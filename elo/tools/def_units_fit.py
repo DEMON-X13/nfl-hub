@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Run Defense, Pass Defense and Pass Rush: the fit and the walk-forward test behind their constants
-in elo/build.py (the five stats' entries in UNIT_STATS, UNIT_TABLES; RUN DEFENSE, PASS DEFENSE AND
-PASS RUSH in its docstring). The owner asked for them on 16 October 2026 ("for ELO ratings, please
-include a section for run defense, pass defense, and pass rush"). Run once, offline from the job, as
-units_fit.py is: its numbers are pasted into the build, which never refits them on the season in
-progress.
+"""Run Defense, Pass Defense and Pass Rush, and their offense mirrors Run Offense, Pass Offense and
+Pass Protection: the fit and the walk-forward test behind their constants in elo/build.py (the five
+stats' entries in UNIT_STATS, UNIT_TABLES; RUN DEFENSE, PASS DEFENSE AND PASS RUSH and RUN OFFENSE,
+PASS OFFENSE AND PASS PROTECTION in its docstring). The owner asked for the defenses on 16 October 2026
+("for ELO ratings, please include a section for run defense, pass defense, and pass rush"), and the
+same day for the offenses' side of the same facets, Elo against Elo on the Game snapshot's position
+matchups ("please add in Offense vs defense their ELOs instead of the rankings"). One fit makes both:
+each facet's regression weighs the offense's ratings and the defense's together, so the offense
+tables are the shares the defense tables' fit already produced (their `opp` until then), not a fit of
+their own. Run once, offline from the job, as units_fit.py is: its numbers are pasted into the build,
+which never refits them on the season in progress.
 
     python3 elo/tools/def_units_fit.py              # downloads what it lacks into elo/cache/ (2012-2025 play-by-play)
     python3 elo/tools/def_units_fit.py --offline    # the cache only
@@ -26,14 +31,19 @@ method held; each stat its own Elo, so a new one never moves another):
      number in it: Run Defense the EPA a run, Pass Defense the EPA a dropback, Pass Rush the sack
      rate (turned so that more is better for the offense). That number regressed on the two stats' ratings of both sides going into the game (plus
      home field), with every weight kept at zero or above, fitted on 2012-2017 weeks 2 on (the
-     playoffs in, as UNIT_WF's footing): the defense's shares, rounded to fives, are the table's
-     weights; the offense's, rounded the same way, are its mirror (`opp`: the offense's side of the
-     same facet, which the test needs and a later offense table would use; nothing publishes it);
+     playoffs in, as UNIT_WF's footing): the defense's shares, rounded to fives, are the defense
+     table's weights; the offense's, rounded the same way, are the offense table's (Run Offense, Pass
+     Offense, Pass Protection: the offense's side of the same facet, published since the owner's call
+     of 16 October 2026; until then kept as the defense table's `opp` for the test alone);
   5. scored once on 2018-2025 weeks 2 on, by RMSE in the measure's own units: the league average with
      home field, each stat alone, both with free weights, both equally, the build's weights with no
      carry and with it, and each club's raw numbers so far this season (the mean of its games before
      this one, the offense's and the defense's, nothing of the opponents counted and nothing carried);
-     by season, the seasons better, and the paired standard error by game against the raw numbers;
+     by season, the seasons better, and the paired standard error by game against the raw numbers.
+     That is the pair's test, the offense table and the defense table together, and both carry it.
+     Then each table on its own side alone (`alone`): the measure forecast from the offense table
+     alone, or the defense table alone, against the same forecast from that side's own raw numbers so
+     far (and nothing of the other side), so each table's own share of the forecast is tested too;
   6. information only: the carry each table would choose, leaving one season of 2013-2017 out at a
      time as units_fit.py chose UNIT_CARRY (the build holds one share for every stat); the same
      non-negative fit on 2012-2021 tested on 2022-2025;
@@ -51,10 +61,11 @@ import build  # noqa: E402
 import units_fit as uf  # noqa: E402
 
 FIRST, FIT_LAST, TEST_LAST = uf.FIRST, uf.FIT_LAST, uf.TEST_LAST
-# each table: its label, its two stats (the measure first) and what it is held to predict
-TABLES = {'run_def': ('Run Defense', ['repa', 'rsr'], 'EPA a run'),
-          'pass_def': ('Pass Defense', ['pepa', 'psr'], 'EPA a dropback'),
-          'pass_rush': ('Pass Rush', ['skr', 'hit'], 'sack rate')}
+# each facet: the defense table's name and label, the offense table's, its two stats (the measure
+# first) and what it is held to predict
+TABLES = {'run_def': ('Run Defense', 'run_off', 'Run Offense', ['repa', 'rsr'], 'EPA a run'),
+          'pass_def': ('Pass Defense', 'pass_off', 'Pass Offense', ['pepa', 'psr'], 'EPA a dropback'),
+          'pass_rush': ('Pass Rush', 'pass_pro', 'Pass Protection', ['skr', 'hit'], 'sack rate')}
 KEYS = ['repa', 'rsr', 'pepa', 'psr', 'skr', 'hit']
 
 
@@ -92,8 +103,8 @@ def main():
             g = t.groupby(['season', side])[k]
             raw[(side, k)] = g.transform(lambda s: s.shift().expanding().mean()).values
 
-    out = {}
-    for name, (label, (m, o), unit) in TABLES.items():
+    out, offs_out = {}, {}
+    for name, (label, oname, olabel, (m, o), unit) in TABLES.items():
         # the measure turned so that more is better for the offense (a sack rate counted negative), so
         # the offense's ratings add to it and the defense's take from it and every weight is >= 0; an
         # RMSE is the same either way round
@@ -149,6 +160,18 @@ def main():
         print(f'  the build against the same weights with no carry: {rb:.4f} against {r0:.4f}; {d0:+.6f} ({se0:.6f}); better in {better_0} of {len(byb)} seasons')
         print(f'  the build against the league average: {rb:.4f} against {lg[0]:.4f}; {dl:+.6f} ({sel:.6f})')
 
+        # each table on its own side alone: the measure from the offense table alone (or the defense
+        # table alone) and home field, against the same from that side's own raw numbers so far
+        alone = {}
+        for side, nm_, ws, R_ in (('off', olabel, OW, O), ('def', label, W, D)):
+            ra, bya, pa, _ = score(np.column_stack([comp(R_, ws)]), f'{nm_} alone (nothing of the other side)')
+            rr_, byr_, pr_, _ = score(np.column_stack([raw[(side, m)], raw[(side, o)]]), f'the {"offense" if side == "off" else "defense"}\'s raw numbers so far alone')
+            da, sea = paired(pa, pr_)
+            alone[side] = {'alone': round(ra, 4), 'alone_raw': round(rr_, 4), 'alone_se': float(f'{sea:.3g}'),
+                           'alone_better': sum(x < z for x, z in zip(bya, byr_))}
+            print(f'  {nm_} alone against its side\'s raw numbers alone: {ra:.4f} against {rr_:.4f}; {da:+.6f} ({sea:.6f}); '
+                  f'{-da / sea:.1f} standard errors; better in {alone[side]["alone_better"]} of {len(bya)} seasons')
+
         # stability: the same non-negative fit on 2012-2021, tested on 2022-2025
         fm2, em2 = ok & (season <= 2021) & (week >= 2), ok & (season >= 2022) & (season <= TEST_LAST) & (week >= 2)
         _, _, _, w2 = score(np.column_stack([O[:, two], -D[:, two]]), 'stability: weights >= 0, fitted 2012-2021, tested 2022-2025',
@@ -174,10 +197,12 @@ def main():
         print(f'  the carry this table alone would choose on {FIRST + 1}-{FIT_LAST} (information only; the build holds {C}): '
               + '  '.join(f'{c:.2f} {v:.5f}' for c, v in sorted(tried.items())) + f'  -> {pick}')
 
-        out[name] = {'label': label, 'side': 'def', 'w': W, 'opp': OW,
-                     'wf': {'target': m, 'measure': unit, 'rmse': round(rb, 4), 'raw': round(rr, 4), 'no_carry': round(r0, 4),
-                            'league': round(lg[0], 4), 'se': float(f'{ser:.3g}'), 'seasons_better': better_raw, 'seasons': len(byb),
-                            'fit': f'{FIRST}-{FIT_LAST}', 'test': f'{FIT_LAST + 1}-{TEST_LAST}', 'carry': C}}
+        pair = {'target': m, 'measure': unit, 'rmse': round(rb, 4), 'raw': round(rr, 4), 'no_carry': round(r0, 4),
+                'league': round(lg[0], 4), 'se': float(f'{ser:.3g}'), 'seasons_better': better_raw, 'seasons': len(byb),
+                'fit': f'{FIRST}-{FIT_LAST}', 'test': f'{FIT_LAST + 1}-{TEST_LAST}', 'carry': C}
+        out[name] = {'label': label, 'side': 'def', 'w': W, 'pair': oname, 'wf': {**pair, **alone['def']}}
+        offs_out[oname] = {'label': olabel, 'side': 'off', 'w': OW, 'pair': name, 'wf': {**pair, **alone['off']}}
+    out.update(offs_out)       # the defenses first, then the offenses, as the build orders UNIT_TABLES
 
     # the constants, as the build should carry them
     print('\nthe constants (mean, spread of a team-game 2012-2017; home field in standard deviations):')

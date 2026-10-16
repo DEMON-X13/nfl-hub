@@ -359,8 +359,8 @@ field), every weight kept at zero or above, fitted on 2012-2017 weeks 2 on, the 
 footing), by elo/tools/def_units_fit.py: the defense's shares were 55.1% and 44.9% (run), 100% and 0%
 (pass: once EPA a dropback is known, its success rate told nothing more, and the fit on 2012-2021 says
 the same) and 89.4% and 10.6% (pass rush), rounded to fives for the weights above (the offense's shares,
-25/75, 70/30 and 95/5, are kept as UNIT_TABLES' `opp` for the test and a later offense table; nothing
-publishes them). K, the carry and home field were held, not chosen again; the carry each table would
+25/75, 70/30 and 95/5, were kept as UNIT_TABLES' `opp` for the test alone until the offense tables
+below published them). K, the carry and home field were held, not chosen again; the carry each table would
 pick alone, leaving one season of 2013-2017 out at a time, is flat about 0.42 (run 0.8, pass 0.5, pass
 rush 0.5, each within 0.0003 of 0.42's error) and is printed as information only. Tested once on
 2018-2025 weeks 2 on (4,198 team-games), the RMSE of the next game's measure: Run Defense 0.2188 EPA a
@@ -375,13 +375,48 @@ game model, the matchups (whose own pass and run defenses are the player Elo's u
 Rankings never read them. The weights and the test are UNIT_TABLES' (`wf`), printed again by
 def_units_fit.py with whether the build carries them.
 
+RUN OFFENSE, PASS OFFENSE AND PASS PROTECTION (16 October 2026, the owner's call: "please add in
+Offense vs defense their ELOs instead of the rankings when going through the position matchups", and,
+asked what the offense's side should show, Elo on both sides, with offense ratings built the same way).
+Three tables of the 32 offenses, the other side of the same three facets, each made exactly as the
+defense tables are (the same stats, Elo, K, home field, carry, pending finals, curve, ranks and window;
+each stat's Elo was already rated on both sides, offense against defense, so nothing new is rated, only
+the offense's side of it weighed and shown):
+
+    Run Offense      = 25% EPA a run + 75% run success rate
+    Pass Offense     = 70% EPA a dropback + 30% dropback success rate
+    Pass Protection  = 95% sack rate + 5% QB-hit rate (both taken: fewer is better)
+
+The weights are the offense's shares of the same fit that gave the defense tables theirs (24.2% and
+75.8%, 69.4% and 30.6%, 92.6% and 7.4%, rounded to fives), on 2012-2017 alone: one regression of each
+facet's next-game measure on both sides' ratings at once, so the two tables of a facet are its two
+halves and no new fit was made (`pair` names the other half). On 2012-2021 the same fit gives 30/70
+for Run Offense, 74/26 for Pass Offense and 89/11 for Pass Protection, so the shares hold about where
+they are; Run Offense's
+leaning on success rate is the run game's steadiness counting for more than its EPA, whose big runs
+come and go. The pair's test is the one above, which both halves carry. Each table was also tested once
+on its own (`alone` in `wf`), on the same 2018-2025 weeks 2 on: the next game's measure forecast from
+the one table and home field, nothing of the other side, against the same forecast from that side's
+raw numbers so far that season. Run Offense 0.2207 EPA a run against 0.2227, better in all 8 seasons
+(5.8 standard errors on the squared error a team-game, by game); Pass Offense 0.3009 EPA a dropback
+against 0.3033, all 8 (3.3); Pass Protection 0.0457 of sack rate against 0.0459, 7 of 8 (2.7). The
+defense tables, alone the same way: Run Defense 0.2227 against 0.2237, 7 of 8 (4.5); Pass Defense
+0.3080 against 0.3094, 6 of 8 (3.3); Pass Rush 0.0469 against 0.0469, 5 of 8 (2.4: level at four
+places, a sack is more the offense's than the defense's). So an offense says more about its own next
+game than the defense it meets does, and each table orders its side better than its raw numbers, Pass
+Rush only barely. They feed no call either. On the Game snapshot's position matchups they are set
+against each other (the quarterback's own season Elo against Pass Defense, Pass Protection against Pass
+Rush, Run Offense against Run Defense, Pass Offense against Pass Defense); the matchup's tag stays the
+Deep Dive's own.
+
 A final is rated only when the play-by-play has both offenses and its highest running score is
 games.csv's final score; any other final (the play-by-play lags the score by a night, or has half
 a game) is `pending`, also `sources.team_stats_pending`, counted nowhere and moving nobody until a
 later run has it whole. `units` in model.json carries `stats` (each stat's key, label, side,
-better and weight; `side` is the table it is shown in, `off`, `def`, `run_def`, `pass_def` or
-`pass_rush`), `weights` (percent, by table), `tables` (each position table's `label`, `of`, the side
-of the ball it rates, and its `walk_forward`), `params` (`carry`, UNIT_CARRY, and `carry_from`,
+better and weight; `side` is the table it is shown in, `off`, `def`, `run_def`, `pass_def`,
+`pass_rush`, `run_off`, `pass_off` or `pass_pro`), `weights` (percent, by table), `tables` (each
+position table's `label`, `of`, the side of the ball it rates, `pair`, the table on the other side of
+its facet, and its `walk_forward`), `params` (`carry`, UNIT_CARRY, and `carry_from`,
 the season carried in, none for the first season in the files), `walk_forward`, `pending`, and for
 every team in `off`, `def` and each position table its rating, `before`, `change`, `raw`, `rank`, `games`, `record` (the
 regular season's, W-L-T), `start` (its carried rating on today's curve, where it began the season:
@@ -581,8 +616,8 @@ ROSTER_URL = 'https://github.com/nflverse/nflverse-data/releases/download/roster
 INJ_URL = 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_{y}.csv'
 DC_URL = 'https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_{y}.csv'
 PBP_URL = 'https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{y}.csv.gz'
-# the play-by-play columns the team units (Overall Offense and Overall Defense, Run Defense, Pass Defense
-# and Pass Rush) are made of (read with usecols)
+# the play-by-play columns the team units (Overall Offense and Overall Defense, and the position tables:
+# Run Defense, Pass Defense, Pass Rush and their offense sides) are made of (read with usecols)
 PBP_COLS = ['game_id', 'home_team', 'posteam', 'defteam', 'play_type', 'pass', 'rush', 'qb_kneel', 'qb_spike', 'two_point_attempt',
             'qb_scramble', 'epa', 'success', 'yards_gained', 'sack', 'qb_hit', 'interception', 'fumble_lost',
             'third_down_converted', 'third_down_failed', 'fixed_drive', 'fixed_drive_result', 'drive_inside20',
@@ -822,7 +857,8 @@ UNIT_STATS = {
               'sign': 1, 'game': ('rz_td', 'rz_trips'), 'season': ('rz_td', 'rz_trips'), 'mu': 0.5494, 'sd': 0.3181, 'home': 0.017, 'fmt': 'pct'},
     'ypp':   {'off': 'Yards a play', 'def': 'Yards a play allowed', 'off_short': 'Yds/play', 'def_short': 'Yds/play allowed',
               'sign': 1, 'game': ('yds', 'plays'), 'season': ('yds', 'plays'), 'mu': 5.5014, 'sd': 1.1479, 'home': 0.099, 'fmt': 'f2'},
-    # Run Defense, Pass Defense and Pass Rush (RUN DEFENSE, PASS DEFENSE AND PASS RUSH; skr above is Pass Rush's too)
+    # the position tables' (RUN DEFENSE, PASS DEFENSE AND PASS RUSH and their offense sides; skr above is Pass Rush's
+    # and Pass Protection's too)
     'repa':  {'off': 'EPA a run', 'def': 'EPA a run allowed', 'off_short': 'EPA/run', 'def_short': 'EPA/run allowed',
               'sign': 1, 'game': ('run_epa', 'runs'), 'season': ('run_epa', 'runs'), 'mu': -0.1044, 'sd': 0.2179, 'home': -0.025, 'fmt': 'epa'},
     'rsr':   {'off': 'Run success rate', 'def': 'Run success rate allowed', 'off_short': 'Run success', 'def_short': 'Run success allowed',
@@ -846,24 +882,44 @@ UNIT_K = 0.08          # the step per final, in standard deviations of the stat
 # season with: last season rated from 0 on its own games, times this (units_fit.py chose it by
 # leaving one season out at a time on 2013-2017; tested once on 2018-2025)
 UNIT_CARRY = 0.42
-# RUN DEFENSE, PASS DEFENSE AND PASS RUSH (see the docstring): three more tables of the defenses, each a
-# weighted sum of two stats' ratings on the same Elo (K, home field and the carry as above), the weights
-# the defense's shares of elo/tools/def_units_fit.py's fit on 2012-2017 rounded to fives; `opp` the
-# offense's shares of the same fit (its side of the facet, which the walk-forward test needs; nothing
-# publishes it) and `wf` the test, once, on 2018-2025: the RMSE of the next game's measure (the offense's
-# own EPA a run, EPA a dropback or sack rate in it) against the league average, the same weights with
-# nothing carried, and each club's raw numbers so far that season (`raw`, `se` the paired standard error
-# of the squared error a team-game against it, by game, `seasons_better` against it)
+# RUN DEFENSE, PASS DEFENSE AND PASS RUSH and RUN OFFENSE, PASS OFFENSE AND PASS PROTECTION (see the
+# docstring): six more tables, a defense's and an offense's side of three facets, each a weighted sum of
+# two stats' ratings on the same Elo (K, home field and the carry as above). One fit of each facet's
+# next-game measure on both sides' ratings, elo/tools/def_units_fit.py's on 2012-2017, gives both weights:
+# the defense's shares rounded to fives are the defense table's, the offense's the offense table's
+# (`pair` names the other side of the facet). `wf` is the test, once, on 2018-2025: the RMSE of the next
+# game's measure (the offense's own EPA a run, EPA a dropback or sack rate in it) from the pair together
+# against the league average, the same weights with nothing carried, and each club's raw numbers so far
+# that season (`raw`, `se` the paired standard error of the squared error a team-game against it, by
+# game, `seasons_better` against it), which both tables of a pair carry; and each table alone, from its
+# own side's rating and nothing of the other, against that side's raw numbers alone (`alone`,
+# `alone_raw`, `alone_se`, `alone_better`). The defenses come first, then the offenses, so the order
+# Overall's two and the defense tables had in the file is kept
 UNIT_TABLES = {
-    'run_def': {'label': 'Run Defense', 'side': 'def', 'w': {'repa': 55, 'rsr': 45}, 'opp': {'repa': 25, 'rsr': 75},
+    'run_def': {'label': 'Run Defense', 'side': 'def', 'w': {'repa': 55, 'rsr': 45}, 'pair': 'run_off',
                 'wf': {'target': 'repa', 'measure': 'EPA a run', 'rmse': 0.2188, 'raw': 0.2216, 'no_carry': 0.2198, 'league': 0.2249,
-                       'se': 0.000185, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42}},
-    'pass_def': {'label': 'Pass Defense', 'side': 'def', 'w': {'pepa': 100, 'psr': 0}, 'opp': {'pepa': 70, 'psr': 30},
+                       'se': 0.000185, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42,
+                       'alone': 0.2227, 'alone_raw': 0.2237, 'alone_se': 9.9e-05, 'alone_better': 7}},
+    'pass_def': {'label': 'Pass Defense', 'side': 'def', 'w': {'pepa': 100, 'psr': 0}, 'pair': 'pass_off',
                  'wf': {'target': 'pepa', 'measure': 'EPA a dropback', 'rmse': 0.2968, 'raw': 0.3012, 'no_carry': 0.299, 'league': 0.3113,
-                        'se': 0.000516, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42}},
-    'pass_rush': {'label': 'Pass Rush', 'side': 'def', 'w': {'skr': 90, 'hit': 10}, 'opp': {'skr': 95, 'hit': 5},
+                        'se': 0.000516, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42,
+                        'alone': 0.308, 'alone_raw': 0.3094, 'alone_se': 0.000254, 'alone_better': 6}},
+    'pass_rush': {'label': 'Pass Rush', 'side': 'def', 'w': {'skr': 90, 'hit': 10}, 'pair': 'pass_pro',
                   'wf': {'target': 'skr', 'measure': 'sack rate', 'rmse': 0.0455, 'raw': 0.0458, 'no_carry': 0.0457, 'league': 0.047,
-                         'se': 8.28e-06, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42}},
+                         'se': 8.28e-06, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42,
+                         'alone': 0.0469, 'alone_raw': 0.0469, 'alone_se': 2.36e-06, 'alone_better': 5}},
+    'run_off': {'label': 'Run Offense', 'side': 'off', 'w': {'repa': 25, 'rsr': 75}, 'pair': 'run_def',
+                'wf': {'target': 'repa', 'measure': 'EPA a run', 'rmse': 0.2188, 'raw': 0.2216, 'no_carry': 0.2198, 'league': 0.2249,
+                       'se': 0.000185, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42,
+                       'alone': 0.2207, 'alone_raw': 0.2227, 'alone_se': 0.000149, 'alone_better': 8}},
+    'pass_off': {'label': 'Pass Offense', 'side': 'off', 'w': {'pepa': 70, 'psr': 30}, 'pair': 'pass_def',
+                 'wf': {'target': 'pepa', 'measure': 'EPA a dropback', 'rmse': 0.2968, 'raw': 0.3012, 'no_carry': 0.299, 'league': 0.3113,
+                        'se': 0.000516, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42,
+                        'alone': 0.3009, 'alone_raw': 0.3033, 'alone_se': 0.000436, 'alone_better': 8}},
+    'pass_pro': {'label': 'Pass Protection', 'side': 'off', 'w': {'skr': 95, 'hit': 5}, 'pair': 'pass_rush',
+                 'wf': {'target': 'skr', 'measure': 'sack rate', 'rmse': 0.0455, 'raw': 0.0458, 'no_carry': 0.0457, 'league': 0.047,
+                        'se': 8.28e-06, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42,
+                        'alone': 0.0457, 'alone_raw': 0.0459, 'alone_se': 8.08e-06, 'alone_better': 7}},
 }
 # the walk-forward record (units_fit.py): RMSE of the offense's points in its next game, 2018-2025 weeks 2 on,
 # with the carry (rmse; the old measure carried the same way, previous) and without it (no_carry)
@@ -1073,7 +1129,7 @@ def unit_ratings(season_games, tg, score, start=None):
 
     # each table's stats, its own in its own order (the weighted first); an entry's `side` is the
     # table's name, which for Overall's two is its side of the ball, and `better` is read on the side
-    # the table rates (every position table a defense's)
+    # the table rates (a defense table's as Overall Defense's, an offense table's as Overall Offense's)
     stats = []
     for name, (side, W, keys) in tabs.items():
         for k in sorted(keys, key=lambda k: (-W.get(k, 0), keys.index(k))):
@@ -1084,7 +1140,7 @@ def unit_ratings(season_games, tg, score, start=None):
     # its carried rating, or a raw 0 for a club with nothing carried
     return {**{name: table_out(name) for name in tabs}, 'pending': pending, 'stats': stats,
             'weights': {name: dict(W) for name, (_, W, _) in tabs.items()},
-            'tables': {n: {'label': v['label'], 'of': v['side'], 'walk_forward': dict(v['wf'])} for n, v in UNIT_TABLES.items()},
+            'tables': {n: {'label': v['label'], 'of': v['side'], 'pair': v['pair'], 'walk_forward': dict(v['wf'])} for n, v in UNIT_TABLES.items()},
             'measure': 'an Elo on each key stat, offense against defense; each table a weighted sum of them (weights in percent)',
             'params': {'K': UNIT_K, 'stats': {k: [UNIT_STATS[k]['mu'], UNIT_STATS[k]['sd'], UNIT_STATS[k]['home']] for k in UNIT_STATS},
                        'carry': UNIT_CARRY, 'carry_from': None,

@@ -9,10 +9,16 @@
        against ../elo/data/model.json, X NFL Bets' own file (tools/deepdive-checks.js);
      - every game of the units' week drawn both ways by deepdive.js possession(): the four rows in order,
        each tag the weighted edge worked out on its own, each row's two sides the offense's then the
-       defense's, each its own club, the ranks and edge shown the file's, the defense's position it faces
-       named (the owner's call, 16 October 2026), and no name, no one out and no number in a row (the owner's
-       call, 14 October 2026: a row is its unit, the clubs and ranks, the defense's position and its tag;
-       who plays is the snapshot's Starters card's); what the rows rest on,
+       defense's, each its own club, its figure the Elo ../elo/data has for it (the owner's call, 16 October
+       2026: the quarterback's own season Elo from players.json through matchups.json's lineup for the game,
+       against Pass Defense; Pass Protection against Pass Rush, Run Offense against Run Defense, Pass Offense
+       against Pass Defense, from model.json's units), worked out by tools/deepdive-checks.js on its own,
+       the higher marked, and the rank from units.json only where there is no Elo, the edge shown the
+       file's, the defense's position it faces named (the owner's call, 16 October 2026), and no name, no
+       one out and no other number in a row (the owner's call, 14 October 2026: a row is its unit, the
+       clubs and figures, the defense's position and its tag; who plays is the snapshot's Starters card's);
+       how often the higher Elo and the row's tag point opposite ways is printed, never checked (the tag
+       is the Deep Dive's tested rule on its own ratings); what the rows rest on,
        deepdive.js basis() (the snapshot's "Position matchups" label's title), naming each side with its
        own count of this season's games; and the Overall
        line's tag, deepdive.js headTag() on model.json's units, against the rule (tools/deepdive-checks.js);
@@ -120,24 +126,34 @@ async function run() {
   let S = null, why = '';
   try { S = await LC.loadSources(path.join(ROOT, 'tools', '.cache', 'lineup-sources.json'), META, fs); } catch (e) { why = e.message; }
   let games = [], gamesFrom = '';
-  if (S) { games = S.games.filter(r => String(r.season) === String(SEASON) && r.game_type === 'REG' && +r.week === META.week).map(r => [r.away_team, r.home_team]); gamesFrom = `the schedule the lineups were checked on (${S.from})`; }
+  if (S) { games = S.games.filter(r => String(r.season) === String(SEASON) && r.game_type === 'REG' && +r.week === META.week).map(r => [r.away_team, r.home_team, r.game_id]); gamesFrom = `the schedule the lineups were checked on (${S.from})`; }
   else {
     const st = readJSON(path.resolve(ROOT, '..', 'betting', 'state.json'));
-    if (st && Array.isArray(st.schedule) && +st.season === SEASON) games = st.schedule.filter(g => (g.game_type || 'REG') === 'REG' && +g.week === META.week).map(g => [g.away_team, g.home_team]);
+    if (st && Array.isArray(st.schedule) && +st.season === SEASON) games = st.schedule.filter(g => (g.game_type || 'REG') === 'REG' && +g.week === META.week).map(g => [g.away_team, g.home_team, g.game_id]);
     gamesFrom = "betting/state.json's schedule";
   }
   check(`the units' week ${META.week} has its slate, from ${gamesFrom}`, games.length >= 13 && games.length <= 16 && DD.applies(D, SEASON, META.week), `${games.length} games`);
 
-  /* every game of the week as the Game snapshot draws it, both ways: the four rows, their tags, ranks and
-     edges, and the Overall line's tag on model.json's units */
-  const sides = games.flatMap(([a, h]) => [[a, h], [h, a]]);
-  { const bad = [];
-    for (const [off, def] of sides) {
-      let r = null; try { r = DD.possession(D, off, def); } catch (e) { bad.push(`${off} v ${def}: threw ${e.message}`); continue; }
+  /* every game of the week as the Game snapshot draws it, both ways: the four rows, their tags, figures
+     and edges, and the Overall line's tag on model.json's units. The figures are Elo from ../elo/data (the
+     owner's call, 16 October 2026), handed to possession() by deepdive.js eloSides() as the snapshot hands
+     them, and held to deepdive-checks.js's own reading of the same files */
+  const sides = games.flatMap(([a, h, gid]) => [[a, h, gid], [h, a, gid]]);
+  const PL = readJSON(path.resolve(ROOT, '..', 'elo', 'data', 'players.json')), MU = readJSON(path.resolve(ROOT, '..', 'elo', 'data', 'matchups.json'));
+  { const bad = [], seen = { elo: 0, rank: 0 }, split = { rows: 0, opposite: 0, even: 0, at: [] };
+    for (const [off, def, gid] of sides) {
+      let r = null; try { r = DD.possession(D, off, def, DD.eloSides(M, PL, MU, gid, off, def)); } catch (e) { bad.push(`${off} v ${def}: threw ${e.message}`); continue; }
       if (!r) { bad.push(`${off} v ${def}: no units for one side`); continue; }
-      bad.push(...DC.checkPossession(r.html, off, def, U[DD.club(off)], U[DD.club(def)]));
+      const W = DC.eloWant(M, PL, MU, gid, off, def);
+      bad.push(...DC.checkPossession(r.html, off, def, U[DD.club(off)], U[DD.club(def)], W));
+      for (const row of r.rows) { const [o, d] = W[row.key]; for (const x of [o, d]) seen[x ? 'elo' : 'rank']++;
+        /* the higher Elo against the tag's side: Favorable or Easy is the offense's, Tough or Very tough the defense's */
+        if (!o || !d || o.elo === d.elo) continue; split.rows++;
+        if (row.tag === 'Even') { split.even++; continue; }
+        const tagO = /Favorable|Easy/.test(row.tag); if (tagO !== (o.elo > d.elo)) { split.opposite++; split.at.push(`${off} ${row.key} ${o.elo}-${d.elo} ${row.tag}`); } }
     }
-    check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, each row\'s two sides headed by their own clubs, the ranks and edges the file\'s, the defense\'s position named, no name or number in a row', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions`); }
+    check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, each row\'s two sides headed by their own clubs, each figure the Elo ../elo/data has for it (the rank only where it has none), the higher marked, the edges the file\'s, the defense\'s position named, no name or other number in a row', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions, ${seen.elo} sides on Elo and ${seen.rank} on a rank`);
+    console.log(`     (the higher Elo and the row's tag: of ${split.rows} rows with two different Elo, ${split.even} tagged Even and ${split.opposite} tagged the other way${split.at.length ? ': ' + split.at.slice(0, 12).join(', ') + (split.at.length > 12 ? ', ...' : '') : ''})`); }
   /* what the rows rest on (deepdive.js basis(), the title of the snapshot's "Position matchups" label): each
      side named with its own count of this season's games,
      the file's g26, worked out here, and a club with no count given none. On every game of the week, and on a

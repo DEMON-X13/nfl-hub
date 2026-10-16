@@ -51,12 +51,17 @@
                        on the gap read as points under it (deepdive.js headTag), the two ratings in two
                        boxes of one size, the better rank's tinted; then the Deep Dive itself,
                        "Position matchups": that offense's four position matchups against that
-                       defense, a compact row each, the unit, the two sides' clubs and ranks, the
-                       defense's position it faces (Pass defense, Pass rush, Run defense, Coverage:
-                       the owner's call, 16 October 2026) and the tag (deepdive.js possession, on
-                       news/data/units.json, where it is for this
-                       game's week), no names, no one out and no numbers (who plays is the Starters
-                       card's, the numbers the Stat breakdown's); a unit with no game yet this season
+                       defense, a compact row each, the unit, the two sides' clubs and Elo (the
+                       owner's call, 16 October 2026: the quarterback's own season Elo against Pass
+                       Defense, Pass Protection against Pass Rush, Run Offense against Run Defense,
+                       Pass Offense against Pass Defense, from the Elo files the window already
+                       has, deepdive.js eloSides; the higher marked; a side with no Elo its rank as
+                       before), the defense's position it faces (Pass defense, Pass rush, Run
+                       defense, Coverage: the owner's call, 16 October 2026) and the tag (deepdive.js
+                       possession, on news/data/units.json, where it is for this game's week; the
+                       tag is the Deep Dive's own, never worked from the Elo), no names, no one out
+                       and no other numbers (who plays is the Starters card's, the numbers the Stat
+                       breakdown's); a unit with no game yet this season
                        on its rating carried from last season, marked so. What the ratings and the
                        Deep Dive rest on is said on hover (the boxes' title, deepdive.js basis as the
                        matchups' label's title, each side's title and the tag's, which gives the edge)
@@ -335,6 +340,10 @@ table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
 #gsModal .ddsn{font-weight:600;color:var(--ink-2)}
 #gsModal .ddsep{color:var(--ink-2)}
 #gsModal .ddrk{font-family:var(--display);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+/* a side's Elo (the owner's call, 16 October 2026), in the card's value box, the higher of the two marked
+   as every comparison in the window is (gs-better) */
+#gsModal .ddelo{font-family:var(--display);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;padding:1px 7px}
+#gsModal .ddelo.gs-better{color:var(--pick)}
 #gsModal .ddend{justify-self:start;display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left}
 #gsModal .dddu{font-size:var(--gs-t2);font-weight:600;color:var(--ink-2);line-height:1.3}
 #gsModal .ddrow .dtag{cursor:help}
@@ -961,8 +970,10 @@ function teamElo(P,g,F){
 /* "Seahawks Possession" (the owner's words, 14 October 2026; the code where a team has no nickname) */
 const possTitle=t=>`${esc(teamName(t))} Possession`;
 /* the Deep Dive for one possession (deepdive.js on news/data/units.json): the four rows where the file
-   is for this game's week, else one quiet line saying why */
-function deepDive(P,g,o,d){
+   is for this game's week, else one quiet line saying why. Each row's figures are the two sides' Elo
+   from the Elo files the window already has (F, the ELO Ratings tab's one read; deepdive.js eloSides),
+   ranks where a side has none or the files have not come in yet (the window draws again when they do) */
+function deepDive(P,g,o,d,F){
   const dd=DD(), rec=NEWS.units;
   const why=t=>`<p class="gs-ddwhy" data-gs-ddwhy>${t}</p>`;
   if(!dd) return why('The Deep Dive is not on this page.');
@@ -975,12 +986,14 @@ function deepDive(P,g,o,d){
     const fs=+m.season, fw=+m.week, later=season>fs||(season===fs&&wk>fw);
     const of=`week ${isFinite(fw)?fw:'?'}${fs!==season&&isFinite(fs)?' of '+fs:''}`;
     return why(`The Deep Dive's matchups are for ${of}: ${later?'this game\'s come with its week':'this game\'s week has gone, and its matchups with it'}.`); }
-  const x=dd.possession(D,o,d);
+  const E=F&&F.model?dd.eloSides(F.model,F.players,F.mu,g.game_id,o,d,tierName):null;
+  const x=dd.possession(D,o,d,E);
   if(!x) return why(`The Deep Dive has no matchups for ${esc(!D.units[dd.club(o)]?o:d)}.`);
+  const anyElo=!!E&&Object.values(E).some(p=>p[0]||p[1]);
   /* what the rows rest on (deepdive.js basis: escaped text, no markup) and when the news job built them,
      said on hover over the label rather than under the rows */
   const built=stamp(D.built_at||(D.meta&&D.meta.built_at));
-  return `<div class="gs-dd"><span class="gs-lab" data-gs-basis title="${dd.basis(D,g.away_team,g.home_team)}${built?` Built ${esc(built)} by the news job.`:''}">Position matchups</span>${x.html}</div>`;
+  return `<div class="gs-dd"><span class="gs-lab" data-gs-basis title="${dd.basis(D,g.away_team,g.home_team,anyElo)}${built?` Built ${esc(built)} by the news job.`:''}">Position matchups</span>${x.html}</div>`;
 }
 function unitsSec(P,g,F){
   const T0='Offense vs defense', a=g.away_team, h=g.home_team;
@@ -1006,7 +1019,7 @@ function unitsSec(P,g,F){
       const ht=dd&&D&&vo&&vd?dd.headTag(D.meta,vo,vd):null;
       if(ht) head=`<span class="gs-uhtag" data-gs-head="${esc(o)}-${esc(d)}"><span class="dtag ${esc(ht.cls)}" title="${esc(ht.title)}">${esc(ht.tag)}</span><span class="gs-hpts">${esc(ht.text)}</span></span>`;
  }
-    return `<div class="gs-unit" data-gs-poss="${esc(o)}-${esc(d)}"><div class="gs-uhd"><h4>${possTitle(o)}</h4>${head}</div>${duel}${deepDive(P,g,o,d)}</div>`; };
+    return `<div class="gs-unit" data-gs-poss="${esc(o)}-${esc(d)}"><div class="gs-uhd"><h4>${possTitle(o)}</h4>${head}</div>${duel}${deepDive(P,g,o,d,F)}</div>`; };
   /* no summary in the title, no note under the card and no stats fold (the owner's call, 14 October 2026):
      what the ratings and the rows rest on is the boxes' title and the matchups' label's; the season's
      stats are the Stat breakdown's */

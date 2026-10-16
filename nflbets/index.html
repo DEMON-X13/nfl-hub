@@ -689,10 +689,15 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-track table{margin-top:6px}
 .pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
 /* Overall Offense and Overall Defense, then (16 October 2026) Run Defense, Pass Defense and Pass
-   Rush: pills at the end of the position row, each a table of the 32 teams with its key stats and
-   their league ranks, sortable, and a team's window */
+   Rush and their offense sides, Run Offense, Pass Offense and Pass Protection: pills under the
+   position row, each a table of the 32 teams with its key stats and their league ranks, sortable,
+   and a team's window. They read as offense and defense: two rows, each headed by its side, the
+   offense over the defense with each facet over its other side (Run Offense over Run Defense, Pass
+   Protection over Pass Rush), and on a phone each side's four two by two under its heading */
 .pe-pos .pe-unitpill{border-color:var(--ink-2);color:var(--ink);font-weight:700}
-.pe-pos .pe-unitpill:first-of-type{margin-left:6px}
+.pe-pos .pe-units{flex:1 1 100%;display:grid;grid-template-columns:max-content repeat(4,max-content);gap:6px;align-items:center;justify-content:start;margin-top:4px}
+.pe-pos .pe-ulab{grid-column:1;font:700 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-right:6px}
+@media(max-width:720px){ .pe-pos .pe-units{grid-template-columns:repeat(2,minmax(0,1fr))} .pe-pos .pe-ulab{grid-column:1/-1;padding:6px 0 0} }
 table.pe-tt th[data-sort]{cursor:pointer;user-select:none}
 table.pe-tt th[data-sort]:hover,table.pe-tt th[aria-sort]{color:var(--ink)}
 table.pe-tt th[aria-sort="descending"]::after{content:' ▼';font-size:9px}
@@ -1124,6 +1129,10 @@ table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
 #gsModal .ddsn{font-weight:600;color:var(--ink-2)}
 #gsModal .ddsep{color:var(--ink-2)}
 #gsModal .ddrk{font-family:var(--display);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+/* a side's Elo (the owner's call, 16 October 2026), in the card's value box, the higher of the two marked
+   as every comparison in the window is (gs-better) */
+#gsModal .ddelo{font-family:var(--display);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;padding:1px 7px}
+#gsModal .ddelo.gs-better{color:var(--pick)}
 #gsModal .ddend{justify-self:start;display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left}
 #gsModal .dddu{font-size:var(--gs-t2);font-weight:600;color:var(--ink-2);line-height:1.3}
 #gsModal .ddrow .dtag{cursor:help}
@@ -6360,7 +6369,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='25ac3e5';
+const PAGE_HASH='ee52e1e';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -8175,7 +8184,7 @@ const thru=P=>P.through?(P.through==='final'?'final':P.through):'through week '+
 function sourceNote(){
   const M=D.model, s=(M&&M.sources)||{}, bits=[];
   const pend=s.player_stats_pending||[]; if(pend.length) bits.push(`${pend.length} final game${pend.length===1?' is':'s are'} not in nflverse's player stats yet, so ${pend.length===1?'it is':'they are'} not rated`);
-  const tp=s.team_stats_pending||[]; if(tp.length) bits.push(`the team tables (Overall Offense and Overall Defense, Run Defense, Pass Defense and Pass Rush) wait on nflverse's play-by-play for ${tp.length} final game${tp.length===1?'':'s'}, which ${tp.length===1?'is':'are'} not rated yet`);
+  const tp=s.team_stats_pending||[]; if(tp.length) bits.push(`the team tables (Overall Offense and Overall Defense and the run, pass and pass-rush tables of each side) wait on nflverse's play-by-play for ${tp.length} final game${tp.length===1?'':'s'}, which ${tp.length===1?'is':'are'} not rated yet`);
   const rep=Object.values(s.injury_report||{}), wk=D.mu&&D.mu.week, mine=rep.filter(r=>r.week===wk);
   const filed=mine.filter(r=>r.statuses_filed).length;
   if(mine.length&&filed<mine.length) bits.push(`week ${esc(wk)}'s game statuses are filed for ${filed} of ${mine.length} clubs; until a club files, a player out at its last report who has not practised since is counted out`);
@@ -8183,18 +8192,25 @@ function sourceNote(){
 }
 /* the position row: a pill a rated group, then Overall Offense and Overall Defense once a team
    has a rating: a rated game, or (from October 2026) its start carried from last season, and
-   after them each of the file's own tables of a unit (`units.tables`, from 16 October 2026: Run
-   Defense, Pass Defense and Pass Rush, each a defense's), named and described by the file; a file
-   without them draws the two */
+   with them each of the file's own tables of a unit (`units.tables`, from 16 October 2026: Run
+   Defense, Pass Defense and Pass Rush, and the same day their offense sides, Run Offense, Pass
+   Offense and Pass Protection), named and described by the file, each under its side of the ball
+   (`of`): the offense's row, Overall Offense first, then the defense's, Overall Defense first, each
+   in the file's order. A file without them draws the two, one a row */
 const unitsOn=()=>{ const U=D.model&&D.model.units; return !!(U&&U.off&&U.def&&Object.values(U.off).some(v=>v.games||v.carried)); };
 const unitKeys=()=>{ const U=D.model&&D.model.units, T=U&&U.tables; return ['off','def',...(T&&typeof T==='object'?Object.keys(T).filter(k=>U[k]&&typeof U[k]==='object'&&T[k]&&T[k].label):[])]; };
+/* each table's side of the ball: Overall's two by their key, a position table by its `of` */
+const unitSide=k=>{ const U=D.model&&D.model.units, T=U&&U.tables&&U.tables[k]; return k==='off'?'off':k==='def'?'def':(T&&T.of==='off'?'off':'def'); };
+/* a position table's pair, the other side of its facet (`pair`, from 16 October 2026), where the file has it */
+const unitPair=k=>{ const U=D.model&&D.model.units, T=U&&U.tables&&U.tables[k], p=T&&T.pair; return p&&U[p]&&typeof U[p]==='object'&&U.tables[p]&&U.tables[p].label?p:null; };
 /* a table: its key (the pill chosen, else Overall Offense), the side of the ball it rates, its name
-   and what its teams are called */
+   and what its teams are called (Pass Protection's are offenses: "pass protections" names nothing) */
 function unitTable(){
   const U=D.model.units, key=unitKeys().includes(D.unit)?D.unit:'off', T=(U.tables||{})[key];
-  const side=key==='off'?'off':key==='def'?'def':(T.of==='off'?'off':'def');
+  const side=unitSide(key);
   const label=key==='off'?'Overall Offense':key==='def'?'Overall Defense':String(T.label);
-  return {key,side,dfn:side==='def',label,pos:!!T,meta:T||null,teams:T?label.toLowerCase()+(/sh$/i.test(label)?'es':'s'):side==='def'?'defenses':'offenses'};
+  const teams=!T?(side==='def'?'defenses':'offenses'):/protection$/i.test(label)?'offenses':label.toLowerCase()+(/sh$/i.test(label)?'es':'s');
+  return {key,side,dfn:side==='def',label,pos:!!T,meta:T||null,teams};
 }
 /* the season the units carry in (`params.carry_from`) and the share, or null for a file without the carry */
 const unitCarry=()=>{ const p=D.model&&D.model.units&&D.model.units.params||{}; return p.carry&&p.carry_from!=null?{c:+p.carry,from:p.carry_from}:null; };
@@ -8206,7 +8222,9 @@ function posRow(){
   const P=D.players, on=D.unit&&unitsOn();
   const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${!on&&k===D.pos}">${esc(P.groups[k].label)}</button>`).join(''):'';
   const U=D.model&&D.model.units, nm=k=>k==='off'?'Overall Offense':k==='def'?'Overall Defense':U.tables[k].label;
-  const units=unitsOn()?unitKeys().map(s=>`<button role="tab" class="pe-unitpill" data-unit="${esc(s)}" aria-selected="${on&&D.unit===s}">${esc(nm(s))}</button>`).join(''):'';
+  const pill=s=>`<button role="tab" class="pe-unitpill" data-unit="${esc(s)}" aria-selected="${on&&D.unit===s}">${esc(nm(s))}</button>`;
+  const ks=unitKeys(), row=(side,word)=>`<span class="pe-ulab" aria-hidden="true">${word}</span>${ks.filter(k=>unitSide(k)===side).map(pill).join('')}`;
+  const units=unitsOn()?`<div class="pe-units" role="presentation">${row('off','Offense')}${row('def','Defense')}</div>`:'';
   return `<div class="pe-pos" role="tablist">${btns}${units}</div>`;
 }
 function rankings(){
@@ -8240,9 +8258,12 @@ function rankings(){
    `units.weights`); every stat is shown with its league rank, the columns sort, and a click on a
    team opens its window. Nothing here knows the weights: the text and the columns are read from
    the file (an older file without `stats` gets the old three columns). The position tables
-   (`units.tables`: Run Defense, Pass Defense and Pass Rush, 16 October 2026) are drawn by the same
-   card on their own stats (each `units.stats` entry's `side` is its table), each with the test the
-   file gives it in place of Overall's note on points. */
+   (`units.tables`: Run Defense, Pass Defense and Pass Rush, and Run Offense, Pass Offense and Pass
+   Protection, 16 October 2026) are drawn by the same card on their own stats (each `units.stats`
+   entry's `side` is its table), each with the test the file gives it in place of Overall's note on
+   points: the pair's (the table with its other side), and since the offense tables came its own
+   alone (`alone`); a file with the defense tables and no pair says, as it did, that the offense's
+   side was used only for the test. */
 const ordinal2=n=>n==null?'':ordinal(n);
 const fmtStat=(v,f)=>v==null?'–':f==='pct'?(v*100).toFixed(1)+'%':f==='epa'?(v>=0?'+':'−')+Math.abs(v).toFixed(3):f==='f2'?v.toFixed(2):v.toFixed(1);
 const recStr=r=>r?`${r[0]}-${r[1]}${r[2]?'-'+r[2]:''}`:'–';
@@ -8286,12 +8307,23 @@ function teamsCard(){
   if(X.pos){ const tw=X.meta.walk_forward||{}, f=x=>(+x).toFixed(x<0.1?4:3), unit=X.label.toLowerCase();
     /* which way each stat is better, in the table's own words: a stat the defense allows is better
        lower, one it makes (Pass Rush's sacks and hits) better higher; Overall Defense's "taken" is its
-       takeaways' word and is not borrowed here */
+       takeaways' word and is not borrowed here. An offense's: more gained, and fewer sacks and hits
+       taken (Pass Protection's) */
     const lo=stats.some(s=>s.better==='low'), hi=stats.some(s=>s.better==='high');
-    const way=lo&&hi?'less allowed, more made by the defense':hi?'more made by the defense':'less allowed';
-    const sub=`<p class="pe-sub" id="peTeamsWhy">Every team's ${esc(unit)} rated on this season's games${C?`, each starting from ${esc(C.c)} of its final rating in ${esc(C.from)} (the share Overall Offense and Overall Defense carry), so every team is rated from the season's first day; one that has not played yet shows that carried rating, marked carried from ${esc(C.from)}. As in the player rankings,`:', the way the player rankings are: everyone started at 1500, and'} after each game each stat moves by how far it beat or missed what was expected against the offense it faced, home field counted. The rating weighs ${listAnd(weighted.map(s=>`${esc(lc(s.label))} <b>${s.weight}%</b>`))}. Because opponents count, a team can stand above one with better raw numbers: a team's window ranks each stat both ways. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better (${way}). Each stat carries its league rank (the best eight green, the worst eight red); click a column to sort by it, best first, and a team for its rating game by game.</p>
+    const way=dfn?(lo&&hi?'less allowed, more made by the defense':hi?'more made by the defense':'less allowed')
+      :(lo&&hi?'more gained, fewer taken':hi?'more gained':'fewer taken');
+    const pk=unitPair(key), pl=pk?String(U.tables[pk].label):'';
+    /* the test: the pair's (this table with its other side's ratings on the same stats), then, where the
+       file has it, this table alone against its own side's raw numbers alone */
+    const pairWf=dfn
+      ?`a forecast of the ${esc(tw.measure)} an offense had in its next game against the team, from this rating with the offense's own ratings on the same stats${pk?` (its ${esc(pl)})`:''}, missed by ${f(tw.rmse)}`
+      :`a forecast of the ${esc(tw.measure)} the team had in its next game, from this rating with the defense's own ratings on the same stats${pk?` (its ${esc(pl)})`:''}, missed by ${f(tw.rmse)}`;
+    const alone=tw.alone!=null&&tw.alone_raw!=null;
+    const level=alone&&f(tw.alone)===f(tw.alone_raw);
+    const aloneWf=alone?` On its own, from this rating and nothing of the ${dfn?'offense':'defense'} it met, the forecast missed by ${f(tw.alone)}, and from the team's own raw numbers so far alone by ${f(tw.alone_raw)}: ${level?`level with them at this precision${tw.alone_better!=null&&tw.seasons?` (ahead in ${esc(tw.alone_better)} of ${esc(tw.seasons)} seasons)`:''}`:`it orders the ${esc(X.teams)} better than their raw numbers do${tw.alone_better!=null&&tw.seasons?`, in ${esc(tw.alone_better)} of ${esc(tw.seasons)} seasons`:''}`}.`:'';
+    const sub=`<p class="pe-sub" id="peTeamsWhy">Every team's ${esc(unit)} rated on this season's games${C?`, each starting from ${esc(C.c)} of its final rating in ${esc(C.from)} (the share Overall Offense and Overall Defense carry), so every team is rated from the season's first day; one that has not played yet shows that carried rating, marked carried from ${esc(C.from)}. As in the player rankings,`:', the way the player rankings are: everyone started at 1500, and'} after each game each stat moves by how far it beat or missed what was expected against the ${dfn?'offense':'defense'} it faced, home field counted. The rating weighs ${listAnd(weighted.map(s=>`${esc(lc(s.label))} <b>${s.weight}%</b>`))}. Because opponents count, a team can stand above one with better raw numbers: a team's window ranks each stat both ways. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better (${way}). Each stat carries its league rank (the best eight green, the worst eight red); click a column to sort by it, best first, and a team for its rating game by game.</p>
       ${zero.length?`<p class="pe-note" id="peTeamsZero">${esc(listAnd(zero.map(s=>s.label)))} ${zero.length===1?'is':'are'} shown with ${zero.length===1?'its rank but weighs':'their ranks but weigh'} nothing: once the weighted ${weighted.length===1?'stat is':'stats are'} known, ${zero.length===1?'it':'they'} told nothing more about a team's next game.</p>`:''}
-      ${tw.rmse?`<p class="pe-note" id="peTeamsWf">Fitted on ${esc(tw.fit)} and tested on ${esc(tw.test)}, a forecast of the ${esc(tw.measure)} an offense had in its next game against the team, from this rating with the offense's own ratings on the same stats, missed by ${f(tw.rmse)} on average (root mean square), where the same forecast from both teams' raw numbers so far that season missed by ${f(tw.raw)} and the league average by ${f(tw.league)}: with opponents counted and last season carried in, it orders the ${esc(X.teams)} better than their raw numbers do${tw.seasons?`, in ${esc(tw.seasons_better)} of ${esc(tw.seasons)} seasons`:''}. The offense's ratings on these stats are used only for that test and are not shown.</p>`:''}`;
+      ${tw.rmse?`<p class="pe-note" id="peTeamsWf">Fitted on ${esc(tw.fit)} and tested on ${esc(tw.test)}, ${pairWf} on average (root mean square), where the same forecast from both teams' raw numbers so far that season missed by ${f(tw.raw)} and the league average by ${f(tw.league)}: with opponents counted and last season carried in, ${pk?`the two ratings together do better than the raw numbers`:`it orders the ${esc(X.teams)} better than their raw numbers do`}${tw.seasons?`, in ${esc(tw.seasons_better)} of ${esc(tw.seasons)} seasons`:''}.${aloneWf}${pk?'':` The offense's ratings on these stats are used only for that test and are not shown.`}</p>`:''}`;
     return `<div class="card" id="peUnits"><h2>${esc(X.label)} <span class="pill">${esc(U.season||P.season)} ${esc(thru(P))}</span></h2>
     ${sub}
     ${sourceNote()}
@@ -8343,8 +8375,12 @@ function teamModal(t){
   const rows=stats.map(s=>{ const e=v.stats&&v.stats[s.key]||{};
     return `<tr data-stat="${s.key}" class="${s.weight?'':'pe-weak'}"><td>${esc(s.label)}</td><td class="pe-n"><b>${fmtStat(e.v,s.fmt)}</b></td><td class="pe-n">${ordinal2(e.rank)||'–'}</td><td class="pe-n">${ordinal2(e.adj)||'–'}</td>
       <td class="pe-n">${s.weight?s.weight+'%':'–'}</td><td class="pe-n">${s.weight&&e.adds!=null?`<span class="pe-nud ${e.adds>0?'up':e.adds<0?'dn':'flat'}" style="display:inline">${e.adds>0?'+':e.adds<0?'−':''}${Math.abs(e.adds).toFixed(1)}</span>`:'–'}</td></tr>`; }).join('');
-  const nx=nextGame(t), other=dfn?'off':'def', ov=nx&&U[other]&&U[other][nx.opp];
-  const next=nx?`<p class="pe-tnext" id="peTmNext">Next: week ${esc(nx.week)} ${nx.home?'vs':'at'} ${tag(nx.opp,true)}, whose ${dfn?'offense':'defense'} is <b>${ov?ordinal(ov.rank):'–'}</b> of ${n} in Overall ${dfn?'Offense':'Defense'}${ov?` (${ov.elo}, ${esc(tierName(ov.elo))})`:''}${X.pos?`: the site has no offense table to set against ${esc(X.label)}, so this is its overall rank`:''}.</p>`:'';
+  /* the coming opponent on the other side of the ball: in Overall's two the other Overall, in a
+     position table its pair (Run Defense's opponent in Run Offense, and so on), and in a file
+     without the pair its Overall rank, said so */
+  const nx=nextGame(t), pk=X.pos?unitPair(key):null, other=pk||(dfn?'off':'def'), ov=nx&&U[other]&&U[other][nx.opp];
+  const otherName=pk?String(U.tables[pk].label):`Overall ${dfn?'Offense':'Defense'}`;
+  const next=nx?`<p class="pe-tnext" id="peTmNext">Next: week ${esc(nx.week)} ${nx.home?'vs':'at'} ${tag(nx.opp,true)}, whose ${dfn?'offense':'defense'} is <b>${ov?ordinal(ov.rank):'–'}</b> of ${n} in ${esc(otherName)}${ov?` (${ov.elo}, ${esc(tierName(ov.elo))})`:''}${X.pos&&!pk?`: the site has no ${dfn?'offense':'defense'} table to set against ${esc(X.label)}, so this is its overall rank`:''}.</p>`:'';
   const zero=stats.filter(s=>!s.weight);
   /* the value column: Allowed where every stat is one the defense allows, Made where every one is one it
      makes (Pass Rush), Value otherwise; Overall Defense keeps the Allowed it always had */
@@ -8803,14 +8839,31 @@ boot();
    side, with the same weights, so they are drawn here as the right-hand side of the line's and the
    receivers' rows. The rows overlap and are never added up.
 
-   A row is drawn compact and centred: the unit, the two sides' clubs and ranks ("SEA 13th · DEN
-   3rd", the offense's then the defense's; the quarterback's and the run game's defense side is the
-   pass or run defense's rank), the defense's position it is up against (Pass defense, Pass rush, Run
-   defense, Coverage: the owner's call, 16 October 2026, "for offense vs defense section, please put
-   opposing positions for the defense") and the tag, the edge in its title. Nothing else: no names, no
-   one out, no numbers (the owner's call, 14 October 2026: who plays is the Starters card's, the
-   numbers the Stat breakdown's). The file still carries the names, who is out and the numbers; the news job's
-   smoke holds them to their sources.
+   A row is drawn compact and centred: the unit, the two sides' clubs and figures ("SEA 1532 · DEN
+   1488", the offense's then the defense's), the defense's position it is up against (Pass defense, Pass
+   rush, Run defense, Coverage: the owner's call, 16 October 2026, "for offense vs defense section, please
+   put opposing positions for the defense") and the tag, the edge in its title. Nothing else: no names, no
+   one out, no other number (the owner's call, 14 October 2026: who plays is the Starters card's, the
+   numbers the Stat breakdown's). The file still carries the names, who is out and the numbers; the news
+   job's smoke holds them to their sources.
+
+   The figures are Elo against Elo (the owner's call, 16 October 2026: "please add in Offense vs defense
+   their ELOs instead of the rankings when going through the position matchups"; asked what the offense
+   side should show, he chose Elo on both sides, the offense's own tables built the way the defense's were,
+   and the quarterback's own Elo on his row). Each is the number the ELO Ratings tab shows, from
+   elo/data/model.json's `units` and players.json, read once by the page (window.eloFiles) and handed in,
+   never baked in (eloSides):
+     Quarterback     the offense's starting quarterback's season Elo (the first quarterback of its
+                     expected lineup for this game, matchups.json `lineups`, as the Starters card shows
+                     him) against the defense's Pass Defense
+     Offensive line  Pass Protection against Pass Rush
+     Running backs   Run Offense against Run Defense
+     Receivers       Pass Offense against Pass Defense (the row still names the defense's position Coverage)
+   The higher of the two wears the card's edge mark (gs-better); each side's title gives its rank and
+   tier. The tag stays the Deep Dive's own, the tested formula on units.json's ratings, never recomputed
+   from the Elo: the two can disagree, and each says what it is. Where model.json has no such table (an
+   older file) or the quarterback has no season rating (unranked, or no lineup for this game), that side
+   shows its rank from units.json as before, and no mark is drawn on a row unless both sides are Elo.
 
    The headline tag is the one the tracker put over its rows: this team's Overall Offense against the
    opponent's Overall Defense (elo/data/model.json `units`, which the card already shows), the gap read
@@ -8846,6 +8899,44 @@ boot();
      pass or the run (no names of its own) */
   const faced = (O, k) => (k === 'passD' || k === 'runD') ? (O.vs && O.vs[k]) || null : O[k] || null;
 
+  /* the Elo of each row's two sides: [the offense's table, the defense's] by row, 'qb' the quarterback's
+     own season Elo; each table must be named in units.tables (an older model.json has none) */
+  const ELO = { qb: ['qb', 'pass_def'], ol: ['pass_pro', 'pass_rush'], rb: ['run_off', 'run_def'], rec: ['pass_off', 'pass_def'] };
+
+  /* the offense's starting quarterback as the Starters card shows him: the first player of the club's
+     expected lineup for this game (matchups.json lineups, only where it is for this game) whom
+     players.json has at quarterback, with his season Elo and rank where he is ranked; else null */
+  function starterQb(PL, MU, team, gameId) {
+    const lu = MU && MU.lineups && MU.lineups[team], P = PL && PL.players;
+    if (!lu || !P || lu.game_id !== gameId) return null;
+    const pid = (lu.players || []).find(p => P[p] && P[p].group === 'QB');
+    const e = pid && P[pid];
+    if (!e || e.rank == null || e.se == null || !isFinite(e.se)) return null;
+    const G = PL.groups && PL.groups.QB;
+    return { pid, elo: +e.se, rank: e.rank, of: G && G.active != null ? G.active : null };
+  }
+
+  /* each row's two Elo figures for one possession: { qb|ol|rb|rec: [offense side, defense side] }, each
+     side { elo, rank, of, what, tier, carried } or null where it falls back to the rank. M is model.json,
+     PL players.json, MU matchups.json (each may be null); tier(elo) names a rating's tier (the page's
+     pkEloTier), optional */
+  function eloSides(M, PL, MU, gameId, off, def, tier) {
+    const U = M && M.units, T = (U && U.tables) || {};
+    const side = (k, t) => {
+      const tab = T[k] && U[k], v = tab && tab[t];
+      if (!v || v.elo == null || !isFinite(v.elo)) return null;
+      return { elo: +v.elo, rank: v.rank, of: Object.keys(tab).length, what: T[k].label || k, tier: tier ? tier(+v.elo) || '' : '', carried: !v.games && !!v.carried };
+    };
+    const out = {};
+    for (const [key, [ko, kd]] of Object.entries(ELO)) {
+      let o = null;
+      if (ko === 'qb') { const q = starterQb(PL, MU, off, gameId); if (q) o = { elo: q.elo, rank: q.rank, of: q.of, what: 'starting quarterback, this season', tier: tier ? tier(q.elo) || '' : '', carried: false }; }
+      else o = side(ko, off);
+      out[key] = [o, side(kd, def)];
+    }
+    return out;
+  }
+
   /* is the file for this game's week? (the units are built for the schedule's current week alone) */
   function applies(D, season, week) {
     const m = D && D.meta;
@@ -8865,26 +8956,36 @@ boot();
   }
 
   /* one possession: this offense's four rows against the defense. Returns { html, rows } where rows
-     are [{ key, dpos, tag, cls, edge }], or null when the file has no units for either club. A row is
-     compact and centred: the offense's unit, each side's club and rank ("SEA 13th · DEN 3rd", the
-     offense's then the defense's, each side titled with what it is rated as), the defense's position it
-     faces (.dddu, the owner's call of 16 October 2026) and the tag, whose title gives the edge, the two
-     together at the row's end (.ddend); no names, no one out, no numbers (the owner's call, 14 October
-     2026: who plays is the Starters card's, the numbers the Stat breakdown's). Each side's figure is in
-     its own .ddside, so a rating in place of a rank is one change there */
-  function possession(D, off, def) {
+     are [{ key, dpos, tag, cls, edge, elo: [offense, defense] }], or null when the file has no units for
+     either club. A row is compact and centred: the offense's unit, each side's club and figure ("SEA
+     1532 · DEN 1488", the offense's then the defense's, each side titled with what it is rated as), the
+     defense's position it faces (.dddu, the owner's call of 16 October 2026) and the tag, whose title
+     gives the edge, the two together at the row's end (.ddend); no names, no one out, no other number
+     (the owner's call, 14 October 2026: who plays is the Starters card's, the numbers the Stat
+     breakdown's). E is eloSides() for this possession: each side's figure its Elo (b.ddelo, the higher
+     of two marked gs-better) where E has it, else its rank from the file (b.ddrk), as before 16 October
+     2026; with no E every figure is a rank */
+  function possession(D, off, def, E) {
     if (!D || !D.units) return null;
     const U = D.units[club(off)], O = D.units[club(def)];
     if (!U || !O) return null;
     const rows = [];
     const html = ROWS.map(([key, dk, label, mine, theirs, dpos]) => {
-      const u = U[key], v = faced(O, dk), t = rowTag(D, off, def, key);
-      rows.push({ key, dpos, tag: t.tag, cls: t.cls, edge: t.edge });
+      const u = U[key], v = faced(O, dk), t = rowTag(D, off, def, key), [eo, ed] = (E && E[key]) || [null, null];
+      rows.push({ key, dpos, tag: t.tag, cls: t.cls, edge: t.edge, elo: [eo ? eo.elo : null, ed ? ed.elo : null] });
+      /* the higher Elo of the two, where both sides are Elo and they differ */
+      const lead = eo && ed && eo.elo !== ed.elo ? (eo.elo > ed.elo ? 'o' : 'd') : null;
       const why = t.edge == null ? '' : ` title="Edge ${sd(t.edge)}: ${esc(off)}'s ${mine} rating minus ${esc(def)}'s ${theirs}, in league standard deviations. The tag weighs it by ${t.w} (${sd(t.w * t.edge)}), by how much this matchup alone has predicted points; the rows overlap, so they are not to be added up"`;
-      /* one side: its club and its rank, titled with what it is rated as */
-      const one = (cls, c, words, x) => { const rk = x && x.rank != null ? ord(x.rank) : '–';
+      /* one side: its club and its Elo, titled with what it is, its rank and its tier; or, with no Elo,
+         its club and its rank, titled with what it is rated as */
+      const one = (cls, c, words, x, e, better) => {
+        if (e) {
+          const at = [`Elo ${e.elo}`, e.rank != null ? `${ord(e.rank)}${e.of ? ` of ${e.of}` : ''}` : '', e.tier ? esc(e.tier) : '', e.carried ? 'no game yet, carried from last season' : ''].filter(Boolean).join(', ');
+          return `<span class="ddside ${cls}" title="${esc(c)} ${esc(e.what)}: ${at}"><span class="ddsn">${esc(c)}</span> <b class="ddelo gs-v${better ? ' gs-better' : ''}">${e.elo}</b></span>`;
+        }
+        const rk = x && x.rank != null ? ord(x.rank) : '–';
         return `<span class="ddside ${cls}" title="${esc(c)} ${words}: ${rk}"><span class="ddsn">${esc(c)}</span> <b class="ddrk">${rk}</b></span>`; };
-      return `<div class="ddrow" data-dd="${key}" data-dd-off="${esc(off)}" data-dd-def="${esc(def)}"><span class="ddunit">${label}</span> <span class="ddrks">${one('ddoff', off, mine, u)}<span class="ddsep" aria-hidden="true"> · </span>${one('dddef', def, theirs, v)}</span> <span class="ddend"><span class="dddu">${dpos}</span> <span class="dtag ${t.cls}"${why}>${t.tag}</span></span></div>`;
+      return `<div class="ddrow" data-dd="${key}" data-dd-off="${esc(off)}" data-dd-def="${esc(def)}"><span class="ddunit">${label}</span> <span class="ddrks">${one('ddoff', off, mine, u, eo, lead === 'o')}<span class="ddsep" aria-hidden="true"> · </span>${one('dddef', def, theirs, v, ed, lead === 'd')}</span> <span class="ddend"><span class="dddu">${dpos}</span> <span class="dtag ${t.cls}"${why}>${t.tag}</span></span></div>`;
     }).join('');
     return { html: `<div class="dd" data-dd-pos="${esc(off)}-${esc(def)}">${html}</div>`, rows };
   }
@@ -8899,17 +9000,19 @@ boot();
       title: `Overall Offense minus Overall Defense on the raw scale, about ${(pts >= 0 ? '+' : '−') + Math.abs(pts).toFixed(1)} points a game to this offense at ${H.slope} points a unit (fitted on ${H.fit || '2012-2017'}): Favorable from about ${(+H.fav).toFixed(1)}, Easy from about ${(+H.easy).toFixed(1)}` };
   }
 
-  /* what the rows rest on: the title of the snapshot's "Position matchups" label (escaped text, no markup) */
-  function basis(D, a, h) {
+  /* what the rows rest on: the title of the snapshot's "Position matchups" label (escaped text, no markup);
+     elo true where the rows show Elo figures, which it then says */
+  function basis(D, a, h, elo) {
     if (!D) return '';
     const U = D.units || {}, g = n => `${n} game${n === 1 ? '' : 's'}`, ua = U[club(a)], uh = U[club(h)];
     const games = [[a, ua], [h, uh]].filter(([, u]) => u && u.g26 != null).map(([t, u]) => `${esc(t)} ${g(u.g26)}`).join(', ');
     const TR = D.meta && D.meta.tags && D.meta.tags.rows, fw = v => String(+(+v).toFixed(2));
     const weighed = TR && TR.weights ? `, weighted by how much that matchup alone has predicted an offense's points (quarterback ${fw(TR.weights.qb)}, receivers ${fw(TR.weights.rec)}, line ${fw(TR.weights.ol)}, run game ${fw(TR.weights.rb)})` : '';
-    return `League ranks from team stats, ${esc(D.basis || '')}${games ? `, plus this season's ${games}` : ''}. Each row rates the offense's unit and the defense's unit it plays on the same numbers; the tag is the offense's edge, its rating minus the defense's in league standard deviations${weighed}: Easy is ${TR ? TR.easy : 1.5} or more, Favorable ${TR ? TR.fav : 0.5} or more, Even within ${TR ? TR.fav : 0.5}, Tough and Very tough the same the other way. Each row is that matchup alone; the rows overlap, so they are not to be added up.${D.lineups ? ` ${esc(D.lineups)}.` : ''}`;
+    const figs = elo ? "The figures are each side's Elo as the ELO Ratings tab shows it: the quarterback's own season Elo against Pass Defense, Pass Protection against Pass Rush, Run Offense against Run Defense, Pass Offense against Pass Defense, the higher marked; a side with no Elo shows its rank. " : '';
+    return `${elo ? figs + 'The tags rest on league ranks' : 'League ranks'} from team stats, ${esc(D.basis || '')}${games ? `, plus this season's ${games}` : ''}. Each row rates the offense's unit and the defense's unit it plays on the same numbers; the tag is the offense's edge, its rating minus the defense's in league standard deviations${weighed}: Easy is ${TR ? TR.easy : 1.5} or more, Favorable ${TR ? TR.fav : 0.5} or more, Even within ${TR ? TR.fav : 0.5}, Tough and Very tough the same the other way. Each row is that matchup alone; the rows overlap, so they are not to be added up.${D.lineups ? ` ${esc(D.lineups)}.` : ''}`;
   }
 
-  const API = { club, tagOf, ROWS, applies, rowTag, possession, headTag, basis, esc, ord };
+  const API = { club, tagOf, ROWS, ELO, starterQb, eloSides, applies, rowTag, possession, headTag, basis, esc, ord };
   if (typeof module === 'object' && module.exports) module.exports = API;
   else root.gsDeepDive = API;
 })(typeof window !== 'undefined' ? window : this);
@@ -9335,8 +9438,10 @@ function teamElo(P,g,F){
 /* "Seahawks Possession" (the owner's words, 14 October 2026; the code where a team has no nickname) */
 const possTitle=t=>`${esc(teamName(t))} Possession`;
 /* the Deep Dive for one possession (deepdive.js on news/data/units.json): the four rows where the file
-   is for this game's week, else one quiet line saying why */
-function deepDive(P,g,o,d){
+   is for this game's week, else one quiet line saying why. Each row's figures are the two sides' Elo
+   from the Elo files the window already has (F, the ELO Ratings tab's one read; deepdive.js eloSides),
+   ranks where a side has none or the files have not come in yet (the window draws again when they do) */
+function deepDive(P,g,o,d,F){
   const dd=DD(), rec=NEWS.units;
   const why=t=>`<p class="gs-ddwhy" data-gs-ddwhy>${t}</p>`;
   if(!dd) return why('The Deep Dive is not on this page.');
@@ -9349,12 +9454,14 @@ function deepDive(P,g,o,d){
     const fs=+m.season, fw=+m.week, later=season>fs||(season===fs&&wk>fw);
     const of=`week ${isFinite(fw)?fw:'?'}${fs!==season&&isFinite(fs)?' of '+fs:''}`;
     return why(`The Deep Dive's matchups are for ${of}: ${later?'this game\'s come with its week':'this game\'s week has gone, and its matchups with it'}.`); }
-  const x=dd.possession(D,o,d);
+  const E=F&&F.model?dd.eloSides(F.model,F.players,F.mu,g.game_id,o,d,tierName):null;
+  const x=dd.possession(D,o,d,E);
   if(!x) return why(`The Deep Dive has no matchups for ${esc(!D.units[dd.club(o)]?o:d)}.`);
+  const anyElo=!!E&&Object.values(E).some(p=>p[0]||p[1]);
   /* what the rows rest on (deepdive.js basis: escaped text, no markup) and when the news job built them,
      said on hover over the label rather than under the rows */
   const built=stamp(D.built_at||(D.meta&&D.meta.built_at));
-  return `<div class="gs-dd"><span class="gs-lab" data-gs-basis title="${dd.basis(D,g.away_team,g.home_team)}${built?` Built ${esc(built)} by the news job.`:''}">Position matchups</span>${x.html}</div>`;
+  return `<div class="gs-dd"><span class="gs-lab" data-gs-basis title="${dd.basis(D,g.away_team,g.home_team,anyElo)}${built?` Built ${esc(built)} by the news job.`:''}">Position matchups</span>${x.html}</div>`;
 }
 function unitsSec(P,g,F){
   const T0='Offense vs defense', a=g.away_team, h=g.home_team;
@@ -9380,7 +9487,7 @@ function unitsSec(P,g,F){
       const ht=dd&&D&&vo&&vd?dd.headTag(D.meta,vo,vd):null;
       if(ht) head=`<span class="gs-uhtag" data-gs-head="${esc(o)}-${esc(d)}"><span class="dtag ${esc(ht.cls)}" title="${esc(ht.title)}">${esc(ht.tag)}</span><span class="gs-hpts">${esc(ht.text)}</span></span>`;
  }
-    return `<div class="gs-unit" data-gs-poss="${esc(o)}-${esc(d)}"><div class="gs-uhd"><h4>${possTitle(o)}</h4>${head}</div>${duel}${deepDive(P,g,o,d)}</div>`; };
+    return `<div class="gs-unit" data-gs-poss="${esc(o)}-${esc(d)}"><div class="gs-uhd"><h4>${possTitle(o)}</h4>${head}</div>${duel}${deepDive(P,g,o,d,F)}</div>`; };
   /* no summary in the title, no note under the card and no stats fold (the owner's call, 14 October 2026):
      what the ratings and the rows rest on is the boxes' title and the matchups' label's; the season's
      stats are the Stat breakdown's */

@@ -117,9 +117,11 @@ There is no page to render: the smoke test holds the files the job writes to the
 Game snapshot draws from them. Blocking: the twins are exactly their `.js` consts; each team's stat line is
 its own game count in `results.js`; the tag constants are their values and every club's Overall ratings are
 `../elo/data/model.json`'s; every game of the units' week, drawn both ways by `deepdive.js`, has its four
-rows in order with each tag the weighted edge worked out on its own and the ranks and edges the file's, each
-row its unit, the two clubs and ranks, the defense's position and its tag alone (no name, no one out, no number: the owner's call of
-14 October 2026), and
+rows in order with each tag the weighted edge worked out on its own, each figure the Elo the Elo files have for
+it (`eloWant`, the checks' own reading of `../elo/data`; the rank only where there is none), the higher marked,
+and the edges the file's, each row its unit, the two clubs and figures, the defense's position and its tag alone
+(no name, no one out, no other number: the owner's calls of 14 and 16 October 2026; the smoke prints, without
+checking, how often the higher Elo and the tag point opposite ways, since the tag is the Deep Dive's own), and
 its Overall line's tag the rule's on `model.json`'s units; the lineups are for the schedule's week (and, in
 the job, checked on that run's own download); `index.html` sends a visitor to `../nflbets/`; every fixed
 case in `tools/cases.js`. Warnings (WARN, the job publishes and goes red after its commit): the other

@@ -369,7 +369,7 @@ const XBFIX = { season: BET_SEASON, updated: '2026-10-10T17:28:44Z', deposit: 10
    Refresh odds read alone reloads it a dozen), and V8 frees a closed one only when it must, so a run peaked
    near the heap's ceiling (4.3GB on a 16GB machine, where four phase replays at once ran out of memory) */
 const GC = (() => { try { require('v8').setFlagsFromString('--expose-gc'); const f = require('vm').runInNewContext('gc'); return typeof f === 'function' ? f : () => {}; } catch (e) { return () => {}; } })();
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null, gate = null, early = false, friends = null, pay = null } = {}) {
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null, gate = null, early = false, friends = null, pay = null, elo = null } = {}) {
   GC();
   return new Promise(resolve => {
     const errs = [], fetched = [], urls = [], calls = [];
@@ -401,9 +401,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           if (s.includes('picks/friends.json')) return Promise.resolve(friends == null ? { ok: false, status: 404 } : { ok: true, status: 200,
             json: async () => typeof friends === 'string' ? JSON.parse(friends) : JSON.parse(JSON.stringify(friends)) });
           if (s.includes('xbets.json')) return Promise.resolve(xbets === 404 ? { ok: false, status: 404 } : { ok: true, status: 200, json: async () => xbets ? JSON.parse(JSON.stringify(xbets)) : JSON.parse(XBETS_REAL) });
-          if (s.includes('elo/data/players.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_P) });
-          if (s.includes('elo/data/model.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_M) });
-          if (s.includes('elo/data/matchups.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_MU) });
+          /* the Elo files: the published ones, or the run's own stand-in for one (elo: { players, model, mu }) */
+          const eloF = (k, real) => Promise.resolve({ ok: true, status: 200, json: async () => elo && elo[k] != null ? JSON.parse(typeof elo[k] === 'string' ? elo[k] : JSON.stringify(elo[k])) : JSON.parse(real) });
+          if (s.includes('elo/data/players.json')) return eloF('players', ELO_P);
+          if (s.includes('elo/data/model.json')) return eloF('model', ELO_M);
+          if (s.includes('elo/data/matchups.json')) return eloF('mu', ELO_MU);
           if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) }); }
           return Promise.resolve({ ok: false, status: 404 }); };
         w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched, urls, calls }), 300));
@@ -442,7 +444,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const pw = new JSDOM(h, { virtualConsole: new VirtualConsole() }).window, pd = pw.document, box = pd.createElement('div');
         box.id = 'gsModal'; box.innerHTML = '<div class="gs-prev"><p class="gs-pv"><span class="gs-lab">Preview</span><span>x <b class="gs-pn">Name</b></span></p><p class="gs-pauto">x</p></div>'
           + ['easy', 'fav', 'even', 'tough', 'vtough'].map(c => `<span class="dtag ${c}">x</span>`).join('')
-          + '<div class="dd"><div class="ddrow"><span class="ddunit">Offensive line</span><span class="ddrks"><span class="ddside ddoff"><span class="ddsn">SEA</span> <b class="ddrk">15th</b></span><span class="ddsep"> · </span><span class="ddside dddef"><span class="ddsn">DEN</span> <b class="ddrk">2nd</b></span></span><span class="ddend"><span class="dddu">Pass rush</span><span class="dtag even">Even</span></span></div></div>'
+          + '<div class="dd"><div class="ddrow"><span class="ddunit">Offensive line</span><span class="ddrks"><span class="ddside ddoff"><span class="ddsn">SEA</span> <b class="ddrk">15th</b></span><span class="ddsep"> · </span><span class="ddside dddef"><span class="ddsn">DEN</span> <b class="ddrk">2nd</b></span></span><span class="ddend"><span class="dddu">Pass rush</span><span class="dtag even">Even</span></span></div>'
+          + '<div class="ddrow ddelos"><span class="ddunit">Receivers</span><span class="ddrks"><span class="ddside ddoff"><span class="ddsn">SEA</span> <b class="ddelo gs-v gs-better">1532</b></span><span class="ddsep"> · </span><span class="ddside dddef"><span class="ddsn">DEN</span> <b class="ddelo gs-v">1488</b></span></span><span class="ddend"><span class="dddu">Coverage</span><span class="dtag fav">Favorable</span></span></div></div>'
           + '<div class="gs-ubox gs-better"><span class="gs-lab">SEA offense</span><span class="gs-urank"><span>13th</span> <small>of 32</small></span><span class="gs-ush"><b>1521</b><span class="gs-utier">Gold</span></span></div>';
         pd.body.appendChild(box);
         const clear = v => ['', 'transparent', 'none', 'rgba(0, 0, 0, 0)', 'initial'].includes(String(v || '').trim());
@@ -462,7 +465,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
            of the colours a card runs between (the preview's cards are a gradient of the two) */
         { const rw = box.querySelector('.ddrow'), card = ['--panel', '--panel-2'].map(k => String(pw.getComputedStyle(pd.documentElement).getPropertyValue(k) || '').trim());
           for (const cbg of card) for (const el of [rw.querySelector('.ddunit'), rw.querySelector('.ddsn'), rw.querySelector('.ddsep'), rw.querySelector('.ddrk'), rw.querySelector('.dddu')]) { const r = ratio(cbg, val(el, 'color'));
-            if (!(r >= 4.5)) bad.push(`a matchup row's ${el.className} reads ${r.toFixed(2)}:1 (${cbg} under ${val(el, 'color')})`); } }
+            if (!(r >= 4.5)) bad.push(`a matchup row's ${el.className} reads ${r.toFixed(2)}:1 (${cbg} under ${val(el, 'color')})`); }
+          /* a side's Elo (the owner's call, 16 October 2026): the plain one on the card, the higher one on its
+             tint laid over either card colour */
+          const ep = box.querySelector('.ddelos .ddelo:not(.gs-better)'), eb = box.querySelector('.ddelos .ddelo.gs-better');
+          for (const cbg of card) { const r1 = ratio(cbg, val(ep, 'color')), tb = over(val(eb, 'background-color'), cbg), r2 = ratio(tb, val(eb, 'color'));
+            if (!(r1 >= 4.5)) bad.push(`a matchup row's Elo reads ${r1.toFixed(2)}:1 (${cbg} under ${val(ep, 'color')})`);
+            if (!(r2 >= 4.5)) bad.push(`a matchup row's higher Elo reads ${r2.toFixed(2)}:1 (${tb} under ${val(eb, 'color')})`); } }
         { const ub = box.querySelector('.gs-ubox.gs-better'), card = String(pw.getComputedStyle(pd.documentElement).getPropertyValue('--panel-2') || '').trim(), ubg = over(val(ub, 'background-color'), card);
           for (const el of [ub.querySelector('.gs-lab'), ub.querySelector('.gs-urank'), ub.querySelector('.gs-urank small'), ub.querySelector('.gs-ush b'), ub.querySelector('.gs-utier')]) { const r = ratio(ubg, val(el, 'color'));
             if (!(r >= 4.5)) bad.push(`the better rank's box: its ${el.className || el.tagName} reads ${r.toFixed(2)}:1 (${ubg} under ${val(el, 'color')})`); } }
@@ -1878,9 +1887,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           d.getElementById('weekSel').value = String(MU.week); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60); }
       } else chk(!card, 'mismatches show on a week they are not for');
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
-    /* Overall Offense and Overall Defense: two pills in the position row, then each position table the
-       file carries (Run Defense, Pass Defense and Pass Rush, from 16 October 2026, named by the file),
-       each a table of the 32 teams in rank order (the ones with a rating best first: played, or carried
+    /* Overall Offense and Overall Defense: two pills under the position row, each with the position
+       tables of its side the file carries (Run Offense, Pass Offense and Pass Protection, and Run Defense,
+       Pass Defense and Pass Rush, from 16 October 2026, named by the file and sided by its `of`), an
+       Offense row then a Defense row, each a table of the 32 teams in rank order (the ones with a rating best first: played, or carried
        from last season), each with its shield, a club yet to play marked carried from the season the
        file names, and no other; a position pill brings the players back (the tab's own gate,
        elo/check_tab.js, checks the rest) */
@@ -1889,8 +1899,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       if (!played) chk(!pill('off') && !card(), 'Overall Offense shows with no games rated');
       else {
         const PT = U.tables && typeof U.tables === 'object' ? Object.keys(U.tables).filter(k => U[k]) : [];
-        chk([...body.querySelectorAll('.pe-pos button[data-unit]')].map(b => b.dataset.unit).join() === ['off', 'def', ...PT].join(),
-          'the position row\'s team pills are not Overall Offense, Overall Defense and the file\'s position tables, in order');
+        const sideOf = k => U.tables[k].of === 'off' ? 'off' : 'def';
+        chk([...body.querySelectorAll('.pe-pos button[data-unit]')].map(b => b.dataset.unit).join() === ['off', ...PT.filter(k => sideOf(k) === 'off'), 'def', ...PT.filter(k => sideOf(k) === 'def')].join(),
+          'the position row\'s team pills are not Overall Offense and the offense tables, then Overall Defense and the defense tables, in the file\'s order');
         for (const side of ['off', 'def', ...PT]) {
           const name = side === 'off' ? 'Overall Offense' : side === 'def' ? 'Overall Defense' : U.tables[side].label;
           chk(!!pill(side) && txt(pill(side)) === name, 'no ' + name + ' pill in the position row'); if (!pill(side)) break;
@@ -3802,9 +3813,13 @@ async function snapshotChecks() {
    defense's, weighed by its matchup's weight: Easy from 1.5, Favorable from 0.5, the same the other
    way), the overall tag on the gap read as points, the records, and the stat bars'
    numbers, marks, split widths and colours; the Deep Dive's rows must be deepdive.js's own html for
-   the stand-in, set in whole (a compact row each: the unit, the two clubs and ranks, the tag, and no
-   name, no one out and no number from the file anywhere in the window), and the basis, the "Position
-   matchups" label's title, counts each club's games as the file does. A game with no note to come
+   the stand-in, set in whole (a compact row each: the unit, the two clubs and their figures, the tag, and
+   no name, no one out and no number from the file anywhere in the window), each figure the Elo the Elo
+   files have for that side, worked out here on its own (the owner's call, 16 October 2026: the
+   quarterback's own season Elo against Pass Defense, Pass Protection against Pass Rush, Run Offense
+   against Run Defense, Pass Offense against Pass Defense), the higher marked, and on planted copies of
+   the Elo files (no position tables, an unranked quarterback) the ranks in their place, unmarked; and
+   the basis, the "Position matchups" label's title, counts each club's games as the file does. A game with no note to come
    draws the automatic line in the head's middle with no news (on a 404 and on a notes file that is not
    JSON too), a played one with none draws nothing, and a written one is its preview alone, escaped,
    the players it marks **so** bold and nothing else markup (a marked "<b>x</b>" is its text, an
@@ -3821,7 +3836,34 @@ async function snapshotChecks() {
    ===================================================================================== */
 async function newsChecks() {
   const c0 = checks, f0 = fails.length;
-  const DDM = require('./deepdive.js'), eloM = JSON.parse(ELO_M), now = Date.now() - PAGE_SHIFT_MS, kick = g => etKick({ d: g.gameday, t: g.gametime });
+  const DDM = require('./deepdive.js'), eloM = JSON.parse(ELO_M), eloP = JSON.parse(ELO_P), eloMu = JSON.parse(ELO_MU), now = Date.now() - PAGE_SHIFT_MS, kick = g => etKick({ d: g.gameday, t: g.gametime });
+  /* the position matchups' figures, Elo against Elo (the owner's call, 16 October 2026), worked out here on
+     their own from the Elo files: the offense's starting quarterback's season Elo (the first quarterback of
+     its lineup for this very game, ranked) against Pass Defense, Pass Protection against Pass Rush, Run
+     Offense against Run Defense, Pass Offense against Pass Defense, each table only where model.json's
+     units.tables names it; null where the side shows its rank instead */
+  const EROWS = { qb: ['QB', 'pass_def'], ol: ['pass_pro', 'pass_rush'], rb: ['run_off', 'run_def'], rec: ['pass_off', 'pass_def'] };
+  const figsWant = (M, PL, MU, gid, o, d) => { const U = (M && M.units) || {}, T = U.tables || {};
+    const tab = (k, t) => T[k] && U[k] && U[k][t] && typeof U[k][t].elo === 'number' ? U[k][t].elo : null;
+    const lu = MU && MU.lineups && MU.lineups[o]; let qb = null;
+    if (lu && lu.game_id === gid) { const pid = (lu.players || []).find(p => PL.players[p] && PL.players[p].group === 'QB'), e = pid && PL.players[pid];
+      if (e && e.rank != null && typeof e.se === 'number') qb = e.se; }
+    return Object.fromEntries(Object.entries(EROWS).map(([k, [x, y]]) => [k, [x === 'QB' ? qb : tab(x, o), tab(y, d)]])); };
+  const anyFig = F => Object.values(F).some(p => p[0] != null || p[1] != null);
+  /* the page's tier name, as the snapshot hands it to eloSides */
+  const tierOf = R => e => { const t = R.w.pkEloTier && R.w.pkEloTier(e); return t ? t[0] : ''; };
+  /* each drawn row against the figures: one figure a side, the Elo where figs has one (b.ddelo) and the rank
+     where it has none (b.ddrk), the higher of two Elo marked gs-better and nothing else marked */
+  const figsBad = (md, figsOf) => { const bad = [];
+    for (const r of md.querySelectorAll('#gsUnits .ddrow')) {
+      const F = figsOf(r.dataset.ddOff, r.dataset.ddDef)[r.dataset.dd], sd = [...r.querySelectorAll('.ddside')];
+      const lead = F[0] != null && F[1] != null && F[0] !== F[1] ? (F[0] > F[1] ? 0 : 1) : -1;
+      sd.forEach((x, j) => { const f = x.querySelector('.ddrk, .ddelo'), who = `the ${r.dataset.dd} row of ${r.dataset.ddOff}, the ${j ? 'defense' : 'offense'}'s side`;
+        if (!f) { bad.push(`${who} shows no figure`); return; }
+        if (F[j] != null ? !(f.matches('.ddelo') && txt(f) === String(F[j])) : !f.matches('.ddrk')) bad.push(`${who} shows ${txt(f)} (want ${F[j] != null ? 'its Elo, ' + F[j] : 'its rank: the Elo files have none for it'})`);
+        if (x.querySelectorAll('.gs-better').length !== (lead === j ? 1 : 0) || (lead === j && !f.classList.contains('gs-better'))) bad.push(`${who} is ${lead === j ? 'not ' : ''}marked better (${F.join(' against ')})`); });
+    }
+    return bad; };
   /* a game to come, over a day off by the page's clock: the schedule's first, or one made so in a copy
      (with every game played, --season-over) */
   let st = STATE, G = STATE.schedule.find(g => g.result == null && kick(g) > now + 86400e3);
@@ -3950,7 +3992,7 @@ async function newsChecks() {
     /* the Deep Dive: each possession deepdive.js's own rows for the stand-in, set in whole, its four tags the rule's */
     { const bad = [];
       for (const [o, dd, O, D] of [[a, h, UNITS.units[A], UNITS.units[H]], [h, a, UNITS.units[H], UNITS.units[A]]]) {
-        const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UNITS, o, dd);
+        const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UNITS, o, dd, DDM.eloSides(eloM, eloP, eloMu, G.game_id, o, dd, tierOf(N1)));
         const tpl = N1.d.createElement('template'); tpl.innerHTML = want ? want.html : '';
         if (!el) { bad.push(`${o} against ${dd} has no Deep Dive rows`); continue; }
         if (!tpl.content.firstElementChild || el.outerHTML !== tpl.content.firstElementChild.outerHTML) bad.push(`${o} against ${dd}: the rows are not deepdive.js's for the file`);
@@ -3963,15 +4005,17 @@ async function newsChecks() {
          alone */
       const DPOS = { qb: 'Pass defense', ol: 'Pass rush', rb: 'Run defense', rec: 'Coverage' };
       for (const r of md.querySelectorAll('#gsUnits .ddrow')) { const k = [...r.children], sd = k[1] ? [...k[1].querySelectorAll('.ddside')] : [], e = k[2] ? [...k[2].children] : [];
-        const words = `${txt(k[0])} ${r.dataset.ddOff} ${sd[0] ? txt(sd[0].querySelector('.ddrk')) : ''} · ${r.dataset.ddDef} ${sd[1] ? txt(sd[1].querySelector('.ddrk')) : ''} ${DPOS[r.dataset.dd]} ${e[1] ? txt(e[1]) : ''}`;
+        const words = `${txt(k[0])} ${r.dataset.ddOff} ${sd[0] ? txt(sd[0].querySelector('.ddrk, .ddelo')) : ''} · ${r.dataset.ddDef} ${sd[1] ? txt(sd[1].querySelector('.ddrk, .ddelo')) : ''} ${DPOS[r.dataset.dd]} ${e[1] ? txt(e[1]) : ''}`;
         if (k.length !== 3 || !k[0].matches('.ddunit') || !k[1].matches('.ddrks') || !k[2].matches('.ddend') || e.length !== 2 || !e[0].matches('.dddu') || !e[1].matches('.dtag')
           || txt(e[0]) !== DPOS[r.dataset.dd] || sd.length !== 2 || !sd[0].matches('.ddoff') || !sd[1].matches('.dddef')
-          || sd.some(x => x.querySelectorAll('.ddrk').length !== 1) || txt(sd[0].querySelector('.ddsn')) !== r.dataset.ddOff || txt(sd[1].querySelector('.ddsn')) !== r.dataset.ddDef
-          || txt(r).replace(/\s+/g, ' ') !== words.replace(/\s+/g, ' ')) { bad.push(`the ${r.dataset.dd} row of ${r.dataset.ddOff} is not its unit, the two clubs and ranks, the defense's position and its tag alone: '${txt(r)}'`); break; } }
+          || sd.some(x => x.querySelectorAll('.ddrk, .ddelo').length !== 1) || txt(sd[0].querySelector('.ddsn')) !== r.dataset.ddOff || txt(sd[1].querySelector('.ddsn')) !== r.dataset.ddDef
+          || txt(r).replace(/\s+/g, ' ') !== words.replace(/\s+/g, ' ')) { bad.push(`the ${r.dataset.dd} row of ${r.dataset.ddOff} is not its unit, the two clubs and figures, the defense's position and its tag alone: '${txt(r)}'`); break; } }
+      /* each figure the Elo files' own, worked out above, the higher marked; a rank only where there is no Elo */
+      bad.push(...figsBad(md, (o, d) => figsWant(eloM, eloP, eloMu, G.game_id, o, d)));
       const shown = namesShown(md, UNITS);
       if (shown.length) bad.push(`the window shows names from the units file: ${shown.join(', ')}`);
       /* what the rows rest on: the "Position matchups" label's title, never text under the card */
-      const basis = htmlTxt(N1, DDM.basis(UNITS, a, h)), labs = [...md.querySelectorAll('#gsUnits [data-gs-basis]')];
+      const basis = htmlTxt(N1, DDM.basis(UNITS, a, h, anyFig(figsWant(eloM, eloP, eloMu, G.game_id, a, h)))), labs = [...md.querySelectorAll('#gsUnits [data-gs-basis]')];
       if (labs.length !== 2 || labs.some(l => txt(l) !== 'Position matchups' || !(l.getAttribute('title') || '').startsWith(basis) || !/ Built .+ by the news job\.$/.test(l.getAttribute('title') || ''))) bad.push(`the matchups' labels are not titled with the Deep Dive's basis and when it was built: ${labs.map(l => `'${txt(l)}' '${l.getAttribute('title')}'`).join(', ')}`);
       if (txt(q('#gsUnits')).includes(basis) || q('#gsUnits .gs-note')) bad.push('the basis is still a note under the card');
       if (!labs.length || !labs.every(l => (l.getAttribute('title') || '').includes(`, plus this season's ${gamesWant(UNITS, a, h)}.`))) bad.push(`the basis does not count the file's games, '${gamesWant(UNITS, a, h)}': ${((labs[0] && labs[0].getAttribute('title') || '').match(/plus this season's[^.]*\./) || ['none'])[0]}`);
@@ -4078,6 +4122,34 @@ async function newsChecks() {
       `news: a units file that is not JSON or a stat file of another season is not said so: ${N5.errs.join('; ')} '${why.join(' / ')}' '${m ? txt(m.querySelector('#gsStats .gs-secbody')) : 'no window'}'`);
     N5.w.close(); }
 
+  /* ---- the figures' fallbacks (the owner's call, 16 October 2026: Elo against Elo where the files have it):
+     an older model.json with none of the six position tables draws each side's rank from the units file,
+     but the quarterback's own season Elo where his lineup is for this game; a quarterback unranked draws
+     his row's rank; nothing is marked beside a rank. Planted on copies of the Elo files: the away side's
+     lineup for G a ranked quarterback alone, the home side's one made unranked ---- */
+  { const M6 = JSON.parse(ELO_M), P6 = JSON.parse(ELO_P), MU6 = JSON.parse(ELO_MU);
+    delete M6.units.tables; for (const k of ['run_def', 'pass_def', 'pass_rush', 'run_off', 'pass_off', 'pass_pro']) delete M6.units[k];
+    const qbs = Object.entries(P6.players).filter(([, e]) => e.group === 'QB' && e.rank != null && typeof e.se === 'number');
+    const qa = (qbs.find(([, e]) => e.team === a) || qbs[0])[0], qh = (qbs.find(([pid, e]) => e.team === h && pid !== qa) || qbs.find(([pid]) => pid !== qa))[0];
+    P6.players[qh] = Object.assign({}, P6.players[qh], { rank: null });
+    MU6.lineups = Object.assign({}, MU6.lineups, { [a]: { game_id: G.game_id, week: wk, players: [qa] }, [h]: { game_id: G.game_id, week: wk, players: [qh] } });
+    const N6 = await run(st, undefined, null, false, { news: { units: UNITS, stats: STATS, notes }, elo: { model: M6, players: P6, mu: MU6 } }); await wait(400);
+    const m = await openG(N6, G), bad = [];
+    if (!m) bad.push('the game opens no window');
+    else {
+      for (const [o, dd] of [[a, h], [h, a]]) { const el = m.querySelector(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UNITS, o, dd, DDM.eloSides(M6, P6, MU6, G.game_id, o, dd, tierOf(N6)));
+        const tpl = N6.d.createElement('template'); tpl.innerHTML = want ? want.html : '';
+        if (!el || !tpl.content.firstElementChild || el.outerHTML !== tpl.content.firstElementChild.outerHTML) bad.push(`${o} against ${dd}: the rows are not deepdive.js's for the files`); }
+      bad.push(...figsBad(m, (o, d) => figsWant(M6, P6, MU6, G.game_id, o, d)));
+      /* by hand: one Elo in the card, the away quarterback's, and every other side a rank, nothing marked */
+      const elos = [...m.querySelectorAll('#gsUnits .ddelo')].map(x => `${x.closest('.ddrow').dataset.ddOff}:${x.closest('.ddrow').dataset.dd}:${txt(x)}`);
+      if (elos.join() !== `${a}:qb:${P6.players[qa].se}`) bad.push(`the Elo drawn are ${elos.join(', ') || 'none'} (want ${a}'s quarterback's ${P6.players[qa].se} alone)`);
+      if (m.querySelectorAll('#gsUnits .ddrk').length !== 15 || m.querySelector('#gsUnits .ddrow .gs-better')) bad.push(`${m.querySelectorAll('#gsUnits .ddrk').length} ranks drawn (want 15), or a side marked beside a rank`);
+      const labs = [...m.querySelectorAll('#gsUnits [data-gs-basis]')].map(l => l.getAttribute('title') || '');
+      if (labs.length !== 2 || !/^The figures are each side's Elo/.test(labs[0]) || !/^League ranks from team stats/.test(labs[1])) bad.push(`the labels' titles do not say what the figures are: ${labs.map(t => t.slice(0, 40)).join(' | ')}`); }
+    chk(bad.length === 0 && N6.errs.length === 0, `news: the matchup rows' fallbacks (no position tables, an unranked quarterback) are not drawn as the files say: ${N6.errs.join('; ')} ${bad.slice(0, 6).join('; ')}`);
+    N6.w.close(); }
+
   /* ---- the Rams: LA on the board, LAR in the news job's files. A copy of G with LA at home (unless a side
      already is), the stand-ins keyed by deepdive.js's club codes as the job keys them: the Stat breakdown
      and the Deep Dive read LA's entries from LAR. And a made-up wild-card game
@@ -4095,10 +4167,13 @@ async function newsChecks() {
       const q = sel => m.querySelector(sel);
       if (!Object.keys(UL.units).includes('LAR') || Object.keys(UL.units).includes('LA') || !Object.keys(SL.stats).includes('LAR')) bad.push('the stand-ins are not keyed LAR');
       bad.push(...statsBad(NL, m, la, lh, S1, S2).map(x => 'the Stat breakdown: ' + x));
-      for (const [o, dd] of [[la, lh], [lh, la]]) { const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UL, o, dd);
+      for (const [o, dd] of [[la, lh], [lh, la]]) { const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UL, o, dd, DDM.eloSides(eloM, eloP, eloMu, LG.game_id, o, dd, tierOf(NL)));
         const tpl = NL.d.createElement('template'); tpl.innerHTML = want ? want.html : '';
         if (!el || !tpl.content.firstElementChild || el.outerHTML !== tpl.content.firstElementChild.outerHTML) bad.push(`${o} against ${dd}: the Deep Dive is not deepdive.js's rows from LAR's entry: ${el ? 'other rows' : txt(q(`#gsUnits [data-gs-poss="${o}-${dd}"] [data-gs-ddwhy]`)) || 'none'}`); }
-      if (![...m.querySelectorAll('#gsUnits [data-gs-basis]')].map(l => l.getAttribute('title') || '').some(t => t.includes(`, plus this season's ${gamesWant(UL, la, lh)}.`))) bad.push(`the Deep Dive's basis does not count LA's games from LAR's entry`); }
+      if (![...m.querySelectorAll('#gsUnits [data-gs-basis]')].map(l => l.getAttribute('title') || '').some(t => t.includes(`, plus this season's ${gamesWant(UL, la, lh)}.`))) bad.push(`the Deep Dive's basis does not count LA's games from LAR's entry`);
+      /* the Rams' Elo is model.json's LA, as the board names them */
+      bad.push(...figsBad(m, (o, d) => figsWant(eloM, eloP, eloMu, LG.game_id, o, d)));
+      if (eloM.units && eloM.units.tables && eloM.units.tables.pass_off && !m.querySelector(`#gsUnits .ddrow[data-dd="rec"][data-dd-off="LA"] .ddoff .ddelo`)) bad.push("the Rams' receivers row shows no Pass Offense Elo"); }
     chk(bad.length === 0 && NL.errs.length === 0, `news: a Rams game (${la} at ${lh}) does not read LA's entries from the files' LAR: ${NL.errs.join('; ')} ${bad.slice(0, 6).join('; ')}`);
     await closeG(NL);
     if (WC) { const mw = await openG(NL, WC), why = [...(mw ? mw.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt), b = mw && mw.querySelector('.gs-prev');
