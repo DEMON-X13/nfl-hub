@@ -331,9 +331,9 @@ the payload's players and the depth chart) from the nflverse roster it already d
 a player no ESPN id names. The reader, the formula and the precedence are in
 `build/patch_espn_prices.py` (its docstring says how). A press is held in memory and, since app v108
 (`build/patch_press_keep.py`, the owner's call of 15 October 2026), kept in that browser's own storage
-(`props_press_v1`, never `S`): a reload puts a game's read back, with no request, while the prices the job
-publishes for that game are the ones it was read over and the game has not kicked off; a newer publish
-wins, and where a read gives way the builder's legs go back with it (a leg a press priced to DraftKings'
+(`props_press_v1`, never `S`): a reload puts a game's read back, with no request, before its kickoff and
+where no publish is newer than the read (the prices it was read over, or a publish whose own time for them
+is older); a newer publish wins, and where a read gives way the builder's legs go back with it (a leg a press priced to DraftKings'
 own price on its line, else the model's estimate). The suggestions record (`build/suggest_ledger.js`)
 never presses it.
 

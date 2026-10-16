@@ -1062,9 +1062,11 @@ no longer stands (`espnLegBack`, in `legPrice`: a reload that set its read aside
 its line). Since app v108 each press also writes its read to the browser's own storage, `props_press_v1`
 (`espnKeepPut`, `espnKeepWrite`: `{v:1, season, saved, games:{gid:{w, gl:{at, lines, ids, event, sig}, pl,
 plsig, out}}}`, the scoreboard's odds, the `ESPN_LIVE` block and what the read found), and `boot()` puts it
-back before the first draw with no request (`espnRestore`): a game's game lines while `espnGlSig` (the
-published `ESPN_GL_KEYS` fields) is the one they were read over, its player lines while `espnPlSig` (its
-`PAY.dk` `at` and `PAY.mkt` rows) is, neither once it has kicked off or has a score; junk or another
+back before the first draw with no request (`espnRestore`): each half over the publish it was read over
+(`espnGlSig`, the published `ESPN_GL_KEYS` fields; `espnPlSig`, its `PAY.dk` `at` and `PAY.mkt` rows), or
+over a newer one where the read is later than that publish's own time for it (`g.lat` where it carries
+DraftKings' lines, the paid pull's `at`, else `baked_at`), neither once it has kicked off or has a score;
+the game half is what the reads did (`ESPN_GL[gid].d`, each field set or dropped), replayed; junk or another
 season's value empties the key; what gave way is in `ESPN_ASIDE` for the status line; a reload writes a
 game's kept lines back exactly (`espnKeepLines`) and its ids with their read times (`espnKeepIds`); a half
 dated after the page's clock is dropped; a write merges half by half with the browser's copy, each half

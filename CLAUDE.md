@@ -523,20 +523,23 @@ button to grab them again. is there any way to make sure it stays on the site wh
 me refresh as needed after") each press also writes its read to the browser's own storage under a key of
 its own, `props_press_v1` (`espnKeepWrite`: per game its scoreboard odds, its player lines' block and
 what the read found, the season inside the value; never `S`), and a load puts it back before the page is
-first drawn, with no request (`espnRestore`), game by game and each half on its own rule: the game lines
-while the game lines the page publishes are the ones they were read over (`espnGlSig`), the player lines
-while the game's published player prices are (`espnPlSig`: the paid pull's time for the game, `PAY.dk`'s
-`at`, and its main lines), neither once the game has kicked off or has a score, nor for a game not on the
-schedule in that week, nor from a value of another season or not the page's shape (the key is then
-emptied); `baked_at` is never compared, since the job rebakes with the same prices. So a newer publish
-always wins, and a game whose player prices are never bought (Sunday's early games) keeps its read to
-kickoff. What gave way is said on the status line for that load ("your earlier Refresh odds read gave way
-to prices published since"). What is kept is what the page shows after every read of the load: a game's
-lines only where a read's stand (a read older than the published lines keeps none), written back exactly
-on a reload (`espnKeepLines`), every DraftKings id a read gave or found with that read's time
-(`espnKeepIds`), the event the page uses, and the player lines' block; a half dated after the page's clock
-is dropped. Writes merge with what the browser holds half by half, each game's game lines and its player
-lines from whichever tab read them later, never bringing back what a load set aside; a save of `S` that
+first drawn, with no request (`espnRestore`), game by game and each half on its own rule: a half stands
+over the publish it was read over (the game lines by `espnGlSig`, the player lines by `espnPlSig`: the
+paid pull's time for the game, `PAY.dk`'s `at`, and its main lines), or over a newer publish where the read
+is later than that publish's own time for the half (the game lines' DraftKings pull, `g.lat`, else the
+bake; the paid pull's `at` for the player prices, else the bake); neither once the game has kicked off or
+has a score, nor for a game not on the schedule in that week, nor from a value of another season or not
+the page's shape (the key is then emptied). A rebake with the same lines never sets a read aside. So a
+publish newer than the read always wins, a read made after a publish in a tab loaded before it stands,
+and a game whose player prices are never bought (Sunday's early games) keeps its read to kickoff. What gave way is said on the status line for that load ("your earlier Refresh odds read gave way
+to prices published since"). What is kept is what the load's reads did: each game-line field a read
+set, with its value, or dropped (a number read without its prices; `ESPN_GL`'s `d`, which a read the page
+left off leaves empty), replayed on a reload (`espnKeepLines`: over the publish it was read over exactly
+what the page showed), every DraftKings id a read gave or found with that read's time (`espnKeepIds`), the
+event the page uses, and the player lines' block with what the last read of them found; a half dated after
+the page's clock is dropped, and a game id not of the schedule's shape is skipped. Writes merge with what the browser holds half by half, each game's game lines and its player
+lines from whichever tab read them later (a read that found nothing never displacing one that found
+lines), never bringing back what a load set aside; a save of `S` that
 fails for room empties the key and tries again (`espnKeepDrop`), so a kept read never costs a visitor their
 builder. Where a read
 gives way, the builder's legs go back with it (`espnLegBack`: a leg a press priced goes back to
@@ -1364,8 +1367,9 @@ may quietly outrank what the job published:
   press reads from ESPN (DraftKings' game lines and player lines, under Props, "Refresh odds") live in the
   page's memory outside the saved state `S`, and in that browser's own storage under `props_press_v1`
   alone (app v108, the owner's call of 15 October 2026), never sent anywhere. A load puts a game's read
-  back only while the prices the job publishes for it are the ones it was read over and the game has not
-  kicked off: a newer publish wins and the read gives way, the builder's legs with it. Nothing is read
+  back only before its kickoff and only where no publish is newer than the read (the prices it was read
+  over, or a publish whose own time for them is older than the read): a newer publish wins and the read
+  gives way, the builder's legs with it. Nothing is read
   from ESPN on load or on a timer.
 - **A routine rebuild is silent.** The job publishes several times a week. Only a model or
   roster change is worth a banner.
