@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>DraftKings Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- A one-off test, linked from nowhere (the owner asked for it, 16 October 2026): can a visitor's
+     browser read DraftKings' own odds data, the way DraftKings' site does, with no API key and no
+     credit spent? If it can, a Refresh odds press could give every leg of a parlay DraftKings' real
+     outcome id at DraftKings' current line, so Open in DraftKings could put every leg on the slip.
+
+     Nothing runs on load. Run the test reads this site's own published payload (props/data/payload.json,
+     for the week's games still to come and the DraftKings event ids the price pull read), then asks
+     DraftKings' site data (sportsbook-nash.draftkings.com/api/sportscontent/<site>/v1/events/<event>/categories,
+     the address DraftKings' own pages read: client bundle, October 2026) for each of up to three games:
+     its game lines, then its player props by category. It says what answered, compares DraftKings'
+     moneyline ids with the ones the price pull read, and builds three betslip links from what it found
+     for the owner to tap and count the legs that land. It writes nothing anywhere, keeps nothing in the
+     browser and sends DraftKings no header of its own. Delete this file once the test is done. -->
+<style>
+  :root{--bg:#2A3043;--panel:#363D52;--panel-2:#3D455B;--ink:#F6F7FB;--ink-2:#CDD2DF;--muted:#B3B9CB;--line:#4A5269;--line-2:#59627B;--gold:#FFD166;
+        --ok:#CDFF4F;--bad:#FFA2B8;
+        --display:"Unbounded",ui-sans-serif,system-ui,sans-serif;--body:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;color:var(--ink);min-height:100vh;
+       background:radial-gradient(900px 520px at 12% -8%,rgba(255,209,102,.13),transparent 60%),linear-gradient(180deg,#333A4F 0%,var(--bg) 40%) fixed,var(--bg)}
+  main{max-width:720px;margin:0 auto;padding:32px 16px 80px}
+  h1{font-family:var(--display);font-weight:900;font-size:clamp(26px,6vw,38px);letter-spacing:-.02em;line-height:1;margin:0 0 12px;text-transform:uppercase}
+  h1 em{font-style:normal;color:var(--gold)}
+  h2{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);margin:28px 0 8px}
+  p{margin:0 0 10px;color:var(--ink-2)}
+  .panel{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin:12px 0}
+  button,a.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;border-radius:12px;border:1px solid var(--line-2);
+    font:inherit;font-weight:800;color:var(--ink);background:var(--panel-2);text-decoration:none;cursor:pointer}
+  button.go{background:var(--gold);color:#1B1F2B;border-color:var(--gold)}
+  button:disabled{opacity:.6;cursor:default}
+  button:focus-visible,a.btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(255,209,102,.5)}
+  ol.steps{margin:0;padding-left:22px}
+  ol.steps li{margin:6px 0;color:var(--ink)}
+  .ok{color:var(--ok);font-weight:800}
+  .bad{color:var(--bad);font-weight:800}
+  .quiet{color:var(--muted);font-size:13px}
+  .links a.btn{width:100%;margin:6px 0 2px;text-align:center}
+  .links .what{font-size:13px;color:var(--muted);margin:0 0 12px;overflow-wrap:anywhere}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:6px 6px;border-top:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  td.id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
+  .scroll{overflow-x:auto}
+  #copyMsg{margin-left:10px}
+</style>
+</head>
+<body>
+<main>
+  <h1>DraftKings <em>Test</em></h1>
+  <p>This checks one thing: can your browser read DraftKings' own odds, the way DraftKings' website does, for free? If it can, the site could give every leg of a parlay DraftKings' real bet id, so Open in DraftKings puts every leg on the slip.</p>
+  <p class="quiet">Nothing happens until you press the button. It only reads; it saves nothing and changes nothing on the site. It works best on the device and browser you normally use.</p>
+  <div class="panel">
+    <button type="button" class="go" id="run">Run the test</button>
+    <div id="out" aria-live="polite" style="margin-top:12px"></div>
+  </div>
+  <div id="linksBox" hidden>
+    <h2>Now tap each link</h2>
+    <p>Each opens DraftKings' betslip in a new tab. Count how many legs land on the slip, then come back here. You don't need to bet.</p>
+    <div class="panel links" id="links"></div>
+  </div>
+  <div id="propsBox" hidden>
+    <h2>What DraftKings sent</h2>
+    <div class="panel scroll" id="props"></div>
+  </div>
+  <div id="copyBox" hidden>
+    <h2>Send me the result</h2>
+    <p>Copy this and paste it in our chat, with how many legs each link put on the slip.</p>
+    <div class="panel"><button type="button" id="copy">Copy the result</button><span id="copyMsg" class="quiet" role="status" aria-live="polite"></span></div>
+  </div>
+</main>
+<script>
+(function(){
+  'use strict';
+  const DKS='https://sportsbook.draftkings.com/';
+  const API='https://sportsbook-nash.draftkings.com/api/sportscontent/';
+  /* DraftKings' site keys by state; the data is read the same way under any of them, so a second
+     and third are tried only when the first answers with an error */
+  const SITES=['dkusnj','dkusoh','dkuspa'];
+  /* the event page's own categories, as DraftKings' site names them in its addresses */
+  const CATS=['receiving props','rushing props','passing props','td scorers'];
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+  const slip=ids=>DKS+'?outcomes='+ids.map(encodeURIComponent).join('+');
+  const log=[], report=[];
+  function line(html,cls){ log.push(`<li${cls?` class="${cls}"`:''}>${html}</li>`); $('out').innerHTML=`<ol class="steps">${log.join('')}</ol>`; }
+  /* a game's kickoff: its date and time are US Eastern, so the offset is found for that day */
+  function kickoff(g){
+    if(!g||!g.d) return null;
+    for(const off of ['-04:00','-05:00']){
+      const dt=new Date(`${g.d}T${g.t||'13:00'}:00${off}`);
+      const wall=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(dt);
+      if(wall===(g.t||'13:00')) return dt; }
+    return null;
+  }
+  /* one read: no header of the page's own (no preflight), no-store, fifteen seconds at most */
+  async function get(url){
+    const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000);
+    try{
+      const r=await fetch(url,{cache:'no-store',signal:ac.signal});
+      if(!r.ok) return {ok:false,status:r.status,why:r.status===403?'DraftKings refused (403)':'DraftKings answered '+r.status};
+      const text=await r.text();
+      try{ return {ok:true,data:JSON.parse(text)}; }catch(e){ return {ok:false,status:r.status,why:'DraftKings answered, but not with data'}; }
+    }catch(e){
+      return {ok:false,status:0,why:e&&e.name==='AbortError'?'no answer in 15 seconds':'blocked: your browser was not allowed to read it (or no connection)'};
+    }finally{ clearTimeout(t); }
+  }
+  /* the selections DraftKings sent, each with its market's name */
+  function sels(data){
+    const mk=new Map((Array.isArray(data&&data.markets)?data.markets:[]).map(m=>[m.id,m]));
+    return (Array.isArray(data&&data.selections)?data.selections:[]).filter(s=>s&&typeof s.id==='string').map(s=>{
+      const m=mk.get(s.marketId)||{}, p=Array.isArray(s.participants)&&s.participants[0]||{};
+      return {id:s.id,label:s.label||'',points:s.points,odds:s.displayOdds&&s.displayOdds.american||'',market:m.name||(m.marketType&&m.marketType.name)||'',
+        player:p.type==='Player'?p.name:'',main:s.main===true||(Array.isArray(s.tags)&&s.tags.includes('MainPointLine'))};
+    });
+  }
+  const isProp=s=>!!s.player;
+  let site=null;
+  async function readEvent(ev,path){
+    const order=site?[site]:SITES;
+    let last=null;
+    for(const st of order){
+      const r=await get(`${API}${st}/v1/events/${encodeURIComponent(ev)}/${path}`);
+      if(r.ok){ site=st; return r; }
+      last=r;
+      if(r.status===0) break;   /* blocked or no connection: another site key will not change that */
+    }
+    return last;
+  }
+  async function run(){
+    const btn=$('run'); btn.disabled=true; btn.textContent='Running…';
+    log.length=0; report.length=0; site=null;
+    ['linksBox','propsBox','copyBox'].forEach(id=>$(id).hidden=true);
+    const ua=navigator.userAgent, phone=/iPhone|iPad|iPod|Android/i.test(ua);
+    report.push('DraftKings test, '+new Date().toLocaleString('en-US',{timeZone:'America/New_York'})+' ET');
+    report.push('Device: '+(phone?'phone/tablet':'computer')+' · '+ua.slice(0,140));
+    /* 1. this site's own payload: the week's games still to come and the event ids the pull read */
+    let pay=null;
+    try{ const r=await fetch('props/data/payload.json',{cache:'no-store'}); pay=r.ok?await r.json():null; }catch(e){ pay=null; }
+    if(!pay||!Array.isArray(pay.sched)){ line('<span class="bad">Could not read this site’s own data.</span> Reload and try again.'); report.push('Own payload: did not load'); return done(); }
+    const now=Date.now(), dk=pay.dk||{};
+    const games=pay.sched.filter(g=>{ const k=kickoff(g); return k&&k.getTime()>now&&g.hs==null; })
+      .map(g=>({g,k:kickoff(g),D:(dk[String(g.w)]||{})[g.id]||null})).filter(x=>x.D&&x.D.event).sort((a,b)=>a.k-b.k);
+    if(!games.length){ line('<span class="bad">No game still to come has a DraftKings event id in the site’s data yet.</span> Try again after the next price pull.'); report.push('Own payload: no game to come with an event id'); return done(); }
+    /* the afternoon and night games first (Sunday's early games are never bought), else the next ones */
+    const late=games.filter(x=>{ const et=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',hourCycle:'h23'}).formatToParts(x.k);
+      const part=t=>(et.find(p=>p.type===t)||{}).value; return !(part('weekday')==='Sun'&&+part('hour')<16); });
+    const pick=(late.length>=3?late:games).slice(0,3);
+    line(`Read this site’s data: ${games.length} games still to come with DraftKings ids. Testing ${pick.map(x=>esc(x.g.a+' at '+x.g.h)).join(', ')}.`);
+    report.push('Games: '+pick.map(x=>x.g.id).join(', '));
+    /* 2. each game's lines, as DraftKings' event page reads them */
+    const found=[];
+    for(const x of pick){
+      const r=await readEvent(x.D.event,'categories/');
+      const nm=x.g.a+' at '+x.g.h;
+      if(!r||!r.ok){
+        line(`${esc(nm)}, game lines: <span class="bad">${esc(r?r.why:'no answer')}</span>`); report.push(`${x.g.id} game lines: FAIL ${r?r.why:''}`);
+        if(r&&r.status===0) break; continue; }
+      const S=sels(r.data), ml=S.filter(s=>s.id.startsWith('0ML'));
+      const ours=[x.D[`team:${x.g.a}|ml`],x.D[`team:${x.g.h}|ml`]].filter(Boolean);
+      const same=ours.filter(id=>ml.some(s=>s.id===id)).length;
+      line(`${esc(nm)}, game lines: <span class="ok">read</span> (${S.length} bets, ${ml.length} moneylines; ${same} of ${ours.length} match the ids the site already has)`);
+      report.push(`${x.g.id} game lines: OK site=${site} sels=${S.length} ml=${ml.length} match=${same}/${ours.length}`);
+      const one={x,ml,props:[]};
+      /* 3. its player props, category by category, until one answers with some */
+      for(const c of CATS){
+        const p=await readEvent(x.D.event,'categories?categoryName='+encodeURIComponent(c));
+        if(!p||!p.ok){ report.push(`${x.g.id} ${c}: FAIL ${p?p.why:''}`); continue; }
+        const P=sels(p.data).filter(isProp);
+        report.push(`${x.g.id} ${c}: OK props=${P.length}`);
+        one.props.push(...P.map(s=>Object.assign(s,{cat:c})));
+        if(one.props.length>=6) break;
+      }
+      line(`${esc(nm)}, player props: ${one.props.length?`<span class="ok">read</span> (${one.props.length} bets with their ids)`:'<span class="bad">none read</span>'}`);
+      found.push(one);
+    }
+    const okGames=found.length, propGames=found.filter(f=>f.props.length);
+    if(!okGames){ line('<span class="bad">Your browser could not read DraftKings’ data.</span> So the free route does not work here; the site keeps buying ids as it does now.'); return done(); }
+    /* 4. the links to tap: three moneylines in three games, three props in three games (or as many
+       as were read), and a same-game one: a moneyline and two props of one game */
+    const L=[];
+    const mls=found.map(f=>(f.ml.find(s=>s.label&&s.label.length)||f.ml[0])).filter(Boolean).slice(0,3);
+    if(mls.length>=2) L.push({k:'A',what:`${mls.length} moneylines in ${mls.length} games`,ids:mls.map(s=>s.id),legs:mls.map(s=>s.label+' to win')});
+    const mainOver=f=>f.props.find(s=>s.main&&/^over$/i.test(s.label))||f.props.find(s=>/^over$/i.test(s.label))||f.props[0];
+    const pr=propGames.map(mainOver).filter(Boolean).slice(0,3);
+    if(pr.length>=2) L.push({k:'B',what:`${pr.length} player props in ${pr.length} games`,ids:pr.map(s=>s.id),legs:pr.map(s=>`${s.player} ${s.label} ${s.points!=null?s.points:''} ${s.market}`.replace(/\s+/g,' ').trim())});
+    else if(pr.length===1) L.push({k:'B',what:'1 player prop',ids:[pr[0].id],legs:[`${pr[0].player} ${pr[0].label} ${pr[0].points!=null?pr[0].points:''} ${pr[0].market}`.replace(/\s+/g,' ').trim()]});
+    const sg=propGames[0];
+    if(sg){ const players=[...new Set(sg.props.map(s=>s.player))].slice(0,2), two=players.map(n=>sg.props.find(s=>s.player===n&&s.main)||sg.props.find(s=>s.player===n));
+      const ml=sg.ml[0];
+      if(ml&&two.length===2) L.push({k:'C',what:`one game: a moneyline and 2 player props (a same-game parlay)`,ids:[ml.id,...two.map(s=>s.id)],legs:[ml.label+' to win',...two.map(s=>`${s.player} ${s.label} ${s.points!=null?s.points:''} ${s.market}`.replace(/\s+/g,' ').trim())]}); }
+    $('links').innerHTML=L.map(l=>`<a class="btn" href="${esc(slip(l.ids))}" target="_blank" rel="noopener">Link ${l.k}: ${esc(l.what)}</a><p class="what">${l.legs.map(esc).join(' · ')}</p>`).join('')||'<p>Not enough was read to build a link.</p>';
+    $('linksBox').hidden=!L.length;
+    L.forEach(l=>report.push(`Link ${l.k} (${l.what}): ${slip(l.ids)}`));
+    /* what was read, for the record */
+    const rows=found.flatMap(f=>f.props.slice(0,6).map(s=>({g:f.x.g.a+' at '+f.x.g.h,...s})));
+    $('props').innerHTML=rows.length?`<table><thead><tr><th>Game</th><th>Bet</th><th>Price</th><th>DraftKings id</th></tr></thead><tbody>${rows.map(s=>`<tr><td>${esc(s.g)}</td><td>${esc(s.player)} ${esc(s.label)} ${esc(s.points!=null?s.points:'')} <span class="quiet">${esc(s.market)}</span></td><td>${esc(s.odds)}</td><td class="id">${esc(s.id)}</td></tr>`).join('')}</tbody></table>`:'<p>No player props were read.</p>';
+    $('propsBox').hidden=false;
+    line(propGames.length?'<span class="ok">Your browser can read DraftKings’ data, player props included.</span> Now tap the links below.':'<span class="ok">Your browser can read DraftKings’ game lines</span>, but no player props came back. Tap the links below anyway.');
+    done();
+  }
+  function done(){ $('copyBox').hidden=false; const b=$('run'); b.disabled=false; b.textContent='Run it again'; }
+  $('run').addEventListener('click',run);
+  $('copy').addEventListener('click',async()=>{
+    const t=report.join('\n'); let ok=false;
+    try{ await navigator.clipboard.writeText(t); ok=true; }catch(e){
+      const ta=document.createElement('textarea'); ta.value=t; ta.setAttribute('readonly',''); ta.style.cssText='position:fixed;left:-9999px;top:0';
+      document.body.appendChild(ta); ta.select(); try{ ok=document.execCommand('copy'); }catch(e2){} ta.remove(); }
+    $('copyMsg').textContent=ok?'Copied':'Could not copy: select the text below instead';
+    if(!ok){ const pre=document.createElement('pre'); pre.textContent=t; pre.style.cssText='white-space:pre-wrap;font-size:12px;margin-top:10px'; $('copyBox').querySelector('.panel').appendChild(pre); }
+  });
+})();
+</script>
+</body>
+</html>
