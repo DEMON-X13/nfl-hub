@@ -331,7 +331,12 @@ const XBFIX = { season: BET_SEASON, updated: '2026-10-10T17:28:44Z', deposit: 10
    answer until each resolves, and early: resolve once the board has drawn, not at the prop model's
    app-ready (which a held payload holds back). pay: the payload's text in place of the published one
    (a copy a check has made of its own). Every request is in `calls` with its method and cache mode. */
+/* a full collection before each boot: the smoke opens the page in a new window some forty times (the kept
+   Refresh odds read alone reloads it a dozen), and V8 frees a closed one only when it must, so a run peaked
+   near the heap's ceiling (4.3GB on a 16GB machine, where four phase replays at once ran out of memory) */
+const GC = (() => { try { require('v8').setFlagsFromString('--expose-gc'); const f = require('vm').runInNewContext('gc'); return typeof f === 'function' ? f : () => {}; } catch (e) { return () => {}; } })();
 function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null, gate = null, early = false, friends = null, pay = null } = {}) {
+  GC();
   return new Promise(resolve => {
     const errs = [], fetched = [], urls = [], calls = [];
     const vc = new VirtualConsole(); vc.sendTo(console, { omitJSDOMErrors: true });
