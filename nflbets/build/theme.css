@@ -123,11 +123,9 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 .pk-matchup .pk-res{background:var(--panel)}
 .pk-note{background:var(--gold-soft);color:var(--gold)}
 .pk-result .pk-mwin.pk-ok{color:var(--pick)}
-/* the win-probability bars: the favourite's side in the pick's lime, the other on the track, where the
-   light look had a mint and a sky blue (the betting app's PROB_HI and PROB_LO, set inline) */
-[style*="background:#AAE5CF"]{background:var(--pick)!important;color:#1E2230!important}
-[style*="background:#A1BDE5"]{background:var(--panel-3)!important;color:var(--ink)!important}
-.pk-prob .pk-a{border-right-color:rgba(0,0,0,.25)}
+/* the win-probability bars are in the two clubs' own colours (probCols in tab_pickems.html), as the NBA
+   Hub's and the NHL Hub's are, split by a line of the page's own graphite */
+.pk-prob .pk-a{border-right:2px solid var(--bg)}
 .pe-pos button[aria-selected="true"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}
 /* the ELO Ratings tab and the Mismatches */
 .pe-mm-n{background:var(--ink);color:#1E2230}

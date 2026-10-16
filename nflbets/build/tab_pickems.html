@@ -126,6 +126,21 @@ const el=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* the betting app's tag, in this tab's own class names */
 const tag=(...a)=>BET.tag(...a).replace(/class="([^"]*)"/,(m,c)=>'class="'+c.split(' ').map(x=>'pk-'+x).join(' ')+'"');
+/* the win-probability bar in the two clubs' own colours, as the NBA Hub and the NHL Hub draw theirs (the
+   owner, 16 October 2026: the lime favourite read as neon). Each side wears its chip's colour (tagBg of
+   tagColor), its percentage in textOn's ink, so it clears 4.5:1 as the chip does; where the two would read
+   as one colour (two reds), the home side takes the first of its own colours that does not, else the
+   track's grey. The pick's percentage is the bold one. Used by the board and the Game snapshot */
+function probCols(a,h){
+  const hsl=c=>{ const [r,g,b]=BET.hex2rgb(c).map(v=>v/255), mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+    const hh=!d?0:mx===r?((g-b)/d+6)%6:mx===g?(b-r)/d+2:(r-g)/d+4; return [hh*60,d,(mx+mn)/2]; };
+  const near=(x,y)=>{ const [h1,c1,l1]=hsl(x), [h2,c2,l2]=hsl(y), dh=Math.min(Math.abs(h1-h2),360-Math.abs(h1-h2));
+    return c1<.15||c2<.15 ? c1<.15&&c2<.15&&Math.abs(l1-l2)<.15 : dh<28&&Math.abs(l1-l2)<.18; };
+  const ca=BET.tagBg(BET.tagColor(a));
+  let ch=BET.tagBg(BET.tagColor(h));
+  if(near(ca,ch)) ch=BET.teamCols(h).map(BET.tagBg).find(c=>!near(ca,c))||'#475068';
+  return [{bg:ca,ink:BET.textOn(ca)},{bg:ch,ink:BET.textOn(ch)}];
+}
 
 /* the prop model's schedule row for a game, which is where its spread and the book's prices
    live. Keyed by the same nflverse id both sites use; null until the prop model has booted. */
@@ -285,7 +300,7 @@ function render(){
   const row=g=>{
     const c=call(g), [day,time]=fmtDate(g), o=outcome(g), win=o&&o.final?o.winner:null;
     const pick=c?c.pick:null;
-    const pa=c?Math.round((1-c.pHome)*100):50, ph=100-pa;
+    const pa=c?Math.round((1-c.pHome)*100):50, ph=100-pa, pc=probCols(g.away_team,g.home_team);
     const [tc,tl]=c?BET.tier(c.conf):['','–'];
     /* tick or cross on the winner's tag: did the model's pick win? */
     let markA='',markH='';
@@ -298,7 +313,7 @@ function render(){
       <div class="pk-matchup"><span class="pk-tw pk-away">${tag(g.away_team,BET.tagColor(g.away_team),pick===g.away_team,'mini')}${markA}</span>${neutral(g)?`<span class="pk-at pk-neutral" title="${esc('Neutral site'+(g.stadium?': '+g.stadium:''))}">vs</span>`:'<span class="pk-at">at</span>'}<span class="pk-tw pk-home">${tag(g.home_team,BET.tagColor(g.home_team),pick===g.home_team,'mini')}${markH}</span></div>
       <div class="pk-probrow" aria-label="${esc(g.away_team)} ${pa}%, ${esc(g.home_team)} ${ph}%">
         <span class="pk-tlab${pick===g.away_team?' pk-win':''}">${esc(g.away_team)}</span>
-        <div class="pk-prob"><div class="pk-a" style="width:${pa}%;background:${pa>=ph?BET.PROB_HI:BET.PROB_LO};color:#0B162A"><span class="${pick===g.away_team?'pk-w':''}">${pa>=14?pa+'%':''}</span></div><div class="pk-h" style="width:${ph}%;background:${ph>pa?BET.PROB_HI:BET.PROB_LO};color:#0B162A"><span class="${pick===g.home_team?'pk-w':''}">${ph>=14?ph+'%':''}</span></div></div>
+        <div class="pk-prob"><div class="pk-a" style="width:${pa}%;background:${pc[0].bg};color:${pc[0].ink}"><span class="${pick===g.away_team?'pk-w':''}">${pa>=14?pa+'%':''}</span></div><div class="pk-h" style="width:${ph}%;background:${pc[1].bg};color:${pc[1].ink}"><span class="${pick===g.home_team?'pk-w':''}">${ph>=14?ph+'%':''}</span></div></div>
         <span class="pk-tlab${pick===g.home_team?' pk-win':''}">${esc(g.home_team)}</span>
       </div>
       <div class="pk-conf">${c?`<span class="pk-tier pk-${tc}">${tl} ${Math.round(c.conf*100)}%</span>`:'<span class="pk-tier">no call yet</span>'}</div>
@@ -364,7 +379,7 @@ function foot(){
 /* the Game snapshot (nflbets/build/snapshot.html) reads the board through this: the season as
    loaded (ST.state is state.json whole), the Vegas call, where a game stands, its kickoff and site,
    and whether the Props tab can open the game's page, and the opening of it */
-window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET,canProps,openOnProps};
+window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET,probCols,canProps,openOnProps};
 
 /* tabs as addresses: #props opens the Props tab, and a reload stays where it was. On a phone the
    bar is wider than the screen and scrolls sideways, so the chosen tab is brought into it, on load,

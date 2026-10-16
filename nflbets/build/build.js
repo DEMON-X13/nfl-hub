@@ -134,9 +134,9 @@ const BET = [
   /* the Elo tiers and their shields, so a player's rating wears the same badge a team's does */
   require(path.join(ROOT, 'betting', 'tools', 'tiers.js'))(lift(betting, 'const TIERS=', 'function tierLegend(', 'Elo tiers and shields'), 'the Bets and Stats page'),
 ].join('\n');
-for (const need of ['function tag(', 'function tagColor(', 'const PROB_HI', 'function tier(', 'function eloTier(', 'function tierBadge(', 'const TIER_DEFS'])
+for (const need of ['function tag(', 'function tagColor(', 'function tagBg(', 'function textOn(', 'function teamCols(', 'const PROB_HI', 'function tier(', 'function eloTier(', 'function tierBadge(', 'const TIER_DEFS'])
   if (!BET.includes(need)) throw new Error('the lifted betting block is missing ' + need);
-const BET_NS = `const BET=(()=>{\n${BET}\nreturn {tag,tagColor,tier,PROB_HI,PROB_LO,eloTier,tierBadge,TIER_DEFS};\n})();`;
+const BET_NS = `const BET=(()=>{\n${BET}\nreturn {tag,tagColor,tagBg,textOn,teamCols,hex2rgb,tier,PROB_HI,PROB_LO,eloTier,tierBadge,TIER_DEFS};\n})();`;
 const js = sub1(sub1(TAB_JS, '/*BETTING*/', BET_NS, 'the /*BETTING*/ slot'),
   "const tag=(...a)=>BET.tag(...a).replace(/class=\"([^\"]*)\"/,(m,c)=>'class=\"'+c.split(' ').map(x=>'pk-'+x).join(' ')+'\"');",
   "const tag=(...a)=>BET.tag(...a).replace(/class=\"([^\"]*)\"/,(m,c)=>'class=\"'+c.split(' ').map(x=>'pk-'+x).join(' ')+'\"');\n/* the Player Elo tab draws team tags and tier shields with these */\nwindow.pkTag=tag; window.pkTagColor=BET.tagColor; window.pkTierBadge=BET.tierBadge; window.pkEloTier=BET.eloTier; window.pkTierDefs=BET.TIER_DEFS;",
