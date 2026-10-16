@@ -272,6 +272,40 @@ function dkDecoys(l, w) {
   return [`${l.pid}|${l.stat}|under|${dkPt(l.k - 0.5)}`];
 }
 const dkIdOf = (DK, l) => { const k = dkKey(l); return k ? ((DK[String(l.week)] || {})[l.gid] || {})[k] : undefined; };
+/* DraftKings' id for a leg at its own line, app v109's rule worked out here on its own (a suggestion takes
+   only a leg that has one, wherever the payload carries ids): its key (dkKey), and for a rung k+ the whole
+   Over k-1 its price was read from as well; none for 2+ touchdowns, and none once its game has kicked off
+   (started: the caller's reading of the page's clock) */
+function dkOwnId(DK, l, started) {
+  if (!DK || typeof DK !== 'object' || started) return null;
+  const D = ((DK[String(l.week)] || {})[l.gid]) || {}, k = dkKey(l);
+  const keys = !k ? [] : (['ml', 'ats', 'total', 'any_td'].includes(l.stat) || l.main) ? [k] : [k, `${l.pid}|${l.stat}|over|${dkPt(l.k - 1)}`];
+  for (const x of keys) if (typeof D[x] === 'string' && D[x]) return D[x];
+  return null;
+}
+/* a leg a suggestion may take, as far as DraftKings' ids go: no table (a payload baked before ids), no entry
+   for its game in its week (taken as before ids: weekly.py bakes PAY.dk {} from Monday night's final to the
+   next week's first pull), or DraftKings' id at its own line */
+function dkTakes(DK, l, started) {
+  if (!DK || typeof DK !== 'object') return true;
+  const W = DK[String(l.week)], E = W && typeof W === 'object' ? W[l.gid] : null;
+  return !(E && typeof E === 'object') || !!dkOwnId(DK, l, started);
+}
+/* the suggested parlays panel's own text, the Elo picks inside it left out (their own words on DraftKings'
+   betslip are not the panel's notes) */
+const pbOwnTxt = panel => { if (!panel) return ''; const c = panel.cloneNode(true), e = c.querySelector('#pbElo'); if (e) e.remove(); return txt(c); };
+/* a table of made-up DraftKings ids standing in for the payload's (a fixture of its own, never merged into
+   the payload's): one under each leg's own key (dkKey), the game's lines and player prices read at `read` */
+function dkFixture(legs, read, tag) {
+  const dk = {};
+  legs.forEach((l, i) => { const k = dkKey(l); if (!k) return; const D = ((dk[String(l.week)] ??= {})[l.gid] ??= { at: read, glat: read }); if (!(k in D)) D[k] = `${tag}${i}#${k}`; });
+  return dk;
+}
+/* the markets the price pull reads (oddsfetch.py's DEFAULT, as CLAUDE.md says it): a player leg on any other
+   has no id that a pull will bring */
+const DK_PULLED = ['passing_yards', 'passing_tds', 'rushing_yards', 'receiving_yards', 'receptions', 'any_td'];
+/* a spread or a total as DraftKings' slip takes it, in the card's words */
+const dkSigned = x => (+x > 0 ? '+' : '') + dkPt(x);
 
 function laterGame(w, S) {
   const ko = x => { const k = w.eval('kickoff')(x); return k ? k.getTime() : -Infinity; }, started = w.eval('gameStarted');
@@ -826,9 +860,18 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const ruleFor = t => t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best return that lands ${Math.round(t.floor * 100)}%+ by the model` : 'the likeliest pair';
     const provedLikeliest = (lab, t, list) => { if (!noMovers(list)) return; const b = likeliestOf(list, t.n, t.thin); if (!b) return;
       chk(t.corr >= b.best - 1e-12, `${lab}: the ${t.id} tier, "${ruleFor(t)}", lands ${(t.corr * 100).toFixed(2)}% (${t.legs.map(l => l.name + ' ' + l.label).join(', ')}) where ${orderF(b.legs).map(l => l.name + ' ' + l.label).join(', ')} land ${(b.best * 100).toFixed(2)}% with as many thin legs (${b.seen} parlays of ${t.n} worked)`); };
+    /* a leg's game has kicked off, by the page's clock; and DraftKings' id at the leg's own line in the
+       payload's ids as they stand. No press has been made yet in this part, so PAY.dk is the payload's own
+       (baked by the job) or a fixture of the smoke's, never one a press made: where it is an object the
+       payload carries ids, and the levels take only legs with one */
+    const startedL = l => { const g = Sx.sched.find(x => x.id === l.gid); return !!g && started(g); };
+    const dkNow = () => { const D = w.eval('PAY').dk; return !!D && typeof D === 'object' ? D : null; };
+    const ownId = l => dkTakes(dkNow(), l, startedL(l));
     const hold = lab => { const r = w.eval('getPbTiers()'), u = U(), m = maxLegs(); let built = 0;
       const on = games.filter(g => !u.off.includes(g.id)), pool = on.length && KINDS.some(k => u.k[k]) ? w.eval('pbPool')(on) : { pref: [], thin: [] };
+      const dkOn = !!dkNow(), own = ownId;
       chk(r.tiers.map(t => t.id + t.n).join() === 'safe2,med3,aggr4,xtrm5', `${lab}: the tiers are not Safe 2, Medium 3, Aggressive 4, Extreme 5`);
+      chk(!dkOn || [...pool.pref, ...pool.thin, ...(pool.mkt || [])].every(own), `${lab}: the legs the levels are built from hold one DraftKings has no id for at its own line: ` + [...pool.pref, ...pool.thin, ...(pool.mkt || [])].filter(l => !own(l)).slice(0, 4).map(l => l.name + ' ' + l.label).join(', '));
       for (const t of r.tiers) {
         /* every level shows a parlay of its size whenever the picks make that many legs */
         if (!t.legs) { chk(typeof t.why === 'string' && t.why.length > 10 && m < t.n && !/of the time or more/.test(t.why), `${lab}: the ${t.id} tier is empty though the picks make ${m} legs for its ${t.n}, or says nothing: ${t.why}`); continue; }
@@ -837,6 +880,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(t.legs.every(l => u.k[kindOf(l)] && !u.off.includes(l.gid) && games.some(g => g.id === l.gid) && !started(Sx.sched.find(g => g.id === l.gid))),
           `${lab}: the ${t.id} tier has a leg of a kind or a game not ticked, or one that has kicked off`);
         chk(t.legs.every(l => takenRule(w)(l) && (l.market || l.p >= mlProb(l.price)) && l.p >= 0.45 && l.p < 0.97), `${lab}: the ${t.id} tier has a leg with no real price (nor the rule's own from DraftKings' line on ESPN, on a kind it may take) or rated below the book`);
+        /* (app v109) where the payload carries DraftKings' ids, every leg has one at its own line, so the
+           whole level goes on DraftKings' betslip (dkOwnId, worked out here on its own) */
+        chk(!dkOn || t.legs.every(own), `${lab}: the ${t.id} tier has a leg DraftKings has no id for at its own line, so it cannot go on the slip: ` + t.legs.filter(l => !own(l)).map(l => l.name + ' ' + l.label).join(', '));
         /* a total only as a market leg, marked no edge, and only where the legs with an edge cannot make the level */
         chk(t.legs.every(l => (l.stat === 'total') === !!l.market) && (t.mkt || 0) === t.legs.filter(l => l.market).length
           && (!t.mkt || w.eval('pbTier')(w.eval('PB_TIERS').find(s => s[0] === t.id), { pref: pool.pref, thin: pool.thin, mkt: [] }, new Map()) === null),
@@ -922,6 +968,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
                 over=probToAmerican(fo*1.03); under=probToAmerican((1-fo)*1.03); }
               ((M[x.pl.id]??={})[l.stat])={line:ln,over,under,n:x.pl.n,g:g.id}; } }); });
         PB_CACHE=new Map(); renderParlay(); })()`);
+      /* (app v109) the made-up lines have no DraftKings id (the payload's ids name its own lines at its own
+         numbers), and where the payload carries ids a level takes only a leg with one: a fixture of made-up
+         ids in place of the payload's table, one under every priced leg's own key and each side of every
+         total, so the levels are built on the made-up lines as before; put back with the rest below */
+      const keepDkM = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)');
+      { const on = w.eval('pbGames()'), tl = w.eval('totalLeg');
+        const legs = [...w.eval('pricedLegs')(on), ...on.flatMap(g => ['over', 'under'].map(s => tl(g, s)).filter(Boolean))];
+        w.eval(`PAY.dk=${JSON.stringify(dkFixture(legs, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'MU'))}; PB_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()`); }
       await wait(60);
       const built = hold('made-up lines');
       chk(built >= 2, 'with a made-up line on every starter, fewer than two tiers were built');
@@ -941,6 +995,73 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           const notes = [...d.querySelectorAll('#gameView p.faroff[data-far]')].map(txt);
           chk(notes.includes(want) && !!d.querySelector('#gameView tr.far'), `the game page does not flag ${farL.name}'s far-off line as "${want}": ${notes.join(' / ') || 'no flag'}`);
           w.eval(`(function(){ const k=${keepUi}; S.ui.game=k.game; S.ui.open=k.open||{}; S.ui.showRungs=k.rungs; closeGameModal(); })()`); await wait(20); } }
+      /* (app v109) suggestions only from legs DraftKings' slip can take, on the fixture's ids. One game's
+         player ids taken out: none of its player legs is left in the levels' lines, a level or its game
+         page's hands, and the panel says how many legs it left out, why (a line read by Refresh odds carries
+         no id, and DraftKings' own come with its prices) and when player prices are pulled. Every player id
+         taken out: the levels are built without player legs and say so, and with Players only every level is
+         empty and says why. With no ids at all (a payload baked before them) every leg is taken as it always
+         was. The pool's lists are capped, so a count is held to at least the legs the check saw go */
+      { const on = w.eval('pbGames()'), poolF = () => w.eval('pbPool')(on), DK0 = JSON.parse(w.eval('JSON.stringify(PAY.dk)'));
+        const plIn = p => [...p.pref, ...p.thin].filter(c => !isG(c)), keyOf = l => l.key + '|' + l.side + '|' + l.k, keys = p => [...p.pref, ...p.thin, ...(p.mkt || [])].map(keyOf).sort().join();
+        const setDk = async o => { w.eval(`${o === null ? 'delete PAY.dk' : 'PAY.dk=' + JSON.stringify(o)}; PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}; renderParlay()`); await wait(30); };
+        const cutPl = (o, gid) => { for (const wk2 in o) for (const id in o[wk2]) if (!gid || id === gid) for (const k of Object.keys(o[wk2][id])) if (!/^(team:|game\|)/.test(k) && !['at', 'glat', 'event'].includes(k)) delete o[wk2][id][k]; return o; };
+        const PULLED_W = 'pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET)';
+        const noteOf = re => (pbOwnTxt(panel).match(re) || [''])[0];
+        const pool0 = poolF(), k0 = keys(pool0), x0 = plIn(pool0)[0], gX = x0 ? Sx.sched.find(g => g.id === x0.gid) : null;
+        chk(pool0.noId === 0 && pool0.noIdPl === 0 && !/betslip can take/.test(pbOwnTxt(panel)), `with a made-up id on every leg the panel still leaves ${pool0.noId} out for want of one, or says so`);
+        if (!gX) chk(false, 'with made-up lines on every starter no player leg is in the levels\' lines, so none can be taken out for want of an id');
+        else {
+          const hand0 = w.eval('gameLegPool')(gX), lost = plIn(pool0).filter(c => c.gid === gX.id).length;
+          await setDk(cutPl(JSON.parse(JSON.stringify(DK0)), gX.id));
+          const p1 = poolF(), r1 = w.eval('getPbTiers()'), hand1 = w.eval('gameLegPool')(gX), note = noteOf(/\d+ legs? (is|are) left out: a suggested parlay takes only legs DraftKings’ betslip can take[^]*?to the builder\./);
+          chk(!plIn(p1).some(c => c.gid === gX.id) && r1.tiers.every(t => !t.legs || t.legs.every(l => isG(l) || l.gid !== gX.id)) && [...p1.pref, ...p1.thin].every(ownId),
+            `with ${gX.id}'s player ids taken out, a player leg of its is still in the levels' lines or a level`);
+          /* (every key of his game but its game lines is gone, so none of them is at another number either) */
+          chk(lost > 0 && p1.noId >= lost && p1.noIdPl === p1.noId && p1.moved === 0, `with ${gX.id}'s player ids taken out the pool counts ${p1.noId} legs left out for want of an id (${p1.noIdPl} players', ${p1.moved} at another number) where at least ${lost} went, all players' and none at another number`);
+          chk(note.startsWith(`${p1.noId} leg${p1.noId === 1 ? ' is' : 's are'} left out: a suggested parlay takes only legs DraftKings’ betslip can take, by DraftKings’ own id at the leg’s line`)
+            && note.includes('A player’s line read by Refresh odds carries no id') && note.includes(PULLED_W) && note.endsWith(`still on the game pages, where you can add ${p1.noId === 1 ? 'it' : 'them'} to the builder.`)
+            && !/to add by hand|DraftKings had (it|them) only at another number/.test(pbOwnTxt(panel)),
+            `the panel does not say how many legs it left out for want of a DraftKings id, why, and when player prices are pulled: "${note || txt(panel).slice(0, 200)}"`);
+          chk(hand0.some(l => !isG(l)) ? hand1.every(ownId) && !hand1.some(l => !isG(l)) : hand1.every(ownId),
+            `${gX.id}'s game page's hands keep a leg DraftKings has no id for at its line: ` + hand1.filter(l => !ownId(l)).map(l => l.name + ' ' + l.label).join(', '));
+          /* a hand its game's lines would make but for DraftKings' ids says so on the game's page, and why
+             (gameNoIdWhy: the player ids not pulled yet, or never for Sunday's early games, or none for its
+             other lines), never that the game has too few lines; worked out from the pool with every leg */
+          { const T1 = w.eval('GAME_TIER_CACHE={}; gameTiers')(gX), empty = ['high', 'med', 'low'].filter(id => !T1[id]), lostH = w.eval('gameLegPool')(gX, true).length - hand1.length;
+            if (empty.length) {
+              const keepG = w.eval('JSON.stringify({game:S.ui.game,open:S.ui.open||{}})');
+              w.eval(`S.ui.game=${JSON.stringify(gX.id)}; S.ui.open={}; renderGame()`); await wait(30);
+              const ps = [...d.querySelectorAll('#gameView .gsugg .gsugg-tier p.muted')].filter(x => x.hasAttribute('data-gsugg-noid') || /to build from/.test(txt(x)));
+              chk(T1.noId === lostH && lostH > 0 && ps.length === empty.length && ps.every(x => x.hasAttribute('data-gsugg-noid') && /^Only legs DraftKings’ betslip can take are suggested here, and this game does not have enough of them for [234] legs( yet)?: /.test(txt(x))),
+                `with ${gX.id}'s player ids taken out, its empty hands do not say they are short of legs DraftKings' betslip can take, and why (${T1.noId} counted left out where ${lostH} are): ` + ps.map(txt).join(' / '));
+              w.eval(`(function(){ const k=${keepG}; S.ui.game=k.game; S.ui.open=k.open; closeGameModal(); })()`); await wait(20);
+              console.log(`  (${gX.id} with its player ids taken out: ${empty.length} of its hands empty, each saying it is short of legs DraftKings' betslip can take)`); }
+            else console.log(`  (${gX.id} with its player ids taken out still fills every hand: the empty hands' words went untested)`); }
+          /* every player id out */
+          await setDk(cutPl(JSON.parse(JSON.stringify(DK0)), null));
+          const p2 = poolF(), r2 = w.eval('getPbTiers()'), n2 = noteOf(/No player leg on your picks can go on DraftKings’ betslip yet[^]*?\(before 4pm ET\)\./);
+          /* (a week of one or two games may make no level of team legs at all: then each level says why, the
+             missing ids among it) */
+          chk(!plIn(p2).length && p2.noIdPl > 0 && p2.noIdPl === p2.noId && r2.tiers.every(t => !t.legs || t.legs.every(isG))
+            && (r2.tiers.some(t => t.legs) ? n2.startsWith('No player leg on your picks can go on DraftKings’ betslip yet, so the tiers below are built without player legs: ') && n2.includes(PULLED_W)
+              && !/legs? (is|are) left out: a suggested parlay takes only/.test(pbOwnTxt(panel))
+              : r2.tiers.every(t => typeof t.why === 'string' && t.why.includes('no player legs DraftKings’ betslip can take yet') && t.why.includes(PULLED_W))),
+            `with no player leg's id, the levels are not built without player legs, or the panel does not say so once with when they are pulled: "${n2 || txt(panel).slice(0, 200)}"`);
+          d.querySelector('#pbPanel [data-pb-mix="players"]').click(); await wait(20);
+          const r3 = w.eval('getPbTiers()');
+          chk(r3.tiers.every(t => !t.legs && typeof t.why === 'string' && t.why.startsWith('No player legs DraftKings’ betslip can take yet: a player’s line read by Refresh odds carries no DraftKings id') && t.why.includes(PULLED_W)),
+            'with Players only and no player leg\'s id, a level is built or does not say it is empty for want of DraftKings\' ids, with when player prices are pulled: ' + r3.tiers.map(t => t.why || 'built').join(' / '));
+          d.querySelector('#pbPanel [data-pb-mix="all"]').click(); await wait(20);
+          /* a payload baked before ids: every leg as it always was */
+          await setDk(null);
+          const p4 = poolF();
+          /* a game page's hands draw on lines of their own beyond the priced legs (a rung the fixture has no key
+             for), so with no ids they hold at least what they held with an id on every priced leg */
+          const hand4 = new Set(w.eval('gameLegPool')(gX).map(keyOf));
+          chk(keys(p4) === k0 && p4.noId === 0 && hand0.every(l => hand4.has(keyOf(l))),
+            'with no DraftKings ids in the payload (baked before them) the levels\' lines or a game page\'s hands are not what a made-up id on every leg gives: ' + JSON.stringify({ same: keys(p4) === k0, noId: p4.noId, lostHand: hand0.filter(l => !hand4.has(keyOf(l))).map(keyOf).slice(0, 3) }));
+          await setDk(DK0); } }
       /* Game total alone, as the owner ticked it: every level the priced totals make legs for is
          built of totals only, each marked no edge, and its card says why they are there */
       { const keepK = JSON.stringify(U().k); for (const k of KINDS) U().k[k] = k === 'total'; w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40);
@@ -1031,26 +1152,90 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           `Finish on the ${t.label} tier does not open its card with its legs, price and chance: ` + txt(view).slice(0, 200));
         chk(cash === [money(AMT), money(AMT * t.dec), '+' + money(AMT * t.dec - AMT)].join(' | '),
           `Finish on the ${t.label} tier does not open its card on the Bet amount: ${cash} for ${amtTxt(AMT)} at ${t.dec}`);
-        /* Open in DraftKings: every leg with a key (all but a 2+ touchdown rung, and a player's leg priced
-           from DraftKings' line read on ESPN, which carries no id and goes on by hand) opens, on its own
-           made-up id, in the card's order, joined by + with each '#' as %23, no decoy among them; the rest
-           named under the buttons, a leg from ESPN's read saying its price is estimated and its id not
-           read, and the note dated, saying what it opens as DraftKings had it then and promising no leg */
-        { const DK = w.eval('PAY').dk || {}, onSlip = l => !!dkKey(l) && !(l.src === 'dkline' && !w.eval('isGameLeg')(l)), ids = t.legs.filter(onSlip).map(l => dkIdOf(DK, l)).filter(Boolean), a = d.getElementById('pcDk'), n = t.legs.filter(onSlip).length;
-          const espnMiss = t.legs.map((l, i) => ({ l, i })).filter(({ l }) => l.src === 'dkline' && !w.eval('isGameLeg')(l));
-          chk(espnMiss.every(({ l, i }) => { const li = d.querySelector(`#pcDkNote [data-pc-dkmiss="${i + 1}"]`); return !!li && txt(li).endsWith(': price estimated from DraftKings’ line read on ESPN; its DraftKings id is not read'); }),
-            `Open in DraftKings on the ${t.label} tier does not name each leg priced from DraftKings' line read on ESPN to add by hand, its price estimated and its id not read: ` + [...d.querySelectorAll('#pcDkNote [data-pc-dkmiss]')].map(txt).join(' / '));
-          if (!n) console.log(`  (every leg of the ${t.label} tier is priced from DraftKings' line read on ESPN: none goes on the slip, and each is named to add by hand)`);
-          else chk(ids.length === n && ids.every(x => /^SMK\d/.test(x)) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
-            && d.querySelectorAll('#pcDkNote [data-pc-dkmiss]').length === t.legs.length - n && !d.getElementById('pcLink').hidden
+        /* Open in DraftKings: every leg with a key (all but a 2+ touchdown rung; since app v109 a level holds
+           only legs DraftKings has an id for where the payload carries ids, and a leg priced from DraftKings'
+           line read on ESPN is looked up like any other) opens, on its own made-up id, in the card's order,
+           joined by + with each '#' as %23, no decoy among them; the button says it opens the parlay where
+           every leg goes on, and "Open N of M legs" where one does not; the rest named under the buttons, and
+           the note dated, saying what it opens as DraftKings had it then and promising no leg; with every leg
+           on its own id, nothing said of a leg going on at another number */
+        { const DK = w.eval('PAY').dk || {}, onSlip = l => !!dkKey(l), ids = t.legs.filter(onSlip).map(l => dkIdOf(DK, l)).filter(Boolean), a = d.getElementById('pcDk'), n = t.legs.filter(onSlip).length;
+          const btn = n === t.legs.length ? 'Open in DraftKings' : `Open ${n} of ${t.legs.length} legs in DraftKings`;
+          if (!n) console.log(`  (no leg of the ${t.label} tier has a DraftKings key: none goes on the slip, and each is named to add by hand)`);
+          else chk(ids.length === n && ids.every(x => /^SMK\d/.test(x)) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+') && txt(a) === btn
+            && d.querySelectorAll('#pcDkNote [data-pc-dkmiss]').length === t.legs.length - n && !d.querySelector('#pcDkNote [data-pc-dkswap]') && !/goes on as|at its own line/.test(txt(d.getElementById('pcDkNote'))) && !d.getElementById('pcLink').hidden
             && /^DraftKings’ lines as read .* ET: Open in DraftKings opens /.test(txt(d.getElementById('pcDkNote'))) && txt(d.getElementById('pcDkNote')).includes(`opens ${n < t.legs.length ? n + ' of the ' + t.legs.length + ' legs' : 'the ' + t.n + ' legs'} as DraftKings had ${n === 1 ? 'it' : 'them'} then; a leg whose line DraftKings has moved or pulled since will not be on the slip`)
             && !/\bputs all\b|\ball \d+ legs on\b/.test(txt(d.getElementById('pcDkNote')) + ' ' + a.getAttribute('title')),
-            `Open in DraftKings on the ${t.label} tier does not open its legs' own ids (${ids.length} of ${n} keyed, ${t.legs.length} legs): ` + (a ? a.getAttribute('href') + ' hidden ' + a.hidden : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 200)); }
+            `Open in DraftKings on the ${t.label} tier does not open its legs' own ids (${ids.length} of ${n} keyed, ${t.legs.length} legs) under "${btn}": ` + (a ? txt(a) + ' ' + a.getAttribute('href') + ' hidden ' + a.hidden : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 200)); }
         w.eval(`(function(){ const k=${keepDk}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
         w.eval('PARLAY_CARD.close()'); await wait(20);
         chk(d.getElementById('pcModal').hidden && d.activeElement === d.querySelector(`#pbPanel [data-pc-finish="pb|${t.id}"]`), 'closing the card did not give the focus back to the tier\'s Finish');
         await wait(400);
-        chk(w.eval('S.saved.length') === n0 && JSON.stringify(Object.keys(w.localStorage).sort()) === keys0, 'finishing a suggested tier saved it, or wrote a key'); }
+        chk(w.eval('S.saved.length') === n0 && JSON.stringify(Object.keys(w.localStorage).sort()) === keys0, 'finishing a suggested tier saved it, or wrote a key');
+        /* (app v109) the card puts a leg DraftKings has only at another number on the slip at DraftKings'
+           number instead of leaving it to add by hand, and the builder says so first. The tier's legs in the
+           builder on a made-up id under each leg's own key (and the decoys): no line under any leg. Then one
+           leg with a number (a spread, a total or a player's main line: sw) has its id only at a number two
+           away, and another (gone) none for its bet at any number: the builder says "On DraftKings as" what
+           goes on (DraftKings' number, in the card's words) under the first and "Not on DraftKings' slip yet:"
+           with why in a few words under the second, nothing under the rest; Finish opens N-1 of N legs, sw on
+           the id at DraftKings' number, in the card's order, under "Open N-1 of N legs in DraftKings", names sw
+           as going on at DraftKings' number and that DraftKings prices it at its own line, and gone to add by
+           hand; Share link's text says the same. Without the parlay card (the prop model's own page) the
+           builder says nothing of DraftKings' slip. Each expectation worked out here from the legs */
+        { const keepP2 = w.eval('JSON.stringify(S.parlay)'), read = new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', isG2 = w.eval('isGameLeg');
+          d.querySelector(`#pbPanel [data-pb-add="${t.id}"]`).click(); await wait(60);
+          const q = w.PARLAY_CARD.quote(), L = q ? q.legs : [], MKT = w.eval('MKT');
+          const fix = () => { const dk = {}; L.forEach((l, i) => { const D = ((dk[String(l.week)] ??= {})[l.gid] ??= { at: read, glat: read });
+            for (const k of dkDecoys(l, w)) if (!(k in D)) D[k] = 'DECOY' + i + '#' + k;
+            const k = dkKey(l); if (k) D[k] = 'SMK' + i + '#' + k; }); return dk; };
+          const put = async dk => { w.eval(`PAY.dk=${JSON.stringify(dk)}; renderParlay()`); await wait(30); };
+          const rows = () => [...d.querySelectorAll('#parlayBody tr.legrow')], lineOf = i => { const r = rows()[i], x = r && r.querySelector('small.dkslip'); return x ? txt(x) : null; };
+          const side = l => l.side === 'under' ? 'Under' : 'Over', lbl = st => ((MKT[st] && MKT[st].lbl) || String(st).replace(/_/g, ' ')).toLowerCase();
+          /* a leg with no key at its own line (2+ touchdowns) has nothing to go on as here: why, in a few words */
+          const noKey = (l, i) => `Not on DraftKings’ slip yet: ${q.prices[i].src === 'real' ? 'not among the lines read' : 'no anytime TD of his read'}`;
+          await put(fix());
+          chk(!!q && rows().length === L.length && L.every((l, i) => lineOf(i) === (dkKey(l) ? null : noKey(l, i))),
+            'with DraftKings\' id for every leg at its own line, the builder says something of the slip under a leg: ' + rows().map((r, i) => lineOf(i)).filter(Boolean).join(' / '));
+          const swI = L.findIndex(l => dkKey(l) && (l.stat === 'ats' || l.stat === 'total' || (l.main && !isG2(l)))), goneI = L.findIndex((l, i) => i !== swI && dkKey(l));
+          if (swI < 0 || goneI < 0) console.log(`  (the ${t.label} tier has no spread, total or main line beside another leg: the card's conversion is held by smoke_live.js)`);
+          else {
+            const ls = L[swI], lg = L[goneI], dk = fix(), Ds = dk[String(ls.week)][ls.gid], Dg = dk[String(lg.week)][lg.gid];
+            const nearOf = l => l.stat === 'ats' ? `${l.pid}|ats|` : l.stat === 'total' ? `game|total|${l.side}|` : l.stat === 'ml' ? null : l.stat === 'any_td' ? null : l.main ? `${l.pid}|${l.stat}|${l.side}|` : `${l.pid}|${l.stat}|over|`;
+            let p2 = +ls.k + 2; if (ls.stat === 'ats' && p2 === 0) p2 = +ls.k - 2;
+            delete Ds[dkKey(ls)]; const swId = 'SWP' + swI + '#' + nearOf(ls) + dkPt(p2); Ds[nearOf(ls) + dkPt(p2)] = swId;
+            const swap = ls.stat === 'ats' ? dkSigned(p2) : ls.stat === 'total' ? `${side(ls)} ${dkPt(p2)}` : `${side(ls)} ${dkPt(p2)} ${lbl(ls.stat)}`;
+            { const nr = nearOf(lg); for (const k of Object.keys(Dg)) if (k === dkKey(lg) || (nr && k.startsWith(nr))) delete Dg[k]; }
+            /* why the gone leg cannot go on, on a game whose prices were read: a market the pull never reads; on
+               no book price, a rung with no line of his on its stat, 2+ touchdowns with no anytime touchdown of
+               his, or a line DraftKings did not offer; on a book price, not among the lines read */
+            const pl = !isG2(lg), booked = q.prices[goneI].src === 'real';
+            const brief = pl && !DK_PULLED.includes(lg.stat) ? 'its market is not read here' : pl && !booked && !lg.main && lg.stat !== 'any_td' ? `no ${lbl(lg.stat)} line of his read`
+              : pl && !booked && lg.stat === 'any_td' && +lg.k >= 2 ? 'no anytime TD of his read' : pl && !booked ? 'DraftKings did not offer it when read' : 'not among the lines read';
+            await put(dk);
+            const want = L.map((l, i) => i === swI ? `On DraftKings as ${swap}` : i === goneI ? `Not on DraftKings’ slip yet: ${brief}` : dkKey(l) ? null : noKey(l, i));
+            chk(L.every((l, i) => lineOf(i) === want[i]) && (rows()[swI] || { querySelector: () => null }).querySelector(`small.dkslip[data-dkslip="${swI + 1}"]`),
+              `the builder does not say under leg ${swI + 1} that it goes on DraftKings' slip at DraftKings' number, and under leg ${goneI + 1} that it cannot go on yet and why, and nothing under the rest: ` + JSON.stringify({ got: L.map((l, i) => lineOf(i)), want }));
+            const fin = d.getElementById('pFinish'); if (fin && !fin.disabled) { fin.click(); await wait(40); }
+            const on = L.map((l, i) => i === swI ? swId : i === goneI || !dkKey(l) ? null : dk[String(l.week)][l.gid][dkKey(l)]), ids = on.filter(Boolean);
+            const a = d.getElementById('pcDk'), note = txt(d.getElementById('pcDkNote')), sw = d.querySelector(`#pcDkNote [data-pc-dkswap="${swI + 1}"]`);
+            const btn = ids.length === L.length ? 'Open in DraftKings' : `Open ${ids.length} of ${L.length} legs in DraftKings`;
+            chk(!!fin && !d.getElementById('pcModal').hidden && !!a && !a.hidden && txt(a) === btn && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
+              && !!sw && txt(sw).startsWith(`${swI + 1}. `) && txt(sw).endsWith(`: goes on as ${swap}`) && d.querySelectorAll('#pcDkNote [data-pc-dkswap]').length === 1
+              && note.includes('On DraftKings’ slip at its own line:') && note.includes('DraftKings prices a changed leg at its own line, so its slip’s payout can differ from this card’s.')
+              && !!d.querySelector(`#pcDkNote [data-pc-dkmiss="${goneI + 1}"]`) && d.querySelectorAll('#pcDkNote [data-pc-dkmiss]').length === L.length - ids.length
+              && note.includes(`opens ${ids.length} of the ${L.length} legs as DraftKings had them then`),
+              `Finish does not open ${ids.length} of ${L.length} legs under "${btn}", leg ${swI + 1} at DraftKings' ${swap} and said so, and leg ${goneI + 1} to add by hand: ` + (a ? txt(a) + ' ' + a.getAttribute('href') : 'no link') + ' / ' + note.slice(0, 400));
+            { const lt = w.PARLAY_CARD.linkText(w.PARLAY_CARD.fromBuilder()), tx = lt ? lt.text : '', missN = L.map((l, i) => i + 1).filter(n => !on[n - 1]);
+              chk(tx.includes(`On DraftKings’ slip at its own line: leg ${swI + 1} as ${swap} (DraftKings prices it at its own line, so its payout can differ)`)
+                && tx.includes(`DraftKings betslip (opens ${ids.length} of the ${L.length} legs as DraftKings had them; add ${missN.length === 1 ? 'leg ' + missN[0] : 'legs ' + missN.slice(0, -1).join(', ') + ' and ' + missN[missN.length - 1]} by hand):\n` + a.getAttribute('href') + '\n'),
+                `Share link's text does not say leg ${swI + 1} goes on as ${swap} at DraftKings' price, or what the link opens: ` + tx.slice(0, 500)); }
+            w.eval('PARLAY_CARD.close()'); await wait(20);
+            /* the prop model's own page has no parlay card: nothing of DraftKings' slip under its builder's legs */
+            const pc = w.PARLAY_CARD; w.PARLAY_CARD = undefined; w.eval('renderParlay()'); await wait(20);
+            chk(!d.querySelector('#parlayBody small.dkslip'), 'without the parlay card (the prop model\'s own page) the builder still says something of DraftKings\' slip');
+            w.PARLAY_CARD = pc; }
+          w.eval(`(function(){ const k=${keepDk}; if(k===null) delete PAY.dk; else PAY.dk=k; S.parlay=${keepP2}; save(); renderParlay(); })()`); await wait(40); } }
       w.eval(`S.stake=${JSON.stringify(stake0)}; save(); renderParlay()`); await wait(40);
       /* a game that kicks off leaves the list and every tier, without a reload */
       { const g0 = w.eval('pbGames()')[0], k0 = w.eval('kickoff')(g0).getTime(), D0 = w.Date, shift = k0 + 60e3 - D0.now();
@@ -1059,7 +1244,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`) && w.eval('getPbTiers()').tiers.every(x => !x.legs || x.legs.every(l => l.gid !== g0.id)), 'a game that kicked off is still on the list or in a tier');
         w.Date = D0; w.eval('renderParlay()'); await wait(40); }
       w.eval(`(function(){ const k=${keepPay}, cw=currentWeek(); if(k.m) PAY.mkt[String(cw)]=k.m; else delete PAY.mkt[String(cw)];
-        S.sched.forEach((g,i)=>{ g.tov=k.t[i][0]; g.tou=k.t[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; }); PB_CACHE=new Map(); renderParlay(); })()`);
+        S.sched.forEach((g,i)=>{ g.tov=k.t[i][0]; g.tou=k.t[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
+        const kd=${keepDkM}; if(kd===null) delete PAY.dk; else PAY.dk=kd; PB_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay(); })()`);
       await wait(40); }
   }
   /* with no game to come (the off-season, or every game of the week under way) the panel says so,
@@ -1089,6 +1275,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     w.__pb4 = { G, L: G.map((g, i) => ({ key: `${g.id}|team:${g.h}|ats`, gid: g.id, pid: 'team:' + g.h, stat: 'ats', k: -3.5, side: 'over', main: false, p: COVER[i][0], price: COVER[i][1],
       src: 'real', mu: null, name: 'Made-up ' + g.h, pos: 'Game', grp: 'TEAM', team: g.h, opp: g.a, week: cw, label: 'To cover -3.5' })) };
     w.eval('pbGames=function(){ return window.__pb4.G; }; pricedLegs=function(games){ return window.__pb4.L.filter(l=>(games||[]).some(g=>g.id===l.gid)).map(l=>({...l})); };');
+    /* each cover under a made-up DraftKings id of its own (a fixture in place of the payload's table): a level
+       takes only a leg with one, wherever the payload carries ids (app v109) */
+    const keepDk4 = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)');
+    w.eval(`PAY.dk=${JSON.stringify(dkFixture(w.__pb4.L, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'TEN'))}`);
     Sx.ui.pb = { k: { ml: false, ats: true, total: false, over: false, under: false }, off: [], gx: false };
     w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40);
     const r = w.eval('getPbTiers()'), kinds = r.tiers.map(t => t.legs ? (t.likeliest ? 'likeliest' : 'built') : 'empty').join();
@@ -1119,6 +1309,33 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(!!fb && !d.getElementById('pcModal').hidden && /Aggressive parlay/i.test(txt(view)) && !!t && !!t.legs && t.legs.every(l => txt(view).includes(l.name))
         && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t && t.dec}))`).replace('-', '−'), 'Finish on the likeliest 4 legs does not open its card with its legs and price: ' + txt(view).slice(0, 160));
       w.eval('PARLAY_CARD.close()'); await wait(20); }
+    /* (app v109) H1's id taken out, then put at another number (-4.5) alone: a suggestion takes a leg only
+       with DraftKings' id at its own line, so H1 leaves the levels' lines and every level, the pool counts it,
+       and the panel says one leg is left out for want of an id and that it is still on the game pages (no
+       word of player prices: it is a team's). With no ids at all (a payload baked before them) H1 is back,
+       and nothing is said */
+    { const fx = JSON.parse(w.eval('JSON.stringify(PAY.dk)')), h1 = w.__pb4.L[1], D1 = fx[String(h1.week)][h1.gid], k1 = dkKey(h1), id1 = D1[k1];
+      const has1 = p => [...p.pref, ...p.thin].some(l => l.gid === h1.gid);
+      /* what the panel says of H1: DraftKings has no id for it, or has its spread only at another number */
+      const none1 = '1 leg is left out: a suggested parlay takes only legs DraftKings’ betslip can take, by DraftKings’ own id at the leg’s line, and DraftKings has none for it yet. It is still on the game pages, where you can add it to the builder.';
+      const moved1 = '1 leg is left out: DraftKings had it only at another number when its lines were last read, and a suggested parlay takes only legs DraftKings’ betslip can take at their own line. Refresh odds reads DraftKings’ current spreads and totals, which the levels can take. Added to the builder from the game pages, it goes on DraftKings’ slip at DraftKings’ number.';
+      for (const [what, moved, one, other] of [['taken out', null, none1, moved1], ['only at -4.5', `${h1.pid}|ats|-4.5`, moved1, none1]]) {
+        delete D1[k1]; if (moved) D1[moved] = id1;
+        w.eval(`PAY.dk=${JSON.stringify(fx)}; PB_CACHE=new Map(); PB_VIEW={sig:null,key:null,t:{}}; renderParlay()`); await wait(30);
+        const p = w.eval('pbPool')(G), rr = w.eval('getPbTiers()'), tx = pbOwnTxt(panel);
+        chk(!has1(p) && p.noId === 1 && p.noIdPl === 0 && p.moved === (moved ? 1 : 0) && rr.tiers.every(t => !t.legs || t.legs.every(l => l.gid !== h1.gid)) && tx.includes(one) && !tx.includes(other) && !/Refresh odds carries no id|to add by hand/.test(tx),
+          `ten made-up games, H1's DraftKings id ${what}: H1 is still in the levels' lines or a level, the pool counts ${p.noId} left out for want of an id (${p.moved} at another number), or the panel does not say "${one}" alone: ` + ((tx.match(/\d+ legs? (is|are) left out: [^]*?(builder|number)\./g) || ['nothing']).join(' ')));
+        if (moved) delete D1[moved]; D1[k1] = id1; }
+      /* a game the payload has no ids for, and an empty table (weekly.py's PAY.dk between Monday night's
+         final and the next week's first pull): taken as before ids, H1 back and nothing said of ids */
+      for (const [what, dk] of [['its game with no entry', (() => { const f2 = JSON.parse(JSON.stringify(fx)); delete f2[String(h1.week)][h1.gid]; return f2; })()], ['an empty table', {}]]) {
+        w.eval(`PAY.dk=${JSON.stringify(dk)}; PB_CACHE=new Map(); PB_VIEW={sig:null,key:null,t:{}}; renderParlay()`); await wait(30);
+        const p = w.eval('pbPool')(G);
+        chk(has1(p) && p.noId === 0 && !/betslip can take|only at another number/.test(pbOwnTxt(panel)), `ten made-up games, ${what}: H1 is not back in the levels' lines as before ids, or the panel speaks of ids: ${p.noId} left out`); }
+      w.eval('delete PAY.dk; PB_CACHE=new Map(); PB_VIEW={sig:null,key:null,t:{}}; renderParlay()'); await wait(30);
+      const p0 = w.eval('pbPool')(G);
+      chk(has1(p0) && p0.noId === 0 && !/betslip can take/.test(pbOwnTxt(panel)), 'ten made-up games with no DraftKings ids in the payload (baked before them): H1 is not back in the levels\' lines, or the panel still speaks of ids'); }
+    w.eval(`(function(){ const k=${keepDk4}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
     w.eval('pbGames=window.__pbKeep4[0]; pricedLegs=window.__pbKeep4[1]; PB_CACHE=new Map();'); delete w.__pbKeep4; delete w.__pb4;
     Sx.ui.pb = JSON.parse(keepU); w.eval('renderParlay()'); await wait(20); }
   /* ---- X Parlays: X's parlays from the file, the whole of its own tab, read only, the same on
@@ -1464,7 +1681,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       byGame.forEach((c, i) => { c.gid = c.gid + '#' + i; });
       const weak = Object.entries(MU.players).flatMap(([pid, v]) => Object.keys(v.stats).filter(st => !trusted(v.group, st) && eloP.players[pid]).map(st => ({ pid, st, gid: v.game_id + '#w' })))[0];
       if (byGame.length >= 3 && weak) {
-        const L = (c, price, side, extra) => Object.assign({ key: c.gid + '|' + c.pid + '|' + c.st, gid: c.gid, pid: c.pid, stat: c.st, k: 4.5, side, main: true, p: 0.5, price,
+        /* (an anytime touchdown is one touchdown, the line DraftKings has an id for; the matchup reads no line) */
+        const L = (c, price, side, extra) => Object.assign({ key: c.gid + '|' + c.pid + '|' + c.st, gid: c.gid, pid: c.pid, stat: c.st, k: c.st === 'any_td' ? 1 : 4.5, side, main: true, p: 0.5, price,
           src: 'real', mu: 4, name: eloP.players[c.pid].name, pos: 'X', grp: eloP.players[c.pid].group, team: 'X', opp: 'Y', week: 3, label: side + ' test line' }, extra || {});
         /* the second the prop model rates at 90%, far off the market: an Elo pick is chosen on its own
            chance, so it stays, flagged */
@@ -1475,6 +1693,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           L(weak, 150, 'over', { key: 'weak' })];                                                   /* a stat the matchup has not earned */
         if (!w.__realPricedLegs) w.__realPricedLegs = w.eval('pricedLegs');   /* the page's own, for the Refresh odds checks below */
         w.__legs = legs; w.eval('pricedLegs=function(){ return window.__legs.map(l=>Object.assign({},l)); }');
+        /* each line under a made-up DraftKings id of its own at its line (a fixture in place of the payload's
+           table, put back below): an Elo pick takes only a leg DraftKings' slip can take, wherever the payload
+           carries ids (app v109) */
+        const keepDkE = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), fixE = dkFixture(legs, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'ELO');
+        const setDkE = o => w.eval(o === null ? 'delete PAY.dk' : `PAY.dk=${JSON.stringify(o)}`);
+        setDkE(fixE);
         const r = w.eval('eloPicks()');
         const t2 = r.tiers[0], t3 = r.tiers[1];
         chk(r.tiers.length === 2 && t2.legs.length === 2 && t3.legs.length === 3, 'Elo picks should make a 2- and a 3-leg parlay from these lines: ' + JSON.stringify(r.tiers.map(t => t.legs.map(l => l.key))));
@@ -1485,16 +1709,35 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         /* a price worked from DraftKings' line read on ESPN (app v107) counts as a book price here and in
            market + form, which pricedLegs offers only on the kinds the estimate has been checked on; a
            model-only estimate never does */
+        /* (app v109) a leg with no DraftKings id at its line is never an Elo pick: byGame[0]'s id taken out
+           (its line, and so the dup beside it), and moved to another number alone, no pick holds him */
+        { const noId = JSON.parse(JSON.stringify(fixE)), D0 = noId['3'][legs[0].gid], k0 = dkKey(legs[0]), id0 = D0[k0];
+          for (const [what, moved] of [['taken out', null]].concat(legs[0].stat === 'any_td' ? [] : [['only at 5.5', `${legs[0].pid}|${legs[0].stat}|over|5.5`]])) {
+            delete D0[k0]; if (moved) D0[moved] = id0; setDkE(noId);
+            const rn = w.eval('eloPicks()'), alln = rn.tiers.flatMap(t => t.legs);
+            chk(alln.length > 0 && !alln.some(l => l.pid === legs[0].pid) && alln.every(l => dkOwnId(noId, l, false)), `with ${legs[0].name}'s DraftKings id ${what}, an Elo pick still takes him, or a leg with no id: ` + JSON.stringify(rn.tiers.map(t => t.legs.map(l => l.key))));
+            if (moved) delete D0[moved]; D0[k0] = id0; }
+          setDkE(fixE); }
+        /* a price worked from DraftKings' line read on ESPN (app v107) counts as a book price in market + form,
+           and in the Elo picks on a payload baked before DraftKings' ids; where the payload carries ids, such a
+           leg (ESPN gives no id for a player's line) is no pick, its line having none; a model-only estimate
+           never is */
         { w.__legs2 = legs.map((l, i) => Object.assign({}, l, i === 2 ? { src: 'dkline', espn: { fair: 0.45, at: '2026-10-15T03:08Z', tested: true, listed: true } } : i === 3 ? { src: 'est' } : {}));
           const keepPL = w.eval('pricedLegs'); w.eval('pricedLegs=function(){ return window.__legs2.map(l=>Object.assign({},l)); }');
+          setDkE(null);
           const r2 = w.eval('eloPicks()'), all2 = r2.tiers.flatMap(t => t.legs);
           chk(all2.some(l => l.key === legs[2].key && l.src === 'dkline') && !all2.some(l => l.key === legs[3].key),
-            'the Elo picks do not take a leg priced from DraftKings\' line read on ESPN as a book price, or take a model-only estimate: ' + JSON.stringify(r2.tiers.map(t => t.legs.map(l => l.key + ' ' + l.src))));
+            'on a payload baked before DraftKings\' ids, the Elo picks do not take a leg priced from DraftKings\' line read on ESPN as a book price, or take a model-only estimate: ' + JSON.stringify(r2.tiers.map(t => t.legs.map(l => l.key + ' ' + l.src))));
+          { const dkE = JSON.parse(JSON.stringify(fixE)); delete dkE['3'][legs[2].gid][dkKey(legs[2])]; setDkE(dkE);
+            const r3 = w.eval('eloPicks()'), all3 = r3.tiers.flatMap(t => t.legs);
+            chk(!all3.some(l => l.src === 'dkline' || l.key === legs[3].key) && all3.every(l => dkOwnId(dkE, l, false)),
+              'where the payload carries DraftKings\' ids, an Elo pick takes a leg priced from DraftKings\' line read on ESPN with no id at its line, or a model-only estimate: ' + JSON.stringify(r3.tiers.map(t => t.legs.map(l => l.key + ' ' + l.src)))); }
+          setDkE(fixE);
           chk(w.eloAltP(legs[0].pid, 'over', -112, 'dkline', legs[0].stat) != null && w.eloAltP(legs[0].pid, 'over', -112, 'est', legs[0].stat) === null,
             'market + form does not read a price from DraftKings\' line read on ESPN as the book\'s, or reads a model-only estimate');
           w.__keepPL = keepPL; w.eval('pricedLegs=window.__keepPL'); w.eval('pricedLegs=function(){ return window.__legs.map(l=>Object.assign({},l)); }'); }
         /* the chance: the book's with its margin out, moved by the nudge in the stat's typical miss */
-        { const l = t3.legs[0], a = MU.players[l.pid].stats[l.stat], sd = MU.fit[MU.players[l.pid].group + '|' + l.stat].sd;
+        if (t3) { const l = t3.legs[0], a = MU.players[l.pid].stats[l.stat], sd = MU.fit[MU.players[l.pid].group + '|' + l.stat].sd;
           const fair = w.eval(`mlProb(${l.price})`) / 1.045, want = w.eloMatchupP(l, w.eval(`mlProb(${l.price})`));
           /* the normal curve by hand: the fair chance moved a[2]/sd standard deviations */
           const erf = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
@@ -1546,6 +1789,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           w.eval('PARLAY_CARD.close()'); }
         chk(w.eval('S.saved.length') === nSaved, 'finishing an Elo pick saved it');
         w.eval(`S.stake=${JSON.stringify(eloStake0)}; save(); renderParlay()`); await wait(20);
+        w.eval(`(function(){ const k=${keepDkE}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
       } else chk(false, 'the smoke could not find the matchups it needs for Elo picks');
       /* a player's window: a click on his row in the rankings opens his rating and his matchup this week, a row a stat */
       { const plOpen = () => { const m = d.getElementById('pePlModal'); return !!m && !m.hidden; };
@@ -1724,13 +1968,29 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const under = Object.entries(mk).flatMap(([pid, sts]) => Object.entries(sts).map(([st, L]) => ({ pid, st, L })))
         .find(x => x.L.g === g.id && S.players[x.pid] && dkIdOf(DK, { pid: x.pid, stat: x.st, side: 'under', k: x.L.line, main: true, week: g.w, gid: g.id }));
       if (under) w.eval('toggleLeg')(`${g.id}|${under.pid}|${under.st}`, under.L.line, g, 'under', true);
+      /* (app v109) and, on another game still to come whose away spread the payload has ids for, that team to
+         cover at the page's line: on DraftKings' id at that line where the payload has one, else on the one at
+         DraftKings' closest number (no press has been made, so no read is newer than the pull's; a tie to the
+         lower), said under its row in the builder and on the card as going on at DraftKings' number */
+      const atsKeys = x => Object.keys(((DK[String(x.w)] || {})[x.id]) || {}).filter(k => k.startsWith(`team:${x.a}|ats|`) && isFinite(+k.slice(`team:${x.a}|ats|`.length)));
+      const gS = S.sched.find(x => x !== g && x.id !== g.id && !started(x) && atsKeys(x).length && w.gameBet(x, x.a, 'ats'));
+      if (gS) w.eval('toggleLeg')(`${gS.id}|team:${gS.a}|ats`, 0, gS, 'over', false);
       w.eval('save(); renderParlay();'); await wait(60);
       const q = w.PARLAY_CARD.quote(), fin = d.getElementById('pFinish');
+      /* each leg's id and, for the spread, what goes on: worked out here from the payload's table */
+      const plan = q ? q.legs.map(l => { const own = dkIdOf(DK, l); if (own || l.stat !== 'ats') return { id: own || null, swap: null };
+        const pre = `${l.pid}|ats|`, D = DK[String(l.week)][l.gid], ps = Object.keys(D).filter(k => k.startsWith(pre)).map(k => +k.slice(pre.length)).filter(isFinite)
+          .sort((x, y) => (Math.abs(x - l.k) - Math.abs(y - l.k)) || (x - y));
+        return ps.length ? { id: D[pre + dkPt(ps[0])], swap: dkSigned(ps[0]) } : { id: null, swap: null }; }) : [];
+      const slipLines = [...d.querySelectorAll('#parlayBody tr.legrow')].map(r => { const x = r.querySelector('small.dkslip'); return x ? txt(x) : null; });
+      chk(!!q && slipLines.length === q.legs.length && plan.every((p, i) => slipLines[i] === (p.swap ? `On DraftKings as ${p.swap}` : null)),
+        `the builder does not say exactly which of its legs go on DraftKings' slip at DraftKings' number, on the payload's own ids: ${JSON.stringify(slipLines)} for ${JSON.stringify(plan)}`);
       if (fin && !fin.disabled) { fin.click(); await wait(30); }
-      const a = d.getElementById('pcDk'), ids = q ? q.legs.map(l => dkIdOf(DK, l)) : [];
-      chk(!!q && q.legs.length === (under ? 2 : 1) && ids.every(Boolean) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
-        && !d.querySelector('#pcDkNote [data-pc-dkmiss]'),
-        `Open in DraftKings on the payload's own ids for ${g.id} (its money line${under ? ' and ' + under.L.n + '\'s Under ' + under.L.line : ''}) is not those ids in the card's order: ` + (a ? a.getAttribute('href') + ' hidden ' + a.hidden : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 200));
+      const a = d.getElementById('pcDk'), ids = plan.map(p => p.id), sws = plan.map((p, i) => p.swap ? i + 1 : 0).filter(Boolean);
+      chk(!!q && q.legs.length === (under ? 2 : 1) + (gS ? 1 : 0) && ids.every(Boolean) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
+        && txt(a) === 'Open in DraftKings' && !d.querySelector('#pcDkNote [data-pc-dkmiss]')
+        && [...d.querySelectorAll('#pcDkNote [data-pc-dkswap]')].map(x => +x.dataset.pcDkswap).join() === sws.join() && sws.every(n => txt(d.querySelector(`#pcDkNote [data-pc-dkswap="${n}"]`)).endsWith(`: goes on as ${plan[n - 1].swap}`)),
+        `Open in DraftKings on the payload's own ids for ${g.id} (its money line${under ? ' and ' + under.L.n + '\'s Under ' + under.L.line : ''}${gS ? ', and ' + gS.a + ' to cover in ' + gS.id : ''}) is not those ids in the card's order under "Open in DraftKings", each at DraftKings' number said so: ` + (a ? txt(a) + ' ' + a.getAttribute('href') + ' hidden ' + a.hidden : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 300));
       w.eval('PARLAY_CARD.close()');
       S.parlay = JSON.parse(keep); w.eval('save(); renderParlay();'); await wait(40); } }
 
@@ -1741,8 +2001,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      reads the week's scoreboard and each game's player lines (here the season's last game still to come
      read in full: the week's last game still to come, one game with no lines posted, one ESPN does not answer), applies DraftKings' game lines
      (real prices), draws the game's page with each est. price the rule's (espn_rule.js, the props audit's
-     own working) and its title saying what it is priced from, counts a tested kind as a book price in the
-     suggested parlays and never an untested one, and the parlay card names such a leg to add by hand. A
+     own working) and its title saying what it is priced from; on a payload baked with DraftKings' ids no leg
+     from the read is suggested (it has no id: app v109), and on one baked before them a tested kind counts
+     as a book price in the suggested parlays and never an untested one, and the parlay card names such a
+     leg to add by hand. A
      failing ESPN and a 404 are worded as the status line says them, and a game's page reads that game
      alone. The stand-in takes the game's own player prices out whatever the payload holds, so it holds
      on any payload: the week's own, a lean week, one baked before PAY.espn_ids. The press's read kept in
@@ -1876,6 +2138,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             const rNow = w.eval('getPbTiers()'), drawn = estLv();
             w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,key:null,t:{}}'); const rNew = w.eval('getPbTiers()'), nDk = rNew.tiers.reduce((a, t) => a + (t.legs ? t.legs.filter(l => l.src === 'dkline').length : 0), 0);
             chk(sig(rNow) === sig(rNew) && drawn === nDk, `right after the press the Parlay Builder shows levels from before it (${drawn} legs marked est. drawn where a build on the read gives ${nDk}): ${sig(rNow).slice(0, 160)}`);
+            /* (app v109) on a payload baked with DraftKings' ids, a leg priced from the read (no id: ESPN gives
+               none for a player's line) is in no level and no Elo pick, and every leg they hold has DraftKings' id
+               at its own line, the press's own game-line ids among them (dkOwnId, here on the ids as they stand) */
+            if (keep.dk !== undefined) { const DKn = w.eval('PAY').dk, st = l => w.eval('gameStarted')(S.sched.find(x => x.id === l.gid) || {}), eloL = ((typeof w.eloPicks === 'function' && w.eloPicks()) || { tiers: [] }).tiers.flatMap(t => t.legs);
+              const lv = rNew.tiers.flatMap(t => t.legs || []);
+              /* (a game the table has no entry for is taken as before ids, so a leg from the read stands only there) */
+              chk(lv.concat(eloL).every(l => dkTakes(DKn, l, st(l))),
+                `on a payload baked with DraftKings' ids, after the press a level or an Elo pick holds a leg priced from the read, or one with no DraftKings id at its line: ` + lv.concat(eloL).filter(l => !dkTakes(DKn, l, st(l))).slice(0, 4).map(l => l.name + ' ' + l.label + ' ' + l.src).join(', ')); }
           } finally { if (pl) pl.remove(); }
           w.eval('renderParlay()'); await wait(20); }
         /* DraftKings' game lines, real, from the press, on each game whose published lines are older than the
@@ -2325,10 +2595,25 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
               twoReads = true; w2.close(); } }
           console.log(`Refresh odds kept across a reload: ${keptIds.length} games' game lines (${bareMoved ? gP.id + '\'s spread prices dropped by a number read without them' : 'no spread read without its prices'}), ${g.id}'s player lines and ${Object.keys(cells1).length} est. prices from them put back with no request; player prices or game lines pulled after the read set their half aside, pulled before it stand; junk, last season's, another version and a kickoff each set it aside; a tab left open across a publish stands field by field over it on ${nB} bakes${bareSame ? ` (${gP.id}'s spread number read without its prices, P2's prices for it dropped)` : ''}${totP2 ? `, ${gT.id}'s total the read did not set P2's` : ''}; ${nBound} kept values off ESPN's steps, out of bounds or past 40 rungs dropped${noneDay ? ', no player lines posted said for a day: ' + noneDay : ''}; another tab's read ${carried ? 'carried by a tab whose schedule no longer offers it, ' : ''}lent over the same publish and not over another (${lent} of 2)${keptPx ? `; a number read without its prices keeps a publish's own prices on it (${gP.id})` : ''}${twoReads ? `; a publish between two reads of ${gT.id} takes the earlier read's total alone` : ''}`); }
         S.ui.game = null; w.eval('closeGameModal()');
-        /* the suggested parlays on that game alone, players only: a tested leg from the read counts as a
-           book price (here a level holds one), an untested one never, each marked est. on its card */
+        /* the suggested parlays on that game alone, players only, on two payloads. Baked with DraftKings' ids
+           (app v109; PAY.dk a plain copy of the table as the press left it, the press's game-line ids for g in
+           it and none for a player's line, which ESPN never gives): no leg from the read is in the levels'
+           lines, a level, a game page's hands or an Elo pick, and every level is empty and says it is for want
+           of DraftKings' ids, with when player prices are pulled. Baked before them (no PAY.dk, as a payload
+           from before 9 October 2026): a tested leg from the read counts as a book price (here a level holds
+           one), an untested one never, each marked est. on its card; the press's own PAY.dk put back after */
         S.ui.pb.off = games.filter(x => x.id !== g.id).map(x => x.id).concat(w.eval('pbGames()').filter(x => String(x.w) !== wk).map(x => x.id)); for (const k of ['ml', 'ats', 'total']) S.ui.pb.k[k] = false; S.ui.pb.k.over = true; S.ui.pb.k.under = true;
-        w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,key:null,t:{}}; renderParlay()'); await wait(40);
+        const dkPress = P.dk;
+        { P.dk = JSON.parse(JSON.stringify(dkPress || {}));
+          w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}; renderParlay()'); await wait(40);
+          const PULLED_W = 'pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET)';
+          const rA = w.eval('getPbTiers()'), pA = w.eval('pbPool')(w.eval('pbGames()').filter(x => !S.ui.pb.off.includes(x.id))), hA = w.eval('gameLegPool')(g);
+          const fromRead = w.eval('pricedLegs')([g]).filter(l => l.src === 'dkline' && !dkOwnId(P.dk, l, false)), eloA = ((typeof w.eloPicks === 'function' && w.eloPicks()) || { tiers: [] }).tiers.flatMap(t => t.legs);
+          chk(fromRead.length > 0 && rA.tiers.every(t => !t.legs && typeof t.why === 'string' && t.why.startsWith('No player legs DraftKings’ betslip can take yet: a player’s line read by Refresh odds carries no DraftKings id') && t.why.includes(PULLED_W))
+            && ![...pA.pref, ...pA.thin].some(l => l.src === 'dkline') && pA.noIdPl === pA.noId && !hA.some(l => l.src === 'dkline') && hA.every(l => dkOwnId(P.dk, l, false)) && !eloA.some(l => l.src === 'dkline'),
+            `on a payload baked with DraftKings' ids, the ${fromRead.length} legs priced from the read (none with an id) are suggested, or the levels do not say they are empty for want of DraftKings' ids: ` + rA.tiers.map(t => t.why || t.legs.map(l => l.label + ' ' + l.src).join('+')).join(' / ')); }
+        delete P.dk;
+        w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}; renderParlay()'); await wait(40);
         const r = w.eval('getPbTiers()'), taken = takenRule(w), legsAll = r.tiers.filter(t => t.legs).flatMap(t => t.legs), UNTESTED = l => ['completions', 'carries'].includes(l.stat) || (!l.main && l.stat === 'receptions');
         nLev = legsAll.filter(l => l.src === 'dkline').length;
         chk(nLev > 0, 'with DraftKings\' lines read by Refresh odds and no price of its own, no level on the game holds a leg priced from them: ' + r.tiers.map(t => t.why || t.legs.map(l => l.label + ' ' + l.src).join('+')).join(' / '));
@@ -2367,6 +2652,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           const row1 = d.querySelector('#parlayBody tr.legrow'), cell = row1 && row1.querySelectorAll('td')[4], lf = row1 && row1.querySelector('.legfair'), f = fairRule(w)(dl);
           chk(!!cell && txt(cell) === `${fmt(dl.price)} est.` && !!lf && !!f && txt(lf) === `fair ${(f.p * 100).toFixed(0)}% est.` && txt(d.querySelector('#parlayBody [data-espn-read]')).startsWith('DraftKings’ lines as read '),
             `the builder does not mark ${dl.name} ${dl.label} est. with its estimated fair chance, or say when the lines were read: "${txt(cell)}" "${txt(lf)}"`); }
+        if (dkPress === undefined) delete P.dk; else P.dk = dkPress;
+        w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}; renderParlay()'); await wait(20);
         /* a game's page reads that game alone */
         S.ui.game = g.id; w.eval('renderGame()'); await wait(20); net.log = [];
         await press(d.querySelector(`#gameView [data-espn-refresh="${g.id}"]`));
@@ -2381,15 +2668,22 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
            model's estimate, no longer one to add by hand from ESPN */
         { reset(); const sp0 = ESPN_RULE.oddsOf(evs[games.indexOf(g)], g).lines.sp, kH = -sp0, OLD = new Date(Math.floor((w.Date.now() - 30 * 3600e3) / 60e3) * 60e3).toISOString();
           ((P.dk ??= {})[wk] ??= {})[g.id] = { glat: OLD, [`team:${g.h}|ats|${kH + 1}`]: 'SMKPAID' };
+          const L0 = k => ({ gid: g.id, week: +g.w, pid: 'team:' + g.h, stat: 'ats', k, side: 'over', main: false, grp: 'TEAM', src: 'real', name: TEAM(g.h), label: 'To cover' });
+          /* before the press, the pull's id at its own number, dated by the pull */
+          const prePaid = w.PARLAY_CARD.dkPlan([L0(kH + 1)]);
           S.ui.game = g.id; w.eval('renderGame()'); await wait(20);
           await press(d.querySelector(`#gameView [data-espn-refresh="${g.id}"]`)); S.ui.game = null; w.eval('closeGameModal()'); w.eval('renderParlay()'); await wait(20);
           const n0 = w.eval('pbGames()').length, e = (w.eval('ESPN_LIVE')[wk] || {})[g.id], t = Math.max(Date.parse(e && e.at) || 0, (w.eval('ESPN_GL')[g.id] || {}).at || 0), st = txt(d.querySelector('#pbPanel [data-espn-status="week"]'));
           const exp = n0 > 1 ? `DraftKings’ lines from ESPN for 1 of ${n0} games (${g.a} at ${g.h}), read ${clk(t)}: player prices estimated from the line; press Refresh odds here for the rest.` : null;
           chk(!exp || st === exp, `after a press on ${g.id}'s page alone, the Parlay Builder's status line reads "${st}", not "${exp}"`);
-          const L0 = k => ({ gid: g.id, week: +g.w, pid: 'team:' + g.h, stat: 'ats', k, side: 'over', main: false, grp: 'TEAM', src: 'real', name: TEAM(g.h), label: 'To cover' });
-          const onRead = w.PARLAY_CARD.dkPlan([L0(kH)]), onPaid = w.PARLAY_CARD.dkPlan([L0(kH + 1)]), atRead = w.eval('espnIdAt')(g.id, `team:${g.h}|ats|${kH}`);
-          chk(P.dk[wk][g.id].glat === OLD && !!atRead && onRead.ok.length === 1 && +onRead.read === atRead && onPaid.ok.length === 1 && onPaid.ok[0].id === 'SMKPAID' && onPaid.read.toISOString() === OLD,
-            `the card does not date the read's spread id by the press and the pull's at a moved number by the pull: ${JSON.stringify({ glat: P.dk[wk][g.id].glat, onRead: onRead.read, atRead, onPaid: onPaid.read })}`);
+          /* after it (app v109): a leg at the press's number on the press's id, dated by the press; a leg at the
+             pull's number, which the press shows DraftKings has moved off since, goes on at DraftKings' number
+             as the press read it (its id, dated by the press), said so, rather than on the pull's old id */
+          const onRead = w.PARLAY_CARD.dkPlan([L0(kH)]), onPaid = w.PARLAY_CARD.dkPlan([L0(kH + 1)]), atRead = w.eval('espnIdAt')(g.id, `team:${g.h}|ats|${kH}`), idRead = P.dk[wk][g.id][`team:${g.h}|ats|${kH}`];
+          chk(P.dk[wk][g.id].glat === OLD && !!atRead && !!idRead && idRead !== 'SMKPAID' && onRead.ok.length === 1 && onRead.ok[0].id === idRead && !onRead.ok[0].swap && +onRead.read === atRead
+            && prePaid.ok.length === 1 && prePaid.ok[0].id === 'SMKPAID' && !prePaid.ok[0].swap && !!prePaid.read && prePaid.read.toISOString() === OLD
+            && onPaid.ok.length === 1 && onPaid.ok[0].id === idRead && onPaid.ok[0].swap === dkSigned(kH) && +onPaid.read === atRead,
+            `the card does not date the read's spread id by the press and the pull's by the pull, or does not put a leg at the pull's number on the press's newer one: ${JSON.stringify({ glat: P.dk[wk][g.id].glat, atRead, idRead, onRead: onRead.ok, onReadAt: onRead.read, prePaid: prePaid.ok, prePaidAt: prePaid.read, onPaid: onPaid.ok, onPaidAt: onPaid.read })}`);
           const x1 = Object.values(ro).flatMap(t2 => t2.players).find(x => (lines[x.pl.id] || {}).receiving_yards != null);
           if (x1) { const L = lines[x1.pl.id].receiving_yards, key = `${g.id}|${x1.pl.id}|receiving_yards`; S.parlay = {}; w.eval('toggleLeg')(key, L, g, 'over', true); w.eval('renderParlay()'); await wait(20);
             const leg1 = S.parlay[key], during = w.eval('legPrice')(leg1), cardDuring = w.PARLAY_CARD.fromBuilder();
@@ -2422,7 +2716,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         put(P, 'espn_ids', keep.ids); put(P.mkt, wk, keep.mk); put(S.odds, g.id, keep.o); put(P, 'dk', keep.dk);
         S.ui.pb = keep.pb; S.parlay = keep.parlay; Object.assign(S.ui, { game: keep.ui.game, open: keep.ui.open, showRungs: keep.ui.rungs, showAll: keep.ui.all });
         w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}; save(); renderSlate(); renderParlay(); closeGameModal()'); await wait(30); }
-      console.log(`Refresh odds, on stand-in ESPN answers for week ${wk}: ${nEst} est. prices on ${g.id}'s page the rule's, ${nLev} legs from them on its levels, the card, the builder, a game page's own read, a failing ESPN and no lines posted`); } }
+      console.log(`Refresh odds, on stand-in ESPN answers for week ${wk}: ${nEst} est. prices on ${g.id}'s page the rule's, none of them on its levels with DraftKings' ids baked and ${nLev} without, the card, the builder, a game page's own read, a failing ESPN and no lines posted`); } }
 
   /* ---- X Parlays is the file: three parlays of a fixture's, one of them cleared ---- */
   { const F = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#xparlays', null, false, { file: FIXFILE });

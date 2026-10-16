@@ -84,7 +84,15 @@ const kicks = [...new Set(games.map(etKick))].sort((a, b) => a - b);
 const first = games.filter(g => etKick(g) === kicks[0]), lastKick = kicks[kicks.length - 1];
 const realStats = (REAL.stats || {})[WS] || [];
 const teamsOf = gs => new Set(gs.flatMap(g => [g.h, g.a]));
-const rowsFor = gs => { const t = teamsOf(gs); return realStats.filter(r => t.has(r.team)); };
+/* the week's stat rows for the games played here: nflverse's own where it has posted the club's, else the
+   club's rows of its latest earlier week moved onto this one (its opponent this week's). The made-up week
+   is played out whatever day the test runs, so a game the real week has not played yet (a Friday, with
+   only Thursday night's rows posted) still has its stats in, as a game needs before a leg on it settles */
+const rowsFor = gs => { const t = teamsOf(gs), have = new Set(realStats.map(r => r.team)), out = realStats.filter(r => t.has(r.team));
+  for (const g of gs) for (const [club, opp] of [[g.h, g.a], [g.a, g.h]]) { if (have.has(club)) continue;
+    for (let w2 = W - 1; w2 >= 1; w2--) { const rs = ((REAL.stats || {})[String(w2)] || []).filter(r => r.team === club);
+      if (rs.length) { out.push(...rs.map(r => ({ ...r, week: W, opponent_team: opp }))); break; } } }
+  return out; };
 /* a score for every game: the real one, else a made-up home win, 24-20 */
 const scoreOf = g => g.hs != null && g.as != null ? { hs: g.hs, as: g.as } : { hs: 24, as: 20 };
 function week(pay, { scored = [], stats = [] } = {}) {

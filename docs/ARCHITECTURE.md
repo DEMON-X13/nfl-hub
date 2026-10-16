@@ -160,6 +160,9 @@ props/
   build/patch_press_keep.py      app v108: a Refresh odds read kept in the browser across a
                                  reload until its game kicks off or the job publishes newer
                                  prices for it (its docstring is the design)
+  build/patch_dk_slip.py         app v109: a suggestion takes only legs with DraftKings' id at
+                                 their own line (dkIdOf, dkCarries), and the builder says
+                                 under each leg what DraftKings' slip will take of it
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
                                  answers (audit M8, the nflbets smoke)
   build/fixtures/espn/           ESPN's recorded answers for week 6 of 2026 (the scoreboard, two
@@ -636,7 +639,8 @@ a MISMATCH tag beside the name of each player with a Solid, Big or Huge mismatch
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
 and the Elo picks at the foot of the Parlay Builder's suggested parlays (`#pbElo`, drawn with the
-panel's own `pbTierCard` and kept to its ticked games and player sides by `pbAllows`). The ELO Model model's calls and record
+panel's own `pbTierCard` and kept to its ticked games and player sides by `pbAllows` and, since app v109,
+wherever the payload carries DraftKings' ids, to legs with one at their own line, `dkIdOf`). The ELO Model model's calls and record
 are on the Pick'em Record and the build's team ratings of results on Power Ratings, both through
 `betting/tools/build.js` (Power Ratings' Record column is the season's own results from
 `betting/state.json`, current within hours of a final, and a team whose latest final the Elo file
@@ -722,14 +726,36 @@ together, so that every parlay is a plain product, every parlay of its size with
 worked with `parlayProb` and none may land likelier, on the week's own picks (Spread alone, Moneyline
 alone, and in the audit Teams only on four games) and on ten made-up games whose covers are priced so
 that the likeliest ones (-115) and the best-paying ones (+140) differ, so a fallback chosen by return
-fails. A leg qualifies from `pricedLegs()` (a real book price, or after a Refresh odds press a `dkline`
-one, DraftKings' line read on ESPN at the formula's price, on a tested kind; the model's chance 45-97% and 3
-points over the chance that price implies, `mlProb(price)`, the book's margin left in, which is
-stricter than its margin-out chance; market + form agreeing on a player leg); where those cannot
-fill a tier, the fewest legs the model still rates at or over the book fill it, each marked thin,
-with a line saying so for each kind of leg (`pbThinLine`: a team bet, which has no market + form,
-missed only the 3-point bar; a player leg the bar with market + form agreeing), and never a leg
-under the book. A game total has no edge: it is priced at the book's own chance (see **game
+fails. A leg qualifies from `pricedLegs()` (a real book price, or, on a payload baked before `dk`, after
+a Refresh odds press a `dkline` one, DraftKings' line read on ESPN at the formula's price, on a tested
+kind; the model's chance 45-97% and 3 points over the chance that price implies, `mlProb(price)`, the
+book's margin left in, which is stricter than its margin-out chance; market + form agreeing on a player
+leg); where those cannot fill a tier, the fewest legs the model still rates at or over the book fill it,
+each marked thin, with a line saying so for each kind of leg (`pbThinLine`: a team bet, which has no
+market + form, missed only the 3-point bar; a player leg the bar with market + form agreeing), and never
+a leg under the book. Since app v109 (`patch_dk_slip.py`, the owner's call of 16 October 2026: Open in
+DraftKings had put only the first leg of his parlay on DraftKings' betslip, the others having no
+DraftKings id, and there is no free source of ids, DraftKings' own odds feed answering neither other sites
+nor cloud or GitHub runners) every list `pbPool` builds, the preferred, the thin and the totals, takes a
+leg only with DraftKings' id at its own line wherever the payload carries ids: `dkIdOf(l)`, from `PAY.dk`
+by the card's keys and rung rule (a moneyline exact, a spread or total at its own number, the anytime
+touchdown for one touchdown only, a player's main line at its line, a rung k+ as Over k-0.5 else the
+whole k-1), null once the game has kicked off, and `dkCarries(l)`, which is false on a payload baked before
+`dk` (and for the `PAY.dk` a press makes on one, marked by `dkPressMade`), where the panel suggests as
+before, and for a game with no entry in its week, which is taken the same way (`weekly.py` bakes `PAY.dk`
+`{}` from Monday night's final until the next week's first pull). The far-off guard counts its legs first; a
+leg left out for want of an id is counted (`noId`, `noIdPl` the players', `moved` and `movedPl` those
+DraftKings had at another number, `dkAtAnother`; the totals left out with them), and a game counts as having player prices (`plGames`) only where one of its player
+legs has an id (`plNoId` the games whose player legs have none). So a `dkline` player leg is never
+suggested where ids are carried (ESPN gives none for a player's line), a team leg a press re-priced is
+(the press gave its current id), and a Sunday early game's player legs never are. The audit works the
+rule on its own (`dkIdAud`, `dkOk`, never the page's `dkIdOf`): M9 on made-up games with ids for some legs
+and decoys under the keys a wrong rule would read (the pool less the legs with no id, the counts said, at
+another number (`dkElseAud`) and with none, the levels the legs with an id alone build, a game with no entry
+and an empty table taken as before ids, no player id at all and its reason, no ids carried suggesting as
+before); M, M4 and M7 run on a made-up id table giving every priced line its id, so their rules still meet
+player legs and totals, and M, M7 and O hold every leg a level or a game hand may take or holds to an id;
+M8 holds a press's read suggested nowhere where ids are carried and as before where they are not. A game total has no edge: it is priced at the book's own chance (see **game
 bets** below), which sits under the chance its price implies, so `pricedLegs()` leaves the totals out
 and a total is never preferred or thin. With Game total ticked `pbPool` adds the week's totals as a
 third list, the market legs (`pool.mkt`: both sides of each ticked game's posted total on a real
@@ -743,10 +769,18 @@ empty only when the picks do not make that many legs (`pbMaxLegs` under its size
 (`pbWhy`), never offering a smaller parlay; when player bets are ticked and none of
 the ticked games has a player price on file yet (`plGames` from `pbPool`, before the week's pulls),
 that is the reason given ("No player prices yet: they are pulled on game day or the day before,
-Sunday's games on Saturday morning.", `PB_NO_PL`: since PR #213 Thursday's game is priced on
-Thursday, Monday's on Monday, a Friday game's on Thursday, and Saturday's games and the whole Sunday
-slate on Saturday morning) under Players only, or after the usual reason under a mix, never "tick
-more". The search is
+Sunday's afternoon and night games on Saturday morning, and never for Sunday's early games (before 4pm
+ET).", `PB_NO_PL`: since PR #213 Thursday's game is priced on Thursday, Monday's on Monday, a Friday
+game's on Thursday, and Saturday's games and the whole Sunday slate on Saturday morning, and since 13
+October 2026 never Sunday's early games, which the page says since app v103), and where player prices are on file and none has a DraftKings id
+(app v109), "No player legs DraftKings' betslip can take yet: ..." (`PB_NO_ID`: a line read by Refresh
+odds carries none, and DraftKings' own come with its prices, `PB_PULLED`), under Players only, or after
+the usual reason under a mix, never "tick more". The panel's notes say the same in plain words: the levels
+built without player legs because none can go on the slip yet, and how many legs were left out for want of
+an id, apart: those DraftKings had only at another number when its lines were last read (the parlay card
+would put them on at DraftKings' number, and Refresh odds reads DraftKings' current spreads and totals,
+which the levels can take), and those it had none for, still on the game pages to add to the builder. A tier
+short of legs says they are legs "DraftKings' betslip can take". The search is
 a beam over a pairwise approximation of the copula (each correlated pair's joint chance exact, by a
 Plackett integral), its finalists worked by `parlayProb` with fewer draws, and the winner by the
 builder's own `parlayProb` and `parlayDec` on the legs in the builder's order, so **Add to
@@ -757,7 +791,11 @@ cached on a signature of the choices and the data (`PB_CACHE`); a game that kick
 open leaves the games list and every tier at the next look (`pbWatch`, every 30 seconds) or draw.
 With no game left to come the panel says so (the season over, or the week's games all started).
 The old Suggested parlays window (`suggModal`, its Any/overs/unders switch and stake box) is gone; a
-game page's High/Medium/Low suggestions stay.
+game page's High/Medium/Low suggestions stay, their pool (`gameLegPool`) held to the same id rule since
+app v109 (`gameLegPool(g, true)` every leg as before, so `gameTiers` counts the legs the ids left out, and a
+hand left empty for want of them says so and why, `gameNoIdWhy`: its player ids not pulled yet, never for
+Sunday's early games, `dkEarlySunday`, or none for its other lines), as are the Elo picks (`eloPicks` in `tab_elo.html`, which says why and when ids come where
+none is left).
 
 **The book's fair chance, and legs far off it** (app v98, after the review of Sunday 11 October 2026
 found the model over-confident against DraftKings every week since week 2: on that Sunday's 389 main
@@ -866,23 +904,48 @@ and Pays, then Profit the card's width), then one to a row, the card growing to 
 (`https://sportsbook.draftkings.com/?outcomes=<id>+<id>`, each `#` as `%23`) from the payload's `dk`, every
 leg it has an id for in the card's order (`dkLeg`, `dkPlan`), and where it has none, the game's page
 ("Open game in DraftKings", every leg in one game to come) or DraftKings' NFL page ("Open DraftKings"),
-`dkPlan`'s `home`, to add them by hand; under the buttons the card says what it
+`dkPlan`'s `home`, to add them by hand. Since app v109 (the owner's call of 16 October 2026, after a parlay
+that opened only its first leg) the card converts a leg rather than leave it off: where DraftKings has no
+id at the leg's own line but has the same bet at another number, `dkLeg` returns `{id, at, swap, now}` and
+the leg goes on at DraftKings' number (`dkNear`: a spread the same team's, a total the same side, a
+player's main line the same player, stat and side, at the newest number a Refresh odds press read,
+`espnIdAt`, else the page's main line for him where DraftKings has it, else the closest number, a tie to
+the lower; a rung k+ with no Over k-0.5 or k-1 the player's Over at DraftKings' closest number for that
+stat; 2+ touchdowns the anytime touchdown; a moneyline and an anytime touchdown exact or nothing). An id
+at the leg's own line is taken unless a press read since has DraftKings at another number, and a `dkline`
+leg is looked up like any other. `dkPlan` returns `swaps` and `each` (every leg's reading, in order) beside
+`ok` and `miss`; the note lists each converted leg ("On DraftKings' slip at its own line: 2. Card Runner,
+100+ receiving yards: goes on as Over 64.5 receiving yards", `data-pc-dkswap`) and says DraftKings prices
+a changed leg at its own line, so its slip's payout can differ from the card's, whose legs and price are
+the builder's, untouched; the button reads "Open in DraftKings" where every leg goes on and "Open 2 of 3
+legs in DraftKings" where one does not. The builder says it first: where the card is on the page,
+`renderParlay` reads `window.PARLAY_CARD.dkPlan` on its legs (`dkSlipRows`) and puts a quiet line
+(`dkSlipLine`, `small.dkslip` in `--ink-2`, `data-dkslip`) under a leg that will not go on as built, "On
+DraftKings as Over 64.5 receiving yards" or "Not on DraftKings' slip yet: " and the reason in a few words,
+nothing under one that goes on as built, and nothing on the prop model's own page, which has no card.
+Under the buttons the card says what it
 opens, dated by the oldest read of the legs it opens (`dk`'s `at` and `glat`): the legs as DraftKings had
 them at that read, never a promise that every leg lands, since DraftKings drops an id whose line has moved
 or been pulled since and a game's player ids are read once, from a few hours to about 40 before its kickoff (Sunday night's on Saturday) (the day-long
 promise it made before went in October 2026, with `dkPlan`'s `fresh`), links each leg on its own, and names the legs it cannot open and why (the
 game's prices not pulled yet, its player prices not pulled yet, both with when they are and only for a leg
 on no book price in a game the payload has no DraftKings player price for (`dkPlayerPriced`, `dkLinesPriced`,
-`dkBooked`; a rung adds that only main lines are read), a market the pull does not read (`DK_READ`, oddsfetch's
+`dkBooked`; a rung adds that once they are it goes on as his Over at DraftKings' line on the stat, 2+
+touchdowns as his anytime touchdown), a market the pull does not read (`DK_READ`, oddsfetch's
 DEFAULT), no ids for its game (all of them in a payload baked before `dk`), a player's line on no book price
-DraftKings did not offer when read, a 2+ touchdown rung, an alternate line, a game kicked off, or a line DraftKings had
-elsewhere: "DraftKings had it at 79.5 when its lines were last read (Sat, Oct 17, 1:17 AM ET)").
+DraftKings did not offer when read, 2+ touchdowns with no anytime touchdown of his among prices read
+("DraftKings did not offer his anytime touchdown", dated), a rung with no line of his on its stat among them
+("DraftKings had no <stat> line of his", dated), a `dkline` leg the pull's ids have nothing for (`DKLINE_WHY`), or a game kicked off;
+until app v109 a line DraftKings had elsewhere was named too, "DraftKings had it at 79.5 when its lines were
+last read", and left off the slip, where it now goes on at 79.5).
 **Share link** sends the parlay as one text (`linkText`: a line a leg, each price marked est. or fair
 where it is not the book's and the title's likewise, the stake and what it pays, the chances, then the
 button's link, always a DraftKings one, alone on its line under what it opens -- "DraftKings betslip (opens 2
 of the 4 legs as DraftKings had them; add legs 3 and 4 by hand):", never "all", or the game's page or DraftKings' NFL page "(add the legs by
 hand)" -- when DraftKings' lines were read with the caution that a line moved or pulled since is not on
-the slip, the legs to add by hand each with why in a few words, the site's address last) by
+the slip, a line naming each converted leg ("On DraftKings' slip at its own line: leg 2 as Over 64.5
+receiving yards (DraftKings prices it at its own line, so its payout can differ)"), the legs to add by
+hand each with why in a few words, the site's address last) by
 `navigator.share({title, text})`, or copied, the same text, where there is no share sheet, it cannot share
 it or it fails (a cancel does nothing); neither touches the image. The link is never the share's `url`:
 on an iPhone WebKit hands the sheet the text and the url as two items, so Messages showed the link as a card
@@ -905,7 +968,8 @@ is not on the box score.
 `liveparlays/index.html` is a redirect. `nflbets/build/smoke.js` boots the built page in jsdom against both sites'
 published data and walks every tab, and holds the Parlay Builder's panel to its rules on the week as
 it stands (the mixes and their boxes, a box by hand, a game unticked and the games list, each tier's
-size, floor, legs and price against the builder's own sums, Add to builder, the choices kept, a game
+size, floor, legs and price against the builder's own sums, every leg of a level, a game hand or an Elo
+pick on DraftKings' id at its line where the payload carries ids, Add to builder, the choices kept, a game
 kicking off, and with `--season-over` the panel saying there is no game left); `nflbets/build/smoke_live.js` does the same for the
 X Parlays section against a stubbed parlay file and scoreboard, on a plain browser and on one the
 retired owner and reader layers marked (its section O: every card's X, Cancel, Escape and a click
@@ -918,7 +982,11 @@ a wide bold face does), a long shot's stake, payout and profit whole in the wind
 (stepped down to fit, and a second row of tiles for a figure too wide even so), the share sheet,
 Open in DraftKings and Share link on made-up ids (no url field and the whole betslip link alone on its
 line in the text, all, part and none on the slip: the game's page, the NFL page, the owner's game with its
-lines and no player prices; the same text copied without a share sheet; nothing promising every leg), Escape, Tab and Start over, and that finishing writes
+lines and no player prices; a leg converted to DraftKings' number, of every kind that can be, a `dkline`
+one, a press's newer number taken over the pull's and an older one not, each named in the note and the
+text, and "Open N of M legs" where one still is not on; the builder's line under each such leg and under
+no other, and none on the prop model's own page; the same text copied without a share sheet; nothing
+promising every leg), Escape, Tab and Start over, and that finishing writes
 nothing. Both record every request a page
 makes, and a request to the retired store or its sign-in services, or anything but a read, fails
 them. The elo job runs `smoke.js`, after its commit (a page check, never a gate on the Elo data),
@@ -1052,7 +1120,8 @@ without its game, then its side and DraftKings' point: `<pid>|<stat>|over|79.5`,
 `team:BAL|ml`, `team:ATL|ats|-3`, `game|total|under|43.5`, and `event`, DraftKings' event id, with `at`
 and `glat`, when the game's player prices and its game lines were read; `dk_ids`
 in `weekly.py` builds it from `data/dk_links_wk{W}.json`, a player placed by the rule his prices are;
-the parlay card's Open in DraftKings and Share link read it), `espn_ids` (app v107: `{ESPN athlete id:
+the parlay card's Open in DraftKings and Share link read it, and since app v109 the suggestions, which
+take only a leg with an id at its own line, `dkIdOf`, wherever it is there, `dkCarries`), `espn_ids` (app v107: `{ESPN athlete id:
 pid}` for every player the page can project, from the roster's `espn_id`; `espn_ids` in `weekly.py`, an id
 the roster gives two players left out; Refresh odds places each athlete of DraftKings' lines by it, and by
 name within his game where it lacks him; the payload carries no ESPN line), `season`, `week` and
@@ -1095,7 +1164,11 @@ dated after the page's clock is dropped; a write merges half by half with the br
 from whichever tab read it later, never one this load set aside (`ESPN_KEEP_GONE`, `{gl, pl}`); a failed
 save of `S` empties the key and retries (`espnKeepDrop`). Where legs
 are chosen (`pricedLegs`, `pbPool`, `gameLegPool`, the Elo picks) a `dkline` leg counts as a book price on
-a tested kind only (`ESPN_TESTED`).
+a tested kind only (`ESPN_TESTED`), and since app v109 is suggested only on a payload baked before `dk`:
+where the payload carries ids a suggested leg needs one at its own line, and ESPN gives none for a
+player's line (the game-line ids a press reads do count: a team leg it re-priced can be suggested; the
+`PAY.dk` a press makes on a payload with none is marked, `dkPressMade`, and does not count as carrying
+ids). The parlay card looks a `dkline` leg up in the pull's ids like any other leg.
 
 Who is playing is decided on every load from the payload, outside `S`: `RSTAT` (the roster
 status by player) and `INJ` (this week's tags: Q, did not practise, limited), with the ruled
@@ -1171,7 +1244,9 @@ Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
   panel: Safe/Medium/Aggressive/Extreme, 2/3/4/5 legs (`PB_TIERS`, floors 25/12/5%
   after Safe), each found on its own from `pricedLegs(games)` (team bets and
   players, never a game total) on the ticked games and bet types (the Elo picks
-  under it use `pricedLegs()` too), cached in
+  under it use `pricedLegs()` too; since app v109 both, and a game page's hands,
+  take only legs with DraftKings' id at their own line, `dkIdOf`, wherever the
+  payload carries ids), cached in
   `PB_CACHE`, outside `S`. `gameTiers()` is a game page's High,
   Medium and Low (`GAME_TIERS`: 2, 3 and 4 legs, paying at least +100/+250/+500 at
   35%/20%/10% or better, no leg shorter than `GAME_LEG_MIN`, -250), cached per game

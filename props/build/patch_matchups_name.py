@@ -26,6 +26,6 @@ s = sub1(s, """/* where a game's lines came from: DraftKings' pull while it is u
    for a payload that does not say. */""", 'the comment over lineSource')
 s = sub1(s, """  return "nflverse's posted line, as on the Pick'ems board";""",
     """  return "nflverse's posted line, as on the Matchups tab";""", "lineSource's nflverse wording")
-s = sub1(s, "const APP_BUILD='app v108 \\u00b7 2026-10-16';", "const APP_BUILD='app v110 \\u00b7 2026-10-16';", 'APP_BUILD')
+s = sub1(s, "const APP_BUILD='app v109 \\u00b7 2026-10-16';", "const APP_BUILD='app v110 \\u00b7 2026-10-16';", 'APP_BUILD')
 io.open(p, 'w', encoding='utf-8').write(s)
 print('patched: app v110, the Game bets card names the Matchups tab')
