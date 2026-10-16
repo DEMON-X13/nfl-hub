@@ -28,7 +28,7 @@ without narrating the steps:
 ## The sites and their parts
 
 GitHub Pages serves the repo root. One site has pages: `nflbets/`, plus the standalone `picks/` page (the
-root `index.html` links them, and X NHL Bets and X College Football Bets in their own repos). `news/` is no
+root `index.html` links them, and X NHL Bets and CFB Hub in their own repos). `news/` is no
 longer a page (the owner's call, 14 October 2026: the Season Tracker went into each game's Game snapshot on the
 Matchups board): it holds the news job (`news.yml`), which writes the data the snapshot reads at runtime, and the
 week's game notes, written by hand; `news/index.html` only sends a visitor to `nflbets/`. `pickems/` and `live/` hold only
@@ -44,7 +44,7 @@ by hand when a source changes, and reads the models' data on every load.
 | `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to `nflbets/`): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
 | `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026), in the NBA Hub's and the NHL Hub's look: the two models on one page, built one tab at a time, with the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, and a Game snapshot of every game on the Matchups board (with the news job's preview, news, Deep Dive and stat breakdown) | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Matchups board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
-| `cfb/` | retired: X College Football Bets moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
+| `cfb/` | retired: CFB Hub (then X College Football Bets) moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
 | `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#xparlays`; `parlays.json` is X's placed parlays and `xbets.json` the X Bet Log, the two files Claude edits from what the owner sends, and `build/page.html` is the X Parlays section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json`, `liveparlays/xbets.json` |
 | `elo/` | Player Elo: every player rated by position since 2012, the roster model built on those ratings and the matchup formula; `elo/data/*.json` is what the Player Elo tab reads | `elo/build.py` (the formula is its docstring); `nflbets/build/tab_elo.html` is the tab |
@@ -915,7 +915,7 @@ a model fitted on the seasons before it. Do not tune the formula on the season i
 
 ## College
 
-X College Football Bets moved to its own repo, `DEMON-X13/cfb-hub`, on 2026-10-14, with its history and
+CFB Hub (then X College Football Bets) moved to its own repo, `DEMON-X13/cfb-hub`, on 2026-10-14, with its history and
 its own CLAUDE.md; `cfb/index.html` here only redirects to it.
 
 ## Hockey
