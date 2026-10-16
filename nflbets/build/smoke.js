@@ -472,6 +472,24 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!!d.querySelector('.pk-gamehead') && /Date.*Matchup.*Win probability.*Confidence.*Score prediction.*Final score/.test(txt(d.querySelector('.pk-gamehead'))),
     'the column header is not the betting board\'s');
   chk(cards.every(c => c.querySelector('.pk-probrow .pk-prob .pk-a') && c.querySelector('.pk-probrow .pk-prob .pk-h')), 'a game is missing its split bar');
+  /* the split bar in the two clubs' own colours (16 October 2026, as the NBA and NHL hubs draw theirs): each
+     side the colour probCols gives it, its percentage at 4.5:1 or more on it, and the two sides never one
+     colour; on every pair of the 32 clubs too, since a week's games try only a few */
+  { const P = w.pkBoard, hexL = h => { const v = String(h).replace('#', ''); return [0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16) / 255)
+        .map(x => x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)).reduce((t, x, i) => t + x * [0.2126, 0.7152, 0.0722][i], 0); },
+      cr = (x, y) => { const a = hexL(x), b = hexL(y); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); }, bad = [];
+    if (!P || typeof P.probCols !== 'function') bad.push('pkBoard has no probCols');
+    else {
+      for (const c of cards) { const gm = state.schedule.find(x => x.game_id === c.dataset.game), pc = P.probCols(gm.away_team, gm.home_team);
+        const sa = c.querySelector('.pk-prob .pk-a'), sh = c.querySelector('.pk-prob .pk-h');
+        if (!sa || !sh || !sa.getAttribute('style').includes(`background:${pc[0].bg};color:${pc[0].ink}`) || !sh.getAttribute('style').includes(`background:${pc[1].bg};color:${pc[1].ink}`))
+          bad.push(`${gm.game_id}'s bar is not in ${gm.away_team}'s ${pc[0].bg} and ${gm.home_team}'s ${pc[1].bg}`); }
+      const clubs = Object.keys(state.teams || {}).length >= 32 ? Object.keys(state.teams) : [...new Set(state.schedule.flatMap(x => [x.away_team, x.home_team]))];
+      for (const a of clubs) for (const h of clubs) if (a !== h) { const pc = P.probCols(a, h);
+        for (const x of pc) if (!/^#[0-9A-Fa-f]{6}$/.test(x.bg) || !(cr(x.bg, x.ink) >= 4.5)) bad.push(`${a} at ${h}: a side in ${x.bg} under ${x.ink} reads ${cr(x.bg, x.ink).toFixed(2)}:1`);
+        if (pc[0].bg.toLowerCase() === pc[1].bg.toLowerCase()) bad.push(`${a} at ${h}: both sides ${pc[0].bg}`); }
+    }
+    chk(bad.length === 0, "the win-probability bar is not in the two clubs' own colours, each percentage at 4.5:1: " + bad.slice(0, 6).join('; ')); }
   /* the board makes a call wherever Vegas has priced the game (both moneylines, or a spread),
      and says "no call yet" where it has not: a week whose lines are not posted is not a failure */
   const gameOf = c => state.schedule.find(x => x.game_id === c.dataset.game);

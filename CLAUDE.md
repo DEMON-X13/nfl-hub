@@ -1272,7 +1272,11 @@ betting tabs (`window.THEME_FRAME_HEAD`, set in by `frames()` in `tab_pickems.ht
 lightened graphite exactly, as the NHL took it, with the NFL's gold (#FFD166, the NBA's own `--gold`) as
 its accent where the NBA has orange and the NHL ice blue, yard lines behind the header where they have
 court and rink lines, quiet text at the NHL's #B3B9CB and red text at its #FFA2B8 (the NBA's own fail
-4.5:1 on a panel), the favourite's win-probability bar in the pick's lime. The parts keep their light
+4.5:1 on a panel), the win-probability bars on the board and in the Game snapshot in the two clubs' own
+colours as the other hubs draw theirs (`probCols` in `tab_pickems.html`, the owner's call of 16 October 2026,
+the lime favourite having read as neon: each side its chip's colour with its percentage at 4.5:1, the home
+side on another of its colours where the two would read as one; the nflbets smoke holds every pair of the 32
+clubs to that). The parts keep their light
 tokens underneath; a new hard-coded light colour in a part needs a rule in `theme.css`. Every text
 holds 4.5:1 (3:1 large) on every tab, a game's page, the Game snapshot, the builder and the parlay
 card, at 1280 and 390, checked in a real browser (jsdom computes no cascade). The parlay card and its

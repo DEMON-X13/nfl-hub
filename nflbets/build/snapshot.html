@@ -785,7 +785,7 @@ function matchup(P,g,F){
      played, who won and whether it was an upset, the line it was favoured by under it */
   let fav;
   if(c){
-    const pa=Math.round((1-c.pHome)*100), ph=100-pa, by=L.spSide===c.pick?` by ${Math.abs(L.sp)}`:L.sp===0?', a pick\'em spread':'';
+    const pa=Math.round((1-c.pHome)*100), ph=100-pa, pc=P.probCols(a,h), by=L.spSide===c.pick?` by ${Math.abs(L.sp)}`:L.sp===0?', a pick\'em spread':'';
     const [tc,tl]=P.BET&&P.BET.tier?P.BET.tier(c.conf):['',''];
     const conf=tl?`<span class="pk-tier pk-${tc}" title="The board's confidence in Vegas's pick">${esc(tl)}</span>`:'';
     const chance=`<span class="gs-favp">${N('vconf',pct(c.conf))} to win ${conf}</span>`;
@@ -798,7 +798,7 @@ function matchup(P,g,F){
     } else head=`<div class="gs-favh"><span class="gs-favt" data-gs-vegas>${tg(c.pick,true)} <span>${esc(teamName(c.pick))} favoured${esc(by)}</span></span>${chance}</div>`;
     fav=`${head}
       <div class="gs-split" role="img" aria-label="Vegas win chance: ${esc(a)} ${pa}%, ${esc(h)} ${ph}%"><span class="gs-slab${c.pick===a?' gs-w':''}">${esc(a)}</span>
-        <div class="pk-prob" aria-hidden="true"><div class="pk-a" style="width:${pa}%;background:${pa>=ph?P.BET.PROB_HI:P.BET.PROB_LO};color:#0B162A"><span class="${c.pick===a?'pk-w':''}">${pa>=14?N('vaway',pa+'%'):''}</span></div><div class="pk-h" style="width:${ph}%;background:${ph>pa?P.BET.PROB_HI:P.BET.PROB_LO};color:#0B162A"><span class="${c.pick===h?'pk-w':''}">${ph>=14?N('vhome',ph+'%'):''}</span></div></div>
+        <div class="pk-prob" aria-hidden="true"><div class="pk-a" style="width:${pa}%;background:${pc[0].bg};color:${pc[0].ink}"><span class="${c.pick===a?'pk-w':''}">${pa>=14?N('vaway',pa+'%'):''}</span></div><div class="pk-h" style="width:${ph}%;background:${pc[1].bg};color:${pc[1].ink}"><span class="${c.pick===h?'pk-w':''}">${ph>=14?N('vhome',ph+'%'):''}</span></div></div>
         <span class="gs-slab${c.pick===h?' gs-w':''}">${esc(h)}</span></div>`;
   } else fav=`<div class="gs-favh"><span class="gs-favt">${st.fin&&win?`${tg(win,true)} <span class="gs-nw">${esc(teamName(win))} won</span>`:st.fin?'<span>A tie</span>':'<span>No line posted yet</span>'}</span></div><p class="gs-favsub">Vegas's favourite and chance show here once the game has a line.</p>`;
   const tile=(lab,val,attr)=>`<div><span class="gs-lab">${lab}</span><b${attr||''}>${val==null?'–':val}</b></div>`;
