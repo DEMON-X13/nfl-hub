@@ -753,7 +753,7 @@ Kansas City Chiefs, injuries:
 Kansas City Chiefs, ESPN headlines:
 
 ### Buffalo Bills at Las Vegas Raiders
-Sun, Oct 18, 4:25 PM ET, CBS, Allegiant Stadium, Las Vegas. Line: BUF -4.5, O/U 53.5
+Sun, Oct 18, 4:25 PM ET, CBS, Allegiant Stadium, Las Vegas. Line: BUF -5.5, O/U 53.5
 
 Searches to run:
 - "Buffalo Bills Las Vegas Raiders preview week 6"
