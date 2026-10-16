@@ -2710,7 +2710,7 @@
   },
   "WAS": {
    "kick": "2026-10-20T00:15Z",
-   "built_at": "2026-10-16T22:22:13.738Z",
+   "built_at": "2026-10-16T23:31:27.150Z",
    "units": {
     "qb": [
      {
@@ -2733,7 +2733,8 @@
      {
       "id": "00-0033082",
       "n": "Lucas Patrick",
-      "pos": "G"
+      "pos": "G",
+      "q": "questionable: illness"
      },
      {
       "id": "00-0036618",
@@ -2762,6 +2763,12 @@
     ],
     "rec": [
      {
+      "id": "00-0031588",
+      "n": "Stefon Diggs",
+      "pos": "WR",
+      "q": "questionable: hamstring"
+     },
+     {
       "id": "00-0035659",
       "n": "Terry McLaurin",
       "pos": "WR",
@@ -2771,11 +2778,6 @@
       "id": "00-0041040",
       "n": "Antonio Williams",
       "pos": "WR"
-     },
-     {
-      "id": "00-0037809",
-      "n": "Chig Okonkwo",
-      "pos": "TE"
      }
     ],
     "front": [
