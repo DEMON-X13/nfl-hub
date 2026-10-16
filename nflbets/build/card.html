@@ -37,41 +37,43 @@
 .pc-top h2{font-family:var(--display);font-size:20px;font-weight:600;letter-spacing:-.3px;margin:0;color:var(--ink)}
 .pc-top .pc-grow{flex:1}
 /* the card is drawn in the site's own colours whatever the page's theme: it is the picture the
-   download makes, so it looks the same here as it will in a phone's photos */
-.pc-card{background:#FFFFFF;color:#0F1B2D;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(15,27,45,.08),0 14px 34px -14px rgba(15,27,45,.45);
-  font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.4}
-.pc-head{background:linear-gradient(135deg,#0B1526 0%,#132238 55%,#1B2E4A 100%);color:#fff;padding:16px 20px 15px;position:relative}
-.pc-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,rgba(211,154,31,0),rgba(211,154,31,.8),rgba(211,154,31,0))}
-.pc-mark{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#B9C5D4;margin:0 0 10px}
-.pc-mark i{width:6px;height:6px;border-radius:50%;background:#D39A1F;box-shadow:0 0 8px rgba(211,154,31,.8);flex:none}
-.pc-kick{margin-left:auto;font-size:10.5px;letter-spacing:.06em;padding:3px 9px;border-radius:999px;background:rgba(211,154,31,.18);color:#F0C565;white-space:nowrap}
+   download makes, so it looks the same here as it will in a phone's photos. Its colours and type are
+   the hub look's (theme.css: the NBA Hub's and the NHL Hub's graphite, the NFL's gold), written out
+   here so the card and its image never depend on the page's tokens */
+.pc-card{background:linear-gradient(180deg,#3D455B,#363D52);color:#F6F7FB;border:1px solid #4A5269;border-radius:18px;overflow:hidden;box-shadow:0 18px 40px -24px rgba(0,0,0,.6);
+  font-family:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.4}
+.pc-head{background:linear-gradient(135deg,#30374B 0%,#343B50 55%,#3A4258 100%);color:#fff;padding:16px 20px 15px;position:relative}
+.pc-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,rgba(255,209,102,0),rgba(255,209,102,.85),rgba(255,209,102,0))}
+.pc-mark{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#CDD2DF;margin:0 0 10px}
+.pc-mark i{width:6px;height:6px;border-radius:50%;background:#FFD166;box-shadow:0 0 8px rgba(255,209,102,.8);flex:none}
+.pc-kick{margin-left:auto;font-size:10.5px;letter-spacing:.06em;padding:3px 9px;border-radius:999px;background:rgba(255,209,102,.16);color:#FFD166;white-space:nowrap}
 .pc-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.pc-title{font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
-.pc-price{font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:32px;font-weight:700;letter-spacing:-.5px;line-height:1.05;color:#F0C565;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pc-sub{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 14px;margin-top:6px;font-size:12.5px;color:#B9C5D4;font-variant-numeric:tabular-nums}
+.pc-title{font-family:"Unbounded",ui-sans-serif,system-ui,sans-serif;font-size:22px;font-weight:700;letter-spacing:-.01em;line-height:1.15}
+.pc-price{font-family:"Unbounded",ui-sans-serif,system-ui,sans-serif;font-size:28px;font-weight:700;letter-spacing:-.01em;line-height:1.05;color:#FFD166;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pc-sub{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 14px;margin-top:6px;font-size:12.5px;color:#CDD2DF;font-variant-numeric:tabular-nums}
 .pc-legs{list-style:none;margin:0;padding:4px 20px 2px}
-.pc-legs li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 0;border-top:1px solid #E4E9F0;margin:0}
+.pc-legs li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 0;border-top:1px solid #4A5269;margin:0}
 .pc-legs li:first-child{border-top:0}
-.pc-n{width:22px;height:22px;border-radius:50%;border:1.5px solid #D5DCE6;font-size:11px;font-weight:700;color:#4F607A;display:flex;align-items:center;justify-content:center;margin-top:1px}
-.pc-who{display:block;font-weight:700;font-size:15px;color:#0F1B2D;overflow-wrap:anywhere}
-.pc-what{display:block;font-size:14px;color:#0F1B2D;overflow-wrap:anywhere}
-.pc-meta{display:block;font-size:12px;color:#657386;margin-top:1px}
-.pc-lp{text-align:right;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#0F1B2D}
-.pc-lp small{display:block;font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,sans-serif;font-weight:600;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#657386;margin-top:2px}
+.pc-n{width:22px;height:22px;border-radius:50%;border:1.5px solid #59627B;font-size:11px;font-weight:700;color:#CDD2DF;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.pc-who{display:block;font-weight:800;font-size:15px;color:#F6F7FB;overflow-wrap:anywhere}
+.pc-what{display:block;font-size:14px;color:#F6F7FB;overflow-wrap:anywhere}
+.pc-meta{display:block;font-size:12px;color:#B3B9CB;margin-top:1px}
+.pc-lp{text-align:right;font-family:"Unbounded",ui-sans-serif,system-ui,sans-serif;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#F6F7FB}
+.pc-lp small{display:block;font-family:"Manrope",ui-sans-serif,system-ui,sans-serif;font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#B3B9CB;margin-top:2px}
 .pc-money{display:flex;flex-wrap:wrap;gap:8px;padding:6px 20px 0}
 /* a figure is never cut: each tile takes an equal share of the row and never less than its
    figure (a flex item's own minimum is its content), and a tile that will not fit beside the
    others goes onto a row of its own */
-.pc-money div{flex:1 1 0;background:#F7F9FB;border:1px solid #E4E9F0;border-radius:10px;padding:8px 10px}
-.pc-money span{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#657386}
-.pc-money b{display:block;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:#0F1B2D;white-space:nowrap}
-.pc-money .pc-win b{color:#1B7A4E}
-.pc-chance{padding:12px 20px 0;font-size:13px;color:#4F607A}
-.pc-chance b{color:#0F1B2D;font-variant-numeric:tabular-nums}
+.pc-money div{flex:1 1 0;background:#30374B;border:1px solid #4A5269;border-radius:10px;padding:8px 10px}
+.pc-money span{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#B3B9CB}
+.pc-money b{display:block;font-family:"Unbounded",ui-sans-serif,system-ui,sans-serif;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;color:#F6F7FB;white-space:nowrap}
+.pc-money .pc-win b{color:#CDFF4F}
+.pc-chance{padding:12px 20px 0;font-size:13px;color:#CDD2DF}
+.pc-chance b{color:#F6F7FB;font-variant-numeric:tabular-nums}
 .pc-chance div+div{margin-top:2px}
-.pc-chance small{display:block;margin-top:4px;font-size:11.5px;color:#657386}
-.pc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;margin:14px 0 0;padding:10px 20px 13px;border-top:1px solid #E4E9F0;font-size:12px;color:#657386}
-.pc-foot b{color:#4F607A;font-weight:600}
+.pc-chance small{display:block;margin-top:4px;font-size:11.5px;color:#B3B9CB}
+.pc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;margin:14px 0 0;padding:10px 20px 13px;border-top:1px solid #4A5269;font-size:12px;color:#B3B9CB}
+.pc-foot b{color:#CDD2DF;font-weight:700}
 .pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
 .pc-actions a.btn{text-align:center}
 /* what Open in DraftKings opens, and the legs it cannot, under the buttons */
@@ -85,7 +87,7 @@
 @media(max-width:430px){
   #pcModal .modal-panel{padding:12px 12px 22px}
   .pc-head{padding:14px 15px 13px} .pc-legs{padding:2px 15px} .pc-money{padding:6px 15px 0;gap:6px} .pc-chance{padding:11px 15px 0} .pc-foot{padding:10px 15px 12px}
-  .pc-title{font-size:22px} .pc-price{font-size:27px} .pc-money div{padding:7px 8px} .pc-money b{font-size:clamp(14px,4.2vw,16px)}
+  .pc-title{font-size:19px} .pc-price{font-size:24px} .pc-money div{padding:7px 8px} .pc-money b{font-size:clamp(14px,4.2vw,16px)}
   .pc-actions .btn{flex:1 1 auto}
 }
 </style>
@@ -321,7 +323,7 @@ window.PARLAY_CARD=(function(){
   function html(m){
     return `<div class="pc-card" id="pcCard">
       <div class="pc-head">
-        <div class="pc-mark"><span>X NFL Bets and Stats</span><i></i><span class="pc-kick">${h(m.kicker)}</span></div>
+        <div class="pc-mark"><span>NFL Hub</span><i></i><span class="pc-kick">${h(m.kicker)}</span></div>
         <div class="pc-row"><span class="pc-title">${h(m.title)}</span><span class="pc-price" title="${h(m.priceNote)}">${h(m.price)}</span></div>
         <div class="pc-sub"><span>${h([m.weekText,m.dateText].filter(Boolean).join(' · '))}</span><span>${h(m.dec)} decimal · ${h(m.implied)} implied · ${h(m.priceNote)}</span></div>
       </div>
@@ -399,15 +401,15 @@ window.PARLAY_CARD=(function(){
   }
 
   /* ---- the image: the same card on a canvas, twice its size for a sharp picture ---- */
-  const C={bg:'#EDF0F4',n0:'#0B1526',n1:'#132238',n2:'#1B2E4A',gold:'#D39A1F',goldT:'#F0C565',head2:'#B9C5D4',panel:'#FFFFFF',panel2:'#F7F9FB',
-    ink:'#0F1B2D',ink2:'#4F607A',muted:'#657386',line:'#E4E9F0',line2:'#D5DCE6',pick:'#1B7A4E'};
-  const FD='"Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
-  const FB='"Inter Tight", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const C={bg:'#2A3043',n0:'#30374B',n1:'#343B50',n2:'#3A4258',gold:'#FFD166',goldT:'#FFD166',head2:'#CDD2DF',panel:'#363D52',panel2:'#30374B',
+    ink:'#F6F7FB',ink2:'#CDD2DF',muted:'#B3B9CB',line:'#4A5269',line2:'#59627B',pick:'#CDFF4F'};
+  const FD='Unbounded, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FB='Manrope, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
   const W=540, M=18, P=24;
   /* the page's own fonts, if the browser has them, for as long as a moment takes */
   async function fonts(){
     try{ const F=document.fonts; if(!F||typeof F.load!=='function') return;
-      await Promise.race([Promise.all(['700 26px "Space Grotesk"','500 14px "Inter Tight"','700 14px "Inter Tight"'].map(f=>F.load(f).catch(()=>null))),new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+      await Promise.race([Promise.all(['700 22px Unbounded','500 14px Manrope','700 14px Manrope'].map(f=>F.load(f).catch(()=>null))),new Promise(r=>setTimeout(r,1500))]); }catch(e){}
   }
   function rr(x,a,b,w,hh,r){ x.beginPath(); x.moveTo(a+r,b); x.lineTo(a+w-r,b); x.quadraticCurveTo(a+w,b,a+w,b+r); x.lineTo(a+w,b+hh-r); x.quadraticCurveTo(a+w,b+hh,a+w-r,b+hh);
     x.lineTo(a+r,b+hh); x.quadraticCurveTo(a,b+hh,a,b+hh-r); x.lineTo(a,b+r); x.quadraticCurveTo(a,b,a+r,b); x.closePath(); }
@@ -447,36 +449,36 @@ window.PARLAY_CARD=(function(){
     x.scale(scale,scale);
     x.fillStyle=C.bg; x.fillRect(0,0,W,H);
     /* the card, with a soft shadow, and its header band */
-    x.save(); x.shadowColor='rgba(15,27,45,.22)'; x.shadowBlur=24; x.shadowOffsetY=8; rr(x,M,M,CW,CH,18); x.fillStyle=C.panel; x.fill(); x.restore();
+    x.save(); x.shadowColor='rgba(0,0,0,.35)'; x.shadowBlur=24; x.shadowOffsetY=8; rr(x,M,M,CW,CH,18); x.fillStyle=C.panel; x.fill(); x.restore();
     x.save(); rr(x,M,M,CW,CH,18); x.clip();
     const g=x.createLinearGradient(M,M,M+CW,M+HEAD_H); g.addColorStop(0,C.n0); g.addColorStop(.55,C.n1); g.addColorStop(1,C.n2);
     x.fillStyle=g; x.fillRect(M,M,CW,HEAD_H);
-    const gl=x.createLinearGradient(M,0,M+CW,0); gl.addColorStop(0,'rgba(211,154,31,0)'); gl.addColorStop(.5,'rgba(211,154,31,.85)'); gl.addColorStop(1,'rgba(211,154,31,0)');
+    const gl=x.createLinearGradient(M,0,M+CW,0); gl.addColorStop(0,'rgba(255,209,102,0)'); gl.addColorStop(.5,'rgba(255,209,102,.85)'); gl.addColorStop(1,'rgba(255,209,102,0)');
     x.fillStyle=gl; x.fillRect(M,M+HEAD_H-2,CW,2);
     x.restore();
     /* the mark, the kicker, the title and the price */
     let y=M+30;
     if('letterSpacing' in x) x.letterSpacing='1px';
-    const mw=text(x,'X NFL BETS AND STATS',L,y,'700 11px '+FB,C.head2);
+    const mw=text(x,'NFL HUB',L,y,'800 11px '+FB,C.head2);
     if('letterSpacing' in x) x.letterSpacing='0px';
     x.beginPath(); x.arc(L+mw+9,y-4,3,0,Math.PI*2); x.fillStyle=C.gold; x.fill();
     { x.font='700 10.5px '+FB; const k=String(m.kicker||'').toUpperCase(), kw=x.measureText(k).width+18;
-      rr(x,R-kw,y-14,kw,20,10); x.fillStyle='rgba(211,154,31,.2)'; x.fill(); text(x,k,R-kw/2,y,'700 10.5px '+FB,C.goldT,'center'); }
+      rr(x,R-kw,y-14,kw,20,10); x.fillStyle='rgba(255,209,102,.16)'; x.fill(); text(x,k,R-kw/2,y,'700 10.5px '+FB,C.goldT,'center'); }
     y=M+76;
-    const pw=text(x,m.price,R,y,'700 32px '+FD,C.goldT,'right');
-    text(x,m.title,L,y,'700 26px '+FD,'#FFFFFF','left',R-L-pw-16);
+    const pw=text(x,m.price,R,y,'700 28px '+FD,C.goldT,'right');
+    text(x,m.title,L,y,'700 22px '+FD,C.ink,'left',R-L-pw-16);
     y=M+108;
     const right=m.dec+' decimal · '+m.implied+' implied';
     const rw=text(x,right,R,y,'500 12.5px '+FB,C.head2,'right');
     text(x,[m.weekText,m.dateText].filter(Boolean).join(' · '),L,y,'500 12.5px '+FB,C.head2,'left',R-L-rw-14);
-    text(x,m.priceNote,R,y+16,'500 11px '+FB,'#8C9AAE','right');
+    text(x,m.priceNote,R,y+16,'500 11px '+FB,C.muted,'right');
     /* the legs */
     y=M+HEAD_H+10;
     m.legs.forEach((l,i)=>{
       if(i){ x.fillStyle=C.line; x.fillRect(L,y,R-L,1); }
       x.beginPath(); x.arc(L+11,y+22,11,0,Math.PI*2); x.lineWidth=1.5; x.strokeStyle=C.line2; x.stroke();
       text(x,String(i+1),L+11,y+26,'700 11px '+FB,C.ink2,'center');
-      const lpw=Math.max(text(x,l.price,R,y+26,'700 17px '+FD,C.ink,'right'),
+      const lpw=Math.max(text(x,l.price,R,y+26,'700 15px '+FD,C.ink,'right'),
         text(x,String(l.tag||'').toUpperCase(),R,y+44,'600 10px '+FB,C.muted,'right'));
       const tx=L+34, tw=R-tx-lpw-14;
       text(x,l.who,tx,y+25,'700 15.5px '+FB,C.ink,'left',tw);
@@ -528,7 +530,7 @@ window.PARLAY_CARD=(function(){
     let blob=null;
     try{ blob=await png(m);
       const f=new File([blob],m.file,{type:'image/png'});
-      if(canShareFiles()&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:'X NFL Bets and Stats: '+m.title}); say(''); return true; } }
+      if(canShareFiles()&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:'NFL Hub: '+m.title}); say(''); return true; } }
     catch(e){ if(e&&e.name==='AbortError'){ say(''); return false; } }
     /* no share sheet after all: the download */
     try{ if(!blob) blob=await png(m); saveFile(blob,m.file); say('Saved as '+m.file+'.'); return true; }

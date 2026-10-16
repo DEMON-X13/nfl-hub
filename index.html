@@ -4,23 +4,51 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NFL Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0F1B2D;color:#E9EEF4;min-height:100vh;display:flex;align-items:center;justify-content:center}
-  main{max-width:720px;padding:32px}
-  h1{font-size:34px;margin:0 0 6px} p{color:#9AA4B0;margin:0 0 24px}
-  a.card{display:block;text-decoration:none;color:inherit;background:#1A2B45;border:1px solid #2A3D5C;border-radius:14px;padding:18px 20px;margin:12px 0;transition:transform .15s,box-shadow .15s}
-  a.card:hover{transform:translateY(-2px);box-shadow:0 8px 24px -12px #000}
-  a.card b{display:block;font-size:18px;margin-bottom:4px} a.card span{color:#9AA4B0;font-size:14px}
+  /* the hub look (nflbets/build/theme.css): the NBA Hub's and the NHL Hub's graphite, inks and type, with
+     the NFL's gold as its accent */
+  :root{--bg:#2A3043;--panel:#363D52;--panel-2:#3D455B;--ink:#F6F7FB;--ink-2:#CDD2DF;--line:#4A5269;--line-2:#59627B;--gold:#FFD166;
+        --display:"Unbounded",ui-sans-serif,system-ui,sans-serif;--body:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);font-size:14.5px;line-height:1.45;-webkit-font-smoothing:antialiased;color:var(--ink);min-height:100vh;
+       background:radial-gradient(900px 520px at 12% -8%,rgba(255,209,102,.13),transparent 60%),radial-gradient(700px 420px at 92% 0%,rgba(95,212,255,.10),transparent 60%),linear-gradient(180deg,#333A4F 0%,var(--bg) 40%);background-color:var(--bg);background-attachment:fixed}
+  /* yard lines and hash marks, where the NBA has court lines and the NHL rink lines */
+  .field{position:fixed;inset:0;pointer-events:none;opacity:.06;
+    background:linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px) 0 0/64px 64px,
+      repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 150px/100% 9px no-repeat,
+      repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 310px/100% 9px no-repeat;
+    mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%)}
+  ::selection{background:var(--gold);color:#000}
+  main{max-width:760px;margin:0 auto;padding:40px 22px 80px;position:relative}
+  .wordmark{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,54px);letter-spacing:-.02em;line-height:.95;margin:0;text-transform:uppercase}
+  .wordmark em{font-style:normal;color:var(--gold)}
+  .wordmark .ball{display:inline-block;width:.62em;height:.38em;border-radius:50%;margin-left:.16em;vertical-align:.1em;transform:rotate(-24deg);
+    background:linear-gradient(#fff,#fff) center/38% 2px no-repeat,repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 5px) center/30% 7px no-repeat,
+      radial-gradient(ellipse at 35% 30%,#E9A66B,#B2581F 55%,#6E2F0D);box-shadow:0 0 22px rgba(255,209,102,.45)}
+  .tagline{color:var(--ink-2);font-size:13px;margin:10px 0 26px;max-width:560px}
+  a.card{display:block;text-decoration:none;color:inherit;background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:18px;padding:18px 20px 18px 22px;margin:12px 0;
+    position:relative;overflow:hidden;transition:transform .2s cubic-bezier(.2,.7,.2,1),border-color .2s,box-shadow .2s}
+  a.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent)}
+  a.card:hover{transform:translateY(-2px);border-color:var(--line-2);box-shadow:0 18px 40px -24px rgba(0,0,0,.6)}
+  a.card:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(255,209,102,.45)}
+  a.card b{display:block;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:-.01em;margin-bottom:6px}
+  a.card span{color:var(--ink-2);font-size:14px}
+  h2{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);margin:30px 0 4px}
 </style>
 </head>
 <body>
+<div class="field" aria-hidden="true"></div>
 <main>
-  <h1>NFL Hub</h1>
-  <p>2026 season. Updated automatically from nflverse data.</p>
-  <a class="card" href="nflbets/"><b>X NFL Bets and Stats</b><span>The betting model's call on every game, a snapshot of each one (a preview and the week's news, the matchups position by position and the stats side by side), player prop projections, a parlay builder with suggested parlays, X's parlays tracked live, both records, power ratings and the bet log, on one page.</span></a>
+  <h1 class="wordmark">NFL <em>Hub</em><span class="ball" aria-hidden="true"></span></h1>
+  <p class="tagline">2026 season. Updated automatically from nflverse data.</p>
+  <a class="card" href="nflbets/"><b>Bets and Stats</b><span>The betting model's call on every game, a snapshot of each one (a preview and the week's news, the matchups position by position and the stats side by side), player prop projections, a parlay builder with suggested parlays, X's parlays tracked live, both records, power ratings and the bet log, on one page.</span></a>
   <a class="card" href="picks/"><b>Weekly Picks</b><span>Pick the winner of every game this week, then save your picks as a file and send it to X.</span></a>
-  <a class="card" href="https://demon-x13.github.io/cfb-hub/"><b>X College Football Bets</b><span>A test: a rating model's call on every FBS game, the polls beside it, the playoff picture, and a moneyline and spread parlay builder.</span></a>
+  <h2>The other hubs</h2>
+  <a class="card" href="https://demon-x13.github.io/nba-hub/"><b>NBA Hub</b><span>Every NBA game priced from who is on the floor: a player-level rating model with offence and defence, coaches, rest and pace, graded in public.</span></a>
   <a class="card" href="https://demon-x13.github.io/nhl-hub/"><b>X NHL Bets</b><span>A rating model's call on every NHL game: moneylines, puck lines and totals against DraftKings' numbers, the standings, the playoff picture and a parlay builder.</span></a>
+  <a class="card" href="https://demon-x13.github.io/cfb-hub/"><b>X College Football Bets</b><span>A test: a rating model's call on every FBS game, the polls beside it, the playoff picture, and a moneyline and spread parlay builder.</span></a>
 </main>
 </body>
 </html>

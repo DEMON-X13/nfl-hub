@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>X NFL Bets and Stats</title>
+<title>NFL Hub</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
 :root{
@@ -821,41 +822,43 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 .pc-top h2{font-family:var(--display);font-size:20px;font-weight:600;letter-spacing:-.3px;margin:0;color:var(--ink)}
 .pc-top .pc-grow{flex:1}
 /* the card is drawn in the site's own colours whatever the page's theme: it is the picture the
-   download makes, so it looks the same here as it will in a phone's photos */
-.pc-card{background:#FFFFFF;color:#0F1B2D;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(15,27,45,.08),0 14px 34px -14px rgba(15,27,45,.45);
-  font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.4}
-.pc-head{background:linear-gradient(135deg,#0B1526 0%,#132238 55%,#1B2E4A 100%);color:#fff;padding:16px 20px 15px;position:relative}
-.pc-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,rgba(211,154,31,0),rgba(211,154,31,.8),rgba(211,154,31,0))}
-.pc-mark{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#B9C5D4;margin:0 0 10px}
-.pc-mark i{width:6px;height:6px;border-radius:50%;background:#D39A1F;box-shadow:0 0 8px rgba(211,154,31,.8);flex:none}
-.pc-kick{margin-left:auto;font-size:10.5px;letter-spacing:.06em;padding:3px 9px;border-radius:999px;background:rgba(211,154,31,.18);color:#F0C565;white-space:nowrap}
+   download makes, so it looks the same here as it will in a phone's photos. Its colours and type are
+   the hub look's (theme.css: the NBA Hub's and the NHL Hub's graphite, the NFL's gold), written out
+   here so the card and its image never depend on the page's tokens */
+.pc-card{background:linear-gradient(180deg,#3D455B,#363D52);color:#F6F7FB;border:1px solid #4A5269;border-radius:18px;overflow:hidden;box-shadow:0 18px 40px -24px rgba(0,0,0,.6);
+  font-family:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.4}
+.pc-head{background:linear-gradient(135deg,#30374B 0%,#343B50 55%,#3A4258 100%);color:#fff;padding:16px 20px 15px;position:relative}
+.pc-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,rgba(255,209,102,0),rgba(255,209,102,.85),rgba(255,209,102,0))}
+.pc-mark{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#CDD2DF;margin:0 0 10px}
+.pc-mark i{width:6px;height:6px;border-radius:50%;background:#FFD166;box-shadow:0 0 8px rgba(255,209,102,.8);flex:none}
+.pc-kick{margin-left:auto;font-size:10.5px;letter-spacing:.06em;padding:3px 9px;border-radius:999px;background:rgba(255,209,102,.16);color:#FFD166;white-space:nowrap}
 .pc-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.pc-title{font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
-.pc-price{font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:32px;font-weight:700;letter-spacing:-.5px;line-height:1.05;color:#F0C565;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pc-sub{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 14px;margin-top:6px;font-size:12.5px;color:#B9C5D4;font-variant-numeric:tabular-nums}
+.pc-title{font-family:"Unbounded",ui-sans-serif,system-ui,sans-serif;font-size:22px;font-weight:700;letter-spacing:-.01em;line-height:1.15}
+.pc-price{font-family:"Unbounded",ui-sans-serif,system-ui,sans-serif;font-size:28px;font-weight:700;letter-spacing:-.01em;line-height:1.05;color:#FFD166;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pc-sub{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 14px;margin-top:6px;font-size:12.5px;color:#CDD2DF;font-variant-numeric:tabular-nums}
 .pc-legs{list-style:none;margin:0;padding:4px 20px 2px}
-.pc-legs li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 0;border-top:1px solid #E4E9F0;margin:0}
+.pc-legs li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 0;border-top:1px solid #4A5269;margin:0}
 .pc-legs li:first-child{border-top:0}
-.pc-n{width:22px;height:22px;border-radius:50%;border:1.5px solid #D5DCE6;font-size:11px;font-weight:700;color:#4F607A;display:flex;align-items:center;justify-content:center;margin-top:1px}
-.pc-who{display:block;font-weight:700;font-size:15px;color:#0F1B2D;overflow-wrap:anywhere}
-.pc-what{display:block;font-size:14px;color:#0F1B2D;overflow-wrap:anywhere}
-.pc-meta{display:block;font-size:12px;color:#657386;margin-top:1px}
-.pc-lp{text-align:right;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#0F1B2D}
-.pc-lp small{display:block;font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,sans-serif;font-weight:600;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#657386;margin-top:2px}
+.pc-n{width:22px;height:22px;border-radius:50%;border:1.5px solid #59627B;font-size:11px;font-weight:700;color:#CDD2DF;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.pc-who{display:block;font-weight:800;font-size:15px;color:#F6F7FB;overflow-wrap:anywhere}
+.pc-what{display:block;font-size:14px;color:#F6F7FB;overflow-wrap:anywhere}
+.pc-meta{display:block;font-size:12px;color:#B3B9CB;margin-top:1px}
+.pc-lp{text-align:right;font-family:"Unbounded",ui-sans-serif,system-ui,sans-serif;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#F6F7FB}
+.pc-lp small{display:block;font-family:"Manrope",ui-sans-serif,system-ui,sans-serif;font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#B3B9CB;margin-top:2px}
 .pc-money{display:flex;flex-wrap:wrap;gap:8px;padding:6px 20px 0}
 /* a figure is never cut: each tile takes an equal share of the row and never less than its
    figure (a flex item's own minimum is its content), and a tile that will not fit beside the
    others goes onto a row of its own */
-.pc-money div{flex:1 1 0;background:#F7F9FB;border:1px solid #E4E9F0;border-radius:10px;padding:8px 10px}
-.pc-money span{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#657386}
-.pc-money b{display:block;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:#0F1B2D;white-space:nowrap}
-.pc-money .pc-win b{color:#1B7A4E}
-.pc-chance{padding:12px 20px 0;font-size:13px;color:#4F607A}
-.pc-chance b{color:#0F1B2D;font-variant-numeric:tabular-nums}
+.pc-money div{flex:1 1 0;background:#30374B;border:1px solid #4A5269;border-radius:10px;padding:8px 10px}
+.pc-money span{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#B3B9CB}
+.pc-money b{display:block;font-family:"Unbounded",ui-sans-serif,system-ui,sans-serif;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;color:#F6F7FB;white-space:nowrap}
+.pc-money .pc-win b{color:#CDFF4F}
+.pc-chance{padding:12px 20px 0;font-size:13px;color:#CDD2DF}
+.pc-chance b{color:#F6F7FB;font-variant-numeric:tabular-nums}
 .pc-chance div+div{margin-top:2px}
-.pc-chance small{display:block;margin-top:4px;font-size:11.5px;color:#657386}
-.pc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;margin:14px 0 0;padding:10px 20px 13px;border-top:1px solid #E4E9F0;font-size:12px;color:#657386}
-.pc-foot b{color:#4F607A;font-weight:600}
+.pc-chance small{display:block;margin-top:4px;font-size:11.5px;color:#B3B9CB}
+.pc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;margin:14px 0 0;padding:10px 20px 13px;border-top:1px solid #4A5269;font-size:12px;color:#B3B9CB}
+.pc-foot b{color:#CDD2DF;font-weight:700}
 .pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
 .pc-actions a.btn{text-align:center}
 /* what Open in DraftKings opens, and the legs it cannot, under the buttons */
@@ -869,7 +872,7 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 @media(max-width:430px){
   #pcModal .modal-panel{padding:12px 12px 22px}
   .pc-head{padding:14px 15px 13px} .pc-legs{padding:2px 15px} .pc-money{padding:6px 15px 0;gap:6px} .pc-chance{padding:11px 15px 0} .pc-foot{padding:10px 15px 12px}
-  .pc-title{font-size:22px} .pc-price{font-size:27px} .pc-money div{padding:7px 8px} .pc-money b{font-size:clamp(14px,4.2vw,16px)}
+  .pc-title{font-size:19px} .pc-price{font-size:24px} .pc-money div{padding:7px 8px} .pc-money b{font-size:clamp(14px,4.2vw,16px)}
   .pc-actions .btn{flex:1 1 auto}
 }
 </style>
@@ -1306,13 +1309,205 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 }
 @media(prefers-reduced-motion:reduce){ .gs-chev{transition:none} }
 </style>
+<style id="hubTheme">
+/* The hub look: NFL Hub in the NBA Hub's and the NHL Hub's colours and type (demon-x13/nba-hub,
+   demon-x13/nhl-hub), the owner's call of 16 October 2026 ("make it match the color scheme and overall
+   feel of the nba and nhl hub so it's consistent across the board"). build.js lays this over every
+   other style of nflbets/index.html, last, so it wins by order, and hands it to the framed betting tabs
+   (window.THEME_FRAME_HEAD). The parts keep their own light tokens; nothing here changes a number.
+
+   The surfaces, inks and lines are the NBA Hub's lightened graphite exactly, as the NHL took them; each
+   hub keeps an accent of its own where the NBA has orange and the NHL ice blue, and the NFL's is gold,
+   the colour its light look always had (the NBA's own --gold). Quiet text is the NHL's --muted-ink
+   (#B3B9CB), since the NBA's #A0A7BB reads 4.49:1 on a panel; red text is the NHL's --rose-ink, since
+   the NBA's rose is 2.8:1 on a panel. Every text holds 4.5:1 (3:1 large) on every tab, the Game snapshot,
+   a game's page, the builder and the parlay card, at 1280 and 390. */
+:root{
+  --bg:#2A3043; --bg-2:#30374B; --panel:#363D52; --panel-2:#3D455B; --panel-3:#475068;
+  --ink:#F6F7FB; --ink-2:#CDD2DF; --muted:#B3B9CB; --line:#4A5269; --line-2:#59627B;
+  --gold:#FFD166; --gold-2:#FFE08F; --gold-soft:rgba(255,209,102,.14);
+  --pick:#CDFF4F; --pick-soft:rgba(205,255,79,.14);
+  --miss:#FFA2B8; --miss-soft:rgba(255,61,107,.16); --rose:#FF3D6B;
+  --ice:#5FD4FF; --ice-2:#8EE3FF; --ice-soft:rgba(95,212,255,.14);
+  --away:#5FD4FF; --home:#CDFF4F;
+  --r-lg:18px; --r-md:14px; --r-sm:11px;
+  --sh-xs:none; --sh-sm:none; --sh-md:0 18px 40px -24px rgba(0,0,0,.6);
+  --ring:0 0 0 3px rgba(255,209,102,.4);
+  --display:"Unbounded",ui-sans-serif,system-ui,sans-serif;
+  --body:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+html{background:var(--bg)}
+body{background:
+  radial-gradient(900px 520px at 12% -8%,rgba(255,209,102,.13),transparent 60%),
+  radial-gradient(700px 420px at 92% 0%,rgba(95,212,255,.10),transparent 60%),
+  linear-gradient(180deg,#333A4F 0%,var(--bg) 40%);background-attachment:fixed;color:var(--ink);font-size:14.5px}
+/* yard lines and hash marks, where the NBA has court lines and the NHL rink lines */
+html:not(.embed) body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.06;
+  background:linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px) 0 0/64px 64px,
+    repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 150px/100% 9px no-repeat,
+    repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 310px/100% 9px no-repeat;
+  mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%)}
+::selection{background:var(--gold);color:#000}
+a{color:var(--ice)}
+
+/* header: no slab, the page's own glow behind the hub's two-tone wordmark, a tagline and the stamp,
+   then pill tabs */
+header{background:transparent;color:var(--ink);padding:26px 22px 0;max-width:1240px;margin:0 auto;position:relative}
+header::after{display:none}
+.brand{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,54px);letter-spacing:-.02em;line-height:.95;margin:0;text-transform:uppercase}
+.brand h1 em{font-style:normal;color:var(--gold)}
+/* the football, where the NBA has its ball and the NHL its puck: leather, a seam and laces */
+.brand h1::after{width:.62em;height:.38em;border-radius:50%;margin-left:.16em;vertical-align:.1em;transform:rotate(-24deg);
+  background:linear-gradient(#fff,#fff) center/38% 2px no-repeat,repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 5px) center/30% 7px no-repeat,
+    radial-gradient(ellipse at 35% 30%,#E9A66B,#B2581F 55%,#6E2F0D);box-shadow:0 0 22px rgba(255,209,102,.45)}
+.tagline{color:var(--ink-2);font-size:13px;margin:8px 0 0;max-width:560px;font-weight:500;letter-spacing:0}
+.hub-stamp{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;line-height:1.5}
+.brand .sub{color:var(--ink-2);font-size:12px}
+.hub-stamp #saveState{color:var(--ink-2);font-weight:600;margin-left:0!important}
+.hub-stamp #buildTag{color:var(--ink-2)}
+nav{background:transparent;border:0;border-radius:0;padding:4px 0 10px;gap:6px;margin-top:22px;width:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);padding:10px 16px;border-radius:999px;font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:.02em}
+nav button:hover{color:var(--ink);border-color:var(--line-2);background:var(--panel);transform:translateY(-1px)}
+nav button[aria-selected=true]{background:var(--ink);color:#1E2230;border-color:var(--ink);box-shadow:none}
+main{max-width:1240px;padding:18px 22px 90px}
+
+/* surfaces */
+.card{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r-lg);position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent);pointer-events:none}
+.card h2,h2{font-family:var(--display);font-weight:700;letter-spacing:-.01em}
+h2 .pill{font-family:var(--body);font-size:12px;font-weight:700;vertical-align:middle;letter-spacing:.02em}
+table{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:none}
+th{background:var(--panel-2);color:var(--muted)}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+.empty{background:var(--panel);border:1px dashed var(--line-2);border-radius:var(--r-lg);color:var(--ink-2)}
+.modal-panel{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line-2);color:var(--ink)}
+
+/* controls: a grey button as the NBA's and the NHL's, gold where the NFL's was its dark primary */
+select,input[type=number],input[type=text]{background:var(--panel);color:var(--ink);border-color:var(--line-2);box-shadow:none}
+select:hover,input[type=number]:hover,input[type=text]:hover{border-color:var(--ink-2)}
+::placeholder{color:var(--ink-2);opacity:1}
+input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
+.btn{background:var(--gold);color:#1E2230;font-weight:700;box-shadow:none;border:1px solid var(--gold)}
+.btn:hover{background:var(--gold-2);border-color:var(--gold-2);box-shadow:none}
+.btn.quiet{background:var(--panel-3);color:var(--ink);border:1px solid var(--line-2)}
+.btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}
+.btn.go{background:var(--pick);border-color:var(--pick);color:#1E2230}
+.btn.danger{background:var(--rose);border-color:var(--rose);color:#1E2230}
+.bar .rec,.pill,.conf,.conf.low,.pays .box.tier.low,.side-res.push,.bres.push{background:var(--panel-3);color:var(--ink-2)}
+.bar .rec b{color:var(--ink)}
+.pill.warn,.log .warn,.inj,.plrbtn .who .inj,.when .cl,.tot .lv,.totpts .lv,.conf.med,.pays .box.tier.med b,.pays .box.tier.med span,.pe-q,.xb-status.bad{color:var(--gold)}
+.conf.med{background:var(--gold-soft)}
+.inj.inj-lim,.plrbtn .who .inj.inj-lim{background:var(--panel-3);color:var(--ink-2)}
+.inj.inj-dnp,.plrbtn .who .inj.inj-dnp{color:var(--gold)}
+.side-res.under{background:var(--ice-soft);color:var(--ice)}
+.game.final .pill.ok{background:var(--ice-soft);color:var(--ice)}
+.finchip{background:var(--ice-soft);color:var(--ice-2);border-color:rgba(95,212,255,.45)}
+.finchip.live{background:var(--gold-soft);color:var(--gold);border-color:rgba(255,209,102,.5)}
+.lead .va.exact,.tile .tv.exact,.tile .td.exact{color:#C9B6FF}
+.bar-track,.pk-prob{background:var(--panel-3);box-shadow:none}
+.bar-fill.low{background:var(--muted)}
+.rungs tr.on td{background:var(--gold-soft)}
+.rungs tr.hit td{background:var(--pick-soft)}
+.rungs tr.miss td{background:var(--miss-soft)}
+.pays .box.tier.med{border-color:rgba(255,209,102,.5)}
+.bigp .hero{background:linear-gradient(135deg,var(--panel-3),var(--bg-2));border-color:var(--line-2)}
+.bigp .hero span{color:var(--ink-2)} .bigp .hero small{color:var(--gold)}
+.sugg-side button.on,.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}
+.pb-amt:hover{border-color:var(--ink-2)}
+.pb-lock.on{background:var(--gold-soft)}
+.pb-tier.xtrm{border-top-color:#B49CFF}
+.faroff{color:var(--gold)}
+.pb-chip.on small{color:var(--ink)}
+.elomv.flat{color:var(--muted)}
+.x-btn:hover{color:var(--miss)}
+
+/* the Pick'ems board */
+.pk-game{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);box-shadow:none;position:relative;overflow:hidden}
+.pk-game::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent)}
+.pk-game.pk-played::before{background:linear-gradient(180deg,var(--muted),transparent)}
+.pk-game:hover{border-color:var(--line-2);box-shadow:var(--sh-md)}
+.pk-tier{background:var(--panel-3);color:var(--ink-2)}
+.pk-tier.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-tier.pk-med{background:var(--gold-soft);color:var(--gold)} .pk-tier.pk-coin{background:var(--miss-soft);color:var(--miss)}
+.pk-sc{font-weight:900}
+.pk-matchup .pk-res{background:var(--panel)}
+.pk-note{background:var(--gold-soft);color:var(--gold)}
+.pk-result .pk-mwin.pk-ok{color:var(--pick)}
+/* the win-probability bars: the favourite's side in the pick's lime, the other on the track, where the
+   light look had a mint and a sky blue (the betting app's PROB_HI and PROB_LO, set inline) */
+[style*="background:#AAE5CF"]{background:var(--pick)!important;color:#1E2230!important}
+[style*="background:#A1BDE5"]{background:var(--panel-3)!important;color:var(--ink)!important}
+.pk-prob .pk-a{border-right-color:rgba(0,0,0,.25)}
+.pe-pos button[aria-selected="true"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}
+/* the ELO Ratings tab and the Mismatches */
+.pe-mm-n{background:var(--ink);color:#1E2230}
+.pe-g3{color:#7BD88F!important} .pe-g2{color:#F2B84B!important}
+
+/* X Parlays */
+#lpCard .pill,#myCard .pill{background:var(--panel-3);color:var(--ink-2)}
+#lpCard .note{background:var(--gold-soft);color:var(--gold)}
+#lpCard .pill.ok,#myCard .pill.ok{background:var(--pick-soft);color:var(--pick)} #lpCard .pill.bad,#myCard .pill.bad{background:var(--miss-soft);color:var(--miss)}
+#lpCard .fill{background:linear-gradient(90deg,rgba(255,209,102,.35),var(--gold))}
+#lpCard .fill.win{background:linear-gradient(90deg,rgba(205,255,79,.35),var(--pick))}
+#lpCard .fill.lose{background:linear-gradient(90deg,rgba(255,61,107,.35),var(--rose))}
+#lpCard .gm.tie,#lpCard .gm.tie em,#lpCard .stamp.bad{color:var(--gold)}
+#lpCard .src{border-left-color:#B49CFF}
+.xp-own,.xp-mark{background:var(--gold-soft);color:var(--gold)}
+.card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}
+
+/* inside the framed betting tabs (html.embed): the page's glow shows through */
+html.embed,html.embed body{background:transparent}
+.seg button.on,.wk-chip{background:var(--ink);color:#1E2230}
+.bk-in,.bres.won{background:var(--pick-soft);color:var(--pick)}
+.bres.lost{background:var(--miss-soft);color:var(--miss)}
+.prob{background:var(--panel-3);box-shadow:none}
+.tier{background:var(--panel-3);color:var(--ink-2)}
+.tier.high{background:var(--pick-soft);color:var(--pick)} .tier.med{background:var(--gold-soft);color:var(--gold)}
+.tier.coin,.tier.doubt{background:var(--miss-soft);color:var(--miss)}
+.mycard.played .myhead{background:var(--panel-3);border-bottom-color:var(--line-2)}
+.vg.differs{background:var(--miss-soft);box-shadow:inset 0 0 0 1.5px var(--rose)}
+/* the Pick'em Record chart: Vegas is drawn in the old ink, which vanishes on dark */
+polyline[stroke="#0F1B2D"]{stroke:#F6F7FB} circle[fill="#0F1B2D"]{fill:#F6F7FB}
+[style*="background:#0F1B2D"]{background:#F6F7FB!important}
+line[stroke="#E6EAEF"]{stroke:#4A5269}
+/* the models' own colours (record_viz.js: Alpha Model's green, the Joker's red, the ELO Model's orange)
+   and the bankroll's up and down (bets_viz.js), each lifted a step so a line reads on the dark card */
+[stroke="#1F6F4A"]{stroke:#5FD49A} [fill="#1F6F4A"]{fill:#5FD49A} [style*="background:#1F6F4A"]{background:#5FD49A!important}
+[stroke="#C0392B"]{stroke:#FF6B6B} [fill="#C0392B"]{fill:#FF6B6B} [style*="background:#C0392B"]{background:#FF6B6B!important}
+[stroke="#E8730A"]{stroke:#FF9F43} [fill="#E8730A"]{fill:#FF9F43} [style*="background:#E8730A"]{background:#FF9F43!important}
+[fill="#B23A32"]{fill:#FF5C7A}
+
+/* the Game snapshot: its red lifted for the tint it sits on */
+#gsModal{--gs-miss-ink:#FFA2B8}
+/* a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */
+#gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}
+/* the stat breakdown's bars the same way, on the same track */
+#gsModal .gs-shalf{background:var(--panel-3)} #gsModal .gs-shalf i{background:color-mix(in srgb,var(--gs-tc) 62%,#fff)}
+/* the Deep Dive's tags: the light look's tints are glare here, so each step has a dark tint of its own
+   with its text at 6:1 or more */
+#gsModal .dtag.easy{background:#2E4426;color:#CDFF4F}
+#gsModal .dtag.fav{background:#2C3E34;color:#9BE3B0}
+#gsModal .dtag.even{background:#3A4155;color:#DDE1EA}
+#gsModal .dtag.tough{background:#4A3A26;color:#FFC08A}
+#gsModal .dtag.vtough{background:#4D2833;color:#FF9DB2}
+/* the preview block a step off the card, its text the look's own ink */
+#gsModal .gs-prev{background:var(--panel-3);border-color:var(--line-2)}
+/* the better rank's box: its words in the full ink on the lime tint */
+#gsModal .gs-ubox.gs-better .gs-lab,#gsModal .gs-ubox.gs-better .gs-utier{color:var(--ink)}
+#gsModal .pe-g3{color:#7BD88F!important}
+
+@media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }
+@media(max-width:620px){ .hub-stamp{align-items:flex-start;text-align:left} }
+</style>
+<script>window.THEME_FRAME_HEAD="\u003clink href=\"https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap\" rel=\"stylesheet\">\u003cstyle>/* The hub look: NFL Hub in the NBA Hub's and the NHL Hub's colours and type (demon-x13/nba-hub,\n   demon-x13/nhl-hub), the owner's call of 16 October 2026 (\"make it match the color scheme and overall\n   feel of the nba and nhl hub so it's consistent across the board\"). build.js lays this over every\n   other style of nflbets/index.html, last, so it wins by order, and hands it to the framed betting tabs\n   (window.THEME_FRAME_HEAD). The parts keep their own light tokens; nothing here changes a number.\n\n   The surfaces, inks and lines are the NBA Hub's lightened graphite exactly, as the NHL took them; each\n   hub keeps an accent of its own where the NBA has orange and the NHL ice blue, and the NFL's is gold,\n   the colour its light look always had (the NBA's own --gold). Quiet text is the NHL's --muted-ink\n   (#B3B9CB), since the NBA's #A0A7BB reads 4.49:1 on a panel; red text is the NHL's --rose-ink, since\n   the NBA's rose is 2.8:1 on a panel. Every text holds 4.5:1 (3:1 large) on every tab, the Game snapshot,\n   a game's page, the builder and the parlay card, at 1280 and 390. */\n:root{\n  --bg:#2A3043; --bg-2:#30374B; --panel:#363D52; --panel-2:#3D455B; --panel-3:#475068;\n  --ink:#F6F7FB; --ink-2:#CDD2DF; --muted:#B3B9CB; --line:#4A5269; --line-2:#59627B;\n  --gold:#FFD166; --gold-2:#FFE08F; --gold-soft:rgba(255,209,102,.14);\n  --pick:#CDFF4F; --pick-soft:rgba(205,255,79,.14);\n  --miss:#FFA2B8; --miss-soft:rgba(255,61,107,.16); --rose:#FF3D6B;\n  --ice:#5FD4FF; --ice-2:#8EE3FF; --ice-soft:rgba(95,212,255,.14);\n  --away:#5FD4FF; --home:#CDFF4F;\n  --r-lg:18px; --r-md:14px; --r-sm:11px;\n  --sh-xs:none; --sh-sm:none; --sh-md:0 18px 40px -24px rgba(0,0,0,.6);\n  --ring:0 0 0 3px rgba(255,209,102,.4);\n  --display:\"Unbounded\",ui-sans-serif,system-ui,sans-serif;\n  --body:\"Manrope\",ui-sans-serif,system-ui,-apple-system,\"Segoe UI\",sans-serif;\n  color-scheme:dark;\n}\nhtml{background:var(--bg)}\nbody{background:\n  radial-gradient(900px 520px at 12% -8%,rgba(255,209,102,.13),transparent 60%),\n  radial-gradient(700px 420px at 92% 0%,rgba(95,212,255,.10),transparent 60%),\n  linear-gradient(180deg,#333A4F 0%,var(--bg) 40%);background-attachment:fixed;color:var(--ink);font-size:14.5px}\n/* yard lines and hash marks, where the NBA has court lines and the NHL rink lines */\nhtml:not(.embed) body::before{content:\"\";position:fixed;inset:0;pointer-events:none;opacity:.06;\n  background:linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px) 0 0/64px 64px,\n    repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 150px/100% 9px no-repeat,\n    repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 310px/100% 9px no-repeat;\n  mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%)}\n::selection{background:var(--gold);color:#000}\na{color:var(--ice)}\n\n/* header: no slab, the page's own glow behind the hub's two-tone wordmark, a tagline and the stamp,\n   then pill tabs */\nheader{background:transparent;color:var(--ink);padding:26px 22px 0;max-width:1240px;margin:0 auto;position:relative}\nheader::after{display:none}\n.brand{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}\n.brand h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,54px);letter-spacing:-.02em;line-height:.95;margin:0;text-transform:uppercase}\n.brand h1 em{font-style:normal;color:var(--gold)}\n/* the football, where the NBA has its ball and the NHL its puck: leather, a seam and laces */\n.brand h1::after{width:.62em;height:.38em;border-radius:50%;margin-left:.16em;vertical-align:.1em;transform:rotate(-24deg);\n  background:linear-gradient(#fff,#fff) center/38% 2px no-repeat,repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 5px) center/30% 7px no-repeat,\n    radial-gradient(ellipse at 35% 30%,#E9A66B,#B2581F 55%,#6E2F0D);box-shadow:0 0 22px rgba(255,209,102,.45)}\n.tagline{color:var(--ink-2);font-size:13px;margin:8px 0 0;max-width:560px;font-weight:500;letter-spacing:0}\n.hub-stamp{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;line-height:1.5}\n.brand .sub{color:var(--ink-2);font-size:12px}\n.hub-stamp #saveState{color:var(--ink-2);font-weight:600;margin-left:0!important}\n.hub-stamp #buildTag{color:var(--ink-2)}\nnav{background:transparent;border:0;border-radius:0;padding:4px 0 10px;gap:6px;margin-top:22px;width:auto;scrollbar-width:none}\nnav::-webkit-scrollbar{display:none}\nnav button{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);padding:10px 16px;border-radius:999px;font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:.02em}\nnav button:hover{color:var(--ink);border-color:var(--line-2);background:var(--panel);transform:translateY(-1px)}\nnav button[aria-selected=true]{background:var(--ink);color:#1E2230;border-color:var(--ink);box-shadow:none}\nmain{max-width:1240px;padding:18px 22px 90px}\n\n/* surfaces */\n.card{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r-lg);position:relative;overflow:hidden}\n.card::before{content:\"\";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent);pointer-events:none}\n.card h2,h2{font-family:var(--display);font-weight:700;letter-spacing:-.01em}\nh2 .pill{font-family:var(--body);font-size:12px;font-weight:700;vertical-align:middle;letter-spacing:.02em}\ntable{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:none}\nth{background:var(--panel-2);color:var(--muted)}\ntbody tr:hover{background:rgba(255,255,255,.025)}\n.empty{background:var(--panel);border:1px dashed var(--line-2);border-radius:var(--r-lg);color:var(--ink-2)}\n.modal-panel{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line-2);color:var(--ink)}\n\n/* controls: a grey button as the NBA's and the NHL's, gold where the NFL's was its dark primary */\nselect,input[type=number],input[type=text]{background:var(--panel);color:var(--ink);border-color:var(--line-2);box-shadow:none}\nselect:hover,input[type=number]:hover,input[type=text]:hover{border-color:var(--ink-2)}\n::placeholder{color:var(--ink-2);opacity:1}\ninput[type=checkbox],input[type=radio]{accent-color:var(--gold)}\n.btn{background:var(--gold);color:#1E2230;font-weight:700;box-shadow:none;border:1px solid var(--gold)}\n.btn:hover{background:var(--gold-2);border-color:var(--gold-2);box-shadow:none}\n.btn.quiet{background:var(--panel-3);color:var(--ink);border:1px solid var(--line-2)}\n.btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}\n.btn.go{background:var(--pick);border-color:var(--pick);color:#1E2230}\n.btn.danger{background:var(--rose);border-color:var(--rose);color:#1E2230}\n.bar .rec,.pill,.conf,.conf.low,.pays .box.tier.low,.side-res.push,.bres.push{background:var(--panel-3);color:var(--ink-2)}\n.bar .rec b{color:var(--ink)}\n.pill.warn,.log .warn,.inj,.plrbtn .who .inj,.when .cl,.tot .lv,.totpts .lv,.conf.med,.pays .box.tier.med b,.pays .box.tier.med span,.pe-q,.xb-status.bad{color:var(--gold)}\n.conf.med{background:var(--gold-soft)}\n.inj.inj-lim,.plrbtn .who .inj.inj-lim{background:var(--panel-3);color:var(--ink-2)}\n.inj.inj-dnp,.plrbtn .who .inj.inj-dnp{color:var(--gold)}\n.side-res.under{background:var(--ice-soft);color:var(--ice)}\n.game.final .pill.ok{background:var(--ice-soft);color:var(--ice)}\n.finchip{background:var(--ice-soft);color:var(--ice-2);border-color:rgba(95,212,255,.45)}\n.finchip.live{background:var(--gold-soft);color:var(--gold);border-color:rgba(255,209,102,.5)}\n.lead .va.exact,.tile .tv.exact,.tile .td.exact{color:#C9B6FF}\n.bar-track,.pk-prob{background:var(--panel-3);box-shadow:none}\n.bar-fill.low{background:var(--muted)}\n.rungs tr.on td{background:var(--gold-soft)}\n.rungs tr.hit td{background:var(--pick-soft)}\n.rungs tr.miss td{background:var(--miss-soft)}\n.pays .box.tier.med{border-color:rgba(255,209,102,.5)}\n.bigp .hero{background:linear-gradient(135deg,var(--panel-3),var(--bg-2));border-color:var(--line-2)}\n.bigp .hero span{color:var(--ink-2)} .bigp .hero small{color:var(--gold)}\n.sugg-side button.on,.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}\n.pb-amt:hover{border-color:var(--ink-2)}\n.pb-lock.on{background:var(--gold-soft)}\n.pb-tier.xtrm{border-top-color:#B49CFF}\n.faroff{color:var(--gold)}\n.pb-chip.on small{color:var(--ink)}\n.elomv.flat{color:var(--muted)}\n.x-btn:hover{color:var(--miss)}\n\n/* the Pick'ems board */\n.pk-game{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);box-shadow:none;position:relative;overflow:hidden}\n.pk-game::before{content:\"\";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent)}\n.pk-game.pk-played::before{background:linear-gradient(180deg,var(--muted),transparent)}\n.pk-game:hover{border-color:var(--line-2);box-shadow:var(--sh-md)}\n.pk-tier{background:var(--panel-3);color:var(--ink-2)}\n.pk-tier.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-tier.pk-med{background:var(--gold-soft);color:var(--gold)} .pk-tier.pk-coin{background:var(--miss-soft);color:var(--miss)}\n.pk-sc{font-weight:900}\n.pk-matchup .pk-res{background:var(--panel)}\n.pk-note{background:var(--gold-soft);color:var(--gold)}\n.pk-result .pk-mwin.pk-ok{color:var(--pick)}\n/* the win-probability bars: the favourite's side in the pick's lime, the other on the track, where the\n   light look had a mint and a sky blue (the betting app's PROB_HI and PROB_LO, set inline) */\n[style*=\"background:#AAE5CF\"]{background:var(--pick)!important;color:#1E2230!important}\n[style*=\"background:#A1BDE5\"]{background:var(--panel-3)!important;color:var(--ink)!important}\n.pk-prob .pk-a{border-right-color:rgba(0,0,0,.25)}\n.pe-pos button[aria-selected=\"true\"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}\n/* the ELO Ratings tab and the Mismatches */\n.pe-mm-n{background:var(--ink);color:#1E2230}\n.pe-g3{color:#7BD88F!important} .pe-g2{color:#F2B84B!important}\n\n/* X Parlays */\n#lpCard .pill,#myCard .pill{background:var(--panel-3);color:var(--ink-2)}\n#lpCard .note{background:var(--gold-soft);color:var(--gold)}\n#lpCard .pill.ok,#myCard .pill.ok{background:var(--pick-soft);color:var(--pick)} #lpCard .pill.bad,#myCard .pill.bad{background:var(--miss-soft);color:var(--miss)}\n#lpCard .fill{background:linear-gradient(90deg,rgba(255,209,102,.35),var(--gold))}\n#lpCard .fill.win{background:linear-gradient(90deg,rgba(205,255,79,.35),var(--pick))}\n#lpCard .fill.lose{background:linear-gradient(90deg,rgba(255,61,107,.35),var(--rose))}\n#lpCard .gm.tie,#lpCard .gm.tie em,#lpCard .stamp.bad{color:var(--gold)}\n#lpCard .src{border-left-color:#B49CFF}\n.xp-own,.xp-mark{background:var(--gold-soft);color:var(--gold)}\n.card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}\n\n/* inside the framed betting tabs (html.embed): the page's glow shows through */\nhtml.embed,html.embed body{background:transparent}\n.seg button.on,.wk-chip{background:var(--ink);color:#1E2230}\n.bk-in,.bres.won{background:var(--pick-soft);color:var(--pick)}\n.bres.lost{background:var(--miss-soft);color:var(--miss)}\n.prob{background:var(--panel-3);box-shadow:none}\n.tier{background:var(--panel-3);color:var(--ink-2)}\n.tier.high{background:var(--pick-soft);color:var(--pick)} .tier.med{background:var(--gold-soft);color:var(--gold)}\n.tier.coin,.tier.doubt{background:var(--miss-soft);color:var(--miss)}\n.mycard.played .myhead{background:var(--panel-3);border-bottom-color:var(--line-2)}\n.vg.differs{background:var(--miss-soft);box-shadow:inset 0 0 0 1.5px var(--rose)}\n/* the Pick'em Record chart: Vegas is drawn in the old ink, which vanishes on dark */\npolyline[stroke=\"#0F1B2D\"]{stroke:#F6F7FB} circle[fill=\"#0F1B2D\"]{fill:#F6F7FB}\n[style*=\"background:#0F1B2D\"]{background:#F6F7FB!important}\nline[stroke=\"#E6EAEF\"]{stroke:#4A5269}\n/* the models' own colours (record_viz.js: Alpha Model's green, the Joker's red, the ELO Model's orange)\n   and the bankroll's up and down (bets_viz.js), each lifted a step so a line reads on the dark card */\n[stroke=\"#1F6F4A\"]{stroke:#5FD49A} [fill=\"#1F6F4A\"]{fill:#5FD49A} [style*=\"background:#1F6F4A\"]{background:#5FD49A!important}\n[stroke=\"#C0392B\"]{stroke:#FF6B6B} [fill=\"#C0392B\"]{fill:#FF6B6B} [style*=\"background:#C0392B\"]{background:#FF6B6B!important}\n[stroke=\"#E8730A\"]{stroke:#FF9F43} [fill=\"#E8730A\"]{fill:#FF9F43} [style*=\"background:#E8730A\"]{background:#FF9F43!important}\n[fill=\"#B23A32\"]{fill:#FF5C7A}\n\n/* the Game snapshot: its red lifted for the tint it sits on */\n#gsModal{--gs-miss-ink:#FFA2B8}\n/* a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */\n#gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}\n/* the stat breakdown's bars the same way, on the same track */\n#gsModal .gs-shalf{background:var(--panel-3)} #gsModal .gs-shalf i{background:color-mix(in srgb,var(--gs-tc) 62%,#fff)}\n/* the Deep Dive's tags: the light look's tints are glare here, so each step has a dark tint of its own\n   with its text at 6:1 or more */\n#gsModal .dtag.easy{background:#2E4426;color:#CDFF4F}\n#gsModal .dtag.fav{background:#2C3E34;color:#9BE3B0}\n#gsModal .dtag.even{background:#3A4155;color:#DDE1EA}\n#gsModal .dtag.tough{background:#4A3A26;color:#FFC08A}\n#gsModal .dtag.vtough{background:#4D2833;color:#FF9DB2}\n/* the preview block a step off the card, its text the look's own ink */\n#gsModal .gs-prev{background:var(--panel-3);border-color:var(--line-2)}\n/* the better rank's box: its words in the full ink on the lime tint */\n#gsModal .gs-ubox.gs-better .gs-lab,#gsModal .gs-ubox.gs-better .gs-utier{color:var(--ink)}\n#gsModal .pe-g3{color:#7BD88F!important}\n\n@media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }\n@media(max-width:620px){ .hub-stamp{align-items:flex-start;text-align:left} }\n\u003c/style>";</script>
 </head>
 <body>
 <header>
   <div class="brand">
-    <h1>X NFL Bets and Stats</h1>
-    <span class="sub" id="buildTag"></span>
-    <span class="sub grow" id="saveState" style="margin-left:auto"></span>
+    <div><h1>NFL <em>Hub</em></h1><p class="tagline">Every game called by three models against Vegas, player props priced against DraftKings, a parlay builder and X's own bets, frozen at kickoff and graded in public.</p></div>
+    <div class="hub-stamp"><span class="sub grow" id="saveState"></span><span class="sub" id="buildTag"></span></div>
   </div>
   <nav role="tablist" id="tabs">
     <button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button>
@@ -6036,7 +6231,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='97dd0e3';
+const PAGE_HASH='74b5b38';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -6830,7 +7025,7 @@ window.PARLAY_CARD=(function(){
   function html(m){
     return `<div class="pc-card" id="pcCard">
       <div class="pc-head">
-        <div class="pc-mark"><span>X NFL Bets and Stats</span><i></i><span class="pc-kick">${h(m.kicker)}</span></div>
+        <div class="pc-mark"><span>NFL Hub</span><i></i><span class="pc-kick">${h(m.kicker)}</span></div>
         <div class="pc-row"><span class="pc-title">${h(m.title)}</span><span class="pc-price" title="${h(m.priceNote)}">${h(m.price)}</span></div>
         <div class="pc-sub"><span>${h([m.weekText,m.dateText].filter(Boolean).join(' · '))}</span><span>${h(m.dec)} decimal · ${h(m.implied)} implied · ${h(m.priceNote)}</span></div>
       </div>
@@ -6908,15 +7103,15 @@ window.PARLAY_CARD=(function(){
   }
 
   /* ---- the image: the same card on a canvas, twice its size for a sharp picture ---- */
-  const C={bg:'#EDF0F4',n0:'#0B1526',n1:'#132238',n2:'#1B2E4A',gold:'#D39A1F',goldT:'#F0C565',head2:'#B9C5D4',panel:'#FFFFFF',panel2:'#F7F9FB',
-    ink:'#0F1B2D',ink2:'#4F607A',muted:'#657386',line:'#E4E9F0',line2:'#D5DCE6',pick:'#1B7A4E'};
-  const FD='"Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
-  const FB='"Inter Tight", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const C={bg:'#2A3043',n0:'#30374B',n1:'#343B50',n2:'#3A4258',gold:'#FFD166',goldT:'#FFD166',head2:'#CDD2DF',panel:'#363D52',panel2:'#30374B',
+    ink:'#F6F7FB',ink2:'#CDD2DF',muted:'#B3B9CB',line:'#4A5269',line2:'#59627B',pick:'#CDFF4F'};
+  const FD='Unbounded, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FB='Manrope, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
   const W=540, M=18, P=24;
   /* the page's own fonts, if the browser has them, for as long as a moment takes */
   async function fonts(){
     try{ const F=document.fonts; if(!F||typeof F.load!=='function') return;
-      await Promise.race([Promise.all(['700 26px "Space Grotesk"','500 14px "Inter Tight"','700 14px "Inter Tight"'].map(f=>F.load(f).catch(()=>null))),new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+      await Promise.race([Promise.all(['700 22px Unbounded','500 14px Manrope','700 14px Manrope'].map(f=>F.load(f).catch(()=>null))),new Promise(r=>setTimeout(r,1500))]); }catch(e){}
   }
   function rr(x,a,b,w,hh,r){ x.beginPath(); x.moveTo(a+r,b); x.lineTo(a+w-r,b); x.quadraticCurveTo(a+w,b,a+w,b+r); x.lineTo(a+w,b+hh-r); x.quadraticCurveTo(a+w,b+hh,a+w-r,b+hh);
     x.lineTo(a+r,b+hh); x.quadraticCurveTo(a,b+hh,a,b+hh-r); x.lineTo(a,b+r); x.quadraticCurveTo(a,b,a+r,b); x.closePath(); }
@@ -6956,36 +7151,36 @@ window.PARLAY_CARD=(function(){
     x.scale(scale,scale);
     x.fillStyle=C.bg; x.fillRect(0,0,W,H);
     /* the card, with a soft shadow, and its header band */
-    x.save(); x.shadowColor='rgba(15,27,45,.22)'; x.shadowBlur=24; x.shadowOffsetY=8; rr(x,M,M,CW,CH,18); x.fillStyle=C.panel; x.fill(); x.restore();
+    x.save(); x.shadowColor='rgba(0,0,0,.35)'; x.shadowBlur=24; x.shadowOffsetY=8; rr(x,M,M,CW,CH,18); x.fillStyle=C.panel; x.fill(); x.restore();
     x.save(); rr(x,M,M,CW,CH,18); x.clip();
     const g=x.createLinearGradient(M,M,M+CW,M+HEAD_H); g.addColorStop(0,C.n0); g.addColorStop(.55,C.n1); g.addColorStop(1,C.n2);
     x.fillStyle=g; x.fillRect(M,M,CW,HEAD_H);
-    const gl=x.createLinearGradient(M,0,M+CW,0); gl.addColorStop(0,'rgba(211,154,31,0)'); gl.addColorStop(.5,'rgba(211,154,31,.85)'); gl.addColorStop(1,'rgba(211,154,31,0)');
+    const gl=x.createLinearGradient(M,0,M+CW,0); gl.addColorStop(0,'rgba(255,209,102,0)'); gl.addColorStop(.5,'rgba(255,209,102,.85)'); gl.addColorStop(1,'rgba(255,209,102,0)');
     x.fillStyle=gl; x.fillRect(M,M+HEAD_H-2,CW,2);
     x.restore();
     /* the mark, the kicker, the title and the price */
     let y=M+30;
     if('letterSpacing' in x) x.letterSpacing='1px';
-    const mw=text(x,'X NFL BETS AND STATS',L,y,'700 11px '+FB,C.head2);
+    const mw=text(x,'NFL HUB',L,y,'800 11px '+FB,C.head2);
     if('letterSpacing' in x) x.letterSpacing='0px';
     x.beginPath(); x.arc(L+mw+9,y-4,3,0,Math.PI*2); x.fillStyle=C.gold; x.fill();
     { x.font='700 10.5px '+FB; const k=String(m.kicker||'').toUpperCase(), kw=x.measureText(k).width+18;
-      rr(x,R-kw,y-14,kw,20,10); x.fillStyle='rgba(211,154,31,.2)'; x.fill(); text(x,k,R-kw/2,y,'700 10.5px '+FB,C.goldT,'center'); }
+      rr(x,R-kw,y-14,kw,20,10); x.fillStyle='rgba(255,209,102,.16)'; x.fill(); text(x,k,R-kw/2,y,'700 10.5px '+FB,C.goldT,'center'); }
     y=M+76;
-    const pw=text(x,m.price,R,y,'700 32px '+FD,C.goldT,'right');
-    text(x,m.title,L,y,'700 26px '+FD,'#FFFFFF','left',R-L-pw-16);
+    const pw=text(x,m.price,R,y,'700 28px '+FD,C.goldT,'right');
+    text(x,m.title,L,y,'700 22px '+FD,C.ink,'left',R-L-pw-16);
     y=M+108;
     const right=m.dec+' decimal · '+m.implied+' implied';
     const rw=text(x,right,R,y,'500 12.5px '+FB,C.head2,'right');
     text(x,[m.weekText,m.dateText].filter(Boolean).join(' · '),L,y,'500 12.5px '+FB,C.head2,'left',R-L-rw-14);
-    text(x,m.priceNote,R,y+16,'500 11px '+FB,'#8C9AAE','right');
+    text(x,m.priceNote,R,y+16,'500 11px '+FB,C.muted,'right');
     /* the legs */
     y=M+HEAD_H+10;
     m.legs.forEach((l,i)=>{
       if(i){ x.fillStyle=C.line; x.fillRect(L,y,R-L,1); }
       x.beginPath(); x.arc(L+11,y+22,11,0,Math.PI*2); x.lineWidth=1.5; x.strokeStyle=C.line2; x.stroke();
       text(x,String(i+1),L+11,y+26,'700 11px '+FB,C.ink2,'center');
-      const lpw=Math.max(text(x,l.price,R,y+26,'700 17px '+FD,C.ink,'right'),
+      const lpw=Math.max(text(x,l.price,R,y+26,'700 15px '+FD,C.ink,'right'),
         text(x,String(l.tag||'').toUpperCase(),R,y+44,'600 10px '+FB,C.muted,'right'));
       const tx=L+34, tw=R-tx-lpw-14;
       text(x,l.who,tx,y+25,'700 15.5px '+FB,C.ink,'left',tw);
@@ -7037,7 +7232,7 @@ window.PARLAY_CARD=(function(){
     let blob=null;
     try{ blob=await png(m);
       const f=new File([blob],m.file,{type:'image/png'});
-      if(canShareFiles()&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:'X NFL Bets and Stats: '+m.title}); say(''); return true; } }
+      if(canShareFiles()&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:'NFL Hub: '+m.title}); say(''); return true; } }
     catch(e){ if(e&&e.name==='AbortError'){ say(''); return false; } }
     /* no share sheet after all: the download */
     try{ if(!blob) blob=await png(m); saveFile(blob,m.file); say('Saved as '+m.file+'.'); return true; }
@@ -7531,8 +7726,8 @@ function frames(){
       if(window.ResizeObserver&&doc.body) new ResizeObserver(fit).observe(doc.body); else setInterval(fit,800);
     });
     let doc=BET_APP.replace('window.EMBED_TAB=null','window.EMBED_TAB='+JSON.stringify(f.dataset.embed));
-    /* nflbets/preview.html sets a theme for the frames too; the live page sets none */
-    if(typeof window.PREVIEW_FRAME_HEAD==='string'){ const i=doc.indexOf('</head>'); if(i>0) doc=doc.slice(0,i)+window.PREVIEW_FRAME_HEAD+doc.slice(i); }
+    /* the hub look, laid over the app's own styles as it is over the page's (theme.css, by the build) */
+    if(typeof window.THEME_FRAME_HEAD==='string'){ const i=doc.indexOf('</head>'); if(i>0) doc=doc.slice(0,i)+window.THEME_FRAME_HEAD+doc.slice(i); }
     f.setAttribute('srcdoc',doc);
   };
   const show=()=>document.querySelectorAll('main section:not([hidden]) iframe.pk-frame').forEach(load);

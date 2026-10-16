@@ -538,10 +538,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     }
     /* the X's look: a 44px target at the top right, clear of the header's chips (the card's
        padding and the header's own room hold the X, so the chips wrap before it on a phone), in
-       the page's own tokens, so the light page and the preview's dark look both carry it */
+       the page's own tokens, so the hub look carries it */
     { const rule = (h, sel) => { const m = h.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\{([^}]*)\\}')); return m ? m[1] : ''; };
-      const PV = fs.readFileSync(path.join(ROOT, 'nflbets', 'preview.html'), 'utf8');
-      for (const [name, h] of [['the page', HTML], ['the preview', PV]]) {
+      for (const [name, h] of [['the page', HTML]]) {
         const x = rule(h, '#lpCard .lp-x'), head = rule(h, '#lpCard .sp-head'), card = rule(h, '#lpCard .savedp');
         const px = (s, p) => +((s.match(new RegExp('(?:^|;)' + p + ':(-?[\\d.]+)px')) || [])[1]);
         const padR = +((card.match(/padding:[\d.]+px ([\d.]+)px/) || [])[1]);
@@ -933,7 +932,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         && /Est\.: a leg is priced on one side only/.test(txt(view.querySelector('.pc-chance'))) === est,
         `${how}: the card does not lead with the fair chance (${line1}), then the model's and the price's: ` + txt(view.querySelector('.pc-chance')));
       chk(new RegExp(`^${wk <= 18 ? 'Week ' + wk : '(Wild Card|Divisional|Conference|Super Bowl)'}`).test(txt(view.querySelector('.pc-sub'))) && /Dec 31/.test(txt(view.querySelector('.pc-sub')))
-        && /X NFL Bets and Stats/i.test(txt(view)) && txt(view).includes('demon-x13.github.io/nfl-hub/nflbets'), `${how}: the card has no week and date, or no mark and address: ` + txt(view.querySelector('.pc-head')));
+        && /NFL Hub/.test(txt(view)) && txt(view).includes('demon-x13.github.io/nfl-hub/nflbets'), `${how}: the card has no week and date, or no mark and address: ` + txt(view.querySelector('.pc-head')));
       chk(d.activeElement === d.getElementById('pcDownload'), `${how}: the window did not take the focus`);
       /* Open in DraftKings: one link to DraftKings' betslip, the legs' own ids in the card's order
          joined by +, each '#' as %23, in a new tab; under the buttons, what it opens and each leg's
@@ -1223,7 +1222,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         `${how}: Download did not save the card as a named PNG: ` + JSON.stringify(rec.clicks));
       chk(rec.urls.length === 1 && rec.urls[0].type === 'image/png' && rec.canvases.length === 1 && rec.canvases[0].width === 1080 && rec.canvases[0].height > 2 * 400,
         `${how}: the download is not a PNG drawn at twice the card's size: ` + (rec.urls[0] && rec.urls[0].type) + ' ' + (rec.canvases[0] && rec.canvases[0].width));
-      chk(['Home Side', 'To win', 'Card Runner', rbLabel, '−135', '+105', price, '2-leg parlay', 'X NFL BETS AND STATS', 'demon-x13.github.io/nfl-hub/nflbets', '$25.00'].every(t => rec.texts.some(x => x.includes(t))),
+      chk(['Home Side', 'To win', 'Card Runner', rbLabel, '−135', '+105', price, '2-leg parlay', 'NFL HUB', 'demon-x13.github.io/nfl-hub/nflbets', '$25.00'].every(t => rec.texts.some(x => x.includes(t))),
         `${how}: the image does not carry every leg, the price, the stake and the mark: ` + rec.texts.join(' | '));
       chk(!rec.texts.some(x => /DraftKings|Share link/.test(x)), `${how}: the image carries the DraftKings link or the Share link: ` + rec.texts.join(' | '));
       { const all = rec.texts.join('');
