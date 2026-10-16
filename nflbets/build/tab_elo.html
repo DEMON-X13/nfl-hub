@@ -689,6 +689,9 @@ function eloPicks(){
        pricedLegs offers only on the kinds the estimate has been checked on */
     if(l.grp==='TEAM'||!(l.src==='real'||l.src==='dkline')||!isFinite(l.price)||l.price<EP.lo||l.price>EP.hi) continue;
     if(typeof pbAllows==='function'&&!pbAllows(l)) continue;   /* the Parlay Builder's ticked games and player sides */
+    /* (app v109) a leg DraftKings' betslip can take, as the Parlay Builder's levels: DraftKings' own id at
+       its line, wherever the payload carries ids for its game (a line read by Refresh odds has none) */
+    if(typeof dkCarries==='function'&&dkCarries(l)&&!(typeof dkIdOf==='function'&&dkIdOf(l))) continue;
     const e=window.eloOf(l.pid); if(!e) continue;
     const imp=mlProb(l.price); if(!(imp>0&&imp<1)) continue;
     const pe=muP(l,imp); if(pe==null) continue;
@@ -720,7 +723,9 @@ function eloSuggest(){
   let body;
   if(!sides) body=`<p class="pb-why">Tick Player overs or Player unders above for the Elo picks: every leg is a player's line.</p>`;
   else if(!r.tiers.length) body=`<p class="pb-why">No Elo picks on your picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price on the games and sides ticked'
-    :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning${typeof espnOn==='function'&&espnOn()?'; DraftKings’ lines read by Refresh odds count too, at our estimate of its price':''}.</p>`;
+    :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. ${typeof dkCarries==='function'&&typeof pbGames==='function'&&pbGames().some(g=>dkCarries({week:g.w,gid:g.id}))
+    ?'A pick takes only legs DraftKings’ betslip can take, by DraftKings’ own id, which comes with its player prices: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET). A line read by Refresh odds carries no id.'
+    :`Player prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET)${typeof espnOn==='function'&&espnOn()?'; DraftKings’ lines read by Refresh odds count too, at our estimate of its price':''}.`}</p>`;
   else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:`data-pb-elo-add="${t.id}"`,
       rule:'<span class="pb-rule">plus money first, one leg a game</span>',badge:l=>badge(l.pid),legP:l=>l.pe})).join('')}</div>`;
   v.innerHTML=`<h3>Elo picks <span class="pill">week ${w}</span></h3>

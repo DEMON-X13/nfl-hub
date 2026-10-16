@@ -1249,7 +1249,7 @@ function espnApplyGame(g,odds,at,since){
     set('ls','dk'); set('lat',espnIso(at)); ESPN_GL[g.id].at=at;
   }
   if(odds.event||Object.keys(odds.ids).length){
-    const D=PAY.dk&&typeof PAY.dk==='object'?PAY.dk:(PAY.dk={}), W=D[String(g.w)]||(D[String(g.w)]={}), E=W[g.id]||(W[g.id]={});
+    const D=PAY.dk&&typeof PAY.dk==='object'?PAY.dk:(PAY.dk=dkPressMade({})), W=D[String(g.w)]||(D[String(g.w)]={}), E=W[g.id]||(W[g.id]={});
     if(odds.event&&!E.event){ E.event=odds.event; ch=true; }
     /* each id the read gave, or found as the pull had it, is dated by this read (ESPN_IDAT, which the
        parlay card reads); glat stays the paid pull's, dating the ids the read did not see (a spread at
@@ -1561,7 +1561,7 @@ function espnKeepLines(g,gl,since,same){
    replacing one, each dated by the read that gave or found it */
 function espnKeepIds(g,gl){
   if(!gl.event&&!Object.keys(gl.ids).length) return;
-  const D=PAY.dk&&typeof PAY.dk==='object'?PAY.dk:(PAY.dk={}), W=D[String(g.w)]||(D[String(g.w)]={}), E=W[g.id]||(W[g.id]={}), T=ESPN_IDAT[g.id]||(ESPN_IDAT[g.id]={});
+  const D=PAY.dk&&typeof PAY.dk==='object'?PAY.dk:(PAY.dk=dkPressMade({})), W=D[String(g.w)]||(D[String(g.w)]={}), E=W[g.id]||(W[g.id]={}), T=ESPN_IDAT[g.id]||(ESPN_IDAT[g.id]={});
   if(gl.event&&!E.event) E.event=gl.event;
   for(const k of Object.keys(gl.ids)){ if(E[k]==null) E[k]=gl.ids[k]; if(E[k]===gl.ids[k]) T[k]=gl.idat[k]||gl.at; }
   if(Object.keys(T).length&&!isFinite(Date.parse(E.glat))) E.glat=gl.glat||espnIso(Math.min(...Object.values(T)));
@@ -1801,6 +1801,58 @@ function espnReadLine(at){
   return `DraftKings’ lines as read ${espnWhen(t)}; prices estimated`+(h>DK_EST.staleHours?` (read ${Math.round(h)}h ago: press Refresh odds for today’s)`:'')+'.';
 }
 
+/* ---------- DraftKings' id for a leg (app v109) ----------
+   DraftKings' betslip takes a leg only by DraftKings' own outcome id, and an id names one outcome at one
+   number. PAY.dk holds the ids the price pull read (weekly.py's dk_ids), and Refresh odds adds DraftKings'
+   current game-line ids (espnIdAt dates them); a player's line read on ESPN carries none. dkIdOf is the
+   id for a leg at its own line, by the keys and rung rule the parlay card reads (card.html, dkLeg): null
+   once its game has kicked off, or where DraftKings has none. A suggestion takes only legs that have one,
+   wherever the payload carries ids for the leg's game (dkCarries; one baked before them suggests as before). */
+/* a press on a payload baked before ids makes PAY.dk to hold the game-line ids it read (dkPressMade):
+   that payload still carries no ids of the pull's, so it suggests as before */
+const DK_PRESS_MADE=new WeakSet();
+function dkPressMade(o){ DK_PRESS_MADE.add(o); return o; }
+/* the payload carries ids (no l), and for the game of leg l ({week, gid} will do): its week has an entry
+   for that game. A game with none is taken as a payload baked before ids is: weekly.py bakes PAY.dk on
+   every run, {} from Monday night's final to the next week's first pull, and a level, hand or Elo pick
+   must not go empty for three days for want of ids no pull has read yet */
+function dkCarries(l){
+  if(!(typeof PAY==='object'&&!!PAY&&!!PAY.dk&&typeof PAY.dk==='object'&&!DK_PRESS_MADE.has(PAY.dk))) return false;
+  if(!l) return true;
+  const W=PAY.dk[String(l.week)], D=W&&typeof W==='object'?W[l.gid]:null;
+  return !!D&&typeof D==='object';
+}
+function dkIdOf(l){
+  if(!l||!dkCarries(l)) return null;
+  const g=(S.sched||[]).find(x=>x.id===l.gid); if(g&&gameStarted(g)) return null;
+  const W=PAY.dk[String(l.week)], D=W&&W[l.gid]; if(!D||typeof D!=='object') return null;
+  const pt=x=>String(+x); let keys;
+  if(l.stat==='ml') keys=[l.pid+'|ml'];
+  else if(l.stat==='ats') keys=[l.pid+'|ats|'+pt(l.k)];
+  else if(l.stat==='total') keys=['game|total|'+l.side+'|'+pt(l.k)];
+  else if(l.stat==='any_td') keys=(+l.k||1)===1?[l.pid+'|any_td']:[];
+  else if(l.main) keys=[[l.pid,l.stat,l.side,pt(l.k)].join('|')];
+  /* a rung, k or more: DraftKings' Over k-0.5, else the whole Over k-1 its price was read from */
+  else keys=[+l.k-0.5,+l.k-1].map(p=>[l.pid,l.stat,'over',pt(p)].join('|'));
+  for(const k of keys){ const v=D[k]; if(typeof v==='string'&&v) return v; }
+  return null;
+}
+/* DraftKings has the same bet, with no id at the leg's own line, at another number: a spread the same
+   team's, a total the same side, a player's main line the same player, stat and side, a rung his Over on
+   the stat, 2+ touchdowns his anytime touchdown (the parlay card puts such a leg on the slip at DraftKings'
+   number: card.html, dkLeg). A moneyline and the anytime touchdown have no number. For the panel's note */
+function dkAtAnother(l){
+  if(!l||!dkCarries(l)) return false;
+  const g=(S.sched||[]).find(x=>x.id===l.gid); if(g&&gameStarted(g)) return false;
+  const D=PAY.dk[String(l.week)][l.gid];
+  if(l.stat==='ml') return false;
+  if(l.stat==='any_td') return (+l.k||1)>=2&&typeof D[l.pid+'|any_td']==='string'&&!!D[l.pid+'|any_td'];
+  const near=l.stat==='ats'?l.pid+'|ats|':l.stat==='total'?'game|total|'+l.side+'|':[l.pid,l.stat,l.main?l.side:'over',''].join('|');
+  return Object.keys(D).some(k=>k.startsWith(near)&&k.length>near.length&&isFinite(+k.slice(near.length))&&typeof D[k]==='string'&&!!D[k]);
+}
+/* a Sunday kickoff before 4pm Eastern (g.d and g.t are Eastern): oddsfetch.py's early_sunday(), whose
+   games are never bought player prices, so never given DraftKings' player ids */
+function dkEarlySunday(g){ return !!g&&!!g.d&&new Date(g.d+'T12:00:00Z').getUTCDay()===0&&(g.t||'13:00')<'16:00'; }
 /* ---------- the lines the suggestions are built from ---------- */
 /* every line this week with a real sportsbook price, team bets and players, unjudged, and (app v107)
    every player leg of a tested kind priced from DraftKings' line read by Refresh odds where the pull has
@@ -2042,14 +2094,24 @@ function pbCap(list){
 /* the legs on the reader's picks: preferred (the full bar) and thin (at or above the book, no more) */
 function pbPool(games){
   const edge=c=>c.p-mlProb(c.price), formOut=typeof window.eloLoaded==='function'&&!window.eloLoaded();
-  const pref=[], thin=[], plGames=new Set(), fm={}; let far=0, farDk=0;
+  /* (app v109) where the payload carries DraftKings' ids, a leg qualifies only with one at its own line,
+     so every leg a level suggests goes on DraftKings' betslip. A game counts as having player prices only
+     where one of its player legs has an id (plNoId: games whose player legs have none), and the legs that
+     would have qualified but for the id are counted for the panel's note (noId, noIdPl the players'; moved,
+     movedPl those DraftKings had at another number). A game the payload has no ids for is as before */
+  const hasId=c=>!dkCarries(c)||!!dkIdOf(c);
+  const pref=[], thin=[], plGames=new Set(), plNoId=new Set(), fm={}; let far=0, farDk=0, noId=0, noIdPl=0, moved=0, movedPl=0;
   for(const c of pricedLegs(games)){
-    if(!isGameLeg(c)) plGames.add(c.gid);
+    const id=hasId(c);
+    if(!isGameLeg(c)) (id?plGames:plNoId).add(c.gid);
     if(!pbAllows(c)||!(c.src==='real'||c.src==='dkline')||!isFinite(c.price)||c.price===0||!(c.p>=PB_PMIN&&c.p<PB_PMAX)||edge(c)<0) continue;
     /* until the Elo files are in, no player leg qualifies at all, as before */
     if(c.grp!=='TEAM'&&formOut) continue;
     /* the model FAR_OFF or more above the book's fair chance: left out, and counted for the panel */
     if(legFarOff(c,fm)){ far++; if(c.src==='dkline') farDk++; continue; }
+    /* no DraftKings id at its line: it cannot go on the slip, so it is not suggested (a leg far off
+       the market is counted as that, above, as before) */
+    if(!id){ const pl=!isGameLeg(c); noId++; if(pl) noIdPl++; if(dkAtAnother(c)){ moved++; if(pl) movedPl++; } continue; }
     if(edge(c)>=PB_EDGE&&formAgrees(c)) pref.push({...c,thin:false}); else thin.push({...c,thin:true});
   }
   /* the totals, with Game total ticked: both sides of each ticked game's posted total on a real
@@ -2058,8 +2120,10 @@ function pbPool(games){
   const mkt=[];
   if(pbUi().k.total) for(const g of games) for(const side of ['over','under']){
     const c=totalLeg(g,side);
-    if(c&&pbAllows(c)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=PB_PMIN&&c.p<PB_PMAX) mkt.push({...c,thin:false,market:true}); }
-  return {pref:pbCap(pref),thin:pbCap(thin),mkt:pbCap(mkt),plGames:plGames.size,far,farDk};
+    if(c&&pbAllows(c)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=PB_PMIN&&c.p<PB_PMAX){
+      /* a total with no DraftKings id at its number is counted for the note too */
+      if(hasId(c)) mkt.push({...c,thin:false,market:true}); else { noId++; if(dkAtAnother(c)) moved++; } } }
+  return {pref:pbCap(pref),thin:pbCap(thin),mkt:pbCap(mkt),plGames:plGames.size,far,farDk,noId,noIdPl,moved,movedPl,plNoId:[...plNoId].filter(id=>!plGames.has(id)).length};
 }
 /* a leg that can join: not a line already on it, not a second side (to win or to cover) on one
    game, and not a second leg on one player (two lines on one man, his catches and his yards, are
@@ -2213,14 +2277,19 @@ function pbTier(t,pool,memo,base){ return pbWithFair(pbTierOf(t,pool,memo,base))
    ticked and none of the ticked games priced yet, that is the reason, and the tier says so rather
    than ask for more ticks (under Players only no tick would help). c: which of the two kinds are ticked */
 const PB_NO_PL='no player prices yet: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).';
+/* (app v109) player legs priced on the ticked games, and none with a DraftKings id: a line read by Refresh
+   odds carries none, and DraftKings' own come only with the prices the pull buys */
+const PB_PULLED='pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET)';
+const PB_NO_ID='no player legs DraftKings’ betslip can take yet: a player’s line read by Refresh odds carries no DraftKings id (ESPN gives none for it), and DraftKings’ own ids come with its prices, which are '+PB_PULLED+'.';
 /* (app v107) once Refresh odds has read the ticked games, a game with no player leg is one DraftKings had
    posted no player lines for: a line read is priced here by estimate, so the reason is the lines */
 function pbNoPl(){ const at=espnLatest(currentWeek());
   return `no player lines yet: DraftKings had posted none for these games when Refresh odds last read them from ESPN${at?` (${espnWhen(at)})`:''}; DraftKings’ own prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`; }
 function pbWhy(n,pool,c){
   const m=pbMaxLegs([...pool.pref,...pool.thin,...(pool.mkt||[])]);
-  const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks`:`No ${n}-leg parlay on your picks`;
-  if(c&&c.players&&!pool.plGames){ const np=c.espn?pbNoPl():PB_NO_PL; return c.teams?`${what}, and ${np}`:np[0].toUpperCase()+np.slice(1); }
+  /* (app v109) short of legs only for want of DraftKings' ids: said so */
+  const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks${pool.noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay on your picks`;
+  if(c&&c.players&&!pool.plGames){ const np=pool.plNoId?PB_NO_ID:(c.espn?pbNoPl():PB_NO_PL); return c.teams?`${what}, and ${np}`:np[0].toUpperCase()+np.slice(1); }
   return `${what}: tick more games or bet types.`;
 }
 function pbBuild(){
@@ -2234,6 +2303,7 @@ function pbBuild(){
     espn:games.some(g=>ESPN_OUT[g.id]&&(ESPN_OUT[g.id].st==='ok'||ESPN_OUT[g.id].st==='none'))};
   out.espnRead=c.espn;
   out.pref=pool.pref.length; out.thin=pool.thin.length; out.mkt=pool.mkt.length; out.far=pool.far; out.farDk=pool.farDk||0; out.noPlayerPrices=c.players&&!pool.plGames;
+  out.noId=pool.noId||0; out.noIdPl=pool.noIdPl||0; out.moved=pool.moved||0; out.movedPl=pool.movedPl||0; out.plNoId=pool.plNoId||0;
   out.tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:pbWhy(n,pool,c)}; });
   return out;
 }
@@ -2398,7 +2468,7 @@ function gameSuggestSig(g){
   return [g.id,gameStarted(g),JSON.stringify(S.odds[g.id]||{}),g.sp,g.tot,g.mlh,g.mla,PAY.baked_at||'',S.margin||'',suggestSide(),'e'+ESPN_SEQ].join('|');
 }
 /* every line in the game worth a place: priced by the book, or by the model's estimate */
-function gameLegPool(g){
+function gameLegPool(g,all){
   const out=pricedLegs([g]);
   const have=new Set(out.map(l=>l.key+'@'+l.k+l.side+(l.main?'m':'')));
   const roster=rosterFor(g,false);
@@ -2424,8 +2494,10 @@ function gameLegPool(g){
         out.push({...base,key,k:r.k,side:'over',main:false,p:r.p,price:rungView(x.pl,l.stat,l.mu,r.k,g.w).est,mu:l.mu,label:`${r.k}+ ${l.m.lbl.toLowerCase()}`}); }
     }
   }
-  const fm={};
-  return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.price>=GAME_LEG_MIN&&c.p>=0.40&&c.p<0.97&&sideAllows(c)&&!legFarOff(c,fm));
+  /* (app v109) where the payload carries DraftKings' ids for the game, only a leg DraftKings' betslip can
+     take (all: every leg as before, to count those the ids left out) */
+  const fm={}, dkOn=!all&&dkCarries({week:g.w,gid:g.id});
+  return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.price>=GAME_LEG_MIN&&c.p>=0.40&&c.p<0.97&&sideAllows(c)&&!legFarOff(c,fm)&&(!dkOn||!!dkIdOf(c)));
 }
 function gameTiers(g){
   const sig=gameSuggestSig(g), hit=GAME_TIER_CACHE[g.id];
@@ -2467,8 +2539,20 @@ function gameTiers(g){
     val[id]=legs?{...done(legs),relaxed,floor}:null;
     if(legs) prev=legs;
   }
+  /* (app v109) the legs DraftKings' ids left out, counted where a hand came out empty */
+  val.noId=GAME_TIERS.some(([id])=>!val[id])&&dkCarries({week:g.w,gid:g.id})?gameLegPool(g,true).length-pool.length:0;
   GAME_TIER_CACHE[g.id]={sig,val};
   return val;
+}
+/* (app v109) why a hand is empty where DraftKings' ids left legs out: a hand takes only legs DraftKings'
+   betslip can take, and a game's player ids come with its player prices, which are not pulled yet, or
+   never for Sunday's early games; with them in, its other lines DraftKings had no id for */
+function gameNoIdWhy(g,n){
+  const D=((PAY.dk||{})[String(g.w)]||{})[g.id]||{}, pl=!!D.at||Object.keys(D).some(k=>!/^(team:|game\|)/.test(k)&&!['event','at','glat'].includes(k));
+  const head=`Only legs DraftKings’ betslip can take are suggested here, and this game does not have enough of them for ${n} legs`;
+  if(pl) return `${head}: DraftKings had no id for its other lines when its prices were read.`;
+  if(dkEarlySunday(g)) return `${head}: DraftKings’ player ids come with its player prices, which are never pulled for Sunday’s early games (before 4pm ET).`;
+  return `${head} yet: DraftKings’ player ids come with its player prices, which are ${PB_PULLED}.`;
 }
 /* on the parlay means this exact line, threshold and side are ticked */
 const suggestLegOn=l=>{ const c=S.parlay[l.key]; return !!c&&c.k===l.k&&c.side===l.side&&!!c.main===!!l.main; };
@@ -2477,7 +2561,7 @@ function gameSuggestCard(g,locked){
   const side=`<div class="gsugg-side"><span class="sugg-side" role="group" aria-label="Which legs to build from">${SUGGEST_SIDES.map(([k,l])=>`<button type="button" class="${suggestSide()===k?'on':''}" data-gsugg-side="${k}" aria-pressed="${suggestSide()===k}">${l}</button>`).join('')}</span></div>`;
   const T=gameTiers(g), stake=pbStake();
   const block=([id,label,n,floor])=>{ const t=T[id];
-    if(!t) return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span></div><p class="muted" style="margin:6px 0 0;font-size:12px">This game does not have ${n} lines to build from yet.</p></div>`;
+    if(!t) return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span></div><p class="muted" style="margin:6px 0 0;font-size:12px"${T.noId?' data-gsugg-noid':''}>${T.noId?esc(gameNoIdWhy(g,n)):`This game does not have ${n} lines to build from yet.`}</p></div>`;
     return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span><span class="grow"></span><button class="btn quiet gsugg-all" data-gtier-add="${id}">Add all</button></div>
       <div class="gsugg-nums">${t.fair&&t.fair.p!=null?`<b data-gsugg-fair="${t.fair.p}">${(t.fair.p*100).toFixed(0)}%</b> fair chance${t.fair.est?' (est.)':''} <span class="muted">·</span> model says <b>${(t.corr*100).toFixed(0)}%</b> to land`
         :`<b>${(t.corr*100).toFixed(0)}%</b> to land <span class="muted">(the model’s chance: no fair chance without every leg’s book price)</span>`} <span class="muted">·</span> <b>${fmtML(decToML(t.dec))}</b>${t.legs.some(l=>l.src==='dkline')?' <span class="muted" data-gsugg-est>estimated price</span>':''}${stake?` <span class="muted">pays $${(stake*t.dec).toFixed(2)}</span>`:''}</div>
@@ -2587,9 +2671,18 @@ function pbPanel(){
   if(u.k.total) notes.push('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.');
   /* player bets ticked, none of their prices in, and a level built all the same (from team bets
      or totals): the levels say nothing of the missing player legs, so the panel does */
-  if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push(r.espnRead?`No player lines are in yet for your picks, so the tiers below are built without player legs: ${pbNoPl().replace(/^no player lines yet: /,'')}`:'Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).');
+  /* (app v109) player legs priced and none with a DraftKings id: the levels are built without them, and why */
+  const noIdNote=r.noPlayerPrices&&r.plNoId&&r.tiers.some(t=>t.legs);
+  if(noIdNote) notes.push(`No player leg on your picks can go on DraftKings’ betslip yet, so the tiers below are built without player legs: ${PB_NO_ID.replace(/^no player legs DraftKings’ betslip can take yet: /,'')}`);
+  else if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push(r.espnRead?`No player lines are in yet for your picks, so the tiers below are built without player legs: ${pbNoPl().replace(/^no player lines yet: /,'')}`:'Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).');
   if(r.far) notes.push(`${r.far} leg${r.far===1?' is':'s are'} left out: the model rates ${r.far===1?'it':'each'} ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance (DraftKings’ prices with the margin taken out${r.farDk?`, or for ${r.farDk===r.far?(r.far===1?'it, priced':'each, priced'):(r.farDk===1?'the one':'the '+r.farDk)} from DraftKings’ line read by Refresh odds and marked est., our estimate of it`:''}), and its edges that large have not held up this season. ${r.far===1?'It is':'They are'} still on the game pages, flagged far off the market.`);
-  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.far&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(espnW?`No line on your picks has a price the model rates at or above the book yet, DraftKings’ lines read by Refresh odds included. DraftKings’ own prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`
+  /* legs left out for want of a DraftKings id at their line, beyond what the note above says (which covers
+     every player leg): those DraftKings had at another number (the parlay card would put them on at its
+     number), and those it had none for, each said apart */
+  const mvN=r.moved-(noIdNote?r.movedPl:0), noneN=r.noId-r.moved-(noIdNote?r.noIdPl-r.movedPl:0), nonePl=noIdNote?0:r.noIdPl-r.movedPl, mvTeam=r.moved-r.movedPl;
+  if(noneN) notes.push(`${noneN} leg${noneN===1?' is':'s are'} left out: a suggested parlay takes only legs DraftKings’ betslip can take, by DraftKings’ own id at the leg’s line, and DraftKings has none for ${noneN===1?'it':'them'} yet${nonePl?`. A player’s line read by Refresh odds carries no id (ESPN gives none for it); DraftKings’ own player ids come with its prices, which are ${PB_PULLED}`:''}. ${noneN===1?'It is':'They are'} still on the game pages, where you can add ${noneN===1?'it':'them'} to the builder.`);
+  if(mvN) notes.push(`${mvN} leg${mvN===1?' is':'s are'} left out: DraftKings had ${mvN===1?'it':'them'} only at another number when its lines were last read, and a suggested parlay takes only legs DraftKings’ betslip can take at their own line${mvTeam?'. Refresh odds reads DraftKings’ current spreads and totals, which the levels can take':''}. Added to the builder from the game pages, ${mvN===1?'it goes':'each goes'} on DraftKings’ slip at DraftKings’ number.`);
+  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.far&&!r.noId&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(espnW?`No line on your picks has a price the model rates at or above the book yet, DraftKings’ lines read by Refresh odds included. DraftKings’ own prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`
     :`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`);
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
@@ -2679,6 +2772,20 @@ function wireStakeChips(){
   document.querySelectorAll('[data-stake-chip]').forEach(b=>{ if(b.dataset.wired) return; b.dataset.wired='1';
     b.addEventListener('click',()=>{ S.stake=+b.dataset.stakeChip; save(); renderParlay(); }); });
 }
+/* the card's plan for the builder's legs, each read as the card reads it (fromBuilder: its price's source
+   decides whether it carries a book price); null without the card */
+function dkSlipRows(legs,prices){
+  const C=window.PARLAY_CARD; if(!C||typeof C.dkPlan!=='function') return null;
+  try{ const p=C.dkPlan(legs.map((l,i)=>Object.assign({},l,l.src==='dkline'&&prices[i].src!=='dkline'?{src:prices[i].src}:{},
+      {card:{tag:prices[i].src==='real'?'book':(prices[i].src==='fair'?'fair':'est.')}})));
+    return p&&Array.isArray(p.each)?p.each:null; }catch(e){ return null; }
+}
+function dkSlipLine(x,i){
+  if(!x) return '';
+  if(x.id&&x.swap) return `<small class="dkslip" data-dkslip="${i+1}">On DraftKings as ${esc(x.swap)}</small>`;
+  if(x.id) return '';
+  return `<small class="dkslip" data-dkslip="${i+1}">Not on DraftKings’ slip yet: ${esc(x.brief||x.why||'')}</small>`;
+}
 function renderParlay(o){
   /* a leg from a game that has kicked off can't be bet, so it leaves the working parlay */
   let dropped=0;
@@ -2718,11 +2825,14 @@ function renderParlay(o){
   let html=droppedNote+`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">${legs.length}-leg parlay <span class="pill">building</span></h2>
     <p class="muted" style="margin:0 0 12px">Every leg has to land. The chance below is worked out with the legs' real relationship to each other, not by multiplying them together.</p>
     <table><thead><tr><th>Player</th><th>The bet</th><th class="num">Projected</th><th class="num">Chance</th><th class="num">Price</th><th></th></tr></thead><tbody>`;
-  const fm={};
+  /* (app v109) the parlay card's own reading of each leg for DraftKings' betslip (window.PARLAY_CARD's
+     dkPlan, on the hub page only), so the builder says before Finish which leg goes on at DraftKings'
+     number and which cannot go on yet. Nothing where a leg goes on as built, nor without the card */
+  const fm={}, slip=dkSlipRows(legs,prices);
   legs.forEach((l,i)=>{
     const [c,lbl]=confTier(l.p), f=legFair(l,fm), far=!!f&&l.p-f.p>=FAR_OFF-1e-9;
     html+=`<tr class="legrow"><td class="plr">${esc(l.name)}${l.grp==='TEAM'?'':injChip(l.pid)}<small>${esc(l.pos)} \u00b7 ${esc(l.team)} v ${esc(l.opp)} \u00b7 wk ${esc(l.week)}</small></td>
-      <td><b>${esc(l.label)}</b>${far?`<small class="faroff" data-far>${farText(l.p,f)}</small>`:''}</td>
+      <td><b>${esc(l.label)}</b>${far?`<small class="faroff" data-far>${farText(l.p,f)}</small>`:''}${dkSlipLine(slip&&slip[i],i)}</td>
       <td class="num">${l.mu==null?'\u2013':num(l.mu,l.mu<10?1:0)}</td>
       <td class="num">${(l.p*100).toFixed(0)}% <span class="conf ${c}" style="margin-left:6px">${lbl}</span>${f?`<small class="legfair" data-legfair="${f.p}" title="The book's fair chance on this leg: its price with the margin taken out${f.est?', estimated with the week\u2019s typical margin since only this side is priced':''}">fair ${(f.p*100).toFixed(0)}%${f.est?' est.':''}</small>`:''}</td>
       <td class="num">${fmtML(prices[i].ml)} <span class="muted" style="font-size:11px"${prices[i].src==='dkline'?estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true}):''}>${prices[i].src==='real'?'real':(prices[i].src==='est'||prices[i].src==='dkline'?'est.':'fair')}</span></td>
