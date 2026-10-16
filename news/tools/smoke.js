@@ -9,9 +9,10 @@
        against ../elo/data/model.json, X NFL Bets' own file (tools/deepdive-checks.js);
      - every game of the units' week drawn both ways by deepdive.js possession(): the four rows in order,
        each tag the weighted edge worked out on its own, each row's two sides the offense's then the
-       defense's, each its own club, the ranks and edge shown the file's, and no name, no one out and no
-       number in a row (the owner's call, 14 October 2026: a row is its unit, the clubs and ranks and its
-       tag; who plays is the snapshot's Starters card's); what the rows rest on,
+       defense's, each its own club, the ranks and edge shown the file's, the defense's position it faces
+       named (the owner's call, 16 October 2026), and no name, no one out and no number in a row (the owner's
+       call, 14 October 2026: a row is its unit, the clubs and ranks, the defense's position and its tag;
+       who plays is the snapshot's Starters card's); what the rows rest on,
        deepdive.js basis() (the snapshot's "Position matchups" label's title), naming each side with its
        own count of this season's games; and the Overall
        line's tag, deepdive.js headTag() on model.json's units, against the rule (tools/deepdive-checks.js);
@@ -136,7 +137,7 @@ async function run() {
       if (!r) { bad.push(`${off} v ${def}: no units for one side`); continue; }
       bad.push(...DC.checkPossession(r.html, off, def, U[DD.club(off)], U[DD.club(def)]));
     }
-    check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, each row\'s two sides headed by their own clubs, the ranks and edges the file\'s, no name or number in a row', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions`); }
+    check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, each row\'s two sides headed by their own clubs, the ranks and edges the file\'s, the defense\'s position named, no name or number in a row', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions`); }
   /* what the rows rest on (deepdive.js basis(), the title of the snapshot's "Position matchups" label): each
      side named with its own count of this season's games,
      the file's g26, worked out here, and a club with no count given none. On every game of the week, and on a

@@ -687,8 +687,9 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 #pbElo .pb-legs .nm .pe-badge .tierbadge{width:16px;height:18px;flex:none}
 .pe-track table{margin-top:6px}
 .pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
-/* Overall Offense and Overall Defense: two pills at the end of the position row, a table of the
-   32 teams with each key stat and its league rank, sortable, and a team's window */
+/* Overall Offense and Overall Defense, then (16 October 2026) Run Defense, Pass Defense and Pass
+   Rush: pills at the end of the position row, each a table of the 32 teams with its key stats and
+   their league ranks, sortable, and a team's window */
 .pe-pos .pe-unitpill{border-color:var(--ink-2);color:var(--ink);font-weight:700}
 .pe-pos .pe-unitpill:first-of-type{margin-left:6px}
 table.pe-tt th[data-sort]{cursor:pointer;user-select:none}
@@ -1109,8 +1110,9 @@ table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
 #gsModal .dtag.vtough{background:#FAE1DE;color:#A93226}
 #gsModal .gs-hpts{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 /* the Deep Dive: four rows a possession, each the offense's unit against the defense's it plays, compact
-   and centred: the unit to the left of the middle, the two clubs and ranks in it, the tag to its right,
-   the middle column on the same axis as the "vs" between the boxes above */
+   and centred: the offense's unit to the left of the middle, the two clubs and ranks in it, the defense's
+   position it faces and the tag to its right (.ddend; the position since the owner's call of 16 October
+   2026), the middle column on the same axis as the "vs" between the boxes above */
 #gsModal .gs-dd{display:block;margin:20px 0 0;text-align:center}
 #gsModal .gs-dd>.gs-lab{display:block;margin:0 0 6px;cursor:help}
 #gsModal .ddrow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:14px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
@@ -1121,7 +1123,9 @@ table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
 #gsModal .ddsn{font-weight:600;color:var(--ink-2)}
 #gsModal .ddsep{color:var(--ink-2)}
 #gsModal .ddrk{font-family:var(--display);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
-#gsModal .ddrow .dtag{justify-self:start;cursor:help}
+#gsModal .ddend{justify-self:start;display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left}
+#gsModal .dddu{font-size:var(--gs-t2);font-weight:600;color:var(--ink-2);line-height:1.3}
+#gsModal .ddrow .dtag{cursor:help}
 #gsModal .gs-ddwhy{margin:14px 0 0;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
 
 /* the stat breakdown: a row a stat, each team's number at its side, the bar split between them */
@@ -1199,6 +1203,12 @@ table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
 .gs-pl.gs-off .gs-pnm{text-decoration:line-through;text-decoration-color:var(--miss)}
 .gs-pl .gs-outw{color:var(--miss);font-weight:600;white-space:normal}
 .gs-pl .gs-pnm .pe-q{display:inline-block;margin-left:3px;white-space:nowrap;text-decoration:none}
+/* a starter's name that opens his row on the Props tab (the owner's call, 16 October 2026): the name box
+   itself, a button that reads as the name, a dotted line under it to say it goes somewhere, 44px to tap,
+   the home side's still to the right; the window's focus ring is the button's own */
+#gsModal .gs-pl button.gs-pnm{display:block;min-height:44px;margin:0;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:inherit;cursor:pointer;text-decoration:underline dotted;text-decoration-color:var(--muted);text-underline-offset:4px}
+#gsModal .gs-pl button.gs-pnm:hover{text-decoration-style:solid;text-decoration-color:currentColor}
+#gsModal .gs-pl.gs-off button.gs-pnm{text-decoration:line-through;text-decoration-color:var(--miss)}
 
 /* mismatches */
 ul.gs-mm{list-style:none;margin:0;padding:0;display:grid;gap:10px}
@@ -1301,11 +1311,20 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   .gs-tiles>div{padding:8px 7px}
   .gs-tiles .gs-lab{letter-spacing:.04em}
 }
-/* a phone: a matchup row's unit centred on a line of its own, the two clubs and ranks and the tag centred
-   under it, so neither the unit nor the tag wraps or runs to the card's edge */
-@media(max-width:560px){
-  #gsModal .ddrow{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 10px;padding:10px 0}
-  #gsModal .ddunit{flex-basis:100%;text-align:center}
+/* a phone, and the narrow window up to 760px (where the right-hand column, the defense's position and
+   the tag together, would wrap): a matchup row's two positions centred on a line of their own ("Quarterback
+   vs Pass defense", the vs drawn by the style alone), the two clubs and ranks and the tag centred under
+   them, so nothing wraps or runs to the card's edge. The row's end (.ddend) gives its two parts to the
+   row, ordered, and a zero-height item of the row's own breaks the line between */
+@media(max-width:760px){
+  #gsModal .ddrow{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 8px;padding:10px 0}
+  #gsModal .ddend{display:contents}
+  #gsModal .ddunit{order:1;text-align:center}
+  #gsModal .dddu{order:2}
+  #gsModal .dddu::before{content:'vs ';font-weight:400}
+  #gsModal .ddrow::after{content:'';order:3;flex-basis:100%;height:0}
+  #gsModal .ddrks{order:4}
+  #gsModal .ddrow .dtag{order:5}
 }
 @media(prefers-reduced-motion:reduce){ .gs-chev{transition:none} }
 </style>
@@ -1508,7 +1527,7 @@ line[stroke="#E6EAEF"]{stroke:#4A5269}
     <div class="hub-stamp"><span class="sub grow" id="saveState"></span><span class="sub" id="buildTag"></span></div>
   </div>
   <nav role="tablist" id="tabs">
-    <button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button>
+    <button role="tab" data-tab="pickems" aria-selected="true">Matchups</button>
     <button role="tab" data-tab="slate">Props</button>
     <button role="tab" data-tab="parlay">Parlay Builder</button>
     <button role="tab" data-tab="xparlays">X Parlays</button>
@@ -2022,7 +2041,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v108 \u00b7 2026-10-16';
+const APP_BUILD='app v110 \u00b7 2026-10-16';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3103,7 +3122,8 @@ function weekOpen(w){ return w<=liveWeek(); }
 /* every regular-season game final: the model covers the regular season, and says so */
 function seasonOver(){ return !!(S&&S.sched&&S.sched.length)&&S.sched.every(g=>gameFinal(g)); }
 /* where a game's lines came from: DraftKings' pull while it is under a day old, nflverse's
-   posted line (the Pick'ems board's) after that. null for a payload that does not say. */
+   posted line (the Matchups tab's, the board Pick'ems was until 16 October 2026) after that. null
+   for a payload that does not say. */
 function lineSource(g){
   if(!g||!g.ls) return null;
   /* (app v107) DraftKings' lines a Refresh odds press read on ESPN, dated as the press's status line dates them */
@@ -3111,7 +3131,7 @@ function lineSource(g){
     if(gl&&gl.at) return 'DraftKings’, read from ESPN by Refresh odds '+espnWhen(gl.at);
     const t=g.lat?new Date(g.lat):null;
     return 'DraftKings'+(t&&isFinite(t)?', pulled '+t.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}):''); }
-  return "nflverse's posted line, as on the Pick'ems board";
+  return "nflverse's posted line, as on the Matchups tab";
 }
 
 /* ---------- small helpers ---------- */
@@ -6226,10 +6246,10 @@ function applyBaked(){
 /* which build of this page you are looking at. Without it there is no way to tell a page
    the browser cached last week from the one the job published this morning. APP_BUILD moves
    only with the prop model's parts; PAGE_HASH is the first seven hex of the page's own
-   SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
+   SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='cb59596';
+const PAGE_HASH='70dd51d';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -7521,16 +7541,35 @@ function canProps(id){
   const row=mkt(id); return !!row&&(typeof weekOpen!=='function'||weekOpen(+row.w));
 }
 /* the page opened: its week chosen on the slate, the tab opened, then the page, as a click on the
-   game there opens it (the prop model's own S.ui.game and renderSlate) */
-function openOnProps(id){
+   game there opens it (the prop model's own S.ui.game and renderSlate). With a player (pid, a gsis id
+   as the lineups and the prop model's depth chart write it: a starter's name in the snapshot's Starters
+   card, the owner's call of 16 October 2026, "in starters, make player names clickable to their props
+   page"), the page opens with his row open, as a Mismatches bubble opens him (S.ui.open), brought into
+   view, highlighted and focused; without one, or where the page draws no row for him, the Game bets
+   card is brought into view as before */
+function openOnProps(id,pid){
   const row=mkt(id); if(!row||typeof renderSlate!=='function') return;
   const ws=document.getElementById('weekSel');
   if(ws&&[...ws.options].some(o=>+o.value===+row.w)) ws.value=String(row.w);
   const tab=document.querySelector('#tabs button[data-tab="slate"]'); if(tab) tab.click();
-  S.ui.game=row.id; S.ui.open={}; save(); renderSlate();
+  S.ui.game=row.id; S.ui.open=pid?{[pid]:true}:{}; save(); renderSlate();
+  const pr=pid?[...document.querySelectorAll('#gameView [data-open]')].find(b=>b.dataset.open===pid):null;
+  if(pr){ try{ if(typeof window.eloFocusPlayer==='function') window.eloFocusPlayer(pid); else if(pr.scrollIntoView) pr.scrollIntoView({block:'start'}); }catch(e){}
+    try{ pr.focus({preventScroll:true}); }catch(e){} return; }
   /* the page opens at its head; this button was for the game bets, so they are brought into view
      (they follow the game's suggested parlays, which a phone shows a screen of first) */
   const gb=document.querySelector('#gameView .gbets'); try{ if(gb&&gb.scrollIntoView) gb.scrollIntoView({block:'start'}); }catch(e){}
+}
+/* the players the game's page on the Props tab draws as a row to open (renderGame: on its roster, as
+   the page shows it, with a line to bet), so the snapshot links a starter there only where his row is;
+   an empty set where the page cannot open the game or the prop model cannot say */
+function propsPlayers(id){
+  const out=new Set();
+  try{ if(!canProps(id)||typeof rosterFor!=='function'||typeof statLines!=='function') return out;
+    const g=mkt(id), R=rosterFor(g,!!(S.ui&&S.ui.showAll));
+    for(const t of [g.a,g.h]) for(const x of (R[t]&&R[t].players)||[]) if(statLines(x).length) out.add(x.pl.id);
+  }catch(e){ out.clear(); }
+  return out;
 }
 /* a game's row is a button to its Game snapshot: a click, or Enter or Space with the row focused, as
    a button takes them: Enter as it goes down, Space as it comes up (opened on its way down, the focus
@@ -7689,24 +7728,32 @@ function foot(){
 
 /* the Game snapshot (nflbets/build/snapshot.html) reads the board through this: the season as
    loaded (ST.state is state.json whole), the Vegas call, where a game stands, its kickoff and site,
-   and whether the Props tab can open the game's page, and the opening of it */
-window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET,probCols,canProps,openOnProps};
+   and whether the Props tab can open the game's page, which players it draws there, and the opening
+   of it, at a player's row or its game bets */
+window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET,probCols,propsPlayers,canProps,openOnProps};
 
 /* tabs as addresses: #props opens the Props tab, and a reload stays where it was. On a phone the
    bar is wider than the screen and scrolls sideways, so the chosen tab is brought into it, on load,
    on a new address and on a tap: landing on #xparlays (where the old Live Parlays links go) left
    its button off the bar's right edge. Only the bar scrolls, never the page. The Season Tracker tab
    is gone (14 October 2026: its games are in each Game snapshot), so its old address, #tracker, where
-   news/ sent every visitor, lands here on Pick'ems, the address written over as #pickems */
+   news/ sent every visitor, lands here on the board. The board is the Matchups tab since the owner's
+   call of 16 October 2026 ("change the name Pickems to matchups"), and #matchups its address; its
+   section and button keep the id pickems, which the prop model's tab switch reads (tab-pickems), so
+   the old #pickems, in every bookmark and pickems/'s redirect, and #tracker land on it, the address
+   written over as #matchups */
 function routeTabs(){
   const nav=document.getElementById('tabs'), btns=[...document.querySelectorAll('#tabs button')];
   const reveal=b=>{ try{ if(!nav||!b) return; const n=nav.getBoundingClientRect(), r=b.getBoundingClientRect();
     if(r.left>=n.left&&r.right<=n.right) return;
     nav.scrollLeft+=(r.left+r.width/2)-(n.left+n.width/2); }catch(e){} };
   const chosen=()=>btns.find(x=>x.getAttribute('aria-selected')==='true');
-  const go=()=>{ if(location.hash==='#tracker') history.replaceState(null,'','#pickems');
-    const b=btns.find(x=>'#'+x.dataset.tab===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); };
-  btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!=='#'+b.dataset.tab) history.replaceState(null,'','#'+b.dataset.tab); reveal(b); }));
+  /* a tab's address is its id but for the board's (both the go and the click must read it, or the
+     click go() makes would write #pickems back over #matchups) */
+  const ADDR={pickems:'matchups'}, addr=b=>'#'+(ADDR[b.dataset.tab]||b.dataset.tab);
+  const go=()=>{ if(location.hash==='#tracker'||location.hash==='#pickems') history.replaceState(null,'','#matchups');
+    const b=btns.find(x=>addr(x)===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); };
+  btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!==addr(b)) history.replaceState(null,'',addr(b)); reveal(b); }));
   window.addEventListener('hashchange',go); go();
   /* the web fonts can widen the buttons after the first layout: once more when they are in */
   if(document.readyState!=='complete') window.addEventListener('load',()=>reveal(chosen()),{once:true});
@@ -7954,15 +8001,27 @@ const thru=P=>P.through?(P.through==='final'?'final':P.through):'through week '+
 function sourceNote(){
   const M=D.model, s=(M&&M.sources)||{}, bits=[];
   const pend=s.player_stats_pending||[]; if(pend.length) bits.push(`${pend.length} final game${pend.length===1?' is':'s are'} not in nflverse's player stats yet, so ${pend.length===1?'it is':'they are'} not rated`);
-  const tp=s.team_stats_pending||[]; if(tp.length) bits.push(`Overall Offense and Overall Defense wait on nflverse's play-by-play for ${tp.length} final game${tp.length===1?'':'s'}, which ${tp.length===1?'is':'are'} not rated yet`);
+  const tp=s.team_stats_pending||[]; if(tp.length) bits.push(`the team tables (Overall Offense and Overall Defense, Run Defense, Pass Defense and Pass Rush) wait on nflverse's play-by-play for ${tp.length} final game${tp.length===1?'':'s'}, which ${tp.length===1?'is':'are'} not rated yet`);
   const rep=Object.values(s.injury_report||{}), wk=D.mu&&D.mu.week, mine=rep.filter(r=>r.week===wk);
   const filed=mine.filter(r=>r.statuses_filed).length;
   if(mine.length&&filed<mine.length) bits.push(`week ${esc(wk)}'s game statuses are filed for ${filed} of ${mine.length} clubs; until a club files, a player out at its last report who has not practised since is counted out`);
   return bits.length?`<p class="pe-note">${bits.map(b=>b.charAt(0).toUpperCase()+b.slice(1)).join('. ')}.</p>`:'';
 }
 /* the position row: a pill a rated group, then Overall Offense and Overall Defense once a team
-   has a rating: a rated game, or (from October 2026) its start carried from last season */
+   has a rating: a rated game, or (from October 2026) its start carried from last season, and
+   after them each of the file's own tables of a unit (`units.tables`, from 16 October 2026: Run
+   Defense, Pass Defense and Pass Rush, each a defense's), named and described by the file; a file
+   without them draws the two */
 const unitsOn=()=>{ const U=D.model&&D.model.units; return !!(U&&U.off&&U.def&&Object.values(U.off).some(v=>v.games||v.carried)); };
+const unitKeys=()=>{ const U=D.model&&D.model.units, T=U&&U.tables; return ['off','def',...(T&&typeof T==='object'?Object.keys(T).filter(k=>U[k]&&typeof U[k]==='object'&&T[k]&&T[k].label):[])]; };
+/* a table: its key (the pill chosen, else Overall Offense), the side of the ball it rates, its name
+   and what its teams are called */
+function unitTable(){
+  const U=D.model.units, key=unitKeys().includes(D.unit)?D.unit:'off', T=(U.tables||{})[key];
+  const side=key==='off'?'off':key==='def'?'def':(T.of==='off'?'off':'def');
+  const label=key==='off'?'Overall Offense':key==='def'?'Overall Defense':String(T.label);
+  return {key,side,dfn:side==='def',label,pos:!!T,meta:T||null,teams:T?label.toLowerCase()+(/sh$/i.test(label)?'es':'s'):side==='def'?'defenses':'offenses'};
+}
 /* the season the units carry in (`params.carry_from`) and the share, or null for a file without the carry */
 const unitCarry=()=>{ const p=D.model&&D.model.units&&D.model.units.params||{}; return p.carry&&p.carry_from!=null?{c:+p.carry,from:p.carry_from}:null; };
 /* a club with no rated game yet, shown on its carried rating: never hidden, always marked */
@@ -7972,7 +8031,8 @@ const unitStart=(U,side,v)=>v&&v.start!=null?v.start:(U.start||{})[side]!=null?U
 function posRow(){
   const P=D.players, on=D.unit&&unitsOn();
   const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${!on&&k===D.pos}">${esc(P.groups[k].label)}</button>`).join(''):'';
-  const units=unitsOn()?['off','def'].map(s=>`<button role="tab" class="pe-unitpill" data-unit="${s}" aria-selected="${on&&D.unit===s}">${s==='off'?'Overall Offense':'Overall Defense'}</button>`).join(''):'';
+  const U=D.model&&D.model.units, nm=k=>k==='off'?'Overall Offense':k==='def'?'Overall Defense':U.tables[k].label;
+  const units=unitsOn()?unitKeys().map(s=>`<button role="tab" class="pe-unitpill" data-unit="${esc(s)}" aria-selected="${on&&D.unit===s}">${esc(nm(s))}</button>`).join(''):'';
   return `<div class="pe-pos" role="tablist">${btns}${units}</div>`;
 }
 function rankings(){
@@ -8005,7 +8065,10 @@ function rankings(){
    file says (each entry of `units.stats` carries its weight, which elo/check.py holds to
    `units.weights`); every stat is shown with its league rank, the columns sort, and a click on a
    team opens its window. Nothing here knows the weights: the text and the columns are read from
-   the file (an older file without `stats` gets the old three columns). */
+   the file (an older file without `stats` gets the old three columns). The position tables
+   (`units.tables`: Run Defense, Pass Defense and Pass Rush, 16 October 2026) are drawn by the same
+   card on their own stats (each `units.stats` entry's `side` is its table), each with the test the
+   file gives it in place of Overall's note on points. */
 const ordinal2=n=>n==null?'':ordinal(n);
 const fmtStat=(v,f)=>v==null?'–':f==='pct'?(v*100).toFixed(1)+'%':f==='epa'?(v>=0?'+':'−')+Math.abs(v).toFixed(3):f==='f2'?v.toFixed(2):v.toFixed(1);
 const recStr=r=>r?`${r[0]}-${r[1]}${r[2]?'-'+r[2]:''}`:'–';
@@ -8013,7 +8076,7 @@ const listAnd=xs=>xs.length<2?xs.join(''):xs.slice(0,-1).join(', ')+' and '+xs[x
 /* a label inside a sentence: "Points a game" reads "points a game", "EPA a play" stays */
 const lc=s=>String(s).replace(/^[A-Z](?=[a-z])/,c=>c.toLowerCase());
 function unitStats(side){ const U=D.model.units; return (U.stats||[]).filter(s=>s.side===side); }
-/* the side's teams in the order on screen: overall rank, or a column best first (# keeps the rank) */
+/* the table's teams in the order on screen: overall rank, or a column best first (# keeps the rank) */
 function teamRows(side){
   const U=D.model.units, T=U[side], st=D.tsort||{key:'rank',dir:1};
   const rows=Object.entries(T).map(([t,v])=>({t,...v}));
@@ -8024,8 +8087,8 @@ function teamRows(side){
   return rows;
 }
 function teamsCard(){
-  const U=D.model.units, side=D.unit==='def'?'def':'off', dfn=side==='def', T=U[side], P=D.players;
-  const stats=unitStats(side), old=!stats.length, n=Object.values(T).filter(v=>v.games).length, C=unitCarry();
+  const U=D.model.units, X=unitTable(), key=X.key, side=X.side, dfn=X.dfn, T=U[key], P=D.players;
+  const stats=unitStats(key), old=!stats.length, n=Object.values(T).filter(v=>v.games).length, C=unitCarry();
   const st=D.tsort||{key:'rank',dir:1};
   const sortTh=(key,label,cls='',extra='')=>`<th class="${cls}" data-sort="${key}"${st.key===key?` aria-sort="${st.dir>0?'descending':'ascending'}"`:''}>${label}${extra}</th>`;
   const mv=v=>v.change==null||v.change===0?'<span class="pe-flat">–</span>':`<span class="pe-${v.change>0?'up':'down'}" title="${v.change>0?'Up':'Down'} ${Math.abs(v.change)} since its last game">${v.change>0?'+':'−'}${Math.abs(v.change)}</span>`;
@@ -8034,7 +8097,7 @@ function teamsCard(){
     return `<td class="pe-st${first}" data-stat="${s.key}"><span class="pe-sv">${fmtStat(e&&e.v,s.fmt)}</span><small class="pe-ord ${ordCls(e&&e.rank)}">${ordinal2(e&&e.rank)}</small></td>`; };
   const what=dfn?'allowed':'scored';
   const oldCells=v=>`<td class="pe-n">${v.ppg}</td><td class="pe-n">${v.ypg}</td><td class="pe-n">${v.epa_play==null?'–':(v.epa_play>=0?'+':'−')+Math.abs(v.epa_play).toFixed(3)}</td>`;
-  const body=teamRows(side).map(v=>`<tr class="pe-tmrow${v.games||v.carried?'':' pe-np'}${v.carried?' pe-carried':''}" data-team="${esc(v.t)}"><td class="pe-rank">${v.rank}</td><td>${mv(v)}</td>
+  const body=teamRows(key).map(v=>`<tr class="pe-tmrow${v.games||v.carried?'':' pe-np'}${v.carried?' pe-carried':''}" data-team="${esc(v.t)}"><td class="pe-rank">${v.rank}</td><td>${mv(v)}</td>
       <td class="pe-name pe-tm">${tag(v.t,true)}<small>${v.games?`${v.games} game${v.games===1?'':'s'}`:'no game yet'}${carryTag(v)}</small></td>
       <td class="pe-n">${recStr(v.record)}</td>
       <td class="pe-n"><span class="pe-elo">${v.elo}</span></td><td><span class="pe-shield">${shield(v.elo)}${tierName(v.elo)}</span></td>
@@ -8043,6 +8106,24 @@ function teamsCard(){
     :stats.map((s,i)=>sortTh(s.key,esc(s.short),'pe-n'+(!s.weight&&i>0&&stats[i-1].weight?' pe-w0f':''),s.weight?`<small>${s.weight}%</small>`:'<small>shown only</small>')).join('');
   const weighted=stats.filter(s=>s.weight), zero=stats.filter(s=>!s.weight);
   const wf=U.walk_forward||{};
+  /* a position table: what it rates, from the file, and its own test (`tables[key].walk_forward`):
+     how far its rating missed the measure it is for in a team's next game, beside the club's raw
+     numbers so far and the league average */
+  if(X.pos){ const tw=X.meta.walk_forward||{}, f=x=>(+x).toFixed(x<0.1?4:3), unit=X.label.toLowerCase();
+    /* which way each stat is better, in the table's own words: a stat the defense allows is better
+       lower, one it makes (Pass Rush's sacks and hits) better higher; Overall Defense's "taken" is its
+       takeaways' word and is not borrowed here */
+    const lo=stats.some(s=>s.better==='low'), hi=stats.some(s=>s.better==='high');
+    const way=lo&&hi?'less allowed, more made by the defense':hi?'more made by the defense':'less allowed';
+    const sub=`<p class="pe-sub" id="peTeamsWhy">Every team's ${esc(unit)} rated on this season's games${C?`, each starting from ${esc(C.c)} of its final rating in ${esc(C.from)} (the share Overall Offense and Overall Defense carry), so every team is rated from the season's first day; one that has not played yet shows that carried rating, marked carried from ${esc(C.from)}. As in the player rankings,`:', the way the player rankings are: everyone started at 1500, and'} after each game each stat moves by how far it beat or missed what was expected against the offense it faced, home field counted. The rating weighs ${listAnd(weighted.map(s=>`${esc(lc(s.label))} <b>${s.weight}%</b>`))}. Because opponents count, a team can stand above one with better raw numbers: a team's window ranks each stat both ways. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better (${way}). Each stat carries its league rank (the best eight green, the worst eight red); click a column to sort by it, best first, and a team for its rating game by game.</p>
+      ${zero.length?`<p class="pe-note" id="peTeamsZero">${esc(listAnd(zero.map(s=>s.label)))} ${zero.length===1?'is':'are'} shown with ${zero.length===1?'its rank but weighs':'their ranks but weigh'} nothing: once the weighted ${weighted.length===1?'stat is':'stats are'} known, ${zero.length===1?'it':'they'} told nothing more about a team's next game.</p>`:''}
+      ${tw.rmse?`<p class="pe-note" id="peTeamsWf">Fitted on ${esc(tw.fit)} and tested on ${esc(tw.test)}, a forecast of the ${esc(tw.measure)} an offense had in its next game against the team, from this rating with the offense's own ratings on the same stats, missed by ${f(tw.rmse)} on average (root mean square), where the same forecast from both teams' raw numbers so far that season missed by ${f(tw.raw)} and the league average by ${f(tw.league)}: with opponents counted and last season carried in, it orders the ${esc(X.teams)} better than their raw numbers do${tw.seasons?`, in ${esc(tw.seasons_better)} of ${esc(tw.seasons)} seasons`:''}. The offense's ratings on these stats are used only for that test and are not shown.</p>`:''}`;
+    return `<div class="card" id="peUnits"><h2>${esc(X.label)} <span class="pill">${esc(U.season||P.season)} ${esc(thru(P))}</span></h2>
+    ${sub}
+    ${sourceNote()}
+    ${posRow()}
+    ${curveChart(Object.values(T).filter(v=>v.games||v.carried).map(v=>v.elo),X.teams)}
+    <div class="pe-tscroll"><table class="pe-t pe-tt"><thead><tr>${sortTh('rank','#')}<th>Move</th>${sortTh('team','Team','pe-tm')}${sortTh('record','Record','pe-n')}${sortTh('rank','Rating','pe-n')}<th>Tier</th>${heads}</tr></thead><tbody>${body}</tbody></table></div></div>`; }
   const sub=old
     ?`<p class="pe-sub">Every team's ${dfn?'defense':'offense'} rated on this season's games alone, everyone starting at 1500, each game scored on points and EPA a play ${what}. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better.</p>`
     :`<p class="pe-sub" id="peTeamsWhy">Every team's ${dfn?'defense':'offense'} rated on this season's games${C?`, each starting from ${esc(C.c)} of its final rating in ${esc(C.from)} (the share of last season that best predicted a team's points in its next game, chosen on 2013-2017 and tested on 2018-2025), so every team is rated from the season's first day; one that has not played yet shows that carried rating, marked carried from ${esc(C.from)}. As in the player rankings,`:', the way the player rankings are: everyone started at 1500, and'} after each game every key stat moves by how far it beat or missed what was expected against the ${dfn?'offense':'defense'} it faced, home field counted. The rating weighs ${listAnd(weighted.map(s=>`${esc(lc(s.label))} <b>${s.weight}%</b>`))}. Because opponents count, a team can stand above one with better raw numbers: a team's window ranks each stat both ways. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better${dfn?' (less allowed)':''}. Each stat carries its league rank (the best eight green, the worst eight red); click a column to sort by it, best first, and a team for its rating game by game.</p>
@@ -8077,31 +8158,34 @@ function nextGame(t){
   return null;
 }
 function teamModal(t){
-  const U=D.model.units, side=D.unit==='def'?'def':'off', dfn=side==='def', v=U[side]&&U[side][t]; if(!v) return;
+  const U=D.model.units, X=unitTable(), key=X.key, side=X.side, dfn=X.dfn, v=U[key]&&U[key][t]; if(!v) return;
   let m=el('peTmModal');
   if(!m){ m=document.createElement('div'); m.id='peTmModal'; m.className='modal'; m.hidden=true;
     m.innerHTML='<div class="modal-panel" role="dialog" aria-modal="true" aria-label="Team"><div id="peTmView"></div></div>';
     (el('tab-elo')||document.body).appendChild(m);
     m.addEventListener('click',e=>{ if(e.target===m) tmClose(); });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) tmClose(); }); }
-  const stats=unitStats(side), n=Object.keys(U[side]).length, C=unitCarry();
+  const stats=unitStats(key), n=Object.keys(U[key]).length, C=unitCarry();
   const rows=stats.map(s=>{ const e=v.stats&&v.stats[s.key]||{};
     return `<tr data-stat="${s.key}" class="${s.weight?'':'pe-weak'}"><td>${esc(s.label)}</td><td class="pe-n"><b>${fmtStat(e.v,s.fmt)}</b></td><td class="pe-n">${ordinal2(e.rank)||'–'}</td><td class="pe-n">${ordinal2(e.adj)||'–'}</td>
       <td class="pe-n">${s.weight?s.weight+'%':'–'}</td><td class="pe-n">${s.weight&&e.adds!=null?`<span class="pe-nud ${e.adds>0?'up':e.adds<0?'dn':'flat'}" style="display:inline">${e.adds>0?'+':e.adds<0?'−':''}${Math.abs(e.adds).toFixed(1)}</span>`:'–'}</td></tr>`; }).join('');
   const nx=nextGame(t), other=dfn?'off':'def', ov=nx&&U[other]&&U[other][nx.opp];
-  const next=nx?`<p class="pe-tnext" id="peTmNext">Next: week ${esc(nx.week)} ${nx.home?'vs':'at'} ${tag(nx.opp,true)}, whose ${dfn?'offense':'defense'} is <b>${ov?ordinal(ov.rank):'–'}</b> of ${n} in Overall ${dfn?'Offense':'Defense'}${ov?` (${ov.elo}, ${esc(tierName(ov.elo))})`:''}.</p>`:'';
+  const next=nx?`<p class="pe-tnext" id="peTmNext">Next: week ${esc(nx.week)} ${nx.home?'vs':'at'} ${tag(nx.opp,true)}, whose ${dfn?'offense':'defense'} is <b>${ov?ordinal(ov.rank):'–'}</b> of ${n} in Overall ${dfn?'Offense':'Defense'}${ov?` (${ov.elo}, ${esc(tierName(ov.elo))})`:''}${X.pos?`: the site has no offense table to set against ${esc(X.label)}, so this is its overall rank`:''}.</p>`:'';
   const zero=stats.filter(s=>!s.weight);
-  el('peTmView').innerHTML=`<div class="card pe-pl"><h2>${shield(v.elo)}${tag(t,true)} <span class="pill">Overall ${dfn?'Defense':'Offense'}</span><span style="flex:1"></span><button class="btn quiet" id="peTmClose">Close</button></h2>
+  /* the value column: Allowed where every stat is one the defense allows, Made where every one is one it
+     makes (Pass Rush), Value otherwise; Overall Defense keeps the Allowed it always had */
+  const colHead=!dfn?'Value':!X.pos||stats.every(s=>s.better==='low')?'Allowed':stats.every(s=>s.better==='high')?'Made':'Value';
+  el('peTmView').innerHTML=`<div class="card pe-pl"><h2>${shield(v.elo)}${tag(t,true)} <span class="pill">${esc(X.label)}</span><span style="flex:1"></span><button class="btn quiet" id="peTmClose">Close</button></h2>
     <div class="pe-pl-tiles">
       <div><span>Rating</span><b>${v.elo}</b><small>${esc(tierName(v.elo))}</small></div>
-      <div><span>Rank</span><b>#${v.rank}</b><small>of ${n} ${dfn?'defenses':'offenses'}</small></div>
+      <div><span>Rank</span><b>#${v.rank}</b><small>of ${n} ${esc(X.teams)}</small></div>
       <div><span>Last game</span><b>${v.change==null?'–':(v.change>0?'+':v.change<0?'−':'')+Math.abs(v.change)}</b><small>${v.before==null?(v.carried&&C?'carried from '+esc(C.from):'no game yet'):'from '+v.before}</small></div>
       <div><span>Games</span><b>${v.games}</b><small>${recStr(v.record)}</small></div>
     </div>
-    ${v.carried&&C?`<p class="pe-note" id="peTmCarried">No game yet this season: ${tag(t,true)}'s rating is carried from ${esc(C.from)}, ${Math.round(C.c*100)}% of where it finished then on every stat (${esc(unitStart(U,side,v))} on today's curve), and moves from its first game.</p>`:''}
+    ${v.carried&&C?`<p class="pe-note" id="peTmCarried">No game yet this season: ${tag(t,true)}'s rating is carried from ${esc(C.from)}, ${Math.round(C.c*100)}% of where it finished then on every stat (${esc(unitStart(U,key,v))} on today's curve), and moves from its first game.</p>`:''}
     ${next}
-    ${teamLine(v,unitStart(U,side,v))}
-    ${stats.length?`<table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">${dfn?'Allowed':'Value'}</th><th class="pe-n">League rank</th><th class="pe-n" title="The rank of the stat's own rating, which counts who the team played">Opponents counted</th><th class="pe-n">Weight</th><th class="pe-n" title="What the stat adds to the rating, in rating points">Adds</th></tr></thead><tbody>${rows}</tbody></table>
+    ${teamLine(v,unitStart(U,key,v))}
+    ${stats.length?`<table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">${colHead}</th><th class="pe-n">League rank</th><th class="pe-n" title="The rank of the stat's own rating, which counts who the team played">Opponents counted</th><th class="pe-n">Weight</th><th class="pe-n" title="What the stat adds to the rating, in rating points">Adds</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="pe-note">League rank is the season's raw number against the other teams; opponents counted ranks the stat's own rating, which credits a good game against a good ${dfn?'offense':'defense'} more than the same game against a weak one${C?` (and carries the share of ${esc(C.from)} the rating starts from)`:''}. Adds is what each weighted stat puts on the rating, in rating points from 1500.${zero.length?` Faded rows weigh nothing: ${esc(listAnd(zero.map(s=>lc(s.label))))} told nothing more about a team's next game once the weighted stats were known.`:''}</p>`:''}</div>`;
   el('peTmClose').addEventListener('click',tmClose);
   m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
@@ -8453,6 +8537,9 @@ function mismatchModal(rows){
 }
 function mmClose(){ const m=document.getElementById('peMmModal'); if(m){ m.hidden=true; if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open'); } }
 window.eloMismatches=mismatches;
+/* and the way a Mismatches bubble brings a player's row into view and highlights it, for the Game
+   snapshot's Starters names (the board's openOnProps) */
+window.eloFocusPlayer=mmFocus;
 if(typeof renderSlate==='function'){ const drawSlate=renderSlate;
   renderSlate=function(){ const r=drawSlate.apply(this,arguments); try{ mismatchCard(); }catch(e){} return r; }; }
 if(typeof renderGame==='function'){ const drawGame=renderGame;
@@ -8539,9 +8626,11 @@ boot();
 
    A row is drawn compact and centred: the unit, the two sides' clubs and ranks ("SEA 13th · DEN
    3rd", the offense's then the defense's; the quarterback's and the run game's defense side is the
-   pass or run defense's rank) and the tag, the edge in its title. Nothing else: no names, no one out,
-   no numbers (the owner's call, 14 October 2026: who plays is the Starters card's, the numbers the
-   Stat breakdown's). The file still carries the names, who is out and the numbers; the news job's
+   pass or run defense's rank), the defense's position it is up against (Pass defense, Pass rush, Run
+   defense, Coverage: the owner's call, 16 October 2026, "for offense vs defense section, please put
+   opposing positions for the defense") and the tag, the edge in its title. Nothing else: no names, no
+   one out, no numbers (the owner's call, 14 October 2026: who plays is the Starters card's, the
+   numbers the Stat breakdown's). The file still carries the names, who is out and the numbers; the news job's
    smoke holds them to their sources.
 
    The headline tag is the one the tracker put over its rows: this team's Overall Offense against the
@@ -8567,12 +8656,12 @@ boot();
   }
 
   /* the four rows of one possession, in this order: [offense unit, how the defense's side is read,
-     the label, the offense's words, the defense's words] */
+     the label, the offense's words, the defense's words, the defense's position as the row names it] */
   const ROWS = [
-    ['qb', 'passD', 'Quarterback', 'passing offense', 'pass defense'],
-    ['ol', 'front', 'Offensive line', 'pass protection', 'pass rush'],
-    ['rb', 'runD', 'Running backs', 'run game', 'run defense'],
-    ['rec', 'db', 'Receivers', 'receivers', 'coverage'],
+    ['qb', 'passD', 'Quarterback', 'passing offense', 'pass defense', 'Pass defense'],
+    ['ol', 'front', 'Offensive line', 'pass protection', 'pass rush', 'Pass rush'],
+    ['rb', 'runD', 'Running backs', 'run game', 'run defense', 'Run defense'],
+    ['rec', 'db', 'Receivers', 'receivers', 'coverage', 'Coverage'],
   ];
   /* the defense's side of a row: a unit of its own (pass rush, coverage) or its rating against the
      pass or the run (no names of its own) */
@@ -8597,24 +8686,26 @@ boot();
   }
 
   /* one possession: this offense's four rows against the defense. Returns { html, rows } where rows
-     are [{ key, tag, cls, edge }], or null when the file has no units for either club. A row is
-     compact and centred: the unit, each side's club and rank ("SEA 13th · DEN 3rd", the offense's
-     then the defense's, each side titled with what it is rated as), and the tag, whose title gives the
-     edge; no names, no one out, no numbers (the owner's call, 14 October 2026: who plays is the
-     Starters card's, the numbers the Stat breakdown's) */
+     are [{ key, dpos, tag, cls, edge }], or null when the file has no units for either club. A row is
+     compact and centred: the offense's unit, each side's club and rank ("SEA 13th · DEN 3rd", the
+     offense's then the defense's, each side titled with what it is rated as), the defense's position it
+     faces (.dddu, the owner's call of 16 October 2026) and the tag, whose title gives the edge, the two
+     together at the row's end (.ddend); no names, no one out, no numbers (the owner's call, 14 October
+     2026: who plays is the Starters card's, the numbers the Stat breakdown's). Each side's figure is in
+     its own .ddside, so a rating in place of a rank is one change there */
   function possession(D, off, def) {
     if (!D || !D.units) return null;
     const U = D.units[club(off)], O = D.units[club(def)];
     if (!U || !O) return null;
     const rows = [];
-    const html = ROWS.map(([key, dk, label, mine, theirs]) => {
+    const html = ROWS.map(([key, dk, label, mine, theirs, dpos]) => {
       const u = U[key], v = faced(O, dk), t = rowTag(D, off, def, key);
-      rows.push({ key, tag: t.tag, cls: t.cls, edge: t.edge });
+      rows.push({ key, dpos, tag: t.tag, cls: t.cls, edge: t.edge });
       const why = t.edge == null ? '' : ` title="Edge ${sd(t.edge)}: ${esc(off)}'s ${mine} rating minus ${esc(def)}'s ${theirs}, in league standard deviations. The tag weighs it by ${t.w} (${sd(t.w * t.edge)}), by how much this matchup alone has predicted points; the rows overlap, so they are not to be added up"`;
       /* one side: its club and its rank, titled with what it is rated as */
       const one = (cls, c, words, x) => { const rk = x && x.rank != null ? ord(x.rank) : '–';
         return `<span class="ddside ${cls}" title="${esc(c)} ${words}: ${rk}"><span class="ddsn">${esc(c)}</span> <b class="ddrk">${rk}</b></span>`; };
-      return `<div class="ddrow" data-dd="${key}" data-dd-off="${esc(off)}" data-dd-def="${esc(def)}"><span class="ddunit">${label}</span> <span class="ddrks">${one('ddoff', off, mine, u)}<span class="ddsep" aria-hidden="true"> · </span>${one('dddef', def, theirs, v)}</span> <span class="dtag ${t.cls}"${why}>${t.tag}</span></div>`;
+      return `<div class="ddrow" data-dd="${key}" data-dd-off="${esc(off)}" data-dd-def="${esc(def)}"><span class="ddunit">${label}</span> <span class="ddrks">${one('ddoff', off, mine, u)}<span class="ddsep" aria-hidden="true"> · </span>${one('dddef', def, theirs, v)}</span> <span class="ddend"><span class="dddu">${dpos}</span> <span class="dtag ${t.cls}"${why}>${t.tag}</span></span></div>`;
     }).join('');
     return { html: `<div class="dd" data-dd-pos="${esc(off)}-${esc(def)}">${html}</div>`, rows };
   }
@@ -9198,16 +9289,24 @@ function positions(P,g,F){
   const qpill=pid=>q(pid)?` <span class="pill pe-q" title="${esc(q(pid))}">Q</span>`:'';
   const off=pid=>typeof S==='object'&&S&&S.inactive&&S.inactive[pid]?(typeof inactiveWhy==='function'?inactiveWhy(S.inactive[pid]):'ruled out'):null;
   const ranked=x=>!!(x&&x.e&&x.e.rank!=null&&x.e.se!=null);
+  /* a starter's name is a button to his own row on the game's page on the Props tab where the prop
+     model draws one there (the owner's call, 16 October 2026: "in starters, make player names clickable
+     to their props page"; pkBoard.propsPlayers), else plain text. The button is the name box itself, so
+     the Q stays inline after the name inside it */
+  const onProps=P&&typeof P.propsPlayers==='function'?P.propsPlayers(g.game_id):new Set();
+  const nameBox=(pid,name)=>onProps.has(pid)
+    ?`<button type="button" class="gs-pnm gs-plink" data-gs-name data-gs-player="${esc(pid)}" aria-label="${esc(name)}${q(pid)?' (questionable)':''}: player props in this game, on the Props tab" title="${esc(name)}'s player props in this game, on the Props tab">${esc(name)}${qpill(pid)}</button>`
+    :`<span class="gs-pnm" data-gs-name>${esc(name)}${qpill(pid)}</span>`;
   const cell=(x,t,lead)=>{ if(!x) return '';
     const e=x.e, o=off(x.pid);
-    if(!e) return `<span class="gs-pl" data-pid="${esc(x.pid)}" data-team="${esc(t)}"><span class="gs-pn"><span class="gs-pnm" data-gs-name>${esc(x.name)}${qpill(x.pid)}</span></span><span class="gs-pst"><small class="gs-pmeta">not rated yet</small></span></span>`;
+    if(!e) return `<span class="gs-pl" data-pid="${esc(x.pid)}" data-team="${esc(t)}"><span class="gs-pn">${nameBox(x.pid,x.name)}</span><span class="gs-pst"><small class="gs-pmeta">not rated yet</small></span></span>`;
     const rk=ranked(x), active=Pl.groups[e.group]&&Pl.groups[e.group].active;
     /* the season Elo on its own, at the inner edge of each half on a wide screen (the two sides'
        numbers meet in the middle), first on the line under the name on a phone; the higher of the
        two on a row wears the edge mark */
     const stat=rk?`<b class="gs-pse gs-v${lead?' gs-better':''}">${e.se}</b><small class="gs-pmeta"><span class="gs-psep"> · </span><span class="gs-prk">#${e.rank}</span>${active?` of ${esc(active)}`:''}<span class="gs-ptier"> · ${esc(tierName(e.se))}</span></small>`
       :`<small class="gs-pmeta">not ranked this season · career <span class="gs-pcar">${e.elo}</span></small>`;
-    return `<span class="gs-pl${o?' gs-off':''}" data-pid="${esc(x.pid)}" data-team="${esc(t)}" data-grp="${esc(e.group)}"><span class="gs-pn">${rk?shield(e.se):''}<span class="gs-pnm" data-gs-name>${esc(e.name)}${qpill(x.pid)}</span></span>
+    return `<span class="gs-pl${o?' gs-off':''}" data-pid="${esc(x.pid)}" data-team="${esc(t)}" data-grp="${esc(e.group)}"><span class="gs-pn">${rk?shield(e.se):''}${nameBox(x.pid,e.name)}</span>
       <span class="gs-pst">${stat}</span>${o?`<small class="gs-outw">${esc(o)}</small>`:''}</span>`; };
   /* each defensive group's unit, ranked among the league's, at either end of its header */
   const nDefs=Object.keys(mu.league&&mu.league.defs||{}).length;
@@ -9284,7 +9383,7 @@ function draw(gid){
    is found again by its key and focused, Close where it has gone (the focus is never left on the page's
    body); and the first block at or below the header stays where it was on the screen, so a block drawn
    in above it (the props button, the preview, the Deep Dive's rows) does not move what is being read */
-const FOCUS_KEYS=['gsProps','gsFold','gsGoto','gsAll','gsSub','gsTab'];
+const FOCUS_KEYS=['gsProps','gsFold','gsGoto','gsAll','gsSub','gsTab','gsPlayer'];
 const ANCHORS='#gsView>section,#gsView>.gs-dbar,#gsView .gs-pair>section,#gsMatch>*,#gsView .gs-gl,#gsView .gs-secbody>*,#gsView .gs-unit,#gsView .gs-unit>*';
 /* the blocks the place is kept by, in the page's order, each under a key that names it again after a
    redraw: its id, its first data-gs- or data-dd- attribute, else its class in the block around it; then
@@ -9358,6 +9457,9 @@ function wire(){
     const al=t.closest('[data-gs-all]'); if(al){ const open=al.dataset.gsAll==='open'; for(const id of CARDS) setCard(id,open); syncAll(); return; }
     const tb=t.closest('[data-gs-tab]'); if(tb){ pickTab(tb.dataset.gsTab,false); return; }
     const gl=t.closest('[data-gs-goto]'); if(gl){ goCard(gl.dataset.gsGoto); return; }
+    /* a starter's name: the window closes and the board opens the game's page on the Props tab at his
+       row (pkBoard); the game is read before close() lets it go */
+    const pl=t.closest('[data-gs-player]'); if(pl){ const gid=cur, pid=pl.dataset.gsPlayer, P=B(); close(false); if(gid&&P&&typeof P.openOnProps==='function') P.openOnProps(gid,pid); return; }
     /* the game's own page on the Props tab: the window closes and the board opens it (pkBoard) */
     const pp=t.closest('[data-gs-props]'); if(pp){ const id=pp.dataset.gsProps, P=B(); close(false); if(P&&typeof P.openOnProps==='function') P.openOnProps(id); }
   });

@@ -25,6 +25,11 @@
  *     stats that weigh nothing; a column sorts best first and back, # keeping the overall rank; a
  *     team's window lists every stat, its line, and its coming opponent when the file calls one;
  *     Close and Escape shut it; and a model.json from before the stats still draws the old columns;
+ *   - Run Defense, Pass Defense and Pass Rush (16 October 2026, the owner's ask), the file's own
+ *     position tables (`units.tables`), are pills after those two, in the file's order and named as it
+ *     names them, each held to all of the above on its own stats, its window's coming opponent its
+ *     Overall Offense rank, and its text giving its own walk-forward test from the file; a file
+ *     without the tables (every build before them) draws exactly the two pills;
  *   - each club's line starts at its own start from the file; a club with no game yet this season
  *     (a copy of the file with one made so) is ranked and shown on its carried rating, marked
  *     "carried from" the season the file names, on the curve, with its window saying so, and the
@@ -240,14 +245,19 @@ function page(MU, opts) {
     const show = (v, f) => v == null ? '–' : f === 'pct' ? (v * 100).toFixed(1) + '%' : f === 'epa' ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(3) : f === 'f2' ? v.toFixed(2) : v.toFixed(1);
     const nth = n => n == null ? '' : n + ((n % 100 >= 11 && n % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
     const pill = (d, side) => [...d.querySelectorAll('#peBody .pe-pos button[data-unit]')].find(b => b.dataset.unit === side);
-    const open = async (d, side) => { const b = pill(d, side); if (b) { b.click(); await wait(20); } return d.getElementById('peUnits'); };
+    const open = async (d, side) => { const b = pill(d, side); if (!b) return null; b.click(); await wait(20); return d.getElementById('peUnits'); };
     const { w, d } = page(MU0); await wait(60);
     const row = d.querySelector('#peBody .pe-pos');
-    chk(!!row && [...row.querySelectorAll('button[data-unit]')].map(txt).join('|') === 'Overall Offense|Overall Defense',
-      'the position row does not carry the Overall Offense and Overall Defense pills');
-    for (const side of ['off', 'def']) {
+    /* the tables: Overall's two, then each of the file's position tables (Run Defense, Pass Defense
+       and Pass Rush), named as the file names them */
+    const POS = Object.keys(U0.tables || {}), TABS = ['off', 'def', ...POS];
+    const label = k => k === 'off' ? 'Overall Offense' : k === 'def' ? 'Overall Defense' : U0.tables[k].label;
+    chk(POS.length === 3 && POS.every(k => U0[k] && U0.tables[k].of === 'def'), `the file does not carry the three position tables, each a defense's: ${POS.join()}`);
+    chk(!!row && [...row.querySelectorAll('button[data-unit]')].map(txt).join('|') === TABS.map(label).join('|'),
+      'the position row does not carry the Overall Offense and Overall Defense pills and the file\'s position tables: ' + (row ? [...row.querySelectorAll('button[data-unit]')].map(txt).join('|') : 'no row'));
+    for (const side of TABS) {
       const card = await open(d, side), T = U0[side], teams = Object.keys(T), stats = U0.stats.filter(s => s.side === side);
-      const name = side === 'off' ? 'Overall Offense' : 'Overall Defense';
+      const name = label(side);
       chk(!!card && txt(card.querySelector('h2')).startsWith(name), `the ${name} pill does not open its table`);
       if (!card) continue;
       chk(d.querySelectorAll('#peBody .card').length === 1 && !d.querySelector('#peBody tr.pe-plrow'), `${name} should take the player table's place, not sit beside it`);
@@ -281,10 +291,26 @@ function page(MU, opts) {
       chk(weighted.every(said) && shares.join() === weighted.map(s => s.weight).join()
         && shares.reduce((a, b) => a + b, 0) === 100, `${name}'s text does not give the file's weights summing to 100: ${shares.join(', ')}`);
       const zero = stats.filter(s => !s.weight), zt = txt(card.querySelector('#peTeamsZero'));
-      chk(!zero.length || (zero.every(s => zt.includes(s.label)) && /weigh nothing/.test(zt)), `${name} does not say which stats weigh nothing, and why`);
+      chk(!zero.length || (zero.every(s => zt.includes(s.label)) && /weighs? nothing/.test(zt)), `${name} does not say which stats weigh nothing, and why`);
+      /* a position table's own test, from the file: the measure it is for, its miss beside the raw numbers' */
+      if (POS.includes(side)) { const tw = U0.tables[side].walk_forward || {}, wt = txt(card.querySelector('#peTeamsWf'));
+        const f = x => (+x).toFixed(x < 0.1 ? 4 : 3);
+        /* the test was a forecast from this rating with the offense's own ratings on the same stats, the
+           raw baseline both teams' raw numbers (def_units_fit.py): the note says so, never that the
+           defense's rating alone was scored */
+        chk(!!tw.rmse && wt.includes(`a forecast of the ${tw.measure} an offense had in its next game against the team, from this rating with the offense's own ratings on the same stats, missed by ${f(tw.rmse)}`)
+          && wt.includes(`same forecast from both teams' raw numbers`) && !/this rating missed/.test(wt)
+          && wt.includes(`missed by ${f(tw.raw)}`) && wt.includes(`${tw.fit}`) && wt.includes(`${tw.test}`),
+          `${name}'s text does not give its walk-forward test from the file: ${wt.slice(0, 260)}`);
+        chk(!/points and EPA|Overall/.test(txt(card.querySelector('#peTeamsZero'))), `${name}'s note borrows Overall's test`);
+        /* which way is better, in the table's own words: "less allowed" only with a stat the defense
+           allows, "more made" only with one it makes (Pass Rush's both), never Overall's "taken" */
+        const lo = stats.some(s => s.better === 'low'), hi = stats.some(s => s.better === 'high');
+        const way = lo && hi ? 'less allowed, more made by the defense' : hi ? 'more made by the defense' : 'less allowed';
+        chk(why.includes(`a standard deviation better (${way})`) && !/more taken/.test(why), `${name}'s text does not say which way is better in its own stats' words (${way}): ${why.slice(-330)}`); }
       /* the old measure's walk-forward on the carried file is the old measure carried the same way,
          which the site never ran: the text says so */
-      chk(!zero.length || (U0.walk_forward || {}).no_carry == null || /old rating on points and EPA alone, carried the same way, by/.test(zt),
+      chk(POS.includes(side) || !zero.length || (U0.walk_forward || {}).no_carry == null || /old rating on points and EPA alone, carried the same way, by/.test(zt),
         `${name}'s walk-forward note gives the old rating's carried score as if it were the old rating's own: ${zt.slice(0, 260)}`);
       /* a stat's header sorts by it, best first, then the other way; # keeps the overall rank */
       const k = stats[1].key, th = () => card.ownerDocument.querySelector(`#peUnits thead th[data-sort="${k}"]`);
@@ -304,13 +330,20 @@ function page(MU, opts) {
       const m = d.getElementById('peTmModal'), view = d.getElementById('peTmView');
       chk(!!m && !m.hidden && txt(view).includes(String(T[t].elo)) && view.querySelectorAll('.pe-pl-tiles div').length === 4, `a click on ${t} does not open its window`);
       chk([...view.querySelectorAll('tbody tr[data-stat]')].map(r => r.dataset.stat).join() === stats.map(s => s.key).join(), `${t}'s window does not list every stat`);
+      /* the value column's heading: a position table's in its stats' own words (Allowed, Made or Value),
+         so Pass Rush's own sacks are never "Allowed"; Overall's as it always was */
+      { const head = txt(view.querySelectorAll('table.pe-t thead th')[1]);
+        const want = side === 'off' ? 'Value' : !POS.includes(side) || stats.every(s => s.better === 'low') ? 'Allowed' : stats.every(s => s.better === 'high') ? 'Made' : 'Value';
+        chk(head === want, `${t}'s window heads its values "${head}" in ${name}, not "${want}"`); }
       chk(view.querySelector('.pe-tline svg') && view.querySelectorAll('.pe-tline circle').length === T[t].line.length + 1, `${t}'s window has no line game by game`);
       { const want = T[t].start != null ? T[t].start : (U0.start || {})[side];
         chk(txt(view.querySelector('.pe-tline circle title')) === `Season start: ${want}`, `${t}'s line does not start at its own start from the file (${want}): ${txt(view.querySelector('.pe-tline circle title'))}`); }
       const N = M.next || {}, g = +N.season === +U0.season ? (N.games || []).find(x => { const p = String(x.game_id).split('_'); return p[2] === t || p[3] === t; }) : null;
       if (g) { const p = g.game_id.split('_'), opp = p[3] === t ? p[2] : p[3], other = U0[side === 'off' ? 'def' : 'off'][opp];
         chk(!!d.getElementById('peTmNext') && txt(d.getElementById('peTmNext')).includes(opp) && txt(d.getElementById('peTmNext')).includes(nth(other.rank)),
-          `${t}'s window does not give its coming opponent ${opp} and that side's rank`); }
+          `${t}'s window does not give its coming opponent ${opp} and that side's rank`);
+        chk(!POS.includes(side) || txt(d.getElementById('peTmNext')).includes(`no offense table to set against ${name}`),
+          `${t}'s window in ${name} sets its opponent's Overall Offense against it without saying so`); }
       else chk(!d.getElementById('peTmNext'), `${t}'s window names an opponent the file does not call`);
       d.getElementById('peTmClose').click(); await wait(10);
       chk(m.hidden, 'Close does not shut a team\'s window');
@@ -328,12 +361,13 @@ function page(MU, opts) {
     { const C = (U0.params || {}).carry, from = (U0.params || {}).carry_from;
       chk(C === 0.42 && from === +U0.season - 1, `the file does not name the carry and the season carried in: ${C}, ${from}`);
       const M5 = JSON.parse(JSON.stringify(M)), t5 = Object.keys(M5.units.off).sort()[0];
-      for (const side of ['off', 'def']) { const v = M5.units[side][t5];
+      for (const side of TABS) { const v = M5.units[side][t5];
         Object.assign(v, { games: 0, line: [], before: null, change: null, carried: true, record: [0, 0, 0], start: v.elo });
         for (const e of Object.values(v.stats)) { e.v = null; e.rank = null; } }
       const { d: d5 } = page(MU0, { M: M5 }); await wait(60);
-      for (const side of ['off', 'def']) {
+      for (const side of TABS) {
         const card = await open(d5, side), v = M5.units[side][t5];
+        if (!card) { chk(false, `the ${side} pill is not on the page`); continue; }
         const tr = card && [...card.querySelectorAll('tbody tr.pe-tmrow')].find(x => x.dataset.team === t5);
         chk(!!tr && txt(tr.querySelector('.pe-elo')) === String(v.elo) && txt(tr.querySelector('.pe-rank')) === String(v.rank) && !tr.classList.contains('pe-np')
           && txt(tr.querySelector('.pe-carry')) === `carried from ${from}`, `${t5}, yet to play, is not shown on its carried rating with its rank and marked carried from ${from}: ${tr ? txt(tr) : 'no row'}`);
@@ -360,12 +394,12 @@ function page(MU, opts) {
        curve. (A pill shown only once a club has a rated game would drop the teams on that day.) */
     { const C = (U0.params || {}).carry, from = (U0.params || {}).carry_from;
       const M6 = JSON.parse(JSON.stringify(M));
-      for (const side of ['off', 'def']) for (const v of Object.values(M6.units[side])) {
+      for (const side of TABS) for (const v of Object.values(M6.units[side])) {
         Object.assign(v, { games: 0, line: [], before: null, change: null, carried: true, record: [0, 0, 0], start: v.elo });
         for (const e of Object.values(v.stats)) { e.v = null; e.rank = null; } }
       const { d: d6 } = page(MU0, { M: M6 }); await wait(60);
-      chk(!!pill(d6, 'off') && !!pill(d6, 'def'), 'with every club carried and none played, the Overall Offense and Overall Defense pills are gone');
-      for (const side of ['off', 'def']) {
+      chk(TABS.every(k => !!pill(d6, k)), 'with every club carried and none played, a team table\'s pill is gone');
+      for (const side of TABS) {
         const card = await open(d6, side), R6 = card ? [...card.querySelectorAll('tbody tr.pe-tmrow')] : [];
         chk(R6.length === 32 && R6.every(tr => txt(tr.querySelector('.pe-carry')) === `carried from ${from}`
           && txt(tr.querySelector('.pe-elo')) === String(M6.units[side][tr.dataset.team].elo)),
@@ -375,13 +409,28 @@ function page(MU, opts) {
     /* a file from before the carry: one start a side, no carry: still draws, its lines from that start */
     { const M4 = JSON.parse(JSON.stringify(M));
       delete M4.units.params.carry; delete M4.units.params.carry_from; M4.units.start = { off: 1487, def: 1509 };
-      for (const side of ['off', 'def']) for (const v of Object.values(M4.units[side])) { delete v.start; delete v.carried; }
+      for (const side of TABS) for (const v of Object.values(M4.units[side])) { delete v.start; delete v.carried; }
       const { d: d4 } = page(MU0, { M: M4 }); await wait(60);
       const card = await open(d4, 'def'), why = txt(card && card.querySelector('#peTeamsWhy'));
       chk(!!card && /the way the player rankings are: everyone started at 1500/.test(why) && !card.querySelector('.pe-carry'), 'a file from before the carry does not draw as one: ' + why.slice(0, 160));
       const tr = card && card.querySelector('tbody tr.pe-tmrow');
       if (tr) { tr.click(); await wait(20);
-        chk(txt(d4.querySelector('#peTmView .pe-tline circle title')) === 'Season start: 1509', 'a file from before the carry does not start a line at its side\'s start'); } }
+        chk(txt(d4.querySelector('#peTmView .pe-tline circle title')) === 'Season start: 1509', 'a file from before the carry does not start a line at its side\'s start'); }
+      const pc = POS.length && await open(d4, POS[0]), pw = txt(pc && pc.querySelector('#peTeamsWhy'));
+      chk(!POS.length || (!!pc && /the way the player rankings are: everyone started at 1500/.test(pw) && !pc.querySelector('.pe-carry')),
+        'a position table on a file without the carry does not draw as one: ' + pw.slice(0, 160)); }
+    /* a file without the position tables (every build before 16 October 2026): exactly the two pills,
+       each table as before */
+    { const M7 = JSON.parse(JSON.stringify(M));
+      for (const k of POS) { delete M7.units[k]; delete M7.units.weights[k]; }
+      delete M7.units.tables; M7.units.stats = M7.units.stats.filter(s => s.side === 'off' || s.side === 'def');
+      const { d: d7 } = page(MU0, { M: M7 }); await wait(60);
+      const r7 = d7.querySelector('#peBody .pe-pos');
+      chk(!!r7 && [...r7.querySelectorAll('button[data-unit]')].map(txt).join('|') === 'Overall Offense|Overall Defense',
+        'a file without the position tables does not draw exactly the Overall Offense and Overall Defense pills');
+      const c7 = await open(d7, 'def');
+      chk(!!c7 && txt(c7.querySelector('h2')).startsWith('Overall Defense') && c7.querySelectorAll('tbody tr.pe-tmrow').length === 32,
+        'a file without the position tables does not open Overall Defense'); }
     /* the weights are the file's, not the page's: a copy with other weights shows those */
     { const M2 = JSON.parse(JSON.stringify(M)), wts = [40, 30, 20, 5, 5];
       const ws = M2.units.stats.filter(s => s.side === 'off' && s.weight);
@@ -391,7 +440,8 @@ function page(MU, opts) {
       chk(ws.every(s => why.toLowerCase().includes(`${s.label.toLowerCase()} ${s.weight}%`)), 'the page does not read the weights from the file: ' + why.slice(0, 200)); }
     /* a model.json from before the stats (the page and the data ship apart) still draws, on the old columns */
     { const M3 = JSON.parse(JSON.stringify(M));
-      delete M3.units.stats; delete M3.units.weights;
+      delete M3.units.stats; delete M3.units.weights; delete M3.units.tables;
+      for (const k of POS) delete M3.units[k];
       for (const side of ['off', 'def']) for (const v of Object.values(M3.units[side])) delete v.stats;
       const { w: w3, d: d3 } = page(MU0, { M: M3 }); await wait(60);
       const card = await open(d3, 'off'), heads = card ? [...card.querySelectorAll('thead th')].map(txt).join('|') : '';

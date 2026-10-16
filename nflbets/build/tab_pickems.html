@@ -210,16 +210,35 @@ function canProps(id){
   const row=mkt(id); return !!row&&(typeof weekOpen!=='function'||weekOpen(+row.w));
 }
 /* the page opened: its week chosen on the slate, the tab opened, then the page, as a click on the
-   game there opens it (the prop model's own S.ui.game and renderSlate) */
-function openOnProps(id){
+   game there opens it (the prop model's own S.ui.game and renderSlate). With a player (pid, a gsis id
+   as the lineups and the prop model's depth chart write it: a starter's name in the snapshot's Starters
+   card, the owner's call of 16 October 2026, "in starters, make player names clickable to their props
+   page"), the page opens with his row open, as a Mismatches bubble opens him (S.ui.open), brought into
+   view, highlighted and focused; without one, or where the page draws no row for him, the Game bets
+   card is brought into view as before */
+function openOnProps(id,pid){
   const row=mkt(id); if(!row||typeof renderSlate!=='function') return;
   const ws=document.getElementById('weekSel');
   if(ws&&[...ws.options].some(o=>+o.value===+row.w)) ws.value=String(row.w);
   const tab=document.querySelector('#tabs button[data-tab="slate"]'); if(tab) tab.click();
-  S.ui.game=row.id; S.ui.open={}; save(); renderSlate();
+  S.ui.game=row.id; S.ui.open=pid?{[pid]:true}:{}; save(); renderSlate();
+  const pr=pid?[...document.querySelectorAll('#gameView [data-open]')].find(b=>b.dataset.open===pid):null;
+  if(pr){ try{ if(typeof window.eloFocusPlayer==='function') window.eloFocusPlayer(pid); else if(pr.scrollIntoView) pr.scrollIntoView({block:'start'}); }catch(e){}
+    try{ pr.focus({preventScroll:true}); }catch(e){} return; }
   /* the page opens at its head; this button was for the game bets, so they are brought into view
      (they follow the game's suggested parlays, which a phone shows a screen of first) */
   const gb=document.querySelector('#gameView .gbets'); try{ if(gb&&gb.scrollIntoView) gb.scrollIntoView({block:'start'}); }catch(e){}
+}
+/* the players the game's page on the Props tab draws as a row to open (renderGame: on its roster, as
+   the page shows it, with a line to bet), so the snapshot links a starter there only where his row is;
+   an empty set where the page cannot open the game or the prop model cannot say */
+function propsPlayers(id){
+  const out=new Set();
+  try{ if(!canProps(id)||typeof rosterFor!=='function'||typeof statLines!=='function') return out;
+    const g=mkt(id), R=rosterFor(g,!!(S.ui&&S.ui.showAll));
+    for(const t of [g.a,g.h]) for(const x of (R[t]&&R[t].players)||[]) if(statLines(x).length) out.add(x.pl.id);
+  }catch(e){ out.clear(); }
+  return out;
 }
 /* a game's row is a button to its Game snapshot: a click, or Enter or Space with the row focused, as
    a button takes them: Enter as it goes down, Space as it comes up (opened on its way down, the focus
@@ -378,24 +397,32 @@ function foot(){
 
 /* the Game snapshot (nflbets/build/snapshot.html) reads the board through this: the season as
    loaded (ST.state is state.json whole), the Vegas call, where a game stands, its kickoff and site,
-   and whether the Props tab can open the game's page, and the opening of it */
-window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET,probCols,canProps,openOnProps};
+   and whether the Props tab can open the game's page, which players it draws there, and the opening
+   of it, at a player's row or its game bets */
+window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET,probCols,propsPlayers,canProps,openOnProps};
 
 /* tabs as addresses: #props opens the Props tab, and a reload stays where it was. On a phone the
    bar is wider than the screen and scrolls sideways, so the chosen tab is brought into it, on load,
    on a new address and on a tap: landing on #xparlays (where the old Live Parlays links go) left
    its button off the bar's right edge. Only the bar scrolls, never the page. The Season Tracker tab
    is gone (14 October 2026: its games are in each Game snapshot), so its old address, #tracker, where
-   news/ sent every visitor, lands here on Pick'ems, the address written over as #pickems */
+   news/ sent every visitor, lands here on the board. The board is the Matchups tab since the owner's
+   call of 16 October 2026 ("change the name Pickems to matchups"), and #matchups its address; its
+   section and button keep the id pickems, which the prop model's tab switch reads (tab-pickems), so
+   the old #pickems, in every bookmark and pickems/'s redirect, and #tracker land on it, the address
+   written over as #matchups */
 function routeTabs(){
   const nav=document.getElementById('tabs'), btns=[...document.querySelectorAll('#tabs button')];
   const reveal=b=>{ try{ if(!nav||!b) return; const n=nav.getBoundingClientRect(), r=b.getBoundingClientRect();
     if(r.left>=n.left&&r.right<=n.right) return;
     nav.scrollLeft+=(r.left+r.width/2)-(n.left+n.width/2); }catch(e){} };
   const chosen=()=>btns.find(x=>x.getAttribute('aria-selected')==='true');
-  const go=()=>{ if(location.hash==='#tracker') history.replaceState(null,'','#pickems');
-    const b=btns.find(x=>'#'+x.dataset.tab===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); };
-  btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!=='#'+b.dataset.tab) history.replaceState(null,'','#'+b.dataset.tab); reveal(b); }));
+  /* a tab's address is its id but for the board's (both the go and the click must read it, or the
+     click go() makes would write #pickems back over #matchups) */
+  const ADDR={pickems:'matchups'}, addr=b=>'#'+(ADDR[b.dataset.tab]||b.dataset.tab);
+  const go=()=>{ if(location.hash==='#tracker'||location.hash==='#pickems') history.replaceState(null,'','#matchups');
+    const b=btns.find(x=>addr(x)===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); };
+  btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!==addr(b)) history.replaceState(null,'',addr(b)); reveal(b); }));
   window.addEventListener('hashchange',go); go();
   /* the web fonts can widen the buttons after the first layout: once more when they are in */
   if(document.readyState!=='complete') window.addEventListener('load',()=>reveal(chosen()),{once:true});

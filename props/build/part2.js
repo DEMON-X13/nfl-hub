@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v108 \u00b7 2026-10-16';
+const APP_BUILD='app v110 \u00b7 2026-10-16';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1089,7 +1089,8 @@ function weekOpen(w){ return w<=liveWeek(); }
 /* every regular-season game final: the model covers the regular season, and says so */
 function seasonOver(){ return !!(S&&S.sched&&S.sched.length)&&S.sched.every(g=>gameFinal(g)); }
 /* where a game's lines came from: DraftKings' pull while it is under a day old, nflverse's
-   posted line (the Pick'ems board's) after that. null for a payload that does not say. */
+   posted line (the Matchups tab's, the board Pick'ems was until 16 October 2026) after that. null
+   for a payload that does not say. */
 function lineSource(g){
   if(!g||!g.ls) return null;
   /* (app v107) DraftKings' lines a Refresh odds press read on ESPN, dated as the press's status line dates them */
@@ -1097,5 +1098,5 @@ function lineSource(g){
     if(gl&&gl.at) return 'DraftKings’, read from ESPN by Refresh odds '+espnWhen(gl.at);
     const t=g.lat?new Date(g.lat):null;
     return 'DraftKings'+(t&&isFinite(t)?', pulled '+t.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}):''); }
-  return "nflverse's posted line, as on the Pick'ems board";
+  return "nflverse's posted line, as on the Matchups tab";
 }

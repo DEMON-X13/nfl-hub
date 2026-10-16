@@ -78,11 +78,13 @@
                           tags each row on its weighted edge (the line's +0.7 is Even, the run game's +1.7
                           and the receivers' +1.6 Favorable), the Rams' board code LA reads the file's LAR,
                           no name, reason or note in the file is drawn (a row is its unit, the two clubs and
-                          ranks and its tag, the owner's call of 14 October 2026), and the checks pass both
-                          ways; the old unweighted rule (what possession() draws from a file without tags)
-                          fails them, and so do ranks or an edge that are not the file's, a row's two sides
-                          drawn the other way round or headed by the wrong club, a name or a number drawn in
-                          a row, and a file whose constants were changed.
+                          ranks, the defense's position and its tag, the owner's calls of 14 and 16 October
+                          2026), and the checks pass both ways; the old unweighted rule (what possession()
+                          draws from a file without tags) fails them, and so do ranks or an edge that are not
+                          the file's, a row's two sides drawn the other way round or headed by the wrong club,
+                          a name or a number drawn in a row, the defense's position left out (the row as it
+                          was drawn until 16 October 2026), the wrong one, one drawn twice or on the
+                          offense's side, and a file whose constants were changed.
      deepdive-headline    the Overall line's tag is this team's Overall Offense against the opponent's
                           Overall Defense from a made-up model.json, tagged by the gap read as points (+3.1
                           Easy one way, -1.8 Tough the other) by the snapshot's own headTag(); a tag from the
@@ -606,8 +608,14 @@ function cases() {
       /* the rows as they were drawn until 14 October 2026: who plays, who is out and the numbers under each side */
       ['a name drawn in a row', h => h.replace('<span class="ddsn">MIN</span> <b class="ddrk">16th</b>', '<span class="ddsn">MIN</span> <b class="ddrk">16th</b><span class="ddwho">Sam Darnold (QB)</span>'), /the row reads/],
       ['a number drawn in a row', h => h.replace(/(<span class="ddunit">Running backs<\/span>)/, '$1<span class="ddnum">4.6 yards a carry (9th)</span>'), /the row reads/],
+      /* the defense's position (the owner's call, 16 October 2026): the row as it was drawn before, without
+         it; the wrong one (the coverage on the line's row); named twice; and drawn on the offense's side */
+      ["the defense's position left out", h => h.replace('<span class="dddu">Pass rush</span>', ''), /the defense's position reads 'nothing'/],
+      ["the wrong defense's position", h => h.replace('<span class="dddu">Pass rush</span>', '<span class="dddu">Coverage</span>'), /the defense's position reads 'Coverage'/],
+      ["the defense's position named twice", h => h.replace('<span class="dddu">Run defense</span>', '<span class="dddu">Run defense</span><span class="dddu">Run defense</span>'), /the defense's position reads 'Run defense' \| 'Run defense'/],
+      ["the defense's position on the offense's side", h => h.replace('<span class="dddu">Pass defense</span>', '').replace('<span class="ddunit">Quarterback</span>', '<span class="ddunit">Quarterback</span> <span class="dddu">Pass defense</span>'), /the row reads/],
     ].map(([what, bend, rx]) => { const b = bend(mine.html); return b !== mine.html && DC.checkPossession(b, 'MIN', 'NO', A, O).some(x => rx.test(x)) ? null : what; }).filter(Boolean) : ['no possession'];
-    add('deepdive-weighted', "a rank or an edge that is not the file's, a row left out, a second tag, a row's sides the other way round, headed by the wrong club or ranked twice, or a name or a number in a row fails the checks", !bent.length, bent.length ? `passed: ${bent.join(', ')}` : 'all nine fail');
+    add('deepdive-weighted', "a rank or an edge that is not the file's, a row left out, a second tag, a row's sides the other way round, headed by the wrong club or ranked twice, a name or a number in a row, or the defense's position left out, wrong, named twice or on the offense's side fails the checks", !bent.length, bent.length ? `passed: ${bent.join(', ')}` : 'all thirteen fail');
     const changed = clone(DD_META); changed.tags.rows.weights.rb = 1; changed.tags.headline.slope = 12.787;
     const fb = DC.checkMeta(changed);
     add('deepdive-weighted', "a file whose constants were changed (the run game weighted 1, the headline's first slope 12.787) fails the checks",

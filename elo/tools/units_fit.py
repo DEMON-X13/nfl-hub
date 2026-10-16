@@ -47,12 +47,12 @@ sys.path.insert(0, os.path.dirname(HERE))
 import build  # noqa: E402
 
 FIRST, FIT_LAST, TEST_LAST = 2012, 2017, 2025
-KEYS = list(build.UNIT_STATS)
+KEYS = list(build.UNIT_OVERALL)      # Overall's nine: the position tables' stats are def_units_fit.py's
 
 
-def team_games(offline):
+def team_games(offline, keys=KEYS):
     """every rated team-game 2012 to the newest season with play-by-play, offense's side, with
-    the nine stats' values and the game's home sign"""
+    the stats' values (the nine, or keys) and the game's home sign"""
     games = pd.read_csv(build.fetch(build.GAMES_URL, os.path.join(build.CACHE, 'games.csv'), offline), low_memory=False)
     games = games[games.game_type.isin(['REG', 'WC', 'DIV', 'CON', 'SB']) & games.home_score.notna()]
     last = int(games.season.max())
@@ -81,7 +81,7 @@ def team_games(offline):
                                                (r.away_team, r.home_team, float(r.away_score), -h, b)):
                 row = {'season': y, 'week': int(r.week), 'kick': f'{r.gameday} {r.gametime}', 'game_id': r.game_id,
                        'reg': r.game_type == 'REG', 'off': off, 'def': dfn, 'pts': pts, 'home': home}
-                for k in KEYS:
+                for k in keys:
                     v = build.unit_value(build.UNIT_STATS[k]['game'], sums, pts)
                     row[k] = np.nan if v is None else v
                 out.append(row)
