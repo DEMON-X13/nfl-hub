@@ -1544,9 +1544,75 @@ setTimeout(async()=>{
      tested kind, at the rule's price and fair chance, under the panel's own band, edge and far-off rules
      (a game page's hands under the far-off rule too) and V6's (pickOk, takenPrice), never an untested one
      or a model-only estimate but in a game page's hands; a leg ticked takes the same price; a read in play
-     never used and a game kicked off offering nothing. With no game still to come (the off-season) the
-     press's checks on the week are skipped and logged, never warned. Warnings (W.wording): the status
-     lines' and the cards' words. */
+     never used and a game kicked off offering nothing. And (app v108, M8g) the read kept in this browser
+     under its own key (props_press_v1): the press writes v 1 and the page's season with an entry for each
+     game it read, each with what a reload must put back (what its reads did to the game lines, d: each field
+     a read set with its value and that read's own time, the value null where one dropped it; every id the read gave or found as the pull had it
+     with the read's time, the pull's glat else the read's, the event; all worked out by the checks from the
+     scoreboard and the paid pull as the press found it, simReads), the published lines it was read over
+     (their hashes, worked out here) and ESPN_LIVE's player lines for it, none of it in S as saved; a reload on
+     the same window, from the page as a load finds it, makes no request and puts back exactly the press's
+     player lines, game lines, ids and their read times, the levels and a game's hands coming out as right
+     after the press; two presses in one load (the week's, then a game page's whose scoreboard lacks the money
+     line and has moved the spread and total) are kept and put back as the page showed them after both, every
+     game's lines, ls and lat, ESPN_GL (d with it), PAY.dk and ESPN_IDAT exactly; two reads in one load
+     bringing a spread (and, on its own, a total) back to the published number with no prices: kept as d with
+     the two prices null, and a reload shows that number with no price, the published ones never back, ESPN_GL
+     as the reads left it and its bets priced as after the reads; a game read twice with two DraftKings events,
+     on a game the pull gave none: the first read's kept and put back, the event the page used; what each read
+     found (ESPN_OUT) put back with the half it describes, an 'ok' only with its player lines and a 'none' with
+     none; a read that found no player lines posted and read no game lines kept as that alone and put back,
+     its status line and the Parlay Builder's empty levels saying so; a read the press left off (older than the
+     published lines) keeps no lines and a reload puts none back. The time rule (round 4): a half stands over
+     the publish it was read over, or over a newer one where the read is later than that publish's own time
+     for it (the game lines' DraftKings pull, g.lat where ls is 'dk', else the bake; the player prices' paid
+     pull, PAY.dk's at, else the bake), each case with the other time of the pair on the far side: a newer
+     publish moving the total with its pull later than the read sets the game lines aside (the player lines
+     standing; a read of the game lines alone said to have given way), earlier stands with the kept d replayed
+     on its lines (a field no read set the newer publish's, a number kept without prices dropping the newer
+     one's two where its number differs) and the key written back over its hash; the same on DraftKings' lines
+     with no pull time and on lines that are not DraftKings', by the bake; a rebake of the same lines never
+     sets a read aside, on lines that are not DraftKings' too; the player half the same by the paid pull's time
+     or the bake, its legs priced from the read as after the press where it stands; a kickoff sets all of it
+     aside; each half set aside named in ESPN_ASIDE, the key written back without it, its time (the half's
+     latest read) held in ESPN_KEEP_GONE by half ({gl, pl}); a value of another season, another version, not
+     JSON or with no games object puts nothing back and empties the key; no schedule leaves the key as it was;
+     a DraftKings id or id key, a player id or a line the page never writes is dropped and never reaches PAY.dk
+     or ESPN_LIVE, "__proto__" among them (a player, an id key or a game: never an own key or a prototype of
+     anything put back, and nothing set on the page's built-ins); a game id not of the schedule's shape
+     ("__proto__", "constructor", "toString", "hasOwnProperty", lower case, a part more), each planted as a game
+     of the schedule too, skipped by the restore and dropped by the write; a game line kept as no number
+     dropped (the published one standing) and the rest replayed as kept; a half dated after the page's clock
+     (gl.at, an idat, glat, pl.at) is dropped and the rest put back, and loses a merge to a real read; an entry
+     for a game not on the schedule or in another week is dropped; two tabs' writes merge half by half, each
+     game's game lines and its player lines (with their plsig and what that read found) from whichever side read
+     them later, a game-line half with no lines and no ids never displacing one with lines and a later read that
+     found no player lines keeping the lines the other side read, so a tab whose latest press failed the player
+     lines never puts its older copy over another tab's newer one, and a half a load set aside is never taken
+     back while the other half still is; and a save of the visitor's state with no room empties the key and
+     saves on its second try, the read not written again that load. Round 5: each game-line field by its own
+     read's time, so over a newer publish only the fields read after it stand, as a read would put them (two
+     reads, the money lines at t1 and the spread at t2, over a publish pulled between them: its money lines and
+     the second read's spread; a number kept without prices keeping that publish's real prices on its own number,
+     dropping them on another, a kept null price pair the same), and over the publish read over everything exactly
+     as after the reads; a kept line of the page's shape alone ([value, time], the time not after its read's); a
+     'none' player read lending its other side's lines only over the same publish; a write carrying the browser's
+     copy of a game this tab's schedule no longer offers (kicked off or scored there, not on it) as it stands, and a
+     restore pruning one not on, or kicked off on, the publish it loads; a kept player line or rung on a half point
+     above 0 and at most 1000, at most 40 rungs a stat; and a 'none' put back for a day at most (DK_EST.staleHours). Round 6: a
+     builder game leg keeping its add-time price only while its own price field stands, with a value, among what the
+     load's reads did (two reads, the money lines and total at t1 and the spread at t2, legs ticked after each, reloaded
+     over the same publish and over newer ones pulled between, before and after the reads; and a cover whose price a later
+     read dropped); the merge's player block the later of the two sides' over the same publish, never borrowed over
+     another; what a reload does not put back (an 'ok' whose player lines were dropped, a 'none' a day old) pruned from the
+     key and from another tab's copy; and a money line, spread or total kept as null dropped, the published one standing,
+     a null price pair replayed, and lat over a newer publish the latest field the replay put. Each case of the kept read runs in a guard
+     of its own (kcase): a throw is a failed check with its message, and the page is put back after it (the
+     schedule, the lines, PAY.dk and baked_at, the main lines, the clock, the key, the ESPN_* state), its
+     built-in prototypes with it (protoClean), so a case that breaks the page fails its checks and never ends
+     the audit without its summary line, which weekly.py reads as a refused run. With no game still to come
+     (the off-season) the press's checks on the week, the kept read's with them, are skipped and logged,
+     never warned. Warnings (W.wording): the status lines' and the cards' words. */
   { const cw=F('currentWeek')(), fmt=F('fmtML'), isG=F('isGameLeg'), FAR=w.eval('FAR_OFF'), imp=ESPN.implied, P=()=>F('PAY'), txt=e=>e?e.textContent:'', SEASON=F('SEASON');
     const FX=n=>JSON.parse(fs.readFileSync('fixtures/espn/'+n,'utf8'));
     const SB0=FX('scoreboard_w6.json'), IT0={'401872995':FX('props_401872995.json'),'401873001':FX('props_401873001.json')}, ATH0=FX('athletes.json');
@@ -1584,6 +1650,18 @@ setTimeout(async()=>{
       for(const k of F('ESPN_GL_KEYS')){ if(GL[id].orig[k]===undefined) delete g[k]; else g[k]=GL[id].orig[k]; } } w.eval('ESPN_GL={}'); };
     const clock0=w.Date.now; let clockOff=0; const setClock=t=>{ clockOff=t-clock0.call(w.Date); w.Date.now=()=>clock0.call(w.Date)+clockOff; };
     const keepIds=P().espn_ids, keepNames=clone(F('ESPN_NAMES')), added=[];
+    /* (app v108) the read kept in this browser: its key, and the page's keeping state as M8 found it, put back after */
+    const LS=w.localStorage, KK=F('ESPN_KEEP_KEY'), lsGet=()=>{ try{ return LS.getItem(KK); }catch(e){ return null; } }, setVar=(n,v)=>w.eval(`(function(v){ ${n}=v; })`)(v);
+    const key0=lsGet(), keep0={ESPN_KEPT:clone(F('ESPN_KEPT')),ESPN_ASIDE:clone(F('ESPN_ASIDE')),ESPN_KEEP_GONE:clone(F('ESPN_KEEP_GONE')),ESPN_KEEP_OFF:F('ESPN_KEEP_OFF')};
+    /* the page's built-ins as M8 found them. A kept value may never set anything on them: on 16 October 2026 a
+       kept game "__proto__" did (espnRestore's ESPN_KEEP_GONE['__proto__'] is Object.prototype, and the
+       times of its halves were set there as gl and pl), every for-in on the page then read them (rosterFor's
+       clubs, buildNorm's stats), and the audit stopped with no summary line. protoClean() takes out whatever
+       was added and names it, so a check fails on it and the rest of the audit runs on clean built-ins */
+    const PROTOS=[['Object.prototype',w.Object.prototype],['Array.prototype',w.Array.prototype],['Function.prototype',w.Function.prototype],['Object',w.Object]];
+    const protoOwn0=PROTOS.map(([,o])=>new Set(Reflect.ownKeys(o)));
+    const protoClean=()=>{ const hit=[]; PROTOS.forEach(([n,o],i)=>{ for(const k of Reflect.ownKeys(o)) if(!protoOwn0[i].has(k)){ hit.push(`${n}.${String(k)}`); try{ delete o[k]; }catch(e){} } }); return hit; };
+    let nKeep=0;
     try{
       /* M8a. nothing asked of ESPN before a press: not on load (the audit's own fetch saw none), not on
          any draw of the slate, a game's page or the panel */
@@ -1704,7 +1782,7 @@ setTimeout(async()=>{
       const games=F('pbGames')();
       /* no game still to come (between the last final and the next week's schedule, the off-season): the
          press's checks on the week are skipped, as M7's are, and the reader's on the recorded answers above stand */
-      if(!games.length) console.log('M8. no game still to come: the press checks on the week are skipped (the reader is held above on ESPN\'s recorded answers)');
+      if(!games.length) console.log('M8. no game still to come: the press checks on the week, and those on the read it keeps in this browser (props_press_v1), are skipped (the reader is held above on ESPN\'s recorded answers)');
       if(games.length){ const g0=games[0], gN=games[1], gF=games[2], gJ=games[3], gK=games[4], wk=String(g0.w);
         const keep={dk:clone(P().dk), mkt:clone(P().mkt[wk]), odds:clone(S.odds), parlay:clone(S.parlay), pb:clone(S.ui.pb)};
         const before={}; for(const g of games) before[g.id]=Object.fromEntries(F('ESPN_GL_KEYS').map(k=>[k,g[k]]));
@@ -1786,6 +1864,7 @@ setTimeout(async()=>{
           const lvSig=r=>JSON.stringify(r.tiers.map(t=>t.why||t.legs.map(l=>[l.key,l.side,l.k,l.price,l.src]))), hdSig=t=>JSON.stringify(['high','med','low'].map(id=>t[id]?t[id].legs.map(l=>[l.key,l.side,l.k,l.price,l.src]):null));
           S.ui.game=g0.id; F('renderGame')(); const hands0=hdSig(F('gameTiers')(g0)), levels0=lvSig(F('getPbTiers')()); S.ui.game=null; F('closeGameModal')();
           /* the press: the Parlay Builder's button, a second press while it runs, then the read */
+          const dkPre=clone(P().dk);   /* the paid pull's ids as the press finds them (a reload's, below) */
           let release; net.gate=new Promise(r=>release=r); net.log=[];
           const btn=d.querySelector('#pbPanel [data-espn-refresh="week"]'); btn.focus(); btn.click(); await sleep(10);
           const busyTxt=txt(d.querySelector('#pbPanel [data-espn-status="week"]'));
@@ -1795,6 +1874,8 @@ setTimeout(async()=>{
           for(let i=0;i<200&&w.eval('ESPN_RUN.busy');i++) await sleep(25);
           const urls=net.log.map(x=>x.url), sbN=urls.filter(u=>/\/scoreboard\?/.test(u)).length, OUT=F('ESPN_OUT'), LV=F('ESPN_LIVE');
           nReq=urls.length;
+          /* (app v108) what the press kept in this browser, and the published lines it was read over, as it left them */
+          const kept1=lsGet(), sig1=Object.fromEntries(games.map(g=>[g.id,{gl:F('espnGlSig')(g),pl:F('espnPlSig')(g)}]));
           /* the levels and hands the page has right after the press, before any cache of the checks' own is
              dropped: what a build from nothing gives on the read, never what stood before it (the press
              drops PB_CACHE and GAME_TIER_CACHE, and ESPN_SEQ is in pbDataSig and gameSuggestSig) */
@@ -1862,12 +1943,1195 @@ setTimeout(async()=>{
           /* never saved: what save() writes is the published game lines and no read */
           F('save')(); await sleep(400);
           { const sv=JSON.parse(mem||'{}'), s0=(sv.sched||[]).find(x=>x.id===g0.id)||{};
-            chk(F('ESPN_GL_KEYS').every(k=>same(s0[k],before[g0.id][k]))&&!/0AU0|5000001|ESPN_LIVE/.test(mem||''),`what the page saves carries the press's game lines or read: ${JSON.stringify(F('ESPN_GL_KEYS').map(k=>s0[k]))}`); }
+            chk(F('ESPN_GL_KEYS').every(k=>same(s0[k],before[g0.id][k]))&&!/0AU0|5000001|ESPN_LIVE/.test(mem||''),`what the page saves carries the press's game lines or read: ${JSON.stringify(F('ESPN_GL_KEYS').map(k=>s0[k]))}`);
+            /* (app v108) nor anything the press kept under its own key: every game's published lines in S, none
+               of the key's DraftKings ids or player lines, and no trace of the key itself */
+            let kvS=null; try{ kvS=JSON.parse(kept1); }catch(e){}
+            const leak=[], ms=mem||'', has=x=>ms.includes(x)||ms.includes(JSON.stringify(x).slice(1,-1)); if(/props_press_v1|ESPN_KEPT|plsig/.test(ms)) leak.push('the key itself');
+            for(const [gid,e] of Object.entries((kvS&&kvS.games)||{})){ const sg=(sv.sched||[]).find(x=>x.id===gid)||{};
+              if(before[gid]&&!F('ESPN_GL_KEYS').every(k=>same(sg[k],before[gid][k]))) leak.push(gid+'\'s game lines');
+              for(const v of Object.values((e&&e.gl&&e.gl.ids)||{})) if(typeof v==='string'&&v.length>3&&ms.includes(v)) leak.push(gid+'\'s id '+v);
+              if(e&&e.pl&&Object.keys(e.pl.lines||{}).length&&has(JSON.stringify(e.pl.lines))) leak.push(gid+'\'s player lines'); }
+            chk(!!kvS&&!leak.length,`what the page saves with the visitor's state carries what the press kept under ${KK}: ${kvS?leak.join(', '):'(no key written)'}`); }
           chk(F('pbDataSig')().endsWith('|e'+w.eval('ESPN_SEQ')),'the suggestions do not stand on the press (ESPN_SEQ in pbDataSig)');
           W.wording(d.activeElement&&d.activeElement.dataset&&d.activeElement.dataset.espnRefresh==='week'&&!!d.activeElement.closest('#pbPanel'),'the focus did not stay on the Parlay Builder\'s Refresh odds button through the redraw');
           { const st=txt(d.querySelector('#pbPanel [data-espn-status="week"]')), nN=Object.values(want).filter(s=>s==='none').length+games.filter(g=>!want[g.id]).length, nF=[gF,gJ].filter(Boolean).length;
             const exp=`DraftKings’ lines from ESPN, read ${F('espnClock')(Date.parse(blk&&blk.at))}: player prices estimated from the line`+(nN?`; ${nN} game${nN===1?' has':'s have'} no player lines posted yet`:'')+(nF?`; couldn’t read DraftKings’ player lines for ${nF} game${nF===1?'':'s'}: ${nF===1?'its':'their'} published player prices stand`:'')+'.';
             W.wording(st===exp,`the status line after the press reads "${st}", not "${exp}"`); }
+          /* M8g. (app v108) the read kept in this browser (part3.js espnKeepPut, espnKeepWrite, espnRestore;
+             ESPN_KEEP_KEY 'props_press_v1'), on the press's own made-up read above and on values made here
+             from it: what the press wrote; a reload on the same window putting back exactly what the press
+             had, with no request; each rule that sets a kept read aside, and (round 4) the time rule that lets
+             one stand over a newer publish, with what the reads did replayed on its lines; the merge of two
+             tabs' writes; and a save of the visitor's state with no room. Each reload starts from the page as a load finds it (the
+             published game lines, the paid pull's ids as the press found them, nothing read, no cache) and the
+             page is put back after to the press's own state, the key too (rule (c)). Blocking: what is kept,
+             put back, set aside or written; W.wording: the status line's words */
+          { const c0=checks, KEYS=F('ESPN_GL_KEYS'), linesOf=g=>Object.fromEntries(KEYS.map(k=>[k,g[k]])), sched0=S.sched;
+            const deep=v=>Array.isArray(v)?v.map(deep):(v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,deep(v[k])])):v), canon=v=>JSON.stringify(deep(v)===undefined?null:deep(v));
+            const parse=s=>{ try{ return JSON.parse(s); }catch(e){ return null; } }, kv=parse(kept1), read=games.filter(g=>g!==gK);
+            const inLive=(L,gid)=>Object.values(L||{}).some(W=>W&&typeof W==='object'&&Object.prototype.hasOwnProperty.call(W,gid));
+            const dkOf=(D,gid)=>canon(((D||{})[wk]||{})[gid]||null);
+            const iso=t=>new Date(t).toISOString(), NUM8=['mla','mlh','sp','spa','sph','tot','tov','tou'];
+            const glValid=t=>t!=null&&isFinite(Date.parse(t));
+            /* the event a reload must put back: PAY.dk's as the page holds it after its reads, the paid pull's where it had
+               one, else the first read's (espnApplyGame sets it only where the game has none), a string or null */
+            const evKept=(...evs)=>{ const v=evs.find(x=>x); return typeof v==='string'?v:null; };
+            /* what one read of g's scoreboard (o, the checks' own reading, at its time) leaves to keep: the game's
+               lines as the page shows them where the read's stand (ESPN_GL has the game: the made-up read gives all
+               eight, so they are its scoreboard's), else none; each id it gave where the paid pull had none or
+               found as the pull had it, at the read's time (a paid id at a key the read gave another is the pull's
+               and stays undated); glat the pull's, else the read's where it dated an id; the event as PAY.dk holds it
+               after the read (the paid pull's, else the read's: a read sets it only where the game has none). Worked
+               out from the paid pull as the press found it (dkPre) and never from espnKeepPut */
+            const keptGl=(g,o,at)=>{ const paid=(((dkPre||{})[wk]||{})[g.id])||{}, ids={}, idat={};
+              for(const [k,v] of Object.entries(o.ids)) if(paid[k]==null||paid[k]===v){ ids[k]=v; idat[k]=at; }
+              /* the lines what the read did to them (round 4: d, each field it set), on the lines published at the press */
+              const pub=before[g.id]||linesOf(g), pubAt=Date.parse(pub.lat||'')||Date.parse(P().baked_at||'')||0;
+              return {lines:simReads(pub,[{lines:o.lines,at}],pubAt).d,ids,idat,glat:glValid(paid.glat)?(typeof paid.glat==='string'?paid.glat:null):(Object.keys(ids).length?iso(at):null),event:evKept(paid.event,o.event)}; };
+            const glAt0=kv&&kv.games&&read[0]&&kv.games[read[0].id]&&kv.games[read[0].id].gl?kv.games[read[0].id].gl.at:null;
+            /* (round 4 of 16 October 2026) the rules the checks hold the kept read to, each written here from what the
+               page says it does and never by calling its keep functions back:
+               - the published lines a half was read over: a hash of the ten game-line fields the page publishes
+                 (glSigOf), and of the paid pull's time for the game with every main line the payload carries for it
+                 (plSigOf), FNV-1a as the page hashes;
+               - what a run of reads does to a game's lines (simReads): a read newer than the lines on the page sets
+                 each field it has (a money line, a number with both its prices) and drops the two prices of a number
+                 it read without them where that number moved; ls 'dk' and lat its time. d records each field a read
+                 set as [its value, that read's time] (round 5: each field by its own read's time), the value null
+                 where one dropped it;
+               - a kept d put back over a publish (replay, round 5): over the publish it was read over, literally (each
+                 pair's value set, a null one gone: exactly the page after the reads); over a newer one, only the
+                 fields whose own read is later than that publish's time, as a read would put them (a money line set; a
+                 number with both its prices set with them, or without them dropping the publish's two only where the
+                 publish has another number, so a kept null price never takes the publish's real prices off its own
+                 number); ls 'dk' and lat the latest field put, and what ESPN_GL's d then holds (D);
+               - what a reload writes back for an entry that stands whole over the same publish (keptBack): the entry
+                 as the page writes it, plsig only beside a player half (it describes that half alone) */
+            const fnv=s=>{ let h=0x811c9dc5; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } return h.toString(16); };
+            const glSigOf=L=>fnv(KEYS.map(k=>L[k]==null?'':String(L[k])).join('|'));
+            const plSigOf=gid=>{ const E=((P().dk||{})[wk]||{})[gid], M=(P().mkt||{})[wk], rows=[];
+              if(M&&typeof M==='object') for(const pid of Object.keys(M).sort()){ const r=M[pid]; if(r&&typeof r==='object') for(const st of Object.keys(r).sort()){ const L=r[st]; if(L&&L.g===gid) rows.push([pid,st,L.line,L.over,L.under].join(',')); } }
+              return fnv(String(E&&E.at||'')+'|'+rows.join(';')); };
+            const simReads=(pub,reads,prev0)=>{ const g={...pub}, d={}; let prev=prev0, at=null;
+              for(const r of reads){ const L=r.lines||{}; if(!Object.keys(L).length||!(r.at>prev)) continue;
+                const set=(k,v)=>{ d[k]=[v,r.at]; g[k]=v; }, dropK=k=>{ d[k]=[null,r.at]; delete g[k]; };
+                if(L.mla!=null) set('mla',L.mla); if(L.mlh!=null) set('mlh',L.mlh);
+                for(const [n,a,b] of [['sp','spa','sph'],['tot','tov','tou']]) if(L[n]!=null){ const same0=g[n]===L[n]; set(n,L[n]);
+                  if(L[a]!=null&&L[b]!=null){ set(a,L[a]); set(b,L[b]); } else if(!same0){ dropK(a); dropK(b); } }
+                g.ls='dk'; g.lat=iso(r.at); prev=r.at; at=r.at; }
+              return {lines:g,d,at}; };
+            const replayD=(pub,d,since,same)=>{ const g={...pub}, D={}, on=NUM8.filter(k=>Object.prototype.hasOwnProperty.call(d,k)&&(same||d[k][1]>since)), has=k=>on.includes(k);
+              if(!on.length) return {lines:g,D,at:null};
+              const put=(k,x)=>{ D[k]=x; if(x[0]===null) delete g[k]; else g[k]=x[0]; };
+              if(same) for(const k of on) put(k,d[k]);
+              else { for(const k of ['mla','mlh']) if(has(k)&&d[k][0]!==null) put(k,d[k]);
+                for(const [n,a,b] of [['sp','spa','sph'],['tot','tov','tou']]){ if(!has(n)||d[n][0]===null) continue;
+                  if(has(a)&&has(b)&&d[a][0]!==null&&d[b][0]!==null){ put(a,d[a]); put(b,d[b]); }
+                  else if(pub[n]!==d[n][0]){ put(a,[null,d[n][1]]); put(b,[null,d[n][1]]); }
+                  put(n,d[n]); } }
+              const ts=Object.values(D).map(x=>x[1]); if(!ts.length) return {lines:{...pub},D,at:null};
+              const at=Math.max(...ts); g.ls='dk'; g.lat=iso(at); return {lines:g,D,at}; };
+            const replay=(pub,d,since,same)=>replayD(pub,d,since,same).lines;
+            /* the time a publish's game lines are judged by (round 4): the DraftKings pull's (lat, where its lines are
+               DraftKings'), else the bake, which over the lines a read was read over is no time at all (0) */
+            const sinceOf=(pub,bk,same)=>{ const lat=pub&&pub.ls==='dk'?Date.parse(pub.lat||''):NaN; return isFinite(lat)?lat:(same?0:(Date.parse(bk||'')||0)); };
+            const vals=d=>Object.fromEntries(Object.entries(d||{}).map(([k,x])=>[k,Array.isArray(x)?x[0]:x]));
+            const keptBack=e=>{ if(!e) return e; const o={w:e.w}; if(e.gl) o.gl=e.gl; if(e.pl) o.pl=e.pl; if(e.out) o.out=e.out; if((e.pl||e.out)&&typeof e.plsig==='string') o.plsig=e.plsig; return o; };
+            const keptBackAll=G=>Object.fromEntries(Object.entries(G||{}).map(([k,e])=>[k,keptBack(e)]));
+
+            /* a reload on this window: the page as a load finds it, the key as raw, a tweak (returning its
+               undo), espnRestore, and look() on the page as the restore left it; then the press's state again */
+            const bk0g=P().baked_at;
+            const post={lines:Object.fromEntries(S.sched.map(g=>[g.id,linesOf(g)])),dk:P().dk,ESPN_LIVE:F('ESPN_LIVE'),ESPN_GL:F('ESPN_GL'),ESPN_OUT:F('ESPN_OUT'),ESPN_IDAT:F('ESPN_IDAT'),
+              ESPN_KEPT:F('ESPN_KEPT'),ESPN_ASIDE:F('ESPN_ASIDE'),ESPN_KEEP_GONE:F('ESPN_KEEP_GONE'),ESPN_KEEP_OFF:F('ESPN_KEEP_OFF')};
+            const drop=()=>w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}');
+            const toLoad=()=>{ for(const g of S.sched){ const o=post.ESPN_GL[g.id]; if(o) for(const k of KEYS){ if(o.orig[k]===undefined) delete g[k]; else g[k]=o.orig[k]; } }
+              P().dk=clone(dkPre); w.eval('ESPN_LIVE={}; ESPN_GL={}; ESPN_OUT={}; ESPN_IDAT={}; ESPN_ASIDE={}; ESPN_KEPT={}; ESPN_KEEP_GONE={}; ESPN_KEEP_OFF=false'); drop(); };
+            const backToPost=()=>{ if(S.sched!==sched0) S.sched=sched0; for(const g of S.sched){ const L=post.lines[g.id]; if(L) for(const k of KEYS){ if(L[k]===undefined) delete g[k]; else g[k]=L[k]; } }
+              P().dk=post.dk; for(const n of ['ESPN_LIVE','ESPN_GL','ESPN_OUT','ESPN_IDAT','ESPN_KEPT','ESPN_ASIDE','ESPN_KEEP_GONE','ESPN_KEEP_OFF']) setVar(n,post[n]);
+              try{ if(kept1==null) LS.removeItem(KK); else LS.setItem(KK,kept1); }catch(e){} w.Date.now=clock0;
+              /* the bake's time as the press found it: a newer publish a case made (round 4) never outlives its reload */
+              if(bk0g===undefined) delete P().baked_at; else P().baked_at=bk0g; drop(); };
+            const reload=(raw,tweak,look,lab)=>{ let undo=null; const o={pub:{},lines:{},dk:{},dk0:null,ESPN_LIVE:{},ESPN_GL:{},ESPN_OUT:{},ESPN_IDAT:{},ESPN_ASIDE:{},ESPN_KEPT:{},GONE:{},kg:{},n:0,req:0,proto:[]};
+              try{ toLoad(); if(raw==null) LS.removeItem(KK); else LS.setItem(KK,raw);
+                undo=tweak?tweak():null;
+                o.pub=Object.fromEntries(games.map(g=>[g.id,linesOf(g)])); o.dk0=canon(P().dk); o.bk=P().baked_at;
+                net.log=[]; const nc=calls.length;
+                try{ o.n=F('espnRestore')(); }catch(e){ o.err=String(e&&e.stack||e); }
+                o.req=net.log.length+(calls.length-nc);
+                o.lines=Object.fromEntries(games.map(g=>[g.id,linesOf(g)])); o.dk=P().dk;
+                for(const n of ['ESPN_LIVE','ESPN_GL','ESPN_OUT','ESPN_IDAT','ESPN_ASIDE','ESPN_KEPT']) o[n]=F(n); o.GONE=clone(F('ESPN_KEEP_GONE'))||{};
+                o.key=lsGet(); o.kv=parse(o.key); o.kg=(o.kv&&o.kv.games)||{};
+                if(look) look(o);
+              } catch(e){ o.err=String(e&&e.stack||e); }
+              finally{ if(undo) try{ undo(); }catch(e){}
+                try{ backToPost(); }catch(e){ o.err=(o.err?o.err+'; ':'')+'the page not put back: '+e; }
+                o.proto=protoClean();
+                chk(!o.proto.length,`${lab||'a reload'} set ${o.proto.join(', ')} on the page's built-in prototypes (every for-in on the page then reads them): a kept value reached a prototype`); }
+              return o; };
+            const nothing=(r,gid)=>!inLive(r.ESPN_LIVE,gid)&&!r.ESPN_GL[gid]&&!r.ESPN_IDAT[gid]&&!r.ESPN_OUT[gid]&&same(r.lines[gid],r.pub[gid])&&dkOf(r.dk,gid)===dkOf(dkPre,gid);
+            const why=r=>`${r.err?'threw '+r.err.split('\n')[0]+'; ':''}${r.proto&&r.proto.length?'set '+r.proto.join(', ')+' on the built-ins; ':''}${r.req} request(s); put back ${r.n} game(s); ESPN_ASIDE ${JSON.stringify(r.ESPN_ASIDE)}; ESPN_KEEP_GONE ${JSON.stringify(r.GONE)}; key ${String(r.key).slice(0,120)}`;
+            /* each case below in a guard of its own: a throw is a failed check with its message, never the audit's
+               end, and whatever the case changed is put back after it (the schedule, every game's lines, PAY.dk and
+               the week's main lines, the page's clock, the key, the ESPN_* state, the network stub, ESPN_RUN) with
+               the page's built-ins: a case that breaks the page can fail only its own checks */
+            const names0=clone(F('ESPN_NAMES')), run0g=clone(F('ESPN_RUN')), route0g=net.route, mkt0g=JSON.stringify((P().mkt||{})[wk]||null);
+            const putMkt=()=>{ const want=JSON.parse(mkt0g), M0=(P().mkt||{})[wk]; if(JSON.stringify(M0||null)===mkt0g) return;
+              if(!want){ delete P().mkt[wk]; return; } if(!M0){ P().mkt[wk]=want; return; }
+              for(const k of Object.keys(M0)) if(!(k in want)) delete M0[k]; for(const [k,v] of Object.entries(want)) if(JSON.stringify(M0[k])!==JSON.stringify(v)) M0[k]=v; };
+            const kcase=async(lab,fn)=>{
+              try{ await fn(); }
+              catch(e){ chk(false,`${lab}: the check threw ${String(e&&e.stack||e).split('\n').slice(0,2).join(' ')}`); }
+              finally{ try{ net.route=route0g; net.gate=null; setVar('ESPN_RUN',clone(run0g)); setVar('ESPN_NAMES',clone(names0)||{}); putMkt(); if(bk0g===undefined) delete P().baked_at; else P().baked_at=bk0g; backToPost(); }
+                catch(e){ chk(false,`${lab}: the page could not be put back to the press's state after it: ${e}`); }
+                const pz=protoClean(); chk(!pz.length,`${lab}: left ${pz.join(', ')} set on the page's built-in prototypes, which every for-in on the page then reads`); } };
+
+            /* 1. what the press wrote: v 1 and the page's season, an entry for every game the press read
+               (each but the one kicked off), each with what a reload must put back (the game lines as the page
+               shows them, the ids the read gave or found with its time, glat and the event: keptGl, worked out
+               here), the published lines it was read over (espnGlSig, espnPlSig as the press left them), the
+               player lines ESPN_LIVE holds for it and what the read found */
+            await kcase('what the press kept',async()=>{
+            chk(!!kv&&kv.v===1&&kv.season===SEASON&&!!kv.games&&typeof kv.games==='object'&&!Array.isArray(kv.games)&&same(Object.keys(kv.games).sort(),read.map(g=>g.id).sort()),
+              `after the press, ${KK} is not {v:1, season ${SEASON}} with an entry for each game the press read: ${String(kept1).slice(0,200)}`);
+            for(const g of read){ const e=kv&&kv.games?kv.games[g.id]:null, o=ESPN.oddsOf(evOfG(g),g), b=(LV[wk]||{})[g.id], GLg=F('ESPN_GL')[g.id], ow=OUT[g.id], x=o&&GLg?keptGl(g,o,GLg.at):null;
+              chk(!!e&&e.w===wk&&!!e.gl&&!!x&&same(sortObj(vals(x.lines)),sortObj(o.lines))&&Object.values(x.lines).every(p=>p[1]===GLg.at)&&canon(e.gl.lines)===canon(x.lines)&&canon(e.gl.ids)===canon(x.ids)&&canon(e.gl.idat)===canon(x.idat)
+                &&e.gl.glat===x.glat&&e.gl.event===x.event&&e.gl.at===GLg.at&&Math.abs(e.gl.at-t0)<60e3&&e.gl.at===glAt0&&Object.keys(x.idat).every(k=>F('espnIdAt')(g.id,k)===x.idat[k]),
+                `the press kept ${g.id}'s game lines otherwise than the page shows them after it (its scoreboard's lines, each id it gave or found as the pull had it dated by the read, the pull's glat else the read's, its event): ${JSON.stringify(e&&e.gl)} against ${JSON.stringify(x)}`);
+              { const gs=glSigOf(before[g.id]||{}), ps=plSigOf(g.id);
+                chk(!!e&&!!e.gl&&e.gl.sig===gs&&e.plsig===ps,`the press kept ${g.id}'s read over other published lines than the page had (the game lines' hash ${gs}, the player prices' ${ps}, worked out here): ${e&&e.gl&&e.gl.sig} ${e&&e.plsig}`); }
+              chk(!!e&&(b?canon(e.pl)===canon(b):e.pl===undefined),`the press kept ${g.id}'s player lines otherwise than ESPN_LIVE holds them: ${String(JSON.stringify(e&&e.pl)).slice(0,160)}`);
+              chk(!!e&&(ow&&(ow.st==='ok'||ow.st==='none')?!!e.out&&e.out.st===ow.st:e.out===undefined),`the press kept what it found for ${g.id} as ${JSON.stringify(e&&e.out)}, where the read ${ow?ow.st:'found nothing'}`); }
+            if(gK) chk(!kv||!kv.games||!(gK.id in kv.games),`the press kept a read of ${gK.id}, kicked off before it was read`); });
+
+
+            /* 2. a reload with the press's read kept: no request, and exactly the press's player lines, game
+               lines, ids and their read times, the key written back as it was, and the levels and g0's hands
+               as right after the press */
+            await kcase(`a reload with the press's read kept`,async()=>{
+            drop(); const lvA=lvSig(F('getPbTiers')()), hdA=hdSig(F('gameTiers')(g0));
+            const r2=reload(kept1,null,o=>{ o.lv=lvSig(F('getPbTiers')()); o.hd=hdSig(F('gameTiers')(g0)); o.st=F('espnStatus')(null); });
+            chk(!r2.err&&r2.req===0&&r2.n===read.length,`a reload with the press's read kept did not put back its ${read.length} games with no request: ${why(r2)}`);
+            chk(canon(r2.ESPN_LIVE)===canon(post.ESPN_LIVE),`a reload did not put back exactly the press's player lines: ${canon(r2.ESPN_LIVE).slice(0,200)} against ${canon(post.ESPN_LIVE).slice(0,200)}`);
+            { const bad=games.filter(g=>!same(r2.lines[g.id],post.lines[g.id]));
+              chk(!bad.length,`a reload did not put back the press's game lines on ${bad.map(g=>g.id+' '+JSON.stringify(r2.lines[g.id])+' against '+JSON.stringify(post.lines[g.id])).join('; ').slice(0,300)}`); }
+            chk(canon(r2.dk)===canon(post.dk)&&canon(r2.ESPN_IDAT)===canon(post.ESPN_IDAT),`a reload did not put back the press's DraftKings ids beside the paid pull's, each dated by its read: ${canon(((r2.dk||{})[wk])).slice(0,200)} ${canon(r2.ESPN_IDAT).slice(0,160)}`);
+            /* written back as the press kept it, plsig beside a player half only (keptBack) */
+            chk(!!r2.kv&&canon(r2.kg)===canon(keptBackAll(kv&&kv.games)),`a reload wrote the kept read back otherwise than the press kept it: ${String(r2.key).slice(0,200)}`);
+            chk(r2.lv===lvA,`after a reload, the Parlay Builder's levels are not the ones on the press's read: ${String(r2.lv).slice(0,160)} against ${lvA.slice(0,160)}`);
+            chk(r2.hd===hdA,`after a reload, ${g0.id}'s hands are not the ones on the press's read: ${String(r2.hd).slice(0,160)} against ${hdA.slice(0,160)}`);
+            W.wording(!!r2.st&&r2.st.startsWith('DraftKings’ lines from ESPN')&&!/gave way/.test(r2.st),`after a reload with the read standing, the status line reads "${r2.st}"`);
+            /* and a load does it before the page is first drawn: boot() calls espnRestore() ahead of its first
+               renderAll() (a boot here would replace S under every check after M8, so its order is held instead) */
+            { const src=String(F('boot')), iR=src.indexOf('espnRestore()'), iD=src.indexOf('renderAll()');
+              chk(iR>=0&&iD>=0&&iR<iD,`a load does not put a kept read back before the page is first drawn: boot() calls ${iR<0?'no espnRestore()':'espnRestore() after renderAll()'}`); }
+            });
+
+            /* 3. the time rule (round 4 of 16 October 2026). A kept half stands over the publish it was read over, or over
+               a newer one where the read is later than that publish's own time for the half: for the game lines the
+               DraftKings pull's (g.lat, where the game's lines are DraftKings'), else the bake (PAY.baked_at); for the
+               player lines the paid pull's for the game (PAY.dk's at), else the bake. Until round 4 any change of the
+               published lines set a read aside, so a read made in a tab left open across a publish was lost on the next
+               reload and the status line said it gave way to prices published since. Each case is a newer publish (P2)
+               made on the reload from the one the press read over (P1), its time for the half set either side of the
+               read's own and the other time of the pair (the bake, or the pull) on the far side, so a rule that read the
+               wrong one fails. The times are the kept read's own (gl.at, pl.at, out's when), so the cases hold in any
+               week and at any hour. Game lines:
+               (a) P2 moves g0's total with a DraftKings pull later than the read (the bake earlier): the game lines aside
+                   (nothing of them, their ids or event), the player lines standing, ESPN_ASIDE and ESPN_KEEP_GONE naming
+                   the game lines alone, the key and another tab's copy written over without them; and g0 kept as its game
+                   lines alone (the entry the page writes where the player read failed): nothing of it stands, and the
+                   status lines say it gave way;
+               (b) the same with the pull earlier than the read (the bake later: a tab left open across a publish): the
+                   read stands over P2, its d replayed on P2's lines (replay), ESPN_GL holding P2's lines as published,
+                   the ids and player lines as the press left them, and the key written back over P2 (its hash);
+               (c) P2 moves g0's total on DraftKings' lines with no pull time, and on lines that are not DraftKings': the
+                   bake later than the read, aside; earlier, standing as in (b);
+               (d) the same lines rebaked later than the read: standing exactly as the press left it (and in its own case
+                   below, on a publish whose lines are not DraftKings', where the bake is the only time there is) */
+            const bump=(g,k,dd)=>{ const v=g[k]; g[k]=typeof v==='number'&&isFinite(v)?v+dd:(k==='tot'?41.5:-150); };
+            /* the times of a kept entry's halves: ESPN_KEEP_GONE holds, by half ({gl, pl}), the times of the halves a load
+               set aside, so a write never takes one back from another tab's copy and never refuses the other half for it.
+               The player half's time is its latest read's: its lines' or, later, the read that found what it found (out's
+               when; round 4, as the page's merge ranks it) */
+            const atOf=e=>({gl:e&&e.gl?e.gl.at:0,pl:Math.max(e&&e.pl?Date.parse(e.pl.at)||0:0,e&&e.out&&isFinite(e.out.when)?+e.out.when:0)}), kAt=atOf(kv&&kv.games&&kv.games[g0.id]);
+            const goneIs=(r,gid,hs,at)=>{ const G=r.GONE[gid]; return !!G&&same(Object.keys(G).sort(),[...hs].sort())&&hs.every(h=>G[h]===at[h]); };
+            const k0e=kv&&kv.games&&kv.games[g0.id], gAt=k0e&&k0e.gl?k0e.gl.at:NaN, plAt=kAt.pl, plRead=k0e&&k0e.pl?Date.parse(k0e.pl.at):NaN;
+            const setBk=t=>{ P().baked_at=iso(t); };
+            /* P2 for the game lines: g0's total moved, its lines DraftKings' pulled at lat (ls 'dk' with no lat where lat is
+               undefined, not DraftKings' at all where it is null), the bake at bk */
+            const p2gl=(lat,bk)=>()=>{ bump(g0,'tot',1); if(lat===null){ delete g0.ls; delete g0.lat; } else { g0.ls='dk'; if(lat===undefined) delete g0.lat; else g0.lat=iso(lat); } setBk(bk); return null; };
+            /* the reload, with the status lines, P2's own hashes, and another tab's copy (the raw value put back in the
+               browser after the restore and written over by this load) */
+            const reloadT=(raw,tweak,look,lab)=>reload(raw,tweak,o=>{ o.st=F('espnStatus')(null); o.st0=F('espnStatus')(g0.id); o.ps2=plSigOf(g0.id); if(look) look(o);
+              try{ LS.setItem(KK,raw); }catch(e){} o.w2=F('espnKeepWrite')(); o.k2=(parse(lsGet())||{}).games||{}; },lab);
+            /* g0's game lines standing over P2 */
+            /* (round 5) over a newer publish the kept d is put back as a read would put it, each field by its own read's
+               time (replayD); the press's read is one read of all eight with their prices, so each field stands */
+            const glStands=(lab,r)=>{ const pub=r.pub[g0.id], RD=replayD(pub,k0e.gl.lines,sinceOf(pub,r.bk,false),false), want=RD.lines, GLr=r.ESPN_GL[g0.id], a=r.ESPN_ASIDE[g0.id]||{}, G=r.GONE[g0.id]||{};
+              chk(!r.err&&r.req===0&&RD.at===gAt&&canon(r.lines[g0.id])===canon(want)&&!!GLr&&canon(GLr.orig)===canon(pub)&&GLr.at===RD.at&&canon(GLr.d)===canon(RD.D)&&!('gl' in a)&&!('gl' in G),
+                `${lab}: ${g0.id}'s kept game lines, read later than that publish's own time for them, did not stand over it (the kept d replayed on its lines, ESPN_GL holding those as published): ${JSON.stringify(r.lines[g0.id])} against ${JSON.stringify(want)}; ESPN_GL ${String(JSON.stringify(GLr||null)).slice(0,220)}; ${why(r)}`);
+              chk(!r.err&&dkOf(r.dk,g0.id)===dkOf(post.dk,g0.id)&&canon(r.ESPN_IDAT[g0.id]||null)===canon(post.ESPN_IDAT[g0.id]||null)&&canon((r.ESPN_LIVE[wk]||{})[g0.id]||null)===canon((post.ESPN_LIVE[wk]||{})[g0.id]||null),
+                `${lab}: ${g0.id}'s DraftKings ids or player lines were not put back as the press left them: ${why(r)}`);
+              const kg=r.kg[g0.id];
+              chk(!!kg&&!!kg.gl&&kg.gl.sig===glSigOf(pub)&&canon({...kg.gl,sig:null})===canon({...k0e.gl,lines:RD.D,at:RD.at,sig:null}),
+                `${lab}: the key written back does not hold ${g0.id}'s game lines as kept, over the newer publish's lines (their hash ${glSigOf(pub)}, worked out here): ${String(JSON.stringify(kg&&kg.gl)).slice(0,240)}`);
+              W.wording(!/gave way/.test(r.st0||'')&&!/gave way/.test(r.st||''),`${lab}: a status line says ${g0.id}'s earlier read gave way where it stands: "${r.st0}" / "${r.st}"`); };
+            /* g0's game lines set aside by P2, its player lines (the full entry) standing */
+            const glAside=(lab,r)=>{ const a=r.ESPN_ASIDE[g0.id]||null, b0=(post.ESPN_LIVE[wk]||{})[g0.id];
+              chk(!r.err&&r.req===0&&same(r.lines[g0.id],r.pub[g0.id])&&!r.ESPN_GL[g0.id]&&!r.ESPN_IDAT[g0.id]&&dkOf(r.dk,g0.id)===dkOf(dkPre,g0.id)&&!!a&&a.gl===gAt&&!('pl' in a),
+                `${lab}: a reload put ${g0.id}'s kept game lines or their ids back, or ESPN_ASIDE does not name its game lines alone at their read's time: ${why(r)}`);
+              chk(goneIs(r,g0.id,['gl'],kAt),`${lab}: ESPN_KEEP_GONE does not hold ${g0.id}'s game lines' time alone: ${JSON.stringify(r.GONE[g0.id]||null)} against {gl:${kAt.gl}}`);
+              chk(!(r.kg[g0.id]&&r.kg[g0.id].gl)&&r.w2===true&&!(r.k2[g0.id]&&r.k2[g0.id].gl),`${lab}: the key written back, or another tab's copy of the press's read written over by this load, still holds ${g0.id}'s game lines: ${String(JSON.stringify(r.kg[g0.id]||null)).slice(0,160)} / ${String(JSON.stringify(r.k2[g0.id]||null)).slice(0,160)}`);
+              chk(!r.err&&(b0?canon((r.ESPN_LIVE[wk]||{})[g0.id])===canon(b0)&&!!r.kg[g0.id]&&canon(r.kg[g0.id].pl)===canon(b0):!inLive(r.ESPN_LIVE,g0.id)),
+                `${lab}: with ${g0.id}'s game lines set aside, its player lines did not stand, or were not written back: ${why(r)}`);
+              W.wording(!/gave way/.test(r.st0)&&!/gave way/.test(r.st),`${lab}: with ${g0.id}'s player lines still standing, a status line says its earlier read gave way: "${r.st0}" / "${r.st}"`);
+              const rest=read.filter(g=>g!==g0&&!same(r.lines[g.id],post.lines[g.id]));
+              chk(!rest.length,`${lab}: with ${g0.id}'s game lines set aside, the other games' kept game lines were not put back: ${rest.map(g=>g.id).join(', ')}`); };
+            await kcase(`the time rule: game lines`,async()=>{
+              if(!(k0e&&k0e.gl&&isFinite(gAt))){ W.coverage(false,`the press kept no game lines for ${g0.id}: the time rule on game lines went untested`); return; }
+              /* g0 kept as its game lines alone: the entry the page writes for a game whose player read failed */
+              const vG=clone(kv); delete vG.games[g0.id].pl; delete vG.games[g0.id].out; const rawG=JSON.stringify(vG);
+              { const lab=`a newer publish moving ${g0.id}'s total with a DraftKings pull later than the read (the bake earlier)`;
+                glAside(lab,reloadT(kept1,p2gl(gAt+1000,gAt-1000),null,lab));
+                const r=reloadT(rawG,p2gl(gAt+1000,gAt-1000),null,lab+', its read kept as its game lines alone');
+                chk(!r.err&&r.req===0&&nothing(r,g0.id)&&!r.ESPN_KEPT[g0.id]&&!(g0.id in r.kg)&&!(g0.id in r.k2)&&!!r.ESPN_ASIDE[g0.id]&&r.ESPN_ASIDE[g0.id].gl===gAt&&goneIs(r,g0.id,['gl'],kAt),
+                  `${lab}, ${g0.id}'s read kept as its game lines alone: something of it stood, was written back or came back from another tab's copy, or ESPN_ASIDE and ESPN_KEEP_GONE do not name its game lines: ${why(r)}`);
+                W.wording(/your earlier Refresh odds read of 1 game gave way to prices published since/.test(r.st)&&(r.st0||'').includes('your earlier Refresh odds read gave way to prices published since'),
+                  `${lab}, ${g0.id}'s kept read wholly given way: the status lines do not say so: "${r.st}" / "${r.st0}"`); }
+              { const lab=`a newer publish moving ${g0.id}'s total with a DraftKings pull earlier than the read (the bake later: a tab left open across a publish)`;
+                glStands(lab,reloadT(kept1,p2gl(gAt-1000,gAt+1000),null,lab));
+                const r=reloadT(rawG,p2gl(gAt-1000,gAt+1000),null,lab+', its read kept as its game lines alone');
+                chk(!r.err&&r.req===0&&canon(r.lines[g0.id])===canon(replay(r.pub[g0.id],k0e.gl.lines,sinceOf(r.pub[g0.id],r.bk,false),false))&&!r.ESPN_ASIDE[g0.id]&&!!r.kg[g0.id]&&!!r.kg[g0.id].gl&&r.kg[g0.id].gl.sig===glSigOf(r.pub[g0.id]),
+                  `${lab}, ${g0.id}'s read kept as its game lines alone: it did not stand over the newer publish, or was not written back over its lines: ${JSON.stringify(r.lines[g0.id])}; ${why(r)}`);
+                W.wording(!/gave way/.test(r.st)&&!/gave way/.test(r.st0),`${lab}, its read kept as its game lines alone: a status line says it gave way where it stands: "${r.st}" / "${r.st0}"`); }
+              for(const [kind,lat] of [['DraftKings\' lines with no pull time',undefined],['lines that are not DraftKings\'',null]]){
+                glAside(`a newer publish moving ${g0.id}'s total on ${kind}, baked later than the read`,reloadT(kept1,p2gl(lat,gAt+1000),null,`a newer publish on ${kind}, baked later`));
+                glStands(`a newer publish moving ${g0.id}'s total on ${kind}, baked earlier than the read`,reloadT(kept1,p2gl(lat,gAt-1000),null,`a newer publish on ${kind}, baked earlier`)); }
+              { const lab=`the same lines rebaked later than the read`;
+                const r=reloadT(kept1,()=>{ setBk(Math.max(gAt,plAt)+3600e3); return null; },null,lab);
+                const bad=games.filter(g=>!same(r.lines[g.id],post.lines[g.id]));
+                chk(!r.err&&r.req===0&&r.n===read.length&&!bad.length&&canon(r.ESPN_GL)===canon(post.ESPN_GL)&&canon(r.ESPN_LIVE)===canon(post.ESPN_LIVE)&&canon(r.dk)===canon(post.dk)&&canon(r.ESPN_IDAT)===canon(post.ESPN_IDAT)
+                  &&canon(r.ESPN_ASIDE)==='{}'&&canon(r.kg)===canon(keptBackAll(kv&&kv.games)),
+                  `${lab}: the kept read did not stand exactly as the press left it (a rebake with the same lines never sets a read aside): ${bad.map(g=>g.id).join(', ')}; ${why(r)}`);
+                W.wording(!/gave way/.test(r.st)&&!/gave way/.test(r.st0),`${lab}: a status line says the earlier read gave way: "${r.st}" / "${r.st0}"`); }
+            });
+            /* the player half: P2 moves g0's published player prices (the paid pull's time for it, or one of its main lines
+               in the payload, with the pull's time set either side of the read or taken out) with the pull later than the
+               read (the bake earlier), or with no pull time and the bake later: the player lines aside, what the read found
+               with them, the game lines standing; with the pull earlier (the bake later), or no pull time and the bake
+               earlier: they stand over P2, the key written back over its hash, and (P2 moving the pull's time alone) its
+               legs priced from the read exactly as after the press */
+            const legSig=()=>{ drop(); return JSON.stringify(F('pricedLegs')([g0]).map(l=>JSON.stringify([l.key,l.side,l.k,l.price,l.src,typeof l.p==='number'?+l.p.toFixed(9):null])).sort()); };
+            const mainMove=()=>{ const Mw=(P().mkt[wk]??={}); let hit=null;
+              for(const p of Object.keys(Mw)) for(const s of Object.keys(Mw[p]||{})) if(!hit&&Mw[p][s]&&Mw[p][s].g===g0.id) hit=Mw[p][s];
+              if(hit){ const was=hit.over; hit.over=was===-110?-115:-110; return ()=>{ hit.over=was; }; }
+              Mw['00-AUDIT-ROW']={receptions:{line:3.5,over:-110,under:-110,n:'Audit Row',g:g0.id}}; return ()=>{ delete Mw['00-AUDIT-ROW']; }; };
+            const atSet=t=>{ const E=((P().dk[wk]??={})[g0.id]??={}); if(t==null) delete E.at; else E.at=iso(t); };
+            const plStands=(lab,r,legs0)=>{ const b0=(post.ESPN_LIVE[wk]||{})[g0.id], kg=r.kg[g0.id], a=r.ESPN_ASIDE[g0.id]||{};
+              chk(!r.err&&r.req===0&&!!b0&&canon((r.ESPN_LIVE[wk]||{})[g0.id])===canon(b0)&&canon(r.ESPN_OUT[g0.id]||null)===canon(k0e.out||null)&&!('pl' in a)&&same(r.lines[g0.id],post.lines[g0.id])&&!!r.ESPN_GL[g0.id],
+                `${lab}: ${g0.id}'s kept player lines, read later than that publish's own time for them, did not stand over it (with what the read found, and its game lines): ${why(r)}`);
+              chk(!!kg&&canon(kg.pl)===canon(b0)&&canon(kg.out||null)===canon(k0e.out||null)&&kg.plsig===r.ps2&&!!kg.gl,
+                `${lab}: the key written back does not hold ${g0.id}'s player lines and what the read found over the newer publish's player prices (their hash ${r.ps2}, worked out here): ${String(JSON.stringify(kg||null)).slice(0,200)}`);
+              if(legs0!=null) chk(!r.err&&r.legs===legs0,`${lab}: ${g0.id}'s legs are not priced from the read as after the press: ${String(r.legs).slice(0,200)} against ${legs0.slice(0,200)}`);
+              W.wording(!/gave way/.test(r.st0||''),`${lab}: ${g0.id}'s page says its earlier read gave way where it stands: "${r.st0}"`); };
+            const plAside=(lab,r)=>{ const a=r.ESPN_ASIDE[g0.id]||null, ids0=((k0e&&k0e.gl)||{}).ids||{}, D=((r.dk||{})[wk]||{})[g0.id]||{}, Dp=((post.dk||{})[wk]||{})[g0.id]||{};
+              chk(!r.err&&r.req===0&&!inLive(r.ESPN_LIVE,g0.id)&&!r.ESPN_OUT[g0.id]&&!!a&&a.pl===plAt&&!('gl' in a)&&same(r.lines[g0.id],post.lines[g0.id])&&!!r.ESPN_GL[g0.id]
+                &&Object.keys(ids0).every(k=>D[k]===Dp[k]),`${lab}: a reload put ${g0.id}'s kept player lines or what the read found back, or not its game lines and ids, or ESPN_ASIDE does not name its player lines alone at their latest read's time: ${why(r)}`);
+              chk(!!r.kg[g0.id]&&!r.kg[g0.id].pl&&!r.kg[g0.id].out&&!!r.kg[g0.id].gl,`${lab}: the key written back holds ${g0.id}'s player lines or what that read found, or not its game lines: ${String(JSON.stringify(r.kg[g0.id]||null)).slice(0,160)}`);
+              chk(goneIs(r,g0.id,['pl'],kAt),`${lab}: ESPN_KEEP_GONE does not hold ${g0.id}'s player lines' time alone, the half set aside: ${JSON.stringify(r.GONE[g0.id]||null)} against {pl:${kAt.pl}}`);
+              W.wording(!/gave way/.test(r.st0),`${lab}: ${g0.id}'s game page says its earlier read gave way where its game lines stand: "${r.st0}"`); };
+            await kcase(`the time rule: player lines`,async()=>{
+              if(!(k0e&&k0e.pl&&isFinite(plRead)&&k0e.gl)){ W.coverage(false,`the press kept no player lines for ${g0.id}: the time rule on player lines went untested`); return; }
+              const legs0=legSig(), later=plAt+1000, earlier=plRead-1000;
+              const T=(lab,tw)=>reloadT(kept1,tw,o=>{ o.legs=legSig(); },lab);
+              plAside(`the paid pull's time for ${g0.id} later than its player read (the bake earlier)`,T('a pull later',()=>{ atSet(later); setBk(earlier); return null; }));
+              plStands(`the paid pull's time for ${g0.id} earlier than its player read (the bake later)`,T('a pull earlier',()=>{ atSet(earlier); setBk(later); return null; }),legs0);
+              plAside(`one of ${g0.id}'s main lines moved in the payload, the paid pull's time later than its player read`,T('a main line, pull later',()=>{ atSet(later); setBk(earlier); return mainMove(); }));
+              plStands(`one of ${g0.id}'s main lines moved in the payload, the paid pull's time earlier than its player read`,T('a main line, pull earlier',()=>{ atSet(earlier); setBk(later); return mainMove(); }),null);
+              plAside(`one of ${g0.id}'s main lines moved, the pull giving no time for it and the bake later than its player read`,T('a main line, no pull time, baked later',()=>{ atSet(null); setBk(later); return mainMove(); }));
+              plStands(`one of ${g0.id}'s main lines moved, the pull giving no time for it and the bake earlier than its player read`,T('a main line, no pull time, baked earlier',()=>{ atSet(null); setBk(earlier); return mainMove(); }),null);
+            });
+            /* the page's clock past g0's kickoff: nothing of it, and the key written back without it */
+            await kcase(`a kickoff`,async()=>{
+            { const k0c=F('kickoff')(g0).getTime(), r=reload(kept1,()=>{ setClock(k0c+60e3); return ()=>{ w.Date.now=clock0; }; });
+              chk(!r.err&&r.req===0&&nothing(r,g0.id)&&!(g0.id in r.kg)&&!r.ESPN_KEPT[g0.id],`with the page's clock past ${g0.id}'s kickoff, a reload put something of its kept read back, or wrote it back: ${why(r)}`);
+              chk(goneIs(r,g0.id,['gl','pl'],kAt),`with the page's clock past ${g0.id}'s kickoff, ESPN_KEEP_GONE does not hold both its halves' times: ${JSON.stringify(r.GONE[g0.id]||null)}`); }
+            });
+            /* a value the page does not write: nothing put back and the key emptied */
+            await kcase(`a kept value the page does not write`,async()=>{
+            for(const [lab,raw] of [['of another season',JSON.stringify({...kv,season:SEASON-1})],['of another version (v 2)',JSON.stringify({...kv,v:2})],['that is not JSON',`{"v":1,"season":${SEASON},"games":{`],
+                ['whose games are a list',JSON.stringify({...kv,games:Object.values((kv&&kv.games)||{})})],['whose games are not an object',JSON.stringify({...kv,games:'x'})]]){
+              const r=reload(raw);
+              chk(!r.err&&r.req===0&&!r.n&&canon(r.ESPN_LIVE)==='{}'&&canon(r.ESPN_GL)==='{}'&&canon(r.ESPN_IDAT)==='{}'&&canon(r.ESPN_OUT)==='{}'&&games.every(g=>same(r.lines[g.id],r.pub[g.id]))&&canon(r.dk)===r.dk0&&r.key===null,
+                `a kept value ${lab}: a reload put something back, or left the key: ${why(r)}`); }
+            });
+            /* no schedule to stand on: nothing done, and the key left exactly as it was */
+            await kcase(`no schedule`,async()=>{
+            { let sch=null; const r=reload(kept1,()=>{ sch=S.sched; S.sched=[]; return ()=>{ S.sched=sch; }; });
+              chk(!r.err&&r.req===0&&!r.n&&r.key===kept1&&canon(r.ESPN_LIVE)==='{}'&&canon(r.ESPN_GL)==='{}'&&canon(r.ESPN_IDAT)==='{}'&&games.every(g=>same(r.lines[g.id],r.pub[g.id]))&&canon(r.dk)===r.dk0,
+                `with no schedule, a reload put something back or touched the key: ${why(r)}`); }
+            });
+            /* a kept entry with parts the page never writes: a DraftKings id that is not one, or under a key
+               that is not one, a game line or a player's line that is not a number, a player id with a quote:
+               each part dropped, never in PAY.dk or ESPN_LIVE, and the rest of the entry put back whole */
+            await kcase(`the parts of a kept entry the page never writes`,async()=>{
+            const e0k=kv&&kv.games&&kv.games[g0.id];
+            if(e0k&&e0k.gl&&e0k.pl){
+              { const v=clone(kv), e0=v.games[g0.id];
+                Object.assign(e0.gl.ids,{'game|total|over|99.5':'<img src=x>','game|total|under|99.5':'javascript:x','team:SEA|ml"><b>x</b>':'0AUBADKEY','ml':'0AUBADKEY2'});
+                /* (round 5) each kept line is [its value, its read's time]: a value that is not a number, a bare value, a
+                   time after the read's own (gl.at) or not a time, or a pair of three, is not one the page writes */
+                const tA=e0.gl.at; Object.assign(e0.gl.lines,{mla:['+999',tA],mlh:[null,tA],tov:[-104,tA+5000],tou:-116,spa:[-108,'AUDITT'],sph:[-112,tA,1]});
+                Object.assign(e0.pl.lines,{'00-0"><img src=x>':{receiving_yards:61.5},'00-AUDIT-STR':{receiving_yards:'55.5'},'00-AUDIT-INF':{receiving_yards:'AUDITINF'},'00-AUDIT-NEG':{receiving_yards:-3}});
+                e0.pl.rungs['00-0"x']={receiving_yards:[50]}; e0.pl.rungs['00-AUDIT-STR']={receiving_yards:['40',null]}; e0.pl.td=[...e0.pl.td,'00-0"x',7];
+                const r=reload(JSON.stringify(v).replace('"AUDITINF"','1e999'));
+                chk(!r.err&&r.req===0&&canon(r.dk)===canon(post.dk)&&!/<img|javascript:|0AUBADKEY/.test(JSON.stringify(r.dk))&&canon(r.ESPN_IDAT)===canon(post.ESPN_IDAT),
+                  `a kept DraftKings id that is not one, or under a key that is not one, reached PAY.dk on a reload, or the entry's own ids did not: ${why(r)}`);
+                chk(canon(r.ESPN_LIVE)===canon(post.ESPN_LIVE),`a kept player id with a quote, or a line that is not a number, reached ESPN_LIVE on a reload, or the rest of ${g0.id}'s player lines did not: ${canon((r.ESPN_LIVE[wk]||{})[g0.id]).slice(0,240)}`);
+                /* the kept d replayed (round 4, espnKeepLines): a money line kept as "+999" is not a value the page writes,
+                   so it is dropped with the rest of what the page never writes and the field is one no read set (the
+                   published one stands); so is a money line kept as null (round 6: a read drops only a price, a number
+                   read without its prices, never a money line, spread or total); the other six as kept */
+                const PRICE=new Set(['spa','sph','tov','tou']), kl=e0.gl.lines, okT=t=>typeof t==='number'&&isFinite(t)&&t>0&&t<=tA, dC=Object.fromEntries(NUM8.filter(k=>{ const x=Object.prototype.hasOwnProperty.call(kl,k)?kl[k]:undefined;
+                  return Array.isArray(x)&&x.length===2&&(x[0]===null?PRICE.has(k):(typeof x[0]==='number'&&isFinite(x[0])))&&okT(x[1]); }).map(k=>[k,kl[k]]));
+                const wantL=replay(r.pub[g0.id],dC,0,true), L0=Object.fromEntries(Object.entries(r.lines[g0.id]).filter(([,x])=>x!==undefined));
+                chk(['mla','mlh','tov','tou','spa','sph'].every(k=>!(k in dC))&&canon(r.lines[g0.id])===canon(wantL)&&L0.mla===r.pub[g0.id].mla&&L0.mlh===r.pub[g0.id].mlh&&['tov','tou','spa','sph'].every(k=>L0[k]===r.pub[g0.id][k])&&games.every(g=>g===g0||same(r.lines[g.id],post.lines[g.id])),
+                  `a kept game line the page never writes (a value that is not a number, a null money line, a bare value, a time after its read's or not a time, a pair of three) was applied on a reload, or the rest were not put back exactly as kept: ${JSON.stringify(r.lines[g0.id])} against ${JSON.stringify(wantL)}`); }
+              /* a player id "__proto__" (in the lines, the ladders and the touchdown list), an id key "__proto__" and
+                 a game "__proto__" beside g0's (fix 1 of 16 October 2026: ESPN_KEEP_PID let it through): dropped as
+                 any other id the page never writes, never an own key or the prototype of anything put back or kept
+                 (ESPN_LIVE and its week, g0's read, ESPN_KEPT, ESPN_KEEP_GONE), nor in what is written back; the
+                 read's lines own and plain (a for-in over them, as espnComplete makes, finds only the players read) */
+              { const v=clone(kv), e0=v.games[g0.id];
+                e0.pl.lines.AUDITPROTO={receiving_yards:62.5,passing_yards:201.5}; e0.pl.rungs.AUDITPROTO={receiving_yards:[40,50]}; e0.pl.td=[...e0.pl.td,'AUDITPROTO']; e0.gl.ids.AUDITPROTO='0AUPROTO';
+                v.games.AUDITPROTOG=clone(kv.games[g0.id]);
+                const forIn=o=>{ const a=[]; if(o&&typeof o==='object') for(const k in o) a.push(k); return a.sort(); };
+                const plain=o=>!!o&&typeof o==='object'&&Object.getPrototypeOf(o)===w.Object.prototype&&!Object.prototype.hasOwnProperty.call(o,'__proto__');
+                const r=reload(JSON.stringify(v).split('"AUDITPROTO"').join('"__proto__"').split('"AUDITPROTOG"').join('"__proto__"'),null,o=>{ const b=(o.ESPN_LIVE[wk]||{})[g0.id], kp=o.ESPN_KEPT[g0.id];
+                  o.pp=b?{lp:plain(b.lines),rp:plain(b.rungs),li:forIn(b.lines),ri:forIn(b.rungs),td:[...(b.td||[])]}:null;
+                  o.holders=[['ESPN_LIVE',o.ESPN_LIVE],['ESPN_LIVE['+wk+']',o.ESPN_LIVE[wk]||{}],['ESPN_KEPT',o.ESPN_KEPT],['ESPN_KEEP_GONE',F('ESPN_KEEP_GONE')],['ESPN_ASIDE',o.ESPN_ASIDE],['ESPN_IDAT',o.ESPN_IDAT],
+                    ['the kept read\'s lines',kp&&kp.pl?kp.pl.lines:{}],['the kept read\'s ladders',kp&&kp.pl?kp.pl.rungs:{}],['the kept ids',kp&&kp.gl?kp.gl.ids:{}]].filter(([,x])=>!plain(x)).map(([n])=>n); });
+                const b0=post.ESPN_LIVE[wk][g0.id];
+                chk(!r.err&&!!r.pp&&r.pp.lp&&r.pp.rp&&same(r.pp.li,Object.keys(b0.lines).sort())&&same(r.pp.ri,Object.keys(b0.rungs).sort())&&!r.pp.td.includes('__proto__')&&canon(r.ESPN_LIVE)===canon(post.ESPN_LIVE),
+                  `a kept player id "__proto__" reached ESPN_LIVE on a reload (${g0.id}'s lines ${r.pp?(r.pp.lp?'plain':'on another prototype')+', for-in '+JSON.stringify(r.pp.li.filter(k=>!(k in b0.lines))):'missing'}; ladders ${r.pp?(r.pp.rp?'plain':'on another prototype'):'missing'}; touchdowns ${r.pp?JSON.stringify(r.pp.td.filter(p=>!b0.td.includes(p))):'missing'})${r.err?'; threw '+r.err.split('\n')[0]:''}`);
+                chk(!r.err&&canon(r.dk)===canon(post.dk)&&!/0AUPROTO/.test(JSON.stringify(r.dk)),`a kept DraftKings id under the key "__proto__" reached PAY.dk on a reload: ${why(r)}`);
+                chk(!r.err&&!!r.holders&&!r.holders.length&&r.n===read.length&&!/__proto__/.test(String(r.key))&&canon(r.kg)===canon(keptBackAll(kv&&kv.games)),
+                  `a kept "__proto__" (a player, an id key or a game) is an own key or the prototype of ${r.holders&&r.holders.length?r.holders.join(', '):'something'} after a reload, or is written back, or the rest was not put back and written back as the press kept it: ${why(r)}`);
+                /* nor anything set on the page's built-ins: a game "__proto__" not on the schedule is set aside whole, and
+                   ESPN_KEEP_GONE['__proto__'] read as a plain object's own key is Object.prototype, so the times of its
+                   halves landed there as gl and pl (round 3 of 16 October 2026) and every for-in on the page read them:
+                   the page's first draw then threw (buildNorm), and the audit stopped with no summary line */
+                chk(!r.proto.length,`a kept game "__proto__" set ${r.proto.join(', ')} on the page's built-ins on a reload (espnRestore's ESPN_KEEP_GONE[gid] for gid "__proto__" is Object.prototype): every for-in on the page then reads them, and a load with this value in ${KK} throws on its first draw`); } }
+            else W.coverage(false,`the press kept no read of ${g0.id} with game and player lines both, so the parts a kept entry may not carry went untested`);
+            });
+            /* an entry for a game the schedule does not have, beside g0's own: dropped, g0's put back; and g0's
+               entry in another week than the schedule's: dropped */
+            await kcase(`a kept entry for a game not on the schedule or of another week`,async()=>{
+            { const v=clone(kv); if(v&&v.games&&v.games[g0.id]) v.games['audit-not-a-game']=clone(v.games[g0.id]);
+              const r=reload(JSON.stringify(v));
+              chk(!r.err&&r.req===0&&!inLive(r.ESPN_LIVE,'audit-not-a-game')&&!r.ESPN_KEPT['audit-not-a-game']&&!('audit-not-a-game' in r.kg)
+                &&canon(r.ESPN_LIVE)===canon(post.ESPN_LIVE)&&same(r.lines[g0.id],post.lines[g0.id]),`a kept entry for a game the schedule does not have was put back or written back, or ${g0.id}'s beside it was not put back: ${why(r)}`);
+              chk(!r.GONE[g0.id],`beside a kept entry for a game the schedule does not have, ${g0.id}'s is set aside in ESPN_KEEP_GONE: ${JSON.stringify(r.GONE)}`); }
+            { const v=clone(kv); if(v&&v.games&&v.games[g0.id]) v.games[g0.id].w=String(+g0.w>=22?1:+g0.w+1);
+              const r=reload(JSON.stringify(v));
+              chk(!r.err&&r.req===0&&nothing(r,g0.id)&&!r.ESPN_KEPT[g0.id]&&!(g0.id in r.kg)&&read.filter(g=>g!==g0).every(g=>same(r.lines[g.id],post.lines[g.id])),
+                `a kept entry for ${g0.id} in another week than the schedule's was put back or written back, or the other games' were not: ${why(r)}`);
+              chk(goneIs(r,g0.id,['gl','pl'],kAt),`a kept entry for ${g0.id} in another week is not set aside whole in ESPN_KEEP_GONE: ${JSON.stringify(r.GONE[g0.id]||null)}`); }
+            });
+
+            /* a kept half dated after the page's clock (fix 4 of 16 October 2026) is not a time the page wrote:
+               that half is dropped and the rest of the entry put back. g0's gl.at two hours ahead: none of its game
+               lines, ids or event, its player lines and the other games' standing; one id's idat two hours ahead and
+               another's past Date's range: each id put back as the pull or the read had it and never dated at that
+               time, nothing thrown; glat two hours ahead, on a game the pull gave no glat (taken out of the load's
+               copy here): never in PAY.dk, the earliest read of its ids in its place; pl.at two hours ahead: no
+               player lines, its game lines and ids standing. Each on values made from the press's own */
+            await kcase(`a kept half dated after the page's clock`,async()=>{
+            const e0g=kv&&kv.games&&kv.games[g0.id];
+            if(e0g&&e0g.gl){ const ahead=w.Date.now()+2*3600e3, late=t=>t!=null&&+t>w.Date.now()+60e3, b0=(post.ESPN_LIVE[wk]||{})[g0.id];
+              { const v=clone(kv); v.games[g0.id].gl.at=ahead; const r=reload(JSON.stringify(v));
+                chk(!r.err&&r.req===0&&same(r.lines[g0.id],r.pub[g0.id])&&!r.ESPN_GL[g0.id]&&!r.ESPN_IDAT[g0.id]&&dkOf(r.dk,g0.id)===dkOf(dkPre,g0.id)
+                  &&(b0?canon((r.ESPN_LIVE[wk]||{})[g0.id])===canon(b0):!inLive(r.ESPN_LIVE,g0.id))&&read.filter(g=>g!==g0).every(g=>same(r.lines[g.id],post.lines[g.id]))&&!(r.kg[g0.id]&&r.kg[g0.id].gl),
+                  `a kept read of ${g0.id} whose game lines are dated two hours after the page's clock: a reload put some of its game lines, ids or event back (or wrote them back), or not its player lines and the other games': ${why(r)}`); }
+              const ks=Object.keys(e0g.gl.idat||{});
+              if(ks.length){ const v=clone(kv), k1=ks[0], k2=ks[1]; v.games[g0.id].gl.idat[k1]=ahead; if(k2) v.games[g0.id].gl.idat[k2]=9e15;
+                const r=reload(JSON.stringify(v),null,o=>{ o.idAt=Object.fromEntries([k1,k2].filter(Boolean).map(k=>[k,F('espnIdAt')(g0.id,k)])); });
+                const D=((r.dk||{})[wk]||{})[g0.id]||{}, Dp=((post.dk||{})[wk]||{})[g0.id]||{}, IA=r.ESPN_IDAT[g0.id]||{}, IAp=post.ESPN_IDAT[g0.id]||{};
+                chk(!r.err&&r.req===0&&!!r.idAt&&[k1,k2].filter(Boolean).every(k=>D[k]===Dp[k]&&!late(IA[k])&&!late(r.idAt[k]))&&ks.slice(2).every(k=>IA[k]===IAp[k])
+                  &&same(r.lines[g0.id],post.lines[g0.id])&&canon(r.ESPN_LIVE)===canon(post.ESPN_LIVE)&&!late(Date.parse(D.glat)),
+                  `a kept id of ${g0.id} dated two hours after the page's clock (${k1}), or past Date's range (${k2||'none'}), reached ESPN_IDAT at that time, or the id, its glat or the rest of the read was not put back: ${k1} ${IA[k1]}${k2?', '+k2+' '+IA[k2]:''}, glat ${D.glat}; ${why(r)}`); }
+              else W.coverage(false,`the press kept no dated id for ${g0.id}: an id dated after the page's clock went untested`);
+              { const v=clone(kv); v.games[g0.id].gl.glat=iso(ahead);
+                const r=reload(JSON.stringify(v),()=>{ const E=((P().dk||{})[wk]||{})[g0.id]; if(E) delete E.glat; return null; });
+                const D=((r.dk||{})[wk]||{})[g0.id]||{}, IA=Object.values(r.ESPN_IDAT[g0.id]||{});
+                chk(!r.err&&r.req===0&&(IA.length?Date.parse(D.glat)===Math.min(...IA):D.glat===undefined)&&!late(Date.parse(D.glat))&&same(r.lines[g0.id],post.lines[g0.id])&&canon(r.ESPN_IDAT)===canon(post.ESPN_IDAT),
+                  `a kept glat for ${g0.id} two hours after the page's clock reached PAY.dk on a game the pull gave none, or the earliest read of its ids is not in its place: ${D.glat} against ${IA.length?iso(Math.min(...IA)):'none'}; ${why(r)}`); }
+              if(e0g.pl){ const v=clone(kv); v.games[g0.id].pl.at=iso(ahead); const r=reload(JSON.stringify(v));
+                chk(!r.err&&r.req===0&&!inLive(r.ESPN_LIVE,g0.id)&&same(r.lines[g0.id],post.lines[g0.id])&&dkOf(r.dk,g0.id)===dkOf(post.dk,g0.id)&&canon(r.ESPN_IDAT[g0.id])===canon(post.ESPN_IDAT[g0.id])
+                  &&!!r.kg[g0.id]&&!r.kg[g0.id].pl&&!!r.kg[g0.id].gl,
+                  `a kept read of ${g0.id} whose player lines are dated two hours after the page's clock: a reload put them back (or wrote them back), or not its game lines and ids: ${why(r)}`);
+                /* D. (round 3) what the read found goes back with the half it describes: an 'ok' whose player lines were
+                   dropped is not put back (the status line would count the game read). (round 5) Whether the key carries it
+                   is the merge's (the stored copy's player half, read later than this load's none): it is never put back */
+                chk(!r.err&&!r.ESPN_OUT[g0.id]&&!!r.kg[g0.id]&&!r.kg[g0.id].pl,`a kept read of ${g0.id} whose player lines were dropped (dated two hours after the page's clock) put its 'ok' back in ESPN_OUT, or wrote player lines back: ${JSON.stringify(r.ESPN_OUT[g0.id]||null)}, written ${JSON.stringify((r.kg[g0.id]||{}).pl||null).slice(0,120)}`); }
+              else W.coverage(false,`the press kept no player lines for ${g0.id}: player lines dated after the page's clock went untested`); }
+            else W.coverage(false,`the press kept no game lines for ${g0.id}: a kept half dated after the page's clock went untested`);
+            });
+
+            /* D. what each read found (ESPN_OUT), put back on a reload with the half it describes (round 3 of 16 October
+               2026): every game's as the press kept it ('ok' with its player lines, 'none' where none were posted, nothing
+               where the read failed); g0 kept as its game lines with what its read found 'none': put back; and g0 kept
+               with 'ok' and its player lines dated two hours after the page's clock, so dropped: not put back, not
+               written back. Each on values made from the press's own */
+            await kcase(`what a kept read found, put back with the half it describes`,async()=>{
+              const e0=kv&&kv.games&&kv.games[g0.id];
+              { const r=reload(kept1), bad=read.filter(g=>{ const ke=kv&&kv.games&&kv.games[g.id]; return ke&&ke.out?canon(r.ESPN_OUT[g.id])!==canon(ke.out):!!r.ESPN_OUT[g.id]; });
+                chk(!r.err&&!bad.length,`a reload did not put back what each read found as the press kept it (ESPN_OUT): ${bad.map(g=>g.id+' '+JSON.stringify(r.ESPN_OUT[g.id]||null)+' against '+JSON.stringify((kv.games[g.id]||{}).out||null)).join('; ').slice(0,300)} ${why(r)}`); }
+              if(!(e0&&e0.gl&&e0.pl&&e0.out)){ W.coverage(false,`the press kept no read of ${g0.id} with its game lines, player lines and what it found: what a read found put back went untested`); return; }
+              { const v=clone(kv), none={st:'none',why:'DraftKings has posted no player lines for it yet',sb:false,when:w.Date.now()-60e3}; delete v.games[g0.id].pl; v.games[g0.id].out=none;
+                const r=reload(JSON.stringify(v));
+                chk(!r.err&&r.req===0&&canon(r.ESPN_OUT[g0.id])===canon(none)&&!!r.kg[g0.id]&&canon(r.kg[g0.id].out)===canon(none)&&!inLive(r.ESPN_LIVE,g0.id)&&same(r.lines[g0.id],post.lines[g0.id]),
+                  `${g0.id} kept as its game lines with what its read found "none" (no player lines posted): a reload did not put that back in ESPN_OUT and write it back, or not its game lines: ${JSON.stringify(r.ESPN_OUT[g0.id]||null)}; ${why(r)}`); }
+              { const v=clone(kv); v.games[g0.id].pl.at=iso(w.Date.now()+2*3600e3); v.games[g0.id].out={...e0.out,st:'ok'};
+                const r=reload(JSON.stringify(v));
+                chk(!r.err&&r.req===0&&!r.ESPN_OUT[g0.id]&&!inLive(r.ESPN_LIVE,g0.id)&&!!r.kg[g0.id]&&!!r.kg[g0.id].gl&&!r.kg[g0.id].pl&&same(r.lines[g0.id],post.lines[g0.id]),
+                  `${g0.id} kept with an 'ok' read whose player lines were dropped (dated two hours after the page's clock): a reload put the 'ok' back in ESPN_OUT (the game counted as read with no player lines), or player lines back, or not its game lines: ${JSON.stringify(r.ESPN_OUT[g0.id]||null)}; ${why(r)}`);
+                /* and a reload of what that wrote back puts the 'ok' back no more than the first did */
+                const r2=reload(r.key);
+                chk(!r2.err&&r2.req===0&&!r2.ESPN_OUT[g0.id]&&!inLive(r2.ESPN_LIVE,g0.id)&&same(r2.lines[g0.id],post.lines[g0.id]),
+                  `${g0.id} kept with an 'ok' read whose player lines were dropped: a second reload, of what the first wrote back, put the 'ok' or player lines back, or not its game lines: ${JSON.stringify(r2.ESPN_OUT[g0.id]||null)}; ${why(r2)}`); } });
+
+            /* two presses in one load, then a reload (fix 2 of 16 October 2026: a reload put back only the last
+               scoreboard read). From the page as a load finds it: the week's press, then one on g0's page whose
+               scoreboard has no money line for g0 and its spread and total moved (new numbers, prices and ids).
+               The page then shows g0's money lines from the first read and its spread and total from the second,
+               with every id each read gave or found dated by that read: the key must hold exactly that (worked out
+               here from the two scoreboards and the paid pull as the press found it), and a reload, with no
+               request, put back every game's lines, ls and lat, ESPN_GL, PAY.dk (ids, event, glat), ESPN_IDAT and
+               the player lines exactly as right after the two presses. The page is put back after (backToPost) */
+            await kcase(`two presses in one load`,async()=>{
+            { const ev0=evOfG(g0), ev1=clone(ev0), od1=ev1.competitions[0].odds.find(x=>String(x.provider.id)==='100'), run0=clone(F('ESPN_RUN')), route0=net.route;
+              const relink=(c,tag)=>{ c.link={href:String(c.link.href).replace(/0AU(\d+)/,tag+'$1')}; };
+              /* the first read's money lines moved off the published ones (g0's were set to the made-up read's
+                 above), so a reload that loses them shows on the page's lines and not on the key alone */
+              for(const s of ['home','away']){ const c=od1.moneyline[s].close, v=F('espnAmerican')(c.odds); od1.moneyline[s].close={...c,odds:fA(v<0?v-10:v+10)}; relink(od1.moneyline[s].close,'0AW'); }
+              const ev2=clone(ev1), od2=ev2.competitions[0].odds.find(x=>String(x.provider.id)==='100');
+              delete od2.moneyline;
+              { const n=F('espnLineNum')(od2.pointSpread.away.close.line)-1;
+                od2.pointSpread.away.close={...od2.pointSpread.away.close,line:fL(n),odds:'-112'}; od2.pointSpread.home.close={...od2.pointSpread.home.close,line:fL(n===0?0:-n),odds:'-108'};
+                const t2=F('espnLineNum')(od2.total.over.close.line)+1;
+                od2.total.over.close={...od2.total.over.close,line:'o'+t2,odds:'-108'}; od2.total.under.close={...od2.total.under.close,line:'u'+t2,odds:'-112'};
+                for(const c of [od2.pointSpread.away.close,od2.pointSpread.home.close,od2.total.over.close,od2.total.under.close]) relink(c,'0AV'); }
+              const o1=ESPN.oddsOf(ev1,g0), o2=ESPN.oddsOf(ev2,g0);
+              let snap=null, kept2=null, err2=null;
+              try{ toLoad(); LS.removeItem(KK);
+                net.route=u=>/\/scoreboard\?/.test(u)?{code:200,body:{events:evs.map(e=>e===ev0?ev1:e)}}:route0(u);
+                await F('espnRefresh')(); const tA=(F('ESPN_GL')[g0.id]||{}).at;
+                await sleep(5);
+                net.route=u=>/\/scoreboard\?/.test(u)?{code:200,body:{events:evs.map(e=>e===ev0?ev2:e)}}:route0(u);
+                await F('espnRefresh')(g0.id); net.route=route0;
+                snap={lines:Object.fromEntries(games.map(g=>[g.id,linesOf(g)])),GL:canon(F('ESPN_GL')),dk:canon(P().dk),IA:canon(F('ESPN_IDAT')),LIVE:canon(F('ESPN_LIVE')),tA,tB:(F('ESPN_GL')[g0.id]||{}).at};
+                kept2=lsGet(); }
+              catch(e){ err2=String(e&&e.stack||e); }
+              finally{ net.route=route0; setVar('ESPN_RUN',run0); backToPost(); }
+              const want=o1&&o2?{...o1.lines,...o2.lines}:null, sh=snap&&snap.lines[g0.id];
+              const pubG0=(post.ESPN_GL[g0.id]||{}).orig||post.lines[g0.id]||{}, moved=!!o1&&!!o2&&o1.lines.mla!==pubG0.mla&&o1.lines.mlh!==pubG0.mlh&&!('mla' in o2.lines)&&!('mlh' in o2.lines)&&o2.lines.sp!==o1.lines.sp&&o2.lines.tot!==o1.lines.tot&&o2.lines.spa!=null&&o2.lines.tov!=null;
+              chk(!err2&&!!snap&&moved&&snap.tB>snap.tA&&NUM8.every(k=>sh[k]===want[k])&&sh.ls==='dk'&&Date.parse(sh.lat)===snap.tB,
+                `two presses in one load (the week's, then ${g0.id}'s page with no money line and its spread and total moved): the page does not show the first read's money lines and the second's spread and total: ${err2?err2.split('\n')[0]:JSON.stringify(sh)} against ${JSON.stringify(want)}`);
+              if(snap&&want){ const e2=(((parse(kept2)||{}).games)||{})[g0.id], paid=(((dkPre||{})[wk]||{})[g0.id])||{}, wIds={}, wIdat={};
+                for(const [o,t] of [[o1,snap.tA],[o2,snap.tB]]) for(const [k,v] of Object.entries(o.ids)) if(paid[k]==null||paid[k]===v){ wIds[k]=v; wIdat[k]=t; }
+                const wGlat=glValid(paid.glat)?(typeof paid.glat==='string'?paid.glat:null):(Object.keys(wIds).length?iso(snap.tA):null);
+                /* (round 5) each field with its own read's time: the money lines the first read's, the rest the second's */
+                const wD=simReads(pubG0,[{lines:o1.lines,at:snap.tA},{lines:o2.lines,at:snap.tB}],Date.parse(pubG0.lat||'')||Date.parse(P().baked_at||'')||0).d;
+                chk(!!e2&&!!e2.gl&&canon(vals(wD))===canon(want)&&wD.mla[1]===snap.tA&&wD.sp[1]===snap.tB&&canon(e2.gl.lines)===canon(wD)&&canon(e2.gl.ids)===canon(wIds)&&canon(e2.gl.idat)===canon(wIdat)&&e2.gl.at===snap.tB&&e2.gl.glat===wGlat&&e2.gl.event===evKept(paid.event,o1.event,o2.event),
+                  `after two presses in one load, ${KK} keeps ${g0.id}'s game lines otherwise than the page shows them (the first read's money lines, the second's spread and total, each with its own read's time), or not every id each read gave or found at its own read's time: ${JSON.stringify(e2&&e2.gl)} against ${JSON.stringify({lines:wD,ids:wIds,idat:wIdat,glat:wGlat,event:evKept(paid.event,o1.event,o2.event)})}`);
+                const r=reload(kept2,null,o=>{ o.GL=canon(F('ESPN_GL')); o.IA=canon(F('ESPN_IDAT')); o.dkc=canon(P().dk); o.LIVE=canon(F('ESPN_LIVE')); });
+                const bad=games.filter(g=>!same(r.lines[g.id],snap.lines[g.id]));
+                chk(!r.err&&r.req===0&&!bad.length,`after two presses in one load, a reload did not put back ${bad.length?bad.map(g=>g.id).join(', '):'every game'}'s lines, ls and lat as the presses left them, with no request: ${bad.slice(0,2).map(g=>JSON.stringify(r.lines[g.id])+' against '+JSON.stringify(snap.lines[g.id])).join('; ')} ${why(r)}`);
+                chk(!r.err&&r.GL===snap.GL,`after two presses in one load, a reload did not put back ESPN_GL (each game's published lines and its read's time) as the presses left it: ${String(r.GL).slice(0,200)} against ${snap.GL.slice(0,200)}`);
+                chk(!r.err&&r.dkc===snap.dk&&r.IA===snap.IA,`after two presses in one load, a reload did not put back PAY.dk (ids, event, glat) and ESPN_IDAT as the presses left them: ${canon(JSON.parse(r.dkc||'null')&&JSON.parse(r.dkc)[wk]&&JSON.parse(r.dkc)[wk][g0.id]).slice(0,200)} ${String(r.IA).slice(0,200)} against ${canon(JSON.parse(snap.dk)&&JSON.parse(snap.dk)[wk]&&JSON.parse(snap.dk)[wk][g0.id]).slice(0,200)} ${snap.IA.slice(0,200)}`);
+                chk(!r.err&&r.LIVE===snap.LIVE,`after two presses in one load, a reload did not put back the player lines as the presses left them: ${String(r.LIVE).slice(0,160)} against ${snap.LIVE.slice(0,160)}`); } }
+            });
+
+            /* two reads of g0's scoreboard in one load, from the page as a load finds it, each through g0's own page
+               (that game alone); plant() runs on the load first and again on the reload, so the published lines the
+               reads were taken over are the ones the reload finds. What the page shows after both (look() too), what
+               it kept, and a reload of that, with no request */
+            const odOf=e=>e.competitions[0].odds.find(x=>String(x.provider.id)==='100');
+            const twoReads=async(ev1,ev2,plant,look)=>{ const ev0=evOfG(g0), out={err:null};
+              try{ toLoad(); LS.removeItem(KK); if(plant) plant(); out.pub=linesOf(g0); out.dkPub=clone(((P().dk||{})[wk]||{})[g0.id]||null);
+                for(const [i,ev] of [ev1,ev2].entries()){ net.route=u=>/\/scoreboard\?/.test(u)?{code:200,body:{events:evs.map(e=>e===ev0?ev:e)}}:route0g(u);
+                  if(i) await sleep(5); await F('espnRefresh')(g0.id); out['t'+i]=(F('ESPN_GL')[g0.id]||{}).at; }
+                net.route=route0g; drop(); out.lines=linesOf(g0); out.dk=clone(((P().dk||{})[wk]||{})[g0.id]||null); out.GL0=clone(F('ESPN_GL')[g0.id]||null); if(look) out.look=look(); out.kept=lsGet(); }
+              catch(e){ out.err=String(e&&e.stack||e); }
+              finally{ net.route=route0g; setVar('ESPN_RUN',clone(run0g)); backToPost(); }
+              if(!out.err) out.r=reload(out.kept,plant?()=>{ plant(); return null; }:null,o=>{ drop(); o.dkG=clone(((P().dk||{})[wk]||{})[g0.id]||null); o.GL0=clone(F('ESPN_GL')[g0.id]||null); if(look) o.look=look(); },'a reload after two reads in one load');
+              return out; };
+            /* A. (round 3 of 16 October 2026: a reload put the kept game lines back through espnApplyGame's merge, which
+               keeps a published price where the number comes back to the published one). The first read moves g0's
+               spread off the published number, with its prices; the second brings it back to the published number with
+               no prices, so the page shows that number with spa and sph gone (espnApplyGame: a number read without its
+               prices drops the old ones, unless unmoved since the last read). A reload must show exactly that: no
+               published price back, ls 'dk', lat the second read's time, and the spread bets priced as after the
+               reads (none: a team bet needs a book price). Then the same on its own for the total (tov and tou gone, the
+               total legs at the estimated -110 and an even chance). The published prices are planted on the load
+               (spa -108, sph -112, tov -104, tou -116), so a week whose game has none still shows the difference */
+            const legsNow=()=>({ats:F('pricedLegs')([g0]).filter(l=>l.stat==='ats').map(l=>[l.key,l.k,l.price,l.src,+l.p.toFixed(9)]),
+              tot:['over','under'].map(sd=>{ const l=F('totalLeg')(g0,sd); return l?[l.k,l.price,l.src,+l.p.toFixed(9)]:null; })});
+            for(const kind of ['spread','total']) await kcase(`two reads in one load, the second bringing ${g0.id}'s ${kind} back to the published number with no prices`,async()=>{
+              const PUB={spa:-108,sph:-112,tov:-104,tou:-116}, ks=kind==='spread'?['spa','sph']:['tov','tou'], plant=()=>{ for(const k of ks) g0[k]=PUB[k]; };
+              toLoad(); const pubN=kind==='spread'?g0.sp:g0.tot; backToPost();
+              const ev1=clone(evOfG(g0)), ev2=clone(evOfG(g0)), d1=odOf(ev1), d2=odOf(ev2);
+              if(kind==='spread'){ const n1=pubN-1;
+                d1.pointSpread.away.close={...d1.pointSpread.away.close,line:fL(n1),odds:'-125'}; d1.pointSpread.home.close={...d1.pointSpread.home.close,line:fL(n1===0?0:-n1),odds:'+105'};
+                d2.pointSpread.away.close={...d2.pointSpread.away.close,line:fL(pubN)}; d2.pointSpread.home.close={...d2.pointSpread.home.close,line:fL(pubN===0?0:-pubN)};
+                delete d2.pointSpread.away.close.odds; delete d2.pointSpread.home.close.odds; }
+              else { d1.total.over.close={...d1.total.over.close,line:'o'+(pubN+1),odds:'-125'}; d1.total.under.close={...d1.total.under.close,line:'u'+(pubN+1),odds:'+105'};
+                d2.total.over.close={...d2.total.over.close,line:'o'+pubN}; d2.total.under.close={...d2.total.under.close,line:'u'+pubN};
+                delete d2.total.over.close.odds; delete d2.total.under.close.odds; }
+              const o1=ESPN.oddsOf(ev1,g0).lines, o2=ESPN.oddsOf(ev2,g0).lines, nk=kind==='spread'?'sp':'tot';
+              const made=isFinite(pubN)&&o1[nk]!==pubN&&ks.every(k=>typeof o1[k]==='number')&&o2[nk]===pubN&&ks.every(k=>!(k in o2));
+              const t=await twoReads(ev1,ev2,plant,legsNow), sh=t.lines||{};
+              chk(!t.err&&made&&t.t1>t.t0&&sh[nk]===pubN&&ks.every(k=>sh[k]===undefined)&&sh.ls==='dk'&&Date.parse(sh.lat)===t.t1,
+                `two reads in one load, the second bringing ${g0.id}'s ${kind} back to the published ${pubN} with no prices: the page does not show that number with ${ks.join(' and ')} gone, ls 'dk' and the second read's time: ${t.err?t.err.split('\n')[0]:JSON.stringify(sh)} (published ${JSON.stringify(t.pub)}; reads ${JSON.stringify(o1)} then ${JSON.stringify(o2)})`);
+              const lw=t.look||{}, r=t.r||{err:'no reload'}, rl=r.lines?r.lines[g0.id]||{}:{};
+              chk(kind==='spread'?!!lw.ats&&lw.ats.length===0:!!lw.tot&&lw.tot.every(l=>!!l&&l[1]===F('TOTAL_EST')&&l[2]==='est'&&Math.abs(l[3]-0.5)<1e-9),
+                `two reads in one load leaving ${g0.id}'s ${kind} at the published number with no prices: its bets are not priced as a number with no book price (${kind==='spread'?'no spread bet':'the total at an estimated '+F('TOTAL_EST')+' and an even chance'}): ${JSON.stringify(lw)}`);
+              chk(!r.err&&r.req===0&&same(rl,t.lines)&&ks.every(k=>rl[k]===undefined)&&!ks.some(k=>Object.values(rl).includes(PUB[k]))&&rl.ls==='dk'&&Date.parse(rl.lat)===t.t1,
+                `after two reads in one load left ${g0.id}'s ${kind} at the published number with no prices, a reload shows its lines otherwise (a published price back, or not ls 'dk' at the second read's time): ${JSON.stringify(rl)} against ${JSON.stringify(t.lines)}; ${why(r)}`);
+              chk(!r.err&&canon(r.look)===canon(t.look),`after two reads in one load left ${g0.id}'s ${kind} at the published number with no prices, a reload prices its bets otherwise than the page did after the reads: ${JSON.stringify(r.look)} against ${JSON.stringify(t.look)}`);
+              /* (round 4) what is kept is what the reads did (d), worked out here from the two scoreboards on the published
+                 lines (simReads): every field the reads set with its value, and the number's two prices null, dropped by the second; ESPN_GL's d
+                 the same; and a reload over the same publish puts ESPN_GL back exactly as the reads left it */
+              { const e=(((parse(t.kept)||{}).games)||{})[g0.id], sim=t.pub?simReads(t.pub,[{lines:o1,at:t.t0},{lines:o2,at:t.t1}],Date.parse(t.pub.lat||'')||Date.parse(P().baked_at||'')||0):null;
+                chk(!t.err&&!!sim&&!!e&&!!e.gl&&canon(e.gl.lines)===canon(sim.d)&&!!t.GL0&&canon(t.GL0.d)===canon(sim.d)&&ks.every(k=>!!sim.d[k]&&sim.d[k][0]===null&&sim.d[k][1]===t.t1)&&canon(t.lines)===canon(sim.lines),
+                  `two reads in one load, the second bringing ${g0.id}'s ${kind} back to the published number with no prices: ${KK} keeps its game lines otherwise than what the reads did (each field set with its value, ${ks.join(' and ')} null), or ESPN_GL's d does: ${JSON.stringify(e&&e.gl&&e.gl.lines)} / d ${JSON.stringify(t.GL0&&t.GL0.d)} against ${JSON.stringify(sim&&sim.d)}`);
+                chk(!r.err&&!!t.GL0&&canon(r.GL0)===canon(t.GL0),`after two reads in one load left ${g0.id}'s ${kind} at the published number with no prices, a reload over the same publish did not put ESPN_GL back as the reads left it (the published lines, the read's time, d): ${String(JSON.stringify(r.GL0)).slice(0,240)} against ${String(JSON.stringify(t.GL0)).slice(0,240)}`);
+                /* (round 5) the kept null price pair over a newer publish (its pull before both reads, the bake after): on that
+                   same number with its own prices, the newer publish's real prices stand (a read of the number without
+                   prices leaves them); on another number, they are dropped */
+                if(sim&&!t.err) for(const [lab2,n2] of [['on that same number',pubN],['on another number',pubN+1]]){
+                  const rP=reload(t.kept,()=>{ plant(); g0[nk]=n2; g0[ks[0]]=-120; g0[ks[1]]=100; g0.ls='dk'; g0.lat=iso(t.t0-1000); setBk(t.t1+1000); return null; },null,'a reload over a newer publish');
+                  const wantP=rP.pub?replay(rP.pub[g0.id],sim.d,t.t0-1000,false):null, LP=(rP.lines||{})[g0.id]||{};
+                  chk(!rP.err&&rP.req===0&&!!wantP&&canon(LP)===canon(wantP)&&LP[nk]===pubN&&(n2===pubN?LP[ks[0]]===-120&&LP[ks[1]]===100:ks.every(k=>LP[k]===undefined))&&LP.ls==='dk'&&Date.parse(LP.lat)===t.t1,
+                    `${g0.id}'s kept read of its ${kind} back at ${pubN} with its two prices dropped, over a newer publish ${lab2} with its own prices (its pull before both reads): ${n2===pubN?'the newer publish\'s real prices did not stand':'its prices were not dropped'}: ${JSON.stringify(LP)} against ${JSON.stringify(wantP)}; ${why(rP)}`); } } });
+            /* B. (round 3: the kept event was the latest read's, where the page uses the first). g0 with no event from the
+               paid pull (taken out of the load's copy), read twice with two DraftKings event ids in its bet links: the
+               page takes the first read's (espnApplyGame sets it only where the game has none) and keeps it, and a
+               reload puts back that event, PAY.dk's entry as the page had it after the reads */
+            await kcase(`a game read twice with two DraftKings event ids, on a game the paid pull gave none`,async()=>{
+              const E1='81000001', E2='82000002', ev1=clone(evOfG(g0)), ev2=clone(evOfG(g0));
+              const reEv=(ev,id)=>{ const od=odOf(ev); for(const m of ['moneyline','pointSpread','total']) for(const sd of Object.keys(od[m]||{})){ const c=od[m][sd]&&od[m][sd].close; if(c&&c.link) c.link={href:String(c.link.href).replace(/event%2F\d+/,'event%2F'+id)}; } };
+              reEv(ev1,E1); reEv(ev2,E2);
+              const plant=()=>{ const E=((P().dk||{})[wk]||{})[g0.id]; if(E) delete E.event; };
+              const t=await twoReads(ev1,ev2,plant), a=ESPN.oddsOf(ev1,g0), b=ESPN.oddsOf(ev2,g0), e=(((parse(t.kept)||{}).games)||{})[g0.id], r=t.r||{err:'no reload'};
+              chk(!t.err&&a.event===E1&&b.event===E2&&!(t.dkPub&&t.dkPub.event)&&!!t.dk&&t.dk.event===E1,
+                `${g0.id}, with no event from the paid pull and read twice with the events ${E1} then ${E2}: the page does not use the first read's: ${t.err?t.err.split('\n')[0]:JSON.stringify(t.dk&&t.dk.event)} (the reads give ${a.event}, ${b.event})`);
+              chk(!!e&&!!e.gl&&e.gl.event===E1,`${g0.id} read twice with the events ${E1} then ${E2}: ${KK} keeps the event ${JSON.stringify(e&&e.gl&&e.gl.event)}, not the page's ${E1}`);
+              chk(!r.err&&r.req===0&&!!r.dkG&&r.dkG.event===E1&&canon(r.dkG)===canon(t.dk),
+                `after a reload, ${g0.id}'s DraftKings entry is not the one the page used after reading it twice (the event ${E1}, the first read's): ${JSON.stringify(r.dkG)} against ${JSON.stringify(t.dk)}; ${why(r)}`); });
+
+            /* a read the press left off (fix 3 of 16 October 2026: one was kept and put back on a reload). g0 as a
+               game with no DraftKings lines of its own (a planted copy: its ls and lat taken out, so the published
+               lines date from the bake), pressed on its page with the page's clock an hour before PAY.baked_at:
+               the read is older than the published lines, so the press leaves them (no ESPN_GL entry) and keeps no
+               lines for g0 (gl.lines {}); a reload on the same publish puts none back, the ids the read gave or
+               found standing as the press left them. The page and its clock are put back after */
+            await kcase(`a read the press left off`,async()=>{
+            { const run0=clone(F('ESPN_RUN')), tBk=Date.parse(P().baked_at), plant=()=>{ delete g0.ls; delete g0.lat; };
+              if(!isFinite(tBk)) W.coverage(false,'the payload has no baked_at: a read older than the published lines went untested');
+              else { let snap=null, kept3=null, err3=null;
+                try{ toLoad(); LS.removeItem(KK); plant(); const pub=linesOf(g0);
+                  setClock(Math.min(tBk,clock0.call(w.Date))-3600e3); net.log=[];
+                  await F('espnRefresh')(g0.id); w.Date.now=clock0;
+                  snap={pub,lines:linesOf(g0),GL:!!F('ESPN_GL')[g0.id],dk:canon((((P().dk||{})[wk])||{})[g0.id]||null),IA:canon(F('ESPN_IDAT')[g0.id]||null),n:net.log.filter(x=>/\/scoreboard\?/.test(x.url)).length};
+                  kept3=lsGet(); }
+                catch(e){ err3=String(e&&e.stack||e); }
+                finally{ w.Date.now=clock0; setVar('ESPN_RUN',run0); backToPost(); }
+                const e3=(((parse(kept3)||{}).games)||{})[g0.id];
+                chk(!err3&&!!snap&&snap.n===1&&!snap.GL&&same(snap.lines,snap.pub),`a press whose read is older than ${g0.id}'s published lines (the page's clock before the bake, the game with no DraftKings lines of its own) applied its lines: ${err3?err3.split('\n')[0]:JSON.stringify(snap&&snap.lines)} against ${JSON.stringify(snap&&snap.pub)}`);
+                chk(!!e3&&!!e3.gl&&canon(e3.gl.lines)==='{}',`a read the press left off (older than ${g0.id}'s published lines) is kept with game lines to put back: ${JSON.stringify(e3&&e3.gl)}`);
+                const r=reload(kept3,()=>{ plant(); return null; });
+                chk(!r.err&&r.req===0&&!!snap&&same(r.lines[g0.id],r.pub[g0.id])&&!r.ESPN_GL[g0.id]&&dkOf(r.dk,g0.id)===snap.dk&&canon(r.ESPN_IDAT[g0.id]||null)===snap.IA,
+                  `a reload put back game lines of a read the press left off (older than ${g0.id}'s published lines), or not the ids it gave or found as the press left them: ${JSON.stringify(r.lines[g0.id])} against ${JSON.stringify(r.pub[g0.id])}; ${why(r)}`); } }
+            });
+
+            /* (round 4 of 16 October 2026) a press of g0's page alone, its scoreboard event evX (and propsR for g0's
+               player lines, else the press's own), from the page as a load finds it with plant() on the published lines
+               first: the lines the press found and left, ESPN_GL's entry, what it found and read, what it kept, and P1's
+               player-price hash; the page put back after (the reloads are the case's own) */
+            const pressG0=async(evX,plant,propsR)=>{ const ev0=evOfG(g0), out={err:null};
+              try{ toLoad(); LS.removeItem(KK); if(plant) plant(); out.pub=linesOf(g0); out.pubAt=Date.parse(g0.lat||'')||Date.parse(P().baked_at||'')||0;
+                net.route=u=>{ if(/\/scoreboard\?/.test(u)) return {code:200,body:{events:evs.map(e=>e===ev0?evX:e)}};
+                  const p=props(u); if(propsR&&p&&p.eid===String(evX.id)) return propsR(u); return route0g(u); };
+                await F('espnRefresh')(g0.id); net.route=route0g;
+                out.t=(F('ESPN_GL')[g0.id]||{}).at; out.lines=linesOf(g0); out.GL=clone(F('ESPN_GL')[g0.id]||null); out.OUT=clone(F('ESPN_OUT')[g0.id]||null);
+                out.LIVE=clone((F('ESPN_LIVE')[wk]||{})[g0.id]||null); out.kept=lsGet(); out.e=(((parse(out.kept)||{}).games)||{})[g0.id]||null; out.ps=plSigOf(g0.id); }
+              catch(e){ out.err=String(e&&e.stack||e); }
+              finally{ net.route=route0g; setVar('ESPN_RUN',clone(run0g)); backToPost(); }
+              return out; };
+            /* the read's game lines at a moved spread (one off the published number) with its prices, or at the published
+               number with none, and no money line: the scoreboard's DraftKings odds on a copy of g0's event */
+            const evLines=(sp,spPrices)=>{ const ev=clone(evOfG(g0)), od=odOf(ev); delete od.moneyline;
+              od.pointSpread.away.close={...od.pointSpread.away.close,line:fL(sp)}; od.pointSpread.home.close={...od.pointSpread.home.close,line:fL(sp===0?0:-sp)};
+              if(spPrices){ od.pointSpread.away.close.odds='-125'; od.pointSpread.home.close.odds='+105'; } else { delete od.pointSpread.away.close.odds; delete od.pointSpread.home.close.odds; }
+              return ev; };
+            /* D4. the kept d replayed over a newer publish. (i) A read with no money line and the spread one off the
+               published number with its prices: d holds the six it set (worked out here, simReads) and no money line; over a
+               newer publish whose money lines and total moved, its DraftKings pull earlier than the read (the bake later),
+               the money lines are the newer publish's and the six the read's. (ii) A read of the spread at the published
+               number with no prices and no money line: d holds the number and no price, so over the same publish the
+               published prices stand exactly as after the read; over a newer publish whose spread moved, its own two prices
+               are dropped, as a read of that number without them does. The published spread prices are planted (spa -108,
+               sph -112), so a week whose game has none still shows them */
+            await kcase(`a kept read's d replayed over a newer publish`,async()=>{
+              const PUB={spa:-108,sph:-112}, plantP=()=>{ Object.assign(g0,PUB); };
+              toLoad(); const pubN=g0.sp; backToPost();
+              if(!(typeof pubN==='number'&&isFinite(pubN))){ W.coverage(false,`${g0.id} has no published spread: a kept d replayed over a newer publish went untested`); return; }
+              { const ev=evLines(pubN-1,true), o=ESPN.oddsOf(ev,g0).lines, t=await pressG0(ev,plantP);
+                const sim=t.err?null:simReads(t.pub,[{lines:o,at:t.t}],t.pubAt);
+                chk(!t.err&&!!sim&&isFinite(t.t)&&!('mla' in o)&&!('mlh' in o)&&!!t.e&&!!t.e.gl&&canon(t.e.gl.lines)===canon(sim.d)&&!!t.GL&&canon(t.GL.d)===canon(sim.d)&&canon(t.lines)===canon(sim.lines)&&!('mla' in sim.d)&&Object.values(sim.d).every(x=>x[1]===t.t),
+                  `a read of ${g0.id} with no money line and its spread moved: ${KK} keeps its game lines otherwise than what the read did (each field it set, no money line), or ESPN_GL's d does, or the page shows otherwise: ${t.err?t.err.split('\n')[0]:JSON.stringify(t.e&&t.e.gl&&t.e.gl.lines)} / d ${JSON.stringify(t.GL&&t.GL.d)} against ${JSON.stringify(sim&&sim.d)}`);
+                if(!t.err&&t.e&&t.e.gl){
+                  const r=reload(t.kept,()=>{ plantP(); bump(g0,'mla',-7); bump(g0,'mlh',7); bump(g0,'tot',2); g0.ls='dk'; g0.lat=iso(t.t-1000); setBk(t.t+1000); return null; },null,'a reload over a newer publish');
+                  const want=r.pub?replay(r.pub[g0.id],sim.d,t.t-1000,false):null, L=(r.lines||{})[g0.id]||{};
+                  chk(!r.err&&r.req===0&&!!want&&canon(L)===canon(want)&&L.mla===r.pub[g0.id].mla&&L.mlh===r.pub[g0.id].mlh&&Object.keys(sim.d).every(k=>sim.d[k][0]===null?L[k]===undefined:L[k]===sim.d[k][0])&&L.ls==='dk'&&Date.parse(L.lat)===t.t,
+                    `${g0.id}'s kept read with no money line, over a newer publish moving its money lines and total (its pull earlier than the read): the money lines are not the newer publish's and every field the read set the read's: ${JSON.stringify(L)} against ${JSON.stringify(want)}; ${why(r)}`); } }
+              { const ev=evLines(pubN,false), o=ESPN.oddsOf(ev,g0).lines, t=await pressG0(ev,plantP);
+                const sim=t.err?null:simReads(t.pub,[{lines:o,at:t.t}],t.pubAt);
+                chk(!t.err&&!!sim&&o.sp===pubN&&!('spa' in o)&&!!t.e&&!!t.e.gl&&canon(t.e.gl.lines)===canon(sim.d)&&!('spa' in sim.d)&&!('sph' in sim.d)&&!!sim.d.sp&&sim.d.sp[0]===pubN&&sim.d.sp[1]===t.t&&t.lines.spa===PUB.spa&&t.lines.sph===PUB.sph,
+                  `a read of ${g0.id}'s spread at the published number with no prices: ${KK} keeps otherwise than the number alone, or the page does not keep the published prices: ${t.err?t.err.split('\n')[0]:JSON.stringify(t.e&&t.e.gl&&t.e.gl.lines)} against ${JSON.stringify(sim&&sim.d)}; shown ${JSON.stringify(t.lines)}`);
+                if(!t.err&&t.e&&t.e.gl){
+                  const r1=reload(t.kept,()=>{ plantP(); return null; },o2=>{ o2.GL0=clone(F('ESPN_GL')[g0.id]||null); },'a reload over the same publish');
+                  chk(!r1.err&&r1.req===0&&same((r1.lines||{})[g0.id],t.lines)&&canon(r1.GL0)===canon(t.GL),
+                    `${g0.id}'s kept read of its spread at the published number with no prices, over the same publish: a reload does not show exactly what the read left (the published prices standing), or ESPN_GL otherwise: ${JSON.stringify((r1.lines||{})[g0.id])} against ${JSON.stringify(t.lines)}; ESPN_GL ${String(JSON.stringify(r1.GL0)).slice(0,200)} against ${String(JSON.stringify(t.GL)).slice(0,200)}; ${why(r1)}`);
+                  const r2=reload(t.kept,()=>{ plantP(); g0.sp=pubN+1; g0.spa=-120; g0.sph=100; g0.ls='dk'; g0.lat=iso(t.t-1000); setBk(t.t+1000); return null; },null,'a reload over a newer publish');
+                  const want=r2.pub?replay(r2.pub[g0.id],sim.d,t.t-1000,false):null, L=(r2.lines||{})[g0.id]||{};
+                  chk(!r2.err&&r2.req===0&&!!want&&canon(L)===canon(want)&&L.sp===pubN&&L.spa===undefined&&L.sph===undefined,
+                    `${g0.id}'s kept read of its spread at the published number with no prices, over a newer publish whose spread moved (its pull earlier than the read): the newer publish's spread prices are kept beside the read's number: ${JSON.stringify(L)} against ${JSON.stringify(want)}; ${why(r2)}`);
+                  /* (round 5) and over a newer publish on that same number with its own prices: they stand, as a read of the
+                     number without prices leaves them */
+                  const r3=reload(t.kept,()=>{ plantP(); g0.sp=pubN; g0.spa=-120; g0.sph=100; g0.ls='dk'; g0.lat=iso(t.t-1000); setBk(t.t+1000); return null; },null,'a reload over a newer publish');
+                  const want3=r3.pub?replay(r3.pub[g0.id],sim.d,t.t-1000,false):null, L3=(r3.lines||{})[g0.id]||{};
+                  chk(!r3.err&&r3.req===0&&!!want3&&canon(L3)===canon(want3)&&L3.sp===pubN&&L3.spa===-120&&L3.sph===100&&L3.ls==='dk'&&Date.parse(L3.lat)===t.t,
+                    `${g0.id}'s kept read of its spread at the published number with no prices, over a newer publish on that same number with its own prices (its pull earlier than the read): the newer publish's real prices did not stand: ${JSON.stringify(L3)} against ${JSON.stringify(want3)}; ${why(r3)}`); } }
+            });
+            /* D5. a read over a publish whose lines are not DraftKings' (no ls or lat: the bake is their only time), then the
+               same lines rebaked later than the read: the read stands exactly as the press left it (a rebake with the same
+               lines never sets a read aside, so the bake's time is not the one to beat over the publish it was read over) */
+            await kcase(`a read over lines that are not DraftKings', the same lines rebaked later`,async()=>{
+              const plantN=()=>{ delete g0.ls; delete g0.lat; }, t=await pressG0(clone(evOfG(g0)),()=>{ plantN(); setBk(w.Date.now()-3600e3); });
+              const sim=t.err?null:simReads(t.pub,[{lines:ESPN.oddsOf(evOfG(g0),g0).lines,at:t.t}],t.pubAt);
+              chk(!t.err&&!!t.GL&&!!t.e&&!!t.e.gl&&canon(t.e.gl.lines)===canon(sim.d)&&Object.keys(sim.d).length>0,
+                `a press of ${g0.id} over lines that are not DraftKings' did not apply and keep its read: ${t.err?t.err.split('\n')[0]:JSON.stringify(t.e&&t.e.gl)}`);
+              if(t.err||!t.e||!t.e.gl) return;
+              const r=reload(t.kept,()=>{ plantN(); setBk(Math.max(t.t,t.LIVE?Date.parse(t.LIVE.at):0,t.OUT?t.OUT.when:0)+3600e3); return null; },o=>{ o.GL0=clone(F('ESPN_GL')[g0.id]||null); },'a reload rebaked later');
+              chk(!r.err&&r.req===0&&same((r.lines||{})[g0.id],t.lines)&&canon(r.GL0)===canon(t.GL)&&!(r.ESPN_ASIDE||{})[g0.id]&&canon(((r.ESPN_LIVE||{})[wk]||{})[g0.id]||null)===canon(t.LIVE),
+                `${g0.id}'s kept read over lines that are not DraftKings', the same lines rebaked later than the read: it did not stand exactly as the press left it: ${JSON.stringify((r.lines||{})[g0.id])} against ${JSON.stringify(t.lines)}; ${why(r)}`);
+            });
+            /* D6. a press that found no player lines posted for g0 (its props 404) and read no game lines (no DraftKings odds
+               on its scoreboard event): the entry the page keeps is what it found alone ({w, out 'none', plsig}: plsig P1's
+               own hash, worked out here), and a reload puts back what it found (ESPN_OUT 'none'), writes it back, and the
+               status line and the Parlay Builder's empty levels (players only, g0 alone, no book price on file) say
+               DraftKings had posted none when Refresh odds last read them. Then the same with the paid pull's time later
+               than that read: set aside, nothing put back or written back, and g0's status line says it gave way */
+            await kcase(`a kept read that found no player lines posted, with no game lines read`,async()=>{
+              const evN=clone(evOfG(g0)); evN.competitions[0].odds=[];
+              const t=await pressG0(evN,null,()=>({code:404,body:{error:{message:'No propBets found',code:404}}})), e=t.e;
+              chk(!t.err&&!!t.OUT&&t.OUT.st==='none'&&!t.GL&&!t.LIVE&&!!e&&e.w===wk&&!e.gl&&!e.pl&&!!e.out&&e.out.st==='none'&&e.out.when===t.OUT.when&&e.plsig===t.ps,
+                `a press that found no player lines posted for ${g0.id} and read no game lines did not keep what it found alone, over P1's player prices: ${t.err?t.err.split('\n')[0]:JSON.stringify(e)} (ESPN_OUT ${JSON.stringify(t.OUT)})`);
+              if(t.err||!e) return;
+              const look=o=>{ o.st0=F('espnStatus')(g0.id);
+                const keepO=JSON.stringify(S.odds||{}), keepU=JSON.stringify(S.ui.pb);
+                try{ if(S.odds) delete S.odds[g0.id]; delete P().mkt[wk];
+                  for(const k of ['ml','ats','total','over','under']) S.ui.pb.k[k]=k==='over'||k==='under'; S.ui.pb.off=games.filter(g=>g!==g0).map(g=>g.id); drop();
+                  const rN=F('getPbTiers')(); o.pb={espn:!!rN.espnRead,none:!!rN.noPlayerPrices,empty:rN.tiers.every(x=>!x.legs),why:rN.tiers.map(x=>x.why)}; }
+                finally{ S.odds=JSON.parse(keepO); S.ui.pb=JSON.parse(keepU); putMkt(); drop(); } };
+              const r=reload(t.kept,null,look,'a reload of a read that found no player lines');
+              const want={st:'none',why:e.out.why,sb:false,when:e.out.when};
+              chk(!r.err&&r.req===0&&r.n>=1&&canon(r.ESPN_OUT[g0.id]||null)===canon(want)&&!inLive(r.ESPN_LIVE,g0.id)&&!r.ESPN_GL[g0.id]&&!!r.ESPN_KEPT[g0.id]&&!(r.ESPN_ASIDE||{})[g0.id]&&canon(r.kg[g0.id]||null)===canon(e),
+                `${g0.id} kept as a read that found no player lines posted: a reload did not put back what it found (ESPN_OUT 'none') and write it back as kept: ESPN_OUT ${JSON.stringify(r.ESPN_OUT[g0.id]||null)}, written ${JSON.stringify(r.kg[g0.id]||null)}; ${why(r)}`);
+              chk(!r.err&&!!r.pb&&r.pb.espn&&r.pb.none&&r.pb.empty,`${g0.id} kept as a read that found no player lines posted: after a reload the Parlay Builder (players only, ${g0.id} alone, no book price) does not stand on that read, or has a level: ${JSON.stringify(r.pb)}`);
+              W.wording(/DraftKings has posted no player lines for it yet/.test(r.st0||''),`after a reload of ${g0.id}'s read that found no player lines, its status line reads "${r.st0}"`);
+              W.wording(!!r.pb&&r.pb.why.every(x=>/^No player lines yet: DraftKings had posted none for these games when Refresh odds last read them from ESPN/.test(x||'')),`after a reload of ${g0.id}'s read that found no player lines, the empty levels read: ${r.pb?r.pb.why.join(' / '):'(none)'}`);
+              const rA=reload(t.kept,()=>{ atSet(e.out.when+1000); setBk(e.out.when-1000); return null; },o=>{ o.st0=F('espnStatus')(g0.id); },'a reload with a newer pull');
+              chk(!rA.err&&rA.req===0&&!rA.ESPN_OUT[g0.id]&&!rA.ESPN_KEPT[g0.id]&&!(g0.id in rA.kg)&&!!rA.ESPN_ASIDE[g0.id]&&rA.ESPN_ASIDE[g0.id].pl===e.out.when&&goneIs(rA,g0.id,['pl'],{pl:e.out.when}),
+                `${g0.id} kept as a read that found no player lines, the paid pull's time later than that read: a reload put it back or wrote it back, or ESPN_ASIDE and ESPN_KEEP_GONE do not name its player half at its time: ${why(rA)}`);
+              W.wording((rA.st0||'').includes('your earlier Refresh odds read gave way to prices published since'),`${g0.id}'s read that found no player lines, set aside by a newer pull: its status line reads "${rA.st0}"`);
+            });
+            /* D7. a stored game id not of the schedule's shape (ESPN_KEEP_GID: four digits, two, two or three capitals
+               twice): "__proto__", "constructor", "toString", "hasOwnProperty", g0's id in lower case and with a part
+               more. Each planted as a game of the schedule too (a copy of g0 under that id, so the shape alone keeps it
+               out) beside g0's kept entry: skipped by the restore and dropped by the write, never an own key of
+               ESPN_KEPT, ESPN_ASIDE, ESPN_KEEP_GONE, ESPN_LIVE's week, ESPN_GL, ESPN_OUT, ESPN_IDAT or PAY.dk's week,
+               none of them on another prototype, nothing set on the page's built-ins, every real game put back, and the
+               key written back as the press kept it */
+            await kcase(`a kept entry under a game id not of the schedule's shape`,async()=>{
+              const e0=kv&&kv.games&&kv.games[g0.id]; if(!e0){ W.coverage(false,`the press kept no read of ${g0.id}: game ids not of the schedule's shape went untested`); return; }
+              const BAD=['__proto__','constructor','toString','hasOwnProperty',g0.id.toLowerCase(),g0.id+'_X'];
+              const v=clone(kv); BAD.forEach((b,i)=>{ v.games['AUDITBADGID'+i]=clone(e0); });
+              let raw=JSON.stringify(v); BAD.forEach((b,i)=>{ raw=raw.split(JSON.stringify('AUDITBADGID'+i)).join(JSON.stringify(b)); });
+              const own=(x,k)=>!!x&&typeof x==='object'&&Object.prototype.hasOwnProperty.call(x,k), plain=x=>!!x&&typeof x==='object'&&[w.Object.prototype,Object.prototype].includes(Object.getPrototypeOf(x));
+              const r=reload(raw,()=>{ const sch=S.sched; S.sched=[...sch,...BAD.map(id=>({...clone(g0),id}))]; return ()=>{ S.sched=sch; }; },o=>{
+                const H=[['ESPN_KEPT',o.ESPN_KEPT],['ESPN_ASIDE',o.ESPN_ASIDE],['ESPN_KEEP_GONE',F('ESPN_KEEP_GONE')],['ESPN_LIVE['+wk+']',o.ESPN_LIVE[wk]||{}],['ESPN_GL',o.ESPN_GL],['ESPN_OUT',o.ESPN_OUT],['ESPN_IDAT',o.ESPN_IDAT],['PAY.dk['+wk+']',((P().dk||{})[wk])||{}]];
+                o.hit=[]; for(const [n,x] of H){ if(!plain(x)) o.hit.push(n+' on another prototype'); for(const b of BAD) if(own(x,b)) o.hit.push(n+'['+JSON.stringify(b)+']'); } },'a reload with game ids not of the schedule\'s shape');
+              const inKey=BAD.filter(b=>own(r.kg,b));
+              chk(!r.err&&r.req===0&&r.n===read.length&&!!r.hit&&!r.hit.length&&!r.proto.length&&!inKey.length&&canon(r.kg)===canon(keptBackAll(kv&&kv.games))&&canon(r.ESPN_LIVE)===canon(post.ESPN_LIVE),
+                `kept entries under game ids not of the schedule's shape (${BAD.join(', ')}), each a game of the schedule: put back or written back (${[...(r.hit||[]),...inKey.map(b=>'the key\'s '+b)].join(', ')||'none'}), or set ${r.proto.join(', ')||'nothing'} on the built-ins, or the real games not put back and written back as kept: ${why(r)}`);
+            });
+            /* 4. the write's merge, on an ESPN_KEPT of its own: another tab's newer read of another game,
+               written between two of this tab's writes, survives the next; a later read of the same game
+               wins, from storage or from this tab, and an older one gives way; one another tab wrote dated two
+               hours after the page's clock (fix 4) loses to a real read here. And where one side wins, a half it
+               lacks is taken from the other (fix 5 of 16 October 2026): this tab's newer read of the game lines
+               alone keeps the other tab's player lines, with their plsig and what that read found, and the other
+               tab's newer one keeps this tab's; an entry this load set aside (ESPN_KEEP_GONE) lends nothing, in
+               either half. Each entry is planted as the page writes one after its own reading of another tab's
+               (espnKeptGame: idat {} and glat null beside the ids, the player lines' ids sorted, out's four
+               fields), so what is written is held whole against the halves it must hold. Until 16 October 2026
+               the planted entries lacked idat and glat and two of these failed on the page's own reading of them */
+            await kcase(`the write's merge of two tabs`,async()=>{
+            { const T=w.Date.now(), gO=games.find(g=>g!==g0)||S.sched.find(g=>g!==g0&&!F('gameStarted')(g)&&!F('hasScore')(g))||null;
+              const ent=(g,at,ml)=>({w:String(g.w),gl:{at,lines:{mla:[ml,at]},ids:{},idat:{},glat:null,event:null,sig:'audit'}});
+              const plOf=(at,pid)=>({at:iso(at),lines:{[pid]:{receiving_yards:50.5}},rungs:{[pid]:{receiving_yards:[40,60]}},td:[pid]}), outOf=at=>({st:'ok',why:'',sb:false,when:at});
+              const got=()=>(parse(lsGet())||{}).games||null, put=(gid,e)=>{ const v=parse(lsGet())||{v:1,season:SEASON,games:{}}; v.games[gid]=e; v.saved=w.Date.now(); LS.setItem(KK,JSON.stringify(v)); };
+              const mine=ent(g0,T-5000,-101);
+              try{ setVar('ESPN_KEPT',{[g0.id]:clone(mine)}); setVar('ESPN_KEEP_GONE',{}); setVar('ESPN_KEEP_OFF',false); LS.removeItem(KK);
+                F('espnKeepWrite')(); const s1=got();
+                chk(!!s1&&same(Object.keys(s1),[g0.id])&&canon(s1[g0.id])===canon(mine),`this tab's kept read was not written as it holds it: ${String(JSON.stringify(s1)).slice(0,200)}`);
+                if(gO){ const theirs=ent(gO,T-1000,-102); put(gO.id,theirs); F('espnKeepWrite')(); const s2=got();
+                  chk(!!s2&&canon(s2[gO.id])===canon(theirs)&&canon(s2[g0.id])===canon(mine),`another tab's newer read of ${gO.id}, written between two of this tab's writes, did not survive the next: ${String(JSON.stringify(s2)).slice(0,240)}`); }
+                else W.coverage(false,'no other game to come on the schedule: another tab\'s read of another game went untested');
+                const later=ent(g0,T-100,-103); put(g0.id,later); F('espnKeepWrite')(); const s3=got();
+                chk(!!s3&&canon(s3[g0.id])===canon(later),`another tab's later read of ${g0.id} gave way to this tab's older one: ${JSON.stringify(s3&&s3[g0.id])}`);
+                const older=ent(g0,T-9000,-104); put(g0.id,older); F('espnKeepWrite')(); const s4=got();
+                chk(!!s4&&canon(s4[g0.id])===canon(mine),`another tab's older read of ${g0.id} was kept over this tab's later one: ${JSON.stringify(s4&&s4[g0.id])}`);
+                const ahead=ent(g0,T+2*3600e3,-107); put(g0.id,ahead); F('espnKeepWrite')(); const s5=got();
+                chk(!!s5&&canon(s5[g0.id])===canon(mine),`another tab's read of ${g0.id} dated two hours after the page's clock won over this tab's real one: ${JSON.stringify(s5&&s5[g0.id])}`);
+                /* the fill: each case from an empty key, this tab's entry in ESPN_KEPT and the other tab's in storage */
+                const fill=(lab,mineE,theirsE,gone,wantE)=>{ setVar('ESPN_KEPT',{[g0.id]:clone(mineE)}); setVar('ESPN_KEEP_GONE',gone||{}); LS.removeItem(KK); put(g0.id,clone(theirsE));
+                  const ok=F('espnKeepWrite')(), s=got();
+                  chk(ok===true&&!!s&&canon(s[g0.id])===canon(wantE),`${lab}: ${String(JSON.stringify(s&&s[g0.id])).slice(0,300)} against ${String(JSON.stringify(wantE)).slice(0,300)}`); };
+                { const mA={...ent(g0,T-1000,-111),plsig:'audit-mine'}, tA={...ent(g0,T-9000,-112),pl:plOf(T-9000,'00-AUDIT-PLA'),plsig:'audit-theirs',out:outOf(T-9000)};
+                  fill(`this tab's newer read of ${g0.id}'s game lines alone, written over another tab's older read of both halves, did not keep the other tab's player lines with their plsig and what that read found`,
+                    mA,tA,null,{w:mA.w,gl:mA.gl,pl:tA.pl,plsig:tA.plsig,out:tA.out}); }
+                { const tB={...ent(g0,T-1000,-113),plsig:'audit-theirs'}, mB={...ent(g0,T-9000,-114),pl:plOf(T-9000,'00-AUDIT-PLB'),plsig:'audit-mine',out:outOf(T-9000)};
+                  fill(`another tab's newer read of ${g0.id}'s game lines alone, written over this tab's older read of both halves, did not keep this tab's player lines with their plsig and what that read found`,
+                    mB,tB,null,{w:tB.w,gl:tB.gl,pl:mB.pl,plsig:mB.plsig,out:mB.out}); }
+                { const asideE={...ent(g0,T-6000,-116),pl:plOf(T-6000,'00-AUDIT-PLC'),plsig:'audit-aside',out:outOf(T-6000)}, gone={[g0.id]:{gl:T-5000,pl:T-5000}};
+                  const mC={...ent(g0,T-1000,-115),plsig:'audit-mine'}, mD={w:String(g0.w),pl:plOf(T-1000,'00-AUDIT-PLD'),plsig:'audit-mine',out:outOf(T-1000)};
+                  fill(`another tab's read of ${g0.id} this load set aside lent its player lines to this tab's read of the game lines alone`,mC,asideE,gone,mC);
+                  fill(`another tab's read of ${g0.id} this load set aside lent its game lines to this tab's read of the player lines alone`,mD,asideE,gone,mD); }
+                /* C. (round 3 of 16 October 2026: the merge took one whole entry a game, the later read's, and only filled the
+                   halves it lacked) each half from whichever side read it later. This tab's latest press read g0's game
+                   lines and failed its player lines, so its entry keeps the player lines of an earlier press (espnKeepPut
+                   leaves them), while the browser holds another tab's newer player-lines read beside older game lines: what
+                   is written takes this tab's game lines and the other tab's player lines, with their plsig and what that
+                   read found. And the mirror for the game lines. Then a half this load set aside, alone: another tab's
+                   player lines read at or before the time ESPN_KEEP_GONE holds for that half are never taken (this tab has
+                   none to give), while its game lines, not set aside, are; and the mirror. Planted as the page writes */
+                { const mE={...ent(g0,T-1000,-121),pl:plOf(T-9000,'00-AUDIT-PLM'),plsig:'audit-mine',out:outOf(T-9000)}, tE={...ent(g0,T-9000,-122),pl:plOf(T-5000,'00-AUDIT-PLT'),plsig:'audit-theirs',out:outOf(T-5000)};
+                  fill(`this tab's newer read of ${g0.id}'s game lines, beside its older player lines, written over another tab's newer player lines: the written entry does not take this tab's game lines and the other tab's player lines with their plsig and what that read found`,
+                    mE,tE,null,{w:mE.w,gl:mE.gl,pl:tE.pl,plsig:tE.plsig,out:tE.out});
+                  const mF={...ent(g0,T-9000,-123),pl:plOf(T-1000,'00-AUDIT-PLM'),plsig:'audit-mine',out:outOf(T-1000)}, tF={...ent(g0,T-5000,-124),pl:plOf(T-9000,'00-AUDIT-PLT'),plsig:'audit-theirs',out:outOf(T-9000)};
+                  fill(`this tab's newer read of ${g0.id}'s player lines, beside its older game lines, written over another tab's newer game lines: the written entry does not take the other tab's game lines and this tab's player lines with their plsig and what that read found`,
+                    mF,tF,null,{w:mF.w,gl:tF.gl,pl:mF.pl,plsig:mF.plsig,out:mF.out});
+                  const tG={...ent(g0,T-5000,-125),pl:plOf(T-5000,'00-AUDIT-PLT'),plsig:'audit-theirs',out:outOf(T-5000)}, mG={...ent(g0,T-9000,-126),plsig:'audit-mine'}, mH={w:String(g0.w),pl:plOf(T-9000,'00-AUDIT-PLM'),plsig:'audit-mine',out:outOf(T-9000)};
+                  fill(`another tab's read of ${g0.id} whose player lines this load set aside (ESPN_KEEP_GONE's pl at their time): the written entry takes them back, or not its newer game lines, not set aside`,
+                    mG,tG,{[g0.id]:{pl:T-5000}},{w:mG.w,gl:tG.gl,plsig:mG.plsig});
+                  fill(`another tab's read of ${g0.id} whose game lines this load set aside (ESPN_KEEP_GONE's gl at their time): the written entry takes them back, or not its newer player lines, not set aside, with their plsig and what that read found`,
+                    mH,tG,{[g0.id]:{gl:T-5000}},{w:mH.w,pl:tG.pl,plsig:tG.plsig,out:tG.out}); }
+                /* (round 4 of 16 October 2026) a game-line half with no lines and no ids (its event alone: a read the press
+                   left off, with no id) ranks below any with lines, whatever its time: another tab's newer one never
+                   displaces this tab's older one with lines, nor this tab's newer one the other tab's. And a later player
+                   read that found no player lines posted ('none') keeps the lines the other side read, as one tab keeps its
+                   own across presses, with the later read's plsig and what it found; on either side. (round 5) Only where
+                   the two were read over the same publish (the same plsig): a block read over another publish is never
+                   lent, and the later read's plsig and what it found are written without it */
+                { const bare=at=>({w:String(g0.w),gl:{at,lines:{},ids:{},idat:{},glat:null,event:'71234567',sig:'audit-bare'}});
+                  const none=at=>({st:'none',why:'DraftKings has posted no player lines for it yet',sb:false,when:at});
+                  const mI=ent(g0,T-9000,-131), tI=bare(T-1000);
+                  fill(`another tab's newer read of ${g0.id} with no game lines and no ids (its event alone) displaced this tab's older one with lines`,mI,tI,null,{w:mI.w,gl:mI.gl});
+                  const mJ=bare(T-1000), tJ=ent(g0,T-9000,-132);
+                  fill(`this tab's newer read of ${g0.id} with no game lines and no ids (its event alone) displaced another tab's older one with lines`,mJ,tJ,null,{w:tJ.w,gl:tJ.gl});
+                  for(const [ov,sM,sT] of [['over the same publish','audit-same','audit-same'],['over another publish','audit-mine','audit-theirs']]){ const lend=sM===sT;
+                    const mK={...ent(g0,T-5000,-133),pl:plOf(T-9000,'00-AUDIT-PLK'),plsig:sM,out:outOf(T-9000)}, tK={w:String(g0.w),out:none(T-1000),plsig:sT};
+                    fill(`another tab's newer read of ${g0.id} that found no player lines posted, written over this tab's older read of them ${ov}: the written entry ${lend?'does not keep':'keeps'} this tab's player lines${lend?'':', read over another publish,'} with the newer read's plsig and what it found`,
+                      mK,tK,null,{w:mK.w,gl:mK.gl,...(lend?{pl:mK.pl}:{}),plsig:tK.plsig,out:tK.out});
+                    const mL={w:String(g0.w),out:none(T-1000),plsig:sM}, tL={...ent(g0,T-5000,-134),pl:plOf(T-9000,'00-AUDIT-PLL'),plsig:sT,out:outOf(T-9000)};
+                    fill(`this tab's newer read of ${g0.id} that found no player lines posted, written over another tab's older read of them ${ov}: the written entry ${lend?'does not keep':'keeps'} the other tab's player lines${lend?'':', read over another publish,'} with this tab's plsig and what it found`,
+                      mL,tL,null,{w:mL.w,gl:tL.gl,...(lend?{pl:tL.pl}:{}),plsig:mL.plsig,out:mL.out}); } }
+              } finally{ for(const n of ['ESPN_KEPT','ESPN_KEEP_GONE','ESPN_KEEP_OFF']) setVar(n,post[n]); try{ if(kept1==null) LS.removeItem(KK); else LS.setItem(KK,kept1); }catch(e){} } }
+            });
+
+            /* R5. (round 5 of 16 October 2026) the five changes of the fifth review, each on values made here and worked out
+               from the stated rules; every case puts back what it changed (reload, twoReads and kcase put the page back).
+               1. Each game-line field by its own read's time. Two reads of g0's page, the first (t1) moving its money lines
+                  alone, the second (t2) its spread alone with its prices: kept as each field with its own read's time. Then
+                  P2, a newer publish with its own money lines, its DraftKings pull between t1 and t2 and its bake after both
+                  (so a rule that read the bake, or the latest read's time for every field, fails): the money lines P2's, the
+                  spread t2's with its prices, the total P2's, lat t2, ESPN_GL's d the three fields t2 set and its at t2, and the
+                  key written back over P2's hash with them, which a second reload over P2 puts back exactly; with P2's pull
+                  before both reads, both stand; after both, the game lines are set aside. Over the same publish, everything
+                  exactly as after the reads (and the null price pair the same, above: two reads back to the published number) */
+            await kcase(`two reads moving different fields, then a newer publish between them`,async()=>{
+              const ev1=clone(evOfG(g0)), ev2=clone(evOfG(g0)), d1=odOf(ev1), d2=odOf(ev2);
+              delete d1.pointSpread; delete d1.total;
+              for(const sd of ['home','away']){ const c=d1.moneyline[sd].close, v=F('espnAmerican')(c.odds); d1.moneyline[sd].close={...c,odds:fA(v<0?v-10:v+10)}; }
+              delete d2.moneyline; delete d2.total;
+              { const n=F('espnLineNum')(d2.pointSpread.away.close.line)-1;
+                d2.pointSpread.away.close={...d2.pointSpread.away.close,line:fL(n),odds:'-125'}; d2.pointSpread.home.close={...d2.pointSpread.home.close,line:fL(n===0?0:-n),odds:'+105'}; }
+              const o1=ESPN.oddsOf(ev1,g0).lines, o2=ESPN.oddsOf(ev2,g0).lines;
+              const t=await twoReads(ev1,ev2,null,null), r=t.r||{err:'no reload'}, tA=t.t0, tB=t.t1;
+              const made=!t.err&&Object.keys(o1).sort().join()==='mla,mlh'&&Object.keys(o2).sort().join()==='sp,spa,sph'&&o1.mla!==t.pub.mla&&o1.mlh!==t.pub.mlh&&o2.sp!==t.pub.sp&&tB>tA+2;
+              const sim=made?simReads(t.pub,[{lines:o1,at:tA},{lines:o2,at:tB}],Date.parse(t.pub.lat||'')||Date.parse(P().baked_at||'')||0):null;
+              const e=(((parse(t.kept)||{}).games)||{})[g0.id];
+              chk(made&&!!e&&!!e.gl&&canon(e.gl.lines)===canon(sim.d)&&!!e.gl.lines.mla&&e.gl.lines.mla[1]===tA&&!!e.gl.lines.sp&&e.gl.lines.sp[1]===tB&&e.gl.at===tB&&!!t.GL0&&canon(t.GL0.d)===canon(sim.d)&&canon(t.lines)===canon(sim.lines),
+                `two reads of ${g0.id}, the first moving its money lines alone and the second its spread alone with its prices: ${KK} does not keep each field with its own read's time, or the page does not show both: ${t.err?t.err.split('\n')[0]:JSON.stringify(e&&e.gl)} against ${JSON.stringify(sim&&sim.d)}; shown ${JSON.stringify(t.lines)}`);
+              chk(!r.err&&r.req===0&&!!r.lines&&same(r.lines[g0.id],t.lines)&&!!r.GL0&&canon(r.GL0)===canon(t.GL0)&&!!r.kg[g0.id]&&canon(r.kg[g0.id].gl)===canon(e&&e.gl),
+                `two reads of ${g0.id} moving different fields: a reload over the same publish did not put back exactly what the page showed after them (its lines, ESPN_GL, the key): ${JSON.stringify((r.lines||{})[g0.id])} against ${JSON.stringify(t.lines)}; ${why(r)}`);
+              if(!made||!e||!e.gl) return;
+              const P2=lat=>()=>{ bump(g0,'mla',-7); bump(g0,'mlh',7); g0.ls='dk'; g0.lat=iso(lat); setBk(tB+1000); return null; };
+              const look=o=>{ o.GL0=clone(F('ESPN_GL')[g0.id]||null); };
+              for(const [lab,lat] of [['between the two reads',Math.floor((tA+tB)/2)],['before both reads',tA-1000],['after both reads',tB+1000]]){
+                const rP=reload(t.kept,P2(lat),look,'a reload over a newer publish'), pub=rP.pub&&rP.pub[g0.id]||{}, L=(rP.lines||{})[g0.id]||{}, kg=(rP.kg||{})[g0.id], RD=replayD(pub,e.gl.lines,lat,false);
+                const nm=`${g0.id}'s two reads (money lines at t1, spread at t2) over a newer publish with its own money lines, its DraftKings pull ${lab}`;
+                if(lat>tB){ chk(!rP.err&&rP.req===0&&same(L,pub)&&!rP.GL0&&!!rP.ESPN_ASIDE[g0.id]&&rP.ESPN_ASIDE[g0.id].gl===tB&&!(kg&&kg.gl),
+                    `${nm}: the game lines were not set aside whole (nothing of them, ESPN_ASIDE naming them at t2, none written back): ${JSON.stringify(L)}; ${why(rP)}`); continue; }
+                const ml=lat<tA?o1:pub;
+                chk(!rP.err&&rP.req===0&&pub.mla!==o1.mla&&pub.mla!==t.pub.mla&&L.mla===ml.mla&&L.mlh===ml.mlh&&L.sp===o2.sp&&L.spa===o2.spa&&L.sph===o2.sph&&L.tot===pub.tot&&L.tov===pub.tov&&L.tou===pub.tou&&L.ls==='dk'&&Date.parse(L.lat)===tB&&canon(L)===canon(RD.lines),
+                  `${nm}: the money lines are not ${lat<tA?'the first read\'s':'the newer publish\'s'}, or the spread not the second read's with its prices, or the total not the newer publish's, or lat not t2: ${JSON.stringify(L)} against ${JSON.stringify(RD.lines)}; ${why(rP)}`);
+                chk(!rP.err&&!!rP.GL0&&canon(rP.GL0.orig)===canon(pub)&&rP.GL0.at===tB&&RD.at===tB&&canon(rP.GL0.d)===canon(RD.D)&&Object.keys(RD.D).length===(lat<tA?5:3),
+                  `${nm}: ESPN_GL is not the newer publish's lines with the fields read after it (${lat<tA?'all five':'the second read\'s three'}) and t2: ${String(JSON.stringify(rP.GL0)).slice(0,300)} against d ${JSON.stringify(RD.D)}`);
+                chk(!!kg&&!!kg.gl&&kg.gl.sig===glSigOf(pub)&&canon(kg.gl.lines)===canon(RD.D)&&kg.gl.at===RD.at,
+                  `${nm}: the key written back does not hold the fields that stand, each at its own read's time, over the newer publish's hash (${glSigOf(pub)}, worked out here): ${String(JSON.stringify(kg&&kg.gl)).slice(0,300)}`);
+                if(lat>tA){ const r2=reload(rP.key,P2(lat),look,'a second reload over the newer publish');
+                  chk(!r2.err&&r2.req===0&&same((r2.lines||{})[g0.id],L)&&canon(r2.GL0)===canon(rP.GL0),
+                    `${nm}: a second reload over it, of what the first wrote back, does not show the same: ${JSON.stringify((r2.lines||{})[g0.id])} against ${JSON.stringify(L)}; ${why(r2)}`); } }
+            });
+            /* 3. carried through. A write judges only the games this tab has its own entry for, on this tab's schedule: a
+               game it has nothing of its own for, or one its schedule no longer offers (kicked off there, scored there, not
+               on it), is the browser's copy carried as it stands (less a half this load set aside), even beside a newer read
+               of this tab's own. A copy of the schedule is planted here with gS's kickoff two days back (or a score), and a
+               game id of the schedule's shape no game has (gA). And each load's restore prunes the copy on the publish it
+               loads: an entry for gA, or for gS kicked off on that publish, is set aside whole (both halves in
+               ESPN_KEEP_GONE at their times), nothing of it put back or written back, every other game put back */
+            await kcase(`a kept read of a game this tab's schedule no longer offers`,async()=>{
+              /* gS another game the press read, else g0 itself (a Monday with one game left: rule (b), the case stands on
+                 the row there is, with no warning) */
+              const gS=read.find(g=>g!==g0)||g0, gA=g0.id.slice(0,8)+'AUA_AUB';
+              chk(F('ESPN_KEEP_GID').test(gA)&&!S.sched.some(x=>x.id===gA),`the audit's made-up game id ${gA} is not of the schedule's shape or is a game of it`);
+              const T=w.Date.now(), day=iso(T-2*86400e3).slice(0,10);
+              const ent=(gid,at,ml,pid)=>({w:wk,gl:{at,lines:{mla:[ml,at]},ids:{},idat:{},glat:null,event:null,sig:'audit'},pl:{at:iso(at),lines:{[pid]:{receiving_yards:50.5}},rungs:{},td:[]},plsig:'audit',out:{st:'ok',why:'',sb:false,when:at}});
+              const got=()=>(parse(lsGet())||{}).games||{};
+              const sch0=S.sched, schWith=f=>S.sched.map(g=>g.id===gS.id?f({...g}):g);
+              const write=(lab,sched,mine,theirs,gone,gid,want)=>{
+                try{ S.sched=sched; setVar('ESPN_KEPT',mine); setVar('ESPN_KEEP_GONE',gone||{}); setVar('ESPN_KEEP_OFF',false);
+                  LS.setItem(KK,JSON.stringify({v:1,season:SEASON,saved:T,games:theirs})); const ok=F('espnKeepWrite')(), s=got();
+                  chk(ok===true&&canon(s[gid]||null)===canon(want),`${lab}: the write left ${gid} as ${String(JSON.stringify(s[gid]||null)).slice(0,260)}, not ${String(JSON.stringify(want)).slice(0,260)}`); }
+                finally{ S.sched=sch0; } };
+              try{
+                const theirs=ent(gS.id,T-9000,-142,'00-AUDIT-CT'), mineS=ent(gS.id,T-1000,-141,'00-AUDIT-CM');
+                write(`another tab's read of ${gS.id}, kicked off on this tab's schedule (planted two days back), beside this tab's newer read of it`,schWith(g=>{ g.d=day; g.t='13:00'; return g; }),{[gS.id]:clone(mineS)},{[gS.id]:clone(theirs)},null,gS.id,theirs);
+                write(`another tab's read of ${gS.id}, scored on this tab's schedule, beside this tab's newer read of it`,schWith(g=>{ g.hs=24; g.as=17; return g; }),{[gS.id]:clone(mineS)},{[gS.id]:clone(theirs)},null,gS.id,theirs);
+                const tA2=ent(gA,T-9000,-143,'00-AUDIT-CA');
+                write(`another tab's read of ${gA}, a game this tab's schedule does not have, with nothing of this tab's own`,sch0,{},{[gA]:clone(tA2)},null,gA,tA2);
+                write(`another tab's read of ${gA}, a game this tab's schedule does not have, beside a newer read of this tab's own`,sch0,{[gA]:clone(ent(gA,T-1000,-144,'00-AUDIT-CB'))},{[gA]:clone(tA2)},null,gA,tA2);
+                { const want={...clone(tA2)}; delete want.gl;
+                  write(`another tab's read of ${gA}, a game this tab's schedule does not have, its game lines set aside by this load`,sch0,{},{[gA]:clone(tA2)},{[gA]:{gl:T-9000}},gA,want); }
+                /* and beside them, this tab's own read of g0 judged as before: it stands over an older copy */
+                write(`this tab's newer read of ${g0.id} beside another tab's read of a game this tab's schedule does not have`,sch0,{[g0.id]:clone(ent(g0.id,T-1000,-145,'00-AUDIT-CC'))},{[g0.id]:clone(ent(g0.id,T-9000,-146,'00-AUDIT-CD')),[gA]:clone(tA2)},null,g0.id,ent(g0.id,T-1000,-145,'00-AUDIT-CC'));
+              } finally{ S.sched=sch0; for(const n of ['ESPN_KEPT','ESPN_KEEP_GONE','ESPN_KEEP_OFF']) setVar(n,post[n]); try{ if(kept1==null) LS.removeItem(KK); else LS.setItem(KK,kept1); }catch(e){} }
+              /* the restore's pruning, from the press's own kept read */
+              const eS=kv&&kv.games&&kv.games[gS.id], aS=atOf(eS);
+              { const v=clone(kv); v.games[gA]={...clone(kv.games[g0.id])}; const aA=atOf(v.games[gA]);
+                const r=reload(JSON.stringify(v),null,null,'a reload with a kept read of a game not on the publish');
+                const bad=read.filter(g=>!same(r.lines[g.id],post.lines[g.id]));
+                chk(!r.err&&r.req===0&&r.n===read.length&&!(gA in r.kg)&&!r.ESPN_KEPT[gA]&&!inLive(r.ESPN_LIVE,gA)&&!r.ESPN_GL[gA]&&!r.ESPN_OUT[gA]&&!bad.length&&canon(r.kg)===canon(keptBackAll(kv.games)),
+                  `a kept read of ${gA}, a game not on the publish the load finds: the restore put or wrote something of it back, or not every game of the schedule as kept: ${bad.map(g=>g.id).join(', ')}; ${why(r)}`);
+                chk(goneIs(r,gA,['gl','pl'],aA),`a kept read of ${gA}, a game not on the publish: ESPN_KEEP_GONE does not set both its halves aside at their times: ${JSON.stringify(r.GONE[gA]||null)}`); }
+              if(eS) for(const [how,f] of [['kicked off on the publish the load finds (its kickoff planted two days back)',g=>{ g.d=day; g.t='13:00'; return g; }],['scored on the publish the load finds',g=>{ g.hs=24; g.as=17; return g; }]]){
+                const r=reload(kept1,()=>{ const sch=S.sched; S.sched=schWith(f); return ()=>{ S.sched=sch; }; },o=>{ const c=S.sched.find(x=>x.id===gS.id); o.cS=c?linesOf(c):null; },'a reload with a game '+how);
+                const rest=read.filter(g=>g!==gS&&!same(r.lines[g.id],post.lines[g.id]));
+                chk(!r.err&&r.req===0&&r.n===read.length-1&&!(gS.id in r.kg)&&!r.ESPN_KEPT[gS.id]&&!inLive(r.ESPN_LIVE,gS.id)&&!r.ESPN_GL[gS.id]&&!r.ESPN_OUT[gS.id]&&!!r.cS&&same(r.cS,r.pub[gS.id])&&!rest.length,
+                  `a kept read of ${gS.id}, ${how}: the restore put or wrote something of it back, or not the other games: ${rest.map(g=>g.id).join(', ')}; ${why(r)}`);
+                chk(goneIs(r,gS.id,['gl','pl'],aS),`a kept read of ${gS.id}, ${how}: ESPN_KEEP_GONE does not set both its halves aside at their times: ${JSON.stringify(r.GONE[gS.id]||null)}`); }
+            });
+            /* 4. bounds. A kept player line or rung is one ESPN lists: on a half point, above 0 and at most 1000 (one of
+               1e9 held a game page's ladder up), and at most 40 rungs a stat. On g0's kept player lines: a receptions line of
+               1e9 on one of its players, 2.3 and -1 on made-up players, 1000 kept beside a receiving yards line of 1000.5
+               dropped; a rung of 1e9 added to one of its ladders, and a made-up ladder of 50 rungs: every number off that
+               rule dropped, at most 40 rungs kept, each one planted, and the rest of the block put back and written back as
+               the press kept it */
+            await kcase(`a kept player line or rung ESPN would never list`,async()=>{
+              const e0=kv&&kv.games&&kv.games[g0.id], b0=e0&&e0.pl;
+              const p1=b0&&Object.keys(b0.lines||{})[0], r1=b0&&Object.keys(b0.rungs||{}).find(p=>Object.keys(b0.rungs[p]||{}).length), s1=r1&&Object.keys(b0.rungs[r1])[0];
+              if(!p1||!r1){ W.coverage(false,`the press kept no player lines or ladders for ${g0.id}: the bounds on a kept line went untested`); return; }
+              const okL=x=>typeof x==='number'&&isFinite(x)&&x>0&&x<=1000&&Number.isInteger(x*2);
+              const v=clone(kv), B=v.games[g0.id].pl, L50=Array.from({length:50},(_,i)=>10+i);
+              B.lines[p1]={...B.lines[p1],receptions:1e9}; Object.assign(B.lines,{'00-AUDIT-B2':{receptions:2.3},'00-AUDIT-B3':{receptions:-1},'00-AUDIT-B4':{receptions:1000,receiving_yards:1000.5},'00-AUDIT-B5':{receptions:0}});
+              B.rungs[r1]={...B.rungs[r1],[s1]:[...B.rungs[r1][s1],1e9]}; B.rungs['00-AUDIT-B6']={receiving_yards:L50};
+              /* what the rule keeps of the planted block, worked out here */
+              const wantB=clone(B);
+              for(const p of Object.keys(wantB.lines)){ const m=wantB.lines[p]; for(const st of Object.keys(m)) if(!okL(m[st])) delete m[st]; if(!Object.keys(m).length) delete wantB.lines[p]; }
+              const r=reload(JSON.stringify(v),null,null,'a reload with player lines off ESPN\'s steps');
+              const got=((r.ESPN_LIVE||{})[wk]||{})[g0.id], kgp=((r.kg||{})[g0.id]||{}).pl;
+              const linesOk=!!got&&canon(got.lines)===canon(wantB.lines)&&!('receptions' in (got.lines[p1]||{}))&&!got.lines['00-AUDIT-B2']&&!got.lines['00-AUDIT-B3']&&!got.lines['00-AUDIT-B5']&&canon(got.lines['00-AUDIT-B4'])===canon({receptions:1000});
+              const g6=got&&got.rungs&&got.rungs['00-AUDIT-B6']&&got.rungs['00-AUDIT-B6'].receiving_yards;
+              const rungsOk=!!got&&canon(got.rungs[r1][s1])===canon(b0.rungs[r1][s1])&&Array.isArray(g6)&&g6.length===40&&new Set(g6).size===40&&g6.every(x=>L50.includes(x))
+                &&Object.keys(got.rungs).filter(p=>p!=='00-AUDIT-B6').every(p=>canon(got.rungs[p])===canon(b0.rungs[p]))&&Object.keys(got.rungs).length===Object.keys(b0.rungs).length+1;
+              chk(!r.err&&r.req===0&&linesOk,`a kept player line off ESPN's steps (1e9, 2.3, -1, 0, 1000.5) was put back, or one on them (1000) or the rest of ${g0.id}'s lines was not: ${JSON.stringify(got&&got.lines['00-AUDIT-B4'])} ${JSON.stringify(got&&got.lines[p1])}; ${why(r)}`);
+              chk(!r.err&&rungsOk,`a kept ladder of ${g0.id} with a rung of 1e9, or of 50 rungs, was put back otherwise than ESPN lists (the 1e9 dropped, at most 40 rungs, each one planted), or the rest of its ladders otherwise than kept: ${JSON.stringify(got&&got.rungs[r1])} / ${g6?g6.length:'none'} rungs; ${why(r)}`);
+              chk(!!kgp&&canon(kgp.lines)===canon(got&&got.lines)&&canon(kgp.rungs)===canon(got&&got.rungs),`the key written back does not hold ${g0.id}'s player lines as they were put back (the numbers off ESPN's steps dropped): ${String(JSON.stringify(kgp)).slice(0,200)}`);
+            });
+            /* 5. a read that found no player lines posted says so for a day at most (DK_EST.staleHours, by the page's clock):
+               g0 kept with its game lines and a 'none' 23 hours old: put back; 25 hours old: not put back, and not said to have
+               given way (the game lines standing, ESPN_ASIDE naming no player half); the same for a 'none' kept alone */
+            await kcase(`a kept read that found no player lines posted, a day on`,async()=>{
+              const e0=kv&&kv.games&&kv.games[g0.id], SH=F('DK_EST').staleHours;
+              if(!(e0&&e0.gl)){ W.coverage(false,`the press kept no game lines for ${g0.id}: a 'none' a day old went untested`); return; }
+              chk(SH===24,`DK_EST.staleHours is ${SH}, not the 24 hours the rule states`);
+              for(const h of [23,25]) for(const alone of [false,true]){ const now=w.Date.now(), none={st:'none',why:'DraftKings has posted no player lines for it yet',sb:false,when:now-h*3600e3};
+                const v=clone(kv); delete v.games[g0.id].pl; v.games[g0.id].out=none; if(alone) delete v.games[g0.id].gl;
+                const r=reload(JSON.stringify(v),null,o=>{ o.st0=F('espnStatus')(g0.id); },`a reload of a 'none' ${h} hours old`), a=(r.ESPN_ASIDE||{})[g0.id]||{};
+                const lab=`${g0.id} kept ${alone?'as':'with its game lines and'} a read that found no player lines posted ${h} hours before the page's clock`;
+                if(h<SH) chk(!r.err&&r.req===0&&canon(r.ESPN_OUT[g0.id]||null)===canon(none)&&!!r.ESPN_KEPT[g0.id]&&(alone||same(r.lines[g0.id],post.lines[g0.id])),
+                  `${lab}: a reload did not put it back (ESPN_OUT 'none'${alone?'':', its game lines'}): ${JSON.stringify(r.ESPN_OUT[g0.id]||null)}; ${why(r)}`);
+                else chk(!r.err&&r.req===0&&!r.ESPN_OUT[g0.id]&&!('pl' in a)&&(alone?!r.ESPN_KEPT[g0.id]:same(r.lines[g0.id],post.lines[g0.id])&&!!r.ESPN_KEPT[g0.id]),
+                  `${lab}: a reload put it back (ESPN_OUT ${JSON.stringify(r.ESPN_OUT[g0.id]||null)}), or set its player half aside as given way to a publish, or ${alone?'kept the game':'not its game lines'}: ${why(r)}`);
+                W.wording(h<SH?/DraftKings has posted no player lines for it yet/.test(r.st0||''):!/no player lines posted|has posted no player lines|gave way/.test(r.st0||''),`${lab}: its status line reads "${r.st0}"`); }
+            });
+            /* 5. no room to save the visitor's state beside a kept read (the storage stub refusing S's first save,
+               the browser's own store too): save() empties the key and saves S on its second try, and the read
+               is not written again on this load (ESPN_KEEP_OFF); with no kept read, a refused save is tried once */
+            await kcase(`no room to save the visitor's state`,async()=>{
+            { const KS=F('KEY'), set0=w.storage.set, si0=w.Storage.prototype.setItem; let refuse=0, tries=0;
+              try{ LS.setItem(KK,kept1||JSON.stringify({v:1,season:SEASON,saved:0,games:{}}));
+                w.storage.set=async(k,v)=>{ tries++; if(refuse>0) throw new Error('QuotaExceededError (made up by the audit)'); mem=v; return true; };
+                w.Storage.prototype.setItem=function(k,v){ if(k===KS&&refuse>0){ refuse--; throw new w.DOMException('made up by the audit','QuotaExceededError'); } return si0.call(this,k,v); };
+                refuse=1; tries=0; mem=null; F('save')(); await sleep(500);
+                const off=F('ESPN_KEEP_OFF'), left=lsGet(), sv=parse(mem), said=txt(d.getElementById('saveState'));
+                chk(tries===2&&left===null&&off===true&&!!sv&&Array.isArray(sv.sched),`with no room to save the visitor's state beside a kept read, save() did not empty ${KK} and save on a second try: ${tries} tries, the key ${left===null?'emptied':'kept'}, ESPN_KEEP_OFF ${off}, S ${sv?'saved':'not saved'}`);
+                W.wording(said==='Autosaved',`after the kept read gave way to the visitor's state, the save line reads "${said}"`);
+                const wr=F('espnKeepWrite')();
+                chk(wr===false&&lsGet()===null,`after the kept read gave way to the visitor's state, it was written again on the same load`);
+                setVar('ESPN_KEEP_OFF',false); LS.removeItem(KK); refuse=1; tries=0; F('save')(); await sleep(500);
+                chk(tries===1&&F('ESPN_KEEP_OFF')===false,`with no kept read, a save with no room was tried ${tries} times, or turned the keeping off`);
+              } finally{ w.storage.set=set0; w.Storage.prototype.setItem=si0; setVar('ESPN_KEEP_OFF',post.ESPN_KEEP_OFF); try{ if(kept1==null) LS.removeItem(KK); else LS.setItem(KK,kept1); }catch(e){}
+                F('save')(); await sleep(400); } }
+            });
+            /* R6. (round 6 of 16 October 2026) the four changes of the sixth review, each on values made here and worked out
+               from the stated rules, each in its own guard; every case puts back what it changed (reload and kcase put the
+               page back; the builder, the key and the keeping state are put back here, and the save a tick in the builder
+               sets off is let run on the builder put back) */
+            const legKeyOf=(team,stat)=>stat==='total'?`${g0.id}|game|total`:`${g0.id}|team:${team}|${stat}`;
+            /* a builder game leg's own price field, as the rule names it: its team's money line, its team's spread price,
+               the over's or the under's total price */
+            const fieldOf=l=>l.stat==='ml'?(l.team===g0.h?'mlh':'mla'):(l.stat==='ats'?(l.team===g0.h?'sph':'spa'):(l.side==='under'?'tou':'tov'));
+            /* a game leg's price on lines L where no read stands on its field: its own number's price where L has one,
+               else the model's estimate (the total's estimated price) */
+            const pxOn=(l,L)=>{ const ok=v=>v!=null&&isFinite(v)&&v!==0, home=l.team===g0.h; let px=null;
+              if(l.stat==='ml') px=home?L.mlh:L.mla; else if(l.stat==='ats'){ if((home?-L.sp:L.sp)===+l.k) px=home?L.sph:L.spa; } else if(L.tot===+l.k) px=l.side==='under'?L.tou:L.tov;
+              return ok(px)?{ml:px,src:'real'}:{ml:l.stat==='total'?F('TOTAL_EST'):F('bookPrice')(l.p),src:'est'}; };
+            /* the rule: the price it was added at while its own field stands, set or dropped, among what the reads did (D: the
+               fields a restore puts back, worked out by replayD; in a load, what the reads set, simReads), else its price on
+               the lines as they then are (L, worked out the same way) */
+            const legWant=(l,D,L)=>{ const x=D[fieldOf(l)]; return Array.isArray(x)?{ml:l.price,src:l.src||'est'}:pxOn(l,L); };
+            const pxNow=()=>Object.fromEntries(Object.entries(S.parlay||{}).map(([k,l])=>[k,F('legPrice')(l)]));
+            /* presses of g0's page in one load, each with its own scoreboard event and a step run after it (a tick in the
+               builder), from the page as a load finds it with plant() on the published lines first and an empty builder:
+               the published lines, each read's time, what the page shows after, the builder's legs and their prices, and
+               what it kept; the builder and the page put back after */
+            const pressSteps=async(steps,plant)=>{ const ev0=evOfG(g0), out={err:null,t:[]}, keepP=JSON.stringify(S.parlay||{});
+              try{ toLoad(); LS.removeItem(KK); if(plant) plant(); out.pub=linesOf(g0); out.pubAt=Date.parse(g0.lat||'')||Date.parse(P().baked_at||'')||0; S.parlay={};
+                for(const [i,s] of steps.entries()){ net.route=u=>/\/scoreboard\?/.test(u)?{code:200,body:{events:evs.map(e=>e===ev0?s.ev:e)}}:route0g(u);
+                  if(i) await sleep(5); await F('espnRefresh')(g0.id); out.t.push((F('ESPN_GL')[g0.id]||{}).at); if(s.then) s.then(); }
+                net.route=route0g; drop(); out.lines=linesOf(g0); out.GL0=clone(F('ESPN_GL')[g0.id]||null); out.legs=clone(S.parlay); out.px=pxNow(); out.kept=lsGet(); }
+              catch(e){ out.err=String(e&&e.stack||e); }
+              finally{ net.route=route0g; setVar('ESPN_RUN',clone(run0g)); S.parlay=JSON.parse(keepP); backToPost(); }
+              return out; };
+            /* a reload of what the presses kept with the builder holding their legs, tw a tweak of the publish (or none) */
+            const reloadLegs=(t,tw,lab)=>reload(t.kept,()=>{ const keepP=JSON.stringify(S.parlay||{}); S.parlay=clone(t.legs); const u=tw?tw():null; return ()=>{ if(u) u(); S.parlay=JSON.parse(keepP); }; },
+              o=>{ drop(); o.px=pxNow(); o.GL0=clone(F('ESPN_GL')[g0.id]||null); },lab);
+            const flushSave=async()=>{ try{ F('save')(); await sleep(400); }catch(e){} };
+            const moveMl=d=>{ for(const sd of ['home','away']){ const c=d.moneyline[sd].close, v=F('espnAmerican')(c.odds); d.moneyline[sd].close={...c,odds:fA(v<0?v-10:v+10)}; } };
+            const moveSp=(d,priced)=>{ const n=F('espnLineNum')(d.pointSpread.away.close.line)-1;
+              d.pointSpread.away.close={...d.pointSpread.away.close,line:fL(n)}; d.pointSpread.home.close={...d.pointSpread.home.close,line:fL(n===0?0:-n)};
+              if(priced){ d.pointSpread.away.close.odds='-125'; d.pointSpread.home.close.odds='+105'; } else { delete d.pointSpread.away.close.odds; delete d.pointSpread.home.close.odds; } };
+            /* 1. a builder game leg by its own field (espnLegBack): a leg tagged with a read's time (gl) keeps the price it was
+                  added at only while its own price field stands, with a value, among what the load's reads did (ESPN_GL's d);
+                  until round 6 any read of its game standing kept it, so a reload over a newer publish that put back only
+                  some fields kept an older read's price where its line was the publish's. Two reads of g0's page in one load:
+                  the first (t1) moving its money lines and its total (one off the published number) with their prices, the
+                  second (t2) its spread with its prices and the away team's money line alone (moved again); each team to win
+                  and the over ticked after t1, the away team to cover after t2, each at its read's price. In the load all four
+                  at those prices; reloaded over the same publish, every field stands and so do they; over a newer publish with
+                  its own money lines and total (on the over's number, or on the published one: the over's number moved) and a
+                  bake after both reads, its DraftKings pull between them: the fields t2 set stand (the away money line, the
+                  spread), so the away team to win and the cover keep their prices (the away team's at t1's price, the one it
+                  was added at), the home team to win and the over go to the publish's price on their number (or the estimate
+                  where the number moved); its pull before both: all four stand; after both: none, each priced on the
+                  publish. And a cover ticked after t1 at the published spread and
+                  its published prices (planted), its price then dropped by a later read of the spread at another number with
+                  no prices: its field stands as a null, so it is priced on the lines as they are (no price on its number: the
+                  model's estimate), in the load and after a reload */
+            await kcase(`a builder game leg kept by its own field`,async()=>{
+              const kML=legKeyOf(g0.h,'ml'), kMA=legKeyOf(g0.a,'ml'), kT=legKeyOf(null,'total'), kS=legKeyOf(g0.a,'ats');
+              try{
+                const ev1=clone(evOfG(g0)), ev2=clone(evOfG(g0)), d1=odOf(ev1), d2=odOf(ev2);
+                delete d1.pointSpread; moveMl(d1);
+                { const T1=F('espnLineNum')(d1.total.over.close.line)+1; d1.total.over.close={...d1.total.over.close,line:'o'+T1,odds:'-104'}; d1.total.under.close={...d1.total.under.close,line:'u'+T1,odds:'-116'}; }
+                delete d2.total; moveSp(d2,true);
+                /* the second read's money line: the away team's alone, moved again (ESPN's side for each club, by its code) */
+                { const sideOf=team=>(ev2.competitions[0].competitors.find(c=>c.team.abbreviation===eab(team))||{}).homeAway;
+                  delete d2.moneyline[sideOf(g0.h)]; const c=d2.moneyline[sideOf(g0.a)].close, v=F('espnAmerican')(c.odds); d2.moneyline[sideOf(g0.a)].close={...c,odds:fA(v<0?v-20:v+20)}; }
+                const o1=ESPN.oddsOf(ev1,g0).lines, o2=ESPN.oddsOf(ev2,g0).lines;
+                const t=await pressSteps([{ev:ev1,then:()=>{ F('toggleLeg')(kML,0,g0,'over',false); F('toggleLeg')(kMA,0,g0,'over',false); F('toggleLeg')(kT,g0.tot,g0,'over',true); }},{ev:ev2,then:()=>{ F('toggleLeg')(kS,g0.sp,g0,'over',false); }}]);
+                const [tA,tB]=t.t, L=t.legs||{}, lM=L[kML], lA=L[kMA], lT=L[kT], lS=L[kS], legs3=[lM,lT,lS,lA], keys3=[kML,kT,kS,kMA];
+                const made=!t.err&&Object.keys(o1).sort().join()==='mla,mlh,tot,tou,tov'&&Object.keys(o2).sort().join()==='mla,sp,spa,sph'&&o1.mlh!==t.pub.mlh&&o1.mla!==t.pub.mla&&o2.mla!==o1.mla&&o1.tot!==t.pub.tot&&o2.sp!==t.pub.sp&&tB>tA+2
+                  &&!!lM&&!!lA&&!!lT&&!!lS&&lM.gl===tA&&lA.gl===tA&&lT.gl===tA&&lS.gl===tB&&lM.price===o1.mlh&&lM.src==='real'&&lA.price===o1.mla&&lA.src==='real'&&lT.price===o1.tov&&lT.src==='real'&&+lT.k===o1.tot&&lS.price===o2.spa&&lS.src==='real'&&+lS.k===o2.sp;
+                chk(made,`two reads of ${g0.id} (its money lines and total at t1, its spread with its prices and the away money line at t2), each team to win and the over ticked after t1 and the away team to cover after t2: the legs are not the reads' at their times: ${t.err?t.err.split('\n')[0]:JSON.stringify({o1,o2,t:t.t,legs:legs3.map(l=>l&&[l.stat,l.team,l.side,l.k,l.price,l.src,l.gl])})}`);
+                if(!made) return;
+                const e=(((parse(t.kept)||{}).games)||{})[g0.id], sim=simReads(t.pub,[{lines:o1,at:tA},{lines:o2,at:tB}],t.pubAt);
+                chk(!!sim.d.mla&&sim.d.mla[1]===tB&&!!sim.d.mlh&&sim.d.mlh[1]===tA,`two reads of ${g0.id}: the audit's own reading does not have the away money line at t2 and the home one at t1: ${JSON.stringify(sim.d)}`);
+                { const want=legs3.map(l=>legWant(l,sim.d,sim.lines)), got=keys3.map(k=>t.px[k]);
+                  chk(want.every((x,i)=>x.ml===legs3[i].price&&x.src==='real')&&got.every((p,i)=>canon(p)===canon(want[i])),`${g0.id}'s builder legs from its two reads, in the load: legPrice gives ${JSON.stringify(got)}, not their add-time prices ${JSON.stringify(want)}`); }
+                if(!(e&&e.gl)){ chk(false,`after two reads of ${g0.id} in one load, ${KK} keeps no game lines for it`); return; }
+                const P2=(lat,tot2)=>()=>{ bump(g0,'mla',-7); bump(g0,'mlh',7); g0.tot=tot2; g0.tov=-112; g0.tou=-108; g0.ls='dk'; g0.lat=iso(lat); setBk(tB+1000); return null; };
+                const runs=[['the same publish',null,null,[true,true,true,true]]];
+                for(const [lab,lat,keep] of [['between the two reads',Math.floor((tA+tB)/2),[false,false,true,true]],['before both reads',tA-1000,[true,true,true,true]],['after both reads',tB+1000,[false,false,false,false]]])
+                  for(const tot2 of [o1.tot,t.pub.tot]) runs.push([`a newer publish with its own money lines and its total on ${tot2===o1.tot?'the over\'s number':'the published number (the over\'s moved)'}, its DraftKings pull ${lab}`,lat,tot2,keep]);
+                for(const [lab,lat,tot2,keep] of runs){
+                  const r=reloadLegs(t,lat==null?null:P2(lat,tot2),'a reload with builder legs'), pub=(r.pub||{})[g0.id]||{}, same0=glSigOf(pub)===e.gl.sig;
+                  const RD=replayD(pub,e.gl.lines,sinceOf(pub,r.bk,same0),same0), want=legs3.map(l=>legWant(l,RD.D,RD.lines)), got=keys3.map(k=>(r.px||{})[k]);
+                  const kept=legs3.map(l=>Array.isArray(RD.D[fieldOf(l)]));
+                  const nm=`${g0.id}'s builder legs from two reads (each team to win and the over at t1, the cover at t2), reloaded over ${lab}`;
+                  /* the case is the one meant: the fields standing as stated, and where a team to win or the over does not stand,
+                     its price the publish's own on its number (the over's moved: the estimate) */
+                  chk(same(kept,keep)&&(lat==null?same0:(!same0&&(keep[0]||(want[0].ml===pub.mlh&&want[0].src==='real'&&pub.mlh!==lM.price))
+                      &&(keep[3]||(want[3].ml===pub.mla&&want[3].src==='real'&&pub.mla!==lA.price))
+                      &&(keep[1]||(tot2===o1.tot?want[1].ml===-112&&want[1].src==='real':want[1].ml===F('TOTAL_EST')&&want[1].src==='est')))),
+                    `${nm}: the audit's own rule has the fields standing as ${JSON.stringify(kept)}, not ${JSON.stringify(keep)}, or the publish is not the one planted: d ${JSON.stringify(RD.D)}, the publish ${JSON.stringify(pub)}`);
+                  chk(!r.err&&r.req===0&&got.every((p,i)=>canon(p)===canon(want[i])),
+                    `${nm}: legPrice gives ${JSON.stringify(got)}, not ${JSON.stringify(want)} (a leg keeps its add-time price only while its own price field stands among what the reads did, else the publish's price on its number, or the estimate); ESPN_GL's d ${JSON.stringify(r.GL0&&r.GL0.d)}; ${why(r)}`); }
+                /* its own field standing as a null: a leg added at the published price keeps it when a later read drops
+                   that price (the final review of round 6: it fell to the estimate mid-load) */
+                { const PUB={spa:-108,sph:-112}, plant=()=>{ Object.assign(g0,PUB); };
+                  const e1=clone(evOfG(g0)), e2=clone(evOfG(g0)), c1=odOf(e1), c2=odOf(e2);
+                  delete c1.pointSpread; delete c1.total; moveMl(c1); delete c2.moneyline; delete c2.total; moveSp(c2,false);
+                  const q1=ESPN.oddsOf(e1,g0).lines, q2=ESPN.oddsOf(e2,g0).lines;
+                  const t2=await pressSteps([{ev:e1,then:()=>{ F('toggleLeg')(kS,g0.sp,g0,'over',false); }},{ev:e2}],plant), lS2=(t2.legs||{})[kS], e2k=(((parse(t2.kept)||{}).games)||{})[g0.id];
+                  const sim2=t2.err?null:simReads(t2.pub,[{lines:q1,at:t2.t[0]},{lines:q2,at:t2.t[1]}],t2.pubAt);
+                  const madeN=!t2.err&&!!lS2&&lS2.gl===t2.t[0]&&lS2.price===PUB.spa&&lS2.src==='real'&&+lS2.k===t2.pub.sp&&q2.sp!=null&&q2.sp!==t2.pub.sp&&!('spa' in q2)&&!('sph' in q2)
+                    &&!!sim2&&Array.isArray(sim2.d.spa)&&sim2.d.spa[0]===null&&!!e2k&&!!e2k.gl&&canon(e2k.gl.lines)===canon(sim2.d);
+                  chk(madeN,`a cover of ${g0.id} ticked after a first read at the published spread and its price (${PUB.spa}), then a read of the spread at another number with no prices: not the case meant: ${t2.err?t2.err.split('\n')[0]:JSON.stringify({leg:lS2&&[lS2.k,lS2.price,lS2.src,lS2.gl],t:t2.t,q2,kept:e2k&&e2k.gl&&e2k.gl.lines})}`);
+                  if(madeN){ const want=legWant(lS2,sim2.d,sim2.lines);
+                    chk(want.src==='real'&&want.ml===PUB.spa&&canon(t2.px[kS])===canon(want),`a cover of ${g0.id} whose own price a later read dropped (its spread read at another number with no prices): in the load legPrice gives ${JSON.stringify(t2.px[kS])}, not ${JSON.stringify(want)} (its field stands, as a null: the price it was added at)`);
+                    const r=reloadLegs(t2,()=>{ plant(); return null; },'a reload with a cover whose price a read dropped'), pub=(r.pub||{})[g0.id]||{}, RD=replayD(pub,e2k.gl.lines,0,true), wantR=legWant(lS2,RD.D,RD.lines);
+                    chk(!r.err&&r.req===0&&glSigOf(pub)===e2k.gl.sig&&wantR.src==='real'&&wantR.ml===PUB.spa&&canon((r.px||{})[kS])===canon(wantR),
+                      `a cover of ${g0.id} whose own price a later read dropped, reloaded over the same publish: legPrice gives ${JSON.stringify((r.px||{})[kS])}, not ${JSON.stringify(wantR)}; ESPN_GL's d ${JSON.stringify(r.GL0&&r.GL0.d)}; ${why(r)}`); } }
+              } finally{ await flushSave(); }
+            });
+            /* 2. the write's merge, the player half: the block is the later (by its own read, pl.at) of the two sides' blocks read
+                  over the same publish (plsig the later side's); until round 6 a later read that found no player lines kept its
+                  tab's older block over a newer one the other tab had stored. On an ESPN_KEPT of this tab's and a stored copy of
+                  another tab's, planted as the page writes them: this tab's later 'none' with its own older block, against a
+                  stored newer block, keeps the stored block, with this tab's plsig and what it found; the mirror (the stored
+                  side's later 'none' with its own older block, this tab's newer block) keeps this tab's; the later side's own
+                  block, newer than the other's, stands; and over another publish (the two plsigs differ) the later side keeps
+                  its own block and never borrows the other's. The game lines from whichever read them later, as before */
+            await kcase(`the write's merge: the later block of the same publish`,async()=>{
+              const T=w.Date.now(), glE=(at,ml)=>({at,lines:{mla:[ml,at]},ids:{},idat:{},glat:null,event:null,sig:'audit'});
+              const plOf=(at,pid)=>({at:iso(at),lines:{[pid]:{receiving_yards:50.5}},rungs:{[pid]:{receiving_yards:[40,60]}},td:[pid]});
+              const okAt=at=>({st:'ok',why:'',sb:false,when:at}), noneAt=at=>({st:'none',why:'DraftKings has posted no player lines for it yet',sb:false,when:at});
+              const got=()=>(parse(lsGet())||{}).games||null;
+              const fill=(lab,mineE,theirsE,wantE)=>{ setVar('ESPN_KEPT',{[g0.id]:clone(mineE)}); setVar('ESPN_KEEP_GONE',{}); setVar('ESPN_KEEP_OFF',false);
+                LS.setItem(KK,JSON.stringify({v:1,season:SEASON,saved:T,games:{[g0.id]:clone(theirsE)}}));
+                const ok=F('espnKeepWrite')(), s=got();
+                chk(ok===true&&!!s&&canon(s[g0.id]||null)===canon(wantE),`${lab}: the write left ${String(JSON.stringify(s&&s[g0.id])).slice(0,300)}, not ${String(JSON.stringify(wantE)).slice(0,300)}`); };
+              try{
+                for(const [ov,sM,sT] of [['over the same publish','audit-same','audit-same'],['over another publish','audit-mine','audit-theirs']]){ const one=sM===sT;
+                  const mA={w:wk,gl:glE(T-6000,-161),pl:plOf(T-9000,'00-AUDIT-R6M'),plsig:sM,out:noneAt(T-1000)}, tA={w:wk,gl:glE(T-7000,-162),pl:plOf(T-5000,'00-AUDIT-R6T'),plsig:sT,out:okAt(T-5000)};
+                  fill(`this tab's later read of ${g0.id} that found no player lines posted, beside its own older block, written over another tab's newer block ${ov}: the written entry does not hold ${one?'the newer block':'this tab\'s own block (the other, read over another publish, is never borrowed)'} with this tab's plsig and what it found`,
+                    mA,tA,{w:wk,gl:mA.gl,pl:one?tA.pl:mA.pl,plsig:sM,out:mA.out});
+                  const tB={w:wk,gl:glE(T-6000,-163),pl:plOf(T-9000,'00-AUDIT-R6T'),plsig:sT,out:noneAt(T-1000)}, mB={w:wk,gl:glE(T-7000,-164),pl:plOf(T-5000,'00-AUDIT-R6M'),plsig:sM,out:okAt(T-5000)};
+                  fill(`another tab's later read of ${g0.id} that found no player lines posted, beside its own older block, written over this tab's newer block ${ov}: the written entry does not hold ${one?'this tab\'s newer block':'the other tab\'s own block (this tab\'s, read over another publish, is never lent)'} with the other tab's plsig and what it found`,
+                    mB,tB,{w:wk,gl:tB.gl,pl:one?mB.pl:tB.pl,plsig:sT,out:tB.out});
+                  const mC={w:wk,gl:glE(T-6000,-165),pl:plOf(T-2000,'00-AUDIT-R6M'),plsig:sM,out:noneAt(T-1000)}, tC={w:wk,gl:glE(T-7000,-166),pl:plOf(T-5000,'00-AUDIT-R6T'),plsig:sT,out:okAt(T-5000)};
+                  fill(`this tab's later read of ${g0.id} that found no player lines posted, beside its own block read after the other tab's ${ov}: the written entry does not hold this tab's own block`,
+                    mC,tC,{w:wk,gl:mC.gl,pl:mC.pl,plsig:sM,out:mC.out}); }
+              } finally{ for(const n of ['ESPN_KEPT','ESPN_KEEP_GONE','ESPN_KEEP_OFF']) setVar(n,post[n]); try{ if(kept1==null) LS.removeItem(KK); else LS.setItem(KK,kept1); }catch(e){} }
+            });
+            /* 3. what a reload does not put back is pruned from the key: what a read found, set aside as not put back (an 'ok'
+                  whose player lines were dropped, a 'none' a day old), is marked in ESPN_KEEP_GONE (pl, at the half's time) so
+                  the write leaves it out; until round 6 it was written back, unshown, until kickoff. g0 kept with an 'ok' whose
+                  player lines are dated two hours after the page's clock, and kept with (and as) a 'none' 25 hours old: the key
+                  written back, and another tab's copy of the same written over by this load, hold no such out (g0 its game
+                  lines alone, or nothing), ESPN_KEEP_GONE holds the player half's time, and nothing says it gave way; a 'none'
+                  23 hours old is put back and written back with its plsig */
+            await kcase(`what a reload does not put back, pruned from the key`,async()=>{
+              const e0=kv&&kv.games&&kv.games[g0.id], SH=F('DK_EST').staleHours;
+              if(!(e0&&e0.gl&&e0.pl&&e0.out)){ W.coverage(false,`the press kept no read of ${g0.id} with its game lines, player lines and what it found: the pruning of what a reload does not put back went untested`); return; }
+              const glOnly={w:e0.w,gl:e0.gl}, nul=x=>x===undefined?null:x;
+              const pruned=(lab,r,wantKg,tPl)=>{ const G=r.GONE[g0.id]||{}, a=(r.ESPN_ASIDE||{})[g0.id]||{};
+                chk(!r.err&&r.req===0&&!r.ESPN_OUT[g0.id]&&!inLive(r.ESPN_LIVE,g0.id)&&G.pl===tPl&&!('gl' in G)&&!('pl' in a),
+                  `${lab}: a reload put back what the read found or its player lines, or ESPN_KEEP_GONE does not hold the player half at its time (${tPl}) alone, or ESPN_ASIDE says it gave way: ESPN_OUT ${JSON.stringify(r.ESPN_OUT[g0.id]||null)}, ESPN_KEEP_GONE ${JSON.stringify(r.GONE[g0.id]||null)}; ${why(r)}`);
+                chk(canon(nul(r.kg[g0.id]))===canon(wantKg)&&r.w2===true&&canon(nul(r.k2[g0.id]))===canon(wantKg),
+                  `${lab}: the key written back, or another tab's copy written over by this load, still holds what the read found: ${String(JSON.stringify(nul(r.kg[g0.id]))).slice(0,200)} / ${String(JSON.stringify(nul(r.k2[g0.id]))).slice(0,200)} against ${String(JSON.stringify(wantKg)).slice(0,200)}`); };
+              { const v=clone(kv), now=w.Date.now(); v.games[g0.id].pl.at=iso(now+2*3600e3); v.games[g0.id].out={...e0.out,st:'ok'};
+                const lab=`${g0.id} kept with an 'ok' read whose player lines were dropped (dated two hours after the page's clock)`;
+                pruned(lab,reloadT(JSON.stringify(v),null,null,lab),glOnly,v.games[g0.id].out.when); }
+              for(const h of [SH-1,SH+1]) for(const alone of [false,true]){ const now=w.Date.now(), none={st:'none',why:'DraftKings has posted no player lines for it yet',sb:false,when:now-h*3600e3};
+                const v=clone(kv); delete v.games[g0.id].pl; v.games[g0.id].out=none; if(alone) delete v.games[g0.id].gl;
+                const lab=`${g0.id} kept ${alone?'as':'with its game lines and'} a read that found no player lines posted ${h} hours before the page's clock`;
+                const r=reloadT(JSON.stringify(v),null,null,lab);
+                if(h<SH){ const want={w:e0.w,...(alone?{}:{gl:e0.gl}),out:none,plsig:r.ps2};
+                  chk(!r.err&&r.req===0&&canon(r.ESPN_OUT[g0.id]||null)===canon(none)&&canon(nul(r.kg[g0.id]))===canon(want)&&r.w2===true&&canon(nul(r.k2[g0.id]))===canon(want),
+                    `${lab}: a reload did not put it back and write it back with its plsig: ESPN_OUT ${JSON.stringify(r.ESPN_OUT[g0.id]||null)}, written ${String(JSON.stringify(nul(r.kg[g0.id]))).slice(0,200)} against ${String(JSON.stringify(want)).slice(0,200)}; ${why(r)}`); }
+                else pruned(lab,r,alone?null:glOnly,none.when); }
+            });
+            /* 4. a read drops only a price (a number read without its prices), never a money line, spread or total: one kept as
+                  [null, its read's time] is not one the page writes, so it is dropped and the published value stands, the rest
+                  put back as kept (each of mla, mlh, sp and tot, on g0's kept read over the same publish); a null price pair
+                  beside its number is replayed (over the same publish, the two gone and the number as kept; over a newer
+                  publish on another number with its own prices, dropped there too). And over a newer publish the lines' lat is
+                  the latest field the replay put: g0 kept with its money lines at t1 and its spread's two prices at t2 with no
+                  spread number (only the fields a replay can put stand), over a publish pulled before t1: the money lines put,
+                  lat t1, ESPN_GL and the load's own entry (ESPN_KEPT) at t1 (what the key then holds is the merge's: the
+                  stored copy, its read at t2, ranks over the load's entry); and kept with those two prices alone: nothing
+                  put, the published lines as they are and no ESPN_GL entry */
+            await kcase(`a money line, spread or total kept as null`,async()=>{
+              const e0=kv&&kv.games&&kv.games[g0.id];
+              if(!(e0&&e0.gl&&e0.gl.lines&&Array.isArray(e0.gl.lines.sp)&&Array.isArray(e0.gl.lines.tot))){ W.coverage(false,`the press kept no spread and total read for ${g0.id}: a money line, spread or total kept as null went untested`); return; }
+              const tA=e0.gl.at, PRICE=new Set(['spa','sph','tov','tou']), own=(x,k)=>Object.prototype.hasOwnProperty.call(x,k);
+              /* what the page keeps of kept lines, by the rule: [a number, or null for a price alone; a time at or before the read's] */
+              const keptD=Lk=>Object.fromEntries(NUM8.filter(k=>{ const x=own(Lk,k)?Lk[k]:undefined;
+                return Array.isArray(x)&&x.length===2&&(x[0]===null?PRICE.has(k):(typeof x[0]==='number'&&isFinite(x[0])))&&typeof x[1]==='number'&&isFinite(x[1])&&x[1]>0&&x[1]<=tA; }).map(k=>[k,Lk[k]]));
+              const look=o=>{ o.GL0=clone(F('ESPN_GL')[g0.id]||null); };
+              for(const nk of ['mla','mlh','sp','tot']){ const v=clone(kv); v.games[g0.id].gl.lines[nk]=[null,tA];
+                const r=reload(JSON.stringify(v),null,look,`a reload with ${nk} kept as null`), pub=(r.pub||{})[g0.id]||{}, dC=keptD(v.games[g0.id].gl.lines), RD=replayD(pub,dC,0,true), L=(r.lines||{})[g0.id]||{}, kg=(r.kg||{})[g0.id];
+                chk(!r.err&&r.req===0&&!(nk in dC)&&typeof pub[nk]==='number'&&L[nk]===pub[nk]&&canon(L)===canon(RD.lines)&&!!r.GL0&&canon(r.GL0.d)===canon(RD.D)&&!!kg&&!!kg.gl&&canon(kg.gl.lines)===canon(RD.D),
+                  `${g0.id}'s ${nk} kept as [null, its read's time] (a read drops only a price): a reload over the same publish did not drop it and leave the published ${pub[nk]} standing with the rest put back and written back as kept: ${JSON.stringify(L)} against ${JSON.stringify(RD.lines)}; d ${JSON.stringify(r.GL0&&r.GL0.d)}; ${why(r)}`); }
+              for(const [n,a,b] of [['sp','spa','sph'],['tot','tov','tou']]){ const v=clone(kv), Lk=v.games[g0.id].gl.lines; Lk[a]=[null,Lk[n][1]]; Lk[b]=[null,Lk[n][1]]; const dC=keptD(Lk);
+                const r=reload(JSON.stringify(v),null,look,`a reload with ${a} and ${b} kept as null`), pub=(r.pub||{})[g0.id]||{}, RD=replayD(pub,dC,0,true), L=(r.lines||{})[g0.id]||{};
+                chk(!r.err&&r.req===0&&own(dC,a)&&own(dC,b)&&L[a]===undefined&&L[b]===undefined&&L[n]===Lk[n][0]&&canon(L)===canon(RD.lines)&&!!r.GL0&&canon(r.GL0.d)===canon(RD.D),
+                  `${g0.id}'s ${n} kept with its two prices null (a read of the number without them): a reload over the same publish did not replay them (the two gone, ${n} as kept): ${JSON.stringify(L)} against ${JSON.stringify(RD.lines)}; ${why(r)}`);
+                const r2=reload(JSON.stringify(v),()=>{ g0[n]=Lk[n][0]+1; g0[a]=-120; g0[b]=100; g0.ls='dk'; g0.lat=iso(tA-1000); setBk(tA+1000); return null; },look,`a reload over a newer publish with ${a} and ${b} kept as null`);
+                const pub2=(r2.pub||{})[g0.id]||{}, RD2=replayD(pub2,dC,tA-1000,false), L2=(r2.lines||{})[g0.id]||{};
+                chk(!r2.err&&r2.req===0&&glSigOf(pub2)!==e0.gl.sig&&L2[a]===undefined&&L2[b]===undefined&&L2[n]===Lk[n][0]&&canon(L2)===canon(RD2.lines),
+                  `${g0.id}'s ${n} kept with its two prices null, over a newer publish on another number with its own prices (pulled before the read): the publish's prices were not dropped beside the kept number: ${JSON.stringify(L2)} against ${JSON.stringify(RD2.lines)}; ${why(r2)}`); }
+              { const t1=tA-60e3, P2=()=>{ bump(g0,'tot',1); g0.ls='dk'; g0.lat=iso(t1-1000); setBk(tA+1000); return null; };
+                for(const withMl of [true,false]){ const v=clone(kv), G=v.games[g0.id].gl;
+                  G.lines={...(withMl?{mla:[-151,t1],mlh:[131,t1]}:{}),spa:[-131,tA],sph:[111,tA]};
+                  const r=reload(JSON.stringify(v),P2,look,'a reload over a newer publish, lat the latest field put'), pub=(r.pub||{})[g0.id]||{}, RD=replayD(pub,keptD(G.lines),t1-1000,false), L=(r.lines||{})[g0.id]||{};
+                  if(withMl) chk(!r.err&&r.req===0&&glSigOf(pub)!==e0.gl.sig&&RD.at===t1&&canon(L)===canon(RD.lines)&&L.mla===-151&&L.mlh===131&&Date.parse(L.lat)===t1&&!!r.GL0&&r.GL0.at===t1&&canon(r.GL0.d)===canon(RD.D)&&!!r.ESPN_KEPT[g0.id]&&!!r.ESPN_KEPT[g0.id].gl&&r.ESPN_KEPT[g0.id].gl.at===t1,
+                    `${g0.id} kept with its money lines at t1 and its spread's two prices alone at t2, over a newer publish pulled before t1: lat is not t1, the latest field the replay put (the two prices with no number put nothing), or ESPN_GL or what the load keeps (ESPN_KEPT) is not at t1: ${JSON.stringify(L)} against ${JSON.stringify(RD.lines)}; ESPN_GL ${String(JSON.stringify(r.GL0)).slice(0,200)}; kept at ${r.ESPN_KEPT[g0.id]&&r.ESPN_KEPT[g0.id].gl&&r.ESPN_KEPT[g0.id].gl.at}; ${why(r)}`);
+                  else chk(!r.err&&r.req===0&&RD.at===null&&same(L,pub)&&!r.GL0,
+                    `${g0.id} kept with its spread's two prices alone (no number), over a newer publish: a reload put something of its lines back (ls, lat or an ESPN_GL entry) where the replay puts nothing: ${JSON.stringify(L)} against ${JSON.stringify(pub)}; ESPN_GL ${String(JSON.stringify(r.GL0)).slice(0,200)}; ${why(r)}`); } }
+            });
+            drop(); nKeep=checks-c0; }
           /* the precedence, leg by leg */
           if(A){ const L=M[A.x.pl.id][A.l.stat], mo=F('mainOf')(A.x,g0,A.l.stat), lg=F('pricedLegs')([g0]).filter(l=>l.pid===A.x.pl.id&&l.stat===A.l.stat&&l.main);
             chk(mo&&mo.src==='real'&&lg.length===2&&lg.every(l=>l.src==='real'&&l.k===L.line&&l.price===(l.side==='under'?L.under:L.over)),`${A.x.pl.n}'s ${A.l.stat} line the press read at the paid pull's number does not keep its real price: ${lg.map(l=>l.label+' '+l.price+' '+l.src).join(', ')}`); }
@@ -2074,17 +3338,23 @@ setTimeout(async()=>{
             W.wording(ids3.length<2||st===exp,`after a press on ${g0.id}'s page alone, the Parlay Builder's status line reads "${st}", not "${exp}"`); }
         } finally {
           for(const [id,v] of injPlant){ if(v===undefined) delete F('INJ')[id]; else F('INJ')[id]=v; }
-          unapply(); reset(); w.eval('ESPN_RUN.busy=false'); for(const k of F('ESPN_GL_KEYS')){ if(trueG0[k]===undefined) delete g0[k]; else g0[k]=trueG0[k]; }
+          try{ unapply(); }catch(e){ chk(false,'the press\'s game lines could not be put back after M8f: '+e); }
+          reset(); w.eval('ESPN_RUN.busy=false'); for(const k of F('ESPN_GL_KEYS')){ if(trueG0[k]===undefined) delete g0[k]; else g0[k]=trueG0[k]; }
           if(keep.dk===undefined) delete P().dk; else P().dk=keep.dk;
           if(keep.mkt===undefined) delete P().mkt[wk]; else P().mkt[wk]=keep.mkt;
-          S.odds=keep.odds; S.parlay=keep.parlay; S.ui.pb=keep.pb; S.ui.game=null; F('closeGameModal')(); } }
-    } finally {
+          S.odds=keep.odds; S.parlay=keep.parlay; S.ui.pb=keep.pb; S.ui.game=null; try{ F('closeGameModal')(); }catch(e){} } }
+    } catch(e){ chk(false,'M8 threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
+    finally {
       w.fetch=realFetch; w.Date.now=clock0; net.gate=null;
+      for(const [n,v] of Object.entries(keep0)) setVar(n,v);
+      try{ if(key0==null) LS.removeItem(KK); else LS.setItem(KK,key0); }catch(e){}
       if(keepIds===undefined) delete P().espn_ids; else P().espn_ids=keepIds;
       for(const id of added) delete S.players[id];
       w.eval('ESPN_NAMES='+JSON.stringify(keepNames||{}));
-      unapply(); reset(); w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}'); F('save')(); F('renderAll')(); }
-    console.log(`M8. Refresh odds: no request before a press; the reader on ESPN's recorded answers (${nParse} events read as the checks read them, two pages, the answers that leave a game alone, athletes by id, by name and by the clubs' rosters, a name never on a player an id names, a kickoff before and during a read); ${nReq?`a press on the week (${nReq} requests) and a game's page, the game lines and ids applied, each dated by its read, and never saved; the levels and hands fresh right after it, and a reload back on the published prices; ${nPx} prices the rule's, ${nDom} drawn on the game page, ${nPick} chosen legs to the rule, ${nTog} ticks`:'no game to come, so no press on the week'}`);
+      { const pz=protoClean(); chk(!pz.length,`after M8, the page's built-ins carry ${pz.join(', ')}, set by the page while M8 ran`); }
+      try{ unapply(); reset(); w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}'); F('save')(); F('renderAll')(); }
+      catch(e){ chk(false,'the page could not be drawn again after M8: '+String(e&&e.stack||e).split('\n').slice(0,2).join(' ')); } }
+    console.log(`M8. Refresh odds: no request before a press; the reader on ESPN's recorded answers (${nParse} events read as the checks read them, two pages, the answers that leave a game alone, athletes by id, by name and by the clubs' rosters, a name never on a player an id names, a kickoff before and during a read); ${nReq?`a press on the week (${nReq} requests) and a game's page, the game lines and ids applied, each dated by its read, and never saved; the levels and hands fresh right after it, and a reload back on the published prices; the read kept in this browser (${nKeep} checks: written as the page shows it, put back on a reload with no request and the levels and hands as after the press, two presses put back as the page showed them after both, a spread and a total read back to the published number with no prices put back with none, the event the page used, what each read found put back with its half, a read the press left off putting nothing back, set aside for a published game line moved, a newer pull, a kickoff, a value of another season or not the page's, a game not on the schedule or in another week, left alone with no schedule, the parts the page never writes dropped ("__proto__" among them), a half dated after the page's clock dropped, two tabs' writes merged half by half and a half set aside never taken back, nothing set on the page's built-ins, given way to the visitor's state with no room, and (round 5) each game-line field by its own read's time over a newer publish, a block lent only over the same publish, a game the schedule no longer offers carried through a write and pruned by a restore, a line or rung off ESPN's steps dropped and at most 40 rungs, a 'none' for a day at most, and (round 6) a builder game leg kept by its own field, the later block of the same publish in the merge, what a reload does not put back pruned from the key, a money line, spread or total kept as null dropped and lat the latest field put); ${nPx} prices the rule's, ${nDom} drawn on the game page, ${nPick} chosen legs to the rule, ${nTog} ticks`:'no game to come, so no press on the week'}`);
     console.log(`M8. untested markets priced from the press (shown, never suggested): ${Object.keys(untested).length?Object.entries(untested).map(([k,v])=>k+' '+v).join(', '):'none'}`); }
 
   /* ---- P. the amount bet: the Bet amount box at the top of the suggested parlays and the

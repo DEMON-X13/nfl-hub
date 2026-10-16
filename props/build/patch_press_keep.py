@@ -32,9 +32,10 @@ read of them found. A reload replays that over the publish (espnKeepLines, espnK
 it was read over, exactly what the page showed; over a newer one, only the fields read after it, on their
 numbers. A time after the page's clock is not one the page wrote, and that half is dropped; nor is a
 player line off ESPN's half-point steps or past 1000. A read that found no player lines posted says so for
-a day at most. A builder leg a read priced keeps the price it was added at while its own field of that read stands
-(espnLegBack: a game leg's money line, spread or total price among what the reads did), and goes to the
-publish's price, or the estimate, where it does not. What gave way to a publish is said once on the status line ("your earlier Refresh odds read
+a day at most. A builder game leg added while a read is on its game keeps the price it was added at while its own
+field stands among what the reads did, set or dropped (espnLegBack: its money line, spread or total
+price), and goes to the publish's price on its number, or the estimate, where it does not (a reload over
+a newer publish that put back only fields read after it). What gave way to a publish is said once on the status line ("your earlier Refresh odds read
 gave way to prices published since"), for that page load. A press reads again over what stands, as
 before, and every write is merged with what the browser holds half by half, each game's game lines and
 its player half from whichever tab read them later (a read that found nothing never displacing one that
@@ -385,11 +386,12 @@ sub('p3', """  if(isGameLeg(l)){
     """  if(isGameLeg(l)){
     if(!l.gl) return null;
     const g=((S&&S.sched)||[]).find(x=>x.id===l.gid); if(!g) return null;
-    /* (app v108) its own price field among what the load's reads did (ESPN_GL's d), not merely a read of its
-       game: a reload over a newer publish puts back only the fields read after it, and a leg whose field is
-       the publish's again goes to the publish's price */
+    /* (app v108) its own price field among what the load's reads did (ESPN_GL's d), set or dropped, not
+       merely a read of its game: a reload over a newer publish puts back only the fields read after it, and a
+       leg whose field is the publish's again goes to the publish's price; within a load, and over the same
+       publish, every field a read touched is in d, so a leg keeps the price it was added at, as before */
     { const G=ESPN_GL[l.gid], f=l.stat==='ml'?(l.team===g.h?'mlh':'mla'):(l.stat==='ats'?(l.team===g.h?'sph':'spa'):(l.side==='under'?'tou':'tov'));
-      if(G&&(!G.d||(Array.isArray(G.d[f])&&G.d[f][0]!=null))) return null; }""")
+      if(G&&(!G.d||Array.isArray(G.d[f]))) return null; }""")
 
 # toggleLeg: a paid main line's leg takes that line's number
 sub('p3', """    if(M.src==='real'){ const L=M.L, pO=pOver(pl.grp,stat,pr.mu,L.line);

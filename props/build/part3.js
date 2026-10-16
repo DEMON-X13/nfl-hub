@@ -1758,11 +1758,12 @@ function espnLegBack(l){
   if(isGameLeg(l)){
     if(!l.gl) return null;
     const g=((S&&S.sched)||[]).find(x=>x.id===l.gid); if(!g) return null;
-    /* (app v108) its own price field among what the load's reads did (ESPN_GL's d), not merely a read of its
-       game: a reload over a newer publish puts back only the fields read after it, and a leg whose field is
-       the publish's again goes to the publish's price */
+    /* (app v108) its own price field among what the load's reads did (ESPN_GL's d), set or dropped, not
+       merely a read of its game: a reload over a newer publish puts back only the fields read after it, and a
+       leg whose field is the publish's again goes to the publish's price; within a load, and over the same
+       publish, every field a read touched is in d, so a leg keeps the price it was added at, as before */
     { const G=ESPN_GL[l.gid], f=l.stat==='ml'?(l.team===g.h?'mlh':'mla'):(l.stat==='ats'?(l.team===g.h?'sph':'spa'):(l.side==='under'?'tou':'tov'));
-      if(G&&(!G.d||(Array.isArray(G.d[f])&&G.d[f][0]!=null))) return null; }
+      if(G&&(!G.d||Array.isArray(G.d[f]))) return null; }
     let px=null;
     if(l.stat==='ml') px=l.team===g.h?g.mlh:g.mla;
     else if(l.stat==='ats'){ if((l.team===g.h?-g.sp:g.sp)===+l.k) px=l.team===g.h?g.sph:g.spa; }
