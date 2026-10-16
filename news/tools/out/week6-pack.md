@@ -151,7 +151,7 @@ Searches to run:
 - "NFL week 6 picks CHI ATL"
 
 Chicago Bears, injuries:
-- Anthony Johnson Jr. (S) Out, Undisclosed: out
+- Anthony Johnson Jr. (S) Injured Reserve, Undisclosed: ir
 - Caleb Williams (QB) Questionable, Hamstring: Williams (hamstring) said Thursday that he doesn't know if he'll play this weekend against Atlanta because he still has medical protocols to complete, Sean Hammond of the Chicago Tribune reports.
 - Kyle Monangai (RB) Questionable, Toe: Monangai (toe) was listed as a non-participant on Thursday's injury report.
 - Kyler Gordon (CB) Out, Calf: Gordon (calf) was estimated as a full participant on the Bears' official injury report Wednesday.
@@ -355,13 +355,13 @@ Searches to run:
 - "NFL week 6 picks NYJ NE"
 
 New York Jets, injuries:
+- Joseph Ossai (DE) Out, Ankle: out
+- Dylan Parham (G) Out, Knee: out
 - Omar Cooper Jr. (WR) Injured Reserve, Ankle: Cooper (ankle) was a limited participant in Thursday's practice.
-- Adonai Mitchell (WR) Doubtful, Finger: Mitchell (finger) didn't practice Thursday.
+- Adonai Mitchell (WR) Out, Finger: Mitchell (finger) didn't practice Thursday.
 - Kenyon Sadiq (TE) Questionable, Concussion: Sadiq (concussion) remained limited at Thursday's practice.
-- Breece Hall (RB) Doubtful, Quadriceps: Hall (quadriceps) wasn't taking part in practice but was spotted working out on a side field with trainers Thursday, Zack Rosenblatt of The Athletic reports.
+- Breece Hall (RB) Out, Quadriceps: Hall (quadriceps) wasn't taking part in practice but was spotted working out on a side field with trainers Thursday, Zack Rosenblatt of The Athletic reports.
 - Kiko Mauigoa (LB) Active: Mauigoa (quadriceps) was estimated as a full participant on the Jets' official injury report Wednesday.
-- Dylan Parham (G) Doubtful, Knee: Coach Aaron Glenn said Wednesday that Parham (knee) is still week-to-week as the Jets start preparing for Week 6, Antwan V. Staley of the New York Daily News reports.
-- Joseph Ossai (DE) Doubtful, Ankle: Ossai (ankle) was estimated to be a nonparticipant at Wednesday's walkthrough, Rich Cimini of ESPN.com reports.
 - Dane Belton (S) Questionable, Knee: questionable
 - Isaiah Davis (RB) Active: Davis rushed twice for eight yards while catching one of two targets for nine yards during Sunday's 17-12 win over the Browns.
 - Nate Lynn (DE) Active
