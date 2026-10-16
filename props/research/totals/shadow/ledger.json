@@ -19,7 +19,7 @@
   "before": "no verdict before 285: until then the summary gives the running numbers and how many of the 285 are in, never a verdict or a word of passing"
  },
  "bar_registered": "2026-10-11T02:01:51Z",
- "run_at": "2026-10-15T23:14:24Z",
+ "run_at": "2026-10-16T01:37:19Z",
  "fits": {
   "2026": {
    "b0": 1.294144,
@@ -31,8 +31,8 @@
  "decision": null,
  "summary": {
   "calls": 42,
-  "to_come": 28,
-  "frozen_awaiting_final": 0,
+  "to_come": 27,
+  "frozen_awaiting_final": 1,
   "graded": 14,
   "pushes": 0,
   "graded_without_market_price": 0,
@@ -507,8 +507,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-10-15T20:30:51Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-10-16T01:37:19Z",
    "final": null
   },
   "2026_06_HOU_JAX": {
