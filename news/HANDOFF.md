@@ -6,7 +6,7 @@ All paths here are relative to `news/`.
 
 Until 14 October 2026 this folder was the Season Tracker, a page of its own (and then a framed tab of X
 NFL Bets and Stats) with a hand-written narrative for every team each week. The owner folded it into the
-**Game snapshot**: tapping a game on X NFL Bets and Stats' Pick'ems board
+**Game snapshot**: tapping a game on X NFL Bets and Stats' Matchups board
 (**https://demon-x13.github.io/nfl-hub/nflbets/**) opens a window with everything the site has on it, and
 the tracker's per-game content now lives there:
 
@@ -15,7 +15,7 @@ the tracker's per-game content now lives there:
   preview alone (the owner's call, 14 October 2026: the news and its sources stay in the file, unshown, and
   are still written); until a game has one, the snapshot shows an automatic line;
 - the **Deep Dive** (the four position matchups each way, a compact row each: the unit, the two clubs'
-  ranks and the tag; who plays and who is out stay in the file, unshown since 14 October 2026) inside its
+  ranks, the defense's position it faces (since 16 October 2026) and the tag; who plays and who is out stay in the file, unshown since 14 October 2026) inside its
   Offense vs defense card, from `data/units.json`, drawn by `../nflbets/build/deepdive.js`;
 - the **Stat breakdown** (the eleven stat bars), from `data/stats.json`.
 
@@ -118,7 +118,7 @@ Game snapshot draws from them. Blocking: the twins are exactly their `.js` const
 its own game count in `results.js`; the tag constants are their values and every club's Overall ratings are
 `../elo/data/model.json`'s; every game of the units' week, drawn both ways by `deepdive.js`, has its four
 rows in order with each tag the weighted edge worked out on its own and the ranks and edges the file's, each
-row its unit, the two clubs and ranks and its tag alone (no name, no one out, no number: the owner's call of
+row its unit, the two clubs and ranks, the defense's position and its tag alone (no name, no one out, no number: the owner's call of
 14 October 2026), and
 its Overall line's tag the rule's on `model.json`'s units; the lineups are for the schedule's week (and, in
 the job, checked on that run's own download); `index.html` sends a visitor to `../nflbets/`; every fixed

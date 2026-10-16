@@ -442,7 +442,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const pw = new JSDOM(h, { virtualConsole: new VirtualConsole() }).window, pd = pw.document, box = pd.createElement('div');
         box.id = 'gsModal'; box.innerHTML = '<div class="gs-prev"><p class="gs-pv"><span class="gs-lab">Preview</span><span>x <b class="gs-pn">Name</b></span></p><p class="gs-pauto">x</p></div>'
           + ['easy', 'fav', 'even', 'tough', 'vtough'].map(c => `<span class="dtag ${c}">x</span>`).join('')
-          + '<div class="dd"><div class="ddrow"><span class="ddunit">Offensive line</span><span class="ddrks"><span class="ddside ddoff"><span class="ddsn">SEA</span> <b class="ddrk">15th</b></span><span class="ddsep"> · </span><span class="ddside dddef"><span class="ddsn">DEN</span> <b class="ddrk">2nd</b></span></span><span class="dtag even">Even</span></div></div>'
+          + '<div class="dd"><div class="ddrow"><span class="ddunit">Offensive line</span><span class="ddrks"><span class="ddside ddoff"><span class="ddsn">SEA</span> <b class="ddrk">15th</b></span><span class="ddsep"> · </span><span class="ddside dddef"><span class="ddsn">DEN</span> <b class="ddrk">2nd</b></span></span><span class="ddend"><span class="dddu">Pass rush</span><span class="dtag even">Even</span></span></div></div>'
           + '<div class="gs-ubox gs-better"><span class="gs-lab">SEA offense</span><span class="gs-urank"><span>13th</span> <small>of 32</small></span><span class="gs-ush"><b>1521</b><span class="gs-utier">Gold</span></span></div>';
         pd.body.appendChild(box);
         const clear = v => ['', 'transparent', 'none', 'rgba(0, 0, 0, 0)', 'initial'].includes(String(v || '').trim());
@@ -461,7 +461,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         /* a position matchup's row has no box of its own since 14 October 2026: its words on the card, both
            of the colours a card runs between (the preview's cards are a gradient of the two) */
         { const rw = box.querySelector('.ddrow'), card = ['--panel', '--panel-2'].map(k => String(pw.getComputedStyle(pd.documentElement).getPropertyValue(k) || '').trim());
-          for (const cbg of card) for (const el of [rw.querySelector('.ddunit'), rw.querySelector('.ddsn'), rw.querySelector('.ddsep'), rw.querySelector('.ddrk')]) { const r = ratio(cbg, val(el, 'color'));
+          for (const cbg of card) for (const el of [rw.querySelector('.ddunit'), rw.querySelector('.ddsn'), rw.querySelector('.ddsep'), rw.querySelector('.ddrk'), rw.querySelector('.dddu')]) { const r = ratio(cbg, val(el, 'color'));
             if (!(r >= 4.5)) bad.push(`a matchup row's ${el.className} reads ${r.toFixed(2)}:1 (${cbg} under ${val(el, 'color')})`); } }
         { const ub = box.querySelector('.gs-ubox.gs-better'), card = String(pw.getComputedStyle(pd.documentElement).getPropertyValue('--panel-2') || '').trim(), ubg = over(val(ub, 'background-color'), card);
           for (const el of [ub.querySelector('.gs-lab'), ub.querySelector('.gs-urank'), ub.querySelector('.gs-urank small'), ub.querySelector('.gs-ush b'), ub.querySelector('.gs-utier')]) { const r = ratio(ubg, val(el, 'color'));
@@ -473,12 +473,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     && !!d.querySelector('header .hub-stamp #saveState') && !!d.querySelector('header .hub-stamp #buildTag'),
     'the page is not headed NFL Hub, as the NBA Hub and the NHL Hub are: the wordmark and a tagline, and the stamp with the build');
 
-  /* the tab bar: Pick'ems open, the prop model's other sections in the page but not on the
-     bar */
+  /* the tab bar: Matchups (the board, Pick'ems until the owner's call of 16 October 2026) open, the
+     prop model's other sections in the page but not on the bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Matchups|Props|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
   chk(!d.querySelector('header a'), 'the header carries a link');
-  chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
+  chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Matchups is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-xparlays', 'tab-track', 'tab-week', 'tab-backup'])
     chk(!!d.getElementById(id), `the prop model's ${id} section is missing, and its listeners with it`);
   /* which build: the prop model's version and the page's own hash, so a change to any source
@@ -752,6 +752,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   w.closeGame(); await wait(40);
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'pickems').click();
   await wait(60);
+  chk(w.location.hash === '#matchups', 'a tap on the Matchups tab does not write its address, #matchups: ' + w.location.hash);
 
   /* Enter and Space on a focused row open its snapshot too, and Escape hands the focus back to the row;
      a redraw of the board (a scoreboard read, a new week) never opens a window, and a window open
@@ -1452,14 +1453,31 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
     w.location.hash = '#pickems'; await wait(30); w.location.hash = hash; await wait(60);
     chk(!d.getElementById(id).hidden && d.getElementById('tab-pickems').hidden && txt(d.querySelector(`#tabs button[aria-selected="true"]`)) === label, `the old address ${hash} does not open ${label}`); }
-  /* the Season Tracker's old address, where news/ sent every visitor, lands on Pick'ems, written over as #pickems */
-  w.location.hash = '#xparlays'; await wait(40); w.location.hash = '#tracker'; await wait(60);
-  chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-xparlays').hidden && w.location.hash === '#pickems' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === "Pick'ems",
-    'the old address #tracker does not land on Pick\'ems as #pickems: ' + w.location.hash);
-  /* back to the board by address */
-  w.location.hash = '#pickems';
+  /* the Season Tracker's old address, where news/ sent every visitor, and the board's own old one, #pickems
+     (every bookmark from before 16 October 2026, and pickems/'s redirect), land on Matchups, written over
+     as #matchups */
+  for (const old of ['#tracker', '#pickems']) {
+    w.location.hash = '#xparlays'; await wait(40); w.location.hash = old; await wait(60);
+    chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-xparlays').hidden && w.location.hash === '#matchups' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Matchups',
+      `the old address ${old} does not land on Matchups as #matchups: ` + w.location.hash); }
+  /* back to the board by its address */
+  w.location.hash = '#slate'; await wait(40);
+  w.location.hash = '#matchups';
   await wait(60);
-  chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'setting the address did not switch tabs');
+  chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden && w.location.hash === '#matchups', 'setting the address did not switch tabs');
+  /* the board is named Matchups wherever a visitor reads it: no Pick'ems left in the page's words (the
+     Pick'em Record is another tab, and keeps its name), a game's page and its Game bets card drawn first */
+  { const g0 = w.eval('(S.sched||[]).find(g=>g.w===S.ui.week)||(S.sched||[])[0]');
+    if (g0) { w.eval(`S.ui.game=${JSON.stringify(g0.id)};S.ui.open={};renderGame()`); await wait(60); }
+    const old = /pick['’]?ems\b/i, said = [];
+    const walk = n => { if (n.nodeType === 3) { if (old.test(n.nodeValue)) said.push(n.nodeValue.trim().slice(0, 80)); return; }
+      if (n.nodeType !== 1 || /^(SCRIPT|STYLE|TEMPLATE)$/.test(n.tagName)) return;
+      for (const a of ['title', 'aria-label', 'placeholder', 'alt']) if (old.test(n.getAttribute(a) || '')) said.push(`${a}="${n.getAttribute(a).slice(0, 80)}"`);
+      for (const c of n.childNodes) walk(c); };
+    walk(d.body); if (old.test(d.title)) said.push('title: ' + d.title);
+    chk(!said.length, 'the page still names the board Pick\'ems where a visitor reads it: ' + said.join(' | '));
+    if (g0) { w.eval('closeGame()'); await wait(30); }
+    w.location.hash = '#matchups'; await wait(40); }
 
   /* the page reads the two sites and bakes nothing */
   chk(fetched.includes('../betting/state.json') && fetched.includes('../props/data/payload.json'), 'the page did not fetch both sites: ' + fetched.join(', '));
@@ -1519,10 +1537,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(s2.d.querySelectorAll('#gamesList .game').length > 0, 'opened on #slate, the Props tab has no games');
 
   /* opened on #tracker, where old links to the Season Tracker go (news/ sends its visitors to the board
-     itself now), the board is showing and the address is #pickems */
-  { const t2 = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#tracker');
-    chk(t2.errs.length === 0 && !t2.d.getElementById('tab-pickems').hidden && t2.w.location.hash === '#pickems' && txt(t2.d.querySelector('#tabs button[aria-selected="true"]')) === "Pick'ems",
-      'opened on #tracker, the page does not land on Pick\'ems as #pickems: ' + t2.w.location.hash + ' ' + t2.errs.join('; '));
+     itself now), on #pickems, the board's address until 16 October 2026 (and pickems/'s redirect), or on
+     #matchups, its address now, the board is showing and the address is #matchups */
+  for (const at of ['#tracker', '#pickems', '#matchups']) {
+    const t2 = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/' + at);
+    chk(t2.errs.length === 0 && !t2.d.getElementById('tab-pickems').hidden && t2.w.location.hash === '#matchups' && txt(t2.d.querySelector('#tabs button[aria-selected="true"]')) === 'Matchups',
+      `opened on ${at}, the page does not land on Matchups as #matchups: ` + t2.w.location.hash + ' ' + t2.errs.join('; '));
     t2.w.close(); }
 
   /* the page with no scoreboard to read (checked below, once it has had time to try) */
@@ -1858,16 +1878,21 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           d.getElementById('weekSel').value = String(MU.week); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60); }
       } else chk(!card, 'mismatches show on a week they are not for');
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
-    /* Overall Offense and Overall Defense: two pills in the position row, each a table of the 32
-       teams in rank order (the ones with a rating best first: played, or carried from last season),
-       each with its shield, a club yet to play marked carried from the season the file names, and no
-       other; a position pill brings the players back (the tab's own gate, elo/check_tab.js, checks the rest) */
+    /* Overall Offense and Overall Defense: two pills in the position row, then each position table the
+       file carries (Run Defense, Pass Defense and Pass Rush, from 16 October 2026, named by the file),
+       each a table of the 32 teams in rank order (the ones with a rating best first: played, or carried
+       from last season), each with its shield, a club yet to play marked carried from the season the
+       file names, and no other; a position pill brings the players back (the tab's own gate,
+       elo/check_tab.js, checks the rest) */
     { const U = eloM.units, played = U ? Object.values(U.off).filter(v => v.games || v.carried).length : 0, card = () => d.getElementById('peUnits');
       const pill = side => body.querySelector(`.pe-pos button[data-unit="${side}"]`), was = (body.querySelector('.pe-pos [aria-selected="true"]') || {}).dataset;
       if (!played) chk(!pill('off') && !card(), 'Overall Offense shows with no games rated');
       else {
-        for (const side of ['off', 'def']) {
-          const name = side === 'off' ? 'Overall Offense' : 'Overall Defense';
+        const PT = U.tables && typeof U.tables === 'object' ? Object.keys(U.tables).filter(k => U[k]) : [];
+        chk([...body.querySelectorAll('.pe-pos button[data-unit]')].map(b => b.dataset.unit).join() === ['off', 'def', ...PT].join(),
+          'the position row\'s team pills are not Overall Offense, Overall Defense and the file\'s position tables, in order');
+        for (const side of ['off', 'def', ...PT]) {
+          const name = side === 'off' ? 'Overall Offense' : side === 'def' ? 'Overall Defense' : U.tables[side].label;
           chk(!!pill(side) && txt(pill(side)) === name, 'no ' + name + ' pill in the position row'); if (!pill(side)) break;
           pill(side).click(); await wait(30);
           const rows = card() ? [...card().querySelectorAll('tbody tr.pe-tmrow')] : [], T = U[side];
@@ -3461,7 +3486,7 @@ async function snapshotChecks() {
       'snapshot: the window\'s modal pads its top, so its content shows above the sticky header once scrolled');
     /* every control a thumb can hit is at least 44px tall at every width (48 for the verdict's
        answers), set by its own rule and never lowered by a narrower screen's */
-    { const tall = [['#gsClose', 44], ['#gsModal .gs-props', 44], ['.gs-gl', 48], ['.gs-dbar .btn', 44], ['.gs-tog', 44], ['.gs-ptabs button', 44]];
+    { const tall = [['#gsClose', 44], ['#gsModal .gs-props', 44], ['.gs-gl', 48], ['.gs-dbar .btn', 44], ['.gs-tog', 44], ['.gs-ptabs button', 44], ['#gsModal .gs-pl button.gs-pnm', 44]];
       const short = tall.filter(([sel, px]) => { const set = rules.filter(r => r.sel === sel && r.st.getPropertyValue('min-height'));
         return !set.some(r => !r.media) || set.some(r => !(parseFloat(r.st.getPropertyValue('min-height')) >= px)); });
       chk(short.length === 0, 'snapshot: a control in the window is under its tap height: ' + short.map(x => x[0]).join(', ')); }
@@ -3483,7 +3508,7 @@ async function snapshotChecks() {
       want('.gs-team.gs-away', false, 'grid-area', 'away'); want('.gs-team.gs-home', false, 'grid-area', 'home'); want('.gs-mid', false, 'grid-area', 'mid');
       want('.gs-duel', false, 'grid-template-columns', 'minmax(0,1fr) auto minmax(0,1fr)'); want('.gs-duel', false, 'align-items', 'stretch');
       want('#gsModal .ddrow', false, 'grid-template-columns', 'minmax(0,1fr) auto minmax(0,1fr)');
-      want('#gsModal .ddunit', false, 'justify-self', 'end'); want('#gsModal .ddrow .dtag', false, 'justify-self', 'start');
+      want('#gsModal .ddunit', false, 'justify-self', 'end'); want('#gsModal .ddend', false, 'justify-self', 'start');
       want('.gs-uhd', false, 'flex-direction', 'column'); want('.gs-uhd', false, 'align-items', 'center'); want('#gsModal .gs-dd', false, 'text-align', 'center');
       if (rules.some(x => /\.gs-more\b|table\.gs-ut\b|\.ddsides\b|\.ddwho\b|\.ddout\b|\.ddnum\b|\.gs-psrc\b/.test(x.sel))) bad.push('a rule for the stats fold, a matchup\'s old side boxes or the note\'s sources is still in the styles');
       for (const r of rules.filter(x => /\.gs-better/.test(x.sel) && /gs-ubox/.test(x.sel)))
@@ -3557,6 +3582,40 @@ async function snapshotChecks() {
         R.d.getElementById('gsClose').click(); await wait(20);
         chk(ok1 && ok2 && ok2b && ok3 && ok4 && ok5 && ok6 && ok7 && ok8 && R.d.activeElement === o.btn,
           `snapshot: the cards do not fold and unfold, or a phone does not open on the verdict with the cards folded (${[ok1, ok2, ok2b, ok3, ok4, ok5, ok6, ok7, ok8].join(' ')})`); }
+      /* the Starters' names (the owner's call, 16 October 2026: "in starters, make player names clickable
+         to their props page"): a starter is a button to his own row on the game's page on the Props tab
+         exactly where that page draws a row for him (renderGame's own buttons, drawn here on the game and
+         read off the page, so the board's copy of the rule cannot drift from it), the button the name box
+         itself (the Q inside it, after the name), plain text for everyone else; a click closes the window
+         and opens the game's page with his row open, highlighted and focused, the address #slate */
+      { const md = o.md, gid = toCome.game_id, bad = [];
+        R.w.eval(`S.ui.game=${JSON.stringify(gid)};S.ui.open={};renderGame()`); await wait(60);
+        const rowsOn = new Set([...R.d.querySelectorAll('#gameView button.plrbtn[data-open]')].map(b => b.dataset.open));
+        R.w.eval('closeGame()'); [...R.d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'pickems').click(); await wait(60);
+        o.btn.click(); await wait(60);
+        md.querySelector('[data-gs-gl="out"]').click(); await wait(10);
+        const can = R.w.pkBoard.canProps(gid), pls = [...md.querySelectorAll('#gsPos .gs-pl[data-pid]')];
+        const want = pls.filter(p => can && rowsOn.has(p.dataset.pid)).map(p => p.dataset.pid).sort().join();
+        const links = [...md.querySelectorAll('#gsPos [data-gs-player]')], got = links.map(b => b.dataset.gsPlayer).sort().join();
+        if (got !== want) bad.push(`the names that open the Props tab are ${got || 'none'}, the page draws rows for ${want || 'none'} of these starters`);
+        if (can && pls.length && !links.length) bad.push('no starter is a link though the Props tab can open the game');
+        for (const b of links) { const pl = b.closest('.gs-pl[data-pid]');
+          if (b.tagName !== 'BUTTON' || b.type !== 'button' || !b.classList.contains('gs-pnm') || !pl || pl.dataset.pid !== b.dataset.gsPlayer || !/Props tab/.test(b.getAttribute('aria-label') || '')) { bad.push(`${b.dataset.gsPlayer}: the link is not the name box itself, a button named for the Props tab`); break; } }
+        if (pls.some(p => !links.some(b => p.contains(b)) && (!p.querySelector('span.gs-pnm[data-gs-name]') || p.querySelector('button')))) bad.push('a starter the Props tab draws no row for is not plain text');
+        const vis = links.find(b => !b.closest('[hidden]')) || links[0];
+        if (vis) { const pid = vis.dataset.gsPlayer, into = [], siv = R.w.Element.prototype.scrollIntoView;
+          R.w.Element.prototype.scrollIntoView = function (x) { into.push(this); };
+          vis.click(); await wait(120);
+          R.w.Element.prototype.scrollIntoView = siv;
+          const S = R.w.eval('S'), row = [...R.d.querySelectorAll('#gameView button.plrbtn[data-open]')].find(b => b.dataset.open === pid);
+          if (!md.hidden) bad.push('a click on a name did not close the window');
+          if (R.d.getElementById('tab-slate').hidden || R.w.location.hash !== '#slate' || S.ui.game !== gid || R.d.getElementById('gameModal').hidden) bad.push(`a click on a name did not open the game's page on the Props tab (${R.w.location.hash}, ${S.ui.game})`);
+          if (JSON.stringify(S.ui.open) !== JSON.stringify({ [pid]: true })) bad.push(`a click on a name opened ${JSON.stringify(S.ui.open)}, not his row alone`);
+          if (!row || row.getAttribute('aria-expanded') !== 'true' || !row.classList.contains('pe-hl') || R.d.activeElement !== row) bad.push('his row on the game\'s page is not open, highlighted and focused');
+          R.w.eval('closeGame()'); [...R.d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'pickems').click(); await wait(60); }
+        else if (!md.hidden) R.d.getElementById('gsClose').click();
+        await wait(20);
+        chk(bad.length === 0, 'snapshot: the Starters\' names do not open their rows on the Props tab as the page draws them: ' + bad.join('; ')); }
       /* an answer of the verdict opens its card, folded or not, and hands the focus to the card's
          title; the stats behind the units open and close under their one button; the Starters tabs
          answer a click, the arrow keys, Home and End, and the tab chosen stays chosen when the window
@@ -3899,12 +3958,16 @@ async function newsChecks() {
         if (got !== rowsWant(O, D)) bad.push(`${o} against ${dd}: the tags read ${got}, the rule makes them ${rowsWant(O, D)}`); }
       if (md.querySelectorAll('#gsUnits [data-gs-ddwhy]').length) bad.push('a possession says why it has no rows: ' + txt(q('#gsUnits [data-gs-ddwhy]')));
       /* each row compact (the owner's call, 14 October 2026): the unit, the two sides (the offense's then the
-         defense's, each its club and one rank) and the tag, in that order, and its words those alone */
-      for (const r of md.querySelectorAll('#gsUnits .ddrow')) { const k = [...r.children], sd = k[1] ? [...k[1].querySelectorAll('.ddside')] : [];
-        const words = `${txt(k[0])} ${r.dataset.ddOff} ${sd[0] ? txt(sd[0].querySelector('.ddrk')) : ''} · ${r.dataset.ddDef} ${sd[1] ? txt(sd[1].querySelector('.ddrk')) : ''} ${txt(k[2])}`;
-        if (k.length !== 3 || !k[0].matches('.ddunit') || !k[1].matches('.ddrks') || !k[2].matches('.dtag') || sd.length !== 2 || !sd[0].matches('.ddoff') || !sd[1].matches('.dddef')
+         defense's, each its club and one rank), then the defense's position it faces (the owner's call, 16
+         October 2026; this smoke's own copy of them) and the tag together, in that order, and its words those
+         alone */
+      const DPOS = { qb: 'Pass defense', ol: 'Pass rush', rb: 'Run defense', rec: 'Coverage' };
+      for (const r of md.querySelectorAll('#gsUnits .ddrow')) { const k = [...r.children], sd = k[1] ? [...k[1].querySelectorAll('.ddside')] : [], e = k[2] ? [...k[2].children] : [];
+        const words = `${txt(k[0])} ${r.dataset.ddOff} ${sd[0] ? txt(sd[0].querySelector('.ddrk')) : ''} · ${r.dataset.ddDef} ${sd[1] ? txt(sd[1].querySelector('.ddrk')) : ''} ${DPOS[r.dataset.dd]} ${e[1] ? txt(e[1]) : ''}`;
+        if (k.length !== 3 || !k[0].matches('.ddunit') || !k[1].matches('.ddrks') || !k[2].matches('.ddend') || e.length !== 2 || !e[0].matches('.dddu') || !e[1].matches('.dtag')
+          || txt(e[0]) !== DPOS[r.dataset.dd] || sd.length !== 2 || !sd[0].matches('.ddoff') || !sd[1].matches('.dddef')
           || sd.some(x => x.querySelectorAll('.ddrk').length !== 1) || txt(sd[0].querySelector('.ddsn')) !== r.dataset.ddOff || txt(sd[1].querySelector('.ddsn')) !== r.dataset.ddDef
-          || txt(r).replace(/\s+/g, ' ') !== words.replace(/\s+/g, ' ')) { bad.push(`the ${r.dataset.dd} row of ${r.dataset.ddOff} is not its unit, the two clubs and ranks and its tag alone: '${txt(r)}'`); break; } }
+          || txt(r).replace(/\s+/g, ' ') !== words.replace(/\s+/g, ' ')) { bad.push(`the ${r.dataset.dd} row of ${r.dataset.ddOff} is not its unit, the two clubs and ranks, the defense's position and its tag alone: '${txt(r)}'`); break; } }
       const shown = namesShown(md, UNITS);
       if (shown.length) bad.push(`the window shows names from the units file: ${shown.join(', ')}`);
       /* what the rows rest on: the "Position matchups" label's title, never text under the card */
@@ -4059,6 +4122,7 @@ async function newsChecks() {
     else {
       const q = sel => m.querySelector(sel), view = NH.d.getElementById('gsView'), PX = 40, tgt = () => NH.d.getElementById('gsUnits');
       if (NH.timedOut || NH.w.pkBoard.canProps(G.game_id) || q('[data-gs-props]')) bad.push('the prop model was up before its payload was let through');
+      if (q('[data-gs-player]')) bad.push('a starter\'s name opens the Props tab before the prop model is up');
       if ([...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].map(txt).join('|') !== 'Loading the Deep Dive…|Loading the Deep Dive…' || txt(q('#gsStats .gs-sum')) !== 'loading…' || !/Loading the stat breakdown/.test(txt(q('#gsStats')))) bad.push('the Deep Dive or the Stat breakdown does not say it is loading');
       const idx = el => [...view.querySelectorAll('*')].indexOf(el);
       NH.w.Element.prototype.getBoundingClientRect = function () { const r = (t, hh) => ({ top: t, bottom: t + hh, height: hh, left: 0, right: 320, width: 320, x: 0, y: t });
@@ -4093,6 +4157,9 @@ async function newsChecks() {
       const r3 = await step('the prop model coming up', () => q('[data-gs-goto="gsUnits"]'), () => gP.go(), async () => { for (let i = 0; i < 200 && !NH.w.eval("typeof S==='object'&&!!S&&Array.isArray(S.sched)"); i++) await wait(50); await wait(400); });
       keep('the prop model coming up', r3, 'gsGoto', 'gsUnits');
       if (!!q('[data-gs-props]') !== NH.w.pkBoard.canProps(G.game_id)) bad.push('the props button is not drawn in once the prop model is up');
+      { const on = NH.w.pkBoard.propsPlayers(G.game_id), want = [...m.querySelectorAll('#gsPos .gs-pl[data-pid]')].map(p => p.dataset.pid).filter(p => on.has(p)).sort().join();
+        const got = [...m.querySelectorAll('#gsPos [data-gs-player]')].map(b => b.dataset.gsPlayer).sort().join();
+        if (got !== want) bad.push(`once the prop model is up, the starters' names that open the Props tab are ${got || 'none'}, not ${want || 'none'}`); }
       if (r3 && q('[data-gs-props]') && !(r3.i1 > r3.i0)) bad.push('the props button was not drawn in above Offense vs defense'); }
     chk(bad.length === 0 && NH.errs.length === 0, `news: the window does not keep the visitor's place as the files come in late: ${NH.errs.join('; ')} ${bad.slice(0, 6).join('; ')}`);
     NH.w.close(); }

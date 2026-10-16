@@ -305,8 +305,8 @@ first test, with the full chain (each season's final itself carried from the one
 the two differ little. On units_fit.py's own rows (the playoffs in, UNIT_WF's footing) 9.431
 against 9.508. Every player's rating already carried 0.75 of its distance from 1500 (CARRY); the
 units carry their own share, set on their own test. The units feed no call: the game model, the
-matchups and Team Rankings never read them, so the carry moves only these two tables and the
-Game snapshot's Offense vs defense.
+matchups and Team Rankings never read them, so the carry moves only these tables (Overall's two,
+and since 16 October 2026 the position tables below) and the Game snapshot's Offense vs defense.
 
 Why these weights (fitted before the carry, on every unit starting each season at 0, and held
 since: the numbers in this paragraph are units_fit.py's as it ran before the carry, at git d3a5d2a;
@@ -335,13 +335,55 @@ the 9.508. The non-negative shares on the carried ratings move a little (offense
 success rate 26%, giveaways 21%, sacks 7%, EPA 7%; defense points 55%, big plays 26%, takeaways
 16%, sacks 3%) and units_fit.py prints them as information only.
 
+RUN DEFENSE, PASS DEFENSE AND PASS RUSH (16 October 2026, the owner's ask: "for ELO ratings, please
+include a section for run defense, pass defense, and pass rush"; three more pills beside Overall
+Offense and Overall Defense). Three tables of the 32 defenses, each made the way Overall's are: every
+stat its own Elo of this season, offense against defense, opponents and home field counted, K 0.08,
+every club starting at UNIT_CARRY of its final rating last season (rated from 0) on every stat, a final
+the play-by-play lacks pending, shown as 1500 + 100 * z across the clubs with a rating, ranked, with each
+stat's value, league rank and `adj`. The play-by-play's scrimmage plays as above; a run is a designed
+run (nflverse's `rush`, which is never a scramble: a scramble is a dropback), a dropback any pass,
+sack or scramble (`pass`: the dropbacks sack rate was already taken over), and a hit any dropback nflverse
+flags `qb_hit`, or a sack (it flags a hit on 93-95% of sacks, and a sack is the hit that landed: 13-15%
+of dropbacks a season). Five new stats, each with its mean, spread and home field from 2012-2017 as the
+nine have (UNIT_STATS), and sack rate shared with Overall:
+
+    Run Defense   = 55% EPA a run allowed + 45% run success rate allowed
+    Pass Defense  = 100% EPA a dropback allowed (dropback success rate allowed shown, weighing nothing)
+    Pass Rush     = 90% sack rate + 10% QB-hit rate
+
+Each table is held to what it is for: the next game's measure of its facet, the offense's own number
+in it, EPA a run for Run Defense, EPA a dropback for Pass Defense, sack rate for Pass Rush. That number
+was regressed on both stats' ratings of the offense and the defense going into the game (plus home
+field), every weight kept at zero or above, fitted on 2012-2017 weeks 2 on, the playoffs in (UNIT_WF's
+footing), by elo/tools/def_units_fit.py: the defense's shares were 55.1% and 44.9% (run), 100% and 0%
+(pass: once EPA a dropback is known, its success rate told nothing more, and the fit on 2012-2021 says
+the same) and 89.4% and 10.6% (pass rush), rounded to fives for the weights above (the offense's shares,
+25/75, 70/30 and 95/5, are kept as UNIT_TABLES' `opp` for the test and a later offense table; nothing
+publishes them). K, the carry and home field were held, not chosen again; the carry each table would
+pick alone, leaving one season of 2013-2017 out at a time, is flat about 0.42 (run 0.8, pass 0.5, pass
+rush 0.5, each within 0.0003 of 0.42's error) and is printed as information only. Tested once on
+2018-2025 weeks 2 on (4,198 team-games), the RMSE of the next game's measure: Run Defense 0.2188 EPA a
+run, against 0.2249 for the league average, 0.2198 for the same weights with nothing carried and 0.2216
+for each club's raw numbers so far that season (the mean of its games before, nothing of its opponents
+counted); Pass Defense 0.2968 EPA a dropback, against 0.3113, 0.2990 and 0.3012; Pass Rush 0.0455 of
+sack rate, against 0.0470, 0.0457 and 0.0458. Each better than the raw numbers in all 8 seasons, by
+1.2e-3, 2.6e-3 and 2.9e-5 on the squared error a team-game, 6.5, 5.0 and 3.5 standard errors (by game).
+A game is noisy at this grain (a club runs 25 times), so the tables explain little of any one game, but
+they order the defenses better than their raw numbers do. They feed no call, as Overall's do not: the
+game model, the matchups (whose own pass and run defenses are the player Elo's units, FACET) and Team
+Rankings never read them. The weights and the test are UNIT_TABLES' (`wf`), printed again by
+def_units_fit.py with whether the build carries them.
+
 A final is rated only when the play-by-play has both offenses and its highest running score is
 games.csv's final score; any other final (the play-by-play lags the score by a night, or has half
 a game) is `pending`, also `sources.team_stats_pending`, counted nowhere and moving nobody until a
 later run has it whole. `units` in model.json carries `stats` (each stat's key, label, side,
-better and weight), `weights` (percent, by side), `params` (`carry`, UNIT_CARRY, and `carry_from`,
+better and weight; `side` is the table it is shown in, `off`, `def`, `run_def`, `pass_def` or
+`pass_rush`), `weights` (percent, by table), `tables` (each position table's `label`, `of`, the side
+of the ball it rates, and its `walk_forward`), `params` (`carry`, UNIT_CARRY, and `carry_from`,
 the season carried in, none for the first season in the files), `walk_forward`, `pending`, and for
-every team in `off` and `def` its rating, `before`, `change`, `raw`, `rank`, `games`, `record` (the
+every team in `off`, `def` and each position table its rating, `before`, `change`, `raw`, `rank`, `games`, `record` (the
 regular season's, W-L-T), `start` (its carried rating on today's curve, where it began the season:
 a line's first point; until October 2026 one `start` a side, a raw 0), `carried` (no rated game
 yet, shown on that start), `line` (week and rating on today's curve after each game) and `stats`:
@@ -350,7 +392,9 @@ for each stat `v` (the season's value, none before a game; giveaways and takeawa
 the stat's own rating, the opponents counted, last season's carried share in it, among every team
 with a rating), `r` (that rating) and,
 for a weighted stat, `adds` (what it adds to the rating, in rating points). `ppg`, `ypg` and
-`epa_play` stay for a page built before October 2026.
+`epa_play` stay, in `off` and `def` alone, for a page built before October 2026. Overall's stats
+are UNIT_OVERALL's nine and its tables are exactly as they were before the position tables came
+(a stat's Elo is its own, so a new one moves no other).
 
 THE MATCHUPS. How much does a player's Elo, and the Elo of the defenders he faces, say about
 his next game beyond what his recent games already say? For every QB, RB, WR and TE game
@@ -537,9 +581,10 @@ ROSTER_URL = 'https://github.com/nflverse/nflverse-data/releases/download/roster
 INJ_URL = 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_{y}.csv'
 DC_URL = 'https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_{y}.csv'
 PBP_URL = 'https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{y}.csv.gz'
-# the play-by-play columns Overall Offense and Overall Defense are made of (read with usecols)
+# the play-by-play columns the team units (Overall Offense and Overall Defense, Run Defense, Pass Defense
+# and Pass Rush) are made of (read with usecols)
 PBP_COLS = ['game_id', 'home_team', 'posteam', 'defteam', 'play_type', 'pass', 'rush', 'qb_kneel', 'qb_spike', 'two_point_attempt',
-            'qb_scramble', 'epa', 'success', 'yards_gained', 'sack', 'interception', 'fumble_lost',
+            'qb_scramble', 'epa', 'success', 'yards_gained', 'sack', 'qb_hit', 'interception', 'fumble_lost',
             'third_down_converted', 'third_down_failed', 'fixed_drive', 'fixed_drive_result', 'drive_inside20',
             'total_home_score', 'total_away_score']
 # the depth chart's own labels to the rated groups: the weekly files name positions, the daily
@@ -777,7 +822,21 @@ UNIT_STATS = {
               'sign': 1, 'game': ('rz_td', 'rz_trips'), 'season': ('rz_td', 'rz_trips'), 'mu': 0.5494, 'sd': 0.3181, 'home': 0.017, 'fmt': 'pct'},
     'ypp':   {'off': 'Yards a play', 'def': 'Yards a play allowed', 'off_short': 'Yds/play', 'def_short': 'Yds/play allowed',
               'sign': 1, 'game': ('yds', 'plays'), 'season': ('yds', 'plays'), 'mu': 5.5014, 'sd': 1.1479, 'home': 0.099, 'fmt': 'f2'},
+    # Run Defense, Pass Defense and Pass Rush (RUN DEFENSE, PASS DEFENSE AND PASS RUSH; skr above is Pass Rush's too)
+    'repa':  {'off': 'EPA a run', 'def': 'EPA a run allowed', 'off_short': 'EPA/run', 'def_short': 'EPA/run allowed',
+              'sign': 1, 'game': ('run_epa', 'runs'), 'season': ('run_epa', 'runs'), 'mu': -0.1044, 'sd': 0.2179, 'home': -0.025, 'fmt': 'epa'},
+    'rsr':   {'off': 'Run success rate', 'def': 'Run success rate allowed', 'off_short': 'Run success', 'def_short': 'Run success allowed',
+              'sign': 1, 'game': ('run_succ', 'runs'), 'season': ('run_succ', 'runs'), 'mu': 0.3736, 'sd': 0.1133, 'home': -0.025, 'fmt': 'pct'},
+    'pepa':  {'off': 'EPA a dropback', 'def': 'EPA a dropback allowed', 'off_short': 'EPA/dropback', 'def_short': 'EPA/dropback allowed',
+              'sign': 1, 'game': ('db_epa', 'db'), 'season': ('db_epa', 'db'), 'mu': 0.0527, 'sd': 0.3003, 'home': 0.021, 'fmt': 'epa'},
+    'psr':   {'off': 'Dropback success rate', 'def': 'Dropback success rate allowed', 'off_short': 'Pass success', 'def_short': 'Pass success allowed',
+              'sign': 1, 'game': ('db_succ', 'db'), 'season': ('db_succ', 'db'), 'mu': 0.4539, 'sd': 0.0935, 'home': 0.062, 'fmt': 'pct'},
+    'hit':   {'off': 'QB-hit rate', 'def': 'QB-hit rate', 'off_short': 'QB hits', 'def_short': 'QB hits',
+              'sign': -1, 'game': ('hits', 'db'), 'season': ('hits', 'db'), 'mu': 0.1373, 'sd': 0.0673, 'home': 0.072, 'fmt': 'pct'},
 }
+# the stats Overall Offense and Overall Defense are made of and show (the rest of UNIT_STATS are the
+# position tables'), in their order
+UNIT_OVERALL = ['pts', 'sr', 'epa', 'tor', 'skr', 'xr', 'third', 'rz', 'ypp']
 # each side's game score: percent shares of the stats' standard deviations (the owner's, rounded
 # from the fit; the rest weigh nothing and are shown with their ranks)
 UNIT_W = {'off': {'pts': 35, 'sr': 25, 'epa': 15, 'tor': 15, 'skr': 10},
@@ -787,12 +846,40 @@ UNIT_K = 0.08          # the step per final, in standard deviations of the stat
 # season with: last season rated from 0 on its own games, times this (units_fit.py chose it by
 # leaving one season out at a time on 2013-2017; tested once on 2018-2025)
 UNIT_CARRY = 0.42
+# RUN DEFENSE, PASS DEFENSE AND PASS RUSH (see the docstring): three more tables of the defenses, each a
+# weighted sum of two stats' ratings on the same Elo (K, home field and the carry as above), the weights
+# the defense's shares of elo/tools/def_units_fit.py's fit on 2012-2017 rounded to fives; `opp` the
+# offense's shares of the same fit (its side of the facet, which the walk-forward test needs; nothing
+# publishes it) and `wf` the test, once, on 2018-2025: the RMSE of the next game's measure (the offense's
+# own EPA a run, EPA a dropback or sack rate in it) against the league average, the same weights with
+# nothing carried, and each club's raw numbers so far that season (`raw`, `se` the paired standard error
+# of the squared error a team-game against it, by game, `seasons_better` against it)
+UNIT_TABLES = {
+    'run_def': {'label': 'Run Defense', 'side': 'def', 'w': {'repa': 55, 'rsr': 45}, 'opp': {'repa': 25, 'rsr': 75},
+                'wf': {'target': 'repa', 'measure': 'EPA a run', 'rmse': 0.2188, 'raw': 0.2216, 'no_carry': 0.2198, 'league': 0.2249,
+                       'se': 0.000185, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42}},
+    'pass_def': {'label': 'Pass Defense', 'side': 'def', 'w': {'pepa': 100, 'psr': 0}, 'opp': {'pepa': 70, 'psr': 30},
+                 'wf': {'target': 'pepa', 'measure': 'EPA a dropback', 'rmse': 0.2968, 'raw': 0.3012, 'no_carry': 0.299, 'league': 0.3113,
+                        'se': 0.000516, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42}},
+    'pass_rush': {'label': 'Pass Rush', 'side': 'def', 'w': {'skr': 90, 'hit': 10}, 'opp': {'skr': 95, 'hit': 5},
+                  'wf': {'target': 'skr', 'measure': 'sack rate', 'rmse': 0.0455, 'raw': 0.0458, 'no_carry': 0.0457, 'league': 0.047,
+                         'se': 8.28e-06, 'seasons_better': 8, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42}},
+}
 # the walk-forward record (units_fit.py): RMSE of the offense's points in its next game, 2018-2025 weeks 2 on,
 # with the carry (rmse; the old measure carried the same way, previous) and without it (no_carry)
 UNIT_WF = {'rmse': 9.431, 'previous': 9.441, 'league': 9.979, 'se': 0.249, 'seasons_better': 5, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42, 'no_carry': 9.508}
 # the sums a team-game's stats are made of (pts, from games.csv, joins them in unit_ratings)
-UNIT_SUMS = ['plays', 'epa', 'succ', 'yds', 'expl', 'to', 'sacks', 'db', 'third_c', 'third_n', 'drives', 'rz_trips', 'rz_td']
+UNIT_SUMS = ['plays', 'epa', 'succ', 'yds', 'expl', 'to', 'sacks', 'db', 'third_c', 'third_n', 'drives', 'rz_trips', 'rz_td',
+             'runs', 'run_epa', 'run_succ', 'db_epa', 'db_succ', 'hits']
 UNIT_ROUND = {'f1': 1, 'f2': 2, 'epa': 3, 'pct': 3}
+
+
+def unit_tables():
+    """every team table model.json's units carry, in the order the page shows them: {name: (side,
+    weights, the stats it shows)}. Overall Offense and Overall Defense show the nine; each position
+    table its own two (a stat its fit weighs at 0 is shown with its rank, as Overall's are)."""
+    return {'off': ('off', UNIT_W['off'], UNIT_OVERALL), 'def': ('def', UNIT_W['def'], UNIT_OVERALL),
+            **{n: (v['side'], v['w'], list(v['w'])) for n, v in UNIT_TABLES.items()}}
 
 
 def pbp_team_games(pbp):
@@ -808,7 +895,7 @@ def pbp_team_games(pbp):
     LAC, LA) where games.csv keeps the old ones (OAK, SD, STL) for those seasons."""
     p = pbp[pbp.posteam.notna() & pbp.defteam.notna()].copy()
     for c in ('pass', 'rush', 'qb_kneel', 'qb_spike', 'two_point_attempt', 'qb_scramble', 'success', 'yards_gained', 'sack',
-              'interception', 'fumble_lost', 'third_down_converted', 'third_down_failed', 'drive_inside20'):
+              'qb_hit', 'interception', 'fumble_lost', 'third_down_converted', 'third_down_failed', 'drive_inside20'):
         p[c] = pd.to_numeric(p[c], errors='coerce').fillna(0.0)
     p['epa'] = pd.to_numeric(p.epa, errors='coerce')
     s = p[((p['pass'] == 1) | (p.rush == 1)) & p.play_type.isin(['pass', 'run']) & (p.qb_kneel == 0)
@@ -817,12 +904,23 @@ def pbp_team_games(pbp):
                  | (((s.rush == 1) | (s.qb_scramble == 1)) & (s.yards_gained >= 10))).astype(float)
     s['to'] = s.interception + s.fumble_lost
     s['db'] = (s['pass'] == 1).astype(float)
+    # Run Defense, Pass Defense and Pass Rush: a designed run (rush, never a scramble, which nflverse
+    # counts a dropback) and its EPA and success; a dropback's EPA and success; a hit on a dropback,
+    # every sack counted one (nflverse flags a hit on 93-95% of sacks, and a sack is the hit that landed)
+    s['runs'] = s.rush
+    s['run_epa'] = s.epa * s.rush
+    s['run_succ'] = s.success * s.rush
+    s['db_epa'] = s.epa * s.db
+    s['db_succ'] = s.success * s.db
+    s['hits'] = (((s.qb_hit == 1) | (s.sack == 1)) & (s.db == 1)).astype(float)
     s['side'] = np.where(s.posteam == s.home_team, 'home', 'away')
     g = s.groupby(['game_id', 'posteam', 'defteam', 'side'])
     tg = pd.DataFrame({'plays': g.size(), 'epa': g.epa.sum(), 'succ': g.success.sum(), 'yds': g.yards_gained.sum(),
                        'expl': g.expl.sum(), 'to': g['to'].sum(), 'sacks': g.sack.sum(), 'db': g.db.sum(),
                        'third_c': g.third_down_converted.sum(),
-                       'third_n': g.third_down_converted.sum() + g.third_down_failed.sum()}).reset_index()
+                       'third_n': g.third_down_converted.sum() + g.third_down_failed.sum(),
+                       'runs': g.runs.sum(), 'run_epa': g.run_epa.sum(), 'run_succ': g.run_succ.sum(),
+                       'db_epa': g.db_epa.sum(), 'db_succ': g.db_succ.sum(), 'hits': g.hits.sum()}).reset_index()
     dr = (s.groupby(['game_id', 'posteam', 'fixed_drive'])
           .agg(rz=('drive_inside20', 'max'), res=('fixed_drive_result', 'last')).reset_index())
     dr['rz_td'] = ((dr.rz == 1) & (dr.res == 'Touchdown')).astype(float)
@@ -855,8 +953,8 @@ def unit_elo(season_games, tg, score, start=None):
     starts at 0). A final is rated only when the play-by-play has both offenses and ends on
     games.csv's score; any other final is `pending`, counted nowhere and moving nobody, until a
     later run has the whole game. Returns the ratings after the last rated final R[side][stat][team],
-    the starts S (the same shape), the season's sums, each club's (week, overall) after each game,
-    the regular-season records, the pending finals and the clubs."""
+    the starts S (the same shape), the season's sums, each club's (week, rating) after each game in
+    each table (unit_tables(): Overall's two and the position tables), the regular-season records, the pending finals and the clubs."""
     g = season_games[season_games.game_type.isin(['REG', 'WC', 'DIV', 'CON', 'SB'])].copy()
     g['kick'] = g.gameday.astype(str) + ' ' + g.gametime.fillna('00:00').astype(str)
     g = g.sort_values(['kick', 'game_id'], kind='mergesort')
@@ -867,9 +965,10 @@ def unit_elo(season_games, tg, score, start=None):
     S = {side: {k: {t: float(((start.get(t) or {}).get(side) or {}).get(k, 0.0)) for t in teams} for k in keys} for side in ('off', 'def')}
     R = {side: {k: dict(S[side][k]) for k in keys} for side in ('off', 'def')}
     acc = {side: {t: dict.fromkeys(UNIT_SUMS + ['pts', 'g'], 0.0) for t in teams} for side in ('off', 'def')}
-    hist = {side: {t: [] for t in teams} for side in ('off', 'def')}       # (week, overall raw) after each game
+    tabs = unit_tables()
+    hist = {n: {t: [] for t in teams} for n in tabs}       # (week, the table's raw) after each game, each table
     record = {t: [0, 0, 0] for t in teams}
-    overall = lambda side, t: sum(w / 100 * R[side][k][t] for k, w in UNIT_W[side].items())
+    overall = lambda n, t: sum(w / 100 * R[tabs[n][0]][k][t] for k, w in tabs[n][1].items())
     pending = []
     for r in g[g.home_score.notna() & g.away_score.notna()].itertuples(index=False):
         hs, as_ = float(r.home_score), float(r.away_score)
@@ -899,8 +998,8 @@ def unit_elo(season_games, tg, score, start=None):
             R['off'][k][off] += d
             R['def'][k][dfn] -= d
         for t in (r.home_team, r.away_team):
-            for side in ('off', 'def'):
-                hist[side][t].append((int(r.week), overall(side, t)))
+            for n in tabs:
+                hist[n][t].append((int(r.week), overall(n, t)))
     return R, S, acc, hist, record, pending, teams
 
 
@@ -921,16 +1020,17 @@ def unit_ratings(season_games, tg, score, start=None):
     each stat's value and ranks. start is unit_carry's (None: every club from 0, as before the
     carry, which a season with no season before it in the files keeps)."""
     R, S, acc, hist, record, pending, teams = unit_elo(season_games, tg, score, start)
-    keys = list(UNIT_STATS)
+    tabs = unit_tables()
     start = start or {}
-    overall = lambda side, t, X=R: sum(w / 100 * X[side][k][t] for k, w in UNIT_W[side].items())
     played = [t for t in teams if acc['off'][t]['g']]
     # every club with a rating is on the curve and ranked: the ones that have played and, carried
     # from last season, the ones that have not yet (`carried`), so week 1 is not one flat 1500
     rated = [t for t in teams if acc['off'][t]['g'] or t in start]
 
-    def side_out(side):
-        raw = {t: overall(side, t) for t in teams}
+    def table_out(name):
+        side, W, keys = tabs[name]
+        overall = lambda t, X=R: sum(w / 100 * X[side][k][t] for k, w in W.items())
+        raw = {t: overall(t) for t in teams}
         v = np.array([raw[t] for t in rated]) if rated else np.zeros(1)
         mu, sd = float(v.mean()), float(v.std())
         show = lambda x: round(1500 + 100 * (x - mu) / sd) if sd > 1e-9 else 1500
@@ -938,8 +1038,8 @@ def unit_ratings(season_games, tg, score, start=None):
         means = {k: (float(np.mean([R[side][k][t] for t in rated])) if rated else 0.0) for k in keys}
         out = {}
         for t in teams:
-            h = hist[side][t]
-            s0 = overall(side, t, S)
+            h = hist[name][t]
+            s0 = overall(t, S)
             now = show(raw[t])
             then = show(h[-2][1] if len(h) > 1 else s0) if h else None
             a = acc[side][t]
@@ -950,9 +1050,11 @@ def unit_ratings(season_games, tg, score, start=None):
             for k in keys:
                 x = unit_value(UNIT_STATS[k]['season'], a, a['pts']) if a['g'] else None
                 e = {'v': None if x is None else round(x, UNIT_ROUND[UNIT_STATS[k]['fmt']]), 'r': round(R[side][k][t], 6)}
-                if k in UNIT_W[side]:
-                    e['adds'] = round(100 * UNIT_W[side][k] / 100 * (R[side][k][t] - means[k]) / sd, 1) if sd > 1e-9 else 0.0
+                if W.get(k):
+                    e['adds'] = round(100 * W[k] / 100 * (R[side][k][t] - means[k]) / sd, 1) if sd > 1e-9 else 0.0
                 out[t]['stats'][k] = e
+            if name not in ('off', 'def'):
+                continue
             # the old page's three columns, kept while a page built before this one is live
             k = max(a['g'], 1)
             out[t].update(ppg=round(a['pts'] / k, 1), ypg=round(a['yds'] / k, 1),
@@ -969,18 +1071,22 @@ def unit_ratings(season_games, tg, score, start=None):
                 e['adj'] = (1 + sum(1 for u in rated if R[side][k][u] > R[side][k][t])) if t in rated else None
         return out
 
+    # each table's stats, its own in its own order (the weighted first); an entry's `side` is the
+    # table's name, which for Overall's two is its side of the ball, and `better` is read on the side
+    # the table rates (every position table a defense's)
     stats = []
-    for side in ('off', 'def'):
-        for k in sorted(keys, key=lambda k: (-UNIT_W[side].get(k, 0), keys.index(k))):
+    for name, (side, W, keys) in tabs.items():
+        for k in sorted(keys, key=lambda k: (-W.get(k, 0), keys.index(k))):
             st = UNIT_STATS[k]
-            stats.append({'key': k, 'side': side, 'label': st[side], 'short': st[side + '_short'], 'fmt': st['fmt'],
-                          'better': 'high' if (st['sign'] > 0) == (side == 'off') else 'low', 'weight': UNIT_W[side].get(k, 0)})
+            stats.append({'key': k, 'side': name, 'label': st[side], 'short': st[side + '_short'], 'fmt': st['fmt'],
+                          'better': 'high' if (st['sign'] > 0) == (side == 'off') else 'low', 'weight': W.get(k, 0)})
     # each club's `start` is where it began the season on today's curve (its line's first point):
     # its carried rating, or a raw 0 for a club with nothing carried
-    return {'off': side_out('off'), 'def': side_out('def'), 'pending': pending, 'stats': stats,
-            'weights': {side: dict(w) for side, w in UNIT_W.items()},
-            'measure': 'an Elo on each key stat, offense against defense; each side a weighted sum of them (weights in percent)',
-            'params': {'K': UNIT_K, 'stats': {k: [UNIT_STATS[k]['mu'], UNIT_STATS[k]['sd'], UNIT_STATS[k]['home']] for k in keys},
+    return {**{name: table_out(name) for name in tabs}, 'pending': pending, 'stats': stats,
+            'weights': {name: dict(W) for name, (_, W, _) in tabs.items()},
+            'tables': {n: {'label': v['label'], 'of': v['side'], 'walk_forward': dict(v['wf'])} for n, v in UNIT_TABLES.items()},
+            'measure': 'an Elo on each key stat, offense against defense; each table a weighted sum of them (weights in percent)',
+            'params': {'K': UNIT_K, 'stats': {k: [UNIT_STATS[k]['mu'], UNIT_STATS[k]['sd'], UNIT_STATS[k]['home']] for k in UNIT_STATS},
                        'carry': UNIT_CARRY, 'carry_from': None,
                        'shown': '1500 + 100 * z across every team with a rating: the ones that have played, and the ones '
                                 'carried from last season that have not yet'},

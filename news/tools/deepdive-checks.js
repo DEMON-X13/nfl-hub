@@ -50,8 +50,9 @@ function headlineWant(off, def) {
 /* one possession's html as deepdive.js possession() writes it: the block's teams (data-dd-pos) and each
    row's key, its tags, the edge its tag's title gives, and its two sides in the order drawn (ddoff,
    dddef), each with the club and the rank it shows; ranks are the two sides' ranks in that order; text is
-   what the row shows, its markup and titles taken off (its unit, the two clubs and ranks and its tag:
-   since 14 October 2026 a row names nobody and shows no number) */
+   what the row shows, its markup and titles taken off (its unit, the two clubs and ranks, the defense's
+   position and its tag: since 14 October 2026 a row names nobody and shows no number, and since 16 October
+   2026 it names the defense's position it faces); dpos is each .dddu the row draws */
 function parse(html) {
   const parts = String(html || '').split('class="ddrow"'), pre = parts[0];
   const pos = /data-dd-pos="([^"]*)"/.exec(pre);
@@ -63,7 +64,8 @@ function parse(html) {
       return { side: (/^([a-z]+)"/.exec(x) || [])[1] || null, label: lab ? lab[1] : null, ranks: rk.map(m => m[1]) };
     });
     const text = seg.replace(/<div\s*$/, '').replace(/^[^>]*>/, '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    return { key: key ? key[1] : null, tags, tag: tags.length ? tags[0] : null, sides, text,
+    const dpos = [...seg.matchAll(/<span class="dddu">([^<]*)<\/span>/g)].map(m => m[1]);
+    return { key: key ? key[1] : null, tags, tag: tags.length ? tags[0] : null, sides, text, dpos,
       ranks: sides.map(x => x.ranks.length === 1 ? x.ranks[0] : `${x.ranks.length} ranks`), edge: edges.length ? 'edge ' + edges[0] : null,
       edges: edges.length };
   });
@@ -84,9 +86,13 @@ function checkMeta(META) {
 /* one possession as drawn (off with the ball against def; A and O their units) against the rules, from the
    data it was drawn from: its four rows in order, each with one tag, the weighted edge's, its two sides
    the offense's then the defense's, each its own club and its rank the file's, the edge in the tag's
-   title the file's, and nothing else drawn: the row's text is its unit, the two clubs and ranks and its
-   tag, so no name, no one out and no number (the owner's call, 14 October 2026) */
+   title the file's, the defense's position it faces named once, after the defense's side (the owner's
+   call, 16 October 2026: "for offense vs defense section, please put opposing positions for the defense"),
+   and nothing else drawn: the row's text is its unit, the two clubs and ranks, the defense's position and
+   its tag, so no name, no one out and no number (the owner's call, 14 October 2026). DPOS is this file's
+   own copy of the positions, never deepdive.js's */
 const UNIT = { qb: 'Quarterback', ol: 'Offensive line', rb: 'Running backs', rec: 'Receivers' };
+const DPOS = { qb: 'Pass defense', ol: 'Pass rush', rb: 'Run defense', rec: 'Coverage' };
 const ESC = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function checkPossession(html, off, def, A, O) {
   const P = parse(html), f = [], at = `${off} v ${def}`;
@@ -103,7 +109,8 @@ function checkPossession(html, off, def, A, O) {
     if (r.sides.map(x => x.side).join('|') !== 'ddoff|dddef') f.push(`${at} ${u}: sides ${r.sides.map(x => x.side).join(',') || 'none'} (want the offense's, then the defense's)`);
     else if (!r.sides.every((x, j) => x.label === ESC([off, def][j]))) f.push(`${at} ${u}: sides headed '${r.sides.map(x => x.label).join("' | '")}' (want ${off}'s, then ${def}'s)`);
     if (r.ranks.join('|') !== ranks.join('|')) f.push(`${at} ${u}: ranks ${r.ranks.join(' vs ')} (want ${ranks.join(' vs ')})`);
-    const text = `${UNIT[u]} ${ESC(off)} ${ranks[0]} · ${ESC(def)} ${ranks[1]} ${r.tag}`;
+    if (r.dpos.join('|') !== DPOS[u]) f.push(`${at} ${u}: the defense's position reads '${r.dpos.join("' | '") || 'nothing'}' (want '${DPOS[u]}', once)`);
+    const text = `${UNIT[u]} ${ESC(off)} ${ranks[0]} · ${ESC(def)} ${ranks[1]} ${DPOS[u]} ${r.tag}`;
     if (r.text !== text) f.push(`${at} ${u}: the row reads '${r.text}' (want '${text}' and nothing else: no name, no one out, no number)`);
     const edge = mine && theirs && isFinite(mine.z) && isFinite(theirs.z) ? `edge ${signed(mine.z - theirs.z)}` : null;
     if (r.edge !== edge || r.edges > (edge ? 1 : 0)) f.push(`${at} ${u}: "${r.edge}"${r.edges > 1 ? ` and ${r.edges - 1} more` : ''} (want ${edge ? `"${edge}"` : 'no edge'})`);

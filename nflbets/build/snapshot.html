@@ -51,8 +51,10 @@
                        on the gap read as points under it (deepdive.js headTag), the two ratings in two
                        boxes of one size, the better rank's tinted; then the Deep Dive itself,
                        "Position matchups": that offense's four position matchups against that
-                       defense, a compact row each, the unit, the two sides' clubs and ranks and the
-                       tag (deepdive.js possession, on news/data/units.json, where it is for this
+                       defense, a compact row each, the unit, the two sides' clubs and ranks, the
+                       defense's position it faces (Pass defense, Pass rush, Run defense, Coverage:
+                       the owner's call, 16 October 2026) and the tag (deepdive.js possession, on
+                       news/data/units.json, where it is for this
                        game's week), no names, no one out and no numbers (who plays is the Starters
                        card's, the numbers the Stat breakdown's); a unit with no game yet this season
                        on its rating carried from last season, marked so. What the ratings and the
@@ -62,7 +64,9 @@
                        its edge on a four-step meter
          starters      the ranked players out first, then the Offense, Defense and Kicker tabs, the
                        two teams' header under them, and each team's expected starters
-                       (matchups.json `lineups`) on those tabs, each with
+                       (matchups.json `lineups`) on those tabs, each name a button to his own row on
+                       the game's page on the Props tab where the prop model draws one (the owner's
+                       call, 16 October 2026; pkBoard.propsPlayers and openOnProps), each with
                        his season Elo, rank and shield as the ELO Ratings tab shows them and a Q
                        where the report has him questionable, the higher Elo of each pair marked
                        and each defensive unit's league rank at either end of its group's header
@@ -318,8 +322,9 @@ table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
 #gsModal .dtag.vtough{background:#FAE1DE;color:#A93226}
 #gsModal .gs-hpts{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 /* the Deep Dive: four rows a possession, each the offense's unit against the defense's it plays, compact
-   and centred: the unit to the left of the middle, the two clubs and ranks in it, the tag to its right,
-   the middle column on the same axis as the "vs" between the boxes above */
+   and centred: the offense's unit to the left of the middle, the two clubs and ranks in it, the defense's
+   position it faces and the tag to its right (.ddend; the position since the owner's call of 16 October
+   2026), the middle column on the same axis as the "vs" between the boxes above */
 #gsModal .gs-dd{display:block;margin:20px 0 0;text-align:center}
 #gsModal .gs-dd>.gs-lab{display:block;margin:0 0 6px;cursor:help}
 #gsModal .ddrow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:14px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
@@ -330,7 +335,9 @@ table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
 #gsModal .ddsn{font-weight:600;color:var(--ink-2)}
 #gsModal .ddsep{color:var(--ink-2)}
 #gsModal .ddrk{font-family:var(--display);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
-#gsModal .ddrow .dtag{justify-self:start;cursor:help}
+#gsModal .ddend{justify-self:start;display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left}
+#gsModal .dddu{font-size:var(--gs-t2);font-weight:600;color:var(--ink-2);line-height:1.3}
+#gsModal .ddrow .dtag{cursor:help}
 #gsModal .gs-ddwhy{margin:14px 0 0;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
 
 /* the stat breakdown: a row a stat, each team's number at its side, the bar split between them */
@@ -408,6 +415,12 @@ table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
 .gs-pl.gs-off .gs-pnm{text-decoration:line-through;text-decoration-color:var(--miss)}
 .gs-pl .gs-outw{color:var(--miss);font-weight:600;white-space:normal}
 .gs-pl .gs-pnm .pe-q{display:inline-block;margin-left:3px;white-space:nowrap;text-decoration:none}
+/* a starter's name that opens his row on the Props tab (the owner's call, 16 October 2026): the name box
+   itself, a button that reads as the name, a dotted line under it to say it goes somewhere, 44px to tap,
+   the home side's still to the right; the window's focus ring is the button's own */
+#gsModal .gs-pl button.gs-pnm{display:block;min-height:44px;margin:0;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:inherit;cursor:pointer;text-decoration:underline dotted;text-decoration-color:var(--muted);text-underline-offset:4px}
+#gsModal .gs-pl button.gs-pnm:hover{text-decoration-style:solid;text-decoration-color:currentColor}
+#gsModal .gs-pl.gs-off button.gs-pnm{text-decoration:line-through;text-decoration-color:var(--miss)}
 
 /* mismatches */
 ul.gs-mm{list-style:none;margin:0;padding:0;display:grid;gap:10px}
@@ -510,11 +523,20 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   .gs-tiles>div{padding:8px 7px}
   .gs-tiles .gs-lab{letter-spacing:.04em}
 }
-/* a phone: a matchup row's unit centred on a line of its own, the two clubs and ranks and the tag centred
-   under it, so neither the unit nor the tag wraps or runs to the card's edge */
-@media(max-width:560px){
-  #gsModal .ddrow{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 10px;padding:10px 0}
-  #gsModal .ddunit{flex-basis:100%;text-align:center}
+/* a phone, and the narrow window up to 760px (where the right-hand column, the defense's position and
+   the tag together, would wrap): a matchup row's two positions centred on a line of their own ("Quarterback
+   vs Pass defense", the vs drawn by the style alone), the two clubs and ranks and the tag centred under
+   them, so nothing wraps or runs to the card's edge. The row's end (.ddend) gives its two parts to the
+   row, ordered, and a zero-height item of the row's own breaks the line between */
+@media(max-width:760px){
+  #gsModal .ddrow{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 8px;padding:10px 0}
+  #gsModal .ddend{display:contents}
+  #gsModal .ddunit{order:1;text-align:center}
+  #gsModal .dddu{order:2}
+  #gsModal .dddu::before{content:'vs ';font-weight:400}
+  #gsModal .ddrow::after{content:'';order:3;flex-basis:100%;height:0}
+  #gsModal .ddrks{order:4}
+  #gsModal .ddrow .dtag{order:5}
 }
 @media(prefers-reduced-motion:reduce){ .gs-chev{transition:none} }
 </style>
@@ -1072,16 +1094,24 @@ function positions(P,g,F){
   const qpill=pid=>q(pid)?` <span class="pill pe-q" title="${esc(q(pid))}">Q</span>`:'';
   const off=pid=>typeof S==='object'&&S&&S.inactive&&S.inactive[pid]?(typeof inactiveWhy==='function'?inactiveWhy(S.inactive[pid]):'ruled out'):null;
   const ranked=x=>!!(x&&x.e&&x.e.rank!=null&&x.e.se!=null);
+  /* a starter's name is a button to his own row on the game's page on the Props tab where the prop
+     model draws one there (the owner's call, 16 October 2026: "in starters, make player names clickable
+     to their props page"; pkBoard.propsPlayers), else plain text. The button is the name box itself, so
+     the Q stays inline after the name inside it */
+  const onProps=P&&typeof P.propsPlayers==='function'?P.propsPlayers(g.game_id):new Set();
+  const nameBox=(pid,name)=>onProps.has(pid)
+    ?`<button type="button" class="gs-pnm gs-plink" data-gs-name data-gs-player="${esc(pid)}" aria-label="${esc(name)}${q(pid)?' (questionable)':''}: player props in this game, on the Props tab" title="${esc(name)}'s player props in this game, on the Props tab">${esc(name)}${qpill(pid)}</button>`
+    :`<span class="gs-pnm" data-gs-name>${esc(name)}${qpill(pid)}</span>`;
   const cell=(x,t,lead)=>{ if(!x) return '';
     const e=x.e, o=off(x.pid);
-    if(!e) return `<span class="gs-pl" data-pid="${esc(x.pid)}" data-team="${esc(t)}"><span class="gs-pn"><span class="gs-pnm" data-gs-name>${esc(x.name)}${qpill(x.pid)}</span></span><span class="gs-pst"><small class="gs-pmeta">not rated yet</small></span></span>`;
+    if(!e) return `<span class="gs-pl" data-pid="${esc(x.pid)}" data-team="${esc(t)}"><span class="gs-pn">${nameBox(x.pid,x.name)}</span><span class="gs-pst"><small class="gs-pmeta">not rated yet</small></span></span>`;
     const rk=ranked(x), active=Pl.groups[e.group]&&Pl.groups[e.group].active;
     /* the season Elo on its own, at the inner edge of each half on a wide screen (the two sides'
        numbers meet in the middle), first on the line under the name on a phone; the higher of the
        two on a row wears the edge mark */
     const stat=rk?`<b class="gs-pse gs-v${lead?' gs-better':''}">${e.se}</b><small class="gs-pmeta"><span class="gs-psep"> · </span><span class="gs-prk">#${e.rank}</span>${active?` of ${esc(active)}`:''}<span class="gs-ptier"> · ${esc(tierName(e.se))}</span></small>`
       :`<small class="gs-pmeta">not ranked this season · career <span class="gs-pcar">${e.elo}</span></small>`;
-    return `<span class="gs-pl${o?' gs-off':''}" data-pid="${esc(x.pid)}" data-team="${esc(t)}" data-grp="${esc(e.group)}"><span class="gs-pn">${rk?shield(e.se):''}<span class="gs-pnm" data-gs-name>${esc(e.name)}${qpill(x.pid)}</span></span>
+    return `<span class="gs-pl${o?' gs-off':''}" data-pid="${esc(x.pid)}" data-team="${esc(t)}" data-grp="${esc(e.group)}"><span class="gs-pn">${rk?shield(e.se):''}${nameBox(x.pid,e.name)}</span>
       <span class="gs-pst">${stat}</span>${o?`<small class="gs-outw">${esc(o)}</small>`:''}</span>`; };
   /* each defensive group's unit, ranked among the league's, at either end of its header */
   const nDefs=Object.keys(mu.league&&mu.league.defs||{}).length;
@@ -1158,7 +1188,7 @@ function draw(gid){
    is found again by its key and focused, Close where it has gone (the focus is never left on the page's
    body); and the first block at or below the header stays where it was on the screen, so a block drawn
    in above it (the props button, the preview, the Deep Dive's rows) does not move what is being read */
-const FOCUS_KEYS=['gsProps','gsFold','gsGoto','gsAll','gsSub','gsTab'];
+const FOCUS_KEYS=['gsProps','gsFold','gsGoto','gsAll','gsSub','gsTab','gsPlayer'];
 const ANCHORS='#gsView>section,#gsView>.gs-dbar,#gsView .gs-pair>section,#gsMatch>*,#gsView .gs-gl,#gsView .gs-secbody>*,#gsView .gs-unit,#gsView .gs-unit>*';
 /* the blocks the place is kept by, in the page's order, each under a key that names it again after a
    redraw: its id, its first data-gs- or data-dd- attribute, else its class in the block around it; then
@@ -1232,6 +1262,9 @@ function wire(){
     const al=t.closest('[data-gs-all]'); if(al){ const open=al.dataset.gsAll==='open'; for(const id of CARDS) setCard(id,open); syncAll(); return; }
     const tb=t.closest('[data-gs-tab]'); if(tb){ pickTab(tb.dataset.gsTab,false); return; }
     const gl=t.closest('[data-gs-goto]'); if(gl){ goCard(gl.dataset.gsGoto); return; }
+    /* a starter's name: the window closes and the board opens the game's page on the Props tab at his
+       row (pkBoard); the game is read before close() lets it go */
+    const pl=t.closest('[data-gs-player]'); if(pl){ const gid=cur, pid=pl.dataset.gsPlayer, P=B(); close(false); if(gid&&P&&typeof P.openOnProps==='function') P.openOnProps(gid,pid); return; }
     /* the game's own page on the Props tab: the window closes and the board opens it (pkBoard) */
     const pp=t.closest('[data-gs-props]'); if(pp){ const id=pp.dataset.gsProps, P=B(); close(false); if(P&&typeof P.openOnProps==='function') P.openOnProps(id); }
   });

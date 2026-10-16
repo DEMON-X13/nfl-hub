@@ -31,7 +31,7 @@ its own repo. `pickems/` and `live/` hold only redirects for old bookmarks; `liv
 holds a redirect too, beside the X Parlays section's source and `parlays.json`.
 
 ```
-nflbets/   NFL Hub                   the one NFL site: both models, the Pick'ems board, Player Elo
+nflbets/   NFL Hub                   the one NFL site: both models, the Matchups board, Player Elo
 props/     Prop Model                no page: the parts, build, job and payload.json
 betting/   X NFL Betting Model       no page: the app source, tools, job and state.json; framed into nflbets/
 elo/       Player Elo                no page: build.py, job and data/
@@ -204,7 +204,9 @@ elo/
                                  and Overall Offense and Overall Defense (an Elo on nine key
                                  stats from the season's play-by-play, weighted, each club
                                  starting the season at 0.42 of its final rating the season
-                                 before, THE CARRY), explained in its docstring; downloads
+                                 before, THE CARRY), and Run Defense, Pass Defense and Pass
+                                 Rush (the same Elo on two stats each, 16 October 2026),
+                                 explained in its docstring; downloads
                                  2012-now nflverse player stats and the play-by-play of the
                                  season and the two before it into cache/ (gitignored) and writes
                                  data/; exits 1 and writes nothing when a required source
@@ -221,7 +223,9 @@ elo/
                                  data/: kicked-off games leave the Mismatches, shields agree,
                                  every ranked row has a trend line (week 1 too), a player kept
                                  out is priced by nothing but keeps his past weeks' ratings;
-                                 Overall Offense and Overall Defense: the two pills, the 32
+                                 Overall Offense and Overall Defense, then the file's position
+                                 tables (Run Defense, Pass Defense, Pass Rush, each with its own
+                                 walk-forward note; a file without them draws two pills): the 32
                                  teams, every value and rank the file's, the weights read from
                                  the file, the sort, the team window, each club's line from its
                                  own start, a club yet to play shown on its carried rating and
@@ -239,6 +243,11 @@ elo/
                                  out at a time), the build's weights scored on 2018-2025 with
                                  the carry and without; run by hand, never by the job; says
                                  whether the build carries its numbers
+  tools/def_units_fit.py         the same for Run Defense, Pass Defense and Pass Rush: their
+                                 stats' constants on 2012-2017, each table's weights fitted
+                                 there on the next game's measure (EPA a run, EPA a dropback,
+                                 sack rate), tested once on 2018-2025 against the raw numbers
+                                 so far; run by hand; says whether the build carries them
   tools/deepdive_vs_units.py     the Deep Dive's rows against the Overall Offense and Defense
                                  units (and the units with the carry), the same team-games,
                                  2018-2025, by stretch of the season; a test, run by hand
@@ -260,7 +269,9 @@ elo/
                                  what its opponent has turned out to be (Power Ratings), `units` (Overall
                                  Offense and Overall Defense: each team's rating, its start and
                                  line, whether it is carried (no game yet), every key stat with
-                                 its league rank, the weights, the carry), `phase`, and
+                                 its league rank, the weights, the carry; and the position
+                                 tables `run_def`, `pass_def` and `pass_rush`, named with
+                                 their walk-forward in `tables`), `phase`, and
                                  `sources` (what each download gave)
   data/matchups.json             generated: the matchup formula per position and stat (its
                                  terms and spread), its walk-forward record, the coming week's
@@ -323,10 +334,10 @@ nflbets/
                                  card.html, storage.js, xbets.js
                                  and the betting app, theme.css over it -> index.html (required, it
                                  builds in memory and writes nothing: the smoke's freshness check)
-  build/tab_pickems.html         the Pick'ems tab (pk- prefixed); a game's row is the button to its
+  build/tab_pickems.html         the Matchups tab (pk- prefixed); a game's row is the button to its
                                  Game snapshot
   build/tab_elo.html             the Player Elo tab and the Elo pieces on the prop tabs (pe-)
-  build/snapshot.html            the Game snapshot (gs-): the window a tap on a Pick'ems game opens,
+  build/snapshot.html            the Game snapshot (gs-): the window a tap on a Matchups game opens,
                                  everything the site has on that game, the news job's preview,
                                  news, Deep Dive and stat breakdown among it (fetched at runtime);
                                  inlined after tab_elo.html
@@ -405,7 +416,7 @@ research/                        the homework toward the next game model (README
 `nflbets/` (NFL Hub, once X NFL Bets and Stats) is the one site: the props and betting sites have no pages
 of their own any more, only their source, tools, jobs and data. `nflbets/build/build.js` assembles the prop model
 from its parts (title, heading and tab bar swapped; every prop model section kept in the
-page, listeners and all, whether or not it has a button yet), sets the Pick'ems board in
+page, listeners and all, whether or not it has a button yet), sets the Matchups board in
 front of it from `nflbets/build/tab_pickems.html` (its own section, styles and closure,
 every class and id prefixed `pk-`), and sets the betting app's Records, Power Ratings
 and Bet Log (the X Bet Log) tabs into frames: the app as `betting/tools/build.js` builds it is carried in
@@ -424,15 +435,16 @@ the framed tabs on the betting app's, so a pick, parlay or bet made in either is
 this page shows. The Season Tracker tab, which framed `news/index.html` by its address, is gone
 (the owner's call, 14 October 2026: its games are in the Game snapshot, below), and no frame is
 filled by address any more. Tabs are addresses: `#slate`, `#parlay` (the Parlay Builder), `#xparlays`
-(X Parlays), `#record` and so on (`routeTabs()` in `tab_pickems.html`); an old `#tracker` lands on
-Pick'ems, written over as `#pickems` (`history.replaceState`). On a phone the tab bar is
+(X Parlays), `#record` and so on (`routeTabs()` in `tab_pickems.html`); the board is the Matchups tab
+(Pick'ems until the owner's call of 16 October 2026; its ids keep the old name) at `#matchups`, and an old `#tracker` or
+`#pickems` lands on it, written over as `#matchups` (`history.replaceState`). On a phone the tab bar is
 wider than the screen and scrolls sideways, so on load, on a new address and on a tap the chosen
 button is brought into the bar by the bar's own `scrollLeft`, never by scrolling the page.
 The header's `buildTag` is the prop model's `APP_BUILD` and the page's own hash (`PAGE_HASH`,
 seven hex of the page's SHA-256 taken with a placeholder in its slot), so every source change
 shows. `smoke.js` builds the page in memory and fails unless the published files match it, checks
 the hash, and runs `betting/tools/reference_models.json`'s gate on the `BET_APP` string.
-The Pick'ems board is Vegas's call on nflverse's lines from `state.json`; it takes its season
+The Matchups board is Vegas's call on nflverse's lines from `state.json`; it takes its season
 from `state.json`, reads each week's scoreboard in ESPN's numbering (weeks 19-22, named Wild Card
 to Super Bowl, are seasontype 3), says the regular season is over once every game is graded and
 the schedule has no playoff game, reads "vs" for a neutral site (nflverse's Neutral or a 9:30am
@@ -504,14 +516,16 @@ centred under it; the two overall ratings, `units`, in two boxes
 of one size and shape either side of "vs", `.gs-ubox`, the better rank's tinted and no separate edge
 chip, a unit with no game yet this season shown on its rating carried from last season and marked so;
 then the Deep Dive's four position matchups for that possession under "Position matchups", below,
-a compact centred row each, its unit, the two clubs and ranks and its tag; no stats fold (the stats
+a compact centred row each, its unit, the two clubs and ranks, the defense's position it faces (the
+owner's call, 16 October 2026) and its tag; no stats fold (the stats
 are the Stat breakdown's) and no note under the card: what the ratings rest on is the boxes' title,
 what the matchups rest on the label's);
 the side of every comparison with the edge wears one mark, `gs-better`; the
 Mismatches in the game (the Props tab's own rows, `window.eloMismatches`, ranked among the week's,
 each edge on the four-step meter with its legend); and Starters (the team's ranked players out
 first, each group's `sidelined`, the box red when someone is; then each team's expected starters,
-`lineups` in `matchups.json`, side by side under each position on Offense, Defense and Kicker tabs
+`lineups` in `matchups.json`, each name a button to his row on the game's page on the Props tab where
+the prop model draws one (16 October 2026; `pkBoard.propsPlayers`, `openOnProps(id, pid)`), side by side under each position on Offense, Defense and Kicker tabs
 -- `role="tablist"`, the arrow keys, Home and End, the choice kept while the page is open; the two
 teams' header under the tabs, directly over the table, since 14 October 2026 -- each
 with his season Elo, rank and shield as on the ELO Ratings tab and a Q from the report, the higher
@@ -530,7 +544,7 @@ window, every card open, is at least 4.5:1 on what it sits on in the hub look. I
 own beyond the vote's counts and the Elo gap, each
 marked `data-gs-n` and held by the smoke, and the stat breakdown's splits and point differential: the
 board hands it the season as loaded, its Vegas call, where a game stands and the way to the Props tab
-(`window.pkBoard`: `canProps`, `openOnProps`), and the Player Elo tab its one read of `elo/data/`
+(`window.pkBoard`: `canProps`, `propsPlayers`, `openOnProps`), and the Player Elo tab its one read of `elo/data/`
 (`window.eloFiles`), so no file is fetched twice. A played game says the ratings, lineups, units and
 stats are the files as they stand now; a game outside the matchups' week, a game under way, a lineup for a
 team's next game rather than this one, and a file that did not load are each said in their card,
@@ -601,7 +615,7 @@ The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closur
 `elo/data/players.json`, `model.json` and `matchups.json` on load and draws one card: the
 rankings by position, a bell-curve histogram by tier shield over the table, each player's
 season line. A click on a player opens his window: his rating, then his matchup this week.
-The position row ends with two pills, Overall Offense and Overall Defense, which put a table of
+The position row ends with the team pills, Overall Offense and Overall Defense first, which put a table of
 the 32 teams in the card's place (`units` in `model.json`): rank, team, record, rating and
 shield, and each key stat with its league rank, the weighted ones first, sortable by column,
 scrolling sideways inside the card at every width with the team column held; a
@@ -612,7 +626,14 @@ rated from a season's first day, starting from 0.42 of its final rating the seas
 share too; a team yet to play is ranked and shown on that carried rating, marked "carried from"
 that season in the table and its window. The weights and the stats are read from the file, a file
 from before them draws the old three columns, and one from before the carry (one start a side)
-draws its lines from that start, with no mark.
+draws its lines from that start, with no mark. After the two come the file's position tables
+(`units.tables`, from 16 October 2026: Run Defense, Pass Defense and Pass Rush, each a defense's,
+on two stats of its own), drawn the same way, the text naming their weights (and which way is better in their
+stats' own words) and, under it, the walk-forward test the file carries for each (a forecast of
+the next game's measure from the table with the offense's own ratings on the same stats, beside
+the same forecast from both clubs' raw numbers); a team's window heads its values Allowed, Made
+or Value by its stats and says its opponent's rank is Overall Offense's, there being no offense
+table to set against it; a file without them draws the two pills alone.
 The same script puts the Mismatches card on the Props tab (games still to kick off only) and, on a game's page,
 a MISMATCH tag beside the name of each player with a Solid, Big or Huge mismatch that week (`mmTags`), a ranked player's shield and his
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
@@ -624,7 +645,7 @@ are on the Pick'em Record and the build's team ratings of results on Power Ratin
 `betting/tools/build.js` (Power Ratings' Record column is the season's own results from
 `betting/state.json`, current within hours of a final, and a team whose latest final the Elo file
 has not taken in yet is starred until the Elo job, which the betting job starts on a new grade,
-rebuilds it). It borrows the Pick'ems tab's team tag and the tier shields
+rebuilds it). It borrows the Matchups tab's team tag and the tier shields
 (`betting/tools/tiers.js`: Wood under 1350 up to Elite from 1700, HOF from 1750) through
 `window.pkTag`, `pkTagColor`, `pkTierBadge`, `pkEloTier` and `pkTierDefs`.
 X Parlays is a tab of its own (`#xparlays`, the section `tab-xparlays`):
@@ -1285,7 +1306,7 @@ games whose stats are not out yet wait for the next run.
 `state.json` holds `teams` (Alpha Model's team ratings and EPA: Power Ratings shows Alpha
 Model's EPA, but its order and Elo are the
 team ratings of results in `elo/data/model.json`), `schedule`, `processed` (graded games), `odds` (nflverse's
-moneylines, spread and total: the Pick'ems board's Vegas baseline), `qb`, `injuries`
+moneylines, spread and total: the Matchups board's Vegas baseline), `qb`, `injuries`
 (the report's columns the app reads), `depth`, `roster`, `events`, `joker`,
 `atKickoff` (each coming game's Alpha call, recorded by every run before its
 kickoff and kept from then on; the game is graded on it, `processed[gid].atKickoff`),

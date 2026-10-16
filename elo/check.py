@@ -80,6 +80,19 @@ all pass. What each one would have caught is said beside it.
              `before` (a curve or an adj over the played clubs alone fails it); its first game steps
              from the carried start, which is its `before` and its line's start; a club new in the
              second season starts at 0; a carry of 0 gives exactly the ratings of no carry.
+             Run Defense, Pass Defense and Pass Rush (16 October 2026, the owner's ask: three more
+             tables of the defenses, each a weighted sum of two stats' ratings on the same Elo) are
+             held every way Overall's two are, each on its own stats (TABLE, the gate's own copy:
+             EPA a run and run success rate on designed runs, EPA a dropback and dropback success
+             rate, sack rate and QB-hit rate, a hit any dropback flagged qb_hit or a sack, read from
+             the play-by-play here with the gate's own code) and from the same carry; the units name
+             each with its side and its walk-forward, and every stat entry is its table's own. On the
+             fixtures: the build's tables are the gate's; each table ranks the team better on every
+             stat above; one more hit or sack raises Pass Rush, a worse run Run Defense and a worse
+             dropback Pass Defense (each stat's rating, the table's only where it weighs), a stat no
+             position table is made of moves none; a game with no designed run leaves the Run
+             Defense it faced at 0 with no value or rank and every number finite; and the pending,
+             bye, line, rank, carry and carry-of-0 cases above hold on them too.
   POWER      Team Rankings (`teams` in model.json, THE POWER RATINGS) against games.csv, solved
              again with the gate's own code: the results part of every team the fixed point of
              R_t = sum(w * score) / (sum(w) + LAM) over its finals (score its capped margin, home
@@ -233,7 +246,8 @@ def unit_checks():
 def _sums(**kw):
     """a team-game's play-by-play sums: an ordinary offense, with kw changed"""
     base = {'plays': 60.0, 'epa': 0.0, 'succ': 25.0, 'yds': 330.0, 'expl': 6.0, 'to': 1.0, 'sacks': 2.0, 'db': 35.0,
-            'third_c': 5.0, 'third_n': 13.0, 'drives': 11.0, 'rz_trips': 3.0, 'rz_td': 2.0}
+            'third_c': 5.0, 'third_n': 13.0, 'drives': 11.0, 'rz_trips': 3.0, 'rz_td': 2.0,
+            'runs': 25.0, 'run_epa': -2.5, 'run_succ': 9.5, 'db_epa': 2.0, 'db_succ': 16.0, 'hits': 5.0}
     base.update({k: float(v) for k, v in kw.items()})
     return base
 
@@ -263,34 +277,44 @@ def _rate(games, season=2030, start=None):
 def unit_team_checks():
     import numpy as np
     keys = list(build.UNIT_STATS)
-    good = _sums(epa=6.0, succ=32, yds=400, expl=9, to=0, sacks=1, third_c=8, rz_td=3)      # better on every stat
+    good = _sums(epa=6.0, succ=32, yds=400, expl=9, to=0, sacks=1, third_c=8, rz_td=3,       # better on every stat
+                 run_epa=3.0, run_succ=13, db_epa=8.0, db_succ=19, hits=3)
     plain = _sums()
-    weak = _sums(epa=-6.0, succ=20, yds=260, expl=3, to=2, sacks=4, third_c=3, rz_td=1)       # worse on every stat
+    weak = _sums(epa=-6.0, succ=20, yds=260, expl=3, to=2, sacks=4, third_c=3, rz_td=1,      # worse on every stat
+                 run_epa=-8.0, run_succ=7, db_epa=-5.0, db_succ=12, hits=8)
     # the weights: shares of 100 a side, none below zero, every weighted stat a stat the build has
     for side, w in build.UNIT_W.items():
         chk(sum(w.values()) == 100 and all(v >= 0 for v in w.values()) and set(w) <= set(keys),
             f'TEAMS: the {side} weights are not shares of 100 over the build\'s stats: {w}')
+    # the build's tables are the gate's (TABLE), each table's weights shares of 100 over its own stats
+    tabs = build.unit_tables()
+    chk(list(tabs) == list(TABLE) and all(tabs[n][0] == TABLE[n][0] and list(tabs[n][2]) == TABLE[n][1] for n in TABLE),
+        f'TEAMS: the build\'s tables are not the gate\'s: {[(n, v[0], list(v[2])) for n, v in tabs.items()]}')
+    for n, (_, w, _) in tabs.items():
+        chk(sum(w.values()) == 100 and all(v >= 0 for v in w.values()) and set(w) <= set(TABLE.get(n, ('', []))[1]),
+            f'TEAMS: the {n} weights are not shares of 100 over its stats: {w}')
     # opponents counted: A and B play the same two opponents at neutral sites, A better on every
     # stat; A's offense ranks above B's, and so does every one of its stats' ratings. The mirror:
     # A's defense allows less of everything than B's against the same offenses
     U = _rate([('g1', 1, 'A', 'X', 30, 10, good, weak, True, 'ok'), ('g2', 1, 'B', 'Y', 20, 20, plain, plain, True, 'ok'),
                ('g3', 2, 'Y', 'A', 10, 30, weak, good, True, 'ok'), ('g4', 2, 'X', 'B', 20, 20, plain, plain, True, 'ok')])
-    for side in ('off', 'def'):
+    for side in TABLE:
         a, b = U[side]['A'], U[side]['B']
         chk(a['rank'] < b['rank'] and a['raw'] > b['raw'], f'TEAMS: a team better on every stat against the same opponents does not rank above ({side}: A {a["rank"]}, B {b["rank"]})')
-        worse = [k for k in keys if not a['stats'][k]['r'] > b['stats'][k]['r']]
+        worse = [k for k in TABLE[side][1] if not a['stats'][k]['r'] > b['stats'][k]['r']]
         chk(not worse, f'TEAMS: {side} stats where being better against the same opponents did not rate higher: {worse}')
-    # the weighted sum is honest: each side's raw is its weights times its stats' ratings
-    for side in ('off', 'def'):
+        chk(sorted(a['stats']) == sorted(TABLE[side][1]), f'TEAMS: the {side} table shows {sorted(a["stats"])}, not its own stats {TABLE[side][1]}')
+    # the weighted sum is honest: each table's raw is its weights times its stats' ratings
+    for side in TABLE:
         for t, v in U[side].items():
-            s = sum(w / 100 * v['stats'][k]['r'] for k, w in build.UNIT_W[side].items())
+            s = sum(w / 100 * v['stats'][k]['r'] for k, w in U['weights'][side].items())
             chk(abs(s - v['raw']) < 1e-5, f'TEAMS: {t} {side} raw {v["raw"]} is not its weights times its stats\' ratings ({s:.6f})')
     # home field: swapping home and away at a neutral site changes nothing; at the home side's
     # ground the same game is expected of the home offense, so it rates below the visitor's
     g = [('g1', 1, 'A', 'B', 24, 17, good, plain, True, 'ok'), ('g2', 2, 'B', 'C', 20, 20, plain, weak, True, 'ok')]
     sw = [('g1', 1, 'B', 'A', 17, 24, plain, good, True, 'ok'), ('g2', 2, 'C', 'B', 20, 20, weak, plain, True, 'ok')]
     U1, U2 = _rate(g), _rate(sw)
-    moved = [(side, t) for side in ('off', 'def') for t in U1[side] if U1[side][t]['raw'] != U2[side][t]['raw']]
+    moved = [(side, t) for side in TABLE for t in U1[side] if U1[side][t]['raw'] != U2[side][t]['raw']]
     chk(not moved, f'TEAMS: swapping home and away at a neutral site moved {moved[:4]}: home field is applied where there is none')
     Un = _rate([('g1', 1, 'A', 'B', 20, 20, plain, plain, True, 'ok')])
     Uh = _rate([('g1', 1, 'A', 'B', 20, 20, plain, plain, False, 'ok')])
@@ -305,32 +329,53 @@ def unit_team_checks():
         chk(U['off']['A']['raw'] < base['off']['A']['raw'] and U['def']['B']['raw'] > base['def']['B']['raw']
             and U['off']['A']['stats'][k]['r'] < base['off']['A']['stats'][k]['r'],
             f'TEAMS: one more {"giveaway" if k == "tor" else "sack"} did not lower the offense and raise the defense')
+    # the position tables, the same way: one more hit or sack raises Pass Rush, a worse run raises Run
+    # Defense, a worse dropback raises Pass Defense (B's defense faced A's offense), and nothing else
+    # of the defense's moves the table
+    for name, k, more in (('pass_rush', 'hit', _sums(hits=6)), ('pass_rush', 'skr', _sums(sacks=3)),
+                          ('run_def', 'repa', _sums(run_epa=-5.0)), ('run_def', 'rsr', _sums(run_succ=7)),
+                          ('pass_def', 'pepa', _sums(db_epa=-3.0)), ('pass_def', 'psr', _sums(db_succ=13))):
+        U = _rate([('g1', 1, 'A', 'B', 20, 20, more, plain, True, 'ok')])
+        up = U[name]['B']['stats'][k]['r'] > base[name]['B']['stats'][k]['r']
+        chk(up and U[name]['B']['raw'] >= base[name]['B']['raw'] and (U[name]['B']['raw'] > base[name]['B']['raw']) == bool(U['weights'][name][k]),
+            f'TEAMS: a worse {k} for the offense did not raise {name} (its weight {U["weights"][name][k]}%)')
+    less = _rate([('g1', 1, 'A', 'B', 20, 20, _sums(to=2, expl=9, third_c=8), plain, True, 'ok')])
+    chk(all(less[n]['B']['raw'] == base[n]['B']['raw'] for n in ('run_def', 'pass_def', 'pass_rush')),
+        'TEAMS: a stat no position table is made of moved one')
     # missing data: a game with no red-zone trip leaves every number finite and the red-zone
     # rating where it was; a final with an offense missing from the play-by-play, or whose
     # play-by-play ends short of the score, is pending, counted nowhere and moves nobody
     norz = _rate([('g1', 1, 'A', 'B', 20, 20, _sums(rz_trips=0, rz_td=0), plain, True, 'ok')])
     finite = all(np.isfinite(v['raw']) and all(e['r'] is not None and np.isfinite(e['r']) for e in v['stats'].values())
-                 for side in ('off', 'def') for v in norz[side].values())
+                 for side in TABLE for v in norz[side].values())
     chk(finite and norz['off']['A']['stats']['rz']['r'] == 0 and norz['off']['A']['stats']['rz']['v'] is None
         and norz['off']['A']['stats']['rz']['rank'] is None, 'TEAMS: a game with no red-zone trip broke a number or moved the red-zone rating')
+    # a game with no designed run (all passes) sits out the run stats: B's Run Defense, which faced it,
+    # stays at 0 with no value or rank, every number finite
+    norun = _rate([('g1', 1, 'A', 'B', 20, 20, _sums(runs=0, run_epa=0, run_succ=0), plain, True, 'ok')])
+    finite = all(np.isfinite(v['raw']) and all(e['r'] is not None and np.isfinite(e['r']) for e in v['stats'].values())
+                 for side in TABLE for v in norun[side].values())
+    rb = norun['run_def']['B']
+    chk(finite and rb['raw'] == 0 and all(rb['stats'][k]['v'] is None and rb['stats'][k]['rank'] is None and rb['stats'][k]['r'] == 0 for k in ('repa', 'rsr')),
+        'TEAMS: a game with no designed run broke a number or moved the Run Defense it faced')
     two = [('g1', 1, 'A', 'B', 24, 17, good, plain, True, 'ok'), ('g2', 2, 'C', 'D', 20, 13, plain, weak, True, 'ok')]
     for kind in ('half', 'oneside'):
         U0, U = _rate(two), _rate(two + [('g3', 3, 'A', 'C', 31, 3, good, weak, False, kind)])
         same = all(U[s][t]['raw'] == U0[s][t]['raw'] and U[s][t]['games'] == U0[s][t]['games']
-                   and all(U[s][t]['stats'][k]['r'] == U0[s][t]['stats'][k]['r'] for k in keys)
-                   for s in ('off', 'def') for t in U0[s])
+                   and all(U[s][t]['stats'][k]['r'] == U0[s][t]['stats'][k]['r'] for k in TABLE[s][1])
+                   for s in TABLE for t in U0[s])
         chk('g3' in U['pending'] and same, f'TEAMS: a final whose play-by-play is {"half a game" if kind == "half" else "missing an offense"} was rated: pending {U["pending"]}')
     # a team on its bye keeps every rating; the line has a point a game played, the last its rating
     U = _rate(two + [('g3', 3, 'A', 'B', 10, 30, weak, good, True, 'ok')])
     U0 = _rate(two)
-    chk(all(U[s][t]['raw'] == U0[s][t]['raw'] for s in ('off', 'def') for t in ('C', 'D')),
+    chk(all(U[s][t]['raw'] == U0[s][t]['raw'] for s in TABLE for t in ('C', 'D')),
         'TEAMS: a team that did not play moved')
-    chk(all(len(v['line']) == v['games'] and (not v['line'] or v['line'][-1][1] == v['elo']) for s in ('off', 'def') for v in U[s].values()),
+    chk(all(len(v['line']) == v['games'] and (not v['line'] or v['line'][-1][1] == v['elo']) for s in TABLE for v in U[s].values()),
         'TEAMS: a team\'s line is not one point a game ending on its rating')
     chk([w for w, _ in U['off']['A']['line']] == [1, 3] and U['off']['A']['before'] == U['off']['A']['line'][0][1],
         f'TEAMS: the line or `before` is not the team\'s own games: {U["off"]["A"]["line"]}, before {U["off"]["A"]["before"]}')
     # ranks: every team ranked once, the ones that have played first, in the order of their raw
-    for s in ('off', 'def'):
+    for s in TABLE:
         chk(sorted(v['rank'] for v in U[s].values()) == list(range(1, len(U[s]) + 1)), f'TEAMS: the {s} ranks are not a permutation')
 
     # the carry, over two invented seasons. 2029: A better than B, C and D on every stat, each a home
@@ -342,15 +387,16 @@ def unit_team_checks():
     P1 = _rate(s1, 2029)
     carry = build.unit_carry(*_season(s1, 2029))
     c = build.UNIT_CARRY
-    off_by = [(t, side, k) for t in 'ABCD' for side in ('off', 'def') for k in keys
-              if abs(carry[t][side][k] - c * P1[side][t]['stats'][k]['r']) > c * 5e-7 + 1e-12]
-    chk(set(carry) == set('ABCD') and not off_by, f'TEAMS: the carry is not UNIT_CARRY of each club\'s final rating on every stat: {off_by[:4]}')
+    off_by = [(t, name, k) for t in 'ABCD' for name, (side, ks) in TABLE.items() for k in ks
+              if abs(carry[t][side][k] - c * P1[name][t]['stats'][k]['r']) > c * 5e-7 + 1e-12]
+    chk(set(carry) == set('ABCD') and not off_by and all(set(carry[t][s]) == set(TEAM_STAT) for t in carry for s in ('off', 'def')),
+        f'TEAMS: the carry is not UNIT_CARRY of each club\'s final rating on every stat: {off_by[:4]}')
     early = [('b1', 1, 'C', 'D', 20, 17, plain, plain, False, 'ok'), ('b2', 1, 'E', 'A', None, None, None, None, False, 'ok'),
              ('b3', 2, 'A', 'B', None, None, None, None, False, 'ok')]
     P2 = _rate(early, 2030, carry)
-    for side in ('off', 'def'):
+    for side, (ball, keys) in TABLE.items():
         a, e = P2[side]['A'], P2[side]['E']
-        same = all(abs(a['stats'][k]['r'] - carry['A'][side][k]) <= 5e-7 for k in keys)
+        same = all(abs(a['stats'][k]['r'] - carry['A'][ball][k]) <= 5e-7 for k in keys)
         chk(same and abs(a['raw'] - c * P1[side]['A']['raw']) <= 1e-5, f'TEAMS: A\'s {side} before its first game is not exactly the carried share of its final ratings')
         chk(a['carried'] and a['games'] == 0 and a['line'] == [] and a['before'] is None and a['elo'] == a['start'] and a['elo'] > 1500
             and a['rank'] == 1, f'TEAMS: A, strong last season and yet to play, is not ranked first above average on its carried rating and marked carried ({side}: {a["elo"]}, rank {a["rank"]}, carried {a["carried"]})')
@@ -365,7 +411,7 @@ def unit_team_checks():
             f'TEAMS: the clubs with a rating in the carry fixture ({side}) are not A-D')
         x = np.array([P2[side][t]['raw'] for t in r])
         mu, sd = float(x.mean()), float(x.std())
-        s0 = {t: sum(wt / 100 * carry[t][side][k] for k, wt in build.UNIT_W[side].items()) for t in r}
+        s0 = {t: sum(wt / 100 * carry[t][ball][k] for k, wt in P2['weights'][side].items()) for t in r}
         want = lambda raw: 1500 + 100 * (raw - mu) / sd
         off_c = [(t, P2[side][t]['elo'], round(want(P2[side][t]['raw']), 1), P2[side][t]['start'], round(want(s0[t]), 1)) for t in r
                  if abs(P2[side][t]['elo'] - want(P2[side][t]['raw'])) > 0.5 + 1e-9 or abs(P2[side][t]['start'] - want(s0[t])) > 0.5 + 1e-9]
@@ -392,7 +438,7 @@ def unit_team_checks():
             ('b4', 2, 'B', 'C', 13, 20, weak, good, False, 'ok'), ('b5', 2, 'D', 'A', 17, 27, plain, good, False, 'ok')]
     zero = build.unit_carry(*_season(s1, 2029), c=0)
     Z0, N0 = _rate(all4, 2030, zero), _rate(all4, 2030)
-    chk(all(zero[t][s][k] == 0 for t in zero for s in zero[t] for k in keys) and all(Z0[s] == N0[s] for s in ('off', 'def')),
+    chk(all(zero[t][s][k] == 0 for t in zero for s in zero[t] for k in zero[t][s]) and all(Z0[s] == N0[s] for s in TABLE),
         'TEAMS: a carry of 0 does not give exactly the ratings of no carry')
 
 # ---- Overall Offense and Overall Defense: the published units against the play-by-play ----
@@ -404,9 +450,20 @@ TEAM_STAT = {'pts': (('pts', None), ('pts', 'g'), 1), 'sr': (('succ', 'plays'), 
              'epa': (('epa', 'plays'), ('epa', 'plays'), 1), 'tor': (('to', 'drives'), ('to', 'g'), -1),
              'skr': (('sacks', 'db'), ('sacks', 'db'), -1), 'xr': (('expl', 'plays'), ('expl', 'plays'), 1),
              'third': (('third_c', 'third_n'), ('third_c', 'third_n'), 1), 'rz': (('rz_td', 'rz_trips'), ('rz_td', 'rz_trips'), 1),
-             'ypp': (('yds', 'plays'), ('yds', 'plays'), 1)}
+             'ypp': (('yds', 'plays'), ('yds', 'plays'), 1),
+             # Run Defense, Pass Defense and Pass Rush: designed runs, dropbacks, and a hit any dropback
+             # nflverse flags qb_hit or a sack
+             'repa': (('run_epa', 'runs'), ('run_epa', 'runs'), 1), 'rsr': (('run_succ', 'runs'), ('run_succ', 'runs'), 1),
+             'pepa': (('db_epa', 'db'), ('db_epa', 'db'), 1), 'psr': (('db_succ', 'db'), ('db_succ', 'db'), 1),
+             'hit': (('hits', 'db'), ('hits', 'db'), -1)}
+# the tables the units carry, the gate's own copy (a deliberate change edits both): the side of the
+# ball each rates and the stats it shows, in order. Overall's two show the nine; the position tables
+# (RUN DEFENSE, PASS DEFENSE AND PASS RUSH in the build, 16 October 2026) their own two, each a defense
+OVERALL = ['pts', 'sr', 'epa', 'tor', 'skr', 'xr', 'third', 'rz', 'ypp']
+TABLE = {'off': ('off', OVERALL), 'def': ('def', OVERALL), 'run_def': ('def', ['repa', 'rsr']),
+         'pass_def': ('def', ['pepa', 'psr']), 'pass_rush': ('def', ['skr', 'hit'])}
 # what a season's value can be: rates in [0, 1], a game's points and giveaways in reason
-RANGE = {'pts': (0, 70), 'tor': (0, 8), 'epa': (-1.5, 1.5), 'ypp': (0, 15)}
+RANGE = {'pts': (0, 70), 'tor': (0, 8), 'epa': (-1.5, 1.5), 'ypp': (0, 15), 'repa': (-1.5, 1.5), 'pepa': (-1.5, 1.5)}
 # half the rounding of the published value (points to a tenth, giveaways and yards to a hundredth, the rest to a thousandth)
 TOL = {'pts': 0.051, 'tor': 0.0051, 'ypp': 0.0051}
 
@@ -416,7 +473,7 @@ def pbp_sums(path):
     are made of, over scrimmage plays (a pass, sack, scramble or run with an EPA, never a kneel,
     a spike or a two-point try); and each game's highest running score"""
     cols = ['game_id', 'home_team', 'posteam', 'defteam', 'play_type', 'pass', 'rush', 'qb_kneel', 'qb_spike',
-            'two_point_attempt', 'qb_scramble', 'epa', 'success', 'yards_gained', 'sack', 'interception', 'fumble_lost',
+            'two_point_attempt', 'qb_scramble', 'epa', 'success', 'yards_gained', 'sack', 'qb_hit', 'interception', 'fumble_lost',
             'third_down_converted', 'third_down_failed', 'fixed_drive', 'fixed_drive_result', 'drive_inside20',
             'total_home_score', 'total_away_score']
     p = pd.read_csv(path, usecols=cols, low_memory=False)
@@ -431,14 +488,20 @@ def pbp_sums(path):
                       'to': num('interception') + num('fumble_lost'), 'sacks': num('sack'), 'db': num('pass'),
                       'third_c': num('third_down_converted'), 'third_n': num('third_down_converted') + num('third_down_failed'),
                       'expl': np.where((num('rush') == 1) | (num('qb_scramble') == 1), num('yards_gained') >= 10,
-                                       (num('sack') == 0) & (num('yards_gained') >= 20)).astype(float)})[play]
+                                       (num('sack') == 0) & (num('yards_gained') >= 20)).astype(float),
+                      'runs': num('rush'), 'run_epa': np.where(num('rush') == 1, pd.to_numeric(p.epa, errors='coerce'), 0.0),
+                      'run_succ': num('success') * num('rush'),
+                      'db_epa': np.where(num('pass') == 1, pd.to_numeric(p.epa, errors='coerce'), 0.0),
+                      'db_succ': num('success') * num('pass'),
+                      'hits': ((num('pass') == 1) & ((num('qb_hit') == 1) | (num('sack') == 1))).astype(float)})[play]
     out = {}
     for (gid, side), x in q.groupby(['game_id', 'side']):
         d = x.groupby('drive').agg(in20=('in20', 'max'), res=('res', 'last'))
         out[(gid, side)] = {'plays': float(len(x)), 'epa': float(x.epa.sum()), 'succ': float(x.succ.sum()), 'yds': float(x.yds.sum()),
                             'expl': float(x.expl.sum()), 'to': float(x['to'].sum()), 'sacks': float(x.sacks.sum()), 'db': float(x.db.sum()),
                             'third_c': float(x.third_c.sum()), 'third_n': float(x.third_n.sum()), 'drives': float(len(d)),
-                            'rz_trips': float((d.in20 == 1).sum()), 'rz_td': float(((d.in20 == 1) & (d.res == 'Touchdown')).sum())}
+                            'rz_trips': float((d.in20 == 1).sum()), 'rz_td': float(((d.in20 == 1) & (d.res == 'Touchdown')).sum()),
+                            **{c: float(x[c].sum()) for c in ('runs', 'run_epa', 'run_succ', 'db_epa', 'db_succ', 'hits')}}
     return out, final
 
 
@@ -454,18 +517,20 @@ def team_replay(sg, sums, final, par, K, weights, start=None):
     season's finals that the play-by-play has whole (both offenses, ending on games.csv's score),
     in kickoff order, every club from start[team][side][stat] (or 0). Returns the rated finals, the
     ratings after them R[side][stat][team], the starts, the season's sums, each club's weeks and
-    each club's overall rating after each of its games, by side."""
+    each club's rating in each table of `weights` (TABLE's) after each of its games, by table."""
     teams = sorted(set(sg.home_team) | set(sg.away_team))
     finals = sg[sg.home_score.notna() & sg.away_score.notna()]
     rated = [r for r in finals.itertuples(index=False)
              if (r.game_id, 'home') in sums and (r.game_id, 'away') in sums and final.get(r.game_id) == (float(r.home_score), float(r.away_score))]
     st = {s: {k: {t: float((((start or {}).get(t) or {}).get(s) or {}).get(k, 0.0)) for t in teams} for k in TEAM_STAT} for s in ('off', 'def')}
     R = {s: {k: dict(st[s][k]) for k in TEAM_STAT} for s in ('off', 'def')}
-    acc = {s: {t: dict.fromkeys(['g', 'pts', 'plays', 'epa', 'succ', 'yds', 'expl', 'to', 'sacks', 'db', 'third_c', 'third_n', 'drives', 'rz_trips', 'rz_td'], 0.0)
+    acc = {s: {t: dict.fromkeys(['g', 'pts', 'plays', 'epa', 'succ', 'yds', 'expl', 'to', 'sacks', 'db', 'third_c', 'third_n', 'drives', 'rz_trips', 'rz_td',
+                                 'runs', 'run_epa', 'run_succ', 'db_epa', 'db_succ', 'hits'], 0.0)
                for t in teams} for s in ('off', 'def')}
     weeks = {t: [] for t in teams}
-    path = {s: {t: [] for t in teams} for s in ('off', 'def')}
-    total = lambda s, t: sum(wt / 100 * R[s][k][t] for k, wt in weights[s].items())
+    names = [n for n in TABLE if n in weights]
+    path = {n: {t: [] for t in teams} for n in names}
+    total = lambda n, t: sum(wt / 100 * R[TABLE[n][0]][k][t] for k, wt in weights[n].items())
     rated.sort(key=lambda r: (f'{r.gameday} {r.gametime if isinstance(r.gametime, str) else "00:00"}', r.game_id))
     for r in rated:
         h = 0.0 if r.location == 'Neutral' else 1.0
@@ -488,8 +553,8 @@ def team_replay(sg, sums, final, par, K, weights, start=None):
             R['def'][k][dfn] -= d
         for t in (r.home_team, r.away_team):
             weeks[t].append(int(r.week))
-            for s in ('off', 'def'):
-                path[s][t].append(total(s, t))
+            for n in names:
+                path[n][t].append(total(n, t))
     return rated, R, st, acc, weeks, path
 
 
@@ -509,18 +574,26 @@ def team_files_checks(M, games, cache):
         return
     stats = U['stats']
     whole = True
-    for side in ('off', 'def'):
+    # the position tables are named with the side they rate (every one a defense) and the test behind them
+    tabs = U.get('tables') or {}
+    chk(sorted(tabs) == sorted(n for n in TABLE if n not in ('off', 'def'))
+        and all(tabs[n].get('of') == TABLE[n][0] and tabs[n].get('label') and (tabs[n].get('walk_forward') or {}).get('rmse') for n in tabs),
+        f'TEAMS: the units\' position tables are not the gate\'s, or one has no label, side or walk-forward: {sorted(tabs)}')
+    chk(sorted(s['side'] for s in stats) == sorted(n for n, (_, ks) in TABLE.items() for _ in ks),
+        f'TEAMS: the units\' stats are not each table\'s own: {sorted({s["side"] for s in stats})}')
+    for side, (ball, keys) in TABLE.items():
         T = U.get(side) or {}
         whole &= set(T) == clubs
         chk(set(T) == clubs and len(T) == 32, f'TEAMS: {side} has {len(T)} teams, the season has {len(clubs)}: {sorted(set(T) ^ clubs)[:4]}')
         chk(sorted(v['rank'] for v in T.values()) == list(range(1, len(T) + 1)), f'TEAMS: the {side} ranks are not 1 to {len(T)} once each')
-        w = U['weights'].get(side) or {}
-        mine = {s['key'] for s in stats if s['side'] == side}
-        chk(sum(w.values()) == 100 and all(v >= 0 for v in w.values()) and set(w) <= mine and mine == set(TEAM_STAT),
+        w = (U['weights'] or {}).get(side) or {}
+        mine = [s['key'] for s in stats if s['side'] == side]
+        chk(sum(w.values()) == 100 and all(v >= 0 for v in w.values()) and set(w) <= set(mine) and sorted(mine) == sorted(keys),
             f'TEAMS: the {side} weights do not sum to 100 over its stats, or a stat is missing: {w}, {sorted(mine)}')
         chk(all(s['weight'] == w.get(s['key'], 0) for s in stats if s['side'] == side), f'TEAMS: the {side} stat list and the weights disagree')
-        chk(all(s['better'] == ('high' if (TEAM_STAT[s['key']][2] > 0) == (side == 'off') else 'low') for s in stats if s['side'] == side and s['key'] in TEAM_STAT),
+        chk(all(s['better'] == ('high' if (TEAM_STAT[s['key']][2] > 0) == (ball == 'off') else 'low') for s in stats if s['side'] == side and s['key'] in TEAM_STAT),
             f'TEAMS: a {side} stat says better the wrong way round')
+        chk(all(sorted((v.get('stats') or {})) == sorted(keys) for v in T.values()), f'TEAMS: a {side} team does not show exactly the table\'s stats')
     if not whole:
         return
     # the play-by-play the build read, read again here
@@ -556,17 +629,17 @@ def team_files_checks(M, games, cache):
     teams = sorted(clubs)
     with_rating = [t for t in teams if acc['off'][t]['g'] or t in (start or {})]
     played = [t for t in teams if acc['off'][t]['g']]
-    for side in ('off', 'def'):
+    for side, (ball, keys) in TABLE.items():
         T, w = U[side], U['weights'][side]
         bad_v, bad_r, bad_rank, bad_line, bad_sum, missing, bad_curve, bad_adj = [], [], [], [], [], [], [], []
         # the curve, on the gate's own replay: 1500 + 100 z across every club with a rating
-        tot = lambda X, t: sum(wt / 100 * X[side][k][t] for k, wt in w.items())
+        tot = lambda X, t: sum(wt / 100 * X[ball][k][t] for k, wt in w.items())
         xs = np.array([tot(R, t) for t in with_rating]) if with_rating else np.zeros(1)
         mu_, sd_ = float(xs.mean()), float(xs.std())
         curve = lambda x: 1500 + 100 * (x - mu_) / sd_ if sd_ > 1e-9 else 1500.0
         near = lambda shown, x: shown is not None and abs(shown - curve(x)) <= 0.5 + 1e-6
         for t in teams:
-            v, a = T[t], acc[side][t]
+            v, a = T[t], acc[ball][t]
             if v['games'] != a['g']:
                 bad_line.append(f'{t} games {v["games"]} for {int(a["g"])}')
             if v.get('carried') != bool(t in (start or {}) and not a['g']):
@@ -588,16 +661,17 @@ def team_files_checks(M, games, cache):
                 bad_line.append(f'{t} change {v.get("change")} for rating {v["elo"]} less before {v["before"]}')
             if abs(sum(wt / 100 * v['stats'][k]['r'] for k, wt in w.items()) - v['raw']) > 1e-5:
                 bad_sum.append(t)
-            for k, (_, (n, d), sign) in TEAM_STAT.items():
+            for k in keys:
+                _, (n, d), sign = TEAM_STAT[k]
                 e = v['stats'].get(k)
                 if e is None:
                     missing.append(f'{t} {k}')
                     continue
-                if abs(e['r'] - R[side][k][t]) > 1e-5:
-                    bad_r.append(f'{t} {k} {e["r"]} for {R[side][k][t]:.6f}')
+                if abs(e['r'] - R[ball][k][t]) > 1e-5:
+                    bad_r.append(f'{t} {k} {e["r"]} for {R[ball][k][t]:.6f}')
                 # its rank on its own rating, the opponents counted, among every club with a rating
                 # (a carried club's included), on the gate's own replay; none for a club with none
-                want_adj = (1 + sum(1 for u in with_rating if R[side][k][u] > R[side][k][t])) if t in with_rating else None
+                want_adj = (1 + sum(1 for u in with_rating if R[ball][k][u] > R[ball][k][t])) if t in with_rating else None
                 if e.get('adj') != want_adj:
                     bad_adj.append(f'{t} {k} adj {e.get("adj")} for {want_adj}')
                 if not a['g']:

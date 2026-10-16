@@ -25,9 +25,11 @@
 
    A row is drawn compact and centred: the unit, the two sides' clubs and ranks ("SEA 13th · DEN
    3rd", the offense's then the defense's; the quarterback's and the run game's defense side is the
-   pass or run defense's rank) and the tag, the edge in its title. Nothing else: no names, no one out,
-   no numbers (the owner's call, 14 October 2026: who plays is the Starters card's, the numbers the
-   Stat breakdown's). The file still carries the names, who is out and the numbers; the news job's
+   pass or run defense's rank), the defense's position it is up against (Pass defense, Pass rush, Run
+   defense, Coverage: the owner's call, 16 October 2026, "for offense vs defense section, please put
+   opposing positions for the defense") and the tag, the edge in its title. Nothing else: no names, no
+   one out, no numbers (the owner's call, 14 October 2026: who plays is the Starters card's, the
+   numbers the Stat breakdown's). The file still carries the names, who is out and the numbers; the news job's
    smoke holds them to their sources.
 
    The headline tag is the one the tracker put over its rows: this team's Overall Offense against the
@@ -53,12 +55,12 @@
   }
 
   /* the four rows of one possession, in this order: [offense unit, how the defense's side is read,
-     the label, the offense's words, the defense's words] */
+     the label, the offense's words, the defense's words, the defense's position as the row names it] */
   const ROWS = [
-    ['qb', 'passD', 'Quarterback', 'passing offense', 'pass defense'],
-    ['ol', 'front', 'Offensive line', 'pass protection', 'pass rush'],
-    ['rb', 'runD', 'Running backs', 'run game', 'run defense'],
-    ['rec', 'db', 'Receivers', 'receivers', 'coverage'],
+    ['qb', 'passD', 'Quarterback', 'passing offense', 'pass defense', 'Pass defense'],
+    ['ol', 'front', 'Offensive line', 'pass protection', 'pass rush', 'Pass rush'],
+    ['rb', 'runD', 'Running backs', 'run game', 'run defense', 'Run defense'],
+    ['rec', 'db', 'Receivers', 'receivers', 'coverage', 'Coverage'],
   ];
   /* the defense's side of a row: a unit of its own (pass rush, coverage) or its rating against the
      pass or the run (no names of its own) */
@@ -83,24 +85,26 @@
   }
 
   /* one possession: this offense's four rows against the defense. Returns { html, rows } where rows
-     are [{ key, tag, cls, edge }], or null when the file has no units for either club. A row is
-     compact and centred: the unit, each side's club and rank ("SEA 13th · DEN 3rd", the offense's
-     then the defense's, each side titled with what it is rated as), and the tag, whose title gives the
-     edge; no names, no one out, no numbers (the owner's call, 14 October 2026: who plays is the
-     Starters card's, the numbers the Stat breakdown's) */
+     are [{ key, dpos, tag, cls, edge }], or null when the file has no units for either club. A row is
+     compact and centred: the offense's unit, each side's club and rank ("SEA 13th · DEN 3rd", the
+     offense's then the defense's, each side titled with what it is rated as), the defense's position it
+     faces (.dddu, the owner's call of 16 October 2026) and the tag, whose title gives the edge, the two
+     together at the row's end (.ddend); no names, no one out, no numbers (the owner's call, 14 October
+     2026: who plays is the Starters card's, the numbers the Stat breakdown's). Each side's figure is in
+     its own .ddside, so a rating in place of a rank is one change there */
   function possession(D, off, def) {
     if (!D || !D.units) return null;
     const U = D.units[club(off)], O = D.units[club(def)];
     if (!U || !O) return null;
     const rows = [];
-    const html = ROWS.map(([key, dk, label, mine, theirs]) => {
+    const html = ROWS.map(([key, dk, label, mine, theirs, dpos]) => {
       const u = U[key], v = faced(O, dk), t = rowTag(D, off, def, key);
-      rows.push({ key, tag: t.tag, cls: t.cls, edge: t.edge });
+      rows.push({ key, dpos, tag: t.tag, cls: t.cls, edge: t.edge });
       const why = t.edge == null ? '' : ` title="Edge ${sd(t.edge)}: ${esc(off)}'s ${mine} rating minus ${esc(def)}'s ${theirs}, in league standard deviations. The tag weighs it by ${t.w} (${sd(t.w * t.edge)}), by how much this matchup alone has predicted points; the rows overlap, so they are not to be added up"`;
       /* one side: its club and its rank, titled with what it is rated as */
       const one = (cls, c, words, x) => { const rk = x && x.rank != null ? ord(x.rank) : '–';
         return `<span class="ddside ${cls}" title="${esc(c)} ${words}: ${rk}"><span class="ddsn">${esc(c)}</span> <b class="ddrk">${rk}</b></span>`; };
-      return `<div class="ddrow" data-dd="${key}" data-dd-off="${esc(off)}" data-dd-def="${esc(def)}"><span class="ddunit">${label}</span> <span class="ddrks">${one('ddoff', off, mine, u)}<span class="ddsep" aria-hidden="true"> · </span>${one('dddef', def, theirs, v)}</span> <span class="dtag ${t.cls}"${why}>${t.tag}</span></div>`;
+      return `<div class="ddrow" data-dd="${key}" data-dd-off="${esc(off)}" data-dd-def="${esc(def)}"><span class="ddunit">${label}</span> <span class="ddrks">${one('ddoff', off, mine, u)}<span class="ddsep" aria-hidden="true"> · </span>${one('dddef', def, theirs, v)}</span> <span class="ddend"><span class="dddu">${dpos}</span> <span class="dtag ${t.cls}"${why}>${t.tag}</span></span></div>`;
     }).join('');
     return { html: `<div class="dd" data-dd-pos="${esc(off)}-${esc(def)}">${html}</div>`, rows };
   }

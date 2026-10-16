@@ -4,7 +4,7 @@
  *   require('./build.js')              the same build in memory, {out, hash}, written
  *                                      nowhere: the smoke compares it with the published page
  *
- *   nflbets/index.html   the prop model's page with the Pick'ems board in front of it, its Parlay
+ *   nflbets/index.html   the prop model's page with the Matchups board in front of it, its Parlay
  *                        Builder tab, X Parlays on a tab of its own, and the Game snapshot a tap on a
  *                        game opens, which reads the Season Tracker's games from the news job's files.
  *
@@ -12,7 +12,8 @@
  * the payload fetch, part2, part3 -- because the tabs it is growing are the prop model's own
  * tabs, and a copy of a tab that size would be a second prop model to keep in step. Its
  * sections all stay in the page, listeners and all; only the tab buttons say which are shown.
- * The Pick'ems tab is set in front of them: its own section, styles and one closure, every
+ * The Matchups tab (Pick'ems until the owner's call of 16 October 2026; its section, file and
+ * prefix keep that name) is set in front of them: its own section, styles and one closure, every
  * name prefixed pk- so nothing of it collides with the app around it.
  *
  * The board draws the betting app's row, so the betting app's tag and confidence-band code is
@@ -121,7 +122,7 @@ for (const f of ['players.json', 'model.json']) if (!fs.existsSync(path.join(ROO
 if (/(^|\n)(body|header|main|:root|\.card|\.bar|table)\{/.test(ELO_CSS)) throw new Error('a page-level rule in the Elo tab styles');
 /* the Season Tracker tab is gone (14 October 2026, the owner's call): its games are in each Game
    snapshot (snapshot.html, below), read from the news job's files, and its old address, #tracker,
-   lands on the Pick'ems board (tab_pickems.html's routeTabs) */
+   lands on the Matchups board, as #matchups (tab_pickems.html's routeTabs) */
 if (fs.existsSync(path.join(ROOT, 'nflbets', 'build', 'tab_tracker.html')))
   throw new Error('nflbets/build/tab_tracker.html is back: the Season Tracker tab is retired, its games are in the Game snapshot');
 
@@ -297,7 +298,7 @@ const BET_INLINE = JSON.stringify(BET_APP).replace(/<\/script/gi, '<\\/script').
 /* the prop model's Track Record (Prop Record) is off the bar: its section stays in the page,
    unshown, since the prop model draws into it on every render */
 const TABS = [
-  ['pickems', "Pick'ems"],
+  ['pickems', 'Matchups'],
   ['slate', 'Props'],
   ['parlay', 'Parlay Builder'],
   ['xparlays', 'X Parlays'],
@@ -334,7 +335,7 @@ const NOTE = `<script>
 /* which build of this page you are looking at. Without it there is no way to tell a page
    the browser cached last week from the one the job published this morning. APP_BUILD moves
    only with the prop model's parts; PAGE_HASH is the first seven hex of the page's own
-   SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
+   SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
 const PAGE_HASH='${HASH_SLOT}';
@@ -355,7 +356,7 @@ let out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>
 for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash', 'NFLSYNC', 'LIVE_IO', 'sync.json', 'sign out of owner', 'Not synced', 'ownerMark', 'syncStamp', 'xpSignIn'])
   if (out.includes(gone)) throw new Error('the built page still has ' + gone + ': the shared store and the owner are retired');
 
-/* the Game snapshot (snapshot.html, every name gs-): the window a tap on a Pick'ems game opens, with
+/* the Game snapshot (snapshot.html, every name gs-): the window a tap on a Matchups game opens, with
    everything the site has on that game. Its styles go in after the others and its script runs
    last, after the Player Elo tab's, whose files (window.eloFiles) and Mismatches it reads; the
    board hands it the season, its own calls and the way to the game on the Props tab
@@ -374,10 +375,10 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
   for (const need of ['window.gameSnapshot=', 'window.pkBoard', 'window.eloFiles', 'window.eloMismatches', "'Escape'", 'window.gsDeepDive',
     "'../news/data/units.json'", "'../news/data/stats.json'", '`../news/data/notes/${season}-w${week}.json`', "fetch(url,{cache:'no-store'})", 'data-gs-props=', 'P.openOnProps(id)', 'P.canProps(g.game_id)'])
     if (!SNAP_JS.includes(need)) throw new Error('nflbets/build/snapshot.html no longer has ' + need);
-  for (const need of ['window.gameSnapshot(card.dataset.game,card)', 'tabindex="0" aria-haspopup="dialog"', 'window.pkBoard={', 'canProps,openOnProps};', 'ST.state=st;', "history.replaceState(null,'','#pickems')"])
-    if (!js.includes(need)) throw new Error("the Pick'ems tab no longer opens the Game snapshot from a game's row, hands it the way to the Props tab, or lands #tracker on the board (" + need + ')');
+  for (const need of ['window.gameSnapshot(card.dataset.game,card)', 'tabindex="0" aria-haspopup="dialog"', 'window.pkBoard={', 'canProps,openOnProps};', 'ST.state=st;', "history.replaceState(null,'','#matchups')"])
+    if (!js.includes(need)) throw new Error("the Matchups tab no longer opens the Game snapshot from a game's row, hands it the way to the Props tab, or lands #tracker and #pickems on the board as #matchups (" + need + ')');
   for (const gone of ['data-snap=', 'pk-gbody', 'aria-expanded'])
-    if (js.includes(gone)) throw new Error("the Pick'ems tab still opens a game's row on buttons (" + gone + '): a tap on a game opens its Game snapshot');
+    if (js.includes(gone)) throw new Error("the Matchups tab still opens a game's row on buttons (" + gone + '): a tap on a game opens its Game snapshot');
   if (!ELO_JS.includes('window.eloFiles=()=>FILES;') || !ELO_JS.includes('window.eloMismatches=mismatches;')) throw new Error('the Player Elo tab no longer hands its files or its Mismatches to the Game snapshot');
   const DD_JS = rd('nflbets', 'build', 'deepdive.js');
   for (const need of ['root.gsDeepDive = API', 'function possession(', 'function headTag(', 'function applies(', 'function basis(', 'module.exports = API'])
