@@ -10,8 +10,9 @@
  * O). No device keeps a list of its own: the Parlay
  * Builder finishes a parlay as a card to download (nflbets/build/card.html), saved nowhere. There
  * is no owner, no sign-in and no shared store: the page writes nothing anywhere but the browser's
- * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the
- * suggested parlays panel over the builder. The test boots the whole page against a stubbed file
+ * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is its choices
+ * and the Top 100 lines over the builder, and Suggest Parlays (#suggest, app v111) each prime-time
+ * game's own set of four levels, whose Finish opens the same card. The test boots the whole page against a stubbed file
  * and a stubbed ESPN, with the real payload and state, opens the X Parlays tab and checks what the section renders, on a
  * browser with nothing of its own and on one that carries what the retired owner and reader layers
  * left (their flags, their copies of the old shared document), which must show exactly the file
@@ -21,8 +22,9 @@
  * figure whole on a long shot, and that finishing writes nothing anywhere; Open in DraftKings and Share
  * link on made-up ids, a leg DraftKings has only at another number going on the slip at DraftKings'
  * number (app v109), named under the buttons, in the shared text and under its row in the builder, and
- * a leg with nothing to convert to named with why. jsdom and PapaParse are
- * borrowed from props/build; run npm ci there first.
+ * a leg with nothing to convert to named with why; and a Suggest Parlays set finished from its own
+ * tab (app v111), live and then locked from the record's entry, each of its legs with an Add of its
+ * own. jsdom and PapaParse are borrowed from props/build; run npm ci there first.
  */
 'use strict';
 const fs = require('fs');
@@ -347,12 +349,14 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
   chk(/^app v\d+/.test(txt(d.getElementById('buildTag'))), 'the page does not say which build it is');
   chk(!/Parlays marked/.test(txt(d.getElementById('lpCard'))), 'the old footer text is in the section');
   /* X Parlays is the whole of its own tab, opened at its address; the builder is the Parlay Builder
-     tab's, under the suggested parlays: no list of a visitor's own anywhere */
-  const lpc = d.getElementById('lpCard'), tx = d.getElementById('tab-xparlays'), tb = d.getElementById('tab-parlay');
+     tab's, under its choices and the Top 100 lines (#pbPanel), and Suggest Parlays (#suggest, app v111)
+     is a tab of its own, without the builder: no list of a visitor's own anywhere */
+  const lpc = d.getElementById('lpCard'), tx = d.getElementById('tab-xparlays'), tb = d.getElementById('tab-parlay'), ts = d.getElementById('tab-suggest');
   chk(!!lpc && !!tx && tx.firstElementChild === lpc && !lpc.nextElementSibling && !tx.hidden && tb.hidden && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'X Parlays'
     && tb.firstElementChild.id === 'pbPanel' && (tb.firstElementChild.nextElementSibling || {}).id === 'parlayBody' && !tb.querySelector('#lpCard')
+    && !!ts && ts.hidden && (ts.firstElementChild || {}).id === 'spPanel' && !ts.querySelector('#parlayBody, #pbPanel, #lpCard')
     && !d.getElementById('suggModal') && !d.getElementById('myCard') && !d.getElementById('myApp') && !d.getElementById('myClear'),
-    'X Parlays is not the whole of its own tab (opened on #xparlays), the builder is not under the suggested parlays on its own tab, or Your parlays is still in the page');
+    'X Parlays is not the whole of its own tab (opened on #xparlays), the builder is not under the Parlay Builder\'s choices on its own tab, Suggest Parlays is not a tab of its own without the builder, or Your parlays is still in the page');
   chk(!/Your parlays/i.test(txt(tx)), 'the X Parlays tab still says Your parlays');
   { const body = d.body.cloneNode(true); body.querySelectorAll('script, style').forEach(n => n.remove());
     chk(/^X Parlays/.test(txt(lpc.querySelector('h2'))) && !/Live Parlays/i.test(body.textContent) && !/Live Parlays/i.test(d.title), 'the section is still called Live Parlays somewhere a reader sees it'); }
@@ -1412,45 +1416,130 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       w.eval(`S.parlay=${JSON.stringify(builder(side))}; S.parlay['other|team:${other ? other.h : 'X'}|ml']=${JSON.stringify({ gid: other ? other.id : 'x', pid: 'team:' + (other ? other.h : 'X'), stat: 'ml', k: 0, side: 'over', main: false, p: 0.5, price: 100, src: 'real', name: 'Elsewhere', pos: 'Game', grp: 'TEAM', team: other ? other.h : 'X', opp: other ? other.a : 'Y', week: other ? +other.w : wk + 1, label: 'To win' })}; save(); renderParlay()`);
       await wait(20);
       chk(!!d.getElementById('pFinish') && d.getElementById('pFinish').disabled && /same week to finish/.test(d.getElementById('pFinish').title), `${how}: a builder across two weeks can be finished`);
-      /* the suggested parlays: a tier finishes the same way, its legs, its price and its chance, on the
-         amount in the panel's Bet amount box, the one the tier pays on (the panel's own tiers are held
-         to their rules in props' audit and smoke.js; here the tier is a fixed one on the two pinned
-         games, so the card is checked on any day) */
-      { const tierLegs = Object.values(builder(side)).map(l => Object.assign({ key: l.gid + '|' + l.pid + '|' + l.stat }, l));
-        w.eval(`getPbTiers=function(){ return {sig:'smoke',games:2,ticked:2,kinds:5,pref:2,thin:0,tiers:[{id:'safe',label:'Safe',n:2,floor:0,legs:${JSON.stringify(tierLegs)},corr:0.41,indep:0.38,dec:3.1,thin:0,fair:{p:0.33,est:false,miss:0}},
-          {id:'med',label:'Medium',n:3,floor:0.25,why:'Only 2 legs on your picks: tick more games or bet types.'},{id:'aggr',label:'Aggressive',n:4,floor:0.12,why:'Only 2 legs on your picks: tick more games or bet types.'},{id:'xtrm',label:'Extreme',n:5,floor:0.05,why:'Only 2 legs on your picks: tick more games or bet types.'}]}; };
-          pbGames=function(){ return S.sched.filter(g=>${JSON.stringify([g1.id, g2.id])}.includes(g.id)); }; renderPb();`);
-        await wait(30);
-        const tb = d.querySelector('#pbPanel [data-pc-finish="pb|safe"]');
-        chk(!!tb && /^Finish$/.test(txt(tb)) && !!d.querySelector('#pbPanel [data-pb-add="safe"]') && !d.querySelector('#pbPanel [data-pc-finish="pb|med"]') && /Only 2 legs on your picks/.test(txt(d.querySelector('#pbPanel .pb-tier.med'))),
-          `${how}: a suggested tier has no Finish and Add to builder, or an empty tier offers one or does not say why`);
+      /* Suggest Parlays (#suggest, app v111, the owner's call of 16 October 2026): each Thursday, Sunday
+         and Monday night game of the week gets its own Safe, Medium, Aggressive and Extreme, and a level
+         finishes the same way the builder does, its legs, its price and its chance, on the amount in the
+         Parlay Builder's Bet amount box, the builder's own stake, which every level pays on. The sets'
+         own rules (prime time, the levels, the lock, a player ruled out) are held to the engine in props'
+         audit and smoke.js; here the set is a fixed one on the second pinned game, moved to Thursday 31
+         December 2099 at 8:15 pm Eastern so it is a Thursday night game, so the card is checked on any
+         day: first live (its lock, 2 hours before kickoff, is far off), then locked, from a record entry
+         made up here, on the page's clock moved to an hour before that kickoff. Its two legs are the
+         game's home money line and the runner's main line, each with DraftKings' id at its own line */
+      { const KICK = Date.UTC(2100, 0, 1, 1, 15), LOCK = KICK - 2 * 3600e3;   /* 8:15 pm EST, UTC-5; the lock 6:15 pm */
+        const ML_G2 = { a: 115, h: -135 }, DK_ML2 = { h: 'SMOKE3#ml_' + g2.h, a: 'SMOKE3#ml_' + g2.a };
+        const mlKey2 = `${g2.id}|team:${g2.h}|ml`, fid = `${g2.id}:safe`;
+        const ml2 = { gid: g2.id, pid: 'team:' + g2.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.58, price: ML_G2.h, src: 'real', mu: null, name: 'Home Side', pos: 'Game', grp: 'TEAM', team: g2.h, opp: g2.a, week: wk, label: 'To win' };
+        const setLegs = [ml2, builder(side)[rbKey]].map(l => Object.assign({ key: l.gid + '|' + l.pid + '|' + l.stat }, l));
+        const WHY = 'Only 2 legs in this game: a parlay takes one leg a player, and one side and one total a game.';
+        const dk = dkMade(); dk[String(wk)][g2.id][`team:${g2.h}|ml`] = DK_ML2.h; dk[String(wk)][g2.id][`team:${g2.a}|ml`] = DK_ML2.a;
+        w.eval(`(()=>{ const g=S.sched.find(x=>x.id===${JSON.stringify(g2.id)}); g.d='2099-12-31'; g.t='20:15'; g.mla=${ML_G2.a}; g.mlh=${ML_G2.h};
+          PAY.dk=${JSON.stringify(dk)};
+          pbGames=function(){ return S.sched.filter(x=>x.id===${JSON.stringify(g2.id)}); };
+          spBuild=function(g){ return {gid:g.id,pref:2,thin:0,mkt:0,far:0,farDk:0,noId:0,moved:0,plGames:1,plNoId:0,tiers:[
+            {id:'safe',label:'Safe',n:2,floor:0,legs:${JSON.stringify(setLegs)},corr:0.41,indep:0.38,dec:3.1,thin:0,mkt:0,fair:{p:0.33,est:false,miss:0}},
+            {id:'med',label:'Medium',n:3,floor:0.25,why:${JSON.stringify(WHY)}},{id:'aggr',label:'Aggressive',n:4,floor:0.12,why:${JSON.stringify(WHY)}},{id:'xtrm',label:'Extreme',n:5,floor:0.05,why:${JSON.stringify(WHY)}}]}; };
+          SP_CACHE=new Map(); renderParlay(); })()`);
+        await wait(20);
+        const tabBtn = t => d.querySelector(`#tabs [data-tab="${t}"]`), sp = d.getElementById('tab-suggest');
+        tabBtn('suggest').click(); await wait(30);
+        chk(!!sp && !sp.hidden && tab.hidden && w.location.hash === '#suggest' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Suggest Parlays' && !!sp.querySelector('#spPanel') && !sp.querySelector('#parlayBody'),
+          `${how}: the Suggest Parlays tab did not open on its own address (#suggest) with its panel and without the builder`);
+        const set = () => d.querySelector(`#spPanel [data-sp-game="${g2.id}"]`);
+        chk(!!set() && txt(set().querySelector('[data-sp-phase="live"]')) === 'Locks Thu 6:15 PM ET, 2 hours before kickoff; Refresh odds updates it until then.',
+          `${how}: the Thursday night game's set does not say it is live until its lock, 2 hours before kickoff: ` + txt(set()));
+        const tb = d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`);
+        chk(!!tb && /^Finish$/.test(txt(tb)) && !!d.querySelector(`#spPanel [data-sp-add="${fid}"]`) && !d.querySelector(`#spPanel [data-pc-finish="sp|${g2.id}:med"]`) && !d.querySelector(`#spPanel [data-sp-add="${g2.id}:med"]`)
+          && txt(set() && set().querySelector('.pb-tier.med .pb-why')) === WHY,
+          `${how}: a set's level has no Finish and Add to builder, or an empty level offers one or does not say why`);
+        /* each leg of a set has its own Add, 44px, named for the leg, pressed while the leg is in the
+           builder: the runner's main line is (the builder holds it from above), the home money line is not */
+        const legBtn = key => set() && set().querySelector(`[data-pb-tier="safe"] [data-pb-leg="${key}"]`);
+        { const css = [...d.querySelectorAll('style')].map(e => e.textContent).join('\n'), r = (css.match(/\.pb-legadd\{([^}]*)\}/) || [])[1] || '';
+          const a = legBtn(mlKey2), b = legBtn(rbKey);
+          chk(/min-height:44px/.test(r) && /min-width:44px/.test(r) && set().querySelectorAll('[data-pb-tier="safe"] [data-pb-leg]').length === 2
+            && !!a && a.tagName === 'BUTTON' && a.getAttribute('aria-pressed') === 'false' && txt(a) === 'Add' && a.getAttribute('aria-label') === 'Add Home Side, To win, to the builder'
+            && !!b && b.getAttribute('aria-pressed') === 'true' && txt(b) === 'Added' && b.getAttribute('aria-label') === `Remove Card Runner, ${rbLabel}, from the builder`,
+            `${how}: a set's legs do not each have an Add of 44px named for the leg, pressed only where the leg is in the builder: ` + [a, b].map(x => x ? x.outerHTML : 'none').join(' | ')); }
         const cash = () => [...d.querySelectorAll('#pcView .pc-money b')].map(txt).join(' | ');
         if (tb) { tb.click(); await wait(20);
-          chk(!md.hidden && /Safe parlay/i.test(txt(d.getElementById('pcView'))) && txt(d.querySelector('#pcView .pc-price')) === '+210' && /Card Runner/.test(txt(d.getElementById('pcView'))) && txt(d.querySelector('#pcView .pc-chance')).startsWith('Fair chance all 2 land 33.0% model says 41.0% · the price says ')
-            && cash() === '$40.00 | $124.00 | +$84.00',
-            `${how}: the suggestion's card is not its legs, price, chance and the $40 amount it pays on: ` + txt(d.getElementById('pcView')));
+          chk(!md.hidden && txt(d.querySelector('#pcView .pc-kick')) === `Safe parlay · ${g2.a} at ${g2.h}` && txt(d.querySelector('#pcView .pc-price')) === '+210'
+            && ['Home Side', 'To win', '−135', 'Card Runner', rbLabel, '+105'].every(t => txt(d.getElementById('pcView')).includes(t))
+            && txt(d.querySelector('#pcView .pc-chance')).startsWith('Fair chance all 2 land 33.0% model says 41.0% · the price says ')
+            && cash() === '$40.00 | $124.00 | +$84.00' && d.getElementById('pcAgain').hidden,
+            `${how}: the set's card is not its game, legs, price, chance and the $40 amount it pays on (with no Start over, which is the builder's): ` + txt(d.getElementById('pcView')));
           const tA = d.getElementById('pcDk');
-          chk(!tA.hidden && tA.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + tierLegs.map(l => (l.stat === 'ml' ? DK_ML : DK_RB).replace(/#/g, '%23')).join('+') && /opens the 2 legs as DraftKings had them then/.test(txt(d.getElementById('pcDkNote'))),
-            `${how}: the suggestion's card does not open its legs in DraftKings in the tier's order: ` + tA.getAttribute('href'));
+          chk(!tA.hidden && tA.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + [DK_ML2.h, DK_RB].map(x => x.replace(/#/g, '%23')).join('+') && /opens the 2 legs as DraftKings had them then/.test(txt(d.getElementById('pcDkNote'))),
+            `${how}: the set's card does not open its legs in DraftKings in the level's order: ` + tA.getAttribute('href'));
           d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-          chk(md.hidden && d.activeElement === tb, `${how}: Escape on the card did not close it, or the focus did not go back to the tier`); }
-        /* an amount of the visitor's own in the Bet amount box: the tier pays on it, Finish opens the
-           card on it, and Add to builder leaves it in the builder, whose own Finish is on it too */
-        { const box = d.getElementById('pbStake'), pay = () => { const p = d.querySelector('#pbPanel [data-pb-tier="safe"] [data-pb-pay]'); return p ? txt(p.querySelector('b')) + ' / ' + txt(p.querySelector('span')) : 'no payout'; };
-          chk(!!box && box.value === '40' && pay() === '$124.00 / $40 pays', `${how}: the panel has no Bet amount box on the builder's $40, or the tier does not pay on it: ${box ? box.value : 'no box'} / ${pay()}`);
+          chk(md.hidden && d.activeElement === tb, `${how}: Escape on the card did not close it, or the focus did not go back to the set's Finish`); }
+        /* an amount of the visitor's own in the Bet amount box, on the Parlay Builder tab: the set pays on
+           it, Finish opens the card on it, and Add to builder leaves it in the builder, whose own Finish
+           is on it too */
+        { const box = d.getElementById('pbStake'), pay = () => { const p = set() && set().querySelector('[data-pb-tier="safe"] [data-pb-pay]'); return p ? txt(p.querySelector('b')) + ' / ' + txt(p.querySelector('span')) : 'no payout'; };
+          chk(!!box && box.value === '40' && pay() === '$124.00 / $40 pays', `${how}: the Parlay Builder has no Bet amount box on the builder's $40, or the set does not pay on it: ${box ? box.value : 'no box'} / ${pay()}`);
           if (box) {
+            tabBtn('parlay').click(); await wait(20);
             box.value = '12.5'; box.dispatchEvent(new w.Event('input')); box.dispatchEvent(new w.Event('change')); await wait(20);
-            chk(w.eval('S.stake') === 12.5 && d.getElementById('pbStake').value === '12.50' && pay() === '$38.75 / $12.50 pays', `${how}: $12.50 typed in the Bet amount box is not what the tier pays on: ${pay()}`);
-            d.querySelector('#pbPanel [data-pc-finish="pb|safe"]').click(); await wait(20);
-            chk(!md.hidden && cash() === '$12.50 | $38.75 | +$26.25', `${how}: Finish on the tier did not open the card on the Bet amount: ` + cash());
+            tabBtn('suggest').click(); await wait(30);
+            chk(w.eval('S.stake') === 12.5 && d.getElementById('pbStake').value === '12.50' && pay() === '$38.75 / $12.50 pays', `${how}: $12.50 typed in the Bet amount box is not what the set pays on: ${pay()}`);
+            const f2 = d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`);
+            if (f2) { f2.click(); await wait(20); }
+            chk(!!f2 && !md.hidden && cash() === '$12.50 | $38.75 | +$26.25', `${how}: Finish on the set did not open the card on the Bet amount: ` + cash());
             d.getElementById('pcClose').click();
-            d.querySelector('#pbPanel [data-pb-add="safe"]').click(); await wait(30);
-            const q = w.PARLAY_CARD.quote(), pS = d.getElementById('pStake');
-            chk(Object.keys(w.eval('S').parlay).length === 2 && !!q && q.stake === 12.5 && !!pS && pS.value === '12.50', `${how}: Add to builder did not leave the tier in the builder on the Bet amount: ${q ? q.stake : 'no builder'}`);
+            const add = d.querySelector(`#spPanel [data-sp-add="${fid}"]`);
+            if (add) { add.click(); await wait(30); }
+            const q = w.PARLAY_CARD.quote(), pS = d.getElementById('pStake'), inB = Object.keys(w.eval('S').parlay).sort().join();
+            chk(!!add && inB === [mlKey2, rbKey].sort().join() && !!q && q.stake === 12.5 && !!pS && pS.value === '12.50' && d.activeElement === d.querySelector(`#spPanel [data-sp-add="${fid}"]`),
+              `${how}: Add to builder did not leave exactly the set's legs in the builder on the Bet amount, or lost the focus: ${inB} / ${q ? q.stake : 'no builder'}`);
             d.getElementById('pFinish').click(); await wait(20);
             const fmt = x => '$' + x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             chk(!md.hidden && !!q && cash() === ['$12.50', fmt(12.5 * q.useDec), '+' + fmt(12.5 * q.useDec - 12.5)].join(' | '), `${how}: the builder's Finish after Add to builder is not on the Bet amount: ` + cash());
-            d.getElementById('pcClose').click(); } }
+            d.getElementById('pcClose').click();
+            /* one leg's Add takes that leg out of the builder and puts it back, by the builder's own path
+               (the home money line priced at the game's own moneyline), the focus kept on it */
+            const a1 = legBtn(mlKey2); if (a1) { a1.click(); await wait(30); }
+            const a2 = legBtn(mlKey2);
+            chk(!!a1 && Object.keys(w.eval('S').parlay).join() === rbKey && !!a2 && a2.getAttribute('aria-pressed') === 'false' && a2.getAttribute('aria-label') === 'Add Home Side, To win, to the builder' && d.activeElement === a2,
+              `${how}: a leg's Add, pressed while the leg is in the builder, did not take that leg alone out, or lost the focus: ` + Object.keys(w.eval('S').parlay).join());
+            if (a2) { a2.click(); await wait(30); }
+            const a3 = legBtn(mlKey2), L = w.eval('S').parlay[mlKey2];
+            chk(!!L && Object.keys(w.eval('S').parlay).length === 2 && L.price === ML_G2.h && L.src === 'real' && L.stat === 'ml' && L.team === g2.h
+              && !!a3 && a3.getAttribute('aria-pressed') === 'true' && txt(a3) === 'Added' && a3.getAttribute('aria-label') === 'Remove Home Side, To win, from the builder' && d.activeElement === a3,
+              `${how}: a leg's Add did not put that leg in the builder at the game's own moneyline, or does not read Added with the focus on it: ` + JSON.stringify(L)); } }
+        /* locked: from 2 hours before kickoff the set is the site's, the record's entry for the game (the
+           props job's suggest_ledger.json, its prime map, made up here: this smoke's fetch stub serves no
+           record), taken before the lock on other legs than the live set's, the away money line and the
+           runner's line; the page's clock is moved to an hour before kickoff (Date.now alone: kickoff()
+           reads the schedule's own times) and set back after */
+        { const realNow = w.Date.now, kIso = new Date(KICK).toISOString().replace(/\.\d{3}Z$/, 'Z'), taken = new Date(KICK - 5.25 * 3600e3).toISOString().replace(/\.\d{3}Z$/, 'Z');
+          const legOut = (l, fair) => ({ gid: l.gid, week: wk, pid: l.pid, team: l.team, grp: l.grp, stat: l.stat, k: l.k, side: l.side, main: !!l.main, price: l.price, src: 'real', name: l.name, label: l.label, p: l.p, fair, fair_est: false, thin: false, market: false });
+          const away = { gid: g2.id, pid: 'team:' + g2.a, team: g2.a, grp: 'TEAM', stat: 'ml', k: 0, side: 'over', main: false, price: ML_G2.a, name: 'Away Side', label: 'To win', p: 0.5 };
+          /* the Safe pair as the job keeps it: its chance and price the builder's sums on its legs, rounded as the
+             record rounds them (4 places, 3); the card states the builder's own sums on the legs as kept, which Add
+             to builder then pays, never the rounded figures */
+          const safeLegs = [legOut(away, 0.45), legOut(builder(side)[rbKey], 0.5)], L2 = w.eval('pbOrder')(safeLegs.map(l => ({ ...l, key: `${l.gid}|${l.pid}|${l.stat}` })));
+          const pj = w.eval('parlayProb')(L2).corr, dj = w.eval('parlayDec')(L2.map(l => ({ leg: l, ml: l.price }))), mny = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          const entry = { season: SEA, week: wk, gid: g2.id, away: g2.a, home: g2.h, kickoff: kIso, lock: new Date(LOCK).toISOString().replace(/\.\d{3}Z$/, 'Z'), baked_at: taken, pool: {}, taken_at: taken,
+            tiers: [{ id: 'safe', label: 'Safe', n: 2, floor: 0, legs: safeLegs, p: Math.round(pj * 1e4) / 1e4, fair: 0.25, fair_est: false, dec: Math.round(dj * 1e3) / 1e3, likeliest: false, thin: 0, mkt: 0 },
+              ...[['med', 'Medium', 3, 0.25], ['aggr', 'Aggressive', 4, 0.12], ['xtrm', 'Extreme', 5, 0.05]].map(([id, label, n, floor]) => ({ id, label, n, floor, why: WHY }))] };
+          w.eval(`PB_REC=${JSON.stringify({ prime: { [`${SEA}|${String(wk).padStart(2, '0')}|${kIso}|${g2.id}`]: entry } })}; PB_REC_DONE=true;`);
+          w.Date.now = () => KICK - 3600e3;
+          w.eval('renderParlay()'); await wait(30);
+          const ph = set() && set().querySelector('[data-sp-phase]');
+          chk(!!ph && ph.getAttribute('data-sp-phase') === 'locked' && txt(ph).startsWith('Locked since Thu 6:15 PM ET, 2 hours before kickoff: the site’s set') && txt(ph).includes('(Thu 3:00 PM ET)') && /Refresh odds no longer changes it\.$/.test(txt(ph)),
+            `${how}: an hour before kickoff the set is not marked Locked, the site's set from the record taken at 3:00 PM ET: ` + txt(ph));
+          const lf = d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`);
+          if (lf) { lf.click(); await wait(20); }
+          chk(!!lf && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === `Safe parlay · ${g2.a} at ${g2.h}` && txt(d.querySelector('#pcView .pc-price')) === w.eval('fmtML')(w.eval('decToML')(dj)).replace('-', '−')
+            && ['Away Side', '+115', 'Card Runner', rbLabel, '+105'].every(t => txt(d.getElementById('pcView')).includes(t)) && !txt(d.getElementById('pcView')).includes('Home Side')
+            && txt(d.querySelector('#pcView .pc-chance')).startsWith(`Fair chance all 2 land 25.0% model says ${(pj * 100).toFixed(1)}% · the price says `)
+            && cash() === `${mny(12.5)} | ${mny(12.5 * dj)} | +${mny(12.5 * dj - 12.5)}`
+            && d.getElementById('pcDk').getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + [DK_ML2.a, DK_RB].map(x => x.replace(/#/g, '%23')).join('+'),
+            `${how}: Finish on a locked set does not open the record's set, its legs, price, chance and the amount: ` + txt(d.getElementById('pcView')) + ' / ' + d.getElementById('pcDk').getAttribute('href'));
+          if (lf) { d.getElementById('pcClose').click(); chk(d.activeElement === lf, `${how}: closing the locked set's card did not give the focus back to its Finish`); }
+          chk(w.localStorage.getItem('props_sp_lock_v1') === null, `${how}: a locked set the record has was kept in the browser as the page's own`);
+          w.Date.now = realNow; w.eval('PB_REC=null; renderParlay()'); await wait(20); }
         chk(w.eval('S').saved.map(p => p.id).join() === 'saved-before' && reads(), `${how}: finishing a suggestion saved it`); }
     }
 

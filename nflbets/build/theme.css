@@ -105,7 +105,6 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 .bigp .hero span{color:var(--ink-2)} .bigp .hero small{color:var(--gold)}
 .sugg-side button.on,.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}
 .pb-amt:hover{border-color:var(--ink-2)}
-.pb-lock.on{background:var(--gold-soft)}
 .pb-tier.xtrm{border-top-color:#B49CFF}
 .faroff{color:var(--gold)}
 .pb-chip.on small{color:var(--ink)}

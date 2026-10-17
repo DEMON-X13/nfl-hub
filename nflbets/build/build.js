@@ -4,8 +4,8 @@
  *   require('./build.js')              the same build in memory, {out, hash}, written
  *                                      nowhere: the smoke compares it with the published page
  *
- *   nflbets/index.html   the prop model's page with the Matchups board in front of it, its Parlay
- *                        Builder tab, X Parlays on a tab of its own, and the Game snapshot a tap on a
+ *   nflbets/index.html   the prop model's page with the Matchups board in front of it, its Suggest
+ *                        Parlays and Parlay Builder tabs, X Parlays on a tab of its own, and the Game snapshot a tap on a
  *                        game opens, which reads the Season Tracker's games from the news job's files.
  *
  * The page is the prop model assembled the way props/build/assemble.py assembles it -- part1,
@@ -48,8 +48,8 @@ const betting = rd('betting', 'app', 'x_nfl_betting_model.html');
 const tab = rd('nflbets', 'build', 'tab_pickems.html');
 /* the X Parlays section is the section page's own source, set into the X Parlays tab, a tab of
    its own (#xparlays): X's parlays (liveparlays/parlays.json, read only on every device) and
-   nothing else. The Parlay Builder is its own tab (#parlay): the prop model's suggested parlays
-   panel over the builder. No device keeps a list of its own: visitors come to see X's parlays,
+   nothing else. The Parlay Builder is its own tab (#parlay): its Top 100 lines over the builder; Suggest
+   Parlays (#suggest) is the prop model's own tab of each prime-time game's parlays. No device keeps a list of its own: visitors come to see X's parlays,
    and the builder finishes a parlay as a card to download (card.html, below), saved nowhere.
    The section's styles are scoped to its card and its script runs in a closure, since the page
    around it defines most of the same names for itself. */
@@ -222,19 +222,19 @@ for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 
   if (!QUOTE.includes(need)) throw new Error("the builder's pricing lifted from part3.js has no " + need);
 /* the builder's save, which every device turns into Finish: the button, its rule, its label; and
    each suggested tier's Add to builder and Finish, which the card answers */
-for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-pb-add="${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${t.id}\"", 'function getPbTiers(', 'function pbStake(', 'id="pbStake"', 'data-pb-pay="${t.dec}"'])
-  if (!part3.includes(need)) throw new Error("the builder's save or the suggested parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
+for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-sp-add="${g.id}:${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${o.fid||t.id}\"", 'function spTier(', 'function pbStake(', 'id="pbStake"', 'data-pb-pay="${t.dec}"'])
+  if (!part3.includes(need)) throw new Error("the builder's save or Suggest Parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
 CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
-for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "getPbTiers().tiers", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'", 'PAY.dk', 'function dkPlan(', 'function shareLink('])
+for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "window.spTier(", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'", 'PAY.dk', 'function dkPlan(', 'function shareLink('])
   if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
 /* Finish on every device: nothing in the card asks whose device it is */
 for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
   if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html still has ' + gone + ': the builder finishes a parlay on every device');
-for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function getPbTiers(', 'function gameStarted', 'function marketLine'])
+for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function spTier(', 'function gameStarted', 'function marketLine'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
 { const elo = rd('nflbets', 'build', 'tab_elo.html');
   if (!elo.includes("kind:'elo'") || !elo.includes('window.eloPicks=eloPicks;') || !elo.includes("getElementById('pbElo')"))
-    throw new Error("the Elo picks' tiers, their place in the suggested parlays or window.eloPicks moved; the parlay card finishes an Elo pick on every device"); }
+    throw new Error("the Elo picks' tiers, their place on Suggest Parlays or window.eloPicks moved; the parlay card finishes an Elo pick on every device"); }
 /* X Parlays: X's parlays from the file, the whole of its tab, read only; a quiet line under the
    heading says when the file last changed them */
 const LIVE_SECTION = `<div class="card" id="lpCard">
@@ -300,6 +300,7 @@ const BET_INLINE = JSON.stringify(BET_APP).replace(/<\/script/gi, '<\\/script').
 const TABS = [
   ['pickems', 'Matchups'],
   ['slate', 'Props'],
+  ['suggest', 'Suggest Parlays'],
   ['parlay', 'Parlay Builder'],
   ['xparlays', 'X Parlays'],
   ['ratings', 'Team Rankings', 'ratings'],
@@ -314,11 +315,12 @@ const FRAMES = TABS.filter(t => t[2]).map(([t, label, embed]) =>
 const navFrom = html.indexOf('<nav role="tablist" id="tabs">'), navTo = html.indexOf('</nav>', navFrom);
 if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where nflbets/build expects it in part1.html');
 html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
-for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|parlay)$/) && html.includes(`id="tab-${t}"`))
+for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|suggest|parlay)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
 html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
-/* the Parlay Builder keeps the prop model's own section and its address, #parlay: the suggested
-   parlays panel over the builder. X Parlays is a section of its own after it, #xparlays. The
+/* the Parlay Builder keeps the prop model's own section and its address, #parlay: the Top 100 lines and
+   the choices they are built from over the builder (app v111; Suggest Parlays, #suggest, is the prop model's
+   own section before it, each prime-time game's parlays and the Elo picks). X Parlays is a section of its own after it, #xparlays. The
    parlay card's window sits at the end of the page, outside every tab, over everything. */
 html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="pbPanel"></div>\n  <div id="parlayBody"></div>\n</section>',
   '<section id="tab-parlay" hidden>\n  <div id="pbPanel"></div>\n  <div id="parlayBody"></div>\n</section>\n\n<section id="tab-xparlays" hidden>\n  ' + LIVE_SECTION + '\n</section>', 'the Parlay Builder section');
