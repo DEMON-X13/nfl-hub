@@ -413,7 +413,7 @@ const LINES = {
  "wk6:CAR-PHI": "CAR -3, O/U 39.5",
  "wk6:PIT-TB": "PIT -2.5, O/U 38.5",
  "wk6:ARI-LAR": "LAR -12.5, O/U 51.5",
- "wk6:LAC-KC": "KC -7.5, O/U 41.5",
+ "wk6:LAC-KC": "KC -7.5, O/U 40.5",
  "wk6:BUF-LV": "BUF -5.5, O/U 53.5",
  "wk6:DAL-GB": "GB -1.5, O/U 53.5",
  "wk6:WAS-SF": "SF -7.5, O/U 52.5",

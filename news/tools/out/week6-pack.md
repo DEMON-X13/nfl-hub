@@ -151,16 +151,17 @@ Searches to run:
 - "NFL week 6 picks CHI ATL"
 
 Chicago Bears, injuries:
+- Zavier Scott (RB) Active: The Bears elevated Scott from the practice squad ahead of Sunday's game against the Falcons.
+- Kyler Gordon (CB) Questionable, Calf: The Bears activated Gordon (calf) from reserve/PUP on Saturday.
 - Anthony Johnson Jr. (S) Out, Undisclosed: out
 - Caleb Williams (QB) Questionable, Hamstring: Williams (hamstring) is expected to start Sunday's game against the Falcons, Adam Schefter of ESPN reports.
 - Dayo Odeyingbo (DE) Injured Reserve, Quadriceps: ir
 - Keyshaun Elliott (LB) Out, Quadriceps: Elliott (quadriceps) has been ruled out for Sunday's game against the Falcons.
-- Kyler Gordon (CB) Questionable, Calf: Gordon (calf) is listed as questionable for Sunday's game against the Falcons.
 - Tyrique Stevenson Sr. (CB) Questionable, Hip: Stevenson (hip) is questionable for Sunday's game against the Falcons.
 - T.J. Edwards (LB) Out, Hamstring: Edwards (hamstring) has been ruled out for Sunday's game against the Falcons.
 - D'Andre Swift (RB) Active: Swift will once again absorb a heavier backfield workload after Kyle Monangai (thumb/toe) was ruled out for Sunday's game against the Falcons, Larry Mayer of the Bears' official site reports.
 - Case Keenum (QB) Active: Caleb Williams (hamstring) is listed as questionable for Sunday's game against Atlanta, but if he's not given the green light to return, then it's unclear whether Keenum or Tyson Bagent starts under center for Chicago, Larry Mayer of the Bears' official site reports.
-- Tyson Bagent (QB) Active: Whether Bagent starts or serves in a backup role against the Falcons on Sunday depends largely on whether Caleb William (hamstring) is cleared to return from a three-game absence, Larry Mayer of the Bears' official site reports.
+- Tyson Bagent (QB) Active: Whether Bagent starts or serves in a backup role against the Falcons on Sunday depends largely on whether Caleb Williams (hamstring) is cleared to return from a three-game absence, Larry Mayer of the Bears' official site reports.
 - Kyle Monangai (RB) Out, Toe: Monangai (thumb/toe) was ruled out for Sunday's game in Atlanta.
 - Shemar Turner (DT) Active: The Bears activated Turner (knee) from their reserve/PUP list Tuesday.
 - Kalif Raymond (WR) Active: Raymond caught three of four passes for six yards and logged one carry for minus-2 yards during the Bears' 31-7 loss to the Packers on Sunday. He also returned one punt for nine yards.
@@ -175,7 +176,6 @@ Chicago Bears, injuries:
 - Noah Sewell (LB) Active: Sewell (Achilles) is active for Sunday's game against the Packers.
 - Darnell Wright (OT) Active
 - Joe Thuney (G) Active
-- Jonah Jackson (G) Active
 
 Chicago Bears, ESPN headlines:
 
@@ -316,8 +316,8 @@ Tennessee Titans, injuries:
 Tennessee Titans, ESPN headlines:
 
 Indianapolis Colts, injuries:
+- Will Mallory (TE) Active: The Colts activated Mallory (thumb) from injured reserve Saturday.
 - Jaylon Carlies (LB) Out, Ribs: Carlies (ribs) has been ruled out for Sunday's game against the Titans, Joel A. Erickson of The Indianapolis Star reports.
-- Will Mallory (TE) Active: Mallory (thumb) is listed as questionable for Sunday's game against the Titans.
 - Ashton Dulin (WR) Out, Hamstring: Dulin (hamstring) has been ruled out ahead of Sunday's game against the Titans, Joel A. Erickson of The Indianapolis Star reports.
 - Jalen Travis (OT) Active
 - Tyler Warren (TE) Questionable, Groin: Warren (groin) is listed as questionable for Sunday's game against the Titans after being added to the practice report Friday as a limited participant.
@@ -520,6 +520,7 @@ Carolina Panthers, injuries:
 Carolina Panthers, ESPN headlines:
 
 Philadelphia Eagles, injuries:
+- Zach Ertz (TE) Active: Ertz is not being elevated from the practice squad for Sunday's matchup against Carolina, Zach Berman of The Athletic reports.
 - Jalen Hurts (QB) Injured Reserve, Calf: The Eagles placed Hurts (calf) on injured reserve Saturday, Adam Schefter of ESPN reports.
 - Lane Johnson (OT) Out, Personal: out
 - Drew Kendall (C) Questionable, Knee: Kendall (knee) is questionable for Sunday's game against the Panthers.
@@ -542,7 +543,6 @@ Philadelphia Eagles, injuries:
 - Marcus Epps (S) Active: Epps (groin) practiced fully Thursday.
 - Tanner McKee (QB) Active: McKee appears lined up to start Sunday's game against the Panthers after the Eagles announced Wednesday that Jalen Hurts has been ruled out for Week 6 due to a superficial blood clot on his calf, Dave Zangaro of NBC Sports Philadelphia reports.
 - Jakorian Bennett (CB) Injured Reserve, Knee: Bennett (knee) had his  21-day practice window opened by the Eagles on Wednesday.
-- Zach Ertz (TE) Active: Ertz reverted to the Eagles' practice squad Monday, per the NFL's transaction log.
 - Jalen Carter (DT) Active: Carter logged five tackles (three solo), including 2.0 sacks, one pass defense and two forced fumbles during the Eagles' 19-17 loss to the Jaguars on Sunday in London.
 - Jake Elliott (PK) Active: Elliott made his lone field-goal attempt and both of his extra-point tries during Sunday's 19-17 loss to the Jaguars in London.
 
@@ -685,7 +685,7 @@ Los Angeles Rams, injuries:
 Los Angeles Rams, ESPN headlines:
 
 ### Los Angeles Chargers at Kansas City Chiefs
-Sun, Oct 18, 4:25 PM ET, CBS, Arrowhead Stadium, Kansas City. Line: KC -7.5, O/U 41.5
+Sun, Oct 18, 4:25 PM ET, CBS, Arrowhead Stadium, Kansas City. Line: KC -7.5, O/U 40.5
 
 Searches to run:
 - "Los Angeles Chargers Kansas City Chiefs preview week 6"
@@ -860,7 +860,7 @@ Dallas Cowboys, injuries:
 Dallas Cowboys, ESPN headlines:
 
 Green Bay Packers, injuries:
-- Skyy Moore (WR) Injured Reserve, Ankle: ir
+- Skyy Moore (WR) Injured Reserve, Ankle: The Packers placed Moore (ankle) on injured reserve Saturday.
 - Javon Hargrave (DT) Injured Reserve, Achilles: ir
 - Jacob Monk (C) Questionable, Quadriceps: Monk (quadriceps) is questionable for Sunday's game against the Cowboys.
 - Aaron Banks (G) Questionable, Toe: Banks (knee/toe) is questionable for Sunday's game against Dallas.
@@ -928,6 +928,7 @@ Washington Commanders, injuries:
 Washington Commanders, ESPN headlines:
 
 San Francisco 49ers, injuries:
+- Kaelon Black (RB) Active: Black was excused from Saturday's practice to address a personal matter but does not have an injury designation for Monday's Week 6 matchup against Washington, Nick Wagoner of ESPN.com reports.
 - Romello Height (DE) Questionable, Hand: questionable
 - James Thompson Jr. (DT) Active
 - Colton McKivitz (OT) Active
@@ -952,7 +953,6 @@ San Francisco 49ers, injuries:
 - Eddy Pineiro (PK) Active: Pineiro went 1-for-2 on field-goal attempts and made all three of his extra-point tries during the 49ers' 32-29 win over the Seahawks on Sunday.
 - Renardo Green (CB) Active: Green logged one solo tackle and three pass defenses (including two interceptions) during the 49ers' 32-29 win over the Seahawks on Sunday.
 - George Kittle (TE) Active: Kittle (illness) caught five of six targets for 24 yards in Sunday's 32-29 win over the Seahawks.
-- Brock Purdy (QB) Active: Purdy completed 19 of 29 passes for 189 yards, two touchdowns and one interception in Sunday's 32-29 win over the Seahawks. He also rushed five times for six yards and threw a successful two-point conversion.
 
 San Francisco 49ers, ESPN headlines:
 
