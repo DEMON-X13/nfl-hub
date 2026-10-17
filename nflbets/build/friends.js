@@ -25,7 +25,7 @@
 window.FRIENDS=(function(){
   /* the betting app's season: the build writes it over this default */
   const SEASON=/*SEASON*/2026;
-  const URL='../picks/friends.json', READY_MS=6000;
+  const URL='picks/friends.json', READY_MS=6000;
   const st={friends:[], at:null, other:null, ok:null, err:null};
   const listeners=[];
   const isObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);

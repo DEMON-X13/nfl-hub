@@ -1,4 +1,5 @@
-/* Check the X Parlays section of the built Bets and Stats page.
+/* Check the X Parlays section of the built NFL Hub page (the site's root, index.html, since 17 October
+ * 2026; nflbets/ until then).
  *
  *   node nflbets/build/smoke_live.js        (from the hub root)
  *
@@ -11,7 +12,7 @@
  * Builder finishes a parlay as a card to download (nflbets/build/card.html), saved nowhere. There
  * is no owner, no sign-in and no shared store: the page writes nothing anywhere but the browser's
  * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is its choices
- * and the Top 100 lines over the builder, and Suggested Parlays (#suggest, app v111) each prime-time
+ * and the Top 50 lines over the builder, and Suggested Parlays (#suggest, app v111) each prime-time
  * game's own set of four levels, whose Finish opens the same card. The test boots the whole page against a stubbed file
  * and a stubbed ESPN, with the real payload and state, opens the X Parlays tab and checks what the section renders, on a
  * browser with nothing of its own and on one that carries what the retired owner and reader layers
@@ -32,12 +33,12 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const { JSDOM } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
 const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papaparse'));
-const HTML = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
+const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 const STATE = fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8');
-const URL_ = 'https://demon-x13.github.io/nfl-hub/nflbets/#xparlays';
+const URL_ = 'https://demon-x13.github.io/nfl-hub/#xparlays';
 /* the Parlay Builder's address, where section J finishes a parlay as a card */
-const URL_PB = 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay';
+const URL_PB = 'https://demon-x13.github.io/nfl-hub/#parlay';
 /* the retired store and its sign-in and token services: no page may ask any of them anything */
 const RETIRED = /firebaseio\.com|firebasedatabase\.app|identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com|googleapis\.com\/identitytoolkit|store\.test/;
 /* every request of every run, and the ones that broke the rule: a request to the retired store,
@@ -363,7 +364,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
   chk(/^app v\d+/.test(txt(d.getElementById('buildTag'))), 'the page does not say which build it is');
   chk(!/Parlays marked/.test(txt(d.getElementById('lpCard'))), 'the old footer text is in the section');
   /* X Parlays is the whole of its own tab, opened at its address; the builder is the Parlay Builder
-     tab's, under its choices and the Top 100 lines (#pbPanel), and Suggested Parlays (#suggest, app v111)
+     tab's, under its choices and the Top 50 lines (#pbPanel), and Suggested Parlays (#suggest, app v111)
      is a tab of its own, without the builder: no list of a visitor's own anywhere */
   const lpc = d.getElementById('lpCard'), tx = d.getElementById('tab-xparlays'), tb = d.getElementById('tab-parlay'), ts = d.getElementById('tab-suggest');
   chk(!!lpc && !!tx && tx.firstElementChild === lpc && !lpc.nextElementSibling && !tx.hidden && tb.hidden && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'X Parlays'
@@ -958,7 +959,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         && /Est\.: a leg is priced on one side only/.test(txt(view.querySelector('.pc-chance'))) === est,
         `${how}: the card does not lead with the fair chance (${line1}), then the model's and the price's: ` + txt(view.querySelector('.pc-chance')));
       chk(new RegExp(`^${wk <= 18 ? 'Week ' + wk : '(Wild Card|Divisional|Conference|Super Bowl)'}`).test(txt(view.querySelector('.pc-sub'))) && /Dec 31/.test(txt(view.querySelector('.pc-sub')))
-        && /NFL Hub/.test(txt(view)) && txt(view).includes('demon-x13.github.io/nfl-hub/nflbets'), `${how}: the card has no week and date, or no mark and address: ` + txt(view.querySelector('.pc-head')));
+        && /NFL Hub/.test(txt(view)) && txt(view.querySelector('.pc-foot b')) === 'demon-x13.github.io/nfl-hub' && !/nfl-hub\/nflbets/.test(txt(view)), `${how}: the card has no week and date, or no mark and the site's address (its root, demon-x13.github.io/nfl-hub): ` + txt(view.querySelector('.pc-head')) + ' / ' + txt(view.querySelector('.pc-foot')));
       chk(d.activeElement === d.getElementById('pcDownload'), `${how}: the window did not take the focus`);
       /* Open in DraftKings: one link to DraftKings' betslip, the legs' own ids in the card's order
          joined by +, each '#' as %23, in a new tab; under the buttons, what it opens and each leg's
@@ -1009,7 +1010,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         chk(asked.length === 1 && JSON.stringify(asked[0]) === JSON.stringify({ title: s0.title, text: t0 }), `${how}: canShare was not asked about the title and the text alone: ` + JSON.stringify(asked));
         chk(t0.split('\n').includes(DKU(order)) && dkA.getAttribute('href') === DKU(order) && t0.includes(slipLines('the 2 legs as DraftKings had them', DKU(order), AT_G)),
           `${how}: Share link's text does not carry the whole betslip link (every id, in the card's order) alone on its line, under what it opens and over the read: ` + JSON.stringify(t0));
-        chk(s0.title === '2-leg parlay ' + price.replace('−', '-') && legsIn(t0) && t0.includes(`Stake ${cash[0]} · Pays ${cash[1]}`) && /\nDraftKings lines as read [^\n]*\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(t0)
+        chk(s0.title === '2-leg parlay ' + price.replace('−', '-') && legsIn(t0) && t0.includes(`Stake ${cash[0]} · Pays ${cash[1]}`) && /\nDraftKings lines as read [^\n]*\ndemon-x13\.github\.io\/nfl-hub$/.test(t0)
           && !/Add by hand/.test(t0) && !promises(t0 + '\n' + s0.title) && !/ est\.\)| fair\)|\(.*price\)$/.test(t0 + '\n' + s0.title),
           `${how}: Share link did not send the title, every leg (book prices, unlabelled), the stake and payout, the read and the site last, or it promises every leg: ` + JSON.stringify(s0));
         chk(copied.length === 0 && rec.clicks.length === clicks0 && rec.blobs.length === blobs0 && rec.canvases.length === canv0, `${how}: Share link copied as well, or drew or downloaded the image`);
@@ -1174,7 +1175,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             && !note().querySelector('a') && !d.getElementById('pcLink').hidden, `${how}: a parlay DraftKings has none of, over two games, does not offer DraftKings' NFL page, or does not name every leg and why: ` + txt(note()) + ' / ' + dkA.outerHTML);
           d.getElementById('pcLink').click(); await wait(30);
           const s2 = shared[0] || {};
-          chk(shared.length === 1 && !('url' in s2) && (s2.text || '').includes(`\nDraftKings’ NFL page (add the legs by hand):\n${NFL}\nAdd by hand at DraftKings:\n`) && legsOf(qb, s2.text || '') && !/DraftKings lines/.test(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s2.text || '')
+          chk(shared.length === 1 && !('url' in s2) && (s2.text || '').includes(`\nDraftKings’ NFL page (add the legs by hand):\n${NFL}\nAdd by hand at DraftKings:\n`) && legsOf(qb, s2.text || '') && !/DraftKings lines/.test(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub$/.test(s2.text || '')
             && handOf(qb, s2.text || '', () => 'its game’s prices are not pulled yet') && (s2.text || '').includes('\nAdd by hand at DraftKings:\n'),
             `${how}: Share link on a parlay DraftKings has none of, over two games, does not send DraftKings' NFL page and every leg to add by hand, with why: ` + JSON.stringify(s2));
           shared.length = 0; }
@@ -1347,7 +1348,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         `${how}: Download did not save the card as a named PNG: ` + JSON.stringify(rec.clicks));
       chk(rec.urls.length === 1 && rec.urls[0].type === 'image/png' && rec.canvases.length === 1 && rec.canvases[0].width === 1080 && rec.canvases[0].height > 2 * 400,
         `${how}: the download is not a PNG drawn at twice the card's size: ` + (rec.urls[0] && rec.urls[0].type) + ' ' + (rec.canvases[0] && rec.canvases[0].width));
-      chk(['Home Side', 'To win', 'Card Runner', rbLabel, '−135', '+105', price, '2-leg parlay', 'NFL HUB', 'demon-x13.github.io/nfl-hub/nflbets', '$25.00'].every(t => rec.texts.some(x => x.includes(t))),
+      chk(['Home Side', 'To win', 'Card Runner', rbLabel, '−135', '+105', price, '2-leg parlay', 'NFL HUB', '$25.00'].every(t => rec.texts.some(x => x.includes(t))) && rec.texts.includes('demon-x13.github.io/nfl-hub') && !rec.texts.some(x => /nfl-hub\/nflbets/.test(x)),
         `${how}: the image does not carry every leg, the price, the stake and the mark: ` + rec.texts.join(' | '));
       chk(!rec.texts.some(x => /DraftKings|Share link/.test(x)), `${how}: the image carries the DraftKings link or the Share link: ` + rec.texts.join(' | '));
       { const all = rec.texts.join('');
@@ -1473,8 +1474,14 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         chk(!!sp && !sp.hidden && tab.hidden && w.location.hash === '#suggest' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Suggested Parlays' && !!sp.querySelector('#spPanel') && !sp.querySelector('#parlayBody'),
           `${how}: the Suggested Parlays tab did not open on its own address (#suggest) with its panel and without the builder`);
         const set = () => d.querySelector(`#spPanel [data-sp-game="${g2.id}"]`);
-        chk(!!set() && txt(set().querySelector('[data-sp-phase="live"]')) === 'Locks Thu 6:15 PM ET, 2 hours before kickoff; Refresh odds updates it until then.',
-          `${how}: the Thursday night game's set does not say it is live until its lock, 2 hours before kickoff: ` + txt(set()));
+        /* (app v113, the owner's call of 17 October 2026: "in suggest parlays, get rid of all the long paragraph
+           description stuff") the lock line is one short line, and a set draws no lead, foot or record sentence, and
+           no line under a level saying why a leg is not a Value pick or a total is there */
+        chk(!!set() && txt(set().querySelector('[data-sp-phase="live"]')) === 'Locks Thu 6:15 PM ET, 2 hours before kickoff.',
+          `${how}: the Thursday night game's set does not say in one short line that it is live until its lock, 2 hours before kickoff: ` + txt(set()));
+        chk(!!set() && ![...set().querySelectorAll('p.pb-thin')].some(p => !p.classList.contains('pb-espnline') && !p.classList.contains('sp-upd')) && !sp.querySelector('#spHead .pb-lead, #spSets .pb-foot, #spRec p')
+          && !/Refresh odds updates it until then|is not a Value pick|are not Value picks|One night is shown at a time|Each set is built from its game|The record starts with this change/.test(txt(sp.querySelector('#spHead')) + ' ' + txt(sp.querySelector('#spSets'))),
+          `${how}: Suggested Parlays still draws one of its long paragraphs (a lead, a foot, the record's sentence or a level's why-line): ` + txt(sp.querySelector('#spSets')).slice(0, 200));
         const tb = d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`);
         chk(!!tb && /^Finish$/.test(txt(tb)) && !!d.querySelector(`#spPanel [data-sp-add="${fid}"]`) && !d.querySelector(`#spPanel [data-pc-finish="sp|${g2.id}:med"]`) && !d.querySelector(`#spPanel [data-sp-add="${g2.id}:med"]`)
           && txt(set() && set().querySelector('.pb-tier.med .pb-why')) === WHY,
@@ -1554,8 +1561,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           w.Date.now = () => KICK - 3600e3;
           w.eval('renderParlay()'); await wait(30);
           const ph = set() && set().querySelector('[data-sp-phase]');
-          chk(!!ph && ph.getAttribute('data-sp-phase') === 'locked' && txt(ph).startsWith('Locked since Thu 6:15 PM ET, 2 hours before kickoff: the site’s set') && txt(ph).includes('(Thu 3:00 PM ET)') && /Refresh odds no longer changes it\.$/.test(txt(ph)),
-            `${how}: an hour before kickoff the set is not marked Locked, the site's set from the record taken at 3:00 PM ET: ` + txt(ph));
+          /* (app v113) one short line: the record's set is the one shown (its legs, below), "Locked since Thu 6:15 PM ET." */
+          chk(!!ph && ph.getAttribute('data-sp-phase') === 'locked' && txt(ph) === 'Locked since Thu 6:15 PM ET.' && !!ph.querySelector('.sp-lockmark') && txt(ph.querySelector('.sp-lockmark')) === 'Locked',
+            `${how}: an hour before kickoff the set is not marked Locked in one short line, "Locked since Thu 6:15 PM ET.": ` + txt(ph));
           const lf = d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`);
           if (lf) { lf.click(); await wait(20); }
           chk(!!lf && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === `Safe parlay · ${g2.a} at ${g2.h}` && txt(d.querySelector('#pcView .pc-price')) === w.eval('fmtML')(w.eval('decToML')(dj)).replace('-', '−')

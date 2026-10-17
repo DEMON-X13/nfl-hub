@@ -25,8 +25,9 @@ change to the audit, the smoke or the props parts is held to every shape the job
                 fake_wk1.csv, and data/ from `git archive <commit> props/data`
   the verdict   weekly.audit_verdict on the summary line, as the job reads it (audit.js exits 0
                 whatever it finds), so a crash with no summary line is a failure too
-  the smoke     nflbets/build/smoke.js with SMOKE_NOW, in a scratch hub: nflbets/, betting/,
-                props/build/ and liveparlays/ from this checkout, and that commit's props/data,
+  the smoke     nflbets/build/smoke.js with SMOKE_NOW, in a scratch hub: the page (the root's
+                index.html), nflbets/, betting/, props/build/, liveparlays/ and the old addresses'
+                redirects (pickems/, live/, news/index.html) from this checkout, and that commit's props/data,
                 elo/data, betting/state.json and liveparlays/*.json over them (the smoke reads them
                 all); it must end "0 failures"
 
@@ -135,7 +136,7 @@ def run_case(case, base, a):
             out = (r.stdout or '') + (r.stderr or '')
             ok, line = audit_verdict(out)
         else:
-            copy_tree(d, ['nflbets', 'betting', 'props/build', 'liveparlays'])
+            copy_tree(d, ['index.html', 'nflbets', 'betting', 'props/build', 'liveparlays', 'pickems', 'live', 'news/index.html'])
             if a.smoke: shutil.copy2(a.smoke, os.path.join(d, 'nflbets', 'build', 'smoke.js'))
             overlay(d, sha, ['props/data', 'elo/data', 'betting/state.json', 'liveparlays/parlays.json', 'liveparlays/xbets.json'])
             r = subprocess.run(['node', 'nflbets/build/smoke.js'], cwd=d, env={**env, 'SMOKE_NOW': now}, capture_output=True, text=True, timeout=a.timeout)

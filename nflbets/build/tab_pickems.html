@@ -117,7 +117,7 @@
    Nothing is stored and nothing is picked here yet. */
 (function(){
 /*BETTING*/
-const STATE_URL='../betting/state.json';
+const STATE_URL='betting/state.json';
 /* season: the betting job's own, from state.json (the board's one source), never written in here */
 const ST={sched:[],odds:{},season:null,state:null};
 /* the scoreboard as last read, by game id: nothing here is saved anywhere */
@@ -444,12 +444,16 @@ function routeTabs(){
    with the tab's name written in front of it. Nothing is fetched for it and nothing can be
    cached apart from this page, so a refresh of this page refreshes the frames with it. */
 function frames(){
+  /* the page's light or dark look (theme.js): a frame's document is given it when it is made and again
+     when it loads, and a press of the switch reaches every frame already open */
+  const look=()=>{ try{ if(window.hubTheme) return window.hubTheme.now(); }catch(e){} return document.documentElement.getAttribute('data-theme')==='light'?'light':'dark'; };
   const load=f=>{
     if(f.dataset.loaded||!f.dataset.embed||typeof BET_APP!=='string') return;
     f.dataset.loaded='1';
     f.addEventListener('load',()=>{
       let doc=null; try{ doc=f.contentDocument; }catch(e){ return; }
       if(!doc||!doc.documentElement) return;
+      doc.documentElement.setAttribute('data-theme',look());
       doc.documentElement.style.overflowY='hidden';
       const fit=()=>{ const h=doc.documentElement.scrollHeight; if(h>0&&Math.abs(h-(parseFloat(f.style.height)||0))>2) f.style.height=h+'px'; };
       fit();
@@ -458,6 +462,8 @@ function frames(){
     let doc=BET_APP.replace('window.EMBED_TAB=null','window.EMBED_TAB='+JSON.stringify(f.dataset.embed));
     /* the hub look, laid over the app's own styles as it is over the page's (theme.css, by the build) */
     if(typeof window.THEME_FRAME_HEAD==='string'){ const i=doc.indexOf('</head>'); if(i>0) doc=doc.slice(0,i)+window.THEME_FRAME_HEAD+doc.slice(i); }
+    /* in the frame's own <html> tag, so its first paint is in the page's look */
+    doc=doc.replace(/<html\b/i,'<html data-theme="'+look()+'"');
     f.setAttribute('srcdoc',doc);
   };
   const show=()=>document.querySelectorAll('main section:not([hidden]) iframe.pk-frame').forEach(load);

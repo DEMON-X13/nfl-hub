@@ -1,4 +1,7 @@
-/* Check the built NFL Hub page (nflbets/), once X NFL Bets and Stats.
+/* Check the built NFL Hub page, the site's own front page since 17 October 2026 (index.html at the
+ * root, https://demon-x13.github.io/nfl-hub/; nflbets/ until then, once X NFL Bets and Stats), built
+ * from nflbets/build/, and the old addresses' redirects to it (nflbets/, pickems/, live/, liveparlays/,
+ * news/).
  *
  *   node nflbets/build/smoke.js                  (from the hub root)
  *   node nflbets/build/smoke.js --season-over    the same, on this season with every game played
@@ -42,7 +45,9 @@ const JSDOM = require(path.join(ROOT, 'props', 'build', 'clock_now.js')).jsdomAt
 const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papaparse'));
 /* a price from DraftKings' line read on ESPN by Refresh odds, worked on its own (the props audit's rule, apart from the page) */
 const ESPN_RULE = require(path.join(ROOT, 'props', 'build', 'espn_rule.js'));
-const HTML = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
+/* the page: the site's root (nflbets/build/build.js writes it there) */
+const SITE = 'https://demon-x13.github.io/nfl-hub/';
+const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const STATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8'));
 const SEASON_OVER = process.argv.includes('--season-over');
 if (SEASON_OVER) {
@@ -130,14 +135,56 @@ process.on('beforeExit', () => finish('the smoke stopped before it finished: its
 { let B = null;
   try { B = require('./build.js'); } catch (e) { chk(false, 'the sources do not build: ' + e.message); }
   if (B) {
-    chk(B.out === HTML, 'nflbets/index.html is not a fresh build of its sources: run node nflbets/build/build.js and commit the page');
+    chk(B.out === HTML, "index.html (the site's root) is not a fresh build of its sources: run node nflbets/build/build.js and commit the page");
     chk(!fs.existsSync(path.join(ROOT, 'nflbets', 'preview.html')), 'nflbets/preview.html is back: the hub look is the page itself since 16 October 2026, and the preview is gone');
     chk(!/PROP_KEY=\/\*PROP_KEY\*\/'/.test(HTML) && (HTML.match(/PROP_KEY=\/\*PROP_KEY\*\/"([^"]+)"/g) || []).length === 1 && HTML.split(`PROP_KEY=/*PROP_KEY*/${JSON.stringify(B.PROP_KEY)}`).length === 2,
       "the storage layer is not on part2's storage key " + B.PROP_KEY); }
 }
+/* ---- the page is the site's root, and every old address sends a visitor to it ----
+   The owner's call of 17 October 2026: ".../nfl-hub/nflbets/ be .../nfl-hub/ and get rid of that page" (the
+   landing page that listed it, Weekly Picks and the other hubs). The root's index.html is the built page
+   (above, byte for byte), never the landing page; nflbets/index.html is a redirect, no copy of the page, and
+   each old address's page, run in vm on the web and from disk, replaces itself (so Back does not loop) with
+   the root at the tab it keeps: nflbets/ its own address's tab and query (nflbets/#suggest to the root's
+   #suggest), pickems/ its hash as before (none: the board, which the page opens on), live/ and liveparlays/
+   X Parlays, news/ the page. Each has a link to the same place for a browser without scripts, loads
+   nothing, and none names nflbets/ outside a comment. nflbets/ has no meta refresh (news/ never had one);
+   the others keep theirs, pointing at the root too. Each target is resolved against its own page's address
+   and must land at the site's root, so a target one folder off (../nflbets/, ../../) fails. */
+{ const vm = require('vm');
+  chk(!/const PAGE_HASH=|id="hubTheme"|const BET_APP=/.test(fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8')),
+    "nflbets/index.html is still a copy of the page: it is the redirect to the site's root since 17 October 2026, and the page is index.html at the root");
+  chk(!/<a class="card" href="nflbets\/"|Weekly Picks<\/b>|The other hubs/.test(HTML), 'the root index.html is still the landing page that listed Bets and Stats, Weekly Picks and the other hubs');
+  /* the betting tabs' frames are srcdoc, resolved against the page's address: the page names their files from the root */
+  chk(HTML.includes("window.STATE_URL='betting/state.json';window.ELO_URL='elo/data/model.json';") && HTML.includes("const DATA_URL='props/data/payload.json';"),
+    "the page does not name its files from the site's root, where it is (the payload, and the framed betting app's season and Elo model)");
+  const went = (html, protocol, hash, search) => { const to = [];
+    try { for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) vm.runInNewContext(m[1], { location: { protocol, hash, search, replace: u => to.push(u), assign: u => to.push('assign ' + u) }, window: {}, document: {} }); }
+    catch (e) { to.push('threw ' + e.message); }
+    return to; };
+  /* [page, its address, [hash, search, where it must land from the root], its meta refresh's target from the root (null: it has none)] */
+  const REDIRECTS = [
+    ['nflbets/index.html', 'nflbets/', [['', '', ''], ['#suggest', '', '#suggest'], ['#tracker', '?a=1', '?a=1#tracker'], ['#xparlays', '', '#xparlays']], null],
+    ['pickems/index.html', 'pickems/', [['', '', ''], ['#record', '?a=1', '#record']], ''],
+    ['live/index.html', 'live/', [['', '', '#xparlays'], ['#suggest', '', '#xparlays']], '#xparlays'],
+    ['liveparlays/index.html', 'liveparlays/', [['', '', '#xparlays'], ['#bets', '', '#xparlays']], '#xparlays'],
+    ['news/index.html', 'news/', [['', '', ''], ['#tracker', '?standalone', '']], null]];
+  for (const [file, at, cases, meta] of REDIRECTS) {
+    const html = fs.readFileSync(path.join(ROOT, file), 'utf8'), bad = [];
+    for (const [hash, search, want] of cases) for (const protocol of ['https:', 'http:', 'file:']) {
+      const to = went(html, protocol, hash, search), land = to.length === 1 && !/^(threw|assign) /.test(to[0]) ? new URL(to[0], SITE + at).href : null;
+      if (land !== SITE + want) bad.push(`${protocol} ${at}${search}${hash}: ${to.join(', ') || 'stays'} lands ${land} not ${SITE + want}`); }
+    const links = [...html.matchAll(/<a [^>]*href="([^"]*)"/g)].map(m => new URL(m[1], SITE + at).href);
+    if (!links.length || links.some(h => h !== SITE + cases[0][2])) bad.push('its link goes to ' + (links.join(', ') || 'nowhere') + ', not ' + SITE + cases[0][2]);
+    const ref = html.match(/<meta[^>]+http-equiv\s*=\s*["']?refresh[^>]*content="0; url=([^"]*)"/i);
+    if (meta === null ? /http-equiv\s*=\s*["']?refresh/i.test(html) : !ref || new URL(ref[1], SITE + at).href !== SITE + meta)
+      bad.push(meta === null ? 'it has a meta refresh' : 'its meta refresh goes to ' + (ref ? ref[1] : 'nowhere') + ', not ' + SITE + meta);
+    if (/<script[^>]+src=|<link[^>]+stylesheet|<iframe/i.test(html)) bad.push('it loads something');
+    if (/nflbets\//.test(html.replace(/\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->/g, ''))) bad.push('it still names nflbets/');
+    chk(!bad.length, `${file}, the old address ${at}, does not send a visitor to the site's root as it should: ` + bad.join('; ')); } }
 /* ---- the betting app inside the page carries the gated model numbers ----
    betting/tools/update.js gates the app source against reference_models.json; this is the same
-   gate on the copy the site actually serves, the BET_APP string in nflbets/index.html */
+   gate on the copy the site actually serves, the BET_APP string in the root index.html */
 { const m = HTML.match(/\nconst BET_APP=("(?:[^"\\]|\\.)*");\n<\/script>/);
   const app = m ? JSON.parse(m[1]) : '';
   const ref = JSON.parse(fs.readFileSync(path.join(ROOT, 'betting', 'tools', 'reference_models.json'), 'utf8'));
@@ -291,7 +338,7 @@ function dkTakes(DK, l, started) {
   const W = DK[String(l.week)], E = W && typeof W === 'object' ? W[l.gid] : null;
   return !(E && typeof E === 'object') || !!dkOwnId(DK, l, started);
 }
-/* the Parlay Builder panel's own text (its choices, notes and Top 100 lines). The Elo picks are on Suggest
+/* the Parlay Builder panel's own text (its choices, notes and Top 50 lines). The Elo picks are on Suggest
    Parlays since app v111; one inside it would be left out all the same, since their own words on DraftKings'
    betslip are not the panel's notes */
 const pbOwnTxt = panel => { if (!panel) return ''; const c = panel.cloneNode(true), e = c.querySelector('#pbElo'); if (e) e.remove(); return txt(c); };
@@ -300,6 +347,12 @@ const pbOwnTxt = panel => { if (!panel) return ''; const c = panel.cloneNode(tru
    and a time as the tab says it, US Eastern ("Sun 6:20 PM ET") */
 const PRIME_NIGHT = { 4: 'Thursday night', 0: 'Sunday night', 1: 'Monday night' };
 const PB_TIERS_OWN = ['safe', 'med', 'aggr', 'xtrm'];
+/* (app v113) the Parlay Builder's list is the Top 50 lines (the owner, 17 October 2026: "in parlay builder only do top
+   50 now instead of 100"), and of the stats the page projects only those DraftKings posts are offered as a bet ("i
+   only want to show legs that draft kings does"): targets and FG attempts are projected and never a line, a leg or a
+   suggestion anywhere. The smoke's own copies, never read from the page (its PB_TOP_N and NO_BET) */
+const PB_TOP_N_OWN = 50;
+const NO_BET_OWN = new Set(['targets', 'fg_att']);
 const primeOwn = g => !!g && /^\d{4}-\d\d-\d\d$/.test(g.d || '') && PRIME_NIGHT[new Date(g.d + 'T12:00:00Z').getUTCDay()] != null && /^\d\d:\d\d$/.test(g.t || '') && g.t >= '19:00';
 const etSay = ms => new Date(ms).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET';
 /* (app v112) one night at a time, by the owner's rule of 17 October 2026 ("just show the next night game dont stack
@@ -404,6 +457,12 @@ function scoreboard(state, week) {
    rule is refused and kept in BAD_CALLS, which fails the smoke. */
 const RETIRED = /firebaseio\.com|firebasedatabase\.app|identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com|store\.test/;
 const ALL_CALLS = [], BAD_CALLS = [];
+/* the page is the site's root: every request it or a frame of it makes to the site stays under the site
+   (demon-x13.github.io/nfl-hub/), and none names a parent folder, which from the root leaves the site
+   (../props/data/payload.json is demon-x13.github.io/props/data/payload.json); the ones that do are kept here */
+const OFF_SITE = [];
+const offSite = (s, base) => { let u = null; try { u = new URL(s, base); } catch (e) { OFF_SITE.push(s + ' (not an address)'); return; }
+  if (/(^|\/)\.\.\//.test(s) || (u.host === new URL(SITE).host && !u.pathname.startsWith(new URL(SITE).pathname))) OFF_SITE.push(s); };
 /* the parlay file some checks read in place of the real one: three placed parlays of their own (a
    player leg, a team bet, and one cleared), so they hold whatever the real file holds this week */
 const FIXFILE = { updated: '2026-10-10T17:28:45Z', games: [`${BET_SEASON}_18_XXA_XXH`], parlays: [
@@ -427,7 +486,7 @@ const XBFIX = { season: BET_SEASON, updated: '2026-10-10T17:28:44Z', deposit: 10
    Refresh odds read alone reloads it a dozen), and V8 frees a closed one only when it must, so a run peaked
    near the heap's ceiling (4.3GB on a 16GB machine, where four phase replays at once ran out of memory) */
 const GC = (() => { try { require('v8').setFlagsFromString('--expose-gc'); const f = require('vm').runInNewContext('gc'); return typeof f === 'function' ? f : () => {}; } catch (e) { return () => {}; } })();
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null, gate = null, early = false, friends = null, pay = null, elo = null } = {}) {
+function run(state, url = SITE, espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null, gate = null, early = false, friends = null, pay = null, elo = null } = {}) {
   GC();
   return new Promise(resolve => {
     const errs = [], fetched = [], urls = [], calls = [];
@@ -441,10 +500,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         if (seed) seed(w);
         const held = (k, p) => gate && gate[k] ? gate[k].then(() => p) : p;
         w.fetch = (u, o) => { const s = String(u), m = String((o && o.method) || 'GET').toUpperCase();
-          fetched.push(s.replace(/\?.*$/, '')); urls.push(s); calls.push({ url: s, method: m, cache: o && o.cache || null }); ALL_CALLS.push(m + ' ' + s);
+          fetched.push(s.replace(/\?.*$/, '')); urls.push(s); calls.push({ url: s, method: m, cache: o && o.cache || null }); ALL_CALLS.push(m + ' ' + s); offSite(s, url);
           if (RETIRED.test(s) || m !== 'GET') { BAD_CALLS.push(m + ' ' + s); return Promise.reject(new TypeError('Failed to fetch')); }
           /* the news job's files: the run's stand-ins, or a 404 (never the real ones) */
-          if (/\/news\/data\//.test(s)) { const nm = s.replace(/\?.*$/, '').match(/news\/data\/(?:notes\/(\d{4}-w\d+)|(units|stats))\.json$/) || [];
+          if (/(^|\/)news\/data\//.test(s)) { const nm = s.replace(/\?.*$/, '').match(/news\/data\/(?:notes\/(\d{4}-w\d+)|(units|stats))\.json$/) || [];
             const f = !news ? undefined : nm[1] ? (news.notes || {})[nm[1]] : nm[2] ? news[nm[2]] : undefined;
             return held(nm[1] ? 'notes' : nm[2], Promise.resolve(f === undefined || f === 404 ? { ok: false, status: 404 } : { ok: true, status: 200,
               json: async () => { if (typeof f === 'string') return JSON.parse(f); return JSON.parse(JSON.stringify(f)); } })); }
@@ -487,7 +546,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!timedOut, 'the prop model never said app-ready');
   /* the page wears the hub look (theme.css, the NBA Hub's and the NHL Hub's colours with the NFL's gold),
      laid over every other style and handed to the framed betting tabs, and nothing of the retired preview */
-  { const LIVE = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
+  { const LIVE = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
     const HEAD = LIVE.slice(0, LIVE.indexOf('</head>'));
     chk(HEAD.includes('<style id="hubTheme">') && HEAD.lastIndexOf('<style') === HEAD.indexOf('<style id="hubTheme">')
       && /<script>window\.THEME_FRAME_HEAD=/.test(LIVE) && /family=Unbounded/.test(LIVE) && !/PREVIEW_FRAME_HEAD|id="previewTheme"|pv-flag/.test(LIVE),
@@ -912,7 +971,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!!w.localStorage.getItem(PROP_KEY), 'the prop model did not save its state under its own key');
 
   /* ---- the Parlay Builder (app v111, the owner's calls of 16 October 2026): its choices at the top (the Bet
-     amount, Refresh odds, Build from, the bet types, the games), the Top 100 lines those choices make under
+     amount, Refresh odds, Build from, the bet types, the games), the Top 50 lines those choices make under
      them, then the visitor's own builder with a Refresh odds of its own; Suggested Parlays (each Thursday,
      Sunday and Monday night game's own parlays, the Elo picks under them) and X Parlays are tabs of their
      own. The four levels over every game, the lock on each leg, New legs and Reset are gone from the page;
@@ -940,9 +999,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const pb = d.getElementById('parlayBody'), tabB = d.getElementById('tab-parlay'), panel = d.getElementById('pbPanel');
   /* a page without the engine fails here, and the checks that need it are left out rather than thrown on */
   const hasPb = ['getPbTiers', 'pbGames', 'getPbTop', 'spSet', 'spGames', 'spLockAt'].every(f => w.eval(`typeof ${f}`) === 'function');
-  chk(hasPb && !!panel, 'the Parlay Builder has no Top 100 lines over the builder, or Suggested Parlays no sets (#pbPanel, getPbTiers, pbGames, getPbTop, spSet, spGames, spLockAt)');
+  chk(hasPb && !!panel, 'the Parlay Builder has no Top 50 lines over the builder, or Suggested Parlays no sets (#pbPanel, getPbTiers, pbGames, getPbTop, spSet, spGames, spLockAt)');
   chk(!!panel && tabB.firstElementChild === panel && panel.nextElementSibling === pb && !pb.nextElementSibling && !tabB.querySelector('#lpCard'),
-    'the Parlay Builder tab is not its choices and the Top 100 lines over the builder and nothing else');
+    'the Parlay Builder tab is not its choices and the Top 50 lines over the builder and nothing else');
   chk(!d.getElementById('suggModal') && !d.getElementById('suggOpen') && !d.getElementById('suggView') && !d.querySelector('[data-suggest-side], [data-suggest-save], #suggStake'),
     'the old Suggested parlays window or its switch is still in the page');
   /* the lock on each leg, New legs and Reset are gone, every trace of them (the owner's call of 16 October
@@ -973,7 +1032,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const legId = l => l.key + '|' + l.side + '|' + l.k;
   /* the rules a suggestion's leg is held to, worked out here on their own from the page's priced lines
      (pricedLegs, which keeps V6's players who will not play off them: the props audit's own check of that),
-     for the Top 100 lines and for each prime-time game's set alike: its box and its game ticked (u), not
+     for the Top 50 lines and for each prime-time game's set alike: its box and its game ticked (u), not
      kicked off, a real price (or the rule's own from DraftKings' line read on ESPN, on a kind it may take:
      takenRule), the model's chance 45-97% and at or above the price's own implied chance, a player's line
      only once the Elo files are in, never 15 points or more above the book's fair chance (fairRule), and
@@ -1001,12 +1060,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     if (u.k.total) for (const g of on) if (!u.off.includes(g.id)) for (const side of ['over', 'under']) { const c = w.eval('totalLeg')(g, side);
       if (c && c.src === 'real' && priced(c) && !st(c) && dkTakes(DK, c, st(c))) out.mkt.push(c); }
     return out; };
-  /* the Top 100 lines, worked out here from qualOwn (app v112, the owner's call of 17 October 2026: "can we do
+  /* the Top 50 lines, worked out here from qualOwn (app v112, the owner's call of 17 October 2026: "can we do
      reverse tags? like get rid of thin edge and no edge and come up with a name for that first section?"): every
      leg the ticks make, in two parts, the Value picks (the preferred legs) first and then the other lines (every
      thin-edge leg and, with Game total ticked, every total), each part ranked by what $1 on it is expected to make
      at the model's chance (its chance times its decimal price, less the $1), best first (the key, side and line in
-     order on a tie), at most 100 in all, so a total, at the book's own chance, ranks after every thin-edge line;
+     order on a tie), at most 50 in all (PB_TOP_N_OWN, app v113), so a total, at the book's own chance, ranks after every thin-edge line;
      each row saying its part (data-pb-grp value or other) and its rank, running on across both parts, its leg, its
      price (est. where it is priced from DraftKings' line read on ESPN), the model's chance, the book's fair chance
      (fairRule) or a dash, what $1 wins and what it is expected to make, Value marked on a Value pick and on nothing
@@ -1026,10 +1085,23 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const pbTopOwn = (u, on) => { const q = qualOwn(u, on), ord = (a, b) => legId(a).localeCompare(legId(b)), same = sameBetOwn([...q.pref, ...q.thin]);
     const rank = list => list.filter(x => !same(x.c)).map(x => ({ ...x, win: decOwn(x.c.price) - 1, ev: x.c.p * decOwn(x.c.price) - 1 })).sort((a, b) => (b.ev - a.ev) || ord(a.c, b.c));
     const rows = [...rank(q.pref.map(c => ({ c, value: true, thin: false, market: false }))), ...rank(q.thin.map(c => ({ c, value: false, thin: true, market: false }))),
-      ...rank(q.mkt.map(c => ({ c, value: false, thin: false, market: true })))].slice(0, 100);
-    rows.same = [...q.pref, ...q.thin, ...q.mkt].filter(same).length; rows.q = q; return rows; };
+      ...rank(q.mkt.map(c => ({ c, value: false, thin: false, market: true })))];
+    const top = rows.slice(0, PB_TOP_N_OWN); top.full = rows.length;
+    top.same = [...q.pref, ...q.thin, ...q.mkt].filter(same).length; top.q = q; return top; };
+  /* how many lists the smoke held where more lines qualified than the list holds (each then exactly the first 50 of
+     the order): the made-up list of sixty below is one, so this is never none */
+  let topOver = 0;
   /* no word of the retired tags, thin edge and no edge, anywhere a visitor reads */
   const OLD_TAG = /\bthin[ -]edge\b|\bno edge\b/i;
+  /* (app v113) the words a set's level drew under it until the owner's call of 17 October 2026, and the tab's lead, its
+     foot and the record's sentence: none is on Suggested Parlays any more (pbThinLine's "is not a Value pick" and "are
+     not Value picks", pbMktLine's "at the book's own chance with its margin out", the lead's "One night is shown at a
+     time" and "A leg marked Value is one of", the foot's "Each set is built from its game's lines alone", the record's
+     "The record starts with this change"), nor the long lock lines' "Refresh odds updates it until then" and
+     "Refresh odds no longer changes it" */
+  /* (app v113) what the lock line adds where the locked set is this browser's own (the record has none for the game) */
+  const OWN_LINE = ' This browser’s own set: the site’s was not published in time, so the record does not grade it.';
+  const WHY_GONE = /\bis not a Value pick\b|\bare not Value picks\b|own chance with its margin out|One night is shown at a time|A leg marked Value is one of|Each set is built from its game|The record starts with this change|Refresh odds (updates it until then|no longer changes it)/;
   const nmOk = (nm, l) => !!nm && [...nm.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === l.name && txt(nm.querySelector('small')).startsWith(l.label);
   let holdSetF = null;
   const money1 = v => (v < -0.0005 ? '−' : '+') + '$' + Math.abs(v).toFixed(2);
@@ -1040,6 +1112,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     if (!want.length) { const none = panel.querySelector('.pb-top-none');
       chk(!rows.length && !!none && txt(none).length > 20 && !/NaN|undefined/.test(txt(none)), `${lab}: nothing qualifies on the ticks and the list draws rows, or does not say why: ${none ? txt(none) : rows.length + ' rows'}`); return 0; }
     if (rows.length !== want.length) bad.push(`${rows.length} rows where ${want.length} lines qualify`);
+    /* (app v113) the Top 50: at most 50 rows, and where more lines qualify, exactly the first 50 of the order (the
+       rows below each held to its rank there), under a heading that says so */
+    { const h2 = panel.querySelector('#pbCard > .pb-hd h2');
+      chk(rows.length <= PB_TOP_N_OWN && want.length === Math.min(PB_TOP_N_OWN, want.full) && !!h2 && txt(h2) === `Top ${PB_TOP_N_OWN} lines`,
+        `${lab}: the list is not the Top ${PB_TOP_N_OWN} lines, at most ${PB_TOP_N_OWN} rows, ${want.full > PB_TOP_N_OWN ? `the first ${PB_TOP_N_OWN} of the ${want.full} lines that qualify in order` : `the ${want.full} lines that qualify`}: ${rows.length} rows under "${h2 ? txt(h2) : 'no heading'}"`);
+      if (want.full > PB_TOP_N_OWN) topOver++; }
     want.forEach((x, i) => { const r = rows[i], l = x.c; if (!r) return;
       const b = r.querySelector('button[data-pb-leg]'), cs = [...r.querySelectorAll('.pb-tc')], f = fo(l), est = l.src === 'dkline', on2 = inB(l), grp = x.value ? 'value' : 'other';
       const got = cs.map(c => txt(c.querySelector('b')) + '/' + txt(c.querySelector('small')));
@@ -1072,23 +1150,23 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       if (nO ? !ho || head(ho) !== 'Other lines' || pill(ho) !== String(nO) || !oo || oo.querySelectorAll(':scope > li.pb-trow').length !== nO || oo.getAttribute('start') !== (nV ? String(nV + 1) : null) || !before(hv, ho) || !before(ho, oo) || (ov && !before(ov, ho)) : !!ho || !!oo)
         bad.push(nO ? `the other lines are not headed Other lines ${nO} over their list starting at ${nV + 1}: "${ho ? txt(ho) : 'none'}", start ${oo ? oo.getAttribute('start') : 'no list'}` : 'with no other line the Other lines part is drawn');
       if (OLD_TAG.test(pbOwnTxt(panel)) || panel.querySelector('.pb-thinmark')) bad.push('the panel still speaks of thin edge or no edge: ' + (pbOwnTxt(panel).match(/.{0,60}(thin[ -]edge|no edge).{0,40}/i) || [''])[0]); }
-    chk(!bad.length, `${lab}: the Top 100 lines are not every qualifying line, the Value picks first and then the other lines, the totals last, each part under its heading ranked by what $1 on it is expected to make, the ranks running on, each with its numbers, Value marked on a Value pick alone and its own Add: ` + bad.slice(0, 3).join('; '));
+    chk(!bad.length, `${lab}: the Top 50 lines are not every qualifying line, the Value picks first and then the other lines, the totals last, each part under its heading ranked by what $1 on it is expected to make, the ranks running on, each with its numbers, Value marked on a Value pick alone and its own Add: ` + bad.slice(0, 3).join('; '));
     /* (app v112, round two) the order as drawn: the Value picks, then the thin-edge lines, then the totals, never a
        line of an earlier part after one of a later; and each bet once: no row is a ladder rung k+ whose same bet,
        the player's main Over at k-0.5 on a half-point line, is among the qualifying legs (either part), and the
        page's count of the rungs it left out (getPbTop's same) is the one worked out here */
     { const partOf = r => { const b = r.querySelector('button[data-pb-leg]'); return r.dataset.pbGrp === 'value' ? 0 : b && /\|game\|total$/.test(b.dataset.pbLeg) ? 2 : 1; };
       const parts = rows.map(partOf), back = parts.findIndex((x, i) => i > 0 && x < parts[i - 1]);
-      chk(back < 0, `${lab}: the Top 100 lines are not the Value picks, then the thin-edge lines, then the totals: row ${back + 1} (${back < 0 ? '' : ['a Value pick', 'a thin-edge line', 'a total'][parts[back]]}) follows ${back < 0 ? '' : ['a Value pick', 'a thin-edge line', 'a total'][parts[back - 1]]}`);
+      chk(back < 0, `${lab}: the Top 50 lines are not the Value picks, then the thin-edge lines, then the totals: row ${back + 1} (${back < 0 ? '' : ['a Value pick', 'a thin-edge line', 'a total'][parts[back]]}) follows ${back < 0 ? '' : ['a Value pick', 'a thin-edge line', 'a total'][parts[back - 1]]}`);
       const half = new Set([...want.q.pref, ...want.q.thin].filter(l => !gameLegOwn(l) && l.main && l.side === 'over' && Math.abs(+l.k % 1) === 0.5).map(l => `${l.key}|${+l.k + 0.5}`));
       const twice = rows.map(r => r.querySelector('button[data-pb-leg]')).filter(b => b && b.dataset.side === 'over' && half.has(`${b.dataset.pbLeg}|${+b.dataset.k}`));
       const got = w.eval('typeof getPbTop') === 'function' ? w.eval('getPbTop()').same : undefined;
-      chk(!twice.length && got === want.same, `${lab}: the Top 100 lines list a bet twice, a ladder rung beside the same bet's half-point main Over (${twice.slice(0, 3).map(b => b.dataset.pbLeg + ' ' + b.dataset.k + '+').join(', ') || 'none'}), or the page counts ${got} rungs left out where ${want.same} are`); }
+      chk(!twice.length && got === want.same, `${lab}: the Top 50 lines list a bet twice, a ladder rung beside the same bet's half-point main Over (${twice.slice(0, 3).map(b => b.dataset.pbLeg + ' ' + b.dataset.k + '+').join(', ') || 'none'}), or the page counts ${got} rungs left out where ${want.same} are`); }
     { const lead = txt(panel.querySelector('.pb-lead')), foot = txt(panel.querySelector('.pb-foot'));
-      chk(lead.includes(`first the Value picks, marked Value, then the other lines${u.k.total ? ', the game totals last' : ''}, each part ranked by what $1 on it is expected to make at the model’s chance, best first, 100 lines at most.`)
-        && foot.includes('The Value picks come first, marked Value, then the other lines (the ones a suggested parlay takes only where the Value picks cannot fill it), each part ranked by what $1 on it is expected to make, any game totals last, 100 lines at most in all. Each bet is listed once: a ladder rung that is the same bet as the player’s main line (225+ passing yards and Over 224.5) is shown as the main line.')
+      chk(lead.includes(`first the Value picks, marked Value, then the other lines${u.k.total ? ', the game totals last' : ''}, each part ranked by what $1 on it is expected to make at the model’s chance, best first, ${PB_TOP_N_OWN} lines at most.`)
+        && foot.includes('The Value picks come first, marked Value, then the other lines (the ones a suggested parlay takes only where the Value picks cannot fill it), each part ranked by what $1 on it is expected to make, any game totals last, ' + PB_TOP_N_OWN + ' lines at most in all. Each bet is listed once: a ladder rung that is the same bet as the player’s main line (225+ passing yards and Over 224.5) is shown as the main line.')
         && foot.includes('3 points above it or more is a Value pick') && foot.includes('a game total, priced at the book’s own chance, is never one'),
-        `${lab}: the Top 100 lines' lead or foot does not say the Value picks come first, then the other lines: ${lead.slice(0, 260)} / ${foot.slice(0, 200)}`); }
+        `${lab}: the Top 50 lines' lead or foot does not say the Value picks come first, then the other lines: ${lead.slice(0, 260)} / ${foot.slice(0, 200)}`); }
     return want.length; };
   /* the panel holds on whatever the week offers: the mix sets the boxes, every tier is its legs or says
      why, and every leg is of a ticked kind and game, has not kicked off and is never rated below the book */
@@ -1132,7 +1210,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           `${lab}: the ${t.id} tier's fair chance ${t.fair && t.fair.p} is not parlayProb on its legs at their fair chances`);
         chk(t.legs.every((l, i) => !fs[i] || l.p - fs[i].p < FAR - 1e-9), `${lab}: the ${t.id} tier has a leg far off the market: ` + t.legs.filter((l, i) => fs[i] && l.p - fs[i].p >= FAR - 1e-9).map(l => l.name + ' ' + l.label).join(', ')); } };
     /* the engine on the ticks (getPbTiers: the all-games levels nothing on the page draws since app v111, but
-       the engine every set is built by), then the Top 100 lines the same ticks make */
+       the engine every set is built by), then the Top 50 lines the same ticks make */
     const hold = lab => { const r = w.eval('getPbTiers()'), u = U(), m = maxLegs(); let built = 0;
       const on = games.filter(g => !u.off.includes(g.id)), pool = on.length && KINDS.some(k => u.k[k]) ? w.eval('pbPool')(on) : { pref: [], thin: [] };
       chk(r.tiers.map(t => t.id + t.n).join() === 'safe2,med3,aggr4,xtrm5', `${lab}: the tiers are not Safe 2, Medium 3, Aggressive 4, Extreme 5`);
@@ -1147,8 +1225,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       }
       /* with Game total ticked, one line says what a total on the list is (and only then): never a Value pick, last
          among the other lines, so a long list can end before them (app v112) */
-      chk(txt(panel).includes('Game totals are never Value picks: each is priced at the book’s own chance, so the totals come last among the other lines, and on a long list the 100 lines can end before them.') === !!u.k.total,
-        `${lab}: ${u.k.total ? 'Game total is ticked and the list does not say a total is never a Value pick, that the totals come last among the other lines and that the 100 can end before them' : 'Game total is not ticked and the list still speaks of totals'}`);
+      chk(txt(panel).includes('Game totals are never Value picks: each is priced at the book’s own chance, so the totals come last among the other lines, and on a long list the ' + PB_TOP_N_OWN + ' lines can end before them.') === !!u.k.total,
+        `${lab}: ${u.k.total ? 'Game total is ticked and the list does not say a total is never a Value pick, that the totals come last among the other lines and that the ' + PB_TOP_N_OWN + ' can end before them' : 'Game total is not ticked and the list still speaks of totals'}`);
       holdTop(lab, u, on);
       return built; };
     const spPanel = d.getElementById('spPanel'), spOf = id => d.querySelector(`#spPanel .sp-game[data-sp-game="${id}"]`);
@@ -1174,7 +1252,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const lockOwn = etKick(g) - 2 * 3600e3, lk = el && el.querySelector('[data-sp-phase]');
       if (!vis) { chk(w.eval('spLockAt')(g) === lockOwn, `${lab}, ${g.id}: its set's lock is not 2 hours before kickoff, ${etSay(lockOwn)}`); hiddenHeld(lab, g); }
       else {
-        chk(w.eval('spLockAt')(g) === lockOwn && !!el && !!lk && lk.dataset.spPhase === 'live' && txt(lk) === `Locks ${etSay(lockOwn)}, 2 hours before kickoff; Refresh odds updates it until then.`,
+        chk(w.eval('spLockAt')(g) === lockOwn && !!el && !!lk && lk.dataset.spPhase === 'live' && txt(lk) === `Locks ${etSay(lockOwn)}, 2 hours before kickoff.`,
           `${lab}, ${g.id}: the set does not say it locks at ${etSay(lockOwn)}, 2 hours before kickoff: ${lk ? lk.dataset.spPhase + ' ' + txt(lk) : 'no set drawn'}`);
         chk(!!el && txt(el.querySelector('.sp-hd h3')) === `${TN[g.a] || g.a} at ${TN[g.h] || g.h}` && txt(el.querySelector('.sp-hd .pill')) === nightOf(g) && el.getAttribute('role') === 'group',
           `${lab}, ${g.id}: the set is not headed with its game and its night (${nightOf(g)}): ${el ? txt(el.querySelector('.sp-hd')) : 'none'}`); }
@@ -1205,18 +1283,19 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           && !!ab && !!fb && /^(Add|In the builder:) the /.test(ab.getAttribute('aria-label') || '') && (ab.getAttribute('aria-label') || '').includes(what) && fb.getAttribute('aria-label') === 'Finish ' + what && !c.querySelector('[data-pb-lock], [data-pb-turn], [data-pb-reset]'),
           `${lab}, ${g.id}: the ${t.id} card does not show its legs, each with its own 44px Add named for it, and Add to builder and Finish named for ${what}`);
         /* (app v112) the reversed tags: Value on each of its legs that is a Value pick (the preferred list, worked
-           out here: qualOwn's pref) and on no other, no thin edge or no edge anywhere; and under it, where it holds
-           legs that are not Value picks, the line saying so, and where it holds a total, the line saying why */
+           out here: qualOwn's pref) and on no other, no thin edge or no edge anywhere. (app v113, the owner's call of
+           17 October 2026: "in suggest parlays, get rid of all the long paragraph description stuff") A set's level
+           draws no line under it saying why a leg is not a Value pick or why the game's total is there, whatever it
+           holds (pbTierCard's quiet; the Elo picks' cards keep theirs, held on cards of the smoke's own below); the
+           est. line (a price that is an estimate) and a ruled-out player's Updated line stay */
         if (c) { const bad = [];
           t.legs.forEach((l, i) => { const mk = lis[i] ? [...lis[i].querySelectorAll('i.pb-valmark')] : [], val = prefOf.has(legId(l));
             if (mk.length !== (val ? 1 : 0) || (val && (txt(mk[0]) !== 'Value' || !mk[0].closest('.nm small')))) bad.push(`${l.name} ${l.label} ${val ? 'is a Value pick and is not marked Value' : 'is not a Value pick and is marked Value'}`); });
           if (OLD_TAG.test(txt(c)) || c.querySelector('.pb-thinmark')) bad.push('the card still says thin edge or no edge: ' + (txt(c).match(/.{0,40}(thin[ -]edge|no edge).{0,30}/i) || [''])[0]);
           const nT = t.legs.filter(l => thinOf.has(legId(l))).length, nM = t.legs.filter(l => mktOf.has(legId(l))).length;
           const lines = [...c.querySelectorAll('p.pb-thin')].filter(p => !p.classList.contains('pb-espnline') && !p.classList.contains('sp-upd')).map(txt);
-          const want = [...(nT ? [`${nT === 1 ? 'One leg is not a Value pick: the model rates it' : nT + ' legs are not Value picks: the model rates them'} at or above the book's price, but `] : []),
-            ...(nM ? [`${nM === 1 ? 'The game total is' : nM + ' game totals are'} at the book’s own chance with its margin out, so ${nM === 1 ? 'it is not a Value pick: it is' : 'they are not Value picks: they are'} here because this game’s other legs do not make a parlay of this size.`] : [])];
-          if (lines.length !== want.length || !lines.every((x, i) => i < (nT ? 1 : 0) ? x.startsWith(want[i]) && /not 3 points above/.test(x) : x === want[i])) bad.push(`the lines under it read ${JSON.stringify(lines)}, where ${nT} legs not Value picks and ${nM} totals want ${JSON.stringify(want)}`);
-          chk(!bad.length, `${lab}, ${g.id}: the ${t.id} card does not mark Value exactly its Value picks, or does not say which legs are not: ` + bad.slice(0, 3).join('; ')); }
+          if (lines.length || WHY_GONE.test(txt(c))) bad.push(`it holds ${nT} legs that are not Value picks and ${nM} totals, and draws the line${lines.length === 1 ? '' : 's'} saying why: ${JSON.stringify(lines.length ? lines : [(txt(c).match(WHY_GONE) || [''])[0]])}`);
+          chk(!bad.length, `${lab}, ${g.id}: the ${t.id} card does not mark Value exactly its Value picks, or still says why a leg is not one or why a total is there: ` + bad.slice(0, 3).join('; ')); }
         if (c) { const first = c.querySelector('.pb-nums > div'), qq = x => first && first.querySelector(x), F = t.fair, pc = v => (v * 100).toFixed(0) + '%', rule = c.querySelector('.pb-rule'), rest = c.cloneNode(true);
           rest.querySelectorAll('.pb-legs, .pb-thin, .pb-rule').forEach(x => x.remove());
           chk(!!first && first.classList.contains('pb-chance') && (F && F.p != null ? txt(qq('b')) === pc(F.p) && txt(qq('span')) === (F.est ? 'fair chance, est.' : 'fair chance') && txt(qq('small')) === `model says ${pc(t.corr)}`
@@ -1236,7 +1315,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
        off); one the rule worked out here hides is held to be off the tab, and its set is not built for it */
     const holdLocked = (lab, g, vis = true) => { if (!vis) { hiddenHeld(lab, g); return 0; }
       const lockOwn = etKick(g) - 2 * 3600e3, el = spOf(g.id), lk = el && el.querySelector('[data-sp-phase]'), v = w.eval('spShown')(g), gl = `${lab}, ${g.id}`;
-      chk(!!el && !!lk && v.phase === 'locked' && lk.dataset.spPhase === (v.own ? 'own' : 'locked') && txt(lk).startsWith(`Locked since ${etSay(lockOwn)}, 2 hours before kickoff`),
+      /* (app v113) one short line: "Locked since Sun 6:20 PM ET.", and where the set is this browser's own, that it is and
+         that the record does not grade it */
+      chk(!!el && !!lk && v.phase === 'locked' && lk.dataset.spPhase === (v.own ? 'own' : 'locked') && txt(lk) === `Locked since ${etSay(lockOwn)}.${v.own ? OWN_LINE : ''}` && !!lk.querySelector('.sp-lockmark'),
         `${gl}: past its lock the set is not drawn as locked since ${etSay(lockOwn)}: ${v.phase} ${lk ? lk.dataset.spPhase + ' ' + txt(lk) : 'no set drawn'}`);
       chk(!!el && txt(el.querySelector('.sp-hd h3')) === `${TN[g.a] || g.a} at ${TN[g.h] || g.h}` && txt(el.querySelector('.sp-hd .pill')) === nightOf(g), `${gl}: the locked set is not headed with its game and its night`);
       const T = v.tiers || [], ok = w.eval('suggestable'), P = w.eval('S').parlay, inB = l => { const x = P[l.key]; return !!x && x.k === l.k && x.side === l.side && !!x.main === !!l.main; }; let built = 0;
@@ -1255,8 +1336,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           && !!c.querySelector(`[data-sp-add="${g.id}:${t.id}"]`) && (c.querySelector(`[data-pc-finish="sp|${g.id}:${t.id}"]`) || { getAttribute: () => '' }).getAttribute('aria-label') === 'Finish ' + what && !!p && +p.dataset.pbPay === t.dec,
           `${gl}: the locked ${t.id} card does not show its legs, each with its own 44px Add named for it, its price, and Add to builder and Finish named for ${what}`);
         /* (app v112) Value on each locked leg that was a Value pick when it was taken (kept thin false, no total) and on no other */
-        chk(!!c && t.legs.every((l, i) => { const mk = lis[i] ? [...lis[i].querySelectorAll('i.pb-valmark')] : [], val = l.thin === false && !l.market; return mk.length === (val ? 1 : 0) && (!val || txt(mk[0]) === 'Value'); }) && !OLD_TAG.test(txt(c)),
-          `${gl}: the locked ${t.id} card does not mark Value exactly the legs kept as Value picks, or still says thin edge or no edge`); }
+        chk(!!c && t.legs.every((l, i) => { const mk = lis[i] ? [...lis[i].querySelectorAll('i.pb-valmark')] : [], val = l.thin === false && !l.market; return mk.length === (val ? 1 : 0) && (!val || txt(mk[0]) === 'Value'); }) && !OLD_TAG.test(txt(c))
+          && ![...c.querySelectorAll('p.pb-thin')].some(p => !p.classList.contains('pb-espnline') && !p.classList.contains('sp-upd')) && !WHY_GONE.test(txt(c)),
+          `${gl}: the locked ${t.id} card does not mark Value exactly the legs kept as Value picks, or still says thin edge or no edge, or why a leg is not a Value pick or a total is there (app v113)`); }
       return built; };
     /* the page's own cut of a long list (each list to 60 for a set: the likeliest half and the best-paying
        half), worked out here so Safe is held to the legs its search was given */
@@ -1281,7 +1363,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       for (const g of hid) hiddenHeld(lab, g);
       if (!G.length) chk(/^No Thursday, Sunday or Monday night game of week \d+ is still to kick off\./.test(txt(d.getElementById('spSets'))), `${lab}: with no prime-time game to come Suggested Parlays does not say so: ` + txt(d.getElementById('spSets')).slice(0, 120));
       /* no word of the retired tags on the tab */
-      const noOld = how => chk(!OLD_TAG.test(txt(d.getElementById('spSets'))) && !OLD_TAG.test(txt(d.getElementById('spHead'))) && !spPanel.querySelector('.pb-thinmark'), `${lab}${how}: Suggested Parlays still says thin edge or no edge: ` + (txt(spPanel).match(/.{0,60}(thin[ -]edge|no edge).{0,40}/i) || [''])[0]);
+      const noOld = how => { const sx = txt(d.getElementById('spSets')), hx = txt(d.getElementById('spHead'));
+        chk(!OLD_TAG.test(sx) && !OLD_TAG.test(hx) && !spPanel.querySelector('.pb-thinmark'), `${lab}${how}: Suggested Parlays still says thin edge or no edge: ` + (txt(spPanel).match(/.{0,60}(thin[ -]edge|no edge).{0,40}/i) || [''])[0]);
+        /* (app v113) and none of its long paragraphs: no lead, no foot, no record sentence, no line under a level saying
+           why a leg is not a Value pick or a total is there, no long lock line (the Elo picks, #pbElo, are apart) */
+        chk(!WHY_GONE.test(sx) && !WHY_GONE.test(hx) && !spPanel.querySelector('#spHead .pb-lead, #spHead p.muted, #spSets .pb-foot, #spRec .sp-rec-line, #spRec p'),
+          `${lab}${how}: Suggested Parlays still draws one of its long paragraphs (the lead, the foot, the record's sentence, a level's why-line or a long lock line): ` + ((sx + ' ' + hx).match(new RegExp('.{0,60}(' + WHY_GONE.source + ').{0,40}')) || [spPanel.querySelector('#spHead .pb-lead, #spHead p.muted, #spSets .pb-foot, #spRec p') ? 'a paragraph drawn' : ''])[0]); };
       noOld('');
       /* then every prime-time game's set held to the rules and as drawn, its cards, legs, Adds, Finish, Value marks,
          the lines under a level, the fair chance first and its rule, at every hour as before the night rule: where
@@ -1332,12 +1419,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         hold('this week, Moneyline only');
         /* and no box at all: the list says to tick one */
         d.querySelector('#pbPanel [data-pb-kind="ml"]').click(); await wait(20);
-        chk(KINDS.every(k => !U().k[k]) && !panel.querySelector('ol.pb-top li') && /^No bet types ticked/.test(txt(panel.querySelector('.pb-top-none'))), 'with no bet type ticked the Top 100 lines draw a line, or do not say to tick one');
+        chk(KINDS.every(k => !U().k[k]) && !panel.querySelector('ol.pb-top li') && /^No bet types ticked/.test(txt(panel.querySelector('.pb-top-none'))), 'with no bet type ticked the Top 50 lines draw a line, or do not say to tick one');
         d.querySelector('#pbPanel [data-pb-mix="all"]').click(); await wait(20); }
       /* one game ticked: every leg from it */
       d.querySelector('#pbPanel [data-pb-games="none"]').click(); await wait(20);
       chk(w.eval('getPbTiers()').tiers.every(t => !t.legs && /No games ticked/.test(t.why)) && !panel.querySelector('ol.pb-top li') && /^No games ticked/.test(txt(panel.querySelector('.pb-top-none'))),
-        'None did not leave every tier, and the Top 100 lines, saying no game is ticked');
+        'None did not leave every tier, and the Top 50 lines, saying no game is ticked');
       d.querySelector(`#pbPanel [data-pb-game="${games[0].id}"]`).click(); await wait(20);
       hold('one game');
       d.querySelector('#pbPanel [data-pb-games="all"]').click(); await wait(20);
@@ -1354,12 +1441,34 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(!!spPanel && d.getElementById('tab-suggest').firstElementChild === spPanel && !!card && card.firstElementChild === head && head.nextElementSibling === d.getElementById('spSets') && card.lastElementChild === d.getElementById('pbElo')
           && txt(head.querySelector('h2')) === 'Suggested Parlays' && !!head.querySelector('#spRec') && !!sb && w.getComputedStyle(sb).minHeight === '44px' && !!sst && sst.getAttribute('aria-live') === 'polite',
           'Suggested Parlays is not its heading (the record, a 44px Refresh odds with its status line), the sets and the Elo picks at its foot');
-        /* its lead says one night is shown at a time, and what a leg marked Value is (app v112), market + form named
-           where the Elo tab is on the page (the page's formSig: window.eloLoaded a function) */
-        chk(txt(head.querySelector('.pb-lead')).includes('One night is shown at a time: the next night’s set goes up at 6:00 AM ET the morning after the night game before it.')
-          && txt(head.querySelector('.pb-lead')).includes('A leg marked Value is one of the model’s best: it rates it at least 3 points above the chance its price implies'
-            + (typeof w.eloLoaded === 'function' ? ', and on a player’s line market + form (the book’s chance moved by his Elo rating) agrees.' : '.')),
-          'the lead of Suggested Parlays does not say one night is shown at a time, or what a leg marked Value is: ' + txt(head.querySelector('.pb-lead')).slice(0, 200));
+        /* (app v113, the owner's call of 17 October 2026: "in suggest parlays, get rid of all the long paragraph
+           description stuff. we dont need to clutter the page.") Its head is its heading, the record's pills and
+           Refresh odds with its status line, and nothing else: no lead (until then it said one night is shown at a
+           time and what a leg marked Value is), and the record draws its pills alone, no sentence under them */
+        { const kids = [...head.children], rec = head.querySelector('#spRec');
+          chk(kids.length === 3 && kids[0].matches('.pb-hd') && kids[1] === rec && kids[2].matches('.sp-odds') && !head.querySelector('.pb-lead, p') && !WHY_GONE.test(txt(head))
+            && !!rec && (rec.hidden || ([...rec.children].length === 1 && rec.firstElementChild.matches('.bar') && !rec.querySelector('p, .sp-rec-line'))),
+            'the head of Suggested Parlays is not its heading, the record\'s pills and Refresh odds alone: it still draws a lead or the record\'s sentence: ' + kids.map(x => x.tagName.toLowerCase() + (x.id ? '#' + x.id : '') + '.' + x.className).join(' ') + ' / ' + txt(head).slice(0, 200)); }
+        /* the card's switch, on cards of the smoke's own (pbTierCard, as the page's two callers call it): a level holding
+           a leg that is not a Value pick and the game's total, and a leg priced from DraftKings' line read on ESPN, with
+           a player ruled out after the lock. Drawn as the Elo picks draw theirs, the lines saying why the leg is not a
+           Value pick and why the total is there; drawn as a set's (quiet), neither, and the est. line and the Updated
+           line on both */
+        { const gx = { id: '2099_01_A90_H90', w: 1 }, base = { gid: gx.id, week: 1, side: 'over', main: false, src: 'real', mu: null, grp: 'WR', pos: 'WR', team: 'H90', opp: 'A90' };
+          const L = [{ ...base, key: gx.id + '|SM-W1|receptions', pid: 'SM-W1', stat: 'receptions', k: 4, p: 0.6, price: -110, name: 'Card Value', label: '4+ receptions', thin: false, market: false },
+            { ...base, key: gx.id + '|SM-W2|receiving_yards', pid: 'SM-W2', stat: 'receiving_yards', k: 50, p: 0.55, price: -110, name: 'Card Thin', label: '50+ receiving yards', thin: true, market: false },
+            { ...base, key: gx.id + '|game|total', pid: 'game', stat: 'total', k: 47.5, p: 0.5, price: -110, name: 'Game total', label: 'Over 47.5', grp: 'TEAM', pos: 'Game', thin: false, market: true },
+            { ...base, key: gx.id + '|SM-W3|receptions', pid: 'SM-W3', stat: 'receptions', k: 3.5, main: true, p: 0.56, price: 105, src: 'dkline', name: 'Card Est', label: 'Over 3.5 receptions', thin: false, market: false,
+              espn: { at: '2099-01-01T12:00Z', fair: 0.48, tested: true, listed: true } }];
+          const T0 = { id: 'aggr', label: 'Aggressive', n: 4, floor: 0.12, legs: L, corr: 0.1, dec: 12, thin: 1, mkt: 1, fair: null, updated: { pid: 'SM-W4', name: 'Card Out', reason: 'Out on the report', at: '2099-01-01T15:00:00Z' } };
+          const draw = o => { try { const box = d.createElement('div'); box.innerHTML = w.eval('pbTierCard')(T0, o); return box; } catch (e) { return null; } };
+          const why = box => box ? [...box.querySelectorAll('p.pb-thin')].filter(p => !p.classList.contains('pb-espnline') && !p.classList.contains('sp-upd')).map(txt) : null;
+          const eloC = draw({ chance: 0.1, kind: 'elo', add: 'data-pb-elo-add="aggr"', rule: '<span class="pb-rule">plus money first, one leg a game</span>' });
+          const setC = draw({ kind: 'sp', fid: gx.id + ':aggr', add: `data-sp-add="${gx.id}:aggr"`, what: 'A90 at H90', quiet: true, mktWhy: 'this game’s other legs do not make a parlay of this size' });
+          const we = why(eloC), ws = why(setC), side = box => box && box.querySelectorAll('p.pb-espnline').length === 1 && txt(box.querySelector('p.sp-upd')) === `Updated: Card Out Out on the report (${etSay(Date.parse(T0.updated.at))}); this level was built again.`;
+          chk(!!we && we.length === 2 && we[0].startsWith('One leg is not a Value pick: the model rates it at or above the book\'s price, but not 3 points above') && we[1] === 'The game total is at the book’s own chance with its margin out, so it is not a Value pick: it is here because your picks’ other legs do not make a parlay of this size.'
+            && !!ws && ws.length === 0 && !WHY_GONE.test(txt(setC)) && side(eloC) && side(setC),
+            'a level\'s card drawn as the Elo picks draw theirs does not say why a leg is not a Value pick and why the total is there, or drawn as a set\'s (quiet) it still does, or either loses the est. line or the Updated line: ' + JSON.stringify({ elo: we, set: ws, upd: setC ? txt(setC.querySelector('p.sp-upd')) : null })); }
         /* the prime-time rule on made-up rows: Thursday, Sunday and Monday at or after 7:00 pm Eastern; not a
            Saturday night, a Sunday or Thanksgiving day game, a Monday at 6:59 pm, or a Friday (Christmas) night */
         const rule = w.eval('spPrime'), rows = [['2026-10-15', '20:15', true], ['2026-10-18', '20:20', true], ['2026-10-19', '19:00', true], ['2026-10-19', '18:59', false], ['2026-10-17', '20:00', false],
@@ -1503,7 +1612,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
          through the redraw; a second press takes it off */
       { const keepP = w.eval('JSON.stringify(S.parlay)'); w.eval('S.parlay={}; save(); renderParlay()'); await wait(30);
         const b0 = panel.querySelector('ol.pb-top li [data-pb-leg]'), row = pbTopOwn(U(), games.filter(g => !U().off.includes(g.id)))[0];
-        if (!b0 || !row) chk(false, 'with made-up lines on every starter the Top 100 lines are empty, so no line\'s Add can be pressed');
+        if (!b0 || !row) chk(false, 'with made-up lines on every starter the Top 50 lines are empty, so no line\'s Add can be pressed');
         else { const l = row.c; b0.focus(); b0.click(); await wait(40);
           const P = w.eval('S').parlay, x = P[l.key], b1 = panel.querySelector('ol.pb-top li [data-pb-leg]');
           chk(Object.keys(P).length === 1 && !!x && x.k === l.k && x.side === l.side && !!x.main === !!l.main && x.price === l.price && Math.abs(x.p - l.p) < 1e-9 && b1 && d.activeElement === b1
@@ -1711,7 +1820,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             w.eval('renderParlay(); renderSp()'); await wait(40);
             chk(!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`) && w.eval('getPbTiers()').tiers.every(x => !x.legs || x.legs.every(l => l.gid !== g0.id))
               && ![...panel.querySelectorAll('ol.pb-top [data-pb-leg]')].some(b => b.dataset.pbLeg.startsWith(g0.id + '|')) && !spOf(g0.id) && !w.eval('spGames()').some(g => g.id === g0.id),
-              `${g0.id}, kicked off, is still on the Parlay Builder's list of games, in a tier, on the Top 100 lines or on Suggested Parlays`); }
+              `${g0.id}, kicked off, is still on the Parlay Builder's list of games, in a tier, on the Top 50 lines or on Suggested Parlays`); }
           finally { w.Date = D0; if (stood) w.eval('spOn=window.__spOnKick; delete window.__spOnKick');
             w.eval('SP_SHOWN=null; renderParlay(); renderSp()'); await wait(40); } } }
       if (planted) { for (const x of planted) Object.assign(x.g, x.was); w.eval('SP_CACHE=new Map()'); }
@@ -1740,7 +1849,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      short of Medium's 25% and Aggressive's 12%, so those two are the likeliest parlays of their
      size: the three and four likeliest -115 covers (H1, H3, H5, H7), never the +140 ones a choice by
      return would take or the first games on the list, worked out in full against every parlay of
-     their size; Safe is the likeliest pair and Extreme its best return over 5%. The Top 100 lines on
+     their size; Safe is the likeliest pair and Extreme its best return over 5%. The Top 50 lines on
      them are the ten covers by what $1 on each is expected to make */
   if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepU = JSON.stringify(Sx.ui.pb);
     w.__pbKeep4 = w.eval('[pbGames, pricedLegs]');
@@ -1759,11 +1868,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(kinds === 'built,likeliest,likeliest,built' && r.tiers.every(t => t.legs && t.legs.length === t.n),
       `ten made-up games with only Spread ticked: the levels are ${kinds}, not Safe and Extreme built with Medium and Aggressive the likeliest of their size`);
     chk(!d.querySelector('#pbPanel [data-pb-mix].on') && !d.querySelector('#pbPanel .pb-custom') && !/\bCustom\b/.test(txt(panel)), 'ten made-up games with only Spread ticked: a mix is lit or a Custom tag shows');
-    /* the Top 100 lines on the ten covers, ranked here by hand: chance times the decimal price, less 1 (the
+    /* the Top 50 lines on the ten covers, ranked here by hand: chance times the decimal price, less 1 (the
        +140 covers first, 0.48 x 2.4 - 1 = +$0.15, the -135 thin ones last) */
     { const n = holdTop('ten made-up games, Spread only', Sx.ui.pb, G), order = [...panel.querySelectorAll('ol.pb-top li [data-pb-leg]')].map(b => b.dataset.pbLeg.split('|')[1].replace('team:', ''));
       chk(n === 10 && order.join() === 'H0,H2,H4,H6,H1,H3,H5,H7,H8,H9' && txt(panel.querySelector('ol.pb-top li .pb-tc:nth-child(5) b')) === '+$0.15',
-        'ten made-up games: the Top 100 lines are not the ten covers best first by what $1 is expected to make (H0, H2, H4, H6 at +140, then the -115s, the -135s last): ' + order.join()); }
+        'ten made-up games: the Top 50 lines are not the ten covers best first by what $1 is expected to make (H0, H2, H4, H6 at +140, then the -115s, the -135s last): ' + order.join()); }
     /* the likeliest 3 and 4 legs are the three and four likeliest -115 covers (a plain product, legs
        in different games), and no parlay of their size with as many thin legs lands likelier; the
        best-paying 3 and 4 are the +140 covers, so the case tells a fallback by return from the likeliest */
@@ -1848,13 +1957,147 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const got = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')].map(r => { const b = r.querySelector('button[data-pb-leg]'); return b ? `${b.dataset.pbLeg} ${b.dataset.side} ${b.dataset.k}` : 'no leg'; }).join(', ');
       const grps = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')].map(r => r.dataset.pbGrp).join();
       chk(!!tl && tl.src === 'real' && tl.p === 0.5 && n === 9 && got === WANT5 && grps === 'value,value,value,value,value,value,other,other,other' && w.eval('getPbTop()').same === 2,
-        `made-up games: the Top 100 lines are not the six Value picks, the two thin-edge lines and then the one-sided total at +120, with the two rungs that are the same bet as a half-point main Over left out (${w.eval('getPbTop()').same} counted left out): ` + got + ' / ' + grps);
+        `made-up games: the Top 50 lines are not the six Value picks, the two thin-edge lines and then the one-sided total at +120, with the two rungs that are the same bet as a half-point main Over left out (${w.eval('getPbTop()').same} counted left out): ` + got + ' / ' + grps);
     } finally {
       w.eval('pbGames=window.__pbKeep5[0]; pricedLegs=window.__pbKeep5[1]'); delete w.__pbKeep5; delete w.__pb5;
       w.eloAltP = keep5.alt; w.eval(`(function(){ const k=${keep5.dk}; if(k===null) delete PAY.dk; else PAY.dk=k;
         const M=PAY.mkt&&PAY.mkt[${cwS}]; if(M) for(const [pid] of ${JSON.stringify(MK5)}) delete M[pid];
         if(!${keep5.hadW}&&PAY.mkt) delete PAY.mkt[${cwS}]; if(!${keep5.hadMkt}) delete PAY.mkt; })()`);
       Sx.ui.pb = JSON.parse(keepU5); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(20); } }
+  /* ---- the Top 50 (app v113, the owner, 17 October 2026: "in parlay builder only do top 50 now instead of 100"), on
+     sixty made-up games of their own (pbGames and pricedLegs stood in for, each in its own slot and put back whatever
+     happens, so this holds on any day, the off-season included), only Moneyline ticked: each game's home side to win at
+     -110 (1.909, the price implying 52.4%), forty rated 60.0% down to 56.1% a tenth of a point at a time (3 points or more
+     above it: Value picks) and twenty 55.0% down to 53.1% (above it by less than 3: thin-edge lines). Ranked here by hand
+     on the chance times 1.909 less 1: the forty Value picks in game order, then the twenty thin-edge lines in game order.
+     The list is the first 50 of them, H100 to H139 and then H140 to H149, the last ten (H150 to H159) left off, under
+     "Top 50 lines", the Value picks' heading counting 40 and the other lines' 10, their ranks from 41 ---- */
+  if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepU6 = JSON.stringify(Sx.ui.pb), wk6 = String(cw).padStart(2, '0');
+    const G6 = [...Array(60)].map((_, i) => ({ id: `2099_${wk6}_A${100 + i}_H${100 + i}`, w: cw, a: 'A' + (100 + i), h: 'H' + (100 + i), d: '2099-01-03', t: '13:00' }));
+    const L6 = G6.map((g, i) => ({ key: `${g.id}|team:${g.h}|ml`, gid: g.id, pid: 'team:' + g.h, stat: 'ml', k: 0, side: 'over', main: false,
+      p: Math.round((i < 40 ? 0.6 - i * 0.001 : 0.55 - (i - 40) * 0.001) * 1e4) / 1e4, price: -110, src: 'real', mu: null, name: 'Made-up ' + g.h, pos: 'Game', grp: 'TEAM', team: g.h, opp: g.a, week: cw, label: 'To win' }));
+    const keepDk6 = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)');
+    w.__pbKeep6 = w.eval('[pbGames, pricedLegs]'); w.__pb6 = { G: G6, L: L6 };
+    try {
+      w.eval('pbGames=function(){ return window.__pb6.G; }; pricedLegs=function(games){ return window.__pb6.L.filter(l=>(games||[]).some(g=>g.id===l.gid)).map(l=>({...l})); };');
+      w.eval(`PAY.dk=${JSON.stringify(dkFixture(L6, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'SIXTY'))}`);
+      Sx.ui.pb = { k: { ml: true, ats: false, total: false, over: false, under: false }, off: [], gx: false };
+      w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); renderParlay()'); await wait(40);
+      const own = pbTopOwn(Sx.ui.pb, G6), n = holdTop('sixty made-up games, Moneyline only', Sx.ui.pb, G6);
+      const rows = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')], got = rows.map(r => (r.querySelector('button[data-pb-leg]') || { dataset: {} }).dataset.pbLeg || 'none');
+      const hand = G6.slice(0, 50).map(g => `${g.id}|team:${g.h}|ml`), pills = [...panel.querySelectorAll('h3.pb-topsec .pill')].map(txt).join(), oo = panel.querySelector('ol.pb-top[data-pb-sec="other"]');
+      chk(n === 50 && own.full === 60 && rows.length === 50 && got.join() === hand.join() && pills === '40,10' && !!oo && oo.getAttribute('start') === '41' && w.eval('getPbTop()').rows.length === 50
+        && txt(panel.querySelector('#pbCard > .pb-hd h2')) === 'Top 50 lines',
+        `sixty made-up games, each a line that qualifies: the list is not the first 50 of their order (the forty Value picks H100 to H139, then the ten best thin-edge lines H140 to H149, H150 to H159 left off) under "Top 50 lines": ${rows.length} rows (${got.slice(38, 52).map(k => k.split('|')[1]).join(', ')} around the cut), the parts counting ${pills}`);
+    } finally {
+      w.eval('pbGames=window.__pbKeep6[0]; pricedLegs=window.__pbKeep6[1]'); delete w.__pbKeep6; delete w.__pb6;
+      w.eval(`(function(){ const k=${keepDk6}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
+      Sx.ui.pb = JSON.parse(keepU6); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(20); }
+    chk(topOver > 0, `no list the smoke held had more lines qualifying than the ${PB_TOP_N_OWN} it holds, so the cut was never held`); }
+  /* ---- only the bets DraftKings posts (app v113, the owner, 17 October 2026: "there are certain bets in the props that
+     are not part of draft kings like for FG attempts. i only want to show legs that draft kings does"): of the stats the
+     page projects, targets and FG attempts (NO_BET_OWN, the smoke's own copy) are never a line on a game's page, a leg in
+     the builder or a suggestion. FG attempts is still projected (a kicker's field goals made and kicking points stand on
+     it). Held first on the week as it stands, every game still to come: every projected player's lines, the priced lines,
+     each game page's hands, the Top 50 and the engine's levels on every bet type and game, each prime-time set, the Elo
+     picks, every game's page with every player open, and the builder; then on a made-up game of the smoke's own, a Sunday
+     night in 2099 between two clubs of the schedule whose kicker the page projects (laid into the schedule and taken out
+     after, so it holds on any day, the off-season included), with DraftKings' main line and two ladder prices planted on
+     each kicker's FG attempts, each with a made-up id (a fixture merged into a copy of the payload's table, put back
+     after): still no line, leg or suggestion of it anywhere, and every line the page draws for the kickers put in the
+     builder by its own box, none of them FG attempts ---- */
+  if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepU7 = JSON.stringify(Sx.ui.pb), wk7 = String(cw).padStart(2, '0');
+    const noBet = l => !!l && NO_BET_OWN.has(l.stat), legTxt = l => `${l.name} ${l.label} (${l.stat})`;
+    const lineOf = el => (el.dataset.leg || el.dataset.pbLeg || '').split('|')[2] || '';
+    const pageBad = () => [...d.querySelectorAll('#gameView [data-leg], #pbPanel [data-pb-leg], #spPanel [data-pb-leg], #parlayBody [data-drop]')]
+      .filter(el => NO_BET_OWN.has(lineOf(el)) || NO_BET_OWN.has((el.dataset.drop || '').split('|')[2] || '')).map(el => el.dataset.leg || el.dataset.pbLeg || el.dataset.drop);
+    const headsBad = () => [...d.querySelectorAll('#gameView .statblk h4, #gameView .tile .tl')].map(txt).filter(t => /^(FG attempts|Targets)\b/.test(t));
+    const allOn = () => { Sx.ui.pb = { k: { ml: true, ats: true, total: true, over: true, under: true }, off: [], gx: false }; };
+    /* everything the page offers on these games, read through the page's own functions: what each holds of NO_BET_OWN */
+    const offered = G => { const bad = [];
+      for (const g of G) { const ro = w.eval('rosterFor')(g, true);
+        for (const tm in ro) for (const x of ro[tm].players) for (const l of w.eval('statLines')(x)) if (NO_BET_OWN.has(l.stat)) bad.push(`${x.pl.n}'s ${l.stat} line in ${g.id}`);
+        for (const l of w.eval('gameLegPool')(g, true)) if (noBet(l)) bad.push('a hand\'s line ' + legTxt(l));
+        const T = w.eval('gameTiers')(g); for (const id of ['high', 'med', 'low']) for (const l of ((T && T[id] && T[id].legs) || [])) if (noBet(l)) bad.push(`the ${id} hand's ` + legTxt(l));
+        if (primeOwn(g)) { const s = w.eval('spSet')(g.id); for (const t of ((s && s.tiers) || [])) for (const l of (t.legs || [])) if (noBet(l)) bad.push(`the ${t.id} set's ` + legTxt(l)); } }
+      for (const l of w.eval('pricedLegs')(G)) if (noBet(l)) bad.push('a priced line ' + legTxt(l));
+      for (const l of w.eval('getPbTop()').rows) if (noBet(l)) bad.push('a Top 50 line ' + legTxt(l));
+      for (const t of w.eval('getPbTiers()').tiers) for (const l of (t.legs || [])) if (noBet(l)) bad.push(`the ${t.id} level's ` + legTxt(l));
+      if (typeof w.eloPicks === 'function') { const r = w.eloPicks(); for (const t of ((r && r.tiers) || [])) for (const l of t.legs) if (noBet(l)) bad.push(`the ${t.id} Elo pick's ` + legTxt(l)); }
+      for (const l of Object.values(w.eval('S').parlay || {})) if (noBet(l)) bad.push('the builder\'s ' + legTxt(l));
+      return bad; };
+    /* each game's page with every player open, its ladders shown: no box, heading or tile of a stat that is no bet */
+    const pagesBad = async (G, also) => { const bad = [], keepG = w.eval('JSON.stringify({game:S.ui.game,open:S.ui.open||{},rungs:S.ui.showRungs})');
+      for (const g of G) { const ro = w.eval('rosterFor')(g, true), open = {}; for (const tm in ro) for (const x of ro[tm].players) open[x.pl.id] = true;
+        w.__fgOpen = open; w.eval(`S.ui.showRungs=true; S.ui.game=${JSON.stringify(g.id)}; S.ui.open=window.__fgOpen; renderGame()`); await wait(20);
+        bad.push(...pageBad().map(k => `${g.id}: a box ${k}`), ...headsBad().map(t => `${g.id}: "${t}"`));
+        if (also) await also(g); }
+      delete w.__fgOpen; w.eval(`(function(){ const k=${keepG}; S.ui.game=k.game; S.ui.open=k.open; S.ui.showRungs=k.rungs; closeGameModal(); })()`); await wait(20);
+      return bad; };
+    try {
+      /* the week as it stands, every bet type and game ticked */
+      allOn(); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(40);
+      const G0 = w.eval('pbGames()'), b0 = offered(G0), p0 = await pagesBad(G0);
+      chk(!b0.length && !p0.length && !pageBad().length, `on the week as it stands a line, leg or suggestion is a stat DraftKings does not post (${[...NO_BET_OWN].join(', ')}): ` + [...b0, ...p0, ...pageBad()].slice(0, 4).join('; '));
+      console.log(`  (only DraftKings' markets: ${G0.length} game${G0.length === 1 ? '' : 's'} of the week as it stands held, every page with every player open)`);
+      /* the made-up Sunday night game: two clubs of the schedule, the first pair in order whose kicker the page projects */
+      const clubs = [...new Set(Sx.sched.flatMap(g => [g.a, g.h]))].sort(), mkG = (a, h) => ({ id: `2099_${wk7}_${a}_${h}`, w: cw, a, h, d: '2099-01-04', t: '20:20' });
+      const kOf = g => { const ro = w.eval('rosterFor')(g, false); return Object.values(ro).flatMap(t => t.players).filter(x => x.pl.grp === 'K' && w.eval('statLines')(x).length); };
+      let F = null; for (let i = 0; i + 1 < clubs.length && !F; i += 2) { const g = mkG(clubs[i], clubs[i + 1]); if (kOf(g).length) F = g; }
+      if (!F) chk(false, 'no two clubs of the schedule give a kicker the page projects, so FG attempts cannot be planted on one');
+      else {
+        Sx.sched.push(F);
+        const K = kOf(F), keepDk7 = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), cwS = JSON.stringify(String(cw));
+        const keepM = w.eval(`JSON.stringify({had:!!PAY.mkt, hadW:!!(PAY.mkt&&PAY.mkt[${cwS}])})`), keepP = w.eval('JSON.stringify(S.parlay)');
+        try {
+          /* FG attempts still projected for each kicker, and priced: DraftKings' main line a few points under the model's
+             side, both ways (PAY.mkt, as the price pull writes it), and his 2+ and 3+ (S.odds, as a pull's ladder) */
+          const plant = [], proj = K.map(x => w.eval('project')(x.pl, 'fg_att', x.opp, x.ctx));
+          chk(proj.every(pr => !!pr && pr.mu > 0), `FG attempts is not projected for the made-up game's kicker${K.length === 1 ? '' : 's'}, which field goals made and kicking points stand on: ` + JSON.stringify(proj));
+          K.forEach((x, i) => { const pr = proj[i]; if (!pr || !(pr.mu > 0)) return;
+            const ln = Math.floor(pr.mu) + 0.5, pO = w.eval('pOver')('K', 'fg_att', pr.mu, ln), ov = pO >= 0.5, fs = Math.max(0.05, Math.min(0.9, (ov ? pO : 1 - pO) - 0.06)), fo = ov ? fs : 1 - fs;
+            const over = w.eval('probToAmerican')(fo * 1.03), under = w.eval('probToAmerican')((1 - fo) * 1.03);
+            const rung = k => w.eval('probToAmerican')(Math.max(0.05, Math.min(0.9, w.eval('pOver')('K', 'fg_att', pr.mu, k - 0.5) - 0.06)) * 1.03);
+            plant.push({ pid: x.pl.id, name: x.pl.n, ln, over, under, r2: rung(2), r3: rung(3), team: x.team }); });
+          w.__fgPlant = { F, plant };
+          w.eval(`(function(){ const P=window.__fgPlant, cw=${cwS}; PAY.mkt=PAY.mkt||{}; const M=(PAY.mkt[cw]=PAY.mkt[cw]||{});
+            for(const q of P.plant){ ((M[q.pid]??={}).fg_att)={line:q.ln,over:q.over,under:q.under,n:10,g:P.F.id}; (((S.odds[P.F.id]??={})[q.pid]??={}).fg_att)={'2':q.r2,'3':q.r3}; } })()`);
+          /* a made-up DraftKings id on each planted line (and on the kickers' other lines), merged into a copy of the
+             payload's table where it has one */
+          const fx = dkFixture(plant.flatMap(q => [{ gid: F.id, week: cw, pid: q.pid, stat: 'fg_att', k: q.ln, side: 'over', main: true }, { gid: F.id, week: cw, pid: q.pid, stat: 'fg_att', k: q.ln, side: 'under', main: true },
+            { gid: F.id, week: cw, pid: q.pid, stat: 'fg_att', k: 2, side: 'over', main: false }, { gid: F.id, week: cw, pid: q.pid, stat: 'fg_att', k: 3, side: 'over', main: false }]), new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'FGA');
+          { const D = JSON.parse(keepDk7); if (D && typeof D === 'object') { (D[String(cw)] ??= {})[F.id] = (fx[String(cw)] || {})[F.id] || {}; w.eval(`PAY.dk=${JSON.stringify(D)}`); } }
+          allOn(); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(40);
+          const inPb = w.eval('pbGames()').some(g => g.id === F.id), b1 = offered([F]);
+          /* on its page, every box the page draws for the kickers ticked into the builder by the page's own path (each a
+             line DraftKings posts), and the builder then shows none of FG attempts */
+          let ticked = 0;
+          const p1 = await pagesBad([F], async () => { for (const q of plant) { const boxes = [...d.querySelectorAll(`#gameView input[data-leg^="${F.id}|${q.pid}|"]`)];
+            for (const el of boxes) { const b = d.querySelector(`#gameView input[data-leg="${el.dataset.leg}"][data-k="${el.dataset.k}"][data-side="${el.dataset.side}"]`); if (b && !b.checked) { b.click(); await wait(10); ticked++; } } } });
+          w.eval('renderParlay()'); await wait(20);
+          const inB = Object.values(w.eval('S').parlay || {}), kLegs = inB.filter(l => l.gid === F.id);
+          chk(inPb && !b1.length && !p1.length && ticked > 0 && kLegs.length > 0 && !kLegs.some(noBet) && !pageBad().length && !/FG attempts/.test(txt(d.getElementById('parlayBody'))),
+            `on a made-up Sunday night game (${F.id}) with FG attempts priced for ${plant.map(q => q.name).join(' and ')}, a line, leg or suggestion of it is offered somewhere, or the kickers' own lines could not be put in the builder (${ticked} boxes ticked, ${kLegs.length} legs of the game in the builder): ` + [...b1, ...p1, ...kLegs.filter(noBet).map(legTxt), ...pageBad()].slice(0, 4).join('; '));
+          console.log(`  (only DraftKings' markets: FG attempts priced on ${plant.length} kicker${plant.length === 1 ? '' : 's'} of a made-up game, ${F.id}; ${ticked} of their own lines put in the builder, none FG attempts)`);
+          /* (app v113) an FG attempts leg a visitor's builder kept from before app v113 (S.parlay is the browser's)
+             leaves it on the next draw, with one line saying why, and toggleLeg never adds one by any path */
+          { const q0 = plant[0], key0 = `${F.id}|${q0.pid}|fg_att`, base = kLegs.find(l => l.pid === q0.pid) || kLegs[0];
+            w.__fgOld = { ...base, key: key0, pid: q0.pid, stat: 'fg_att', k: 2, side: 'over', main: false, price: -110, src: 'est' };
+            w.eval('S.parlay[window.__fgOld.key]=window.__fgOld; delete window.__fgOld; save(); renderParlay()'); await wait(20);
+            const left = Object.values(w.eval('S').parlay || {}).filter(noBet), note = d.querySelector('#parlayBody [data-pb-notdk]');
+            w.eval(`toggleLeg(${JSON.stringify(key0)},2,null,'over',false)`); await wait(10);
+            const after = Object.values(w.eval('S').parlay || {}).filter(noBet);
+            chk(!left.length && !!note && note.dataset.pbNotdk === '1' && txt(note) === '1 leg was removed: DraftKings does not offer FG attempts.' && !after.length,
+              `an FG attempts leg kept in the builder from before is not removed with its line (${left.length} left; ${note ? '"' + txt(note) + '"' : 'no line'}), or toggleLeg still adds one (${after.length})`); }
+        } finally {
+          const i7 = Sx.sched.indexOf(F); if (i7 >= 0) Sx.sched.splice(i7, 1);
+          w.__fgKeep = { m: JSON.parse(keepM) };
+          w.eval(`(function(){ const P=window.__fgPlant, cw=${cwS}; if(P){ const M=PAY.mkt&&PAY.mkt[cw]; if(M) for(const q of P.plant){ if(M[q.pid]){ delete M[q.pid].fg_att; if(!Object.keys(M[q.pid]).length) delete M[q.pid]; } }
+            delete S.odds[P.F.id]; } const k=window.__fgKeep.m; if(!k.hadW&&PAY.mkt) delete PAY.mkt[cw]; if(!k.had) delete PAY.mkt;
+            const kd=${keepDk7}; if(kd===null) delete PAY.dk; else PAY.dk=kd; S.parlay=${keepP}; save(); })()`);
+          delete w.__fgPlant; delete w.__fgKeep; } }
+    } finally {
+      Sx.ui.pb = JSON.parse(keepU7); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(20); } }
   /* ---- Suggested Parlays on made-up games of its own (pbGames and pricedLegs stood in for, the games laid into
      the schedule and taken out after, so this holds on any day, the off-season included): a Thursday night
      game with one line, a Saturday night and a Sunday afternoon game (not prime time, never set out), a Sunday
@@ -1921,7 +2164,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         w.eval('PARLAY_CARD.close()'); await wait(20); }
       /* at the lock, before the record has answered: the tab says it is reading the site's locked set */
       at(lockP + 60e3); w.eval('PB_REC_DONE=false'); await redraw();
-      chk(phaseOf(P) === 'loading' && /^Locked since Sun 6:20 PM ET: reading the site’s locked set/.test(txt(elOf(P).querySelector('[data-sp-phase]'))) && !elOf(Q) && phaseOf(Z) === 'live',
+      chk(phaseOf(P) === 'loading' && txt(elOf(P).querySelector('[data-sp-phase]')) === 'Locked since Sun 6:20 PM ET. Loading the site’s set…' && !elOf(Q) && phaseOf(Z) === 'live',
         `at the lock, with the record not read yet, the made-up Sunday night game does not say it is reading the site's locked set (or the Thursday game, kicked off, is still there): ${phaseOf(P)} ${elOf(P) ? txt(elOf(P).querySelector('[data-sp-phase]')) : ''}`);
       /* the site's locked set: the record's entry, made up, drawn as it stands */
       const out = (l, x) => ({ gid: l.gid, week: l.week, pid: l.pid, team: l.team, grp: l.grp, stat: l.stat, k: l.k, side: l.side, main: l.main, price: l.price, src: l.src, name: l.name, label: l.label, p: l.p, fair: x, fair_est: false, thin: true, market: false });
@@ -1944,8 +2187,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       setRec(REC); w.eval('SP_KEEP=null'); w.localStorage.removeItem(KK); await redraw();
       const lockedTxt = () => txt(elOf(P).querySelector('[data-sp-phase]'));
       const want1 = recDrawn(REC), got1 = drawn(P) || '';
-      chk(phaseOf(P) === 'locked' && lockedTxt() === `Locked since Sun 6:20 PM ET, 2 hours before kickoff: the site’s set, the same for everyone and the one the record grades, as the props job last published it before the lock (${etSay(Date.parse(takenAt))}). Refresh odds no longer changes it.`,
-        'from the lock, the made-up Sunday night game does not show the site\'s locked set, marked Locked, saying when the props job published it: ' + (elOf(P) ? lockedTxt() : 'no set'));
+      /* (app v113) one short line, "Locked since Sun 6:20 PM ET.", where it said whose set it is, when the props job
+         published it and that Refresh odds no longer changes it */
+      chk(phaseOf(P) === 'locked' && lockedTxt() === 'Locked since Sun 6:20 PM ET.' && !!elOf(P).querySelector('[data-sp-phase] .sp-lockmark') && !WHY_GONE.test(txt(elOf(P))),
+        'from the lock, the made-up Sunday night game does not show the site\'s locked set marked Locked in one short line: ' + (elOf(P) ? lockedTxt() : 'no set'));
       chk(got1 === want1, `from the lock the tab does not draw the record's entry as it stands: ${got1} / want ${want1}`);
       chk(w.eval('spTier')(`${P.id}:med`) && w.eval('spTier')(`${P.id}:med`).legs.map(l => l.pid).sort().join() === [wr1, rb1, te1].map(l => l.pid).sort().join(), 'the card would not finish the locked Medium on the record\'s legs');
       /* a press after the lock (new prices too: the live set would move) changes nothing of it */
@@ -1960,7 +2205,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       { const m = medT(), q = qualOwn({ k: { ml: true, ats: true, total: true, over: true, under: true }, off: [] }, [P]), okSet = new Set([...q.pref, ...q.thin, ...q.mkt].map(legId)), k1 = kept();
         const others = lockedNow.split(' / ').filter(s => !s.startsWith('med')), now = (drawn(P) || '').split(' / ').filter(s => !s.startsWith('med'));
         chk(!!m && m.legs.length === 3 && m.legs.every(l => l.gid === P.id && l.pid !== te1.pid && okSet.has(legId(l))) && !!upd() && upd().dataset.spUpd === te1.pid
-          && txt(upd()).startsWith(`Updated: ${te1.name} held out (`) && txt(upd()).includes('This page made the change') && now.join(' / ') === others.join(' / ')
+          && !!k1 && !!k1.games[P.id] && !!k1.games[P.id].rep.med && Date.parse(k1.games[P.id].rep.med.at) >= lockP + 60e3 && Date.parse(k1.games[P.id].rep.med.at) < lockP + 120e3
+          && txt(upd()) === `Updated in this browser: ${te1.name} held out (${etSay(Date.parse(k1.games[P.id].rep.med.at))}); this level was built again.` && now.join(' / ') === others.join(' / ')
           && !!k1 && k1.v === 1 && +k1.season === SEAS && !!k1.games[P.id] && k1.games[P.id].kickoff === isoS(kickP) && k1.games[P.id].rep.med && k1.games[P.id].rep.med.pid === te1.pid && !k1.games[P.id].own,
           `with ${te1.name} ruled out after the lock, the Medium alone is not built again without him and marked Updated as the page's change, kept in this browser, the other levels as locked: ` + JSON.stringify({ med: m && m.legs.map(l => l.pid), upd: upd() ? txt(upd()) : null, kept: k1 && k1.games[P.id] }));
         /* read again from the browser, as a reload reads it: the same Medium */
@@ -1971,7 +2217,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         e.tiers[1] = T('med', 'Medium', 3, 0.25, [wr1, rb1, qb1], 0.21, 0.18, 7.1, { updated: { pid: te1.pid, name: te1.name, reason: 'Out on the report', at: isoS(lockP + 30e3) } });
         setRec(R2); await redraw();
         const m = medT(), k2 = kept();
-        chk(!!m && m.legs.map(l => l.pid).sort().join() === [wr1, rb1, qb1].map(l => l.pid).sort().join() && !!upd() && txt(upd()) === `Updated: ${te1.name} Out on the report (${etSay(lockP + 30e3)}), so this level was built again from the lines at hand.`
+        chk(!!m && m.legs.map(l => l.pid).sort().join() === [wr1, rb1, qb1].map(l => l.pid).sort().join() && !!upd() && txt(upd()) === `Updated: ${te1.name} Out on the report (${etSay(lockP + 30e3)}); this level was built again.`
           && !(k2 && k2.games[P.id] && k2.games[P.id].rep && k2.games[P.id].rep.med),
           'the record\'s own replacement of the Medium for the same player does not take over from the page\'s, or the page\'s is still kept: ' + JSON.stringify({ med: m && m.legs.map(l => l.pid), upd: upd() ? txt(upd()) : null, kept: k2 && k2.games[P.id] })); }
       delete INJ[te1.pid];
@@ -1979,7 +2225,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
          and keeps it in this browser (outside S); a reload, a press and new prices leave it as it was */
       setRec({ entries: {} }); w.eval('SP_KEEP=null'); w.localStorage.removeItem(KK); await redraw();
       const own0 = drawn(P), k3 = kept(), fresh = w.eval('SP_CACHE=new Map(); spSet')(P.id);
-      chk(phaseOf(P) === 'own' && /^Locked since Sun 6:20 PM ET, 2 hours before kickoff\. The site’s locked set for this game was not published when this page loaded, so this is the set as this browser built it \(.+\): it is kept in this browser to kickoff, and it is not the set the record grades\. Refresh odds no longer changes it\.$/.test(lockedTxt())
+      chk(phaseOf(P) === 'own' && lockedTxt() === 'Locked since Sun 6:20 PM ET.' + OWN_LINE
         && !!k3 && !!k3.games[P.id] && k3.games[P.id].own === true && k3.games[P.id].tiers.length === 4 && k3.games[P.id].kickoff === isoS(kickP)
         && fresh.tiers.every(t => { const s = k3.games[P.id].tiers.find(x => x.id === t.id); return t.legs ? !!s && Array.isArray(s.legs) && s.legs.map(l => l.pid + l.stat).sort().join() === t.legs.map(l => l.pid + l.stat).sort().join() : !!s && !s.legs; })
         && !JSON.stringify(w.eval('S')).includes('"own":true') && w.eval('typeof S.sp') === 'undefined',
@@ -2103,8 +2349,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const adminHtml = recFrame.getAttribute('srcdoc') || '';
   chk(adminHtml.length > 100000 && /const MODEL = /.test(adminHtml), 'the Records frame was not filled with the betting app: ' + adminHtml.length + ' chars');
   chk(/^<!DOCTYPE html>/i.test(adminHtml.trim()), 'the framed app does not start with its doctype');
-  chk(/<head>\s*<script>window\.EMBED_TAB="record";window\.STATE_URL='\.\.\/betting\/state\.json';window\.XBETS=window\.XBETS\|\|\(function\(\)\{try\{return window\.parent!==window&&window\.parent\.XBETS\|\|null;\}catch\(e\)\{return null;\}\}\)\(\);if\(window\.XBETS\)document\.documentElement\.classList\.add\('xbets-ro'\);window\.FRIENDS=window\.FRIENDS\|\|\(function\(\)\{try\{return window\.parent!==window&&window\.parent\.FRIENDS\|\|null;\}catch\(e\)\{return null;\}\}\)\(\);<\/script>/.test(adminHtml),
-    'the framed app is not told its tab, its season path, the page\'s X Bet Log and the friends\' picks');
+  chk(/<head>\s*<script>window\.EMBED_TAB="record";window\.STATE_URL='betting\/state\.json';window\.ELO_URL='elo\/data\/model\.json';window\.XBETS=window\.XBETS\|\|\(function\(\)\{try\{return window\.parent!==window&&window\.parent\.XBETS\|\|null;\}catch\(e\)\{return null;\}\}\)\(\);if\(window\.XBETS\)document\.documentElement\.classList\.add\('xbets-ro'\);window\.FRIENDS=window\.FRIENDS\|\|\(function\(\)\{try\{return window\.parent!==window&&window\.parent\.FRIENDS\|\|null;\}catch\(e\)\{return null;\}\}\)\(\);<\/script>/.test(adminHtml),
+    'the framed app is not told its tab, its season\'s and its Elo model\'s paths from the site\'s root, the page\'s X Bet Log and the friends\' picks');
   /* the frames reach the page's X Bet Log through window.parent: a sandboxed frame could not */
   chk([...d.querySelectorAll('iframe.pk-frame')].every(f => !f.hasAttribute('sandbox')), 'a betting frame is sandboxed, so it cannot reach the X Bet Log');
   chk(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml) && /classList\.add\('embed'\)/.test(adminHtml),
@@ -2156,10 +2402,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      commit never leaves this page stale ---- */
   chk(!d.getElementById('tab-tracker') && !d.querySelector('#tabs button[data-tab="tracker"], iframe.nt-frame, #ntTop, #ntNote'), 'the Season Tracker tab is still in the page');
   chk(d.querySelectorAll('iframe').length === 3 && d.querySelectorAll('iframe.pk-frame').length === 3, 'a frame in the page is not one of the three betting tabs');
-  { const baked = HTML.match(/const (UNITS26|STATS26|WEEKS|RANKS26|PLAYERS26|RESULTS)\b|\b(UNITS26_META|STATS26_THROUGH|UNITS26_LINEUPS)\s*=|<script[^>]+src=[^>]*news\//), refs = [...new Set(HTML.match(/(['"`])\.\.\/news\/[^'"`]*\1/g) || [])].map(x => x.slice(1, -1)).sort();
-    chk(!baked && refs.join() === ['../news/data/notes/${season}-w${week}.json', '../news/data/units.json'].join(),
+  { const baked = HTML.match(/const (UNITS26|STATS26|WEEKS|RANKS26|PLAYERS26|RESULTS)\b|\b(UNITS26_META|STATS26_THROUGH|UNITS26_LINEUPS)\s*=|<script[^>]+src=[^>]*news\//), refs = [...new Set(HTML.match(/(['"`])(?:\.\.\/)*news\/[^'"`]*\1/g) || [])].map(x => x.slice(1, -1)).sort();
+    chk(!baked && refs.join() === ['news/data/notes/${season}-w${week}.json', 'news/data/units.json'].join(),
       'the page bakes in the news job\'s data or reads a news file other than units.json and the week\'s notes (stats.json went with the Stat breakdown, 16 October 2026): ' + (baked ? baked[0] : refs.join(', '))); }
-  { const nc = calls.filter(c => /\/news\/data\//.test(c.url)), n = f => nc.filter(c => c.url.replace(/\?.*$/, '').endsWith(f)).length;
+  { const nc = calls.filter(c => /(^|\/)news\/data\//.test(c.url)), n = f => nc.filter(c => c.url.replace(/\?.*$/, '').endsWith(f)).length;
     chk(nc.length > 0 && nc.every(c => c.method === 'GET' && c.cache === 'no-store') && n('news/data/units.json') === 1 && n('news/data/stats.json') === 0
       && new Set(nc.map(c => c.url)).size === nc.length,
       'the Game snapshot does not read the news job\'s files once each, no-store, as the page loads, or still reads stats.json: ' + nc.map(c => `${c.method} ${c.url} ${c.cache}`).join(' | ')); }
@@ -2195,7 +2441,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     w.location.hash = '#matchups'; await wait(40); }
 
   /* the page reads the two sites and bakes nothing */
-  chk(fetched.includes('../betting/state.json') && fetched.includes('../props/data/payload.json'), 'the page did not fetch both sites: ' + fetched.join(', '));
+  chk(fetched.includes('betting/state.json') && fetched.includes('props/data/payload.json'), 'the page did not fetch both sites, named from the site\'s root where it is: ' + fetched.join(', '));
+  /* every file the page reads as it loads, named from the root (never ../, which from there leaves the site) */
+  { const want = ['props/data/payload.json', 'props/data/suggest_ledger.json', 'betting/state.json', 'elo/data/players.json', 'elo/data/model.json', 'elo/data/matchups.json',
+      'news/data/units.json', 'liveparlays/parlays.json', 'liveparlays/xbets.json', 'picks/friends.json'];
+    const ours = bootCalls.map(c => c.url.replace(/\?.*$/, '')).filter(u => !/^https?:/.test(u));
+    chk(want.every(f => ours.includes(f)) && ours.every(u => !/\.\.\//.test(u) && new URL(u, SITE).href.startsWith(SITE)),
+      'the page does not read its files at the site\'s root, where it is: missing ' + want.filter(f => !ours.includes(f)).join(', ') + '; read ' + ours.join(', ')); }
   chk(!/const MKT=\{"|const PAY=\{grid:/.test(HTML), 'the page bakes data in, so it goes stale between builds');
   chk(!/api\.github\.com/.test(HTML), 'the page talks to the GitHub API');
 
@@ -2246,7 +2498,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     O.w.close(); }
 
   /* opened on #slate, the Props tab is the one showing */
-  const s2 = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#slate');
+  const s2 = await run(state, 'https://demon-x13.github.io/nfl-hub/#slate');
   chk(s2.errs.length === 0, 'the page threw opening on #slate: ' + s2.errs.join('; '));
   chk(!s2.d.getElementById('tab-slate').hidden && s2.d.getElementById('tab-pickems').hidden, 'opening on #slate did not open the Props tab');
   chk(s2.d.querySelectorAll('#gamesList .game').length > 0, 'opened on #slate, the Props tab has no games');
@@ -2255,7 +2507,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      itself now), on #pickems, the board's address until 16 October 2026 (and pickems/'s redirect), or on
      #matchups, its address now, the board is showing and the address is #matchups */
   for (const at of ['#tracker', '#pickems', '#matchups']) {
-    const t2 = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/' + at);
+    const t2 = await run(state, 'https://demon-x13.github.io/nfl-hub/' + at);
     chk(t2.errs.length === 0 && !t2.d.getElementById('tab-pickems').hidden && t2.w.location.hash === '#matchups' && txt(t2.d.querySelector('#tabs button[aria-selected="true"]')) === 'Matchups',
       `opened on ${at}, the page does not land on Matchups as #matchups: ` + t2.w.location.hash + ' ' + t2.errs.join('; '));
     t2.w.close(); }
@@ -2277,7 +2529,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
 
   /* ---- Player Elo: the ratings and the roster model, read from elo/data ---- */
   { const eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M);
-    chk(fetched.includes('../elo/data/players.json') && fetched.includes('../elo/data/model.json'), 'the page did not read the Elo files');
+    chk(fetched.includes('elo/data/players.json') && fetched.includes('elo/data/model.json'), 'the page did not read the Elo files');
     [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click();
     await wait(80);
     chk(!d.getElementById('tab-elo').hidden && w.location.hash === '#elo', 'the Player Elo tab did not open');
@@ -2353,7 +2605,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       { const q = eloP.groups.QB.top[0];   /* a quarterback's rating is a passer's: no second price on the touchdown he scores himself (app v102) */
         chk(altP(q.id, 'over', 200, 'real', 'any_td') === null && altP(q.id, 'over', 200, 'real', 'passing_yards') != null, 'market + form prices a quarterback\'s own touchdown on his passing rating, or no longer his passing line'); }
       chk(w.eval('getPbTiers().sig').split('|').includes('form') && w.eval('getPbTop().sig').split('|').includes('form') && w.eval('spSig')(w.eval('S').sched[0] || {}).split('|').includes('form'),
-        'the suggestions\' signature (the levels\', the Top 100 lines\' or a set\'s) does not carry the Elo state: ' + w.eval('getPbTiers().sig')); } }
+        'the suggestions\' signature (the levels\', the Top 50 lines\' or a set\'s) does not carry the Elo state: ' + w.eval('getPbTiers().sig')); } }
     /* the Props game view: the same shield on a ranked player's row */
     { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
       const S = w.eval('S'); const top = eloP.groups.QB.top[0];
@@ -2479,6 +2731,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         /* (app v112) an Elo pick's legs are chosen on the Elo matchup, not the edge: none is marked Value, and neither
            retired tag is drawn */
         chk(!!card && !card.querySelector('.pb-valmark, .pb-thinmark') && !OLD_TAG.test(txt(card)), 'an Elo pick\'s leg is marked Value, or the Elo picks still say thin edge or no edge: ' + (card ? [...card.querySelectorAll('.pb-valmark')].length + ' marked' : 'no card'));
+        /* (app v113) their lead is one short sentence, the owner's "get rid of all the long paragraph description stuff" */
+        { const ld = card && card.querySelectorAll(':scope > .pb-lead');
+          chk(!!ld && ld.length === 1 && txt(ld[0]) === 'Players whose Elo matchup beats the book\'s price, on the games and player sides ticked on the Parlay Builder tab.',
+            'the Elo picks\' lead is not its one short sentence: ' + (ld && ld.length ? [...ld].map(txt).join(' / ').slice(0, 200) : 'no lead')); }
         /* a leg carries a shield where its player is ranked this season, and only there */
         const wantBadges = [t2, t3].flatMap(t => t.legs).filter(l => eloP.players[l.pid] && eloP.players[l.pid].rank).length;
         chk(!!card && /Elo picks/.test(txt(card.querySelector('h3'))) && card.querySelectorAll('.pb-tier').length === 2 && card.querySelectorAll('.pb-legs .pe-badge').length === wantBadges, `the Elo picks are not the last section of Suggested Parlays, or their legs' shields are wrong: ${card ? card.querySelectorAll('.pb-legs .pe-badge').length : 'no section'} for ${wantBadges}`);
@@ -2497,7 +2753,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         /* Add to builder puts exactly those legs in the builder */
         { const keepP = w.eval('JSON.stringify(S.parlay)'), ab = card && card.querySelector('[data-pb-elo-add="elo2"]');
           if (ab) { ab.click(); await wait(40); const P = w.eval('S').parlay;
-            chk(Object.keys(P).length === 2 && t2.legs.every(l => P[l.key] && P[l.key].side === l.side && P[l.key].pe === undefined), 'an Elo pick\'s Add to builder did not put exactly its legs in the builder'); }
+            chk(Object.keys(P).length === 2 && t2.legs.every(l => P[l.key] && P[l.key].side === l.side && P[l.key].pe === undefined), 'an Elo pick\'s Add to builder did not put exactly its legs in the builder: ' + JSON.stringify(Object.values(P).map(x => [x.key || '', x.stat, x.k, x.side])) + ' for ' + JSON.stringify(t2.legs.map(l => [l.key, l.stat, l.k, l.side]))); }
           else chk(false, 'an Elo pick has no Add to builder');
           w.eval(`S.parlay=${keepP}; save(); renderParlay()`); await wait(40); }
         /* an Elo pick finishes as a card on every device, saved nowhere */
@@ -2664,7 +2920,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(!d.querySelector('#ownerMark, #xpOwner, #xpSignIn, #xpSignOut, #xpSignInBox, #syncStamp') && !/\bowner\b|sign out|sign in|Not synced|Synced/i.test(txt(shown)),
       'the page shows an owner mark, a sign-in or a sync stamp: ' + ((txt(shown).match(/.{0,60}(\bowner\b|sign out|sign in|Not synced|Synced).{0,60}/i) || [''])[0])); }
   /* the two files are read on every load, never from a cache */
-  chk(['../liveparlays/parlays.json', '../liveparlays/xbets.json'].every(f => calls.some(c => c.url.replace(/\?.*$/, '') === f && c.method === 'GET' && c.cache === 'no-store')),
+  chk(['liveparlays/parlays.json', 'liveparlays/xbets.json'].every(f => calls.some(c => c.url.replace(/\?.*$/, '') === f && c.method === 'GET' && c.cache === 'no-store')),
     'the page does not read liveparlays/parlays.json and liveparlays/xbets.json on load with cache: no-store: ' + calls.filter(c => /liveparlays/.test(c.url)).map(c => c.url + ' ' + c.cache).join(', '));
   /* a game that has not kicked off, so the builder keeps the leg */
   const openGame = S => laterGame(w, S);
@@ -2847,7 +3103,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(st === exp, `the status line after the press reads "${st}", not "${exp}"`);
           chk(['#parlayBody', '#spPanel'].every(x => txt(d.querySelector(`${x} [data-espn-status="week"]`)) === exp), 'after the press the builder\'s or Suggested Parlays\' own status line does not say what the Parlay Builder\'s says: ' + ['#parlayBody', '#spPanel'].map(x => txt(d.querySelector(`${x} [data-espn-status="week"]`))).join(' / '));
           chk(d.activeElement && d.activeElement.dataset && d.activeElement.dataset.espnRefresh === 'week', 'the focus did not stay on the Refresh odds button through the redraw'); }
-        /* what the page shows right after the press, before any cache of the smoke's own is dropped: the Top 100
+        /* what the page shows right after the press, before any cache of the smoke's own is dropped: the Top 50
            lines, the levels the engine builds and each prime-time game's set are what a build from nothing gives
            on the read (the press drops the caches they stand on), and the list draws est. on exactly its lines
            priced from the read. An Elo pick (#pbElo, at the foot of Suggested Parlays since app v111) may take a
@@ -3365,7 +3621,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           const badHand = w.eval('gameLegPool')(g).filter(l => l.src === 'dkline' && farOf(l));
           chk(!!alt && !badPref.length && !badThin.length && !badHand.length && pool.pref.concat(pool.thin).every(l => l.src !== 'dkline' || !farOf(l)),
             `a leg priced from DraftKings' line is preferred or not thin without market + form or a 3-point edge, or far off its estimated fair chance in the panel or a game page's hands: ${[...badPref, ...badThin, ...badHand].slice(0, 4).map(l => l.name + ' ' + l.label + ' ' + l.price + (l.thin ? ' thin' : '')).join(', ')}`); }
-        /* the Top 100 lines on these ticks mark est. exactly their lines priced from DraftKings' line, each titled
+        /* the Top 50 lines on these ticks mark est. exactly their lines priced from DraftKings' line, each titled
            with what it is priced from, and say once what such a line is and when the lines were read; and where
            the game is a prime-time one whose set is still live (before its lock, 2 hours before kickoff, by the
            page's clock: a locked set no press changes), its set on Suggested Parlays takes a leg from the read only
@@ -3377,7 +3633,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         if (spHid) { w.__spOnPress = w.eval('spOn'); w.eval('spOn=function(){ return spGames(); }'); console.log(`  (${g.id}'s set is not on the tab by the night rule now: spOn stood in for the checks of its cards after the press)`); }
         const pnl = d.getElementById('pbPanel'), tops = [...pnl.querySelectorAll('ol.pb-top > li.pb-trow')], topR = w.eval('getPbTop()').rows;
         chk(tops.length === topR.length && topR.some(l => l.src === 'dkline') && topR.every((l, i) => { const m = tops[i].querySelector('.pb-tc i.est'); return l.src === 'dkline' ? !!m && m.title.startsWith('DraftKings’ line from ESPN, read ') : !m; }),
-          'the Top 100 lines do not mark est. exactly their lines priced from DraftKings\' line read by Refresh odds, with what each is priced from: ' + topR.filter(l => l.src === 'dkline').length + ' of ' + tops.length);
+          'the Top 50 lines do not mark est. exactly their lines priced from DraftKings\' line read by Refresh odds, with what each is priced from: ' + topR.filter(l => l.src === 'dkline').length + ' of ' + tops.length);
         chk(txt(pnl).includes('A player line marked est. is priced from DraftKings’ line read on ESPN by Refresh odds, where DraftKings’ own price is not on file or its line has moved since: DraftKings’ lines as read ' + when(at) + '; prices estimated.'),
           'the panel does not say what a line marked est. is and when DraftKings\' lines were read');
         if (spLive) { await (async () => { [...d.querySelectorAll('#tabs button')].find(b2 => b2.dataset.tab === 'suggest').click(); await wait(80); })();
@@ -3474,7 +3730,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       console.log(`Refresh odds, on stand-in ESPN answers for week ${wk}: ${nEst} est. prices on ${g.id}'s page the rule's, none of them on its levels with DraftKings' ids baked and ${nLev} without, the card, the builder, a game page's own read, a failing ESPN and no lines posted`); } }
 
   /* ---- X Parlays is the file: three parlays of a fixture's, one of them cleared ---- */
-  { const F = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#xparlays', null, false, { file: FIXFILE });
+  { const F = await run(state, 'https://demon-x13.github.io/nfl-hub/#xparlays', null, false, { file: FIXFILE });
     await settle();
     const lp = F.d.getElementById('lpCard');
     chk(!F.timedOut && F.errs.length === 0, 'the page broke on the fixture file: ' + F.errs.join('; '));
@@ -3506,7 +3762,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         return was.call(this); };
       w2.__vscroll = 0; for (const f of ['scrollTo', 'scrollBy']) { w2[f] = () => { w2.__vscroll++; }; }
       w2.Element.prototype.scrollIntoView = function () { if (this.closest && this.closest('#tabs')) w2.__vscroll++; }; };
-    const T = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#xparlays', null, false, { seed });
+    const T = await run(state, 'https://demon-x13.github.io/nfl-hub/#xparlays', null, false, { seed });
     await wait(200);
     const nav = T.d.getElementById('tabs'), inBar = b => { const n = nav.getBoundingClientRect(), r = b.getBoundingClientRect(); return r.left >= n.left && r.right <= n.right; };
     const sel = () => T.d.querySelector('#tabs button[aria-selected="true"]');
@@ -3525,7 +3781,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      with the page; a saved amount that is not one reads as $20 ---- */
   for (const [saved, want] of [[12.5, 12.5], ['<b>', 20]]) {
     const pb = { k: { ml: false, ats: false, total: false, over: true, under: true }, off: [], gx: false };
-    const R = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { seed: w2 => w2.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: saved, ui: { pb } })) });
+    const R = await run(state, 'https://demon-x13.github.io/nfl-hub/#parlay', null, false, { seed: w2 => w2.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: saved, ui: { pb } })) });
     await wait(300);
     const P = R.d.getElementById('pbPanel'), on = R.d.querySelector('#pbPanel [data-pb-mix].on'), games = R.w.eval('typeof pbGames') === 'function' ? R.w.eval('pbGames()').length : 0;
     chk(!R.timedOut && R.errs.length === 0 && JSON.stringify(R.w.eval('S').ui.pb) === JSON.stringify(pb), 'the suggested parlays\' saved choices did not come back with the page: ' + JSON.stringify(R.w.eval('S').ui.pb));
@@ -3568,14 +3824,17 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       return (any ? Object.entries(o).map(([id, r]) => `${LAB[id]} ${r.won}–${r.lost}` + (r.won + r.lost + r.push ? ` ${un(r.u)} units` : '')) : ['No prime-time set graded yet']).concat(pending ? [`Pending ${pending}`] : []).join(' | '); };
     const lineShown = D => [...D.querySelectorAll('#spRec .bar .rec')].map(txt).join(' | ');
     const ask = bootCalls.filter(c => /suggest_ledger\.json/.test(c.url));
-    chk(ask.length === 1 && /^\.\.\/props\/data\/suggest_ledger\.json\?t=\d+$/.test(ask[0].url) && ask[0].method === 'GET' && ask[0].cache === 'no-store'
+    chk(ask.length === 1 && /^props\/data\/suggest_ledger\.json\?t=\d+$/.test(ask[0].url) && ask[0].method === 'GET' && ask[0].cache === 'no-store'
       && calls.filter(c => /suggest_ledger\.json/.test(c.url)).every(c => c.method === 'GET' && c.cache === 'no-store'),
       'the page did not ask for the suggestions record beside the payload, once as it loaded, with no-store: ' + JSON.stringify(ask));
-    { const R = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#suggest'); await wait(300);
+    { const R = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest'); await wait(300);
       const el = R.d.getElementById('spRec'), real = LEDGER_REAL ? JSON.parse(LEDGER_REAL) : null, isMap = v => !!v && typeof v === 'object' && !Array.isArray(v);
       const shown = !!real && (isMap(real.entries) || isMap(real.prime));
-      chk(!!el && !!R.d.querySelector('#spCard #spHead #spRec') && (shown ? !el.hidden && /The record starts with this change, 16 October 2026: each Thursday, Sunday and Monday night game’s four parlays as the site locked them, 2 hours before kickoff/.test(txt(el)) : el.hidden),
-        'the real suggestions record is not drawn at the top of Suggested Parlays, saying it starts with this change: ' + txt(el));
+      /* (app v113) its pills alone: the sentence under them (that it starts with this change, 16 October 2026, and how it
+         grades) is gone with the tab's other long paragraphs; each pill's title still states its numbers (below) */
+      chk(!!el && !!R.d.querySelector('#spCard #spHead #spRec') && (shown ? !el.hidden && [...el.children].length === 1 && el.firstElementChild.matches('.bar') && el.querySelectorAll('.bar > .rec').length > 0
+          && !el.querySelector('p, .sp-rec-line') && !/The record starts with this change|graded as a book settles them/.test(txt(el)) : el.hidden),
+        'the real suggestions record is not drawn at the top of Suggested Parlays as its pills alone, with no sentence under them: ' + txt(el));
       if (shown) chk(lineShown(R.d) === lineWant(real), `the real record reads ${lineShown(R.d)}, not ${lineWant(real)}`);
       if (shown && R.d.querySelector('#spRec [data-sp-rec="safe"]')) chk(JSON.stringify(titlesShown(R.d)) === JSON.stringify(titlesWant(real)), `the real record's titles state ${JSON.stringify(titlesShown(R.d))}, where its grades give ${JSON.stringify(titlesWant(real))}`);
       chk(!R.timedOut && R.errs.length === 0 && !/NaN|undefined/.test(txt(el)) && !R.d.getElementById('pbRec'), 'the page threw, the record reads NaN, or the old record table is still drawn: ' + R.errs.join('; '));
@@ -3594,20 +3853,22 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           '2026|05|2026-10-13T00:15:00Z|2026_05_C_D': E('2026-10-13T00:15:00Z', '2026_05_C_D', [T('safe', 2, 0.55, 0.41, 2.4, 'c'), T('med', 3, 0.29, null, 6, 'c'), T('aggr', 4, 0.14, 0.1, 11, 'c'), T('xtrm', 5, 0.06, 0.04, 31, 'c')],
             { safe: G('lost', 2, 0), med: G('lost', 3, 0), aggr: G('pending', 4), xtrm: G('won', 5, 31) }),
           '2026|06|2026-10-19T00:20:00Z|2026_06_E_F': E('2026-10-19T00:20:00Z', '2026_06_E_F', [T('safe', 2, 0.5, 0.4, 2.5, 'e')]) } };
-      const R = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#suggest', null, false, { ledger: FIX }); await wait(300);
+      const R = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest', null, false, { ledger: FIX }); await wait(300);
       chk(lineShown(R.d) === lineWant(FIX) && lineShown(R.d) === 'Safe 0–2 −2.00 units | Medium 1–1 +1.20 units | Aggressive 0–1 −1.00 units | Extreme 1–0 +30.00 units | Pending 1',
         `a made-up record reads ${lineShown(R.d)}, not ${lineWant(FIX)}`);
+      chk(!!R.d.getElementById('spRec') && !R.d.querySelector('#spRec p, #spRec .sp-rec-line') && !/The record starts with this change/.test(txt(R.d.getElementById('spRec'))),
+        'a made-up record draws a sentence under its pills (app v113: its pills alone): ' + txt(R.d.getElementById('spRec')));
       { const hand = { safe: { graded: 2, won: 0, fair: '0.8', fairOn: null, model: '1.0', push: 0 }, med: { graded: 2, won: 1, fair: '0.2', fairOn: 1, model: '0.6', push: 0 },
           aggr: { graded: 1, won: 0, fair: '0.1', fairOn: null, model: '0.2', push: 0 }, xtrm: { graded: 1, won: 1, fair: '0.0', fairOn: null, model: '0.1', push: 1 } };
         chk(JSON.stringify(titlesShown(R.d)) === JSON.stringify(titlesWant(FIX)) && JSON.stringify(titlesWant(FIX)) === JSON.stringify(hand),
           `a made-up record's titles state ${JSON.stringify(titlesShown(R.d))}, where its grades give ${JSON.stringify(titlesWant(FIX))} (by hand ${JSON.stringify(hand)})`); }
       R.w.close();
       /* a record with entries and no prime-time grade yet says so */
-      const NG = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#suggest', null, false, { ledger: { entries: FIX.entries, prime: { [Object.keys(FIX.prime)[3]]: FIX.prime[Object.keys(FIX.prime)[3]] } } }); await wait(300);
+      const NG = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest', null, false, { ledger: { entries: FIX.entries, prime: { [Object.keys(FIX.prime)[3]]: FIX.prime[Object.keys(FIX.prime)[3]] } } }); await wait(300);
       chk(lineShown(NG.d) === 'No prime-time set graded yet' && !NG.d.getElementById('spRec').hidden, 'a record with no prime-time set graded does not say so: ' + lineShown(NG.d));
       NG.w.close();
       for (const junk of [404, [], 5, 'junk', { how: 'x' }, { entries: [] }]) {
-        const N = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#suggest', null, false, { ledger: junk }); await wait(300);
+        const N = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest', null, false, { ledger: junk }); await wait(300);
         chk(!!N.d.getElementById('spRec') && N.d.getElementById('spRec').hidden && !txt(N.d.getElementById('spRec')) && N.errs.length === 0, `a record file that is not one (${JSON.stringify(junk)}) drew something on Suggested Parlays, or threw`);
         N.w.close(); } } }
   /* ---- the set the page builds at a game's lock where the record has none, kept in this browser across a real
@@ -3621,7 +3882,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const clock = extra => w2 => { const B = w2.Date, sh = lockAt - B.now(); w2.Date = class extends B { constructor(...a) { if (a.length) super(...a); else super(B.now() + sh); } static now() { return B.now() + sh; } }; if (extra) extra(w2); };
       const setOf = D => { const el = D.querySelector(`#spPanel .sp-game[data-sp-game="${g.id}"]`); return el ? [...el.querySelectorAll('.pb-tier')].map(c => c.classList.contains('none') ? c.className.split(' ')[1] + ' none' : c.dataset.pbTier + ': ' + [...c.querySelectorAll('.pb-legs [data-pb-leg]')].map(b => b.dataset.pbLeg + '|' + b.dataset.side + '|' + b.dataset.k).join(' + ')).join(' / ') : null; };
       const phase = D => { const x = D.querySelector(`#spPanel .sp-game[data-sp-game="${g.id}"] [data-sp-phase]`); return x ? x.dataset.spPhase : null; };
-      const A = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#suggest', null, false, { ledger: 404, seed: clock() }); await wait(400);
+      const A = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest', null, false, { ledger: 404, seed: clock() }); await wait(400);
       const setA = setOf(A.d), keptA = A.w.localStorage.getItem(KK), vA = (() => { try { return JSON.parse(keptA); } catch (e) { return null; } })();
       { const NA = nightOwn(A.w.eval('pbGames()').filter(primeOwn), A.w.eval('S').sched, A.w.eval('Date.now()'));
         chk(NA.on.some(x => x.id === g.id) && A.w.eval('spOn()').some(x => x.id === g.id), `at ${g.id}'s lock the night rule (${NA.on.map(x => x.id).join(', ') || 'none'}) or the page (${A.w.eval('spOn()').map(x => x.id).join(', ') || 'none'}) does not set it out`); }
@@ -3629,13 +3890,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         `at ${g.id}'s lock with no record, the page did not build its set once and keep it in this browser outside S: ${phase(A.d)} ${keptA ? keptA.slice(0, 120) : 'nothing kept'}`);
       A.w.close();
       if (keptA) {
-        const B = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#suggest', null, false, { ledger: 404, seed: clock(w2 => w2.localStorage.setItem(KK, keptA)) }); await wait(400);
+        const B = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest', null, false, { ledger: 404, seed: clock(w2 => w2.localStorage.setItem(KK, keptA)) }); await wait(400);
         chk(!B.timedOut && B.errs.length === 0 && phase(B.d) === 'own' && setOf(B.d) === setA, `a reload at ${g.id}'s lock does not show the set this browser kept: ${setOf(B.d)} / kept ${setA}`);
         B.w.close();
         /* the record's own locked set for the game (made up: the kept set with its Medium taken away) takes over from the browser's */
         const tiers = vA.games[g.id].tiers.map(t => t.id === 'med' ? { id: 'med', label: 'Medium', n: 3, floor: 0.25, why: 'No 3-leg parlay in this game.' } : t);
         const LED = { entries: {}, prime: { [`${w.eval('SEASON')}|${String(g.w).padStart(2, '0')}|${isoS(etKick(g))}|${g.id}`]: { season: w.eval('SEASON'), week: g.w, gid: g.id, kickoff: isoS(etKick(g)), lock: isoS(etKick(g) - 2 * 3600e3), taken_at: isoS(etKick(g) - 5 * 3600e3), tiers } } };
-        const C = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#suggest', null, false, { ledger: LED, seed: clock(w2 => w2.localStorage.setItem(KK, keptA)) }); await wait(400);
+        const C = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest', null, false, { ledger: LED, seed: clock(w2 => w2.localStorage.setItem(KK, keptA)) }); await wait(400);
         const vC = (() => { try { return JSON.parse(C.w.localStorage.getItem(KK)); } catch (e) { return null; } })();
         chk(!C.timedOut && C.errs.length === 0 && phase(C.d) === 'locked' && /med none/.test(setOf(C.d) || '') && !(vC && vC.games && vC.games[g.id] && vC.games[g.id].own),
           `with the record's locked set for ${g.id} published, the page still shows the set this browser built, or keeps it: ${phase(C.d)} ${setOf(C.d)}`);
@@ -3649,12 +3910,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const BET_FRAME = JSON.parse(HTML.match(/\nconst BET_APP=("(?:[^"\\]|\\.)*");\n<\/script>/)[1]);
   const frame = (X, tab, on) => new Promise(resolve => {
     const errs = [];
-    const dom = new JSDOM(BET_FRAME.replace('window.EMBED_TAB=null', 'window.EMBED_TAB=' + JSON.stringify(tab)), { runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://demon-x13.github.io/nfl-hub/nflbets/',
+    const dom = new JSDOM(BET_FRAME.replace('window.EMBED_TAB=null', 'window.EMBED_TAB=' + JSON.stringify(tab)), { runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://demon-x13.github.io/nfl-hub/',
       beforeParse(fw) { fw.XBETS = X; fw.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) };
         if (on) Object.defineProperty(fw, 'localStorage', { get: () => on.localStorage, configurable: true });
         fw.confirm = () => true; fw.alert = () => {}; fw.scrollTo = () => {};
         fw.addEventListener('error', e => errs.push(e.message));
-        fw.fetch = async (u, o) => { const s = String(u), m = String((o && o.method) || 'GET').toUpperCase(); ALL_CALLS.push(m + ' ' + s);
+        fw.fetch = async (u, o) => { const s = String(u), m = String((o && o.method) || 'GET').toUpperCase(); ALL_CALLS.push(m + ' ' + s); offSite(s, SITE);
           if (RETIRED.test(s) || m !== 'GET') { BAD_CALLS.push(m + ' ' + s); throw new TypeError('Failed to fetch'); }
           if (/elo\/data\/model\.json/.test(s)) return { ok: true, status: 200, json: async () => JSON.parse(ELO_M) };
           if (/state\.json/.test(s)) return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) };
@@ -3664,7 +3925,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const colOf = (fd, i) => [...fd.querySelectorAll('#betTable tbody tr')].map(tr => tr.children[i] ? txt(tr.children[i]) : '');
   const mineOf = (bets, deposit) => JSON.stringify({ myPicks: {}, bets, bank: { lastAmt: 20, filter: 'all', build: [], mode: 'straight', deposit } });
   { const own = mineOf({ 5: { staked: 5, returned: 0, note: 'own week' } }, 40);
-    const B = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#bets', null, false, { xbets: XBFIX, seed: w2 => w2.localStorage.setItem(BET_KEY, own) });
+    const B = await run(state, 'https://demon-x13.github.io/nfl-hub/#bets', null, false, { xbets: XBFIX, seed: w2 => w2.localStorage.setItem(BET_KEY, own) });
     await B.w.XBETS.ready();
     const x = B.w.XBETS.get();
     chk(JSON.stringify(x.weeks) === JSON.stringify({ 1: { staked: 10, returned: 8.71, note: '' }, 3: { staked: 11, returned: 14.66, note: '' }, 4: { staked: 8, returned: 29.02, note: '' } }) && x.deposit === 100 && x.status.ok === true,
@@ -3732,7 +3993,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       xparlays_cache_v1: JSON.stringify({ rev: 'r-old', at: '2026-10-10T05:00:00Z', doc }), live_parlays_v1: JSON.stringify({ lines: { 'file|w3-dk-sgp-5|4': 239.5 }, removed: doc.live.removed }),
       ['xbets_joined_' + BET_SEASON]: '{}', ['xbets_cache_' + BET_SEASON]: '{"weeks":{}}',
       [PROP_KEY]: ownProp, my_parlays_v1: '{"lines":{"prop|own-1|0":4},"removed":{},"kept":{}}', [BET_KEY]: ownBets, ['x_nfl_bets_preshare_' + BET_SEASON]: '{"bets":{}}' };
-    const O = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#owner=the-old-owner-secret', null, false, { file: FIXFILE, xbets: XBFIX, seed: w2 => { for (const [k, v] of Object.entries(OLD)) w2.localStorage.setItem(k, v); } });
+    const O = await run(state, 'https://demon-x13.github.io/nfl-hub/#owner=the-old-owner-secret', null, false, { file: FIXFILE, xbets: XBFIX, seed: w2 => { for (const [k, v] of Object.entries(OLD)) w2.localStorage.setItem(k, v); } });
     await settle(); await O.w.XBETS.ready();
     const lp = O.d.getElementById('lpCard'), keys = {};
     for (let i = 0; i < O.w.localStorage.length; i++) { const k = O.w.localStorage.key(i); keys[k] = O.w.localStorage.getItem(k); }
@@ -3758,10 +4019,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await snapshotChecks();
   await newsChecks();
   await friendsChecks();
+  /* ---- the light look and its switch: its own section, at the end of this file ---- */
+  await lightChecks();
 
   /* ---- no page asked the retired store or its sign-in services anything, and nothing any page
      or frame sent was a write ---- */
   chk(ALL_CALLS.length > 100 && BAD_CALLS.length === 0, 'a page asked the retired store or its sign-in services, or sent a write: ' + BAD_CALLS.slice(0, 5).join(' | '));
+  chk(OFF_SITE.length === 0, 'a page or one of its frames asked for a file outside the site, or named a parent folder (from the site\'s root that leaves the site): ' + [...new Set(OFF_SITE)].slice(0, 5).join(' | '));
   chk(!/firebaseio|identitytoolkit|securetoken/.test(HTML), 'the built page still names the retired store or its sign-in services');
 
   finish();
@@ -4866,9 +5130,9 @@ async function newsChecks() {
       `news: a game of a later regular-season week does not say its Deep Dive comes with its week: '${why.join(' / ')}'`); await closeG(N1); }
   /* each file read once a page load (the notes once a week), no-store, however often the window opened */
   await openG(N1, G); await closeG(N1);
-  { const nc = N1.calls.filter(c => /\/news\/data\//.test(c.url)), urls = nc.map(c => c.url.replace(/\?.*$/, ''));
-    chk(nc.every(c => c.cache === 'no-store' && c.method === 'GET') && new Set(urls).size === urls.length && urls.some(u => u.endsWith('news/data/units.json')) && !urls.some(u => u.endsWith('news/data/stats.json'))
-      && urls.some(u => u.endsWith(`news/data/notes/${season}-w${wk}.json`)) && (!P1 || urls.some(u => u.endsWith(`news/data/notes/${season}-w${+P1.week}.json`))),
+  { const nc = N1.calls.filter(c => /(^|\/)news\/data\//.test(c.url)), urls = nc.map(c => c.url.replace(/\?.*$/, ''));
+    chk(nc.every(c => c.cache === 'no-store' && c.method === 'GET') && new Set(urls).size === urls.length && urls.includes('news/data/units.json') && !urls.some(u => u.endsWith('news/data/stats.json'))
+      && urls.includes(`news/data/notes/${season}-w${wk}.json`) && (!P1 || urls.includes(`news/data/notes/${season}-w${+P1.week}.json`)),
       'news: the news files are not each read once, no-store, at their addresses, or stats.json is read: ' + urls.join(', ')); }
   N1.w.close();
 
@@ -5075,11 +5339,11 @@ async function friendsChecks() {
   const want = { Ann: { w: 1, l: 1, p: 1, net: '0' }, Bo: { w: 0, l: 1, p: 1, net: '−1' }, Cy: { w: 0, l: 0, p: 1, net: null } };
   const frame = (X, s2) => new Promise(resolve => {
     const errs = [];
-    const dom = new JSDOM(BET_FRAME.replace('window.EMBED_TAB=null', 'window.EMBED_TAB="record"'), { runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://demon-x13.github.io/nfl-hub/nflbets/',
+    const dom = new JSDOM(BET_FRAME.replace('window.EMBED_TAB=null', 'window.EMBED_TAB="record"'), { runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://demon-x13.github.io/nfl-hub/',
       beforeParse(fw) { if (X) fw.FRIENDS = X; fw.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) };
         fw.confirm = () => true; fw.alert = () => {}; fw.scrollTo = () => {};
         fw.addEventListener('error', e => errs.push(e.message));
-        fw.fetch = async (u, o) => { const s = String(u), m = String((o && o.method) || 'GET').toUpperCase(); ALL_CALLS.push(m + ' ' + s);
+        fw.fetch = async (u, o) => { const s = String(u), m = String((o && o.method) || 'GET').toUpperCase(); ALL_CALLS.push(m + ' ' + s); offSite(s, SITE);
           if (RETIRED.test(s) || m !== 'GET') { BAD_CALLS.push(m + ' ' + s); throw new TypeError('Failed to fetch'); }
           if (/elo\/data\/model\.json/.test(s)) return { ok: true, status: 200, json: async () => JSON.parse(ELO_M) };
           if (/state\.json/.test(s)) return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(s2)) };
@@ -5094,10 +5358,10 @@ async function friendsChecks() {
   base.w.close();
 
   /* the page reads the stand-in once, no-store, and cleans it */
-  const P = await run(st, 'https://demon-x13.github.io/nfl-hub/nflbets/#record', null, false, { friends: FIX });
+  const P = await run(st, 'https://demon-x13.github.io/nfl-hub/#record', null, false, { friends: FIX });
   await P.w.FRIENDS.ready();
   { const got = P.w.FRIENDS.get(), fc = P.calls.filter(c => /picks\/friends\.json/.test(c.url));
-    chk(fc.length === 1 && fc[0].method === 'GET' && fc[0].cache === 'no-store' && fc[0].url.replace(/\?.*$/, '') === '../picks/friends.json', 'friends: the page does not read ../picks/friends.json once, no-store: ' + JSON.stringify(fc));
+    chk(fc.length === 1 && fc[0].method === 'GET' && fc[0].cache === 'no-store' && fc[0].url.replace(/\?.*$/, '') === 'picks/friends.json', 'friends: the page does not read picks/friends.json once, no-store: ' + JSON.stringify(fc));
     chk(got.status.ok === true && got.friends.map(f => f.name).join() === 'Ann,Bo,Cy', 'friends: the page\'s FRIENDS is not the file\'s three friends, the junk name dropped: ' + JSON.stringify(got.friends.map(f => f.name)));
     chk(!/"D money fresh"|nfl-hub-weekly-picks/.test(HTML), 'friends: the page bakes in friends\' picks'); }
   const F = await frame(P.w.FRIENDS, st); await wait(200);
@@ -5134,10 +5398,169 @@ async function friendsChecks() {
 
   /* nothing to draw: no file, not JSON, another season, no list */
   for (const [what, fx] of [['no file', null], ['a file that is not JSON', '{"friends": [oops'], ['another season', Object.assign({}, FIX, { season: BET_SEASON - 1 })], ['no list', { season: BET_SEASON, friends: 'Ann' }]]) {
-    const R = await run(st, 'https://demon-x13.github.io/nfl-hub/nflbets/#record', null, false, { friends: fx }); await R.w.FRIENDS.ready();
+    const R = await run(st, 'https://demon-x13.github.io/nfl-hub/#record', null, false, { friends: fx }); await R.w.FRIENDS.ready();
     const got = R.w.FRIENDS.get(), Z = await frame(R.w.FRIENDS, st), head = await pickHead(Z);
     chk(got.friends.length === 0 && R.errs.length === 0 && Z.errs.length === 0 && rowsTh(Z.d).join('|') === baseRows && !Z.d.querySelector('.rv-flg, polyline.rv-friend') && head.join('|') === baseHead.join('|'),
       `friends: ${what} draws something, or throws: ${rowsTh(Z.d).join('|')} / ${head.join('|')} ${R.errs.concat(Z.errs).join('; ')}`);
     Z.w.close(); R.w.close(); }
   console.log(`friends' picks on the Pick'em Record: ${checks - c0} checks on stand-in files (week ${Wk}), ${fails.length - f0} failures`);
+}
+
+/* =====================================================================================
+   LIGHT MODE (the owner's call of 17 October 2026: "keep this whole layout as dark mode, and then make a
+   light mode version that people can tab on and off on the top right"). Dark is the look and every
+   visitor's default whatever the system says; the switch at the top right of the header puts
+   html[data-theme="light"] on the page and on every framed tab, and keeps the choice in this browser
+   alone under nflhub_theme_v1 (nflbets/build/theme.js), read by a script in the head before anything is
+   drawn. Held here: the build (the head script before the styles and the body, the light palette in the
+   page and in every frame's head, nothing following the system's scheme, the key named by that script
+   alone), the light palette's own pairs at 4.5:1 (jsdom lays nothing out and composes no background, so
+   the page's every text in both looks is the Chromium sweep's), the switch (in the header before the
+   tabs, a 44px button named Light mode, aria-pressed), a press each way on the page and its frames, open
+   and opened after, with nothing written but the key, a reload in the stored look before the body is
+   parsed, and storage that throws or holds junk read as dark, throwing nothing. All on the page's own
+   clock and the files as they stand: nothing here turns on the week or the hour.
+   ===================================================================================== */
+async function lightChecks() {
+  const c0 = checks, f0 = fails.length, KEY = 'nflhub_theme_v1', URL0 = 'https://demon-x13.github.io/nfl-hub/';
+  const head = HTML.slice(0, HTML.indexOf('</head>'));
+  /* ---- the build ---- */
+  const scripts = [...head.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+  const tm = scripts.find(m => m[1].includes(`'${KEY}'`)), TJS = tm ? tm[1] : '';
+  chk(!!tm && tm.index < head.indexOf('<style') && tm.index < head.indexOf('<style id="hubTheme">') && !HTML.slice(HTML.indexOf('</head>')).includes(`'${KEY}'`),
+    'light mode: the script that reads the visitor\'s look is not in the page\'s head before its styles (so before anything is drawn), or the key is read elsewhere too');
+  chk(!!TJS && !new RegExp(`['"\`]${KEY}['"\`]`).test(HTML.replace(TJS, '')), 'light mode: something other than the head\'s script names ' + KEY);
+  const CSS = (head.match(/<style id="hubTheme">\n?([\s\S]*?)<\/style>/) || [])[1] || '';
+  const block = sel => { const i = CSS.indexOf(sel + '{'); if (i < 0) return null; const j = CSS.indexOf('}', i); return CSS.slice(i + sel.length + 1, j); };
+  const tokens = body => Object.fromEntries((body || '').split(';').map(x => x.trim()).filter(x => x.startsWith('--')).map(x => [x.slice(0, x.indexOf(':')).trim(), x.slice(x.indexOf(':') + 1).trim()]));
+  const DARK = tokens(block(':root')), LIGHT = tokens(block('html[data-theme="light"]'));
+  const colourish = v => /#[0-9a-f]{3,8}\b|rgba?\(/i.test(v);
+  const missing = Object.keys(DARK).filter(k => colourish(DARK[k]) && !(k in LIGHT));
+  chk(Object.keys(DARK).length > 15 && Object.keys(LIGHT).length > 15 && missing.length === 0 && /color-scheme:\s*light/.test(block('html[data-theme="light"]') || '') && /color-scheme:\s*dark/.test(block(':root') || '') && !!LIGHT['--gold-ink'],
+    `light mode: the page's hub look has no light palette beside the dark one (each colour token of :root given its light value, --gold-ink for gold read as text, color-scheme light): missing ${missing.join(', ')}`);
+  chk(!/prefers-color-scheme/.test(CSS), 'light mode: the hub look follows the system\'s colour scheme; dark is every visitor\'s default, light only by the switch');
+  { const m = HTML.match(/<script>window\.THEME_FRAME_HEAD=("(?:[^"\\]|\\.)*");<\/script>/); let fh = '';
+    try { fh = m ? JSON.parse(m[1]) : ''; } catch (e) { fh = ''; }
+    chk(!!CSS && fh.includes('<style>' + CSS + '</style>') && fh.includes('html[data-theme="light"]{'), 'light mode: the framed tabs\' head (THEME_FRAME_HEAD) does not carry the page\'s hub look, light palette and all'); }
+  /* the light palette's own pairs, from its tokens and the light rules' own colours (a tint laid over the
+     surface it sits on): the inks on every surface; gold, the pick, the miss and the ice read as text on the
+     surfaces and on their own tints; the text on a gold, ink, pick or rose fill; and the Deep Dive's tags */
+  { const rgba = v => { v = String(v || '').trim(); let m = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+      if (m) { const h = m[1].length === 3 ? m[1].replace(/./g, c => c + c) : m[1]; return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).concat(1); }
+      m = v.match(/^rgba?\(([^)]*)\)$/); if (!m) return null; const p = m[1].split(',').map(x => parseFloat(x)); return p.length >= 3 ? [p[0], p[1], p[2], p.length > 3 ? p[3] : 1] : null; };
+    const lum = c => { const f = x => (x /= 255) <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+    const on = (tint, base) => { const t = rgba(tint), b = Array.isArray(base) ? base : rgba(base); if (!t || !b) return null; return t[3] >= 1 ? t : [0, 1, 2].map(i => t[i] * t[3] + b[i] * (1 - t[3])).concat(1); };
+    const ratio = (fg, bg) => { const a = rgba(fg), b = Array.isArray(bg) ? bg : rgba(bg); if (!a || !b) return 0; return (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05); };
+    const T = k => LIGHT[k], bad = [];
+    const need = (fg, bg, what, min = 4.5) => { const r = ratio(fg, bg); if (!(r >= min)) bad.push(`${what} ${r.toFixed(2)}:1`); };
+    for (const ink of ['--ink', '--ink-2', '--muted']) for (const s of ['--bg', '--bg-2', '--panel', '--panel-2', '--panel-3']) need(T(ink), T(s), `${ink} on ${s}`);
+    for (const [ink, tint] of [['--gold-ink', '--gold-soft'], ['--pick', '--pick-soft'], ['--miss', '--miss-soft'], ['--ice', '--ice-soft']])
+      for (const s of ['--bg', '--panel', '--panel-2', '--panel-3']) { need(T(ink), T(s), `${ink} on ${s}`); need(T(ink), on(T(tint), T(s)), `${ink} on ${tint} over ${s}`); }
+    need('#1E2230', T('--gold'), 'a gold button\'s text'); need('#1E2230', T('--gold-2'), 'a gold button\'s text, hovered');
+    for (const f of ['--ink', '--pick', '--rose']) need('#FFFFFF', T(f), `white text on ${f}`);
+    for (const c of ['easy', 'fav', 'even', 'tough', 'vtough']) { const r = block(`html[data-theme="light"] #gsModal .dtag.${c}`) || '';
+      const bg = (r.match(/background:([^;]+)/) || [])[1], fg = (r.match(/(?:^|;)color:([^;]+)/) || [])[1];
+      if (!bg || !fg) bad.push(`the Deep Dive's ${c} tag has no light colours of its own`); else for (const s of ['--panel', '--panel-2']) need(fg, on(bg, T(s)), `the ${c} tag on the card`);
+      if (c === 'even') { const ring = (r.match(/inset 0 0 0 [\d.]+px (#[0-9a-f]{3,6})/i) || [])[1]; for (const s of ['--panel', '--panel-2']) need(ring, T(s), 'the Even tag\'s ring on the card', 3); } }
+    chk(bad.length === 0, 'light mode: the light palette has a pair under 4.5:1 (3:1 for the Even ring): ' + bad.join('; ')); }
+
+  /* ---- a visitor with nothing stored: dark, the switch, a press each way ---- */
+  const A = await run(STATE, URL0, null, false, { seed: w2 => { const P = w2.Storage.prototype, s = P.setItem; w2.__lmWrites = null;
+    P.setItem = function (k, v) { if (w2.__lmWrites) w2.__lmWrites.push(k); return s.call(this, k, v); }; } });
+  { const { w, d, errs } = A, root = d.documentElement, cs = () => w.getComputedStyle(root);
+    const b = d.querySelector('header [data-theme-toggle]'), nav = d.getElementById('tabs');
+    chk(!!b && b.tagName === 'BUTTON' && b.type === 'button' && !!b.closest('.hub-stamp') && !!nav && !!(b.compareDocumentPosition(nav) & w.Node.DOCUMENT_POSITION_FOLLOWING),
+      'light mode: the header has no light/dark switch, a button in its stamp, before the tabs');
+    if (b) {
+      const st = w.getComputedStyle(b), svgs = [...b.querySelectorAll('svg')];
+      chk(b.getAttribute('aria-label') === 'Light mode' && txt(b) === '' && svgs.length === 2 && svgs.every(s => s.getAttribute('aria-hidden') === 'true')
+        && st.minHeight === '44px' && st.minWidth === '44px' && st.height === '44px' && st.width === '44px',
+        `light mode: the switch is not a 44px button named Light mode with its glyphs hidden from a screen reader: ${b.getAttribute('aria-label')} ${st.minHeight}/${st.height} ${st.minWidth}/${st.width}`);
+      const look = () => ({ attr: root.getAttribute('data-theme'), kept: w.localStorage.getItem(KEY), pressed: b.getAttribute('aria-pressed'), title: b.getAttribute('title'), bg: cs().getPropertyValue('--bg').trim() });
+      const dark0 = look();
+      chk((dark0.attr == null || dark0.attr === 'dark') && dark0.kept == null && dark0.pressed === 'false' && dark0.title === 'Switch to light mode' && dark0.bg.toUpperCase() === String(DARK['--bg']).toUpperCase(),
+        'light mode: a visitor with nothing stored is not on the dark look, the switch not pressed: ' + JSON.stringify(dark0));
+      /* a frame open before the press and one opened after it, as the page's frames() makes them (jsdom loads
+         no srcdoc, so each frame's load is played on the blank document it does have) */
+      const openFrame = async t => { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === t).click(); await wait(60);
+        const f = d.querySelector(`#tab-${t} iframe.pk-frame`); if (f && f.contentDocument && f.contentDocument.documentElement && !f.contentDocument.documentElement.style.overflowY) f.dispatchEvent(new w.Event('load')); return f; };
+      const frameLook = f => f && f.contentDocument && f.contentDocument.documentElement ? f.contentDocument.documentElement.getAttribute('data-theme') : 'no document';
+      const tagOf = f => ((f && f.getAttribute('srcdoc') || '').match(/^<!DOCTYPE html>\s*<html\b[^>]*>/i) || [''])[0];
+      const f1 = await openFrame('ratings');
+      chk(!!f1 && /data-theme="dark"/.test(tagOf(f1)) && frameLook(f1) === 'dark' && (f1.getAttribute('srcdoc') || '').includes('html[data-theme="light"]{'),
+        `light mode: a frame made on the dark look is not given it, or its head lacks the light palette: ${tagOf(f1)} / ${frameLook(f1)}`);
+      const press = () => { w.__lmWrites = []; let threw = null; try { b.click(); } catch (e) { threw = e; } const wr = w.__lmWrites; w.__lmWrites = null; return { wr, threw }; };
+      const p1 = press(), light1 = look();
+      chk(!p1.threw && light1.attr === 'light' && light1.kept === 'light' && light1.pressed === 'true' && light1.title === 'Switch to dark mode' && light1.bg.toUpperCase() === String(LIGHT['--bg']).toUpperCase() && frameLook(f1) === 'light',
+        `light mode: a press does not put the page and its open frame on the light look, keep it and mark the switch pressed: ${JSON.stringify(light1)}, frame ${frameLook(f1)}`);
+      chk(p1.wr.length === 1 && p1.wr[0] === KEY, 'light mode: a press wrote something besides ' + KEY + ': ' + JSON.stringify(p1.wr));
+      const f2 = await openFrame('record');
+      chk(!!f2 && /data-theme="light"/.test(tagOf(f2)) && frameLook(f2) === 'light', `light mode: a frame opened on the light look is not made in it: ${tagOf(f2)} / ${frameLook(f2)}`);
+      const p2 = press(), dark1 = look();
+      chk(!p2.threw && dark1.attr === 'dark' && dark1.kept === 'dark' && dark1.pressed === 'false' && dark1.title === 'Switch to light mode' && dark1.bg.toUpperCase() === String(DARK['--bg']).toUpperCase() && frameLook(f1) === 'dark' && frameLook(f2) === 'dark',
+        `light mode: a second press does not put the page and both frames back on the dark look: ${JSON.stringify(dark1)}, frames ${frameLook(f1)} ${frameLook(f2)}`);
+      chk(p2.wr.length === 1 && p2.wr[0] === KEY, 'light mode: the second press wrote something besides ' + KEY + ': ' + JSON.stringify(p2.wr));
+      chk(!/nflhub_theme|data-theme/.test(w.localStorage.getItem(PROP_KEY) || '') && !/nflhub_theme|"theme"/.test(String(w.eval('JSON.stringify(S)'))), 'light mode: the look is kept in the prop model\'s state');
+      /* another tab of the site switched (its write fires the storage event here only): this one follows, page
+         and frames, and writes nothing; a key of its own left alone changes nothing */
+      const other = (v, key) => { w.localStorage.setItem(KEY, v); w.__lmWrites = [];
+        w.dispatchEvent(new w.StorageEvent('storage', { key: key == null ? KEY : key })); const wr = w.__lmWrites; w.__lmWrites = null;
+        return { ...look(), f1: frameLook(f1), f2: frameLook(f2), wr }; };
+      const oLight = other('light'), oStill = other('dark', 'props_press_v1'), oDark = other('dark');
+      chk(oLight.attr === 'light' && oLight.pressed === 'true' && oLight.f1 === 'light' && oLight.f2 === 'light'
+        && oStill.attr === 'light' && oStill.f1 === 'light'
+        && oDark.attr === 'dark' && oDark.pressed === 'false' && oDark.f1 === 'dark' && oDark.f2 === 'dark'
+        && ![oLight, oStill, oDark].some(o => o.wr.length),
+        `light mode: a switch made in another tab is not followed here (page, switch and frames), another key moved it, or following wrote something: ${JSON.stringify([oLight, oStill, oDark])}`); }
+    chk(errs.length === 0, 'light mode: the page threw: ' + errs.join('; ')); }
+  A.w.close();
+
+  /* ---- a reload with light kept: the head's script reads it before the body is parsed and puts the look on
+     the page before anything is drawn ---- */
+  const B = await run(STATE, URL0, null, false, { seed: w2 => { w2.localStorage.setItem(KEY, 'light');
+    const P = w2.Storage.prototype, g = P.getItem, rec = w2.__lmOrder = [];
+    P.getItem = function (k) { if (k === KEY && !w2.__lmMO) { rec.push(w2.document.body ? 'read after the body' : 'read'); const de = w2.document.documentElement;
+        w2.__lmMO = new w2.MutationObserver(ms => { for (const m of ms) { if (m.type === 'attributes') rec.push('look ' + de.getAttribute('data-theme')); else for (const n of m.addedNodes) if (n.nodeName === 'BODY') rec.push('body'); } });
+        w2.__lmMO.observe(de, { attributes: true, attributeFilter: ['data-theme'], childList: true }); }
+      return g.call(this, k); }; } });
+  { const { w, d, errs } = B, rec = w.__lmOrder || [], b = d.querySelector('[data-theme-toggle]');
+    chk(rec[0] === 'read' && rec.indexOf('look light') > 0 && rec.indexOf('body') > rec.indexOf('look light'),
+      'light mode: a reload with light kept does not put the light look on the page before its body is parsed: ' + rec.slice(0, 5).join(' > '));
+    chk(d.documentElement.getAttribute('data-theme') === 'light' && !!b && b.getAttribute('aria-pressed') === 'true' && w.getComputedStyle(d.documentElement).getPropertyValue('--bg').trim().toUpperCase() === String(LIGHT['--bg']).toUpperCase(),
+      'light mode: a reload with light kept is not on the light look, the switch pressed');
+    [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'bets').click(); await wait(60);
+    const f = d.querySelector('#tab-bets iframe.pk-frame');
+    chk(!!f && /^<!DOCTYPE html>\s*<html\b[^>]*data-theme="light"/i.test(f.getAttribute('srcdoc') || ''), 'light mode: a frame opened after a reload in light is not made in it');
+    chk(errs.length === 0, 'light mode: the page reloaded in light threw: ' + errs.join('; ')); }
+  B.w.close();
+
+  /* ---- storage that throws on the key, read and write: dark, a press still changes the look for the visit,
+     and nothing is thrown ---- */
+  const C = await run(STATE, URL0, null, false, { seed: w2 => { const P = w2.Storage.prototype, g = P.getItem, s = P.setItem;
+    P.getItem = function (k) { if (k === KEY) throw new w2.DOMException('denied', 'SecurityError'); return g.call(this, k); };
+    P.setItem = function (k, v) { if (k === KEY) throw new w2.DOMException('full', 'QuotaExceededError'); return s.call(this, k, v); }; } });
+  { const { d, errs } = C, b = d.querySelector('[data-theme-toggle]'), a0 = d.documentElement.getAttribute('data-theme');
+    let threw = null; try { if (b) b.click(); } catch (e) { threw = e; }
+    chk(!!b && (a0 == null || a0 === 'dark') && !threw && d.documentElement.getAttribute('data-theme') === 'light' && b.getAttribute('aria-pressed') === 'true' && errs.length === 0,
+      `light mode: storage that throws is not read as dark, or a press then throws or does nothing: ${a0} / ${d.documentElement.getAttribute('data-theme')} ${threw || ''} ${errs.join('; ')}`); }
+  C.w.close();
+
+  /* ---- the head's script on a page of its own: whatever the key holds but 'light' reads as dark, and a
+     window whose storage cannot be reached at all reads as dark and switches all the same ---- */
+  const mini = async beforeParse => { const errs = [];
+    const dom = new JSDOM(`<!DOCTYPE html><html lang="en"><head><script>${TJS}</script></head><body><header><button type="button" data-theme-toggle aria-label="Light mode" aria-pressed="false"></button></header></body></html>`,
+      { runScripts: 'dangerously', url: URL0, virtualConsole: new VirtualConsole(), beforeParse(w2) { w2.addEventListener('error', e => errs.push(e.message)); beforeParse(w2); } });
+    await wait(30);                                 /* the switch is drawn once the document is parsed */
+    return { w: dom.window, d: dom.window.document, errs }; };
+  for (const v of ['light', 'Light', 'LIGHT', ' light', 'light ', 'dark', '', '1', 'true', '{"theme":"light"}', 'null']) {
+    const M = await mini(w2 => w2.localStorage.setItem(KEY, v)), a = M.d.documentElement.getAttribute('data-theme'), want = v === 'light' ? 'light' : null;
+    chk(a === want && M.d.querySelector('button').getAttribute('aria-pressed') === String(v === 'light') && M.errs.length === 0,
+      `light mode: a kept ${JSON.stringify(v)} reads as ${a || 'dark'}, not ${want || 'dark'}${M.errs.length ? ', and threw ' + M.errs.join('; ') : ''}`);
+    M.w.close(); }
+  { const M = await mini(w2 => Object.defineProperty(w2, 'localStorage', { configurable: true, get() { throw new w2.DOMException('denied', 'SecurityError'); } }));
+    const a0 = M.d.documentElement.getAttribute('data-theme'); let threw = null; try { M.d.querySelector('button').click(); } catch (e) { threw = e; }
+    chk(a0 == null && !threw && M.d.documentElement.getAttribute('data-theme') === 'light' && M.errs.length === 0,
+      `light mode: a window whose storage cannot be reached does not read as dark and switch without throwing: ${a0} / ${M.d.documentElement.getAttribute('data-theme')} ${threw || ''} ${M.errs.join('; ')}`);
+    M.w.close(); }
+  console.log(`light mode: ${checks - c0} checks, ${fails.length - f0} failures`);
 }

@@ -10,8 +10,10 @@ before a scheduled run did. This runs it, and spends nothing: weekly.py with --n
   classify   which parts a change touches: AUDIT (what the props job runs: props/build, the props/data
              scripts and the model files weekly.py reads (not the job's own outputs), the research files
              it runs, lib/, props.yml, this gate) and PAGE (what the Bets and Stats page is built from and
-             its smoke runs on: nflbets/, the betting app, betting/neutral_sites.json and the build's parts
-             of betting/tools, the props parts, liveparlays/build/). Neither: nothing the props job or the page runs changed, and the
+             its smoke runs on: nflbets/, the page itself at the site's root (index.html, built from
+             nflbets/build/ since 17 October 2026) and the old addresses' redirects to it, the betting app,
+             betting/neutral_sites.json and the build's parts of betting/tools, the props parts,
+             liveparlays/build/). Neither: nothing the props job or the page runs changed, and the
              gate passes at once. On a push to main or a dispatch, everything runs.
   bake       job A: `weekly.py --no-odds` on this code (today's nflverse files, main's price files, the
              audit with PROPS_AUDIT_RAW as weekly.py sets it), judged on its exit code; then the page smoke
@@ -48,7 +50,10 @@ PAGE = ['nflbets/**', 'betting/app/**', 'betting/tools/build.js', 'betting/tools
         'betting/tools/tiers.js', 'betting/tools/*_viz.js', 'betting/tools/reference_models.json',
         'props/build/part1.html', 'props/build/part*.js', 'props/build/espn_rule.js', 'props/build/clock_now.js',
         'betting/neutral_sites.json',  # patches.js inlines it into the app the page carries
-        'props/build/package.json', 'props/build/package-lock.json', 'liveparlays/build/**'] + GATE
+        'props/build/package.json', 'props/build/package-lock.json', 'liveparlays/build/**',
+        # the page itself, at the site's root since 17 October 2026 (nflbets/build/build.js writes it), and the
+        # old addresses' redirects to it, which its smoke holds
+        'index.html', 'pickems/index.html', 'live/index.html', 'liveparlays/index.html', 'news/index.html'] + GATE
 SMOKE_LINE = re.compile(r'(\d+) checks, (\d+) failures')
 DOWNLOAD = re.compile(r'^BLOCKED: (download |schedule \()', re.M)
 NOT_POSTED = re.compile(r'^\s*\S+: not posted yet \(', re.M)   # weekly.py's line for a 404 it goes on without

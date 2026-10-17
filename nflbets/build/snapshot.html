@@ -615,10 +615,10 @@ function newsFile(key,url,shape){
   return rec;
 }
 const isObj=x=>!!x&&typeof x==='object'&&!Array.isArray(x);
-const unitsFile=()=>newsFile('units','../news/data/units.json',j=>isObj(j)&&isObj(j.units)&&isObj(j.meta)?null:'not the Deep Dive\'s file');
+const unitsFile=()=>newsFile('units','news/data/units.json',j=>isObj(j)&&isObj(j.units)&&isObj(j.meta)?null:'not the Deep Dive\'s file');
 /* a game's season: its id's, as the notes and the news files name it */
 const seasonOf=(P,g)=>+String(g.game_id).slice(0,4)||+P.ST.season||null;
-const notesFile=(season,week)=>newsFile(`notes:${season}-${week}`,`../news/data/notes/${season}-w${week}.json`,
+const notesFile=(season,week)=>newsFile(`notes:${season}-${week}`,`news/data/notes/${season}-w${week}.json`,
   j=>isObj(j)&&isObj(j.games)&&+j.season===+season&&+j.week===+week?null:`not the notes of ${season} week ${week}`);
 /* the game's note, where its week's file has one in the shape the rules write: a preview sentence,
    the news (may be empty) and the outlets */

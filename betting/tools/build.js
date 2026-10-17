@@ -4,13 +4,15 @@
  *   require('./build.js').buildApp()   the built app, as a string, for nflbets/build/build.js
  *
  * The betting site has no pages of its own any more: betting/index.html and betting/admin.html
- * are gone, and the app lives inside nflbets/index.html, which sets it into the Pick'em
- * Record, Power Ratings and Bet Log tabs as the srcdoc of a frame. A srcdoc frame is the
- * page's own origin, so the app keeps this browser's picks, bankroll, bets and self-loaded
- * odds under the same local-storage key it always did, and its relative fetches resolve
- * against nflbets/, which is why the season is read from ../betting/state.json (written by
- * update.js). Uploads grade for the session only; the job's published state wins on the
- * next load.
+ * are gone, and the app lives inside the NFL Hub page, the site's root index.html since 17 October
+ * 2026 (built by nflbets/build/build.js), which sets it into the Pick'em Record, Power Ratings and
+ * Bet Log tabs as the srcdoc of a frame. A srcdoc frame is the page's own origin, so the app keeps
+ * this browser's picks, bankroll, bets and self-loaded odds under the same local-storage key it
+ * always did, and its relative fetches resolve against the page's address, which is why the page
+ * names its files for it: the season (window.STATE_URL, betting/state.json, written by update.js)
+ * and the Elo model (window.ELO_URL, elo/data/model.json). On its own, from betting/, the app reads
+ * state.json beside it and ../elo/data/model.json. Uploads grade for the session only; the job's
+ * published state wins on the next load.
  *
  * Inside the frame there is no address to carry a tab, so the page sets window.EMBED_TAB
  * before the app runs: it marks the document embedded (no header, no tab bar) and opens
@@ -96,7 +98,7 @@ const HOOK = `<script>
          processed games, the coming week's onto S.elo, so Records can show it like the Joker */
       S.elo={};
       try{
-        const r2=await fetch('../elo/data/model.json?t='+Date.now(),{cache:'no-store'});
+        const r2=await fetch((window.ELO_URL||'../elo/data/model.json')+'?t='+Date.now(),{cache:'no-store'});
         if(r2.ok){ const M=await r2.json();
           for(const g of (M.graded||[])){ const e={pick:g.pick,correct:g.correct}; S.elo[g.game_id]=e; if(S.processed&&S.processed[g.game_id]) S.processed[g.game_id].elo=e; }
           /* the coming week's calls were made when the ratings were last built (every morning,
@@ -543,9 +545,9 @@ function renderBetsApp(){`, 'the Bet Log balance');
 /* the Elo tiers: Challenger renamed Elite, and HOF above it from 1750, worn as a gem (tiers.js) */
 html = require('./tiers.js')(html, 'the built app');
 /* the built app: every tab, on the published season, reading it from where the page around
-   it says (window.STATE_URL) and opening on the tab it names (window.EMBED_TAB). Both are
-   set by a script the page puts in before this one; on its own the app reads state.json
-   beside it and opens on its first tab. */
+   it says (window.STATE_URL, and the Elo model from window.ELO_URL) and opening on the tab it
+   names (window.EMBED_TAB). They are set by a script the page puts in before this one; on its
+   own the app reads state.json beside it and ../elo/data/model.json, and opens on its first tab. */
 /* the main model's name as the page shows it: Alpha Model (the Elo game model is written as ELO
    based wherever the build draws it). Only the words a reader sees change, at build time;
    the app source is not edited. */
@@ -553,7 +555,7 @@ const RENAME = [[/Main Model/g, 'Alpha Model'], [/\bthe main model\b/g, 'Alpha M
 function buildApp() {
   let out = html.replace(anchor, HOOK + LIVE + VIZ + anchor);
   for (const [re, to] of RENAME) out = out.replace(re, to);
-  for (const need of ['function betsViz(', 'renderBetsApp(); betsViz();', 'window.XBETS.get()', 'if(XB.on){ bets=loadMine().bets||{};', 'html.xbets-ro #backupCard', 'id="xbNote"', 'function recordViz(', 'recordViz(rows);', 'function ratingsViz(', 'ratingsViz();', 'window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
+  for (const need of ['function betsViz(', 'renderBetsApp(); betsViz();', 'window.XBETS.get()', 'if(XB.on){ bets=loadMine().bets||{};', 'html.xbets-ro #backupCard', 'id="xbNote"', 'function recordViz(', 'recordViz(rows);', 'function ratingsViz(', 'ratingsViz();', 'window.STATE_URL', 'window.ELO_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
     if (!out.includes(need)) throw new Error('the built betting app is missing ' + need);
   /* X's log is read only in every frame: nothing in the app writes it or signs anyone in or out */
   for (const gone of ['XBETS.write', 'XBETS.signOut', 'xbSignOut', 'xbBackup', 'Owner on this device'])

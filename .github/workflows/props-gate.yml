@@ -41,6 +41,12 @@ on:
       - "betting/tools/reference_models.json"
       - "betting/neutral_sites.json"
       - "liveparlays/build/**"
+      # the page itself, at the site's root (nflbets/build/build.js writes it), and the old addresses' redirects
+      - "index.html"
+      - "pickems/index.html"
+      - "live/index.html"
+      - "liveparlays/index.html"
+      - "news/index.html"
   workflow_dispatch:
 
 permissions:

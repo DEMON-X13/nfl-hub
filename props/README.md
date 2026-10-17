@@ -14,8 +14,9 @@ the model works).
 
 ## Run it
 
-The prop model has no page of its own: its parts are the source of `nflbets/index.html`
-(`node ../../nflbets/build/build.js` from `build/`). `assemble.py` writes
+The prop model has no page of its own: its parts are the source of NFL Hub, the site's root
+`index.html` since 17 October 2026 (`nflbets/index.html` until then, a redirect to the root now), built by
+`node ../../nflbets/build/build.js` from `build/`. `assemble.py` writes
 `app/prop_model_2026.html` (gitignored) for the audit only.
 
 ## Rebuild it
@@ -374,7 +375,11 @@ same leg with no paid price:
 | Yards ladder rungs (k+) | 248 rungs, leave one ladder out | 3.4 / 5.5 / 49% / 62% | 1.5 / 1.8 / 80% / 97% |
 
 Completions, attempts, carries, rush + rec yards, interceptions, field goals, kicking points and the
-receptions and passing-TD ladders have no DraftKings price on file to test against. The audit's M8 holds
+receptions and passing-TD ladders have no DraftKings price on file to test against. FG attempts, which DraftKings
+does not post (the reader's markets are DraftKings' own), is no bet at all since app v113
+(`build/patch_declutter_top50.py`, the owner's call of 17 October 2026: "i only want to show legs that draft kings
+does"): it joins targets in `NO_BET`, still projected for a kicker's field goals made and kicking points, never a line,
+a leg or a suggestion, and a builder leg kept from before is removed with a line saying why (the audit's M13). The audit's M8 holds
 the reader (on ESPN's recorded answers in `build/fixtures/espn/`, through a fetch stub) and every price
 from a press to `build/espn_rule.js`, the checks' own copy of the formula.
 
