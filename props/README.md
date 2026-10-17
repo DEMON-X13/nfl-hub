@@ -323,7 +323,7 @@ change's own fail it.
 The owner asked for free odds "without the prices" and a best-guess price from the line, then for "a
 refresh odds button that will pull the live lines on demand ... rather than like a constant job". So the
 page reads DraftKings' lines from ESPN's free feed in the visitor's browser, only when **Refresh odds**
-is pressed (the Parlay Builder's controls and its builder, Suggest Parlays and the Props tab's game list
+is pressed (the Parlay Builder's controls and its builder, Suggested Parlays and the Props tab's game list
 read every game of the week still to come; a game's page reads that game alone), and nothing reads ESPN
 on a schedule: the props job's only part is `PAY.espn_ids`, the ESPN athlete id of every player the page
 can project (this season's stat rows, the payload's players and the depth chart) from the nflverse roster
@@ -337,8 +337,12 @@ time for them is older); a newer publish wins, and where a read gives way the bu
 it (a leg a press priced to DraftKings' own price on its line, else the model's estimate). The
 suggestions record (`build/suggest_ledger.js`) never presses it, and since app v111
 (`build/patch_suggest_tab.py`, the owner's calls of 16 October 2026) a press re-picks a prime-time game's
-set on Suggest Parlays only until the set locks, 2 hours before kickoff: from then it is the set the
-record locked, the same for everyone and the one it grades, whatever is pressed.
+set on Suggested Parlays only until the set locks, 2 hours before kickoff: from then it is the set the record
+locked, the same for everyone and the one it grades, whatever is pressed. The tab was Suggest Parlays until app
+v112 (`build/patch_suggested_night.py`) renamed it, at the owner's call of 17 October 2026 ("tab name suggest
+parlay should be Suggested Parlays"); at his call that day to show only the next night game, the same change sets
+out one prime-time night at a time, from 6:00 AM Eastern the morning after the night before it, while the record
+still takes, locks and grades every prime-time game's set.
 
 A player leg's price after a press: the paid pull's real price while its line is still DraftKings' line;
 the read's line where DraftKings has moved it since, or where the pull has no price, priced by the formula

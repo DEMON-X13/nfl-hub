@@ -115,7 +115,7 @@ jobs:
         # season just finished to it (the baselines come from there); it is committed here so the
         # next run finds it ready. A refused run never commits it. props/data carries the
         # suggestions record too, props/data/suggest_ledger.json (props/build/suggest_ledger.js, run
-        # by weekly.py after a clean audit): each prime-time game's Suggest Parlays set, locked 2 hours
+        # by weekly.py after a clean audit): each prime-time game's Suggested Parlays set, locked 2 hours
         # before its kickoff and graded after (and the retired all-games panel's entries, frozen and
         # still graded); a run whose record the script refused leaves the last good one in place.
         run: |

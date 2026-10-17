@@ -295,12 +295,49 @@ function dkTakes(DK, l, started) {
    Parlays since app v111; one inside it would be left out all the same, since their own words on DraftKings'
    betslip are not the panel's notes */
 const pbOwnTxt = panel => { if (!panel) return ''; const c = panel.cloneNode(true), e = c.querySelector('#pbElo'); if (e) e.remove(); return txt(c); };
-/* (app v111) Suggest Parlays' prime-time games by the owner's rule of 16 October 2026, worked out here on its own:
+/* (app v111) Suggested Parlays' prime-time games by the owner's rule of 16 October 2026, worked out here on its own:
    a kickoff on a Thursday, Sunday or Monday (the schedule's date, which is Eastern) at or after 7:00 pm Eastern;
    and a time as the tab says it, US Eastern ("Sun 6:20 PM ET") */
 const PRIME_NIGHT = { 4: 'Thursday night', 0: 'Sunday night', 1: 'Monday night' };
+const PB_TIERS_OWN = ['safe', 'med', 'aggr', 'xtrm'];
 const primeOwn = g => !!g && /^\d{4}-\d\d-\d\d$/.test(g.d || '') && PRIME_NIGHT[new Date(g.d + 'T12:00:00Z').getUTCDay()] != null && /^\d\d:\d\d$/.test(g.t || '') && g.t >= '19:00';
 const etSay = ms => new Date(ms).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET';
+/* (app v112) one night at a time, by the owner's rule of 17 October 2026 ("just show the next night game dont stack
+   the monday night game until monday morning"), worked out here on its own: of the week's prime-time games still to
+   kick off (primeOwn, kickoff order), the tab sets out those of the first Eastern date (both games of a
+   doubleheader), and only from 6:00 AM Eastern on the morning after the latest prime-time night before that date
+   anywhere on the schedule (any week, played or not); with none before it, at once. Eastern time through the time
+   zone database (Intl), twice over so a clock change between the guess and the hour cannot move it, never the
+   page's easternOffset or spNight. With the night not up yet, the tab says which game is next and when (waitOwn).
+   Two games kicking off at the same moment are in the schedule's own order, as the page keeps them (its week's games
+   are sorted on their date and time, a sort that leaves a tie as the schedule has it): never by game id, which put a
+   Thursday night game moved to Sunday night's kickoff after it where the page puts it first */
+const etOffOwn = ms => { const tz = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(new Date(ms)).find(p => p.type === 'timeZoneName');
+  const m = tz && tz.value.match(/GMT([+-]\d+)/); return m ? +m[1] : -5; };
+const etAtOwn = (day, hm) => { const naive = Date.parse(`${day}T${hm}:00Z`); let t = naive + 5 * 3600e3; for (let i = 0; i < 3; i++) t = naive - etOffOwn(t) * 3600e3; return t; };
+const nightOwn = (prime, sched, now) => {
+  const at = g => { const i = (sched || []).findIndex(x => x.id === g.id); return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
+  const G = (prime || []).filter(primeOwn).sort((a, b) => (etKick(a) - etKick(b)) || (at(a) - at(b)));
+  if (!G.length) return { games: [], open: null, prev: null, up: false, on: [] };
+  const D = G[0].d, games = G.filter(g => g.d === D), prev = (sched || []).filter(g => primeOwn(g) && g.d < D).map(g => g.d).sort().pop() || null;
+  const open = prev ? etAtOwn(new Date(Date.parse(prev + 'T12:00:00Z') + 86400e3).toISOString().slice(0, 10), '06:00') : null, up = open == null || now >= open;
+  return { games, open, prev, up, on: up ? games : [] };
+};
+const isoOwn = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+const waitOwn = (N, sched, TN) => { const nm = x => `${(TN && TN[x.a]) || x.a} at ${(TN && TN[x.h]) || x.h}`, nightOf = d => PRIME_NIGHT[new Date(d + 'T12:00:00Z').getUTCDay()];
+  const pg = N.prev ? (sched || []).filter(x => primeOwn(x) && x.d === N.prev).length : 0;
+  return `Next up: ${nightOf(N.games[0].d)}, ${N.games.map(nm).join(' and ')}.` + (N.open != null ? ` ${N.games.length > 1 ? 'Their sets go' : 'Its set goes'} up ${etSay(N.open)}, the morning after ${nightOf(N.prev)}’s ${pg > 1 ? 'games' : 'game'}.` : ''); };
+/* the tab's wait line, as drawn, held to the rule: where the night is not up, one line naming its games and when
+   their sets go up, and no set; where it is up (or no prime-time game is left), none */
+const waitHeld = (d, N, sched, TN) => { const el = d.querySelector('#spSets [data-sp-wait]');
+  if (!N.games.length || N.up) return el ? `a wait line is drawn where the night's sets are up: ${txt(el)}` : null;
+  if (!el) return `no wait line where the next night (${N.games.map(g => g.id).join(', ')}) is not up until ${isoOwn(N.open)}`;
+  const want = waitOwn(N, sched, TN), bad = [];
+  if (el.dataset.spWait !== isoOwn(N.open)) bad.push(`data-sp-wait ${el.dataset.spWait}, not ${isoOwn(N.open)}`);
+  if (el.dataset.spNext !== N.games.map(g => g.id).join(' ')) bad.push(`data-sp-next ${el.dataset.spNext}, not ${N.games.map(g => g.id).join(' ')}`);
+  if (txt(el) !== want) bad.push(`it reads "${txt(el)}", not "${want}"`);
+  if (d.querySelector('#spSets .sp-game')) bad.push('a set is drawn beside it');
+  return bad.length ? bad.join('; ') : null; };
 /* two legs of one game together, worked out here on their own (a set's Safe is the likeliest pair of one
    game's legs, which move together): the builder's gaussian copula, a leg landing when its own normal clears
    the point its chance puts it at, the two normals correlated by legRho (and taken apart under 0.03, as
@@ -518,11 +555,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     && !!d.querySelector('header .hub-stamp #saveState') && !!d.querySelector('header .hub-stamp #buildTag'),
     'the page is not headed NFL Hub, as the NBA Hub and the NHL Hub are: the wordmark and a tagline, and the stamp with the build');
 
-  /* the tab bar: Matchups (the board, Pick'ems until the owner's call of 16 October 2026) open, Suggest
-     Parlays after Props and before the Parlay Builder (app v111, the owner's call of that day), the prop
-     model's other sections in the page but not on the bar */
+  /* the tab bar: Matchups (the board, Pick'ems until the owner's call of 16 October 2026) open, Suggested
+     Parlays after Props and before the Parlay Builder (app v111, the owner's call of that day; Suggest Parlays
+     until app v112, the owner's call of 17 October 2026, "tab name suggest parlay should be Suggested Parlays"),
+     the prop model's other sections in the page but not on the bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Matchups|Props|Suggest Parlays|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Matchups|Props|Suggested Parlays|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
+  /* and no word a visitor reads names the old one */
+  { const said = []; const walk = n => { if (n.nodeType === 3) { if (/\bSuggest Parlays\b/.test(n.nodeValue)) said.push(n.nodeValue.trim().slice(0, 80)); return; }
+      if (n.nodeType === 1 && !/^(SCRIPT|STYLE)$/.test(n.tagName)) { for (const a of ['aria-label', 'title']) if (/\bSuggest Parlays\b/.test(n.getAttribute(a) || '')) said.push(a + ': ' + n.getAttribute(a).slice(0, 80)); for (const c of n.childNodes) walk(c); } };
+    walk(d.body); chk(!said.length, 'the page still names the tab Suggest Parlays where a visitor reads it: ' + said.slice(0, 3).join(' / ')); }
   chk(!d.querySelector('header a'), 'the header carries a link');
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Matchups is not the open tab');
   for (const id of ['tab-slate', 'tab-suggest', 'tab-parlay', 'tab-xparlays', 'tab-track', 'tab-week', 'tab-backup'])
@@ -709,6 +751,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     await gbPage(gid);
     const rows = gbRows(), gb = gbCard();
     chk(!!gb && d.querySelectorAll('#gameView .gbets').length === 1, 'the game\'s page does not carry the Game bets card once');
+    /* (app v112) its note says what a Suggested Parlays set does with a game total: a fill where the game's other
+       legs run out, never marked Value */
+    chk(!!gb && txt(gb.querySelector('p.muted')).includes('A Suggested Parlays set takes a game total only where the game\'s other legs cannot fill a parlay, and never marks it Value; tick it here to add one yourself.'),
+      'the Game bets card does not say a Suggested Parlays set takes a game total only where the game\'s other legs cannot fill a parlay, never marked Value: ' + (gb ? txt(gb.querySelector('p.muted')).slice(0, 400) : 'no card'));
     /* to win for both sides, and to cover for both where the prop model has a spread (a game whose
        spread is not posted yet offers the money line alone, and says so), and the game total over
        and under where a total is posted */
@@ -867,21 +913,26 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
 
   /* ---- the Parlay Builder (app v111, the owner's calls of 16 October 2026): its choices at the top (the Bet
      amount, Refresh odds, Build from, the bet types, the games), the Top 100 lines those choices make under
-     them, then the visitor's own builder with a Refresh odds of its own; Suggest Parlays (each Thursday,
+     them, then the visitor's own builder with a Refresh odds of its own; Suggested Parlays (each Thursday,
      Sunday and Monday night game's own parlays, the Elo picks under them) and X Parlays are tabs of their
      own. The four levels over every game, the lock on each leg, New legs and Reset are gone from the page;
      the level engine stays (getPbTiers, pbTier), and is held below on many sets of ticks, since each
      prime-time game's set is built by it ---- */
   const tabBtn = t => [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === t);
-  /* Suggest Parlays builds a game's live set only while its tab is on the screen: before it was ever opened, the
+  /* Suggested Parlays builds a game's live set only while its tab is on the screen: before it was ever opened, the
      page has built none (a load of the hub pays nothing for a tab nobody opened), and a live game says so. A
      game past its lock (2 hours before kickoff, by its own kickoff and the page's clock) is drawn as locked
      whatever the tab, and where the record has no entry for it the page builds its own set at load, so the
-     cache may hold that game's set alone */
-  { const now = w.eval('Date.now()'), G = w.eval('typeof spGames') === 'function' ? w.eval('spGames()') : [], live = G.filter(g => now < etKick(g) - 2 * 3600e3);
-    const shown = live.map(g => d.querySelector(`#spPanel [data-sp-game="${g.id}"] [data-sp-phase]`)), cached = w.eval('typeof SP_CACHE') !== 'undefined' ? w.eval('[...SP_CACHE.keys()]') : null;
-    chk(!!cached && cached.every(k => !live.some(g => k.startsWith(g.id + '|'))) && shown.every(x => !!x && x.dataset.spPhase === 'wait' && txt(x) === 'Built when this tab is open.'),
-      'Suggest Parlays built a set before its tab was opened, or a game it has not built does not say it is built when the tab opens: ' + shown.map(x => x ? x.dataset.spPhase + ' ' + txt(x) : 'none').join(' / ')); }
+     cache may hold that game's set alone. (app v112) Only the next night's games are on the tab, once its morning has
+     come (nightOwn, the rule worked out here): a game the rule hides is not drawn at all, and none of its set built */
+  { const now = w.eval('Date.now()'), G = w.eval('typeof pbGames') === 'function' ? w.eval('pbGames()').filter(primeOwn) : [], live = G.filter(g => now < etKick(g) - 2 * 3600e3);
+    const N = nightOwn(G, w.eval('S').sched, now), onIds = N.on.map(g => g.id);
+    const shown = live.filter(g => onIds.includes(g.id)).map(g => d.querySelector(`#spPanel [data-sp-game="${g.id}"] [data-sp-phase]`)), cached = w.eval('typeof SP_CACHE') !== 'undefined' ? w.eval('[...SP_CACHE.keys()]') : null;
+    const hidden = G.filter(g => !onIds.includes(g.id)).filter(g => !!d.querySelector(`#spSets [data-sp-game="${g.id}"]`));
+    chk(!!cached && cached.every(k => !live.some(g => k.startsWith(g.id + '|'))) && shown.every(x => !!x && x.dataset.spPhase === 'wait' && txt(x) === 'Built when this tab is open.') && !hidden.length,
+      'Suggested Parlays built a set before its tab was opened, a game it has not built does not say it is built when the tab opens, or a game the night rule hides is drawn: ' + shown.map(x => x ? x.dataset.spPhase + ' ' + txt(x) : 'none').join(' / ') + (hidden.length ? ' / drawn: ' + hidden.map(g => g.id).join(', ') : ''));
+    const wh = G.length ? waitHeld(d, N, w.eval('S').sched, w.eval('TEAM_NAMES')) : null;
+    chk(!wh, 'before its tab was opened, Suggested Parlays does not say which night is next and when its set goes up where the night rule hides it: ' + wh); }
   tabBtn('parlay').click();
   await wait(60);
   chk(!d.getElementById('tab-parlay').hidden && d.getElementById('tab-slate').hidden && (d.getElementById('tab-xparlays') || { hidden: true }).hidden && (d.getElementById('tab-suggest') || { hidden: true }).hidden, 'the Parlay Builder tab did not open');
@@ -889,13 +940,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const pb = d.getElementById('parlayBody'), tabB = d.getElementById('tab-parlay'), panel = d.getElementById('pbPanel');
   /* a page without the engine fails here, and the checks that need it are left out rather than thrown on */
   const hasPb = ['getPbTiers', 'pbGames', 'getPbTop', 'spSet', 'spGames', 'spLockAt'].every(f => w.eval(`typeof ${f}`) === 'function');
-  chk(hasPb && !!panel, 'the Parlay Builder has no Top 100 lines over the builder, or Suggest Parlays no sets (#pbPanel, getPbTiers, pbGames, getPbTop, spSet, spGames, spLockAt)');
+  chk(hasPb && !!panel, 'the Parlay Builder has no Top 100 lines over the builder, or Suggested Parlays no sets (#pbPanel, getPbTiers, pbGames, getPbTop, spSet, spGames, spLockAt)');
   chk(!!panel && tabB.firstElementChild === panel && panel.nextElementSibling === pb && !pb.nextElementSibling && !tabB.querySelector('#lpCard'),
     'the Parlay Builder tab is not its choices and the Top 100 lines over the builder and nothing else');
   chk(!d.getElementById('suggModal') && !d.getElementById('suggOpen') && !d.getElementById('suggView') && !d.querySelector('[data-suggest-side], [data-suggest-save], #suggStake'),
     'the old Suggested parlays window or its switch is still in the page');
   /* the lock on each leg, New legs and Reset are gone, every trace of them (the owner's call of 16 October
-     2026), and the Parlay Builder draws no level: its levels are each prime-time game's, on Suggest Parlays */
+     2026), and the Parlay Builder draws no level: its levels are each prime-time game's, on Suggested Parlays */
   chk(!d.querySelector('[data-pb-lock], [data-pb-turn], [data-pb-reset], .pb-lock') && ['PB_VIEW', 'pbLocked', 'pbShownTier', 'pbTurn', 'pbLockBtn'].every(n => w.eval(`typeof ${n}`) === 'undefined')
     && !!panel && !panel.querySelector('.pb-tier, [data-pb-add], [data-pc-finish], #pbElo, #pbRec, #spRec') && !/New legs|beside your lock/.test(txt(panel)),
     'a leg\'s lock, New legs or Reset is still in the page, or the Parlay Builder still draws a level, the Elo picks or the record: ' + (panel ? txt(panel).slice(0, 160) : ''));
@@ -950,16 +1001,35 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     if (u.k.total) for (const g of on) if (!u.off.includes(g.id)) for (const side of ['over', 'under']) { const c = w.eval('totalLeg')(g, side);
       if (c && c.src === 'real' && priced(c) && !st(c) && dkTakes(DK, c, st(c))) out.mkt.push(c); }
     return out; };
-  /* the Top 100 lines, worked out here from qualOwn: every leg the ticks make, in two groups, the preferred
-     legs and the totals first and every thin-edge leg after them, each group ranked by what $1 on it is
-     expected to make at the model's chance (its chance times its decimal price, less the $1), best first (the
-     key, side and line in order on a tie), at most 100 in all, each row saying its group (data-pb-grp), each row its leg, its price (est. where it is priced
-     from DraftKings' line read on ESPN), the model's chance, the book's fair chance (fairRule) or a dash, what
-     $1 wins and what it is expected to make, thin edge or no edge marked, and its own Add, 44px, named for the
-     leg; with nothing to rank, the list says why */
-  const pbTopOwn = (u, on) => { const q = qualOwn(u, on), ord = (a, b) => legId(a).localeCompare(legId(b));
-    const rank = list => list.map(x => ({ ...x, win: decOwn(x.c.price) - 1, ev: x.c.p * decOwn(x.c.price) - 1 })).sort((a, b) => (b.ev - a.ev) || ord(a.c, b.c));
-    return [...rank([...q.pref.map(c => ({ c, thin: false, market: false })), ...q.mkt.map(c => ({ c, thin: false, market: true }))]), ...rank(q.thin.map(c => ({ c, thin: true, market: false })))].slice(0, 100); };
+  /* the Top 100 lines, worked out here from qualOwn (app v112, the owner's call of 17 October 2026: "can we do
+     reverse tags? like get rid of thin edge and no edge and come up with a name for that first section?"): every
+     leg the ticks make, in two parts, the Value picks (the preferred legs) first and then the other lines (every
+     thin-edge leg and, with Game total ticked, every total), each part ranked by what $1 on it is expected to make
+     at the model's chance (its chance times its decimal price, less the $1), best first (the key, side and line in
+     order on a tie), at most 100 in all, so a total, at the book's own chance, ranks after every thin-edge line;
+     each row saying its part (data-pb-grp value or other) and its rank, running on across both parts, its leg, its
+     price (est. where it is priced from DraftKings' line read on ESPN), the model's chance, the book's fair chance
+     (fairRule) or a dash, what $1 wins and what it is expected to make, Value marked on a Value pick and on nothing
+     else (no thin edge or no edge any more), and its own Add, 44px, named for the leg; each part under its own
+     heading (Value picks, Other lines, each with its count), the second list starting where the first ends; with
+     no Value pick, its heading saying so over the other lines; with nothing to rank, the list says why. The other
+     lines are the thin-edge lines and then the totals, each ranked on its own (app v112, round two): a total
+     priced on one side only is put at 50%, so at plus money it is expected to make more than a thin-edge line, and
+     ranked with them it came before them. Each bet once (the owner, 17 October 2026, Patrick Mahomes's Over 224.5
+     and 225+ passing yards ranked 1 and 2 at -113: "i find it hard to believe that draft kings would let me bet
+     both on the same parlay"): a ladder rung k+ lands exactly when the player's main Over at k-0.5 does, so where
+     that half-point main Over is among the qualifying legs (either part) the rung is left out of every part, and
+     the main line kept wherever it is (sameBetOwn); the count left out rides on the list as .same */
+  const gameLegOwn = l => ['ml', 'ats', 'total'].includes(l.stat);
+  const sameBetOwn = legs => { const half = new Set(legs.filter(l => !gameLegOwn(l) && l.main && l.side === 'over' && Math.abs(+l.k % 1) === 0.5).map(l => `${l.gid}|${l.pid}|${l.stat}|${+l.k + 0.5}`));
+    return l => !gameLegOwn(l) && !l.main && l.side === 'over' && half.has(`${l.gid}|${l.pid}|${l.stat}|${+l.k}`); };
+  const pbTopOwn = (u, on) => { const q = qualOwn(u, on), ord = (a, b) => legId(a).localeCompare(legId(b)), same = sameBetOwn([...q.pref, ...q.thin]);
+    const rank = list => list.filter(x => !same(x.c)).map(x => ({ ...x, win: decOwn(x.c.price) - 1, ev: x.c.p * decOwn(x.c.price) - 1 })).sort((a, b) => (b.ev - a.ev) || ord(a.c, b.c));
+    const rows = [...rank(q.pref.map(c => ({ c, value: true, thin: false, market: false }))), ...rank(q.thin.map(c => ({ c, value: false, thin: true, market: false }))),
+      ...rank(q.mkt.map(c => ({ c, value: false, thin: false, market: true })))].slice(0, 100);
+    rows.same = [...q.pref, ...q.thin, ...q.mkt].filter(same).length; rows.q = q; return rows; };
+  /* no word of the retired tags, thin edge and no edge, anywhere a visitor reads */
+  const OLD_TAG = /\bthin[ -]edge\b|\bno edge\b/i;
   const nmOk = (nm, l) => !!nm && [...nm.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === l.name && txt(nm.querySelector('small')).startsWith(l.label);
   let holdSetF = null;
   const money1 = v => (v < -0.0005 ? '−' : '+') + '$' + Math.abs(v).toFixed(2);
@@ -971,19 +1041,54 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(!rows.length && !!none && txt(none).length > 20 && !/NaN|undefined/.test(txt(none)), `${lab}: nothing qualifies on the ticks and the list draws rows, or does not say why: ${none ? txt(none) : rows.length + ' rows'}`); return 0; }
     if (rows.length !== want.length) bad.push(`${rows.length} rows where ${want.length} lines qualify`);
     want.forEach((x, i) => { const r = rows[i], l = x.c; if (!r) return;
-      const b = r.querySelector('button[data-pb-leg]'), cs = [...r.querySelectorAll('.pb-tc')], f = fo(l), est = l.src === 'dkline', on2 = inB(l);
+      const b = r.querySelector('button[data-pb-leg]'), cs = [...r.querySelectorAll('.pb-tc')], f = fo(l), est = l.src === 'dkline', on2 = inB(l), grp = x.value ? 'value' : 'other';
       const got = cs.map(c => txt(c.querySelector('b')) + '/' + txt(c.querySelector('small')));
       const exp = [`${fmt(l.price)}${est ? ' est.' : ''}/price`, `${(l.p * 100).toFixed(0)}%/model`, f ? `${(f.p * 100).toFixed(0)}%/${f.est ? 'fair, est.' : 'fair'}` : '–/no fair', `${money1(x.win)}/wins on $1`, `${money1(x.ev)}/expected on $1`];
-      if (!b || b.dataset.pbLeg !== l.key || b.dataset.side !== l.side || +b.dataset.k !== +l.k || txt(r.querySelector('.pb-trk')) !== String(i + 1) || r.dataset.pbGrp !== (x.thin ? 'thin' : 'edge')) bad.push(`row ${i + 1} is ${b ? b.dataset.pbLeg + ' ' + b.dataset.side + ' ' + b.dataset.k : 'no leg'} ${b ? ' (' + r.dataset.pbGrp + ')' : ''} where ${l.key} ${l.side} ${l.k} ranks there (${x.thin ? 'thin' : 'edge'}, expected ${money1(x.ev)} on $1)`);
-      else if (got.join(' | ') !== exp.join(' | ') || !nmOk(r.querySelector('.nm'), l) || /thin edge/.test(txt(r)) !== x.thin || /no edge/.test(txt(r).replace(/thin edge/, '')) !== x.market
+      const marks = [...r.querySelectorAll('i.pb-valmark')];
+      if (!b || b.dataset.pbLeg !== l.key || b.dataset.side !== l.side || +b.dataset.k !== +l.k || txt(r.querySelector('.pb-trk')) !== String(i + 1) || r.dataset.pbRow !== String(i + 1) || r.dataset.pbGrp !== grp
+        || !r.closest(`ol.pb-top[data-pb-sec="${grp}"]`)) bad.push(`row ${i + 1} is ${b ? b.dataset.pbLeg + ' ' + b.dataset.side + ' ' + b.dataset.k : 'no leg'} ${b ? ' (' + r.dataset.pbGrp + ', ranked ' + txt(r.querySelector('.pb-trk')) + '/' + r.dataset.pbRow + ')' : ''} where ${l.key} ${l.side} ${l.k} ranks there (${grp}, expected ${money1(x.ev)} on $1)`);
+      else if (got.join(' | ') !== exp.join(' | ') || !nmOk(r.querySelector('.nm'), l) || marks.length !== (x.value ? 1 : 0) || (x.value && (txt(marks[0]) !== 'Value' || !marks[0].closest('.nm small'))) || OLD_TAG.test(txt(r)) || r.querySelector('.pb-thinmark')
         || (est && !(r.querySelector('.pb-tc i.est') || { title: '' }).title.startsWith('DraftKings’ line from ESPN, read ')) || (!est && r.querySelector('i.est')))
-        bad.push(`row ${i + 1}, ${l.name} ${l.label}, reads ${got.join(' | ')}${x.thin ? ' (thin)' : ''}${x.market ? ' (no edge)' : ''}, not ${exp.join(' | ')}`);
+        bad.push(`row ${i + 1}, ${l.name} ${l.label}, reads ${got.join(' | ')}, ${marks.length} Value mark${marks.length === 1 ? '' : 's'}${OLD_TAG.test(txt(r)) ? ', an old tag' : ''}, not ${exp.join(' | ')}${x.value ? ', marked Value' : ', unmarked'}`);
       else if (b.getAttribute('aria-label') !== addName(l, on2) || b.getAttribute('aria-pressed') !== String(on2) || txt(b) !== (on2 ? 'Added' : 'Add') || w.getComputedStyle(b).minHeight !== '44px')
         bad.push(`row ${i + 1}'s Add is not a 44px button named "${addName(l, on2)}": ${b.getAttribute('aria-label')} ${w.getComputedStyle(b).minHeight}`); });
-    chk(!bad.length, `${lab}: the Top 100 lines are not every qualifying line, those with an edge and the totals before the thin-edge ones, each group ranked by what $1 on it is expected to make, each with its numbers, its mark and its own Add: ` + bad.slice(0, 3).join('; '));
+    /* the two parts as drawn: the Value picks' heading (its count, or with none a line saying so), its list, then the
+       other lines' heading and count and their list starting at the next rank, in that order and nothing else */
+    { const nV = want.filter(x => x.value).length, nO = want.length - nV, H = [...panel.querySelectorAll('h3.pb-topsec')], O = [...panel.querySelectorAll('ol.pb-top')];
+      const hv = H.find(h => h.dataset.pbSec === 'value'), ho = H.find(h => h.dataset.pbSec === 'other'), ov = O.find(o => o.dataset.pbSec === 'value'), oo = O.find(o => o.dataset.pbSec === 'other'), nv = panel.querySelector('[data-pb-novalue]');
+      const pill = h => h && h.querySelector('.pill') ? txt(h.querySelector('.pill')) : null, before = (a, b2) => !!a && !!b2 && !!(a.compareDocumentPosition(b2) & 4);
+      const head = h => h ? txt(h).replace(/\s*\d+$/, '') : null;
+      if (H.length !== 1 + (nO ? 1 : 0) || O.length !== (nV ? 1 : 0) + (nO ? 1 : 0)) bad.push(`${H.length} headings and ${O.length} lists for ${nV} Value picks and ${nO} other lines`);
+      if (!hv || head(hv) !== 'Value picks' || pill(hv) !== (nV ? String(nV) : null)) bad.push(`the first part is headed "${hv ? txt(hv) : 'nothing'}", not Value picks${nV ? ' ' + nV : ' with no count'}`);
+      if (nV ? !ov || ov.querySelectorAll(':scope > li.pb-trow').length !== nV || ov.hasAttribute('start') || !!nv || !before(hv, ov) : !!ov || !nv || !before(hv, nv) || txt(nv) !== 'No line on your picks is a Value pick right now.')
+        bad.push(nV ? `the Value picks' list does not hold its ${nV} lines from rank 1 under its heading` : `with no Value pick the heading is not over a line saying so: "${nv ? txt(nv) : 'none'}"`);
+      /* what each part is, under its heading: the Value picks' bar, and why the other lines miss it, the game totals
+         last where Game total is ticked (market + form named where the Elo tab is on the page, as the page's formSig) */
+      { const form = typeof w.eloLoaded === 'function', sub = h => h && h.nextElementSibling && h.nextElementSibling.matches('p.pb-topsub') ? txt(h.nextElementSibling) : null;
+        const wantV = `The model rates each at least 3 points above the chance its price implies${form ? ', and on a player’s line market + form agrees' : ''}. Each is marked Value.`;
+        const wantO = `These miss a Value pick’s bar (3 points above the chance the price implies${form ? ', and market + form agreeing on a player’s line' : ''}), though the model still rates each at or above the book’s price${u.k.total ? '; the game totals, at the book’s own chance, come last' : ''}. A suggested parlay takes them only where its Value picks run out.`;
+        if (nV && sub(hv) !== wantV) bad.push(`the Value picks' line reads "${sub(hv)}", not "${wantV}"`);
+        if (nO && sub(ho) !== wantO) bad.push(`the other lines' line reads "${sub(ho)}", not "${wantO}"`); }
+      if (nO ? !ho || head(ho) !== 'Other lines' || pill(ho) !== String(nO) || !oo || oo.querySelectorAll(':scope > li.pb-trow').length !== nO || oo.getAttribute('start') !== (nV ? String(nV + 1) : null) || !before(hv, ho) || !before(ho, oo) || (ov && !before(ov, ho)) : !!ho || !!oo)
+        bad.push(nO ? `the other lines are not headed Other lines ${nO} over their list starting at ${nV + 1}: "${ho ? txt(ho) : 'none'}", start ${oo ? oo.getAttribute('start') : 'no list'}` : 'with no other line the Other lines part is drawn');
+      if (OLD_TAG.test(pbOwnTxt(panel)) || panel.querySelector('.pb-thinmark')) bad.push('the panel still speaks of thin edge or no edge: ' + (pbOwnTxt(panel).match(/.{0,60}(thin[ -]edge|no edge).{0,40}/i) || [''])[0]); }
+    chk(!bad.length, `${lab}: the Top 100 lines are not every qualifying line, the Value picks first and then the other lines, the totals last, each part under its heading ranked by what $1 on it is expected to make, the ranks running on, each with its numbers, Value marked on a Value pick alone and its own Add: ` + bad.slice(0, 3).join('; '));
+    /* (app v112, round two) the order as drawn: the Value picks, then the thin-edge lines, then the totals, never a
+       line of an earlier part after one of a later; and each bet once: no row is a ladder rung k+ whose same bet,
+       the player's main Over at k-0.5 on a half-point line, is among the qualifying legs (either part), and the
+       page's count of the rungs it left out (getPbTop's same) is the one worked out here */
+    { const partOf = r => { const b = r.querySelector('button[data-pb-leg]'); return r.dataset.pbGrp === 'value' ? 0 : b && /\|game\|total$/.test(b.dataset.pbLeg) ? 2 : 1; };
+      const parts = rows.map(partOf), back = parts.findIndex((x, i) => i > 0 && x < parts[i - 1]);
+      chk(back < 0, `${lab}: the Top 100 lines are not the Value picks, then the thin-edge lines, then the totals: row ${back + 1} (${back < 0 ? '' : ['a Value pick', 'a thin-edge line', 'a total'][parts[back]]}) follows ${back < 0 ? '' : ['a Value pick', 'a thin-edge line', 'a total'][parts[back - 1]]}`);
+      const half = new Set([...want.q.pref, ...want.q.thin].filter(l => !gameLegOwn(l) && l.main && l.side === 'over' && Math.abs(+l.k % 1) === 0.5).map(l => `${l.key}|${+l.k + 0.5}`));
+      const twice = rows.map(r => r.querySelector('button[data-pb-leg]')).filter(b => b && b.dataset.side === 'over' && half.has(`${b.dataset.pbLeg}|${+b.dataset.k}`));
+      const got = w.eval('typeof getPbTop') === 'function' ? w.eval('getPbTop()').same : undefined;
+      chk(!twice.length && got === want.same, `${lab}: the Top 100 lines list a bet twice, a ladder rung beside the same bet's half-point main Over (${twice.slice(0, 3).map(b => b.dataset.pbLeg + ' ' + b.dataset.k + '+').join(', ') || 'none'}), or the page counts ${got} rungs left out where ${want.same} are`); }
     { const lead = txt(panel.querySelector('.pb-lead')), foot = txt(panel.querySelector('.pb-foot'));
-      chk(lead.includes(`first the lines with an edge${u.k.total ? ' and the game totals' : ''}, then the lines with only a thin edge, marked thin edge, each group ranked by`) && foot.includes('The lines with an edge come first, then any game totals, then the thin-edge lines, marked thin edge'),
-        `${lab}: the Top 100 lines' lead or foot does not say the lines with an edge come before the thin-edge ones: ${lead.slice(0, 200)}`); }
+      chk(lead.includes(`first the Value picks, marked Value, then the other lines${u.k.total ? ', the game totals last' : ''}, each part ranked by what $1 on it is expected to make at the model’s chance, best first, 100 lines at most.`)
+        && foot.includes('The Value picks come first, marked Value, then the other lines (the ones a suggested parlay takes only where the Value picks cannot fill it), each part ranked by what $1 on it is expected to make, any game totals last, 100 lines at most in all. Each bet is listed once: a ladder rung that is the same bet as the player’s main line (225+ passing yards and Over 224.5) is shown as the main line.')
+        && foot.includes('3 points above it or more is a Value pick') && foot.includes('a game total, priced at the book’s own chance, is never one'),
+        `${lab}: the Top 100 lines' lead or foot does not say the Value picks come first, then the other lines: ${lead.slice(0, 260)} / ${foot.slice(0, 200)}`); }
     return want.length; };
   /* the panel holds on whatever the week offers: the mix sets the boxes, every tier is its legs or says
      why, and every leg is of a ticked kind and game, has not kicked off and is never rated below the book */
@@ -1040,9 +1145,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         /* Safe's likeliest pair and a level's likeliest of its size, worked out in full where every parlay is a plain product */
         if ((t.likeliest || !t.floor) && !t.mkt) provedLikeliest(lab, t, [...pool.pref, ...pool.thin]);
       }
-      /* with Game total ticked, one line says what a total on the list is (and only then) */
-      chk(txt(panel).includes('Game totals have no edge: each is priced at the book’s own chance, so what $1 on it is expected to make is below nothing, and it ranks after every line with an edge and before every thin-edge line, marked no edge.') === !!u.k.total,
-        `${lab}: ${u.k.total ? 'Game total is ticked and the list does not say a total has no edge' : 'Game total is not ticked and the list still speaks of totals'}`);
+      /* with Game total ticked, one line says what a total on the list is (and only then): never a Value pick, last
+         among the other lines, so a long list can end before them (app v112) */
+      chk(txt(panel).includes('Game totals are never Value picks: each is priced at the book’s own chance, so the totals come last among the other lines, and on a long list the 100 lines can end before them.') === !!u.k.total,
+        `${lab}: ${u.k.total ? 'Game total is ticked and the list does not say a total is never a Value pick, that the totals come last among the other lines and that the 100 can end before them' : 'Game total is not ticked and the list still speaks of totals'}`);
       holdTop(lab, u, on);
       return built; };
     const spPanel = d.getElementById('spPanel'), spOf = id => d.querySelector(`#spPanel .sp-game[data-sp-game="${id}"]`);
@@ -1054,27 +1160,34 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
        night, when it locks (2 hours before kickoff, said in Eastern time), each level a card with its legs,
        each leg's own Add, the set's Add to builder and Finish, or why it is empty. Safe, the likeliest pair,
        is worked out in full on the game's own legs with two legs together computed here (pairOwn), since a
-       set's legs are one game's and move together */
-    const holdSet = (lab, g) => { if (w.eval('Date.now()') >= etKick(g) - 2 * 3600e3) return holdLocked(lab, g);
+       set's legs are one game's and move together. (app v112) vis: whether the night rule (nightOwn) sets the game
+       out now. Every prime-time game's set is held to the rules (the props job's record takes them all, shown or
+       not); one the rule hides is not on the tab at all, no card, leg, Add or Finish of it, and its levels cannot be
+       finished from the tab (spTier) */
+    const hiddenHeld = (lab, g) => { const el = spOf(g.id), any = d.querySelector(`#spSets [data-sp-add^="${g.id}:"], #spSets [data-pc-finish^="sp|${g.id}:"], #spSets [data-pb-leg^="${g.id}|"]`), fin = PB_TIERS_OWN.filter(id => w.eval('spTier')(`${g.id}:${id}`) != null);
+      chk(!el && !any && !fin.length, `${lab}, ${g.id}: the night rule hides its set until ${isoOwn(nightOwn(primeHere(), w.eval('S').sched, w.eval('Date.now()')).open || 0)}, and the tab draws it, a leg or a button of it, or a level of it can still be finished (${fin.join(', ') || 'none'})`); };
+    const holdSet = (lab, g, vis = true) => { if (w.eval('Date.now()') >= etKick(g) - 2 * 3600e3) return holdLocked(lab, g, vis);
       const s = w.eval('spSet')(g.id), el = spOf(g.id), q = qualOwn(SPU, [g]), all = [...q.pref, ...q.thin], allM = [...all, ...q.mkt];
-      const ownSet = new Map(allM.map(c => [legId(c), c])), thinOf = new Set(q.thin.map(legId)), mktOf = new Set(q.mkt.map(legId));
+      const ownSet = new Map(allM.map(c => [legId(c), c])), thinOf = new Set(q.thin.map(legId)), mktOf = new Set(q.mkt.map(legId)), prefOf = new Set(q.pref.map(legId));
       chk(!!s && s.tiers.map(t => t.id + t.n).join() === 'safe2,med3,aggr4,xtrm5', `${lab}, ${g.id}: the set is not Safe 2, Medium 3, Aggressive 4, Extreme 5`);
       if (!s) return 0;
       const lockOwn = etKick(g) - 2 * 3600e3, lk = el && el.querySelector('[data-sp-phase]');
-      chk(w.eval('spLockAt')(g) === lockOwn && !!el && !!lk && lk.dataset.spPhase === 'live' && txt(lk) === `Locks ${etSay(lockOwn)}, 2 hours before kickoff; Refresh odds updates it until then.`,
-        `${lab}, ${g.id}: the set does not say it locks at ${etSay(lockOwn)}, 2 hours before kickoff: ${lk ? lk.dataset.spPhase + ' ' + txt(lk) : 'no set drawn'}`);
-      chk(!!el && txt(el.querySelector('.sp-hd h3')) === `${TN[g.a] || g.a} at ${TN[g.h] || g.h}` && txt(el.querySelector('.sp-hd .pill')) === nightOf(g) && el.getAttribute('role') === 'group',
-        `${lab}, ${g.id}: the set is not headed with its game and its night (${nightOf(g)}): ${el ? txt(el.querySelector('.sp-hd')) : 'none'}`);
+      if (!vis) { chk(w.eval('spLockAt')(g) === lockOwn, `${lab}, ${g.id}: its set's lock is not 2 hours before kickoff, ${etSay(lockOwn)}`); hiddenHeld(lab, g); }
+      else {
+        chk(w.eval('spLockAt')(g) === lockOwn && !!el && !!lk && lk.dataset.spPhase === 'live' && txt(lk) === `Locks ${etSay(lockOwn)}, 2 hours before kickoff; Refresh odds updates it until then.`,
+          `${lab}, ${g.id}: the set does not say it locks at ${etSay(lockOwn)}, 2 hours before kickoff: ${lk ? lk.dataset.spPhase + ' ' + txt(lk) : 'no set drawn'}`);
+        chk(!!el && txt(el.querySelector('.sp-hd h3')) === `${TN[g.a] || g.a} at ${TN[g.h] || g.h}` && txt(el.querySelector('.sp-hd .pill')) === nightOf(g) && el.getAttribute('role') === 'group',
+          `${lab}, ${g.id}: the set is not headed with its game and its night (${nightOf(g)}): ${el ? txt(el.querySelector('.sp-hd')) : 'none'}`); }
       let built = 0; const m = maxOwn(allM);
       for (const t of s.tiers) { const c = el && el.querySelector(`.pb-tier.${t.id}`);
         if (!t.legs) {
           const what = m ? `Only ${m} leg${m === 1 ? '' : 's'} in this game` : 'No legs in this game';
-          chk(m < t.n && typeof t.why === 'string' && t.why.startsWith(what) && (q.plId ? t.why.endsWith('a parlay takes one leg a player, and one side and one total a game.') : t.why.includes(pulledOwn(g))) && !!c && c.classList.contains('none') && txt(c.querySelector('.pb-why')) === t.why,
+          chk(m < t.n && typeof t.why === 'string' && t.why.startsWith(what) && (q.plId ? t.why.endsWith('a parlay takes one leg a player, and one side and one total a game.') : t.why.includes(pulledOwn(g))) && (!vis || (!!c && c.classList.contains('none') && txt(c.querySelector('.pb-why')) === t.why)),
             `${lab}, ${g.id}: the ${t.id} level is empty though the game's legs make ${m} of its ${t.n}, or it does not say so${q.plId ? '' : ' and when its player prices (and DraftKings\' ids) come, ' + pulledOwn(g)}: ${t.why}`);
           continue; }
         built++;
         holdTier(`${lab}, ${g.id}`, t, { pref: q.pref, thin: q.thin }, l => l.gid === g.id);
-        chk(t.legs.every(l => ownSet.has(legId(l)) && !!l.thin === thinOf.has(legId(l)) && !!l.market === mktOf.has(legId(l))), `${lab}, ${g.id}: the ${t.id} level holds a leg the rules do not let a suggestion take, or marks one thin or no edge wrongly: ` + t.legs.filter(l => !ownSet.has(legId(l))).map(l => l.name + ' ' + l.label).join(', '));
+        chk(t.legs.every(l => ownSet.has(legId(l)) && !!l.thin === thinOf.has(legId(l)) && !!l.market === mktOf.has(legId(l))), `${lab}, ${g.id}: the ${t.id} level holds a leg the rules do not let a suggestion take, or keeps one thin or a total wrongly: ` + t.legs.filter(l => !ownSet.has(legId(l))).map(l => l.name + ' ' + l.label).join(', '));
         /* Safe: no pair with as many legs from the preferred list lands likelier, two legs worked out here */
         if (!t.floor && !t.mkt) { const kMin = [0, 1, 2].find(k => maxOwn(q.pref) >= 2 - k && maxOwn(all) >= 2), need = 2 - kMin, cand = capOwn(q.pref).concat(capOwn(q.thin));
           let best = -1, bl = null; for (let i = 0; i < cand.length; i++) for (let j = i + 1; j < cand.length; j++) { const a = cand[i], b = cand[j];
@@ -1083,13 +1196,27 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(t.thin === t.legs.filter(l => l.thin).length && t.legs.filter(l => !l.thin).length >= need && Math.abs(t.corr - mine) < 0.012 && mine >= best - 0.015,
             `${lab}, ${g.id}: Safe lands ${(mine * 100).toFixed(1)}% worked out here (${(t.corr * 100).toFixed(1)}% shown) where ${bl ? bl.map(l => l.name + ' ' + l.label).join(' + ') : 'no pair'} land ${(best * 100).toFixed(1)}%: it is not the likeliest pair on the game's legs`); }
         /* the card: its legs each with its own Add (44px, named for the leg), its rule, the fair chance first,
-           Add to builder and Finish named for the game, no lock */
+           Add to builder and Finish named for the game, no lock (a set the night rule hides has no card: above) */
+        if (!vis) continue;
         const lis = c ? [...c.querySelectorAll('.pb-legs li')] : [], P = w.eval('S').parlay, inB = l => { const x = P[l.key]; return !!x && x.k === l.k && x.side === l.side && !!x.main === !!l.main; };
         const ab = c && c.querySelector(`[data-sp-add="${g.id}:${t.id}"]`), fb = c && c.querySelector(`[data-pc-finish="sp|${g.id}:${t.id}"]`), what = `the ${t.label} parlay for ${g.a} at ${g.h}`;
         chk(!!c && c.dataset.pbTier === t.id && lis.length === t.n && t.legs.every((l, i) => { const b = lis[i].querySelector('button[data-pb-leg]');
             return nmOk(lis[i].querySelector('.nm'), l) && !!b && b.dataset.pbLeg === l.key && +b.dataset.k === +l.k && b.dataset.side === l.side && b.getAttribute('aria-label') === addName(l, inB(l)) && txt(b) === (inB(l) ? 'Added' : 'Add') && w.getComputedStyle(b).minHeight === '44px'; })
           && !!ab && !!fb && /^(Add|In the builder:) the /.test(ab.getAttribute('aria-label') || '') && (ab.getAttribute('aria-label') || '').includes(what) && fb.getAttribute('aria-label') === 'Finish ' + what && !c.querySelector('[data-pb-lock], [data-pb-turn], [data-pb-reset]'),
           `${lab}, ${g.id}: the ${t.id} card does not show its legs, each with its own 44px Add named for it, and Add to builder and Finish named for ${what}`);
+        /* (app v112) the reversed tags: Value on each of its legs that is a Value pick (the preferred list, worked
+           out here: qualOwn's pref) and on no other, no thin edge or no edge anywhere; and under it, where it holds
+           legs that are not Value picks, the line saying so, and where it holds a total, the line saying why */
+        if (c) { const bad = [];
+          t.legs.forEach((l, i) => { const mk = lis[i] ? [...lis[i].querySelectorAll('i.pb-valmark')] : [], val = prefOf.has(legId(l));
+            if (mk.length !== (val ? 1 : 0) || (val && (txt(mk[0]) !== 'Value' || !mk[0].closest('.nm small')))) bad.push(`${l.name} ${l.label} ${val ? 'is a Value pick and is not marked Value' : 'is not a Value pick and is marked Value'}`); });
+          if (OLD_TAG.test(txt(c)) || c.querySelector('.pb-thinmark')) bad.push('the card still says thin edge or no edge: ' + (txt(c).match(/.{0,40}(thin[ -]edge|no edge).{0,30}/i) || [''])[0]);
+          const nT = t.legs.filter(l => thinOf.has(legId(l))).length, nM = t.legs.filter(l => mktOf.has(legId(l))).length;
+          const lines = [...c.querySelectorAll('p.pb-thin')].filter(p => !p.classList.contains('pb-espnline') && !p.classList.contains('sp-upd')).map(txt);
+          const want = [...(nT ? [`${nT === 1 ? 'One leg is not a Value pick: the model rates it' : nT + ' legs are not Value picks: the model rates them'} at or above the book's price, but `] : []),
+            ...(nM ? [`${nM === 1 ? 'The game total is' : nM + ' game totals are'} at the book’s own chance with its margin out, so ${nM === 1 ? 'it is not a Value pick: it is' : 'they are not Value picks: they are'} here because this game’s other legs do not make a parlay of this size.`] : [])];
+          if (lines.length !== want.length || !lines.every((x, i) => i < (nT ? 1 : 0) ? x.startsWith(want[i]) && /not 3 points above/.test(x) : x === want[i])) bad.push(`the lines under it read ${JSON.stringify(lines)}, where ${nT} legs not Value picks and ${nM} totals want ${JSON.stringify(want)}`);
+          chk(!bad.length, `${lab}, ${g.id}: the ${t.id} card does not mark Value exactly its Value picks, or does not say which legs are not: ` + bad.slice(0, 3).join('; ')); }
         if (c) { const first = c.querySelector('.pb-nums > div'), qq = x => first && first.querySelector(x), F = t.fair, pc = v => (v * 100).toFixed(0) + '%', rule = c.querySelector('.pb-rule'), rest = c.cloneNode(true);
           rest.querySelectorAll('.pb-legs, .pb-thin, .pb-rule').forEach(x => x.remove());
           chk(!!first && first.classList.contains('pb-chance') && (F && F.p != null ? txt(qq('b')) === pc(F.p) && txt(qq('span')) === (F.est ? 'fair chance, est.' : 'fair chance') && txt(qq('small')) === `model says ${pc(t.corr)}`
@@ -1104,8 +1231,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
        player and one side and one total, none on a player the page's rules hold out (suggestable, which the
        audit's V6 holds to the sources), its chance and price the builder's own sums on its legs, each leg's own
        Add and the level's Add to builder and Finish; or why it is empty. So the smoke holds at any hour,
-       between a Thursday, Sunday or Monday night game's lock and its kickoff too */
-    const holdLocked = (lab, g) => { const lockOwn = etKick(g) - 2 * 3600e3, el = spOf(g.id), lk = el && el.querySelector('[data-sp-phase]'), v = w.eval('spShown')(g), gl = `${lab}, ${g.id}`;
+       between a Thursday, Sunday or Monday night game's lock and its kickoff too. (app v112) A game at its lock is
+       always on the tab by the night rule (its night's morning has come, and every night before it has kicked
+       off); one the rule worked out here hides is held to be off the tab, and its set is not built for it */
+    const holdLocked = (lab, g, vis = true) => { if (!vis) { hiddenHeld(lab, g); return 0; }
+      const lockOwn = etKick(g) - 2 * 3600e3, el = spOf(g.id), lk = el && el.querySelector('[data-sp-phase]'), v = w.eval('spShown')(g), gl = `${lab}, ${g.id}`;
       chk(!!el && !!lk && v.phase === 'locked' && lk.dataset.spPhase === (v.own ? 'own' : 'locked') && txt(lk).startsWith(`Locked since ${etSay(lockOwn)}, 2 hours before kickoff`),
         `${gl}: past its lock the set is not drawn as locked since ${etSay(lockOwn)}: ${v.phase} ${lk ? lk.dataset.spPhase + ' ' + txt(lk) : 'no set drawn'}`);
       chk(!!el && txt(el.querySelector('.sp-hd h3')) === `${TN[g.a] || g.a} at ${TN[g.h] || g.h}` && txt(el.querySelector('.sp-hd .pill')) === nightOf(g), `${gl}: the locked set is not headed with its game and its night`);
@@ -1123,7 +1253,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(!!c && lis.length === t.n && t.legs.every((l, i) => { const b = lis[i].querySelector('button[data-pb-leg]');
             return nmOk(lis[i].querySelector('.nm'), l) && !!b && b.dataset.pbLeg === l.key && +b.dataset.k === +l.k && b.dataset.side === l.side && b.getAttribute('aria-label') === addName(l, inB(l)) && w.getComputedStyle(b).minHeight === '44px'; })
           && !!c.querySelector(`[data-sp-add="${g.id}:${t.id}"]`) && (c.querySelector(`[data-pc-finish="sp|${g.id}:${t.id}"]`) || { getAttribute: () => '' }).getAttribute('aria-label') === 'Finish ' + what && !!p && +p.dataset.pbPay === t.dec,
-          `${gl}: the locked ${t.id} card does not show its legs, each with its own 44px Add named for it, its price, and Add to builder and Finish named for ${what}`); }
+          `${gl}: the locked ${t.id} card does not show its legs, each with its own 44px Add named for it, its price, and Add to builder and Finish named for ${what}`);
+        /* (app v112) Value on each locked leg that was a Value pick when it was taken (kept thin false, no total) and on no other */
+        chk(!!c && t.legs.every((l, i) => { const mk = lis[i] ? [...lis[i].querySelectorAll('i.pb-valmark')] : [], val = l.thin === false && !l.market; return mk.length === (val ? 1 : 0) && (!val || txt(mk[0]) === 'Value'); }) && !OLD_TAG.test(txt(c)),
+          `${gl}: the locked ${t.id} card does not mark Value exactly the legs kept as Value picks, or still says thin edge or no edge`); }
       return built; };
     /* the page's own cut of a long list (each list to 60 for a set: the likeliest half and the best-paying
        half), worked out here so Safe is held to the legs its search was given */
@@ -1132,12 +1265,43 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const openSp = async () => { tabBtn('suggest').click(); await wait(80); };
     const openPb = async () => { tabBtn('parlay').click(); await wait(40); };
     const primeHere = () => w.eval('pbGames()').filter(primeOwn);
-    const holdSets = async lab => { await openSp(); const G = primeHere(); let n = 0;
-      chk(w.eval('spGames()').map(g => g.id).join() === G.map(g => g.id).join() && [...spPanel.querySelectorAll('.sp-game[data-sp-game]')].map(x => x.dataset.spGame).join() === G.map(g => g.id).join(),
-        `${lab}: Suggest Parlays does not set out exactly the week's Thursday, Sunday and Monday night games still to come (${G.map(g => g.id).join(', ') || 'none'}): ` + [...spPanel.querySelectorAll('.sp-game[data-sp-game]')].map(x => x.dataset.spGame).join(', '));
-      for (const g of G) n += holdSet(lab, g);
-      if (!G.length) chk(/^No Thursday, Sunday or Monday night game of week \d+ is still to kick off\./.test(txt(d.getElementById('spSets'))), `${lab}: with no prime-time game to come Suggest Parlays does not say so: ` + txt(d.getElementById('spSets')).slice(0, 120));
+    /* (app v112) the night the tab sets out now, by the rule worked out here (nightOwn) on the page's clock */
+    const shownHere = () => nightOwn(primeHere(), w.eval('S').sched, w.eval('Date.now()'));
+    /* every prime-time game of the week still to come is the page's spGames (the record takes them all); the tab
+       sets out the next night's alone once its morning has come, and says when where it has not; each game's set
+       held to the rules, and as drawn where it is shown */
+    const holdSets = async lab => { await openSp(); const G = primeHere(), N = shownHere(), on = N.on.map(g => g.id); let n = 0;
+      const drawnIds = [...spPanel.querySelectorAll('.sp-game[data-sp-game]')].map(x => x.dataset.spGame);
+      chk(w.eval('spGames()').map(g => g.id).join() === G.map(g => g.id).join(), `${lab}: the page's prime-time games (spGames) are not the week's Thursday, Sunday and Monday night games still to come (${G.map(g => g.id).join(', ') || 'none'}): ` + w.eval('spGames()').map(g => g.id).join(', '));
+      chk(drawnIds.join() === on.join() && w.eval('spOn()').map(g => g.id).join() === on.join(),
+        `${lab}: Suggested Parlays does not set out exactly the next prime-time night's games once its morning has come (${on.join(', ') || (N.games.length ? 'none until ' + isoOwn(N.open) + ', then ' + N.games.map(g => g.id).join(', ') : 'none')}): ` + (drawnIds.join(', ') || 'none drawn'));
+      { const wh = waitHeld(d, N, w.eval('S').sched, TN); chk(!wh, `${lab}: the wait line for the next night is not as the rule has it: ` + wh); }
+      /* a game the rule hides, on the tab as it is: no card, leg or button of it, and none of its levels finished */
+      const hid = G.filter(g => !on.includes(g.id));
+      for (const g of hid) hiddenHeld(lab, g);
+      if (!G.length) chk(/^No Thursday, Sunday or Monday night game of week \d+ is still to kick off\./.test(txt(d.getElementById('spSets'))), `${lab}: with no prime-time game to come Suggested Parlays does not say so: ` + txt(d.getElementById('spSets')).slice(0, 120));
+      /* no word of the retired tags on the tab */
+      const noOld = how => chk(!OLD_TAG.test(txt(d.getElementById('spSets'))) && !OLD_TAG.test(txt(d.getElementById('spHead'))) && !spPanel.querySelector('.pb-thinmark'), `${lab}${how}: Suggested Parlays still says thin edge or no edge: ` + (txt(spPanel).match(/.{0,60}(thin[ -]edge|no edge).{0,40}/i) || [''])[0]);
+      noOld('');
+      /* then every prime-time game's set held to the rules and as drawn, its cards, legs, Adds, Finish, Value marks,
+         the lines under a level, the fair chance first and its rule, at every hour as before the night rule: where
+         the rule hides a game now, the tab's one question of which games it sets out (spOn) is stood in by every
+         prime-time game for these checks (its own slot, put back whatever happens), the rule itself held above on
+         the tab as it is */
+      if (!hid.length || w.eval('typeof spOn') !== 'function') { for (const g of G) n += holdSet(lab, g, on.includes(g.id)); return n; }
+      w.__spOnHold = w.eval('spOn');
+      try { w.eval('spOn=function(){ return spGames(); }; SP_SHOWN=null; renderSp()'); await wait(40);
+        chk([...spPanel.querySelectorAll('.sp-game[data-sp-game]')].map(x => x.dataset.spGame).join() === G.map(g => g.id).join(), `${lab}: with spOn stood in by every prime-time game the tab does not draw them all (${G.map(g => g.id).join(', ')})`);
+        for (const g of G) n += holdSet(lab, g, true);
+        noOld(', every prime-time game drawn');
+        console.log(`  (${lab}: ${hid.map(g => g.id).join(', ')} not on the tab by the night rule now: spOn stood in for ${hid.length === 1 ? 'its' : 'their'} cards' checks)`); }
+      finally { w.eval('spOn=window.__spOnHold; delete window.__spOnHold; SP_SHOWN=null; renderSp()'); await wait(20); }
       return n; };
+    /* spOn stood in by every prime-time game (all) or put back: the one place the tab asks which games it sets out,
+       so a check that needs the cards of a game the night rule hides (the rule itself held on the published week and
+       on made-up games at clocks of their own) may stand it in */
+    const SP_ON_REAL = w.eval('typeof spOn') === 'function' ? w.eval('spOn') : null;
+    const standOn = all => { w.__spOnReal = SP_ON_REAL; w.eval(all ? 'spOn=function(){ return spGames(); }' : 'spOn=window.__spOnReal'); w.eval('SP_SHOWN=null; renderSp()'); };
     holdSetF = holdSet;
     if (!games.length) chk(/no game is left|nothing left to build from/.test(txt(panel)), 'with no game to come the panel does not say so: ' + txt(panel).slice(0, 160));
     else {
@@ -1178,18 +1342,24 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       hold('one game');
       d.querySelector('#pbPanel [data-pb-games="all"]').click(); await wait(20);
 
-      /* ---- Suggest Parlays (#suggest, app v111, the owner's calls of 16 October 2026), on the week as it is
+      /* ---- Suggested Parlays (#suggest, app v111, the owner's calls of 16 October 2026), on the week as it is
          published: its own tab after Props, headed with the record and its Refresh odds, a set of four parlays
          for each game of the week still to come that kicks off on a Thursday, Sunday or Monday at or after
          7:00 pm Eastern (worked out here on its own, primeOwn), each its own game's legs alone, and the Elo
          picks at its foot ---- */
       { await openSp();
-        chk(!d.getElementById('tab-suggest').hidden && d.getElementById('tab-parlay').hidden && w.location.hash === '#suggest' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Suggest Parlays',
-          'the Suggest Parlays tab did not open, or did not become the address #suggest');
+        chk(!d.getElementById('tab-suggest').hidden && d.getElementById('tab-parlay').hidden && w.location.hash === '#suggest' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Suggested Parlays',
+          'the Suggested Parlays tab did not open, or did not become the address #suggest');
         const card = d.getElementById('spCard'), head = d.getElementById('spHead'), sb = head && head.querySelector('[data-espn-refresh="week"]'), sst = sb && d.getElementById(sb.getAttribute('aria-describedby'));
         chk(!!spPanel && d.getElementById('tab-suggest').firstElementChild === spPanel && !!card && card.firstElementChild === head && head.nextElementSibling === d.getElementById('spSets') && card.lastElementChild === d.getElementById('pbElo')
-          && txt(head.querySelector('h2')) === 'Suggest Parlays' && !!head.querySelector('#spRec') && !!sb && w.getComputedStyle(sb).minHeight === '44px' && !!sst && sst.getAttribute('aria-live') === 'polite',
-          'Suggest Parlays is not its heading (the record, a 44px Refresh odds with its status line), the sets and the Elo picks at its foot');
+          && txt(head.querySelector('h2')) === 'Suggested Parlays' && !!head.querySelector('#spRec') && !!sb && w.getComputedStyle(sb).minHeight === '44px' && !!sst && sst.getAttribute('aria-live') === 'polite',
+          'Suggested Parlays is not its heading (the record, a 44px Refresh odds with its status line), the sets and the Elo picks at its foot');
+        /* its lead says one night is shown at a time, and what a leg marked Value is (app v112), market + form named
+           where the Elo tab is on the page (the page's formSig: window.eloLoaded a function) */
+        chk(txt(head.querySelector('.pb-lead')).includes('One night is shown at a time: the next night’s set goes up at 6:00 AM ET the morning after the night game before it.')
+          && txt(head.querySelector('.pb-lead')).includes('A leg marked Value is one of the model’s best: it rates it at least 3 points above the chance its price implies'
+            + (typeof w.eloLoaded === 'function' ? ', and on a player’s line market + form (the book’s chance moved by his Elo rating) agrees.' : '.')),
+          'the lead of Suggested Parlays does not say one night is shown at a time, or what a leg marked Value is: ' + txt(head.querySelector('.pb-lead')).slice(0, 200));
         /* the prime-time rule on made-up rows: Thursday, Sunday and Monday at or after 7:00 pm Eastern; not a
            Saturday night, a Sunday or Thanksgiving day game, a Monday at 6:59 pm, or a Friday (Christmas) night */
         const rule = w.eval('spPrime'), rows = [['2026-10-15', '20:15', true], ['2026-10-18', '20:20', true], ['2026-10-19', '19:00', true], ['2026-10-19', '18:59', false], ['2026-10-17', '20:00', false],
@@ -1197,7 +1367,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const wrong = rows.filter(([dd, tt, want]) => rule({ d: dd, t: tt }) !== want || primeOwn({ d: dd, t: tt }) !== want), sch = Sx.sched.filter(g => rule(g) !== primeOwn(g));
         chk(!wrong.length && !sch.length, 'the page\'s prime-time rule is not a Thursday, Sunday or Monday kickoff at or after 7:00 pm Eastern: ' + wrong.map(x => x.join(' ')).concat(sch.slice(0, 3).map(g => g.id + ' ' + g.d + ' ' + g.t)).join(', '));
         const n = await holdSets('this week, as published');
-        console.log(`  (Suggest Parlays on the published week: ${primeHere().map(g => g.id).join(', ') || 'no prime-time game to come'}, ${n} levels built)`);
+        { const N = shownHere(); console.log(`  (Suggested Parlays on the published week: ${primeHere().map(g => g.id).join(', ') || 'no prime-time game to come'}, ${N.on.length ? N.on.map(g => g.id).join(', ') + ' on the tab' : N.games.length ? 'none on the tab until ' + isoOwn(N.open) : 'none on the tab'}, ${n} levels built)`); }
         await openPb(); }
       /* made-up lines on every starter (each a few points off his own projection) and a price on
          every other total, so the tiers are built on any day of the week; then Add to builder and
@@ -1316,14 +1486,17 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             'with no DraftKings ids in the payload (baked before them) the levels\' lines or a game page\'s hands are not what a made-up id on every leg gives: ' + JSON.stringify({ same: keys(p4) === k0, noId: p4.noId, lostHand: hand0.filter(l => !hand4.has(keyOf(l))).map(keyOf).slice(0, 3) }));
           await setDk(DK0); } }
       /* Game total alone, as the owner ticked it: every level the priced totals make legs for is
-         built of totals only, each marked no edge, and the list is the totals, each marked no edge */
+         built of totals only, and the list is the totals, each under Other lines and unmarked (a total is never
+         a Value pick: app v112), the Value picks' heading saying there is none */
       { const keepK = JSON.stringify(U().k); for (const k of KINDS) U().k[k] = k === 'total'; w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40);
         const nT = new Set(w.eval('pbPool(pbGames())').mkt.map(l => l.gid)).size, rT = w.eval('getPbTiers()');
         hold('made-up lines, Game total alone');
         chk((nT >= 2 || games.length < 3) && rT.tiers.every(x => x.n > nT ? !x.legs : (!!x.legs && x.legs.every(l => l.market && l.stat === 'total') && x.mkt === x.n)),
           `with only Game total ticked, a level the totals make legs for was not built of totals alone (${nT} totals priced): ` + rT.tiers.map(x => x.why || x.legs.map(l => l.label).join('+')).join(' / '));
-        chk([...panel.querySelectorAll('ol.pb-top li')].every(li => /no edge/.test(txt(li)) && /\|game\|total$/.test((li.querySelector('[data-pb-leg]') || { dataset: {} }).dataset.pbLeg || '')),
-          'with only Game total ticked, a line on the list is not a game total marked no edge');
+        { const lis = [...panel.querySelectorAll('ol.pb-top li')];
+          chk(lis.every(li => !li.querySelector('.pb-valmark') && li.dataset.pbGrp === 'other' && !!li.closest('ol.pb-top[data-pb-sec="other"]') && !OLD_TAG.test(txt(li)) && /\|game\|total$/.test((li.querySelector('[data-pb-leg]') || { dataset: {} }).dataset.pbLeg || ''))
+            && (!lis.length || (!!panel.querySelector('[data-pb-novalue]') && !panel.querySelector('ol.pb-top[data-pb-sec="value"]'))),
+            'with only Game total ticked, a line on the list is not a game total under Other lines, unmarked, or the Value picks\' heading does not say there is none'); }
         Object.assign(U().k, JSON.parse(keepK)); w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40); }
       /* a line's own Add on the list: exactly that leg into the builder by the builder's own path (so it is
          priced as the builder prices it), the button Added and named to take it off, the focus kept on it
@@ -1355,7 +1528,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         w.eval('SP_CACHE=new Map(); PB_CACHE=new Map(); PB_TOP_CACHE=new Map()'); return moved; })();
       if (planted) console.log(`  (${planted.map(x => x.g.id).join(', ')} made a Sunday night game, ${planted[0].g.d}, for the sets' checks on made-up lines: ${planted[0].why})`);
       const builtSp = await holdSets('made-up lines');
-      const spGame = primeHere().find(g => (w.eval('spSet')(g.id).tiers || []).some(t => t.legs && t.n >= 3)) || null;
+      /* a set with a level of three legs or more, for the checks of a set's Add, the Bet amount, Add to builder and
+         Finish: on the tab by the night rule where one is; where the night rule hides every such set now (the hours
+         between a night's kickoff and the next night's morning), spOn stood in so those checks still run */
+      const has3 = g => (w.eval('spSet')(g.id).tiers || []).some(t => t.legs && t.n >= 3), onNow = shownHere().on.map(g => g.id);
+      let spGame = primeHere().filter(g => onNow.includes(g.id)).find(has3) || null, spStood = false;
+      if (!spGame) { spGame = primeHere().find(has3) || null;
+        if (spGame) { standOn(true); spStood = true; console.log(`  (${spGame.id}'s set is not on the tab by the night rule now (${onNow.join(', ') || 'none shown'}): spOn stood in for the checks of a set's Add, the Bet amount, Add to builder and Finish)`); } }
       const t = spGame ? w.eval('spSet')(spGame.id).tiers.filter(x => x.legs).slice(-1)[0] : null, fid = t ? `${spGame.id}:${t.id}` : null;
       chk(!!t, `with made-up lines on every starter no prime-time game's set has a level of three legs or more (${builtSp} levels built)`);
       /* a leg's own Add in a set, as on the list: that one leg, by the builder's own path */
@@ -1514,16 +1693,27 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           w.eval(`(function(){ const k=${keepDk}; if(k===null) delete PAY.dk; else PAY.dk=k; S.parlay=${keepP2}; save(); renderParlay(); })()`); await wait(40); }
         await openPb(); }
       w.eval(`S.stake=${JSON.stringify(stake0)}; save(); renderParlay()`); await wait(40);
-      /* a game that kicks off leaves the list, every tier and Suggest Parlays, without a reload: the first
-         game to come, and the last prime-time game */
+      if (spStood) standOn(false);
+      /* a game that kicks off leaves the list, every tier and Suggested Parlays, without a reload: the first
+         game to come, and the last prime-time game. Each is first seen there before its kickoff, so its leaving is
+         not taken from a tab that never drew it: the prime-time game on Suggested Parlays, where the night rule
+         hides it now with the tab's one question of which games it sets out (spOn) stood in by every prime-time
+         game (its own slot, put back whatever happens) */
       { const sp1 = primeHere().slice(-1)[0];
         for (const g0 of [w.eval('pbGames()')[0], sp1].filter(Boolean)) { const k0 = w.eval('kickoff')(g0).getTime(), D0 = w.Date, shift = k0 + 60e3 - D0.now();
-          w.Date = class extends D0 { constructor(...a) { if (a.length) super(...a); else super(D0.now() + shift); } static now() { return D0.now() + shift; } };
-          w.eval('renderParlay(); renderSp()'); await wait(40);
-          chk(!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`) && w.eval('getPbTiers()').tiers.every(x => !x.legs || x.legs.every(l => l.gid !== g0.id))
-            && ![...panel.querySelectorAll('ol.pb-top [data-pb-leg]')].some(b => b.dataset.pbLeg.startsWith(g0.id + '|')) && !spOf(g0.id) && !w.eval('spGames()').some(g => g.id === g0.id),
-            `${g0.id}, kicked off, is still on the Parlay Builder's list of games, in a tier, on the Top 100 lines or on Suggest Parlays`);
-          w.Date = D0; w.eval('renderParlay(); renderSp()'); await wait(40); } }
+          const isSp = !!sp1 && g0.id === sp1.id, stood = isSp && w.eval('typeof spOn') === 'function' && !shownHere().on.some(x => x.id === g0.id);
+          if (stood) { w.__spOnKick = w.eval('spOn'); w.eval('spOn=function(){ return spGames(); }'); }
+          try {
+            w.eval('SP_SHOWN=null; renderParlay(); renderSp()'); await wait(40);
+            chk(!!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`) && (!isSp || (!!spOf(g0.id) && w.eval('spGames()').some(g => g.id === g0.id))),
+              `${g0.id}, still to kick off, is not on the Parlay Builder's list of games${isSp ? ' or on Suggested Parlays' + (stood ? ' (spOn stood in by every prime-time game)' : '') : ''}, so its leaving at kickoff cannot be seen`);
+            w.Date = class extends D0 { constructor(...a) { if (a.length) super(...a); else super(D0.now() + shift); } static now() { return D0.now() + shift; } };
+            w.eval('renderParlay(); renderSp()'); await wait(40);
+            chk(!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`) && w.eval('getPbTiers()').tiers.every(x => !x.legs || x.legs.every(l => l.gid !== g0.id))
+              && ![...panel.querySelectorAll('ol.pb-top [data-pb-leg]')].some(b => b.dataset.pbLeg.startsWith(g0.id + '|')) && !spOf(g0.id) && !w.eval('spGames()').some(g => g.id === g0.id),
+              `${g0.id}, kicked off, is still on the Parlay Builder's list of games, in a tier, on the Top 100 lines or on Suggested Parlays`); }
+          finally { w.Date = D0; if (stood) w.eval('spOn=window.__spOnKick; delete window.__spOnKick');
+            w.eval('SP_SHOWN=null; renderParlay(); renderSp()'); await wait(40); } } }
       if (planted) { for (const x of planted) Object.assign(x.g, x.was); w.eval('SP_CACHE=new Map()'); }
       w.eval(`(function(){ const k=${keepPay}, cw=currentWeek(); if(k.m) PAY.mkt[String(cw)]=k.m; else delete PAY.mkt[String(cw)];
         S.sched.forEach((g,i)=>{ g.tov=k.t[i][0]; g.tou=k.t[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
@@ -1536,10 +1726,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; renderParlay(); renderSp();'); await wait(20);
     chk(/regular season is over: no game is left/.test(txt(panel)) && !panel.querySelector('[data-pb-mix], .pb-tier, ol.pb-top, [data-pb-leg], [data-pc-finish]')
       && /regular season is over: no Thursday, Sunday or Monday night game is left/.test(txt(d.getElementById('spSets'))) && !d.querySelector('#spSets .sp-game, #spSets [data-pc-finish]'),
-      'with the season over the Parlay Builder or Suggest Parlays does not say so, or still offers something: ' + txt(panel).slice(0, 120) + ' / ' + txt(d.getElementById('spSets')).slice(0, 120));
+      'with the season over the Parlay Builder or Suggested Parlays does not say so, or still offers something: ' + txt(panel).slice(0, 120) + ' / ' + txt(d.getElementById('spSets')).slice(0, 120));
     w.eval('seasonOver=function(){ return false; }; renderParlay(); renderSp();'); await wait(20);
     chk(/has kicked off, so there is nothing left to build from/.test(txt(panel)) && /^No Thursday, Sunday or Monday night game of week \d+ is still to kick off\./.test(txt(d.getElementById('spSets'))),
-      'with every game of the week under way the Parlay Builder or Suggest Parlays does not say so: ' + txt(panel).slice(0, 120) + ' / ' + txt(d.getElementById('spSets')).slice(0, 120));
+      'with every game of the week under way the Parlay Builder or Suggested Parlays does not say so: ' + txt(panel).slice(0, 120) + ' / ' + txt(d.getElementById('spSets')).slice(0, 120));
     w.eval('pbGames=window.__pbKeep[0]; seasonOver=window.__pbKeep[1]; renderParlay(); renderSp();'); await wait(20); }
   /* every level shows a parlay of its size: ten made-up games standing in for the week's (pbGames
      and pricedLegs stood in for, so this holds on any day, the off-season included), only Spread
@@ -1616,7 +1806,56 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     w.eval(`(function(){ const k=${keepDk4}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
     w.eval('pbGames=window.__pbKeep4[0]; pricedLegs=window.__pbKeep4[1]; PB_CACHE=new Map(); PB_TOP_CACHE=new Map();'); delete w.__pbKeep4; delete w.__pb4;
     Sx.ui.pb = JSON.parse(keepU); w.eval('renderParlay()'); await wait(20); }
-  /* ---- Suggest Parlays on made-up games of its own (pbGames and pricedLegs stood in for, the games laid into
+  /* ---- each bet once, and the totals after every thin-edge line (app v112, round two: the owner, 17 October 2026,
+     "why there are several instances of this where it's only a half yard difference?"), on made-up games of their
+     own: pbGames and pricedLegs stood in for, and the Elo tab's market + form (window.eloAltP) on the made-up players
+     alone, agreeing, so their lines can be Value picks; each in its own slot and put back whatever happens, so this
+     holds on any day, the off-season included. The first game: a quarterback's main Over 224.5 passing yards and his
+     225+ rung, the same bet (the rung left out); another's whole-number main Over 225 and his 226+ rung, two bets (both
+     kept); a receiver's main Over 49.5 receiving yards that misses the 3-point bar and his 50+ rung that clears it (the
+     rung left out: the main line is among the qualifying legs, if in the other part); a back's main Under 59.5 and his
+     60+ rung (both kept: the main line is an Under); a rung of a receiver with no main line (kept, a thin-edge line);
+     and its game total priced on its over alone at +120, put at 50%, expected to make $0.10 on $1, more than either
+     thin-edge line (it comes after both). The second game: a 225+ rung of the first quarterback's id (kept: another
+     game). The order, worked out here by hand on each line's chance times its decimal price less 1: the Value picks
+     at +$0.15, +$0.13, +$0.11, +$0.10, +$0.09 and +$0.07, the thin-edge lines at +$0.03 and +$0.01, then the total */
+  if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepU5 = JSON.stringify(Sx.ui.pb), wk5 = String(cw).padStart(2, '0');
+    const O1 = { id: `2099_${wk5}_A40_H40`, w: cw, a: 'A40', h: 'H40', d: '2099-01-02', t: '13:00', tot: 47.5, tov: 120 }, O2 = { id: `2099_${wk5}_A41_H41`, w: cw, a: 'A41', h: 'H41', d: '2099-01-02', t: '16:25' };
+    const pl = (g, pid, grp, stat, k, main, side, p, price, label) => ({ key: `${g.id}|${pid}|${stat}`, gid: g.id, pid, stat, k, side, main, p, price, src: 'real', mu: null,
+      name: 'Once ' + pid.split('-')[1], pos: grp, grp, team: g.h, opp: g.a, week: cw, label });
+    const L5 = [pl(O1, 'ONCE-QB1', 'QB', 'passing_yards', 224.5, true, 'over', 0.6, -110, 'Over 224.5 passing yards'), pl(O1, 'ONCE-QB1', 'QB', 'passing_yards', 225, false, 'over', 0.6, -113, '225+ passing yards'),
+      pl(O1, 'ONCE-QB2', 'QB', 'passing_yards', 225, true, 'over', 0.58, -105, 'Over 225 passing yards'), pl(O1, 'ONCE-QB2', 'QB', 'passing_yards', 226, false, 'over', 0.57, -108, '226+ passing yards'),
+      pl(O1, 'ONCE-WR1', 'WR', 'receiving_yards', 49.5, true, 'over', 0.54, -110, 'Over 49.5 receiving yards'), pl(O1, 'ONCE-WR1', 'WR', 'receiving_yards', 50, false, 'over', 0.61, -110, '50+ receiving yards'),
+      pl(O1, 'ONCE-RB1', 'RB', 'rushing_yards', 59.5, true, 'under', 0.58, -110, 'Under 59.5 rushing yards'), pl(O1, 'ONCE-RB1', 'RB', 'rushing_yards', 60, false, 'over', 0.57, -110, '60+ rushing yards'),
+      pl(O1, 'ONCE-WR2', 'WR', 'receiving_yards', 70, false, 'over', 0.53, -110, '70+ receiving yards'), pl(O2, 'ONCE-QB1', 'QB', 'passing_yards', 225, false, 'over', 0.56, -110, '225+ passing yards')];
+    const WANT5 = [[O1, 'ONCE-QB1', 'passing_yards', 'over', 224.5], [O1, 'ONCE-QB2', 'passing_yards', 'over', 225], [O1, 'ONCE-RB1', 'rushing_yards', 'under', 59.5], [O1, 'ONCE-QB2', 'passing_yards', 'over', 226],
+      [O1, 'ONCE-RB1', 'rushing_yards', 'over', 60], [O2, 'ONCE-QB1', 'passing_yards', 'over', 225], [O1, 'ONCE-WR1', 'receiving_yards', 'over', 49.5], [O1, 'ONCE-WR2', 'receiving_yards', 'over', 70],
+      [O1, 'game', 'total', 'over', 47.5]].map(([g, pid, st, sd, k]) => `${g.id}|${pid}|${st} ${sd} ${k}`).join(', ');
+    /* each main line's book prices, as the price pull writes them (PAY.mkt: a real main line's price is DraftKings'
+       on its line there), over and under, so each has its two-sided fair chance; taken out after */
+    const MK5 = [['ONCE-QB1', 'passing_yards', 224.5, -110, -110], ['ONCE-QB2', 'passing_yards', 225, -105, -115], ['ONCE-WR1', 'receiving_yards', 49.5, -110, -110], ['ONCE-RB1', 'rushing_yards', 59.5, -110, -110]];
+    const cwS = JSON.stringify(String(cw)), keep5 = { alt: w.eloAltP, dk: w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), hadMkt: w.eval('!!PAY.mkt'), hadW: w.eval(`!!(PAY.mkt&&PAY.mkt[${cwS}])`) };
+    w.__pbKeep5 = w.eval('[pbGames, pricedLegs]'); w.__pb5 = { G: [O1, O2], L: L5 };
+    try {
+      w.eval('pbGames=function(){ return window.__pb5.G; }; pricedLegs=function(games){ return window.__pb5.L.filter(l=>(games||[]).some(g=>g.id===l.gid)).map(l=>({...l})); };');
+      if (typeof keep5.alt === 'function') w.eloAltP = (pid, ...a) => /^ONCE-/.test(String(pid)) ? 0.9 : keep5.alt(pid, ...a);
+      w.eval(`(function(){ PAY.mkt=PAY.mkt||{}; const M=(PAY.mkt[${cwS}]=PAY.mkt[${cwS}]||{}); for(const [pid,st,line,over,under] of ${JSON.stringify(MK5)}) ((M[pid]??={})[st])={line,over,under,n:10,g:${JSON.stringify(O1.id)}}; })()`);
+      const tl = w.eval('totalLeg')(O1, 'over');
+      w.eval(`PAY.dk=${JSON.stringify(dkFixture([...L5, tl].filter(Boolean), new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'ONCE'))}`);
+      Sx.ui.pb = { k: { ml: true, ats: true, total: true, over: true, under: true }, off: [], gx: false };
+      w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(40);
+      const n = holdTop('made-up games, each bet once and the totals last', Sx.ui.pb, [O1, O2]);
+      const got = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')].map(r => { const b = r.querySelector('button[data-pb-leg]'); return b ? `${b.dataset.pbLeg} ${b.dataset.side} ${b.dataset.k}` : 'no leg'; }).join(', ');
+      const grps = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')].map(r => r.dataset.pbGrp).join();
+      chk(!!tl && tl.src === 'real' && tl.p === 0.5 && n === 9 && got === WANT5 && grps === 'value,value,value,value,value,value,other,other,other' && w.eval('getPbTop()').same === 2,
+        `made-up games: the Top 100 lines are not the six Value picks, the two thin-edge lines and then the one-sided total at +120, with the two rungs that are the same bet as a half-point main Over left out (${w.eval('getPbTop()').same} counted left out): ` + got + ' / ' + grps);
+    } finally {
+      w.eval('pbGames=window.__pbKeep5[0]; pricedLegs=window.__pbKeep5[1]'); delete w.__pbKeep5; delete w.__pb5;
+      w.eloAltP = keep5.alt; w.eval(`(function(){ const k=${keep5.dk}; if(k===null) delete PAY.dk; else PAY.dk=k;
+        const M=PAY.mkt&&PAY.mkt[${cwS}]; if(M) for(const [pid] of ${JSON.stringify(MK5)}) delete M[pid];
+        if(!${keep5.hadW}&&PAY.mkt) delete PAY.mkt[${cwS}]; if(!${keep5.hadMkt}) delete PAY.mkt; })()`);
+      Sx.ui.pb = JSON.parse(keepU5); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(20); } }
+  /* ---- Suggested Parlays on made-up games of its own (pbGames and pricedLegs stood in for, the games laid into
      the schedule and taken out after, so this holds on any day, the off-season included): a Thursday night
      game with one line, a Saturday night and a Sunday afternoon game (not prime time, never set out), a Sunday
      night game with ten lines, and a Monday 7:00 pm game with two. The Sunday night game's set is held to the
@@ -1627,7 +1866,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      that level alone built again and said so, kept in the browser, and the record's own replacement taking
      over from the page's; with no entry, the set the page builds once, kept in the browser outside S so a
      reload shows it again, which a press and new prices do not change; and once the game kicks off, its set
-     off the tab and its kept copy pruned at the next write ---- */
+     off the tab and its kept copy pruned at the next write. Those checks need every made-up game's cards, so the
+     tab's one question of which games it sets out (spOn) is stood in by every prime-time game; then, put back, the
+     night rule itself (app v112, the owner's call of 17 October 2026: "just show the next night game dont stack the
+     mondy night game until monday morning") on the same games, at the page's clock moved to each turn, worked out
+     here on its own (nightOwn): the Thursday alone first; from its kickoff to 6:00 AM Eastern the next morning a
+     line naming the Sunday night game and when its set goes up, then that set; from its kickoff to Monday 6:00 AM
+     the Monday night games (a doubleheader, together), then theirs; the morning's turn redrawing an open tab by its
+     own half-minute look (pbWatchTick, on spState's on= token); and a hidden game's level never finished ---- */
   if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), SEAS = w.eval('SEASON'), KK = 'props_sp_lock_v1', D0 = w.Date, fmt = w.eval('fmtML'), isG = w.eval('isGameLeg');
     const wk2 = String(cw).padStart(2, '0'), mk = (n, d0, t0) => ({ id: `2099_${wk2}_A${n}_H${n}`, w: cw, a: 'A' + n, h: 'H' + n, d: d0, t: t0 });
     const Q = mk(21, '2099-01-01', '20:15'), X = mk(22, '2099-01-03', '20:00'), Y = mk(23, '2099-01-04', '13:00'), P = mk(20, '2099-01-04', '20:20'), Z = mk(24, '2099-01-05', '19:00'), G2 = [Q, X, Y, P, Z];
@@ -1640,7 +1886,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       { ...leg(P, 'team:H20', 'TEAM', P.h, 'ml', 0, 0.6, -130, 'To win') }, { ...leg(P, 'team:H20', 'TEAM', P.h, 'ats', -3.5, 0.55, -110, 'To cover -3.5') }];
     const LQ = [leg(Q, 'team:H21', 'TEAM', Q.h, 'ml', 0, 0.58, -120, 'To win')], LZ = [leg(Z, 'team:H24', 'TEAM', Z.h, 'ml', 0, 0.6, -125, 'To win'), leg(Z, 'Z24-WR1', 'WR', Z.h, 'receiving_yards', 60, 0.58, -105, '60+ rec yds')];
     const LALL = [...LP, ...LQ, ...LZ], byTag = tag => LP.find(l => l.pid === tag && l.stat !== 'ats');
-    const keep = { pb: w.eval('[pbGames, pricedLegs]'), dk: w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), rec: w.eval('PB_REC'), done: w.eval('PB_REC_DONE'), key: w.localStorage.getItem(KK), parlay: w.eval('JSON.stringify(S.parlay)'), hash: w.location.hash };
+    const keep = { pb: w.eval('[pbGames, pricedLegs]'), dk: w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), rec: w.eval('PB_REC'), done: w.eval('PB_REC_DONE'), key: w.localStorage.getItem(KK), parlay: w.eval('JSON.stringify(S.parlay)'), hash: w.location.hash,
+      on: w.eval('typeof spOn') === 'function' ? w.eval('spOn') : null };
     /* the made-up lines as pricedLegs gives a week's: a player the page holds out (suggestable: V6's rule, which
        pricedLegs keeps) is left off, as the real one leaves him */
     w.__sp2 = { G: G2, L: LALL };
@@ -1656,10 +1903,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       : `${c.dataset.pbTier}: ${[...c.querySelectorAll('.pb-legs li .nm')].map(nmOf).join(' + ')} | ${txt(c.querySelector('.pb-chance b'))} | ${txt(c.querySelector('.pb-chance small'))} | ${txt(c.querySelector('.pb-nums > div:nth-child(2) b'))}`).join(' / ') : null; };
     const kickP = etKick(P), lockP = kickP - 2 * 3600e3, isoS = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
     try {
+      /* every prime-time game's set on the tab, whatever the night rule says (it is held below, put back) */
+      if (keep.on) w.eval('spOn=function(){ return spGames(); }');
       w.eval('renderParlay()'); tabBtn('suggest').click(); await wait(80);
       /* live: the prime-time games alone, in kickoff order, each held to the rules; Safe worked out in full */
       const ids = [...d.querySelectorAll('#spPanel .sp-game[data-sp-game]')].map(x => x.dataset.spGame);
-      chk(ids.join() === [Q, P, Z].map(g => g.id).join(), 'made-up games: Suggest Parlays does not set out the Thursday night, Sunday night and Monday 7:00 pm games alone, in kickoff order (not the Saturday night or the Sunday afternoon game): ' + ids.join(', '));
+      chk(ids.join() === [Q, P, Z].map(g => g.id).join(), 'made-up games: Suggested Parlays (every prime-time game set out) does not set out the Thursday night, Sunday night and Monday 7:00 pm games alone, in kickoff order (not the Saturday night or the Sunday afternoon game): ' + ids.join(', '));
       const nP = holdSetF('a made-up Sunday night game', P); holdSetF('a made-up Thursday night game with one line', Q); holdSetF('a made-up Monday night game with two lines', Z);
       chk(nP === 4, `a made-up Sunday night game with ten lines does not build all four levels: ${nP}`);
       const live = drawn(P);
@@ -1681,13 +1930,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const takenAt = isoS(lockP - 3 * 3600e3), REC = { entries: {}, prime: { [`${SEAS}|${wk2}|${isoS(kickP)}|${P.id}`]: { season: SEAS, week: cw, gid: P.id, away: P.a, home: P.h, kickoff: isoS(kickP), lock: isoS(lockP), baked_at: takenAt, taken_at: takenAt, pool: {},
         tiers: [T('safe', 'Safe', 2, 0, [wr2, rb2], 0.4, 0.36, 3.3), T('med', 'Medium', 3, 0.25, [wr1, rb1, te1], 0.22, 0.19, 6.8), T('aggr', 'Aggressive', 4, 0.12, [tML, wr2, rb2, wr3], 0.13, 0.1, 12.5),
           { id: 'xtrm', label: 'Extreme', n: 5, floor: 0.05, why: 'No 5-leg parlay in this game.' }] } } };
+      /* the Safe's two legs kept as Value picks (thin false, as the record keeps a preferred leg), the rest thin: the
+         locked card marks Value on those two alone (app v112) */
+      { const sf = REC.prime[Object.keys(REC.prime)[0]].tiers[0]; sf.legs.forEach(l => { l.thin = false; }); sf.thin = 0; }
       const mlOwn = dec => dec >= 2 ? '+' + Math.round((dec - 1) * 100) : '-' + Math.round(100 / (dec - 1)), pc = v => (v * 100).toFixed(0) + '%';
       /* (a level's chance and price drawn as the builder's own sums on its legs as kept, in the builder's order,
          which Add to builder then pays; its fair chance the one kept) */
       const keptSums = t => { const L = w.eval('pbOrder')(t.legs.map(l => ({ ...l, key: `${l.gid}|${l.pid}|${l.stat}` })));
         return { p: w.eval('parlayProb')(L).corr, dec: w.eval('parlayDec')(L.map(l => ({ leg: l, ml: l.price }))) }; };
       const recDrawn = R => R.prime[Object.keys(R.prime)[0]].tiers.map(t => { if (!t.legs) return `${t.id} none: ${t.why}`; const k = keptSums(t);
-        return `${t.id}: ` + [...t.legs].sort((a, b) => a.name.localeCompare(b.name)).map(l => l.name + ' ' + l.label + (l.thin ? ' thin edge' : '')).join(' + ') + ` | ${pc(t.fair)} | model says ${pc(k.p)} | ${mlOwn(k.dec)}`; }).join(' / ');
+        return `${t.id}: ` + [...t.legs].sort((a, b) => a.name.localeCompare(b.name)).map(l => l.name + ' ' + l.label + (l.thin === false && !l.market ? ' Value' : '')).join(' + ') + ` | ${pc(t.fair)} | model says ${pc(k.p)} | ${mlOwn(k.dec)}`; }).join(' / ');
       const setRec = R => { w.__spRec = R; w.eval('PB_REC=window.__spRec; PB_REC_DONE=true'); };
       setRec(REC); w.eval('SP_KEEP=null'); w.localStorage.removeItem(KK); await redraw();
       const lockedTxt = () => txt(elOf(P).querySelector('[data-sp-phase]'));
@@ -1741,9 +1993,61 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       at(etKick(Z) - 2 * 3600e3 + 60e3); w.eval('SP_KEEP=null'); await redraw();
       const k4 = kept();
       chk(!elOf(P) && phaseOf(Z) === 'own' && !!k4 && !k4.games[P.id] && !!k4.games[Z.id], 'once the made-up Sunday night game kicked off, its set is still on the tab or its kept copy was not pruned at the next write: ' + JSON.stringify(k4 && Object.keys(k4.games || {})));
+      /* ---- the night rule on the made-up games, spOn put back (app v112). The rule's own copy (nightOwn) gives
+         what the tab sets out at each moment; the hand values beside it (the dates and 6:00 AM Eastern, EST in
+         January, 11:00 UTC) hold that copy to what the fixture is for. A Monday doubleheader's second game (A25 at
+         H25, 8:30 pm, no lines) is laid in for the Monday night, and taken out after ---- */
+      if (keep.on) {
+        w.__spOnBack = keep.on; w.eval('spOn=window.__spOnBack; SP_KEEP=null; SP_SHOWN=null'); w.localStorage.removeItem(KK); setRec({ entries: {} });
+        const Z2 = mk(25, '2099-01-05', '20:30'), TNm = w.eval('TEAM_NAMES'), ids = a => a.map(g => g.id).join();
+        const N_at = ms => nightOwn(G2.filter(g => etKick(g) > ms), Sx.sched, ms);
+        const onTab = () => [...d.querySelectorAll('#spSets .sp-game[data-sp-game]')].map(x => x.dataset.spGame).join();
+        const view = async ms => { at(ms); w.eval('SP_CACHE=new Map(); renderParlay()'); await wait(30); };
+        /* the tab at that moment against the rule: the games set out (drawn, spOn and spState's on= token), the wait
+           line where the night is not up, and no level of a game off the tab finished (spTier) */
+        const held = (what, ms, hand) => { const N = N_at(ms), want = ids(N.on), wh = waitHeld(d, N, Sx.sched, TNm), st = String(w.eval('spState()')).split(',');
+          chk(ids(hand.on) === want && (!hand.next || ids(N.games) === ids(hand.next)) && (hand.open === undefined || N.open === hand.open) && (!hand.say || waitOwn(N, Sx.sched, TNm) === hand.say),
+            `made-up games, ${what}: the smoke's own night rule gives ${want || 'none'} on the tab (next ${ids(N.games)}, up ${N.open != null ? isoOwn(N.open) : 'at once'}), not what the fixture is for: ${ids(hand.on) || 'none'}${hand.open !== undefined ? ' up ' + isoOwn(hand.open) : ''}`);
+          const hid = G2.filter(g => etKick(g) > ms && primeOwn(g) && !N.on.includes(g)).flatMap(g => PB_TIERS_OWN.filter(id => w.eval('spTier')(`${g.id}:${id}`) != null).map(id => g.id + ':' + id));
+          chk(onTab() === want && ids(w.eval('spOn()')) === want && st.includes('on=' + N.on.map(g => g.id).join('+')) && !wh && !hid.length,
+            `made-up games, ${what}: Suggested Parlays sets out ${onTab() || 'none'} (spOn ${ids(w.eval('spOn()')) || 'none'}), where the night rule sets out ${want || 'none'}${wh ? '; ' + wh : ''}${hid.length ? '; a level of a game off the tab can be finished: ' + hid.join(', ') : ''}`);
+          return N; };
+        const UTC6 = day => Date.parse(`${day}T11:00:00Z`);
+        try {
+          /* the Thursday first: up from the morning after the last prime-time night before it on the schedule (the
+             season's own last one; at once if the schedule has none), the Sunday and Monday games off the tab */
+          const N0 = N_at(D0.now()), oQ = N0.open;
+          if (oQ != null) { await view(oQ - 60e3); held('a minute before the Thursday night game\'s morning', oQ - 60e3, { on: [], next: [Q] }); }
+          await view((oQ != null ? oQ : D0.now()) + 60e3); held('from the Thursday night game\'s morning', (oQ != null ? oQ : D0.now()) + 60e3, { on: [Q], next: [Q] });
+          chk(!elOf(P) && !elOf(Z), 'made-up games: with the Thursday night game up, the Sunday or Monday night game is on the tab too (stacked)');
+          /* from Thursday's kickoff: a line naming Sunday night's game, up Friday 6:00 AM Eastern; its set not built */
+          const kQ = etKick(Q) + 60e3; await view(kQ);
+          held('after the Thursday night game kicked off', kQ, { on: [], next: [P], open: UTC6('2099-01-02'), say: 'Next up: Sunday night, A20 at H20. Its set goes up Fri 6:00 AM ET, the morning after Thursday night’s game.' });
+          chk(!w.eval('[...SP_CACHE.keys()]').some(k => k.startsWith(P.id + '|')) && (!w.PARLAY_CARD || w.PARLAY_CARD.fromTier('sp', `${P.id}:aggr`) == null),
+            'made-up games: before its morning the Sunday night game\'s set was built for the tab, or the parlay card finishes one of its levels');
+          /* the morning's turn on an open tab: drawn a minute before, the page's own half-minute look a minute after
+             finds what it shows stale (only the on= token moved) and redraws it with the Sunday night set */
+          const oP = UTC6('2099-01-02'); await view(oP - 60e3); held('a minute before Friday 6:00 AM', oP - 60e3, { on: [], next: [P] });
+          chk(w.eval('pbStale()') === false, 'made-up games: a tab just drawn a minute before Friday 6:00 AM is already stale, so the morning\'s turn cannot be told by the on= token');
+          at(oP + 60e3); const stale = w.eval('pbStale()'); w.pbWatchTick(); await wait(40);
+          held('Friday 6:00 AM, redrawn by the page\'s own look', oP + 60e3, { on: [P], next: [P] });
+          chk(stale === true && phaseOf(P) === 'live' && !!d.querySelector(`#spSets [data-pc-finish="sp|${P.id}:aggr"]`) && !!w.eval('spTier')(`${P.id}:aggr`),
+            `made-up games: at Friday 6:00 AM an open tab is not redrawn by its own look with the Sunday night game's live set (stale ${stale}, ${phaseOf(P)})`);
+          /* the Monday doubleheader: both games off the tab until Monday 6:00 AM, named together, then both set out in
+             kickoff order */
+          G2.push(Z2); Sx.sched.push(Z2);
+          const kP = etKick(P) + 60e3; await view(kP);
+          held('after the Sunday night game kicked off', kP, { on: [], next: [Z, Z2], open: UTC6('2099-01-05'), say: 'Next up: Monday night, A24 at H24 and A25 at H25. Their sets go up Mon 6:00 AM ET, the morning after Sunday night’s game.' });
+          const oZ = UTC6('2099-01-05'); await view(oZ + 60e3);
+          held('from Monday 6:00 AM', oZ + 60e3, { on: [Z, Z2], next: [Z, Z2] });
+          chk(phaseOf(Z) === 'live' && phaseOf(Z2) === 'live' && !!w.eval('spTier')(`${Z.id}:safe`), 'made-up games: from Monday 6:00 AM the Monday doubleheader\'s two sets are not both live on the tab, or the first one\'s Safe cannot be finished');
+        } finally {
+          const i2 = G2.indexOf(Z2); if (i2 >= 0) G2.splice(i2, 1); const j2 = Sx.sched.indexOf(Z2); if (j2 >= 0) Sx.sched.splice(j2, 1); delete w.__spOnBack; }
+      }
     } finally {
       w.Date = D0; Sx.sched.splice(Sx.sched.length - G2.length, G2.length);
       w.__spKeep = keep; w.eval('pbGames=window.__spKeep.pb[0]; pricedLegs=window.__spKeep.pb[1]; PB_REC=window.__spKeep.rec; PB_REC_DONE=window.__spKeep.done; SP_KEEP=null');
+      if (keep.on) w.eval('spOn=window.__spKeep.on');
       w.eval(`(function(){ const k=${keep.dk}; if(k===null) delete PAY.dk; else PAY.dk=k; S.parlay=${keep.parlay}; save(); })()`);
       if (keep.key == null) w.localStorage.removeItem(KK); else w.localStorage.setItem(KK, keep.key);
       delete w.__sp2; delete w.__spKeep; delete w.__spRec;
@@ -1860,8 +2164,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       && new Set(nc.map(c => c.url)).size === nc.length,
       'the Game snapshot does not read the news job\'s files once each, no-store, as the page loads, or still reads stats.json: ' + nc.map(c => `${c.method} ${c.url} ${c.cache}`).join(' | ')); }
 
-  /* the tabs keep their addresses: #suggest is Suggest Parlays (app v111), #parlay the Parlay Builder, #xparlays X Parlays, #bets the X Bet Log */
-  for (const [hash, id, label] of [['#suggest', 'tab-suggest', 'Suggest Parlays'], ['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
+  /* the tabs keep their addresses: #suggest is Suggested Parlays (app v111; named so since app v112), #parlay the Parlay Builder, #xparlays X Parlays, #bets the X Bet Log */
+  for (const [hash, id, label] of [['#suggest', 'tab-suggest', 'Suggested Parlays'], ['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
     w.location.hash = '#pickems'; await wait(30); w.location.hash = hash; await wait(60);
     chk(!d.getElementById(id).hidden && d.getElementById('tab-pickems').hidden && txt(d.querySelector(`#tabs button[aria-selected="true"]`)) === label, `the old address ${hash} does not open ${label}`); }
   /* the Season Tracker's old address, where news/ sent every visitor, and the board's own old one, #pickems
@@ -2162,7 +2466,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk([t2, t3].every(t => { const fs = t.legs.map(fo); return fs.every(Boolean) ? !!t.fair && Math.abs(t.fair.p - w.eval('parlayProb')(t.legs.map((l, i) => ({ ...l, p: fs[i].p }))).corr) < 1e-12 && t.fair.est === fs.some(f => f.est) : !!t.fair && t.fair.p === null; }),
             'an Elo pick\'s fair chance is not parlayProb on its legs at their fair chances: ' + [t2, t3].map(t => JSON.stringify(t.fair)).join(' / ')); }
         w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40);
-        /* the Elo picks are the last section of Suggest Parlays since app v111, still on the Parlay Builder's ticks */
+        /* the Elo picks are the last section of Suggested Parlays since app v111, still on the Parlay Builder's ticks */
         const card = d.querySelector('#spPanel #spCard > #pbElo:last-child');
         /* each card leads with the fair chance, the Elo's beside it; the leg far off the market is flagged, and only it */
         { const pc = v => (v * 100).toFixed(0) + '%', fo = fairRule(w);
@@ -2172,9 +2476,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           const far = card ? [...card.querySelectorAll('[data-pb-tier="elo3"] [data-pb-far]')].map(txt) : [], f1 = fo(legs[1]);
           chk(far.length === 1 && !!f1 && far[0] === `model 90% · market ${Math.round(f1.p * 100)}%${f1.est ? ' est.' : ''}: far off the market` && !!card && !card.querySelector('[data-pb-tier="elo2"] [data-pb-far]'),
             'the Elo pick\'s leg far off the market is not flagged, or another is: ' + far.join(' / ')); }
+        /* (app v112) an Elo pick's legs are chosen on the Elo matchup, not the edge: none is marked Value, and neither
+           retired tag is drawn */
+        chk(!!card && !card.querySelector('.pb-valmark, .pb-thinmark') && !OLD_TAG.test(txt(card)), 'an Elo pick\'s leg is marked Value, or the Elo picks still say thin edge or no edge: ' + (card ? [...card.querySelectorAll('.pb-valmark')].length + ' marked' : 'no card'));
         /* a leg carries a shield where its player is ranked this season, and only there */
         const wantBadges = [t2, t3].flatMap(t => t.legs).filter(l => eloP.players[l.pid] && eloP.players[l.pid].rank).length;
-        chk(!!card && /Elo picks/.test(txt(card.querySelector('h3'))) && card.querySelectorAll('.pb-tier').length === 2 && card.querySelectorAll('.pb-legs .pe-badge').length === wantBadges, `the Elo picks are not the last section of Suggest Parlays, or their legs' shields are wrong: ${card ? card.querySelectorAll('.pb-legs .pe-badge').length : 'no section'} for ${wantBadges}`);
+        chk(!!card && /Elo picks/.test(txt(card.querySelector('h3'))) && card.querySelectorAll('.pb-tier').length === 2 && card.querySelectorAll('.pb-legs .pe-badge').length === wantBadges, `the Elo picks are not the last section of Suggested Parlays, or their legs' shields are wrong: ${card ? card.querySelectorAll('.pb-legs .pe-badge').length : 'no section'} for ${wantBadges}`);
         /* each leg of a pick has its own Add (44px, named for the leg), as a set's legs do */
         chk(!!card && [t2, t3].every(t => { const lis = [...card.querySelectorAll(`[data-pb-tier="${t.id}"] .pb-legs li`)];
             return lis.length === t.legs.length && t.legs.every((l, i) => { const b = lis[i].querySelector('button[data-pb-leg]');
@@ -2467,8 +2774,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           S.ui.game = g.id; w.eval('renderGame()'); await wait(20);
           const gb = d.querySelector(`#gameView [data-espn-refresh="${g.id}"]`), gs = d.querySelector(`#gameView [data-espn-status="${g.id}"]`);
           chk(!!gb && w.getComputedStyle(gb).minHeight === '44px' && !!gs && txt(gs) === pub, `${g.id}'s page has no 44px Refresh odds button for the game, with its status line`);
-          /* and the builder's own, and Suggest Parlays', each with its status line saying the same (app v111) */
-          for (const [where, nm2] of [['#parlayBody', 'the builder'], ['#spPanel', 'Suggest Parlays']]) { const b2 = d.querySelector(`${where} [data-espn-refresh="week"]`), s2 = b2 && d.getElementById(b2.getAttribute('aria-describedby'));
+          /* and the builder's own, and Suggested Parlays', each with its status line saying the same (app v111) */
+          for (const [where, nm2] of [['#parlayBody', 'the builder'], ['#spPanel', 'Suggested Parlays']]) { const b2 = d.querySelector(`${where} [data-espn-refresh="week"]`), s2 = b2 && d.getElementById(b2.getAttribute('aria-describedby'));
             chk(!!b2 && w.getComputedStyle(b2).minHeight === '44px' && !!s2 && d.querySelector(where).contains(s2) && s2.getAttribute('aria-live') === 'polite' && txt(s2) === pub, `${nm2} has no 44px Refresh odds of its own with its status line saying the published prices: ${s2 ? txt(s2) : 'none'}`); }
           S.ui.game = null; w.eval('closeGameModal()'); }
         /* the game's own player prices out: every player leg is priced from the read or by the model */
@@ -2538,12 +2845,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           `the press did not read ${g.id}'s stand-in lines on one scoreboard and plain no-store requests: ${net.log.map(x => x.url.replace(/https:\/\/[^/]+/, '')).slice(0, 4).join(' ')}`);
         { const st = txt(d.querySelector('#pbPanel [data-espn-status="week"]')), exp = `DraftKings’ lines from ESPN, read ${clk(Date.parse(blk && blk.at))}: player prices estimated from the line` + (gN ? '; 1 game has no player lines posted yet' : '') + (gF ? '; couldn’t read DraftKings’ player lines for 1 game: its published player prices stand' : '') + '.';
           chk(st === exp, `the status line after the press reads "${st}", not "${exp}"`);
-          chk(['#parlayBody', '#spPanel'].every(x => txt(d.querySelector(`${x} [data-espn-status="week"]`)) === exp), 'after the press the builder\'s or Suggest Parlays\' own status line does not say what the Parlay Builder\'s says: ' + ['#parlayBody', '#spPanel'].map(x => txt(d.querySelector(`${x} [data-espn-status="week"]`))).join(' / '));
+          chk(['#parlayBody', '#spPanel'].every(x => txt(d.querySelector(`${x} [data-espn-status="week"]`)) === exp), 'after the press the builder\'s or Suggested Parlays\' own status line does not say what the Parlay Builder\'s says: ' + ['#parlayBody', '#spPanel'].map(x => txt(d.querySelector(`${x} [data-espn-status="week"]`))).join(' / '));
           chk(d.activeElement && d.activeElement.dataset && d.activeElement.dataset.espnRefresh === 'week', 'the focus did not stay on the Refresh odds button through the redraw'); }
         /* what the page shows right after the press, before any cache of the smoke's own is dropped: the Top 100
            lines, the levels the engine builds and each prime-time game's set are what a build from nothing gives
            on the read (the press drops the caches they stand on), and the list draws est. on exactly its lines
-           priced from the read. An Elo pick (#pbElo, at the foot of Suggest Parlays since app v111) may take a
+           priced from the read. An Elo pick (#pbElo, at the foot of Suggested Parlays since app v111) may take a
            leg priced from the read; one planted there, of the page's own card, is drawn est. and is no line of
            the list's (counted with them, the smoke failed on the 15 October 2026 payload, when an Elo pick took
            Jayden Daniels' read line) */
@@ -2551,7 +2858,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           const topSig = r => JSON.stringify(r.rows.map(l => [l.key, l.side, l.k, l.price, l.src]));
           const estList = () => [...d.querySelectorAll('#pbPanel ol.pb-top li .pb-tc i.est')].length, estElo = () => [...d.querySelectorAll('#pbElo .pb-tier .pb-legs li .pr i.est')].length;
           const el = d.getElementById('pbElo'), nL0 = estList(), nE0 = estElo(); let html = '', pl = null;
-          chk(!!el && !!el.closest('#spPanel'), 'Suggest Parlays has no Elo picks section (#pbElo) after the press');
+          chk(!!el && !!el.closest('#spPanel'), 'Suggested Parlays has no Elo picks section (#pbElo) after the press');
           if (el) { const leg = { key: g.id + '|00-SMOKE-ELO|receptions', gid: g.id, week: g.w, pid: '00-SMOKE-ELO', name: 'Planted Elopick', label: 'Over 3.5 receptions', stat: 'receptions', k: 3.5, side: 'over', main: true,
               p: 0.5, price: 120, src: 'dkline', grp: 'WR', pos: 'WR', team: g.h, opp: g.a, espn: { at: new w.Date(w.Date.now()).toISOString(), fair: 0.45, tested: true, listed: true } };
             try { html = w.eval('pbTierCard')({ id: 'elo2', label: 'Elo 2-leg', legs: [leg], p: 0.5, dec: 2.2, fair: null }, { chance: 0.5, chanceBy: 'Elo chance', by: 'Elo', kind: 'elo', add: 'data-pb-elo-add="elo2"', legP: l => l.p }); } catch (e) { html = ''; }
@@ -3061,9 +3368,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         /* the Top 100 lines on these ticks mark est. exactly their lines priced from DraftKings' line, each titled
            with what it is priced from, and say once what such a line is and when the lines were read; and where
            the game is a prime-time one whose set is still live (before its lock, 2 hours before kickoff, by the
-           page's clock: a locked set no press changes), its set on Suggest Parlays takes a leg from the read only
+           page's clock: a locked set no press changes), its set on Suggested Parlays takes a leg from the read only
            by the rule (a tested kind at the formula's own price), marked est. on its card */
         const spLive = primeOwn(g) && w.eval('Date.now()') < etKick(g) - 2 * 3600e3;
+        /* (app v112) a set the night rule hides now (nightOwn) has no cards on the tab: spOn stood in for these checks
+           of its cards and its parlay card, put back after them */
+        const spHid = spLive && typeof w.eval('spOn') === 'function' && !nightOwn(w.eval('pbGames()').filter(primeOwn), S.sched, w.eval('Date.now()')).on.some(x => x.id === g.id);
+        if (spHid) { w.__spOnPress = w.eval('spOn'); w.eval('spOn=function(){ return spGames(); }'); console.log(`  (${g.id}'s set is not on the tab by the night rule now: spOn stood in for the checks of its cards after the press)`); }
         const pnl = d.getElementById('pbPanel'), tops = [...pnl.querySelectorAll('ol.pb-top > li.pb-trow')], topR = w.eval('getPbTop()').rows;
         chk(tops.length === topR.length && topR.some(l => l.src === 'dkline') && topR.every((l, i) => { const m = tops[i].querySelector('.pb-tc i.est'); return l.src === 'dkline' ? !!m && m.title.startsWith('DraftKings’ line from ESPN, read ') : !m; }),
           'the Top 100 lines do not mark est. exactly their lines priced from DraftKings\' line read by Refresh odds, with what each is priced from: ' + topR.filter(l => l.src === 'dkline').length + ' of ' + tops.length);
@@ -3093,6 +3404,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           const row1 = d.querySelector('#parlayBody tr.legrow'), cell = row1 && row1.querySelectorAll('td')[4], lf = row1 && row1.querySelector('.legfair'), f = fairRule(w)(dl);
           chk(!!cell && txt(cell) === `${fmt(dl.price)} est.` && !!lf && !!f && txt(lf) === `fair ${(f.p * 100).toFixed(0)}% est.` && txt(d.querySelector('#parlayBody [data-espn-read]')).startsWith('DraftKings’ lines as read '),
             `the builder does not mark ${dl.name} ${dl.label} est. with its estimated fair chance, or say when the lines were read: "${txt(cell)}" "${txt(lf)}"`); }
+        if (spHid) { w.eval('spOn=window.__spOnPress'); delete w.__spOnPress; }
         if (dkPress === undefined) delete P.dk; else P.dk = dkPress;
         w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); renderParlay()'); await wait(20);
         /* a game's page reads that game alone */
@@ -3224,7 +3536,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         `a saved amount of ${JSON.stringify(saved)} came back as ${JSON.stringify(R.w.eval('S').stake)}, the Bet amount box showing ${box ? JSON.stringify(box.value) : 'nothing'}, not ${shown}`); }
     R.w.close(); }
 
-  /* ---- the suggestions record at the top of Suggest Parlays (app v111): props/data/suggest_ledger.json, asked
+  /* ---- the suggestions record at the top of Suggested Parlays (app v111): props/data/suggest_ledger.json, asked
      for beside the payload once a load with no-store; its `prime` map, each Thursday, Sunday and Monday night
      game's set as the site locked it, graded after the game, is drawn as a line a level, as the ELO Ratings
      tab's record bar: won-lost and units on $1, then what is pending; the all-games panel's `entries` from
@@ -3263,7 +3575,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const el = R.d.getElementById('spRec'), real = LEDGER_REAL ? JSON.parse(LEDGER_REAL) : null, isMap = v => !!v && typeof v === 'object' && !Array.isArray(v);
       const shown = !!real && (isMap(real.entries) || isMap(real.prime));
       chk(!!el && !!R.d.querySelector('#spCard #spHead #spRec') && (shown ? !el.hidden && /The record starts with this change, 16 October 2026: each Thursday, Sunday and Monday night game’s four parlays as the site locked them, 2 hours before kickoff/.test(txt(el)) : el.hidden),
-        'the real suggestions record is not drawn at the top of Suggest Parlays, saying it starts with this change: ' + txt(el));
+        'the real suggestions record is not drawn at the top of Suggested Parlays, saying it starts with this change: ' + txt(el));
       if (shown) chk(lineShown(R.d) === lineWant(real), `the real record reads ${lineShown(R.d)}, not ${lineWant(real)}`);
       if (shown && R.d.querySelector('#spRec [data-sp-rec="safe"]')) chk(JSON.stringify(titlesShown(R.d)) === JSON.stringify(titlesWant(real)), `the real record's titles state ${JSON.stringify(titlesShown(R.d))}, where its grades give ${JSON.stringify(titlesWant(real))}`);
       chk(!R.timedOut && R.errs.length === 0 && !/NaN|undefined/.test(txt(el)) && !R.d.getElementById('pbRec'), 'the page threw, the record reads NaN, or the old record table is still drawn: ' + R.errs.join('; '));
@@ -3296,11 +3608,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       NG.w.close();
       for (const junk of [404, [], 5, 'junk', { how: 'x' }, { entries: [] }]) {
         const N = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#suggest', null, false, { ledger: junk }); await wait(300);
-        chk(!!N.d.getElementById('spRec') && N.d.getElementById('spRec').hidden && !txt(N.d.getElementById('spRec')) && N.errs.length === 0, `a record file that is not one (${JSON.stringify(junk)}) drew something on Suggest Parlays, or threw`);
+        chk(!!N.d.getElementById('spRec') && N.d.getElementById('spRec').hidden && !txt(N.d.getElementById('spRec')) && N.errs.length === 0, `a record file that is not one (${JSON.stringify(junk)}) drew something on Suggested Parlays, or threw`);
         N.w.close(); } } }
   /* ---- the set the page builds at a game's lock where the record has none, kept in this browser across a real
      reload (props_sp_lock_v1, outside S), on the week's own last prime-time game still to come, the page's clock
-     moved to five minutes after its lock; and a record that has the game's entry taking over from it ---- */
+     moved to five minutes after its lock; and a record that has the game's entry taking over from it. (app v112) At
+     its lock the game is on the tab by the night rule whatever the week (its night's 6:00 AM has passed, and every
+     prime-time night before it has kicked off), so the page builds its set; held so on the boot itself below ---- */
   { const g = w.eval('typeof spGames') === 'function' ? w.eval('spGames()').slice(-1)[0] : null, KK = 'props_sp_lock_v1';
     if (!g) console.log('  (no prime-time game to come: the set kept across a reload is held on the made-up games above, in one window)');
     else { const lockAt = etKick(g) - 2 * 3600e3 + 5 * 60e3, isoS = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -3309,6 +3623,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const phase = D => { const x = D.querySelector(`#spPanel .sp-game[data-sp-game="${g.id}"] [data-sp-phase]`); return x ? x.dataset.spPhase : null; };
       const A = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#suggest', null, false, { ledger: 404, seed: clock() }); await wait(400);
       const setA = setOf(A.d), keptA = A.w.localStorage.getItem(KK), vA = (() => { try { return JSON.parse(keptA); } catch (e) { return null; } })();
+      { const NA = nightOwn(A.w.eval('pbGames()').filter(primeOwn), A.w.eval('S').sched, A.w.eval('Date.now()'));
+        chk(NA.on.some(x => x.id === g.id) && A.w.eval('spOn()').some(x => x.id === g.id), `at ${g.id}'s lock the night rule (${NA.on.map(x => x.id).join(', ') || 'none'}) or the page (${A.w.eval('spOn()').map(x => x.id).join(', ') || 'none'}) does not set it out`); }
       chk(!A.timedOut && A.errs.length === 0 && phase(A.d) === 'own' && !!setA && !!vA && !!vA.games && !!vA.games[g.id] && vA.games[g.id].own === true && vA.games[g.id].kickoff === isoS(etKick(g)) && !JSON.stringify(A.w.eval('S')).includes(KK),
         `at ${g.id}'s lock with no record, the page did not build its set once and keep it in this browser outside S: ${phase(A.d)} ${keptA ? keptA.slice(0, 120) : 'nothing kept'}`);
       A.w.close();
