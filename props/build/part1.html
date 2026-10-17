@@ -375,7 +375,9 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pb-legs .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11.5px}
 .pb-legs .pr{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;text-align:right}
 .pb-legs .pr em{display:block;font-style:normal;font-size:11px;font-weight:500;color:var(--muted)}
-.pb-thinmark{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:0 6px;border-radius:999px;border:1px solid var(--gold);color:var(--ink-2);white-space:nowrap}
+/* app v112: a Value pick's tag, the one mark left on a leg (thin edge and no edge are gone): the gold filled, its
+   text dark on it in either look (#1A1A1A on the hub's #FFD166, 12.6:1; on the light page's #D39A1F, 6.9:1) */
+.pb-valmark{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:0 6px;border-radius:999px;background:var(--gold);color:#1A1A1A;white-space:nowrap}
 .pb-thin{margin:0;font-size:11.5px;color:var(--ink-2)}
 .pb-legs .pr .est{font-style:normal;font-size:10.5px;font-weight:500;color:var(--ink-2);margin-left:2px}
 .espn-read{color:var(--ink-2)}
@@ -396,7 +398,7 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 @media(max-width:1100px){ .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-nums{display:flex;flex-wrap:wrap} }
 @media(max-width:640px){ .card.pb{padding:16px 14px} .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:minmax(0,1fr)} .pb-lbl{min-width:0;flex-basis:100%} .pb-ctl{padding:12px} .pb-glist{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-seg{display:flex;width:100%} .pb-seg button{flex:1 1 auto;padding:8px 10px}
   .pb-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%} .pb-chip{border-radius:12px;padding:7px 10px;line-height:1.25} .pb-chip small{display:block} .pb-chip span{min-width:0} }
-/* app v111: Suggest Parlays (each Thursday, Sunday and Monday night game's own set, its lock and the record bar)
+/* app v111: Suggested Parlays (each Thursday, Sunday and Monday night game's own set, its lock and the record bar)
    and the Parlay Builder's Top 100 lines; each leg's own Add, 44px */
 /* the Parlay Builder tab's own controls, at the top of it as they were, now 44px tall like every control on the
    tab: Build from, the games' All and None and their list's summary, and the Bet amount (its box's 1px border
@@ -430,7 +432,9 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pb-tc small{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .pb-tc .est{font-style:normal;font-size:10.5px;font-weight:500;color:var(--ink-2);margin-left:2px}
 .pb-trow .pb-legadd{grid-area:ad}
-.pb-trow[data-pb-grp="edge"]+.pb-trow[data-pb-grp="thin"]{border-top:2px solid var(--gold)}
+/* app v112: the Top 100 lines in two parts, each under its heading (Value picks, Other lines) */
+.pb-topsec{display:flex;align-items:center;gap:8px;margin:16px 0 2px;font-size:15px}
+.pb-topsub{margin:0 0 6px;font-size:12px}
 @media(max-width:1100px){ .pb-trow{grid-template-columns:26px minmax(0,1fr) auto;grid-template-areas:"rk nm ad" ". cs cs"} .pb-tcs{justify-content:start} .pb-tc{text-align:left} }
 @media(max-width:640px){ .pb-tcs{grid-template-columns:repeat(3,minmax(0,1fr));width:100%} }
 /* the parlay card: what it pays sits under the legs behind a divider, then the actions behind another */
@@ -523,7 +527,7 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
   </div>
   <nav role="tablist" id="tabs">
     <button role="tab" data-tab="slate" aria-selected="true">Games</button>
-    <button role="tab" data-tab="suggest">Suggest Parlays</button>
+    <button role="tab" data-tab="suggest">Suggested Parlays</button>
     <button role="tab" data-tab="parlay">Parlay Builder</button>
     <button role="tab" data-tab="track">Track Record</button>
     <button role="tab" data-tab="week">Weekly Update</button>

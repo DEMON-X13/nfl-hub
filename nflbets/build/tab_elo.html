@@ -45,7 +45,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-alt{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
 .pe-alt b{color:var(--ink-2);font-weight:600}
 .pe-altsum{margin:10px 0 0;font-size:12px;color:var(--ink-2)}
-/* Elo picks: the last section of Suggest Parlays (#pbElo, at the tab's foot since app v111), styled with its own tier cards */
+/* Elo picks: the last section of Suggested Parlays (#pbElo, at the tab's foot since app v111), styled with its own tier cards */
 /* mismatches: five bubbles over the Props game list, the rest in a window */
 .pe-mm{margin:0 0 16px}
 .pe-mm h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -783,7 +783,7 @@ function eloPicks(){
   }
   return {tiers,candidates:best.length,games:new Set(best.map(l=>l.gid)).size};
 }
-/* the Elo picks, as their own section at the foot of Suggest Parlays (app v111; until then the Parlay
+/* the Elo picks, as their own section at the foot of Suggested Parlays (app v111; until then the Parlay
    Builder's suggested parlays): built from the games and player sides ticked on the Parlay Builder tab, as
    they always were, each tier added to the builder, a leg at a time or whole, or finished as a card like
    the sets' own */

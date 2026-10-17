@@ -344,7 +344,7 @@ window.PARLAY_CARD=(function(){
       priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
       chance:q.pr.corr,chanceBy:'Model',fair:q.fair,stake:q.stake});
   }
-  /* from a level of Suggest Parlays (kind sp, id "<game id>:<level>": window.spTier, the level as the tab
+  /* from a level of Suggested Parlays (kind sp, id "<game id>:<level>": window.spTier, the level as the tab
      shows it, live or locked) or an Elo pick, on the amount its tier pays on: the Bet amount box, which is
      the builder's own stake (pbStake) */
   function fromTier(kind,id){
@@ -672,7 +672,7 @@ window.PARLAY_CARD=(function(){
     close();
     try{ if(typeof renderParlay==='function') renderParlay(); if(S.ui&&S.ui.game&&typeof renderGame==='function') renderGame(); }catch(e){}
     /* Finish went with the legs: the focus goes to the first control of the tab on the screen (the Parlay
-       Builder's choices, or Suggest Parlays' first Add to builder) */
+       Builder's choices, or Suggested Parlays' first Add to builder) */
     try{ const b=document.querySelector('main section:not([hidden]) [data-pb-mix]')||document.querySelector('main section:not([hidden]) [data-sp-add]')||document.querySelector('#pbPanel [data-pb-mix]'); if(b) b.focus(); }catch(e){}
   }
 
