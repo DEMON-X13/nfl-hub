@@ -4059,7 +4059,9 @@ setTimeout(async()=>{
         {id:'safe',label:'Safe',n:L.length,floor:0,legs:L,corr:0.4,indep:0.4,dec,thin:0},
         {id:'med',label:'Medium',n:3,floor:0.25,legs:L,corr:0.3,indep:0.3,dec:13.7,thin:0},
         {id:'aggr',label:'Aggressive',n:4,floor:0.12,why},{id:'xtrm',label:'Extreme',n:5,floor:0.05,why}]};
-      w.__pKeep=w.eval('[spGames, spSet]'); w.eval('spGames=function(){ return [window.__pG]; }; spSet=function(gid){ return gid===window.__pG.id?window.__pFix:null; };');
+      /* (app v112) spOn, the one place the tab asks which games it sets out (one night at a time), stood in too:
+         the made-up game is the night shown, whatever the real schedule's nights say */
+      w.__pKeep=w.eval('[spGames, spSet, spOn]'); w.eval('spGames=function(){ return [window.__pG]; }; spSet=function(gid){ return gid===window.__pG.id?window.__pFix:null; }; spOn=function(){ return [window.__pG]; };');
       const stab=d.getElementById('tab-suggest'), keepH=stab.hidden; stab.hidden=false;
       try{
       S.parlay={}; S.bookPrice=null; S.stake=20; F('renderParlay')();
@@ -4074,7 +4076,7 @@ setTimeout(async()=>{
         'the Bet amount box is not a dollar box (a number, the decimal keypad, $1 up in steps of $1) showing the amount: '+(b0?b0.outerHTML:'none'));
       chk(!!b0&&b0.closest('.pb-row')===panel.querySelector('.pb-ctl > .pb-row')&&((panel.querySelector('label[for="pbStake"]')||{}).textContent||'')==='Bet amount',
         'the Bet amount box is not the first of the Parlay Builder\'s controls, labelled Bet amount');
-      W.wording(/every parlay on Suggest Parlays pays on it/.test((d.getElementById('pbStakeHint')||{}).textContent||''),'the Bet amount box does not say the builder and every Suggest Parlays parlay use it');
+      W.wording(/every parlay on Suggested Parlays pays on it/.test((d.getElementById('pbStakeHint')||{}).textContent||''),'the Bet amount box does not say the builder and every Suggested Parlays parlay use it');
       chk(paysAll(20),'on the $20 to start, a level does not pay $20 times its price: '+paysTxt());
       if(b0){
         /* typed in the box: each entry as it is typed, then settled */
@@ -4115,7 +4117,7 @@ setTimeout(async()=>{
       { const t1=[...panel.querySelectorAll('[data-pb-win],[data-pb-ev]')].map(x=>x.textContent).join(); S.stake=77; F('renderParlay')();
         chk([...panel.querySelectorAll('[data-pb-win],[data-pb-ev]')].map(x=>x.textContent).join()===t1,'the Top 100 lines\' figures on $1 moved with the Bet amount'); }
       } finally {
-        stab.hidden=keepH; w.eval('spGames=window.__pKeep[0]; spSet=window.__pKeep[1];'); delete w.__pKeep; delete w.__pFix; delete w.__pG; }
+        stab.hidden=keepH; w.eval('spGames=window.__pKeep[0]; spSet=window.__pKeep[1]; spOn=window.__pKeep[2];'); delete w.__pKeep; delete w.__pFix; delete w.__pG; }
       S.parlay={}; S.stake=20; F('renderParlay')(); }
     /* the builder's one-tap amounts set the same amount, with a leg in the builder so What it pays is drawn */
     /* from an empty builder, so the box ticked is a new leg: one an earlier section left on would be
