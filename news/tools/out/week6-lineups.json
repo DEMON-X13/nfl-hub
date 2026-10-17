@@ -2706,7 +2706,7 @@
   },
   "WAS": {
    "kick": "2026-10-20T00:15Z",
-   "built_at": "2026-10-17T17:51:18.650Z",
+   "built_at": "2026-10-17T21:23:47.713Z",
    "units": {
     "qb": [
      {
@@ -2747,14 +2747,12 @@
      {
       "id": "00-0037256",
       "n": "Rachaad White",
-      "pos": "RB",
-      "q": "questionable: shoulder"
+      "pos": "RB"
      },
      {
       "id": "00-0033699",
       "n": "Austin Ekeler",
-      "pos": "RB",
-      "q": "questionable: chest"
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -2768,7 +2766,7 @@
       "id": "00-0035659",
       "n": "Terry McLaurin",
       "pos": "WR",
-      "q": "questionable: hamstring, not practising"
+      "q": "not practising: hamstring"
      },
      {
       "id": "00-0041040",
@@ -2802,8 +2800,7 @@
      {
       "id": "00-0034465",
       "n": "Jeremy Reaves",
-      "pos": "FS",
-      "q": "questionable: rib"
+      "pos": "FS"
      },
      {
       "id": "00-0033551",
@@ -2815,7 +2812,7 @@
   },
   "SF": {
    "kick": "2026-10-20T00:15Z",
-   "built_at": "2026-10-17T17:51:18.650Z",
+   "built_at": "2026-10-17T21:23:47.713Z",
    "units": {
     "qb": [
      {
@@ -2848,8 +2845,7 @@
      {
       "id": "00-0036256",
       "n": "Colton McKivitz",
-      "pos": "T",
-      "q": "questionable: illness"
+      "pos": "T"
      }
     ],
     "rb": [
