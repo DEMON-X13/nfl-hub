@@ -1,4 +1,4 @@
-/* The suggestions record: what Suggest Parlays said of each Thursday, Sunday and Monday night game before
+/* The suggestions record: what Suggested Parlays said of each Thursday, Sunday and Monday night game before
    it locked, frozen there, and what happened to it; and, before that, what the Parlay Builder's
    all-games panel said before each wave of kickoffs.
 
@@ -15,12 +15,14 @@
 
    prime (since app v111, 16 October 2026, the owner's call: "do a section for Thurs night, sun night, and
    monday night games ONLY ... do similar tracking/grading as ELO tracking"). Each prime-time game's own
-   four levels on the Suggest Parlays tab, Safe, Medium, Aggressive and Extreme, 2 to 5 legs from that game
+   four levels on the Suggested Parlays tab, Safe, Medium, Aggressive and Extreme, 2 to 5 legs from that game
    alone: a game kicking off on a Thursday, Sunday or Monday at or after 7:00 pm US Eastern (the page's
    spPrime, which the guard below works out again on its own from the kickoff). Taken from the published
    page itself: nflbets/index.html booted in jsdom on the payload the job has just baked, with the Elo files
    beside it (market + form decides which player legs qualify) and the window's clock at the run's time,
-   read by the page's own spGames, spSet and spTierOut, so the record holds exactly what the tab shows. Keyed
+   read by the page's own spGames, spSet and spTierOut, so the record holds exactly the sets the tab shows
+   (every prime-time game's, each taken from its first run, though since app v112 the tab sets out one night at
+   a time, from 6:00 AM Eastern the morning after the night before: spOn). Keyed
    season|week|kickoff|game id. A set LOCKS 2 hours before its kickoff (the owner's call, 16 October 2026:
    "can we have the ability to refresh odds up until 2 hours before the game before it locks?"; the page's
    spLockAt). While the lock is to come a run rewrites the entry whenever the set has changed (prices
@@ -72,7 +74,7 @@
    many won, the wins expected by the fair chance and by the model's (the sums of the chances the page
    showed; a parlay a push shortened counts on its full chance), how many had a fair chance, and the units
    on $1 (the payout less the stake; a push is 0). prime_summary counts each season's game and level once,
-   from the last key that holds it (a kickoff the league moved makes a new key), as the Suggest Parlays tab's
+   from the last key that holds it (a kickoff the league moved makes a new key), as the Suggested Parlays tab's
    record bar does (spRecSum in part3.js, the same rule, from the entries' own grades). summary counts the
    old entries' parlays once each: an entry was the whole week's panel, so the same level parlay (the same
    legs, in any order) frozen into every wave it outlived is counted from the last of them; `repeats` says
@@ -119,7 +121,7 @@ const TIERS = ['safe', 'med', 'aggr', 'xtrm'], LABELS = { safe: 'Safe', med: 'Me
    another time is refused) */
 const LOCK_MS = 2 * 3600e3;
 const HOW = 'The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each '
-  + 'Thursday, Sunday and Monday night game\'s four parlays on the Suggest Parlays tab (Safe, Medium, Aggressive, Extreme, every leg '
+  + 'Thursday, Sunday and Monday night game\'s four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg '
   + 'from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the '
   + 'set\'s lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before '
   + 'the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in '
@@ -224,7 +226,7 @@ async function ready(w, errs, payload) {
   if (w.eval('PB_TIERS').map(t => t[0] + ':' + t[1]).join() !== TIERS.map(id => id + ':' + LABELS[id]).join()) why.push("the page's levels are not the four this record keeps");
   const missing = ['spGames', 'spSet', 'spTierOut', 'spLockAt', 'spOutWhy', 'spRebuild', 'settleLeg', 'parlayDec', 'isGameLeg', 'kickoff']
     .filter(f => w.eval(`typeof ${f}`) !== 'function');
-  if (missing.length) why.push("the page has no Suggest Parlays sets to take (no " + missing.join(', ') + ')');
+  if (missing.length) why.push("the page has no Suggested Parlays sets to take (no " + missing.join(', ') + ')');
   else if (w.eval('SP_LOCK_MS') !== LOCK_MS) why.push('the page locks a set at another time than 2 hours before kickoff');
   return why;
 }

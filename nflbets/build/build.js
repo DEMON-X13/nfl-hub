@@ -223,7 +223,7 @@ for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 
 /* the builder's save, which every device turns into Finish: the button, its rule, its label; and
    each suggested tier's Add to builder and Finish, which the card answers */
 for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-sp-add="${g.id}:${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${o.fid||t.id}\"", 'function spTier(', 'function pbStake(', 'id="pbStake"', 'data-pb-pay="${t.dec}"'])
-  if (!part3.includes(need)) throw new Error("the builder's save or Suggest Parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
+  if (!part3.includes(need)) throw new Error("the builder's save or Suggested Parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
 CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
 for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "window.spTier(", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'", 'PAY.dk', 'function dkPlan(', 'function shareLink('])
   if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
@@ -234,7 +234,7 @@ for (const need of ['function parlayLegs', 'function parlayProb', 'function legP
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
 { const elo = rd('nflbets', 'build', 'tab_elo.html');
   if (!elo.includes("kind:'elo'") || !elo.includes('window.eloPicks=eloPicks;') || !elo.includes("getElementById('pbElo')"))
-    throw new Error("the Elo picks' tiers, their place on Suggest Parlays or window.eloPicks moved; the parlay card finishes an Elo pick on every device"); }
+    throw new Error("the Elo picks' tiers, their place on Suggested Parlays or window.eloPicks moved; the parlay card finishes an Elo pick on every device"); }
 /* X Parlays: X's parlays from the file, the whole of its tab, read only; a quiet line under the
    heading says when the file last changed them */
 const LIVE_SECTION = `<div class="card" id="lpCard">
@@ -300,7 +300,7 @@ const BET_INLINE = JSON.stringify(BET_APP).replace(/<\/script/gi, '<\\/script').
 const TABS = [
   ['pickems', 'Matchups'],
   ['slate', 'Props'],
-  ['suggest', 'Suggest Parlays'],
+  ['suggest', 'Suggested Parlays'],
   ['parlay', 'Parlay Builder'],
   ['xparlays', 'X Parlays'],
   ['ratings', 'Team Rankings', 'ratings'],
@@ -319,7 +319,7 @@ for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
 html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
 /* the Parlay Builder keeps the prop model's own section and its address, #parlay: the Top 100 lines and
-   the choices they are built from over the builder (app v111; Suggest Parlays, #suggest, is the prop model's
+   the choices they are built from over the builder (app v111; Suggested Parlays, #suggest, is the prop model's
    own section before it, each prime-time game's parlays and the Elo picks). X Parlays is a section of its own after it, #xparlays. The
    parlay card's window sits at the end of the page, outside every tab, over everything. */
 html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="pbPanel"></div>\n  <div id="parlayBody"></div>\n</section>',

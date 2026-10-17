@@ -11,7 +11,7 @@
  * Builder finishes a parlay as a card to download (nflbets/build/card.html), saved nowhere. There
  * is no owner, no sign-in and no shared store: the page writes nothing anywhere but the browser's
  * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is its choices
- * and the Top 100 lines over the builder, and Suggest Parlays (#suggest, app v111) each prime-time
+ * and the Top 100 lines over the builder, and Suggested Parlays (#suggest, app v111) each prime-time
  * game's own set of four levels, whose Finish opens the same card. The test boots the whole page against a stubbed file
  * and a stubbed ESPN, with the real payload and state, opens the X Parlays tab and checks what the section renders, on a
  * browser with nothing of its own and on one that carries what the retired owner and reader layers
@@ -22,7 +22,7 @@
  * figure whole on a long shot, and that finishing writes nothing anywhere; Open in DraftKings and Share
  * link on made-up ids, a leg DraftKings has only at another number going on the slip at DraftKings'
  * number (app v109), named under the buttons, in the shared text and under its row in the builder, and
- * a leg with nothing to convert to named with why; and a Suggest Parlays set finished from its own
+ * a leg with nothing to convert to named with why; and a Suggested Parlays set finished from its own
  * tab (app v111), live and then locked from the record's entry, each of its legs with an Add of its
  * own. jsdom and PapaParse are borrowed from props/build; run npm ci there first.
  */
@@ -69,6 +69,20 @@ const status = row => txt(row.querySelector('.status'));
 const who = row => txt(row.querySelector('.who'));
 const target = row => txt(row.querySelector('.tgt'));
 const wait = ms => new Promise(r => setTimeout(r, ms));
+/* (app v112) Suggested Parlays sets out one night at a time (the owner's call of 17 October 2026: "just show the next
+   night game dont stack the mondy night game until monday morning"): the next prime-time night's games, from 6:00 AM
+   Eastern on the morning after the latest prime-time night before it on the schedule (any week; none before it, at
+   once). Worked out here on its own: a Thursday, Sunday or Monday kickoff at or after 7:00 pm Eastern is prime time,
+   and Eastern time is read through the time zone database (Intl), never the page's own helpers */
+const PRIME_NIGHT_L = { 4: 'Thursday night', 0: 'Sunday night', 1: 'Monday night' };
+const primeL = g => !!g && /^\d{4}-\d\d-\d\d$/.test(g.d || '') && PRIME_NIGHT_L[new Date(g.d + 'T12:00:00Z').getUTCDay()] != null && /^\d\d:\d\d$/.test(g.t || '') && g.t >= '19:00';
+const etOffL = ms => { const tz = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(new Date(ms)).find(p => p.type === 'timeZoneName');
+  const m = tz && tz.value.match(/GMT([+-]\d+)/); return m ? +m[1] : -5; };
+const etAtL = (day, hm) => { const naive = Date.parse(`${day}T${hm}:00Z`); let t = naive + 5 * 3600e3; for (let i = 0; i < 3; i++) t = naive - etOffL(t) * 3600e3; return t; };
+const etSayL = ms => new Date(ms).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET';
+/* when a night (its first game g, the schedule sched) goes up: null for at once, and the line the tab says until then */
+const nightOpenL = (g, sched) => { const prev = sched.filter(x => primeL(x) && x.d < g.d).map(x => x.d).sort().pop() || null;
+  return { prev, open: prev ? etAtL(new Date(Date.parse(prev + 'T12:00:00Z') + 86400e3).toISOString().slice(0, 10), '06:00') : null, pg: prev ? sched.filter(x => primeL(x) && x.d === prev).length : 0 }; };
 /* jsdom draws nothing, so the card's image is checked on a recorder: a canvas whose 2D context
    keeps every piece of text drawn on it (and the font it was drawn in), a toBlob that hands back a
    blob of the type asked for, a blob address, and a download that is an anchor clicked, recorded.
@@ -349,14 +363,14 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
   chk(/^app v\d+/.test(txt(d.getElementById('buildTag'))), 'the page does not say which build it is');
   chk(!/Parlays marked/.test(txt(d.getElementById('lpCard'))), 'the old footer text is in the section');
   /* X Parlays is the whole of its own tab, opened at its address; the builder is the Parlay Builder
-     tab's, under its choices and the Top 100 lines (#pbPanel), and Suggest Parlays (#suggest, app v111)
+     tab's, under its choices and the Top 100 lines (#pbPanel), and Suggested Parlays (#suggest, app v111)
      is a tab of its own, without the builder: no list of a visitor's own anywhere */
   const lpc = d.getElementById('lpCard'), tx = d.getElementById('tab-xparlays'), tb = d.getElementById('tab-parlay'), ts = d.getElementById('tab-suggest');
   chk(!!lpc && !!tx && tx.firstElementChild === lpc && !lpc.nextElementSibling && !tx.hidden && tb.hidden && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'X Parlays'
     && tb.firstElementChild.id === 'pbPanel' && (tb.firstElementChild.nextElementSibling || {}).id === 'parlayBody' && !tb.querySelector('#lpCard')
     && !!ts && ts.hidden && (ts.firstElementChild || {}).id === 'spPanel' && !ts.querySelector('#parlayBody, #pbPanel, #lpCard')
     && !d.getElementById('suggModal') && !d.getElementById('myCard') && !d.getElementById('myApp') && !d.getElementById('myClear'),
-    'X Parlays is not the whole of its own tab (opened on #xparlays), the builder is not under the Parlay Builder\'s choices on its own tab, Suggest Parlays is not a tab of its own without the builder, or Your parlays is still in the page');
+    'X Parlays is not the whole of its own tab (opened on #xparlays), the builder is not under the Parlay Builder\'s choices on its own tab, Suggested Parlays is not a tab of its own without the builder, or Your parlays is still in the page');
   chk(!/Your parlays/i.test(txt(tx)), 'the X Parlays tab still says Your parlays');
   { const body = d.body.cloneNode(true); body.querySelectorAll('script, style').forEach(n => n.remove());
     chk(/^X Parlays/.test(txt(lpc.querySelector('h2'))) && !/Live Parlays/i.test(body.textContent) && !/Live Parlays/i.test(d.title), 'the section is still called Live Parlays somewhere a reader sees it'); }
@@ -1416,7 +1430,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       w.eval(`S.parlay=${JSON.stringify(builder(side))}; S.parlay['other|team:${other ? other.h : 'X'}|ml']=${JSON.stringify({ gid: other ? other.id : 'x', pid: 'team:' + (other ? other.h : 'X'), stat: 'ml', k: 0, side: 'over', main: false, p: 0.5, price: 100, src: 'real', name: 'Elsewhere', pos: 'Game', grp: 'TEAM', team: other ? other.h : 'X', opp: other ? other.a : 'Y', week: other ? +other.w : wk + 1, label: 'To win' })}; save(); renderParlay()`);
       await wait(20);
       chk(!!d.getElementById('pFinish') && d.getElementById('pFinish').disabled && /same week to finish/.test(d.getElementById('pFinish').title), `${how}: a builder across two weeks can be finished`);
-      /* Suggest Parlays (#suggest, app v111, the owner's call of 16 October 2026): each Thursday, Sunday
+      /* Suggested Parlays (#suggest, app v111, the owner's call of 16 October 2026): each Thursday, Sunday
          and Monday night game of the week gets its own Safe, Medium, Aggressive and Extreme, and a level
          finishes the same way the builder does, its legs, its price and its chance, on the amount in the
          Parlay Builder's Bet amount box, the builder's own stake, which every level pays on. The sets'
@@ -1441,10 +1455,23 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             {id:'med',label:'Medium',n:3,floor:0.25,why:${JSON.stringify(WHY)}},{id:'aggr',label:'Aggressive',n:4,floor:0.12,why:${JSON.stringify(WHY)}},{id:'xtrm',label:'Extreme',n:5,floor:0.05,why:${JSON.stringify(WHY)}}]}; };
           SP_CACHE=new Map(); renderParlay(); })()`);
         await wait(20);
+        /* the night rule on this set as the page has it, before anything stands in for it: the Thursday night game is
+           the next night, and goes up on the morning after the last prime-time night before it on the schedule (the
+           season's own last one), so until then the tab names it and says when, and draws no set; once that morning
+           has come, its set. Then the tab's one question of which games it sets out (spOn) is stood in by every
+           prime-time game, so the card checks below hold on any day; put back at the end */
+        { const S0 = w.eval('S'), G0 = S0.sched.find(x => x.id === g2.id), no = nightOpenL(G0, S0.sched), up = no.open == null || w.eval('Date.now()') >= no.open;
+          const el = d.querySelector('#spSets [data-sp-wait]'), on = [...d.querySelectorAll('#spSets .sp-game[data-sp-game]')].map(x => x.dataset.spGame).join();
+          const TNl = w.eval('TEAM_NAMES'), say = `Next up: Thursday night, ${TNl[g2.a] || g2.a} at ${TNl[g2.h] || g2.h}.` + (no.open != null ? ` Its set goes up ${etSayL(no.open)}, the morning after ${PRIME_NIGHT_L[new Date(no.prev + 'T12:00:00Z').getUTCDay()]}’s ${no.pg > 1 ? 'games' : 'game'}.` : '');
+          chk(primeL(G0) && (up ? on === g2.id && !el : on === '' && !!el && el.dataset.spWait === new Date(no.open).toISOString().replace(/\.\d{3}Z$/, 'Z') && el.dataset.spNext === g2.id && txt(el) === say && w.eval('spTier')(fid) === null),
+            `${how}: by the night rule the Thursday night game's set is ${up ? 'up' : 'not up until ' + new Date(no.open).toISOString()}, and the tab ${on ? 'sets out ' + on : el ? 'says "' + txt(el) + '"' : 'draws neither a set nor a line'}${up ? '' : ', not "' + say + '"'}`); }
+        w.eval('window.__spOnL=spOn; spOn=function(){ return spGames(); }; SP_SHOWN=null; renderParlay()'); await wait(20);
+        /* (put back whatever happens below, in its own slot) */
+        try {
         const tabBtn = t => d.querySelector(`#tabs [data-tab="${t}"]`), sp = d.getElementById('tab-suggest');
         tabBtn('suggest').click(); await wait(30);
-        chk(!!sp && !sp.hidden && tab.hidden && w.location.hash === '#suggest' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Suggest Parlays' && !!sp.querySelector('#spPanel') && !sp.querySelector('#parlayBody'),
-          `${how}: the Suggest Parlays tab did not open on its own address (#suggest) with its panel and without the builder`);
+        chk(!!sp && !sp.hidden && tab.hidden && w.location.hash === '#suggest' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Suggested Parlays' && !!sp.querySelector('#spPanel') && !sp.querySelector('#parlayBody'),
+          `${how}: the Suggested Parlays tab did not open on its own address (#suggest) with its panel and without the builder`);
         const set = () => d.querySelector(`#spPanel [data-sp-game="${g2.id}"]`);
         chk(!!set() && txt(set().querySelector('[data-sp-phase="live"]')) === 'Locks Thu 6:15 PM ET, 2 hours before kickoff; Refresh odds updates it until then.',
           `${how}: the Thursday night game's set does not say it is live until its lock, 2 hours before kickoff: ` + txt(set()));
@@ -1539,7 +1566,12 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             `${how}: Finish on a locked set does not open the record's set, its legs, price, chance and the amount: ` + txt(d.getElementById('pcView')) + ' / ' + d.getElementById('pcDk').getAttribute('href'));
           if (lf) { d.getElementById('pcClose').click(); chk(d.activeElement === lf, `${how}: closing the locked set's card did not give the focus back to its Finish`); }
           chk(w.localStorage.getItem('props_sp_lock_v1') === null, `${how}: a locked set the record has was kept in the browser as the page's own`);
+          /* the record keeps both legs as Value picks (thin false, no total): the locked card marks each Value (app v112) */
+          chk(!!set() && [...set().querySelectorAll('[data-pb-tier="safe"] .pb-legs li')].length === 2 && [...set().querySelectorAll('[data-pb-tier="safe"] .pb-legs li')].every(li => li.querySelectorAll('i.pb-valmark').length === 1 && txt(li.querySelector('i.pb-valmark')) === 'Value')
+            && !/\bthin[ -]edge\b|\bno edge\b/i.test(txt(set())), `${how}: the locked set's legs, kept as Value picks, are not each marked Value, or the set still says thin edge or no edge`);
           w.Date.now = realNow; w.eval('PB_REC=null; renderParlay()'); await wait(20); }
+        } finally { w.eval('spOn=window.__spOnL; delete window.__spOnL; SP_SHOWN=null; renderParlay()'); }
+        await wait(20);
         chk(w.eval('S').saved.map(p => p.id).join() === 'saved-before' && reads(), `${how}: finishing a suggestion saved it`); }
     }
 

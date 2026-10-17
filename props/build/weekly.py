@@ -57,7 +57,7 @@ What it does, in order:
      a suggestion level picks, a note's wording, a rule the week left untested), never do: the run
      publishes and the warnings are a problem, so the job goes red after its commit (audit_warnings)
   6. once the audit is clean, the suggestions record (suggest_ledger.js -> data/suggest_ledger.json):
-     each Thursday, Sunday and Monday night game's set on Suggest Parlays, taken from the published
+     each Thursday, Sunday and Monday night game's set on Suggested Parlays, taken from the published
      page on the payload just baked, rewritten until the set locks 2 hours before kickoff, a level
      built again after the lock only for a player ruled out since, and graded after by the app's own
      settleLeg, which reads who played from the payload's snaps (the retired all-games panel's
@@ -523,7 +523,7 @@ def audit_step(a):
 
 def suggestions_record(offline=False):
     """The suggestions record (suggest_ledger.js, whose docstring has the rules): each prime-time
-    game's four Suggest Parlays levels, taken from the published page on the payload this run baked,
+    game's four Suggested Parlays levels, taken from the published page on the payload this run baked,
     rewritten while the set's lock (2 hours before kickoff) is to come, locked from it (a level holding
     a player ruled out before kickoff built again, that level alone) and graded after, beside the
     retired all-games panel's frozen entries, in data/suggest_ledger.json, which the workflow commits with the rest of props/data. Only after a
