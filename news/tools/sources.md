@@ -46,5 +46,6 @@ Never the market (the snapshot shows the line and the models apart), never a rec
 (the records sit beside it), never the site's own ranks. The format and the full rules are in
 `tools/week-request.md`; `node tools/notes.js --strict` holds a file to them.
 
-Written automatically, not by hand: the Deep Dive (`data/units.json`), the stat bars (`data/stats.json`) and
-the records, which the Game snapshot draws beside the notes.
+Written automatically, not by hand: the Deep Dive (`data/units.json`) and the records, which the Game snapshot
+draws beside the notes; the stat bars (`data/stats.json`) are still written but read by no page since 16 October
+2026 (the owner's call: the Stat breakdown went).

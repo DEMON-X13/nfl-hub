@@ -11,7 +11,7 @@ GitHub Pages serves the repo root:
 | `nflbets/` | NFL Hub (once X NFL Bets and Stats), the one NFL site, in the NBA Hub's and the NHL Hub's look: both models on one page, and a Game snapshot of every game on the Matchups board | built by `nflbets/build/build.js` from the props parts, the betting app, the X Parlays section, the storage layer, the Player Elo tab and the Game snapshot (with `nflbets/build/deepdive.js`); rebuilt by hand when a source changes, never by a job |
 | `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside `nflbets/` | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model: no pages, only the parts, build, job and data | `props/` is the prop model package; its own `weekly.py` does the refresh |
-| `news/` | the news job: no page since 14 October 2026 (`news/` sends a visitor to `nflbets/`); the Deep Dive, the stat bars and each game's preview and news, which the Game snapshot reads | moved from `DEMON-X13/nfl-news-tracker`; `tools/run-auto.js` does the scripted half, and the game notes in `data/notes/` are written each Wednesday by Claude |
+| `news/` | the news job: no page since 14 October 2026 (`news/` sends a visitor to `nflbets/`); the Deep Dive and each game's preview, which the Game snapshot reads, and the stat bars, still written but read by no page since 16 October 2026 (the owner's call: the Stat breakdown went) | moved from `DEMON-X13/nfl-news-tracker`; `tools/run-auto.js` does the scripted half, and the game notes in `data/notes/` are written each Wednesday by Claude |
 | `elo/` | Player Elo: every player rated by position since 2012, the game model and matchup formula built on those ratings, and each team's Overall Offense and Overall Defense on this season's key stats from the play-by-play | `elo/build.py`; `.github/workflows/elo.yml` re-rates every morning |
 | `liveparlays/` | the X Parlays section's source, X's placed parlays and the X Bet Log, which every device sees, read only; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to `nflbets/` | `liveparlays/build/page.html`, `liveparlays/parlays.json` and `liveparlays/xbets.json` (kept by Claude from what the owner sends) |
 | `cfb/` | a redirect: CFB Hub (once X College Football Bets) lives in its own repo, `DEMON-X13/cfb-hub` | `cfb-hub` |
@@ -85,7 +85,7 @@ runs `tools/pull-week.js`, which refreshes `data/results.js` (scores, records)
 and `data/stats2026.js` with its twin `data/stats.json` (the stat bars) from
 ESPN and TeamRankings, rebuilds the Deep Dive (`data/units2026.js` and its twin
 `data/units.json`) with `tools/context.js`, and writes the reading pack to
-`tools/out/`. The snapshot fetches the JSON twins as the page loads. Each game's one-line
+`tools/out/`. The snapshot fetches `units.json` as the page loads (`stats.json` no longer: the Stat breakdown went on 16 October 2026, the owner's call). Each game's one-line
 preview and short news note is written each Wednesday by Claude into
 `data/notes/<season>-w<N>.json` from the pack (see `HANDOFF.md`) and checked
 with `tools/notes.js`; until a game has one the snapshot shows an automatic
