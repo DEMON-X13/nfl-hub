@@ -1,13 +1,14 @@
-/* Smoke test for the built betting app: the string build.js returns, which nflbets/index.html
- * carries as the srcdoc of its Pick'em Record, Power Ratings and Bet Log frames.
+/* Smoke test for the built betting app: the string build.js returns, which the NFL Hub page (the
+ * site's root index.html since 17 October 2026, built by nflbets/build/build.js) carries as the srcdoc
+ * of its Pick'em Record, Power Ratings and Bet Log frames.
  *
  *   node betting/tools/smoke.js
  *
  * Loads the built app in jsdom with fetch stubbed to serve betting/state.json, and checks:
  * the published season is shown, every tab but My Picks is there, a visitor's pick is kept in
  * their own storage and graded against the published result, and the embedded form (the
- * page around it sets window.EMBED_TAB and window.STATE_URL before the app runs) opens the
- * tab it is told to, headless, reading the season from where it is told.
+ * page around it sets window.EMBED_TAB, window.STATE_URL and window.ELO_URL before the app runs)
+ * opens the tab it is told to, headless, reading the season and the Elo model from where it is told.
  *
  * Then the published state against what it was built from (section 5): the season is the app's;
  * the injury report, roster and depth chart are this run's, and anything stale is shown as stale;
@@ -53,7 +54,11 @@ const PATCHES = require('./patches.js');
 const { season: APP_SEASON, key: APP_KEY } = PATCHES.season(fs.readFileSync(path.join(ROOT, 'betting', 'app', 'x_nfl_betting_model.html'), 'utf8'));
 const MINE = 'x_nfl_viewer_picks_' + APP_SEASON;
 for (const gone of ['index.html', 'admin.html'])
-  if (fs.existsSync(path.join(ROOT, 'betting', gone))) throw new Error('betting/' + gone + ' is back; the betting site has no pages, the app lives in nflbets/index.html');
+  if (fs.existsSync(path.join(ROOT, 'betting', gone))) throw new Error('betting/' + gone + ' is back; the betting site has no pages, the app lives in the NFL Hub page, the site\'s root index.html');
+/* the page the app is framed in: NFL Hub at the site's root (nflbets/ until 17 October 2026), which names
+   the app's two files for it from there (nflbets/build/build.js: window.STATE_URL, window.ELO_URL); a
+   srcdoc frame resolves them against the page's address */
+const PAGE_URL = 'http://localhost/', PAGE_STATE = 'betting/state.json', PAGE_ELO = 'elo/data/model.json';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let fails = 0; const check = (c, m) => { if (!c) { fails++; console.log('  FAIL', m); } };
 /* Warnings: a check of how the published state is shown, never of a number in it: the wording and the
@@ -84,8 +89,8 @@ function load(picks) {
 function boot(st, opts = {}) {
   const errors = [], fetched = [];
   const elo = opts.elo || eloModel;
-  const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/nflbets/',
-    beforeParse(w) { w.EMBED_TAB = opts.tab || 'record'; w.STATE_URL = '../betting/state.json';
+  const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, url: PAGE_URL,
+    beforeParse(w) { w.EMBED_TAB = opts.tab || 'record'; w.STATE_URL = PAGE_STATE; w.ELO_URL = PAGE_ELO;
       w.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) };
       w.fetch = async url => { const u = String(url); fetched.push(u);
         if (/elo\/data\/model\.json/.test(u)) return { ok: true, status: 200, json: async () => JSON.parse(elo) };
@@ -525,8 +530,8 @@ function stubXB({ weeks, deposit = null, at = '2026-10-10T17:28:44Z', ok = true,
 }
 function loadXB(X, tab, mine) {
   const errors = [];
-  const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/nflbets/',
-    beforeParse(w) { w.EMBED_TAB = tab || 'bets'; w.STATE_URL = '../betting/state.json'; w.XBETS = X;
+  const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, url: PAGE_URL,
+    beforeParse(w) { w.EMBED_TAB = tab || 'bets'; w.STATE_URL = PAGE_STATE; w.ELO_URL = PAGE_ELO; w.XBETS = X;
       w.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) };
       w.fetch = async url => { const u = String(url);
         if (/elo\/data\/model\.json/.test(u)) return { ok: true, status: 200, json: async () => JSON.parse(eloModel) };
@@ -654,14 +659,17 @@ async function xbetLog() {
     check(bs2.className === 'err' && /Everything you have entered/.test(bs2.textContent), 'a visitor who has picks does get the backup warning'); }
 
   // 3. the app on its own: same published season, every tab, private things from the same store
-  const adminHtml = html;
+  const adminHtml = html, adminFetched = [];
   const a = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/betting/admin.html',
-    beforeParse(w2) { w2.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w2.fetch = async url => /elo\/data\/model\.json/.test(String(url)) ? { ok: true, status: 200, json: async () => JSON.parse(eloModel) } : ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
+    beforeParse(w2) { w2.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w2.fetch = async url => (adminFetched.push(String(url)), /elo\/data\/model\.json/.test(String(url))) ? { ok: true, status: 200, json: async () => JSON.parse(eloModel) } : ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
       w2.confirm = () => true; w2.alert = () => {}; w2.scrollTo = () => {};
       w2.localStorage.setItem(MINE, JSON.stringify({ myPicks: { [first]: loser }, bank: { lastAmt: 35, filter: 'all', build: [], mode: 'straight' }, bets: { 1: { staked: 20, returned: 35, note: 'visitor' } } })); } });
   await sleep(600);
   const SA = a.window.eval('S'); const da = a.window.document;
   check(Object.keys(SA.processed).length === graded.length, 'admin: published season loaded');
+  /* on its own, from betting/, with no page to name its files, it reads state.json beside it and the Elo model at ../elo/data/model.json */
+  check(adminFetched.some(u => u.replace(/\?.*$/, '') === 'state.json') && adminFetched.some(u => u.replace(/\?.*$/, '') === '../elo/data/model.json'),
+    'admin: on its own the app does not read state.json beside it and ../elo/data/model.json: ' + adminFetched.join(', '));
   check([...da.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,bank,record,bets,ratings,upload,backup', 'admin: every tab present but My Picks');
   check(!da.getElementById('tab-mine'), 'admin: the My Picks section is gone with its tab');
   check(![...da.querySelectorAll('#tab-record th, .pickgrid th')].some(th => th.textContent.trim() === 'You'), 'admin: no You column survives');
@@ -712,11 +720,11 @@ async function xbetLog() {
   a.window.eval('S.lastBackup=Date.now()-3*86400000; S.lastBackupHow="downloaded"; save()'); await sleep(900);
   const kept = JSON.parse(a.window.localStorage.getItem(MINE) || '{}');
   check(kept.lastBackup && Date.now() - kept.lastBackup > 2 * 86400000, 'admin: the last-backup time is kept in the browser store');
-  // 4. embedded: the X NFL Bets and Stats page sets the app into a srcdoc frame, one tab of it, headless.
-  //    The frame has the page's address, so the season path is given and the tab is named.
+  // 4. embedded: the NFL Hub page (the site's root) sets the app into a srcdoc frame, one tab of it, headless.
+  //    The frame has the page's address, so the season's and the Elo model's paths are given and the tab is named.
   const embedFetched = [];
-  const e = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/nflbets/',
-    beforeParse(w3) { w3.EMBED_TAB = 'record'; w3.STATE_URL = '../betting/state.json';
+  const e = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: PAGE_URL,
+    beforeParse(w3) { w3.EMBED_TAB = 'record'; w3.STATE_URL = PAGE_STATE; w3.ELO_URL = PAGE_ELO;
       w3.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w3.fetch = async url => { embedFetched.push(String(url)); const u = String(url);
         if (/elo\/data\/model\.json/.test(u)) return { ok: true, status: 200, json: async () => JSON.parse(eloModel) };
         return { ok: /state\.json/.test(u), status: 200, json: async () => JSON.parse(state) }; };
@@ -726,7 +734,9 @@ async function xbetLog() {
   check(de.documentElement.classList.contains('embed'), 'embed: the page marks itself embedded');
   check(!de.getElementById('tab-record').hidden && de.getElementById('tab-picks').hidden, 'embed: EMBED_TAB opens the Records tab');
   check(!graded.length || /straight-up, \d+ of \d+/.test(de.getElementById('recordStats').textContent), 'embed: the record renders');
-  check(embedFetched.some(u => u === '../betting/state.json'), 'embed: the season is not read from ../betting/state.json: ' + embedFetched.join(', '));
+  check(embedFetched.some(u => u === PAGE_STATE), 'embed: the season is not read from ' + PAGE_STATE + ': ' + embedFetched.join(', '));
+  check(embedFetched.some(u => u.replace(/\?.*$/, '') === PAGE_ELO) && !embedFetched.some(u => /\.\.\//.test(u)),
+    'embed: the Elo model is not read from ' + PAGE_ELO + ', where the page says (window.ELO_URL), or a file is read from a parent folder, which from the site\'s root leaves the site: ' + embedFetched.join(', '));
   check(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml), 'embed: header and tab bar are hidden by the stylesheet');
   /* the Elo model rides along: read from elo/data/model.json beside the season, graded onto
      the games it called, and drawn on Records like the Joker */
@@ -739,7 +749,7 @@ async function xbetLog() {
       .concat(((EM.next && EM.next.games) || []).filter(g => { const p = SE.processed[g.game_id]; return p && p.result != null && p.result !== 0; }).map(g => g.game_id));
     check(gradedIds.every(id => { const p = SE.processed[id], n = ((EM.next && EM.next.games) || []).find(g => g.game_id === id);
       return !n || p.elo.correct === (n.pick === (p.result > 0 ? p.home : p.away)); }), 'embed: a coming-week Elo call was graded against the wrong winner');
-    check(embedFetched.some(u => /\.\.\/elo\/data\/model\.json/.test(u)), 'embed: the Elo model was not read from ../elo/data/model.json');
+    check(embedFetched.some(u => u.replace(/\?.*$/, '') === PAGE_ELO), 'embed: the Elo model was not read from ' + PAGE_ELO);
     check(gradedIds.length > 0 && gradedIds.every(id => SE.processed[id] && SE.processed[id].elo && typeof SE.processed[id].elo.correct === 'boolean'), 'embed: the Elo model\'s graded calls are not on the processed games');
     check(Object.keys(SE.elo || {}).length >= EM.graded.length + ((EM.next && EM.next.games) || []).length, 'embed: S.elo does not carry the graded and coming calls');
     /* the record's pictures: wins against Vegas (each model's wins minus the Vegas favourite's on

@@ -1012,6 +1012,7 @@ function toggleLeg(key,k,g,side,main){
   { const gid=key.split('|')[0]; const gg=g||S.sched.find(x=>x.id===gid); if(gg&&gameStarted(gg)) return; }
   if(cur&&cur.k===k&&cur.side===side&&!!cur.main===!!main){ delete S.parlay[key]; save(); renderGame(); renderParlay(); return; }
   const [gid,pid,stat]=key.split('|');
+  if(NO_BET.has(stat)) return;   /* (app v113) never a leg DraftKings does not offer */
   const game=g||S.sched.find(x=>x.id===gid);
   if(stat==='total'){
     if(!game) return; const l=totalLeg(game,side==='under'?'under':'over'); if(!l) return;
@@ -2377,7 +2378,7 @@ function spRecHtml(){
   const pills=any?R.tiers.map(s=>`<span class="rec" data-sp-rec="${s.id}" title="${esc(s.label)}: ${s.graded} graded, ${s.won} won${s.graded?`; wins expected ${s.fairN?f1(s.fair)+' by the book’s fair chance'+(s.fairN<s.graded?' (on the '+s.fairN+' with one)':'')+', ':''}${f1(s.model)} by the model`:''}${s.push?`; ${s.push} push${s.push===1?'':'es'}, the stake back`:''}">${esc(s.label)} <b>${s.won}–${s.lost}</b> ${s.graded||s.push?un(s.units)+' units':''}</span>`).join('')
     :'<span class="rec" data-sp-rec="none">No prime-time set graded yet</span>';
   return `<div id="spRec" class="sp-rec"><div class="bar">${pills}${R.pending?`<span class="rec" data-sp-rec="pending">Pending <b>${R.pending}</b></span>`:''}</div>
-    <p class="muted sp-rec-line">The record starts with this change, 16 October 2026: each Thursday, Sunday and Monday night game’s four parlays as the site locked them, 2 hours before kickoff, graded as a book settles them (a push drops out, and so does a player who did not play; one who played with no stat line is graded on zero). Won–lost and units on $1 a parlay. Refresh odds never changes it.</p></div>`;
+</div>`;
 }
 /* the tiers for the picks as they stand, from the cache when nothing they stand on has moved */
 /* everything the panel's choices stand on: the week, the games to come, those unticked, the boxes, the data */
@@ -2571,11 +2572,12 @@ function pbLegAddBtn(l){
 /* a locked level the page or the job built again for a player ruled out after the lock */
 function spUpdLine(u){
   const at=Date.parse(u.at);
-  return `Updated: ${esc(u.name)} ${esc(u.reason||'ruled out')}${isFinite(at)?` (${spEt(at,true)})`:''}, so this level was built again from the lines at hand${u.by==='page'?'. This page made the change, from the latest published report, and keeps it in this browser; the record grades the site’s locked set, which the props job updates the same way only if it runs again before kickoff':''}.`;
+  return `Updated${u.by==='page'?' in this browser':''}: ${esc(u.name)} ${esc(u.reason||'ruled out')}${isFinite(at)?` (${spEt(at,true)})`:''}; this level was built again.`;
 }
 /* one tier's card, or why it has none. The Elo picks draw theirs with it (window.pbTierCard). o.fid: the
    id its Finish names (a Suggested Parlays level's game:level); o.what: the game, for the buttons' names;
-   o.legAdd false: no Add on each leg */
+   o.legAdd false: no Add on each leg; o.quiet: no line saying why a leg is not a Value pick or why a total is there
+   (a Suggested Parlays set's, app v113) */
 function pbTierCard(t,o){
   o=o||{}; const card=!!window.PARLAY_CARD, chance=o.chance!=null?o.chance:t.corr, legAdd=o.legAdd!==false;
   const upd=t.updated?`<p class="pb-thin sp-upd" data-sp-upd="${esc(t.updated.pid)}">${spUpdLine(t.updated)}</p>`:'';
@@ -2585,11 +2587,11 @@ function pbTierCard(t,o){
     <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.rule||(t.floor!=null?`<span class="pb-rule">${pbRuleOf(t)}</span>`:'')}</div>
     <div class="pb-nums">${pbChanceHtml(t.fair,chance,o)}<div><b>${fmtML(decToML(t.dec))}</b><span>${nE?'price, est.':'price'}</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
     <ul class="pb-legs">${t.legs.map(l=>{ const ff=legFarOff(l,fm); return `<li><span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${pbValMark(l)}</small>${ff?`<small class="faroff" data-pb-far>${farText(l.p,ff)}</small>`:''}</span><span class="pr">${fmtML(l.price)}${l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:''}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span>${legAdd?pbLegAddBtn(l):''}</li>`; }).join('')}</ul>
-    ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt?`<p class="pb-thin">${pbMktLine(t.legs,o.mktWhy)}</p>`:''}${nE?`<p class="pb-thin pb-espnline">${pbEspnLine(t.legs)}</p>`:''}${upd}
+    ${t.thin&&!o.quiet?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt&&!o.quiet?`<p class="pb-thin">${pbMktLine(t.legs,o.mktWhy)}</p>`:''}${nE?`<p class="pb-thin pb-espnline">${pbEspnLine(t.legs)}</p>`:''}${upd}
     <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}${nm?` aria-label="${pbInBuilder(t.legs)?'In the builder:':'Add'}${nm}${pbInBuilder(t.legs)?'':' to the builder'}"`:''}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${o.fid||t.id}"${nm?` aria-label="Finish${nm}"`:''}>Finish</button>`:''}</div></div>`;
 }
 window.pbTierCard=pbTierCard;
-/* ---------- the Parlay Builder's Top 100 lines (app v111) ----------
+/* ---------- the Parlay Builder's Top lines (app v111; 50 since app v113) ----------
    Every leg on the reader's ticks that qualifies as a suggestion's leg does (pbLegs: a real price, or a
    tested DraftKings line read by Refresh odds on a payload baked before ids; DraftKings' id at its line
    where the payload carries ids; the 45-97% band at or above the book's implied chance, preferred with the
@@ -2606,7 +2608,7 @@ window.pbTierCard=pbTierCard;
    line, priced from it, so where that main line is on the list the rung is not. Each row keeps what $1 wins if it lands (the decimal price less 1) and the book's fair chance
    (legFair) where there is one. Cached on the levels' own signature (pbSig), so ticking back is instant,
    and a press (ESPN_SEQ is in pbDataSig, and espnRedraw drops the cache) or a kickoff rebuilds it. */
-const PB_TOP_N=100;
+const PB_TOP_N=50;
 let PB_TOP_CACHE=new Map();
 function pbTopBuild(){
   const u=pbUi(), all=pbGames(), games=all.filter(g=>!u.off.includes(g.id)), kinds=PB_KINDS.map(([k])=>k).filter(k=>u.k[k]);
@@ -2661,7 +2663,7 @@ function pbTopRow(l,i){
 }
 function pbPanel(){
   const u=pbUi(), w=currentWeek(), games=pbGames(), mix=pbMix(u);
-  const head=`<div class="pb-hd"><h2>Top 100 lines</h2><span class="pill">week ${w}</span></div>`;
+  const head=`<div class="pb-hd"><h2>Top ${PB_TOP_N} lines</h2><span class="pill">week ${w}</span></div>`;
   if(!games.length) return `<div class="card pb" id="pbCard">${head}
     <p class="pb-none">${seasonOver()?`The ${SEASON} regular season is over: no game is left to build a parlay from.`:`Every week ${w} game has kicked off, so there is nothing left to build from. Week ${w+1} opens once they are final.`}</p></div>`;
   const r=getPbTop(), nOn=games.filter(g=>!u.off.includes(g.id)).length, open=u.gx!=null?u.gx:pbWide(), form=formSig()!=='';
@@ -2673,7 +2675,7 @@ function pbPanel(){
   const notes=[];
   if(formSig()==='noform') notes.push('The Elo ratings are still loading: player lines join once they are in.');
   if(dkLegs.length) notes.push(`A player line marked est. is priced from DraftKings’ line read on ESPN by Refresh odds, where DraftKings’ own price is not on file or its line has moved since: ${esc(espnReadLine(dkLegs.map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0]||null))} The line is DraftKings’, the price our estimate of DraftKings’ (${ESPN_ERR} on weeks it was not fitted on), and it counts here as a book price does.`);
-  if(u.k.total) notes.push('Game totals are never Value picks: each is priced at the book’s own chance, so the totals come last among the other lines, and on a long list the 100 lines can end before them.');
+  if(u.k.total) notes.push('Game totals are never Value picks: each is priced at the book’s own chance, so the totals come last among the other lines, and on a long list the '+PB_TOP_N+' lines can end before them.');
   /* (app v109) player legs priced and none with a DraftKings id: the list has none of them, and why */
   const noIdNote=r.noPlayerPrices&&r.plNoId&&r.rows.length;
   if(noIdNote) notes.push(`No player line on your picks can go on DraftKings’ betslip yet, so the list below has no player lines: ${PB_NO_ID.replace(/^no player legs DraftKings’ betslip can take yet: /,'')}`);
@@ -2693,7 +2695,7 @@ function pbPanel(){
       +(O.length?secHd('other','Other lines',O.length)+`<p class="muted pb-topsub">These miss a Value pick’s bar (3 points above the chance the price implies${form?', and market + form agreeing on a player’s line':''}), though the model still rates each at or above the book’s price${u.k.total?'; the game totals, at the book’s own chance, come last':''}. A suggested parlay takes them only where its Value picks run out.</p><ol class="pb-top" data-pb-sec="other"${nV?` start="${nV+1}"`:''} aria-label="${nV?'Then ':''}${O.length} other line${O.length===1?'':'s'} on your picks, by expected profit on $1">${O.map((l,i)=>pbTopRow(l,nV+i)).join('')}</ol>`:'')
     :`<p class="pb-none pb-top-none">${esc(pbTopWhy(r,u))}</p>`;
   return `<div class="card pb" id="pbCard">${head}
-    <p class="muted pb-lead">Choose what to build from: the list below takes only the bet types and games ticked here, every line that qualifies as a suggested leg does: first the Value picks, marked Value, then the other lines${u.k.total?', the game totals last':''}, each part ranked by what $1 on it is expected to make at the model’s chance, best first, 100 lines at most. Add any of them to the builder below.</p>
+    <p class="muted pb-lead">Choose what to build from: the list below takes only the bet types and games ticked here, every line that qualifies as a suggested leg does: first the Value picks, marked Value, then the other lines${u.k.total?', the game totals last':''}, each part ranked by what $1 on it is expected to make at the model’s chance, best first, ${PB_TOP_N} lines at most. Add any of them to the builder below.</p>
     <div class="pb-ctl">
       <div class="pb-row pb-amt-row"><label class="pb-lbl" for="pbStake">Bet amount</label><span class="pb-amt"><span aria-hidden="true">$</span><input type="number" id="pbStake" inputmode="decimal" min="${STAKE_MIN}" max="${STAKE_MAX}" step="1" value="${stakeText(pbStake())}" autocomplete="off" aria-describedby="pbStakeHint"></span><span class="pb-amt-hint" id="pbStakeHint">The builder below uses this amount, and every parlay on Suggested Parlays pays on it.</span></div>
       <div class="pb-row pb-odds-row"><span class="pb-lbl">Odds</span>${espnCtl(null,'pb')}</div>
@@ -2705,7 +2707,7 @@ function pbPanel(){
     </div>
     ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
     ${list}
-    <p class="muted pb-foot">Every line has a real sportsbook price${espnW?' (or, marked est., DraftKings’ line read by Refresh odds at our estimate of its price, on main lines, touchdowns and yards ladders, the markets the estimate has been checked on)':''} and a model chance between 45% and 97%, at or above the chance that price implies: 3 points above it or more is a Value pick${form?' (on a player’s line, with market + form, the book’s chance moved by his Elo, 3 points above it too)':''}, and a game total, priced at the book’s own chance, is never one. The Value picks come first, marked Value, then the other lines (the ones a suggested parlay takes only where the Value picks cannot fill it), each part ranked by what $1 on it is expected to make, any game totals last, 100 lines at most in all. Each bet is listed once: a ladder rung that is the same bet as the player’s main line (225+ passing yards and Over 224.5) is shown as the main line. Wins on $1 is what $1 wins if the line lands; expected on $1 is the model’s chance times what $1 returns, less the $1, so it is only as good as the model’s chance, which has run higher than the book’s this season. Each line gives the book’s fair chance beside the model’s, DraftKings’ prices with the margin taken out (est. where it is priced on one side only), and a line the model rates ${Math.round(FAR_OFF*100)} points or more above it is left out.</p></div>`;
+    <p class="muted pb-foot">Every line has a real sportsbook price${espnW?' (or, marked est., DraftKings’ line read by Refresh odds at our estimate of its price, on main lines, touchdowns and yards ladders, the markets the estimate has been checked on)':''} and a model chance between 45% and 97%, at or above the chance that price implies: 3 points above it or more is a Value pick${form?' (on a player’s line, with market + form, the book’s chance moved by his Elo, 3 points above it too)':''}, and a game total, priced at the book’s own chance, is never one. The Value picks come first, marked Value, then the other lines (the ones a suggested parlay takes only where the Value picks cannot fill it), each part ranked by what $1 on it is expected to make, any game totals last, ${PB_TOP_N} lines at most in all. Each bet is listed once: a ladder rung that is the same bet as the player’s main line (225+ passing yards and Over 224.5) is shown as the main line. Wins on $1 is what $1 wins if the line lands; expected on $1 is the model’s chance times what $1 returns, less the $1, so it is only as good as the model’s chance, which has run higher than the book’s this season. Each line gives the book’s fair chance beside the model’s, DraftKings’ prices with the margin taken out (est. where it is priced on one side only), and a line the model rates ${Math.round(FAR_OFF*100)} points or more above it is left out.</p></div>`;
 }
 function renderPb(){
   const el=$('pbPanel'); if(!el||!S||!S.sched) return;
@@ -2929,19 +2931,19 @@ function spGameHtml(g,on){
   if(!on&&lk!=null&&Date.now()<lk&&!SP_CACHE.has(spSig(g))) return `<div class="sp-game" role="group" data-sp-game="${esc(g.id)}" aria-labelledby="spg-${esc(g.id)}">
     <div class="sp-hd"><h3 id="spg-${esc(g.id)}">${esc(TEAM_NAMES[g.a]||g.a)} at ${esc(TEAM_NAMES[g.h]||g.h)}</h3><span class="pill">${SP_NIGHT[spDow(g)]}</span><small>${esc(d.day)}${d.t?' · '+esc(d.t):''}</small></div><p class="sp-lock" data-sp-phase="wait">Built when this tab is open.</p></div>`;
   const v=spShown(g), what=`${g.a} at ${g.h}`, lockT=v.lock!=null?spEt(v.lock,true):'';
-  const mark='<span class="sp-lockmark">Locked</span>', when=v.at&&isFinite(Date.parse(v.at))?` (${spEt(Date.parse(v.at),true)})`:'';
-  const line=v.phase==='live'?`<p class="sp-lock" data-sp-phase="live">Locks ${lockT}, 2 hours before kickoff; Refresh odds updates it until then.</p>`
-    :v.phase==='loading'?`<p class="sp-lock" data-sp-phase="loading">${mark} since ${lockT}: reading the site’s locked set…</p>`
-    :v.own?`<p class="sp-lock" data-sp-phase="own">${mark} since ${lockT}, 2 hours before kickoff. The site’s locked set for this game was not published when this page loaded, so this is the set as this browser built it${when}: it is kept in this browser to kickoff, and it is not the set the record grades. Refresh odds no longer changes it.</p>`
-    :`<p class="sp-lock" data-sp-phase="locked">${mark} since ${lockT}, 2 hours before kickoff: the site’s set, the same for everyone and the one the record grades, as the props job last published it before the lock${when}. Refresh odds no longer changes it.</p>`;
-  const cards=v.tiers?`<div class="pb-tiers">${v.tiers.map(t=>pbTierCard(t,{kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,mktWhy:'this game’s other legs do not make a parlay of this size'})).join('')}</div>`:'';
+  /* (app v113) one short line each: the owner's "get rid of all the long paragraph description stuff" */
+  const mark='<span class="sp-lockmark">Locked</span>';
+  const line=v.phase==='live'?`<p class="sp-lock" data-sp-phase="live">Locks ${lockT}, 2 hours before kickoff.</p>`
+    :v.phase==='loading'?`<p class="sp-lock" data-sp-phase="loading">${mark} since ${lockT}. Loading the site’s set…</p>`
+    :v.own?`<p class="sp-lock" data-sp-phase="own">${mark} since ${lockT}. This browser’s own set: the site’s was not published in time, so the record does not grade it.</p>`
+    :`<p class="sp-lock" data-sp-phase="locked">${mark} since ${lockT}.</p>`;
+  const cards=v.tiers?`<div class="pb-tiers">${v.tiers.map(t=>pbTierCard(t,{kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,quiet:true,mktWhy:'this game’s other legs do not make a parlay of this size'})).join('')}</div>`:'';
   return `<div class="sp-game" role="group" data-sp-game="${esc(g.id)}" aria-labelledby="spg-${esc(g.id)}">
     <div class="sp-hd"><h3 id="spg-${esc(g.id)}">${esc(TEAM_NAMES[g.a]||g.a)} at ${esc(TEAM_NAMES[g.h]||g.h)}</h3><span class="pill">${SP_NIGHT[spDow(g)]}</span><small>${esc(d.day)}${d.t?' · '+esc(d.t):''}</small></div>${line}${cards}</div>`;
 }
 function spHeadHtml(){
   const w=currentWeek();
   return `<div class="pb-hd"><h2>Suggested Parlays</h2><span class="pill">week ${w}</span></div>${spRecHtml()}
-    <p class="muted pb-lead">The next Thursday, Sunday or Monday night game gets four parlays of its own, every leg from that game: Safe, Medium, Aggressive and Extreme, 2 to 5 legs priced together as a book prices a same-game parlay. One night is shown at a time: the next night’s set goes up at 6:00 AM ET the morning after the night game before it. A set is live until 2 hours before its kickoff, when it locks: from then to kickoff everyone sees the set the site locked, and that is the one the record above grades. A leg marked Value is one of the model’s best: it rates it at least 3 points above the chance its price implies${formSig()!==''?', and on a player’s line market + form (the book’s chance moved by his Elo rating) agrees':''}. Add a whole parlay to the builder, or one leg at a time.</p>
     <div class="pb-row pb-odds-row sp-odds"><span class="pb-lbl">Odds</span>${espnCtl(null,'sp')}</div>`;
 }
 function spSetsHtml(on){
@@ -2954,8 +2956,7 @@ function spSetsHtml(on){
   if(!On.length){ const N=spNight(), two=N.games.length>1, pn=N.prev?SP_NIGHT[new Date(N.prev+'T12:00:00Z').getUTCDay()]:null;
     const pg=N.prev?(S.sched||[]).filter(x=>spPrime(x)&&x.d===N.prev).length:0;
     wait=`<p class="pb-none sp-wait" data-sp-wait="${N.open!=null?spIso(N.open):''}" data-sp-next="${esc(N.games.map(x=>x.id).join(' '))}">Next up: ${SP_NIGHT[spDow(N.games[0])]}, ${esc(N.games.map(nm).join(' and '))}.${N.open!=null?` ${two?'Their sets go':'Its set goes'} up ${spEt(N.open,true)}, the morning after ${pn||'the night game before it'}’s ${pg>1?'games':'game'}.`:''}</p>`; }
-  return (On.length?On.map(g=>spGameHtml(g,on)).join(''):wait)
-    +`<p class="muted pb-foot">Each set is built from its game’s lines alone, on every bet type, whatever the Parlay Builder’s boxes say. Every leg has a real sportsbook price${espnOn(w)?' (or, on a payload with no DraftKings ids, DraftKings’ line read by Refresh odds at our estimate of its price, marked est.)':''} and a model chance between 45% and 97%, at least 3 points above the chance that price implies (a player leg also needs market + form 3 points above it): those are the Value picks, marked Value. Where they cannot make a level, the fewest legs the model still rates at or above the book fill it, and a game total, the book’s own chance, only after them; neither is marked, and a line under the level says why. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that the model says land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time, or, where none of that size gets there, the likeliest of that size. One leg a player, and one side (to win or to cover) and one total; where the payload carries DraftKings’ ids every leg is one DraftKings’ betslip can take, and none is on a player the report or the roster has out. Each level leads with the book’s fair chance, DraftKings’ prices with the margin taken out, the model’s beside it, and a leg the model rates ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance is left out.</p>`;
+  return On.length?On.map(g=>spGameHtml(g,on)).join(''):wait;
 }
 function renderSp(){
   const el=$('spPanel'); if(!el||!S||!S.sched) return;
@@ -3085,18 +3086,21 @@ function dkSlipLine(x,i){
 }
 function renderParlay(o){
   /* a leg from a game that has kicked off can't be bet, so it leaves the working parlay */
-  let dropped=0;
+  let dropped=0, notDk=0;
   for(const [k,l] of Object.entries(S.parlay||{})){ const g=S.sched.find(x=>x.id===l.gid); if(g&&gameStarted(g)){ delete S.parlay[k]; dropped++; } }
-  if(dropped) save();
+  /* (app v113) an FG attempts leg kept from before: the one bet the page offered until app v113 that DraftKings
+     does not (targets, the other stat in NO_BET, was never a leg) */
+  for(const [k,l] of Object.entries(S.parlay||{})) if(l&&l.stat==='fg_att'){ delete S.parlay[k]; notDk++; }
+  if(dropped||notDk) save();
   /* the Top 100 lines over the builder, and Suggested Parlays, drawn with it, unless only the amount moved
      (o.keepPb: the payouts are redrawn in place, and the buttons stay put) */
   if(!(o&&o.keepPb)) renderPb();
   const legs=parlayLegs();
   const el=$('parlayBody');
-  const droppedNote=dropped?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">${dropped} leg${dropped===1?' was':'s were'} removed because that game has already kicked off. Saved and locked parlays keep theirs.</p>`:'';
+  const droppedNote=(notDk?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05" data-pb-notdk="${notDk}">${notDk} leg${notDk===1?' was':'s were'} removed: DraftKings does not offer FG attempts.</p>`:'')+(dropped?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">${dropped} leg${dropped===1?' was':'s were'} removed because that game has already kicked off. Saved and locked parlays keep theirs.</p>`:'');
   if(!legs.length){
     el.innerHTML=droppedNote+`<div class="card"><h2>Parlay Builder</h2>${espnCtl(null,'builder')}
-      <p class="muted" style="margin:0 0 10px">Open a game, click a player, and tick any line you like, or add a parlay from Suggested Parlays or a line from the Top 100 above. Each leg lands here and gets priced.</p></div>`+renderSaved()+renderBetParlays();
+      <p class="muted" style="margin:0 0 10px">Open a game, click a player, and tick any line you like, or add a parlay from Suggested Parlays or a line from the Top ${PB_TOP_N} above. Each leg lands here and gets priced.</p></div>`+renderSaved()+renderBetParlays();
     wireSaved(); wireStakeChips();
     return;
   }

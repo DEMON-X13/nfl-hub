@@ -77,6 +77,15 @@ yml = open(os.path.join(ROOT, '.github', 'workflows', 'props-gate.yml'), encodin
 for f in ('betting/neutral_sites.json', '.github/scripts/test_props_gate.py'):
     case(f'- "{f}"' in yml, f'props-gate.yml\'s push paths leave out {f}')
 case('test_props_gate.py' in yml.split('id: classify')[0], 'props-gate.yml does not run this test before it classifies')
+# the page is the site's root index.html (since 17 October 2026, built from nflbets/build/): a PAGE path, as
+# nflbets/ still is (its index.html the redirect to the root), and so is every old address's redirect, which
+# the page smoke holds; an index.html anywhere else is not
+for f in ('index.html', 'nflbets/index.html', 'nflbets/build/build.js', 'pickems/index.html', 'live/index.html', 'liveparlays/index.html', 'news/index.html'):
+    a, p, labels, audit, page = G.plan([f])
+    case(p and not a and page == [f], f'{f} is not a PAGE path: {(a, p, page)}')
+    case(f.startswith('nflbets/') or f'- "{f}"' in yml, f'props-gate.yml\'s push paths leave out {f}')
+for f in ('picks/index.html', 'cfb/index.html', 'nhl/index.html', 'news/data/index.html', 'props/index.html'):
+    case(not G.parts([f])[1], f'{f} is a PAGE path, as if it were the page')
 # every file the page build reads from betting/ is a PAGE path
 reads = set()
 for f in ('betting/tools/build.js', 'betting/tools/patches.js'):

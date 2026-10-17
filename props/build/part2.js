@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v112 \u00b7 2026-10-17';
+const APP_BUILD='app v113 \u00b7 2026-10-17';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -40,8 +40,10 @@ const DEFMAP={attempts:'d_pass_att',completions:'d_pass_att',passing_yards:'d_pa
  fg_att:'d_pass_yds',fg_made:'d_pass_yds',kick_pts:'d_tds'};
 const TCOLS=['t_pass_att','t_carries','t_plays','t_pass_yds','t_rush_yds','t_targets','t_tds','t_fg_att','t_pat_att'];
 const DCOLS=['d_pass_yds','d_rush_yds','d_pass_att','d_carries','d_tds'];
-/* projected but not offered as a bet: targets still drives usage ranking and receptions */
-const NO_BET=new Set(['targets']);
+/* projected but not offered as a bet: targets still drives usage ranking and receptions, and FG attempts a
+   kicker's field goals made and kicking points; DraftKings posts neither (app v113: the owner's "i only want to
+   show legs that draft kings does"; the markets DraftKings posts are the reader's ESPN_MAIN and ESPN_MILE) */
+const NO_BET=new Set(['targets','fg_att']);
 const GRP_STATS={QB:['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards','any_td'],
  RB:['carries','rushing_yards','receptions','targets','receiving_yards','scrim_yards','any_td'],
  WR:['targets','receptions','receiving_yards','any_td'],

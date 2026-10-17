@@ -176,7 +176,7 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
    tab is the rankings, and a click on a player opens his window: his rating and his matchup
    this week. */
 (function(){
-const P_URL='../elo/data/players.json', M_URL='../elo/data/model.json', MU_URL='../elo/data/matchups.json';
+const P_URL='elo/data/players.json', M_URL='elo/data/model.json', MU_URL='elo/data/matchups.json';
 const D={players:null,model:null,mu:null,pos:'QB',more:false,unit:null,tsort:null};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -800,7 +800,7 @@ function eloSuggest(){
   else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:`data-pb-elo-add="${t.id}"`,
       rule:'<span class="pb-rule">plus money first, one leg a game</span>',badge:l=>badge(l.pid),legP:l=>l.pe})).join('')}</div>`;
   v.innerHTML=`<h3>Elo picks <span class="pill">week ${w}</span></h3>
-    <p class="muted pb-lead" style="margin:0 0 12px">Ranked players whose Elo matchup says they beat the book's price, on the games and player sides ticked on the Parlay Builder tab: the book's chance moved by the player's Elo against the defenders he faces this week (click a player on the ELO Ratings tab for his matchup). A fun model, not an edge: the matchup nudge has landed on its side 53 to 63% of the time on its biggest calls since 2017, depending on the stat, which is less than a book's cut on most single legs. Each pick leads with the book's fair chance (DraftKings' prices with the margin taken out) and gives the Elo matchup chance beside it; a leg the prop model rates ${typeof FAR_OFF==='number'?Math.round(FAR_OFF*100):15} points or more above the book's fair chance is flagged far off the market.</p>${body}`;
+    <p class="muted pb-lead" style="margin:0 0 12px">Players whose Elo matchup beats the book's price, on the games and player sides ticked on the Parlay Builder tab.</p>${body}`;
   v.querySelectorAll('[data-pb-elo-add]').forEach(b=>b.addEventListener('click',()=>{
     const t=r.tiers.find(x=>x.id===b.dataset.pbEloAdd); if(t&&typeof pbPut==='function') pbPut(t.legs,`the ${t.label} parlay`); }));
 }

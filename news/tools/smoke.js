@@ -32,7 +32,8 @@
        Wednesday before a Thursday game, a quarterback with no healthy backup, the postseason's stat tables,
        the notes' rules), each with the version a review caught fed to the checks, which must fail it;
      - the game notes in data/notes/ (tools/notes.js), every problem a warning;
-     - news/index.html, the retired page's address: it sends the visitor to ../nflbets/.
+     - news/index.html, the retired page's address: it sends the visitor to ../, NFL Hub at the site's root
+       (nflbets/ until 17 October 2026).
    Run from news/:  npm ci && node tools/smoke.js
    The lineup checks need the nflverse files: when the build's snapshot is missing and the network
    is too, they fail, unless NEWS_SMOKE_OFFLINE=1 says to skip them (each skip is printed).          */
@@ -192,15 +193,15 @@ async function run() {
     check(`the Overall line's tag on every possession is the rule's, on model.json's units (built ${M.built_at}, ${M.units.season})`, bad.length === 0, brief(bad) || `${sides.length} possessions`);
   }
 
-  /* ---- the retired page's address: on the web and from disk alike it sends the visitor to X NFL Bets and
-     Stats (location.replace, so Back does not loop), with a link for a browser without scripts, never a
-     meta refresh, and loads nothing else ---- */
+  /* ---- the retired page's address: on the web and from disk alike it sends the visitor to NFL Hub, the
+     site's own front page since 17 October 2026 (location.replace, so Back does not loop), with a link for
+     a browser without scripts, never a meta refresh, and loads nothing else ---- */
   { const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
     const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
     const went = protocol => { const to = []; try { for (const src of inline) vm.runInNewContext(src, { location: { protocol, hash: '#tracker', search: '?standalone', replace: u => to.push(u) }, window: {}, document: {} }); } catch (e) { to.push('threw ' + e.message); } return to.join(','); };
     const got = ['https:', 'http:', 'file:'].map(went);
-    check('news/index.html sends the visitor to ../nflbets/ with location.replace, on the web and from disk, with a link and no meta refresh',
-      got.every(x => x === '../nflbets/') && /<a href="\.\.\/nflbets\/">/.test(html) && !/http-equiv\s*=\s*["']?refresh/i.test(html) && !/<script[^>]+src=|<link[^>]+stylesheet/i.test(html), got.join(' ; ')); }
+    check('news/index.html sends the visitor to ../ (NFL Hub, at the site\'s root) with location.replace, on the web and from disk, with a link and no meta refresh',
+      got.every(x => x === '../') && /<a href="\.\.\/">/.test(html) && !/nflbets/.test(html.replace(/\/\*[\s\S]*?\*\//g, '')) && !/http-equiv\s*=\s*["']?refresh/i.test(html) && !/<script[^>]+src=|<link[^>]+stylesheet/i.test(html), got.join(' ; ')); }
 
   /* ---- the cases the rules and their checks must keep, each from a week the real files produced (tools/cases.js) ---- */
   for (const c of require('./cases').cases()) check(`case ${c.name}: ${c.label}`, c.ok, c.ok ? undefined : c.detail);

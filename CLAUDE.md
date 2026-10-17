@@ -27,26 +27,32 @@ without narrating the steps:
 
 ## The sites and their parts
 
-GitHub Pages serves the repo root. One site has pages: `nflbets/`, plus the standalone `picks/` page (the
-root `index.html` links them, and X NHL Bets and CFB Hub in their own repos). `news/` is no
+GitHub Pages serves the repo root, and the root is NFL Hub: its `index.html` is the page, built from
+`nflbets/build/` by `nflbets/build/build.js` (the owner's call of 17 October 2026, "can you make
+https://demon-x13.github.io/nfl-hub/nflbets/ be https://demon-x13.github.io/nfl-hub/ and get rid of that page": until
+then the page was `nflbets/index.html` and the root a hand-written landing page linking it, Weekly Picks and the other
+hubs, which went that day, its links with it). `nflbets/` is the page's source folder (`build/`), and its `index.html`
+a hand-written redirect to the root for old bookmarks. The one other page is the standalone `picks/` (Weekly Picks),
+whose NFL Hub link, `../`, now lands on the page; X NHL Bets and CFB Hub are in their own repos. `news/` is no
 longer a page (the owner's call, 14 October 2026: the Season Tracker went into each game's Game snapshot on the
 Matchups board): it holds the news job (`news.yml`), which writes the data the snapshot reads at runtime, and the
-week's game notes, written by hand; `news/index.html` only sends a visitor to `nflbets/`. `pickems/` and `live/` hold only
-redirects for old bookmarks; `liveparlays/` holds a redirect beside the X Parlays section's source and its
+week's game notes, written by hand; `news/index.html` only sends a visitor to the root, `../`. `pickems/` and `live/` hold only
+redirects for old bookmarks, to the root; `liveparlays/` holds a redirect (to the root's `#xparlays`) beside the X Parlays section's source and its
 `parlays.json`. `props/`, `betting/` and `elo/` are models with no page of their own, each
-with its own job (`props.yml`, `update.yml`, `elo.yml`); `nflbets/` has no job: it is rebuilt
-by hand when a source changes, and reads the models' data on every load.
+with its own job (`props.yml`, `update.yml`, `elo.yml`); the page has no job: it is rebuilt
+by hand when a source changes, and reads the models' data on every load, every file named from the root
+(`props/data/payload.json`, never `../props/...`, which from the root would leave the site).
 
 | Path | What | Source of truth |
 |---|---|---|
-| `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what `nflbets/` reads) | `props/build/part1.html`, `part2.js`, `part3.js` |
-| `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what `nflbets/` reads); the app itself lives inside `nflbets/index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
-| `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to `nflbets/`): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`, still written though no page reads them since the Stat breakdown went on 16 October 2026), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches with `units.json` | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
-| `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026), in the NBA Hub's and the NHL Hub's look: the two models on one page, built one tab at a time, with Suggested Parlays (each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, locked 2 hours before kickoff and graded by the props job's suggestions record, and the Elo picks), the Parlay Builder (the Top 100 lines, Value picks first, each bet once, on the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, and a Game snapshot of every game on the Matchups board (with the news job's preview and Deep Dive) | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
+| `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what the page reads) | `props/build/part1.html`, `part2.js`, `part3.js` |
+| `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what the page reads); the app itself lives inside the page, the root's `index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
+| `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to the root): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`, still written though no page reads them since the Stat breakdown went on 16 October 2026), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches with `units.json` | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
+| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, locked 2 hours before kickoff and graded by the props job's suggestions record, and the Elo picks), the Parlay Builder (the Top 50 lines, Value picks first, each bet once, on the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, and a Game snapshot of every game on the Matchups board (with the news job's preview and Deep Dive) | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `theme.css` and `theme.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Matchups board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `cfb/` | retired: CFB Hub (then X College Football Bets) moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
-| `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#xparlays`; `parlays.json` is X's placed parlays and `xbets.json` the X Bet Log, the two files Claude edits from what the owner sends, and `build/page.html` is the X Parlays section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json`, `liveparlays/xbets.json` |
+| `liveparlays/` | retired as a page: `index.html` redirects to the root's `#xparlays`; `parlays.json` is X's placed parlays and `xbets.json` the X Bet Log, the two files Claude edits from what the owner sends, and `build/page.html` is the X Parlays section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json`, `liveparlays/xbets.json` |
 | `elo/` | Player Elo: every player rated by position since 2012, the roster model built on those ratings and the matchup formula; `elo/data/*.json` is what the Player Elo tab reads | `elo/build.py` (the formula is its docstring); `nflbets/build/tab_elo.html` is the tab |
 
 ## Source vs generated -- never edit a generated file
@@ -56,7 +62,7 @@ at the next refresh:
 
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
-- `nflbets/index.html` (by `nflbets/build/build.js`)
+- `index.html` at the root, the page (by `nflbets/build/build.js`; until 17 October 2026 it wrote `nflbets/index.html`, which is now a hand-written redirect to the root, source like the other redirects)
 - `props/data/payload.json`, `props/data/priced_at.json`
 - `props/data/suggest_ledger.json` (by `props/build/suggest_ledger.js` in the props job: each prime-time
   game's Suggested Parlays set, shown on the tab or not, locked 2 hours before its kickoff and graded after, beside the retired all-games
@@ -81,8 +87,8 @@ node tools/smoke.js              # must end "all checks passed" (runs tools/case
 
 The Season Tracker's page and its tab on X NFL Bets and Stats are gone (the owner's call, 14 October 2026): what
 it said of each game is in that game's Game snapshot (under "Bets and Stats: the loop"), and `news/` is the job
-that feeds it. `news/index.html` only sends a visitor, and every old bookmark, to `../nflbets/`, the Matchups board
-(`location.replace`, so Back does not loop, on the web and from disk alike, with a link for a browser without
+that feeds it. `news/index.html` only sends a visitor, and every old bookmark, to `../`, NFL Hub at the site's root (`../nflbets/`
+until 17 October 2026), which opens on the Matchups board (`location.replace`, so Back does not loop, on the web and from disk alike, with a link for a browser without
 scripts; never a meta refresh). The tracker's page, its week files, the team matchup, positives, negatives and keys
 paragraphs, the rank chip and the player positions are in git history before that day. The job writes
 `data/results.js`, `data/stats2026.js` and its twin `data/stats.json` (`pull-week.js`), `data/units2026.js` and its
@@ -176,7 +182,7 @@ smoke prints how often the higher Elo and the tag point opposite ways, never a c
 (`basis()`, the snapshot's "Position matchups" label's title) giving each side its own count of this season's
 games, and each overall line's tag, `headTag()` on model.json's units, the rule's (`checkHead`); the
 lineups for the schedule's week (and, in the job, checked on that run's own download); `news/index.html`, run in
-`vm`, sending a visitor to `../nflbets/`; and the fixed cases in `tools/cases.js` (each with the broken version a
+`vm`, sending a visitor to `../`, the site's root, and naming `nflbets/` nowhere outside a comment; and the fixed cases in `tools/cases.js` (each with the broken version a
 review caught, which the checks must fail; the Deep Dive's run on `deepdive.js` itself). On a checkout whose
 `units2026.js` is older than the report it fails until `node tools/context.js` runs. A change to a rule comes
 with a case there. Each drawn row is its unit, the two clubs and figures, the defense's position and its tag and nothing else
@@ -200,7 +206,7 @@ Edit the parts, then from `props/build/`:
 ```
 python3 assemble.py        # part1 + part2 + part3 -> ../app/prop_model_2026.html (gitignored; payload.json is fetched at boot, only checked here)
 node audit.js              # the gate: its summary line must say "0 failures" and "0 runtime errors"; warnings publish
-node ../../nflbets/build/build.js   # the parts are the Bets and Stats page's source: rebuild it (see below)
+node ../../nflbets/build/build.js   # the parts are the Bets and Stats page's source: rebuild it, the root's index.html (see below)
 ```
 
 `node_modules` for the audit lives in `props/build/` (`npm ci`).
@@ -244,7 +250,8 @@ logic in `.github/scripts/props_gate.py`) runs both on every PR, on a push to ma
 covers, and by dispatch, and spends nothing (`weekly.py --no-odds`, no secret mapped, nothing
 committed). Its first job sorts the changed paths into AUDIT (what the props job runs: `props/build/`,
 the `props/data` scripts and model files but not the job's outputs, the research files `weekly.py`
-runs, `lib/`, `props.yml`, the gate) and PAGE (`nflbets/`, the betting app, `betting/neutral_sites.json`
+runs, `lib/`, `props.yml`, the gate) and PAGE (`nflbets/`, the page itself at the root, `index.html`, and the old addresses' redirects to it,
+`pickems/`, `live/`, `liveparlays/` and `news/index.html`, since 17 October 2026, the betting app, `betting/neutral_sites.json`
 and `betting/tools`' build parts, the props parts, `liveparlays/build/`), a renamed file by its old path
 too; with neither it passes at once, and a push or a dispatch runs everything. Job A runs `weekly.py
 --no-odds` on the PR's code and today's nflverse files, then the page smoke on the payload it baked (the
@@ -315,9 +322,10 @@ there (MAE +0.13 points, Brier +0.0042, its 3-point-edge picks 66-81 for -20.3 u
 the chance back only by passing that study's preregistered rule on seasons it has never seen; never
 tune one on the season in play. A no-vig chance sits under the chance its price implies, so a total
 never clears the bar a suggested leg must and `pricedLegs` leaves the totals out; a Suggested Parlays set
-(every bet type of its game) takes its game's total only as the last fill, never a Value pick and so unmarked,
-with a line under the level saying why ("... it is here because this game's other legs do not make a parlay of
-this size."), and with Game total ticked the Parlay Builder's Top 100 lines list both sides of each ticked game's
+(every bet type of its game) takes its game's total only as the last fill, never a Value pick and so unmarked
+(until app v113 with a line under the level saying why, "... it is here because this game's other legs do not make a
+parlay of this size."; a set's cards draw no such line since, the owner's call of 17 October 2026, under "Bets and
+Stats: the loop"), and with Game total ticked the Parlay Builder's Top 50 lines list both sides of each ticked game's
 total last among the other lines, after every Value pick and every thin-edge line, set there and never left to the
 sort, since a total priced on one side only is put at 50% and at plus money can be expected to make more than a
 thin-edge line (app v91-v93, v111 and v112, below; until app v112 the totals came before the thin-edge lines, marked
@@ -407,7 +415,7 @@ and their player legs are shown at the model's estimate, as any game without a b
 player ids either, their player legs are never suggested, not even priced by a Refresh odds press (app
 v109: a suggested leg needs DraftKings' id, below), while their team legs are. The page
 says so wherever it says when player prices are pulled (app v103, `patch_early_sunday.py`: the Parlay
-Builder's notes and the empty line of its Top 100 lines, its empty tiers until app v111, and the parlay card;
+Builder's notes and the empty line of its Top 50 lines (the Top 100 until app v113), its empty tiers until app v111, and the parlay card;
 no prime-time game is an early one, so Suggested Parlays never needs it); `test_pull_schedule.py`'s (e) holds that no
 early game is ever bought.
 
@@ -447,12 +455,12 @@ does not count). A game with no entry is taken as a payload without ids is: `wee
 `{}` from Monday night's final until the next week's first pull, and judged on the payload as a whole that
 emptied every level, hand and Elo pick from Tuesday to Thursday. Where it does, a leg qualifies for
 the levels (`pbPool`: the preferred, thin and totals lists; since app v111 each prime-time game's set on
-Suggested Parlays and, uncapped, the Parlay Builder's Top 100 lines), a game page's hands (`gameLegPool`) and
+Suggested Parlays and, uncapped, the legs the Parlay Builder's Top 50 lines are ranked from), a game page's hands (`gameLegPool`) and
 the Elo picks only with an id; every other rule (the band, the edge, market + form,
 the far-off guard, which counts its legs first) is as it was, and a payload baked before `dk` suggests as
 before. So after a press a `dkline` player leg is no longer suggested, and a team leg the press
 re-priced is (the press gave its current id). A game counts as having player prices only where one of
-its player legs has an id: with player bets ticked, prices on file and none with an id, the Top 100
+its player legs has an id: with player bets ticked, prices on file and none with an id, the Top 50
 lines' empty line (an empty tier's until app v111) says "No player legs DraftKings' betslip can take yet" and
 why (`PB_NO_ID`, with when they are pulled, `PB_PULLED`, Sunday's early games never), and a set's empty level
 says the same of its game with when its player prices come (`spWhy`); a list or a level short of legs says
@@ -474,11 +482,40 @@ those at another number by the audit's own `dkElseAud` and those with none, the 
 alone build, a game with no entry and an empty table taken as before ids, no player id at all and its
 reason, and no ids carried suggesting as before); M, M4 and M7 run on a made-up id table giving every priced line its id (as the
 pull reads one with each price), so their rules still meet player legs and totals; M (the levels, and since
-app v111 the Top 100 lines and the sets), M7 and O (a game's hands) hold every leg a level, a list or a hand may
+app v111 the Top 50 lines and the sets), M7 and O (a game's hands) hold every leg a level, a list or a hand may
 take or holds to an id; M8 a press's read suggested nowhere where ids are carried and as before where they are
-not. The nflbets smoke holds the same on the page (the Top 100 lines, the sets, a game's hands and their empty
+not. The nflbets smoke holds the same on the page (the Top 50 lines, the sets, a game's hands and their empty
 hands' words, and the Elo picks), its checks of the Parlay Builder's notes reading that panel alone, never the
 Elo picks' own words on DraftKings' betslip (the Elo picks are on Suggested Parlays since app v111).
+
+**Only the bets DraftKings offers** (app v113, `patch_declutter_top50.py`, the owner's call of 17 October 2026: "there
+are certain bets in the props that are not part of draft kings like for FG attempts. i only want to show legs that draft
+kings does."). The page knows which player markets DraftKings posts from its own reader of DraftKings' lines on ESPN
+(`ESPN_MAIN`, `ESPN_MILE` and the anytime touchdown: passing yards, completions, attempts, passing touchdowns,
+interceptions, carries, rushing yards, receptions, receiving yards, rush + rec yards, kicking points and field goals
+made, under "Refresh odds" below), and of the stats it projects, FG attempts was the one offered as a bet outside them
+(targets never was). So FG attempts joins targets in `NO_BET` (`part2.js`): still projected, since a kicker's field
+goals made and kicking points stand on it, and never drawn as a line on a game's page or offered to the builder, a set,
+a game page's hands, the Top 50 lines or the Elo picks. A visitor's builder is kept in the browser (`S.parlay`), so an
+FG attempts leg added before app v113 leaves it on the next draw (`renderParlay`), as a started game's leg does, with a
+line saying so ("1 leg was removed: DraftKings does not offer FG attempts.", `data-pb-notdk`), and `toggleLeg` never
+adds one by any path. The audit's M13 holds it on its own copy of what DraftKings posts, never the page's `NO_BET`
+(`DK_PLAYER_AUD`, the reader's twelve player markets and the anytime touchdown; `DK_GAME_AUD`, the moneyline, spread
+and total; `NOT_DK_AUD`, targets and FG attempts, projected and never offered): every stat the page projects is in one
+or the other, and the reader's markets are the copy's, so a market added on either side is said; on the week as it
+stands, every game played or to come, no line its page draws (every player opened, the ladders shown), no leg
+`pricedLegs` gives, none a game page's hands may take or hold, none on the Top 50, a set or the all-games levels and
+none in the builder is on a bet outside the copy; and on a made-up Monday night game of two made-up kickers (on the
+schedule for the run, every stand-in put back on every path, so it holds in any week and the off-season), each with FG
+attempts and field goals made priced as a Value pick with DraftKings' ids, field goals made reaches his game page,
+`pricedLegs`, the hands' pool, the Top 50, the set and, by the page's own boxes and Adds, the builder (so the case can
+tell), and FG attempts none of them; blocking. The nflbets smoke holds the same on its own copy (`NO_BET_OWN`): on the
+week as it stands, every game's page with every player open and every list, hand, set, Elo pick and the builder, no
+box, heading, tile or leg of targets or FG attempts; on a made-up Sunday night game between two clubs of the schedule
+whose kicker the page projects, FG attempts still projected, DraftKings' main line and two ladder prices planted on it
+with made-up ids, still no line, leg or suggestion of it anywhere, and every line the page draws for the kickers put in
+the builder by its own box, none of them FG attempts; and an FG attempts leg kept in the builder from before removed
+with that one line, `toggleLeg` adding none.
 
 Once the audit is clean, `weekly.py` runs the **suggestions record**, `node suggest_ledger.js` (the third change
 after the review of Sunday 11 October 2026, the owner's call; since app v111 the record of Suggested Parlays, the
@@ -486,8 +523,8 @@ owner's call of 16 October 2026: "do similar tracking/grading as ELO tracking"):
 (under "Bets and Stats: the loop", Suggested Parlays), every prime-time game's to come whether or not the tab shows it
 yet (since app v112 the tab sets out one night at a time, `spOn`; the record reads `spGames`, which the night rule
 does not touch, so Monday night's set is the job's from its first run, the tab's from Monday morning, and the same set
-either way), taken from the published page itself (`nflbets/index.html`
-booted in jsdom on the payload just baked, with `elo/data` beside it, since market + form decides which player legs
+either way), taken from the published page itself (`index.html` at the site's root, `nflbets/index.html` until 17 October
+2026, booted in jsdom on the payload just baked, with `elo/data` beside it, since market + form decides which player legs
 qualify, and the window's clock held at the run's time, so a boot of a few seconds cannot carry it past a lock or a
 kickoff) by the page's own `spGames`, `spSet` and `spTierOut`, into the `prime` map of
 `props/data/suggest_ledger.json`, which the workflow commits with the rest of `props/data`. An entry is keyed
@@ -692,7 +729,7 @@ A `dkline` leg of those tested kinds (a main line over or under on passing, rush
 receptions or passing touchdowns; the anytime touchdown; a yards rung DraftKings lists) counts as a book
 price under the same rules: the 45-97% band, the 3-point edge, market + form (`eloAltP` reads a `dkline`
 price as a book price), the far-off guard on its estimated fair chance (the formula's own, `legFair`) and
-V6. Since app v109 it enters a suggestion (a Suggested Parlays level, the Top 100 lines, a game page's hands,
+V6. Since app v109 it enters a suggestion (a Suggested Parlays level, the Top 50 lines, a game page's hands,
 the Elo picks) only on a payload baked before `dk`: wherever the payload carries DraftKings' ids a suggested leg must
 have one at its own line, and ESPN gives none for a player's line (the owner's call of 16 October 2026,
 "Every suggested leg on DraftKings' slip" under Props). Every other kind
@@ -993,10 +1030,18 @@ Props, Suggested Parlays (Suggest Parlays until the owner's call of 17 October 2
 Suggested Parlays", app v112: its button, its heading and every word a visitor reads that names it; its section, address
 and `sp` names keep the old one; the prop model's own section `tab-suggest`, `#suggest`, after Props since app v111: the
 next prime-time night's parlays and the Elo picks), Parlay Builder (the prop model's own Parlay Builder tab, `#parlay`: its choices, the
-Top 100 lines and the builder), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
+Top 50 lines and the builder), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
 Player Elo tab, renamed), Pick'em Record, X Bet Log (the Bet Log frame, still `#bets`); a prop model section with no button
-there stays in the page, unshown. `liveparlays/` and `live/` redirect to `#xparlays`, and `news/` to the page, which opens on
-the Matchups board. The Season Tracker tab is gone (the owner's call, 14 October 2026: its games are in the Game snapshot,
+there stays in the page, unshown. Every old address sends a visitor to the page at the site's root (the owner's call of
+17 October 2026, above, when it moved there from `nflbets/`), by `location.replace`, so Back does not loop, with a link
+for a browser without scripts: `nflbets/` with its own query and tab (`location.replace('../'+search+hash)`, so
+`nflbets/#suggest` lands on the root's `#suggest`, and `#tracker` or `#pickems` on the Matchups board by the page's own
+routing; no meta refresh), `pickems/` with its hash, `liveparlays/` and `live/` to `#xparlays` (these three keep the meta
+refresh they had, pointing at the root too), and `news/` to the page, which opens on the Matchups board. The nflbets
+smoke runs each in `vm` on the web and from disk, resolves where it lands against its own address (so a target one
+folder off, `../nflbets/` or `../../`, fails), and holds its link, its meta refresh or none, that it loads nothing and
+that it names `nflbets/` nowhere outside a comment; it holds too that the root's `index.html` is the built page and not
+the landing page, and that `nflbets/index.html` is no copy of the page. The Season Tracker tab is gone (the owner's call, 14 October 2026: its games are in the Game snapshot,
 below): the board's address is `#matchups`, and an old `#tracker` or `#pickems` (every bookmark from before 16 October
 2026, and `pickems/`'s redirect) lands on it, written over as `#matchups` (`routeTabs` in `tab_pickems.html`, by
 `history.replaceState`; the smoke holds each, on an open page and on a fresh load, and that no text a visitor reads names
@@ -1014,8 +1059,8 @@ padding against the page's content, less a 17px classic scrollbar, at that layou
 middle layout's max-width, 1,161px, for the wide one; 901 for the one between), fails unless there is exactly one
 layout between the phone card and a wide screen, and fails a final-score column under 136px or narrower than the
 wide layout's.
-`nflbets/index.html` is the prop model's page (part1 + part2 + part3, assembled by
-`nflbets/build/build.js` the way `assemble.py` assembles it) with the Matchups board set in
+The page, the root's `index.html` (`nflbets/index.html` until 17 October 2026), is the prop model's page (part1 + part2 + part3, assembled by
+`nflbets/build/build.js` the way `assemble.py` assembles it, its payload named from the root, `props/data/payload.json`) with the Matchups board set in
 front of it as its own `pk-` prefixed section, and the X Parlays section lifted out of
 `liveparlays/build/page.html` into a section of its own, `tab-xparlays` (styles scoped to `#lpCard`,
 script in a closure): X's card (`#lpCard`, X's placed parlays from `liveparlays/parlays.json`, read
@@ -1075,19 +1120,22 @@ far-off guard, below; nobody V6 keeps out, through `pricedLegs`), and since app 
 DraftKings' ids, only with DraftKings' id at its own line (`dkIdOf`), so every leg a level suggests goes on
 DraftKings' betslip (the owner's call of 16 October 2026: under Props, "Every suggested leg on DraftKings' slip");
 those are the Value picks, each marked Value (below); where they cannot fill a level, the fewest legs the model still
-rates at or above the book fill it (the thin legs), unmarked, with a line under the level saying why they are not
-Value picks and what each kind lacked (`pbThinLine`: "One leg is not a Value pick: the model rates it at or above the
-book's price, but not 3 points above."; a team bet has no market + form), an id held to them the same; never a leg
+rates at or above the book fill it (the thin legs), unmarked (until app v113 with a line under the level saying why
+they are not Value picks and what each kind lacked, `pbThinLine`: "One leg is not a Value pick: the model rates it at
+or above the book's price, but not 3 points above."; a team bet has no market + form; a set's cards draw it no more,
+**Without the long paragraphs**, below), an id held to them the same; never a leg
 below the book (a `dkline` leg's book is its estimated price). A level with a player leg from a press (only on
 a payload baked before `dk`) marks it est. and says its price is estimated and why; a team leg a press re-priced is
 DraftKings' real price, with the id the press read. A game total has no edge (it is the book's own chance), so it is
 never preferred or thin: the game's total is a third list, the market legs (`pool.mkt`), taken only where the legs
 with an edge cannot make a level of its size, those legs then the base and the totals the only fill (`pbTier`), never
-a Value pick, unmarked, with a line saying why (`pbMktLine`: "The game total is at the book's own chance with its margin
-out, so it is not a Value pick: it is here because this game's other legs do not make a parlay of this size.", the
-sets' reason, `mktWhy`, which read "this game's legs with an edge do not ..." until app v112's second round; where
-a card is passed no reason, "your picks' other legs do not make a parlay of this size", which the audit holds on
-cards of its own; the audit and the smoke hold the sets' reason word for word, blocking); a total takes the id rule
+a Value pick, unmarked (until app v113 with a line saying why, `pbMktLine`: "The game total is at the book's own chance
+with its margin out, so it is not a Value pick: it is here because this game's other legs do not make a parlay of this
+size.", the sets' reason, `mktWhy`, which read "this game's legs with an edge do not ..." until app v112's second
+round; a set's cards draw it no more; `pbTierCard` still draws both lines on a card it is not told to keep quiet, with
+the reason it is passed, else "your picks' other legs do not make a parlay of this size", which the audit, M2, holds on
+cards of its own with the sets' reason and the smoke on a card of its own drawn as the Elo picks draw theirs with no
+reason, word for word, blocking); a total takes the id rule
 too. One side (to win or to cover)
 and one total, which a book takes on one ticket and which are unrelated (`legRho`), one leg a player, no line twice.
 A level is empty only when the game does not make that many legs, and then says why (`spWhy`: "Only 3 legs in this
@@ -1095,7 +1143,8 @@ game, and no player prices yet: they are pulled on Saturday morning.", "... that
 game's player prices, and DraftKings' ids with them, coming on the day of a Thursday or Monday game and on Saturday
 morning for Sunday night's), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
 `parlayDec`, same-game legs priced together), worked on the legs in the builder's order. Each level is a card
-(`pbTierCard`): the book's fair chance first and the model's beside it, the price and what the Bet amount pays, then
+(`pbTierCard`, drawn quiet, `o.quiet`, since app v113: under its legs only the est. line where a leg's price is an
+estimate and a ruled-out level's Updated line): the book's fair chance first and the model's beside it, the price and what the Bet amount pays, then
 its legs, each with its own **Add** (`data-pb-leg`, 44px, `aria-pressed`, named for the leg: "Add Bo Nix, 250+
 passing yards, to the builder"), which puts that one leg in the builder by `toggleLeg`'s own path, so the builder
 prices it as it always has, and reads Added while it is in, a second press taking it off as on a game's page, the
@@ -1106,7 +1155,9 @@ control is Refresh odds (Odds, its status line beside it); its Bet amount is the
 on its game's kickoff and the data (`SP_CACHE`, `spSig`, with `pbDataSig` and so `ESPN_SEQ` in it), and a game that
 kicks off while the page is open leaves the tab (`pbWatch`). With no prime-time game left to come the tab says so.
 The Elo picks (under "Player Elo: the loop") are its last section, `#pbElo`, their rules unchanged and still on the
-Parlay Builder's ticked games and player sides, each leg with its own Add too.
+Parlay Builder's ticked games and player sides, each leg with its own Add too, led since app v113 by one sentence, "Players
+whose Elo matchup beats the book's price, on the games and player sides ticked on the Parlay Builder tab." (until then a
+paragraph on the matchup nudge's record and the fair chance), which the nflbets smoke holds word for word.
 
 **One night at a time** (app v112, `patch_suggested_night.py`, whose docstring is the design, the owner's call of 17
 October 2026: "also can you just show the next night game dont stack the mondy night game until monday morning"). The
@@ -1122,7 +1173,8 @@ that night's games once it is up, else none, and it is the one place the tab ask
 night is up the tab draws one line in place of the sets, saying which game is next and when its set goes up
 (`p.sp-wait`, `data-sp-wait` the instant, `data-sp-next` the games' ids: "Next up: Monday night, Commanders at 49ers.
 Its set goes up Mon 6:00 AM ET, the morning after Sunday night's game.", "Their sets go up" for two games); with no
-prime-time game left to come it says so as before, and the lead says one night is shown at a time. The page builds a
+prime-time game left to come it says so as before (the tab's lead said one night is shown at a time until app v113 took
+the lead off). The page builds a
 set only for a game it sets out (its own copy at the lock, where the record has none, among them), a level's Finish
 (`spTier`, which the parlay card reads) finds only a game `spOn` sets out, and `spState()` carries `on=` and the games
 set out, so the half-minute look (`pbWatch`, through `pbStale`) redraws an open page at the 6:00 AM turn. The record
@@ -1151,31 +1203,36 @@ of thin edge and no edge and come up with a name for that first section?"). The 
 puts on its preferred list (the 3-point edge, with market + form agreeing on a player's line: `thin` false and not a
 total, `pbIsValue(l)`, `!!l && l.thin === false && !l.market`) is a **Value pick**, and wears the one mark a leg has,
 `<i class="pb-valmark">Value</i>` (`pbValMark`, the hub's gold filled with dark text on it), on a level's card and on
-a row of the Top 100 lines. A thin-edge leg and a game total wear none (the `pb-thinmark` "thin edge" and "no edge"
-are gone), and the lines under a level say why they are not Value picks (`pbThinLine`, `pbMktLine`, above). An Elo
+a row of the Top 50 lines. A thin-edge leg and a game total wear none (the `pb-thinmark` "thin edge" and "no edge"
+are gone), and until app v113 the lines under a level said why they are not Value picks (`pbThinLine`, `pbMktLine`,
+above; a set's cards draw neither since: the Value mark says it). An Elo
 pick's legs come from `pricedLegs`, which sets neither `thin` nor `market`, so none is marked: they are chosen on
 the Elo matchup, not the edge. Nothing about which legs a level takes, its order or its numbers moves, and the record
-still keeps each leg's `thin` and `market`. The tab's lead says a leg marked Value is one of the model's best, rated
-at least 3 points above the chance its price implies, and, wherever the Elo tab is on the page (`formSig()` not
-empty, loaded or not), "and on a player's line market + form (the book's chance moved by his Elo rating) agrees"
-(app v112's second round; the audit holds it as a warning, the smoke blocking). The audit (`pbIsValue` on its own
-cases and the marks on cards of its own, then every level card and Top 100 row) and the nflbets smoke hold the Value
+still keeps each leg's `thin` and `market`. From app v112's second round to app v113 the tab's lead said a leg marked
+Value is one of the model's best, rated at least 3 points above the chance its price implies, and, wherever the Elo tab
+is on the page, "and on a player's line market + form (the book's chance moved by his Elo rating) agrees"; the lead
+went with app v113, and the Parlay Builder's Value picks heading and the line under it say what a Value pick is. The
+audit (`pbIsValue` on its own cases and the marks on cards of its own, then every level card and Top 50 row) and the nflbets smoke hold the Value
 mark on every Value pick and on nothing else, no Elo pick's leg marked, and no old tag anywhere.
 
 **The lock** (the owner's call of 16 October 2026, after the sets above: "obviously dont want the lines and options
 changing alot ... can we have the ability to refresh odds up until 2 hours before the game before it locks?"). A set
 is live until 2 hours before its kickoff (`spLockAt`, `SP_LOCK_MS`): built from the published prices and, in the
 visitor's browser, any Refresh odds press, which re-picks it as it re-picks everything, and the tab says when it
-locks ("Locks Sun 6:20 PM ET, 2 hours before kickoff; Refresh odds updates it until then."). From the lock to
-kickoff the tab shows the site's locked set, marked Locked with its time: the game's entry in the suggestions record
+locks in one short line ("Locks Sun 6:20 PM ET, 2 hours before kickoff."; until app v113 it went on "; Refresh odds
+updates it until then."). From the lock to kickoff the tab shows the site's locked set, marked Locked with its time
+("Locked since Sun 6:20 PM ET."; until app v113 a sentence went on to say whose set it is, when the props job took it
+and that Refresh odds no longer changes it): the game's entry in the suggestions record
 (the ledger's `prime`, under Props; `spLedgerOf`: of this season and of the game's kickoff as it stands, taken
 before the lock), the same for every visitor and the one the record grades, which no press changes (a press still
 prices everything else, and the parlay card still converts a leg to DraftKings' number). Where the record has no
 entry for the game (no run of the props job landed before the lock, or the file did not load), the page builds the
-set once, says it is not the site's locked set and not the one the record grades, and keeps it in the browser
+set once, says it is not the site's locked set and not the one the record grades ("Locked since Sun 6:20 PM ET. This
+browser's own set: the site's was not published in time, so the record does not grade it."), and keeps it in the browser
 (`props_sp_lock_v1`, outside `S` and never sent anywhere, `{v, season, games}` under each game's kickoff, a game
 pruned on every write once it kicks off or leaves the schedule), so a reload shows the same set; the record's set
-takes its place as soon as a load reads one, and a locked game waits for the record's read to answer (`PB_REC_DONE`)
+takes its place as soon as a load reads one, and a locked game waits for the record's read to answer (`PB_REC_DONE`,
+"Locked since Sun 6:20 PM ET. Loading the site's set…")
 before building its own; a set that reaches its lock with the page open has the record read again (`pbWatch`,
 `PB_REC_STATE`), since the job may have rewritten or first taken the entry after the page loaded (a read again that
 fails keeps the one before). A locked level's chance and price are worked out again on its legs as kept by the
@@ -1186,10 +1243,11 @@ puts that leg in as it was locked (its line and price), never the line as it sta
 in Eastern time beside its lock (`spKickEt`), so the two read on one clock wherever the visitor is. Ruled out after the lock (the owner's call of that day, "Replace that level only"): a
 locked level holding a player the latest published report has Out or Doubtful, the roster has inactive, or the
 page's own rules hold out (`spOutWhy`, on `suggestable`: V6's rule, the one every suggestion obeys) is built again
-from the lines at hand, that level only (`spRebuild`), the others staying as locked, and marked "Updated: <player>
-ruled out" with when (`spUpdLine`; the page's own says the record grades the site's locked set, which the props
-job updates the same way only if it runs again before kickoff, since its runs start 2 to 9 hours late and replace a
-level only before kickoff): the record's own replacement where the props job has made one (the level's
+from the lines at hand, that level only (`spRebuild`), the others staying as locked, and marked in one line with the
+player and when (`spUpdLine`, app v113: "Updated: Bo Nix ruled out (Sun 5:30 PM ET); this level was built again.", and
+the page's own "Updated in this browser: ..."; until then the page's own went on to say the record grades the site's
+locked set, which the props job updates the same way only if it runs again before kickoff, since its runs start 2 to 9
+hours late and replace a level only before kickoff): the record's own replacement where the props job has made one (the level's
 `updated`), else the page's, which says it is the page's own change, is kept in the browser beside the set and gives
 way to the record's when that names the same player. The record grades the ledger's entry, with the job's
 replacement where it made one.
@@ -1197,20 +1255,53 @@ replacement where it made one.
 At the top of the tab is the **record** (`#spRec`, `spRecHtml`): a pill a level, as the ELO Ratings tab's record
 bar, its won-lost and units on $1 from the `prime` entries' own grades (`spRecSum`, as the job's `prime_summary`
 counts them: each season's game and level once, from the last key that holds it; a push and a pending level counted
-apart; each pill's title giving the wins expected by the book's fair chance and by the model's), "No prime-time set
-graded yet" until one is, and a line saying it starts with this change, 16 October 2026, each Thursday, Sunday and
-Monday night game's four parlays as the site locked them, graded as a book settles them, and that Refresh odds never
-changes it. It is read beside the payload once a load with no-store and kept outside `S` (`PB_REC`); no file, or one
+apart; each pill's title giving the wins expected by the book's fair chance and by the model's, and its pushes), "No prime-time set
+graded yet" until one is, and nothing else: the line under the pills that said it starts with this change, 16 October
+2026, each Thursday, Sunday and Monday night game's four parlays as the site locked them, graded as a book settles
+them, and that Refresh odds never changes it went with app v113. It is read beside the payload once a load with no-store and kept outside `S` (`PB_REC`); no file, or one
 that is not a ledger, draws nothing. The audit's P2 and the nflbets smoke hold every number it states, the pills'
 won-lost and units and each title's graded, won, expected wins (fair, on how many had one, and the model's) and
 pushes, to the entries' grades worked out on their own, blocking. The all-games record it replaced (app v99 and v100, `pbRecHtml` and `pbRecSum`:
 the panel's default levels per kickoff wave from 12 October 2026, Monday night's Bills at Rams the first) stays in
 the file, graded, and is drawn nowhere.
 
+**Without the long paragraphs** (app v113, `patch_declutter_top50.py`, whose docstring is the design, the owner's call of
+17 October 2026: "in suggest parlays, get rid of all the long paragraph description stuff. we dont need to clutter the
+page."). Suggested Parlays keeps what a visitor acts on and drops what explains it. Gone: the lead paragraph under the
+heading (what a set is, one night at a time, the lock, what a Value pick is), the foot under the sets (how a set is
+built, its rules and its floors), the record's sentence under its pills, and on a set's level cards the lines saying why
+a leg is not a Value pick or why the game's total is there (`pbTierCard`'s `o.quiet`, which every set's card passes; a
+card not passed it, the Elo picks' and the retired all-games panel's, drawn nowhere, still draws them). The lock lines
+are one short line each and a replaced level's Updated line one line (**The lock**, above), and the Elo picks' lead one
+sentence. Kept: the heading, the record's pills (each pill's title still giving its expected wins and its pushes),
+Refresh odds and its status line, the wait line, an empty level's reason, and the est. line (a price that is an
+estimate is money), so the tab's head is its heading, the record and Refresh odds and nothing else. The audit holds it
+on the week as it stands (`holdSets`: each set's live or locked line word for word, and no line on a set's card saying
+why it holds a total, blocking, or why a leg is not a Value pick, a warning, whatever it holds, the cards with a thin
+leg or a total drawn quiet counted), on M10's made-up prime-time games (the live line, this browser's own locked set,
+one waiting for the record and the record's, and the replaced level's Updated line, the record's and the page's own,
+word for word; with three of a game's lines made thin, its live cards still quiet, blocking), on M11's nights (a Safe
+card's thin leg unmarked with no line under it), on M2's cards of its own (one not quiet with a thin leg and a total
+drawing both lines, a quiet one neither with the same marks, and a quiet one keeping the est. line alone, blocking), on
+M13's made-up Monday night (its set's level taking the game's total drawn quiet, blocking) and in P2 (the record its
+pills alone, each title naming its pushes); the words, the lead's and the foot's absence and the record's are
+warnings (`W.wording`). The nflbets smoke, which has no warnings, holds all of it: the tab's head its heading, the
+record's pills and Refresh odds alone; no word of the lead, the foot, the record's sentence, a level's why-lines or the
+long lock lines anywhere on the tab, at any hour (`WHY_GONE`, with the old tags); every live and locked line word for
+word (`Locked since <time>.`, and this browser's own set's sentence after it); a card of its own drawn as the Elo picks
+draw theirs saying why a leg is not a Value pick and why the total is there, and drawn as a set's saying neither, both
+keeping the est. line and the Updated line; the made-up Sunday night game's lines at the lock, waiting for the record,
+locked from it and as this browser's own, and the Medium built again ("Updated in this browser: ...", then the
+record's "Updated: ..."); the real and a made-up record drawn as pills alone; and the Elo picks' one sentence.
+`smoke_live.js` holds its Thursday night fixture's live line and, an hour before kickoff, its locked line word for word,
+and no long paragraph on the tab.
+
 The Parlay Builder tab (`#parlay`, `tab-parlay`; app v111, the owner's call of 16 October 2026: "move top section
 with odds, build from, bet types, game checkboxes into new section tab called 'Parlay Builder'. add leg parlay
 section for live builder, in that section add refresh odds button and show top 100 line + profit ratio and allow
-each line item to be added to parley builder") is its choices at the top and the **Top 100 lines** they make
+each line item to be added to parley builder") is its choices at the top and the **Top 50 lines** they make (the
+Top 100 until app v113, `patch_declutter_top50.py`, the owner's call of 17 October 2026: "in parlay builder only do top
+50 now instead of 100")
 (`#pbPanel`, drawn by `renderPb()` in `part3.js`, from `renderParlay()`, which draws Suggested Parlays with it), over
 the builder (`#parlayBody`). The four levels it drew over every game until then are on Suggested Parlays, one set a
 prime-time game, and the lock on each leg, New legs and Reset (app v95, `patch_pb_lock_turn.py`) are gone with them,
@@ -1222,14 +1313,14 @@ one-tap amounts set the same number (its hint says every parlay on Suggested Par
 its own decimal price ("$25 pays"), redrawn in place as it is typed (`pbPays`, each card's `data-pb-pay` holding its
 price, on either tab) with the builder following a moment later; leaving the box or Enter settles it without
 redrawing the panel (`renderParlay({keepPb:true})`), so an Add to builder or Finish pressed straight after typing
-lands. The Top 100 lines are on $1 and never move with it. A typed amount is read by `stakeRead` ($ and thousands
+lands. The Top 50 lines are on $1 and never move with it. A typed amount is read by `stakeRead` ($ and thousands
 commas allowed); one that is not a positive number (blank, a word, 0, a minus) leaves the amount as it was, and a
 saved one that is not an amount reads as $20 (`pbStake`), so nothing drawn from it is NaN. Then Refresh odds (Odds,
 its status line beside it), and the choices, each kept in the browser's own prop model state (`S.ui.pb`: the boxes,
 the games unticked, whether the games list is open; nothing else holds it): a mix, All (the default), Teams only or
 Players only, which sets five boxes, Moneyline, Spread, Game total, Player overs and Player unders (a touchdown and
 a ladder rung are overs; a box changed by hand lights the mix it makes, or no mix at all: there is no Custom tag);
-and the week's games still to kick off, all ticked to start, with All and None. From those alone, the **Top 100
+and the week's games still to kick off, all ticked to start, with All and None. From those alone, the **Top 50
 lines** (`getPbTop`, `pbTopBuild`): every leg on the ticks that qualifies as a suggested leg does (`pbLegs`, the
 lists a level is searched from, uncapped: the preferred and the thin legs and, with Game total ticked, both sides of
 each ticked game's total, every rule above held, the id rule among them), in two parts (app v112, the owner's "come
@@ -1237,8 +1328,8 @@ up with a name for that first section", under **Value picks** above): first the 
 then the other lines, every thin-edge leg (one that missed the 3-point edge or market + form, which a level takes
 only as fill; they pay more for the model's chance and filled the list's top until app v111 grouped them) and then
 every total, each of the three ranked on its own by what $1 on it is expected to make at the model's chance (the
-chance times the decimal price, less the $1; the lower `pbOrd` on a tie), best first, at most 100 in all
-(`PB_TOP_N`): `[...rank(P1), ...rank(P2), ...rank(P3)].slice(0, 100)`, `P1` the Value picks, `P2` the thin-edge legs
+chance times the decimal price, less the $1; the lower `pbOrd` on a tie), best first, at most 50 in all
+(`PB_TOP_N`, 100 until app v113): `[...rank(P1), ...rank(P2), ...rank(P3)].slice(0, 50)`, `P1` the Value picks, `P2` the thin-edge legs
 and `P3` the totals. The totals are set last, the order a level fills in, never left to the sort: a total is at the
 book's own chance, but one priced on one side only is put at 50%, so at plus money (its over alone at +120: +$0.10
 on $1) it can be expected to make more than a thin-edge line, and ranked with them, as app v112 first had it, it came
@@ -1250,7 +1341,7 @@ pairs). A ladder rung k+ (a player's over that is not his main line) lands exact
 half-point line does and is priced from it, so before the ranking, where that main Over of the same game, player and
 stat is among the Value picks or the thin-edge legs, the rung is left out of every part (`once()`) and its slot goes
 to the next line. The main line is kept wherever it ranks, in either part (where the rung was the Value pick and the
-main line a thin-edge one too), and the rung is left out even where its main line ranks past the 100th. A
+main line a thin-edge one too), and the rung is left out even where its main line ranks past the 50th. A
 whole-number main line (Over 225 pushes at 225, where 226+ loses), an Under, a main line that does not qualify and a
 main line in another game never take a rung's place. `getPbTop()`'s `same` counts the rungs left out, drawn nowhere.
 A level never took both (one leg a player) and the builder holds one leg a stat (`legKey`), so it was the list
@@ -1264,7 +1355,7 @@ the page, the totals with Game total ticked), and `ol.pb-top[data-pb-sec="other"
 the last Value pick, so the ranks run on across both (`data-pb-row`, the rank shown); with no Value pick on the
 reader's choices, the Value picks heading has no count and a line under it says so ("No line on your picks is a
 Value pick right now.", `data-pb-novalue`) over the other lines. The lead and the foot say the order (the foot: "...
-each part ranked by what $1 on it is expected to make, any game totals last, 100 lines at most in all. Each bet is
+each part ranked by what $1 on it is expected to make, any game totals last, 50 lines at most in all. Each bet is
 listed once: a ladder rung that is the same bet as the player's main line (225+ passing yards and Over 224.5) is
 shown as the main line."), and each row carries its part (`data-pb-grp`, value or other; edge or thin until app
 v112, the first thin row under a gold rule, which went with the headings).
@@ -1273,13 +1364,18 @@ no mark on any other row, its price (est. where it is, titled with what it is pr
 chance, the book's fair chance where there is one ("fair, est." where it is), what $1 wins if it lands and what $1
 is expected to make, and an Add, the sets' own. A game total is never a Value pick, and a note says the totals come
 last whenever Game total is ticked ("Game totals are never Value picks: each is priced at the book's own chance, so
-the totals come last among the other lines, and on a long list the 100 lines can end before them."). The audit's
-top-100 check (`topAud`, `topFullAud`, its own rung rule `sameBetAud`) and the nflbets smoke's (`pbTopOwn`,
+the totals come last among the other lines, and on a long list the 50 lines can end before them."). The list's
+length is the page's one number for it, `PB_TOP_N`, which its heading (`Top ${PB_TOP_N} lines`, "Top 50 lines"), the
+lead ("best first, 50 lines at most."), the foot, that note and the empty builder's line ("or add a parlay from
+Suggested Parlays or a line from the Top 50 above.") all read; the checks keep their own copies of 50, `TOP_N_AUD` in
+the audit and `PB_TOP_N_OWN` in the nflbets smoke, never read from the page. The audit's
+Top 50 check (`topAud`, `topFullAud`, its own rung rule `sameBetAud`) and the nflbets smoke's (`pbTopOwn`,
 `sameBetOwn`) work the order, each bet once, the parts (each holding exactly its rows, its heading, its count and
 the second list's start) and the marks out on their own, on the week as it stands: no row a rung whose half-point
 main Over qualifies, `same` the count they work out, and no line of a later part (the Value picks, the thin-edge
 lines, the totals) before one of an earlier; the audit also holds each main line a rung was left out for exactly
-where its rank in the order without those rungs earns it, and the list the first 100 of that order. On the week as
+where its rank in the order without those rungs earns it, and the list the first 50 of that order, at most 50 rows
+drawn under the heading "Top 50 lines" (blocking: a number the page states). On the week as
 it stands only the smoke meets a priced ladder rung (week 6's list left out 7): the audit boots with no baked odds
 (`NO_BAKED`, `S.odds` empty), so its real lists carry no rung and its own made-up games (M12) are what hold the rule
 for it. Both hold it
@@ -1289,8 +1385,14 @@ out, a whole-number Over 225 with its 226+ kept, an Under main line with a rung 
 another game kept, a Value-pick rung left out for its thin-edge main line, a rung whose main line does not qualify (or
 that has none) kept, and the game's total priced on its over alone at +120, put at 50% and expected to make $0.10,
 still after every thin-edge line (the smoke's nine rows worked out by hand, `same` 2; the audit's M12 also on a list
-of more than 100 with eight Value-pick pairs at its top, where the lines ranked 93 to 100 once the rungs are out take
-their slots, and a thin-edge main line ranked past the 100th is off the list with its rung left out all the same).
+of 103 lines once its nine rungs are out, more than the 50 the list holds, with eight Value-pick pairs at its top, where
+the lines ranked 43 to 50 once the rungs are out take their slots, the 51st is off the list, exactly 50 rows are drawn,
+and a thin-edge main line ranked past the 50th is off the list with its rung left out all the same). The smoke holds
+the cut on sixty made-up games of its own too (Moneyline only, each home side to win at -110, forty rated 60.0% down to
+56.1% a tenth of a point at a time, Value picks, and twenty 55.0% down to 53.1%, thin-edge lines): the list is the
+first 50 of their order, the forty Value picks and then the ten best thin-edge lines, the last ten left off, under
+"Top 50 lines", the parts counting 40 and 10 and the other lines ranked from 41; and it fails unless some list it held
+had more lines qualifying than the 50 it holds (`topOver`), so the cut is always met.
 Which lines, their part, order and numbers are blocking; the words are warnings in the audit (`W.wording`) and fail
 the smoke, which has no warnings. The list's notes say what the
 all-games panel's said: with player bets ticked and none of their prices in yet, that the list has no player lines
@@ -1340,7 +1442,7 @@ with it where every leg has a book price (the hands' floors, 35%, 20% and 10% by
 no longer stated on the page: app v106 took the game page's explanations off at the owner's ask, and the
 audit holds the card to stating no floor), and the parlay card does too (below). A leg the model rates `FAR_OFF` (15 points) or more above its fair chance on its
 side (`legFarOff`; only where a fair chance exists) is left out of the preferred and thin lists every
-suggestion is built from, the sets' and the Top 100 lines' (`pbPool` and `pbLegs` count it in `far`, and the
+suggestion is built from, the sets' and the Top 50 lines' (`pbPool` and `pbLegs` count it in `far`, and the
 Parlay Builder's note says how many lines and why) and of a game page's hands
 (`gameLegPool`), and flagged "model 77% · market 55%: far off the market" (`farText`) on the game pages
 (the player lines, the touchdown and rungs on a book price, the Game bets card's team lines), in the
@@ -1431,7 +1533,8 @@ lines as read ...: a leg whose line DraftKings has moved or pulled since will no
 it before you bet"), a line naming each converted leg ("On DraftKings' slip at its own line: leg 2 as
 Over 64.5 receiving yards (DraftKings prices it at its own line, so its payout can differ)"), the legs to
 add by hand, a line each with why in a few words ("player prices for its game are not pulled yet"), and
-the site's address last, as where it came from. The link is in the text and
+the site's address last, as where it came from (its root, `demon-x13.github.io/nfl-hub`, on the card and its image as
+in the text since 17 October 2026; `.../nfl-hub/nflbets` until then). The link is in the text and
 never in the share's `url` field (the owner, October 2026: "sometimes when i copy the button to share the
 draft kings link it like compresses the url and doesnt show all legs"): on an iPhone WebKit hands the share
 sheet the text and the url as two items, Messages draws the url as a card showing only
@@ -1452,14 +1555,18 @@ Log come from is in "X's parlays and the X Bet Log" below. Then the Player Elo t
 from `nflbets/build/tab_elo.html` (`pe-` prefixed, its own closure, reading `elo/data/`), and the betting
 app's Records, Power Ratings and Bet Log tabs in frames: the app, as `betting/tools/build.js`
 builds it, is carried in the page as a string (`BET_APP`) and becomes a frame's srcdoc when
-its tab is first opened, with `window.EMBED_TAB` and `window.STATE_URL` written in front of
-it. A srcdoc frame is the page's own origin, so the app keeps its browser store. A frame takes
+its tab is first opened, with `window.EMBED_TAB`, `window.STATE_URL` (`betting/state.json`) and, since 17 October
+2026, `window.ELO_URL` (`elo/data/model.json`) written in front of it: a srcdoc frame resolves an address against the
+page's, so the page names the app's two files from the root (on its own, from `betting/`, the app reads `state.json`
+beside it and its fallback `../elo/data/model.json`, the one parent folder the build lets the page name; the betting
+smoke holds both readings). The frame's own `<html>` tag is given the page's light or dark look when it is made and
+again when it loads (under "The hub look"). A srcdoc frame is the page's own origin, so the app keeps its browser store. A frame takes
 the height of its content and never scrolls up and down by itself (`frames()` in
 `tab_pickems.html`): allowed to, a classic scrollbar, Windows Chrome's with its arrows, stuck in the
 Pick'em Record with nothing to scroll, since its charts drawn without the bar came out a few px
 taller than the height measured with it. Sideways, a box scrolls only where its content is really
 wider (the week-by-week grid and the pick grid on a phone), with one bar.
-Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json`,
+Nothing is baked in: it fetches, each named from the site's root where it is, `props/data/payload.json`, `betting/state.json`,
 `liveparlays/parlays.json`, `liveparlays/xbets.json`, `picks/friends.json` and `elo/data/*.json`, and the news job's
 `news/data/units.json` as the page loads and a week's notes when the board or a window first wants them, so it is
 rebuilt when a source changes, never when the data does; and ESPN's feed only when a visitor presses Refresh odds
@@ -1468,8 +1575,8 @@ rebuilt when a source changes, never when the data does; and ESPN's feed only wh
 rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the news smoke as well:
 
 ```
-node nflbets/build/build.js
-node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule and its lock, the Parlay Builder's Top 100 lines, their two parts, the totals last and each bet once, X Parlays and the X Bet Log from their files
+node nflbets/build/build.js      # writes the page, the root's index.html
+node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Parlay Builder's Top 50 lines, their two parts, the totals last and each bet once, only DraftKings' markets, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on a plain browser and one the retired owner layer marked, and the parlay card (the builder's and a Suggested Parlays level's); must end "0 failures"
 (cd news && npm ci && node tools/smoke.js)   # after a change to deepdive.js: the Deep Dive drawn on the real news files (the nflbets smoke only uses stand-ins); must end "all checks passed"
@@ -1481,7 +1588,7 @@ what needs a game to come only when there is one, and, once the page's own week 
 first with a game not yet final, else the last) has no game still to kick off (within the hour of its last
 kickoff or past it: Monday night under way before the props job rebakes after its final, which the Elo job,
 dispatched by the betting job on a final, lands in; and the season's end), boots the page two days before
-that week's last kickoff so the Top 100 lines, the sets, the Elo picks and the builder checks still have a game to stand on;
+that week's last kickoff so the Top 50 lines, the sets, the Elo picks and the builder checks still have a game to stand on;
 a missing section there is a failed check, never a crash. A prime-time game between its set's lock and its kickoff
 (Sunday night's from about 22:20 UTC, when the betting job's late-afternoon finals dispatch the Elo job) is held as
 the set it locked (`holdLocked`), and the checks on made-up lines move it a day and more out, so they stand on live
@@ -1617,7 +1724,8 @@ is still his passing against the pass defense while his row shows the Overall De
 (`#gsStats`, the tracker's eleven stat bars from `stats.json`) is gone (the owner's call, 16 October 2026: "get rid
 of stat breakdown section"): the window no longer reads `stats.json`, which the news job still writes and its smoke
 still holds, read by no page, and the build stops if the card or the read comes back. The window fetches
-`../news/data/units.json` and the opened game's week's notes at runtime, `cache: 'no-store'`, each once a page
+`news/data/units.json` and the opened game's week's notes (`news/data/notes/<season>-w<week>.json`), named from the
+site's root (`../news/...` until 17 October 2026), at runtime, `cache: 'no-store'`, each once a page
 load, the units as the page loads and a week's notes once (the board's week once the board has its schedule,
 another week's the first time one of its games opens), and never bakes them in, so a news job publish is on the
 next load with no rebuild; a file still being read says so in its own part ("Loading the Deep Dive…"), and one
@@ -1648,7 +1756,9 @@ of the news job's data and carries none of the old tab; the
 real files are `news/tools/smoke.js`'s.
 
 `nflbets/build/storage.js` (the browser's own storage), `nflbets/build/xbets.js` (the X Bet Log's
-adapter), `nflbets/build/friends.js` (friends' picks, `window.FRIENDS`) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
+adapter), `nflbets/build/friends.js` (friends' picks, `window.FRIENDS`), `nflbets/build/card.html` (the parlay card)
+and `nflbets/build/theme.js` (the light or dark look, in the page's head, and `theme.css` with it: under "The hub
+look") are inlined by the build, so a change to any
 is a rebuild too. `smoke_live.js` section J holds the card to all of the above: Finish, every leg and
 the price in the window, the image (a recorder canvas, since jsdom draws nothing), the share sheet,
 Open in DraftKings on made-up ids (every leg; a leg DraftKings has only at another number going on at
@@ -1682,9 +1792,14 @@ where the payload has ids for a game still to come, a builder parlay of its mone
 Under to the payload's own ids, with another game's away spread at the page's line going on at its own id
 or DraftKings' closest number, said under its row and on the card (skipped, and said, on a payload baked
 before `dk`). Both smokes record every request a page makes: one to the retired
-Firebase store or its sign-in services, or anything but a read, fails them.
+Firebase store or its sign-in services, or anything but a read, fails them, and `smoke.js` fails too any request
+the page or one of its frames makes that leaves the site (`demon-x13.github.io/nfl-hub/`) or names a parent folder,
+and a file the page reads as it loads that is not read at the site's root (the page is the root since 17 October
+2026; `build.js` refuses a page that names a parent folder anywhere, the betting app's own fallback for its Elo model
+alone excepted, and drops the link to `../betting/`, a page gone since the app moved in, that ended the builder's card
+of the betting model's own Bet Build parlays, `part3.js` untouched).
 `smoke.js` runs the build in memory (`require('./build.js')` writes nothing) and fails unless
-`nflbets/index.html` matches it byte for byte (and that `preview.html` is gone), so a source committed without the
+the root's `index.html` matches it byte for byte (and that `preview.html` is gone), so a source committed without the
 rebuild fails the gate, and the elo job, which runs this smoke every morning after its commit, goes red on it. It
 also runs the betting job's `reference_models.json` gate on the copy of the betting app inside the
 page (`BET_APP`). The prop model's storage key is read from part2's `SEASON`/`KEY` line at build
@@ -1715,9 +1830,51 @@ tokens underneath; a new hard-coded light colour in a part needs a rule in `them
 holds 4.5:1 (3:1 large) on every tab, a game's page, the Game snapshot, the builder and the parlay
 card, at 1280 and 390, checked in a real browser (jsdom computes no cascade). The parlay card and its
 image carry the same palette written out in `card.html`, since the image must not depend on the page.
-The root `index.html` (the landing page, which links the other hubs), `picks/` and the redirect pages
-wear it too. `nflbets/preview.html` and `preview_theme.css`, the look on trial, are gone; the smoke fails
+`picks/` and the redirect pages wear it too (the root's `index.html` is the page itself since 17 October 2026; the
+landing page it was until then wore it as well). `nflbets/preview.html` and `preview_theme.css`, the look on trial, are gone; the smoke fails
 if `preview.html` comes back.
+
+**The light look** (the owner's call of 17 October 2026: "keep this whole layout as dark mode, and then make a light
+mode version that people can tab on and off on the top right"). Dark stays the look and every visitor's default,
+whatever the system's colour scheme says (nothing follows `prefers-color-scheme`; the build refuses a `theme.css`
+that does). The switch is a round 44px button at the header's top right (`[data-theme-toggle]`, `.hub-theme`, first in
+`.hub-stamp`, before the tabs), named "Light mode" (`aria-label`) with `aria-pressed` true while the light look is on
+and a title saying what a press does ("Switch to light mode", "Switch to dark mode"), its glyph the look a press
+gives (a sun while dark, a moon while light, both hidden from a screen reader); it is laid over the header's corner
+out of the flow, so on the dark look nothing else on the page moves (every tab and window at 1280 and 390 was pixel
+for pixel the same before and after outside the switch and the build hash), and under 340px the wordmark keeps clear
+of it. A press puts `html[data-theme="light"]` on the page (and `dark` back), and keeps the choice in that browser
+alone under its own key, `nflhub_theme_v1` (`light` or `dark`), never in the prop model's `S` and never sent anywhere.
+`nflbets/build/theme.js` does all of it, set in the page's head before its styles and its body, so a light visitor's
+first paint is light, never a dark flash: it reads the key there, and storage that throws, cannot be reached or holds
+anything but `light` reads as dark and throws nothing; one listener on the document answers the switch the moment it
+is drawn; and another open tab of the site follows a switch by the `storage` event, page and frames, writing nothing.
+The build refuses a `theme.js` that keeps anything in storage but that key, or sends anything. The light palette is
+`theme.css`'s own block, `html[data-theme="light"]`, `color-scheme: light`: the surfaces a cool light grey and white,
+the hub's graphite as ink, the NFL's #FFD166 kept for every gold fill and `--gold-ink` (#7A5205) for gold read as text,
+and the pick, the miss and the ice taken down to dark steps of themselves for text; every rule of the dark look that
+writes a colour of its own has its light twin there (the selected pills' text, X Parlays' Clear in "Clear this parlay?"
+white on the rose, the Pick'em Record's and the bankroll's chart colours back to the app's own, the Game snapshot's red,
+lean bar and Deep Dive tags back to its light tints, the Even tag's ring, the Elo grade colours, the ELO windows' rows
+that weigh nothing quieted by the muted ink rather than faded), and a new one needs both, checked in a real browser.
+`THEME_FRAME_HEAD` carries both palettes, and `frames()` in `tab_pickems.html` writes the page's look into a frame's
+own `<html>` tag when it makes the frame and again when it loads, so a frame opened later is in the look; a press
+switches every frame already open. The parlay card itself and its downloaded image keep the dark palette `card.html`
+writes out (the window around it follows the look). A Chromium sweep of every visible text, its colour composed over
+what is under it, on every tab, a game's page, the builder with legs, X Parlays drawn, a player's and a team's ELO
+window, the Game snapshot with every card open and the parlay card's window, at 1280 and 390 (8,711 texts each look):
+light, none under 4.5:1 (3:1 large); dark, the same 29 a width as before it, the ELO player and team windows' faded
+rows that weigh nothing at about 4.3:1, which predate it and were left, since the dark look must not move. The nflbets
+smoke's LIGHT MODE section (`lightChecks`, blocking) holds the build (the head's script before the styles and the body,
+the light palette beside the dark one in the page and in `THEME_FRAME_HEAD`, every colour token of `:root` given a
+light value, nothing following the system's scheme, the key named by that script alone), the light palette's own
+pairs at 4.5:1 (3:1 for the Even tag's ring), the switch (in the header before the tabs, a 44px button named Light
+mode, its glyphs hidden, `aria-pressed`), dark with nothing stored, a press to light and back on the page, a frame open
+before it and one opened after, each press writing the key and nothing else and nothing in `S`, another tab's switch
+followed with nothing written (and another key moving nothing), a reload with light kept putting the look on the page
+before its body is parsed and on a frame opened after, storage that throws read as dark with a press still switching
+and nothing thrown, and the head's script on a page of its own reading every kept value but `light` (`Light`, `LIGHT`, a space
+either side, `dark`, junk) as dark and a window whose storage cannot be reached as dark, switching all the same.
 
 A parlay X placed at the book goes in `liveparlays/parlays.json`, and a week of the X Bet Log in
 `liveparlays/xbets.json`, by Claude from what the owner sends, as each file's `how` field
@@ -1751,7 +1908,7 @@ had kicked off when the new file was saved, which keeps the pick the earlier fil
 Each pick keeps the saved_at of the file it came from.
 
 The page reads it like the X Bet Log: `nflbets/build/friends.js` (`window.FRIENDS`, inlined after
-`xbets.js`) fetches `../picks/friends.json` no-store on every load, cleans it (a junk name or entry is
+`xbets.js`) fetches `picks/friends.json` (from the site's root) no-store on every load, cleans it (a junk name or entry is
 dropped; a file missing, not JSON, of another season or with no list draws no friend and throws nothing)
 and hands it to the betting frames as `parent.FRIENDS`; nothing is baked in, and a file that answers late
 redraws the record. `record_viz.js`'s `rvFriends()` grades them in the frame on its own state: a pick counts
@@ -1811,7 +1968,8 @@ The owner publishes a change and expects it on every device on the next load. No
 may quietly outrank what the job published:
 
 - **Published data wins over anything a browser kept.** Local storage holds only what the
-  visitor made -- their own builder, saved slips, picks, bankroll, settings, the parlays they
+  visitor made -- their own builder, saved slips, picks, bankroll, settings (their light or dark look among them,
+  `nflhub_theme_v1`), the parlays they
   cleared from X Parlays on that device, the Refresh odds reads they pressed for -- and nothing of X's. That cleared list only hides; it
   never changes or outranks the file, and it is pruned to the file on every load. The one thing the
   page keeps of its own making is a Suggested Parlays set it built at a game's lock where the record had none
@@ -1834,13 +1992,13 @@ may quietly outrank what the job published:
 - **Every page says which build it is.** `buildTag` on the Bets and Stats header: `APP_BUILD`
   (the prop model's parts) and the page's own hash (`PAGE_HASH`, the first seven hex of its
   SHA-256), so any source change -- the Matchups tab, the X Parlays section, the parlay card, the storage layer,
-  the X Bet Log, the betting app -- shows as a new tag. Without it a stale copy cannot be told from a current one.
+  the X Bet Log, the betting app, the look and its switch -- shows as a new tag. Without it a stale copy cannot be told from a current one.
 - **A frame's content is in the page.** The betting tabs are srcdoc frames filled from a
-  string inside `nflbets/index.html`, so nothing is fetched or cached for them apart from
+  string inside the page, the root's `index.html`, so nothing is fetched or cached for them apart from
   the page itself: a refresh of the page is a refresh of the frames. No frame is filled by address
   any more (the Season Tracker tab, which framed `news/index.html`, went on 14 October 2026); the
-  Game snapshot fetches the news job's files itself, `../news/data/units.json` and
-  the week's notes, `cache: 'no-store'`, at runtime as the page loads (a week's notes when the board or a window
+  Game snapshot fetches the news job's files itself, `news/data/units.json` and
+  the week's notes, named from the site's root, `cache: 'no-store'`, at runtime as the page loads (a week's notes when the board or a window
   first wants them), and the page bakes
   none of them in, so a news job publish is on the next load.
 - **Data fetches are `cache: 'no-store'`.** The HTML is served by GitHub Pages with its own
@@ -1931,11 +2089,12 @@ may quietly outrank what the job published:
   download, saved nowhere; X's parlays and the X Bet Log are the files in `liveparlays/`, which no
   page writes. Which of X's parlays a visitor has cleared from X Parlays on a device
   (`lp_cleared_here_v1`) is that visitor's own choice of what to see there, kept in that browser
-  alone, never X's data and never sent anywhere. What a browser saved before (the prop model's saved
+  alone, never X's data and never sent anywhere, and so is their light or dark look (`nflhub_theme_v1`, `light` or
+  `dark`, written by `theme.js` alone, never in `S`, under "The light look"). What a browser saved before (the prop model's saved
   list, `my_parlays_v1`, the betting app's own Bet Log and `x_nfl_bets_preshare_<season>`) stays in
   its storage, undrawn and never deleted. Anything held per-session and not meant to persist
   (for example the game pages' suggested parlays, cached in `GAME_TIER_CACHE` in `part3.js`, and Suggested Parlays'
-  sets and the Top 100 lines, in `SP_CACHE` and `PB_TOP_CACHE`) is kept outside the saved state object `S`, so
+  sets and the Top 50 lines, in `SP_CACHE` and `PB_TOP_CACHE`) is kept outside the saved state object `S`, so
   it is never serialised.
 - **Downloads go through `lib/netfetch.py` (Python) or `lib/netfetch.js` (Node)**, one rule for every
   NFL job (`elo/build.py`, `weekly.py`, `update.js`, the Joker through `betting/jobkit.py`'s

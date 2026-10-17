@@ -32,7 +32,7 @@
 window.XBETS=(function(){
   /* the betting app's season: the build writes it over this default */
   const SEASON=/*SEASON*/2026;
-  const URL='../liveparlays/xbets.json', READY_MS=6000;
+  const URL='liveparlays/xbets.json', READY_MS=6000;
   const CACHE='xbets_cache_'+SEASON, JOINED='xbets_joined_'+SEASON, PENDING='xbets_pending_'+SEASON;
   const st={weeks:{}, deposit:null, at:null, other:null, applied:false, ok:null, err:null};
   const listeners=[];

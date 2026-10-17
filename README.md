@@ -1,19 +1,22 @@
 # nfl-hub
 
 One repo, four scheduled jobs (one per model or site, in `.github/workflows/`) and
-two sites with pages, plus the standalone Weekly Picks page. Each job downloads its
+one site with pages, NFL Hub at the repo's root, plus the standalone Weekly Picks page. Each job downloads its
 sources, runs its model without anyone clicking anything, and commits the data; the
 pages fetch it on load.
-GitHub Pages serves the repo root:
+GitHub Pages serves the repo root, and the root's `index.html` is NFL Hub (since 17 October 2026, the owner's
+call: "can you make https://demon-x13.github.io/nfl-hub/nflbets/ be https://demon-x13.github.io/nfl-hub/ and get rid
+of that page"; until then the page was `nflbets/` and the root a landing page linking it, Weekly Picks and the other
+hubs):
 
 | Path | What | Source |
 |---|---|---|
-| `nflbets/` | NFL Hub (once X NFL Bets and Stats), the one NFL site, in the NBA Hub's and the NHL Hub's look: both models on one page, and a Game snapshot of every game on the Matchups board | built by `nflbets/build/build.js` from the props parts, the betting app, the X Parlays section, the storage layer, the Player Elo tab and the Game snapshot (with `nflbets/build/deepdive.js`); rebuilt by hand when a source changes, never by a job |
-| `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside `nflbets/` | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
+| `index.html` (the root), from `nflbets/` | NFL Hub (once X NFL Bets and Stats), the one NFL site, in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): both models on one page, and a Game snapshot of every game on the Matchups board; `nflbets/index.html` only redirects old bookmarks to the root | built by `nflbets/build/build.js` from the props parts, the betting app, the X Parlays section, the storage layer, the look (`nflbets/build/theme.css` and `theme.js`), the Player Elo tab and the Game snapshot (with `nflbets/build/deepdive.js`); rebuilt by hand when a source changes, never by a job |
+| `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside the page | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model: no pages, only the parts, build, job and data | `props/` is the prop model package; its own `weekly.py` does the refresh |
-| `news/` | the news job: no page since 14 October 2026 (`news/` sends a visitor to `nflbets/`); the Deep Dive and each game's preview, which the Game snapshot reads, and the stat bars, still written but read by no page since 16 October 2026 (the owner's call: the Stat breakdown went) | moved from `DEMON-X13/nfl-news-tracker`; `tools/run-auto.js` does the scripted half, and the game notes in `data/notes/` are written each Wednesday by Claude |
+| `news/` | the news job: no page since 14 October 2026 (`news/` sends a visitor to the root); the Deep Dive and each game's preview, which the Game snapshot reads, and the stat bars, still written but read by no page since 16 October 2026 (the owner's call: the Stat breakdown went) | moved from `DEMON-X13/nfl-news-tracker`; `tools/run-auto.js` does the scripted half, and the game notes in `data/notes/` are written each Wednesday by Claude |
 | `elo/` | Player Elo: every player rated by position since 2012, the game model and matchup formula built on those ratings, and each team's Overall Offense and Overall Defense on this season's key stats from the play-by-play | `elo/build.py`; `.github/workflows/elo.yml` re-rates every morning |
-| `liveparlays/` | the X Parlays section's source, X's placed parlays and the X Bet Log, which every device sees, read only; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to `nflbets/` | `liveparlays/build/page.html`, `liveparlays/parlays.json` and `liveparlays/xbets.json` (kept by Claude from what the owner sends) |
+| `liveparlays/` | the X Parlays section's source, X's placed parlays and the X Bet Log, which every device sees, read only; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to the root | `liveparlays/build/page.html`, `liveparlays/parlays.json` and `liveparlays/xbets.json` (kept by Claude from what the owner sends) |
 | `cfb/` | a redirect: CFB Hub (once X College Football Bets) lives in its own repo, `DEMON-X13/cfb-hub` | `cfb-hub` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Matchups board's week and saves the picks as a JSON file to send to X; kept in that browser only, a game locks at kickoff, nothing is sent anywhere; the files friends send X go in `picks/friends.json`, which the Pick'em Record draws beside the models | `picks/index.html`, hand-written, no build; reads `betting/state.json` on every load and team names and colours from `news/data/teams.js`; `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `nhl/` | a redirect: X NHL Bets moved to `DEMON-X13/nhl-hub` on 2026-10-13 | `nhl-hub` |
@@ -65,7 +68,7 @@ nflverse files, pulls prop prices from the-odds-api (needs the `ODDS_API_KEY`
 repository secret; about 7 credits a game, 500 free a month), rebuilds the
 payload, bakes stats, injuries and prices into it, assembles the page and runs
 the 26,000-check audit against the assembled page, which is gitignored: the prop
-model has no pages of its own, its parts are the source of `nflbets/index.html`.
+model has no pages of its own, its parts are the source of the page, the root's `index.html`.
 `raw/feat.pkl` (43MB, the fitted feature table for 2019-2025) is committed so
 the job does not rebuild it. Visitors' parlays and bets stay in their browser.
 
@@ -79,7 +82,7 @@ commits `props/data` itself. The betting job never touches the key.
 `news/` was the Season Tracker, a newsletter-style page and then a tab of X NFL
 Bets and Stats; since October 14, 2026 (the owner's call) what it said of each
 game is in that game's Game snapshot, the window a tap on a game on the Matchups
-board opens, and `news/` on its own sends a visitor to `nflbets/`.
+board opens, and `news/` on its own sends a visitor to the site's root.
 `tools/run-auto.js` works out the current week from the nflverse schedule and
 runs `tools/pull-week.js`, which refreshes `data/results.js` (scores, records)
 and `data/stats2026.js` with its twin `data/stats.json` (the stat bars) from
@@ -95,7 +98,7 @@ push to the job's code or the notes.
 
 ## X Parlays and the X Bet Log
 
-X Parlays is a tab of `nflbets/` (`#xparlays`; `live/` and `liveparlays/`
+X Parlays is a tab of NFL Hub (`#xparlays`; `live/` and `liveparlays/`
 redirect there): X's placed parlays, the same on every device, and nothing else.
 X's parlays are the slips placed at the book, in `liveparlays/parlays.json`,
 followed live against ESPN's public scoreboard and box scores in the browser; a
@@ -105,16 +108,21 @@ section's source is `liveparlays/build/page.html`, lifted in by
 closure. The X Bet Log tab is X's week-by-week log from `liveparlays/xbets.json`,
 with the balance from its deposit.
 
-The Parlay Builder is its own tab (`#parlay`): suggested parlays over the builder.
-A visitor picks All, Teams only or Players only (or ticks moneyline, spread, game
-total, player overs and player unders by hand) and the week's games to build
-from, types a Bet amount (the builder's own stake, one number), and gets a Safe
-2-leg, Medium 3-leg, Aggressive 4-leg and Extreme 5-leg parlay, each with its book
-price, the model's chance and what that amount pays, Add to builder and Finish,
-both on the same amount. A game total is priced at the book's own chance
-(`props/research/totals/README.md` says why), so it never makes a suggested
-parlay: it is added by hand from a game's Game bets card, and the panel says so
-when Game total is ticked. No device keeps a list of its own: the builder, kept in the
+The Parlay Builder is its own tab (`#parlay`). A visitor picks All, Teams only or
+Players only (or ticks moneyline, spread, game total, player overs and player
+unders by hand) and the week's games to build from, types a Bet amount (the
+builder's own stake, one number), and gets the Top 50 lines those choices make
+(the Top 100 until 17 October 2026): the Value picks first, then the other lines,
+each ranked by what $1 on it is expected to make, each with its own Add, over the
+builder. Suggested Parlays (`#suggest`) gives the next Thursday, Sunday or Monday
+night game a Safe 2-leg, Medium 3-leg, Aggressive 4-leg and Extreme 5-leg parlay
+of its own, each with its book price, the model's chance and what the Bet amount
+pays, Add to builder and Finish, locked 2 hours before kickoff and graded by the
+props job's suggestions record, with the Elo picks under them. Only the bets
+DraftKings posts are offered (FG attempts went on 17 October 2026). A game total
+is priced at the book's own chance (`props/research/totals/README.md` says why),
+so it is never a Value pick, and a suggested parlay takes one only where its
+game's other legs cannot fill it. No device keeps a list of its own: the builder, kept in the
 browser alone, finishes a parlay as a card to download as an image
 (`nflbets/build/card.html`), saved nowhere.
 
@@ -131,7 +139,7 @@ prop model's own readers from `props/build/part2.js`, so there is one source of
 truth and the prop model's audit keeps testing it.
 
 ```
-node nflbets/build/build.js         # -> nflbets/index.html
+node nflbets/build/build.js         # -> index.html, at the site's root
 node nflbets/build/smoke_live.js    # the section from its file, and the parlay card
 node nflbets/build/smoke.js         # the whole page, the suggested parlays, X Parlays and the X Bet Log from their files
 ```

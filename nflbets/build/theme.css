@@ -1,7 +1,7 @@
 /* The hub look: NFL Hub in the NBA Hub's and the NHL Hub's colours and type (demon-x13/nba-hub,
    demon-x13/nhl-hub), the owner's call of 16 October 2026 ("make it match the color scheme and overall
    feel of the nba and nhl hub so it's consistent across the board"). build.js lays this over every
-   other style of nflbets/index.html, last, so it wins by order, and hands it to the framed betting tabs
+   other style of the page (index.html at the site's root), last, so it wins by order, and hands it to the framed betting tabs
    (window.THEME_FRAME_HEAD). The parts keep their own light tokens; nothing here changes a number.
 
    The surfaces, inks and lines are the NBA Hub's lightened graphite exactly, as the NHL took them; each
@@ -186,3 +186,96 @@ line[stroke="#E6EAEF"]{stroke:#4A5269}
 
 @media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }
 @media(max-width:620px){ .hub-stamp{align-items:flex-start;text-align:left} }
+
+/* the light/dark switch at the top right of the header (theme.js): a round 44px button, its glyph the
+   look a press gives (a sun while dark, a moon while light). It is laid over the header's corner, out
+   of the flow, so the wordmark, the stamp and the tabs sit exactly where they did before it */
+.hub-theme{position:absolute;top:26px;right:22px;z-index:2;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;
+  border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);cursor:pointer}
+.hub-theme:hover{color:var(--ink);border-color:var(--line-2)}
+.hub-theme svg{width:20px;height:20px;display:block;pointer-events:none}
+.hub-theme .ht-moon{display:none}
+html[data-theme="light"] .hub-theme .ht-sun{display:none}
+html[data-theme="light"] .hub-theme .ht-moon{display:block}
+@media(max-width:900px){ .hub-theme{top:12px;right:16px} }
+/* under about 340px the wordmark's football reaches the switch's corner: the wordmark keeps clear of it */
+@media(max-width:340px){ .brand h1{padding-right:52px} }
+
+/* THE LIGHT LOOK (the owner's call of 17 October 2026: "keep this whole layout as dark mode, and then make
+   a light mode version that people can tab on and off on the top right"). Dark is the look and every
+   visitor's default whatever the system says; a visitor who presses the switch gets html[data-theme=light],
+   kept in that browser alone (theme.js). The same layout, type and gold: the surfaces a
+   cool light grey and white, the inks the hub's own graphite, and each accent that is read as text taken
+   down to a dark step of itself (gold text is --gold-ink; the gold fills stay the NFL's #FFD166). Every
+   rule above that writes a dark colour has its light twin here, and every text holds 4.5:1 (3:1 large) on
+   every tab, the Game snapshot, a game's page, the builder and the parlay card's window, at 1280 and 390.
+   The parlay card itself (.pc-card) and its image keep the dark palette written out in card.html. */
+html[data-theme="light"]{
+  --bg:#E8EBF1; --bg-2:#F1F3F7; --panel:#FFFFFF; --panel-2:#F7F8FB; --panel-3:#E7EAF0;
+  --ink:#1E2230; --ink-2:#3A4256; --muted:#545D72; --line:#D8DCE5; --line-2:#BEC5D3;
+  --gold:#FFD166; --gold-2:#FFC53D; --gold-soft:rgba(255,196,64,.24); --gold-ink:#7A5205;
+  --pick:#146638; --pick-soft:rgba(20,102,56,.12);
+  --miss:#AA1F42; --miss-soft:rgba(214,40,80,.11); --rose:#D42A54;
+  --ice:#085F86; --ice-2:#074F70; --ice-soft:rgba(8,95,134,.11);
+  --away:#2F5E9E; --home:#146638;
+  --sh-md:0 18px 40px -24px rgba(30,34,48,.35);
+  --ring:0 0 0 3px rgba(156,106,0,.75);
+  color-scheme:light;
+}
+html[data-theme="light"] body{background:
+  radial-gradient(900px 520px at 12% -8%,rgba(255,196,64,.22),transparent 60%),
+  radial-gradient(700px 420px at 92% 0%,rgba(10,106,145,.08),transparent 60%),
+  linear-gradient(180deg,#F5F6FA 0%,var(--bg) 40%);background-attachment:fixed}
+html[data-theme="light"]:not(.embed) body::before{opacity:.07;
+  background:linear-gradient(90deg,rgba(30,34,48,.5) 1px,transparent 1px) 0 0/64px 64px,
+    repeating-linear-gradient(90deg,rgba(30,34,48,.5) 0 1px,transparent 1px 12.8px) 0 150px/100% 9px no-repeat,
+    repeating-linear-gradient(90deg,rgba(30,34,48,.5) 0 1px,transparent 1px 12.8px) 0 310px/100% 9px no-repeat}
+html[data-theme="light"] .brand h1 em{color:#9C6A00}
+html[data-theme="light"] nav button[aria-selected=true],
+html[data-theme="light"] .sugg-side button.on,html[data-theme="light"] .stake-chips button.on,html[data-theme="light"] .tbtn.on,
+html[data-theme="light"] .pe-pos button[aria-selected="true"],html[data-theme="light"] .pe-mm-n,
+html[data-theme="light"] .seg button.on,html[data-theme="light"] .wk-chip{color:#FFFFFF}
+html[data-theme="light"] tbody tr:hover{background:rgba(30,34,48,.03)}
+html[data-theme="light"] .btn.go,html[data-theme="light"] .btn.danger{color:#FFFFFF}
+/* X Parlays' own buttons inherit their colour (#lpCard button{color:inherit}, which outranks the rule above): its Clear in
+   "Clear this parlay?" is white on the light rose too (4.9:1) */
+html[data-theme="light"] #lpCard .btn.danger,html[data-theme="light"] #lpCard .btn.go{color:#FFFFFF}
+/* gold read as text: a dark gold on the light surfaces and tints */
+html[data-theme="light"] .pill.warn,html[data-theme="light"] .log .warn,html[data-theme="light"] .inj,html[data-theme="light"] .plrbtn .who .inj,
+html[data-theme="light"] .when .cl,html[data-theme="light"] .tot .lv,html[data-theme="light"] .totpts .lv,html[data-theme="light"] .conf.med,
+html[data-theme="light"] .pays .box.tier.med b,html[data-theme="light"] .pays .box.tier.med span,html[data-theme="light"] .pe-q,html[data-theme="light"] .xb-status.bad,
+html[data-theme="light"] .inj.inj-dnp,html[data-theme="light"] .plrbtn .who .inj.inj-dnp,html[data-theme="light"] .finchip.live,
+html[data-theme="light"] .bigp .hero small,html[data-theme="light"] .faroff,html[data-theme="light"] .pk-tier.pk-med,html[data-theme="light"] .pk-note,
+html[data-theme="light"] #lpCard .note,html[data-theme="light"] #lpCard .gm.tie,html[data-theme="light"] #lpCard .gm.tie em,html[data-theme="light"] #lpCard .stamp.bad,
+html[data-theme="light"] #lpCard .res.tie,html[data-theme="light"] .xp-own,html[data-theme="light"] .xp-mark,html[data-theme="light"] .tier.med,
+html[data-theme="light"] .lead .va.near,html[data-theme="light"] .lv.warnc,html[data-theme="light"] .tile .tv.near,html[data-theme="light"] .tile .td.near,
+html[data-theme="light"] #gsModal .gs-lag{color:var(--gold-ink)}
+html[data-theme="light"] .finchip{border-color:rgba(8,95,134,.4)}
+html[data-theme="light"] .finchip.live{border-color:rgba(196,140,20,.55)}
+html[data-theme="light"] .lead .va.exact,html[data-theme="light"] .tile .tv.exact,html[data-theme="light"] .tile .td.exact{color:#5B3CC4}
+html[data-theme="light"] .pays .box.tier.med{border-color:rgba(196,140,20,.55)}
+html[data-theme="light"] .pb-tier.xtrm{border-top-color:#8B6CF0}
+html[data-theme="light"] .pe-g3{color:#236B42!important} html[data-theme="light"] .pe-g2{color:#8A5E05!important}
+html[data-theme="light"] #lpCard .src{border-left-color:#8B6CF0}
+/* the Pick'em Record chart and the bankroll in their own light colours, as the app draws them */
+html[data-theme="light"] polyline[stroke="#0F1B2D"]{stroke:#0F1B2D} html[data-theme="light"] circle[fill="#0F1B2D"]{fill:#0F1B2D}
+html[data-theme="light"] [style*="background:#0F1B2D"]{background:#0F1B2D!important}
+html[data-theme="light"] line[stroke="#E6EAEF"]{stroke:#E6EAEF}
+html[data-theme="light"] [stroke="#1F6F4A"]{stroke:#1F6F4A} html[data-theme="light"] [fill="#1F6F4A"]{fill:#1F6F4A} html[data-theme="light"] [style*="background:#1F6F4A"]{background:#1F6F4A!important}
+html[data-theme="light"] [stroke="#C0392B"]{stroke:#C0392B} html[data-theme="light"] [fill="#C0392B"]{fill:#C0392B} html[data-theme="light"] [style*="background:#C0392B"]{background:#C0392B!important}
+html[data-theme="light"] [stroke="#E8730A"]{stroke:#E8730A} html[data-theme="light"] [fill="#E8730A"]{fill:#E8730A} html[data-theme="light"] [style*="background:#E8730A"]{background:#E8730A!important}
+html[data-theme="light"] [fill="#B23A32"]{fill:#B23A32}
+/* the Game snapshot: its own light red, a lean bar in the team's own colour, the Deep Dive's light tints
+   (Even a pale slate with a ring at 4:1 on the card) and its grade green a step darker */
+html[data-theme="light"] #gsModal{--gs-miss-ink:#A93226}
+html[data-theme="light"] #gsModal .gs-track em{background:var(--gs-tc,var(--ink-2));box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+html[data-theme="light"] #gsModal .dtag.easy{background:#DDF3E6;color:#17603D}
+html[data-theme="light"] #gsModal .dtag.fav{background:#EEF8F2;color:#1B6E47}
+html[data-theme="light"] #gsModal .dtag.even{background:#E9EEF4;color:#3F4D63;box-shadow:inset 0 0 0 1.5px #6F7E96}
+html[data-theme="light"] #gsModal .dtag.tough{background:#FBEFD3;color:#7A5205}
+html[data-theme="light"] #gsModal .dtag.vtough{background:#FAE1DE;color:#A93226}
+html[data-theme="light"] #gsModal .pe-g3{color:#236B42!important}
+/* the builder's hero figure on its light tint, and the ELO windows' rows that weigh nothing quieted by
+   the muted ink rather than faded, so they and their coloured moves still read at 4.5:1 on white */
+html[data-theme="light"] .bigp .hero b{color:var(--ink)}
+html[data-theme="light"] .pe-pl tr.pe-weak td{opacity:1;color:var(--muted)}

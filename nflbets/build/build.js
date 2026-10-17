@@ -1,12 +1,20 @@
-/* Build the NFL Hub page (nflbets/), once X NFL Bets and Stats.
+/* Build the NFL Hub page, the site's own front page (https://demon-x13.github.io/nfl-hub/), once X NFL
+ * Bets and Stats at nflbets/.
  *
  *   node nflbets/build/build.js        (from the hub root)
  *   require('./build.js')              the same build in memory, {out, hash}, written
  *                                      nowhere: the smoke compares it with the published page
  *
- *   nflbets/index.html   the prop model's page with the Matchups board in front of it, its Suggest
- *                        Parlays and Parlay Builder tabs, X Parlays on a tab of its own, and the Game snapshot a tap on a
- *                        game opens, which reads the Season Tracker's games from the news job's files.
+ *   index.html           at the site's root (the owner's call of 17 October 2026: "can you make
+ *                        .../nfl-hub/nflbets/ be .../nfl-hub/ and get rid of that page", the landing page
+ *                        that listed this page, Weekly Picks and the other hubs): the prop model's page with
+ *                        the Matchups board in front of it, its Suggested Parlays and Parlay Builder tabs, X
+ *                        Parlays on a tab of its own, and the Game snapshot a tap on a game opens, which reads
+ *                        the Season Tracker's games from the news job's files. nflbets/ stays the source
+ *                        folder (build/); its index.html is a hand-written redirect to the root now, for old
+ *                        bookmarks. Every file the page reads is named from the root (props/data/payload.json,
+ *                        never ../props/...), and nothing in it names a parent folder, which from the root
+ *                        would leave the site.
  *
  * The page is the prop model assembled the way props/build/assemble.py assembles it -- part1,
  * the payload fetch, part2, part3 -- because the tabs it is growing are the prop model's own
@@ -80,13 +88,13 @@ const STORAGE_JS = sub1(rd('nflbets', 'build', 'storage.js'), /\/\*PROP_KEY\*\/'
 for (const need of ['window.storage=', 'function clean(v,d)', "const BAD=/[<>\"`]/g;", "ls.del('live_parlays_v1')", "'nflowner_v1'", "'xparlays_v1'"])
   if (!STORAGE_JS.includes(need)) throw new Error('nflbets/build/storage.js no longer has ' + need);
 const XBETS_JS = sub1(rd('nflbets', 'build', 'xbets.js'), /\/\*SEASON\*\/\d{4}/, '/*SEASON*/' + BETB.SEASON, "the X Bet Log's season");
-for (const need of ['window.XBETS=', "URL='../liveparlays/xbets.json'", "{cache:'no-store'}", 'function cleanWeek(', "replace(/[<>]/g,'')", 'function tidy('])
+for (const need of ['window.XBETS=', "URL='liveparlays/xbets.json'", "{cache:'no-store'}", 'function cleanWeek(', "replace(/[<>]/g,'')", 'function tidy('])
   if (!XBETS_JS.includes(need)) throw new Error('nflbets/build/xbets.js no longer has ' + need);
 /* friends' picks on the Pick'em Record (friends.js, the owner's call of 15 October 2026): read from
    picks/friends.json, which Claude keeps with picks/tools/add.js, and handed to the betting frames as
    parent.FRIENDS, read only. A missing file draws no friends; nothing is baked in. */
 const FRIENDS_JS = sub1(rd('nflbets', 'build', 'friends.js'), /\/\*SEASON\*\/\d{4}/, '/*SEASON*/' + BETB.SEASON, "the friends' picks' season");
-for (const need of ['window.FRIENDS=', "URL='../picks/friends.json'", "{cache:'no-store'}", 'function clean('])
+for (const need of ['window.FRIENDS=', "URL='picks/friends.json'", "{cache:'no-store'}", 'function clean('])
   if (!FRIENDS_JS.includes(need)) throw new Error('nflbets/build/friends.js no longer has ' + need);
 /* nothing on the page writes anywhere but this browser: the two scripts send no request but the
    X Bet Log file's read */
@@ -115,7 +123,7 @@ const ELO_HTML = epiece(/(<section id="tab-elo" hidden>[\s\S]*?<\/section>)/, 's
 const ELO_JS = epiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
 for (const need of ['<tr class="legrow"><td class="plr">', 'data-drop="${l.key}"'])
   if (!part3.includes(need)) throw new Error('the builder leg markup moved (' + need + '); the Elo badge on each leg relies on it');
-for (const need of ["'../elo/data/players.json'", "'../elo/data/model.json'", 'window.pkTag', 'window.pkTierBadge', 'window.pkTierDefs'])
+for (const need of ["'elo/data/players.json'", "'elo/data/model.json'", 'window.pkTag', 'window.pkTierBadge', 'window.pkTierDefs'])
   if (!ELO_JS.includes(need)) throw new Error('tab_elo.html no longer has ' + need);
 for (const f of ['players.json', 'model.json']) if (!fs.existsSync(path.join(ROOT, 'elo', 'data', f)))
   throw new Error('elo/data/' + f + ' is missing: run python3 elo/build.py first');
@@ -183,7 +191,7 @@ for (const need of ['#lpCard .savedp{', '#lpCard .sp-leg{', '#lpCard .pbar{', '#
   if (!LIVE_SCOPED.includes(need)) throw new Error('the scoped live styles lost ' + need);
 if (/(^|\n)(body|header|main|:root)\{/.test(LIVE_SCOPED)) throw new Error('a page-level live rule survived scoping');
 const lsub = (from, to, what) => { LIVE_JS = sub1(LIVE_JS, from, to, 'the live script: ' + what); };
-lsub("const DATA='parlays.json';", "const DATA='../liveparlays/parlays.json';", 'file path');
+lsub("const DATA='parlays.json';", "const DATA='liveparlays/parlays.json';", 'file path');
 /* the section draws once the model is up (a leg's injury word and player ids are the model's) */
 /* lp-, not live-: the prop model has a liveRefresh of its own, and a global by that name
    would replace it */
@@ -225,7 +233,7 @@ for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 
 for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-sp-add="${g.id}:${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${o.fid||t.id}\"", 'function spTier(', 'function pbStake(', 'id="pbStake"', 'data-pb-pay="${t.dec}"'])
   if (!part3.includes(need)) throw new Error("the builder's save or Suggested Parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
 CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
-for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "window.spTier(", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'", 'PAY.dk', 'function dkPlan(', 'function shareLink('])
+for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "window.spTier(", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'", 'PAY.dk', 'function dkPlan(', 'function shareLink('])
   if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
 /* Finish on every device: nothing in the card asks whose device it is */
 for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
@@ -266,10 +274,17 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
    wordmark and a tagline on the left, when the data was built and which build it is on the right */
 let html = part1;
 html = sub1(html, '<title>X NFL Prop Model</title>', '<title>NFL Hub</title>', 'title');
+/* the light/dark switch (theme.js, the owner's call of 17 October 2026) heads the stamp, laid over the
+   header's top right corner by theme.css: a 44px button named Light mode, aria-pressed while the light
+   look is on, its glyph the look a press gives (a sun while dark, a moon while light) */
+const THEME_TOGGLE = '<button type="button" class="hub-theme" data-theme-toggle aria-label="Light mode" aria-pressed="false" title="Switch to light mode">'
+  + '<svg class="ht-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5" fill="currentColor"/>'
+  + '<path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>'
+  + '<svg class="ht-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z"/></svg></button>';
 html = sub1(html, '<h1>X NFL Prop Model</h1>\n    <span class="sub" id="buildTag"></span>\n    <span class="sub grow" id="saveState" style="margin-left:auto"></span>',
   '<div><h1>NFL <em>Hub</em></h1><p class="tagline">Every game called by three models against Vegas, player props priced against DraftKings, '
   + 'a parlay builder and X\'s own bets, frozen at kickoff and graded in public.</p></div>\n'
-  + '    <div class="hub-stamp"><span class="sub grow" id="saveState"></span><span class="sub" id="buildTag"></span></div>', 'heading');
+  + '    <div class="hub-stamp">' + THEME_TOGGLE + '<span class="sub grow" id="saveState"></span><span class="sub" id="buildTag"></span></div>', 'heading');
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n<style>' + CARD_CSS + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here stays in the page, unshown. */
@@ -278,17 +293,19 @@ html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>
    frame as its srcdoc when the tab is first opened, with the tab's name in front of it. No
    betting page exists on the site any more. A srcdoc frame is this page's own origin, so
    the app draws on the same browser store as ever (a bet logged there is logged here) and
-   reads the season from ../betting/state.json. The frame takes the height of what it shows.
+   reads the season from betting/state.json and the Elo model from elo/data/model.json, both named
+   from the site's root, where this page is (window.STATE_URL and window.ELO_URL: a srcdoc frame
+   resolves an address against this page's). The frame takes the height of what it shows.
    Nothing is cached apart from this page: the frame's content is inside it. */
 const { buildApp } = BETB;
 /* the frame is handed the page's X Bet Log (window.XBETS, nflbets/build/xbets.js, which reads
    liveparlays/xbets.json): a srcdoc frame is this page's origin, so its parent is reachable. It is
    read only from its first paint (xbets-ro): no entry form, Remove, deposit box or backup card. */
-const BET_APP = sub1(buildApp(), '<head>', "<head>\n<script>window.EMBED_TAB=null;window.STATE_URL='../betting/state.json';"
+const BET_APP = sub1(buildApp(), '<head>', "<head>\n<script>window.EMBED_TAB=null;window.STATE_URL='betting/state.json';window.ELO_URL='elo/data/model.json';"
   + "window.XBETS=window.XBETS||(function(){try{return window.parent!==window&&window.parent.XBETS||null;}catch(e){return null;}})();"
   + "if(window.XBETS)document.documentElement.classList.add('xbets-ro');"
   + "window.FRIENDS=window.FRIENDS||(function(){try{return window.parent!==window&&window.parent.FRIENDS||null;}catch(e){return null;}})();</script>", 'the head of the betting app');
-for (const need of ['html.embed header,html.embed #tabs{display:none}', "classList.add('embed')", 'data-tab="record"', 'data-tab="ratings"', 'data-tab="bets"', 'id="betSave"', 'window.STATE_URL||', 'window.XBETS.get()', 'html.xbets-ro #backupCard', '<h2>X Bet Log</h2>'])
+for (const need of ['html.embed header,html.embed #tabs{display:none}', "classList.add('embed')", "fetch((window.ELO_URL||'../elo/data/model.json')+'?t='", 'data-tab="record"', 'data-tab="ratings"', 'data-tab="bets"', 'id="betSave"', 'window.STATE_URL||', 'window.XBETS.get()', 'html.xbets-ro #backupCard', '<h2>X Bet Log</h2>'])
   if (!BET_APP.includes(need)) throw new Error('the built betting app has no ' + need + ', which the framed tabs rely on');
 for (const gone of ['index.html', 'admin.html']) if (fs.existsSync(path.join(ROOT, 'betting', gone)))
   throw new Error('betting/' + gone + ' exists; the betting site has no pages, its app is inside this one');
@@ -330,8 +347,12 @@ if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by 
    Log's adapter right after it */
 html = html.slice(0, -'<script>\n'.length) + '<script>\n' + STORAGE_JS + '\n</script>\n<script>\n' + XBETS_JS + '\n</script>\n<script>\n' + FRIENDS_JS + '\n</script>\n<script>\n';
 
-/* the app, as assemble.py assembles it, one directory further from its payload */
-const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + part2 + '\n' + part3;
+/* the app, as assemble.py assembles it, its payload named from the site's root, where the page is. The
+   builder's card of the betting model's own Bet Build parlays (renderBetParlays) ends on a link to
+   ../betting/, the betting model's page, gone since its app went into this page; from the root it would
+   leave the site, so the page drops it (the card says where they are settled without it) */
+const APP = "let PAY=null;\nconst DATA_URL='props/data/payload.json';\n" + part2 + '\n'
+  + sub1(part3, ' <a href="../betting/">Open the betting model</a></p>', '</p>', "the betting model's parlays' link to its retired page");
 /* the public prop page's header note: when the data was last built, not "Autosaved" */
 const NOTE = `<script>
 /* which build of this page you are looking at. Without it there is no way to tell a page
@@ -375,7 +396,7 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
     if (/(^|[\s,>+~])\.(dd|dtag)/.test(rule) && rule.split(',').some(sel => /\.(dd|dtag)/.test(sel) && !/#gsModal\b/.test(sel)))
       throw new Error('a Deep Dive rule in the snapshot styles is not scoped to #gsModal: ' + rule.trim());
   for (const need of ['window.gameSnapshot=', 'window.pkBoard', 'window.eloFiles', 'window.eloMismatches', "'Escape'", 'window.gsDeepDive',
-    "'../news/data/units.json'", '`../news/data/notes/${season}-w${week}.json`', "fetch(url,{cache:'no-store'})", 'data-gs-props=', 'P.openOnProps(id)', 'P.canProps(g.game_id)'])
+    "'news/data/units.json'", '`news/data/notes/${season}-w${week}.json`', "fetch(url,{cache:'no-store'})", 'data-gs-props=', 'P.openOnProps(id)', 'P.canProps(g.game_id)'])
     if (!SNAP_JS.includes(need)) throw new Error('nflbets/build/snapshot.html no longer has ' + need);
   /* the Stat breakdown went on 16 October 2026 (the owner's call: "get rid of stat breakdown section"), and
      with it the window's read of the news job's stats.json */
@@ -402,6 +423,25 @@ if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out))
    in tab_pickems.html) */
 { const THEME = rd('nflbets', 'build', 'theme.css');
   if (/<\/style|<\/script|<!--/i.test(THEME)) throw new Error('nflbets/build/theme.css has a closing tag or a comment opener, which would end its block in the page');
+  /* the light look (the owner's call of 17 October 2026): dark stays the look and the default, and
+     html[data-theme="light"] is a palette of its own in the same file, so the page and every framed tab
+     carry both. theme.js, in the head before anything is drawn, puts a light visitor's choice on the
+     page before its first paint, and answers the switch in the header. Its one stored thing is the
+     visitor's own choice under nflhub_theme_v1. */
+  for (const need of ['html[data-theme="light"]{', '--gold-ink:', 'color-scheme:light', '.hub-theme{', 'html[data-theme="light"] .hub-theme .ht-moon{display:block}'])
+    if (!THEME.includes(need)) throw new Error('nflbets/build/theme.css no longer has ' + need + ', which the light look relies on');
+  if (/prefers-color-scheme/.test(THEME)) throw new Error("nflbets/build/theme.css follows the system's colour scheme: dark is every visitor's default, light only by the switch");
+  const THEME_JS = rd('nflbets', 'build', 'theme.js');
+  if (/<\/script|<!--/i.test(THEME_JS)) throw new Error('nflbets/build/theme.js has a closing script tag or a comment opener, which would end its script in the page');
+  for (const need of ["KEY='nflhub_theme_v1'", "root.setAttribute('data-theme','light')", "closest('[data-theme-toggle]')", 'window.hubTheme=', "localStorage.getItem(KEY)==='light'"])
+    if (!THEME_JS.includes(need)) throw new Error('nflbets/build/theme.js no longer has ' + need);
+  { const uses = [...THEME_JS.matchAll(/localStorage\s*\.\s*(\w+)\s*\(([^,)]*)/g)];
+    if (!uses.length || uses.some(m => !['getItem', 'setItem'].includes(m[1]) || m[2].trim() !== 'KEY') || (THEME_JS.match(/localStorage/g) || []).length !== uses.length)
+      throw new Error("nflbets/build/theme.js uses this browser's storage for something other than the visitor's own light or dark choice (KEY)"); }
+  for (const gone of ['fetch(', 'XMLHttpRequest', 'sendBeacon', 'window.storage', 'S.ui'])
+    if (THEME_JS.includes(gone)) throw new Error('nflbets/build/theme.js has ' + gone + ': the look is kept in this browser alone, under its own key');
+  out = sub1(out, '<title>NFL Hub</title>\n', '<title>NFL Hub</title>\n<script>\n' + THEME_JS + '</script>\n', "the light/dark script in the page's head");
+  if (!out.includes('data-theme-toggle aria-label="Light mode" aria-pressed="false"')) throw new Error('the header has no light/dark switch');
   const FONTS = '<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
   /* the hubs' fonts in place of the prop model's own, which nothing on the page draws in any more */
   out = sub1(out, '<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">',
@@ -410,6 +450,14 @@ if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out))
   if (head < 0 || head > out.indexOf('<body')) throw new Error('the page has no head of its own');
   out = out.slice(0, head) + '<style id="hubTheme">\n' + THEME + '</style>\n'
     + '<script>window.THEME_FRAME_HEAD=' + JSON.stringify(FONTS + '<style>' + THEME + '</style>').replace(/</g, '\\u003c') + ';</script>\n' + out.slice(head); }
+/* the page is the site's root: nothing in it names a parent folder, which from there would leave the
+   site (demon-x13.github.io/nfl-hub/../x is demon-x13.github.io/x). The one exception is the betting
+   app's own fallback for its Elo model when it runs on its own, from betting/: in the page its frames
+   are handed window.ELO_URL (above), so the fallback is never read */
+{ const rest = out.split("window.ELO_URL||'../elo/data/model.json'");
+  if (rest.length !== 2) throw new Error("the betting app does not read its Elo model from window.ELO_URL, once, with ../elo/data/model.json only as its own fallback");
+  const all = rest.join(''), at = all.indexOf('../');
+  if (at >= 0) throw new Error("the page names a parent folder, which from the site's root leaves the site: " + all.slice(Math.max(0, at - 60), at + 40)); }
 /* the hash of the page with the slot still in it, then set into the slot: the smoke takes it
    out again and checks the page is what was hashed */
 const HASH = crypto.createHash('sha256').update(out).digest('hex').slice(0, 7);
@@ -417,7 +465,7 @@ out = sub1(out, `const PAGE_HASH='${HASH_SLOT}';`, `const PAGE_HASH='${HASH}';`,
 
 module.exports = { out, hash: HASH, HASH_SLOT, PROP_KEY, SEASON: +SEASON_KEY[1] };
 if (require.main === module) {
-  fs.writeFileSync(path.join(ROOT, 'nflbets', 'index.html'), out);
-  console.log(`nflbets/index.html written: ${(out.length / 1024).toFixed(1)} KB, build ${HASH} `
+  fs.writeFileSync(path.join(ROOT, 'index.html'), out);
+  console.log(`index.html (the site's root) written: ${(out.length / 1024).toFixed(1)} KB, build ${HASH} `
     + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);
 }

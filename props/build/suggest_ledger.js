@@ -18,7 +18,7 @@
    four levels on the Suggested Parlays tab, Safe, Medium, Aggressive and Extreme, 2 to 5 legs from that game
    alone: a game kicking off on a Thursday, Sunday or Monday at or after 7:00 pm US Eastern (the page's
    spPrime, which the guard below works out again on its own from the kickoff). Taken from the published
-   page itself: nflbets/index.html booted in jsdom on the payload the job has just baked, with the Elo files
+   page itself: index.html, at the site's root, booted in jsdom on the payload the job has just baked, with the Elo files
    beside it (market + form decides which player legs qualify) and the window's clock at the run's time,
    read by the page's own spGames, spSet and spTierOut, so the record holds exactly the sets the tab shows
    (every prime-time game's, each taken from its first run, though since app v112 the tab sets out one night at
@@ -112,8 +112,9 @@ const HERE = __dirname, ROOT = path.resolve(HERE, '..', '..');
 const LEDGER_REL = 'props/data/suggest_ledger.json';
 const LEDGER = process.env.SUGGEST_LEDGER || path.join(ROOT, LEDGER_REL);
 const PAYLOAD = process.env.SUGGEST_PAYLOAD || path.join(ROOT, 'props', 'data', 'payload.json');
-const PAGE = path.join(ROOT, 'nflbets', 'index.html');
-const PAGE_URL = 'https://demon-x13.github.io/nfl-hub/nflbets/';
+/* NFL Hub, the site's root page since 17 October 2026 (nflbets/ before; nflbets/build/build.js writes it) */
+const PAGE = path.join(ROOT, 'index.html');
+const PAGE_URL = 'https://demon-x13.github.io/nfl-hub/';
 const SINCE = '2026-10-12', PRIME_SINCE = '2026-10-16';
 /* the levels (PB_TIERS in part3.js; a run whose page has others is refused) */
 const TIERS = ['safe', 'med', 'aggr', 'xtrm'], LABELS = { safe: 'Safe', med: 'Medium', aggr: 'Aggressive', xtrm: 'Extreme' };

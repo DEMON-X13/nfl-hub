@@ -6,8 +6,9 @@ All paths here are relative to `news/`.
 
 Until 14 October 2026 this folder was the Season Tracker, a page of its own (and then a framed tab of X
 NFL Bets and Stats) with a hand-written narrative for every team each week. The owner folded it into the
-**Game snapshot**: tapping a game on X NFL Bets and Stats' Matchups board
-(**https://demon-x13.github.io/nfl-hub/nflbets/**) opens a window with everything the site has on it, and
+**Game snapshot**: tapping a game on NFL Hub's (once X NFL Bets and Stats') Matchups board
+(**https://demon-x13.github.io/nfl-hub/**, the site's root since 17 October 2026; `nflbets/` until then, which
+now sends a visitor there) opens a window with everything the site has on it, and
 the tracker's per-game content now lives there:
 
 - a one-line **preview** and a short **news** note for each game, written by hand each Wednesday into
@@ -26,9 +27,11 @@ the tracker's per-game content now lives there:
 The **Stat breakdown** (the eleven stat bars from `data/stats.json`) went on 16 October 2026 (the owner's
 call, "get rid of stat breakdown section"): the job still writes `stats2026.js` and `stats.json` and the
 smoke still holds them, but no page reads them. The page reads the notes and `units.json` at runtime
-(`cache: 'no-store'`), so nothing here ever needs NFL Hub rebuilt. The tracker's page, its week files, the matchup, positives, negatives and keys paragraphs, the
+(`cache: 'no-store'`, as `news/data/units.json` and `news/data/notes/...`, from the site's root, where the page is), so
+nothing here ever needs NFL Hub rebuilt. The tracker's page, its week files, the matchup, positives, negatives and keys paragraphs, the
 rank chip and the player positions were dropped; they are in git history before that day. `index.html` is
-now a tiny page that sends a visitor (and any old bookmark) to `../nflbets/`.
+now a tiny page that sends a visitor (and any old bookmark) to `../`, NFL Hub at the site's root (`../nflbets/`
+until 17 October 2026).
 
 The **news job** (`.github/workflows/news.yml`) keeps running: it produces the Deep Dive and the stats and
 holds them to their sources.
@@ -130,7 +133,8 @@ and the edges the file's, each row its unit, the two clubs and figures, the defe
 (no name, no one out, no other number: the owner's calls of 14 and 16 October 2026; the smoke prints, without
 checking, how often the higher Elo and the tag point opposite ways, since the tag is the Deep Dive's own), and
 its Overall line's tag the rule's on `model.json`'s units; the lineups are for the schedule's week (and, in
-the job, checked on that run's own download); `index.html` sends a visitor to `../nflbets/`; every fixed
+the job, checked on that run's own download); `index.html` sends a visitor to `../`, the site's root, naming
+`nflbets/` nowhere outside a comment; every fixed
 case in `tools/cases.js`. Warnings (WARN, the job publishes and goes red after its commit): the other
 lineup rules, a quarterback in doubt with the next one named in the file, nobody both listed and out, and every problem in a notes file, its shape included, so a bad note never holds back the
 week's data. The lineup checks read the build's own snapshot (`tools/.cache/`, not committed) when it
