@@ -347,16 +347,6 @@ body.modal-open{overflow:hidden}
 .pb-g b{display:block;font-family:var(--display);font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap}
 .pb-g small{display:block;font-size:11.5px;color:var(--muted);line-height:1.3}
 .pb-note{margin:-4px 0 12px;font-size:12.5px;color:var(--ink-2)}
-.pb-rec{margin:16px 0 0;padding:12px 0 0;border-top:1px solid var(--line)}
-.pb-rec h3{margin:0 0 4px;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.2px}
-.pb-rec p{margin:0 0 8px;font-size:12px;line-height:1.45}
-.pb-rec-wrap{overflow-x:auto}
-.pb-rec table{width:100%;border-collapse:collapse;font-size:12.5px}
-.pb-rec th,.pb-rec td{padding:6px 7px;white-space:normal}
-.pb-rec thead th{font-size:10px;line-height:1.25;vertical-align:bottom}
-.pb-rec tbody th{font-weight:700;color:var(--ink);background:transparent;font-size:12.5px;letter-spacing:0;text-transform:none}
-.pb-rec td.up{color:var(--pick);font-weight:700}
-.pb-rec td.down{color:var(--miss);font-weight:700}
 .pb-tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .pb-tier{background:var(--panel-2);border:1px solid var(--line);border-top:3px solid var(--line-2);border-radius:var(--r-md);padding:12px 13px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .pb-tier.safe,.pb-tier.elo2{border-top-color:var(--pick)} .pb-tier.med,.pb-tier.elo3{border-top-color:var(--gold)} .pb-tier.aggr,.pb-tier.elo4{border-top-color:var(--miss)} .pb-tier.xtrm{border-top-color:#7C4DFF}
@@ -382,11 +372,6 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .card .pb-legs{list-style:none;margin:0;padding:0}
 .card .pb-legs li{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:6px 0;margin:0;border-top:1px solid var(--line);font-size:13px;line-height:1.35}
 .pb-legs .nm{font-weight:600;min-width:0;overflow-wrap:anywhere}
-.pb-legs .pb-lock+.nm{flex:1}
-.pb-lock{flex:none;align-self:center;width:34px;height:34px;margin:-4px 2px -4px -2px;padding:0;border:1px solid var(--line-2);border-radius:999px;background:var(--panel);font-size:14px;line-height:1;cursor:pointer;opacity:.75}
-.pb-lock.on{opacity:1;border-color:var(--gold);background:var(--gold-soft,#FCF1D6)}
-.pb-lock:focus-visible{outline:2px solid var(--ink-2);outline-offset:1px}
-.pb-turnbar{display:inline-flex;gap:6px;margin-left:auto}
 .pb-legs .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11.5px}
 .pb-legs .pr{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;text-align:right}
 .pb-legs .pr em{display:block;font-style:normal;font-size:11px;font-weight:500;color:var(--muted)}
@@ -402,7 +387,7 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pb-why{margin:0;font-size:13px;color:var(--ink-2)}
 .pb-tier.none{border-top-style:dashed}
 .pb-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
-.pb-acts .btn{flex:1 1 auto;text-align:center;min-height:40px}
+.pb-acts .btn{flex:1 1 auto;text-align:center;min-height:44px}
 .pb-foot{margin:12px 0 0;font-size:12px}
 .pb-none{margin:6px 0 0;padding:18px;text-align:center;color:var(--ink-2);background:var(--panel-2);border:1.5px dashed var(--line-2);border-radius:var(--r-md)}
 .pb-elo:not(:empty){margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
@@ -411,6 +396,43 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 @media(max-width:1100px){ .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-nums{display:flex;flex-wrap:wrap} }
 @media(max-width:640px){ .card.pb{padding:16px 14px} .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:minmax(0,1fr)} .pb-lbl{min-width:0;flex-basis:100%} .pb-ctl{padding:12px} .pb-glist{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-seg{display:flex;width:100%} .pb-seg button{flex:1 1 auto;padding:8px 10px}
   .pb-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%} .pb-chip{border-radius:12px;padding:7px 10px;line-height:1.25} .pb-chip small{display:block} .pb-chip span{min-width:0} }
+/* app v111: Suggest Parlays (each Thursday, Sunday and Monday night game's own set, its lock and the record bar)
+   and the Parlay Builder's Top 100 lines; each leg's own Add, 44px */
+/* the Parlay Builder tab's own controls, at the top of it as they were, now 44px tall like every control on the
+   tab: Build from, the games' All and None and their list's summary, and the Bet amount (its box's 1px border
+   round a 42px input) */
+.pb-seg button,.pb .pb-gbar .btn,.pb-games summary{min-height:44px}
+.pb-amt input[type=number]{min-height:42px}
+.sp-game{margin:18px 0 0;padding:14px 0 0;border-top:1px solid var(--line)}
+.sp-hd{display:flex;align-items:baseline;gap:6px 10px;flex-wrap:wrap;margin:0 0 6px}
+.sp-hd h3{margin:0;font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px;min-width:0;overflow-wrap:anywhere}
+.sp-hd small{font-size:12px;color:var(--muted)}
+.sp-lock{margin:0 0 12px;font-size:12.5px;line-height:1.5;color:var(--ink-2)}
+.sp-lockmark{display:inline-block;margin-right:6px;padding:1px 8px;border:1px solid var(--gold);border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);vertical-align:1px}
+.sp-rec .bar{margin:8px 0 6px}
+.sp-rec .bar .rec{white-space:normal;min-width:0;overflow-wrap:anywhere}
+.sp-rec-line{margin:0 0 12px;font-size:12px;line-height:1.5}
+.sp-odds{margin:0 0 4px}
+.sp-upd{color:var(--ink)}
+.pb-legs .nm{flex:1 1 auto}
+.pb-legs .pr{flex:none}
+.pb-legadd{flex:none;align-self:center;min-height:44px;min-width:44px;padding:0 10px;font-size:12.5px}
+.pb-legadd.on{border-color:var(--pick);background:var(--pick-soft);color:var(--ink)}
+.pb-top{list-style:none;margin:0;padding:0}
+.pb-trow{display:grid;grid-template-columns:26px minmax(0,1fr) auto auto;grid-template-areas:"rk nm cs ad";align-items:center;gap:6px 12px;padding:8px 0;margin:0;border-top:1px solid var(--line);font-size:13px}
+.pb-trk{grid-area:rk;text-align:right;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.pb-trow .nm{grid-area:nm;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.pb-trow .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11.5px}
+.pb-trow .nm small.pb-tg{color:var(--muted)}
+.pb-tcs{grid-area:cs;display:grid;grid-template-columns:repeat(5,minmax(64px,auto));gap:4px 10px}
+.pb-tc{text-align:right;min-width:0}
+.pb-tc b{display:block;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+.pb-tc small{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.pb-tc .est{font-style:normal;font-size:10.5px;font-weight:500;color:var(--ink-2);margin-left:2px}
+.pb-trow .pb-legadd{grid-area:ad}
+.pb-trow[data-pb-grp="edge"]+.pb-trow[data-pb-grp="thin"]{border-top:2px solid var(--gold)}
+@media(max-width:1100px){ .pb-trow{grid-template-columns:26px minmax(0,1fr) auto;grid-template-areas:"rk nm ad" ". cs cs"} .pb-tcs{justify-content:start} .pb-tc{text-align:left} }
+@media(max-width:640px){ .pb-tcs{grid-template-columns:repeat(3,minmax(0,1fr));width:100%} }
 /* the parlay card: what it pays sits under the legs behind a divider, then the actions behind another */
 .pays{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
 .pays h3{margin:0 0 12px}
@@ -501,6 +523,7 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
   </div>
   <nav role="tablist" id="tabs">
     <button role="tab" data-tab="slate" aria-selected="true">Games</button>
+    <button role="tab" data-tab="suggest">Suggest Parlays</button>
     <button role="tab" data-tab="parlay">Parlay Builder</button>
     <button role="tab" data-tab="track">Track Record</button>
     <button role="tab" data-tab="week">Weekly Update</button>
@@ -533,6 +556,10 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
       <div id="gameView"></div>
     </div>
   </div>
+</section>
+
+<section id="tab-suggest" hidden>
+  <div id="spPanel"></div>
 </section>
 
 <section id="tab-parlay" hidden>

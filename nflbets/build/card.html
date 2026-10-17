@@ -344,19 +344,19 @@ window.PARLAY_CARD=(function(){
       priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
       chance:q.pr.corr,chanceBy:'Model',fair:q.fair,stake:q.stake});
   }
-  /* from a tier of the Parlay Builder's suggestions (getPbTiers) or its Elo picks, on the amount
-     its tier pays on: the Bet amount box, which is the builder's own stake (pbStake) */
+  /* from a level of Suggest Parlays (kind sp, id "<game id>:<level>": window.spTier, the level as the tab
+     shows it, live or locked) or an Elo pick, on the amount its tier pays on: the Bet amount box, which is
+     the builder's own stake (pbStake) */
   function fromTier(kind,id){
     let t=null;
     try{ t=kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)
-      :kind==='pb'?(typeof window.pbShownTier==='function'?window.pbShownTier(id)
-        :(typeof getPbTiers==='function'?getPbTiers().tiers.find(x=>x.id===id):null)):null;
+      :kind==='sp'?(typeof window.spTier==='function'?window.spTier(id):null):null;
       if(t&&!Array.isArray(t.legs)) t=null; }catch(e){ t=null; }
     if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
     const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
     /* a tier with a leg priced from DraftKings' line read on ESPN is priced on that estimate, and says
        so as the builder does */
-    return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay',legs,dec:t.dec,priceNote:t.legs.some(l=>l.src&&l.src!=='real')?'estimated price':'book price',
+    return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay'+(t.game?' \u00b7 '+t.game:''),legs,dec:t.dec,priceNote:t.legs.some(l=>l.src&&l.src!=='real')?'estimated price':'book price',
       chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',fair:t.fair,stake:pbStake()});
   }
 
@@ -671,8 +671,9 @@ window.PARLAY_CARD=(function(){
     try{ if(typeof save==='function') save(); }catch(e){}
     close();
     try{ if(typeof renderParlay==='function') renderParlay(); if(S.ui&&S.ui.game&&typeof renderGame==='function') renderGame(); }catch(e){}
-    /* Finish went with the legs: the focus goes to the suggestions' first control, over the builder */
-    try{ const b=document.querySelector('#pbPanel [data-pb-mix]'); if(b) b.focus(); }catch(e){}
+    /* Finish went with the legs: the focus goes to the first control of the tab on the screen (the Parlay
+       Builder's choices, or Suggest Parlays' first Add to builder) */
+    try{ const b=document.querySelector('main section:not([hidden]) [data-pb-mix]')||document.querySelector('main section:not([hidden]) [data-sp-add]')||document.querySelector('#pbPanel [data-pb-mix]'); if(b) b.focus(); }catch(e){}
   }
 
   /* ---- on every device: Finish where Save was ---- */
@@ -689,7 +690,7 @@ window.PARLAY_CARD=(function(){
     nb.addEventListener('click',()=>{ const m=fromBuilder(); if(m) open(m,nb); });
     return true;
   }
-  /* a suggested tier's Finish (data-pc-finish="pb|med", "elo|elo3"): the panel draws the button
+  /* a suggested tier's Finish (data-pc-finish="sp|2026_06_SEA_DEN:med", "elo|elo3"): the tab draws the button
      wherever this card is on the page, and one listener opens the card for whichever is pressed */
   function finishFrom(btn){
     /* a game kicked off since the panel was drawn: redraw it rather than open a parlay nobody saw */

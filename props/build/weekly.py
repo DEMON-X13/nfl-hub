@@ -57,9 +57,11 @@ What it does, in order:
      a suggestion level picks, a note's wording, a rule the week left untested), never do: the run
      publishes and the warnings are a problem, so the job goes red after its commit (audit_warnings)
   6. once the audit is clean, the suggestions record (suggest_ledger.js -> data/suggest_ledger.json):
-     the Parlay Builder's suggested parlays on their default choices, taken from the published page
-     on the payload just baked, frozen at each wave's kickoff and graded after by the app's own
-     settleLeg, which reads who played from the payload's snaps. It never refuses the run or turns it
+     each Thursday, Sunday and Monday night game's set on Suggest Parlays, taken from the published
+     page on the payload just baked, rewritten until the set locks 2 hours before kickoff, a level
+     built again after the lock only for a player ruled out since, and graded after by the app's own
+     settleLeg, which reads who played from the payload's snaps (the retired all-games panel's
+     entries stay, frozen, and are still graded). It never refuses the run or turns it
      red: a ledger it refuses is logged in the report and the last good one stays
   7. prints a REPORT block
 A run that is refused (a required download, the stats shrinking, the bake, the audit's failures)
@@ -520,10 +522,11 @@ def audit_step(a):
     suggestions_record(a.offline)
 
 def suggestions_record(offline=False):
-    """The suggestions record (suggest_ledger.js, whose docstring has the rules): the panel's four
-    suggested parlays on its default choices, taken from the published page on the payload this run
-    baked, rewritten while their wave's kickoff is to come, frozen from it and graded after, in
-    data/suggest_ledger.json, which the workflow commits with the rest of props/data. Only after a
+    """The suggestions record (suggest_ledger.js, whose docstring has the rules): each prime-time
+    game's four Suggest Parlays levels, taken from the published page on the payload this run baked,
+    rewritten while the set's lock (2 hours before kickoff) is to come, locked from it (a level holding
+    a player ruled out before kickoff built again, that level alone) and graded after, beside the
+    retired all-games panel's frozen entries, in data/suggest_ledger.json, which the workflow commits with the rest of props/data. Only after a
     clean audit, and never a reason to refuse the run or turn it red: the payload is what the site
     needs, the record is a record of it. When the script refuses (its guard found a frozen entry moved,
     the page or the Elo files would not load) it has already put the last good ledger back; that is

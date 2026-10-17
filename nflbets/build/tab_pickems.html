@@ -401,7 +401,8 @@ function foot(){
    of it, at a player's row or its game bets */
 window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET,probCols,propsPlayers,canProps,openOnProps};
 
-/* tabs as addresses: #props opens the Props tab, and a reload stays where it was. On a phone the
+/* tabs as addresses: a tab's address is its button's data-tab (#slate the Props tab, #suggest Suggest
+   Parlays since app v111, #parlay the Parlay Builder), and a reload stays where it was. On a phone the
    bar is wider than the screen and scrolls sideways, so the chosen tab is brought into it, on load,
    on a new address and on a tap: landing on #xparlays (where the old Live Parlays links go) left
    its button off the bar's right edge. Only the bar scrolls, never the page. The Season Tracker tab

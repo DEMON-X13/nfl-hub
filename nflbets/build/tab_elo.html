@@ -45,7 +45,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-alt{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
 .pe-alt b{color:var(--ink-2);font-weight:600}
 .pe-altsum{margin:10px 0 0;font-size:12px;color:var(--ink-2)}
-/* Elo picks: the last section of the Parlay Builder's suggested parlays (#pbElo), styled with the panel's own tier cards */
+/* Elo picks: the last section of Suggest Parlays (#pbElo, at the tab's foot since app v111), styled with its own tier cards */
 /* mismatches: five bubbles over the Props game list, the rest in a window */
 .pe-mm{margin:0 0 16px}
 .pe-mm h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -783,15 +783,16 @@ function eloPicks(){
   }
   return {tiers,candidates:best.length,games:new Set(best.map(l=>l.gid)).size};
 }
-/* the Elo picks, as their own section at the foot of the Parlay Builder's suggested parlays:
-   built from the same ticked games and player sides, each tier added to the builder or
-   finished as a card like the panel's own */
+/* the Elo picks, as their own section at the foot of Suggest Parlays (app v111; until then the Parlay
+   Builder's suggested parlays): built from the games and player sides ticked on the Parlay Builder tab, as
+   they always were, each tier added to the builder, a leg at a time or whole, or finished as a card like
+   the sets' own */
 function eloSuggest(){
   const v=document.getElementById('pbElo'); if(!v) return;
   const r=eloPicks(); if(!r||typeof pbTierCard!=='function'){ v.innerHTML=''; return; }
   const w=typeof currentWeek==='function'?currentWeek():'', sides=typeof pbPlayerSides!=='function'||pbPlayerSides();
   let body;
-  if(!sides) body=`<p class="pb-why">Tick Player overs or Player unders above for the Elo picks: every leg is a player's line.</p>`;
+  if(!sides) body=`<p class="pb-why">Tick Player overs or Player unders on the Parlay Builder tab for the Elo picks: every leg is a player's line.</p>`;
   else if(!r.tiers.length) body=`<p class="pb-why">No Elo picks on your picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price on the games and sides ticked'
     :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. ${typeof dkCarries==='function'&&typeof pbGames==='function'&&pbGames().some(g=>dkCarries({week:g.w,gid:g.id}))
     ?'A pick takes only legs DraftKings’ betslip can take, by DraftKings’ own id, which comes with its player prices: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET). A line read by Refresh odds carries no id.'
@@ -799,7 +800,7 @@ function eloSuggest(){
   else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:`data-pb-elo-add="${t.id}"`,
       rule:'<span class="pb-rule">plus money first, one leg a game</span>',badge:l=>badge(l.pid),legP:l=>l.pe})).join('')}</div>`;
   v.innerHTML=`<h3>Elo picks <span class="pill">week ${w}</span></h3>
-    <p class="muted pb-lead" style="margin:0 0 12px">Ranked players whose Elo matchup says they beat the book's price: the book's chance moved by the player's Elo against the defenders he faces this week (click a player on the ELO Ratings tab for his matchup). A fun model, not an edge: the matchup nudge has landed on its side 53 to 63% of the time on its biggest calls since 2017, depending on the stat, which is less than a book's cut on most single legs. Each pick leads with the book's fair chance (DraftKings' prices with the margin taken out) and gives the Elo matchup chance beside it; a leg the prop model rates ${typeof FAR_OFF==='number'?Math.round(FAR_OFF*100):15} points or more above the book's fair chance is flagged far off the market.</p>${body}`;
+    <p class="muted pb-lead" style="margin:0 0 12px">Ranked players whose Elo matchup says they beat the book's price, on the games and player sides ticked on the Parlay Builder tab: the book's chance moved by the player's Elo against the defenders he faces this week (click a player on the ELO Ratings tab for his matchup). A fun model, not an edge: the matchup nudge has landed on its side 53 to 63% of the time on its biggest calls since 2017, depending on the stat, which is less than a book's cut on most single legs. Each pick leads with the book's fair chance (DraftKings' prices with the margin taken out) and gives the Elo matchup chance beside it; a leg the prop model rates ${typeof FAR_OFF==='number'?Math.round(FAR_OFF*100):15} points or more above the book's fair chance is flagged far off the market.</p>${body}`;
   v.querySelectorAll('[data-pb-elo-add]').forEach(b=>b.addEventListener('click',()=>{
     const t=r.tiers.find(x=>x.id===b.dataset.pbEloAdd); if(t&&typeof pbPut==='function') pbPut(t.legs,`the ${t.label} parlay`); }));
 }
