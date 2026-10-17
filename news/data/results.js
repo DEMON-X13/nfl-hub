@@ -431,4 +431,4 @@ const LINES = {
  "wk7:LAR-LV": "LAR -7, O/U 48.5",
  "wk7:KC-SEA": "SEA -2.5, O/U 44.5"
 };
-const LINES_ASOF = "2026-10-16";
+const LINES_ASOF = "2026-10-17";
