@@ -2673,9 +2673,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
        -200 and +300, one leg a player (his best by value), ranked on value (until that day plus money first, so
        touchdowns filled them), the levels searched from the 30 best by value and the 10 likeliest by the Elo
        chance, each once (18 October 2026; with the six candidates here, all of them, so the rule worked out below
-       over every parlay of their size is the whole of it; check_tab holds the union on 34 of its own); Safe the
-       likeliest pair by the Elo chance, Medium, Aggressive and Extreme the best return over 25%, 12% and 5% by it,
-       else the likeliest of the size, marked so only under the floor; legs of one game allowed and priced together,
+       over every parlay of their size is the whole of it; check_tab holds the union on 34 of its own); Safe, Medium,
+       Aggressive and Extreme the best return over 35%, 25%, 12% and 5% by the Elo chance (Safe's 35% the Elo picks'
+       own, ELO_SAFE_OWN, since 18 October 2026: until then the likeliest pair), else the likeliest of the size,
+       marked so only under the floor; legs of one game allowed and priced together,
        every figure the builder's own sums, and the tab's fast sums those sums to the bit; each leg wearing its
        mismatch this week, where the Props tab's Mismatches has one, on the side it favours; built when Suggested
        Parlays is on the screen */
@@ -2766,7 +2767,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           const has = w.eval(`(function(){ const M=(PAY.mkt||{})[${wk}]||{}; for(const p in M) for(const s in M[p]){ const L=M[p][s]; if(L&&L.over&&L.under) return true; } return false; })()`);
           if (!has) { w.eval(`PAY.mkt=PAY.mkt||{}; PAY.mkt[${wk}]=PAY.mkt[${wk}]||{}; PAY.mkt[${wk}]['00-SMOKE-MKT']={receiving_yards:{line:40.5,over:-110,under:-110}}`);
             undoMkt = () => w.eval(`(function(){ const M=PAY.mkt[${wk}]; delete M['00-SMOKE-MKT']; if(!Object.keys(M).length) delete PAY.mkt[${wk}]; })()`); } }
-        const pP = w.eval('parlayProb'), pD = w.eval('parlayDec'), pOrd = w.eval('pbOrder'), dec = w.eval('mlToDec'), LV = w.eval('PB_TIERS'), idOf = l => l.key + '|' + l.side + '|' + l.k;
+        /* the Elo picks' levels, the smoke's own reading: Suggested Parlays' (PB_TIERS), Safe on the Elo picks' own 35% */
+        const ELO_SAFE_OWN = 0.35, LV = w.eval('PB_TIERS').map(t => t[3] ? t : [t[0], t[1], t[2], ELO_SAFE_OWN]);
+        const pP = w.eval('parlayProb'), pD = w.eval('parlayDec'), pOrd = w.eval('pbOrder'), dec = w.eval('mlToDec'), idOf = l => l.key + '|' + l.side + '|' + l.k;
         const r = w.eval('eloPicks()'), T = r ? r.tiers : [];
         /* the candidates: every player's best line by value, ranked on value, none of the lines the rule refuses */
         { const C = r ? r.cands : [], best = {};
@@ -2776,21 +2779,21 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             && !C.some(l => ['long', 'under', 'weak'].includes(l.key)),
             'the Elo picks\' candidates are not each player\'s best line by value, ranked on value, or take a line they should pass on: ' + (C || []).map(l => `${l.name} ${l.price} ${l.ev.toFixed(3)}`).join(', ')); }
         chk(T.length === 4 && T.every((t, i) => t.id === 'elo-' + LV[i][0] && t.label === LV[i][1] && t.n === LV[i][2] && t.floor === LV[i][3] && t.legs.length === t.n),
-          'the Elo picks are not Suggested Parlays\' four levels (Safe, Medium, Aggressive, Extreme), each with its legs, from six candidates: ' + T.map(t => t.id + ' ' + t.legs.length).join(', '));
+          'the Elo picks are not Suggested Parlays\' four levels (Safe, Medium, Aggressive, Extreme) on their own floors (Safe 35%), each with its legs, from six candidates: ' + T.map(t => t.id + ' ' + t.legs.length + ' ' + t.floor).join(', '));
         /* every level at the builder's own sums on its legs (the Elo chances, a game's legs priced together), its floor
            held, and Suggested Parlays' rule worked out here over every parlay of its size from the candidates */
         { const C = r ? r.cands : [], memo = new Map(), sums = ls => { const k = ls.map(idOf).sort().join(','); let e = memo.get(k);
             if (!e) { const O = pOrd(ls); e = { k, O, p: pP(O.map(l => ({ ...l, p: l.pe }))).corr, d: pD(O.map(l => ({ leg: l, ml: l.price }))) }; memo.set(k, e); } return e; };
           const sub = (n, f) => { const go = (s0, cur) => { if (cur.length === n) { f(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); }; go(0, []); };
           for (const t of T) { if (!t.legs || !t.legs.length) { chk(false, `the ${t.label} Elo pick has no legs to hold to the rule: ${t.why || 'no reason given'}`); continue; }
-            const e = sums(t.legs), O = pOrd(t.legs);
+            const e = sums(t.legs), O = pOrd(t.legs), lv = LV.find(x => 'elo-' + x[0] === t.id), fl = lv ? lv[3] : NaN;
             let best = null, likely = null;
             sub(t.n, ls => { const x = sums(ls); if (!likely || x.p > likely.p || (x.p === likely.p && x.k < likely.k)) likely = x;
-              if (t.floor && x.p >= t.floor && (!best || x.p * x.d > best.p * best.d || (x.p * x.d === best.p * best.d && x.k < best.k))) best = x; });
-            const want = t.floor ? (best || likely) : likely;
+              if (fl && x.p >= fl && (!best || x.p * x.d > best.p * best.d || (x.p * x.d === best.p * best.d && x.k < best.k))) best = x; });
+            const want = fl ? (best || likely) : likely;
             /* (want is null where the candidates make no parlay of the level's size: counted as a failure, never read) */
-            chk(!!want && t.legs.every((l, i) => idOf(l) === idOf(O[i])) && new Set(t.legs.map(l => l.pid)).size === t.n && t.p === e.p && t.dec === e.d && e.k === want.k && !!t.likeliest === (!!t.floor && !best),
-              `the ${t.label} Elo pick is not Suggested Parlays' rule on the Elo chance (${t.floor ? `best return that lands ${t.floor * 100}%+, else the likeliest` : 'the likeliest pair'}) at the builder's own sums: ${t.legs.map(l => l.name).join(', ')} at ${t.p}, ${t.dec}${t.likeliest ? ' (likeliest)' : ''}; the rule ${want ? `${want.k} at ${want.p}, ${want.d}` : `none: ${C.length} candidates`}`); }
+            chk(!!want && t.legs.every((l, i) => idOf(l) === idOf(O[i])) && new Set(t.legs.map(l => l.pid)).size === t.n && t.p === e.p && t.dec === e.d && e.k === want.k && !!t.likeliest === (!!fl && !best),
+              `the ${t.label} Elo pick is not Suggested Parlays' rule on the Elo chance (${fl ? `best return that lands ${fl * 100}%+, else the likeliest` : 'the likeliest'}) at the builder's own sums: ${t.legs.map(l => l.name).join(', ')} at ${t.p}, ${t.dec}${t.likeliest ? ' (likeliest)' : ''}; the rule ${want ? `${want.k} at ${want.p}, ${want.d}` : `none: ${C.length} candidates`}`); }
           /* the search works those sums fast, from parlayProb's draws kept (window.eloSums): parlayProb's and
              parlayDec's to the bit on every parlay worked out above */
           { const all = [...memo.values()]; let got = null; try { got = w.eloSums(C, all.map(e => e.O)); } catch (err) { got = null; }
@@ -2858,12 +2861,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         /* the Elo picks are the last section of Suggested Parlays since app v111, still on the Parlay Builder's ticks */
         const card = d.querySelector('#spPanel #spCard > #pbElo:last-child'), cardOf = t => card && card.querySelector(`[data-pb-tier="${t.id}"]`);
         /* each card leads with the fair chance, the Elo's beside it, and says how its level was chosen */
-        { const pc = v => (v * 100).toFixed(0) + '%', rule = t => t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best value that lands ${Math.round(t.floor * 100)}%+ by Elo` : 'the likeliest pair';
+        { const pc = v => (v * 100).toFixed(0) + '%', rule = t => { const lv = LV.find(x => 'elo-' + x[0] === t.id), fl = lv && lv[3];
+            return t.likeliest || !fl ? (t.n === 2 ? 'the likeliest pair' : `the likeliest ${t.n} legs`) : `best value that lands ${Math.round(fl * 100)}%+ by Elo`; };
           chk(T.every(t => { const c = cardOf(t), first = c && c.querySelector('.pb-nums > div'), F = t.fair;
             return !!first && first.classList.contains('pb-chance') && (F && F.p != null ? txt(first.querySelector('b')) === pc(F.p) && txt(first.querySelector('small')) === `Elo says ${pc(t.p)}` : txt(first.querySelector('b')) === pc(t.p)); }),
             'the Elo picks do not lead with the fair chance beside the Elo\'s: ' + [...(card ? card.querySelectorAll('.pb-nums > div:first-child') : [])].map(txt).join(' / '));
           chk(T.every(t => { const c = cardOf(t); return !!c && c.classList.contains(t.id) && txt(c.querySelector('.pb-tn')) === t.label && txt(c.querySelector('.pb-th .pill')) === `${t.n} legs` && [...c.querySelectorAll('.pb-rule')].map(txt).join('|') === rule(t); }),
-            'an Elo pick\'s card is not its level, its legs and how it was chosen ("the likeliest pair", "best value that lands 25%+ by Elo", "the likeliest 4 legs"): ' + T.map(t => { const c = cardOf(t); return c ? txt(c.querySelector('.pb-th')) : t.id + ' not drawn'; }).join(' / ')); }
+            'an Elo pick\'s card is not its level, its legs and how it was chosen ("best value that lands 35%+ by Elo", "best value that lands 25%+ by Elo", "the likeliest pair", "the likeliest 4 legs"): ' + T.map(t => { const c = cardOf(t); return c ? txt(c.querySelector('.pb-th')) : t.id + ' not drawn'; }).join(' / ')); }
         /* the leg the prop model rates far off the market is flagged on every card that holds it, and only it */
         { const fo = fairRule(w), farWant = l => { const f = fo(l); return !!f && l.p - f.p >= 0.15 - 1e-9; };
           chk(T.every(t => { const lis = card ? [...card.querySelectorAll(`[data-pb-tier="${t.id}"] .pb-legs > li`)] : [];
