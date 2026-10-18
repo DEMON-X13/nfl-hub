@@ -73,7 +73,7 @@ Denver Broncos, injuries:
 Denver Broncos, ESPN headlines:
 
 ### Houston Texans at Jacksonville Jaguars
-Sun, Oct 18, 9:30 AM ET, NFL Net, Wembley Stadium, London. Line: JAX -2.5, O/U 41.5
+Sun, Oct 18, 9:30 AM ET, NFL Net, Wembley Stadium, London. Line: JAX -2.5, O/U 42.5
 
 Searches to run:
 - "Houston Texans Jacksonville Jaguars preview week 6"
@@ -248,6 +248,7 @@ Baltimore Ravens, injuries:
 Baltimore Ravens, ESPN headlines:
 
 Cleveland Browns, injuries:
+- Quinshon Judkins (RB) Questionable, Foot: Judkins (ankle) will go through a pregame workout to determine his status for Sunday's contest against the Ravens, Ian Rapoport of NFL Network reports.
 - Teven Jenkins (G) Out, Back: Jenkins (back) has been ruled out for Sunday's game against the Ravens.
 - Tytus Howard (OT) Active: Howard (knee) does not have an injury designation against Baltimore on Sunday.
 - Kalia Davis (DT) Injured Reserve, Quadriceps: Davis (quadriceps) has been ruled out for Sunday's game against the Ravens.
@@ -261,7 +262,6 @@ Cleveland Browns, injuries:
 - Denzel Boston (WR) Active
 - KC Concepcion (WR) Active: Concepcion has cleared concussion protocol and will play Sunday against the Ravens, Daniel Oyefusi of ESPN.com reports.
 - Dylan Sampson (RB) Injured Reserve, Knee: Sampson (knee) won't be activated from injured reserve ahead of Sunday's contest against the Ravens, Zac Jackson of The Athletic reports.
-- Quinshon Judkins (RB) Questionable, Foot: Judkins (foot) is listed as questionable for Sunday's game against Baltimore, Zac Jackson of The Athletic reports.
 - Elgton Jenkins (C) Active
 - Derek Barnett (DE) Questionable, Ankle: questionable
 - Audric Estime (RB) Active: The Browns signed Estime to the 53-man roster Tuesday.
@@ -316,11 +316,11 @@ Tennessee Titans, injuries:
 Tennessee Titans, ESPN headlines:
 
 Indianapolis Colts, injuries:
+- Tyler Warren (TE) Questionable, Groin: Warren (groin) is considered a game-time decision for Sunday's contest against the Titans, Jeremy Fowler of ESPN reports.
 - Will Mallory (TE) Active: The Colts activated Mallory (thumb) from injured reserve Saturday.
 - Jaylon Carlies (LB) Out, Ribs: Carlies (ribs) has been ruled out for Sunday's game against the Titans, Joel A. Erickson of The Indianapolis Star reports.
 - Ashton Dulin (WR) Out, Hamstring: Dulin (hamstring) has been ruled out ahead of Sunday's game against the Titans, Joel A. Erickson of The Indianapolis Star reports.
 - Jalen Travis (OT) Active
-- Tyler Warren (TE) Questionable, Groin: Warren (groin) is listed as questionable for Sunday's game against the Titans after being added to the practice report Friday as a limited participant.
 - Jaylahn Tuimoloau (DE) Active
 - Matt Goncalves (G) Active
 - Josh Downs (WR) Active: Downs (rest/hamstring) upgraded to full participation at Thursday's practice.
@@ -384,6 +384,7 @@ New York Jets, injuries:
 New York Jets, ESPN headlines:
 
 New England Patriots, injuries:
+- TreVeyon Henderson (RB) Questionable, Ankle: Henderson (ankle), who is listed as questionable for Sunday's game against the Jets, is likely to suit up, Ian Rapoport of NFL Network reports.
 - A.J. Brown (WR) Questionable, Ankle: The Patriots activated Brown (ankle) from injured reserve Saturday, but he's still listed as questionable for Sunday's game against the Jets.
 - Will Campbell (OT) Questionable, Knee - MCL: Campbell (knee) is questionable for Sunday's game against the Jets.
 - Charles Woods (CB) Active: Woods (shoulder) does not have an injury designation for Sunday's game against the Jets.
@@ -395,7 +396,6 @@ New England Patriots, injuries:
 - Morgan Moses (OT) Active
 - Marcus Jones (CB) Active
 - Cory Durden (DT) Active
-- TreVeyon Henderson (RB) Questionable, Ankle: Henderson said Friday that an MRI revealed he sustained a high-ankle sprain but that he is "hoping to play" Sunday against the Jets, Doug Kyed of the Boston Herald reports.
 - Christian Gonzalez (CB) Active: Gonzalez (shoulder) was a full participant in Thursday's practice.
 - Marcus Bryant (OT) Injured Reserve, Ankle: The Patriots opened the 21-day practice window Wednesday for Bryant (ankle) to return from injured reserve.
 - Craig Woodson (S) Questionable, Shoulder: questionable
@@ -413,7 +413,7 @@ New England Patriots, injuries:
 New England Patriots, ESPN headlines:
 
 ### New Orleans Saints at New York Giants
-Sun, Oct 18, 1:00 PM ET, Fox, MetLife Stadium, East Rutherford. Line: NYG -1.5, O/U 46.5
+Sun, Oct 18, 1:00 PM ET, Fox, MetLife Stadium, East Rutherford. Line: NO -1.5, O/U 46.5
 
 Searches to run:
 - "New Orleans Saints New York Giants preview week 6"
@@ -423,13 +423,13 @@ Searches to run:
 - "NFL week 6 picks NO NYG"
 
 New Orleans Saints, injuries:
+- Chris Olave (WR) Questionable, Illness: Olave (illness), who is listed as questionable for Sunday's game at the Giants, is expected to suit up, Ian Rapoport of NFL Network reports.
 - Zach Wood (LS) Questionable, Calf: The Saints activated Wood (calf) from injured reserve Saturday.
 - Cedric Tillman (WR) Active: The Saints elevated Tillman from the practice squad Saturday.
 - Vernon Broughton (DT) Active: Broughton (illness) does not have an injury designation for Sunday's game against the Giants, Jeff Nowak of The Big 870 New Orleans reports.
 - Anfernee Jennings (LB) Out, Knee: Jennings (knee) has been ruled out for Sunday's game against the Giants, Jeff Nowak of The Big 870 New Orleans reports.
 - Kaden Elliss (LB) Out, Calf: Elliss (calf) has been ruled out ahead of Sunday's game against the Giants, Jeff Nowak of The Big 870 New Orleans reports.
 - Alvin Kamara (RB) Questionable, Back: Kamara (back) practiced on a limited basis Friday is listed as questionable for Sunday's game at the Giants, Katherine Terrell of ESPN.com reports.
-- Chris Olave (WR) Questionable, Illness: Olave (illness) was limited at Friday's practice and will be listed as questionable for Week 6.
 - Colby Wooden (DT) Active
 - Lorenzo Styles Jr. (S) Questionable, Knee: questionable
 - Tyree Wilson (DE) Active
@@ -559,6 +559,7 @@ Searches to run:
 - "NFL week 6 picks PIT TB"
 
 Pittsburgh Steelers, injuries:
+- Rico Dowdle (RB) Questionable, Toe: Dowdle (toe) is slated to play in Sunday's game against the Buccaneers, Jeremy Fowler of ESPN.com reports.
 - Brandon Smith (WR) Active: The Steelers elevated Smith from the practice squad Saturday ahead of Sunday's game against the Bucs.
 - Brandon Johnson (WR) Active: The Steelers have elevated Johnson from the practice squad ahead of Sunday's game against the Bucs.
 - Lew Nichols (RB) Active: The Steelers signed Nichols off their practice squad Saturday.
@@ -569,7 +570,6 @@ Pittsburgh Steelers, injuries:
 - Jalen Ramsey (CB) Questionable, Wrist: Ramsey (wrist) is listed as questionable for Sunday's game against the Buccaneers, Adam Caplan of SiriusXM NFL Radio reports.
 - Jamel Dean (CB) Questionable, Ankle: Dean (ankle) is listed as questionable ahead of Sunday's game against the Buccaneers, Adam Caplan of SiriusXM NFL Radio reports.
 - Germie Bernard (WR) Active: Bernard and return specialist Kaden Wetjen are the only wide receivers on Pittsburgh's active roster without injury designations for Week 6.
-- Rico Dowdle (RB) Questionable, Toe: Dowdle (toe) is listed as questionable for Sunday's game against the Buccaneers after being a full participant in practice Thursday and Friday.
 - Keeanu Benton (DT) Questionable, Ankle: questionable
 - Darnell Washington (TE) Active: Washington caught two of three targets for 12 yards during the Steelers' 34-22 win over the Colts on Sunday.
 - Ben Skowronek (WR) Out, Calf: Head coach Mike McCarthy said Monday that Skowronek (calf) will not play against the Buccaneers this Sunday, Alan Saunders of SteelersNow.com reports.
@@ -831,10 +831,10 @@ Searches to run:
 - "NFL week 6 picks DAL GB"
 
 Dallas Cowboys, injuries:
+- Joey Porter Jr. (CB) Questionable, Ankle: Porter (ankle) is in line to play in Sunday's game against the Packers, Jeremy Fowler of ESPN reports.
 - DeMarvion Overshown (LB) Out, Hamstring: Dallas has downgraded Overshown (hamstring) to out for Sunday night's game against the Packers, Mike Garafolo of NFL Network reports.
 - Drew Shelton (OT) Out, Hamstring: Shelton (hamstring) has ben ruled out for Sunday's game against the Packers, Patrik Walker of the Cowboys' official site reports.
 - Cobie Durant (CB) Out, Hamstring: Durant (hamstring) has been ruled out for Sunday's game against the Packers, Patrik Walker of the Cowboys' official site reports.
-- Joey Porter Jr. (CB) Questionable, Ankle: Porter (ankle) is listed as questionable for Sunday's game against the Packers, Patrik Walker of the Cowboys' official site reports.
 - George Pickens (WR) Active: With CeeDee Lamb (quadriceps) healthy and cleared to play Sunday night against the Packers, Pickens will handle his normal role as Dallas' WR2.
 - LT Overton (DT) Questionable, Foot: questionable
 - Malachi Lawrence (LB) Active: Lawrence is expected to get more opportunities on the Cowboys' defense moving forward, Jon Machota of The Athletic reports.
