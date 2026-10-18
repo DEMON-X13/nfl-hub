@@ -1,7 +1,7 @@
 {
  "how": "Friends' picks on the Pick'em Record: each friend's Weekly Picks (picks/), week by week, which the Pick'em Record shows beside the models on every device, read only. Claude keeps this file from the files the owner sends, with node picks/tools/add.js <file> (never by hand, never by a job); node picks/tools/add.js --check holds it to its rules. season is the NFL season (a file for another season than the betting app's shows nothing). friends is a list, in the order they were first added: name is the friend's name as their file gives it (or as the owner renamed them, with node picks/tools/add.js --rename <old> <new>; aka then lists the names they went by, and a file sent under one of them lands on the same friend), and weeks holds a week for each file sent, keyed w1 to w22 (w19 to w22 are the playoffs). A week is saved_at, when the last file for it was saved, tiebreaker ({game_id, total_points} or null), and picks, keyed by the nflverse game id as betting/state.json's schedule writes it, each the team picked and when the file that picked it was saved. A pick counts only if it was saved before its game's kickoff; it is graded on the finals the models are graded on (state.json's processed), a tie counting for nobody. A week sent again replaces the friend's week, but a game already kicked off keeps the pick made before it. updated is when this file last changed.",
  "season": 2026,
- "updated": "2026-10-15T01:09:44Z",
+ "updated": "2026-10-17T23:58:59Z",
  "friends": [
   {
    "name": "D",
@@ -83,6 +83,37 @@
       "2026_06_LAC_KC": {"pick": "KC", "saved_at": "2026-10-15T00:23:42.065Z"},
       "2026_06_DAL_GB": {"pick": "GB", "saved_at": "2026-10-15T00:23:42.065Z"},
       "2026_06_WAS_SF": {"pick": "SF", "saved_at": "2026-10-15T00:23:42.065Z"}
+     }
+    }
+   }
+  },
+  {
+   "name": "K",
+   "aka": [
+    "K Diggity"
+   ],
+   "weeks": {
+    "w6": {
+     "saved_at": "2026-10-15T23:30:25.452Z",
+     "tiebreaker": {
+      "game_id": "2026_06_WAS_SF",
+      "total_points": 47
+     },
+     "picks": {
+      "2026_06_SEA_DEN": {"pick": "SEA", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_HOU_JAX": {"pick": "JAX", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_BAL_CLE": {"pick": "BAL", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_CAR_PHI": {"pick": "PHI", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_CHI_ATL": {"pick": "CHI", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_NO_NYG": {"pick": "NO", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_NYJ_NE": {"pick": "NE", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_PIT_TB": {"pick": "PIT", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_TEN_IND": {"pick": "IND", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_ARI_LA": {"pick": "LA", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_BUF_LV": {"pick": "BUF", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_LAC_KC": {"pick": "KC", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_DAL_GB": {"pick": "GB", "saved_at": "2026-10-15T23:30:25.452Z"},
+      "2026_06_WAS_SF": {"pick": "SF", "saved_at": "2026-10-15T23:30:25.452Z"}
      }
     }
    }
