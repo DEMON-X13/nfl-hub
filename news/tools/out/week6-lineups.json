@@ -417,7 +417,7 @@
   },
   "CHI": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-14T18:49:14.932Z",
+   "built_at": "2026-10-18T07:57:49.283Z",
    "units": {
     "qb": [
      {
@@ -512,9 +512,10 @@
       "pos": "CB"
      },
      {
-      "id": "00-0035357",
-      "n": "Cam Lewis",
-      "pos": "FS"
+      "id": "00-0039071",
+      "n": "Tyrique Stevenson",
+      "pos": "CB",
+      "q": "questionable: hip"
      }
     ]
    }
@@ -1041,7 +1042,7 @@
   },
   "NYJ": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-14T22:08:11.163Z",
+   "built_at": "2026-10-18T07:57:49.283Z",
    "units": {
     "qb": [
      {
@@ -1102,8 +1103,8 @@
       "q": "questionable: concussion"
      },
      {
-      "id": "00-0039451",
-      "n": "Isaiah Williams",
+      "id": "00-0033375",
+      "n": "Tim Patrick",
       "pos": "WR"
      }
     ],
@@ -1464,7 +1465,7 @@
   },
   "CAR": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-16T20:47:31.810Z",
+   "built_at": "2026-10-18T07:57:49.283Z",
    "units": {
     "qb": [
      {
@@ -1496,9 +1497,10 @@
       "pos": "G"
      },
      {
-      "id": "00-0036653",
-      "n": "Stone Forsythe",
-      "pos": "T"
+      "id": "00-0033284",
+      "n": "Taylor Moton",
+      "pos": "T",
+      "q": "questionable: lung"
      }
     ],
     "rb": [
@@ -1506,6 +1508,12 @@
       "id": "00-0036555",
       "n": "Chuba Hubbard",
       "pos": "RB"
+     },
+     {
+      "id": "00-0040644",
+      "n": "Trevor Etienne",
+      "pos": "RB",
+      "q": "questionable: ankle"
      }
     ],
     "rec": [
@@ -1668,7 +1676,7 @@
   },
   "PIT": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-16T20:47:31.810Z",
+   "built_at": "2026-10-18T07:57:49.283Z",
    "units": {
     "qb": [
      {
@@ -1719,6 +1727,11 @@
     ],
     "rec": [
      {
+      "id": "00-0035640",
+      "n": "DK Metcalf",
+      "pos": "WR"
+     },
+     {
       "id": "00-0041489",
       "n": "Germie Bernard",
       "pos": "WR"
@@ -1727,11 +1740,6 @@
       "id": "00-0038558",
       "n": "Darnell Washington",
       "pos": "TE"
-     },
-     {
-      "id": "00-0041397",
-      "n": "Kaden Wetjen",
-      "pos": "WR"
      }
     ],
     "front": [
@@ -2706,7 +2714,7 @@
   },
   "WAS": {
    "kick": "2026-10-20T00:15Z",
-   "built_at": "2026-10-17T21:23:47.713Z",
+   "built_at": "2026-10-18T07:57:49.283Z",
    "units": {
     "qb": [
      {
@@ -2765,8 +2773,7 @@
      {
       "id": "00-0035659",
       "n": "Terry McLaurin",
-      "pos": "WR",
-      "q": "not practising: hamstring"
+      "pos": "WR"
      },
      {
       "id": "00-0041040",
@@ -2812,7 +2819,7 @@
   },
   "SF": {
    "kick": "2026-10-20T00:15Z",
-   "built_at": "2026-10-17T21:23:47.713Z",
+   "built_at": "2026-10-18T07:57:49.283Z",
    "units": {
     "qb": [
      {
@@ -2862,12 +2869,6 @@
     ],
     "rec": [
      {
-      "id": "00-0031408",
-      "n": "Mike Evans",
-      "pos": "WR",
-      "q": "questionable: ribs, not practising"
-     },
-     {
       "id": "00-0033288",
       "n": "George Kittle",
       "pos": "TE"
@@ -2875,6 +2876,11 @@
      {
       "id": "00-0039365",
       "n": "Jacob Cowing",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0031236",
+      "n": "Brandin Cooks",
       "pos": "WR"
      }
     ],
@@ -2893,7 +2899,7 @@
       "id": "00-0041557",
       "n": "Gracen Halton",
       "pos": "DT",
-      "q": "questionable: quadricep, not practising"
+      "q": "questionable: quadricep"
      }
     ],
     "db": [
