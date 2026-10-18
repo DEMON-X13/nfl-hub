@@ -693,6 +693,13 @@ function altP(pid,side,price,src,stat){
 }
 window.eloAltP=altP;
 window.eloLoaded=()=>!!D.players;
+/* a builder row's market + form and Elo matchup, on the price the row shows (legPrice in the props parts: a
+   ladder rung at the book's price now, a leg a Refresh odds press priced back on the published prices once the
+   press gives way), as its price column and the matchup bubble read it (17 October 2026: until then these read
+   the price the leg was stored at, so Michael Wilson's 60+ receiving yards, added at -174 with the book now at
+   -114, said 64% and 58% here and 55% and 48% in his bubble). Display only: nothing graded or recorded reads
+   these lines (the Track Record grades market + form on its own rows, the suggestions record on its sets) */
+const shownPrice=l=>{ try{ const x=typeof legPrice==='function'?legPrice(l):null; if(x&&x.ml!=null&&isFinite(x.ml)) return x; }catch(e){} return {ml:l.price,src:l.src}; };
 function decorateAlt(){
   if(!D.players||typeof S!=='object'||!S||!S.parlay) return;
   let any=false, prod=1, prodM=1, n=0;
@@ -700,10 +707,10 @@ function decorateAlt(){
     const b=tr.querySelector('button[data-drop]'); if(!b) return;
     const l=S.parlay[b.dataset.drop]; if(!l) return;
     const cell=tr.querySelectorAll('td')[3]; if(!cell||cell.querySelector('.pe-alt')) { if(cell&&cell.querySelector('.pe-alt')){ const v=+cell.querySelector('.pe-alt').dataset.p; if(v){ prod*=v; prodM*=l.p; n++; } } return; }
-    const p=altP(l.pid,l.side,l.price,l.src,l.stat); if(p==null) return;
+    const sp=shownPrice(l), p=altP(l.pid,l.side,sp.ml,sp.src,l.stat); if(p==null) return;
     any=true; prod*=p; prodM*=l.p; n++;
-    cell.insertAdjacentHTML('beforeend',`<small class="pe-alt" data-p="${p.toFixed(4)}" title="The book's chance for this line, moved by the player's rating on the side of the bet. Beside the model's chance, not in its place.">market + form <b>${Math.round(p*100)}%</b></small>`);
-    const mn=muNudge(l.pid,l.stat), mp=mn?muP(l,mlProb(l.price)):null;
+    cell.insertAdjacentHTML('beforeend',`<small class="pe-alt" data-p="${p.toFixed(4)}" title="The book's chance for this line at the price shown, moved by the player's rating on the side of the bet. Beside the model's chance, not in its place.">market + form <b>${Math.round(p*100)}%</b></small>`);
+    const mn=muNudge(l.pid,l.stat), mp=mn?muP(l,mlProb(sp.ml)):null;
     if(mp!=null) cell.insertAdjacentHTML('beforeend',`<small class="pe-alt pe-muleg" title="His Elo against the defenders he faces this week moves his projection ${mn.nudge>=0?'+':''}${mn.nudge.toFixed(1)}; the book's chance moved by that.">Elo matchup ${mn.nudge>=0?'+':'−'}${Math.abs(mn.nudge).toFixed(1)} <b>${Math.round(mp*100)}%</b></small>`);
   });
   const table=document.querySelector('#parlayBody tr.legrow')&&document.querySelector('#parlayBody tr.legrow').closest('table');
@@ -1082,15 +1089,30 @@ window.eloMismatches=mismatches;
    snapshot's Starters names (the board's openOnProps) */
 window.eloFocusPlayer=mmFocus;
 /* the hub's matchup bubble (glance.js, 17 October 2026) reads a player's matchup as this tab does: the stats where
-   the Elo part has held up (muTrusted) and their labels, the unit he faces ranked among the league's defences as the
-   Mismatches rank it (for every expected starter, not only those with a mismatch), a mismatch's grade, and why the
-   matchups file has him out */
-function unitFaced(v){ const u=v&&MM_UNIT[v.group]; if(!u||!D.mu) return null; const byTeam={};
-  for(const x of Object.values(D.mu.players||{})) if(x.opp_def) byTeam[x.opp]=x.opp_def;
-  if(D.mu.league&&D.mu.league.defs) Object.assign(byTeam,D.mu.league.defs);
-  const val=d=>u.units.reduce((a,k)=>a+d[k],0)/u.units.length, order=Object.keys(byTeam).sort((a,b)=>val(byTeam[b])-val(byTeam[a]));
-  const r=order.indexOf(v.opp)+1; return r?{name:u.name,rank:r,n:order.length}:null; }
-window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,outWhy};
+   the Elo part has held up (muTrusted) and their labels, the defense he faces, a mismatch's grade and what the
+   Mismatches set him against, and why the matchups file has him out.
+   The defense he faces is one of this tab's own unit tables (model.json's units), the one the Game snapshot's
+   position matchups set against his side of the ball (deepdive.js ELO): a quarterback against the opponent's
+   Overall Defense (units.def; the owner's call of 16 October 2026, "QB needs to be vs team defense overall"), a back
+   against its Run Defense (units.run_def), a receiver or tight end against its Pass Defense (units.pass_def). It is
+   named as the tab names the table and ranked as the table draws the club (the file's rank, the # column, with a
+   club yet to play shown on its carried rating and marked carried, as carryTag marks it), out of the clubs the
+   table lists, as a team's window counts them. None for a kicker, before a team has a rating (the tab draws no
+   unit pill: unitsOn) or on a file without that table (unitKeys). Until 18 October 2026 this ranked the Mismatches'
+   player-Elo unit averages (matchups.json) and called them "pass defense" and "run defense", which put Green Bay's
+   pass defense 14th for Dak Prescott and 3rd for George Pickens in the same game while the Pass Defense table drew it
+   18th: the Mismatches' edge stays the matchup formula's, and its words say so (mmAgainst), with no rank of its own */
+const FACE_TABLE={QB:'def',RB:'run_def',WR:'pass_def',TE:'pass_def'};
+function unitFaced(group,opp){
+  const key=FACE_TABLE[group]; if(!key||!opp||!unitsOn()||!unitKeys().includes(key)) return null;
+  const U=D.model.units, T=U[key], v=T&&T[opp]; if(!v||v.rank==null) return null;
+  const C=unitCarry();
+  return {key,name:key==='def'?'Overall Defense':String(U.tables[key].label),team:opp,rank:v.rank,n:Object.keys(T).length,elo:v.elo,carried:!!(v.carried&&C),from:C?C.from:null};
+}
+/* what the Mismatches' edge sets a player against: the matchups file's player ratings of the opponent's units */
+const MM_WORDS={DB:'secondary',DL:'defensive line',LB:'linebackers'};
+const mmAgainst=g=>MM_UNIT[g]?MM_UNIT[g].units.map(u=>MM_WORDS[u]||u).join(' and '):null;
+window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,against:mmAgainst,outWhy};
 if(typeof renderSlate==='function'){ const drawSlate=renderSlate;
   renderSlate=function(){ const r=drawSlate.apply(this,arguments); try{ mismatchCard(); }catch(e){} return r; }; }
 if(typeof renderGame==='function'){ const drawGame=renderGame;
