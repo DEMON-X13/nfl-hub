@@ -2105,9 +2105,13 @@ function pbCap(list,cap){
   return [...keep.values()].sort(pbOrd);
 }
 /* the legs on the reader's picks (u, the choices: the reader's own by default): preferred (the full bar)
-   and thin (at or above the book, no more), uncapped (the Top 100 lines rank them all); pbPool caps them */
-function pbLegs(games,u){
-  u=u||pbUi();
+   and thin (at or above the book, no more), uncapped (the Top 30 lines rank them all); pbPool caps them.
+   o.read (app v115, the Top lines alone): a player leg priced from DraftKings' line read by Refresh odds is
+   kept with no DraftKings id at its own number (kept counts them), since a press finds most of a Sunday's lines
+   moved since the Saturday pull and ESPN gives no id for a player's line; every level, set, hand and Elo pick
+   is built without it, slip-only */
+function pbLegs(games,u,o){
+  u=u||pbUi(); const read=!!(o&&o.read);
   const edge=c=>c.p-mlProb(c.price), formOut=typeof window.eloLoaded==='function'&&!window.eloLoaded();
   /* (app v109) where the payload carries DraftKings' ids, a leg qualifies only with one at its own line,
      so every leg a level suggests goes on DraftKings' betslip. A game counts as having player prices only
@@ -2115,9 +2119,11 @@ function pbLegs(games,u){
      would have qualified but for the id are counted for the panel's note (noId, noIdPl the players'; moved,
      movedPl those DraftKings had at another number). A game the payload has no ids for is as before */
   const hasId=c=>!dkCarries(c)||!!dkIdOf(c);
-  const pref=[], thin=[], plGames=new Set(), plNoId=new Set(), fm={}; let far=0, farDk=0, noId=0, noIdPl=0, moved=0, movedPl=0;
+  /* (app v115) with o.read, a leg from the read on a tested kind (pricedLegs gives no other) stands as one with an id */
+  const readKept=c=>read&&c.src==='dkline'&&!isGameLeg(c)&&!!c.espn&&!!c.espn.tested&&!!c.espn.listed;
+  const pref=[], thin=[], plGames=new Set(), plNoId=new Set(), fm={}; let far=0, farDk=0, noId=0, noIdPl=0, moved=0, movedPl=0, kept=0;
   for(const c of pricedLegs(games)){
-    const id=hasId(c);
+    const id=hasId(c)||readKept(c);
     if(!isGameLeg(c)) (id?plGames:plNoId).add(c.gid);
     if(!pbAllows(c,u)||!(c.src==='real'||c.src==='dkline')||!isFinite(c.price)||c.price===0||!(c.p>=PB_PMIN&&c.p<PB_PMAX)||edge(c)<0) continue;
     /* until the Elo files are in, no player leg qualifies at all, as before */
@@ -2127,6 +2133,7 @@ function pbLegs(games,u){
     /* no DraftKings id at its line: it cannot go on the slip, so it is not suggested (a leg far off
        the market is counted as that, above, as before) */
     if(!id){ const pl=!isGameLeg(c); noId++; if(pl) noIdPl++; if(dkAtAnother(c)){ moved++; if(pl) movedPl++; } continue; }
+    if(!hasId(c)) kept++;
     if(edge(c)>=PB_EDGE&&formAgrees(c)) pref.push({...c,thin:false}); else thin.push({...c,thin:true});
   }
   /* the totals, with Game total ticked: both sides of each ticked game's posted total on a real
@@ -2138,7 +2145,7 @@ function pbLegs(games,u){
     if(c&&pbAllows(c,u)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=PB_PMIN&&c.p<PB_PMAX){
       /* a total with no DraftKings id at its number is counted for the note too */
       if(hasId(c)) mkt.push({...c,thin:false,market:true}); else { noId++; if(dkAtAnother(c)) moved++; } } }
-  return {pref,thin,mkt,plGames:plGames.size,far,farDk,noId,noIdPl,moved,movedPl,plNoId:[...plNoId].filter(id=>!plGames.has(id)).length};
+  return {pref,thin,mkt,plGames:plGames.size,far,farDk,noId,noIdPl,moved,movedPl,kept,plNoId:[...plNoId].filter(id=>!plGames.has(id)).length};
 }
 /* the legs a level is searched from: each list cut to the likeliest and best-paying (opt.cap, 40 for the
    panel), so the search stays quick */
@@ -2611,10 +2618,11 @@ function pbTierCard(t,o){
     <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}${nm?` aria-label="${pbInBuilder(t.legs)?'In the builder:':'Add'}${nm}${pbInBuilder(t.legs)?'':' to the builder'}"`:''}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${o.fid||t.id}"${nm?` aria-label="Finish${nm}"`:''}>Finish</button>`:''}</div></div>`;
 }
 window.pbTierCard=pbTierCard;
-/* ---------- the Parlay Builder's Top lines (app v111; 50 since app v113) ----------
+/* ---------- the Parlay Builder's Top lines (app v111; 50 since app v113, 30 since app v116) ----------
    Every leg on the reader's ticks that qualifies as a suggestion's leg does (pbLegs: a real price, or a
-   tested DraftKings line read by Refresh odds on a payload baked before ids; DraftKings' id at its line
-   where the payload carries ids; the 45-97% band at or above the book's implied chance, preferred with the
+   tested DraftKings line read by Refresh odds; DraftKings' id at its line where the payload carries ids,
+   except (app v115, pbLegs' read option) a player's line from the read, which has none, marked by pbTopSlip;
+   the 45-97% band at or above the book's implied chance, preferred with the
    3-point edge and market + form, thin without; the far-off guard; V6, in pricedLegs; and, with Game total
    ticked, both sides of each ticked game's total at the book's own chance), in two parts: every preferred
    leg first, the Value picks (pbIsValue), then the other lines, every thin-edge leg (one that missed the
@@ -2628,15 +2636,15 @@ window.pbTierCard=pbTierCard;
    line, priced from it, so where that main line is on the list the rung is not. Each row keeps what $1 wins if it lands (the decimal price less 1) and the book's fair chance
    (legFair) where there is one. Cached on the levels' own signature (pbSig), so ticking back is instant,
    and a press (ESPN_SEQ is in pbDataSig, and espnRedraw drops the cache) or a kickoff rebuilds it. */
-const PB_TOP_N=50;
+const PB_TOP_N=30;
 let PB_TOP_CACHE=new Map();
 function pbTopBuild(){
   const u=pbUi(), all=pbGames(), games=all.filter(g=>!u.off.includes(g.id)), kinds=PB_KINDS.map(([k])=>k).filter(k=>u.k[k]);
-  const out={games:all.length,ticked:games.length,kinds:kinds.length,rows:[],pref:0,thin:0,mkt:0,far:0,farDk:0,noId:0,noIdPl:0,moved:0,movedPl:0,plNoId:0,noPlayerPrices:false,espnRead:false};
+  const out={games:all.length,ticked:games.length,kinds:kinds.length,rows:[],pref:0,thin:0,mkt:0,far:0,farDk:0,noId:0,noIdPl:0,moved:0,movedPl:0,kept:0,plNoId:0,noPlayerPrices:false,espnRead:false};
   if(!all.length||!kinds.length||!games.length) return out;
-  const r=pbLegs(games,u), fm={};
+  const r=pbLegs(games,u,{read:true}), fm={};
   out.pref=r.pref.length; out.thin=r.thin.length; out.mkt=r.mkt.length; out.far=r.far; out.farDk=r.farDk||0;
-  out.noId=r.noId||0; out.noIdPl=r.noIdPl||0; out.moved=r.moved||0; out.movedPl=r.movedPl||0; out.plNoId=r.plNoId||0;
+  out.noId=r.noId||0; out.noIdPl=r.noIdPl||0; out.moved=r.moved||0; out.movedPl=r.movedPl||0; out.kept=r.kept||0; out.plNoId=r.plNoId||0;
   out.noPlayerPrices=!!(u.k.over||u.k.under)&&!r.plGames;
   out.espnRead=games.some(g=>ESPN_OUT[g.id]&&(ESPN_OUT[g.id].st==='ok'||ESPN_OUT[g.id].st==='none'));
   const rank=list=>list.map(l=>{ const dec=mlToDec(l.price); return dec>1?{...l,dec,win:dec-1,ev:l.p*dec-1,fc:legFair(l,fm)}:null; })
@@ -2672,12 +2680,25 @@ function pbTopWhy(r,u){
   return `No line on your picks qualifies yet${r.noId?' that DraftKings’ betslip can take':''}: tick more games or bet types.`;
 }
 const pbMoney1=v=>(v<-0.0005?'−':'+')+'$'+Math.abs(v).toFixed(2);
+/* (app v115) a row whose leg is priced from DraftKings' line read by Refresh odds and has no DraftKings id at its
+   own number, where the payload carries ids: one quiet line saying why and what DraftKings' slip does with it, read
+   from the parlay card's own plan for the leg (dkSlipRows, as the builder's rows read it). A main line the pull read
+   at another number has moved since DraftKings' prices were pulled, and the card puts on the slip the id the pull
+   read at the old number; any other leg (a touchdown, a rung, a main line the pull had no price for) has no id at
+   its line. Without the card (the prop model's own page) the cause alone */
+function pbTopSlip(l){
+  if(!l||l.src!=='dkline'||isGameLeg(l)||!dkCarries(l)||dkIdOf(l)) return '';
+  const M=l.main?marketLine(l.week,l.pid,l.stat):null, moved=!!M&&isFinite(+M.line)&&+M.line!==+l.k;
+  const x=(dkSlipRows([l],[{ml:l.price,src:'dkline'}])||[])[0];
+  const tail=!x?'':!x.id?': add it on DraftKings by hand':moved&&x.now!=null&&+x.now===+M.line?`: the slip link has the old line, ${+x.now}`:`: the slip link has ${x.swap||'it'} instead`;
+  return `<small class="pb-tslip" data-pb-slip="${moved?'moved':'none'}">${esc((moved?'Moved since DraftKings’ prices were pulled':'No DraftKings id at this line')+tail)}</small>`;
+}
 function pbTopRow(l,i){
   const g=(S.sched||[]).find(x=>x.id===l.gid), pc=v=>(v*100).toFixed(0)+'%';
   const est=l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:'';
   const mark=pbValMark(l);
   return `<li class="pb-trow" data-pb-row="${i+1}" data-pb-grp="${pbIsValue(l)?'value':'other'}"><span class="pb-trk">${i+1}</span>
-    <span class="nm">${glanceName(l)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}</span>
+    <span class="nm">${glanceName(l)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}${pbTopSlip(l)}</span>
     <span class="pb-tcs"><span class="pb-tc"><b>${fmtML(l.price)}${est}</b><small>price</small></span><span class="pb-tc"><b data-pb-model="${l.p}">${pc(l.p)}</b><small>model</small></span><span class="pb-tc"><b${l.fc?` data-pb-fair="${l.fc.p}"`:''}>${l.fc?pc(l.fc.p):'–'}</b><small>${l.fc?(l.fc.est?'fair, est.':'fair'):'no fair'}</small></span><span class="pb-tc"><b data-pb-win="${l.win}">${pbMoney1(l.win)}</b><small>wins on $1</small></span><span class="pb-tc"><b data-pb-ev="${l.ev}">${pbMoney1(l.ev)}</b><small>expected on $1</small></span></span>
     ${pbLegAddBtn(l)}</li>`;
 }
@@ -3052,6 +3073,8 @@ function pbLegClick(b,box){
   const all=[...document.querySelectorAll(box+' [data-pb-leg]')], i=all.indexOf(b);
   const key=b.dataset.pbLeg, kk=b.dataset.k, side=b.dataset.side, main=b.dataset.main==='1';
   const g=(S.sched||[]).find(x=>x.id===key.split('|')[0]);
+  /* (app v116) where the button was on the screen: the builder is over the list, so the redraw below moves it */
+  let top0=null; try{ top0=b.getBoundingClientRect().top; }catch(e){}
   /* a locked set's leg is the leg as it was locked: its own line, which toggleLeg (reading the line as it stands
      now) would move wherever a rebake or a press has moved it since. So it goes in as shown, as the set's Add
      to builder puts it (pbPut), or comes off where it is in; a live set's and the list's go by toggleLeg */
@@ -3066,6 +3089,9 @@ function pbLegClick(b,box){
   else toggleLeg(key,+kk,g,side,main);
   const now=[...document.querySelectorAll(box+' [data-pb-leg]')], same=x=>x.dataset.pbLeg===key&&x.dataset.k===kk&&x.dataset.side===side;
   const f=(now[i]&&same(now[i]))?now[i]:now.find(same);
+  /* at once, not by the page's smooth scrolling (html{scroll-behavior:smooth}), so the row never slides */
+  try{ if(f&&top0!=null&&typeof window.scrollBy==='function'){ const dy=f.getBoundingClientRect().top-top0;
+    if(isFinite(dy)&&Math.abs(dy)>=1){ const de=document.documentElement, sb=de.style.scrollBehavior; de.style.scrollBehavior='auto'; window.scrollBy(0,dy); de.style.scrollBehavior=sb; } } }catch(e){}
   try{ if(f) f.focus({preventScroll:true}); }catch(e){}
 }
 /* a set's Add to builder: exactly its legs into the builder, the focus kept on the button */
@@ -3112,7 +3138,7 @@ function renderParlay(o){
      does not (targets, the other stat in NO_BET, was never a leg) */
   for(const [k,l] of Object.entries(S.parlay||{})) if(l&&l.stat==='fg_att'){ delete S.parlay[k]; notDk++; }
   if(dropped||notDk) save();
-  /* the Top 100 lines over the builder, and Suggested Parlays, drawn with it, unless only the amount moved
+  /* the Top lines under the builder (app v116: the builder first on the tab), and Suggested Parlays, drawn with it, unless only the amount moved
      (o.keepPb: the payouts are redrawn in place, and the buttons stay put) */
   if(!(o&&o.keepPb)) renderPb();
   const legs=parlayLegs();
@@ -3120,7 +3146,7 @@ function renderParlay(o){
   const droppedNote=(notDk?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05" data-pb-notdk="${notDk}">${notDk} leg${notDk===1?' was':'s were'} removed: DraftKings does not offer FG attempts.</p>`:'')+(dropped?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">${dropped} leg${dropped===1?' was':'s were'} removed because that game has already kicked off. Saved and locked parlays keep theirs.</p>`:'');
   if(!legs.length){
     el.innerHTML=droppedNote+`<div class="card"><h2>Parlay Builder</h2>${espnCtl(null,'builder')}
-      <p class="muted" style="margin:0 0 10px">Open a game, click a player, and tick any line you like, or add a parlay from Suggested Parlays or a line from the Top ${PB_TOP_N} above. Each leg lands here and gets priced.</p></div>`+renderSaved()+renderBetParlays();
+      <p class="muted" style="margin:0 0 10px">Open a game, click a player, and tick any line you like, or add a parlay from Suggested Parlays or a line from the Top ${PB_TOP_N} below. Each leg lands here and gets priced.</p></div>`+renderSaved()+renderBetParlays();
     wireSaved(); wireStakeChips();
     return;
   }

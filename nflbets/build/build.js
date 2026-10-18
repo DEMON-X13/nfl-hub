@@ -347,8 +347,8 @@ html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n
    the choices they are built from over the builder (app v111; Suggested Parlays, #suggest, is the prop model's
    own section before it, each prime-time game's parlays and the Elo picks). X Parlays is a section of its own after it, #xparlays. The
    parlay card's window sits at the end of the page, outside every tab, over everything. */
-html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="pbPanel"></div>\n  <div id="parlayBody"></div>\n</section>',
-  '<section id="tab-parlay" hidden>\n  <div id="pbPanel"></div>\n  <div id="parlayBody"></div>\n</section>\n\n<section id="tab-xparlays" hidden>\n  ' + LIVE_SECTION + '\n</section>', 'the Parlay Builder section');
+html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>\n  <div id="pbPanel"></div>\n</section>',
+  '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>\n  <div id="pbPanel"></div>\n</section>\n\n<section id="tab-xparlays" hidden>\n  ' + LIVE_SECTION + '\n</section>', 'the Parlay Builder section');
 html = sub1(html, '\n</main>', '\n' + CARD_HTML + '\n</main>', "the parlay card's window");
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
 /* the storage layer runs first: the prop model reads its state through it at boot; the X Bet

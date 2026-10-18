@@ -48,7 +48,7 @@ by hand when a source changes, and reads the models' data on every load, every f
 | `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what the page reads) | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what the page reads); the app itself lives inside the page, the root's `index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to the root): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`, still written though no page reads them since the Stat breakdown went on 16 October 2026), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches with `units.json` | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
-| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, locked 2 hours before kickoff and graded by the props job's suggestions record, and the Elo picks), the Parlay Builder (the Top 50 lines, Value picks first, each bet once, on the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, a Game snapshot of every game on the Matchups board (with the news job's preview and Deep Dive), and a matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css` and `theme.js` |
+| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, locked 2 hours before kickoff and graded by the props job's suggestions record, and the Elo picks), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 30 lines, Value picks first, each bet once, on the bet types and games a visitor ticks), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, a Game snapshot of every game on the Matchups board (with the news job's preview and Deep Dive), and a matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css` and `theme.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Matchups board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `cfb/` | retired: CFB Hub (then X College Football Bets) moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
@@ -325,7 +325,7 @@ never clears the bar a suggested leg must and `pricedLegs` leaves the totals out
 (every bet type of its game) takes its game's total only as the last fill, never a Value pick and so unmarked
 (until app v113 with a line under the level saying why, "... it is here because this game's other legs do not make a
 parlay of this size."; a set's cards draw no such line since, the owner's call of 17 October 2026, under "Bets and
-Stats: the loop"), and with Game total ticked the Parlay Builder's Top 50 lines list both sides of each ticked game's
+Stats: the loop"), and with Game total ticked the Parlay Builder's Top 30 lines list both sides of each ticked game's
 total last among the other lines, after every Value pick and every thin-edge line, set there and never left to the
 sort, since a total priced on one side only is put at 50% and at plus money can be expected to make more than a
 thin-edge line (app v91-v93, v111 and v112, below; until app v112 the totals came before the thin-edge lines, marked
@@ -413,9 +413,10 @@ each, so the free tier's 500 credits a month cover a five-week month with room o
 spreads and totals still come in the slate's one game-lines call (and their DraftKings ids with them),
 and their player legs are shown at the model's estimate, as any game without a book price. With no
 player ids either, their player legs are never suggested, not even priced by a Refresh odds press (app
-v109: a suggested leg needs DraftKings' id, below), while their team legs are. The page
+v109: a suggested leg needs DraftKings' id, below; since app v115 the Parlay Builder's Top 30 lines list one a press
+priced, marked, and no parlay takes it), while their team legs are. The page
 says so wherever it says when player prices are pulled (app v103, `patch_early_sunday.py`: the Parlay
-Builder's notes and the empty line of its Top 50 lines (the Top 100 until app v113), its empty tiers until app v111, and the parlay card;
+Builder's notes and the empty line of its Top 30 lines (the Top 100 until app v113, the Top 50 until app v116), its empty tiers until app v111, and the parlay card;
 no prime-time game is an early one, so Suggested Parlays never needs it); `test_pull_schedule.py`'s (e) holds that no
 early game is ever bought.
 
@@ -455,17 +456,19 @@ does not count). A game with no entry is taken as a payload without ids is: `wee
 `{}` from Monday night's final until the next week's first pull, and judged on the payload as a whole that
 emptied every level, hand and Elo pick from Tuesday to Thursday. Where it does, a leg qualifies for
 the levels (`pbPool`: the preferred, thin and totals lists; since app v111 each prime-time game's set on
-Suggested Parlays and, uncapped, the legs the Parlay Builder's Top 50 lines are ranked from), a game page's hands (`gameLegPool`) and
+Suggested Parlays and, uncapped, the legs the Parlay Builder's Top 30 lines are ranked from, which since app v115 keep
+a player's line read by Refresh odds with none: **The Top lines keep a line DraftKings moved**, below), a game page's hands (`gameLegPool`) and
 the Elo picks only with an id; every other rule (the band, the edge, market + form,
 the far-off guard, which counts its legs first) is as it was, and a payload baked before `dk` suggests as
-before. So after a press a `dkline` player leg is no longer suggested, and a team leg the press
+before. So after a press a `dkline` player leg is no longer suggested (since app v115 the Top lines list it, marked,
+and no parlay takes it), and a team leg the press
 re-priced is (the press gave its current id). A game counts as having player prices only where one of
-its player legs has an id: with player bets ticked, prices on file and none with an id, the Top 50
+its player legs has an id: with player bets ticked, prices on file and none with an id, the Top 30
 lines' empty line (an empty tier's until app v111) says "No player legs DraftKings' betslip can take yet" and
 why (`PB_NO_ID`, with when they are pulled, `PB_PULLED`, Sunday's early games never), and a set's empty level
 says the same of its game with when its player prices come (`spWhy`); a list or a level short of legs says
 they are legs "DraftKings' betslip can take", and the Parlay Builder's notes say how many lines the list left
-out for want of one, apart: those DraftKings had only at another number (`moved`, `dkAtAnother`: a spread at
+out for want of one (since app v115 only those it still leaves out, below), apart: those DraftKings had only at another number (`moved`, `dkAtAnother`: a spread at
 nflverse's number where DraftKings' is another, say, which the card would put on at DraftKings' number, and
 Refresh odds reads DraftKings' current spreads and totals, which the list and the sets can take) and those it
 had none for (`noId` less `moved`, with why and when player ids come), still on the game pages to add to the
@@ -482,9 +485,10 @@ those at another number by the audit's own `dkElseAud` and those with none, the 
 alone build, a game with no entry and an empty table taken as before ids, no player id at all and its
 reason, and no ids carried suggesting as before); M, M4 and M7 run on a made-up id table giving every priced line its id (as the
 pull reads one with each price), so their rules still meet player legs and totals; M (the levels, and since
-app v111 the Top 50 lines and the sets), M7 and O (a game's hands) hold every leg a level, a list or a hand may
-take or holds to an id; M8 a press's read suggested nowhere where ids are carried and as before where they are
-not. The nflbets smoke holds the same on the page (the Top 50 lines, the sets, a game's hands and their empty
+app v111 the Top lines and the sets), M7 and O (a game's hands) hold every leg a level, a list or a hand may
+take or holds to an id (the Top lines, since app v115, but for the read's lines they keep, below); M8 a press's read
+suggested nowhere where ids are carried (since app v115 but on the Top lines) and as before where they are
+not. The nflbets smoke holds the same on the page (the Top 30 lines, the sets, a game's hands and their empty
 hands' words, and the Elo picks), its checks of the Parlay Builder's notes reading that panel alone, never the
 Elo picks' own words on DraftKings' betslip (the Elo picks are on Suggested Parlays since app v111).
 
@@ -496,7 +500,7 @@ interceptions, carries, rushing yards, receptions, receiving yards, rush + rec y
 made, under "Refresh odds" below), and of the stats it projects, FG attempts was the one offered as a bet outside them
 (targets never was). So FG attempts joins targets in `NO_BET` (`part2.js`): still projected, since a kicker's field
 goals made and kicking points stand on it, and never drawn as a line on a game's page or offered to the builder, a set,
-a game page's hands, the Top 50 lines or the Elo picks. A visitor's builder is kept in the browser (`S.parlay`), so an
+a game page's hands, the Top 30 lines or the Elo picks. A visitor's builder is kept in the browser (`S.parlay`), so an
 FG attempts leg added before app v113 leaves it on the next draw (`renderParlay`), as a started game's leg does, with a
 line saying so ("1 leg was removed: DraftKings does not offer FG attempts.", `data-pb-notdk`), and `toggleLeg` never
 adds one by any path. The audit's M13 holds it on its own copy of what DraftKings posts, never the page's `NO_BET`
@@ -504,11 +508,11 @@ adds one by any path. The audit's M13 holds it on its own copy of what DraftKing
 and total; `NOT_DK_AUD`, targets and FG attempts, projected and never offered): every stat the page projects is in one
 or the other, and the reader's markets are the copy's, so a market added on either side is said; on the week as it
 stands, every game played or to come, no line its page draws (every player opened, the ladders shown), no leg
-`pricedLegs` gives, none a game page's hands may take or hold, none on the Top 50, a set or the all-games levels and
+`pricedLegs` gives, none a game page's hands may take or hold, none on the Top 30, a set or the all-games levels and
 none in the builder is on a bet outside the copy; and on a made-up Monday night game of two made-up kickers (on the
 schedule for the run, every stand-in put back on every path, so it holds in any week and the off-season), each with FG
 attempts and field goals made priced as a Value pick with DraftKings' ids, field goals made reaches his game page,
-`pricedLegs`, the hands' pool, the Top 50, the set and, by the page's own boxes and Adds, the builder (so the case can
+`pricedLegs`, the hands' pool, the Top 30, the set and, by the page's own boxes and Adds, the builder (so the case can
 tell), and FG attempts none of them; blocking. The nflbets smoke holds the same on its own copy (`NO_BET_OWN`): on the
 week as it stands, every game's page with every player open and every list, hand, set, Elo pick and the builder, no
 box, heading, tile or leg of targets or FG attempts; on a made-up Sunday night game between two clubs of the schedule
@@ -516,6 +520,48 @@ whose kicker the page projects, FG attempts still projected, DraftKings' main li
 with made-up ids, still no line, leg or suggestion of it anywhere, and every line the page draws for the kickers put in
 the builder by its own box, none of them FG attempts; and an FG attempts leg kept in the builder from before removed
 with that one line, `toggleLeg` adding none.
+
+**The Top lines keep a line DraftKings moved** (app v115, `patch_top50_moved.py`, the owner's call of 18 October 2026:
+"any idea why the player props are not showing up in the top 50 anymore? :/"). On a fresh load the Parlay Builder's Top
+50 held 43 player lines of 50. A Refresh odds press reads DraftKings' current player lines from ESPN, and by Sunday
+morning most had moved since the paid pull read them on Saturday morning; a line the read has at another number is
+priced there by the formula (src `dkline`, est.), and ESPN gives no DraftKings id for a player's line, so since app
+v109 (**Every suggested leg on DraftKings' slip**, above) the list left every such line out wherever the payload
+carries ids. Simulated on that morning's payload with every priced main line moved by half a point, the list went from
+50 rows with 43 player lines to 40 rows with 7, and the press is kept in the browser (`props_press_v1`) until a newer
+publish, so a reload did not bring them back. So the Top lines alone (`pbTopBuild`, through `pbLegs(games,u,{read:true})`)
+keep a player leg priced from DraftKings' line read by Refresh odds on a tested kind (a main line over or under on
+passing, rushing or receiving yards, receptions or passing touchdowns, the anytime touchdown, a yards rung DraftKings
+lists; `pricedLegs` gives no other) even where the payload carries ids and the leg has none at its own number. It
+qualifies by every other rule as before (the band, the 3-point edge and market + form for a Value pick, the far-off
+guard on its estimated fair chance, V6, each bet once, the totals last) and ranks with the rest. Everything that builds
+a parlay stays slip-only, unchanged: Suggested Parlays' sets, the all-games levels (`getPbTiers`, `pbPool`), a game
+page's hands (`gameLegPool`) and the Elo picks take only a leg with DraftKings' id at its own line. The notes do not
+grow: the count "left out: DraftKings had them only at another number" counts only what is still left out (a line with
+a real price whose id is at another number, a spread or total at nflverse's number), and `getPbTop()`'s `kept` counts
+the rows kept without an id, drawn nowhere. Such a row is marked est. (as before) and carries one quiet line under its
+game (`pbTopSlip`, `small.pb-tslip[data-pb-slip]`): "Moved since DraftKings’ prices were pulled" (`data-pb-slip="moved"`)
+where the pull read that main line of his at another number (`PAY.mkt`), else "No DraftKings id at this line" (`none`: a
+touchdown, a rung, a main line the pull had no price for), then on the hub what the parlay card's plan for the leg
+(`dkPlan`, through `dkSlipRows`, as the builder's rows read it) does on DraftKings' slip: ": the slip link has the old
+line, 224.5" (the card puts on the id the pull read at the old number), ": the slip link has Over 224.5 passing yards
+instead" (a line it converts) or ": add it on DraftKings by hand" (no id); on the prop model's own page, which has no
+card, the cause alone. The audit works it out on its own (`readTopAud`, `dkTopOk`, `slipAud`, with `SLIP_AUD` for the
+prop page's words; `qualAud`'s top mode; `holdTop` holding each row's line, blocking, and its words, `W.wording`; M8
+after its press), and M14 on a made-up Monday night game of two made-up clubs and four made-up players on which a press
+moves the quarterback's passing yards, a receiver's receiving yards and a back's rushing yards (tested kinds) and the
+quarterback's completions (untested), leaves a second receiver's receptions where the pull had them and reads his
+receiving yards alone: before the press and after one that moves nothing, the pull's lines alone with their ids; after
+it, every moved tested line on the list at the read's number at the rule's price, marked moved, one the pull had no
+price for marked none, no completions line, the unmoved receptions at the pull's price with its id and no line; nothing
+from the read with no id in a level, the set, a hand's pool or a hand; the counts the audit's own; and with no ids
+carried the read's legs listed as before with no line; blocking, on made-up data. The nflbets smoke, which has no
+warnings, holds it with `qualOwn`'s read option (the Top lines only) and `slipOwn` in `holdTop` (every row's line, its
+kind worked out on its own from `PAY.mkt` and the ids, its words from the card's own plan), and in its Refresh odds
+section, on a payload baked with ids: the Top lines after the press keeping the read's legs with no id, each with its
+line, while no level, set or Elo pick holds one; a plant of the pull at another number on one of the read's main lines
+marked moved with "the slip link has the old line", the old number offered nowhere; without the parlay card the cause
+alone; and both kinds met (`SLIP_SEEN`).
 
 Once the audit is clean, `weekly.py` runs the **suggestions record**, `node suggest_ledger.js` (the third change
 after the review of Sunday 11 October 2026, the owner's call; since app v111 the record of Suggested Parlays, the
@@ -729,10 +775,12 @@ A `dkline` leg of those tested kinds (a main line over or under on passing, rush
 receptions or passing touchdowns; the anytime touchdown; a yards rung DraftKings lists) counts as a book
 price under the same rules: the 45-97% band, the 3-point edge, market + form (`eloAltP` reads a `dkline`
 price as a book price), the far-off guard on its estimated fair chance (the formula's own, `legFair`) and
-V6. Since app v109 it enters a suggestion (a Suggested Parlays level, the Top 50 lines, a game page's hands,
-the Elo picks) only on a payload baked before `dk`: wherever the payload carries DraftKings' ids a suggested leg must
+V6. Since app v109 it enters a suggestion (a Suggested Parlays level, a game page's hands, the Elo picks, and
+until app v115 the Top lines) only on a payload baked before `dk`: wherever the payload carries DraftKings' ids a suggested leg must
 have one at its own line, and ESPN gives none for a player's line (the owner's call of 16 October 2026,
-"Every suggested leg on DraftKings' slip" under Props). Every other kind
+"Every suggested leg on DraftKings' slip" under Props). Since app v115 the Parlay Builder's Top 30 lines keep it there
+too, with one quiet line under its game saying why it has no id and what DraftKings' slip does with it, and no parlay
+takes it (the owner's call of 18 October 2026, "The Top lines keep a line DraftKings moved" under Props). Every other kind
 (completions, attempts, carries, rush + rec yards, interceptions, field goals, kicking points, the
 receptions and passing-TD ladders, a rung DraftKings does not list) has no DraftKings price on file to
 test against: priced, shown est. on the game pages, never suggested. Every `dkline` price is marked est.
@@ -755,7 +803,7 @@ shapes on the payload's own games, so it holds in any week; with no game to come
 `props/build/espn_rule.js`, the checks' own copy of the formula's constants: the parse, the paging, the
 placement (a name never on a player an id names), the kickoff guards, every price, the precedence, what
 the page chooses and on what rules (where the payload carries ids, no leg from the read in a level or a
-hand; with them taken away, as a payload baked before them, the read's legs taken as before), the levels
+hand, and since app v115 the read's legs on the Top lines, each with its line; with them taken away, as a payload baked before them, the read's legs taken as before), the levels
 and hands fresh right after a press, each id dated by its read, a read that gave way back on the published prices, nothing of it in `S` and no request to ESPN
 without a press, and the kept read (the key's content after a press, a reload putting back exactly what
 the press gave with no request, each rule that sets a half aside, a value from another season or junk
@@ -1072,8 +1120,8 @@ model's tab switch reads),
 Props, Suggested Parlays (Suggest Parlays until the owner's call of 17 October 2026, "tab name suggest parlay should be
 Suggested Parlays", app v112: its button, its heading and every word a visitor reads that names it; its section, address
 and `sp` names keep the old one; the prop model's own section `tab-suggest`, `#suggest`, after Props since app v111: the
-next prime-time night's parlays and the Elo picks), Parlay Builder (the prop model's own Parlay Builder tab, `#parlay`: its choices, the
-Top 50 lines and the builder), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
+next prime-time night's parlays and the Elo picks), Parlay Builder (the prop model's own Parlay Builder tab, `#parlay`: the builder, then its
+choices and the Top 30 lines), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
 Player Elo tab, renamed), Pick'em Record, X Bet Log (the Bet Log frame, still `#bets`); a prop model section with no button
 there stays in the page, unshown. Every old address sends a visitor to the page at the site's root (the owner's call of
 17 October 2026, above, when it moved there from `nflbets/`), by `location.replace`, so Back does not loop, with a link
@@ -1247,7 +1295,7 @@ of thin edge and no edge and come up with a name for that first section?"). The 
 puts on its preferred list (the 3-point edge, with market + form agreeing on a player's line: `thin` false and not a
 total, `pbIsValue(l)`, `!!l && l.thin === false && !l.market`) is a **Value pick**, and wears the one mark a leg has,
 `<i class="pb-valmark">Value</i>` (`pbValMark`, the hub's gold filled with dark text on it), on a level's card and on
-a row of the Top 50 lines. A thin-edge leg and a game total wear none (the `pb-thinmark` "thin edge" and "no edge"
+a row of the Top 30 lines. A thin-edge leg and a game total wear none (the `pb-thinmark` "thin edge" and "no edge"
 are gone), and until app v113 the lines under a level said why they are not Value picks (`pbThinLine`, `pbMktLine`,
 above; a set's cards draw neither since: the Value mark says it). An Elo
 pick's legs come from `pricedLegs`, which sets neither `thin` nor `market`, so none is marked: they are chosen on
@@ -1256,7 +1304,7 @@ still keeps each leg's `thin` and `market`. From app v112's second round to app 
 Value is one of the model's best, rated at least 3 points above the chance its price implies, and, wherever the Elo tab
 is on the page, "and on a player's line market + form (the book's chance moved by his Elo rating) agrees"; the lead
 went with app v113, and the Parlay Builder's Value picks heading and the line under it say what a Value pick is. The
-audit (`pbIsValue` on its own cases and the marks on cards of its own, then every level card and Top 50 row) and the nflbets smoke hold the Value
+audit (`pbIsValue` on its own cases and the marks on cards of its own, then every level card and Top 30 row) and the nflbets smoke hold the Value
 mark on every Value pick and on nothing else, no Elo pick's leg marked, and no old tag anywhere.
 
 **The lock** (the owner's call of 16 October 2026, after the sets above: "obviously dont want the lines and options
@@ -1343,11 +1391,20 @@ and no long paragraph on the tab.
 The Parlay Builder tab (`#parlay`, `tab-parlay`; app v111, the owner's call of 16 October 2026: "move top section
 with odds, build from, bet types, game checkboxes into new section tab called 'Parlay Builder'. add leg parlay
 section for live builder, in that section add refresh odds button and show top 100 line + profit ratio and allow
-each line item to be added to parley builder") is its choices at the top and the **Top 50 lines** they make (the
-Top 100 until app v113, `patch_declutter_top50.py`, the owner's call of 17 October 2026: "in parlay builder only do top
-50 now instead of 100")
-(`#pbPanel`, drawn by `renderPb()` in `part3.js`, from `renderParlay()`, which draws Suggested Parlays with it), over
-the builder (`#parlayBody`). The four levels it drew over every game until then are on Suggested Parlays, one set a
+each line item to be added to parley builder") is the builder (`#parlayBody`) at its top, then its choices and the
+**Top 30 lines** they make (the Top 100 until app v113, `patch_declutter_top50.py`, the owner's call of 17 October 2026:
+"in parlay builder only do top 50 now instead of 100"; the Top 50 until app v116, `patch_top30_first.py`, the owner's of
+18 October 2026, with a screenshot of the tab: "its only showing top 30, but honestly top 30 is enough if you want to
+set it at that", the list having shown 30 rows because the reader had ticked a few games)
+(`#pbPanel`, drawn by `renderPb()` in `part3.js`, from `renderParlay()`, which draws Suggested Parlays with it). Until
+app v116 the choices and the list were over the builder; that day the owner, with a screenshot of the builder holding
+five legs under the list, asked "that 5 leg parlay section can we move it up to the top of the page?", so `#parlayBody`
+comes before `#pbPanel` in the section (`part1.html`, and `build.js`'s match of that section), and the builder, empty or
+not, with its Refresh odds and its stake, is the first thing on the tab, over the choices (Bet amount, Refresh odds,
+the mix, the bet types, the games) and the Top 30 lines. Since a line added from the list grows the builder above it
+(a phone's Safari has no scroll anchoring), `pbLegClick` keeps the pressed Add's button where it was on the screen
+(`window.scrollBy` by the distance the redraw moved it) and the focus on it. The audit's layout check (blocking), the
+nflbets smoke and `smoke_live.js` hold the builder first. The four levels it drew over every game until then are on Suggested Parlays, one set a
 prime-time game, and the lock on each leg, New legs and Reset (app v95, `patch_pb_lock_turn.py`) are gone with them,
 every trace of them (`PB_VIEW`, `pbLocked`, `data-pb-lock`, `data-pb-turn`, `data-pb-reset`). At the top of the
 controls is a **Bet amount** box (`#pbStake`: dollars, the decimal keypad on a phone, $1 to $100,000 in steps of $1,
@@ -1357,23 +1414,25 @@ one-tap amounts set the same number (its hint says every parlay on Suggested Par
 its own decimal price ("$25 pays"), redrawn in place as it is typed (`pbPays`, each card's `data-pb-pay` holding its
 price, on either tab) with the builder following a moment later; leaving the box or Enter settles it without
 redrawing the panel (`renderParlay({keepPb:true})`), so an Add to builder or Finish pressed straight after typing
-lands. The Top 50 lines are on $1 and never move with it. A typed amount is read by `stakeRead` ($ and thousands
+lands. The Top 30 lines are on $1 and never move with it. A typed amount is read by `stakeRead` ($ and thousands
 commas allowed); one that is not a positive number (blank, a word, 0, a minus) leaves the amount as it was, and a
 saved one that is not an amount reads as $20 (`pbStake`), so nothing drawn from it is NaN. Then Refresh odds (Odds,
 its status line beside it), and the choices, each kept in the browser's own prop model state (`S.ui.pb`: the boxes,
 the games unticked, whether the games list is open; nothing else holds it): a mix, All (the default), Teams only or
 Players only, which sets five boxes, Moneyline, Spread, Game total, Player overs and Player unders (a touchdown and
 a ladder rung are overs; a box changed by hand lights the mix it makes, or no mix at all: there is no Custom tag);
-and the week's games still to kick off, all ticked to start, with All and None. From those alone, the **Top 50
+and the week's games still to kick off, all ticked to start, with All and None. From those alone, the **Top 30
 lines** (`getPbTop`, `pbTopBuild`): every leg on the ticks that qualifies as a suggested leg does (`pbLegs`, the
 lists a level is searched from, uncapped: the preferred and the thin legs and, with Game total ticked, both sides of
-each ticked game's total, every rule above held, the id rule among them), in two parts (app v112, the owner's "come
+each ticked game's total, every rule above held, the id rule among them, but for a player's line read by Refresh odds
+on a tested kind, which since app v115 the list alone keeps with none, under Props, **The Top lines keep a line
+DraftKings moved**), in two parts (app v112, the owner's "come
 up with a name for that first section", under **Value picks** above): first the Value picks, every preferred leg,
 then the other lines, every thin-edge leg (one that missed the 3-point edge or market + form, which a level takes
 only as fill; they pay more for the model's chance and filled the list's top until app v111 grouped them) and then
 every total, each of the three ranked on its own by what $1 on it is expected to make at the model's chance (the
-chance times the decimal price, less the $1; the lower `pbOrd` on a tie), best first, at most 50 in all
-(`PB_TOP_N`, 100 until app v113): `[...rank(P1), ...rank(P2), ...rank(P3)].slice(0, 50)`, `P1` the Value picks, `P2` the thin-edge legs
+chance times the decimal price, less the $1; the lower `pbOrd` on a tie), best first, at most 30 in all
+(`PB_TOP_N`, 100 until app v113 and 50 until app v116): `[...rank(P1), ...rank(P2), ...rank(P3)].slice(0, 30)`, `P1` the Value picks, `P2` the thin-edge legs
 and `P3` the totals. The totals are set last, the order a level fills in, never left to the sort: a total is at the
 book's own chance, but one priced on one side only is put at 50%, so at plus money (its over alone at +120: +$0.10
 on $1) it can be expected to make more than a thin-edge line, and ranked with them, as app v112 first had it, it came
@@ -1385,7 +1444,7 @@ pairs). A ladder rung k+ (a player's over that is not his main line) lands exact
 half-point line does and is priced from it, so before the ranking, where that main Over of the same game, player and
 stat is among the Value picks or the thin-edge legs, the rung is left out of every part (`once()`) and its slot goes
 to the next line. The main line is kept wherever it ranks, in either part (where the rung was the Value pick and the
-main line a thin-edge one too), and the rung is left out even where its main line ranks past the 50th. A
+main line a thin-edge one too), and the rung is left out even where its main line ranks past the 30th. A
 whole-number main line (Over 225 pushes at 225, where 226+ loses), an Under, a main line that does not qualify and a
 main line in another game never take a rung's place. `getPbTop()`'s `same` counts the rungs left out, drawn nowhere.
 A level never took both (one leg a player) and the builder holds one leg a stat (`legKey`), so it was the list
@@ -1399,27 +1458,29 @@ the page, the totals with Game total ticked), and `ol.pb-top[data-pb-sec="other"
 the last Value pick, so the ranks run on across both (`data-pb-row`, the rank shown); with no Value pick on the
 reader's choices, the Value picks heading has no count and a line under it says so ("No line on your picks is a
 Value pick right now.", `data-pb-novalue`) over the other lines. The lead and the foot say the order (the foot: "...
-each part ranked by what $1 on it is expected to make, any game totals last, 50 lines at most in all. Each bet is
+each part ranked by what $1 on it is expected to make, any game totals last, 30 lines at most in all. Each bet is
 listed once: a ladder rung that is the same bet as the player's main line (225+ passing yards and Over 224.5) is
 shown as the main line."), and each row carries its part (`data-pb-grp`, value or other; edge or thin until app
 v112, the first thin row under a gold rule, which went with the headings).
 Each row (`pbTopRow`) gives its rank, the player or team, the line and its game, the Value mark on a Value pick and
 no mark on any other row, its price (est. where it is, titled with what it is priced from and when), the model's
 chance, the book's fair chance where there is one ("fair, est." where it is), what $1 wins if it lands and what $1
-is expected to make, and an Add, the sets' own. A game total is never a Value pick, and a note says the totals come
+is expected to make, and an Add, the sets' own (and, since app v115, under its game the quiet line of a read's
+leg kept with no id, `pbTopSlip`, under Props). A game total is never a Value pick, and a note says the totals come
 last whenever Game total is ticked ("Game totals are never Value picks: each is priced at the book's own chance, so
-the totals come last among the other lines, and on a long list the 50 lines can end before them."). The list's
-length is the page's one number for it, `PB_TOP_N`, which its heading (`Top ${PB_TOP_N} lines`, "Top 50 lines"), the
-lead ("best first, 50 lines at most."), the foot, that note and the empty builder's line ("or add a parlay from
-Suggested Parlays or a line from the Top 50 above.") all read; the checks keep their own copies of 50, `TOP_N_AUD` in
-the audit and `PB_TOP_N_OWN` in the nflbets smoke, never read from the page. The audit's
-Top 50 check (`topAud`, `topFullAud`, its own rung rule `sameBetAud`) and the nflbets smoke's (`pbTopOwn`,
+the totals come last among the other lines, and on a long list the 30 lines can end before them."). The list's
+length is the page's one number for it, `PB_TOP_N`, which its heading (`Top ${PB_TOP_N} lines`, "Top 30 lines"), the
+lead ("best first, 30 lines at most."), the foot, that note and the empty builder's line ("or add a parlay from
+Suggested Parlays or a line from the Top 30 below.", "above" until app v116 put the builder over the list; the audit
+holds "below" as `W.wording`, the smoke blocking) all read; the checks keep their own copies of 30 (50 until app v116),
+`TOP_N_AUD` in the audit and `PB_TOP_N_OWN` in the nflbets smoke, never read from the page. The audit's
+Top lines check (`topAud`, `topFullAud`, its own rung rule `sameBetAud`) and the nflbets smoke's (`pbTopOwn`,
 `sameBetOwn`) work the order, each bet once, the parts (each holding exactly its rows, its heading, its count and
 the second list's start) and the marks out on their own, on the week as it stands: no row a rung whose half-point
 main Over qualifies, `same` the count they work out, and no line of a later part (the Value picks, the thin-edge
 lines, the totals) before one of an earlier; the audit also holds each main line a rung was left out for exactly
-where its rank in the order without those rungs earns it, and the list the first 50 of that order, at most 50 rows
-drawn under the heading "Top 50 lines" (blocking: a number the page states). On the week as
+where its rank in the order without those rungs earns it, and the list the first 30 of that order, at most 30 rows
+drawn under the heading "Top 30 lines" (blocking: a number the page states). On the week as
 it stands only the smoke meets a priced ladder rung (week 6's list left out 7): the audit boots with no baked odds
 (`NO_BAKED`, `S.odds` empty), so its real lists carry no rung and its own made-up games (M12) are what hold the rule
 for it. Both hold it
@@ -1429,14 +1490,16 @@ out, a whole-number Over 225 with its 226+ kept, an Under main line with a rung 
 another game kept, a Value-pick rung left out for its thin-edge main line, a rung whose main line does not qualify (or
 that has none) kept, and the game's total priced on its over alone at +120, put at 50% and expected to make $0.10,
 still after every thin-edge line (the smoke's nine rows worked out by hand, `same` 2; the audit's M12 also on a list
-of 103 lines once its nine rungs are out, more than the 50 the list holds, with eight Value-pick pairs at its top, where
-the lines ranked 43 to 50 once the rungs are out take their slots, the 51st is off the list, exactly 50 rows are drawn,
-and a thin-edge main line ranked past the 50th is off the list with its rung left out all the same). The smoke holds
-the cut on sixty made-up games of its own too (Moneyline only, each home side to win at -110, forty rated 60.0% down to
-56.1% a tenth of a point at a time, Value picks, and twenty 55.0% down to 53.1%, thin-edge lines): the list is the
-first 50 of their order, the forty Value picks and then the ten best thin-edge lines, the last ten left off, under
-"Top 50 lines", the parts counting 40 and 10 and the other lines ranked from 41; and it fails unless some list it held
-had more lines qualifying than the 50 it holds (`topOver`), so the cut is always met.
+of 103 lines once its nine rungs are out, more than the 30 the list holds, with eight Value-pick pairs at its top, where
+the lines ranked 23 to 30 once the rungs are out take their slots, the 31st is off the list, exactly 30 rows are drawn,
+and a thin-edge main line ranked past the 30th is off the list with its rung left out all the same; until app v116 the
+same list cut at 50, the lines ranked 43 to 50 taking the slots). The smoke holds
+the cut on sixty made-up games of its own too (Moneyline only, each home side to win at -110, twenty rated 60.0% down
+to 58.1% a tenth of a point at a time, Value picks, and forty 55.0% down to 53.05% a twentieth at a time, thin-edge
+lines; until app v116 forty and twenty, cut at 50): the list is the first 30 of their order, the twenty Value picks
+(H100 to H119) and then the ten best thin-edge lines (H120 to H129), H130 to H159 left off, under "Top 30 lines", the
+parts counting 20 and 10 and the other lines ranked from 21; and it fails unless some list it held had more lines
+qualifying than the 30 it holds (`topOver`), so the cut is always met.
 Which lines, their part, order and numbers are blocking; the words are warnings in the audit (`W.wording`) and fail
 the smoke, which has no warnings. The list's notes say what the
 all-games panel's said: with player bets ticked and none of their prices in yet, that the list has no player lines
@@ -1462,7 +1525,7 @@ is gone; a game page's own High/Medium/Low suggestions and their side switch sta
 **The matchup bubble** (app v114, `props/build/patch_glance.py` and `nflbets/build/glance.js`, the owner's call of 17
 October 2026: "in the parlay builder, when i click on a player or a team, bring up a bubble pop up where it shows their
 matchup for the day so i can see info at a glance"). On the hub every name on a leg the Parlay Builder tab and
-Suggested Parlays draw (a Top 50 row, a builder row, a set's level card, an Elo pick's card) is a button, drawn by the
+Suggested Parlays draw (a Top 30 row, a builder row, a set's level card, an Elo pick's card) is a button, drawn by the
 props parts' `glanceName`: `button.glance-name`, `data-glance` p:<pid> for a player's line, t:<ABBR> for a moneyline
 or spread, g:<gid> for a game total, `data-glance-game`, and `data-glance-leg`, the leg's signature (key, side, line,
 the price the row shows and its source, the model's chance), `aria-haspopup="dialog"`, named "Bo Nix: his matchup";
@@ -1479,7 +1542,7 @@ chosen tab's button, never the page's body. It sits under the page's windows (z-
 where there is no room below, kept on the screen and keeping where the reader had scrolled it when placed again; a
 sheet across the foot of the screen at 640px and under, and wherever it fits neither side of the name and that side
 has under 160px (`ROOM_MIN`, a landscape phone). It keeps the place it was opened from (`placeOf`: the builder, the Top
-50, or a level card under its set's game or under `#pbElo`; within one place a leg is drawn once) and the leg's key,
+lines, or a level card under its set's game or under `#pbElo`; within one place a leg is drawn once) and the leg's key,
 side and line, and a MutationObserver, connected only while it is open, follows every redraw (a kickoff, a lock, a
 Refresh odds press, the builder's own): it binds to that place's copy, marks it `aria-expanded`, places itself again
 and redraws where the copy's price moved, and where that place no longer draws the leg it closes, the focus on the
@@ -1538,7 +1601,7 @@ with it where every leg has a book price (the hands' floors, 35%, 20% and 10% by
 no longer stated on the page: app v106 took the game page's explanations off at the owner's ask, and the
 audit holds the card to stating no floor), and the parlay card does too (below). A leg the model rates `FAR_OFF` (15 points) or more above its fair chance on its
 side (`legFarOff`; only where a fair chance exists) is left out of the preferred and thin lists every
-suggestion is built from, the sets' and the Top 50 lines' (`pbPool` and `pbLegs` count it in `far`, and the
+suggestion is built from, the sets' and the Top 30 lines' (`pbPool` and `pbLegs` count it in `far`, and the
 Parlay Builder's note says how many lines and why) and of a game page's hands
 (`gameLegPool`), and flagged "model 77% · market 55%: far off the market" (`farText`) on the game pages
 (the player lines, the touchdown and rungs on a book price, the Game bets card's team lines), in the
@@ -1644,7 +1707,8 @@ the image's step down from 19px to 14px, then take a second row. Finishing saves
 nothing anywhere; a suggested level's Finish finishes the same way, answered by one listener in the card
 (`finishFrom`): a Suggested Parlays level's (`data-pc-finish="sp|<game id>:<level>"`, which `fromTier` reads through
 `window.spTier` as the tab shows it, live or locked, and since app v112 only for a game the tab sets out, the card's
-kicker naming the game: "Medium parlay · SEA at DEN") and an Elo pick's (`"elo|<pick>"`). Start over gives the focus to the first control of the tab on the screen.
+kicker naming the game: "Medium parlay · SEA at DEN") and an Elo pick's (`"elo|<pick>"`). Start over gives the focus to the tab's choices on the screen: the Parlay Builder's mix (`[data-pb-mix]`, as before
+app v116 put the builder over it), or Suggested Parlays' first Add to builder.
 The build lifts renderParlay's pricing
 out of `part3.js` into the card, so its price is the builder's own. Where X's parlays and the X Bet
 Log come from is in "X's parlays and the X Bet Log" below. Then the Player Elo tab
@@ -1672,7 +1736,7 @@ rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the ne
 
 ```
 node nflbets/build/build.js      # writes the page, the root's index.html
-node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder's Top 50 lines, their two parts, the totals last and each bet once, only DraftKings' markets, the matchup bubble, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
+node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 30 lines, their two parts, the totals last, each bet once and the read's moved lines with their slip line, only DraftKings' markets, the matchup bubble, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on a plain browser and one the retired owner layer marked, and the parlay card (the builder's and a Suggested Parlays level's); must end "0 failures"
 (cd news && npm ci && node tools/smoke.js)   # after a change to deepdive.js: the Deep Dive drawn on the real news files (the nflbets smoke only uses stand-ins); must end "all checks passed"
@@ -1684,7 +1748,7 @@ what needs a game to come only when there is one, and, once the page's own week 
 first with a game not yet final, else the last) has no game still to kick off (within the hour of its last
 kickoff or past it: Monday night under way before the props job rebakes after its final, which the Elo job,
 dispatched by the betting job on a final, lands in; and the season's end), boots the page two days before
-that week's last kickoff so the Top 50 lines, the sets, the Elo picks and the builder checks still have a game to stand on;
+that week's last kickoff so the Top 30 lines, the sets, the Elo picks and the builder checks still have a game to stand on;
 a missing section there is a failed check, never a crash. A prime-time game between its set's lock and its kickoff
 (Sunday night's from about 22:20 UTC, when the betting job's late-afternoon finals dispatch the Elo job) is held as
 the set it locked (`holdLocked`), and the checks on made-up lines move it a day and more out, so they stand on live
@@ -2194,7 +2258,7 @@ may quietly outrank what the job published:
   list, `my_parlays_v1`, the betting app's own Bet Log and `x_nfl_bets_preshare_<season>`) stays in
   its storage, undrawn and never deleted. Anything held per-session and not meant to persist
   (for example the game pages' suggested parlays, cached in `GAME_TIER_CACHE` in `part3.js`, and Suggested Parlays'
-  sets and the Top 50 lines, in `SP_CACHE` and `PB_TOP_CACHE`) is kept outside the saved state object `S`, so
+  sets and the Top 30 lines, in `SP_CACHE` and `PB_TOP_CACHE`) is kept outside the saved state object `S`, so
   it is never serialised.
 - **Downloads go through `lib/netfetch.py` (Python) or `lib/netfetch.js` (Node)**, one rule for every
   NFL job (`elo/build.py`, `weekly.py`, `update.js`, the Joker through `betting/jobkit.py`'s

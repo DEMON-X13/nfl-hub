@@ -2,7 +2,7 @@
    The owner, 17 October 2026: "in the parlay builder, when i click on a player or a team, bring up a bubble pop up
    where it shows their matchup for the day so i can see info at a glance."
 
-   A leg's name on the Parlay Builder tab and on Suggested Parlays (the Top 50 lines, the builder's rows, a set's
+   A leg's name on the Parlay Builder tab and on Suggested Parlays (the Top lines, the builder's rows, a set's
    level cards and the Elo picks' cards) is, on this page, a button the props parts draw (glanceName in part3.js,
    app v114): data-glance "p:<pid>" for a player's line, "t:<ABBR>" for a team's moneyline or spread, "g:<gid>" for
    a game total, the leg's game in data-glance-game and the leg itself kept by its signature (window.glanceLeg). The
@@ -14,8 +14,8 @@
    is open; Escape, Close (44px), a click outside it or a click on another name close it, the focus going back to
    the name. It sits under the page's windows (z-index 45; the Game snapshot it opens closes it first).
 
-   The same leg is often drawn in several places at once (a Top 50 row and its builder row, one set's Safe to Extreme
-   cards, a set's card and an Elo pick's), so the bubble keeps the place it was opened from (the builder, the Top 50,
+   The same leg is often drawn in several places at once (a Top row and its builder row, one set's Safe to Extreme
+   cards, a set's card and an Elo pick's), so the bubble keeps the place it was opened from (the builder, the Top lines,
    or a level card in its set or in the Elo picks: placeOf) and the leg's key, side and line, and when the page draws
    its rows again while it is open (a MutationObserver, connected only then) it is bound to that place's copy of the
    leg (marked open, placed again, drawn again where the copy's price moved), or closed, the focus on the leg's
@@ -79,10 +79,10 @@ const legOf=sig=>sig&&typeof window.glanceLeg==='function'?window.glanceLeg(sig)
 
 let cur=null, box=null;
 /* where a name is drawn, worked out from the page when the bubble opens, so a redraw finds the same copy of it: the
-   builder (#parlayBody), the Top 50 lines (#pbPanel), or a level card (.pb-tier[data-pb-tier]) in its section, a
+   builder (#parlayBody), the Top lines (#pbPanel), or a level card (.pb-tier[data-pb-tier]) in its section, a
    set's under its game ([data-sp-game], inside #spPanel) and an Elo pick's under #pbElo, since a set's level ids and
    the Elo picks' are the same four; anywhere else the nearest element with an id. One leg is often drawn in several
-   places at once (a Top 50 row and its builder row, one set's Safe to Extreme cards, a set's card and an Elo pick's),
+   places at once (a Top row and its builder row, one set's Safe to Extreme cards, a set's card and an Elo pick's),
    but within one of these once: the builder holds one leg a stat, the list each bet once, a card one leg a player.
    A leg is known there by its key, side and line (its signature less the price, its source and the model's chance,
    which a Refresh odds press or a rung's book price can move while the leg stays) */
@@ -209,7 +209,7 @@ function teamHtml(){
   if(T) rows.push(`<tr data-glance-row="pr"><th scope="row">Power Rating</th>${[a,h].map(t=>`<td><span class="glance-sh">${shield(T.T[t].elo)}</span>${N('pr:'+t,T.T[t].elo)} <small class="glance-q">${N('prk:'+t,'#'+T.rank(t))}</small></td>`).join('')}</tr>`);
   const tbl=`<table class="glance-vs"><thead><tr><td></td>${col(a)}${col(h)}</tr></thead><tbody>${rows.join('')}</tbody></table>${!F?'<p class="glance-q">Loading the ratings…</p>':!T?'<p class="glance-q" data-glance-n="nopr">No Power Rating for these clubs.</p>':''}`;
   /* the line the leg stands on: the prop model's own row for the game (its spread, total and moneylines, the numbers
-     the leg, the Top 50 lines and the Game bets card are priced on: DraftKings' while its pull is under a day old or
+     the leg, the Top lines and the Game bets card are priced on: DraftKings' while its pull is under a day old or
      after a Refresh odds press, so named, else nflverse's posted line); the board's (state.json's closing lines) only
      for a game the prop model has no row for. Until 18 October 2026 it was the board's wherever the board had the
      game, so a leg "To cover -4.5" at -118 sat under "BUF −5.5 · BUF −258 / LV +210" while the payload had BUF −4.5
