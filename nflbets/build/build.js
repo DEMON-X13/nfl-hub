@@ -240,9 +240,17 @@ for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
   if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html still has ' + gone + ': the builder finishes a parlay on every device');
 for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function spTier(', 'function gameStarted', 'function marketLine'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
+/* the Elo picks' four levels (17 October 2026): Suggested Parlays' own (PB_TIERS, which the tab reads from the
+   page), each named elo-<level> (elo-safe, elo-med, elo-aggr, elo-xtrm), its Finish "elo|elo-<level>", which
+   the card finds by that id in window.eloPicks() */
 { const elo = rd('nflbets', 'build', 'tab_elo.html');
-  if (!elo.includes("kind:'elo'") || !elo.includes('window.eloPicks=eloPicks;') || !elo.includes("getElementById('pbElo')"))
-    throw new Error("the Elo picks' tiers, their place on Suggested Parlays or window.eloPicks moved; the parlay card finishes an Elo pick on every device"); }
+  if (!elo.includes("kind:'elo'") || !elo.includes('window.eloPicks=eloPicks;') || !elo.includes("getElementById('pbElo')")
+    || !elo.includes("id:'elo-'+id") || !elo.includes("typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?PB_TIERS:null") || !elo.includes('add:`data-pb-elo-add="${t.id}"`'))
+    throw new Error("the Elo picks' levels, their ids, their place on Suggested Parlays or window.eloPicks moved; the parlay card finishes an Elo pick on every device");
+  if (!part3.includes('const PB_TIERS=['))
+    throw new Error("Suggested Parlays' levels (PB_TIERS) moved; the Elo picks are built on them");
+  if (!CARD_JS.includes("kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)"))
+    throw new Error("the parlay card no longer finds an Elo pick's level by its id in window.eloPicks()"); }
 /* X Parlays: X's parlays from the file, the whole of its tab, read only; a quiet line under the
    heading says when the file last changed them */
 const LIVE_SECTION = `<div class="card" id="lpCard">
@@ -416,6 +424,26 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
   out = sub1(out, '</style>\n</head>', '</style>\n<style>' + SNAP_CSS + '</style>\n</head>', "the snapshot's styles");
   out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>\n' + DD_JS + '</script>\n<script>' + SNAP_JS + '</script>\n</body>\n</html>\n', "the Deep Dive's and the snapshot's scripts");
   if (out.split('root.gsDeepDive = API').length !== 2) throw new Error('the Deep Dive is not in the page exactly once'); }
+/* the matchup bubble (glance.js, every name glance-; the owner's call of 17 October 2026: "in the parlay builder, when
+   i click on a player or a team, bring up a bubble pop up where it shows their matchup for the day so i can see info at
+   a glance"): a leg's name on the Parlay Builder tab and on Suggested Parlays opens it. Its script runs last, after the
+   Game snapshot's, whose readings (window.gsReadings) and window (window.gameSnapshot) it uses beside the ELO Ratings
+   tab's (window.eloGlance, eloFiles, eloMismatches). The props parts draw a name as its button only where it is on the
+   page (window.hubGlance), so the prop model's own page keeps plain names. It reads what the page has: it fetches
+   nothing and keeps nothing */
+{ const GL = rd('nflbets', 'build', 'glance.js');
+  if (/<\/script|<!--/i.test(GL)) throw new Error('nflbets/build/glance.js has a closing script tag or a comment opener, which would end its script in the page');
+  for (const need of ['window.hubGlance=', "setAttribute('role','dialog')", "setAttribute('aria-modal','false')", "setAttribute('aria-labelledby','glanceTitle')", "'Escape'",
+    'window.gsReadings', 'window.eloGlance', 'window.gameSnapshot(', 'window.glanceLeg', "matchMedia('(max-width:640px)')"])
+    if (!GL.includes(need)) throw new Error('nflbets/build/glance.js no longer has ' + need);
+  for (const gone of ['fetch(', 'XMLHttpRequest', 'sendBeacon', 'localStorage', 'sessionStorage', 'indexedDB', 'window.storage', 'save('])
+    if (GL.includes(gone)) throw new Error('nflbets/build/glance.js has ' + gone + ': the bubble reads what the page already has and keeps nothing');
+  if (!/\nwindow\.gsReadings=\{recordOf,lineOf,callsOf,chanceOf,teamsOf,unitsOf\};\n/.test(rd('nflbets', 'build', 'snapshot.html'))) throw new Error('the Game snapshot no longer hands the matchup bubble its readings (window.gsReadings)');
+  if (!ELO_JS.includes('window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,against:mmAgainst,outWhy};')) throw new Error('the Player Elo tab no longer hands the matchup bubble its readings (window.eloGlance)');
+  for (const need of ['function glanceName(', "typeof window.hubGlance!=='function'", '${glanceName(l)}<small>', '${glanceName(l,prices[i])}'])
+    if (!part3.includes(need)) throw new Error("the props parts no longer draw a leg's name as the matchup bubble's button (" + need + ')');
+  out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>\n' + GL + '</script>\n</body>\n</html>\n', "the matchup bubble's script");
+  if (out.split('window.hubGlance=function').length !== 2) throw new Error('the matchup bubble is not in the page exactly once'); }
 if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out)) throw new Error('the page still carries the Season Tracker tab');
 /* the hub look (theme.css, the NBA Hub's and the NHL Hub's colours and type with the NFL's gold): laid
    over every other style, last, so it wins by order, with the hubs' two fonts, and handed to the

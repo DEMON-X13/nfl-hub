@@ -48,7 +48,7 @@ by hand when a source changes, and reads the models' data on every load, every f
 | `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what the page reads) | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what the page reads); the app itself lives inside the page, the root's `index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to the root): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`, still written though no page reads them since the Stat breakdown went on 16 October 2026), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches with `units.json` | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
-| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, locked 2 hours before kickoff and graded by the props job's suggestions record, and the Elo picks), the Parlay Builder (the Top 50 lines, Value picks first, each bet once, on the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, and a Game snapshot of every game on the Matchups board (with the news job's preview and Deep Dive) | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `theme.css` and `theme.js` |
+| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, locked 2 hours before kickoff and graded by the props job's suggestions record, and the Elo picks), the Parlay Builder (the Top 50 lines, Value picks first, each bet once, on the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, a Game snapshot of every game on the Matchups board (with the news job's preview and Deep Dive), and a matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css` and `theme.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Matchups board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `cfb/` | retired: CFB Hub (then X College Football Bets) moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
@@ -989,10 +989,41 @@ player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`)
 beside the model's chance and graded against it, week by week, at the top of the prop
 model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`; a player out, who is kept out of the map so nothing prices him, keeps his in `past` beside it), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
 starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
-shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield); on a game's page each player with a Solid, Big or Huge one wears MISMATCH beside his name in the Diamond shield's blue, `pe-mmtag`, each leg in the builder carries its Elo matchup chance, and the Elo picks
-(their own section at the foot of Suggested Parlays since app v111, `#pbElo`, until then of the Parlay Builder's suggested parlays; their legs wear no Value mark, since they are chosen on the Elo matchup, not the edge: app v112) are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says
-they beat the book's price with its margin out (a real price, or, on a payload baked before `dk`, after a Refresh odds press one from DraftKings' line on a tested kind, est.), on the stats where the matchup has held up (plus money first, -200 to +300, one leg a
-game), built from `pricedLegs()` in the props parts and filtered by the Parlay Builder's ticked games and player sides (`pbAllows`, the reader's own choices, as before the move) and, since app v109, wherever the payload carries DraftKings' ids, to legs with one at their own line (`dkCarries`, `dkIdOf`: the Parlay Builder's rule, under Props, "Every suggested leg on DraftKings' slip"; with none, the section says why and when player prices, and their ids, are pulled), each with Add to builder, an Add on each leg (app v111, as a set's) and Finish. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
+shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield; what they rank is the matchup formula's units, the player ratings of the defenders he faces, and since 18 October 2026 their words say so, "vs the LAC secondary and defensive line, 32nd by player Elo" (`mmLine`, `mmTitle`, `mmAgainst`), as do a game page's MISMATCH title, the Game snapshot's Mismatches and an Elo pick's tag, since "pass defense ranked" on the page is the ELO Ratings tab's Pass Defense table alone, which can rank the same club far apart: LAC 32nd of the one for Patrick Mahomes in week 6, 4th of the other); on a game's page each player with a Solid, Big or Huge one wears MISMATCH beside his name in the Diamond shield's blue, `pe-mmtag`, each leg in the builder carries its Elo matchup chance, and the Elo picks
+(their own section at the foot of Suggested Parlays since app v111, `#pbElo`, until then of the Parlay Builder's suggested parlays; their legs wear no Value mark, since they are chosen on the Elo matchup, not the edge: app v112) are built on it.
+Since 18 October 2026 (the owner's call of 17 October: "for the ELO picks suggestions, can we also add an aggressive
+and extreme versions. is it touchdowns only or did it just so happen to show that? would want to see the best
+lines:value ratio for ELO mismatches etc": not touchdowns only, but the picks were the first two, three and four
+candidates taken plus money first, one leg a game, and an anytime touchdown is nearly always plus money, 7 of week 6's
+9 legs, 1 of 14 since) they are Suggested Parlays' own four levels, read from the page's `PB_TIERS`, on the Elo chance:
+Safe the likeliest pair, Medium, Aggressive and Extreme the 3-, 4- and 5-leg parlay with the best expected return that
+lands 25%, 12% and 5% by the Elo chance, else the likeliest of that size, marked "the likeliest N legs" only while its
+chance is under the floor (ids `elo-safe`, `elo-med`, `elo-aggr`, `elo-xtrm`; `.pb-tier.elo-xtrm` takes Extreme's
+colour in `theme.css`, both looks). The candidates (`eloCands`, `EP` in `tab_elo.html`) are ranked players whose
+matchup says they beat the book's price with its margin out (a real price, or, on a payload baked before `dk`, after a
+Refresh odds press one from DraftKings' line on a tested kind, est.), on the stats where the matchup has held up
+(`muTrusted`), priced -200 to +300, at an Elo chance of 30% or more and an expected return above nothing, each player's
+best leg by value (his Elo chance times the decimal price, less 1; the main line on a tie), built from `pricedLegs()`
+in the props parts and filtered by the Parlay Builder's ticked games and player sides (`pbAllows`, the reader's own
+choices, as before the move) and, since app v109, wherever the payload carries DraftKings' ids, to legs with one at
+their own line (`dkCarries`, `dkIdOf`: the Parlay Builder's rule, under Props, "Every suggested leg on DraftKings'
+slip"; with none, the section says why and when player prices, and their ids, are pulled); a level is searched from
+the 30 best by value and the 10 likeliest by the Elo chance, each once (`EP.cap`, `EP.capP`), and one that cannot be
+filled says why ("Only 3 players on your picks qualify: this level takes 4."). Legs of one game may go together: a
+level's chance is the builder's own `parlayProb` on the Elo chances and its price `parlayDec`, on the legs in the
+builder's order, so Add to builder and Finish pay what its card says. The search is the rule's own answer by those
+sums: they are worked from draws made once with `parlayProb`'s own seed and Cholesky rows (`epDraws`, `epSums`,
+`epDec`), equal to the parts' to the bit, inside a branch and bound over a quick reading (Mendell-Elston for a game's
+legs; bounds of `EP.z` 4.5 and `EP.zr` 4 standard deviations of the draws' noise and `EP.bias` 1%, measured on the
+payload's correlations, which the nflbets smoke holds under 0.7 between two players of one game, twice the table's
+0.353, since past about 2.6 times it the bounds miss); every level is worked again by `parlayProb` and `parlayDec`
+before it is drawn, the fast sums set aside (`EP_FAST`) should they ever differ. It is built only while Suggested
+Parlays is on the screen ("Built when this tab is open.", the ELO tab wrapping `renderSp`) and cached on the data
+(`EP_CACHE`): a fresh build about 140-300 ms in Chromium on week 6. A leg on a player with a Solid-or-better mismatch
+in that game wears its grade just after his name's button, "Huge mismatch" (`pe-mmtag`, `epMmTag`, titled in the
+Mismatches' own words), only on the side the mismatch favours, his over, a ladder rung or his touchdown, never an Under
+or interceptions (`epMmFor`). Each level has Add to builder, an Add on each leg (app v111, as a set's) and Finish
+(`elo|elo-<level>`, the card's kicker "Medium Elo pick"). A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
 moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.html` and a
 rebuild of the page. The Elo model also stands on the Pick'em Record chart, table and pick
 grid as a third model, beside Alpha Model and the Joker: `betting/tools/build.js` reads `elo/data/model.json` beside the season
@@ -1007,7 +1038,14 @@ the smoke's Elo-picks checks have nothing to read): a page check, after the comm
 seen (a tied final, a top 25 of 24 quarterbacks, in October 2026) turns the run red without holding back the ratings.
 What the files feed that touches a chance or a price is held before the commit by `check_tab.js`: market + form
 (`eloAltP`, which decides whether a player leg qualifies for the suggestions) on every rated player, the Elo matchup
-chance on every matchup line, and the Elo picks' chance and price as the products of their legs', on made-up book
+chance on every matchup line, and the Elo picks' four levels at the builder's own sums (`parlayProb`, `parlayDec`,
+`PB_TIERS` and `pbOrder`, loaded from the props parts' source): on the real files the candidates the rule's, every
+level its floor's rule, "likeliest" only under its floor, none worse than the best parlay of games all different and the
+fast sums the parts' to the bit, and on fixtures of its own each level held to a full enumeration (F1 the candidate
+rules, a -115 main line of better value leading a +150 touchdown; F2 four candidates, Extreme empty with its reason;
+F3 ten correlated legs of one game where the quick reading misorders parlays; F4 the likeliest four legs all in
+different games; F5 34 candidates whose favourites the 30 best by value would cut; F6 fifteen seeded one-game slates of
+9 to 12 legs, their chances clustered at each floor, which fail a search pruned at the floor itself), on made-up book
 prices, with no error thrown. The walk-forward record in `model.json` is the honest number: each season called by
 a model fitted on the seasons before it. Do not tune the formula on the season in progress.
 
@@ -1154,7 +1192,8 @@ focus kept on it; then **Add to builder** (`data-sp-add="<game id>:<level>"`, ex
 control is Refresh odds (Odds, its status line beside it); its Bet amount is the Parlay Builder's. A set is cached
 on its game's kickoff and the data (`SP_CACHE`, `spSig`, with `pbDataSig` and so `ESPN_SEQ` in it), and a game that
 kicks off while the page is open leaves the tab (`pbWatch`). With no prime-time game left to come the tab says so.
-The Elo picks (under "Player Elo: the loop") are its last section, `#pbElo`, their rules unchanged and still on the
+The Elo picks (under "Player Elo: the loop") are its last section, `#pbElo`, since 18 October 2026 Suggested Parlays'
+own four levels on the Elo chance, ranked on value, still on the
 Parlay Builder's ticked games and player sides, each leg with its own Add too, led since app v113 by one sentence, "Players
 whose Elo matchup beats the book's price, on the games and player sides ticked on the Parlay Builder tab." (until then a
 paragraph on the matchup nudge's record and the fair chance), which the nflbets smoke holds word for word.
@@ -1415,6 +1454,58 @@ the ticks, which nothing on the page draws, and the audit and the smoke hold the
 come the tab says so. The old Suggested parlays window (`#suggModal`, its Any/overs/unders switch and its stake box)
 is gone; a game page's own High/Medium/Low suggestions and their side switch stay.
 
+**The matchup bubble** (app v114, `props/build/patch_glance.py` and `nflbets/build/glance.js`, the owner's call of 17
+October 2026: "in the parlay builder, when i click on a player or a team, bring up a bubble pop up where it shows their
+matchup for the day so i can see info at a glance"). On the hub every name on a leg the Parlay Builder tab and
+Suggested Parlays draw (a Top 50 row, a builder row, a set's level card, an Elo pick's card) is a button, drawn by the
+props parts' `glanceName`: `button.glance-name`, `data-glance` p:<pid> for a player's line, t:<ABBR> for a moneyline
+or spread, g:<gid> for a game total, `data-glance-game`, and `data-glance-leg`, the leg's signature (key, side, line,
+the price the row shows and its source, the model's chance), `aria-haspopup="dialog"`, named "Bo Nix: his matchup";
+no button chrome, a dotted underline, and a 44px tap target from padding a negative margin takes back out of the line,
+so no row moves. The leg is kept as its row drew it in `GLANCE_LEGS`, outside `S`, the last 600 (`window.glanceLeg`).
+The parts draw the button only where `window.hubGlance` is on the page, so the prop model's own page, the audit's,
+keeps plain names, and the audit holds that. The bubble is `glance.js`, inlined last by `build.js`, which refuses one
+that fetches or keeps anything and stops if `window.eloGlance` (`tab_elo.html`), `window.gsReadings`
+(`snapshot.html`) or the parts' `glanceName` go missing; its styles are on the theme's tokens, so both looks. It is a
+dialog, not modal (`aria-modal="false"`), labelled by its heading, the focus moved into it and Tab kept there;
+Escape, Close (44px), a click outside or another name close it with the focus back on the name, and a tab changed by
+the address (a hash change, Back) closes it with the focus on the name where it is still on the screen, else on the
+chosen tab's button, never the page's body. It sits under the page's windows (z-index 45), below its name or above
+where there is no room below, kept on the screen and keeping where the reader had scrolled it when placed again; a
+sheet across the foot of the screen at 640px and under, and wherever it fits neither side of the name and that side
+has under 160px (`ROOM_MIN`, a landscape phone). It keeps the place it was opened from (`placeOf`: the builder, the Top
+50, or a level card under its set's game or under `#pbElo`; within one place a leg is drawn once) and the leg's key,
+side and line, and a MutationObserver, connected only while it is open, follows every redraw (a kickoff, a lock, a
+Refresh odds press, the builder's own): it binds to that place's copy, marks it `aria-expanded`, places itself again
+and redraws where the copy's price moved, and where that place no longer draws the leg it closes, the focus on the
+leg's neighbour there. A player's bubble: his position and club and his status as the page reads it; his season Elo,
+shield, tier and rank at the position he is rated at (prov. where provisional), or why he is not ranked; the game and
+its kickoff in ET; "Faces", the ELO Ratings tab's own table for his leg's side of the ball (`eloGlance.unit`), set
+against him as the Game snapshot's position matchups do, a quarterback against the opponent's Overall Defense, a back
+its Run Defense, a receiver or tight end its Pass Defense, named as the tab names it and ranked as its table draws the
+club, "carried from" where the tab marks it carried, and none for a kicker (the side is the leg's, so Travis Hunter's
+receiving line faces the Pass Defense though he is rated a defensive back; until the review of 18 October 2026 this line
+ranked the Mismatches' player-Elo units, which put GB's pass defense 14th for Dak Prescott, 3rd for George Pickens and
+18th on the tab); the Props tab's Mismatch grade and edge, with no rank of its own, its title naming the formula's units
+(`eloGlance.against`); his trusted stats' recent form and projection; and the leg: its line, the price its row shows,
+the model's chance, the book's fair chance, market + form and the Elo matchup on that price (none for a player the page
+has ruled out, whose Matchup line says he has none to show). A team's or a game total's bubble: both records as Team
+Rankings counts them, the Power Ratings and their rank, the line the leg stands on (the prop model's own row for the
+game, named DraftKings where it is DraftKings'; the board's closing line only for a game the prop model has no row for:
+until 18 October 2026 it was the board's, so a Bills "To cover -4.5" at -118 sat under "BUF -5.5 · BUF -258"), Overall
+Offense against Overall Defense each way, each model's pick and chance, the leg's team marked "this leg" (a row's
+line, not a bet the visitor made) and, on a moneyline alone, each model picking that team to win ticked; then the leg
+and Open game snapshot. A file that has not loaded says so in its own line. The builder rows' own market + form and
+Elo matchup (`decorateAlt`) read the price the row shows, as the bubble does (display only: the Track Record grades
+market + form on its own rows). The nflbets smoke's THE MATCHUP BUBBLE section (`glanceChecks`, blocking) holds every
+name as the right button for its leg, each place drawing a leg once, every number on its own reading (the Faces line on
+its own map from model.json, `FACE_OWN`, and the rank the ELO Ratings tab's own table draws, read off the tab), the
+line the leg stands on with the prop model's row moved off the board's, "this leg" and the moneyline-only tick, a
+two-way player, a club planted carried, a player planted Out and Questionable, the window's keys, focus, Close, Open
+game snapshot and a tab changed by the address, the redraws (renderParlay, a price moved, the leg taken out, renderSp,
+an Elo pick's card), the reader's scroll, a stale stored price, and nothing written to storage, all on fixtures of its
+own at any hour (the builder's legs on a made-up game two days out).
+
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
 from its biggest edges, collected its mistakes; the 1pm Safe pair said 53% where its fair chance was
@@ -1576,7 +1667,7 @@ rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the ne
 
 ```
 node nflbets/build/build.js      # writes the page, the root's index.html
-node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Parlay Builder's Top 50 lines, their two parts, the totals last and each bet once, only DraftKings' markets, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
+node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder's Top 50 lines, their two parts, the totals last and each bet once, only DraftKings' markets, the matchup bubble, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on a plain browser and one the retired owner layer marked, and the parlay card (the builder's and a Suggested Parlays level's); must end "0 failures"
 (cd news && npm ci && node tools/smoke.js)   # after a change to deepdive.js: the Deep Dive drawn on the real news files (the nflbets smoke only uses stand-ins); must end "all checks passed"
@@ -1595,7 +1686,11 @@ the set it locked (`holdLocked`), and the checks on made-up lines move it a day 
 sets at any hour. Which games Suggested Parlays sets out turns on the hour too (one night at a time, from 6:00 AM
 Eastern: under "Bets and Stats: the loop"), so the smoke works that out on its own (`nightOwn`, through `Intl`) at the
 page's clock and holds the tab to it, and a check that needs the cards of a set the rule keeps off the tab at that
-hour stands the page's `spOn` in with every prime-time game to come and puts it back. `SMOKE_PAYLOAD=<file>` boots it on another
+hour stands the page's `spOn` in with every prime-time game to come and puts it back. The made-up lines plant a total of
+44.5 on every game they stand on that has none posted (weeks 8 to 18 of a mid-October payload have none), and the Elo
+picks' block and the matchup bubble's stand on made-up games of their own two days out, so each holds on a Sunday
+afternoon, the Tuesday after and the off-season alike (until 18 October 2026 the Elo picks' block stood on
+matchups.json's own games and threw once they had kicked off). `SMOKE_PAYLOAD=<file>` boots it on another
 payload, to try a week the job has not baked, and `SMOKE_NOW=<ISO time>` runs it as if it were then
 (Node's clock and every page's, the shift above laid over it; `props/build/test_audit_phases.py` uses both). `--season-over` gives every game a result first; run it after a change to the smoke or
 to the Matchups board. Both smokes end on their own: a mistake in the smoke's code exits 1 at once
@@ -1756,8 +1851,8 @@ of the news job's data and carries none of the old tab; the
 real files are `news/tools/smoke.js`'s.
 
 `nflbets/build/storage.js` (the browser's own storage), `nflbets/build/xbets.js` (the X Bet Log's
-adapter), `nflbets/build/friends.js` (friends' picks, `window.FRIENDS`), `nflbets/build/card.html` (the parlay card)
-and `nflbets/build/theme.js` (the light or dark look, in the page's head, and `theme.css` with it: under "The hub
+adapter), `nflbets/build/friends.js` (friends' picks, `window.FRIENDS`), `nflbets/build/card.html` (the parlay card),
+`nflbets/build/glance.js` (the matchup bubble, the page's last script) and `nflbets/build/theme.js` (the light or dark look, in the page's head, and `theme.css` with it: under "The hub
 look") are inlined by the build, so a change to any
 is a rebuild too. `smoke_live.js` section J holds the card to all of the above: Finish, every leg and
 the price in the window, the image (a recorder canvas, since jsdom draws nothing), the share sheet,

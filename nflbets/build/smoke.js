@@ -77,8 +77,9 @@ const PROP_KEY = fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 
 const { BET_KEY, SEASON: BET_SEASON } = require(path.join(ROOT, 'betting', 'tools', 'build.js'));
 const ELO_M = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
 /* the matchups as published, except in a thin week (a lone Monday game has one or two players
-   whose nudge clears the Elo picks' bar): then three real players' strongest trusted nudges are
-   raised to clear it, in this copy only, so the Elo picks checks run on any day of the week; and a
+   whose nudge clears the Elo picks' bar): then six rated players' strongest trusted nudges are
+   raised to clear it, in this copy only, so the Elo picks checks (six candidates, for the four
+   levels, Extreme's five legs among them) run on any day of the week; and a
    week with no starter questionable on one side of the games (a report not out yet, a lone Monday
    game) would leave the Game snapshot's Q with nothing to hold in that column, so the first starter
    of each lineup on that side is made questionable, in this copy only */
@@ -91,13 +92,13 @@ const ELO_MU = (() => {
     for (const [t, lu] of Object.entries(M.lineups || {})) { const sd = sideOf(t, lu);
       if (sd && !has[sd] && (lu.players || []).length) { M.q = M.q || {}; M.q[lu.players[0]] = "questionable (the smoke's own: no starter on this side was)"; planted = true; } } }
   const ok = (g, st) => { const q = ((M.record[g + '|' + st] || {}).past); return !!q && q.rmse_elo < q.rmse_form && q.right_top >= 0.53; };
-  const best = {};
+  const best = {}, rated = JSON.parse(ELO_P).players || {};
   for (const [pid, v] of Object.entries(M.players || {})) for (const [st, a] of Object.entries(v.stats)) {
-    if (!ok(v.group, st)) continue; const z = a[2] / M.fit[v.group + '|' + st].sd;
+    if (!ok(v.group, st) || !rated[pid]) continue; const z = a[2] / M.fit[v.group + '|' + st].sd;
     if (!best[pid] || z > best[pid].z) best[pid] = { pid, st, z }; }
   const top = Object.values(best).sort((x, y) => y.z - x.z);
-  if (top.filter(x => x.z >= 0.12).length >= 3) return planted ? JSON.stringify(M) : raw;
-  for (const x of top.slice(0, 3)) { const v = M.players[x.pid]; v.stats[x.st][2] = 0.2 * M.fit[v.group + '|' + x.st].sd; }
+  if (top.filter(x => x.z >= 0.12).length >= 6) return planted ? JSON.stringify(M) : raw;
+  for (const x of top.slice(0, 6)) { const v = M.players[x.pid]; v.stats[x.st][2] = Math.max(v.stats[x.st][2], 0.2 * M.fit[v.group + '|' + x.st].sd); }
   return JSON.stringify(M);
 })();
 
@@ -250,6 +251,11 @@ const sticksIn = (w, cell, box) => { if (!cell || !box || w.getComputedStyle(cel
   for (let el = cell.parentElement; el && el !== box; el = el.parentElement) if (ovf(w, el).some(v => !/^(visible|clip)$/.test(v))) return false;
   return true; };
 const TEAM = t => ({ LA: 'Rams', KC: 'Chiefs', IND: 'Colts', NYG: 'Giants' }[t] || t);
+/* a leg's name as a row draws it (a Top 50 row's or a level card's .nm, a builder row's td.plr): on the hub, the matchup
+   bubble's one button (app v114, glanceName in the props parts) with no name of the row's own beside it; a row drawn
+   without the bubble, its own text. Anything else (two buttons, a name both ways) reads as no name */
+const legNameOf = nm => { const own = [...nm.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim(), b = [...nm.children].filter(x => x.matches('button.glance-name'));
+  return b.length === 1 && !own ? txt(b[0]) : b.length ? '\u0000' : own; };
 /* the book's fair chance on a leg, by the rule, worked here on its own from the page's payload and
    schedule as they stand: both sides of its line priced (a player's main line, a game's two
    moneylines or two spread prices on the leg's number, the total's over and under), that side's
@@ -412,6 +418,28 @@ function dkFixture(legs, read, tag) {
   legs.forEach((l, i) => { const k = dkKey(l); if (!k) return; const D = ((dk[String(l.week)] ??= {})[l.gid] ??= { at: read, glat: read }); if (!(k in D)) D[k] = `${tag}${i}#${k}`; });
   return dk;
 }
+/* what a mismatch ranks, in the smoke's own words (tab_elo.html's MM_UNIT read as the units it averages): the matchup
+   formula's units by their players' Elo, never "a pass defense ranked" or "a run defense ranked", which on the page are
+   the ELO Ratings tab's tables alone (18 October 2026: an Elo pick's tag said "a pass defense ranked 20th" beside a
+   bubble whose Faces line said the same club's Pass Defense was 12th) */
+const MM_AGAINST_OWN = { QB: 'secondary and defensive line', WR: 'secondary', TE: 'secondary', RB: 'defensive line and linebackers' };
+const MM_UNITS_OWN = { QB: ['DB', 'DL'], WR: ['DB'], TE: ['DB'], RB: ['DL', 'LB'] };
+const ordOwn = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
+const mmGradeOwn = s => { const x = Math.round(s * 10) / 10; return x >= 3 ? 'Huge' : x >= 2 ? 'Big' : x >= 1 ? 'Solid' : 'Slight'; };
+const mmTitleOwn = (v, rank, n) => `${mmGradeOwn(v.score)} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs the ${v.opp} ${MM_AGAINST_OWN[v.group]}, ranked ${ordOwn(rank)} of ${n} on the matchup formula's player ratings`;
+/* a club's rank on the matchup formula's units for a position, the smoke's own: matchups.json's league table (each
+   club's opp_def where it has none), 1st the highest */
+const mmRankOwn = (M, group, opp) => { const defs = {}; for (const v of Object.values(M.players || {})) if (v.opp_def) defs[v.opp] = v.opp_def;
+  Object.assign(defs, (M.league && M.league.defs) || {}); const u = MM_UNITS_OWN[group], avg = d => u.reduce((a, k) => a + d[k], 0) / u.length;
+  return defs[opp] ? { rank: 1 + Object.keys(defs).filter(t => avg(defs[t]) > avg(defs[opp])).length, n: Object.keys(defs).length } : null; };
+/* the old words, anywhere under root (its text and every title): a defense "ranked" by the formula's units under the
+   ELO Ratings tab's table's name, lower case as the Mismatches wrote it (the tab's and the bubble's own "Pass Defense
+   ranked" are the table's) */
+const MM_OLD_WORDS = /\b(?:pass|run) defense ranked\b|\bvs an? (?:pass|run) defense\b|\bagainst an? (?:pass|run) defense\b/;
+const mmOldWords = root => { if (!root) return ''; const hits = [];
+  const t = root.textContent || ''; if (MM_OLD_WORDS.test(t)) hits.push(t.match(MM_OLD_WORDS)[0]);
+  for (const e of [root, ...root.querySelectorAll('[title]')]) { const ti = e.getAttribute && e.getAttribute('title'); if (ti && MM_OLD_WORDS.test(ti)) hits.push(ti); }
+  return hits.join(' | '); };
 /* the markets the price pull reads (oddsfetch.py's DEFAULT, as CLAUDE.md says it): a player leg on any other
    has no id that a pull will bring */
 const DK_PULLED = ['passing_yards', 'passing_tds', 'rushing_yards', 'receiving_yards', 'receptions', 'any_td'];
@@ -1102,7 +1130,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   /* (app v113) what the lock line adds where the locked set is this browser's own (the record has none for the game) */
   const OWN_LINE = ' This browser’s own set: the site’s was not published in time, so the record does not grade it.';
   const WHY_GONE = /\bis not a Value pick\b|\bare not Value picks\b|own chance with its margin out|One night is shown at a time|A leg marked Value is one of|Each set is built from its game|The record starts with this change|Refresh odds (updates it until then|no longer changes it)/;
-  const nmOk = (nm, l) => !!nm && [...nm.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === l.name && txt(nm.querySelector('small')).startsWith(l.label);
+  const nmOk = (nm, l) => !!nm && legNameOf(nm) === l.name && txt(nm.querySelector('small')).startsWith(l.label);
   let holdSetF = null;
   const money1 = v => (v < -0.0005 ? '−' : '+') + '$' + Math.abs(v).toFixed(2);
   const addName = (l, on) => `${on ? 'Remove' : 'Add'} ${l.name}, ${l.label}, ${on ? 'from' : 'to'} the builder`;
@@ -1463,7 +1491,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           const T0 = { id: 'aggr', label: 'Aggressive', n: 4, floor: 0.12, legs: L, corr: 0.1, dec: 12, thin: 1, mkt: 1, fair: null, updated: { pid: 'SM-W4', name: 'Card Out', reason: 'Out on the report', at: '2099-01-01T15:00:00Z' } };
           const draw = o => { try { const box = d.createElement('div'); box.innerHTML = w.eval('pbTierCard')(T0, o); return box; } catch (e) { return null; } };
           const why = box => box ? [...box.querySelectorAll('p.pb-thin')].filter(p => !p.classList.contains('pb-espnline') && !p.classList.contains('sp-upd')).map(txt) : null;
-          const eloC = draw({ chance: 0.1, kind: 'elo', add: 'data-pb-elo-add="aggr"', rule: '<span class="pb-rule">plus money first, one leg a game</span>' });
+          const eloC = draw({ chance: 0.1, kind: 'elo', what: 'the Elo picks', add: 'data-pb-elo-add="elo-aggr"', rule: '<span class="pb-rule">best value that lands 12%+ by Elo</span>' });
           const setC = draw({ kind: 'sp', fid: gx.id + ':aggr', add: `data-sp-add="${gx.id}:aggr"`, what: 'A90 at H90', quiet: true, mktWhy: 'this game’s other legs do not make a parlay of this size' });
           const we = why(eloC), ws = why(setC), side = box => box && box.querySelectorAll('p.pb-espnline').length === 1 && txt(box.querySelector('p.sp-upd')) === `Updated: Card Out Out on the report (${etSay(Date.parse(T0.updated.at))}); this level was built again.`;
           chk(!!we && we.length === 2 && we[0].startsWith('One leg is not a Value pick: the model rates it at or above the book\'s price, but not 3 points above') && we[1] === 'The game total is at the book’s own chance with its margin out, so it is not a Value pick: it is here because your picks’ other legs do not make a parlay of this size.'
@@ -1478,12 +1506,16 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const n = await holdSets('this week, as published');
         { const N = shownHere(); console.log(`  (Suggested Parlays on the published week: ${primeHere().map(g => g.id).join(', ') || 'no prime-time game to come'}, ${N.on.length ? N.on.map(g => g.id).join(', ') + ' on the tab' : N.games.length ? 'none on the tab until ' + isoOwn(N.open) : 'none on the tab'}, ${n} levels built)`); }
         await openPb(); }
-      /* made-up lines on every starter (each a few points off his own projection) and a price on
-         every other total, so the tiers are built on any day of the week; then Add to builder and
-         Finish on one of them */
+      /* made-up lines on every starter (each a few points off his own projection), a made-up total of 44.5 on
+         every game with none posted (a week the payload has no lines for yet: a clock far past the bake, the
+         off-season replay, where weeks 8 to 18 of a mid-October payload have no total) and a price on every
+         other total, so the tiers, and the totals' checks, are built on any day of the week; then Add to
+         builder and Finish on one of them */
       const keepPay = w.eval('JSON.stringify({m:PAY.mkt[String(currentWeek())]||null,t:S.sched.map(g=>[g.tov,g.tou])})');
       w.eval(`(function(){ const cw=currentWeek(), M=(PAY.mkt[String(cw)]=PAY.mkt[String(cw)]||{}); let J=0;
-        pbGames().forEach((g,gi)=>{ if(gi%2===0){ g.tov=-105; g.tou=-115; }
+        window.__totPlanted=[];
+        pbGames().forEach((g,gi)=>{ if(g.tot==null||!isFinite(g.tot)){ window.__totPlanted.push({g,had:Object.prototype.hasOwnProperty.call(g,'tot'),v:g.tot}); g.tot=44.5; }
+          if(gi%2===0){ g.tov=-105; g.tou=-115; }
           const ro=rosterFor(g,false); for(const tm in ro) ro[tm].players.forEach((x,i)=>{ if(!x.starter) return;
             for(const l of statLines(x)){ if(l.prob||!(l.mu>2)) continue;
               /* one line in three priced so the book's fair chance on the model's side is 25 points under the
@@ -1826,6 +1858,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (planted) { for (const x of planted) Object.assign(x.g, x.was); w.eval('SP_CACHE=new Map()'); }
       w.eval(`(function(){ const k=${keepPay}, cw=currentWeek(); if(k.m) PAY.mkt[String(cw)]=k.m; else delete PAY.mkt[String(cw)];
         S.sched.forEach((g,i)=>{ g.tov=k.t[i][0]; g.tou=k.t[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
+        for(const x of window.__totPlanted||[]){ if(x.had) x.g.tot=x.v; else delete x.g.tot; } delete window.__totPlanted;
         const kd=${keepDkM}; if(kd===null) delete PAY.dk; else PAY.dk=kd; PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay(); })()`);
       await wait(40); }
   }
@@ -2141,7 +2174,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const redraw = async () => { w.eval('SP_CACHE=new Map(); renderSp()'); await wait(30); };
     const elOf = g => d.querySelector(`#spPanel .sp-game[data-sp-game="${g.id}"]`), phaseOf = g => { const x = elOf(g) && elOf(g).querySelector('[data-sp-phase]'); return x ? x.dataset.spPhase : null; };
     /* a set as the tab draws it: each level's legs (name and label), its chance and price, or why it is empty */
-    const nmOf = nm => [...nm.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() + ' ' + txt(nm.querySelector('small'));
+    const nmOf = nm => legNameOf(nm) + ' ' + txt(nm.querySelector('small'));
     const drawn = g => { const el = elOf(g); return el ? [...el.querySelectorAll('.pb-tier')].map(c => c.classList.contains('none') ? c.className.split(' ')[1] + ' none: ' + txt(c.querySelector('.pb-why'))
       : `${c.dataset.pbTier}: ${[...c.querySelectorAll('.pb-legs li .nm')].map(nmOf).join(' + ')} | ${txt(c.querySelector('.pb-chance b'))} | ${txt(c.querySelector('.pb-chance small'))} | ${txt(c.querySelector('.pb-nums > div:nth-child(2) b'))}`).join(' / ') : null; };
     const kickP = etKick(P), lockP = kickP - 2 * 3600e3, isoS = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -2634,31 +2667,82 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           chk(w.eval(`eloPre(${JSON.stringify(pid)},1)`) === v.s0 && w.eval(`eloPre(${JSON.stringify(pid)},${v.h[0][0] + 1})`) === v.h[0][1],
             'eloPre does not read the rating a player took into the week'); } }
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
-    /* Elo picks: legs whose Elo matchup (trusted stats only) beats the book's price with its
-       margin out, plus money first, one leg a game and a player, prices held between -200 and
-       +300, saved like any suggestion */
+    /* Elo picks: Suggested Parlays' four levels on the Elo chance (17 October 2026, the owner's call: "can we also
+       add an aggressive and extreme versions ... would want to see the best lines:value ratio for ELO mismatches").
+       Legs whose Elo matchup (trusted stats only) beats the book's price with its margin out, prices held between
+       -200 and +300, one leg a player (his best by value), ranked on value (until that day plus money first, so
+       touchdowns filled them), the levels searched from the 30 best by value and the 10 likeliest by the Elo
+       chance, each once (18 October 2026; with the six candidates here, all of them, so the rule worked out below
+       over every parlay of their size is the whole of it; check_tab holds the union on 34 of its own); Safe the
+       likeliest pair by the Elo chance, Medium, Aggressive and Extreme the best return over 25%, 12% and 5% by it,
+       else the likeliest of the size, marked so only under the floor; legs of one game allowed and priced together,
+       every figure the builder's own sums, and the tab's fast sums those sums to the bit; each leg wearing its
+       mismatch this week, where the Props tab's Mismatches has one, on the side it favours; built when Suggested
+       Parlays is on the screen */
+    /* the Elo picks' search is exact only while each parlay's sums stay within the bounds it reads about its quick
+       reading, which were measured on the payload's own correlations: at the table of October 2026 (two players of one
+       game 0.353 at most) the worst stray was 2.9 of the 4.5 deviations allowed, at 1.5 and 2 times the table no level
+       missed its best, and at 2.6 times (0.92) 6 of 40 one-game slates did, by up to 22%. So the table the page prices
+       with stays within twice that, 0.7, between two players of one game (the same player is never two legs of a pick) */
+    { const C0 = JSON.parse(PAYLOAD_TXT).corr || {}, big = Object.entries(C0).filter(([k, v]) => /^(team|opp)\|/.test(k) && Math.abs(v) > 0.7);
+      chk(!big.length, `the payload's correlations between two players of one game go past 0.7, past what the Elo picks' search was measured on (twice the table of October 2026): ${big.slice(0, 3).map(([k, v]) => k + ' ' + v).join(', ')}`); }
     { const MU = JSON.parse(ELO_MU);
       const trusted = (g, st) => { const p = ((MU.record[g + '|' + st] || {}).past); return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
-      const cand = [];
-      for (const [pid, v] of Object.entries(MU.players)) for (const [st, a] of Object.entries(v.stats))
-        if (trusted(v.group, st) && eloP.players[pid] && a[2] / MU.fit[v.group + '|' + st].sd >= 0.12) cand.push({ pid, st, gid: v.game_id, z: a[2] / MU.fit[v.group + '|' + st].sd });
-      cand.sort((a, b) => b.z - a.z);
-      /* one leg a game is the rule under test, so the three legs are given three games of their
-         own: the coming week can be a single Monday game, which must not fail the smoke */
-      const byGame = []; for (const c of cand) if (!byGame.some(x => x.pid === c.pid)) byGame.push(c);
-      byGame.forEach((c, i) => { c.gid = c.gid + '#' + i; });
-      const weak = Object.entries(MU.players).flatMap(([pid, v]) => Object.keys(v.stats).filter(st => !trusted(v.group, st) && eloP.players[pid]).map(st => ({ pid, st, gid: v.game_id + '#w' })))[0];
-      if (byGame.length >= 3 && weak) {
+      const liveMu = (await w.eloFiles()).mu, Sx = w.eval('S');
+      const gradeOf = s => { const x = Math.round(s * 10) / 10; return x >= 3 ? 'Huge' : x >= 2 ? 'Big' : x >= 1 ? 'Solid' : 'Slight'; };
+      /* every leg of the block stands on made-up games of the smoke's own, two days out at the page's clock (on the
+         schedule for the run and taken off after, as the matchup bubble's fixture is), never on the week's: until 18
+         October 2026 it stood on matchups.json's own games, and once one kicked off (a Sunday afternoon, the Tuesday
+         after, the off-season) its legs went with it and the block threw. Six rated players, each on a trusted stat of
+         his in the tab's own matchups (not interceptions, which no mismatch reads for; a touchdown only where he has
+         nothing else) and none ruled out, the first at a position the Mismatches read, for the mismatch planted on him */
+      const MMG = ['QB', 'RB', 'WR', 'TE'];
+      const stOf = (pid, v) => { const lv = liveMu && liveMu.players && liveMu.players[pid]; if (!lv) return null;
+        const ok = Object.keys(v.stats || {}).filter(st => trusted(v.group, st) && st !== 'passing_interceptions' && lv.stats && lv.stats[st] && MU.fit[v.group + '|' + st]);
+        return ok.find(st => st !== 'any_td') || ok[0] || null; };
+      const pool = []; for (const [pid, v] of Object.entries(MU.players)) { if (!eloP.players[pid] || w.eloRuledOut(pid)) continue; const st = stOf(pid, v); if (st) pool.push({ pid, st, grp: v.group }); }
+      const i0 = pool.findIndex(c => MMG.includes(c.grp) && c.st !== 'any_td');
+      const byGame = i0 < 0 ? [] : [pool[i0], ...pool.filter((c, i) => i !== i0)].slice(0, 6);
+      const weak = Object.entries(MU.players).flatMap(([pid, v]) => Object.keys(v.stats).filter(st => !trusted(v.group, st) && eloP.players[pid]).map(st => ({ pid, st })))[0];
+      const wkE = w.eval('currentWeek()'), seasonE = +w.eval('SEASON'), atE = new Date(w.Date.now() + 2 * 86400e3).toISOString().slice(0, 10);
+      const EG = [...'ABCDE'].map(c => ({ id: `${seasonE}_${String(wkE).padStart(2, '0')}_XE${c}_YE${c}`, w: wkE, d: atE, t: '13:00', a: 'XE' + c, h: 'YE' + c }));
+      const wkOf = gid => { const g = Sx.sched.find(x => x.id === gid); return g ? g.w : wkE; };
+      if (byGame.length >= 6 && weak) {
+        Sx.sched.push(...EG);
+        /* what the block stands in, each put back in the finally below whatever path it leaves by */
+        const keepMu = {}; let undoDk = null, undoCorr = null, undoMkt = null;
+        try {
+        /* the third is put in the first one's game, so two legs of one game are there to be taken and priced together;
+           the second the prop model rates at 90%, far off the market: an Elo pick is chosen on its own chance, so it
+           stays, flagged. Each nudge is the smoke's own, set in the tab's matchups (the file the page holds, every entry
+           put back below), so the levels stand on numbers of the smoke's choosing whatever the week's file says: the
+           second the likeliest and the best value, the first and third next, so a level takes the game's two together */
+        const GAME_OF = [0, 1, 0, 2, 3, 4], Z = [0.35, 0.5, 0.3, 0.25, 0.2, 0.15];
+        const B = byGame.map((c, i) => ({ ...c, gid: EG[GAME_OF[i]].id, z: Z[i] }));
+        for (const c of B) { keepMu[c.pid] = JSON.stringify(liveMu.players[c.pid]); liveMu.players[c.pid].stats[c.st][2] = c.z * MU.fit[liveMu.players[c.pid].group + '|' + c.st].sd; }
+        const nudgeOf = c => c.z * MU.fit[liveMu.players[c.pid].group + '|' + c.st].sd;
+        weak.gid = EG[4].id;
+        /* a mismatch of the smoke's own on the first, in his made-up game: his rating set 4 standard deviations above
+           his position's (the top of the Mismatches whatever the week has) and the club whose units he faces the
+           league's weakest by the matchup formula (the tab's matchups, put back below), so the tags and the words are
+           held at any hour, not only in a week that has one in a game to come */
+        const mmC = { pid: B[0].pid, st: B[0].st, gid: B[0].gid };
+        { const e0 = liveMu.players[mmC.pid], g0 = e0.group, defs = {};
+          for (const v of Object.values(liveMu.players)) if (v.opp_def) defs[v.opp] = v.opp_def;
+          Object.assign(defs, (liveMu.league && liveMu.league.defs) || {});
+          const avg = d => MM_UNITS_OWN[g0].reduce((a, u) => a + d[u], 0) / MM_UNITS_OWN[g0].length, order = Object.keys(defs).sort((a, b) => avg(defs[b]) - avg(defs[a]));
+          const nrm = liveMu.league && liveMu.league.norms && liveMu.league.norms[g0], opp = order[order.length - 1];
+          e0.game_id = mmC.gid; e0.opp = opp; e0.opp_def = { ...defs[opp] };
+          e0.elo = nrm ? nrm[0] + 4 * nrm[1] : Math.max(...Object.values(liveMu.players).filter(v => v.group === g0).map(v => v.elo)) + 400;
+          mmC.opp = opp; mmC.group = g0; Object.assign(mmC, mmRankOwn(liveMu, g0, opp)); }
         /* (an anytime touchdown is one touchdown, the line DraftKings has an id for; the matchup reads no line) */
         const L = (c, price, side, extra) => Object.assign({ key: c.gid + '|' + c.pid + '|' + c.st, gid: c.gid, pid: c.pid, stat: c.st, k: c.st === 'any_td' ? 1 : 4.5, side, main: true, p: 0.5, price,
-          src: 'real', mu: 4, name: eloP.players[c.pid].name, pos: 'X', grp: eloP.players[c.pid].group, team: 'X', opp: 'Y', week: 3, label: side + ' test line' }, extra || {});
-        /* the second the prop model rates at 90%, far off the market: an Elo pick is chosen on its own
-           chance, so it stays, flagged */
-        const legs = [L(byGame[0], 120, 'over'), L(byGame[1], -110, 'over', { p: 0.9 }), L(byGame[2], 110, 'over'),
-          L(byGame[0], 130, 'over', { key: byGame[0].gid + '|' + byGame[0].pid + '|dup' }),        /* same player again */
-          L(byGame[1], 1600, 'over', { key: 'long' }),                                              /* too long a price */
-          L(byGame[2], -110, 'under', { key: 'under' }),                                            /* against his nudge */
-          L(weak, 150, 'over', { key: 'weak' })];                                                   /* a stat the matchup has not earned */
+          src: 'real', mu: 4, name: eloP.players[c.pid].name, pos: 'X', grp: eloP.players[c.pid].group, team: 'X', opp: 'Y', week: wkOf(c.gid), label: side + ' test line' }, extra || {});
+        const legs = [L(B[0], 120, 'over'), L(B[1], -110, 'over', { p: 0.9 }), L(B[2], 110, 'over'), L(B[3], -115, 'over'), L(B[4], 105, 'over'), L(B[5], -105, 'over'),
+          L(B[0], 130, 'over', { key: B[0].gid + '|' + B[0].pid + '|dup' }),          /* the same player again */
+          L(B[1], 1600, 'over', { key: 'long' }),                                       /* too long a price */
+          L(B[2], -110, 'under', { key: 'under' }),                                     /* against his nudge */
+          L(weak, 150, 'over', { key: 'weak' })];                                       /* a stat the matchup has not earned */
         if (!w.__realPricedLegs) w.__realPricedLegs = w.eval('pricedLegs');   /* the page's own, for the Refresh odds checks below */
         w.__legs = legs; w.eval('pricedLegs=function(){ return window.__legs.map(l=>Object.assign({},l)); }');
         /* each line under a made-up DraftKings id of its own at its line (a fixture in place of the payload's
@@ -2666,68 +2750,178 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
            carries ids (app v109) */
         const keepDkE = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), fixE = dkFixture(legs, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'ELO');
         const setDkE = o => w.eval(o === null ? 'delete PAY.dk' : `PAY.dk=${JSON.stringify(o)}`);
-        setDkE(fixE);
-        const r = w.eval('eloPicks()');
-        const t2 = r.tiers[0], t3 = r.tiers[1];
-        chk(r.tiers.length === 2 && t2.legs.length === 2 && t3.legs.length === 3, 'Elo picks should make a 2- and a 3-leg parlay from these lines: ' + JSON.stringify(r.tiers.map(t => t.legs.map(l => l.key))));
-        chk(t3 && t3.legs[0].price > 0 && t3.legs[1].price > 0 && t3.legs[2].price < 0, 'Elo picks do not put plus money first');
-        chk(t3 && new Set(t3.legs.map(l => l.gid)).size === 3 && new Set(t3.legs.map(l => l.pid)).size === 3, 'Elo picks took two legs from one game or one player');
-        chk(t3 && t3.legs.every(l => !['long', 'under', 'weak'].includes(l.key)), 'Elo picks took a line they should have passed on: ' + JSON.stringify(t3 && t3.legs.map(l => l.key)));
-        chk(t2 && Math.abs(t2.dec - t2.legs.reduce((a, l) => a * w.eval('mlToDec')(l.price), 1)) < 1e-9, 'an Elo parlay is not priced as its legs multiplied');
+        setDkE(fixE); undoDk = () => w.eval(`(function(){ const k=${keepDkE}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
+        /* the two legs of one game move together strongly (a correlation of the smoke's own in the page's table, put
+           back below), so a level takes them, priced together */
+        const ka = legs[0].grp + ':' + legs[0].stat, kb = legs[2].grp + ':' + legs[2].stat, ck = 'team|' + (ka < kb ? ka + '|' + kb : kb + '|' + ka);
+        const keepCorr = w.eval(`(function(){ const v=PAY.corr&&PAY.corr[${JSON.stringify(ck)}]; return v===undefined?null:v; })()`);
+        w.eval(`PAY.corr=PAY.corr||{}; PAY.corr[${JSON.stringify(ck)}]=0.6`);
+        undoCorr = () => w.eval(keepCorr === null ? `delete PAY.corr[${JSON.stringify(ck)}]` : `PAY.corr[${JSON.stringify(ck)}]=${keepCorr}`);
+        /* a leg priced on one side has as its fair chance that price over the week's typical overround on two-sided lines,
+           and a week with none (the last week of a season played out, where the made-up games fall in the off-season)
+           gives none, so the leg far off the market could not be told: where the made-up games' week has no two-sided
+           line of its own, one player main line of the smoke's own goes in its market table for the block (put back
+           below) */
+        { const wk = JSON.stringify(String(wkE));
+          const has = w.eval(`(function(){ const M=(PAY.mkt||{})[${wk}]||{}; for(const p in M) for(const s in M[p]){ const L=M[p][s]; if(L&&L.over&&L.under) return true; } return false; })()`);
+          if (!has) { w.eval(`PAY.mkt=PAY.mkt||{}; PAY.mkt[${wk}]=PAY.mkt[${wk}]||{}; PAY.mkt[${wk}]['00-SMOKE-MKT']={receiving_yards:{line:40.5,over:-110,under:-110}}`);
+            undoMkt = () => w.eval(`(function(){ const M=PAY.mkt[${wk}]; delete M['00-SMOKE-MKT']; if(!Object.keys(M).length) delete PAY.mkt[${wk}]; })()`); } }
+        const pP = w.eval('parlayProb'), pD = w.eval('parlayDec'), pOrd = w.eval('pbOrder'), dec = w.eval('mlToDec'), LV = w.eval('PB_TIERS'), idOf = l => l.key + '|' + l.side + '|' + l.k;
+        const r = w.eval('eloPicks()'), T = r ? r.tiers : [];
+        /* the candidates: every player's best line by value, ranked on value, none of the lines the rule refuses */
+        { const C = r ? r.cands : [], best = {};
+          for (const l of legs) { const pe = w.eloMatchupP(l, w.eval(`mlProb(${l.price})`)); if (pe == null || l.price < -200 || l.price > 300) continue;
+            const ev = pe * dec(l.price) - 1; if (pe >= 0.3 && ev > 0 && (!best[l.pid] || ev > best[l.pid].ev)) best[l.pid] = { l, ev }; }
+          chk(!!C.length && C.length === Object.keys(best).length && C.every(l => best[l.pid] && idOf(best[l.pid].l) === idOf(l) && Math.abs(best[l.pid].ev - l.ev) < 1e-12) && C.every((l, i) => !i || C[i - 1].ev >= l.ev)
+            && !C.some(l => ['long', 'under', 'weak'].includes(l.key)),
+            'the Elo picks\' candidates are not each player\'s best line by value, ranked on value, or take a line they should pass on: ' + (C || []).map(l => `${l.name} ${l.price} ${l.ev.toFixed(3)}`).join(', ')); }
+        chk(T.length === 4 && T.every((t, i) => t.id === 'elo-' + LV[i][0] && t.label === LV[i][1] && t.n === LV[i][2] && t.floor === LV[i][3] && t.legs.length === t.n),
+          'the Elo picks are not Suggested Parlays\' four levels (Safe, Medium, Aggressive, Extreme), each with its legs, from six candidates: ' + T.map(t => t.id + ' ' + t.legs.length).join(', '));
+        /* every level at the builder's own sums on its legs (the Elo chances, a game's legs priced together), its floor
+           held, and Suggested Parlays' rule worked out here over every parlay of its size from the candidates */
+        { const C = r ? r.cands : [], memo = new Map(), sums = ls => { const k = ls.map(idOf).sort().join(','); let e = memo.get(k);
+            if (!e) { const O = pOrd(ls); e = { k, O, p: pP(O.map(l => ({ ...l, p: l.pe }))).corr, d: pD(O.map(l => ({ leg: l, ml: l.price }))) }; memo.set(k, e); } return e; };
+          const sub = (n, f) => { const go = (s0, cur) => { if (cur.length === n) { f(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); }; go(0, []); };
+          for (const t of T) { if (!t.legs || !t.legs.length) { chk(false, `the ${t.label} Elo pick has no legs to hold to the rule: ${t.why || 'no reason given'}`); continue; }
+            const e = sums(t.legs), O = pOrd(t.legs);
+            let best = null, likely = null;
+            sub(t.n, ls => { const x = sums(ls); if (!likely || x.p > likely.p || (x.p === likely.p && x.k < likely.k)) likely = x;
+              if (t.floor && x.p >= t.floor && (!best || x.p * x.d > best.p * best.d || (x.p * x.d === best.p * best.d && x.k < best.k))) best = x; });
+            const want = t.floor ? (best || likely) : likely;
+            /* (want is null where the candidates make no parlay of the level's size: counted as a failure, never read) */
+            chk(!!want && t.legs.every((l, i) => idOf(l) === idOf(O[i])) && new Set(t.legs.map(l => l.pid)).size === t.n && t.p === e.p && t.dec === e.d && e.k === want.k && !!t.likeliest === (!!t.floor && !best),
+              `the ${t.label} Elo pick is not Suggested Parlays' rule on the Elo chance (${t.floor ? `best return that lands ${t.floor * 100}%+, else the likeliest` : 'the likeliest pair'}) at the builder's own sums: ${t.legs.map(l => l.name).join(', ')} at ${t.p}, ${t.dec}${t.likeliest ? ' (likeliest)' : ''}; the rule ${want ? `${want.k} at ${want.p}, ${want.d}` : `none: ${C.length} candidates`}`); }
+          /* the search works those sums fast, from parlayProb's draws kept (window.eloSums): parlayProb's and
+             parlayDec's to the bit on every parlay worked out above */
+          { const all = [...memo.values()]; let got = null; try { got = w.eloSums(C, all.map(e => e.O)); } catch (err) { got = null; }
+            const off = all.filter((e, i) => !got || !got[i] || got[i].p !== e.p || got[i].dec !== e.d);
+            chk(all.length > 0 && !off.length, `the Elo picks' fast sums are not parlayProb's and parlayDec's to the bit on ${off.length} of ${all.length} parlays: ${off.slice(0, 2).map(e => e.k + ' ' + e.p + ' ' + e.d).join('; ')}`); }
+          /* two legs of one game, taken and priced together: never the legs multiplied */
+          const sg = T.filter(t => new Set(t.legs.map(l => l.gid)).size < t.legs.length);
+          chk(sg.length > 0 && sg.every(t => t.dec < t.legs.reduce((a, l) => a * dec(l.price), 1) - 1e-6),
+            'no Elo pick takes two legs of one game, or one is priced as its legs multiplied: ' + T.map(t => t.id + ' ' + t.legs.map(l => l.gid).join('/') + ' ' + t.dec).join('; ')); }
         /* a price worked from DraftKings' line read on ESPN (app v107) counts as a book price here and in
            market + form, which pricedLegs offers only on the kinds the estimate has been checked on; a
            model-only estimate never does */
-        /* (app v109) a leg with no DraftKings id at its line is never an Elo pick: byGame[0]'s id taken out
-           (its line, and so the dup beside it), and moved to another number alone, no pick holds him */
-        { const noId = JSON.parse(JSON.stringify(fixE)), D0 = noId['3'][legs[0].gid], k0 = dkKey(legs[0]), id0 = D0[k0];
+        /* (app v109) a leg with no DraftKings id at its line is never an Elo pick: B[0]'s id taken out (its line, and
+           so the dup beside it), and moved to another number alone, no pick holds him */
+        { const noId = JSON.parse(JSON.stringify(fixE)), wk0 = String(legs[0].week), D0 = noId[wk0][legs[0].gid], k0 = dkKey(legs[0]), id0 = D0[k0], kd = dkKey(legs[6]), idd = D0[kd];
           for (const [what, moved] of [['taken out', null]].concat(legs[0].stat === 'any_td' ? [] : [['only at 5.5', `${legs[0].pid}|${legs[0].stat}|over|5.5`]])) {
-            delete D0[k0]; if (moved) D0[moved] = id0; setDkE(noId);
-            const rn = w.eval('eloPicks()'), alln = rn.tiers.flatMap(t => t.legs);
-            chk(alln.length > 0 && !alln.some(l => l.pid === legs[0].pid) && alln.every(l => dkOwnId(noId, l, false)), `with ${legs[0].name}'s DraftKings id ${what}, an Elo pick still takes him, or a leg with no id: ` + JSON.stringify(rn.tiers.map(t => t.legs.map(l => l.key))));
-            if (moved) delete D0[moved]; D0[k0] = id0; }
+            delete D0[k0]; if (kd !== k0) delete D0[kd]; if (moved) D0[moved] = id0; setDkE(noId);
+            const rn = w.eval('eloPicks()'), alln = ((rn && rn.tiers) || []).flatMap(t => t.legs);
+            chk(alln.length > 0 && !alln.some(l => l.pid === legs[0].pid) && alln.every(l => dkOwnId(noId, l, false)), `with ${legs[0].name}'s DraftKings id ${what}, an Elo pick still takes him, or a leg with no id: ` + JSON.stringify(((rn && rn.tiers) || []).map(t => t.legs.map(l => l.key))));
+            if (moved) delete D0[moved]; D0[k0] = id0; if (kd !== k0) D0[kd] = idd; }
           setDkE(fixE); }
         /* a price worked from DraftKings' line read on ESPN (app v107) counts as a book price in market + form,
            and in the Elo picks on a payload baked before DraftKings' ids; where the payload carries ids, such a
            leg (ESPN gives no id for a player's line) is no pick, its line having none; a model-only estimate
            never is */
-        { w.__legs2 = legs.map((l, i) => Object.assign({}, l, i === 2 ? { src: 'dkline', espn: { fair: 0.45, at: '2026-10-15T03:08Z', tested: true, listed: true } } : i === 3 ? { src: 'est' } : {}));
+        { w.__legs2 = legs.map((l, i) => Object.assign({}, l, i === 3 ? { src: 'dkline', espn: { fair: 0.45, at: '2026-10-15T03:08Z', tested: true, listed: true } } : i === 4 ? { src: 'est' } : {}));
           const keepPL = w.eval('pricedLegs'); w.eval('pricedLegs=function(){ return window.__legs2.map(l=>Object.assign({},l)); }');
           setDkE(null);
-          const r2 = w.eval('eloPicks()'), all2 = r2.tiers.flatMap(t => t.legs);
-          chk(all2.some(l => l.key === legs[2].key && l.src === 'dkline') && !all2.some(l => l.key === legs[3].key),
-            'on a payload baked before DraftKings\' ids, the Elo picks do not take a leg priced from DraftKings\' line read on ESPN as a book price, or take a model-only estimate: ' + JSON.stringify(r2.tiers.map(t => t.legs.map(l => l.key + ' ' + l.src))));
-          { const dkE = JSON.parse(JSON.stringify(fixE)); delete dkE['3'][legs[2].gid][dkKey(legs[2])]; setDkE(dkE);
-            const r3 = w.eval('eloPicks()'), all3 = r3.tiers.flatMap(t => t.legs);
-            chk(!all3.some(l => l.src === 'dkline' || l.key === legs[3].key) && all3.every(l => dkOwnId(dkE, l, false)),
-              'where the payload carries DraftKings\' ids, an Elo pick takes a leg priced from DraftKings\' line read on ESPN with no id at its line, or a model-only estimate: ' + JSON.stringify(r3.tiers.map(t => t.legs.map(l => l.key + ' ' + l.src)))); }
+          const r2 = w.eval('eloPicks()') || {}, c2 = r2.cands || [], all2 = (r2.tiers || []).flatMap(t => t.legs);
+          chk(c2.some(l => l.key === legs[3].key && l.src === 'dkline') && !c2.some(l => l.key === legs[4].key) && !all2.some(l => l.key === legs[4].key),
+            'on a payload baked before DraftKings\' ids, the Elo picks do not take a leg priced from DraftKings\' line read on ESPN as a book price, or take a model-only estimate: ' + JSON.stringify((r2.tiers || []).map(t => t.legs.map(l => l.key + ' ' + l.src))));
+          { const dkE = JSON.parse(JSON.stringify(fixE)); delete dkE[String(legs[3].week)][legs[3].gid][dkKey(legs[3])]; setDkE(dkE);
+            const r3 = w.eval('eloPicks()') || {}, all3 = (r3.tiers || []).flatMap(t => t.legs).concat(r3.cands || []);
+            chk(!!r3.tiers && !all3.some(l => l.src === 'dkline' || l.key === legs[4].key) && all3.every(l => dkOwnId(dkE, l, false)),
+              'where the payload carries DraftKings\' ids, an Elo pick takes a leg priced from DraftKings\' line read on ESPN with no id at its line, or a model-only estimate: ' + JSON.stringify((r3.tiers || []).map(t => t.legs.map(l => l.key + ' ' + l.src)))); }
           setDkE(fixE);
           chk(w.eloAltP(legs[0].pid, 'over', -112, 'dkline', legs[0].stat) != null && w.eloAltP(legs[0].pid, 'over', -112, 'est', legs[0].stat) === null,
             'market + form does not read a price from DraftKings\' line read on ESPN as the book\'s, or reads a model-only estimate');
           w.__keepPL = keepPL; w.eval('pricedLegs=window.__keepPL'); w.eval('pricedLegs=function(){ return window.__legs.map(l=>Object.assign({},l)); }'); }
         /* the chance: the book's with its margin out, moved by the nudge in the stat's typical miss */
-        if (t3) { const l = t3.legs[0], a = MU.players[l.pid].stats[l.stat], sd = MU.fit[MU.players[l.pid].group + '|' + l.stat].sd;
-          const fair = w.eval(`mlProb(${l.price})`) / 1.045, want = w.eloMatchupP(l, w.eval(`mlProb(${l.price})`));
-          /* the normal curve by hand: the fair chance moved a[2]/sd standard deviations */
-          const erf = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
-          const Phi = z => 0.5 * (1 + erf(z / Math.SQRT2));
-          let lo = -8, hi = 8; for (let k = 0; k < 80; k++) { const m = (lo + hi) / 2; if (Phi(m) < fair) lo = m; else hi = m; }
-          const byHand = Phi(lo + a[2] / sd);
-          chk(Math.abs(l.pe - want) < 1e-12 && Math.abs(l.pe - byHand) < 2e-4 && l.pe > fair, `an Elo pick's chance is not the book's fair chance moved by the matchup: ${l.pe} vs ${byHand}`); }
-        /* each pick's fair chance: parlayProb on its legs at the rule's fair chances (one leg a game, so their product) */
+        { const l = ((r && r.cands) || [])[0], c = l && B.find(x => x.pid === l.pid && x.st === l.stat), sd = c && MU.fit[MU.players[l.pid].group + '|' + l.stat].sd;
+          chk(!!c, 'the Elo picks have no candidate of the smoke\'s own to hold the chance to');
+          if (c) { const fair = w.eval(`mlProb(${l.price})`) / 1.045, want = w.eloMatchupP(l, w.eval(`mlProb(${l.price})`));
+            /* the normal curve by hand: the fair chance moved the nudge the smoke set, in standard deviations */
+            const erf = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
+            const Phi = z => 0.5 * (1 + erf(z / Math.SQRT2));
+            let lo = -8, hi = 8; for (let k = 0; k < 80; k++) { const m = (lo + hi) / 2; if (Phi(m) < fair) lo = m; else hi = m; }
+            const byHand = Phi(lo + nudgeOf(c) / sd);
+            chk(Math.abs(l.pe - want) < 1e-12 && Math.abs(l.pe - byHand) < 2e-4 && l.pe > fair, `an Elo pick's chance is not the book's fair chance moved by the matchup: ${l.pe} vs ${byHand}`); } }
+        /* each pick's fair chance: parlayProb on its legs at the rule's fair chances */
         { const fo = fairRule(w);
-          chk([t2, t3].every(t => { const fs = t.legs.map(fo); return fs.every(Boolean) ? !!t.fair && Math.abs(t.fair.p - w.eval('parlayProb')(t.legs.map((l, i) => ({ ...l, p: fs[i].p }))).corr) < 1e-12 && t.fair.est === fs.some(f => f.est) : !!t.fair && t.fair.p === null; }),
-            'an Elo pick\'s fair chance is not parlayProb on its legs at their fair chances: ' + [t2, t3].map(t => JSON.stringify(t.fair)).join(' / ')); }
+          chk(T.every(t => { const fs = t.legs.map(fo); return fs.every(Boolean) ? !!t.fair && Math.abs(t.fair.p - pP(t.legs.map((l, i) => ({ ...l, p: fs[i].p }))).corr) < 1e-12 && t.fair.est === fs.some(f => f.est) : !!t.fair && t.fair.p === null; }),
+            'an Elo pick\'s fair chance is not parlayProb on its legs at their fair chances: ' + T.map(t => JSON.stringify(t.fair)).join(' / ')); }
+        /* off Suggested Parlays, nothing new is built: the section says it is built when the tab is open, and the
+           tab's opening draws the levels */
+        { const kp = w.eval('pricedLegs'); w.__legs3 = legs.map(l => ({ ...l, price: l.price === 105 ? 104 : l.price })); w.eval('pricedLegs=function(){ return window.__legs3.map(l=>Object.assign({},l)); }');
+          [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40);
+          w.eval('renderPb()'); await wait(20);
+          const el = d.getElementById('pbElo');
+          chk(!!el && !el.querySelector('.pb-tier') && txt(el.querySelector('[data-pb-elo-wait]')) === 'Built when this tab is open.',
+            'with Suggested Parlays off the screen, the Elo picks built new levels, or do not say they are built when the tab is open: ' + (el ? txt(el).slice(0, 160) : 'no section'));
+          w.__kp = kp; w.eval('pricedLegs=window.__kp'); }
+        [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'suggest').click(); await wait(80);
         w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40);
         /* the Elo picks are the last section of Suggested Parlays since app v111, still on the Parlay Builder's ticks */
-        const card = d.querySelector('#spPanel #spCard > #pbElo:last-child');
-        /* each card leads with the fair chance, the Elo's beside it; the leg far off the market is flagged, and only it */
-        { const pc = v => (v * 100).toFixed(0) + '%', fo = fairRule(w);
-          chk([t2, t3].every(t => { const c = card && card.querySelector(`[data-pb-tier="${t.id}"]`), first = c && c.querySelector('.pb-nums > div'), F = t.fair;
+        const card = d.querySelector('#spPanel #spCard > #pbElo:last-child'), cardOf = t => card && card.querySelector(`[data-pb-tier="${t.id}"]`);
+        /* each card leads with the fair chance, the Elo's beside it, and says how its level was chosen */
+        { const pc = v => (v * 100).toFixed(0) + '%', rule = t => t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best value that lands ${Math.round(t.floor * 100)}%+ by Elo` : 'the likeliest pair';
+          chk(T.every(t => { const c = cardOf(t), first = c && c.querySelector('.pb-nums > div'), F = t.fair;
             return !!first && first.classList.contains('pb-chance') && (F && F.p != null ? txt(first.querySelector('b')) === pc(F.p) && txt(first.querySelector('small')) === `Elo says ${pc(t.p)}` : txt(first.querySelector('b')) === pc(t.p)); }),
             'the Elo picks do not lead with the fair chance beside the Elo\'s: ' + [...(card ? card.querySelectorAll('.pb-nums > div:first-child') : [])].map(txt).join(' / '));
-          const far = card ? [...card.querySelectorAll('[data-pb-tier="elo3"] [data-pb-far]')].map(txt) : [], f1 = fo(legs[1]);
-          chk(far.length === 1 && !!f1 && far[0] === `model 90% · market ${Math.round(f1.p * 100)}%${f1.est ? ' est.' : ''}: far off the market` && !!card && !card.querySelector('[data-pb-tier="elo2"] [data-pb-far]'),
-            'the Elo pick\'s leg far off the market is not flagged, or another is: ' + far.join(' / ')); }
+          chk(T.every(t => { const c = cardOf(t); return !!c && c.classList.contains(t.id) && txt(c.querySelector('.pb-tn')) === t.label && txt(c.querySelector('.pb-th .pill')) === `${t.n} legs` && [...c.querySelectorAll('.pb-rule')].map(txt).join('|') === rule(t); }),
+            'an Elo pick\'s card is not its level, its legs and how it was chosen ("the likeliest pair", "best value that lands 25%+ by Elo", "the likeliest 4 legs"): ' + T.map(t => { const c = cardOf(t); return c ? txt(c.querySelector('.pb-th')) : t.id + ' not drawn'; }).join(' / ')); }
+        /* the leg the prop model rates far off the market is flagged on every card that holds it, and only it */
+        { const fo = fairRule(w), farWant = l => { const f = fo(l); return !!f && l.p - f.p >= 0.15 - 1e-9; };
+          chk(T.every(t => { const lis = card ? [...card.querySelectorAll(`[data-pb-tier="${t.id}"] .pb-legs > li`)] : [];
+            return lis.length === t.n && t.legs.every((l, i) => { const ff = lis[i].querySelector('[data-pb-far]'), f = fo(l);
+              return farWant(l) ? !!ff && txt(ff) === `model ${Math.round(l.p * 100)}% · market ${Math.round(f.p * 100)}%${f.est ? ' est.' : ''}: far off the market` : !ff; }); })
+            && T.some(t => t.legs.some(farWant)),
+            'the Elo picks\' leg far off the market is not flagged, or another is: ' + (card ? [...card.querySelectorAll('[data-pb-far]')].map(txt).join(' / ') : 'no section')); }
+        /* each leg on a player with a Solid mismatch or better this week, in that game, on the side it favours, wears it
+           after his name: the game page's tag, its grade in words, the edge and the unit in its title; no other leg
+           wears one. A mismatch is a player above his position's average against a unit below the league's, so it
+           favours him: his over, a ladder rung and his touchdown (side over), never an under on him, nor more of his
+           interceptions (18 October 2026: an Under on Matthew Golden wore "Solid mismatch", which reads as an edge for
+           a bet against him) */
+        const mmSide = l => l.side === 'over' && l.stat !== 'passing_interceptions';
+        { const mm = {}; for (const v of (typeof w.eloMismatches === 'function' ? w.eloMismatches() : [])) if (gradeOf(v.score) !== 'Slight' && !mm[v.pid]) mm[v.pid] = v;
+          const ord = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
+          let nTag = 0; const bad = [];
+          /* the smoke's own mismatch is on the Mismatches, in its made-up game, against the club it was set against */
+          { const v = mm[mmC.pid]; if (!v || String(v.game_id) !== String(mmC.gid) || v.opp !== mmC.opp || v.group !== mmC.group) bad.push(`the mismatch the smoke planted on ${mmC.pid} (${mmC.gid}, against ${mmC.opp}) is not on the Mismatches: ${v ? `${v.game_id} against ${v.opp}, ${v.score.toFixed(2)}` : 'none'}`); }
+          for (const t of T) { const lis = card ? [...card.querySelectorAll(`[data-pb-tier="${t.id}"] .pb-legs > li`)] : [];
+            t.legs.forEach((l, i) => { const tags = lis[i] ? [...lis[i].querySelectorAll('.pe-mmtag')] : [], v = mm[l.pid] && String(mm[l.pid].game_id) === String(l.gid) ? mm[l.pid] : null;
+              if (!v) { if (tags.length) bad.push(`${l.name} wears ${txt(tags[0])} with none this week in his game`); return; }
+              if (!mmSide(l)) { if (tags.length) bad.push(`${l.name}'s ${l.side} wears ${txt(tags[0])}, a bet against the side his mismatch favours`); return; }
+              const g = gradeOf(v.score), tg = tags[0], nm = lis[i] && lis[i].querySelector('.nm'), name = nm && (typeof w.hubGlance === 'function' ? nm.querySelector(':scope > button.glance-name') : [...nm.childNodes].find(x => x.nodeType === 3 && x.textContent.trim()));
+              if (tags.length !== 1 || txt(tg) !== `${g} mismatch` || tg.dataset.peMmgrade !== g || tg.dataset.peMmtag !== v.score.toFixed(1) || !name || name.nextSibling !== tg || name.textContent !== l.name
+                || tg.title !== mmTitleOwn(v, ...(v.pid === mmC.pid ? [mmC.rank, mmC.n] : [v.defRank, v.defN])) || w.getComputedStyle(tg).whiteSpace !== 'nowrap') bad.push(`${l.name}: ${tags.map(txt).join(', ') || 'no tag'} for ${g} (${v.score.toFixed(1)})${tg ? `, titled "${tg.title}"` : ''}`);
+              else nTag++; }); }
+          chk(!bad.length && nTag > 0, 'an Elo pick\'s leg does not wear its player\'s mismatch this week, after his name, or wears one he does not have: ' + (bad.join('; ') || 'no tag on ' + mmC.pid)); }
+        /* the Props tab's Mismatches card words the planted mismatch as what it ranks, the matchup formula's units by
+           their players' Elo, and nothing on it says "a pass defense ranked" (the card is drawn for the matchups' own
+           week: that week stood in as the list's, put back after) */
+        { const keepWk = liveMu.week;
+          [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
+          const wsel = d.getElementById('weekSel');
+          if (wsel) liveMu.week = +wsel.value; w.eval('renderSlate()'); await wait(40);
+          const mc = d.getElementById('peMism'), b = mc && [...mc.querySelectorAll('.pe-mm-b')].find(x => x.dataset.mmPid === mmC.pid), sub = b && b.querySelector('.pe-mm-sub');
+          const want = `vs the ${mmC.opp} ${MM_AGAINST_OWN[mmC.group]}, ${ordOwn(mmC.rank)} by player Elo.`;
+          chk(!!sub && txt(sub).startsWith(want) && !mmOldWords(mc),
+            `the Props tab's Mismatches do not word the smoke's mismatch as the matchup formula's units ("${want}"), or still say a pass or run defense ranked: ${sub ? txt(sub) : mc ? 'not on the card' : 'no card'}${mmOldWords(mc) ? ' / ' + mmOldWords(mc) : ''}`);
+          liveMu.week = keepWk; w.eval('renderSlate()'); await wait(40);
+          [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'suggest').click(); await wait(80);
+          w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40); }
+        /* the side, planted: the mismatch player's leg made an Under at -110 that his matchup favours (his nudge turned
+           against him in the tab's matchups, as Matthew Golden's -2.75 receiving yards stood beside his Solid
+           mismatch), with a made-up DraftKings id of its own; every level that takes it draws it with no tag, where
+           his over above wore one; then all put back and the levels drawn again */
+        if (card) { const st = liveMu.players[mmC.pid].stats[mmC.st], keepZ = st[2];
+          st[2] = -nudgeOf(B[0]);
+          const legsU = legs.map((l, i) => i ? l : { ...l, side: 'under', price: -110, label: 'under test line' });
+          setDkE(dkFixture(legsU, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'ELU'));
+          w.__legs = legsU; w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40);
+          const rU = w.eval('eloPicks()'), held = rU && rU.tiers ? rU.tiers.filter(t => t.legs.some(l => l.pid === mmC.pid && l.side === 'under')) : [];
+          const worn = ((rU && rU.tiers) || []).flatMap(t => { const lis = [...card.querySelectorAll(`[data-pb-tier="${t.id}"] .pb-legs > li`)];
+            return t.legs.flatMap((l, i) => l.side === 'under' && lis[i] && lis[i].querySelector('.pe-mmtag') ? [`${t.label}: ${l.name} ${txt(lis[i].querySelector('.pe-mmtag'))}`] : []); });
+          chk(held.length > 0 && !worn.length && w.eloMmFor && !w.eloMmFor(legsU[0]) && w.eloMmFor(legs[0]),
+            `an Under on ${mmC.pid}, whose mismatch favours him, wears his mismatch tag (or no level takes it, or the page's rule reads the sides otherwise): ${held.length} levels hold it; ${worn.join('; ') || 'no tag'}`);
+          st[2] = keepZ; w.__legs = legs; setDkE(fixE); w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40); }
+        else chk(false, 'Suggested Parlays drew no Elo picks section to hold the side of a mismatch on');
         /* (app v112) an Elo pick's legs are chosen on the Elo matchup, not the edge: none is marked Value, and neither
            retired tag is drawn */
         chk(!!card && !card.querySelector('.pb-valmark, .pb-thinmark') && !OLD_TAG.test(txt(card)), 'an Elo pick\'s leg is marked Value, or the Elo picks still say thin edge or no edge: ' + (card ? [...card.querySelectorAll('.pb-valmark')].length + ' marked' : 'no card'));
@@ -2736,10 +2930,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           chk(!!ld && ld.length === 1 && txt(ld[0]) === 'Players whose Elo matchup beats the book\'s price, on the games and player sides ticked on the Parlay Builder tab.',
             'the Elo picks\' lead is not its one short sentence: ' + (ld && ld.length ? [...ld].map(txt).join(' / ').slice(0, 200) : 'no lead')); }
         /* a leg carries a shield where its player is ranked this season, and only there */
-        const wantBadges = [t2, t3].flatMap(t => t.legs).filter(l => eloP.players[l.pid] && eloP.players[l.pid].rank).length;
-        chk(!!card && /Elo picks/.test(txt(card.querySelector('h3'))) && card.querySelectorAll('.pb-tier').length === 2 && card.querySelectorAll('.pb-legs .pe-badge').length === wantBadges, `the Elo picks are not the last section of Suggested Parlays, or their legs' shields are wrong: ${card ? card.querySelectorAll('.pb-legs .pe-badge').length : 'no section'} for ${wantBadges}`);
+        const wantBadges = T.flatMap(t => t.legs).filter(l => eloP.players[l.pid] && eloP.players[l.pid].rank).length;
+        chk(!!card && /Elo picks/.test(txt(card.querySelector('h3'))) && card.querySelectorAll('.pb-tier').length === 4 && card.querySelectorAll('.pb-legs .pe-badge').length === wantBadges, `the Elo picks are not the last section of Suggested Parlays with their four levels, or their legs' shields are wrong: ${card ? card.querySelectorAll('.pb-legs .pe-badge').length : 'no section'} for ${wantBadges}`);
         /* each leg of a pick has its own Add (44px, named for the leg), as a set's legs do */
-        chk(!!card && [t2, t3].every(t => { const lis = [...card.querySelectorAll(`[data-pb-tier="${t.id}"] .pb-legs li`)];
+        chk(!!card && T.every(t => { const lis = [...card.querySelectorAll(`[data-pb-tier="${t.id}"] .pb-legs li`)];
             return lis.length === t.legs.length && t.legs.every((l, i) => { const b = lis[i].querySelector('button[data-pb-leg]');
               return !!b && b.dataset.pbLeg === l.key && b.dataset.side === l.side && +b.dataset.k === +l.k && b.getAttribute('aria-label') === `Add ${l.name}, ${l.label}, to the builder` && w.getComputedStyle(b).minHeight === '44px'; }); }),
           'an Elo pick\'s leg has no 44px Add of its own named for it');
@@ -2747,30 +2941,42 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const eloStake0 = w.eval('S.stake'), amtBox = d.getElementById('pbStake');
         if (amtBox) { amtBox.value = '12.5'; amtBox.dispatchEvent(new w.Event('input')); amtBox.dispatchEvent(new w.Event('change')); await wait(20); }
         const eloAmt = amtBox ? 12.5 : eloStake0;
-        chk(!!amtBox && !!card && [t2, t3].every(t => { const p = card.querySelector(`[data-pb-tier="${t.id}"] [data-pb-pay]`);
+        chk(!!amtBox && !!card && T.every(t => { const p = card.querySelector(`[data-pb-tier="${t.id}"] [data-pb-pay]`);
           return !!p && +p.dataset.pbPay === t.dec && txt(p.querySelector('b')) === money(12.5 * t.dec) && txt(p.querySelector('span')) === '$12.50 pays'; }),
           'the Elo picks do not pay the Bet amount ($12.50) times their price: ' + [...(card ? card.querySelectorAll('.pb-nums div:last-child') : [])].map(x => [...x.children].map(txt).join(' ')).join(' / '));
-        /* Add to builder puts exactly those legs in the builder */
-        { const keepP = w.eval('JSON.stringify(S.parlay)'), ab = card && card.querySelector('[data-pb-elo-add="elo2"]');
-          if (ab) { ab.click(); await wait(40); const P = w.eval('S').parlay;
-            chk(Object.keys(P).length === 2 && t2.legs.every(l => P[l.key] && P[l.key].side === l.side && P[l.key].pe === undefined), 'an Elo pick\'s Add to builder did not put exactly its legs in the builder: ' + JSON.stringify(Object.values(P).map(x => [x.key || '', x.stat, x.k, x.side])) + ' for ' + JSON.stringify(t2.legs.map(l => [l.key, l.stat, l.k, l.side]))); }
-          else chk(false, 'an Elo pick has no Add to builder');
+        /* Add to builder puts exactly those legs in the builder, which prices them at the card's price and pays what the card says */
+        for (const t of T) { const keepP = w.eval('JSON.stringify(S.parlay)'), ab = d.querySelector(`#pbElo [data-pb-elo-add="${t.id}"]`);
+          if (ab) { chk(ab.getAttribute('aria-label') === `Add the ${t.label} parlay for the Elo picks to the builder`, `the ${t.label} Elo pick's Add to builder is not named for it: ${ab.getAttribute('aria-label')}`);
+            ab.click(); await wait(40); const P = w.eval('S').parlay, q = w.PARLAY_CARD.quote();
+            chk(Object.keys(P).length === t.n && t.legs.every(l => P[l.key] && P[l.key].side === l.side && P[l.key].k === l.k && P[l.key].pe === undefined && P[l.key].p === l.p)
+              && !!q && Math.abs(q.useDec - t.dec) < 1e-9 && Math.abs(q.payout - eloAmt * t.dec) < 1e-6 && txt(d.querySelector('#parlayBody .bigp .payout')) === '$' + (eloAmt * q.useDec).toFixed(2),
+              `the ${t.label} Elo pick's Add to builder did not put exactly its legs in the builder, keeping the model's chances, at the card's price and payout: ` + JSON.stringify(Object.values(P).map(x => [x.stat, x.k, x.side])) + ` at ${q && q.useDec} for ${t.dec}`); }
+          else chk(false, `the ${t.label} Elo pick has no Add to builder`);
           w.eval(`S.parlay=${keepP}; save(); renderParlay()`); await wait(40); }
         /* an Elo pick finishes as a card on every device, saved nowhere */
-        const nSaved = w.eval('S.saved.length'), fb = d.querySelector('#pbElo [data-pc-finish="elo|elo2"]');
-        chk(!!fb && /^Finish$/.test(txt(fb)) && !d.querySelector('[data-elo-save]'), 'an Elo pick has no Finish');
-        if (fb) { fb.click(); await wait(40);
-          const view = d.getElementById('pcView');
-          chk(!d.getElementById('pcModal').hidden && /Elo pick/i.test(txt(view)) && t2.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label))
-            && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t2.dec}))`).replace('-', '\u2212')
-            && txt(view.querySelector('.pc-chance')).startsWith(t2.fair && t2.fair.p != null ? `Fair chance all 2 land ${pct1(t2.fair.p)}${t2.fair.est ? ' (est.)' : ''} Elo says ${pct1(t2.p)} · the price says ` : `Elo\u2019s chance all 2 land ${pct1(t2.p)}`),
-            'an Elo pick\'s card is not its legs, its price and its Elo chance: ' + txt(view));
+        const nSaved = w.eval('S.saved.length');
+        for (const t of T) { const fb = d.querySelector(`#pbElo [data-pc-finish="elo|${t.id}"]`);
+          chk(!!fb && /^Finish$/.test(txt(fb)) && fb.getAttribute('aria-label') === `Finish the ${t.label} parlay for the Elo picks` && !d.querySelector('[data-elo-save]'), `the ${t.label} Elo pick has no Finish`);
+          if (!fb) continue;
+          fb.click(); await wait(40);
+          const view = d.getElementById('pcView'), n = t.n;
+          chk(!d.getElementById('pcModal').hidden && txt(view).includes(`${t.label} Elo pick`) && t.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label))
+            && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t.dec}))`).replace('-', '−')
+            && txt(view.querySelector('.pc-chance')).startsWith(t.fair && t.fair.p != null ? `Fair chance all ${n} land ${pct1(t.fair.p)}${t.fair.est ? ' (est.)' : ''} Elo says ${pct1(t.p)} · the price says ` : `Elo’s chance all ${n} land ${pct1(t.p)}`),
+            `the ${t.label} Elo pick's card is not its legs, its price and its Elo chance: ` + txt(view).slice(0, 300));
           { const cash = [...view.querySelectorAll('.pc-money b')].map(txt).join(' | ');
-            chk(cash === [money(eloAmt), money(eloAmt * t2.dec), '+' + money(eloAmt * t2.dec - eloAmt)].join(' | '), `an Elo pick's card is not on the Bet amount: ${cash} for ${amtTxt(eloAmt)} at ${t2.dec}`); }
+            chk(cash === [money(eloAmt), money(eloAmt * t.dec), '+' + money(eloAmt * t.dec - eloAmt)].join(' | '), `the ${t.label} Elo pick's card is not on the Bet amount: ${cash} for ${amtTxt(eloAmt)} at ${t.dec}`); }
           w.eval('PARLAY_CARD.close()'); }
         chk(w.eval('S.saved.length') === nSaved, 'finishing an Elo pick saved it');
         w.eval(`S.stake=${JSON.stringify(eloStake0)}; save(); renderParlay()`); await wait(20);
-        w.eval(`(function(){ const k=${keepDkE}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
+        } finally {
+          if (undoDk) undoDk(); if (undoCorr) undoCorr(); if (undoMkt) undoMkt();
+          for (const [pid, j] of Object.entries(keepMu)) liveMu.players[pid] = w.JSON.parse(j);
+          for (const g of EG) { const i = Sx.sched.indexOf(g); if (i >= 0) Sx.sched.splice(i, 1); }
+          w.eval('PB_CACHE=new Map()'); }
+        chk(!Sx.sched.some(g => /_XE[A-E]_YE[A-E]$/.test(g.id)) && Object.keys(keepMu).every(pid => JSON.stringify(liveMu.players[pid]) === keepMu[pid]),
+          'the Elo picks\' made-up games or the smoke\'s own matchups are still on the page after the block');
+        [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40);
       } else chk(false, 'the smoke could not find the matchups it needs for Elo picks');
       /* a player's window: a click on his row in the rankings opens his rating and his matchup this week, a row a stat */
       { const plOpen = () => { const m = d.getElementById('pePlModal'); return !!m && !m.hidden; };
@@ -2813,6 +3019,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(rows.length > 0 && bubbles.length === Math.min(5, rows.length) && rows.every((r, i) => i === 0 || r.score <= rows[i - 1].score) && rows.every(r => r.zp > 0 && r.zd < 0),
           'the mismatch bubbles are not the five biggest favourable gaps');
         chk(bubbles[0].textContent.includes(rows[0].score.toFixed(1)) && card === d.querySelector('#slateView .bar').nextElementSibling, 'the mismatches card is not first under the Props bar');
+        /* each bubble words what its edge ranks as the matchup formula's units by their players' Elo, the rank the smoke's own */
+        { const bad = bubbles.map((b, i) => { const r = rows[i], k = mmRankOwn(MU, r.group, r.opp), want = k ? `vs the ${r.opp} ${MM_AGAINST_OWN[r.group]}, ${ordOwn(k.rank)} by player Elo.` : null, sub = b.querySelector('.pe-mm-sub');
+            return want && sub && txt(sub).startsWith(want) ? '' : `${r.pid}: ${sub ? txt(sub) : 'no line'} (want "${want}")`; }).filter(Boolean);
+          chk(!bad.length && !mmOldWords(card), 'a Mismatches bubble does not word its rank as the matchup formula\'s units, or says a pass or run defense ranked: ' + (bad.join(' | ') || mmOldWords(card))); }
         w.eval('renderSlate()'); await wait(40);
         chk(d.querySelectorAll('#peMism').length === 1, 'redrawing the Props list doubled the mismatches');
         /* a click on a mismatch opens his game with his stats open, scrolled to and highlighted */
@@ -2830,8 +3040,12 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             const btns = [...d.querySelectorAll('#gameView button.plrbtn[data-open]')], drawn = new Set(btns.map(b => b.dataset.open));
             const exp = {}; for (const r of w.eloMismatches()) { const g = grade(Math.round(r.score * 10) / 10);
               if (r.game_id === rows[0].game_id && g && drawn.has(r.pid)) exp[r.pid] = 'Mismatch|' + g; }
+            /* its title words what the edge ranks as the matchup formula's units, the rank the smoke's own */
+            const byPid = {}; for (const r of w.eloMismatches()) if (r.game_id === rows[0].game_id && !byPid[r.pid]) byPid[r.pid] = r;
+            const titleOf = pid => { const r = byPid[pid], k = r && mmRankOwn(MU, r.group, r.opp); return r && k ? mmTitleOwn(r, k.rank, k.n) : null; };
             const got = {}; for (const b of btns) { const t = b.querySelectorAll('.pe-mmtag');
-              if (t.length) got[b.dataset.open] = t.length === 1 && t[0].parentNode.classList.contains('who') && t[0].previousSibling && t[0].previousSibling.nodeType === 3 ? t[0].textContent + '|' + t[0].dataset.peMmgrade : 'misplaced or twice'; }
+              if (t.length) got[b.dataset.open] = t.length === 1 && t[0].parentNode.classList.contains('who') && t[0].previousSibling && t[0].previousSibling.nodeType === 3
+                ? t[0].textContent + '|' + t[0].dataset.peMmgrade + (t[0].title === titleOf(b.dataset.open) ? '' : ` titled "${t[0].title}", not "${titleOf(b.dataset.open)}"`) : 'misplaced or twice'; }
             const k = o => JSON.stringify(Object.entries(o).sort());
             return Object.keys(exp).length > 0 && k(got) === k(exp) ? '' : `expected ${k(exp)}, drew ${k(got)}`; };
           { const bad = tagCheck(); chk(!bad, 'the game page does not tag the players with a favourable mismatch beside their names: ' + bad); }
@@ -2852,6 +3066,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         if (rows.length > 5) { more.click(); await wait(40);
           const m = d.getElementById('peMmModal');
           chk(!!m && !m.hidden && m.querySelectorAll('tbody tr').length === Math.min(30, rows.length), 'Show more does not open the top thirty');
+          /* its Facing column ranks the formula's units and names them, and its note says so, nowhere "the pass defense" */
+          { const trs = [...m.querySelectorAll('tbody tr')], bad = trs.map((tr, i) => { const r = rows[i], k = mmRankOwn(MU, r.group, r.opp), c = tr.children[3];
+              return k && c && txt(c) === `${ordOwn(k.rank)} of ${k.n}${MM_AGAINST_OWN[r.group]}` ? '' : `${r.pid}: ${c ? txt(c) : 'no cell'}`; }).filter(Boolean), note = txt(m.querySelector('.pe-sub'));
+            chk(!bad.length && !mmOldWords(m) && /Facing ranks the units he faces among all 32 defenses by their players' Elo/.test(note) && /not the ELO Ratings tab's Pass Defense or Run Defense table/.test(note),
+              'the Mismatches window\'s Facing column does not rank and name the matchup formula\'s units, or its note still says the pass defense: ' + (bad.slice(0, 3).join(' | ') || mmOldWords(m) || note.slice(0, 200))); }
           d.getElementById('peMmClose').click(); await wait(20); chk(m.hidden, 'the mismatches window does not close'); }
         const opts = [...d.getElementById('weekSel').options].map(o => +o.value), other = opts.find(v => v !== +MU.week);
         if (other) { d.getElementById('weekSel').value = String(other); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60);
@@ -4019,6 +4238,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   await snapshotChecks();
   await newsChecks();
   await friendsChecks();
+  /* ---- the matchup bubble a leg's name opens: its own section, at the end of this file ---- */
+  await glanceChecks();
   /* ---- the light look and its switch: its own section, at the end of this file ---- */
   await lightChecks();
 
@@ -4286,6 +4507,13 @@ async function snapshotChecks() {
       else { chk(li.map(x => x.dataset.pid).join() === mine.map(v => v.pid).join() && li.every((x, i) => txt(x.querySelector('[data-gs-mm]')) === mine[i].score.toFixed(1) && txt(x.querySelector('.gs-mmn')) === '#' + mine[i].n)
           && (mine.length > 0 || /No mismatches in this game/.test(txt(q('#gsMism')))),
           `snapshot (${label}): the Mismatches are not the Props tab's for this game: ${li.map(x => x.dataset.pid).join()} against ${mine.map(v => v.pid).join()}`);
+        /* each words what its edge ranks as the matchup formula's units by their players' Elo (the window's Offense vs
+           defense card draws the ELO Ratings tab's Pass Defense and Run Defense), and nothing in the window says a pass
+           or run defense ranked */
+        { const bad = li.map((x, i) => { const r = mine[i], k = r && mmRankOwn(eloMu, r.group, r.opp), sub = x.querySelector('.gs-mmsub');
+            const want = k ? `Against the ${r.opp} ${MM_AGAINST_OWN[r.group]}, ${ordOwn(k.rank)} of ${k.n} by player Elo.` : null;
+            return want && sub && txt(sub).startsWith(want) ? '' : `${x.dataset.pid}: ${sub ? txt(sub) : 'no line'} (want "${want}")`; }).filter(Boolean);
+          chk(!bad.length && !mmOldWords(md), `snapshot (${label}): a mismatch does not word its rank as the matchup formula's units, or the window says a pass or run defense ranked: ${bad.slice(0, 2).join(' | ') || mmOldWords(md)}`); }
         /* and the bubbles the Props tab draws for this game are among them */
         const bubbles = [...R.d.querySelectorAll('#peMism [data-mm-game]')].filter(b => b.dataset.mmGame === g.game_id).map(b => b.dataset.mmPid);
         chk(bubbles.every(pid => li.some(x => x.dataset.pid === pid)), `snapshot (${label}): a Mismatches bubble on the Props tab for this game is not in the window`); } }
@@ -5563,4 +5791,628 @@ async function lightChecks() {
       `light mode: a window whose storage cannot be reached does not read as dark and switch without throwing: ${a0} / ${M.d.documentElement.getAttribute('data-theme')} ${threw || ''} ${M.errs.join('; ')}`);
     M.w.close(); }
   console.log(`light mode: ${checks - c0} checks, ${fails.length - f0} failures`);
+}
+
+/* =====================================================================================
+   THE MATCHUP BUBBLE (nflbets/build/glance.js and the props parts' glanceName, app v114; the owner's call of 17
+   October 2026: "in the parlay builder, when i click on a player or a team, bring up a bubble pop up where it shows
+   their matchup for the day so i can see info at a glance"). Blocking, all of it. Every name on a leg the Parlay
+   Builder tab and Suggested Parlays draw (a row of the Top 50 lines, a leg of the builder, a leg on a set's level card
+   and on an Elo pick's card) is one button of its leg's kind and id (p:<pid> for a player's line, t:<ABBR> for a team's
+   moneyline or spread, g:<gid> for a game total), in its leg's game, keeping its row's own leg, named for what it
+   opens, its tap target 44px tall and taken back out of the line (min-height 44px over 14px of padding a side, the
+   same negative margin, on top of the line under it). A click opens one bubble, a dialog (not modal) labelled by its
+   heading, the focus moved into it, holding exactly the numbers the files hold, each worked out here on the smoke's
+   own reading of players.json, matchups.json, model.json, state.json and the payload, never the bubble's code: a
+   player's season Elo, its tier and shield, his rank at his position (and prov.), his status, the game (home or away,
+   the opponent, the kickoff in ET), the defense he faces (model.json's units table for his side of the ball, by the
+   smoke's own map: a quarterback the opponent's Overall Defense, a back its Run Defense, a receiver or tight end its
+   Pass Defense; named and ranked as the file has it, and the rank the ELO Ratings tab's own table draws for that club,
+   read off the tab), his mismatch's grade and edge where he has one with no rank of its own, each trusted stat's
+   recent form and projection, and the leg's line, price, the model's chance, the book's fair chance, market + form and
+   the Elo matchup's chance; a team's or a game's two records as Team Rankings counts them, the line as the board reads
+   it, each club's Power Rating and rank, Overall Offense against Overall Defense each way, every model's pick and its
+   chance, the leg's team marked "this leg" and, on a moneyline alone, each model picking it to win ticked. Escape,
+   Close, a click outside and another name close it, the focus back on the name (another name's own bubble taking
+   its place), Tab stays inside it, Open game snapshot opens that game's window and closing it gives the name the
+   focus back, and nothing is written to the browser's storage. On the week as it stands wherever the page draws a
+   name (each place drawing a leg once), and at any hour, the off-season included, on fixtures of its own: a level card
+   drawn by the page's own pbTierCard with a real player's line, his game's team (to win and to cover) and total, and
+   a made-up player with no Elo row and a team bet on a made-up game with no line; the builder holding those two
+   made-up legs; a status planted on the real player, Out and then questionable; the page drawing its rows again while
+   a bubble is open (renderParlay with the same leg drawn earlier in the page, renderSp with one leg on two levels of a
+   set and an Elo pick's level of the same id, a builder leg's price moved, the leg taken out of the builder): bound to
+   the same place's copy, marked open, its focus and toggle there, and closed with the focus on its neighbour when the
+   leg is gone; the reader's scroll in the bubble kept through a redraw and a resize, as a bubble and as the sheet a short
+   screen falls back to (jsdom lays nothing out: the browser's rule, a measure with the max-height cleared taking the
+   scroll to the top, is stood in on the bubble alone); a player the ratings file rates on the other side of the ball
+   from his leg (Travis Hunter, a defensive back there, on a receiving line) set against the defense his leg faces, his
+   rank kept at his rated position; a club yet to play this season marked carried from last season on the Faces line;
+   and a builder row whose stored price is not the one it shows (a ladder rung at the book's price now), its market +
+   form and Elo matchup on the price shown, as the bubble's.
+   ===================================================================================== */
+async function glanceChecks() {
+  const c0 = checks, f0 = fails.length;
+  const Pl = JSON.parse(ELO_P), MO = JSON.parse(ELO_M), MU = JSON.parse(ELO_MU);
+  const R = await run(STATE);
+  const { w, d, errs } = R;
+  try { await w.eloFiles(); } catch (e) {}
+  await wait(300);
+  const S = w.eval('S'), TN = w.eval('TEAM_NAMES'), fo = fairRule(w), legPrice = w.eval('legPrice'), legKey = w.eval('legKey');
+  const box = () => d.getElementById('glanceBox'), shown = () => { const b = box(); return !!b && !b.hidden; };
+  const nOf = k => { const b = box(), e = b && b.querySelector(`[data-glance-n="${k}"]`); return e ? txt(e) : null; };
+  /* a whole per cent shown against a chance worked out here (the page's normal curve and the smoke's agree to 1e-7) */
+  const near = (s, p) => { const m = /^(\d+)%/.exec(s || ''); return !!m && p != null && Math.abs(+m[1] - p * 100) <= 0.5 + 1e-4; };
+  /* ---- the smoke's own readings ---- */
+  const ordOwn = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
+  const decOwn = x => Math.abs(x) >= 10 ? x.toFixed(0) : x.toFixed(1);
+  const pxOwn = v => v == null ? '–' : (v > 0 ? '+' + v : '' + v);
+  const estOwn = src => src === 'dkline' || src === 'est' ? ' est.' : src === 'fair' ? ' fair' : '';
+  const mlOwn = x => x == null || !isFinite(x) || !+x ? null : (+x > 0 ? '+' : '−') + Math.abs(Math.round(+x));
+  const impOwn = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
+  const kickOwn = (dd, t) => { if (!dd) return ''; const day = new Date(dd + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+    const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); if (!m) return day; const h = +m[1]; return `${day} · ${(h % 12) || 12}:${m[2]} ${h < 12 ? 'AM' : 'PM'} ET`; };
+  const TIERS = [['HOF', 1750], ['Elite', 1700], ['Master', 1650], ['Diamond', 1600], ['Platinum', 1550], ['Gold', 1500], ['Silver', 1450], ['Bronze', 1400], ['Iron', 1350]];
+  const tierOwn = e => (TIERS.find(([, lo]) => e >= lo) || ['Wood'])[0];
+  const trustOwn = (g, st) => { const r = MU.record && MU.record[g + '|' + st], p = r && r.past; return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
+  const LBL = { passing_yards: 'Pass yds', passing_tds: 'Pass TD', attempts: 'Att', completions: 'Comp', passing_interceptions: 'INT', rushing_yards: 'Rush yds', carries: 'Carries',
+    receptions: 'Rec', receiving_yards: 'Rec yds', targets: 'Tgt', scrim_yards: 'Rush+rec', any_td: 'TDs' };
+  /* the Mismatches' units: the secondary and the line for a quarterback, the secondary for a receiver or tight end, the
+     line and the linebackers for a back (the matchup formula's player ratings, matchups.json), for the grade alone */
+  const MM_OWN = { QB: [['DB', 'DL'], 'pass defense'], WR: [['DB'], 'pass defense'], TE: [['DB'], 'pass defense'], RB: [['DL', 'LB'], 'run defense'] };
+  const uval = (g, x) => MM_OWN[g][0].reduce((a, k) => a + x[k], 0) / MM_OWN[g][0].length;
+  /* the defense a player faces: model.json's units table the Game snapshot's position matchups set against his side of
+     the ball (the smoke's own map: a quarterback the opponent's Overall Defense, a back its Run Defense, a receiver or
+     tight end its Pass Defense), only once a team has a rating and where the file names the table; its name as the
+     tab names it, the club's rank in it, out of the clubs it lists, and carried as the file has it */
+  const FACE_OWN = { QB: 'def', RB: 'run_def', WR: 'pass_def', TE: 'pass_def' };
+  const faceOwn = (grp, opp) => { const U = MO.units, key = FACE_OWN[grp];
+    if (!key || !opp || !U || !U.off || !U.def || !Object.values(U.off).some(v => v.games || v.carried)) return null;
+    const T = U[key], meta = key === 'def' ? null : U.tables && U.tables[key];
+    if (!T || typeof T !== 'object' || (key !== 'def' && !(meta && meta.label))) return null;
+    const v = T[opp]; if (!v || v.rank == null) return null;
+    const pr = U.params || {}, from = pr.carry && pr.carry_from != null ? pr.carry_from : null;
+    return { key, name: key === 'def' ? 'Overall Defense' : String(meta.label), rank: v.rank, n: Object.keys(T).length, carried: !!v.carried && from != null, from }; };
+  /* and the rank the ELO Ratings tab's own table draws for each club (its pill pressed, its # column read off the rows),
+     with the table's heading, so the bubble can never say one rank and the tab another */
+  const TAB_RANK = {};
+  { const body = d.getElementById('peBody'), was = body && body.querySelector('.pe-pos [aria-selected="true"]');
+    for (const key of [...new Set(Object.values(FACE_OWN))]) { const pill = body && body.querySelector(`.pe-pos button[data-unit="${key}"]`); if (!pill) continue;
+      pill.click(); await wait(20); const card = d.getElementById('peUnits'); if (!card) continue;
+      const rows = {}; for (const tr of card.querySelectorAll('tbody tr.pe-tmrow')) rows[tr.dataset.team] = +txt(tr.querySelector('td.pe-rank'));
+      TAB_RANK[key] = { name: txt(card.querySelector('h2')).replace(/\s*\d{4}\b.*$/, '').trim(), rows }; }
+    const back = was && (was.dataset.pos ? body.querySelector(`.pe-pos button[data-pos="${was.dataset.pos}"]`) : body.querySelector(`.pe-pos button[data-unit="${was.dataset.unit}"]`));
+    if (back) { back.click(); await wait(20); } }
+  const startedOwn = gid => { const r = S.sched.find(x => x.id === gid); return !!r && isFinite(etKick(r)) && w.Date.now() >= etKick(r); };
+  const outOwn = pid => !!((S.inactive && S.inactive[pid]) || (MU.out && MU.out[pid]));
+  /* his mismatch: his Elo above his position's norm and the unit he faces below the league's, in standard deviations,
+     among the expected starters still to play and not ruled out; graded Huge from 3, Big from 2, Solid from 1 */
+  const mmOwn = (pid, gid) => {
+    const L = MU.league || {}, P = Object.entries(MU.players || {}).map(([id, v]) => ({ id, ...v })).filter(v => MM_OWN[v.group] && !outOwn(v.id) && !startedOwn(v.game_id));
+    const v = P.find(x => x.id === pid && x.game_id === gid); if (!v) return null;
+    const zs = a => { const m = a.reduce((s, x) => s + x, 0) / a.length, sd = Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / Math.max(1, a.length - 1)) || 1; return x => (x - m) / sd; };
+    const n = L.norms && L.norms[v.group]; let pz;
+    if (n) pz = x => (x - n[0]) / (n[1] || 1); else { const grp = P.filter(x => x.group === v.group); if (grp.length < 2) return null; pz = zs(grp.map(x => x.elo)); }
+    const by = {}; for (const x of P) by[x.opp] = x.opp_def; if (L.defs) Object.assign(by, L.defs);
+    const a = pz(v.elo), b = zs(Object.values(by).map(x => uval(v.group, x)))(uval(v.group, v.opp_def)); if (!(a > 0 && b < 0)) return null;
+    const s = a - b, x = Math.round(s * 10) / 10; return { score: s, grade: x >= 3 ? 'Huge' : x >= 2 ? 'Big' : x >= 1 ? 'Solid' : 'Slight' }; };
+  /* market + form: the book's chance moved by his career Elo on the side of the bet (the rule in tab_elo.html, worked here) */
+  const ALT_OWN = { c: -0.05, book: 0.8, form: 0.3, step: 40, fitSd: { QB: 34.1, RB: 21.3, WR: 27.6, TE: 27.0 } };
+  const sdOwn = {}; { const by = {}; for (const e of Object.values(Pl.players || {})) if (e && e.group && isFinite(e.elo)) (by[e.group] = by[e.group] || []).push(e.elo);
+    for (const g in by) { const v = by[g], m = v.reduce((a, x) => a + x, 0) / v.length; if (v.length >= 10) sdOwn[g] = Math.sqrt(v.reduce((a, x) => a + (x - m) ** 2, 0) / v.length); } }
+  const lgt = p => Math.log(p / (1 - p)), sgm = x => 1 / (1 + Math.exp(-x));
+  const mfOwn = (l, price, src) => {
+    if (!l.pid || String(l.pid).startsWith('team:') || l.pid === 'game' || !(src === 'real' || src === 'dkline') || price == null || !isFinite(price)) return null;
+    const e = Pl.players[l.pid], grp = (e && e.group) || ((S.players[l.pid] || {}).grp) || null; if (l.stat === 'any_td' && grp === 'QB') return null;
+    const imp = impOwn(price); if (!(imp > 0 && imp < 1)) return null;
+    const z = e ? (e.elo - 1500) / ALT_OWN.step * (ALT_OWN.fitSd[e.group] && sdOwn[e.group] > 0 ? ALT_OWN.fitSd[e.group] / sdOwn[e.group] : 1) : 0;
+    return sgm(ALT_OWN.c + ALT_OWN.book * lgt(imp) + ALT_OWN.form * z * (l.side === 'under' ? -1 : 1)); };
+  /* the Elo matchup's chance: the book's with a 4.5% margin out, moved by the trusted nudge in the stat's typical miss */
+  const muOwn = (l, price) => { const v = MU.players && MU.players[l.pid]; if (!v || !v.stats || !v.stats[l.stat] || !trustOwn(v.group, l.stat) || price == null || !isFinite(price)) return null;
+    const f = MU.fit && MU.fit[v.group + '|' + l.stat]; if (!f || !(f.sd > 0)) return null;
+    const fair = Math.min(0.99, Math.max(0.01, impOwn(price) / 1.045)); return PhiOwn(invPhiOwn(fair) + (l.side === 'under' ? -1 : 1) * v.stats[l.stat][2] / f.sd); };
+  /* a team's record as Team Rankings counts it: the regular season's finals, or the ratings file's where it has more */
+  const recOwn = (t, sched = STATE.schedule) => { const reg = g => g.game_type ? g.game_type === 'REG' : +g.week <= 18, r = [0, 0, 0]; let n = 0;
+    for (const g of sched) if (g.result != null && (g.home_team === t || g.away_team === t) && reg(g)) { n++; const m = g.home_team === t ? g.result : -g.result; r[m > 0 ? 0 : m < 0 ? 1 : 2]++; }
+    const f = (MO.teams && MO.teams[t] && MO.teams[t].record) || [0, 0, 0], x = n >= f[0] + f[1] + f[2] ? r : f; return x[0] + '-' + x[1] + (x[2] ? '-' + x[2] : ''); };
+  const prRank = t => Object.entries(MO.teams || {}).sort((x, y) => y[1].elo - x[1].elo).findIndex(x => x[0] === t) + 1;
+  /* every model's call as the Game snapshot reads it: Vegas (the moneylines with the margin out, else the spread), Alpha
+     (graded, else frozen at kickoff), the Joker, the ELO Model (graded, else this season's next) */
+  const callsOwn = g => { const gid = g.game_id, pr = (STATE.processed || {})[gid], ak = (STATE.atKickoff || {})[gid], one = x => x && x.pick ? { pick: x.pick, pHome: x.pHome != null ? +x.pHome : null } : null;
+    const o = (STATE.odds || {})[gid], sp = g.spread_line != null && isFinite(g.spread_line) ? +g.spread_line : null; let vh = null;
+    if (o && isFinite(o.home) && isFinite(o.away) && o.home && o.away) { const hh = impOwn(+o.home), aa = impOwn(+o.away); vh = hh / (hh + aa); } else if (sp != null && sp !== 0) vh = PhiOwn(sp / 13.5);
+    const eg = (MO.graded || []).find(x => x.game_id === gid), en = !eg && MO.next && +MO.next.season === +STATE.season ? (MO.next.games || []).find(x => x.game_id === gid) : null;
+    return { vegas: vh == null ? null : { pick: vh >= 0.5 ? g.home_team : g.away_team, p: Math.max(vh, 1 - vh) }, alpha: pr ? one(pr) : one(ak),
+      joker: one(pr && pr.joker) || one((STATE.joker || {})[gid]), elo: eg ? { pick: eg.pick, pHome: eg.p_home } : en ? { pick: en.pick, pHome: en.p_home } : null }; };
+  const chOwn = (x, g) => x.p != null ? x.p : x.pHome != null ? (x.pick === g.home_team ? x.pHome : 1 - x.pHome) : null;
+
+  /* ---- a name: one button of its leg's kind and id, keeping its row's leg, named, 44px ---- */
+  const kindOf = key => { const [gid, pid, stat] = String(key).split('|'); return pid === 'game' && stat === 'total' ? ['g', gid, gid] : /^team:/.test(pid) ? ['t', pid.slice(5), gid] : ['p', pid, gid]; };
+  const WHAT = { p: 'his matchup', t: 'the team’s matchup', g: 'the game’s matchup' };
+  const nameOwn = (kind, id, gid, leg) => { if (kind === 't') return TN[id] || id;
+    if (kind === 'g') { const r = S.sched.find(x => x.id === gid); return r ? `${TN[r.a] || r.a} at ${TN[r.h] || r.h}` : null; }
+    return S.players[id] ? S.players[id].n : leg && leg.name; };
+  const tapOk = b => { const cs = w.getComputedStyle(b);
+    return cs.minHeight === '44px' && cs.boxSizing === 'border-box' && cs.paddingTop === '14px' && cs.paddingBottom === '14px' && cs.marginTop === '-14px' && cs.marginBottom === '-14px'
+      && cs.display === 'inline-block' && cs.position === 'relative' && cs.zIndex === '1'; };
+  const nameBad = (row, key, side, k) => {
+    const bs = row ? [...row.querySelectorAll('[data-glance]')] : [], b = bs[0], [kind, id, gid] = kindOf(key);
+    if (bs.length !== 1 || b.tagName !== 'BUTTON' || b.getAttribute('type') !== 'button' || !b.classList.contains('glance-name')) return `${key}: ${bs.length} names drawn as the bubble's button, not one`;
+    const K = w.glanceLeg(b.dataset.glanceLeg), nm = nameOwn(kind, id, gid, K && K.leg);
+    if (b.dataset.glance !== `${kind}:${id}` || b.dataset.glanceGame !== gid) return `${key}: data-glance ${b.dataset.glance} in ${b.dataset.glanceGame}, not ${kind}:${id} in ${gid}`;
+    if (!K || K.leg.key !== key || (K.leg.side || 'over') !== (side || 'over') || +K.leg.k !== +k) return `${key}: the leg it keeps is not its row's (${K ? [K.leg.key, K.leg.side, K.leg.k].join(' ') : 'none'})`;
+    if (b.getAttribute('aria-haspopup') !== 'dialog' || b.getAttribute('aria-label') !== `${nm}: ${WHAT[kind]}` || txt(b) !== nm) return `${key}: named "${b.getAttribute('aria-label')}", reads "${txt(b)}", for ${nm}`;
+    if (!tapOk(b)) return `${key}: its tap target is not 44px tall and taken back out of the line`;
+    return ''; };
+
+  /* ---- what one bubble holds, against the smoke's own reading ---- */
+  const legBad = (kind, K, wantPrice, wantSrc) => {
+    const bad = [], l = K.leg, B = box(), lb = B && B.querySelector('[data-glance-legbox]');
+    if (!lb) return ['no leg in the bubble'];
+    if (K.price !== wantPrice || (K.src || '') !== (wantSrc || '')) bad.push(`the leg is kept at ${K.price} ${K.src}, not the ${wantPrice} ${wantSrc} its row shows`);
+    if (nOf('label') !== l.label) bad.push(`line ${nOf('label')}, not ${l.label}`);
+    if (nOf('price') !== pxOwn(wantPrice) + estOwn(wantSrc)) bad.push(`price ${nOf('price')}, not ${pxOwn(wantPrice) + estOwn(wantSrc)}`);
+    if (nOf('model') !== (l.p * 100).toFixed(0) + '%') bad.push(`model ${nOf('model')}, not ${(l.p * 100).toFixed(0)}%`);
+    const f = fo(l), fw = f && f.p != null ? (f.p * 100).toFixed(0) + '%' + (f.est ? ' est.' : '') : 'none';
+    if (nOf('fair') !== fw) bad.push(`fair ${nOf('fair')}, not ${fw}`);
+    /* a player the page has ruled out shows no Elo matchup: his bubble says he has none to show */
+    const mf = kind === 'p' ? mfOwn(l, wantPrice, wantSrc) : null, mu = kind === 'p' && !(typeof w.eloRuledOut === 'function' && w.eloRuledOut(l.pid)) ? muOwn(l, wantPrice) : null;
+    if (mf == null ? nOf('mf') !== null : !near(nOf('mf'), mf)) bad.push(`market + form ${nOf('mf')}, not ${mf == null ? 'none' : (mf * 100).toFixed(2)}`);
+    if (mu == null ? nOf('mu') !== null : !near(nOf('mu'), mu)) bad.push(`Elo matchup ${nOf('mu')}, not ${mu == null ? 'none' : (mu * 100).toFixed(2)}`);
+    return bad; };
+  const playerBad = (pid, gid, K) => {
+    const bad = [], l = K && K.leg, e = Pl.players[pid], sp = S.players[pid] || null, r = S.sched.find(x => x.id === gid) || null, B = box();
+    const name = sp ? sp.n : l.name, team = (l && l.team) || (sp && sp.team) || '', pos = (l && l.pos) || (sp && sp.pos) || '';
+    if (txt(d.getElementById('glanceTitle')) !== name) bad.push(`headed ${txt(d.getElementById('glanceTitle'))}, not ${name}`);
+    if (nOf('pos') !== pos || nOf('team') !== (team || null)) bad.push(`${nOf('pos')} · ${nOf('team')}, not ${pos} · ${team}`);
+    /* his status: the tag the page wears beside his name (the report and the roster as the page reads them), else the matchups file's out */
+    const it = w.injTag ? w.injTag(pid) : w.eval('injTag')(pid), ow = MU.out && MU.out[pid] || null;
+    const wantInj = it ? it.t : ow ? 'OUT' : null, why = B.querySelector('.glance-why');
+    if (nOf('inj') !== wantInj || (wantInj && txt(why) !== (it ? it.title : ow))) bad.push(`status ${nOf('inj')} (${txt(why)}), not ${wantInj} (${it ? it.title : ow})`);
+    if (e && e.se != null) { const gx = Pl.groups[e.group], row = gx && (gx.top || []).find(x => x.id === pid), sh = B.querySelector('.glance-sh'), want = d.createElement('span'); want.innerHTML = w.pkTierBadge(e.se);
+      if (nOf('se') !== String(e.se) || nOf('tier') !== tierOwn(e.se) || !sh || sh.innerHTML !== want.innerHTML) bad.push(`Elo ${nOf('se')} ${nOf('tier')}, not ${e.se} ${tierOwn(e.se)} with its shield`);
+      if (e.rank && (nOf('rank') !== '#' + e.rank || nOf('of') !== String(gx.active) || (nOf('prov') === 'prov.') !== !!(row && row.prov))) bad.push(`rank ${nOf('rank')} of ${nOf('of')} ${nOf('prov') || ''}, not #${e.rank} of ${gx.active}${row && row.prov ? ' prov.' : ''}`); }
+    else { const sd = Object.values(Pl.groups || {}).flatMap(x => x.sidelined || []).find(x => x.id === pid), want = sd ? 'not ranked: ' + sd.why : 'no Elo rating this season';
+      if (nOf('noelo') !== want || nOf('se') !== null) bad.push(`no Elo row said "${nOf('noelo')}", not "${want}"`); }
+    const opp = r ? (team === r.h ? r.a : team === r.a ? r.h : null) : null;
+    if (r) { if ((opp && (nOf('ha') !== (team === r.h ? 'vs' : 'at') || nOf('opp') !== opp)) || nOf('kick') !== kickOwn(r.d, r.t)) bad.push(`game ${nOf('ha')} ${nOf('opp')} ${nOf('kick')}, not ${team === r.h ? 'vs' : 'at'} ${opp} ${kickOwn(r.d, r.t)}`); }
+    /* the defense he faces: model.json's table for his side of the ball, the leg's (a receiving line is an offense's,
+       whatever position the ratings file rates him at: Travis Hunter, a defensive back there, has receiving lines),
+       named and ranked as the file has it, and the rank the ELO Ratings tab's own table draws for that club; none for
+       a kicker or with no such table */
+    { const grp = (l && l.grp) || (sp && sp.grp) || (e && e.group) || '', fw = faceOwn(grp, opp), tb = fw && TAB_RANK[fw.key], tr = tb ? tb.rows[opp] : undefined;
+      if (!fw) { if (nOf('unit') !== null || B.querySelector('[data-glance-faces]')) bad.push(`a Faces line (${nOf('uclub')} ${nOf('unit')} ${nOf('urank')}) where a ${grp || 'player of no position'} faces no table of the file's`); }
+      else {
+        if (nOf('unit') !== fw.name || nOf('uclub') !== opp || nOf('urank') !== ordOwn(fw.rank) || nOf('uof') !== String(fw.n) || (fw.carried ? nOf('ucarry') !== `carried from ${fw.from}` : nOf('ucarry') !== null)
+          || (B.querySelector('[data-glance-faces]') || { dataset: {} }).dataset.glanceFaces !== fw.key)
+          bad.push(`faces ${nOf('uclub')} ${nOf('unit')} ${nOf('urank')} of ${nOf('uof')}${nOf('ucarry') ? ' ' + nOf('ucarry') : ''}, not ${opp} ${fw.name} ${ordOwn(fw.rank)} of ${fw.n}${fw.carried ? ' carried from ' + fw.from : ''}`);
+        if (!tb || tr == null || nOf('urank') !== ordOwn(tr) || nOf('unit') !== tb.name) bad.push(`faces ${opp} ${nOf('unit')} ${nOf('urank')}, where the ELO Ratings tab's own table draws ${tb ? `${tb.name}: ${opp} ${tr == null ? 'not ranked' : ordOwn(tr)}` : 'no such table'}`); }
+      /* one rank for one defense: the mismatch line ranks nothing, and the bubble says "ranked" once at most */
+      const ml = B.querySelector('[data-glance-mm] dd');
+      if (ml && (/\b\d+(st|nd|rd|th)\b|ranked/i.test(txt(ml)) || /\b\d+(st|nd|rd|th)\b|ranked/i.test(ml.title || ''))) bad.push(`the mismatch line states a rank of its own: "${txt(ml)}" (${ml.title})`);
+      if ((txt(B).match(/ranked \d+(st|nd|rd|th)\b/g) || []).length > (fw ? 1 : 0)) bad.push(`the bubble ranks a defense more than once: "${txt(B).slice(0, 300)}"`); }
+    const v = MU.players && MU.players[pid];
+    if (!v || v.game_id !== gid || outOwn(pid)) { if (nOf('nomu') === null || B.querySelector('tr[data-glance-stat]') || nOf('mm') !== null) bad.push('a matchup drawn where the file has none for this game, or no line saying so'); }
+    else {
+      const m = mmOwn(pid, gid);
+      if (m ? nOf('mm') !== m.grade || nOf('gap') !== m.score.toFixed(1) : nOf('mm') !== null) bad.push(`mismatch ${nOf('mm')} ${nOf('gap')}, not ${m ? m.grade + ' ' + m.score.toFixed(1) : 'none'}`);
+      const sts = (MU.stats && MU.stats[v.group] || Object.keys(v.stats || {})).filter(s => v.stats && v.stats[s] && trustOwn(v.group, s)), rows = [...B.querySelectorAll('tr[data-glance-stat]')];
+      if (rows.map(x => x.dataset.glanceStat).join() !== sts.join()) bad.push(`trusted stats ${rows.map(x => x.dataset.glanceStat).join()}, not ${sts.join()}`);
+      else rows.forEach((tr, i) => { const a = v.stats[sts[i]], f = tr.querySelector('[data-glance-n="form"]'), p = tr.querySelector('[data-glance-n="proj"]');
+        if (txt(tr.querySelector('th')) !== (LBL[sts[i]] || sts[i]) || txt(f) !== decOwn(a[0]) || txt(p) !== decOwn(a[1])) bad.push(`${sts[i]}: ${txt(tr)}, not ${decOwn(a[0])} -> ${decOwn(a[1])}`); });
+      if (!sts.length && nOf('notrust') === null) bad.push('no trusted stat and no line saying so'); }
+    return bad; };
+  const teamBad = (gid, me, stat) => {
+    const bad = [], g = STATE.schedule.find(x => x.game_id === gid), r = S.sched.find(x => x.id === gid), B = box(), toWin = !!me && stat === 'ml';
+    if (/your bet/i.test(txt(B))) bad.push('it still says "your bet"');
+    const a = g ? g.away_team : r.a, h = g ? g.home_team : r.h, neutral = !!g && (g.location === 'Neutral' || g.gametime === '09:30');
+    const head = `${TN[a] || a} ${neutral ? 'vs' : 'at'} ${TN[h] || h}`;
+    if (txt(d.getElementById('glanceTitle')) !== head) bad.push(`headed ${txt(d.getElementById('glanceTitle'))}, not ${head}`);
+    if (nOf('kick') !== kickOwn(g ? g.gameday : r.d, g ? g.gametime : r.t)) bad.push(`kickoff ${nOf('kick')}`);
+    const ths = [...B.querySelectorAll('th[data-glance-team]')];
+    if (ths.map(x => x.dataset.glanceTeam).join() !== [a, h].join() || ths.some(x => x.classList.contains('glance-me') !== (x.dataset.glanceTeam === me) || !!x.querySelector('.glance-mine') !== (x.dataset.glanceTeam === me)) || (me && txt(ths.find(x => x.dataset.glanceTeam === me).querySelector('.glance-mine')) !== 'this leg'))
+      bad.push(`the clubs ${ths.map(x => x.dataset.glanceTeam + (x.classList.contains('glance-me') ? '*' : '')).join()}, not ${a},${h} with ${me || 'none'} marked`);
+    for (const t of [a, h]) if (nOf('rec:' + t) !== recOwn(t)) bad.push(`${t} record ${nOf('rec:' + t)}, not ${recOwn(t)}`);
+    if (MO.teams && MO.teams[a] && MO.teams[h]) { for (const t of [a, h]) if (nOf('pr:' + t) !== String(MO.teams[t].elo) || nOf('prk:' + t) !== '#' + prRank(t)) bad.push(`${t} Power Rating ${nOf('pr:' + t)} ${nOf('prk:' + t)}, not ${MO.teams[t].elo} #${prRank(t)}`); }
+    else if (nOf('nopr') === null || nOf('pr:' + a) !== null) bad.push('a Power Rating drawn for a club the file has none for, or no line saying so');
+    /* the line the leg stands on: the prop model's own row (its spread, total and moneylines, which the leg, the Top 50
+       and the Game bets card are priced on), DraftKings' named so; the board's (state.json's spread and total, the
+       closing moneylines) only for a game the prop model has no row for (18 October 2026: the board's line sat beside
+       a leg on another number) */
+    { const fin = v => v != null && isFinite(v) ? +v : null;
+      const sp = r ? fin(r.sp) : g ? fin(g.spread_line) : null, tot = r ? fin(r.tot) : g ? fin(g.total_line) : null;
+      const o = !r && g ? (STATE.odds || {})[gid] : null, mA = r ? mlOwn(r.mla) : o ? mlOwn(o.away) : null, mH = r ? mlOwn(r.mlh) : o ? mlOwn(o.home) : null;
+      const spT = sp == null ? null : sp > 0 ? `${h} −${sp}` : sp < 0 ? `${a} −${-sp}` : 'Pick\'em', mlT = mA || mH ? `${a} ${mA || '–'} / ${h} ${mH || '–'}` : null;
+      const any = !!spT || tot != null || !!mlT, src = r && r.ls === 'dk' && any ? 'DraftKings' : null;
+      if (nOf('spread') !== spT || nOf('total') !== (tot == null ? null : String(tot)) || nOf('ml') !== mlT || (nOf('noline') !== null) !== !any || nOf('lsrc') !== src)
+        bad.push(`line ${nOf('spread')} / ${nOf('total')} / ${nOf('ml')} / ${nOf('noline')} (${nOf('lsrc') || 'no source'}), not the leg's own ${spT} / ${tot} / ${mlT} (${src || 'no source'})`); }
+    /* Overall Offense against Overall Defense, each way */
+    { const U = MO.units, on = !!U && !!U.off && Object.values(U.off).some(v => v.games || v.carried);
+      for (const [o, df] of [[a, h], [h, a]]) { const li = B.querySelector(`[data-glance-poss="${o}-${df}"]`), vo = on && U.off[o], vd = on && U.def[df];
+        if (!vo || !vd) { if (li) bad.push(`${o} offense against ${df} defense drawn with no unit rating`); continue; }
+        const got = li ? ['oelo', 'ork', 'delo', 'drk'].map(k => txt(li.querySelector(`[data-glance-n="${k}"]`))).join(' ') : 'none', want = [vo.elo, ordOwn(vo.rank), vd.elo, ordOwn(vd.rank)].join(' ');
+        if (got !== want) bad.push(`${o} offense against ${df} defense ${got}, not ${want}`); } }
+    /* every model's pick, the clicked team's side marked */
+    if (g) { const C = callsOwn(g);
+      for (const id of ['vegas', 'alpha', 'joker', 'elo']) { const li = B.querySelector(`[data-glance-model="${id}"]`), x = C[id], ok = x && (x.pick === a || x.pick === h);
+        if (!li) { bad.push(`no ${id} line`); continue; }
+        if (!ok) { if (li.dataset.pick || nOf('p:' + id) !== null) bad.push(`${id} drawn with a pick the files do not have`); continue; }
+        const p = chOwn(x, g);
+        const tick = toWin && x.pick === me;
+        if (li.dataset.pick !== x.pick || !(p == null ? nOf('p:' + id) === '–' : near(nOf('p:' + id), p)) || li.classList.contains('glance-with') !== tick || !!li.querySelector('.glance-chk') !== tick)
+          bad.push(`${id} ${li.dataset.pick} ${nOf('p:' + id)}${li.querySelector('.glance-chk') ? ' ticked' : ''}, not ${x.pick} ${p == null ? '-' : (p * 100).toFixed(2)}${tick ? ' ticked' : ''} (a ${stat || 'leg'} on ${me || 'no team'})`); } }
+    else if (B.querySelector('[data-glance-model]')) bad.push('model picks drawn for a game the board does not have');
+    return bad; };
+  const bubbleBad = (btn, wantPrice, wantSrc) => {
+    const bad = [], B = box(), K = w.glanceLeg(btn.dataset.glanceLeg), [kind, id] = [btn.dataset.glance.slice(0, 1), btn.dataset.glance.slice(2)], gid = btn.dataset.glanceGame;
+    if (d.querySelectorAll('#glanceBox').length !== 1 || !shown()) return ['no bubble, or more than one'];
+    const hd = d.getElementById('glanceTitle');
+    if (B.getAttribute('role') !== 'dialog' || B.getAttribute('aria-modal') !== 'false' || B.getAttribute('aria-labelledby') !== 'glanceTitle' || !hd || !B.contains(hd) || B.dataset.glanceOf !== btn.dataset.glance || B.dataset.glanceGame !== gid)
+      bad.push('not a dialog labelled by its heading, for this name');
+    if (!B.contains(d.activeElement)) bad.push('the focus is not in it');
+    if (btn.getAttribute('aria-expanded') !== 'true') bad.push('its name does not say it is open');
+    const xb = B.querySelector('button[data-glance-close]'); if (!xb || txt(xb) !== 'Close' || w.getComputedStyle(xb).minHeight !== '44px') bad.push('no 44px Close');
+    const sn = B.querySelector('button[data-glance-snap]'), onBoard = STATE.schedule.some(x => x.game_id === gid);
+    if (!!sn !== onBoard || (sn && (txt(sn) !== 'Open game snapshot' || sn.dataset.glanceSnap !== gid || w.getComputedStyle(sn).minHeight !== '44px'))) bad.push(`Open game snapshot ${sn ? 'drawn' : 'missing'} for a game ${onBoard ? 'on' : 'not on'} the board`);
+    if (!K) bad.push('its leg is not kept'); else bad.push(...legBad(kind, K, wantPrice, wantSrc));
+    bad.push(...(kind === 'p' ? playerBad(id, gid, K) : teamBad(gid, kind === 't' ? id : null, K ? K.leg.stat : String(btn.dataset.glanceLeg || '').split('|')[2])));
+    return bad; };
+  /* the browser's storage, watched while bubbles open and close: nothing may be written */
+  const SPR = w.Storage.prototype, keepSet = SPR.setItem, keepRm = SPR.removeItem, keepClr = SPR.clear, writes = []; let watching = false;
+  SPR.setItem = function (k, v) { if (watching) writes.push('set ' + k); return keepSet.call(this, k, v); };
+  SPR.removeItem = function (k) { if (watching) writes.push('remove ' + k); return keepRm.call(this, k); };
+  SPR.clear = function () { if (watching) writes.push('clear'); return keepClr.call(this); };
+  const openOn = async (btn, wantPrice, wantSrc, where) => { watching = true; btn.click(); await wait(20); const bad = bubbleBad(btn, wantPrice, wantSrc);
+    if (shown()) { box().querySelector('[data-glance-close]').click(); await wait(10); } watching = false;
+    chk(bad.length === 0 && !shown() && d.activeElement === btn, `the matchup bubble from ${where} (${btn.dataset.glance}, ${btn.dataset.glanceLeg}): ${bad.join('; ') || 'Close did not close it with the focus back on the name'}`); };
+  const priceOf = (where, K) => where === 'the builder' ? legPrice(K.leg) : { ml: K.leg.price, src: K.leg.src };
+
+  /* ---- on the week as it stands: every name the page draws, and the first of each kind in each place opened ---- */
+  [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'suggest').click(); await wait(400);
+  const live = () => { const out = [];
+    for (const li of d.querySelectorAll('#pbPanel ol.pb-top li.pb-trow')) { const a = li.querySelector('button[data-pb-leg]'); if (a) out.push({ where: 'the Top 50', row: li.querySelector('.nm'), key: a.dataset.pbLeg, side: a.dataset.side, k: a.dataset.k }); }
+    for (const tr of d.querySelectorAll('#parlayBody tr.legrow')) { const b = tr.querySelector('button[data-drop]'), l = b && S.parlay[b.dataset.drop]; if (l) out.push({ where: 'the builder', row: tr.querySelector('td.plr'), key: b.dataset.drop, side: l.side, k: l.k }); }
+    for (const [sel, where] of [['#spSets', 'a set’s card'], ['#pbElo', 'an Elo pick’s card']]) for (const li of d.querySelectorAll(`${sel} .pb-tier .pb-legs li`)) {
+      const a = li.querySelector('button[data-pb-leg]'); if (a) out.push({ where, row: li.querySelector('.nm'), key: a.dataset.pbLeg, side: a.dataset.side, k: a.dataset.k }); }
+    return out; };
+  /* the builder, on the week as it stands: a player's line, a team's and a total, each the first the Top 50 lists */
+  const keepParlay = JSON.stringify(S.parlay);
+  for (const kd of ['p', 't', 'g']) { const li = [...d.querySelectorAll('#pbPanel ol.pb-top li.pb-trow')].find(x => x.querySelector(`[data-glance^="${kd}:"]`)), a = li && li.querySelector('button[data-pb-leg]');
+    if (a && a.getAttribute('aria-pressed') !== 'true') { a.click(); await wait(30); } }
+  await wait(400);                                  /* the page's own save of the builder (a 300ms debounce) lands before the storage is watched */
+  const L0 = live(), byPlace = {};
+  { const bad = L0.map(P => { const x = nameBad(P.row, P.key, P.side, P.k); return x ? `${P.where} ${x}` : ''; }).filter(Boolean);
+    chk(bad.length === 0, `a name on a leg is not the matchup bubble's button for its leg: ${bad.slice(0, 4).join(' | ')}`); }
+  /* within one place a leg is drawn once (the builder, the Top 50 lines, each level card of a set or of the Elo picks), so a
+     bubble's place and its leg's key, side and line find one copy after a redraw */
+  { const idOf = b => String(b.dataset.glanceLeg || '').split('|').slice(0, 5).join('|'), dup = [];
+    for (const pl of [d.getElementById('parlayBody'), d.getElementById('pbPanel'), ...d.querySelectorAll('#spPanel .pb-tier')]) { if (!pl) continue; const seen = new Set();
+      for (const b of pl.querySelectorAll('[data-glance]')) { const k = b.dataset.glance + '|' + idOf(b); if (seen.has(k)) dup.push(`${pl.id || pl.dataset.pbTier} ${k}`); seen.add(k); } }
+    chk(dup.length === 0, `a leg is drawn twice in one place, so a bubble opened on it cannot tell its copies apart: ${dup.slice(0, 4).join(' | ')}`); }
+  for (const P of L0) { const b = P.row && P.row.querySelector('[data-glance]'); if (!b) continue; const k = P.where + '|' + b.dataset.glance[0]; if (!byPlace[k]) byPlace[k] = { P, b }; }
+  for (const { P, b } of Object.values(byPlace)) { const K = w.glanceLeg(b.dataset.glanceLeg); if (!K) continue; const pr = priceOf(P.where, K); await openOn(b, pr.ml, pr.src, P.where + ' (the week as it stands)'); }
+
+  /* ---- at any hour: the fixtures ---- */
+  const wk = w.eval('currentWeek()'), season = +w.eval('SEASON');
+  /* a game both schedules have and a real player on it: a ranked player with a matchup row and a trusted stat where the
+     matchups file has one (in the season), else a ranked player of either club (the off-season, a file of no starters) */
+  const both = id => S.sched.some(x => x.id === id) && STATE.schedule.some(x => x.game_id === id);
+  const mrow = Object.entries(MU.players || {}).find(([pid, v]) => Pl.players[pid] && Pl.players[pid].se != null && Pl.players[pid].rank && S.players[pid]
+    && both(v.game_id) && Object.keys(v.stats || {}).some(st => trustOwn(v.group, st)) && !outOwn(pid));
+  const r = mrow ? S.sched.find(x => x.id === mrow[1].game_id) : (S.sched.find(x => +x.w === +wk && both(x.id)) || S.sched.find(x => both(x.id)));
+  const pid = mrow ? mrow[0] : r ? Object.keys(Pl.players || {}).find(id => Pl.players[id].rank && Pl.players[id].se != null && S.players[id]
+    && [r.a, r.h].includes(S.players[id].team) && ['QB', 'RB', 'WR', 'TE'].includes(S.players[id].grp)) : null;
+  const pick = r ? [pid, mrow ? mrow[1] : null] : null;
+  const at = new Date(w.Date.now() + 2 * 86400e3).toISOString().slice(0, 10);
+  const FAKE = { id: `${season}_${String(wk).padStart(2, '0')}_XXA_XXH`, w: wk, d: at, t: '13:00', a: 'XXA', h: 'XXH' };
+  const fakeP = { key: legKey(FAKE.id, 'XX-0000001', 'receiving_yards'), gid: FAKE.id, pid: 'XX-0000001', stat: 'receiving_yards', k: 40.5, side: 'over', main: true, p: 0.58, price: -110, src: 'real',
+    mu: 44, name: 'Planted Receiver', pos: 'WR', grp: 'WR', team: 'XXA', opp: 'XXH', week: wk, label: 'Over 40.5 receiving yards' };
+  const fakeT = { key: legKey(FAKE.id, 'team:XXA', 'ml'), gid: FAKE.id, pid: 'team:XXA', stat: 'ml', k: 0, side: 'over', main: false, p: 0.52, price: 110, src: 'est', mu: null,
+    name: 'XXA', pos: 'Game', grp: 'TEAM', team: 'XXA', opp: 'XXH', week: wk, label: 'To win' };
+  chk(!!r, 'the matchup bubble: no game in both the payload\'s schedule and the board\'s to stand a fixture on');
+  let GRADES_SEEN = [];
+  if (r) {
+    const v = pick[1], sp = pid && S.players[pid], st = v ? Object.keys(v.stats).find(s => trustOwn(v.group, s)) : sp && sp.grp === 'QB' ? 'passing_yards' : 'receiving_yards';
+    const kk = v ? Math.round(v.stats[st][1]) + 0.5 : 50.5, team = v ? v.team : sp && sp.team, opp = team === r.h ? r.a : r.h;
+    const realP = sp ? { key: legKey(r.id, pid, st), gid: r.id, pid, stat: st, k: kk, side: 'over', main: true, p: 0.57, price: -110, src: 'real', mu: kk,
+      name: sp.n, pos: sp.pos, grp: sp.grp, team, opp, week: r.w, label: `Over ${kk} ${st}` } : null;
+    const realT = { key: legKey(r.id, 'team:' + r.h, 'ml'), gid: r.id, pid: 'team:' + r.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.6, price: r.mlh != null ? r.mlh : -150, src: r.mlh != null ? 'real' : 'est', mu: null,
+      name: TN[r.h] || r.h, pos: 'Game', grp: 'TEAM', team: r.h, opp: r.a, week: r.w, label: 'To win' };
+    const realG = w.eval('totalLeg')(r, 'under') || { key: legKey(r.id, 'game', 'total'), gid: r.id, pid: 'game', stat: 'total', k: 44.5, side: 'under', main: true, p: 0.5, price: -110, src: 'est', mu: 44.5,
+      name: `${TN[r.a] || r.a} at ${TN[r.h] || r.h}`, pos: 'Game', grp: 'TEAM', team: r.a, opp: r.h, week: r.w, label: 'Under 44.5 points' };
+    S.sched.push(FAKE);
+    /* and a line of each player the Mismatches grade at either end of each grade the smoke works out (the lowest edge
+       and the highest), so every grade the week has, and its bounds, is read off a bubble whatever the rows above drew */
+    const graded = {}; for (const [id, x] of Object.entries(MU.players || {})) { if (!S.players[id] || !S.sched.some(y => y.id === x.game_id) || id === pid) continue;
+      const m = mmOwn(id, x.game_id); if (!m) continue; const G2 = graded[m.grade] = graded[m.grade] || {};
+      if (!G2.lo || m.score < G2.lo.s) G2.lo = { id, x, s: m.score }; if (!G2.hi || m.score > G2.hi.s) G2.hi = { id, x, s: m.score }; }
+    const mmLegs = Object.values(graded).flatMap(G2 => G2.lo.id === G2.hi.id ? [G2.lo] : [G2.lo, G2.hi]).map(({ id, x }) => { const sp2 = S.players[id], st2 = Object.keys(x.stats || {})[0] || 'receiving_yards', k2 = x.stats && x.stats[st2] ? Math.round(x.stats[st2][1]) + 0.5 : 20.5, g2 = S.sched.find(y => y.id === x.game_id);
+      return { key: legKey(x.game_id, id, st2), gid: x.game_id, pid: id, stat: st2, k: k2, side: 'under', main: true, p: 0.52, price: 105, src: 'real', mu: k2,
+        name: sp2.n, pos: sp2.pos, grp: sp2.grp, team: x.team, opp: x.opp, week: g2.w, label: `Under ${k2} ${st2}` }; });
+    GRADES_SEEN = Object.keys(graded);
+    /* and a club to cover, the one a model picks to win where one does: a team's leg that is not to win, whose bubble
+       ticks no model all the same (a pick to win says nothing of a cover) */
+    const gB = STATE.schedule.find(x => x.game_id === r.id), cs = gB ? callsOwn(gB) : {};
+    const sT = ['vegas', 'alpha', 'joker', 'elo'].map(k => cs[k] && cs[k].pick).find(t => t === r.a || t === r.h) || r.a, sO = sT === r.h ? r.a : r.h;
+    const realS = { key: legKey(r.id, 'team:' + sT, 'ats'), gid: r.id, pid: 'team:' + sT, stat: 'ats', k: -3.5, side: 'over', main: false, p: 0.53, price: -110, src: 'real', mu: null,
+      name: TN[sT] || sT, pos: 'Game', grp: 'TEAM', team: sT, opp: sO, week: r.w, label: 'To cover -3.5' };
+    /* and a player the ratings file rates on the other side of the ball from his leg, on a receiving line in the
+       fixture's game (Travis Hunter, a defensive back in players.json, has receiving lines in the payload): one the
+       payload carries so, else a ranked defender of the file's planted on a receiver's line; his bubble sets him
+       against the Pass Defense his leg faces, and keeps his Elo and rank at the position he is rated at */
+    const twoId = Object.keys(S.players).find(id => Pl.players[id] && Pl.players[id].se != null && Pl.players[id].rank && FACE_OWN[S.players[id].grp] && !FACE_OWN[Pl.players[id].group])
+      || Object.keys(Pl.players || {}).find(id => Pl.players[id].se != null && Pl.players[id].rank && !FACE_OWN[Pl.players[id].group] && Pl.players[id].group !== 'K' && id !== pid)
+      || Object.keys(Pl.players || {}).find(id => Pl.players[id].group && !FACE_OWN[Pl.players[id].group] && Pl.players[id].group !== 'K' && id !== pid);
+    const twoP = twoId ? { key: legKey(r.id, twoId, 'receiving_yards'), gid: r.id, pid: twoId, stat: 'receiving_yards', k: 40.5, side: 'over', main: true, p: 0.55, price: -115, src: 'real', mu: 42,
+      name: S.players[twoId] ? S.players[twoId].n : Pl.players[twoId].name, pos: 'WR', grp: 'WR', team: r.a, opp: r.h, week: r.w, label: 'Over 40.5 receiving yards' } : null;
+    chk(!!twoP, 'the matchup bubble: no player in the ratings file rated on the other side of the ball to plant on a receiving line');
+    const legs = [realP, realT, realS, realG, fakeP, fakeT, twoP, ...mmLegs].filter(Boolean), at1 = l => lis[legs.indexOf(l)].querySelector('[data-glance]');
+    const host = d.createElement('div'); host.id = 'glFix'; host.className = 'card'; d.body.appendChild(host);
+    host.innerHTML = w.pbTierCard({ id: 'glfix', label: 'Fixture', legs, corr: 0.05, dec: 20, fair: null, floor: null }, { quiet: true, kind: 'sp', fid: 'glfix' });
+    const lis = [...host.querySelectorAll('.pb-legs li')];
+    { const bad = legs.map((l, i) => { const x = lis[i] ? nameBad(lis[i].querySelector('.nm'), l.key, l.side, l.k) : `${l.key}: not drawn`; return x; }).filter(Boolean);
+      chk(lis.length === legs.length && bad.length === 0, `the matchup bubble: a name on a level card of the smoke's own is not the bubble's button for its leg: ${bad.join(' | ')}`); }
+    for (let i = 0; i < lis.length; i++) { const b = lis[i].querySelector('[data-glance]'); if (b) await openOn(b, legs[i].price, legs[i].src, `a level card of the smoke's own (${legs[i].name}, ${legs[i].label})`); }
+    /* the player rated on the other side of the ball: his receiving line sets him against the Pass Defense (the leg's
+       side), where the file has one for the club, and his rank stays the one at his rated position */
+    if (twoP) { const fw = faceOwn('WR', twoP.opp), e2 = Pl.players[twoP.pid], g2 = Pl.groups && Pl.groups[e2.group], b = at1(twoP);
+      watching = true; b.click(); await wait(20);
+      const fc = box().querySelector('[data-glance-faces]'), got = [fc ? fc.dataset.glanceFaces : null, nOf('uclub'), nOf('rank'), nOf('of')].join(' ');
+      box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
+      const rk2 = e2.se != null && e2.rank, want = [fw ? fw.key : null, fw ? twoP.opp : null, rk2 ? '#' + e2.rank : null, rk2 && g2 && g2.active ? String(g2.active) : null].join(' ');
+      chk(got === want, `the matchup bubble of ${twoP.name}, rated a ${e2.group} and on a receiver's line, does not set him against the defense his leg faces with his rank at his rated position: ${got}, not ${want}`); }
+    /* a club yet to play this season, on the rating carried from last season (week 1, or a team on its bye then): the
+       Faces line marks it "carried from <season>", as the ELO Ratings tab marks it, on the same rank. Planted on the
+       page's own copy of model.json (eloFiles) and the smoke's alike, every value put back after */
+    { const L = realP || twoP, F = await w.eloFiles(), U = F && F.model && F.model.units, key = L && FACE_OWN[L.grp], club = L && L.opp;
+      const T = U && key && U[key], T0 = T && MO.units && MO.units[key];
+      if (!T || !T[club] || !T0 || !T0[club] || !faceOwn(L.grp, club)) chk(false, `the matchup bubble: no ${key || 'unit'} table rating for ${club || 'the fixture\'s opponent'} to mark carried`);
+      else {
+        const keep = { v: T[club].carried, v0: T0[club].carried, p: U.params, p0: MO.units.params }, from = season - 1;
+        const P1 = { ...(U.params || {}), carry: (U.params && U.params.carry) || 0.42, carry_from: from };
+        T[club].carried = true; T0[club].carried = true; U.params = P1; MO.units.params = { ...P1 };
+        const b = at1(L); watching = true; b.click(); await wait(20);
+        const bad = bubbleBad(b, L.price, L.src), cw = nOf('ucarry'), rk = nOf('urank');
+        box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
+        const put = (o, k, v) => { if (v === undefined) delete o[k]; else o[k] = v; };
+        put(T[club], 'carried', keep.v); put(T0[club], 'carried', keep.v0); put(U, 'params', keep.p); put(MO.units, 'params', keep.p0);
+        chk(cw === `carried from ${from}` && rk === ordOwn(T[club].rank) && !bad.length,
+          `the matchup bubble does not mark a club carried from last season on its Faces line, on the rank the tab draws: "${cw}" ${rk} (${bad.join('; ')})`); } }
+    /* a final the board has and the ratings file has not counted yet (the betting job graded it before the Elo job ran):
+       the record counts it, as Team Rankings does, planted on the board's own schedule for a made-up opponent */
+    { const P = w.pkBoard, b = at1(realT), extra = { game_id: `${season}_01_XXZ_${r.h}`, week: 1, game_type: 'REG', gameday: '2026-09-10', gametime: '13:00', away_team: 'XXZ', home_team: r.h, home_score: 30, away_score: 3, result: 27 };
+      const before = recOwn(r.h), want = recOwn(r.h, STATE.schedule.concat([extra]));
+      P.ST.sched.push(extra); watching = true; b.click(); await wait(20);
+      const got = nOf('rec:' + r.h); box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
+      P.ST.sched.splice(P.ST.sched.indexOf(extra), 1);
+      chk(got === want && want !== before, `the matchup bubble does not count a final the board has that the ratings file has not: ${r.h} ${got}, not ${want} (${before} before it)`); }
+    /* the line is the one the leg stands on: the prop model's row moved off the board's (DraftKings' read a point and a
+       half away, its own moneylines, as a fresh pull or a Refresh odds press leaves it), and the bubble draws the row's,
+       named DraftKings, never the board's closing line beside a leg on another number; every value put back after */
+    { const b = at1(realT), gB = STATE.schedule.find(x => x.game_id === r.id), keep = ['sp', 'tot', 'mla', 'mlh', 'ls'].map(k => [k, Object.prototype.hasOwnProperty.call(r, k), r[k]]);
+      const bsp = gB && gB.spread_line != null && isFinite(gB.spread_line) ? +gB.spread_line : null, btot = gB && gB.total_line != null && isFinite(gB.total_line) ? +gB.total_line : null;
+      Object.assign(r, { sp: bsp == null ? 3.5 : bsp + 1.5, tot: btot == null ? 47.5 : btot + 2.5, mla: 163, mlh: -191, ls: 'dk' });
+      watching = true; b.click(); await wait(20);
+      const bad = bubbleBad(b, realT.price, realT.src), sp = nOf('spread'), src = nOf('lsrc'), tt = nOf('total');
+      box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
+      for (const [k, had, v] of keep) { if (had) r[k] = v; else delete r[k]; }
+      chk(!bad.length && src === 'DraftKings' && tt === String(btot == null ? 47.5 : btot + 2.5) && sp !== (bsp == null ? null : bsp > 0 ? `${r.h} −${bsp}` : bsp < 0 ? `${r.a} −${-bsp}` : 'Pick\'em'),
+        `the matchup bubble's line is not the one the leg stands on (the prop model's row, named DraftKings), with the row moved off the board's: ${sp} total ${tt} (${src || 'no source'}); ${bad.join('; ')}`); }
+    /* his status as the page knows it, planted: ruled out (no matchup to show, OUT and why), then questionable */
+    { const L = realP || fakeP, b = at1(L), sid = L.pid, keepI = S.inactive[sid], INJ = w.eval('INJ'), keepQ = INJ[sid];
+      S.inactive[sid] = { week: wk, status: 'Out', inj: 'Knee' };
+      watching = true; b.click(); await wait(20);
+      const s1 = [nOf('inj'), txt(box().querySelector('.glance-why')), nOf('nomu') !== null, !box().querySelector('tr[data-glance-stat]'), nOf('mu') === null], bad1 = bubbleBad(b, L.price, L.src);
+      box().querySelector('[data-glance-close]').click(); await wait(10);
+      if (keepI) S.inactive[sid] = keepI; else delete S.inactive[sid];
+      INJ[sid] = { k: 'q', t: 'Q', title: 'Questionable (ankle); limited in practice' };
+      b.click(); await wait(20);
+      const s2 = [nOf('inj'), txt(box().querySelector('.glance-why'))], bad2 = bubbleBad(b, L.price, L.src);
+      box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
+      if (keepQ) INJ[sid] = keepQ; else delete INJ[sid];
+      chk(s1.join('|') === 'OUT|ruled out, knee|true|true|true' && s2.join('|') === 'Q|Questionable (ankle); limited in practice' && !bad1.length && !bad2.length,
+        `the matchup bubble does not say a player is ruled out (and show no matchup) or questionable as the page reads it: ${s1.join('|')} / ${s2.join('|')} ${bad1.concat(bad2).join('; ')}`); }
+
+    /* ---- the window itself, on the real player's name and the team's beside it ---- */
+    { const b1 = at1(realP || fakeP), b2 = at1(realT), key = (el, k, o) => el.dispatchEvent(new w.KeyboardEvent('keydown', Object.assign({ key: k, bubbles: true, cancelable: true }, o || {})));
+      const bad = []; watching = true;
+      b1.click(); await wait(20);
+      { const f = [...box().querySelectorAll('button')], first = f[0], last = f[f.length - 1];
+        last.focus(); key(last, 'Tab'); if (d.activeElement !== first) bad.push('Tab from the last control does not come round to the first');
+        first.focus(); key(first, 'Tab', { shiftKey: true }); if (d.activeElement !== last) bad.push('Shift+Tab from the first control does not go round to the last');
+        box().focus(); key(box(), 'Tab', { shiftKey: true }); if (d.activeElement !== last) bad.push('Shift+Tab from the bubble itself leaves it'); }
+      key(d.activeElement, 'Escape'); await wait(10);
+      if (shown() || d.activeElement !== b1 || b1.hasAttribute('aria-expanded')) bad.push('Escape does not close it with the focus back on the name');
+      b1.click(); await wait(20); const outside = d.querySelector('#spCard h2') || d.querySelector('header h1');
+      outside.dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true })); await wait(10);
+      if (shown() || d.activeElement !== b1) bad.push('a click outside does not close it with the focus back on the name');
+      b1.click(); await wait(20); b2.click(); await wait(20);
+      if (d.querySelectorAll('#glanceBox').length !== 1 || !shown() || box().dataset.glanceOf !== b2.dataset.glance || !box().contains(d.activeElement) || b1.hasAttribute('aria-expanded') || b2.getAttribute('aria-expanded') !== 'true')
+        bad.push('another name does not close the first bubble and open its own, the focus in it');
+      key(d.activeElement, 'Escape'); await wait(10);
+      if (shown() || d.activeElement !== b2) bad.push('Escape on the second bubble does not give its name the focus back');
+      b2.click(); await wait(20); b2.click(); await wait(10);
+      if (shown()) bad.push('its own name pressed again does not close it');
+      /* Open game snapshot: the bubble closes and that game's window opens; closing it gives the name the focus back */
+      b2.click(); await wait(20); const sn = box().querySelector('[data-glance-snap]');
+      if (!sn) bad.push('no Open game snapshot on a game the board has');
+      else { sn.click(); await wait(80); const gm = d.getElementById('gsModal'), g = STATE.schedule.find(x => x.game_id === r.id), tt = gm && [...gm.querySelectorAll('#gsTitle .pk-ttag')].map(txt);
+        if (shown() || !gm || gm.hidden || !tt || tt.join() !== [g.away_team, g.home_team].join()) bad.push(`Open game snapshot does not close the bubble and open ${r.id}'s window (${tt})`);
+        w.gameSnapshotClose(); await wait(20);
+        if (d.activeElement !== b2) bad.push('closing the game snapshot does not give the name the focus back'); }
+      /* the tab changed by the address (a hash change, as Back makes) with the focus in the bubble: the page clicks the
+         tab's button for the reader, the bubble closes and the focus goes to the chosen tab's button, never the body */
+      { const t0 = d.querySelector('#tabs button[aria-selected="true"]'), sec0 = d.querySelector('main section:not([hidden])');
+        /* the fixture's cards are set in the tab on the screen for this, so the tab change hides the name too */
+        if (sec0) sec0.appendChild(host);
+        b1.click(); await wait(20); box().focus(); const inside = box().contains(d.activeElement);
+        w.location.hash = '#matchups'; await wait(60);
+        const sel = d.querySelector('#tabs button[aria-selected="true"]');
+        if (!inside || shown() || !sel || sel.dataset.tab !== 'pickems' || d.activeElement !== sel || b1.hasAttribute('aria-expanded'))
+          bad.push(`a tab changed by the address does not close the bubble with the focus on the chosen tab's button (${shown() ? 'still open' : 'closed'}, tab ${sel && sel.dataset.tab}, focus on ${d.activeElement && (d.activeElement.id || d.activeElement.dataset.tab || d.activeElement.tagName)})`);
+        if (t0) t0.click(); await wait(20); d.body.appendChild(host); }
+      watching = false;
+      chk(bad.length === 0, 'the matchup bubble as a window: ' + bad.join('; ')); }
+    host.remove();
+
+    /* ---- the page draws its rows again while a bubble is open (the half-minute look at a kickoff or a lock, a Refresh
+       odds press finishing): the bubble stays on its own leg's copy in the place it was opened from, wherever else the
+       page draws the same leg, marked open there, its focus and its toggle there; follows that copy's new price; and,
+       where that place no longer draws the leg, closes with the focus on its neighbour there, never on the page's body ---- */
+    { const bad = [], builder = () => d.getElementById('parlayBody');
+      const part = what => { chk(bad.length === 0, `the matchup bubble across a redraw (${what}): ${bad.join('; ')}`); bad.length = 0; };
+      /* the builder's legs on the made-up game two days out, which no kickoff takes out of the builder at any hour */
+      const fakeH = { ...fakeT, key: legKey(FAKE.id, 'team:XXH', 'ml'), pid: 'team:XXH', name: 'XXH', team: 'XXH', opp: 'XXA', p: 0.48, price: -130 };
+      const fakeS = { ...fakeT, key: legKey(FAKE.id, 'team:XXA', 'ats'), stat: 'ats', k: 2.5, p: 0.51, price: -110, label: 'To cover +2.5' };
+      let L = fakeP, X = fakeT;
+      const copyIn = (pl, l) => pl ? [...pl.querySelectorAll('[data-glance]')].find(b => { const K = w.glanceLeg(b.dataset.glanceLeg);
+        return !!K && K.leg.key === l.key && (K.leg.side || 'over') === (l.side || 'over') && +K.leg.k === +l.k; }) || null : null;
+      const expanded = () => [...d.querySelectorAll('[data-glance][aria-expanded="true"]')];
+      const where = el => !el || el === d.body ? 'the body' : `${el.closest('[id]') ? el.closest('[id]').id : ''} ${el.getAttribute('aria-label') || el.className || el.tagName}`;
+      const key = (el, k) => (el || d.body).dispatchEvent(new w.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+      const tab = t => [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === t).click();
+      const keepP = JSON.stringify(S.parlay), tierOf = (id, label, ls) => ({ id, label, legs: ls, corr: 0.2, dec: 4, fair: null, floor: null });
+      /* the builder drawn again (renderParlay), the same leg drawn earlier in the page than the builder (a card of the smoke's own, first in the body) */
+      tab('parlay'); await wait(40);
+      const early = d.createElement('div'); early.id = 'glEarly'; d.body.insertBefore(early, d.body.firstChild);
+      early.innerHTML = w.pbTierCard(tierOf('safe', 'Safe', [L, X]), { quiet: true, kind: 'sp', fid: 'glearly' });
+      S.parlay = { [L.key]: { ...L }, [X.key]: { ...X } }; w.eval('renderParlay()'); await wait(40);
+      const b0 = copyIn(builder(), L);
+      if (!b0 || !copyIn(early, L)) bad.push('the builder or the early card does not draw the leg');
+      else {
+        b0.click(); await wait(20); w.eval('renderParlay()'); await wait(30);
+        { const b1 = copyIn(builder(), L);
+          if (!shown() || !b1 || b1 === b0 || b1.getAttribute('aria-expanded') !== 'true' || expanded().length !== 1 || !box().contains(d.activeElement))
+            bad.push(`after renderParlay the bubble is not bound to the builder's new copy of ${L.name}, marked open, the focus in it (shown ${shown()}; marked open: ${expanded().map(where).join(', ') || 'none'}; the focus on ${where(d.activeElement)})`); }
+        key(d.activeElement, 'Escape'); await wait(10);
+        if (shown() || d.activeElement !== copyIn(builder(), L)) bad.push(`Escape after renderParlay gives the focus to ${where(d.activeElement)}, not the builder's copy of ${L.name}`);
+        copyIn(builder(), L).click(); await wait(20); w.eval('renderParlay()'); await wait(30); copyIn(builder(), L).click(); await wait(20);
+        if (shown() || expanded().length) bad.push('after renderParlay the builder\'s name pressed again does not close its bubble');
+        /* its price moved under it (a Refresh odds press, a rung's book price): the bubble follows the copy's numbers */
+        copyIn(builder(), L).click(); await wait(20); S.parlay[L.key].price = 105; w.eval('renderParlay()'); await wait(30);
+        { const lp = legPrice(S.parlay[L.key]), c = copyIn(builder(), L);
+          if (!shown() || nOf('price') !== pxOwn(lp.ml) + estOwn(lp.src) || !c || c.getAttribute('aria-expanded') !== 'true')
+            bad.push(`a builder leg's price moved under its open bubble: the bubble says ${nOf('price')}, not ${pxOwn(lp.ml) + estOwn(lp.src)}`); }
+        key(d.activeElement, 'Escape'); await wait(10); }
+      part('renderParlay: the builder\'s copy, its focus, its toggle and a price moved under it');
+      /* the reader's place in the bubble kept through a redraw and a resize: scrolled to its foot (the leg's own box), a
+         redraw on the page that leaves the leg as it was, or a resize, places it again and must not take it back to the
+         top. jsdom lays nothing out, so the browser's rule is stood in on the bubble alone: a measure of its height with
+         its max-height cleared takes its scroll back to the top, as Chromium does (offsetHeight there, 400px); the
+         screen's height stood in too, for the sheet a short screen falls back to; all put back after */
+      if (b0) { const B = box(); let st = 0;
+        const keepH = Object.getOwnPropertyDescriptor(w, 'innerHeight');
+        Object.defineProperty(B, 'scrollTop', { configurable: true, get: () => st, set: v => { st = Math.max(0, +v || 0); } });
+        Object.defineProperty(B, 'offsetHeight', { configurable: true, get: () => { if (!B.style.maxHeight) st = 0; return 400; } });
+        try {
+          for (const [lab, hgt] of [['as a bubble', 900], ['as the sheet a short screen falls back to', 150]]) {
+            Object.defineProperty(w, 'innerHeight', { configurable: true, writable: true, value: hgt });
+            copyIn(builder(), L).click(); await wait(20); B.scrollTop = 225;
+            w.eval('renderParlay()'); await wait(30); const a1 = st, sheet1 = B.classList.contains('glance-sheet');
+            w.dispatchEvent(new w.Event('resize')); await wait(10); const a2 = st;
+            if (!shown() || a1 !== 225 || a2 !== 225 || sheet1 !== (hgt < 400)) bad.push(`${lab}, scrolled 225px down, the bubble is at ${a1}px after renderParlay and ${a2}px after a resize${sheet1 !== (hgt < 400) ? `, ${sheet1 ? '' : 'not '}a sheet` : ''}`);
+            key(d.activeElement, 'Escape'); await wait(10); } }
+        finally { delete B.scrollTop; delete B.offsetHeight; if (keepH) Object.defineProperty(w, 'innerHeight', keepH); else delete w.innerHeight; }
+        part('the reader\'s scroll in the bubble across a redraw and a resize'); }
+      /* the leg taken out of the builder: the bubble closes, the focus on the name now in its place there */
+      S.parlay = Object.fromEntries([fakeP, fakeT, fakeH, fakeS].map(l => [l.key, { ...l }])); w.eval('renderParlay()'); await wait(40);
+      { const n0 = [...builder().querySelectorAll('[data-glance]')], mid = n0[1], Km = mid && w.glanceLeg(mid.dataset.glanceLeg);
+        if (!Km) bad.push('the builder does not draw three legs');
+        else { mid.click(); await wait(20); delete S.parlay[Km.leg.key]; w.eval('renderParlay()'); await wait(30);
+          const n1 = [...builder().querySelectorAll('[data-glance]')];
+          if (shown() || expanded().length || d.activeElement !== n1[1]) bad.push(`with ${Km.leg.name} taken out of the builder, the bubble ${shown() ? 'is still open' : 'closed'} with the focus on ${where(d.activeElement)}, not the leg now in its place`);
+          /* and the builder emptied: the focus on the builder's (or the tab's) first control */
+          n1[0].click(); await wait(20); S.parlay = {}; w.eval('renderParlay()'); await wait(30);
+          const fa = d.activeElement;
+          if (shown() || !fa || fa === d.body || !fa.isConnected || !fa.closest('#tab-parlay')) bad.push(`with the builder emptied under an open bubble, the focus is on ${where(fa)}`); } }
+      part('the leg taken out of the builder');
+      early.remove(); S.parlay = JSON.parse(keepP); w.eval('renderParlay()'); await wait(40);
+
+      /* Suggested Parlays drawn again (renderSp): one leg on a set's Safe and Extreme cards and on an Elo pick's Safe card
+         (the same level id in another section), the page's spGames, spOn and spShown stood in for a set of the smoke's own
+         on the fixture's game, so it holds at any hour; each put back after */
+      tab('suggest'); await wait(40);
+      L = realP || realT; X = realP ? realT : realS;
+      const SP = { games: w.spGames, on: w.spOn, shown: w.spShown }, eloBox = d.getElementById('pbElo'), keepElo = eloBox ? eloBox.innerHTML : null;
+      let tiers = [tierOf('safe', 'Safe', [L, X]), tierOf('extreme', 'Extreme', [realS, realG, L])];
+      w.spGames = () => [r]; w.spOn = () => [r]; w.spShown = () => ({ phase: 'live', lock: w.Date.now() + 864e5, tiers });
+      const eloHtml = () => `<div class="pb-tiers">${w.pbTierCard(tierOf('safe', 'Safe', [L, realG]), { kind: 'elo', what: 'the Elo picks', add: 'data-pb-elo-add="safe"' })}</div>`;
+      w.eval('renderSp()'); if (eloBox) eloBox.innerHTML = eloHtml(); await wait(30);
+      const card = id => d.querySelector(`#spSets [data-sp-game="${r.id}"] .pb-tier[data-pb-tier="${id}"]`);
+      const e0 = copyIn(card('extreme'), L);
+      if (!e0 || !copyIn(card('safe'), L) || (eloBox && !copyIn(eloBox, L))) bad.push('the stood-in set or the Elo pick does not draw the leg on each card');
+      else {
+        e0.click(); await wait(20); w.eval('renderSp()'); await wait(30);
+        { const e1 = copyIn(card('extreme'), L);
+          if (!shown() || !e1 || e1 === e0 || e1.getAttribute('aria-expanded') !== 'true' || expanded().length !== 1 || !box().contains(d.activeElement))
+            bad.push(`after renderSp the bubble is not bound to the Extreme card's new copy of ${L.name}, marked open, the focus in it (marked open: ${expanded().map(x => x.closest('.pb-tier').dataset.pbTier).join(', ') || 'none'})`); }
+        key(d.activeElement, 'Escape'); await wait(10);
+        if (shown() || d.activeElement !== copyIn(card('extreme'), L)) bad.push(`Escape after renderSp gives the focus to ${where(d.activeElement)}${d.activeElement && d.activeElement.closest('.pb-tier') ? ' (' + d.activeElement.closest('.pb-tier').dataset.pbTier + ')' : ''}, not the Extreme card's copy`);
+        copyIn(card('extreme'), L).click(); await wait(20); w.eval('renderSp()'); await wait(30); copyIn(card('extreme'), L).click(); await wait(20);
+        if (shown() || expanded().length) bad.push('after renderSp the Extreme card\'s name pressed again does not close its bubble');
+        part('renderSp: the Extreme card\'s copy, its focus and its toggle');
+        /* the Elo picks' Safe card drawn again: its own copy, not the set's Safe card's before it in the page (renderSp
+           draws the Elo picks again too, the ELO tab's own, so the smoke's card is planted again here) */
+        if (eloBox) { eloBox.innerHTML = eloHtml(); await wait(10); copyIn(eloBox, L).click(); await wait(20); eloBox.innerHTML = eloHtml(); await wait(30);
+          const o1 = copyIn(eloBox, L);
+          if (!shown() || !o1 || o1.getAttribute('aria-expanded') !== 'true' || expanded().length !== 1) bad.push(`after the Elo picks are drawn again the bubble is not bound to their copy (marked open: ${expanded().map(where).join(', ') || 'none'})`);
+          key(d.activeElement, 'Escape'); await wait(10);
+          if (shown() || d.activeElement !== copyIn(eloBox, L)) bad.push(`Escape after the Elo picks are drawn again gives the focus to ${where(d.activeElement)}, not their copy`);
+          part('the Elo picks drawn again: their own Safe card\'s copy, not the set\'s'); }
+        /* the leg gone from the Extreme card (its set built again): the bubble closes, the focus on the leg now in its place there */
+        copyIn(card('extreme'), L).click(); await wait(20);
+        const n0 = [...card('extreme').querySelectorAll('[data-glance]')], i0 = n0.indexOf(copyIn(card('extreme'), L));
+        tiers = [tiers[0], tierOf('extreme', 'Extreme', [realS, realG])]; w.eval('renderSp()'); await wait(30);
+        const n1 = [...card('extreme').querySelectorAll('[data-glance]')], want = n1[Math.min(i0, n1.length - 1)];
+        if (shown() || expanded().length || !want || d.activeElement !== want) bad.push(`with ${L.name} gone from the Extreme card, the bubble ${shown() ? 'is still open' : 'closed'} with the focus on ${where(d.activeElement)}, not the leg now in its place there`); }
+      part('renderSp: the leg gone from its card');
+      w.spGames = SP.games; w.spOn = SP.on; w.spShown = SP.shown; if (eloBox) eloBox.innerHTML = keepElo; w.eval('renderSp()'); await wait(30);
+
+      /* a builder row whose stored price is not the one it shows: a ladder rung added at -174, the book's price on it -114
+         now (legPrice reads the book): the row's own market + form and Elo matchup on the price it shows, as the bubble's */
+      if (realP) { tab('parlay'); await wait(40);
+        /* the real player's line on the made-up game two days out (his market + form and Elo matchup turn on him, not his game) */
+        const kk = Math.max(1, Math.round(realP.k)), rung = { ...realP, key: legKey(FAKE.id, realP.pid, realP.stat), gid: FAKE.id, team: 'XXA', opp: 'XXH', week: FAKE.w, k: kk, main: false, price: -174, src: 'real', label: `${kk}+ ${realP.stat}` };
+        const OD = S.odds = S.odds || {};
+        OD[FAKE.id] = { [realP.pid]: { [realP.stat]: { [String(kk)]: -114 } } };
+        S.parlay = { [rung.key]: rung }; w.eval('renderParlay()'); await wait(40);
+        const tr = builder().querySelector('tr.legrow'), alt = tr && tr.querySelector('.pe-alt:not(.pe-muleg)'), mul = tr && tr.querySelector('.pe-muleg'), lp = legPrice(S.parlay[rung.key]);
+        const mf = mfOwn(rung, -114, 'real'), mu = muOwn(rung, -114), b = tr && tr.querySelector('[data-glance]');
+        if (lp.ml !== -114 || lp.src !== 'real') bad.push(`the rung planted at the book's -114 shows ${lp.ml} ${lp.src}`);
+        if (mf == null ? !!alt : !alt || Math.abs(+alt.dataset.p - mf) > 1e-4) bad.push(`the builder row's market + form is ${alt ? alt.dataset.p : 'none'}, not ${mf == null ? 'none' : mf.toFixed(4)} on the -114 it shows (on the -174 it was stored at: ${(mfOwn(rung, -174, 'real') || 0).toFixed(4)})`);
+        if (mu == null ? !!mul : !mul || !near(txt(mul.querySelector('b')), mu)) bad.push(`the builder row's Elo matchup is ${mul ? txt(mul.querySelector('b')) : 'none'}, not ${mu == null ? 'none' : (mu * 100).toFixed(2)} on the -114 it shows`);
+        if (b) { b.click(); await wait(20);
+          if (alt && nOf('mf') !== txt(alt.querySelector('b'))) bad.push(`the bubble's market + form ${nOf('mf')} is not its row's ${txt(alt.querySelector('b'))}`);
+          if (mul && nOf('mu') !== txt(mul.querySelector('b'))) bad.push(`the bubble's Elo matchup ${nOf('mu')} is not its row's ${txt(mul.querySelector('b'))}`);
+          key(d.activeElement, 'Escape'); await wait(10);
+          await openOn(b, lp.ml, lp.src, 'the builder, a rung at the book\'s price now'); }
+        else bad.push('the rung\'s name is not drawn as the bubble\'s button');
+        delete OD[FAKE.id];
+        S.parlay = JSON.parse(keepP); w.eval('renderParlay()'); await wait(40); }
+      part('a builder row\'s market + form and Elo matchup on the price it shows, as its bubble\'s');
+      tab('suggest'); await wait(40); }
+
+    /* ---- the builder at any hour: a made-up player with no Elo row, on no book price (the builder shows the model's
+       fair price, as for a line added from a game's page with none: the bubble shows the price the row shows, not the
+       leg's own), and a team bet on a made-up game with no line ---- */
+    const fakePb = { ...fakeP, price: null, src: undefined };
+    S.parlay = { [fakePb.key]: fakePb, [fakeT.key]: { ...fakeT } }; w.eval('renderParlay()'); await wait(40);
+    { const rows = [...d.querySelectorAll('#parlayBody tr.legrow')], bad = [];
+      for (const l of [fakePb, fakeT]) { const tr = rows.find(x => (x.querySelector('button[data-drop]') || {}).dataset && x.querySelector('button[data-drop]').dataset.drop === l.key);
+        const x = tr ? nameBad(tr.querySelector('td.plr'), l.key, l.side, l.k) : `${l.key}: not in the builder`; if (x) bad.push(x); }
+      chk(rows.length === 2 && bad.length === 0, `the matchup bubble: a made-up leg's name in the builder is not the bubble's button for its leg: ${bad.join(' | ')}`);
+      for (const tr of rows) { const b = tr.querySelector('[data-glance]'); if (!b) continue; const K = w.glanceLeg(b.dataset.glanceLeg); const pr = K ? legPrice(K.leg) : {}; await openOn(b, pr.ml, pr.src, 'the builder, a made-up game with no line'); }
+      const tb = rows.map(x => x.querySelector('[data-glance^="t:"]')).find(Boolean);
+      if (tb) { tb.click(); await wait(20);
+        chk(nOf('noline') === 'no line posted yet' && nOf('nopr') !== null && !box().querySelector('[data-glance-snap], [data-glance-model], [data-glance-poss]') && nOf('rec:XXA') === '0-0',
+          'the matchup bubble on a made-up game with no line does not say so, or draws a rating, a pick or a snapshot it has not got');
+        box().querySelector('[data-glance-close]').click(); await wait(10); } }
+    S.parlay = JSON.parse(keepParlay); S.sched.splice(S.sched.indexOf(FAKE), 1); w.eval('save(); renderParlay()'); await wait(40);
+  }
+  SPR.setItem = keepSet; SPR.removeItem = keepRm; SPR.clear = keepClr;
+  chk(writes.length === 0, 'the matchup bubble wrote to the browser\'s storage: ' + writes.slice(0, 5).join(', '));
+  chk(errs.length === 0, 'the matchup bubble: the page threw: ' + errs.join('; '));
+  w.close();
+  const kinds = Object.keys(byPlace).map(k => k.replace('|', ' ')).join(', '), gradesSeen = GRADES_SEEN;
+  console.log(`the matchup bubble: ${checks - c0} checks (${L0.length} names on the week as it stands${kinds ? ', opened from ' + kinds : ''}; fixtures on ${r ? r.id + (pid ? ', ' + pid + (mrow ? ' with his matchup' : ' with no matchup row') : '') + (gradesSeen.length ? ', a mismatch graded ' + gradesSeen.join(', ') : '') : 'no game'} and a made-up game), ${fails.length - f0} failures`);
 }

@@ -892,7 +892,7 @@ function matchup(P,g,F){
       if(!R.mine.length) return ['<span class="gs-load">None in this game</span>','No starter here is above his position\'s average facing a unit below the league\'s.'];
       const v0=R.mine[0], [gw,gc,lv]=mmGrade(v0.score), se=plSe(F,v0.pid);
       const v=`<span class="gs-mm1">${se!=null?shield(se):''} <span data-gs-n="mm1:${esc(v0.pid)}">${esc(plName(F,v0.pid))}</span> <small>${esc(v0.group)} · ${esc(v0.team)}</small></span>`;
-      const cx=`${meter(lv,gc)}${N('mm1score',v0.score.toFixed(1))} ${gw} edge, against a ${esc(v0.unitName)} ranked ${ordinal(v0.defRank)}${R.mine.length>1?` · all ${R.mine.length} in Mismatches`:''}`;
+      const cx=`${meter(lv,gc)}${N('mm1score',v0.score.toFixed(1))} ${gw} edge, against the ${esc(v0.opp)} ${esc(v0.against||'defense')}, ${ordinal(v0.defRank)} by player Elo${R.mine.length>1?` · all ${R.mine.length} in Mismatches`:''}`;
       return [v,cx]; })}
   </div>`;
   let prev=''; try{ prev=preview(P,g,F,st); }catch(e){ prev=''; }
@@ -1118,7 +1118,7 @@ function mismatchSec(P,g,F){
   const li=R.mine.map(v=>{ const [gw,gc,lv]=mmGrade(v.score), se=plSe(F,v.pid);
     return `<li data-pid="${esc(v.pid)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
       <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small><span class="gs-mmvs">${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span></span>
-      <span class="gs-mmsub">Against a ${esc(v.unitName)} ranked ${ordinal(v.defRank)} of ${v.defN}.${v.proj!=null?` <b>${Math.round(v.proj)} ${MM_LBL[v.lead]||''}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}.`:''}</span></div>
+      <span class="gs-mmsub">Against the ${esc(v.opp)} ${esc(v.against||'defense')}, ${ordinal(v.defRank)} of ${v.defN} by player Elo.${v.proj!=null?` <b>${Math.round(v.proj)} ${MM_LBL[v.lead]||''}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}.`:''}</span></div>
       <div class="gs-mmsc"><span class="gs-mmv">${meter(lv,gc)}<b class="${gc}" data-gs-mm>${v.score.toFixed(1)}</b></span><small class="${gc}">${gw}</small></div></li>`; }).join('');
   const v0=R.mine[0];
   const sum=`best ${esc(plName(F,v0.pid))} ${N('mm1score',v0.score.toFixed(1))}`;
@@ -1275,6 +1275,10 @@ function close(restore=true){
 }
 window.gameSnapshot=open;
 window.gameSnapshotClose=close;
+/* the hub's matchup bubble (glance.js, 17 October 2026) reads a game as this window does: the records Team Rankings
+   counts, the line as the board reads it, every model's call and its chance, the Power Ratings, Overall Offense and
+   Overall Defense */
+window.gsReadings={recordOf,lineOf,callsOf,chanceOf,teamsOf,unitsOf};
 /* start waiting on the Elo files and the news job's files now, so a window opened later has them at
    once rather than drawing again under the visitor as each answers; and the notes of the board's week
    as soon as the board has its schedule (it opens on the first week with a game still to play, else

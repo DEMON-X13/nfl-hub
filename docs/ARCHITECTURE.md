@@ -200,6 +200,12 @@ props/
                                  targets, DraftKings posting neither (a builder leg kept
                                  from before removed with a line, toggleLeg adding none)
                                  (its docstring is the design)
+  build/patch_glance.py          app v114: glanceName, a leg's name on the Top 50, the builder,
+                                 a set's level cards and the Elo picks' cards drawn as the
+                                 matchup bubble's button (button.glance-name, data-glance,
+                                 data-glance-game, data-glance-leg) where window.hubGlance is
+                                 on the page, plain text on the prop model's own page;
+                                 GLANCE_LEGS, window.glanceLeg
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
                                  answers (audit M8, the nflbets smoke)
   build/fixtures/espn/           ESPN's recorded answers for week 6 of 2026 (the scoreboard, two
@@ -279,8 +285,14 @@ elo/
                                  page's stylesheet round it, the team column free to stick;
                                  and the money the files feed: market + form on every rated
                                  player, the Elo matchup chance on every matchup line, the Elo
-                                 picks' chance and price the products of their legs', no
-                                 error (the gate on that, the page smoke running after the commit)
+                                 picks' four levels at the builder's own sums (parlayProb,
+                                 parlayDec, PB_TIERS, pbOrder loaded from the props parts),
+                                 each its floor's rule, likeliest only under its floor, the
+                                 fast sums the parts' to the bit, and fixtures F1-F6 held to a
+                                 full enumeration (the search's quality: correlated one-game
+                                 slates, seeded slates clustered at the floors, the union of
+                                 the 30 best by value and the 10 likeliest), no error (the
+                                 gate on that, the page smoke running after the commit)
   tools/units_fit.py             the fit and the walk-forward test behind Overall Offense and
                                  Overall Defense: 2012-2025 play-by-play, every constant fitted
                                  on 2012-2017 (the carry's share chosen there, one season left
@@ -380,8 +392,8 @@ news/
 nflbets/
   build/build.js                 THE BUILD: the prop model's parts, tab_pickems.html,
                                  tab_elo.html, snapshot.html, deepdive.js, the X Parlays section,
-                                 card.html, storage.js, xbets.js, friends.js, theme.js
-                                 and the betting app, theme.css over it -> the root's index.html
+                                 card.html, storage.js, xbets.js, friends.js, glance.js,
+                                 theme.js and the betting app, theme.css over it -> the root's index.html
                                  (nflbets/index.html until 17 October 2026; required, it
                                  builds in memory and writes nothing: the smoke's freshness check);
                                  refuses a page that names a parent folder
@@ -407,9 +419,20 @@ nflbets/
                                  liveparlays/xbets.json for the betting frames, read only
   build/friends.js               friends' picks (window.FRIENDS), inlined after xbets.js: reads
                                  picks/friends.json for the Pick'em Record, read only
+  build/glance.js                the matchup bubble (glance-, app v114), the page's last script:
+                                 window.hubGlance opens it from a leg's name; a non-modal
+                                 dialog over the Parlay Builder and Suggested Parlays with the
+                                 player's (or both clubs') matchup for the day and the leg's
+                                 own numbers, read from eloGlance and eloFiles (tab_elo.html),
+                                 gsReadings and gameSnapshot (snapshot.html), pkBoard and the
+                                 parts' legFair, legPrice, injTag and S; it keeps its place
+                                 (placeOf) and the leg's key, side and line across redraws by
+                                 a MutationObserver connected only while open; fetches and
+                                 keeps nothing (build.js refuses one that does)
   build/smoke.js  smoke_live.js  the page, and the X Parlays section, in jsdom: the gates
                                  (smoke.js also: Suggested Parlays' sets, their night rule,
-                                 their lock and their short lines, and the Parlay Builder's
+                                 their lock and their short lines, the Elo picks' four
+                                 levels, the matchup bubble (THE MATCHUP BUBBLE), and the Parlay Builder's
                                  Top 50 lines, their two parts, the totals last and each
                                  bet once, only DraftKings' markets offered,
                                  held to their rules, the old addresses' redirects to the
@@ -738,7 +761,21 @@ and the Elo picks at the foot of Suggested Parlays since app v111 (`#pbElo`, unt
 Builder's suggested parlays; drawn with the sets' own `pbTierCard`, each leg with its own Add and no Value mark,
 since `pricedLegs` sets neither `thin` nor `market` and the picks are chosen on the Elo matchup, and kept to the
 Parlay Builder's ticked games and player sides by `pbAllows` and, since app v109, wherever the payload carries
-DraftKings' ids, to legs with one at their own line, `dkIdOf`). The ELO Model model's calls and record
+DraftKings' ids, to legs with one at their own line, `dkIdOf`). Since 18 October 2026 they are Suggested Parlays' own
+four levels on the Elo chance (`eloPicks`, `eloSuggest`; ids `elo-safe`, `elo-med`, `elo-aggr`, `elo-xtrm`, which the
+card's `elo|elo-<level>` names): the candidates (`eloCands`) each player's best leg by value, searched from the 30 best
+by value and the 10 likeliest (`epKeep`), Safe the likeliest pair, the others the best expected return over 25%, 12%
+and 5%, legs of one game priced together by the builder's own `parlayProb` and `parlayDec`; the search (`epPrep`,
+`epScan`, `epLevel`) a branch and bound over a quick reading (`epGroup`, `epBounds`) whose finalists are worked by fast
+sums equal to the parts' to the bit (`epDraws`, `epSums`, `epDec`), every level worked again by the parts before it is
+drawn (`EP_FAST` off should they differ), built only while the tab is on the screen and cached (`EP_CACHE`; the ELO tab
+wraps `renderSp`); each leg on a player with a Solid-or-better mismatch wearing "<Grade> mismatch" after his name's
+button, on the side it favours only (`epMm`, `epMmFor`, `epMmTag`). The Mismatches' words (`mmLine`, `mmTitle`,
+`mmAgainst`) name the matchup formula's units, "vs the LAC secondary and defensive line, 32nd by player Elo", never
+"pass defense ranked", which is the ELO Ratings tab's table's alone. `window.eloGlance` {trusted, labels, unit, grade,
+against, outWhy} is what the matchup bubble (`glance.js`) reads here: `unit(group, opp)` the tab's own table for a
+side of the ball (a quarterback the Overall Defense, a back the Run Defense, a receiver or tight end the Pass Defense),
+ranked as the table draws it. The ELO Model model's calls and record
 are on the Pick'em Record and the build's team ratings of results on Power Ratings, both through
 `betting/tools/build.js` (Power Ratings' Record column is the season's own results from
 `betting/state.json`, current within hours of a final, and a team whose latest final the Elo file
@@ -1663,13 +1700,19 @@ Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
   Parlay Builder's Top 50 lines (`getPbTop`, `PB_TOP_CACHE`) rank the legs those levels are
   searched from, the Value picks first, then the other lines, the thin ones and then the
   totals, each bet once (a ladder rung that is a half-point main Over's bet left out). The
-  Elo picks use `pricedLegs()` too; since app v109 all of them, and a game page's hands,
+  Elo picks use `pricedLegs()` too, and since 18 October 2026 the same four levels on the Elo
+  chance (`eloPicks` in `tab_elo.html`, an exact search by the builder's own sums); since app v109 all of them, and a game page's hands,
   take only legs with DraftKings' id at their own line, `dkIdOf`,
   wherever the payload carries ids. `gameTiers()` is a game page's High,
   Medium and Low (`GAME_TIERS`: 2, 3 and 4 legs, paying at least +100/+250/+500 at
   35%/20%/10% or better, no leg shorter than `GAME_LEG_MIN`, -250), cached per game
   in `GAME_TIER_CACHE`, outside `S`. The sets, locked 2 hours before kickoff, are recorded
   per game in `props/data/suggest_ledger.json`'s `prime` (the suggestions record).
+- **matchup bubble / place** -- (app v114) the window a leg's name opens on the hub
+  (`glance.js`, `glanceName` in `part3.js`): the player's or both clubs' matchup for the day
+  and the leg's own numbers. Its place is where the name was drawn (the builder, the Top 50, a
+  level card in its set or in the Elo picks), which it keeps across a redraw. "This leg" in it
+  is a row's line, never a bet the visitor made.
 - **Value pick / thin / market** -- (app v112) a leg `pbPool` puts on its preferred list, 3 points
   above the chance its price implies with market + form agreeing on a player's line (`thin:
   false`, not `market`): `pbIsValue()`, and the one mark a leg wears, Value (`pbValMark`). A thin

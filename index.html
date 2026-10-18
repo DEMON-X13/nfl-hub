@@ -751,6 +751,15 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 @media(max-width:640px){ .pe-pl-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
 #pbElo .pb-legs .nm .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:-2px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
 #pbElo .pb-legs .nm .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+/* the Elo picks' four levels (17 October 2026), side by side as Suggested Parlays' are, each topped in its
+   level's colour (Extreme's own, the theme's, in theme.css) */
+#pbElo .pb-tiers{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1100px){ #pbElo .pb-tiers{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media(max-width:640px){ #pbElo .pb-tiers{grid-template-columns:minmax(0,1fr)} }
+.pb-tier.elo-safe{border-top-color:var(--pick)} .pb-tier.elo-med{border-top-color:var(--gold)} .pb-tier.elo-aggr{border-top-color:var(--miss)} .pb-tier.elo-xtrm{border-top-color:#7C4DFF}
+/* a leg's mismatch this week on an Elo pick, after the name: the game page's tag, its grade in words
+   (white on #2563EB to #1E4FA8 is 5.2:1 and up, in either look) */
+#pbElo .pb-legs .nm .pe-mmtag{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-family:var(--body);font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;line-height:1.3;vertical-align:1px;white-space:nowrap;box-shadow:0 0 0 1px rgba(59,130,246,.35)}
 .pe-track table{margin-top:6px}
 .pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
 /* Overall Offense and Overall Defense, then (16 October 2026) Run Defense, Pass Defense and Pass
@@ -1513,7 +1522,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 .bigp .hero span{color:var(--ink-2)} .bigp .hero small{color:var(--gold)}
 .sugg-side button.on,.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}
 .pb-amt:hover{border-color:var(--ink-2)}
-.pb-tier.xtrm{border-top-color:#B49CFF}
+.pb-tier.xtrm,.pb-tier.elo-xtrm{border-top-color:#B49CFF}
 .faroff{color:var(--gold)}
 .pb-chip.on small{color:var(--ink)}
 .elomv.flat{color:var(--muted)}
@@ -1662,7 +1671,7 @@ html[data-theme="light"] .finchip{border-color:rgba(8,95,134,.4)}
 html[data-theme="light"] .finchip.live{border-color:rgba(196,140,20,.55)}
 html[data-theme="light"] .lead .va.exact,html[data-theme="light"] .tile .tv.exact,html[data-theme="light"] .tile .td.exact{color:#5B3CC4}
 html[data-theme="light"] .pays .box.tier.med{border-color:rgba(196,140,20,.55)}
-html[data-theme="light"] .pb-tier.xtrm{border-top-color:#8B6CF0}
+html[data-theme="light"] .pb-tier.xtrm,html[data-theme="light"] .pb-tier.elo-xtrm{border-top-color:#8B6CF0}
 html[data-theme="light"] .pe-g3{color:#236B42!important} html[data-theme="light"] .pe-g2{color:#8A5E05!important}
 html[data-theme="light"] #lpCard .src{border-left-color:#8B6CF0}
 /* the Pick'em Record chart and the bankroll in their own light colours, as the app draws them */
@@ -1688,7 +1697,7 @@ html[data-theme="light"] #gsModal .pe-g3{color:#236B42!important}
 html[data-theme="light"] .bigp .hero b{color:var(--ink)}
 html[data-theme="light"] .pe-pl tr.pe-weak td{opacity:1;color:var(--muted)}
 </style>
-<script>window.THEME_FRAME_HEAD="\u003clink href=\"https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap\" rel=\"stylesheet\">\u003cstyle>/* The hub look: NFL Hub in the NBA Hub's and the NHL Hub's colours and type (demon-x13/nba-hub,\n   demon-x13/nhl-hub), the owner's call of 16 October 2026 (\"make it match the color scheme and overall\n   feel of the nba and nhl hub so it's consistent across the board\"). build.js lays this over every\n   other style of the page (index.html at the site's root), last, so it wins by order, and hands it to the framed betting tabs\n   (window.THEME_FRAME_HEAD). The parts keep their own light tokens; nothing here changes a number.\n\n   The surfaces, inks and lines are the NBA Hub's lightened graphite exactly, as the NHL took them; each\n   hub keeps an accent of its own where the NBA has orange and the NHL ice blue, and the NFL's is gold,\n   the colour its light look always had (the NBA's own --gold). Quiet text is the NHL's --muted-ink\n   (#B3B9CB), since the NBA's #A0A7BB reads 4.49:1 on a panel; red text is the NHL's --rose-ink, since\n   the NBA's rose is 2.8:1 on a panel. Every text holds 4.5:1 (3:1 large) on every tab, the Game snapshot,\n   a game's page, the builder and the parlay card, at 1280 and 390. */\n:root{\n  --bg:#2A3043; --bg-2:#30374B; --panel:#363D52; --panel-2:#3D455B; --panel-3:#475068;\n  --ink:#F6F7FB; --ink-2:#CDD2DF; --muted:#B3B9CB; --line:#4A5269; --line-2:#59627B;\n  --gold:#FFD166; --gold-2:#FFE08F; --gold-soft:rgba(255,209,102,.14);\n  --pick:#CDFF4F; --pick-soft:rgba(205,255,79,.14);\n  --miss:#FFA2B8; --miss-soft:rgba(255,61,107,.16); --rose:#FF3D6B;\n  --ice:#5FD4FF; --ice-2:#8EE3FF; --ice-soft:rgba(95,212,255,.14);\n  --away:#5FD4FF; --home:#CDFF4F;\n  --r-lg:18px; --r-md:14px; --r-sm:11px;\n  --sh-xs:none; --sh-sm:none; --sh-md:0 18px 40px -24px rgba(0,0,0,.6);\n  --ring:0 0 0 3px rgba(255,209,102,.4);\n  --display:\"Unbounded\",ui-sans-serif,system-ui,sans-serif;\n  --body:\"Manrope\",ui-sans-serif,system-ui,-apple-system,\"Segoe UI\",sans-serif;\n  color-scheme:dark;\n}\nhtml{background:var(--bg)}\nbody{background:\n  radial-gradient(900px 520px at 12% -8%,rgba(255,209,102,.13),transparent 60%),\n  radial-gradient(700px 420px at 92% 0%,rgba(95,212,255,.10),transparent 60%),\n  linear-gradient(180deg,#333A4F 0%,var(--bg) 40%);background-attachment:fixed;color:var(--ink);font-size:14.5px}\n/* yard lines and hash marks, where the NBA has court lines and the NHL rink lines */\nhtml:not(.embed) body::before{content:\"\";position:fixed;inset:0;pointer-events:none;opacity:.06;\n  background:linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px) 0 0/64px 64px,\n    repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 150px/100% 9px no-repeat,\n    repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 310px/100% 9px no-repeat;\n  mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%)}\n::selection{background:var(--gold);color:#000}\na{color:var(--ice)}\n\n/* header: no slab, the page's own glow behind the hub's two-tone wordmark, a tagline and the stamp,\n   then pill tabs */\nheader{background:transparent;color:var(--ink);padding:26px 22px 0;max-width:1240px;margin:0 auto;position:relative}\nheader::after{display:none}\n.brand{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}\n.brand h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,54px);letter-spacing:-.02em;line-height:.95;margin:0;text-transform:uppercase}\n.brand h1 em{font-style:normal;color:var(--gold)}\n/* the football, where the NBA has its ball and the NHL its puck: leather, a seam and laces */\n.brand h1::after{width:.62em;height:.38em;border-radius:50%;margin-left:.16em;vertical-align:.1em;transform:rotate(-24deg);\n  background:linear-gradient(#fff,#fff) center/38% 2px no-repeat,repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 5px) center/30% 7px no-repeat,\n    radial-gradient(ellipse at 35% 30%,#E9A66B,#B2581F 55%,#6E2F0D);box-shadow:0 0 22px rgba(255,209,102,.45)}\n.tagline{color:var(--ink-2);font-size:13px;margin:8px 0 0;max-width:560px;font-weight:500;letter-spacing:0}\n.hub-stamp{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;line-height:1.5}\n.brand .sub{color:var(--ink-2);font-size:12px}\n.hub-stamp #saveState{color:var(--ink-2);font-weight:600;margin-left:0!important}\n.hub-stamp #buildTag{color:var(--ink-2)}\nnav{background:transparent;border:0;border-radius:0;padding:4px 0 10px;gap:6px;margin-top:22px;width:auto;scrollbar-width:none}\nnav::-webkit-scrollbar{display:none}\nnav button{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);padding:10px 16px;border-radius:999px;font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:.02em}\nnav button:hover{color:var(--ink);border-color:var(--line-2);background:var(--panel);transform:translateY(-1px)}\nnav button[aria-selected=true]{background:var(--ink);color:#1E2230;border-color:var(--ink);box-shadow:none}\nmain{max-width:1240px;padding:18px 22px 90px}\n\n/* surfaces */\n.card{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r-lg);position:relative;overflow:hidden}\n.card::before{content:\"\";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent);pointer-events:none}\n.card h2,h2{font-family:var(--display);font-weight:700;letter-spacing:-.01em}\nh2 .pill{font-family:var(--body);font-size:12px;font-weight:700;vertical-align:middle;letter-spacing:.02em}\ntable{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:none}\nth{background:var(--panel-2);color:var(--muted)}\ntbody tr:hover{background:rgba(255,255,255,.025)}\n.empty{background:var(--panel);border:1px dashed var(--line-2);border-radius:var(--r-lg);color:var(--ink-2)}\n.modal-panel{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line-2);color:var(--ink)}\n\n/* controls: a grey button as the NBA's and the NHL's, gold where the NFL's was its dark primary */\nselect,input[type=number],input[type=text]{background:var(--panel);color:var(--ink);border-color:var(--line-2);box-shadow:none}\nselect:hover,input[type=number]:hover,input[type=text]:hover{border-color:var(--ink-2)}\n::placeholder{color:var(--ink-2);opacity:1}\ninput[type=checkbox],input[type=radio]{accent-color:var(--gold)}\n.btn{background:var(--gold);color:#1E2230;font-weight:700;box-shadow:none;border:1px solid var(--gold)}\n.btn:hover{background:var(--gold-2);border-color:var(--gold-2);box-shadow:none}\n.btn.quiet{background:var(--panel-3);color:var(--ink);border:1px solid var(--line-2)}\n.btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}\n.btn.go{background:var(--pick);border-color:var(--pick);color:#1E2230}\n.btn.danger{background:var(--rose);border-color:var(--rose);color:#1E2230}\n.bar .rec,.pill,.conf,.conf.low,.pays .box.tier.low,.side-res.push,.bres.push{background:var(--panel-3);color:var(--ink-2)}\n.bar .rec b{color:var(--ink)}\n.pill.warn,.log .warn,.inj,.plrbtn .who .inj,.when .cl,.tot .lv,.totpts .lv,.conf.med,.pays .box.tier.med b,.pays .box.tier.med span,.pe-q,.xb-status.bad{color:var(--gold)}\n.conf.med{background:var(--gold-soft)}\n.inj.inj-lim,.plrbtn .who .inj.inj-lim{background:var(--panel-3);color:var(--ink-2)}\n.inj.inj-dnp,.plrbtn .who .inj.inj-dnp{color:var(--gold)}\n.side-res.under{background:var(--ice-soft);color:var(--ice)}\n.game.final .pill.ok{background:var(--ice-soft);color:var(--ice)}\n.finchip{background:var(--ice-soft);color:var(--ice-2);border-color:rgba(95,212,255,.45)}\n.finchip.live{background:var(--gold-soft);color:var(--gold);border-color:rgba(255,209,102,.5)}\n.lead .va.exact,.tile .tv.exact,.tile .td.exact{color:#C9B6FF}\n.bar-track,.pk-prob{background:var(--panel-3);box-shadow:none}\n.bar-fill.low{background:var(--muted)}\n.rungs tr.on td{background:var(--gold-soft)}\n.rungs tr.hit td{background:var(--pick-soft)}\n.rungs tr.miss td{background:var(--miss-soft)}\n.pays .box.tier.med{border-color:rgba(255,209,102,.5)}\n.bigp .hero{background:linear-gradient(135deg,var(--panel-3),var(--bg-2));border-color:var(--line-2)}\n.bigp .hero span{color:var(--ink-2)} .bigp .hero small{color:var(--gold)}\n.sugg-side button.on,.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}\n.pb-amt:hover{border-color:var(--ink-2)}\n.pb-tier.xtrm{border-top-color:#B49CFF}\n.faroff{color:var(--gold)}\n.pb-chip.on small{color:var(--ink)}\n.elomv.flat{color:var(--muted)}\n.x-btn:hover{color:var(--miss)}\n\n/* the Pick'ems board */\n.pk-game{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);box-shadow:none;position:relative;overflow:hidden}\n.pk-game::before{content:\"\";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent)}\n.pk-game.pk-played::before{background:linear-gradient(180deg,var(--muted),transparent)}\n.pk-game:hover{border-color:var(--line-2);box-shadow:var(--sh-md)}\n.pk-tier{background:var(--panel-3);color:var(--ink-2)}\n.pk-tier.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-tier.pk-med{background:var(--gold-soft);color:var(--gold)} .pk-tier.pk-coin{background:var(--miss-soft);color:var(--miss)}\n.pk-sc{font-weight:900}\n.pk-matchup .pk-res{background:var(--panel)}\n.pk-note{background:var(--gold-soft);color:var(--gold)}\n.pk-result .pk-mwin.pk-ok{color:var(--pick)}\n/* the win-probability bars are in the two clubs' own colours (probCols in tab_pickems.html), as the NBA\n   Hub's and the NHL Hub's are, split by a line of the page's own graphite */\n.pk-prob .pk-a{border-right:2px solid var(--bg)}\n.pe-pos button[aria-selected=\"true\"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}\n/* the ELO Ratings tab and the Mismatches */\n.pe-mm-n{background:var(--ink);color:#1E2230}\n.pe-g3{color:#7BD88F!important} .pe-g2{color:#F2B84B!important}\n\n/* X Parlays */\n#lpCard .pill,#myCard .pill{background:var(--panel-3);color:var(--ink-2)}\n#lpCard .note{background:var(--gold-soft);color:var(--gold)}\n#lpCard .pill.ok,#myCard .pill.ok{background:var(--pick-soft);color:var(--pick)} #lpCard .pill.bad,#myCard .pill.bad{background:var(--miss-soft);color:var(--miss)}\n#lpCard .fill{background:linear-gradient(90deg,rgba(255,209,102,.35),var(--gold))}\n#lpCard .fill.win{background:linear-gradient(90deg,rgba(205,255,79,.35),var(--pick))}\n#lpCard .fill.lose{background:linear-gradient(90deg,rgba(255,61,107,.35),var(--rose))}\n#lpCard .gm.tie,#lpCard .gm.tie em,#lpCard .stamp.bad{color:var(--gold)}\n#lpCard .src{border-left-color:#B49CFF}\n.xp-own,.xp-mark{background:var(--gold-soft);color:var(--gold)}\n.card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}\n\n/* inside the framed betting tabs (html.embed): the page's glow shows through */\nhtml.embed,html.embed body{background:transparent}\n.seg button.on,.wk-chip{background:var(--ink);color:#1E2230}\n.bk-in,.bres.won{background:var(--pick-soft);color:var(--pick)}\n.bres.lost{background:var(--miss-soft);color:var(--miss)}\n.prob{background:var(--panel-3);box-shadow:none}\n.tier{background:var(--panel-3);color:var(--ink-2)}\n.tier.high{background:var(--pick-soft);color:var(--pick)} .tier.med{background:var(--gold-soft);color:var(--gold)}\n.tier.coin,.tier.doubt{background:var(--miss-soft);color:var(--miss)}\n.mycard.played .myhead{background:var(--panel-3);border-bottom-color:var(--line-2)}\n.vg.differs{background:var(--miss-soft);box-shadow:inset 0 0 0 1.5px var(--rose)}\n/* the Pick'em Record chart: Vegas is drawn in the old ink, which vanishes on dark */\npolyline[stroke=\"#0F1B2D\"]{stroke:#F6F7FB} circle[fill=\"#0F1B2D\"]{fill:#F6F7FB}\n[style*=\"background:#0F1B2D\"]{background:#F6F7FB!important}\nline[stroke=\"#E6EAEF\"]{stroke:#4A5269}\n/* the models' own colours (record_viz.js: Alpha Model's green, the Joker's red, the ELO Model's orange)\n   and the bankroll's up and down (bets_viz.js), each lifted a step so a line reads on the dark card */\n[stroke=\"#1F6F4A\"]{stroke:#5FD49A} [fill=\"#1F6F4A\"]{fill:#5FD49A} [style*=\"background:#1F6F4A\"]{background:#5FD49A!important}\n[stroke=\"#C0392B\"]{stroke:#FF6B6B} [fill=\"#C0392B\"]{fill:#FF6B6B} [style*=\"background:#C0392B\"]{background:#FF6B6B!important}\n[stroke=\"#E8730A\"]{stroke:#FF9F43} [fill=\"#E8730A\"]{fill:#FF9F43} [style*=\"background:#E8730A\"]{background:#FF9F43!important}\n[fill=\"#B23A32\"]{fill:#FF5C7A}\n\n/* the Game snapshot: its red lifted for the tint it sits on */\n#gsModal{--gs-miss-ink:#FFA2B8}\n/* a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */\n#gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}\n/* the Deep Dive's tags: the light look's tints are glare here, so each step has a dark tint of its own\n   with its text at 6:1 or more. Even, the neutral step, is a slate a step lighter than the card with a\n   light ring (an inset shadow, so its shape is the others'), the ring 3.8:1 or more on either card\n   colour: its old grey (#3A4155) was the card's own and read as plain text (the owner's call, 16 October\n   2026: \"make 'even' tags more distinguishable\") */\n#gsModal .dtag.easy{background:#2E4426;color:#CDFF4F}\n#gsModal .dtag.fav{background:#2C3E34;color:#9BE3B0}\n#gsModal .dtag.even{background:#525C78;color:#F6F7FB;box-shadow:inset 0 0 0 1.5px #9AA4BF}\n#gsModal .dtag.tough{background:#4A3A26;color:#FFC08A}\n#gsModal .dtag.vtough{background:#4D2833;color:#FF9DB2}\n/* the preview block a step off the card, its text the look's own ink */\n#gsModal .gs-prev{background:var(--panel-3);border-color:var(--line-2)}\n/* the better rank's box: its words in the full ink on the lime tint */\n#gsModal .gs-ubox.gs-better .gs-lab,#gsModal .gs-ubox.gs-better .gs-utier{color:var(--ink)}\n#gsModal .pe-g3{color:#7BD88F!important}\n\n@media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }\n@media(max-width:620px){ .hub-stamp{align-items:flex-start;text-align:left} }\n\n/* the light/dark switch at the top right of the header (theme.js): a round 44px button, its glyph the\n   look a press gives (a sun while dark, a moon while light). It is laid over the header's corner, out\n   of the flow, so the wordmark, the stamp and the tabs sit exactly where they did before it */\n.hub-theme{position:absolute;top:26px;right:22px;z-index:2;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;\n  border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);cursor:pointer}\n.hub-theme:hover{color:var(--ink);border-color:var(--line-2)}\n.hub-theme svg{width:20px;height:20px;display:block;pointer-events:none}\n.hub-theme .ht-moon{display:none}\nhtml[data-theme=\"light\"] .hub-theme .ht-sun{display:none}\nhtml[data-theme=\"light\"] .hub-theme .ht-moon{display:block}\n@media(max-width:900px){ .hub-theme{top:12px;right:16px} }\n/* under about 340px the wordmark's football reaches the switch's corner: the wordmark keeps clear of it */\n@media(max-width:340px){ .brand h1{padding-right:52px} }\n\n/* THE LIGHT LOOK (the owner's call of 17 October 2026: \"keep this whole layout as dark mode, and then make\n   a light mode version that people can tab on and off on the top right\"). Dark is the look and every\n   visitor's default whatever the system says; a visitor who presses the switch gets html[data-theme=light],\n   kept in that browser alone (theme.js). The same layout, type and gold: the surfaces a\n   cool light grey and white, the inks the hub's own graphite, and each accent that is read as text taken\n   down to a dark step of itself (gold text is --gold-ink; the gold fills stay the NFL's #FFD166). Every\n   rule above that writes a dark colour has its light twin here, and every text holds 4.5:1 (3:1 large) on\n   every tab, the Game snapshot, a game's page, the builder and the parlay card's window, at 1280 and 390.\n   The parlay card itself (.pc-card) and its image keep the dark palette written out in card.html. */\nhtml[data-theme=\"light\"]{\n  --bg:#E8EBF1; --bg-2:#F1F3F7; --panel:#FFFFFF; --panel-2:#F7F8FB; --panel-3:#E7EAF0;\n  --ink:#1E2230; --ink-2:#3A4256; --muted:#545D72; --line:#D8DCE5; --line-2:#BEC5D3;\n  --gold:#FFD166; --gold-2:#FFC53D; --gold-soft:rgba(255,196,64,.24); --gold-ink:#7A5205;\n  --pick:#146638; --pick-soft:rgba(20,102,56,.12);\n  --miss:#AA1F42; --miss-soft:rgba(214,40,80,.11); --rose:#D42A54;\n  --ice:#085F86; --ice-2:#074F70; --ice-soft:rgba(8,95,134,.11);\n  --away:#2F5E9E; --home:#146638;\n  --sh-md:0 18px 40px -24px rgba(30,34,48,.35);\n  --ring:0 0 0 3px rgba(156,106,0,.75);\n  color-scheme:light;\n}\nhtml[data-theme=\"light\"] body{background:\n  radial-gradient(900px 520px at 12% -8%,rgba(255,196,64,.22),transparent 60%),\n  radial-gradient(700px 420px at 92% 0%,rgba(10,106,145,.08),transparent 60%),\n  linear-gradient(180deg,#F5F6FA 0%,var(--bg) 40%);background-attachment:fixed}\nhtml[data-theme=\"light\"]:not(.embed) body::before{opacity:.07;\n  background:linear-gradient(90deg,rgba(30,34,48,.5) 1px,transparent 1px) 0 0/64px 64px,\n    repeating-linear-gradient(90deg,rgba(30,34,48,.5) 0 1px,transparent 1px 12.8px) 0 150px/100% 9px no-repeat,\n    repeating-linear-gradient(90deg,rgba(30,34,48,.5) 0 1px,transparent 1px 12.8px) 0 310px/100% 9px no-repeat}\nhtml[data-theme=\"light\"] .brand h1 em{color:#9C6A00}\nhtml[data-theme=\"light\"] nav button[aria-selected=true],\nhtml[data-theme=\"light\"] .sugg-side button.on,html[data-theme=\"light\"] .stake-chips button.on,html[data-theme=\"light\"] .tbtn.on,\nhtml[data-theme=\"light\"] .pe-pos button[aria-selected=\"true\"],html[data-theme=\"light\"] .pe-mm-n,\nhtml[data-theme=\"light\"] .seg button.on,html[data-theme=\"light\"] .wk-chip{color:#FFFFFF}\nhtml[data-theme=\"light\"] tbody tr:hover{background:rgba(30,34,48,.03)}\nhtml[data-theme=\"light\"] .btn.go,html[data-theme=\"light\"] .btn.danger{color:#FFFFFF}\n/* X Parlays' own buttons inherit their colour (#lpCard button{color:inherit}, which outranks the rule above): its Clear in\n   \"Clear this parlay?\" is white on the light rose too (4.9:1) */\nhtml[data-theme=\"light\"] #lpCard .btn.danger,html[data-theme=\"light\"] #lpCard .btn.go{color:#FFFFFF}\n/* gold read as text: a dark gold on the light surfaces and tints */\nhtml[data-theme=\"light\"] .pill.warn,html[data-theme=\"light\"] .log .warn,html[data-theme=\"light\"] .inj,html[data-theme=\"light\"] .plrbtn .who .inj,\nhtml[data-theme=\"light\"] .when .cl,html[data-theme=\"light\"] .tot .lv,html[data-theme=\"light\"] .totpts .lv,html[data-theme=\"light\"] .conf.med,\nhtml[data-theme=\"light\"] .pays .box.tier.med b,html[data-theme=\"light\"] .pays .box.tier.med span,html[data-theme=\"light\"] .pe-q,html[data-theme=\"light\"] .xb-status.bad,\nhtml[data-theme=\"light\"] .inj.inj-dnp,html[data-theme=\"light\"] .plrbtn .who .inj.inj-dnp,html[data-theme=\"light\"] .finchip.live,\nhtml[data-theme=\"light\"] .bigp .hero small,html[data-theme=\"light\"] .faroff,html[data-theme=\"light\"] .pk-tier.pk-med,html[data-theme=\"light\"] .pk-note,\nhtml[data-theme=\"light\"] #lpCard .note,html[data-theme=\"light\"] #lpCard .gm.tie,html[data-theme=\"light\"] #lpCard .gm.tie em,html[data-theme=\"light\"] #lpCard .stamp.bad,\nhtml[data-theme=\"light\"] #lpCard .res.tie,html[data-theme=\"light\"] .xp-own,html[data-theme=\"light\"] .xp-mark,html[data-theme=\"light\"] .tier.med,\nhtml[data-theme=\"light\"] .lead .va.near,html[data-theme=\"light\"] .lv.warnc,html[data-theme=\"light\"] .tile .tv.near,html[data-theme=\"light\"] .tile .td.near,\nhtml[data-theme=\"light\"] #gsModal .gs-lag{color:var(--gold-ink)}\nhtml[data-theme=\"light\"] .finchip{border-color:rgba(8,95,134,.4)}\nhtml[data-theme=\"light\"] .finchip.live{border-color:rgba(196,140,20,.55)}\nhtml[data-theme=\"light\"] .lead .va.exact,html[data-theme=\"light\"] .tile .tv.exact,html[data-theme=\"light\"] .tile .td.exact{color:#5B3CC4}\nhtml[data-theme=\"light\"] .pays .box.tier.med{border-color:rgba(196,140,20,.55)}\nhtml[data-theme=\"light\"] .pb-tier.xtrm{border-top-color:#8B6CF0}\nhtml[data-theme=\"light\"] .pe-g3{color:#236B42!important} html[data-theme=\"light\"] .pe-g2{color:#8A5E05!important}\nhtml[data-theme=\"light\"] #lpCard .src{border-left-color:#8B6CF0}\n/* the Pick'em Record chart and the bankroll in their own light colours, as the app draws them */\nhtml[data-theme=\"light\"] polyline[stroke=\"#0F1B2D\"]{stroke:#0F1B2D} html[data-theme=\"light\"] circle[fill=\"#0F1B2D\"]{fill:#0F1B2D}\nhtml[data-theme=\"light\"] [style*=\"background:#0F1B2D\"]{background:#0F1B2D!important}\nhtml[data-theme=\"light\"] line[stroke=\"#E6EAEF\"]{stroke:#E6EAEF}\nhtml[data-theme=\"light\"] [stroke=\"#1F6F4A\"]{stroke:#1F6F4A} html[data-theme=\"light\"] [fill=\"#1F6F4A\"]{fill:#1F6F4A} html[data-theme=\"light\"] [style*=\"background:#1F6F4A\"]{background:#1F6F4A!important}\nhtml[data-theme=\"light\"] [stroke=\"#C0392B\"]{stroke:#C0392B} html[data-theme=\"light\"] [fill=\"#C0392B\"]{fill:#C0392B} html[data-theme=\"light\"] [style*=\"background:#C0392B\"]{background:#C0392B!important}\nhtml[data-theme=\"light\"] [stroke=\"#E8730A\"]{stroke:#E8730A} html[data-theme=\"light\"] [fill=\"#E8730A\"]{fill:#E8730A} html[data-theme=\"light\"] [style*=\"background:#E8730A\"]{background:#E8730A!important}\nhtml[data-theme=\"light\"] [fill=\"#B23A32\"]{fill:#B23A32}\n/* the Game snapshot: its own light red, a lean bar in the team's own colour, the Deep Dive's light tints\n   (Even a pale slate with a ring at 4:1 on the card) and its grade green a step darker */\nhtml[data-theme=\"light\"] #gsModal{--gs-miss-ink:#A93226}\nhtml[data-theme=\"light\"] #gsModal .gs-track em{background:var(--gs-tc,var(--ink-2));box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}\nhtml[data-theme=\"light\"] #gsModal .dtag.easy{background:#DDF3E6;color:#17603D}\nhtml[data-theme=\"light\"] #gsModal .dtag.fav{background:#EEF8F2;color:#1B6E47}\nhtml[data-theme=\"light\"] #gsModal .dtag.even{background:#E9EEF4;color:#3F4D63;box-shadow:inset 0 0 0 1.5px #6F7E96}\nhtml[data-theme=\"light\"] #gsModal .dtag.tough{background:#FBEFD3;color:#7A5205}\nhtml[data-theme=\"light\"] #gsModal .dtag.vtough{background:#FAE1DE;color:#A93226}\nhtml[data-theme=\"light\"] #gsModal .pe-g3{color:#236B42!important}\n/* the builder's hero figure on its light tint, and the ELO windows' rows that weigh nothing quieted by\n   the muted ink rather than faded, so they and their coloured moves still read at 4.5:1 on white */\nhtml[data-theme=\"light\"] .bigp .hero b{color:var(--ink)}\nhtml[data-theme=\"light\"] .pe-pl tr.pe-weak td{opacity:1;color:var(--muted)}\n\u003c/style>";</script>
+<script>window.THEME_FRAME_HEAD="\u003clink href=\"https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap\" rel=\"stylesheet\">\u003cstyle>/* The hub look: NFL Hub in the NBA Hub's and the NHL Hub's colours and type (demon-x13/nba-hub,\n   demon-x13/nhl-hub), the owner's call of 16 October 2026 (\"make it match the color scheme and overall\n   feel of the nba and nhl hub so it's consistent across the board\"). build.js lays this over every\n   other style of the page (index.html at the site's root), last, so it wins by order, and hands it to the framed betting tabs\n   (window.THEME_FRAME_HEAD). The parts keep their own light tokens; nothing here changes a number.\n\n   The surfaces, inks and lines are the NBA Hub's lightened graphite exactly, as the NHL took them; each\n   hub keeps an accent of its own where the NBA has orange and the NHL ice blue, and the NFL's is gold,\n   the colour its light look always had (the NBA's own --gold). Quiet text is the NHL's --muted-ink\n   (#B3B9CB), since the NBA's #A0A7BB reads 4.49:1 on a panel; red text is the NHL's --rose-ink, since\n   the NBA's rose is 2.8:1 on a panel. Every text holds 4.5:1 (3:1 large) on every tab, the Game snapshot,\n   a game's page, the builder and the parlay card, at 1280 and 390. */\n:root{\n  --bg:#2A3043; --bg-2:#30374B; --panel:#363D52; --panel-2:#3D455B; --panel-3:#475068;\n  --ink:#F6F7FB; --ink-2:#CDD2DF; --muted:#B3B9CB; --line:#4A5269; --line-2:#59627B;\n  --gold:#FFD166; --gold-2:#FFE08F; --gold-soft:rgba(255,209,102,.14);\n  --pick:#CDFF4F; --pick-soft:rgba(205,255,79,.14);\n  --miss:#FFA2B8; --miss-soft:rgba(255,61,107,.16); --rose:#FF3D6B;\n  --ice:#5FD4FF; --ice-2:#8EE3FF; --ice-soft:rgba(95,212,255,.14);\n  --away:#5FD4FF; --home:#CDFF4F;\n  --r-lg:18px; --r-md:14px; --r-sm:11px;\n  --sh-xs:none; --sh-sm:none; --sh-md:0 18px 40px -24px rgba(0,0,0,.6);\n  --ring:0 0 0 3px rgba(255,209,102,.4);\n  --display:\"Unbounded\",ui-sans-serif,system-ui,sans-serif;\n  --body:\"Manrope\",ui-sans-serif,system-ui,-apple-system,\"Segoe UI\",sans-serif;\n  color-scheme:dark;\n}\nhtml{background:var(--bg)}\nbody{background:\n  radial-gradient(900px 520px at 12% -8%,rgba(255,209,102,.13),transparent 60%),\n  radial-gradient(700px 420px at 92% 0%,rgba(95,212,255,.10),transparent 60%),\n  linear-gradient(180deg,#333A4F 0%,var(--bg) 40%);background-attachment:fixed;color:var(--ink);font-size:14.5px}\n/* yard lines and hash marks, where the NBA has court lines and the NHL rink lines */\nhtml:not(.embed) body::before{content:\"\";position:fixed;inset:0;pointer-events:none;opacity:.06;\n  background:linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px) 0 0/64px 64px,\n    repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 150px/100% 9px no-repeat,\n    repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 310px/100% 9px no-repeat;\n  mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%)}\n::selection{background:var(--gold);color:#000}\na{color:var(--ice)}\n\n/* header: no slab, the page's own glow behind the hub's two-tone wordmark, a tagline and the stamp,\n   then pill tabs */\nheader{background:transparent;color:var(--ink);padding:26px 22px 0;max-width:1240px;margin:0 auto;position:relative}\nheader::after{display:none}\n.brand{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}\n.brand h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,54px);letter-spacing:-.02em;line-height:.95;margin:0;text-transform:uppercase}\n.brand h1 em{font-style:normal;color:var(--gold)}\n/* the football, where the NBA has its ball and the NHL its puck: leather, a seam and laces */\n.brand h1::after{width:.62em;height:.38em;border-radius:50%;margin-left:.16em;vertical-align:.1em;transform:rotate(-24deg);\n  background:linear-gradient(#fff,#fff) center/38% 2px no-repeat,repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 5px) center/30% 7px no-repeat,\n    radial-gradient(ellipse at 35% 30%,#E9A66B,#B2581F 55%,#6E2F0D);box-shadow:0 0 22px rgba(255,209,102,.45)}\n.tagline{color:var(--ink-2);font-size:13px;margin:8px 0 0;max-width:560px;font-weight:500;letter-spacing:0}\n.hub-stamp{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;line-height:1.5}\n.brand .sub{color:var(--ink-2);font-size:12px}\n.hub-stamp #saveState{color:var(--ink-2);font-weight:600;margin-left:0!important}\n.hub-stamp #buildTag{color:var(--ink-2)}\nnav{background:transparent;border:0;border-radius:0;padding:4px 0 10px;gap:6px;margin-top:22px;width:auto;scrollbar-width:none}\nnav::-webkit-scrollbar{display:none}\nnav button{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);padding:10px 16px;border-radius:999px;font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:.02em}\nnav button:hover{color:var(--ink);border-color:var(--line-2);background:var(--panel);transform:translateY(-1px)}\nnav button[aria-selected=true]{background:var(--ink);color:#1E2230;border-color:var(--ink);box-shadow:none}\nmain{max-width:1240px;padding:18px 22px 90px}\n\n/* surfaces */\n.card{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r-lg);position:relative;overflow:hidden}\n.card::before{content:\"\";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent);pointer-events:none}\n.card h2,h2{font-family:var(--display);font-weight:700;letter-spacing:-.01em}\nh2 .pill{font-family:var(--body);font-size:12px;font-weight:700;vertical-align:middle;letter-spacing:.02em}\ntable{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:none}\nth{background:var(--panel-2);color:var(--muted)}\ntbody tr:hover{background:rgba(255,255,255,.025)}\n.empty{background:var(--panel);border:1px dashed var(--line-2);border-radius:var(--r-lg);color:var(--ink-2)}\n.modal-panel{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line-2);color:var(--ink)}\n\n/* controls: a grey button as the NBA's and the NHL's, gold where the NFL's was its dark primary */\nselect,input[type=number],input[type=text]{background:var(--panel);color:var(--ink);border-color:var(--line-2);box-shadow:none}\nselect:hover,input[type=number]:hover,input[type=text]:hover{border-color:var(--ink-2)}\n::placeholder{color:var(--ink-2);opacity:1}\ninput[type=checkbox],input[type=radio]{accent-color:var(--gold)}\n.btn{background:var(--gold);color:#1E2230;font-weight:700;box-shadow:none;border:1px solid var(--gold)}\n.btn:hover{background:var(--gold-2);border-color:var(--gold-2);box-shadow:none}\n.btn.quiet{background:var(--panel-3);color:var(--ink);border:1px solid var(--line-2)}\n.btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}\n.btn.go{background:var(--pick);border-color:var(--pick);color:#1E2230}\n.btn.danger{background:var(--rose);border-color:var(--rose);color:#1E2230}\n.bar .rec,.pill,.conf,.conf.low,.pays .box.tier.low,.side-res.push,.bres.push{background:var(--panel-3);color:var(--ink-2)}\n.bar .rec b{color:var(--ink)}\n.pill.warn,.log .warn,.inj,.plrbtn .who .inj,.when .cl,.tot .lv,.totpts .lv,.conf.med,.pays .box.tier.med b,.pays .box.tier.med span,.pe-q,.xb-status.bad{color:var(--gold)}\n.conf.med{background:var(--gold-soft)}\n.inj.inj-lim,.plrbtn .who .inj.inj-lim{background:var(--panel-3);color:var(--ink-2)}\n.inj.inj-dnp,.plrbtn .who .inj.inj-dnp{color:var(--gold)}\n.side-res.under{background:var(--ice-soft);color:var(--ice)}\n.game.final .pill.ok{background:var(--ice-soft);color:var(--ice)}\n.finchip{background:var(--ice-soft);color:var(--ice-2);border-color:rgba(95,212,255,.45)}\n.finchip.live{background:var(--gold-soft);color:var(--gold);border-color:rgba(255,209,102,.5)}\n.lead .va.exact,.tile .tv.exact,.tile .td.exact{color:#C9B6FF}\n.bar-track,.pk-prob{background:var(--panel-3);box-shadow:none}\n.bar-fill.low{background:var(--muted)}\n.rungs tr.on td{background:var(--gold-soft)}\n.rungs tr.hit td{background:var(--pick-soft)}\n.rungs tr.miss td{background:var(--miss-soft)}\n.pays .box.tier.med{border-color:rgba(255,209,102,.5)}\n.bigp .hero{background:linear-gradient(135deg,var(--panel-3),var(--bg-2));border-color:var(--line-2)}\n.bigp .hero span{color:var(--ink-2)} .bigp .hero small{color:var(--gold)}\n.sugg-side button.on,.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}\n.pb-amt:hover{border-color:var(--ink-2)}\n.pb-tier.xtrm,.pb-tier.elo-xtrm{border-top-color:#B49CFF}\n.faroff{color:var(--gold)}\n.pb-chip.on small{color:var(--ink)}\n.elomv.flat{color:var(--muted)}\n.x-btn:hover{color:var(--miss)}\n\n/* the Pick'ems board */\n.pk-game{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);box-shadow:none;position:relative;overflow:hidden}\n.pk-game::before{content:\"\";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent)}\n.pk-game.pk-played::before{background:linear-gradient(180deg,var(--muted),transparent)}\n.pk-game:hover{border-color:var(--line-2);box-shadow:var(--sh-md)}\n.pk-tier{background:var(--panel-3);color:var(--ink-2)}\n.pk-tier.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-tier.pk-med{background:var(--gold-soft);color:var(--gold)} .pk-tier.pk-coin{background:var(--miss-soft);color:var(--miss)}\n.pk-sc{font-weight:900}\n.pk-matchup .pk-res{background:var(--panel)}\n.pk-note{background:var(--gold-soft);color:var(--gold)}\n.pk-result .pk-mwin.pk-ok{color:var(--pick)}\n/* the win-probability bars are in the two clubs' own colours (probCols in tab_pickems.html), as the NBA\n   Hub's and the NHL Hub's are, split by a line of the page's own graphite */\n.pk-prob .pk-a{border-right:2px solid var(--bg)}\n.pe-pos button[aria-selected=\"true\"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}\n/* the ELO Ratings tab and the Mismatches */\n.pe-mm-n{background:var(--ink);color:#1E2230}\n.pe-g3{color:#7BD88F!important} .pe-g2{color:#F2B84B!important}\n\n/* X Parlays */\n#lpCard .pill,#myCard .pill{background:var(--panel-3);color:var(--ink-2)}\n#lpCard .note{background:var(--gold-soft);color:var(--gold)}\n#lpCard .pill.ok,#myCard .pill.ok{background:var(--pick-soft);color:var(--pick)} #lpCard .pill.bad,#myCard .pill.bad{background:var(--miss-soft);color:var(--miss)}\n#lpCard .fill{background:linear-gradient(90deg,rgba(255,209,102,.35),var(--gold))}\n#lpCard .fill.win{background:linear-gradient(90deg,rgba(205,255,79,.35),var(--pick))}\n#lpCard .fill.lose{background:linear-gradient(90deg,rgba(255,61,107,.35),var(--rose))}\n#lpCard .gm.tie,#lpCard .gm.tie em,#lpCard .stamp.bad{color:var(--gold)}\n#lpCard .src{border-left-color:#B49CFF}\n.xp-own,.xp-mark{background:var(--gold-soft);color:var(--gold)}\n.card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}\n\n/* inside the framed betting tabs (html.embed): the page's glow shows through */\nhtml.embed,html.embed body{background:transparent}\n.seg button.on,.wk-chip{background:var(--ink);color:#1E2230}\n.bk-in,.bres.won{background:var(--pick-soft);color:var(--pick)}\n.bres.lost{background:var(--miss-soft);color:var(--miss)}\n.prob{background:var(--panel-3);box-shadow:none}\n.tier{background:var(--panel-3);color:var(--ink-2)}\n.tier.high{background:var(--pick-soft);color:var(--pick)} .tier.med{background:var(--gold-soft);color:var(--gold)}\n.tier.coin,.tier.doubt{background:var(--miss-soft);color:var(--miss)}\n.mycard.played .myhead{background:var(--panel-3);border-bottom-color:var(--line-2)}\n.vg.differs{background:var(--miss-soft);box-shadow:inset 0 0 0 1.5px var(--rose)}\n/* the Pick'em Record chart: Vegas is drawn in the old ink, which vanishes on dark */\npolyline[stroke=\"#0F1B2D\"]{stroke:#F6F7FB} circle[fill=\"#0F1B2D\"]{fill:#F6F7FB}\n[style*=\"background:#0F1B2D\"]{background:#F6F7FB!important}\nline[stroke=\"#E6EAEF\"]{stroke:#4A5269}\n/* the models' own colours (record_viz.js: Alpha Model's green, the Joker's red, the ELO Model's orange)\n   and the bankroll's up and down (bets_viz.js), each lifted a step so a line reads on the dark card */\n[stroke=\"#1F6F4A\"]{stroke:#5FD49A} [fill=\"#1F6F4A\"]{fill:#5FD49A} [style*=\"background:#1F6F4A\"]{background:#5FD49A!important}\n[stroke=\"#C0392B\"]{stroke:#FF6B6B} [fill=\"#C0392B\"]{fill:#FF6B6B} [style*=\"background:#C0392B\"]{background:#FF6B6B!important}\n[stroke=\"#E8730A\"]{stroke:#FF9F43} [fill=\"#E8730A\"]{fill:#FF9F43} [style*=\"background:#E8730A\"]{background:#FF9F43!important}\n[fill=\"#B23A32\"]{fill:#FF5C7A}\n\n/* the Game snapshot: its red lifted for the tint it sits on */\n#gsModal{--gs-miss-ink:#FFA2B8}\n/* a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */\n#gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}\n/* the Deep Dive's tags: the light look's tints are glare here, so each step has a dark tint of its own\n   with its text at 6:1 or more. Even, the neutral step, is a slate a step lighter than the card with a\n   light ring (an inset shadow, so its shape is the others'), the ring 3.8:1 or more on either card\n   colour: its old grey (#3A4155) was the card's own and read as plain text (the owner's call, 16 October\n   2026: \"make 'even' tags more distinguishable\") */\n#gsModal .dtag.easy{background:#2E4426;color:#CDFF4F}\n#gsModal .dtag.fav{background:#2C3E34;color:#9BE3B0}\n#gsModal .dtag.even{background:#525C78;color:#F6F7FB;box-shadow:inset 0 0 0 1.5px #9AA4BF}\n#gsModal .dtag.tough{background:#4A3A26;color:#FFC08A}\n#gsModal .dtag.vtough{background:#4D2833;color:#FF9DB2}\n/* the preview block a step off the card, its text the look's own ink */\n#gsModal .gs-prev{background:var(--panel-3);border-color:var(--line-2)}\n/* the better rank's box: its words in the full ink on the lime tint */\n#gsModal .gs-ubox.gs-better .gs-lab,#gsModal .gs-ubox.gs-better .gs-utier{color:var(--ink)}\n#gsModal .pe-g3{color:#7BD88F!important}\n\n@media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }\n@media(max-width:620px){ .hub-stamp{align-items:flex-start;text-align:left} }\n\n/* the light/dark switch at the top right of the header (theme.js): a round 44px button, its glyph the\n   look a press gives (a sun while dark, a moon while light). It is laid over the header's corner, out\n   of the flow, so the wordmark, the stamp and the tabs sit exactly where they did before it */\n.hub-theme{position:absolute;top:26px;right:22px;z-index:2;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;\n  border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);cursor:pointer}\n.hub-theme:hover{color:var(--ink);border-color:var(--line-2)}\n.hub-theme svg{width:20px;height:20px;display:block;pointer-events:none}\n.hub-theme .ht-moon{display:none}\nhtml[data-theme=\"light\"] .hub-theme .ht-sun{display:none}\nhtml[data-theme=\"light\"] .hub-theme .ht-moon{display:block}\n@media(max-width:900px){ .hub-theme{top:12px;right:16px} }\n/* under about 340px the wordmark's football reaches the switch's corner: the wordmark keeps clear of it */\n@media(max-width:340px){ .brand h1{padding-right:52px} }\n\n/* THE LIGHT LOOK (the owner's call of 17 October 2026: \"keep this whole layout as dark mode, and then make\n   a light mode version that people can tab on and off on the top right\"). Dark is the look and every\n   visitor's default whatever the system says; a visitor who presses the switch gets html[data-theme=light],\n   kept in that browser alone (theme.js). The same layout, type and gold: the surfaces a\n   cool light grey and white, the inks the hub's own graphite, and each accent that is read as text taken\n   down to a dark step of itself (gold text is --gold-ink; the gold fills stay the NFL's #FFD166). Every\n   rule above that writes a dark colour has its light twin here, and every text holds 4.5:1 (3:1 large) on\n   every tab, the Game snapshot, a game's page, the builder and the parlay card's window, at 1280 and 390.\n   The parlay card itself (.pc-card) and its image keep the dark palette written out in card.html. */\nhtml[data-theme=\"light\"]{\n  --bg:#E8EBF1; --bg-2:#F1F3F7; --panel:#FFFFFF; --panel-2:#F7F8FB; --panel-3:#E7EAF0;\n  --ink:#1E2230; --ink-2:#3A4256; --muted:#545D72; --line:#D8DCE5; --line-2:#BEC5D3;\n  --gold:#FFD166; --gold-2:#FFC53D; --gold-soft:rgba(255,196,64,.24); --gold-ink:#7A5205;\n  --pick:#146638; --pick-soft:rgba(20,102,56,.12);\n  --miss:#AA1F42; --miss-soft:rgba(214,40,80,.11); --rose:#D42A54;\n  --ice:#085F86; --ice-2:#074F70; --ice-soft:rgba(8,95,134,.11);\n  --away:#2F5E9E; --home:#146638;\n  --sh-md:0 18px 40px -24px rgba(30,34,48,.35);\n  --ring:0 0 0 3px rgba(156,106,0,.75);\n  color-scheme:light;\n}\nhtml[data-theme=\"light\"] body{background:\n  radial-gradient(900px 520px at 12% -8%,rgba(255,196,64,.22),transparent 60%),\n  radial-gradient(700px 420px at 92% 0%,rgba(10,106,145,.08),transparent 60%),\n  linear-gradient(180deg,#F5F6FA 0%,var(--bg) 40%);background-attachment:fixed}\nhtml[data-theme=\"light\"]:not(.embed) body::before{opacity:.07;\n  background:linear-gradient(90deg,rgba(30,34,48,.5) 1px,transparent 1px) 0 0/64px 64px,\n    repeating-linear-gradient(90deg,rgba(30,34,48,.5) 0 1px,transparent 1px 12.8px) 0 150px/100% 9px no-repeat,\n    repeating-linear-gradient(90deg,rgba(30,34,48,.5) 0 1px,transparent 1px 12.8px) 0 310px/100% 9px no-repeat}\nhtml[data-theme=\"light\"] .brand h1 em{color:#9C6A00}\nhtml[data-theme=\"light\"] nav button[aria-selected=true],\nhtml[data-theme=\"light\"] .sugg-side button.on,html[data-theme=\"light\"] .stake-chips button.on,html[data-theme=\"light\"] .tbtn.on,\nhtml[data-theme=\"light\"] .pe-pos button[aria-selected=\"true\"],html[data-theme=\"light\"] .pe-mm-n,\nhtml[data-theme=\"light\"] .seg button.on,html[data-theme=\"light\"] .wk-chip{color:#FFFFFF}\nhtml[data-theme=\"light\"] tbody tr:hover{background:rgba(30,34,48,.03)}\nhtml[data-theme=\"light\"] .btn.go,html[data-theme=\"light\"] .btn.danger{color:#FFFFFF}\n/* X Parlays' own buttons inherit their colour (#lpCard button{color:inherit}, which outranks the rule above): its Clear in\n   \"Clear this parlay?\" is white on the light rose too (4.9:1) */\nhtml[data-theme=\"light\"] #lpCard .btn.danger,html[data-theme=\"light\"] #lpCard .btn.go{color:#FFFFFF}\n/* gold read as text: a dark gold on the light surfaces and tints */\nhtml[data-theme=\"light\"] .pill.warn,html[data-theme=\"light\"] .log .warn,html[data-theme=\"light\"] .inj,html[data-theme=\"light\"] .plrbtn .who .inj,\nhtml[data-theme=\"light\"] .when .cl,html[data-theme=\"light\"] .tot .lv,html[data-theme=\"light\"] .totpts .lv,html[data-theme=\"light\"] .conf.med,\nhtml[data-theme=\"light\"] .pays .box.tier.med b,html[data-theme=\"light\"] .pays .box.tier.med span,html[data-theme=\"light\"] .pe-q,html[data-theme=\"light\"] .xb-status.bad,\nhtml[data-theme=\"light\"] .inj.inj-dnp,html[data-theme=\"light\"] .plrbtn .who .inj.inj-dnp,html[data-theme=\"light\"] .finchip.live,\nhtml[data-theme=\"light\"] .bigp .hero small,html[data-theme=\"light\"] .faroff,html[data-theme=\"light\"] .pk-tier.pk-med,html[data-theme=\"light\"] .pk-note,\nhtml[data-theme=\"light\"] #lpCard .note,html[data-theme=\"light\"] #lpCard .gm.tie,html[data-theme=\"light\"] #lpCard .gm.tie em,html[data-theme=\"light\"] #lpCard .stamp.bad,\nhtml[data-theme=\"light\"] #lpCard .res.tie,html[data-theme=\"light\"] .xp-own,html[data-theme=\"light\"] .xp-mark,html[data-theme=\"light\"] .tier.med,\nhtml[data-theme=\"light\"] .lead .va.near,html[data-theme=\"light\"] .lv.warnc,html[data-theme=\"light\"] .tile .tv.near,html[data-theme=\"light\"] .tile .td.near,\nhtml[data-theme=\"light\"] #gsModal .gs-lag{color:var(--gold-ink)}\nhtml[data-theme=\"light\"] .finchip{border-color:rgba(8,95,134,.4)}\nhtml[data-theme=\"light\"] .finchip.live{border-color:rgba(196,140,20,.55)}\nhtml[data-theme=\"light\"] .lead .va.exact,html[data-theme=\"light\"] .tile .tv.exact,html[data-theme=\"light\"] .tile .td.exact{color:#5B3CC4}\nhtml[data-theme=\"light\"] .pays .box.tier.med{border-color:rgba(196,140,20,.55)}\nhtml[data-theme=\"light\"] .pb-tier.xtrm,html[data-theme=\"light\"] .pb-tier.elo-xtrm{border-top-color:#8B6CF0}\nhtml[data-theme=\"light\"] .pe-g3{color:#236B42!important} html[data-theme=\"light\"] .pe-g2{color:#8A5E05!important}\nhtml[data-theme=\"light\"] #lpCard .src{border-left-color:#8B6CF0}\n/* the Pick'em Record chart and the bankroll in their own light colours, as the app draws them */\nhtml[data-theme=\"light\"] polyline[stroke=\"#0F1B2D\"]{stroke:#0F1B2D} html[data-theme=\"light\"] circle[fill=\"#0F1B2D\"]{fill:#0F1B2D}\nhtml[data-theme=\"light\"] [style*=\"background:#0F1B2D\"]{background:#0F1B2D!important}\nhtml[data-theme=\"light\"] line[stroke=\"#E6EAEF\"]{stroke:#E6EAEF}\nhtml[data-theme=\"light\"] [stroke=\"#1F6F4A\"]{stroke:#1F6F4A} html[data-theme=\"light\"] [fill=\"#1F6F4A\"]{fill:#1F6F4A} html[data-theme=\"light\"] [style*=\"background:#1F6F4A\"]{background:#1F6F4A!important}\nhtml[data-theme=\"light\"] [stroke=\"#C0392B\"]{stroke:#C0392B} html[data-theme=\"light\"] [fill=\"#C0392B\"]{fill:#C0392B} html[data-theme=\"light\"] [style*=\"background:#C0392B\"]{background:#C0392B!important}\nhtml[data-theme=\"light\"] [stroke=\"#E8730A\"]{stroke:#E8730A} html[data-theme=\"light\"] [fill=\"#E8730A\"]{fill:#E8730A} html[data-theme=\"light\"] [style*=\"background:#E8730A\"]{background:#E8730A!important}\nhtml[data-theme=\"light\"] [fill=\"#B23A32\"]{fill:#B23A32}\n/* the Game snapshot: its own light red, a lean bar in the team's own colour, the Deep Dive's light tints\n   (Even a pale slate with a ring at 4:1 on the card) and its grade green a step darker */\nhtml[data-theme=\"light\"] #gsModal{--gs-miss-ink:#A93226}\nhtml[data-theme=\"light\"] #gsModal .gs-track em{background:var(--gs-tc,var(--ink-2));box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}\nhtml[data-theme=\"light\"] #gsModal .dtag.easy{background:#DDF3E6;color:#17603D}\nhtml[data-theme=\"light\"] #gsModal .dtag.fav{background:#EEF8F2;color:#1B6E47}\nhtml[data-theme=\"light\"] #gsModal .dtag.even{background:#E9EEF4;color:#3F4D63;box-shadow:inset 0 0 0 1.5px #6F7E96}\nhtml[data-theme=\"light\"] #gsModal .dtag.tough{background:#FBEFD3;color:#7A5205}\nhtml[data-theme=\"light\"] #gsModal .dtag.vtough{background:#FAE1DE;color:#A93226}\nhtml[data-theme=\"light\"] #gsModal .pe-g3{color:#236B42!important}\n/* the builder's hero figure on its light tint, and the ELO windows' rows that weigh nothing quieted by\n   the muted ink rather than faded, so they and their coloured moves still read at 4.5:1 on white */\nhtml[data-theme=\"light\"] .bigp .hero b{color:var(--ink)}\nhtml[data-theme=\"light\"] .pe-pl tr.pe-weak td{opacity:1;color:var(--muted)}\n\u003c/style>";</script>
 </head>
 <body>
 <header>
@@ -2216,7 +2225,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v113 \u00b7 2026-10-17';
+const APP_BUILD='app v114 \u00b7 2026-10-17';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -5882,6 +5891,26 @@ function pbLegAddBtn(l){
   const on=suggestLegOn(l);
   return `<button type="button" class="btn quiet pb-legadd${on?' on':''}" data-pb-leg="${esc(l.key)}" data-k="${esc(l.k)}" data-side="${esc(l.side)}" data-main="${l.main?1:0}" aria-pressed="${on}" aria-label="${on?'Remove':'Add'} ${esc(l.name)}, ${esc(l.label)}, ${on?'from':'to'} the builder">${on?'Added':'Add'}</button>`;
 }
+/* (app v114) a leg's player, team or game, as the hub's matchup bubble opens it (the owner's "when i click on a
+   player or a team, bring up a bubble pop up where it shows their matchup for the day"): on the hub's page
+   (window.hubGlance, nflbets/build/glance.js) a button the bubble answers, data-glance p:<pid>, t:<ABBR> (a
+   moneyline or spread) or g:<gid> (a game total), the leg's game and its signature beside it; on the prop model's
+   own page the name as plain text, as before. The leg is kept as the row drew it (shown: the price the row shows,
+   where it is not the leg's own), outside S and never saved, so the bubble shows the row's own numbers */
+const GLANCE_LEGS=new Map();
+function glanceName(l,shown){
+  const nm=esc(l.name);
+  if(typeof window.hubGlance!=='function') return nm;
+  const kind=l.stat==='total'?'g':isGameLeg(l)?'t':'p';
+  const id=kind==='g'?l.gid:kind==='t'?(l.team||String(l.pid||'').replace(/^team:/,'')):l.pid;
+  const price=shown&&shown.ml!=null?shown.ml:l.price, src=shown&&shown.src?shown.src:l.src;
+  const sig=[l.key,l.side,l.k,price,src,l.p!=null&&isFinite(l.p)?(+l.p).toFixed(4):''].join('|');
+  GLANCE_LEGS.delete(sig); GLANCE_LEGS.set(sig,{leg:l,price,src});
+  if(GLANCE_LEGS.size>600) GLANCE_LEGS.delete(GLANCE_LEGS.keys().next().value);
+  const what=kind==='p'?'his matchup':kind==='t'?'the team’s matchup':'the game’s matchup';
+  return `<button type="button" class="glance-name" data-glance="${kind}:${esc(id)}" data-glance-game="${esc(l.gid)}" data-glance-leg="${esc(sig)}" aria-haspopup="dialog" aria-label="${nm}: ${what}">${nm}</button>`;
+}
+window.glanceLeg=sig=>GLANCE_LEGS.get(String(sig))||null;
 /* a locked level the page or the job built again for a player ruled out after the lock */
 function spUpdLine(u){
   const at=Date.parse(u.at);
@@ -5899,7 +5928,7 @@ function pbTierCard(t,o){
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
     <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.rule||(t.floor!=null?`<span class="pb-rule">${pbRuleOf(t)}</span>`:'')}</div>
     <div class="pb-nums">${pbChanceHtml(t.fair,chance,o)}<div><b>${fmtML(decToML(t.dec))}</b><span>${nE?'price, est.':'price'}</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
-    <ul class="pb-legs">${t.legs.map(l=>{ const ff=legFarOff(l,fm); return `<li><span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${pbValMark(l)}</small>${ff?`<small class="faroff" data-pb-far>${farText(l.p,ff)}</small>`:''}</span><span class="pr">${fmtML(l.price)}${l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:''}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span>${legAdd?pbLegAddBtn(l):''}</li>`; }).join('')}</ul>
+    <ul class="pb-legs">${t.legs.map(l=>{ const ff=legFarOff(l,fm); return `<li><span class="nm">${o.badge?o.badge(l):''}${glanceName(l)}<small>${esc(l.label)}${pbValMark(l)}</small>${ff?`<small class="faroff" data-pb-far>${farText(l.p,ff)}</small>`:''}</span><span class="pr">${fmtML(l.price)}${l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:''}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span>${legAdd?pbLegAddBtn(l):''}</li>`; }).join('')}</ul>
     ${t.thin&&!o.quiet?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt&&!o.quiet?`<p class="pb-thin">${pbMktLine(t.legs,o.mktWhy)}</p>`:''}${nE?`<p class="pb-thin pb-espnline">${pbEspnLine(t.legs)}</p>`:''}${upd}
     <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}${nm?` aria-label="${pbInBuilder(t.legs)?'In the builder:':'Add'}${nm}${pbInBuilder(t.legs)?'':' to the builder'}"`:''}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${o.fid||t.id}"${nm?` aria-label="Finish${nm}"`:''}>Finish</button>`:''}</div></div>`;
 }
@@ -5970,7 +5999,7 @@ function pbTopRow(l,i){
   const est=l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:'';
   const mark=pbValMark(l);
   return `<li class="pb-trow" data-pb-row="${i+1}" data-pb-grp="${pbIsValue(l)?'value':'other'}"><span class="pb-trk">${i+1}</span>
-    <span class="nm">${esc(l.name)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}</span>
+    <span class="nm">${glanceName(l)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}</span>
     <span class="pb-tcs"><span class="pb-tc"><b>${fmtML(l.price)}${est}</b><small>price</small></span><span class="pb-tc"><b data-pb-model="${l.p}">${pc(l.p)}</b><small>model</small></span><span class="pb-tc"><b${l.fc?` data-pb-fair="${l.fc.p}"`:''}>${l.fc?pc(l.fc.p):'–'}</b><small>${l.fc?(l.fc.est?'fair, est.':'fair'):'no fair'}</small></span><span class="pb-tc"><b data-pb-win="${l.win}">${pbMoney1(l.win)}</b><small>wins on $1</small></span><span class="pb-tc"><b data-pb-ev="${l.ev}">${pbMoney1(l.ev)}</b><small>expected on $1</small></span></span>
     ${pbLegAddBtn(l)}</li>`;
 }
@@ -6445,7 +6474,7 @@ function renderParlay(o){
   const fm={}, slip=dkSlipRows(legs,prices);
   legs.forEach((l,i)=>{
     const [c,lbl]=confTier(l.p), f=legFair(l,fm), far=!!f&&l.p-f.p>=FAR_OFF-1e-9;
-    html+=`<tr class="legrow"><td class="plr">${esc(l.name)}${l.grp==='TEAM'?'':injChip(l.pid)}<small>${esc(l.pos)} \u00b7 ${esc(l.team)} v ${esc(l.opp)} \u00b7 wk ${esc(l.week)}</small></td>
+    html+=`<tr class="legrow"><td class="plr">${glanceName(l,prices[i])}${l.grp==='TEAM'?'':injChip(l.pid)}<small>${esc(l.pos)} \u00b7 ${esc(l.team)} v ${esc(l.opp)} \u00b7 wk ${esc(l.week)}</small></td>
       <td><b>${esc(l.label)}</b>${far?`<small class="faroff" data-far>${farText(l.p,f)}</small>`:''}${dkSlipLine(slip&&slip[i],i)}</td>
       <td class="num">${l.mu==null?'\u2013':num(l.mu,l.mu<10?1:0)}</td>
       <td class="num">${(l.p*100).toFixed(0)}% <span class="conf ${c}" style="margin-left:6px">${lbl}</span>${f?`<small class="legfair" data-legfair="${f.p}" title="The book's fair chance on this leg: its price with the margin taken out${f.est?', estimated with the week\u2019s typical margin since only this side is priced':''}">fair ${(f.p*100).toFixed(0)}%${f.est?' est.':''}</small>`:''}</td>
@@ -6837,7 +6866,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='4f8dd37';
+const PAGE_HASH='8331839';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -7653,7 +7682,8 @@ window.PARLAY_CARD=(function(){
       chance:q.pr.corr,chanceBy:'Model',fair:q.fair,stake:q.stake});
   }
   /* from a level of Suggested Parlays (kind sp, id "<game id>:<level>": window.spTier, the level as the tab
-     shows it, live or locked) or an Elo pick, on the amount its tier pays on: the Bet amount box, which is
+     shows it, live or locked) or an Elo pick (kind elo, id elo-<level>: elo-safe, elo-med, elo-aggr or elo-xtrm,
+     the level of window.eloPicks; an empty level has no legs and opens nothing), on the amount its tier pays on: the Bet amount box, which is
      the builder's own stake (pbStake) */
   function fromTier(kind,id){
     let t=null;
@@ -7664,7 +7694,7 @@ window.PARLAY_CARD=(function(){
     const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
     /* a tier with a leg priced from DraftKings' line read on ESPN is priced on that estimate, and says
        so as the builder does */
-    return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay'+(t.game?' \u00b7 '+t.game:''),legs,dec:t.dec,priceNote:t.legs.some(l=>l.src&&l.src!=='real')?'estimated price':'book price',
+    return card({source:kind,kicker:kind==='elo'?t.label+' Elo pick':t.label+' parlay'+(t.game?' \u00b7 '+t.game:''),legs,dec:t.dec,priceNote:t.legs.some(l=>l.src&&l.src!=='real')?'estimated price':'book price',
       chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',fair:t.fair,stake:pbStake()});
   }
 
@@ -7998,7 +8028,7 @@ window.PARLAY_CARD=(function(){
     nb.addEventListener('click',()=>{ const m=fromBuilder(); if(m) open(m,nb); });
     return true;
   }
-  /* a suggested tier's Finish (data-pc-finish="sp|2026_06_SEA_DEN:med", "elo|elo3"): the tab draws the button
+  /* a suggested tier's Finish (data-pc-finish="sp|2026_06_SEA_DEN:med", "elo|elo-med"): the tab draws the button
      wherever this card is on the page, and one listener opens the card for whichever is pressed */
   function finishFrom(btn){
     /* a game kicked off since the panel was drawn: redraw it rather than open a parlay nobody saw */
@@ -8925,7 +8955,7 @@ function mmTags(){
     const name=[...who.childNodes].find(n=>n.nodeType===3&&n.textContent.trim()); if(!name) continue;
     const g=mmGrade(v.score)[0], t=document.createElement('span');
     t.className='pe-mmtag'; t.dataset.peMmtag=v.score.toFixed(1); t.dataset.peMmgrade=g;
-    t.title=`${g} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs a ${v.unitName} ranked ${ordinal(v.defRank)} of ${v.defN}`;
+    t.title=mmTitle(v);
     t.textContent='Mismatch'; name.after(t);
   }
 }
@@ -9004,6 +9034,13 @@ function altP(pid,side,price,src,stat){
 }
 window.eloAltP=altP;
 window.eloLoaded=()=>!!D.players;
+/* a builder row's market + form and Elo matchup, on the price the row shows (legPrice in the props parts: a
+   ladder rung at the book's price now, a leg a Refresh odds press priced back on the published prices once the
+   press gives way), as its price column and the matchup bubble read it (17 October 2026: until then these read
+   the price the leg was stored at, so Michael Wilson's 60+ receiving yards, added at -174 with the book now at
+   -114, said 64% and 58% here and 55% and 48% in his bubble). Display only: nothing graded or recorded reads
+   these lines (the Track Record grades market + form on its own rows, the suggestions record on its sets) */
+const shownPrice=l=>{ try{ const x=typeof legPrice==='function'?legPrice(l):null; if(x&&x.ml!=null&&isFinite(x.ml)) return x; }catch(e){} return {ml:l.price,src:l.src}; };
 function decorateAlt(){
   if(!D.players||typeof S!=='object'||!S||!S.parlay) return;
   let any=false, prod=1, prodM=1, n=0;
@@ -9011,10 +9048,10 @@ function decorateAlt(){
     const b=tr.querySelector('button[data-drop]'); if(!b) return;
     const l=S.parlay[b.dataset.drop]; if(!l) return;
     const cell=tr.querySelectorAll('td')[3]; if(!cell||cell.querySelector('.pe-alt')) { if(cell&&cell.querySelector('.pe-alt')){ const v=+cell.querySelector('.pe-alt').dataset.p; if(v){ prod*=v; prodM*=l.p; n++; } } return; }
-    const p=altP(l.pid,l.side,l.price,l.src,l.stat); if(p==null) return;
+    const sp=shownPrice(l), p=altP(l.pid,l.side,sp.ml,sp.src,l.stat); if(p==null) return;
     any=true; prod*=p; prodM*=l.p; n++;
-    cell.insertAdjacentHTML('beforeend',`<small class="pe-alt" data-p="${p.toFixed(4)}" title="The book's chance for this line, moved by the player's rating on the side of the bet. Beside the model's chance, not in its place.">market + form <b>${Math.round(p*100)}%</b></small>`);
-    const mn=muNudge(l.pid,l.stat), mp=mn?muP(l,mlProb(l.price)):null;
+    cell.insertAdjacentHTML('beforeend',`<small class="pe-alt" data-p="${p.toFixed(4)}" title="The book's chance for this line at the price shown, moved by the player's rating on the side of the bet. Beside the model's chance, not in its place.">market + form <b>${Math.round(p*100)}%</b></small>`);
+    const mn=muNudge(l.pid,l.stat), mp=mn?muP(l,mlProb(sp.ml)):null;
     if(mp!=null) cell.insertAdjacentHTML('beforeend',`<small class="pe-alt pe-muleg" title="His Elo against the defenders he faces this week moves his projection ${mn.nudge>=0?'+':''}${mn.nudge.toFixed(1)}; the book's chance moved by that.">Elo matchup ${mn.nudge>=0?'+':'−'}${Math.abs(mn.nudge).toFixed(1)} <b>${Math.round(mp*100)}%</b></small>`);
   });
   const table=document.querySelector('#parlayBody tr.legrow')&&document.querySelector('#parlayBody tr.legrow').closest('table');
@@ -9040,20 +9077,64 @@ function trackAlt(){
     <tbody>${weeks.map(w=>line('Week '+w,rows.filter(r=>r.w===w))).join('')}${line('All',rows)}</tbody></table></div>`;
   body.insertAdjacentHTML('afterbegin',html);
 }
-/* ---- Elo picks: parlays of ranked players whose rating says they beat the book's price ----
-   Each leg is a line the book has priced for a ranked player. The player's chance is the
+/* ---- Elo picks: parlays of players whose Elo matchup says they beat the book's price ----
+   Each leg is a line the book has priced for a rated player. The player's chance is the
    book's own (its price read as a chance) moved by his Elo matchup: the nudge the matchup
    formula (above) gives that stat this week, his own Elo against the defenders he faces, in
    units of the stat's typical miss. Only stats where that nudge has held up season by
-   season are used. A leg is a pick when that chance times the payout comes out above the
-   stake. Plus-money legs come first, then the best expected return; prices are held
-   between -200 and +300 and the chance at 30% or better, because an alt line at +1600 is
-   where the rating's nudge is least trustworthy and a parlay of them almost never lands.
-   One leg a player and one a game, so the book pays the legs multiplied and the chance is
-   the chances multiplied. The first version (the player's own Elo, no matchup) was replayed
-   on weeks 1 and 2 and its singles lost; the matchup nudge is small by design, so few legs
-   clear the book's cut. A fun model, not an edge. */
-const EP={lo:-200,hi:300,floor:0.30,sizes:[2,3,4],vig:1.045};
+   season are used (muTrusted: in the October 2026 file a quarterback's passing yards, passing
+   touchdowns and completions; a back's rushing yards, carries, rush + rec yards and touchdown; a
+   receiver's catches, yards and touchdown; a tight end's yards and touchdown), so never touchdowns
+   alone. A leg is a candidate when that chance is 30% or better and times the payout comes out
+   above the stake, its price between -200 and +300, because an alt line at +1600 is where the
+   rating's nudge is least trustworthy and a parlay of them almost never lands; one leg a player,
+   his best by value (the main line on a tie).
+
+   The four levels (17 October 2026, the owner's call: "for the ELO picks suggestions, can we also add
+   an aggressive and extreme versions. is it touchdowns only or did it just so happen to show that?
+   would want to see the best lines:value ratio for ELO mismatches etc"). Until then the candidates
+   were sorted plus money first and the picks were the first two, three and four of them, one leg a
+   game, so an anytime touchdown, nearly always plus money, filled them whatever a main line at -115
+   offered: week 6's were three touchdowns and a passing-touchdowns under. Now the candidates are
+   ranked on value, what $1 on the leg is expected to make at the Elo chance (the chance times the
+   decimal price, less the $1), and the picks are Suggested Parlays' own four levels (PB_TIERS, read
+   from the page, never copied), searched from the EP.cap best by value and the EP.capP likeliest by
+   the Elo chance, each once (18 October 2026: the 30 best by value alone cut a heavy favourite of thin
+   value before Safe, the likeliest pair, could see him): Safe, the likeliest pair by the Elo chance;
+   Medium, Aggressive and Extreme, the 3-, 4- and 5-leg parlay with the best expected return (the Elo
+   chance all land times what it pays) that lands at least 25%, 12% and 5% of the time by the Elo
+   chance, else, where none of that size reaches it, the likeliest of its size, marked so ("the
+   likeliest 4 legs"; never a parlay at or over the floor). A level is empty only when fewer players
+   qualify than it takes. Legs from one game are allowed (a weekend's priced games are often four, and
+   one leg a game would leave Extreme empty), and every level's chance and price are the builder's own
+   sums on the legs in the builder's order: parlayProb with each leg's chance its Elo chance (the
+   builder's same-game correlations) and parlayDec on their prices (a game's legs priced together), so
+   Add to builder and Finish pay exactly what the card says. The legs the builder gets keep the
+   model's chance: the Elo chance rides beside it as pe, which pbPut strips.
+
+   The search (18 October 2026, after a review found the first one several percent short of the best
+   on a one-game slate, where only that game has player prices): each level is the rule's own answer
+   by the builder's sums, every parlay of its size from the candidates in reach. Those sums are a count
+   of 40,000 seeded draws (parlayProb's; parlayDec's 20,000 on a game's legs at the book's chances), the
+   same for a given set of legs every time, about 4 ms a parlay, so they are worked here as parlayProb
+   works them, to the draw, from draws made once (epSums, below: check_tab and the nflbets smoke hold
+   them to parlayProb and parlayDec to the bit, and each level is worked again by the props parts' own
+   before it is shown, the fast sums set aside should they ever differ). Every parlay is read first by
+   a quick reading (each game's legs together by Mendell and Elston's reading of the builder's
+   gaussian copula, a pair of them exactly; legs of different games multiplied), with the most and the
+   least the exact sums can come to on it (EP.z standard deviations of the draws' own noise on its chance
+   and EP.zr on its expected return, and EP.bias for the reading: over every parlay of up to five legs
+   of 10 to 20 made-up candidates the exact chance stayed within 3.1 of those deviations of the reading,
+   and the exact return of a parlay over its floor within 1.9; a parlay with no two legs that move
+   together is read exactly): every parlay whose
+   most reaches the best least found is kept, worked with the exact sums best bound first, until the
+   next one's most falls under the best worked, so no parlay left can beat the one chosen. On 346 sets
+   of made-up candidates, 8 to 18 of them in one to four games, every level was the full enumeration's
+   (the first search missed 29 levels there, up to 10% short of the best return); a fresh build of the
+   four takes 150 to 350 ms in Chromium on week 6's payload and about 100 on a one-game slate of 12. A
+   fun model, not an edge: the first version (the player's own Elo, no matchup) was replayed on weeks 1
+   and 2 and its singles lost. */
+const EP={lo:-200,hi:300,floor:0.30,vig:1.045,cap:30,capP:10,z:4.5,zr:4,bias:0.01,slow:48};
 /* the normal curve and its inverse (Acklam's), for moving a chance by a nudge in sd units */
 const ncdf=z=>{ const t=1/(1+0.2316419*Math.abs(z)), d=0.3989423*Math.exp(-z*z/2), p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-p:p; };
 function nq(p){ const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],
@@ -9070,8 +9151,12 @@ function muP(l,imp){ const m=muNudge(l.pid,l.stat); if(!m||!(m.sd>0)) return nul
   const fair=Math.min(0.99,Math.max(0.01,imp/EP.vig));
   return ncdf(nq(fair)+(l.side==='under'?-1:1)*m.nudge/m.sd); }
 window.eloMatchupP=muP;
-function eloPicks(){
-  if(!D.players||typeof pricedLegs!=='function'||typeof mlProb!=='function') return null;
+const epId=l=>l.key+'|'+l.side+'|'+l.k;
+const epCmp=(a,b)=>a<b?-1:a>b?1:0;
+/* the candidates: every leg the rules above allow, one a player (his best by value, the main line on a
+   tie, then the lower id), ranked on value, best first; null where the page cannot price a leg */
+function eloCands(){
+  if(!D.players||typeof pricedLegs!=='function'||typeof mlProb!=='function'||typeof mlToDec!=='function') return null;
   let legs; try{ legs=pricedLegs(); }catch(e){ return null; }
   const c=[];
   for(const l of legs){
@@ -9083,49 +9168,322 @@ function eloPicks(){
        its line, wherever the payload carries ids for its game (a line read by Refresh odds has none) */
     if(typeof dkCarries==='function'&&dkCarries(l)&&!(typeof dkIdOf==='function'&&dkIdOf(l))) continue;
     const e=window.eloOf(l.pid); if(!e) continue;
-    const imp=mlProb(l.price); if(!(imp>0&&imp<1)) continue;
+    const imp=mlProb(l.price), dec=mlToDec(l.price); if(!(imp>0&&imp<1)||!(dec>1)) continue;
     const pe=muP(l,imp); if(pe==null) continue;
-    const ev=pe*mlToDec(l.price)-1;
+    const ev=pe*dec-1;
     if(pe>=EP.floor&&ev>0) c.push({...l,pe,ev,imp});
   }
-  c.sort((a,b)=>((a.price<0)-(b.price<0))||(b.ev-a.ev));
+  c.sort((a,b)=>(b.ev-a.ev)||((b.main?1:0)-(a.main?1:0))||epCmp(epId(a),epId(b)));
   const best=[], seen=new Set();
   for(const l of c){ if(seen.has(l.pid)) continue; seen.add(l.pid); best.push(l); }
-  const tiers=[];
-  for(const n of EP.sizes){
-    const pick=[], games=new Set();
-    for(const l of best){ if(pick.length>=n) break; if(games.has(l.gid)) continue; games.add(l.gid); pick.push(l); }
-    if(pick.length<n) break;
-    const p=pick.reduce((a,l)=>a*l.pe,1), d=pick.reduce((a,l)=>a*mlToDec(l.price),1);
-    /* the book's fair chance on the same legs (parlayFair in the props parts: DraftKings' prices with
-       the margin taken out), which the card leads with, the Elo matchup chance beside it */
-    tiers.push({id:'elo'+n,label:`Elo ${n}-leg`,legs:pick,p,dec:d,fair:typeof parlayFair==='function'?parlayFair(pick):null,sig:'elo|'+pick.map(l=>l.key+'|'+l.side+'|'+l.k).join(',')});
-  }
-  return {tiers,candidates:best.length,games:new Set(best.map(l=>l.gid)).size};
+  return best;
+}
+/* what the levels are searched from: the EP.cap best by value and the EP.capP likeliest by the Elo chance (the
+   better value, then the lower id, on a tie), each once, still ranked on value */
+function epKeep(all){
+  const likely=[...all].sort((a,b)=>(b.pe-a.pe)||(b.ev-a.ev)||epCmp(epId(a),epId(b))).slice(0,EP.capP), keep=new Set([...all.slice(0,EP.cap),...likely]);
+  return all.filter(l=>keep.has(l));
+}
+/* P(X<h, Y<k) for two standard normals correlated r: Plackett's integral by ten-point Gauss-Legendre, as the
+   props parts' own search reads a pair (bvnLower there) */
+const EP_GX=[-0.9739065285171717,-0.8650633666889845,-0.6794095682990244,-0.4333953941292472,-0.1488743389816312,0.1488743389816312,0.4333953941292472,0.6794095682990244,0.8650633666889845,0.9739065285171717];
+const EP_GW=[0.0666713443086881,0.1494513491505806,0.2190863625159820,0.2692667193099963,0.2955242247147529,0.2955242247147529,0.2692667193099963,0.2190863625159820,0.1494513491505806,0.0666713443086881];
+function epBvn(h,k,r){ const a=Math.asin(Math.max(-0.9999,Math.min(0.9999,r))); let s=0;
+  for(let i=0;i<10;i++){ const t=a*(EP_GX[i]+1)/2, c=Math.cos(t); s+=EP_GW[i]*Math.exp(-(h*h-2*h*k*Math.sin(t)+k*k)/(2*c*c)); }
+  return Math.max(0,ncdf(h)*ncdf(k)+s*a/(4*Math.PI)); }
+/* ---- the builder's own sums, worked fast ----
+   parlayProb (the props parts) reads a parlay of n legs some of which move together by 40,000 draws of n
+   standard normals from one seeded stream (mulberry(20260908), two uniforms to each two normals, so a parlay of
+   2k-1 or 2k legs reads the same draws), each leg landing on a draw when its z (its row of the Cholesky factor of
+   the legs' correlations times the draw) clears its threshold; parlayDec prices a game's legs together on the
+   same count at the book's chances, 20,000 draws. So the draws are made once for each width and kept (EP_G), and
+   a game's legs at their places in a parlay land on a set of draws kept as bits, the same sums in the same order
+   as parlayProb's (a leg's z sums only its own game's legs, every other term of its row being zero), so a
+   parlay's count is the draws all its games' sets share: parlayProb's to the draw. epSums is null where
+   parlayProb would shrink the correlations (a Cholesky factor it cannot take): the props parts' own are used
+   there. */
+const EP_SIMS=40000, EP_DSIMS=20000, EP_G=[];
+let EP_FAST=true;
+function epDraws(k){
+  if(EP_G[k]) return EP_G[k];
+  const rnd=mulberry(20260908), g=[]; for(let c=0;c<2*k;c++) g.push(new Float64Array(EP_SIMS));
+  for(let s=0;s<EP_SIMS;s++) for(let i=0;i<2*k;i+=2){ const u1=rnd()||1e-12,u2=rnd(); const m=Math.sqrt(-2*Math.log(u1));
+    g[i][s]=m*Math.cos(2*Math.PI*u2); g[i+1][s]=m*Math.sin(2*Math.PI*u2); }
+  return EP_G[k]=g;
+}
+const epPop=x=>{ x=x-((x>>>1)&0x55555555); x=(x&0x33333333)+((x>>>2)&0x33333333); return (((x+(x>>>4))&0x0F0F0F0F)*0x01010101)>>>24; };
+function epCount(b){ let h=0; for(let w=0;w<b.length;w++) h+=epPop(b[w]); return h; }
+/* one game's legs (candidate indices, in the parlay's order) at their columns of the draws of width k: the draws
+   every one of them lands on, as bits (at the book's chances for a price, the first EP_DSIMS draws), the last leg
+   read only on the draws the others land on, which are kept */
+function epBits(P,legs,cols,k,book,keep){
+  const key=(book?'b':'e')+k+':'+legs.map((i,r)=>i+'@'+cols[r]).join(',');
+  let b=P.bits.get(key); if(b!==undefined) return b;
+  const m=legs.length, sims=book?EP_DSIMS:EP_SIMS, W=(sims+31)>>>5, G=epDraws(k);
+  const pre=m>1?epBits(P,legs.slice(0,-1),cols.slice(0,-1),k,book,true):null;
+  const L=m>1&&!pre?null:cholesky(legs.map((a,r)=>legs.map((c,q)=>r===q?1:P.RH[a][c])));
+  if(!L) b=null;
+  else { const Lr=L[m-1], g=cols.map(c=>G[c]), i=legs[m-1], thr=book?P.tb[i]:P.te[i], dir=P.dir[i];
+    b=new Int32Array(W);
+    if(m===1){ const g0=g[0], l0=Lr[0]; for(let s=0;s<sims;s++){ let z=0; z+=l0*g0[s]; if(dir*z>thr) b[s>>>5]|=1<<(s&31); } }
+    else { const c0=Lr[0], c1=Lr[1], c2=m>2?Lr[2]:0, c3=m>3?Lr[3]:0, g0=g[0], g1=g[1], g2=g[2], g3=g[3];
+      for(let w=0;w<W;w++){ let x=pre[w], y=0;
+        while(x){ const t=x&-x, s=(w<<5)+(31-Math.clz32(t)); x^=t;
+          let z=0; z+=c0*g0[s]; z+=c1*g1[s];
+          if(m>2){ z+=c2*g2[s]; if(m>3){ z+=c3*g3[s]; for(let q=4;q<m;q++) z+=Lr[q]*g[q][s]; } }
+          if(dir*z>thr) y|=t; }
+        b[w]=y; } } }
+  if(keep||m===1) P.bits.set(key,b);
+  return b;
+}
+/* parlayProb's chance on candidates ids (ascending: the builder's order) at their Elo chances, and parlayDec's price */
+function epSums(P,ids){
+  const n=ids.length, k=(n+1)>>1;
+  let p=1; for(const i of ids) p=p*P.pe[i];
+  let pairs=false; for(let a=0;a<n&&!pairs;a++) for(let c=a+1;c<n;c++) if(Math.abs(P.RH[ids[a]][ids[c]])>=0.03){ pairs=true; break; }
+  if(pairs){ const by=new Map(); ids.forEach((i,c)=>{ let x=by.get(P.gi[i]); if(!x) by.set(P.gi[i],x={legs:[],cols:[]}); x.legs.push(i); x.cols.push(c); });
+    const gs=[...by.values()], one=gs.length===1; let acc=null;
+    for(const x of gs){ const b=epBits(P,x.legs,x.cols,k,false,!one); if(!b) return null;
+      if(!acc) acc=one?b:b.slice(); else for(let w=0;w<acc.length;w++) acc[w]&=b[w]; }
+    p=epCount(acc)/EP_SIMS; }
+  const dec=epDec(P,ids);
+  return dec==null?null:{p,dec};
+}
+/* parlayDec's price on candidates ids (ascending), its game's legs priced together on parlayProb's count at the
+   book's chances, kept for each game's legs */
+function epDec(P,ids){
+  const byGame={}; for(const i of ids) (byGame[P.C[i].gid]=byGame[P.C[i].gid]||[]).push(i);
+  let dec=1;
+  for(const gid in byGame){ const grp=byGame[gid];
+    let mult=1; for(const i of grp) mult=mult*(P.dec[i]||1);
+    if(grp.length<2){ dec*=mult; continue; }
+    const key=grp.join(','); let f=P.dm.get(key);
+    if(f===undefined){ const m=grp.length; let pj=1; for(const i of grp) pj=pj*P.bk[i];
+      let pr=false; for(let a=0;a<m&&!pr;a++) for(let c=a+1;c<m;c++) if(Math.abs(P.RH[grp[a]][grp[c]])>=0.03){ pr=true; break; }
+      if(pr){ const b=epBits(P,grp,grp.map((_,c)=>c),(m+1)>>1,true,false); pj=b?epCount(b)/EP_DSIMS:null; }
+      f=pj==null?null:(pj>0&&isFinite(pj))?Math.min(mult,(1/pj)*SGP_HOLD):mult; P.dm.set(key,f); }
+    if(f==null) return null;
+    dec*=f; }
+  return dec;
+}
+/* ---- the quick reading, and how far the exact sums can stray from it ---- */
+const epNpdf=z=>0.3989422804014327*Math.exp(-z*z/2);
+/* P(Y_i<b_i for every i), Y standard normals correlated R, by Mendell and Elston's reading: each in turn, the rest
+   taken as normal with the truncated one's mean and variance carried through. On every parlay of up to five legs
+   of one game, of made-up candidates, the exact sums stayed within 3.5 of their draws' own standard deviations of it */
+function epME(b,R){
+  const m=b.length; if(m===1) return ncdf(b[0]);
+  const mu=new Array(m).fill(0), C=R.map(r=>r.slice()); let p=1;
+  for(let k=0;k<m;k++){
+    const s=Math.sqrt(C[k][k]), a=(b[k]-mu[k])/s, pk=ncdf(a); p*=pk; if(!(pk>1e-12)) return 0; if(k===m-1) break;
+    const lam=epNpdf(a)/pk, vt=1-a*lam-lam*lam;
+    for(let j=k+1;j<m;j++){ const bj=C[j][k]/s; mu[j]-=bj*lam; for(let i=k+1;i<=j;i++){ const bi=C[i][k]/s; C[i][j]=C[j][i]=C[i][j]-bi*bj*(1-vt); } } }
+  return p;
+}
+/* what the search stands on, once a candidate list: the candidates in the builder's order (pbOrder, so a parlay's
+   legs in that order are its columns of the draws), each one's Elo chance, price, book chance, thresholds and side,
+   its game, and how each two move together (legRho) */
+function epPrep(C0){
+  const C=typeof pbOrder==='function'?pbOrder(C0):[...C0], games=[...new Set(C.map(l=>l.gid))];
+  const P={C,N:C.length,RH:C.map(a=>C.map(b=>a===b?1:(typeof legRho==='function'?legRho(a,b):0))),gi:C.map(l=>games.indexOf(l.gid)),
+    pe:C.map(l=>l.pe),dec:C.map(l=>mlToDec(l.price)),bk:C.map(l=>mlProb(l.price)),te:C.map(l=>invNorm(1-l.pe)),tb:C.map(l=>invNorm(1-mlProb(l.price))),
+    dir:C.map(l=>l.side==='under'?-1:1),bits:new Map(),dm:new Map(),G:games.length,li:[],gl:games.map(()=>[]),gv:games.map(()=>new Map())};
+  C.forEach((l,i)=>{ const g=P.gi[i]; P.li[i]=P.gl[g].length; P.gl[g].push(i); });
+  P.nqE=P.pe.map(p=>nq(p)); P.nqB=P.bk.map(p=>nq(p));
+  return P;
+}
+/* one game's legs in a parlay (a mask of its candidates, a sum of powers of two): the quick reading of them all
+   landing at their Elo chances, their price factor (parlayDec's, on the quick reading at the book's chances),
+   whether two of them move together, and the variance of the exact price about it, up and down */
+function epGroup(P,g,mask){
+  let v=P.gv[g].get(mask); if(v) return v;
+  const legs=P.gl[g].filter((_,b)=>Math.floor(mask/2**b)%2===1), m=legs.length;
+  let pairs=false; for(let a=0;a<m&&!pairs;a++) for(let c=a+1;c<m;c++) if(Math.abs(P.RH[legs[a]][legs[c]])>=0.03){ pairs=true; break; }
+  let pe=1, pb=1, mult=1; for(const i of legs){ pe=pe*P.pe[i]; pb=pb*P.bk[i]; mult=mult*(P.dec[i]||1); }
+  if(pairs){ const S=legs.map((a,r)=>legs.map((c,q)=>r===q?1:P.dir[a]*P.dir[c]*P.RH[a][c]));
+    pe=m===2?epBvn(P.nqE[legs[0]],P.nqE[legs[1]],S[0][1]):epME(legs.map(i=>P.nqE[i]),S);
+    pb=m===2?epBvn(P.nqB[legs[0]],P.nqB[legs[1]],S[0][1]):epME(legs.map(i=>P.nqB[i]),S); }
+  const f=m<2?mult:(pb>0&&isFinite(pb))?Math.min(mult,(1/pb)*SGP_HOLD):mult, vv=pairs?(1-pb)/(pb*EP_DSIMS):0;
+  v=[pe,f,pairs?1:0,f<mult?vv:0,vv];
+  P.gv[g].set(mask,v); return v;
+}
+/* the most and the least the exact sums can come to on a parlay the quick reading puts at chance a and price d
+   (k: how many of its games have legs that move together, so its chance is a count of draws; v, vl: its price's
+   variance up and down): [most chance, most return, least chance, least return], EP.z of the draws' standard
+   deviations on the chance and EP.zr on the return. Read exactly with no two legs that move together */
+function epBounds(a,d,k,v,vl){
+  if(!k) return [a*(1+1e-9),a*d*(1+1e-9),a*(1-1e-9),a*d*(1-1e-9)];
+  const sa=(1-Math.min(a,1))/(Math.max(a,1e-12)*EP_SIMS), Z=EP.z, ZR=EP.zr, B=EP.bias, su=Math.sqrt(sa);
+  return [a*Math.exp(Z*su+B),a*d*Math.exp(ZR*Math.sqrt(sa+v)+B),a*Math.exp(-Z*su-B),a*d*Math.exp(-ZR*Math.sqrt(sa+vl)-B)];
+}
+/* the least quick chance whose most reaches a floor */
+const EP_AMIN=new Map();
+function epAMin(floor){
+  let x=EP_AMIN.get(floor); if(x!=null) return x;
+  let lo=floor*0.2, hi=floor; for(let i=0;i<60;i++){ const m=(lo+hi)/2; if(epBounds(m,1,1,0,0)[0]>=floor) hi=m; else lo=m; }
+  EP_AMIN.set(floor,lo); return lo;
+}
+/* every parlay of n candidates (one leg a player, so any n of them) by the quick reading: those whose most (its
+   chance with floor 0, else its expected return) reaches the best least found, best first; one whose chance cannot
+   reach the floor is left out with every parlay it starts, since a leg added only takes draws away */
+function epScan(P,n,floor){
+  const N=P.N, gm=new Array(P.G).fill(0), idx=new Array(n), A=new Float64Array(n+1), D=new Float64Array(n+1), V=new Float64Array(n+1), VL=new Float64Array(n+1), K=new Int32Array(n+1);
+  A[0]=1; D[0]=1;
+  const amin=floor?epAMin(floor):0, amin0=floor/(1+1e-9);
+  /* the most any bound multiplies a reading by, for a parlay whose price strays little (the rest are worked out) */
+  const mx=floor?Math.exp(Math.max(EP.z,EP.zr)*Math.sqrt((1-amin)/(amin*EP_SIMS)+0.002)+EP.bias)*(1+1e-9):Infinity;
+  let list=[], lb=-Infinity, cap=4096;
+  const go=(d,start)=>{
+    for(let i=start;i<=N-(n-d);i++){
+      const g=P.gi[i], old=gm[g], nw=old+2**P.li[i], o=old?epGroup(P,g,old):null, x=epGroup(P,g,nw);
+      const a=o?A[d]/o[0]*x[0]:A[d]*x[0], k=K[d]-(o?o[2]:0)+x[2];
+      if(floor&&a<(k?amin:amin0)) continue;
+      const dd=o?D[d]/o[1]*x[1]:D[d]*x[1], v=V[d]-(o?o[3]:0)+x[3], vl=VL[d]-(o?o[4]:0)+x[4];
+      idx[d]=i;
+      if(d+1===n){
+        if(floor&&v<=0.002&&a*dd*mx<lb) continue;
+        const b=epBounds(a,dd,k,v,vl), ub=floor?b[1]:b[0], low=floor?(b[2]>=floor?b[3]:-Infinity):b[2];
+        if(low>lb) lb=low;
+        if(ub>=lb){ list.push({ub,a,k,ids:idx.slice()}); if(list.length>cap){ list=list.filter(y=>y.ub>=lb); cap=Math.max(4096,2*list.length); } }
+        continue; }
+      gm[g]=nw; A[d+1]=a; D[d+1]=dd; V[d+1]=v; VL[d+1]=vl; K[d+1]=k; go(d+1,i+1); gm[g]=old; } };
+  go(0,0);
+  return list.filter(y=>y.ub>=lb).sort((u,w)=>w.ub-u.ub);
+}
+/* the builder's own sums on a parlay's legs, in the builder's order (pbOrder): the chance all land at their Elo
+   chances (parlayProb, its same-game correlations) and the price (parlayDec, a game's legs together) */
+function epExact(legs){
+  const L=typeof pbOrder==='function'?pbOrder(legs):[...legs];
+  return {legs:L,p:parlayProb(L.map(l=>({...l,p:l.pe}))).corr,dec:parlayDec(L.map(l=>({leg:l,ml:l.price})))};
+}
+/* those sums on candidates ids (ascending), the fast way where it can, else the props parts' own; kept */
+function epReal(P,ids,memo){
+  const key=ids.join(','); let e=memo.get(key); if(e) return e;
+  const legs=ids.map(i=>P.C[i]), f=EP_FAST?epSums(P,ids):null;
+  e=f?{legs,p:f.p,dec:f.dec}:epExact(legs);
+  e.id=legs.map(epId).sort().join(','); memo.set(key,e); return e;
+}
+/* the best parlay of n by the exact sums: the best return over the floor (floor>0), else the likeliest; every parlay
+   whose most reaches the best found is worked, so no parlay left can beat it (a tie to the lower ids). With the
+   props parts' own sums alone (the fast ones set aside), the first EP.slow */
+function epBest(P,n,floor,memo){
+  let best=null, worked=0;
+  for(const x of epScan(P,n,floor)){ if(best&&x.ub<best.s) break;
+    /* with a floor the price is worked first (kept for each game's legs, so mostly worked already): a parlay whose
+       chance at its most, times its exact price, cannot reach the best is passed over */
+    if(floor&&best&&EP_FAST&&!memo.has(x.ids.join(','))){ const d=epDec(P,x.ids);
+      if(d!=null&&epBounds(x.a,d,x.k,0,0)[0]*d<best.s) continue; }
+    if(!EP_FAST&&++worked>EP.slow) break;
+    const e=epReal(P,x.ids,memo); if(floor&&!(e.p>=floor)) continue; const v=floor?e.p*e.dec:e.p;
+    if(!best||v>best.s||(v===best.s&&e.id<best.e.id)) best={e,s:v}; }
+  return best&&best.e;
+}
+/* one level, Suggested Parlays' rule on the Elo chance: Safe (no floor) the likeliest pair; a level with a floor the
+   best expected return over it, else, where no parlay of its size reaches it, the likeliest of its size, marked so;
+   null with fewer than n candidates */
+function epLevel(P,t,memo){
+  const [,,n,floor]=t; if(P.N<n) return null;
+  if(floor){ const r=epBest(P,n,floor,memo); if(r) return r; }
+  const x=epBest(P,n,0,memo);
+  return x?(floor&&x.p<floor?{...x,likeliest:true}:x):null;
+}
+/* a parlay's fair chance (parlayFair, the book's prices with the margin out), worked again only when a leg's
+   fair chance or price has moved */
+const EP_FAIR=new Map();
+function epFair(legs){
+  if(typeof parlayFair!=='function') return null;
+  let key=null;
+  try{ const m={}; key=legs.map(l=>{ const f=typeof legFair==='function'?legFair(l,m):null, pr=typeof legPrice==='function'?legPrice(l):null;
+    return [epId(l),l.price,f?f.p+'/'+f.est:'-',pr?pr.src+'/'+pr.ml:''].join('~'); }).join(','); }catch(e){ key=null; }
+  if(key!=null&&EP_FAIR.has(key)) return EP_FAIR.get(key);
+  const v=parlayFair(legs);
+  if(key!=null){ EP_FAIR.set(key,v); if(EP_FAIR.size>64) EP_FAIR.delete(EP_FAIR.keys().next().value); }
+  return v;
+}
+/* the four levels on the candidates, kept until the candidates (or the payload, or the levels) change, so a
+   redraw costs nothing; each level's id is the level's own behind elo- (elo-safe, elo-med, elo-aggr, elo-xtrm),
+   which Add to builder and the parlay card's Finish name. o.kept: only what is already built, else {wait}
+   (the section, drawn while Suggested Parlays is off the screen, builds nothing: a load of the hub pays nothing
+   for a tab nobody opened, as the sets do) */
+let EP_CACHE=null;
+function eloPicks(o){
+  const LV=typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?PB_TIERS:null;
+  if(!LV||typeof parlayProb!=='function'||typeof parlayDec!=='function') return null;
+  const all=eloCands(); if(!all) return null;
+  const C=epKeep(all);
+  /* what the levels stand on: the payload, the levels, the candidates and how each pair of them in one game moves together */
+  const rho=[]; for(let i=0;i<C.length;i++) for(let j=i+1;j<C.length;j++) if(C[i].gid===C[j].gid) rho.push(typeof legRho==='function'?legRho(C[i],C[j]):0);
+  const sig=JSON.stringify([typeof PAY==='object'&&PAY?PAY.baked_at||null:null,LV,C,rho]);
+  let base=EP_CACHE&&EP_CACHE.sig===sig?EP_CACHE.base:null;
+  if(!base&&o&&o.kept) return {tiers:null,wait:true,cands:C,candidates:all.length,games:new Set(C.map(l=>l.gid)).size};
+  if(!base){
+    /* each level's figures are the props parts' own sums on its legs, worked again; the fast sums are theirs to the
+       bit (check_tab and the nflbets smoke hold them so), and should a level ever differ they are set aside */
+    const build=()=>{ const P=epPrep(C), memo=new Map();
+      return LV.map(t=>{ const [id,label,n,floor]=t, r=epLevel(P,t,memo), x=r&&epExact(r.legs);
+        return r?{id:'elo-'+id,label,n,floor,legs:x.legs,p:x.p,dec:x.dec,...(floor&&x.p<floor?{likeliest:true}:{}),same:x.p===r.p&&x.dec===r.dec}
+          :{id:'elo-'+id,label,n,floor,legs:[],why:`Only ${all.length} player${all.length===1?'':'s'} on your picks qualif${all.length===1?'ies':'y'}: this level takes ${n}.`}; }); };
+    base=build();
+    if(EP_FAST&&base.some(t=>t.legs.length&&!t.same)){ EP_FAST=false; base=build(); }
+    base=base.map(({same,...t})=>t);
+    EP_CACHE={sig,base}; }
+  const tiers=base.map(t=>t.legs.length?{...t,fair:epFair(t.legs),sig:'elo|'+t.legs.map(epId).join(',')}:t);
+  return {tiers,cands:C,candidates:all.length,games:new Set(C.map(l=>l.gid)).size};
+}
+/* how a level was chosen, as its card says it */
+const epRuleOf=t=>t.likeliest?`the likeliest ${t.legs.length} legs`:t.floor?`best value that lands ${Math.round(t.floor*100)}%+ by Elo`:'the likeliest pair';
+/* each player's mismatch this week where the Props tab's Mismatches has one, Solid and up, as a game's page tags it */
+function epMm(){ const by={}; try{ for(const v of mismatches()) if(mmGrade(v.score)[0]!=='Slight'&&!by[v.pid]) by[v.pid]=v; }catch(e){} return by; }
+/* the side a mismatch favours: every one is a player standing above his position's average against a unit below the
+   league's (mismatches() keeps only those), so it reads for his over, a ladder rung of his and his touchdown, and
+   never for an under on him, a bet against him whatever the matchup formula's own nudge says (18 October 2026:
+   Matthew Golden's Under 65.5 receiving yards wore "Solid mismatch"); nor for more interceptions, which he would
+   rather not throw */
+const epMmFor=l=>!!l&&l.side==='over'&&l.stat!=='passing_interceptions';
+function epMmTag(v){
+  const g=mmGrade(v.score)[0], t=document.createElement('span');
+  t.className='pe-mmtag'; t.dataset.peMmtag=v.score.toFixed(1); t.dataset.peMmgrade=g;
+  t.title=mmTitle(v);
+  t.textContent=g+' mismatch'; return t;
 }
 /* the Elo picks, as their own section at the foot of Suggested Parlays (app v111; until then the Parlay
    Builder's suggested parlays): built from the games and player sides ticked on the Parlay Builder tab, as
-   they always were, each tier added to the builder, a leg at a time or whole, or finished as a card like
-   the sets' own */
+   they always were, each level added to the builder, a leg at a time or whole, or finished as a card like
+   the sets' own; each leg on a player with a mismatch this week, on the side it favours, wears it after his name */
 function eloSuggest(){
   const v=document.getElementById('pbElo'); if(!v) return;
-  const r=eloPicks(); if(!r||typeof pbTierCard!=='function'){ v.innerHTML=''; return; }
+  const tab=document.getElementById('tab-suggest'), shown=!tab||!tab.hidden;
+  const r=eloPicks(shown?undefined:{kept:true}); if(!r||typeof pbTierCard!=='function'){ v.innerHTML=''; return; }
   const w=typeof currentWeek==='function'?currentWeek():'', sides=typeof pbPlayerSides!=='function'||pbPlayerSides();
   let body;
   if(!sides) body=`<p class="pb-why">Tick Player overs or Player unders on the Parlay Builder tab for the Elo picks: every leg is a player's line.</p>`;
-  else if(!r.tiers.length) body=`<p class="pb-why">No Elo picks on your picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price on the games and sides ticked'
-    :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. ${typeof dkCarries==='function'&&typeof pbGames==='function'&&pbGames().some(g=>dkCarries({week:g.w,gid:g.id}))
+  else if(r.wait) body=`<p class="pb-why" data-pb-elo-wait>Built when this tab is open.</p>`;
+  else if(!r.tiers.some(t=>t.legs.length)) body=`<p class="pb-why">No Elo picks on your picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price on the games and sides ticked'
+    :'only one ranked player beats a book price on the games and sides ticked, and a pick takes two'}. ${typeof dkCarries==='function'&&typeof pbGames==='function'&&pbGames().some(g=>dkCarries({week:g.w,gid:g.id}))
     ?'A pick takes only legs DraftKings’ betslip can take, by DraftKings’ own id, which comes with its player prices: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET). A line read by Refresh odds carries no id.'
     :`Player prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET)${typeof espnOn==='function'&&espnOn()?'; DraftKings’ lines read by Refresh odds count too, at our estimate of its price':''}.`}</p>`;
-  else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:`data-pb-elo-add="${t.id}"`,
-      rule:'<span class="pb-rule">plus money first, one leg a game</span>',badge:l=>badge(l.pid),legP:l=>l.pe})).join('')}</div>`;
+  else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',by:'Elo',kind:'elo',what:'the Elo picks',add:`data-pb-elo-add="${t.id}"`,
+      rule:`<span class="pb-rule">${epRuleOf(t)}</span>`,badge:l=>badge(l.pid),legP:l=>l.pe})).join('')}</div>`;
   v.innerHTML=`<h3>Elo picks <span class="pill">week ${w}</span></h3>
     <p class="muted pb-lead" style="margin:0 0 12px">Players whose Elo matchup beats the book's price, on the games and player sides ticked on the Parlay Builder tab.</p>${body}`;
+  if(!r.tiers) return;
+  const mm=epMm();
+  v.querySelectorAll('.pb-tier[data-pb-tier]').forEach(card=>{ const t=r.tiers.find(x=>x.id===card.dataset.pbTier); if(!t) return;
+    [...card.querySelectorAll('.pb-legs > li')].forEach((li,i)=>{ const l=t.legs[i], m=l&&mm[l.pid]; if(!m||String(m.game_id)!==String(l.gid)||!epMmFor(l)) return;
+      const nm=li.querySelector('.nm'), name=nm&&(nm.querySelector(':scope > .glance-name')||[...nm.childNodes].find(x=>x.nodeType===3&&x.textContent.trim())); if(name) name.after(epMmTag(m)); }); });
   v.querySelectorAll('[data-pb-elo-add]').forEach(b=>b.addEventListener('click',()=>{
-    const t=r.tiers.find(x=>x.id===b.dataset.pbEloAdd); if(t&&typeof pbPut==='function') pbPut(t.legs,`the ${t.label} parlay`); }));
+    const t=r.tiers.find(x=>x.id===b.dataset.pbEloAdd); if(t&&t.legs.length&&typeof pbPut==='function') pbPut(t.legs,`the ${t.label} Elo pick`); }));
 }
 window.eloPicks=eloPicks;
-if(typeof renderPb==='function'){ const drawPb=renderPb;
+/* for the checks: the fast sums on parlays of the given candidates (each a list of them), as the search works them,
+   to be held to parlayProb's and parlayDec's own; and the side a leg's mismatch tag reads for */
+window.eloSums=(cands,sets)=>{ const P=epPrep(cands), at=new Map(P.C.map((l,i)=>[l,i])); return sets.map(ls=>epSums(P,ls.map(l=>at.get(l)).sort((a,b)=>a-b))); };
+window.eloMmFor=epMmFor;
+/* drawn after Suggested Parlays' own sets, wherever they are drawn (renderPb draws them last, and the tab's
+   opening draws them alone), so the Elo picks are built as the tab comes on the screen */
+if(typeof renderSp==='function'){ const drawSp=renderSp;
+  renderSp=function(){ const r=drawSp.apply(this,arguments); try{ eloSuggest(); }catch(e){} return r; }; }
+else if(typeof renderPb==='function'){ const drawPb=renderPb;
   renderPb=function(){ const r=drawPb.apply(this,arguments); try{ eloSuggest(); }catch(e){} return r; }; }
 if(typeof renderTrack==='function'){ const drawTrack=renderTrack;
   renderTrack=function(){ const r=drawTrack.apply(this,arguments); trackAlt(); return r; }; }
@@ -9141,7 +9499,7 @@ if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
    back against the line and linebackers. The top five sit over the Props game list as
    bubbles; Show more opens the top thirty. Each carries the matchup formula's projection for
    the player's leading stat. Only on the week the matchups are for. */
-const MM_UNIT={QB:{units:['DB','DL'],name:'pass defense'},WR:{units:['DB'],name:'pass defense'},TE:{units:['DB'],name:'pass defense'},RB:{units:['DL','LB'],name:'run defense'}};
+const MM_UNIT={QB:{units:['DB','DL']},WR:{units:['DB']},TE:{units:['DB']},RB:{units:['DL','LB']}};
 /* how big an edge is, in words and a colour: 3 and up huge, 2 big, 1 solid, less slight */
 const mmGrade=s=>{const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4']:x>=2?['Big','pe-g3']:x>=1?['Solid','pe-g2']:['Slight','pe-g1'];};
 const MM_LEAD={QB:'passing_yards',RB:'rushing_yards',WR:'receiving_yards',TE:'receiving_yards'};
@@ -9164,13 +9522,19 @@ function mismatches(){
     rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t],i)=>[t,i+1]))}; }
   return P.filter(v=>pz[v.group]).map(v=>{ const d=unitOf(v), a=pz[v.group](v.elo), b=dz[v.group](d);
       const lead=MM_LEAD[v.group], st=v.stats&&v.stats[lead];
-      return {...v,unit:Math.round(d),unitName:MM_UNIT[v.group].name,defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:st?st[1]:null,nudge:st?st[2]:null}; })
+      return {...v,unit:Math.round(d),against:mmAgainst(v.group),defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:st?st[1]:null,nudge:st?st[2]:null}; })
     .filter(v=>v.zp>0&&v.zd<0).sort((x,y)=>y.score-x.score);
 }
 const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
 const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]||'th');
-/* the plain words: a Diamond RB against a run D ranked 30th */
-const mmLine=v=>`vs a ${esc(v.unitName)} ranked ${ordinal(v.defRank)}`;
+/* the plain words. What a mismatch ranks is the matchup formula's units, the averages of the player ratings of the
+   defenders he faces (the secondary for a receiver or tight end, the secondary and the line for a quarterback, the
+   line and the linebackers for a back), never the ELO Ratings tab's Pass Defense or Run Defense table, which rate a
+   defense on its plays and can rank the same club far apart (LAC 32nd of the one for Patrick Mahomes, 4th of the
+   other, in week 6): so its words name the units and what ranks them, and "pass defense ranked" on the page is the
+   table's alone (18 October 2026, beside the matchup bubble, whose Faces line is the table's) */
+const mmLine=v=>`vs the ${esc(v.opp)} ${esc(v.against)}, ${ordinal(v.defRank)} by player Elo`;
+const mmTitle=v=>`${mmGrade(v.score)[0]} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs the ${v.opp} ${v.against}, ranked ${ordinal(v.defRank)} of ${v.defN} on the matchup formula's player ratings`;
 const mmProj=v=>v.proj==null?'':`<b>${Math.round(v.proj)} ${MM_LBL[v.lead]}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}`;
 function mmName(pid){ return (D.players&&D.players.players&&D.players.players[pid]&&D.players.players[pid].name)||pid; }
 /* a click on a player opens his game with his stats already open, scrolled to and highlighted */
@@ -9218,10 +9582,10 @@ function mismatchModal(rows){
     m.addEventListener('click',e=>{ if(e.target===m) mmClose(); });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) mmClose(); }); }
   const body=rows.map((v,i)=>`<tr data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" style="cursor:pointer"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))} <span class="muted" style="font-weight:600">(${esc(v.group)})</span></td>
-    <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.unitName)}</small></td>
+    <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.against)}</small></td>
     <td class="pe-c pe-edge ${mmGrade(v.score)[1]}"><b>${v.score.toFixed(1)}</b><small>${mmGrade(v.score)[0]}</small></td><td class="pe-n">${v.proj==null?'–':Math.round(v.proj)+' '+MM_LBL[v.lead]}${v.nudge?`<small class="muted" style="display:block;font-size:11px">${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup</small>`:''}</td></tr>`).join('');
   document.getElementById('peMmView').innerHTML=`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">Mismatches, week ${esc(D.mu.week)} <span class="pill">top ${rows.length}</span><span style="flex:1"></span><button class="btn quiet" id="peMmClose">Close</button></h2>
-    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the defense among all 32, 1st the best: quarterbacks, receivers and tight ends against the pass defense, backs against the run defense. Click a row to open the game at his stats.</p>
+    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the units he faces among all 32 defenses by their players' Elo, as the matchup formula rates them, 1st the best: a quarterback against the secondary and defensive line, a receiver or tight end against the secondary, a back against the defensive line and linebackers (not the ELO Ratings tab's Pass Defense or Run Defense table). Click a row to open the game at his stats.</p>
     <div style="overflow-x:auto"><table class="pe-t pe-mm-t"><thead><tr><th class="pe-n">#</th><th>Player</th><th class="pe-c">Game</th><th class="pe-c">Facing</th><th class="pe-c" title="How lopsided the matchup is: the player's standing at his position plus the defence's weakness, in standard deviations">Edge</th><th class="pe-n">Projection</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
   document.getElementById('peMmClose').addEventListener('click',mmClose);
   m.querySelectorAll('tr[data-mm-game]').forEach(r=>r.addEventListener('click',()=>{ mmClose(); mmOpen(r.dataset.mmGame,r.dataset.mmPid); }));
@@ -9232,6 +9596,31 @@ window.eloMismatches=mismatches;
 /* and the way a Mismatches bubble brings a player's row into view and highlights it, for the Game
    snapshot's Starters names (the board's openOnProps) */
 window.eloFocusPlayer=mmFocus;
+/* the hub's matchup bubble (glance.js, 17 October 2026) reads a player's matchup as this tab does: the stats where
+   the Elo part has held up (muTrusted) and their labels, the defense he faces, a mismatch's grade and what the
+   Mismatches set him against, and why the matchups file has him out.
+   The defense he faces is one of this tab's own unit tables (model.json's units), the one the Game snapshot's
+   position matchups set against his side of the ball (deepdive.js ELO): a quarterback against the opponent's
+   Overall Defense (units.def; the owner's call of 16 October 2026, "QB needs to be vs team defense overall"), a back
+   against its Run Defense (units.run_def), a receiver or tight end against its Pass Defense (units.pass_def). It is
+   named as the tab names the table and ranked as the table draws the club (the file's rank, the # column, with a
+   club yet to play shown on its carried rating and marked carried, as carryTag marks it), out of the clubs the
+   table lists, as a team's window counts them. None for a kicker, before a team has a rating (the tab draws no
+   unit pill: unitsOn) or on a file without that table (unitKeys). Until 18 October 2026 this ranked the Mismatches'
+   player-Elo unit averages (matchups.json) and called them "pass defense" and "run defense", which put Green Bay's
+   pass defense 14th for Dak Prescott and 3rd for George Pickens in the same game while the Pass Defense table drew it
+   18th: the Mismatches' edge stays the matchup formula's, and its words say so (mmAgainst), with no rank of its own */
+const FACE_TABLE={QB:'def',RB:'run_def',WR:'pass_def',TE:'pass_def'};
+function unitFaced(group,opp){
+  const key=FACE_TABLE[group]; if(!key||!opp||!unitsOn()||!unitKeys().includes(key)) return null;
+  const U=D.model.units, T=U[key], v=T&&T[opp]; if(!v||v.rank==null) return null;
+  const C=unitCarry();
+  return {key,name:key==='def'?'Overall Defense':String(U.tables[key].label),team:opp,rank:v.rank,n:Object.keys(T).length,elo:v.elo,carried:!!(v.carried&&C),from:C?C.from:null};
+}
+/* what the Mismatches' edge sets a player against: the matchups file's player ratings of the opponent's units */
+const MM_WORDS={DB:'secondary',DL:'defensive line',LB:'linebackers'};
+const mmAgainst=g=>MM_UNIT[g]?MM_UNIT[g].units.map(u=>MM_WORDS[u]||u).join(' and '):null;
+window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,against:mmAgainst,outWhy};
 if(typeof renderSlate==='function'){ const drawSlate=renderSlate;
   renderSlate=function(){ const r=drawSlate.apply(this,arguments); try{ mismatchCard(); }catch(e){} return r; }; }
 if(typeof renderGame==='function'){ const drawGame=renderGame;
@@ -9851,7 +10240,7 @@ function matchup(P,g,F){
       if(!R.mine.length) return ['<span class="gs-load">None in this game</span>','No starter here is above his position\'s average facing a unit below the league\'s.'];
       const v0=R.mine[0], [gw,gc,lv]=mmGrade(v0.score), se=plSe(F,v0.pid);
       const v=`<span class="gs-mm1">${se!=null?shield(se):''} <span data-gs-n="mm1:${esc(v0.pid)}">${esc(plName(F,v0.pid))}</span> <small>${esc(v0.group)} · ${esc(v0.team)}</small></span>`;
-      const cx=`${meter(lv,gc)}${N('mm1score',v0.score.toFixed(1))} ${gw} edge, against a ${esc(v0.unitName)} ranked ${ordinal(v0.defRank)}${R.mine.length>1?` · all ${R.mine.length} in Mismatches`:''}`;
+      const cx=`${meter(lv,gc)}${N('mm1score',v0.score.toFixed(1))} ${gw} edge, against the ${esc(v0.opp)} ${esc(v0.against||'defense')}, ${ordinal(v0.defRank)} by player Elo${R.mine.length>1?` · all ${R.mine.length} in Mismatches`:''}`;
       return [v,cx]; })}
   </div>`;
   let prev=''; try{ prev=preview(P,g,F,st); }catch(e){ prev=''; }
@@ -10077,7 +10466,7 @@ function mismatchSec(P,g,F){
   const li=R.mine.map(v=>{ const [gw,gc,lv]=mmGrade(v.score), se=plSe(F,v.pid);
     return `<li data-pid="${esc(v.pid)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
       <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small><span class="gs-mmvs">${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span></span>
-      <span class="gs-mmsub">Against a ${esc(v.unitName)} ranked ${ordinal(v.defRank)} of ${v.defN}.${v.proj!=null?` <b>${Math.round(v.proj)} ${MM_LBL[v.lead]||''}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}.`:''}</span></div>
+      <span class="gs-mmsub">Against the ${esc(v.opp)} ${esc(v.against||'defense')}, ${ordinal(v.defRank)} of ${v.defN} by player Elo.${v.proj!=null?` <b>${Math.round(v.proj)} ${MM_LBL[v.lead]||''}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}.`:''}</span></div>
       <div class="gs-mmsc"><span class="gs-mmv">${meter(lv,gc)}<b class="${gc}" data-gs-mm>${v.score.toFixed(1)}</b></span><small class="${gc}">${gw}</small></div></li>`; }).join('');
   const v0=R.mine[0];
   const sum=`best ${esc(plName(F,v0.pid))} ${N('mm1score',v0.score.toFixed(1))}`;
@@ -10234,6 +10623,10 @@ function close(restore=true){
 }
 window.gameSnapshot=open;
 window.gameSnapshotClose=close;
+/* the hub's matchup bubble (glance.js, 17 October 2026) reads a game as this window does: the records Team Rankings
+   counts, the line as the board reads it, every model's call and its chance, the Power Ratings, Overall Offense and
+   Overall Defense */
+window.gsReadings={recordOf,lineOf,callsOf,chanceOf,teamsOf,unitsOf};
 /* start waiting on the Elo files and the news job's files now, so a window opened later has them at
    once rather than drawing again under the visitor as each answers; and the notes of the board's week
    as soon as the board has its schedule (it opens on the first week with a game still to play, else
@@ -10249,6 +10642,463 @@ if(!boardNotes()){ const bd=$('pkBoard');
 /* a window opened before the prop model was up draws again once it is: the button to the game's page
    on the Props tab needs the prop model's schedule */
 document.addEventListener('app-ready',()=>{ if(cur) redraw(); });
+})();
+</script>
+<script>
+/* ---------- the matchup bubble ----------
+   The owner, 17 October 2026: "in the parlay builder, when i click on a player or a team, bring up a bubble pop up
+   where it shows their matchup for the day so i can see info at a glance."
+
+   A leg's name on the Parlay Builder tab and on Suggested Parlays (the Top 50 lines, the builder's rows, a set's
+   level cards and the Elo picks' cards) is, on this page, a button the props parts draw (glanceName in part3.js,
+   app v114): data-glance "p:<pid>" for a player's line, "t:<ABBR>" for a team's moneyline or spread, "g:<gid>" for
+   a game total, the leg's game in data-glance-game and the leg itself kept by its signature (window.glanceLeg). The
+   parts draw it only where this module is on the page (window.hubGlance), so the prop model's own page keeps plain
+   names. One delegated click on a name (Enter and Space too: it is a button) opens a small window anchored to it:
+   below the name, above it where there is no room below, kept inside the screen; a sheet across the foot of the
+   screen at 640px and under, and wherever neither side of the name has 160px for it (a landscape phone). It is
+   role="dialog" aria-modal="false", labelled by its heading; the focus moves into it and Tab stays inside while it
+   is open; Escape, Close (44px), a click outside it or a click on another name close it, the focus going back to
+   the name. It sits under the page's windows (z-index 45; the Game snapshot it opens closes it first).
+
+   The same leg is often drawn in several places at once (a Top 50 row and its builder row, one set's Safe to Extreme
+   cards, a set's card and an Elo pick's), so the bubble keeps the place it was opened from (the builder, the Top 50,
+   or a level card in its set or in the Elo picks: placeOf) and the leg's key, side and line, and when the page draws
+   its rows again while it is open (a MutationObserver, connected only then) it is bound to that place's copy of the
+   leg (marked open, placed again, drawn again where the copy's price moved), or closed, the focus on the leg's
+   neighbour there, where that place no longer draws the leg. Placed again, it keeps where the reader had scrolled it.
+
+   What it shows is a few lines, no paragraphs, every number read from what the page already has (nothing is
+   fetched, nothing is saved): for a player his club and position, his status on the injury report as the page
+   reads it, his season Elo with its shield, tier and rank at his position (players.json; prov. where provisional),
+   the game (the opponent, home or away, the kickoff in ET), the defense he faces as the ELO Ratings tab's own table
+   for his leg's side of the ball names and ranks it (model.json's units: a quarterback the opponent's Overall Defense, a
+   back its Run Defense, a receiver or tight end its Pass Defense, as the Game snapshot's position matchups set them:
+   window.eloGlance.unit), his mismatch's grade and edge where the Props tab's Mismatches have one (matchups.json,
+   window.eloMismatches; no rank of its own), the stats where the Elo part of the matchup has held up (muTrusted)
+   with his recent form and the matchup's projection, and the leg it was opened from: its line, the price its row
+   shows, the model's chance, the book's fair chance (legFair), market + form (eloAltP) and the Elo matchup's chance
+   (eloMatchupP), both on that price. For a team's or a game's leg, both clubs' records as Team Rankings counts
+   them, the line the leg stands on (the prop model's own row, DraftKings' named so; the board's only for a game it
+   has no row for), each club's Power Rating and rank, Overall Offense against Overall Defense
+   each way, each model's pick (the Game snapshot's own readings, window.gsReadings), the leg's team marked "this
+   leg" and, on a moneyline alone, each model picking that team to win ticked, the leg, and Open game snapshot.
+   What a file has not given says so in its own line, and the rest draws. */
+(function(){
+'use strict';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]||'th');
+const pc0=p=>(p*100).toFixed(0)+'%';
+const dec=x=>Math.abs(x)>=10?x.toFixed(0):x.toFixed(1);
+const N=(key,v)=>`<b data-glance-n="${esc(key)}">${esc(v)}</b>`;
+const tg=t=>window.pkTag?window.pkTag(t,window.pkTagColor?window.pkTagColor(t):null,false,'mini'):`<b>${esc(t)}</b>`;
+const shield=e=>e!=null&&window.pkTierBadge?window.pkTierBadge(e):'';
+const tierName=e=>{ const t=e!=null&&window.pkEloTier?window.pkEloTier(e):null; return t?t[0]:''; };
+const nick=t=>(typeof TEAM_NAMES==='object'&&TEAM_NAMES&&TEAM_NAMES[t])||t;
+const fmtPx=v=>typeof fmtML==='function'?fmtML(v):(v>0?'+'+v:String(v));
+const Sx=()=>(typeof S==='object'&&S)?S:null;
+const propsRow=gid=>{ const s=Sx(); return s&&Array.isArray(s.sched)?s.sched.find(x=>x.id===gid)||null:null; };
+const board=()=>window.pkBoard||null;
+const boardRow=gid=>{ const P=board(); return P&&P.ST&&Array.isArray(P.ST.sched)?P.ST.sched.find(x=>x.game_id===gid)||null:null; };
+
+/* the ELO Ratings tab's one read of its files, as the Game snapshot waits on it */
+let FILES=null;
+if(typeof window.eloFiles==='function') Promise.resolve(window.eloFiles()).then(f=>{ FILES=f||{}; if(cur) draw(); },
+  e=>{ FILES={err:String(e&&e.message||e)}; if(cur) draw(); });
+
+/* the kickoff in ET: the schedule's own date and time, which are US Eastern */
+function kickEt(d,t){
+  if(!d) return '';
+  const day=new Date(d+'T12:00:00Z');
+  const ds=isNaN(day)?d:day.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'});
+  const m=/^(\d{1,2}):(\d{2})/.exec(t||''); if(!m) return ds;
+  const h=+m[1]; return `${ds} · ${(h%12)||12}:${m[2]} ${h<12?'AM':'PM'} ET`;
+}
+/* the game the bubble is about: the board's row (state.json's schedule) where it has one, else the prop
+   model's own row in the board's shape, so a game the board does not carry still draws what it has */
+function gameView(gid){
+  const b=boardRow(gid); if(b) return {g:b,board:true,a:b.away_team,h:b.home_team,week:+b.week,d:b.gameday,t:b.gametime};
+  const r=propsRow(gid); if(!r) return null;
+  return {g:{game_id:r.id,week:r.w,gameday:r.d,gametime:r.t,away_team:r.a,home_team:r.h,spread_line:r.sp,total_line:r.tot,game_type:'REG'},board:false,a:r.a,h:r.h,week:+r.w,d:r.d,t:r.t,row:r};
+}
+/* the leg the bubble was opened from, as its row drew it */
+const legOf=sig=>sig&&typeof window.glanceLeg==='function'?window.glanceLeg(sig):null;
+
+let cur=null, box=null;
+/* where a name is drawn, worked out from the page when the bubble opens, so a redraw finds the same copy of it: the
+   builder (#parlayBody), the Top 50 lines (#pbPanel), or a level card (.pb-tier[data-pb-tier]) in its section, a
+   set's under its game ([data-sp-game], inside #spPanel) and an Elo pick's under #pbElo, since a set's level ids and
+   the Elo picks' are the same four; anywhere else the nearest element with an id. One leg is often drawn in several
+   places at once (a Top 50 row and its builder row, one set's Safe to Extreme cards, a set's card and an Elo pick's),
+   but within one of these once: the builder holds one leg a stat, the list each bet once, a card one leg a player.
+   A leg is known there by its key, side and line (its signature less the price, its source and the model's chance,
+   which a Refresh odds press or a rung's book price can move while the leg stays) */
+const qv=v=>'"'+String(v).replace(/["\\]/g,'\\$&')+'"';
+const legId=sig=>{ const p=String(sig||'').split('|'); return p.length>3?p.slice(0,-3).join('|'):p.join('|'); };
+function placeOf(btn){
+  const sec=btn.closest('#parlayBody,#pbPanel,#pbElo,[data-sp-game]')||btn.closest('[id]'); if(!sec) return null;
+  const s=sec.id?`[id=${qv(sec.id)}]`:`[data-sp-game=${qv(sec.dataset.spGame)}]`, card=btn.closest('.pb-tier[data-pb-tier]');
+  return card&&sec.contains(card)?`${s} .pb-tier[data-pb-tier=${qv(card.dataset.pbTier)}]`:s;
+}
+const namesIn=el=>el?[...el.querySelectorAll('[data-glance]')]:[];
+const sameLeg=(b,c)=>b.dataset.glance===c.of&&(b.dataset.glanceGame||'')===c.gid&&legId(b.dataset.glanceLeg)===c.leg;
+/* the open bubble's name: the one it was opened from while that is on the page, else, after a redraw, the same
+   leg's copy in the same place (marked open, and the bubble's leg the copy's, so its numbers follow a new price) */
+function anchor(){
+  if(!cur) return null;
+  if(cur.from&&cur.from.isConnected) return cur.from;
+  const pl=cur.place?document.querySelector(cur.place):null, same=namesIn(pl).find(b=>sameLeg(b,cur))||null;
+  if(same){ cur.from=same; same.setAttribute('aria-expanded','true');
+    if(same.dataset.glanceLeg!==cur.sig){ cur.sig=same.dataset.glanceLeg||''; cur.stale=true; } }
+  return same;
+}
+
+/* ---- the leg it was opened from ---- */
+function legHtml(K){
+  if(!K||!K.leg) return '';
+  const l=K.leg, price=K.price, src=K.src, out=[];
+  const est=src==='dkline'||src==='est'?' est.':src==='fair'?' fair':'';
+  out.push(`<div><dt>Price</dt><dd>${N('price',price!=null&&isFinite(price)?fmtPx(price)+est:'–')}</dd></div>`);
+  if(l.p!=null&&isFinite(l.p)) out.push(`<div><dt>Model</dt><dd>${N('model',pc0(l.p))}</dd></div>`);
+  let f=null; try{ f=typeof legFair==='function'?legFair(l):null; }catch(e){ f=null; }
+  out.push(`<div><dt>Fair</dt><dd>${f&&f.p!=null?N('fair',pc0(f.p)+(f.est?' est.':'')):'<span class="glance-q" data-glance-n="fair">none</span>'}</dd></div>`);
+  if(!/^(t|g):/.test(cur.of)){
+    let mf=null; try{ mf=typeof window.eloAltP==='function'?window.eloAltP(l.pid,l.side,price,src,l.stat):null; }catch(e){ mf=null; }
+    if(mf!=null) out.push(`<div><dt>Market + form</dt><dd>${N('mf',Math.round(mf*100)+'%')}</dd></div>`);
+    /* no Elo matchup for a player the page has ruled out: the bubble says above that he has none to show (the
+       matchups file can be hours behind the report the page reads) */
+    const ruled=typeof window.eloRuledOut==='function'&&window.eloRuledOut(l.pid);
+    let mu=null; try{ mu=!ruled&&typeof window.eloMatchupP==='function'&&typeof mlProb==='function'&&price!=null&&isFinite(price)?window.eloMatchupP(l,mlProb(price)):null; }catch(e){ mu=null; }
+    if(mu!=null) out.push(`<div><dt>Elo matchup</dt><dd>${N('mu',Math.round(mu*100)+'%')}</dd></div>`);
+  }
+  return `<div class="glance-leg" data-glance-legbox><p class="glance-lt"><span class="glance-k">This leg</span> ${N('label',l.label||'')}</p><dl class="glance-nums">${out.join('')}</dl></div>`;
+}
+function snapBtn(gid){
+  return boardRow(gid)&&typeof window.gameSnapshot==='function'?`<div class="glance-acts"><button type="button" class="btn quiet glance-snap" data-glance-snap="${esc(gid)}">Open game snapshot</button></div>`:'';
+}
+
+/* ---- a player ---- */
+function playerHtml(){
+  const pid=cur.id, gid=cur.gid, K=legOf(cur.sig), L=K&&K.leg, G=gameView(gid), F=FILES;
+  const Pl=F&&F.players, e=Pl&&Pl.players&&Pl.players[pid]||null, sp=Sx()&&Sx().players&&Sx().players[pid]||null, mu=F&&F.mu;
+  /* his side of the ball is the leg's (a receiving line is an offense's, whatever position he is rated at: Travis
+     Hunter, rated a defensive back, has receiving lines), so the defense he faces follows the leg; his Elo and rank
+     stay the ratings file's, at the position he is rated at, which the rank line names */
+  const name=(L&&L.name)||(e&&e.name)||(sp&&sp.n)||pid, grp=(L&&L.grp)||(sp&&sp.grp)||(e&&e.group)||'';
+  const pos=(L&&L.pos)||(sp&&sp.pos)||grp, team=(L&&L.team)||(sp&&sp.team)||(e&&e.team)||'';
+  const opp=G?(team===G.h?G.a:team===G.a?G.h:(L&&L.opp)||''):(L&&L.opp)||'', home=G?team===G.h:null;
+  const lines=[];
+  /* his status, as the page reads the report and the roster */
+  let it=null; try{ it=typeof injTag==='function'?injTag(pid):null; }catch(e){ it=null; }
+  const outWhy=window.eloGlance&&window.eloGlance.outWhy?window.eloGlance.outWhy(pid):null;
+  const status=it?`<span class="inj inj-${esc(it.k)}" data-glance-n="inj">${esc(it.t)}</span> <span class="glance-why">${esc(it.title||'')}</span>`
+    :outWhy?`<span class="inj inj-out" data-glance-n="inj">OUT</span> <span class="glance-why">${esc(outWhy)}</span>`:'';
+  const sub=`<p class="glance-sub"><span data-glance-n="pos">${esc(pos)}</span>${team?` · <span data-glance-n="team">${esc(team)}</span>`:''}${status?` ${status}`:''}</p>`;
+  /* his season Elo, its shield and tier, and his rank at his position */
+  if(!F) lines.push(`<div><dt>Season Elo</dt><dd class="glance-q">Loading the ratings…</dd></div>`);
+  else if(e&&e.se!=null){
+    const grpX=Pl.groups&&Pl.groups[e.group], row=grpX&&(grpX.top||[]).find(x=>x.id===pid);
+    lines.push(`<div><dt>Season Elo</dt><dd><span class="glance-sh">${shield(e.se)}</span>${N('se',e.se)} <span data-glance-n="tier">${esc(tierName(e.se))}</span></dd></div>`);
+    if(e.rank) lines.push(`<div><dt>Rank</dt><dd>${N('rank','#'+e.rank)}${grpX&&grpX.active?` <span class="glance-q">of <span data-glance-n="of">${esc(grpX.active)}</span> ${esc(String(grpX.label||e.group).toLowerCase())}</span>`:''}${row&&row.prov?' <span class="glance-prov" data-glance-n="prov">prov.</span>':''}</dd></div>`);
+  } else {
+    const sd=Pl&&Pl.groups?Object.values(Pl.groups).flatMap(x=>x.sidelined||[]).find(x=>x.id===pid):null;
+    lines.push(`<div><dt>Season Elo</dt><dd class="glance-q" data-glance-n="noelo">${sd?`not ranked: ${esc(sd.why)}`:F.err&&!Pl?'the ratings did not load':'no Elo rating this season'}</dd></div>`);
+  }
+  /* the game */
+  if(G) lines.push(`<div><dt>Game</dt><dd>${home==null||!opp?'':`<span data-glance-n="ha">${home?'vs':'at'}</span> <span data-glance-n="opp">${tg(opp)}</span> · `}<span data-glance-n="kick">${esc(kickEt(G.d,G.t))}</span></dd></div>`);
+  /* the defense he faces: the ELO Ratings tab's own table for his side of the ball (a quarterback the opponent's
+     Overall Defense, a back its Run Defense, a receiver or tight end its Pass Defense, as the Game snapshot's position
+     matchups set them), named as the tab names it and ranked as its table draws the club (eloGlance.unit); none for a
+     kicker or where the tab has no such table */
+  const GL=window.eloGlance||null;
+  if(F&&G&&opp&&(team===G.h||team===G.a)){ let u=null; try{ u=GL&&GL.unit?GL.unit(grp,opp):null; }catch(e){ u=null; }
+    if(u) lines.push(`<div data-glance-faces="${esc(u.key)}"><dt>Faces</dt><dd title="The ELO Ratings tab's ${esc(u.name)} table: ${esc(u.team)} ${esc(ordinal(u.rank))} of ${esc(u.n)}"><span data-glance-n="uclub">${tg(u.team)}</span> <span data-glance-n="unit">${esc(u.name)}</span> ranked ${N('urank',ordinal(u.rank))} <span class="glance-q">of <span data-glance-n="uof">${esc(u.n)}</span>${u.carried?` · <span data-glance-n="ucarry">carried from ${esc(u.from)}</span>`:''}</span></dd></div>`); }
+  /* his Elo matchup this week, as the ELO Ratings tab and the Mismatches have it */
+  let table='';
+  const v=mu&&mu.players&&mu.players[pid]||null;
+  const ruled=typeof window.eloRuledOut==='function'&&window.eloRuledOut(pid);
+  if(!F) {}
+  else if(!mu) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">the matchups did not load</dd></div>`);
+  else if(!v||v.game_id!==gid) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">${v?`the matchups file has him in another game (week ${esc(mu.week)})`:`none in the matchups file for week ${esc(mu.week)}`}</dd></div>`);
+  else if(ruled) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">not expected to play, so none to show</dd></div>`);
+  else {
+    /* the Props tab's Mismatches: its grade and edge, on the matchup formula's player ratings of the units he faces
+       (its title says which); no rank of its own, so the bubble never ranks one defense twice */
+    let mm=null; try{ mm=typeof window.eloMismatches==='function'?(window.eloMismatches()||[]).find(x=>x.pid===pid&&x.game_id===gid):null; }catch(e){ mm=null; }
+    if(mm&&GL&&GL.grade){ const ag=GL.against?GL.against(v.group):null;
+      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="The Props tab's Mismatches: his Elo above his position's average plus how far the ${esc(v.opp)} ${esc(ag||'defense')} stand${ag&&/ and /.test(ag)?'':'s'} below the league's, on the matchup formula's player ratings, in standard deviations">${N('mm',GL.grade(mm.score)[0])} · edge ${N('gap',mm.score.toFixed(1))} <span class="glance-q">SD</span></dd></div>`); }
+    const st=(mu.stats&&mu.stats[v.group]||Object.keys(v.stats||{})).filter(s=>v.stats&&v.stats[s]&&GL&&GL.trusted(v.group,s));
+    table=st.length?`<table class="glance-t" aria-label="His trusted stats: recent form and the Elo matchup's projection"><thead><tr><th scope="col">Stat</th><th scope="col" class="glance-n">Form</th><th scope="col" class="glance-n">Projected</th></tr></thead><tbody>${st.map(s=>{ const a=v.stats[s];
+        return `<tr data-glance-stat="${esc(s)}"${L&&L.stat===s?' class="glance-on"':''}><th scope="row">${esc((GL.labels&&GL.labels[s])||s)}</th><td class="glance-n" data-glance-n="form">${esc(dec(a[0]))}</td><td class="glance-n"><span aria-hidden="true">→ </span><b data-glance-n="proj">${esc(dec(a[1]))}</b></td></tr>`; }).join('')}</tbody></table>`
+      :`<p class="glance-q glance-none" data-glance-n="notrust">No stat of his where the Elo matchup has held up.</p>`;
+  }
+  return {title:esc(name),body:`${sub}<dl class="glance-kv">${lines.join('')}</dl>${table}${legHtml(K)}${snapBtn(gid)}`};
+}
+
+/* ---- a team, or a game ---- */
+function teamHtml(){
+  const gid=cur.gid, me=cur.of.startsWith('t:')?cur.id:null, K=legOf(cur.sig), G=gameView(gid), P=board(), F=FILES, R=window.gsReadings||null;
+  /* the leg's team is marked "this leg" (it is a row's line, not a bet the visitor has made); a model's pick is ticked
+     as going with it only on a moneyline, to win, where a model's winner is the leg's own question: a pick to win
+     says nothing of a cover (Vegas's own favourite covers its line about half the time), and a total has no side */
+  const stat=(K&&K.leg&&K.leg.stat)||String(cur.sig||'').split('|')[2]||'', toWin=!!me&&stat==='ml';
+  if(!G) return {title:esc((K&&K.leg&&K.leg.name)||gid),body:`<p class="glance-q">This game is not on the schedule the page has.</p>${legHtml(K)}`};
+  const a=G.a, h=G.h, g=G.g, M=F&&F.model;
+  const title=`${esc(nick(a))} ${P&&P.neutral&&P.neutral(g)?'vs':'at'} ${esc(nick(h))}`;
+  const sub=`<p class="glance-sub">${P&&P.weekName?esc(P.weekName(G.week)):'Week '+esc(G.week)} · <span data-glance-n="kick">${esc(kickEt(G.d,G.t))}</span></p>`;
+  const col=t=>`<th scope="col" data-glance-team="${esc(t)}"${t===me?' class="glance-me"':''}>${tg(t)}${t===me?' <small class="glance-mine">this leg</small>':''}</th>`;
+  const rows=[];
+  /* records, as Team Rankings counts them */
+  if(R&&P&&P.ST){ const rec=t=>{ const r=R.recordOf(P,M,t), x=r.reg; return x[0]+'-'+x[1]+(x[2]?'-'+x[2]:''); };
+    rows.push(`<tr data-glance-row="rec"><th scope="row">Record</th><td>${N('rec:'+a,rec(a))}</td><td>${N('rec:'+h,rec(h))}</td></tr>`); }
+  /* Power Ratings, ranked as Team Rankings ranks them */
+  const T=R&&F?R.teamsOf(F,g):null;
+  if(T) rows.push(`<tr data-glance-row="pr"><th scope="row">Power Rating</th>${[a,h].map(t=>`<td><span class="glance-sh">${shield(T.T[t].elo)}</span>${N('pr:'+t,T.T[t].elo)} <small class="glance-q">${N('prk:'+t,'#'+T.rank(t))}</small></td>`).join('')}</tr>`);
+  const tbl=`<table class="glance-vs"><thead><tr><td></td>${col(a)}${col(h)}</tr></thead><tbody>${rows.join('')}</tbody></table>${!F?'<p class="glance-q">Loading the ratings…</p>':!T?'<p class="glance-q" data-glance-n="nopr">No Power Rating for these clubs.</p>':''}`;
+  /* the line the leg stands on: the prop model's own row for the game (its spread, total and moneylines, the numbers
+     the leg, the Top 50 lines and the Game bets card are priced on: DraftKings' while its pull is under a day old or
+     after a Refresh odds press, so named, else nflverse's posted line); the board's (state.json's closing lines) only
+     for a game the prop model has no row for. Until 18 October 2026 it was the board's wherever the board had the
+     game, so a leg "To cover -4.5" at -118 sat under "BUF −5.5 · BUF −258 / LV +210" while the payload had BUF −4.5
+     and BUF −230 / LV +190 */
+  let line='';
+  const pr=propsRow(gid);
+  if(pr){ const parts=[], mm=v=>v!=null&&isFinite(v)&&v?(v>0?'+':'−')+Math.abs(Math.round(v)):null;
+    if(pr.sp!=null&&isFinite(pr.sp)) parts.push(`<span data-glance-n="spread">${pr.sp>0?esc(h)+' −'+pr.sp:pr.sp<0?esc(a)+' −'+(-pr.sp):'Pick\'em'}</span>`);
+    if(pr.tot!=null&&isFinite(pr.tot)) parts.push(`total <span data-glance-n="total">${esc(pr.tot)}</span>`);
+    if(mm(pr.mla)||mm(pr.mlh)) parts.push(`<span data-glance-n="ml">${esc(a)} ${mm(pr.mla)||'–'} / ${esc(h)} ${mm(pr.mlh)||'–'}</span>`);
+    let src=null; try{ src=typeof lineSource==='function'?lineSource(pr):null; }catch(e){ src=null; }
+    line=parts.length?parts.join(' · ')+(pr.ls==='dk'?` <span class="glance-q"${src?` title="${esc(src)}"`:''}>(<span data-glance-n="lsrc">DraftKings</span>)</span>`:'')
+      :'<span class="glance-q" data-glance-n="noline">no line posted yet</span>'; }
+  else if(G.board&&R&&P){ const Lx=R.lineOf(P,g), parts=[];
+    if(Lx.spTxt) parts.push(`<span data-glance-n="spread">${esc(Lx.spTxt)}</span>`);
+    if(Lx.tot!=null) parts.push(`total <span data-glance-n="total">${esc(Lx.tot)}</span>`);
+    if(Lx.mlA||Lx.mlH) parts.push(`<span data-glance-n="ml">${esc(a)} ${esc(Lx.mlA||'–')} / ${esc(h)} ${esc(Lx.mlH||'–')}</span>`);
+    line=parts.length?parts.join(' · '):'<span class="glance-q" data-glance-n="noline">no line posted yet</span>'; }
+  else line='<span class="glance-q" data-glance-n="noline">no line posted yet</span>';
+  /* Overall Offense against Overall Defense, each way */
+  let poss='';
+  const X=R&&F?R.unitsOf(F):null;
+  if(X&&X.on){ const U=X.U;
+    const one=(o,d)=>{ const vo=U.off[o], vd=U.def[d]; if(!vo||!vd) return '';
+      return `<li data-glance-poss="${esc(o)}-${esc(d)}">${esc(o)} offense ${N('oelo',vo.elo)} <small class="glance-q">${N('ork',ordinal(vo.rank))}</small> <span class="glance-q">vs</span> ${esc(d)} defense ${N('delo',vd.elo)} <small class="glance-q">${N('drk',ordinal(vd.rank))}</small></li>`; };
+    const both=one(a,h)+one(h,a); if(both) poss=`<p class="glance-h4">Offense vs defense</p><ul class="glance-poss">${both}</ul>`; }
+  /* every model's pick, the clicked team's side marked */
+  let picks='';
+  if(R&&P&&G.board){ const C=R.callsOf(P,g,F);
+    const MOD=[['vegas','Vegas'],['alpha','Alpha Model'],['joker','The Joker'],['elo','ELO Model']];
+    picks=`<p class="glance-h4">Picks</p><ul class="glance-picks">${MOD.map(([id,lab])=>{ const x=C[id];
+      if(!x||(x.pick!==a&&x.pick!==h)) return `<li data-glance-model="${id}"><span>${lab}</span><span class="glance-q">no call</span></li>`;
+      const p=R.chanceOf(x,g), mine=toWin&&x.pick===me;
+      return `<li data-glance-model="${id}" data-pick="${esc(x.pick)}"${mine?' class="glance-with"':''}><span>${lab}</span><span>${tg(x.pick)} ${N('p:'+id,p!=null?Math.round(p*100)+'%':'–')}${mine?' <span class="glance-chk" aria-label="picks this leg to win" role="img">✓</span>':''}</span></li>`; }).join('')}</ul>`; }
+  return {title,body:`${sub}${tbl}<p class="glance-line"><span class="glance-k">Line</span> ${line}</p>${poss}${picks}${legHtml(K)}${snapBtn(gid)}`};
+}
+
+/* ---- the window ---- */
+function make(){
+  if(box) return box;
+  box=document.createElement('div'); box.id='glanceBox'; box.className='glance-pop'; box.hidden=true;
+  box.setAttribute('role','dialog'); box.setAttribute('aria-modal','false'); box.setAttribute('aria-labelledby','glanceTitle'); box.tabIndex=-1;
+  document.body.appendChild(box);
+  box.addEventListener('click',e=>{
+    const t=e.target&&e.target.closest?e.target:null; if(!t) return;
+    if(t.closest('[data-glance-close]')){ close(true); return; }
+    const sn=t.closest('[data-glance-snap]');
+    if(sn){ const gid=sn.dataset.glanceSnap, from=anchor(); close(false); if(typeof window.gameSnapshot==='function') window.gameSnapshot(gid,from||undefined); }
+  });
+  box.addEventListener('keydown',e=>{
+    if(e.key!=='Tab') return;
+    const f=focusables(box);
+    if(!f.length){ e.preventDefault(); return; }
+    const first=f[0], last=f[f.length-1], at=document.activeElement;
+    if(e.shiftKey&&(at===first||at===box||!box.contains(at))){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey&&(at===last||!box.contains(at))){ e.preventDefault(); first.focus(); }
+  });
+  return box;
+}
+const FOCUSABLE='button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])';
+const focusables=el=>el?[...el.querySelectorAll(FOCUSABLE)].filter(x=>!x.disabled&&!x.closest('[hidden]')):[];
+const sheet=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-width:640px)').matches); }catch(e){ return false; } };
+/* the least room a side of the name must give the bubble, scrolling inside it, before it is drawn there */
+const ROOM_MIN=160;
+/* below the name, above it where there is no room below, inside the screen; a sheet across the foot of the screen
+   at 640px and under, and wherever neither side of the name has ROOM_MIN for it (a landscape phone, about 330px
+   tall or less), since a bubble held to its floor there would cover the name and run off the screen. Where the
+   reader has scrolled the bubble, the scroll is kept: measuring its whole height clears its max-height, and the
+   browser takes the scroll back to the top on that measure (any redraw on the page, or a resize, placed it again) */
+function place(){
+  if(!box||box.hidden) return;
+  const scrolled=box.scrollTop||0;
+  let sh=sheet();
+  if(!sh){
+    /* the name's own block (the name and its line under it), so the bubble never covers what the leg is */
+    const a=anchor(), at=a&&(a.closest('.nm,td.plr')||a); let r=null; try{ r=at?at.getBoundingClientRect():null; }catch(e){ r=null; }
+    if(!r){ box.classList.remove('glance-sheet'); if(scrolled) box.scrollTop=scrolled; return; }
+    const de=document.documentElement, vw=de.clientWidth||window.innerWidth||0, vh=window.innerHeight||de.clientHeight||0, pad=8, gap=6;
+    box.classList.remove('glance-sheet'); box.style.maxHeight='';   /* its whole height as a bubble, border and all (border-box), before the room is chosen */
+    const bw=box.offsetWidth||0, bh=box.offsetHeight||0, below=vh-r.bottom-gap-pad, above=r.top-gap-pad;
+    const down=bh<=below||below>=above, room=down?below:above, fits=bh<=room;
+    if(!fits&&room<ROOM_MIN) sh=true;
+    else {
+      const top=down?r.bottom+gap:r.top-gap-Math.min(bh,room), left=Math.max(pad,Math.min(r.left,vw-bw-pad));
+      box.style.maxHeight=Math.round(room)+'px';
+      box.style.left=Math.round(left+(window.scrollX||0))+'px'; box.style.top=Math.round(Math.max(pad,top)+(window.scrollY||0))+'px';
+    }
+  }
+  box.classList.toggle('glance-sheet',sh);
+  if(sh){ box.style.left=''; box.style.top=''; box.style.maxHeight=''; }
+  if(scrolled) box.scrollTop=scrolled;
+}
+function draw(){
+  if(!cur||!box) return;
+  const at=document.activeElement, inBox=box.contains(at), key=inBox&&at!==box?['glanceClose','glanceSnap'].find(k=>at.dataset&&at.dataset[k]!=null):null;
+  let v; try{ v=cur.of.startsWith('p:')?playerHtml():teamHtml(); }catch(e){ v={title:'Matchup',body:`<p class="glance-q">This could not be drawn: ${esc(e&&e.message||e)}.</p>`}; }
+  box.dataset.glanceOf=cur.of; box.dataset.glanceGame=cur.gid;
+  box.innerHTML=`<div class="glance-hd"><h3 class="glance-title" id="glanceTitle">${v.title}</h3><button type="button" class="btn quiet glance-x" data-glance-close>Close</button></div><div class="glance-body">${v.body}</div>`;
+  if(key){ const nx=box.querySelector(`[data-${key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}]`); try{ (nx||box).focus({preventScroll:true}); }catch(e){} }
+  else if(inBox){ try{ box.focus({preventScroll:true}); }catch(e){} }
+  place();
+}
+function open(btn){
+  const of=btn.dataset.glance||'', i=of.indexOf(':'); if(i<1) return;
+  if(cur) close(false);
+  const sig=btn.dataset.glanceLeg||'', place=placeOf(btn), tab=btn.closest('[id^="tab-"]');
+  cur={of,kind:of.slice(0,i),id:of.slice(i+1),gid:btn.dataset.glanceGame||'',sig,leg:legId(sig),from:btn,place,tab:tab?tab.id:null,
+    at:Math.max(0,namesIn(place&&document.querySelector(place)).indexOf(btn))};
+  make(); box.hidden=false; btn.setAttribute('aria-expanded','true');
+  draw();
+  try{ box.focus({preventScroll:true}); }catch(e){}
+  watch(true);
+}
+function close(restore){
+  if(!cur) return;
+  watch(false);
+  const a=anchor(), had=!!box&&box.contains(document.activeElement); cur=null;
+  if(box){ box.hidden=true; box.innerHTML=''; }
+  for(const b of document.querySelectorAll('[data-glance][aria-expanded]')) b.removeAttribute('aria-expanded');
+  if(restore&&a){ try{ a.focus({preventScroll:true}); }catch(e){} }
+  /* closed with the focus inside it by something that takes no focus of its own (the tab changed by the address:
+     a hash change or Back clicks the tab's button for the reader): once that click has done its work (the tab
+     switched), the focus goes to its name where that is still on the screen, else to the chosen tab's button, never
+     lost to the page's body */
+  else if(had) setTimeout(()=>{ const at=document.activeElement;
+    if(at&&at!==document.body&&at.isConnected&&!at.closest('[hidden]')) return;
+    const to=a&&a.isConnected&&!a.closest('[hidden]')?a:document.querySelector('#tabs button[aria-selected="true"]');
+    if(to) try{ to.focus({preventScroll:true}); }catch(e){} },0);
+}
+/* the page draws its rows again while a bubble is open (the half-minute look at a kickoff or a lock, a Refresh
+   odds press finishing, a level built again, the builder's own redraw): one MutationObserver on the page, connected
+   only while a bubble is open, so the bubble follows whatever draws them, the props parts' renderParlay, renderPb and
+   renderSp and the Elo picks' own alike, without glance.js wrapping any of them. After each redraw the bubble is
+   bound again to its leg's copy in the place it was opened from (anchor), drawn again where the copy's numbers moved,
+   placed again (a row above may have gone) and its name marked open; where that place no longer draws the leg (it
+   left the builder, its game kicked off, its set moved on), the bubble closes (gone) */
+let MO=null;
+function watch(on){
+  if(typeof MutationObserver!=='function') return;
+  if(!MO) MO=new MutationObserver(recs=>{ if(!cur||!box||recs.every(r=>box.contains(r.target))) return; sync(); });
+  if(on) MO.observe(document.body,{childList:true,subtree:true});
+  else { MO.takeRecords(); MO.disconnect(); }
+}
+function sync(){
+  if(!cur||!box||box.hidden) return;
+  const a=anchor(); if(!a){ gone(); return; }
+  const pl=cur.place&&document.querySelector(cur.place), i=namesIn(pl).indexOf(a); if(i>=0) cur.at=i;
+  if(cur.stale){ cur.stale=false; draw(); } else place();
+}
+/* the leg is gone from where its bubble was opened: the bubble closes and the focus, where it was in the bubble (or
+   lost with the old row), goes to the leg's neighbour in that place (the name now at its place in the list, else the
+   last), else the place's first control, else the first control of the tab it was on, never to the page's body */
+function gone(){
+  const c=cur, at=document.activeElement, mine=!at||at===document.body||(!!box&&box.contains(at))||(!!c.from&&at===c.from)||!at.isConnected;
+  close(false);
+  if(!mine) return;
+  const pl=c.place&&document.querySelector(c.place), names=namesIn(pl).filter(b=>!b.disabled&&!b.closest('[hidden]'));
+  const to=names[Math.min(c.at,names.length-1)]||focusables(pl)[0]||focusables(c.tab&&document.getElementById(c.tab))[0]||null;
+  if(to) try{ to.focus({preventScroll:true}); }catch(e){}
+}
+/* a click outside the bubble closes it, before anything else answers it; a name opens its own (or, the open
+   one's, closes it); the focus goes back to the name unless the click was on something that takes it */
+document.addEventListener('click',e=>{
+  const t=e.target&&e.target.closest?e.target:null; if(!t) return;
+  const nm=t.closest('[data-glance]');
+  if(cur&&box&&!box.contains(t)){
+    if(nm&&nm===anchor()){ close(false); return; }
+    close(!nm&&!t.closest('button,a[href],input,select,textarea,label,[tabindex]'));
+  }
+  if(nm) open(nm);
+},true);
+document.addEventListener('keydown',e=>{
+  if(!cur||e.key!=='Escape') return;
+  if(document.querySelector('.modal:not([hidden])')) return;
+  e.preventDefault(); e.stopPropagation(); close(true);
+},true);
+window.addEventListener('resize',()=>place());
+
+/* its styles, every one prefixed glance-, on the hub's tokens (theme.css: the dark :root and the light
+   html[data-theme="light"] alike), so it reads the same in both looks */
+const css=document.createElement('style'); css.id='glanceCss';
+css.textContent=`
+.glance-name{-webkit-appearance:none;appearance:none;position:relative;z-index:1;display:inline-block;box-sizing:border-box;min-height:44px;max-width:100%;margin:-14px 0;padding:14px 0;border:0;border-radius:4px;background:none;font:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;text-align:inherit;vertical-align:baseline;cursor:pointer;overflow-wrap:anywhere;text-decoration:underline dotted;text-decoration-thickness:1px;text-underline-offset:3px;box-shadow:none}
+.glance-name:hover{text-decoration-style:solid}
+.glance-name:focus{outline:none}
+.glance-name:focus-visible::after{content:"";position:absolute;left:-4px;right:-4px;top:50%;height:calc(1.35em + 6px);transform:translateY(-50%);border:2px solid var(--ink);border-radius:6px;pointer-events:none}
+.glance-pop{position:absolute;z-index:45;box-sizing:border-box;width:360px;max-width:calc(100vw - 16px);overflow:auto;overscroll-behavior:contain;background:var(--panel);color:var(--ink);border:1px solid var(--line-2);border-radius:14px;box-shadow:0 18px 44px -14px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.3);padding:6px 14px 14px;font-family:var(--body);font-size:13px;line-height:1.45;text-align:left}
+.glance-pop[hidden]{display:none}
+.glance-pop:focus{outline:none}
+.glance-pop.glance-sheet{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;max-width:none;max-height:min(78vh,640px);border-radius:18px 18px 0 0;border-bottom:0;padding:6px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.glance-hd{display:flex;align-items:center;gap:10px;margin:0 -4px 0 0}
+.glance-title{flex:1 1 auto;min-width:0;margin:0;font:700 16px/1.3 var(--body);color:var(--ink);overflow-wrap:anywhere}
+.glance-x{flex:none;min-height:44px;min-width:44px;padding:0 12px;font-size:13px}
+.glance-sub{margin:0 0 8px;color:var(--ink-2);font-size:12.5px}
+.glance-sub .inj{margin-left:4px}
+.glance-why{color:var(--ink-2)}
+.glance-q{color:var(--ink-2);font-weight:500}
+.glance-kv{margin:0 0 8px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px}
+.glance-kv>div{display:contents}
+.glance-kv dt{color:var(--ink-2);font-size:12px;font-weight:600;white-space:nowrap}
+.glance-kv dd{margin:0;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.glance-kv dd b,.glance-vs b,.glance-poss b,.glance-picks b,.glance-nums b,.glance-lt b{color:var(--ink);font-weight:700}
+.glance-sh{display:inline-flex;vertical-align:-4px;margin-right:4px}
+.glance-sh .tierbadge{width:16px;height:18px}
+.glance-prov{color:var(--ink-2);font-size:11.5px;font-weight:600}
+.glance-pop table.glance-t,.glance-pop table.glance-vs{width:100%;border-collapse:collapse;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible;margin:0 0 8px;font-size:12.5px}
+.glance-pop .glance-t th,.glance-pop .glance-t td,.glance-pop .glance-vs th,.glance-pop .glance-vs td{padding:4px 6px;background:none;border:0;border-top:1px solid var(--line);text-align:left;vertical-align:middle;font-size:12.5px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink);white-space:normal}
+.glance-pop .glance-t thead th,.glance-pop .glance-vs thead th,.glance-pop .glance-vs thead td{border-top:0;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.glance-pop .glance-t th[scope=row],.glance-pop .glance-vs th[scope=row]{color:var(--ink-2);font-weight:600}
+.glance-pop .glance-t .glance-n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.glance-pop .glance-t tr.glance-on th,.glance-pop .glance-t tr.glance-on td{background:var(--gold-soft)}
+.glance-pop .glance-vs thead th{text-transform:none;letter-spacing:0}
+.glance-pop .glance-vs th.glance-me{box-shadow:inset 0 -2px 0 var(--gold)}
+.glance-mine{display:block;font-size:10.5px;font-weight:700;color:var(--ink);letter-spacing:.02em}
+.glance-line{margin:0 0 8px;color:var(--ink)}
+.glance-k{display:inline-block;margin-right:6px;color:var(--ink-2);font-size:12px;font-weight:600}
+.glance-h4{margin:8px 0 4px;color:var(--ink-2);font-size:12px;font-weight:700}
+.glance-poss,.glance-picks{list-style:none;margin:0 0 8px;padding:0}
+.glance-poss li{padding:3px 0;color:var(--ink)}
+.glance-picks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+.glance-picks li{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0;padding:4px 0;border-top:1px solid var(--line);color:var(--ink)}
+.glance-picks li>span:first-child{min-width:0;overflow-wrap:anywhere}
+.glance-picks li>span:last-child{flex:none;white-space:nowrap}
+.glance-picks li.glance-with{font-weight:700}
+.glance-chk{color:var(--ink);font-weight:800}
+.glance-none{margin:0 0 8px}
+.glance-leg{margin:4px 0 0;padding:8px 10px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line)}
+.glance-lt{margin:0 0 4px;color:var(--ink)}
+.glance-nums{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0}
+.glance-nums>div{display:flex;gap:5px;align-items:baseline}
+.glance-nums dt{color:var(--ink-2);font-size:12px;font-weight:600}
+.glance-nums dd{margin:0;color:var(--ink);font-variant-numeric:tabular-nums}
+.glance-acts{margin:10px 0 0}
+.glance-snap{width:100%;min-height:44px;font-size:13px}
+html[data-theme="light"] .glance-pop{box-shadow:0 18px 40px -16px rgba(30,34,48,.38),0 2px 8px rgba(30,34,48,.14)}
+`;
+(document.head||document.documentElement).appendChild(css);
+
+/* the parts ask for this before they draw a name as a button (glanceName in part3.js) */
+window.hubGlance=function(btn){ if(btn&&btn.dataset&&btn.dataset.glance) open(btn); };
+window.hubGlanceClose=()=>close(true);
+window.hubGlanceState=()=>cur?{of:cur.of,gid:cur.gid,sig:cur.sig}:null;
 })();
 </script>
 </body>
