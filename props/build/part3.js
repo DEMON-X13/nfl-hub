@@ -2569,6 +2569,26 @@ function pbLegAddBtn(l){
   const on=suggestLegOn(l);
   return `<button type="button" class="btn quiet pb-legadd${on?' on':''}" data-pb-leg="${esc(l.key)}" data-k="${esc(l.k)}" data-side="${esc(l.side)}" data-main="${l.main?1:0}" aria-pressed="${on}" aria-label="${on?'Remove':'Add'} ${esc(l.name)}, ${esc(l.label)}, ${on?'from':'to'} the builder">${on?'Added':'Add'}</button>`;
 }
+/* (app v114) a leg's player, team or game, as the hub's matchup bubble opens it (the owner's "when i click on a
+   player or a team, bring up a bubble pop up where it shows their matchup for the day"): on the hub's page
+   (window.hubGlance, nflbets/build/glance.js) a button the bubble answers, data-glance p:<pid>, t:<ABBR> (a
+   moneyline or spread) or g:<gid> (a game total), the leg's game and its signature beside it; on the prop model's
+   own page the name as plain text, as before. The leg is kept as the row drew it (shown: the price the row shows,
+   where it is not the leg's own), outside S and never saved, so the bubble shows the row's own numbers */
+const GLANCE_LEGS=new Map();
+function glanceName(l,shown){
+  const nm=esc(l.name);
+  if(typeof window.hubGlance!=='function') return nm;
+  const kind=l.stat==='total'?'g':isGameLeg(l)?'t':'p';
+  const id=kind==='g'?l.gid:kind==='t'?(l.team||String(l.pid||'').replace(/^team:/,'')):l.pid;
+  const price=shown&&shown.ml!=null?shown.ml:l.price, src=shown&&shown.src?shown.src:l.src;
+  const sig=[l.key,l.side,l.k,price,src,l.p!=null&&isFinite(l.p)?(+l.p).toFixed(4):''].join('|');
+  GLANCE_LEGS.delete(sig); GLANCE_LEGS.set(sig,{leg:l,price,src});
+  if(GLANCE_LEGS.size>600) GLANCE_LEGS.delete(GLANCE_LEGS.keys().next().value);
+  const what=kind==='p'?'his matchup':kind==='t'?'the team’s matchup':'the game’s matchup';
+  return `<button type="button" class="glance-name" data-glance="${kind}:${esc(id)}" data-glance-game="${esc(l.gid)}" data-glance-leg="${esc(sig)}" aria-haspopup="dialog" aria-label="${nm}: ${what}">${nm}</button>`;
+}
+window.glanceLeg=sig=>GLANCE_LEGS.get(String(sig))||null;
 /* a locked level the page or the job built again for a player ruled out after the lock */
 function spUpdLine(u){
   const at=Date.parse(u.at);
@@ -2586,7 +2606,7 @@ function pbTierCard(t,o){
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
     <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.rule||(t.floor!=null?`<span class="pb-rule">${pbRuleOf(t)}</span>`:'')}</div>
     <div class="pb-nums">${pbChanceHtml(t.fair,chance,o)}<div><b>${fmtML(decToML(t.dec))}</b><span>${nE?'price, est.':'price'}</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
-    <ul class="pb-legs">${t.legs.map(l=>{ const ff=legFarOff(l,fm); return `<li><span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${pbValMark(l)}</small>${ff?`<small class="faroff" data-pb-far>${farText(l.p,ff)}</small>`:''}</span><span class="pr">${fmtML(l.price)}${l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:''}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span>${legAdd?pbLegAddBtn(l):''}</li>`; }).join('')}</ul>
+    <ul class="pb-legs">${t.legs.map(l=>{ const ff=legFarOff(l,fm); return `<li><span class="nm">${o.badge?o.badge(l):''}${glanceName(l)}<small>${esc(l.label)}${pbValMark(l)}</small>${ff?`<small class="faroff" data-pb-far>${farText(l.p,ff)}</small>`:''}</span><span class="pr">${fmtML(l.price)}${l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:''}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span>${legAdd?pbLegAddBtn(l):''}</li>`; }).join('')}</ul>
     ${t.thin&&!o.quiet?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt&&!o.quiet?`<p class="pb-thin">${pbMktLine(t.legs,o.mktWhy)}</p>`:''}${nE?`<p class="pb-thin pb-espnline">${pbEspnLine(t.legs)}</p>`:''}${upd}
     <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}${nm?` aria-label="${pbInBuilder(t.legs)?'In the builder:':'Add'}${nm}${pbInBuilder(t.legs)?'':' to the builder'}"`:''}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${o.fid||t.id}"${nm?` aria-label="Finish${nm}"`:''}>Finish</button>`:''}</div></div>`;
 }
@@ -2657,7 +2677,7 @@ function pbTopRow(l,i){
   const est=l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:'';
   const mark=pbValMark(l);
   return `<li class="pb-trow" data-pb-row="${i+1}" data-pb-grp="${pbIsValue(l)?'value':'other'}"><span class="pb-trk">${i+1}</span>
-    <span class="nm">${esc(l.name)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}</span>
+    <span class="nm">${glanceName(l)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}</span>
     <span class="pb-tcs"><span class="pb-tc"><b>${fmtML(l.price)}${est}</b><small>price</small></span><span class="pb-tc"><b data-pb-model="${l.p}">${pc(l.p)}</b><small>model</small></span><span class="pb-tc"><b${l.fc?` data-pb-fair="${l.fc.p}"`:''}>${l.fc?pc(l.fc.p):'–'}</b><small>${l.fc?(l.fc.est?'fair, est.':'fair'):'no fair'}</small></span><span class="pb-tc"><b data-pb-win="${l.win}">${pbMoney1(l.win)}</b><small>wins on $1</small></span><span class="pb-tc"><b data-pb-ev="${l.ev}">${pbMoney1(l.ev)}</b><small>expected on $1</small></span></span>
     ${pbLegAddBtn(l)}</li>`;
 }
@@ -3132,7 +3152,7 @@ function renderParlay(o){
   const fm={}, slip=dkSlipRows(legs,prices);
   legs.forEach((l,i)=>{
     const [c,lbl]=confTier(l.p), f=legFair(l,fm), far=!!f&&l.p-f.p>=FAR_OFF-1e-9;
-    html+=`<tr class="legrow"><td class="plr">${esc(l.name)}${l.grp==='TEAM'?'':injChip(l.pid)}<small>${esc(l.pos)} \u00b7 ${esc(l.team)} v ${esc(l.opp)} \u00b7 wk ${esc(l.week)}</small></td>
+    html+=`<tr class="legrow"><td class="plr">${glanceName(l,prices[i])}${l.grp==='TEAM'?'':injChip(l.pid)}<small>${esc(l.pos)} \u00b7 ${esc(l.team)} v ${esc(l.opp)} \u00b7 wk ${esc(l.week)}</small></td>
       <td><b>${esc(l.label)}</b>${far?`<small class="faroff" data-far>${farText(l.p,f)}</small>`:''}${dkSlipLine(slip&&slip[i],i)}</td>
       <td class="num">${l.mu==null?'\u2013':num(l.mu,l.mu<10?1:0)}</td>
       <td class="num">${(l.p*100).toFixed(0)}% <span class="conf ${c}" style="margin-left:6px">${lbl}</span>${f?`<small class="legfair" data-legfair="${f.p}" title="The book's fair chance on this leg: its price with the margin taken out${f.est?', estimated with the week\u2019s typical margin since only this side is priced':''}">fair ${(f.p*100).toFixed(0)}%${f.est?' est.':''}</small>`:''}</td>

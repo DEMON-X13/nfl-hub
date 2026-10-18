@@ -250,6 +250,11 @@ const sticksIn = (w, cell, box) => { if (!cell || !box || w.getComputedStyle(cel
   for (let el = cell.parentElement; el && el !== box; el = el.parentElement) if (ovf(w, el).some(v => !/^(visible|clip)$/.test(v))) return false;
   return true; };
 const TEAM = t => ({ LA: 'Rams', KC: 'Chiefs', IND: 'Colts', NYG: 'Giants' }[t] || t);
+/* a leg's name as a row draws it (a Top 50 row's or a level card's .nm, a builder row's td.plr): on the hub, the matchup
+   bubble's one button (app v114, glanceName in the props parts) with no name of the row's own beside it; a row drawn
+   without the bubble, its own text. Anything else (two buttons, a name both ways) reads as no name */
+const legNameOf = nm => { const own = [...nm.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim(), b = [...nm.children].filter(x => x.matches('button.glance-name'));
+  return b.length === 1 && !own ? txt(b[0]) : b.length ? '\u0000' : own; };
 /* the book's fair chance on a leg, by the rule, worked here on its own from the page's payload and
    schedule as they stand: both sides of its line priced (a player's main line, a game's two
    moneylines or two spread prices on the leg's number, the total's over and under), that side's
@@ -1102,7 +1107,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   /* (app v113) what the lock line adds where the locked set is this browser's own (the record has none for the game) */
   const OWN_LINE = ' This browser’s own set: the site’s was not published in time, so the record does not grade it.';
   const WHY_GONE = /\bis not a Value pick\b|\bare not Value picks\b|own chance with its margin out|One night is shown at a time|A leg marked Value is one of|Each set is built from its game|The record starts with this change|Refresh odds (updates it until then|no longer changes it)/;
-  const nmOk = (nm, l) => !!nm && [...nm.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === l.name && txt(nm.querySelector('small')).startsWith(l.label);
+  const nmOk = (nm, l) => !!nm && legNameOf(nm) === l.name && txt(nm.querySelector('small')).startsWith(l.label);
   let holdSetF = null;
   const money1 = v => (v < -0.0005 ? '−' : '+') + '$' + Math.abs(v).toFixed(2);
   const addName = (l, on) => `${on ? 'Remove' : 'Add'} ${l.name}, ${l.label}, ${on ? 'from' : 'to'} the builder`;
@@ -2141,7 +2146,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const redraw = async () => { w.eval('SP_CACHE=new Map(); renderSp()'); await wait(30); };
     const elOf = g => d.querySelector(`#spPanel .sp-game[data-sp-game="${g.id}"]`), phaseOf = g => { const x = elOf(g) && elOf(g).querySelector('[data-sp-phase]'); return x ? x.dataset.spPhase : null; };
     /* a set as the tab draws it: each level's legs (name and label), its chance and price, or why it is empty */
-    const nmOf = nm => [...nm.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() + ' ' + txt(nm.querySelector('small'));
+    const nmOf = nm => legNameOf(nm) + ' ' + txt(nm.querySelector('small'));
     const drawn = g => { const el = elOf(g); return el ? [...el.querySelectorAll('.pb-tier')].map(c => c.classList.contains('none') ? c.className.split(' ')[1] + ' none: ' + txt(c.querySelector('.pb-why'))
       : `${c.dataset.pbTier}: ${[...c.querySelectorAll('.pb-legs li .nm')].map(nmOf).join(' + ')} | ${txt(c.querySelector('.pb-chance b'))} | ${txt(c.querySelector('.pb-chance small'))} | ${txt(c.querySelector('.pb-nums > div:nth-child(2) b'))}`).join(' / ') : null; };
     const kickP = etKick(P), lockP = kickP - 2 * 3600e3, isoS = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -4019,6 +4024,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   await snapshotChecks();
   await newsChecks();
   await friendsChecks();
+  /* ---- the matchup bubble a leg's name opens: its own section, at the end of this file ---- */
+  await glanceChecks();
   /* ---- the light look and its switch: its own section, at the end of this file ---- */
   await lightChecks();
 
@@ -5563,4 +5570,369 @@ async function lightChecks() {
       `light mode: a window whose storage cannot be reached does not read as dark and switch without throwing: ${a0} / ${M.d.documentElement.getAttribute('data-theme')} ${threw || ''} ${M.errs.join('; ')}`);
     M.w.close(); }
   console.log(`light mode: ${checks - c0} checks, ${fails.length - f0} failures`);
+}
+
+/* =====================================================================================
+   THE MATCHUP BUBBLE (nflbets/build/glance.js and the props parts' glanceName, app v114; the owner's call of 17
+   October 2026: "in the parlay builder, when i click on a player or a team, bring up a bubble pop up where it shows
+   their matchup for the day so i can see info at a glance"). Blocking, all of it. Every name on a leg the Parlay
+   Builder tab and Suggested Parlays draw (a row of the Top 50 lines, a leg of the builder, a leg on a set's level card
+   and on an Elo pick's card) is one button of its leg's kind and id (p:<pid> for a player's line, t:<ABBR> for a team's
+   moneyline or spread, g:<gid> for a game total), in its leg's game, keeping its row's own leg, named for what it
+   opens, its tap target 44px tall and taken back out of the line (min-height 44px over 14px of padding a side, the
+   same negative margin, on top of the line under it). A click opens one bubble, a dialog (not modal) labelled by its
+   heading, the focus moved into it, holding exactly the numbers the files hold, each worked out here on the smoke's
+   own reading of players.json, matchups.json, model.json, state.json and the payload, never the bubble's code: a
+   player's season Elo, its tier and shield, his rank at his position (and prov.), his status, the game (home or away,
+   the opponent, the kickoff in ET), the unit he faces and its rank among the league's defences, his mismatch's grade
+   and edge where he has one, each trusted stat's recent form and projection, and the leg's line, price, the model's
+   chance, the book's fair chance, market + form and the Elo matchup's chance; a team's or a game's two records as
+   Team Rankings counts them, the line as the board reads it, each club's Power Rating and rank, Overall Offense
+   against Overall Defense each way, every model's pick and its chance with the clicked team's side marked. Escape,
+   Close, a click outside and another name close it, the focus back on the name (another name's own bubble taking
+   its place), Tab stays inside it, Open game snapshot opens that game's window and closing it gives the name the
+   focus back, and nothing is written to the browser's storage. On the week as it stands wherever the page draws a
+   name, and at any hour, the off-season included, on fixtures of its own: a level card drawn by the page's own
+   pbTierCard with a real player's line, his game's team and total, and a made-up player with no Elo row and a team
+   bet on a made-up game with no line; the builder holding those two made-up legs; and a status planted on the real
+   player, Out and then questionable.
+   ===================================================================================== */
+async function glanceChecks() {
+  const c0 = checks, f0 = fails.length;
+  const Pl = JSON.parse(ELO_P), MO = JSON.parse(ELO_M), MU = JSON.parse(ELO_MU);
+  const R = await run(STATE);
+  const { w, d, errs } = R;
+  try { await w.eloFiles(); } catch (e) {}
+  await wait(300);
+  const S = w.eval('S'), TN = w.eval('TEAM_NAMES'), fo = fairRule(w), legPrice = w.eval('legPrice'), legKey = w.eval('legKey');
+  const box = () => d.getElementById('glanceBox'), shown = () => { const b = box(); return !!b && !b.hidden; };
+  const nOf = k => { const b = box(), e = b && b.querySelector(`[data-glance-n="${k}"]`); return e ? txt(e) : null; };
+  /* a whole per cent shown against a chance worked out here (the page's normal curve and the smoke's agree to 1e-7) */
+  const near = (s, p) => { const m = /^(\d+)%/.exec(s || ''); return !!m && p != null && Math.abs(+m[1] - p * 100) <= 0.5 + 1e-4; };
+  /* ---- the smoke's own readings ---- */
+  const ordOwn = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
+  const decOwn = x => Math.abs(x) >= 10 ? x.toFixed(0) : x.toFixed(1);
+  const pxOwn = v => v == null ? '–' : (v > 0 ? '+' + v : '' + v);
+  const estOwn = src => src === 'dkline' || src === 'est' ? ' est.' : src === 'fair' ? ' fair' : '';
+  const mlOwn = x => x == null || !isFinite(x) || !+x ? null : (+x > 0 ? '+' : '−') + Math.abs(Math.round(+x));
+  const impOwn = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
+  const kickOwn = (dd, t) => { if (!dd) return ''; const day = new Date(dd + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+    const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); if (!m) return day; const h = +m[1]; return `${day} · ${(h % 12) || 12}:${m[2]} ${h < 12 ? 'AM' : 'PM'} ET`; };
+  const TIERS = [['HOF', 1750], ['Elite', 1700], ['Master', 1650], ['Diamond', 1600], ['Platinum', 1550], ['Gold', 1500], ['Silver', 1450], ['Bronze', 1400], ['Iron', 1350]];
+  const tierOwn = e => (TIERS.find(([, lo]) => e >= lo) || ['Wood'])[0];
+  const trustOwn = (g, st) => { const r = MU.record && MU.record[g + '|' + st], p = r && r.past; return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
+  const LBL = { passing_yards: 'Pass yds', passing_tds: 'Pass TD', attempts: 'Att', completions: 'Comp', passing_interceptions: 'INT', rushing_yards: 'Rush yds', carries: 'Carries',
+    receptions: 'Rec', receiving_yards: 'Rec yds', targets: 'Tgt', scrim_yards: 'Rush+rec', any_td: 'TDs' };
+  /* the unit a player faces: the secondary and the line for a quarterback, the secondary for a receiver or tight end,
+     the line and the linebackers for a back, ranked among the league's defences, 1st the best (the highest) */
+  const MM_OWN = { QB: [['DB', 'DL'], 'pass defense'], WR: [['DB'], 'pass defense'], TE: [['DB'], 'pass defense'], RB: [['DL', 'LB'], 'run defense'] };
+  const uval = (g, x) => MM_OWN[g][0].reduce((a, k) => a + x[k], 0) / MM_OWN[g][0].length;
+  const unitOwn = v => { if (!MM_OWN[v.group]) return null; const by = {}; for (const x of Object.values(MU.players || {})) if (x.opp_def) by[x.opp] = x.opp_def;
+    Object.assign(by, (MU.league || {}).defs || {}); const order = Object.keys(by).sort((a, b) => uval(v.group, by[b]) - uval(v.group, by[a]));
+    const r = order.indexOf(v.opp) + 1; return r ? { name: MM_OWN[v.group][1], rank: r, n: order.length } : null; };
+  const startedOwn = gid => { const r = S.sched.find(x => x.id === gid); return !!r && isFinite(etKick(r)) && w.Date.now() >= etKick(r); };
+  const outOwn = pid => !!((S.inactive && S.inactive[pid]) || (MU.out && MU.out[pid]));
+  /* his mismatch: his Elo above his position's norm and the unit he faces below the league's, in standard deviations,
+     among the expected starters still to play and not ruled out; graded Huge from 3, Big from 2, Solid from 1 */
+  const mmOwn = (pid, gid) => {
+    const L = MU.league || {}, P = Object.entries(MU.players || {}).map(([id, v]) => ({ id, ...v })).filter(v => MM_OWN[v.group] && !outOwn(v.id) && !startedOwn(v.game_id));
+    const v = P.find(x => x.id === pid && x.game_id === gid); if (!v) return null;
+    const zs = a => { const m = a.reduce((s, x) => s + x, 0) / a.length, sd = Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / Math.max(1, a.length - 1)) || 1; return x => (x - m) / sd; };
+    const n = L.norms && L.norms[v.group]; let pz;
+    if (n) pz = x => (x - n[0]) / (n[1] || 1); else { const grp = P.filter(x => x.group === v.group); if (grp.length < 2) return null; pz = zs(grp.map(x => x.elo)); }
+    const by = {}; for (const x of P) by[x.opp] = x.opp_def; if (L.defs) Object.assign(by, L.defs);
+    const a = pz(v.elo), b = zs(Object.values(by).map(x => uval(v.group, x)))(uval(v.group, v.opp_def)); if (!(a > 0 && b < 0)) return null;
+    const s = a - b, x = Math.round(s * 10) / 10; return { score: s, grade: x >= 3 ? 'Huge' : x >= 2 ? 'Big' : x >= 1 ? 'Solid' : 'Slight' }; };
+  /* market + form: the book's chance moved by his career Elo on the side of the bet (the rule in tab_elo.html, worked here) */
+  const ALT_OWN = { c: -0.05, book: 0.8, form: 0.3, step: 40, fitSd: { QB: 34.1, RB: 21.3, WR: 27.6, TE: 27.0 } };
+  const sdOwn = {}; { const by = {}; for (const e of Object.values(Pl.players || {})) if (e && e.group && isFinite(e.elo)) (by[e.group] = by[e.group] || []).push(e.elo);
+    for (const g in by) { const v = by[g], m = v.reduce((a, x) => a + x, 0) / v.length; if (v.length >= 10) sdOwn[g] = Math.sqrt(v.reduce((a, x) => a + (x - m) ** 2, 0) / v.length); } }
+  const lgt = p => Math.log(p / (1 - p)), sgm = x => 1 / (1 + Math.exp(-x));
+  const mfOwn = (l, price, src) => {
+    if (!l.pid || String(l.pid).startsWith('team:') || l.pid === 'game' || !(src === 'real' || src === 'dkline') || price == null || !isFinite(price)) return null;
+    const e = Pl.players[l.pid], grp = (e && e.group) || ((S.players[l.pid] || {}).grp) || null; if (l.stat === 'any_td' && grp === 'QB') return null;
+    const imp = impOwn(price); if (!(imp > 0 && imp < 1)) return null;
+    const z = e ? (e.elo - 1500) / ALT_OWN.step * (ALT_OWN.fitSd[e.group] && sdOwn[e.group] > 0 ? ALT_OWN.fitSd[e.group] / sdOwn[e.group] : 1) : 0;
+    return sgm(ALT_OWN.c + ALT_OWN.book * lgt(imp) + ALT_OWN.form * z * (l.side === 'under' ? -1 : 1)); };
+  /* the Elo matchup's chance: the book's with a 4.5% margin out, moved by the trusted nudge in the stat's typical miss */
+  const muOwn = (l, price) => { const v = MU.players && MU.players[l.pid]; if (!v || !v.stats || !v.stats[l.stat] || !trustOwn(v.group, l.stat) || price == null || !isFinite(price)) return null;
+    const f = MU.fit && MU.fit[v.group + '|' + l.stat]; if (!f || !(f.sd > 0)) return null;
+    const fair = Math.min(0.99, Math.max(0.01, impOwn(price) / 1.045)); return PhiOwn(invPhiOwn(fair) + (l.side === 'under' ? -1 : 1) * v.stats[l.stat][2] / f.sd); };
+  /* a team's record as Team Rankings counts it: the regular season's finals, or the ratings file's where it has more */
+  const recOwn = (t, sched = STATE.schedule) => { const reg = g => g.game_type ? g.game_type === 'REG' : +g.week <= 18, r = [0, 0, 0]; let n = 0;
+    for (const g of sched) if (g.result != null && (g.home_team === t || g.away_team === t) && reg(g)) { n++; const m = g.home_team === t ? g.result : -g.result; r[m > 0 ? 0 : m < 0 ? 1 : 2]++; }
+    const f = (MO.teams && MO.teams[t] && MO.teams[t].record) || [0, 0, 0], x = n >= f[0] + f[1] + f[2] ? r : f; return x[0] + '-' + x[1] + (x[2] ? '-' + x[2] : ''); };
+  const prRank = t => Object.entries(MO.teams || {}).sort((x, y) => y[1].elo - x[1].elo).findIndex(x => x[0] === t) + 1;
+  /* every model's call as the Game snapshot reads it: Vegas (the moneylines with the margin out, else the spread), Alpha
+     (graded, else frozen at kickoff), the Joker, the ELO Model (graded, else this season's next) */
+  const callsOwn = g => { const gid = g.game_id, pr = (STATE.processed || {})[gid], ak = (STATE.atKickoff || {})[gid], one = x => x && x.pick ? { pick: x.pick, pHome: x.pHome != null ? +x.pHome : null } : null;
+    const o = (STATE.odds || {})[gid], sp = g.spread_line != null && isFinite(g.spread_line) ? +g.spread_line : null; let vh = null;
+    if (o && isFinite(o.home) && isFinite(o.away) && o.home && o.away) { const hh = impOwn(+o.home), aa = impOwn(+o.away); vh = hh / (hh + aa); } else if (sp != null && sp !== 0) vh = PhiOwn(sp / 13.5);
+    const eg = (MO.graded || []).find(x => x.game_id === gid), en = !eg && MO.next && +MO.next.season === +STATE.season ? (MO.next.games || []).find(x => x.game_id === gid) : null;
+    return { vegas: vh == null ? null : { pick: vh >= 0.5 ? g.home_team : g.away_team, p: Math.max(vh, 1 - vh) }, alpha: pr ? one(pr) : one(ak),
+      joker: one(pr && pr.joker) || one((STATE.joker || {})[gid]), elo: eg ? { pick: eg.pick, pHome: eg.p_home } : en ? { pick: en.pick, pHome: en.p_home } : null }; };
+  const chOwn = (x, g) => x.p != null ? x.p : x.pHome != null ? (x.pick === g.home_team ? x.pHome : 1 - x.pHome) : null;
+
+  /* ---- a name: one button of its leg's kind and id, keeping its row's leg, named, 44px ---- */
+  const kindOf = key => { const [gid, pid, stat] = String(key).split('|'); return pid === 'game' && stat === 'total' ? ['g', gid, gid] : /^team:/.test(pid) ? ['t', pid.slice(5), gid] : ['p', pid, gid]; };
+  const WHAT = { p: 'his matchup', t: 'the team’s matchup', g: 'the game’s matchup' };
+  const nameOwn = (kind, id, gid, leg) => { if (kind === 't') return TN[id] || id;
+    if (kind === 'g') { const r = S.sched.find(x => x.id === gid); return r ? `${TN[r.a] || r.a} at ${TN[r.h] || r.h}` : null; }
+    return S.players[id] ? S.players[id].n : leg && leg.name; };
+  const tapOk = b => { const cs = w.getComputedStyle(b);
+    return cs.minHeight === '44px' && cs.boxSizing === 'border-box' && cs.paddingTop === '14px' && cs.paddingBottom === '14px' && cs.marginTop === '-14px' && cs.marginBottom === '-14px'
+      && cs.display === 'inline-block' && cs.position === 'relative' && cs.zIndex === '1'; };
+  const nameBad = (row, key, side, k) => {
+    const bs = row ? [...row.querySelectorAll('[data-glance]')] : [], b = bs[0], [kind, id, gid] = kindOf(key);
+    if (bs.length !== 1 || b.tagName !== 'BUTTON' || b.getAttribute('type') !== 'button' || !b.classList.contains('glance-name')) return `${key}: ${bs.length} names drawn as the bubble's button, not one`;
+    const K = w.glanceLeg(b.dataset.glanceLeg), nm = nameOwn(kind, id, gid, K && K.leg);
+    if (b.dataset.glance !== `${kind}:${id}` || b.dataset.glanceGame !== gid) return `${key}: data-glance ${b.dataset.glance} in ${b.dataset.glanceGame}, not ${kind}:${id} in ${gid}`;
+    if (!K || K.leg.key !== key || (K.leg.side || 'over') !== (side || 'over') || +K.leg.k !== +k) return `${key}: the leg it keeps is not its row's (${K ? [K.leg.key, K.leg.side, K.leg.k].join(' ') : 'none'})`;
+    if (b.getAttribute('aria-haspopup') !== 'dialog' || b.getAttribute('aria-label') !== `${nm}: ${WHAT[kind]}` || txt(b) !== nm) return `${key}: named "${b.getAttribute('aria-label')}", reads "${txt(b)}", for ${nm}`;
+    if (!tapOk(b)) return `${key}: its tap target is not 44px tall and taken back out of the line`;
+    return ''; };
+
+  /* ---- what one bubble holds, against the smoke's own reading ---- */
+  const legBad = (kind, K, wantPrice, wantSrc) => {
+    const bad = [], l = K.leg, B = box(), lb = B && B.querySelector('[data-glance-legbox]');
+    if (!lb) return ['no leg in the bubble'];
+    if (K.price !== wantPrice || (K.src || '') !== (wantSrc || '')) bad.push(`the leg is kept at ${K.price} ${K.src}, not the ${wantPrice} ${wantSrc} its row shows`);
+    if (nOf('label') !== l.label) bad.push(`line ${nOf('label')}, not ${l.label}`);
+    if (nOf('price') !== pxOwn(wantPrice) + estOwn(wantSrc)) bad.push(`price ${nOf('price')}, not ${pxOwn(wantPrice) + estOwn(wantSrc)}`);
+    if (nOf('model') !== (l.p * 100).toFixed(0) + '%') bad.push(`model ${nOf('model')}, not ${(l.p * 100).toFixed(0)}%`);
+    const f = fo(l), fw = f && f.p != null ? (f.p * 100).toFixed(0) + '%' + (f.est ? ' est.' : '') : 'none';
+    if (nOf('fair') !== fw) bad.push(`fair ${nOf('fair')}, not ${fw}`);
+    const mf = kind === 'p' ? mfOwn(l, wantPrice, wantSrc) : null, mu = kind === 'p' ? muOwn(l, wantPrice) : null;
+    if (mf == null ? nOf('mf') !== null : !near(nOf('mf'), mf)) bad.push(`market + form ${nOf('mf')}, not ${mf == null ? 'none' : (mf * 100).toFixed(2)}`);
+    if (mu == null ? nOf('mu') !== null : !near(nOf('mu'), mu)) bad.push(`Elo matchup ${nOf('mu')}, not ${mu == null ? 'none' : (mu * 100).toFixed(2)}`);
+    return bad; };
+  const playerBad = (pid, gid, K) => {
+    const bad = [], l = K && K.leg, e = Pl.players[pid], sp = S.players[pid] || null, r = S.sched.find(x => x.id === gid) || null, B = box();
+    const name = sp ? sp.n : l.name, team = (l && l.team) || (sp && sp.team) || '', pos = (l && l.pos) || (sp && sp.pos) || '';
+    if (txt(d.getElementById('glanceTitle')) !== name) bad.push(`headed ${txt(d.getElementById('glanceTitle'))}, not ${name}`);
+    if (nOf('pos') !== pos || nOf('team') !== (team || null)) bad.push(`${nOf('pos')} · ${nOf('team')}, not ${pos} · ${team}`);
+    /* his status: the tag the page wears beside his name (the report and the roster as the page reads them), else the matchups file's out */
+    const it = w.injTag ? w.injTag(pid) : w.eval('injTag')(pid), ow = MU.out && MU.out[pid] || null;
+    const wantInj = it ? it.t : ow ? 'OUT' : null, why = B.querySelector('.glance-why');
+    if (nOf('inj') !== wantInj || (wantInj && txt(why) !== (it ? it.title : ow))) bad.push(`status ${nOf('inj')} (${txt(why)}), not ${wantInj} (${it ? it.title : ow})`);
+    if (e && e.se != null) { const gx = Pl.groups[e.group], row = gx && (gx.top || []).find(x => x.id === pid), sh = B.querySelector('.glance-sh'), want = d.createElement('span'); want.innerHTML = w.pkTierBadge(e.se);
+      if (nOf('se') !== String(e.se) || nOf('tier') !== tierOwn(e.se) || !sh || sh.innerHTML !== want.innerHTML) bad.push(`Elo ${nOf('se')} ${nOf('tier')}, not ${e.se} ${tierOwn(e.se)} with its shield`);
+      if (e.rank && (nOf('rank') !== '#' + e.rank || nOf('of') !== String(gx.active) || (nOf('prov') === 'prov.') !== !!(row && row.prov))) bad.push(`rank ${nOf('rank')} of ${nOf('of')} ${nOf('prov') || ''}, not #${e.rank} of ${gx.active}${row && row.prov ? ' prov.' : ''}`); }
+    else { const sd = Object.values(Pl.groups || {}).flatMap(x => x.sidelined || []).find(x => x.id === pid), want = sd ? 'not ranked: ' + sd.why : 'no Elo rating this season';
+      if (nOf('noelo') !== want || nOf('se') !== null) bad.push(`no Elo row said "${nOf('noelo')}", not "${want}"`); }
+    if (r) { const opp = team === r.h ? r.a : team === r.a ? r.h : null;
+      if ((opp && (nOf('ha') !== (team === r.h ? 'vs' : 'at') || nOf('opp') !== opp)) || nOf('kick') !== kickOwn(r.d, r.t)) bad.push(`game ${nOf('ha')} ${nOf('opp')} ${nOf('kick')}, not ${team === r.h ? 'vs' : 'at'} ${opp} ${kickOwn(r.d, r.t)}`); }
+    const v = MU.players && MU.players[pid];
+    if (!v || v.game_id !== gid || outOwn(pid)) { if (nOf('nomu') === null || B.querySelector('tr[data-glance-stat]') || nOf('unit') !== null) bad.push('a matchup drawn where the file has none for this game, or no line saying so'); }
+    else {
+      const u = unitOwn(v), m = mmOwn(pid, gid);
+      if (!u || nOf('unit') !== u.name || nOf('urank') !== ordOwn(u.rank)) bad.push(`faces ${nOf('unit')} ${nOf('urank')}, not ${u && u.name} ${u && ordOwn(u.rank)}`);
+      if (m ? nOf('mm') !== m.grade || nOf('gap') !== m.score.toFixed(1) : nOf('mm') !== null) bad.push(`mismatch ${nOf('mm')} ${nOf('gap')}, not ${m ? m.grade + ' ' + m.score.toFixed(1) : 'none'}`);
+      const sts = (MU.stats && MU.stats[v.group] || Object.keys(v.stats || {})).filter(s => v.stats && v.stats[s] && trustOwn(v.group, s)), rows = [...B.querySelectorAll('tr[data-glance-stat]')];
+      if (rows.map(x => x.dataset.glanceStat).join() !== sts.join()) bad.push(`trusted stats ${rows.map(x => x.dataset.glanceStat).join()}, not ${sts.join()}`);
+      else rows.forEach((tr, i) => { const a = v.stats[sts[i]], f = tr.querySelector('[data-glance-n="form"]'), p = tr.querySelector('[data-glance-n="proj"]');
+        if (txt(tr.querySelector('th')) !== (LBL[sts[i]] || sts[i]) || txt(f) !== decOwn(a[0]) || txt(p) !== decOwn(a[1])) bad.push(`${sts[i]}: ${txt(tr)}, not ${decOwn(a[0])} -> ${decOwn(a[1])}`); });
+      if (!sts.length && nOf('notrust') === null) bad.push('no trusted stat and no line saying so'); }
+    return bad; };
+  const teamBad = (gid, me) => {
+    const bad = [], g = STATE.schedule.find(x => x.game_id === gid), r = S.sched.find(x => x.id === gid), B = box();
+    const a = g ? g.away_team : r.a, h = g ? g.home_team : r.h, neutral = !!g && (g.location === 'Neutral' || g.gametime === '09:30');
+    const head = `${TN[a] || a} ${neutral ? 'vs' : 'at'} ${TN[h] || h}`;
+    if (txt(d.getElementById('glanceTitle')) !== head) bad.push(`headed ${txt(d.getElementById('glanceTitle'))}, not ${head}`);
+    if (nOf('kick') !== kickOwn(g ? g.gameday : r.d, g ? g.gametime : r.t)) bad.push(`kickoff ${nOf('kick')}`);
+    const ths = [...B.querySelectorAll('th[data-glance-team]')];
+    if (ths.map(x => x.dataset.glanceTeam).join() !== [a, h].join() || ths.some(x => x.classList.contains('glance-me') !== (x.dataset.glanceTeam === me)) || (me && !/your bet/.test(txt(ths.find(x => x.dataset.glanceTeam === me)))))
+      bad.push(`the clubs ${ths.map(x => x.dataset.glanceTeam + (x.classList.contains('glance-me') ? '*' : '')).join()}, not ${a},${h} with ${me || 'none'} marked`);
+    for (const t of [a, h]) if (nOf('rec:' + t) !== recOwn(t)) bad.push(`${t} record ${nOf('rec:' + t)}, not ${recOwn(t)}`);
+    if (MO.teams && MO.teams[a] && MO.teams[h]) { for (const t of [a, h]) if (nOf('pr:' + t) !== String(MO.teams[t].elo) || nOf('prk:' + t) !== '#' + prRank(t)) bad.push(`${t} Power Rating ${nOf('pr:' + t)} ${nOf('prk:' + t)}, not ${MO.teams[t].elo} #${prRank(t)}`); }
+    else if (nOf('nopr') === null || nOf('pr:' + a) !== null) bad.push('a Power Rating drawn for a club the file has none for, or no line saying so');
+    /* the line: the board's (state.json's spread and total, the prop model's total where it has none, the closing moneylines), else the prop model's row */
+    { const sp = g ? (g.spread_line != null && isFinite(g.spread_line) ? +g.spread_line : null) : (r.sp != null && isFinite(r.sp) ? +r.sp : null);
+      let tot = g ? (g.total_line != null && isFinite(g.total_line) ? +g.total_line : null) : (r.tot != null && isFinite(r.tot) ? +r.tot : null);
+      if (tot == null && r && r.tot != null && isFinite(r.tot)) tot = +r.tot;
+      const o = g ? (STATE.odds || {})[gid] : null, mA = g ? (o ? mlOwn(o.away) : null) : mlOwn(r.mla), mH = g ? (o ? mlOwn(o.home) : null) : mlOwn(r.mlh);
+      const spT = sp == null ? null : sp > 0 ? `${h} −${sp}` : sp < 0 ? `${a} −${-sp}` : 'Pick\'em', mlT = mA || mH ? `${a} ${mA || '–'} / ${h} ${mH || '–'}` : null;
+      if (nOf('spread') !== spT || nOf('total') !== (tot == null ? null : String(tot)) || nOf('ml') !== mlT || (nOf('noline') !== null) !== (!spT && tot == null && !mlT))
+        bad.push(`line ${nOf('spread')} / ${nOf('total')} / ${nOf('ml')} / ${nOf('noline')}, not ${spT} / ${tot} / ${mlT}`); }
+    /* Overall Offense against Overall Defense, each way */
+    { const U = MO.units, on = !!U && !!U.off && Object.values(U.off).some(v => v.games || v.carried);
+      for (const [o, df] of [[a, h], [h, a]]) { const li = B.querySelector(`[data-glance-poss="${o}-${df}"]`), vo = on && U.off[o], vd = on && U.def[df];
+        if (!vo || !vd) { if (li) bad.push(`${o} offense against ${df} defense drawn with no unit rating`); continue; }
+        const got = li ? ['oelo', 'ork', 'delo', 'drk'].map(k => txt(li.querySelector(`[data-glance-n="${k}"]`))).join(' ') : 'none', want = [vo.elo, ordOwn(vo.rank), vd.elo, ordOwn(vd.rank)].join(' ');
+        if (got !== want) bad.push(`${o} offense against ${df} defense ${got}, not ${want}`); } }
+    /* every model's pick, the clicked team's side marked */
+    if (g) { const C = callsOwn(g);
+      for (const id of ['vegas', 'alpha', 'joker', 'elo']) { const li = B.querySelector(`[data-glance-model="${id}"]`), x = C[id], ok = x && (x.pick === a || x.pick === h);
+        if (!li) { bad.push(`no ${id} line`); continue; }
+        if (!ok) { if (li.dataset.pick || nOf('p:' + id) !== null) bad.push(`${id} drawn with a pick the files do not have`); continue; }
+        const p = chOwn(x, g);
+        if (li.dataset.pick !== x.pick || !(p == null ? nOf('p:' + id) === '–' : near(nOf('p:' + id), p)) || li.classList.contains('glance-with') !== (!!me && x.pick === me))
+          bad.push(`${id} ${li.dataset.pick} ${nOf('p:' + id)}${li.classList.contains('glance-with') ? ' marked' : ''}, not ${x.pick} ${p == null ? '-' : (p * 100).toFixed(2)}${me && x.pick === me ? ' marked' : ''}`); } }
+    else if (B.querySelector('[data-glance-model]')) bad.push('model picks drawn for a game the board does not have');
+    return bad; };
+  const bubbleBad = (btn, wantPrice, wantSrc) => {
+    const bad = [], B = box(), K = w.glanceLeg(btn.dataset.glanceLeg), [kind, id] = [btn.dataset.glance.slice(0, 1), btn.dataset.glance.slice(2)], gid = btn.dataset.glanceGame;
+    if (d.querySelectorAll('#glanceBox').length !== 1 || !shown()) return ['no bubble, or more than one'];
+    const hd = d.getElementById('glanceTitle');
+    if (B.getAttribute('role') !== 'dialog' || B.getAttribute('aria-modal') !== 'false' || B.getAttribute('aria-labelledby') !== 'glanceTitle' || !hd || !B.contains(hd) || B.dataset.glanceOf !== btn.dataset.glance || B.dataset.glanceGame !== gid)
+      bad.push('not a dialog labelled by its heading, for this name');
+    if (!B.contains(d.activeElement)) bad.push('the focus is not in it');
+    if (btn.getAttribute('aria-expanded') !== 'true') bad.push('its name does not say it is open');
+    const xb = B.querySelector('button[data-glance-close]'); if (!xb || txt(xb) !== 'Close' || w.getComputedStyle(xb).minHeight !== '44px') bad.push('no 44px Close');
+    const sn = B.querySelector('button[data-glance-snap]'), onBoard = STATE.schedule.some(x => x.game_id === gid);
+    if (!!sn !== onBoard || (sn && (txt(sn) !== 'Open game snapshot' || sn.dataset.glanceSnap !== gid || w.getComputedStyle(sn).minHeight !== '44px'))) bad.push(`Open game snapshot ${sn ? 'drawn' : 'missing'} for a game ${onBoard ? 'on' : 'not on'} the board`);
+    if (!K) bad.push('its leg is not kept'); else bad.push(...legBad(kind, K, wantPrice, wantSrc));
+    bad.push(...(kind === 'p' ? playerBad(id, gid, K) : teamBad(gid, kind === 't' ? id : null)));
+    return bad; };
+  /* the browser's storage, watched while bubbles open and close: nothing may be written */
+  const SPR = w.Storage.prototype, keepSet = SPR.setItem, keepRm = SPR.removeItem, keepClr = SPR.clear, writes = []; let watching = false;
+  SPR.setItem = function (k, v) { if (watching) writes.push('set ' + k); return keepSet.call(this, k, v); };
+  SPR.removeItem = function (k) { if (watching) writes.push('remove ' + k); return keepRm.call(this, k); };
+  SPR.clear = function () { if (watching) writes.push('clear'); return keepClr.call(this); };
+  const openOn = async (btn, wantPrice, wantSrc, where) => { watching = true; btn.click(); await wait(20); const bad = bubbleBad(btn, wantPrice, wantSrc);
+    if (shown()) { box().querySelector('[data-glance-close]').click(); await wait(10); } watching = false;
+    chk(bad.length === 0 && !shown() && d.activeElement === btn, `the matchup bubble from ${where} (${btn.dataset.glance}, ${btn.dataset.glanceLeg}): ${bad.join('; ') || 'Close did not close it with the focus back on the name'}`); };
+  const priceOf = (where, K) => where === 'the builder' ? legPrice(K.leg) : { ml: K.leg.price, src: K.leg.src };
+
+  /* ---- on the week as it stands: every name the page draws, and the first of each kind in each place opened ---- */
+  [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'suggest').click(); await wait(400);
+  const live = () => { const out = [];
+    for (const li of d.querySelectorAll('#pbPanel ol.pb-top li.pb-trow')) { const a = li.querySelector('button[data-pb-leg]'); if (a) out.push({ where: 'the Top 50', row: li.querySelector('.nm'), key: a.dataset.pbLeg, side: a.dataset.side, k: a.dataset.k }); }
+    for (const tr of d.querySelectorAll('#parlayBody tr.legrow')) { const b = tr.querySelector('button[data-drop]'), l = b && S.parlay[b.dataset.drop]; if (l) out.push({ where: 'the builder', row: tr.querySelector('td.plr'), key: b.dataset.drop, side: l.side, k: l.k }); }
+    for (const [sel, where] of [['#spSets', 'a set’s card'], ['#pbElo', 'an Elo pick’s card']]) for (const li of d.querySelectorAll(`${sel} .pb-tier .pb-legs li`)) {
+      const a = li.querySelector('button[data-pb-leg]'); if (a) out.push({ where, row: li.querySelector('.nm'), key: a.dataset.pbLeg, side: a.dataset.side, k: a.dataset.k }); }
+    return out; };
+  /* the builder, on the week as it stands: a player's line, a team's and a total, each the first the Top 50 lists */
+  const keepParlay = JSON.stringify(S.parlay);
+  for (const kd of ['p', 't', 'g']) { const li = [...d.querySelectorAll('#pbPanel ol.pb-top li.pb-trow')].find(x => x.querySelector(`[data-glance^="${kd}:"]`)), a = li && li.querySelector('button[data-pb-leg]');
+    if (a && a.getAttribute('aria-pressed') !== 'true') { a.click(); await wait(30); } }
+  await wait(400);                                  /* the page's own save of the builder (a 300ms debounce) lands before the storage is watched */
+  const L0 = live(), byPlace = {};
+  { const bad = L0.map(P => { const x = nameBad(P.row, P.key, P.side, P.k); return x ? `${P.where} ${x}` : ''; }).filter(Boolean);
+    chk(bad.length === 0, `a name on a leg is not the matchup bubble's button for its leg: ${bad.slice(0, 4).join(' | ')}`); }
+  for (const P of L0) { const b = P.row && P.row.querySelector('[data-glance]'); if (!b) continue; const k = P.where + '|' + b.dataset.glance[0]; if (!byPlace[k]) byPlace[k] = { P, b }; }
+  for (const { P, b } of Object.values(byPlace)) { const K = w.glanceLeg(b.dataset.glanceLeg); if (!K) continue; const pr = priceOf(P.where, K); await openOn(b, pr.ml, pr.src, P.where + ' (the week as it stands)'); }
+
+  /* ---- at any hour: the fixtures ---- */
+  const wk = w.eval('currentWeek()'), season = +w.eval('SEASON');
+  /* a game both schedules have and a real player on it: a ranked player with a matchup row and a trusted stat where the
+     matchups file has one (in the season), else a ranked player of either club (the off-season, a file of no starters) */
+  const both = id => S.sched.some(x => x.id === id) && STATE.schedule.some(x => x.game_id === id);
+  const mrow = Object.entries(MU.players || {}).find(([pid, v]) => Pl.players[pid] && Pl.players[pid].se != null && Pl.players[pid].rank && S.players[pid]
+    && both(v.game_id) && Object.keys(v.stats || {}).some(st => trustOwn(v.group, st)) && !outOwn(pid));
+  const r = mrow ? S.sched.find(x => x.id === mrow[1].game_id) : (S.sched.find(x => +x.w === +wk && both(x.id)) || S.sched.find(x => both(x.id)));
+  const pid = mrow ? mrow[0] : r ? Object.keys(Pl.players || {}).find(id => Pl.players[id].rank && Pl.players[id].se != null && S.players[id]
+    && [r.a, r.h].includes(S.players[id].team) && ['QB', 'RB', 'WR', 'TE'].includes(S.players[id].grp)) : null;
+  const pick = r ? [pid, mrow ? mrow[1] : null] : null;
+  const at = new Date(w.Date.now() + 2 * 86400e3).toISOString().slice(0, 10);
+  const FAKE = { id: `${season}_${String(wk).padStart(2, '0')}_XXA_XXH`, w: wk, d: at, t: '13:00', a: 'XXA', h: 'XXH' };
+  const fakeP = { key: legKey(FAKE.id, 'XX-0000001', 'receiving_yards'), gid: FAKE.id, pid: 'XX-0000001', stat: 'receiving_yards', k: 40.5, side: 'over', main: true, p: 0.58, price: -110, src: 'real',
+    mu: 44, name: 'Planted Receiver', pos: 'WR', grp: 'WR', team: 'XXA', opp: 'XXH', week: wk, label: 'Over 40.5 receiving yards' };
+  const fakeT = { key: legKey(FAKE.id, 'team:XXA', 'ml'), gid: FAKE.id, pid: 'team:XXA', stat: 'ml', k: 0, side: 'over', main: false, p: 0.52, price: 110, src: 'est', mu: null,
+    name: 'XXA', pos: 'Game', grp: 'TEAM', team: 'XXA', opp: 'XXH', week: wk, label: 'To win' };
+  chk(!!r, 'the matchup bubble: no game in both the payload\'s schedule and the board\'s to stand a fixture on');
+  let GRADES_SEEN = [];
+  if (r) {
+    const v = pick[1], sp = pid && S.players[pid], st = v ? Object.keys(v.stats).find(s => trustOwn(v.group, s)) : sp && sp.grp === 'QB' ? 'passing_yards' : 'receiving_yards';
+    const kk = v ? Math.round(v.stats[st][1]) + 0.5 : 50.5, team = v ? v.team : sp && sp.team, opp = team === r.h ? r.a : r.h;
+    const realP = sp ? { key: legKey(r.id, pid, st), gid: r.id, pid, stat: st, k: kk, side: 'over', main: true, p: 0.57, price: -110, src: 'real', mu: kk,
+      name: sp.n, pos: sp.pos, grp: sp.grp, team, opp, week: r.w, label: `Over ${kk} ${st}` } : null;
+    const realT = { key: legKey(r.id, 'team:' + r.h, 'ml'), gid: r.id, pid: 'team:' + r.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.6, price: r.mlh != null ? r.mlh : -150, src: r.mlh != null ? 'real' : 'est', mu: null,
+      name: TN[r.h] || r.h, pos: 'Game', grp: 'TEAM', team: r.h, opp: r.a, week: r.w, label: 'To win' };
+    const realG = w.eval('totalLeg')(r, 'under') || { key: legKey(r.id, 'game', 'total'), gid: r.id, pid: 'game', stat: 'total', k: 44.5, side: 'under', main: true, p: 0.5, price: -110, src: 'est', mu: 44.5,
+      name: `${TN[r.a] || r.a} at ${TN[r.h] || r.h}`, pos: 'Game', grp: 'TEAM', team: r.a, opp: r.h, week: r.w, label: 'Under 44.5 points' };
+    S.sched.push(FAKE);
+    /* and a line of each player the Mismatches grade at either end of each grade the smoke works out (the lowest edge
+       and the highest), so every grade the week has, and its bounds, is read off a bubble whatever the rows above drew */
+    const graded = {}; for (const [id, x] of Object.entries(MU.players || {})) { if (!S.players[id] || !S.sched.some(y => y.id === x.game_id) || id === pid) continue;
+      const m = mmOwn(id, x.game_id); if (!m) continue; const G2 = graded[m.grade] = graded[m.grade] || {};
+      if (!G2.lo || m.score < G2.lo.s) G2.lo = { id, x, s: m.score }; if (!G2.hi || m.score > G2.hi.s) G2.hi = { id, x, s: m.score }; }
+    const mmLegs = Object.values(graded).flatMap(G2 => G2.lo.id === G2.hi.id ? [G2.lo] : [G2.lo, G2.hi]).map(({ id, x }) => { const sp2 = S.players[id], st2 = Object.keys(x.stats || {})[0] || 'receiving_yards', k2 = x.stats && x.stats[st2] ? Math.round(x.stats[st2][1]) + 0.5 : 20.5, g2 = S.sched.find(y => y.id === x.game_id);
+      return { key: legKey(x.game_id, id, st2), gid: x.game_id, pid: id, stat: st2, k: k2, side: 'under', main: true, p: 0.52, price: 105, src: 'real', mu: k2,
+        name: sp2.n, pos: sp2.pos, grp: sp2.grp, team: x.team, opp: x.opp, week: g2.w, label: `Under ${k2} ${st2}` }; });
+    GRADES_SEEN = Object.keys(graded);
+    const legs = [realP, realT, realG, fakeP, fakeT, ...mmLegs].filter(Boolean), at1 = l => lis[legs.indexOf(l)].querySelector('[data-glance]');
+    const host = d.createElement('div'); host.id = 'glFix'; host.className = 'card'; d.body.appendChild(host);
+    host.innerHTML = w.pbTierCard({ id: 'glfix', label: 'Fixture', legs, corr: 0.05, dec: 20, fair: null, floor: null }, { quiet: true, kind: 'sp', fid: 'glfix' });
+    const lis = [...host.querySelectorAll('.pb-legs li')];
+    { const bad = legs.map((l, i) => { const x = lis[i] ? nameBad(lis[i].querySelector('.nm'), l.key, l.side, l.k) : `${l.key}: not drawn`; return x; }).filter(Boolean);
+      chk(lis.length === legs.length && bad.length === 0, `the matchup bubble: a name on a level card of the smoke's own is not the bubble's button for its leg: ${bad.join(' | ')}`); }
+    for (let i = 0; i < lis.length; i++) { const b = lis[i].querySelector('[data-glance]'); if (b) await openOn(b, legs[i].price, legs[i].src, `a level card of the smoke's own (${legs[i].name}, ${legs[i].label})`); }
+    /* a final the board has and the ratings file has not counted yet (the betting job graded it before the Elo job ran):
+       the record counts it, as Team Rankings does, planted on the board's own schedule for a made-up opponent */
+    { const P = w.pkBoard, b = at1(realT), extra = { game_id: `${season}_01_XXZ_${r.h}`, week: 1, game_type: 'REG', gameday: '2026-09-10', gametime: '13:00', away_team: 'XXZ', home_team: r.h, home_score: 30, away_score: 3, result: 27 };
+      const before = recOwn(r.h), want = recOwn(r.h, STATE.schedule.concat([extra]));
+      P.ST.sched.push(extra); watching = true; b.click(); await wait(20);
+      const got = nOf('rec:' + r.h); box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
+      P.ST.sched.splice(P.ST.sched.indexOf(extra), 1);
+      chk(got === want && want !== before, `the matchup bubble does not count a final the board has that the ratings file has not: ${r.h} ${got}, not ${want} (${before} before it)`); }
+    /* his status as the page knows it, planted: ruled out (no matchup to show, OUT and why), then questionable */
+    { const L = realP || fakeP, b = at1(L), sid = L.pid, keepI = S.inactive[sid], INJ = w.eval('INJ'), keepQ = INJ[sid];
+      S.inactive[sid] = { week: wk, status: 'Out', inj: 'Knee' };
+      watching = true; b.click(); await wait(20);
+      const s1 = [nOf('inj'), txt(box().querySelector('.glance-why')), nOf('nomu') !== null, !box().querySelector('tr[data-glance-stat]')], bad1 = bubbleBad(b, L.price, L.src);
+      box().querySelector('[data-glance-close]').click(); await wait(10);
+      if (keepI) S.inactive[sid] = keepI; else delete S.inactive[sid];
+      INJ[sid] = { k: 'q', t: 'Q', title: 'Questionable (ankle); limited in practice' };
+      b.click(); await wait(20);
+      const s2 = [nOf('inj'), txt(box().querySelector('.glance-why'))], bad2 = bubbleBad(b, L.price, L.src);
+      box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
+      if (keepQ) INJ[sid] = keepQ; else delete INJ[sid];
+      chk(s1.join('|') === 'OUT|ruled out, knee|true|true' && s2.join('|') === 'Q|Questionable (ankle); limited in practice' && !bad1.length && !bad2.length,
+        `the matchup bubble does not say a player is ruled out (and show no matchup) or questionable as the page reads it: ${s1.join('|')} / ${s2.join('|')} ${bad1.concat(bad2).join('; ')}`); }
+
+    /* ---- the window itself, on the real player's name and the team's beside it ---- */
+    { const b1 = at1(realP || fakeP), b2 = at1(realT), key = (el, k, o) => el.dispatchEvent(new w.KeyboardEvent('keydown', Object.assign({ key: k, bubbles: true, cancelable: true }, o || {})));
+      const bad = []; watching = true;
+      b1.click(); await wait(20);
+      { const f = [...box().querySelectorAll('button')], first = f[0], last = f[f.length - 1];
+        last.focus(); key(last, 'Tab'); if (d.activeElement !== first) bad.push('Tab from the last control does not come round to the first');
+        first.focus(); key(first, 'Tab', { shiftKey: true }); if (d.activeElement !== last) bad.push('Shift+Tab from the first control does not go round to the last');
+        box().focus(); key(box(), 'Tab', { shiftKey: true }); if (d.activeElement !== last) bad.push('Shift+Tab from the bubble itself leaves it'); }
+      key(d.activeElement, 'Escape'); await wait(10);
+      if (shown() || d.activeElement !== b1 || b1.hasAttribute('aria-expanded')) bad.push('Escape does not close it with the focus back on the name');
+      b1.click(); await wait(20); const outside = d.querySelector('#spCard h2') || d.querySelector('header h1');
+      outside.dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true })); await wait(10);
+      if (shown() || d.activeElement !== b1) bad.push('a click outside does not close it with the focus back on the name');
+      b1.click(); await wait(20); b2.click(); await wait(20);
+      if (d.querySelectorAll('#glanceBox').length !== 1 || !shown() || box().dataset.glanceOf !== b2.dataset.glance || !box().contains(d.activeElement) || b1.hasAttribute('aria-expanded') || b2.getAttribute('aria-expanded') !== 'true')
+        bad.push('another name does not close the first bubble and open its own, the focus in it');
+      key(d.activeElement, 'Escape'); await wait(10);
+      if (shown() || d.activeElement !== b2) bad.push('Escape on the second bubble does not give its name the focus back');
+      b2.click(); await wait(20); b2.click(); await wait(10);
+      if (shown()) bad.push('its own name pressed again does not close it');
+      /* Open game snapshot: the bubble closes and that game's window opens; closing it gives the name the focus back */
+      b2.click(); await wait(20); const sn = box().querySelector('[data-glance-snap]');
+      if (!sn) bad.push('no Open game snapshot on a game the board has');
+      else { sn.click(); await wait(80); const gm = d.getElementById('gsModal'), g = STATE.schedule.find(x => x.game_id === r.id), tt = gm && [...gm.querySelectorAll('#gsTitle .pk-ttag')].map(txt);
+        if (shown() || !gm || gm.hidden || !tt || tt.join() !== [g.away_team, g.home_team].join()) bad.push(`Open game snapshot does not close the bubble and open ${r.id}'s window (${tt})`);
+        w.gameSnapshotClose(); await wait(20);
+        if (d.activeElement !== b2) bad.push('closing the game snapshot does not give the name the focus back'); }
+      watching = false;
+      chk(bad.length === 0, 'the matchup bubble as a window: ' + bad.join('; ')); }
+    host.remove();
+
+    /* ---- the builder at any hour: a made-up player with no Elo row, on no book price (the builder shows the model's
+       fair price, as for a line added from a game's page with none: the bubble shows the price the row shows, not the
+       leg's own), and a team bet on a made-up game with no line ---- */
+    const fakePb = { ...fakeP, price: null, src: undefined };
+    S.parlay = { [fakePb.key]: fakePb, [fakeT.key]: { ...fakeT } }; w.eval('renderParlay()'); await wait(40);
+    { const rows = [...d.querySelectorAll('#parlayBody tr.legrow')], bad = [];
+      for (const l of [fakePb, fakeT]) { const tr = rows.find(x => (x.querySelector('button[data-drop]') || {}).dataset && x.querySelector('button[data-drop]').dataset.drop === l.key);
+        const x = tr ? nameBad(tr.querySelector('td.plr'), l.key, l.side, l.k) : `${l.key}: not in the builder`; if (x) bad.push(x); }
+      chk(rows.length === 2 && bad.length === 0, `the matchup bubble: a made-up leg's name in the builder is not the bubble's button for its leg: ${bad.join(' | ')}`);
+      for (const tr of rows) { const b = tr.querySelector('[data-glance]'); if (!b) continue; const K = w.glanceLeg(b.dataset.glanceLeg); const pr = K ? legPrice(K.leg) : {}; await openOn(b, pr.ml, pr.src, 'the builder, a made-up game with no line'); }
+      const tb = rows.map(x => x.querySelector('[data-glance^="t:"]')).find(Boolean);
+      if (tb) { tb.click(); await wait(20);
+        chk(nOf('noline') === 'no line posted yet' && nOf('nopr') !== null && !box().querySelector('[data-glance-snap], [data-glance-model], [data-glance-poss]') && nOf('rec:XXA') === '0-0',
+          'the matchup bubble on a made-up game with no line does not say so, or draws a rating, a pick or a snapshot it has not got');
+        box().querySelector('[data-glance-close]').click(); await wait(10); } }
+    S.parlay = JSON.parse(keepParlay); S.sched.splice(S.sched.indexOf(FAKE), 1); w.eval('save(); renderParlay()'); await wait(40);
+  }
+  SPR.setItem = keepSet; SPR.removeItem = keepRm; SPR.clear = keepClr;
+  chk(writes.length === 0, 'the matchup bubble wrote to the browser\'s storage: ' + writes.slice(0, 5).join(', '));
+  chk(errs.length === 0, 'the matchup bubble: the page threw: ' + errs.join('; '));
+  w.close();
+  const kinds = Object.keys(byPlace).map(k => k.replace('|', ' ')).join(', '), gradesSeen = GRADES_SEEN;
+  console.log(`the matchup bubble: ${checks - c0} checks (${L0.length} names on the week as it stands${kinds ? ', opened from ' + kinds : ''}; fixtures on ${r ? r.id + (pid ? ', ' + pid + (mrow ? ' with his matchup' : ' with no matchup row') : '') + (gradesSeen.length ? ', a mismatch graded ' + gradesSeen.join(', ') : '') : 'no game'} and a made-up game), ${fails.length - f0} failures`);
 }

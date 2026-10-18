@@ -1058,6 +1058,10 @@ setTimeout(async()=>{
           &&nrz(+(q('[data-pb-win]')||{dataset:{}}).dataset.pbWin,win)&&(q('[data-pb-win]')||{}).textContent===m1(win)
           &&nrz(+(q('[data-pb-ev]')||{dataset:{}}).dataset.pbEv,ev)&&(q('[data-pb-ev]')||{}).textContent===m1(ev),
           `${lab}: Top 50 row ${i+1} does not draw ${l.name} ${l.label} at ${fm(l.price)}${l.src==='dkline'?' est.':''}, model ${pc0(l.p)}, fair ${f?pc0(f.p):'none'}, ${m1(win)} won and ${m1(ev)} expected on $1: "${tx.slice(0,200)}"`);
+        /* (app v114) the matchup bubble a leg's name opens is the hub's (nflbets/build/glance.js), not this page's: here the
+           name is the row's own plain text, as before, and no row carries the bubble's button */
+        { const nm=q('.nm'), own=nm?[...nm.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim():'';
+          chk(own===l.name&&!row.querySelector('[data-glance], button.glance-name'),`${lab}: Top 50 row ${i+1}'s name is not its own plain text on the prop model's page, or the row carries the hub's matchup bubble: "${nm?nm.innerHTML.slice(0,120):''}"`); }
         { const vm=[...row.querySelectorAll('.pb-valmark')], val=want[i].grp==='value';
           W.wording((val?vm.length===1&&vm[0].textContent==='Value':!vm.length)&&!row.querySelector('.pb-thinmark')&&!/thin edge|no edge/i.test(tx)&&(!f||/fair/.test(tx)),`${lab}: Top 50 row ${i+1} (${l.name} ${l.label}) is not marked ${val?'Value, and that alone':'with no mark at all'}: "${tx.slice(0,160)}"`); }
         chk(legAddOk(q('[data-pb-leg]'),l),`${lab}: Top 50 row ${i+1} has no Add of its own on ${l.name} ${l.label}, named for it and pressed only while it is in the builder: ${q('[data-pb-leg]')?q('[data-pb-leg]').outerHTML.slice(0,240):'none'}`); });
@@ -5840,6 +5844,11 @@ setTimeout(async()=>{
       if(notPosted.length) console.log(`V. raw files not compared because nflverse has not posted them yet: ${notPosted.join(', ')}`);
     })(); }catch(e){ chk(false,'section V threw: '+(e&&e.stack||e)); }
 
+    /* (app v114) the matchup bubble is the hub's (nflbets/build/glance.js, window.hubGlance), and the parts draw a leg's name as
+       its button only where it is on the page: this page, the prop model's own, has none, so every name it drew in this run
+       (the Top 50, the builder, the sets, the hands, the Elo picks, as they stand now) is plain text */
+    chk(typeof w.hubGlance==='undefined'&&typeof w.glanceName==='function'&&!d.querySelector('[data-glance], button.glance-name, #glanceBox'),
+      'the prop model\'s own page carries the hub\'s matchup bubble, or draws a name as its button');
     console.log(`\n${checks} checks, ${fails.length} failures, ${warns.length} warnings, ${errs.length} runtime errors`);
     fails.slice(0,15).forEach(f=>console.log('  FAIL:',f));
     errs.slice(0,5).forEach(e=>console.log('  ERROR:',e));
