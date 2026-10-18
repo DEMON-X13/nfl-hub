@@ -317,6 +317,18 @@ function page(MU, opts) {
         chk(want === null ? !sh : (!!sh && sh.getAttribute('data-elo') === want),
           `a Mismatches bubble wears ${sh ? sh.getAttribute('data-elo') : 'no shield'} for ${e ? e.name : pid}, whose season shield is ${want}`);
       }
+      /* each bubble words what its edge ranks as what it is, the matchup formula's units by their players' Elo (this
+         check's own reading of matchups.json's league table), never "a pass defense ranked" or "a run defense ranked",
+         which on the page are the ELO Ratings tab's tables alone (18 October 2026) */
+      { const UN = { QB: ['DB', 'DL'], WR: ['DB'], TE: ['DB'], RB: ['DL', 'LB'] }, AG = { QB: 'secondary and defensive line', WR: 'secondary', TE: 'secondary', RB: 'defensive line and linebackers' };
+        const ord = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
+        const defs = {}; for (const v of Object.values(MU0.players)) if (v.opp_def) defs[v.opp] = v.opp_def; Object.assign(defs, (MU0.league && MU0.league.defs) || {});
+        const bad = bubbles.map(b => { const v = MU0.players[b.dataset.mmPid], u = v && UN[v.group], avg = x => u.reduce((a, k) => a + x[k], 0) / u.length;
+          if (!u || !defs[v.opp]) return `${b.dataset.mmPid}: no unit to rank`;
+          const want = `vs the ${v.opp} ${AG[v.group]}, ${ord(1 + Object.keys(defs).filter(t => avg(defs[t]) > avg(defs[v.opp])).length)} by player Elo.`, sub = txt(b.querySelector('.pe-mm-sub'));
+          return sub.startsWith(want) ? '' : `${b.dataset.mmPid}: "${sub.slice(0, 90)}", not "${want}"`; }).filter(Boolean);
+        const old = /\b(?:pass|run) defense ranked\b|\bvs an? (?:pass|run) defense\b/.exec(txt(d.getElementById('peMism')));
+        chk(!bad.length && !old, 'a Mismatches bubble does not word its rank as the matchup formula\'s units, or says a pass or run defense ranked: ' + (bad.slice(0, 2).join(' | ') || (old && old[0]))); }
       /* the earliest game with a mismatch kicks off */
       const g0 = before[0].game_id, k0 = (w.eval('S.sched').find(x => x.id === g0) || {}).k;
       w.__clock.now = k0;

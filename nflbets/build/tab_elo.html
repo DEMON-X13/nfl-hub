@@ -614,7 +614,7 @@ function mmTags(){
     const name=[...who.childNodes].find(n=>n.nodeType===3&&n.textContent.trim()); if(!name) continue;
     const g=mmGrade(v.score)[0], t=document.createElement('span');
     t.className='pe-mmtag'; t.dataset.peMmtag=v.score.toFixed(1); t.dataset.peMmgrade=g;
-    t.title=`${g} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs a ${v.unitName} ranked ${ordinal(v.defRank)} of ${v.defN}`;
+    t.title=mmTitle(v);
     t.textContent='Mismatch'; name.after(t);
   }
 }
@@ -1102,7 +1102,7 @@ const epMmFor=l=>!!l&&l.side==='over'&&l.stat!=='passing_interceptions';
 function epMmTag(v){
   const g=mmGrade(v.score)[0], t=document.createElement('span');
   t.className='pe-mmtag'; t.dataset.peMmtag=v.score.toFixed(1); t.dataset.peMmgrade=g;
-  t.title=`${g} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs a ${v.unitName} ranked ${ordinal(v.defRank)} of ${v.defN}`;
+  t.title=mmTitle(v);
   t.textContent=g+' mismatch'; return t;
 }
 /* the Elo picks, as their own section at the foot of Suggested Parlays (app v111; until then the Parlay
@@ -1158,7 +1158,7 @@ if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
    back against the line and linebackers. The top five sit over the Props game list as
    bubbles; Show more opens the top thirty. Each carries the matchup formula's projection for
    the player's leading stat. Only on the week the matchups are for. */
-const MM_UNIT={QB:{units:['DB','DL'],name:'pass defense'},WR:{units:['DB'],name:'pass defense'},TE:{units:['DB'],name:'pass defense'},RB:{units:['DL','LB'],name:'run defense'}};
+const MM_UNIT={QB:{units:['DB','DL']},WR:{units:['DB']},TE:{units:['DB']},RB:{units:['DL','LB']}};
 /* how big an edge is, in words and a colour: 3 and up huge, 2 big, 1 solid, less slight */
 const mmGrade=s=>{const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4']:x>=2?['Big','pe-g3']:x>=1?['Solid','pe-g2']:['Slight','pe-g1'];};
 const MM_LEAD={QB:'passing_yards',RB:'rushing_yards',WR:'receiving_yards',TE:'receiving_yards'};
@@ -1181,13 +1181,19 @@ function mismatches(){
     rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t],i)=>[t,i+1]))}; }
   return P.filter(v=>pz[v.group]).map(v=>{ const d=unitOf(v), a=pz[v.group](v.elo), b=dz[v.group](d);
       const lead=MM_LEAD[v.group], st=v.stats&&v.stats[lead];
-      return {...v,unit:Math.round(d),unitName:MM_UNIT[v.group].name,defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:st?st[1]:null,nudge:st?st[2]:null}; })
+      return {...v,unit:Math.round(d),against:mmAgainst(v.group),defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:st?st[1]:null,nudge:st?st[2]:null}; })
     .filter(v=>v.zp>0&&v.zd<0).sort((x,y)=>y.score-x.score);
 }
 const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
 const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]||'th');
-/* the plain words: a Diamond RB against a run D ranked 30th */
-const mmLine=v=>`vs a ${esc(v.unitName)} ranked ${ordinal(v.defRank)}`;
+/* the plain words. What a mismatch ranks is the matchup formula's units, the averages of the player ratings of the
+   defenders he faces (the secondary for a receiver or tight end, the secondary and the line for a quarterback, the
+   line and the linebackers for a back), never the ELO Ratings tab's Pass Defense or Run Defense table, which rate a
+   defense on its plays and can rank the same club far apart (LAC 32nd of the one for Patrick Mahomes, 4th of the
+   other, in week 6): so its words name the units and what ranks them, and "pass defense ranked" on the page is the
+   table's alone (18 October 2026, beside the matchup bubble, whose Faces line is the table's) */
+const mmLine=v=>`vs the ${esc(v.opp)} ${esc(v.against)}, ${ordinal(v.defRank)} by player Elo`;
+const mmTitle=v=>`${mmGrade(v.score)[0]} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs the ${v.opp} ${v.against}, ranked ${ordinal(v.defRank)} of ${v.defN} on the matchup formula's player ratings`;
 const mmProj=v=>v.proj==null?'':`<b>${Math.round(v.proj)} ${MM_LBL[v.lead]}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}`;
 function mmName(pid){ return (D.players&&D.players.players&&D.players.players[pid]&&D.players.players[pid].name)||pid; }
 /* a click on a player opens his game with his stats already open, scrolled to and highlighted */
@@ -1235,10 +1241,10 @@ function mismatchModal(rows){
     m.addEventListener('click',e=>{ if(e.target===m) mmClose(); });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) mmClose(); }); }
   const body=rows.map((v,i)=>`<tr data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" style="cursor:pointer"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))} <span class="muted" style="font-weight:600">(${esc(v.group)})</span></td>
-    <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.unitName)}</small></td>
+    <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.against)}</small></td>
     <td class="pe-c pe-edge ${mmGrade(v.score)[1]}"><b>${v.score.toFixed(1)}</b><small>${mmGrade(v.score)[0]}</small></td><td class="pe-n">${v.proj==null?'–':Math.round(v.proj)+' '+MM_LBL[v.lead]}${v.nudge?`<small class="muted" style="display:block;font-size:11px">${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup</small>`:''}</td></tr>`).join('');
   document.getElementById('peMmView').innerHTML=`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">Mismatches, week ${esc(D.mu.week)} <span class="pill">top ${rows.length}</span><span style="flex:1"></span><button class="btn quiet" id="peMmClose">Close</button></h2>
-    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the defense among all 32, 1st the best: quarterbacks, receivers and tight ends against the pass defense, backs against the run defense. Click a row to open the game at his stats.</p>
+    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the units he faces among all 32 defenses by their players' Elo, as the matchup formula rates them, 1st the best: a quarterback against the secondary and defensive line, a receiver or tight end against the secondary, a back against the defensive line and linebackers (not the ELO Ratings tab's Pass Defense or Run Defense table). Click a row to open the game at his stats.</p>
     <div style="overflow-x:auto"><table class="pe-t pe-mm-t"><thead><tr><th class="pe-n">#</th><th>Player</th><th class="pe-c">Game</th><th class="pe-c">Facing</th><th class="pe-c" title="How lopsided the matchup is: the player's standing at his position plus the defence's weakness, in standard deviations">Edge</th><th class="pe-n">Projection</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
   document.getElementById('peMmClose').addEventListener('click',mmClose);
   m.querySelectorAll('tr[data-mm-game]').forEach(r=>r.addEventListener('click',()=>{ mmClose(); mmOpen(r.dataset.mmGame,r.dataset.mmPid); }));
