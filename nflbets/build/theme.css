@@ -105,7 +105,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 .bigp .hero span{color:var(--ink-2)} .bigp .hero small{color:var(--gold)}
 .sugg-side button.on,.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}
 .pb-amt:hover{border-color:var(--ink-2)}
-.pb-tier.xtrm{border-top-color:#B49CFF}
+.pb-tier.xtrm,.pb-tier.elo-xtrm{border-top-color:#B49CFF}
 .faroff{color:var(--gold)}
 .pb-chip.on small{color:var(--ink)}
 .elomv.flat{color:var(--muted)}
@@ -254,7 +254,7 @@ html[data-theme="light"] .finchip{border-color:rgba(8,95,134,.4)}
 html[data-theme="light"] .finchip.live{border-color:rgba(196,140,20,.55)}
 html[data-theme="light"] .lead .va.exact,html[data-theme="light"] .tile .tv.exact,html[data-theme="light"] .tile .td.exact{color:#5B3CC4}
 html[data-theme="light"] .pays .box.tier.med{border-color:rgba(196,140,20,.55)}
-html[data-theme="light"] .pb-tier.xtrm{border-top-color:#8B6CF0}
+html[data-theme="light"] .pb-tier.xtrm,html[data-theme="light"] .pb-tier.elo-xtrm{border-top-color:#8B6CF0}
 html[data-theme="light"] .pe-g3{color:#236B42!important} html[data-theme="light"] .pe-g2{color:#8A5E05!important}
 html[data-theme="light"] #lpCard .src{border-left-color:#8B6CF0}
 /* the Pick'em Record chart and the bankroll in their own light colours, as the app draws them */
