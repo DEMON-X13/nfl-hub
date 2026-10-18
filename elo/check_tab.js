@@ -75,7 +75,14 @@
  *     at 12.03%, over its 12% floor, and with one parlay worked picked a worse one; F4, six legs of one
  *     game that move together strongly, which the quick reading overrates, and three games of one leg
  *     each, where the likeliest four legs are one of each game, a parlay the first search reached only
- *     as its best parlay of legs all in different games. Since October 2026 the whole page's smoke
+ *     as its best parlay of legs all in different games; and F6, the search's pruning and bounds near the
+ *     floors, on fifteen seeded one-game slates of 9 to 12 legs whose chances cluster where each level's
+ *     floor falls, every level held to every parlay of its size worked out in full (a review planted two
+ *     slips, a partial parlay pruned at the floor itself and the price-first pass reading the quick
+ *     chance as its most, which passed every other check);
+ *   - the Mismatches bubbles' words (18 October 2026): what an edge ranks is the matchup formula's units
+ *     by their players' Elo ("vs the LAC secondary and defensive line, 32nd by player Elo"), never "a
+ *     pass defense ranked", which on the page is the ELO Ratings tab's Pass Defense table. Since October 2026 the whole page's smoke
  *     (nflbets/build/smoke.js) runs after the Elo job's commit, so this is the gate on the files
  *     reaching the code that touches a chance or a price.
  */
@@ -139,6 +146,26 @@ const sumsOwn = corr => new Function('PAY', SUMS_SRC + '\nreturn {parlayProb,par
 const sumsInto = (w, corr) => { w.eval(`var PAY={corr:${JSON.stringify(corr || {})}};\n${SUMS_SRC.replace(/^const /gm, 'var ')}`); };   /* a top-level const in eval'd code is the eval's own: var makes it the page's */
 /* the published payload's correlation table, the one the page prices same-game legs with */
 const CORR = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8')).corr || {}; } catch (e) { return {}; } })();
+/* F6's correlation table, the check's own: the published payload's pairs of two players of one game among the stats
+   its slates draw, as they stood on 18 October 2026 (so only a code change can fail it) */
+const CORR_F6 = {
+  'team|QB:passing_yards|RB:rushing_yards': -0.11, 'team|QB:passing_yards|RB:receptions': 0.118, 'team|QB:passing_yards|WR:receptions': 0.305, 'team|QB:passing_yards|WR:receiving_yards': 0.353,
+  'team|QB:passing_yards|WR:any_td': 0.163, 'team|QB:passing_yards|TE:receiving_yards': 0.229, 'team|QB:passing_yards|TE:any_td': 0.095, 'team|QB:passing_tds|RB:rushing_yards': 0.03,
+  'team|QB:passing_tds|RB:scrim_yards': 0.056, 'team|QB:passing_tds|WR:receptions': 0.116, 'team|QB:passing_tds|WR:receiving_yards': 0.167, 'team|QB:passing_tds|WR:any_td': 0.323,
+  'team|QB:passing_tds|TE:receiving_yards': 0.1, 'team|QB:passing_tds|TE:any_td': 0.246, 'team|QB:completions|RB:rushing_yards': -0.148, 'team|QB:completions|RB:scrim_yards': -0.033,
+  'team|QB:completions|RB:receptions': 0.261, 'team|QB:completions|WR:receptions': 0.335, 'team|QB:completions|WR:receiving_yards': 0.233, 'team|QB:completions|WR:any_td': 0.088,
+  'team|QB:completions|TE:receiving_yards': 0.194, 'team|QB:completions|TE:any_td': 0.066, 'team|RB:rushing_yards|RB:scrim_yards': -0.04, 'team|RB:receptions|RB:rushing_yards': -0.099,
+  'team|RB:rushing_yards|WR:receptions': -0.054, 'team|RB:rushing_yards|WR:receiving_yards': -0.037, 'team|RB:scrim_yards|RB:scrim_yards': -0.034, 'team|RB:receptions|RB:scrim_yards': -0.083,
+  'team|RB:scrim_yards|WR:receptions': -0.046, 'team|RB:scrim_yards|WR:receiving_yards': -0.039, 'team|RB:receptions|WR:receptions': 0.04, 'team|WR:receiving_yards|WR:receiving_yards': -0.038,
+  'team|TE:any_td|WR:receiving_yards': 0.03, 'team|WR:any_td|WR:any_td': -0.032, 'team|TE:receiving_yards|WR:any_td': 0.034, 'team|TE:receiving_yards|TE:receiving_yards': -0.032,
+  'opp|QB:passing_yards|QB:passing_yards': 0.094, 'opp|QB:passing_tds|QB:passing_yards': 0.148, 'opp|QB:completions|QB:passing_yards': 0.04, 'opp|QB:passing_yards|WR:receptions': 0.036,
+  'opp|QB:passing_yards|WR:receiving_yards': 0.064, 'opp|QB:passing_yards|WR:any_td': 0.099, 'opp|QB:passing_yards|TE:any_td': 0.038, 'opp|QB:passing_tds|QB:passing_tds': 0.085,
+  'opp|QB:completions|QB:passing_tds': 0.154, 'opp|QB:passing_tds|RB:rushing_yards': -0.047, 'opp|QB:passing_tds|RB:receptions': 0.038, 'opp|QB:passing_tds|WR:receptions': 0.076,
+  'opp|QB:passing_tds|WR:receiving_yards': 0.07, 'opp|QB:passing_tds|WR:any_td': 0.059, 'opp|QB:passing_tds|TE:receiving_yards': 0.058, 'opp|QB:passing_tds|TE:any_td': 0.031,
+  'opp|QB:completions|QB:completions': -0.037, 'opp|QB:completions|RB:scrim_yards': -0.033, 'opp|QB:completions|RB:receptions': -0.043, 'opp|QB:completions|WR:any_td': 0.113,
+  'opp|QB:completions|TE:any_td': 0.035, 'opp|RB:rushing_yards|RB:rushing_yards': -0.102, 'opp|RB:rushing_yards|RB:scrim_yards': -0.102, 'opp|RB:scrim_yards|RB:scrim_yards': -0.097,
+  'opp|RB:receptions|RB:receptions': -0.032, 'opp|RB:receptions|TE:receiving_yards': -0.03, 'opp|WR:any_td|WR:receptions': 0.051, 'opp|TE:any_td|WR:receptions': 0.032,
+  'opp|WR:receiving_yards|WR:receiving_yards': 0.035, 'opp|WR:any_td|WR:receiving_yards': 0.05, 'opp|TE:any_td|WR:receiving_yards': 0.039, 'opp|TE:receiving_yards|WR:any_td': 0.034 };
 /* the Elo picks' rule, the check's own copy (tab_elo.html, EP and eloCands): a rated player, a trusted stat, a
    real price (or one from DraftKings' line read by Refresh odds) from -200 to +300, the Elo chance 30% or more and
    its expected return above 0, one leg a player (his best by value, the main line on a tie, then the lower id),
@@ -857,6 +884,49 @@ function page(MU, opts) {
         notes.push(`the Elo picks on ${nm}'s ${C.length} candidates (${want.sums.length} parlays worked in full): ${r.tiers.map(t => `${t.label} ${(t.p * 100).toFixed(2)}%${t.likeliest ? ' (likeliest)' : ''} in ${new Set(t.legs.map(l => l.gid)).size} game${new Set(t.legs.map(l => l.gid)).size > 1 ? 's' : ''}`).join('; ')}`); }
       chk(!errors.length, `${nm}: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); }
   }
+
+  /* ---- F6 (18 October 2026): the search's pruning and its bounds, on seeded one-game slates of the check's own ----
+     A review planted two plausible slips in the search, a partial parlay pruned at the floor itself rather than at the
+     least quick chance whose most reaches it, and the price-first pass reading a parlay's quick chance as its most, and
+     both gates passed while levels came up to 29% short of the best (F3 to F5 catch a search that is broken outright,
+     not one a little off near a floor). So: fifteen one-game slates of 9 to 12 made-up candidates, four in five on one
+     club, each leg's Elo chance clustered about where its level's floor falls (0.63 a leg for Medium's 25%, 0.589 for
+     Aggressive's 12%, 0.549 for Extreme's 5%) at +100 to +140, on a correlation table of the check's own (the
+     published payload's pairs among the stats drawn, as of October 2026), and every level the search picks (the tab's
+     own code, compiled here on its own, so it is quick) held to every parlay of its size worked out in full by the
+     tab's fast sums, which the checks above hold to the props parts' sums to the bit (the parts' own where they give
+     none). Planted, the two slips fail it 4 and 3 times. */
+  { const a0 = TAB.indexOf('const EP={'), b0 = TAB.indexOf("/* a parlay's fair chance (parlayFair,");
+    let F = null; try { F = new Function('PAY', 'window', SUMS_SRC + '\n' + TAB.slice(a0, b0) + '\nreturn {PB_TIERS,mlToDec,epPrep,epLevel,epSums,epExact};')({ corr: CORR_F6 }, {}); } catch (err) { F = 'threw ' + err.message; }
+    if (a0 < 0 || b0 < a0 || !F || typeof F === 'string') chk(false, `F6: the tab's search could not be read on its own (EP to parlayFair): ${typeof F === 'string' ? F : 'not found'}`);
+    else {
+      let s = 20261018; const rnd = () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+      const STATS = { QB: ['passing_yards', 'passing_tds', 'completions'], RB: ['rushing_yards', 'scrim_yards', 'receptions'], WR: ['receptions', 'receiving_yards', 'any_td'], TE: ['receiving_yards', 'any_td'] };
+      const GRPS = ['QB', 'RB', 'WR', 'WR', 'WR', 'TE'], gid = '2026_06_FSA_FSB';
+      const slate = (si, near) => { const N = 9 + (si % 4), C = []; let n = 0;
+        while (C.length < N) { const home = rnd() < 0.2, grp = GRPS[Math.floor(rnd() * GRPS.length)], stat = STATS[grp][Math.floor(rnd() * STATS[grp].length)];
+          const pe = near + (rnd() - 0.5) * 0.03, ml = 100 + Math.round(rnd() * 40), side = stat === 'any_td' || rnd() < 0.75 ? 'over' : 'under';
+          if (!(pe * F.mlToDec(ml) > 1)) continue; n++;
+          C.push({ key: `${gid}|fs-${si}-${n}|${stat}`, gid, pid: `fs-${si}-${n}`, name: 'S' + n, grp, team: home ? 'FSB' : 'FSA', opp: home ? 'FSA' : 'FSB', stat, k: 1.5, side, main: true, price: ml, src: 'real', p: 0.5, pe, ev: pe * F.mlToDec(ml) - 1, week: 6 }); }
+        return C.sort((x, y) => (y.ev - x.ev) || cmpC(idC(x), idC(y))); };
+      const full = P => { const out = {}, memo = new Map(), C = P.C;
+        const sumOf = ids => { const k = ids.join(','); let e = memo.get(k); if (e) return e; const legs = ids.map(i => C[i]), f = F.epSums(P, ids), x = f || F.epExact(legs);
+          e = { p: x.p, dec: x.dec, id: legs.map(idC).sort().join(',') }; memo.set(k, e); return e; };
+        for (const [id, , n, floor] of F.PB_TIERS) { let best = null, likely = null; const idx = [];
+          const go = (st, d) => { if (d === n) { const e = sumOf(idx.slice()); if (!likely || e.p > likely.p || (e.p === likely.p && e.id < likely.id)) likely = e;
+              if (floor && e.p >= floor) { const v = e.p * e.dec; if (!best || v > best.v || (v === best.v && e.id < best.e.id)) best = { e, v }; } return; }
+            for (let i = st; i <= C.length - (n - d); i++) { idx[d] = i; go(i + 1, d + 1); } };
+          go(0, 0); out[id] = floor ? (best ? { ...best.e, likeliest: false } : { ...likely, likeliest: true }) : { ...likely, likeliest: false }; }
+        return out; };
+      const bad = []; let sets = 0, levels = 0, near = 0;
+      for (const [floor, at] of [[0.25, 0.63], [0.12, 0.589], [0.05, 0.549]]) for (let i = 0; i < 5; i++) {
+        const C = slate(sets++, at), P = F.epPrep(C), want = full(P), memo = new Map();
+        for (const t of F.PB_TIERS) { const [id, label, , fl] = t, w = want[id]; let r = null; try { r = F.epLevel(P, t, memo); } catch (err) { r = { err: err.message }; }
+          levels++; if (fl && Math.abs(w.p - fl) < 0.004) near++;
+          const got = r && r.legs ? r.legs.map(idC).sort().join(',') : null;
+          if (got !== w.id || !!(r && r.likeliest) !== w.likeliest) bad.push(`slate ${sets - 1} (${C.length} legs, ${floor * 100}%) ${label}: ${r && r.legs ? `${(r.p * 100).toFixed(2)}% at ${r.dec.toFixed(2)}${r.likeliest ? ' (likeliest)' : ''}` : r && r.err ? 'threw ' + r.err : 'none'}, the best ${(w.p * 100).toFixed(2)}% at ${w.dec.toFixed(2)}${w.likeliest ? ' (likeliest)' : ''}`); } }
+      chk(!bad.length, `F6: on ${bad.length} of ${levels} levels of the check's seeded one-game slates, the search does not pick the best its rule allows, every parlay of its size worked out in full: ${bad.slice(0, 3).join('; ')}`);
+      notes.push(`the Elo picks' search on ${sets} seeded one-game slates of 9 to 12 legs near the floors: ${levels - bad.length} of ${levels} levels the full enumeration's, ${near} of them within 0.4 points of a floor`); } }
 
   console.log(`elo tab check: ${checks} checks, ${fails.length} failures`);
   for (const n of notes) console.log('  note: ' + n);

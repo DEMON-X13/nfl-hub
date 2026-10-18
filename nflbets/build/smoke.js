@@ -2679,6 +2679,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
        every figure the builder's own sums, and the tab's fast sums those sums to the bit; each leg wearing its
        mismatch this week, where the Props tab's Mismatches has one, on the side it favours; built when Suggested
        Parlays is on the screen */
+    /* the Elo picks' search is exact only while each parlay's sums stay within the bounds it reads about its quick
+       reading, which were measured on the payload's own correlations: at the table of October 2026 (two players of one
+       game 0.353 at most) the worst stray was 2.9 of the 4.5 deviations allowed, at 1.5 and 2 times the table no level
+       missed its best, and at 2.6 times (0.92) 6 of 40 one-game slates did, by up to 22%. So the table the page prices
+       with stays within twice that, 0.7, between two players of one game (the same player is never two legs of a pick) */
+    { const C0 = JSON.parse(PAYLOAD).corr || {}, big = Object.entries(C0).filter(([k, v]) => /^(team|opp)\|/.test(k) && Math.abs(v) > 0.7);
+      chk(!big.length, `the payload's correlations between two players of one game go past 0.7, past what the Elo picks' search was measured on (twice the table of October 2026): ${big.slice(0, 3).map(([k, v]) => k + ' ' + v).join(', ')}`); }
     { const MU = JSON.parse(ELO_MU);
       const trusted = (g, st) => { const p = ((MU.record[g + '|' + st] || {}).past); return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
       const liveMu = (await w.eloFiles()).mu, Sx = w.eval('S');
