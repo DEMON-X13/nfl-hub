@@ -2710,7 +2710,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (byGame.length >= 6 && weak) {
         Sx.sched.push(...EG);
         /* what the block stands in, each put back in the finally below whatever path it leaves by */
-        const keepMu = {}; let undoDk = null, undoCorr = null;
+        const keepMu = {}; let undoDk = null, undoCorr = null, undoMkt = null;
         try {
         /* the third is put in the first one's game, so two legs of one game are there to be taken and priced together;
            the second the prop model rates at 90%, far off the market: an Elo pick is chosen on its own chance, so it
@@ -2757,6 +2757,15 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const keepCorr = w.eval(`(function(){ const v=PAY.corr&&PAY.corr[${JSON.stringify(ck)}]; return v===undefined?null:v; })()`);
         w.eval(`PAY.corr=PAY.corr||{}; PAY.corr[${JSON.stringify(ck)}]=0.6`);
         undoCorr = () => w.eval(keepCorr === null ? `delete PAY.corr[${JSON.stringify(ck)}]` : `PAY.corr[${JSON.stringify(ck)}]=${keepCorr}`);
+        /* a leg priced on one side has as its fair chance that price over the week's typical overround on two-sided lines,
+           and a week with none (the last week of a season played out, where the made-up games fall in the off-season)
+           gives none, so the leg far off the market could not be told: where the made-up games' week has no two-sided
+           line of its own, one player main line of the smoke's own goes in its market table for the block (put back
+           below) */
+        { const wk = JSON.stringify(String(wkE));
+          const has = w.eval(`(function(){ const M=(PAY.mkt||{})[${wk}]||{}; for(const p in M) for(const s in M[p]){ const L=M[p][s]; if(L&&L.over&&L.under) return true; } return false; })()`);
+          if (!has) { w.eval(`PAY.mkt=PAY.mkt||{}; PAY.mkt[${wk}]=PAY.mkt[${wk}]||{}; PAY.mkt[${wk}]['00-SMOKE-MKT']={receiving_yards:{line:40.5,over:-110,under:-110}}`);
+            undoMkt = () => w.eval(`(function(){ const M=PAY.mkt[${wk}]; delete M['00-SMOKE-MKT']; if(!Object.keys(M).length) delete PAY.mkt[${wk}]; })()`); } }
         const pP = w.eval('parlayProb'), pD = w.eval('parlayDec'), pOrd = w.eval('pbOrder'), dec = w.eval('mlToDec'), LV = w.eval('PB_TIERS'), idOf = l => l.key + '|' + l.side + '|' + l.k;
         const r = w.eval('eloPicks()'), T = r ? r.tiers : [];
         /* the candidates: every player's best line by value, ranked on value, none of the lines the rule refuses */
@@ -2961,7 +2970,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(w.eval('S.saved.length') === nSaved, 'finishing an Elo pick saved it');
         w.eval(`S.stake=${JSON.stringify(eloStake0)}; save(); renderParlay()`); await wait(20);
         } finally {
-          if (undoDk) undoDk(); if (undoCorr) undoCorr();
+          if (undoDk) undoDk(); if (undoCorr) undoCorr(); if (undoMkt) undoMkt();
           for (const [pid, j] of Object.entries(keepMu)) liveMu.players[pid] = w.JSON.parse(j);
           for (const g of EG) { const i = Sx.sched.indexOf(g); if (i >= 0) Sx.sched.splice(i, 1); }
           w.eval('PB_CACHE=new Map()'); }
