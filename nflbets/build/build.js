@@ -241,11 +241,11 @@ for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
 for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function spTier(', 'function gameStarted', 'function marketLine'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
 /* the Elo picks' four levels (17 October 2026): Suggested Parlays' own (PB_TIERS, which the tab reads from the
-   page), each named elo-<level> (elo-safe, elo-med, elo-aggr, elo-xtrm), its Finish "elo|elo-<level>", which
-   the card finds by that id in window.eloPicks() */
+   page, Safe given the Elo picks' own floor by epTiers since 18 October 2026), each named elo-<level> (elo-safe,
+   elo-med, elo-aggr, elo-xtrm), its Finish "elo|elo-<level>", which the card finds by that id in window.eloPicks() */
 { const elo = rd('nflbets', 'build', 'tab_elo.html');
   if (!elo.includes("kind:'elo'") || !elo.includes('window.eloPicks=eloPicks;') || !elo.includes("getElementById('pbElo')")
-    || !elo.includes("id:'elo-'+id") || !elo.includes("typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?PB_TIERS:null") || !elo.includes('add:`data-pb-elo-add="${t.id}"`'))
+    || !elo.includes("id:'elo-'+id") || !elo.includes("typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?epTiers(PB_TIERS):null") || !elo.includes('add:`data-pb-elo-add="${t.id}"`'))
     throw new Error("the Elo picks' levels, their ids, their place on Suggested Parlays or window.eloPicks moved; the parlay card finishes an Elo pick on every device");
   if (!part3.includes('const PB_TIERS=['))
     throw new Error("Suggested Parlays' levels (PB_TIERS) moved; the Elo picks are built on them");

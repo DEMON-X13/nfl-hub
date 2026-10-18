@@ -63,8 +63,9 @@
  *     correlations of the check's own, so it holds in any week: the candidates the rule's, a -115 main
  *     line of the better value leading a +150 touchdown (never plus money first), every line the rule
  *     refuses refused; every level Suggested Parlays' rule on the Elo chance worked out in full over
- *     every parlay of its size by the builder's own sums (the likeliest pair; the best return over
- *     the floor, else the likeliest, marked so), legs of one game taken and priced together, and a
+ *     every parlay of its size by the builder's own sums (the best return over the floor, Safe's the
+ *     Elo picks' own 35% since 18 October 2026, else the likeliest, marked so), legs of one game taken
+ *     and priced together, and a
  *     level with too few candidates empty, saying why;
  *   - the search's quality (18 October 2026, after a review found the levels several percent short of
  *     the best on a one-game slate, and both gates passing with the search cut to one parlay): on two
@@ -76,7 +77,7 @@
  *     game that move together strongly, which the quick reading overrates, and three games of one leg
  *     each, where the likeliest four legs are one of each game, a parlay the first search reached only
  *     as its best parlay of legs all in different games; and F6, the search's pruning and bounds near the
- *     floors, on fifteen seeded one-game slates of 9 to 12 legs whose chances cluster where each level's
+ *     floors, on twenty seeded one-game slates of 9 to 12 legs whose chances cluster where each level's
  *     floor falls, every level held to every parlay of its size worked out in full (a review planted two
  *     slips, a partial parlay pruned at the floor itself and the price-first pass reading the quick
  *     chance as its most, which passed every other check);
@@ -174,7 +175,11 @@ const CORR_F6 = {
    by value alone, so a heavy favourite of thin value was cut before the likeliest pair could see him); never plus
    money first (until 17 October 2026 the picks were the first of a list sorted plus money first, so an anytime
    touchdown filled them) */
-const EPC = { lo: -200, hi: 300, floor: 0.30, vig: 1.045, cap: 30, capP: 10 };
+const EPC = { lo: -200, hi: 300, floor: 0.30, vig: 1.045, cap: 30, capP: 10, safe: 0.35 };
+/* the Elo picks' levels, the check's own copy: Suggested Parlays' (PB_TIERS), Safe given the Elo picks' own floor,
+   35%, so it is the best value over it like the others (the owner's call of 18 October 2026, "yeah safe picked on
+   value too"; until then Safe was the likeliest pair) */
+const tiersOwn = LV => LV.map(t => t[3] ? t : [t[0], t[1], t[2], EPC.safe]);
 const erfC = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
 const PhiC = z => 0.5 * (1 + erfC(z / Math.SQRT2));
 const invPhiC = p => { let lo = -9, hi = 9; for (let i = 0; i < 90; i++) { const m = (lo + hi) / 2; if (PhiC(m) < p) lo = m; else hi = m; } return (lo + hi) / 2; };
@@ -205,16 +210,16 @@ function candsOwn(legs, MU, players, sums) {
   return { all, kept: all.filter(l => keep.has(l)), byValue: all.slice(0, EPC.cap), likely };
 }
 /* every parlay of each level's size from the candidates, worked in full with the builder's own sums (sums: the
-   check's own copy), and each level chosen as Suggested Parlays chooses on the Elo chance: Safe (no floor) the
-   likeliest pair; a level with a floor the best expected return (chance times price) over it, else the likeliest
-   of its size (likeliest); a tie to the lower ids. legs: the page's candidates (their Elo chances, so the sums
+   check's own copy), and each level chosen as Suggested Parlays chooses on the Elo chance, on the Elo picks' floors
+   (tiersOwn: Safe's 35% too): the best expected return (chance times price) over the floor, else the likeliest of
+   its size (likeliest); a tie to the lower ids. legs: the page's candidates (their Elo chances, so the sums
    are the page's to the bit) */
 function levelsOwn(cands, sums) {
   const out = [], memo = new Map();
   const subsets = (n, start, cur, f) => { if (cur.length === n) { f(cur); return; } for (let i = start; i <= cands.length - (n - cur.length); i++) subsets(n, i + 1, cur.concat(i), f); };
   const sumOf = ids => { const k = ids.join(','); let e = memo.get(k); if (e) return e;
     const L = sums.pbOrder(ids.map(i => cands[i])); e = { legs: L, p: sums.parlayProb(L.map(l => ({ ...l, p: l.pe }))).corr, dec: sums.parlayDec(L.map(l => ({ leg: l, ml: l.price }))), id: L.map(idC).sort().join(',') }; memo.set(k, e); return e; };
-  for (const [id, label, n, floor] of sums.PB_TIERS) {
+  for (const [id, label, n, floor] of tiersOwn(sums.PB_TIERS)) {
     if (cands.length < n) { out.push({ id: 'elo-' + id, label, n, floor, none: true }); continue; }
     let best = null, likely = null;
     subsets(n, 0, [], ids => { const e = sumOf(ids);
@@ -707,8 +712,9 @@ function page(MU, opts) {
         `the Elo picks' candidates on the files are not the rule's (a rated player's best leg by value, ranked on value; searched from the ${EPC.cap} best by value and the ${EPC.capP} likeliest by the Elo chance, each once): ${C.length} kept of ${r.candidates}, the rule ${own.kept.length} of ${own.all.length}; ${badC.slice(0, 3).map(l => l.pid + ' ' + l.stat + ' ' + l.side + ' ' + l.price + ' ' + l.pe).join('; ')}`);
       /* the union is what is searched: where some of the likeliest are not among the best by value, they are there */
       notes.push(`the Elo picks' candidates on the files: ${C.length} searched of ${own.all.length}, ${own.likely.filter(l => !own.byValue.includes(l)).length} of the ${EPC.capP} likeliest from past the ${EPC.cap} best by value`);
-      chk(r.tiers.length === sums.PB_TIERS.length && r.tiers.every((t, i) => t.id === 'elo-' + sums.PB_TIERS[i][0] && t.label === sums.PB_TIERS[i][1] && t.n === sums.PB_TIERS[i][2] && t.floor === sums.PB_TIERS[i][3]),
-        'the Elo picks are not Suggested Parlays\' four levels (PB_TIERS), each elo-<level>: ' + r.tiers.map(t => t.id + ' ' + t.n + ' ' + t.floor).join(', '));
+      { const LT = tiersOwn(sums.PB_TIERS);
+        chk(r.tiers.length === LT.length && r.tiers.every((t, i) => t.id === 'elo-' + LT[i][0] && t.label === LT[i][1] && t.n === LT[i][2] && t.floor === LT[i][3]),
+          'the Elo picks are not Suggested Parlays\' four levels (PB_TIERS) on their own floors (Safe 35%), each elo-<level>: ' + r.tiers.map(t => t.id + ' ' + t.n + ' ' + t.floor).join(', ')); }
       const sub = (n, f) => { const go = (s0, cur) => { if (cur.length === n) { f(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); }; go(0, []); };
       for (const t of r.tiers) {
         if (C.length < t.n) { chk(!t.legs.length && /^Only \d+ players? on your picks qualif(y|ies): this level takes \d\.$/.test(t.why || ''), `the ${t.id} Elo pick is not empty with its reason where only ${C.length} players qualify: ${JSON.stringify(t)}`); continue; }
@@ -811,8 +817,9 @@ function page(MU, opts) {
       ...[1, 2, 3].map(i => ['fx-b' + (i - 1), 'RB', G4[i].slice(8, 11), G4[i].slice(12), G4[i], 'rushing_yards', 'over', 1.5, -170, 0.65])];
     const CORR_F4 = { 'team|WR:receiving_yards|WR:receiving_yards': 0.4 };
     /* F5: thirty legs at +150 and four heavy favourites at -190 of thinner value, each in a game of its own: the levels
-       are searched from the 30 best by value and the 10 likeliest, so the favourites are there and Safe, the likeliest
-       pair, is two of them (until 18 October 2026 the 30 best by value alone cut all four) */
+       are searched from the 30 best by value and the 10 likeliest, so the favourites are there, and Safe, the best
+       value over 35%, is two of them, since only the favourites' pairs reach it (until 18 October 2026 the 30 best by
+       value alone cut all four) */
     const ROWS5 = [...[...Array(30)].map((_, i) => ['fx-v' + String(i).padStart(2, '0'), 'WR', 'FV' + String.fromCharCode(65 + (i % 26)) + Math.floor(i / 26), 'FW' + i, `2026_06_FV${i}_FW${i}`, 'receiving_yards', 'over', 49.5, 150, 0.45 + i * 0.0005]),
       ...[0, 1, 2, 3].map(i => ['fx-f' + i, 'RB', 'FF' + i, 'FG' + i, `2026_06_FF${i}_FG${i}`, 'rushing_yards', 'over', 59.5, -190, 0.72 - i * 0.01])];
     const sums = sumsOwn(CORR_FX);
@@ -844,13 +851,16 @@ function page(MU, opts) {
         `${nm}: the Elo picks' candidates are not the rule's, ranked on value: ${C.map(l => l.pid + ' ' + l.stat + ' ' + l.price).join(', ')}; the rule ${own.kept.map(l => l.pid + ' ' + l.stat + ' ' + l.price).join(', ')}`);
       chk(!C.some(l => whys.some(x => idC(x) === idC(l))), `${nm}: a line that is no candidate is one: ` + C.filter(l => whys.some(x => idC(x) === idC(l))).map(l => whys.find(x => idC(x) === idC(l)).why).join('; '));
       if (nm === 'F5') {
-        /* all 34 searched, the four favourites among them, and Safe two of them: the likeliest pair, worked out here */
-        let likely = null; for (let i = 0; i < C.length; i++) for (let j = i + 1; j < C.length; j++) { const O = sums.pbOrder([C[i], C[j]]), p = sums.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr, k = O.map(idC).sort().join(',');
-          if (!likely || p > likely.p || (p === likely.p && k < likely.k)) likely = { O, p, k }; }
-        const safe = r.tiers.find(t => t.id === 'elo-safe');
-        chk(C.length === 34 && ['fx-f0', 'fx-f1', 'fx-f2', 'fx-f3'].every(pid => C.some(l => l.pid === pid)) && !!safe && safe.legs.map(idC).sort().join(',') === likely.k && safe.p === likely.p
-          && safe.legs.every(l => /^fx-f/.test(l.pid)),
-          `F5: the Elo picks are not searched from the 30 best by value and the 10 likeliest, or Safe is not the likeliest pair: ${C.length} searched; Safe ${safe ? safe.legs.map(l => l.pid).join('+') + ' at ' + safe.p : 'none'}, the likeliest pair ${likely.O.map(l => l.pid).join('+')} at ${likely.p}`);
+        /* all 34 searched, the four favourites among them, and Safe two of them: the best value over 35%, worked out here
+           over every pair (the likeliest pair where none reaches it) */
+        let likely = null, best = null; for (let i = 0; i < C.length; i++) for (let j = i + 1; j < C.length; j++) { const O = sums.pbOrder([C[i], C[j]]), p = sums.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr,
+            d = sums.parlayDec(O.map(l => ({ leg: l, ml: l.price }))), k = O.map(idC).sort().join(',');
+          if (!likely || p > likely.p || (p === likely.p && k < likely.k)) likely = { O, p, k };
+          if (p >= EPC.safe && (!best || p * d > best.v || (p * d === best.v && k < best.k))) best = { O, p, k, v: p * d }; }
+        const want5 = best || likely, safe = r.tiers.find(t => t.id === 'elo-safe');
+        chk(C.length === 34 && ['fx-f0', 'fx-f1', 'fx-f2', 'fx-f3'].every(pid => C.some(l => l.pid === pid)) && !!best && !!safe && safe.legs.map(idC).sort().join(',') === want5.k && safe.p === want5.p
+          && !safe.likeliest && safe.legs.every(l => /^fx-f/.test(l.pid)),
+          `F5: the Elo picks are not searched from the 30 best by value and the 10 likeliest, or Safe is not the best value over 35%: ${C.length} searched; Safe ${safe ? safe.legs.map(l => l.pid).join('+') + ' at ' + safe.p : 'none'}, the rule's ${want5.O.map(l => l.pid).join('+')} at ${want5.p}`);
         notes.push(`the Elo picks on 34 candidates, four heavy favourites of thin value among them: ${C.length} searched, Safe ${safe ? safe.legs.map(l => l.pid.slice(3)).join('+') : 'none'}`);
         chk(!errors.length, `${nm}: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); continue; }
       const want = levelsOwn(C, sums);
@@ -889,8 +899,9 @@ function page(MU, opts) {
      A review planted two plausible slips in the search, a partial parlay pruned at the floor itself rather than at the
      least quick chance whose most reaches it, and the price-first pass reading a parlay's quick chance as its most, and
      both gates passed while levels came up to 29% short of the best (F3 to F5 catch a search that is broken outright,
-     not one a little off near a floor). So: fifteen one-game slates of 9 to 12 made-up candidates, four in five on one
-     club, each leg's Elo chance clustered about where its level's floor falls (0.63 a leg for Medium's 25%, 0.589 for
+     not one a little off near a floor). So: twenty one-game slates of 9 to 12 made-up candidates, four in five on one
+     club, each leg's Elo chance clustered about where its level's floor falls (0.592 a leg for Safe's 35%, the Elo
+     picks' own since 18 October 2026, 0.63 for Medium's 25%, 0.589 for
      Aggressive's 12%, 0.549 for Extreme's 5%) at +100 to +140, on a correlation table of the check's own (the
      published payload's pairs among the stats drawn, as of October 2026), and every level the search picks (the tab's
      own code, compiled here on its own, so it is quick) held to every parlay of its size worked out in full by the
@@ -912,16 +923,16 @@ function page(MU, opts) {
       const full = P => { const out = {}, memo = new Map(), C = P.C;
         const sumOf = ids => { const k = ids.join(','); let e = memo.get(k); if (e) return e; const legs = ids.map(i => C[i]), f = F.epSums(P, ids), x = f || F.epExact(legs);
           e = { p: x.p, dec: x.dec, id: legs.map(idC).sort().join(',') }; memo.set(k, e); return e; };
-        for (const [id, , n, floor] of F.PB_TIERS) { let best = null, likely = null; const idx = [];
+        for (const [id, , n, floor] of tiersOwn(F.PB_TIERS)) { let best = null, likely = null; const idx = [];
           const go = (st, d) => { if (d === n) { const e = sumOf(idx.slice()); if (!likely || e.p > likely.p || (e.p === likely.p && e.id < likely.id)) likely = e;
               if (floor && e.p >= floor) { const v = e.p * e.dec; if (!best || v > best.v || (v === best.v && e.id < best.e.id)) best = { e, v }; } return; }
             for (let i = st; i <= C.length - (n - d); i++) { idx[d] = i; go(i + 1, d + 1); } };
           go(0, 0); out[id] = floor ? (best ? { ...best.e, likeliest: false } : { ...likely, likeliest: true }) : { ...likely, likeliest: false }; }
         return out; };
       const bad = []; let sets = 0, levels = 0, near = 0;
-      for (const [floor, at] of [[0.25, 0.63], [0.12, 0.589], [0.05, 0.549]]) for (let i = 0; i < 5; i++) {
+      for (const [floor, at] of [[0.35, 0.592], [0.25, 0.63], [0.12, 0.589], [0.05, 0.549]]) for (let i = 0; i < 5; i++) {
         const C = slate(sets++, at), P = F.epPrep(C), want = full(P), memo = new Map();
-        for (const t of F.PB_TIERS) { const [id, label, , fl] = t, w = want[id]; let r = null; try { r = F.epLevel(P, t, memo); } catch (err) { r = { err: err.message }; }
+        for (const t of tiersOwn(F.PB_TIERS)) { const [id, label, , fl] = t, w = want[id]; let r = null; try { r = F.epLevel(P, t, memo); } catch (err) { r = { err: err.message }; }
           levels++; if (fl && Math.abs(w.p - fl) < 0.004) near++;
           const got = r && r.legs ? r.legs.map(idC).sort().join(',') : null;
           if (got !== w.id || !!(r && r.likeliest) !== w.likeliest) bad.push(`slate ${sets - 1} (${C.length} legs, ${floor * 100}%) ${label}: ${r && r.legs ? `${(r.p * 100).toFixed(2)}% at ${r.dec.toFixed(2)}${r.likeliest ? ' (likeliest)' : ''}` : r && r.err ? 'threw ' + r.err : 'none'}, the best ${(w.p * 100).toFixed(2)}% at ${w.dec.toFixed(2)}${w.likeliest ? ' (likeliest)' : ''}`); } }

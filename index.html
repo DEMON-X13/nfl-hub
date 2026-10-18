@@ -6866,7 +6866,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='8331839';
+const PAGE_HASH='1217827';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -9100,11 +9100,14 @@ function trackAlt(){
    decimal price, less the $1), and the picks are Suggested Parlays' own four levels (PB_TIERS, read
    from the page, never copied), searched from the EP.cap best by value and the EP.capP likeliest by
    the Elo chance, each once (18 October 2026: the 30 best by value alone cut a heavy favourite of thin
-   value before Safe, the likeliest pair, could see him): Safe, the likeliest pair by the Elo chance;
-   Medium, Aggressive and Extreme, the 3-, 4- and 5-leg parlay with the best expected return (the Elo
-   chance all land times what it pays) that lands at least 25%, 12% and 5% of the time by the Elo
-   chance, else, where none of that size reaches it, the likeliest of its size, marked so ("the
-   likeliest 4 legs"; never a parlay at or over the floor). A level is empty only when fewer players
+   value before Safe, then the likeliest pair, could see him): Safe, Medium, Aggressive and Extreme, the
+   2-, 3-, 4- and 5-leg parlay with the best expected return (the Elo chance all land times what it
+   pays) that lands at least 35%, 25%, 12% and 5% of the time by the Elo chance, else, where none of
+   that size reaches it, the likeliest of its size, marked so ("the likeliest pair", "the likeliest 4
+   legs"; never a parlay at or over the floor). Safe's 35% is the Elo picks' own (EP.safe; Suggested
+   Parlays' Safe, PB_TIERS's, has no floor and is the likeliest pair): the owner's call of 18 October
+   2026, "yeah safe picked on value too", after week 6's Safe was the likeliest pair, two short
+   favourites returning $1.06 on $1 where a pair landing 36% returned $1.32. A level is empty only when fewer players
    qualify than it takes. Legs from one game are allowed (a weekend's priced games are often four, and
    one leg a game would leave Extreme empty), and every level's chance and price are the builder's own
    sums on the legs in the builder's order: parlayProb with each leg's chance its Elo chance (the
@@ -9134,7 +9137,10 @@ function trackAlt(){
    four takes 150 to 350 ms in Chromium on week 6's payload and about 100 on a one-game slate of 12. A
    fun model, not an edge: the first version (the player's own Elo, no matchup) was replayed on weeks 1
    and 2 and its singles lost. */
-const EP={lo:-200,hi:300,floor:0.30,vig:1.045,cap:30,capP:10,z:4.5,zr:4,bias:0.01,slow:48};
+const EP={lo:-200,hi:300,floor:0.30,vig:1.045,cap:30,capP:10,z:4.5,zr:4,bias:0.01,slow:48,safe:0.35};
+/* the Elo picks' levels: Suggested Parlays' own (PB_TIERS), Safe given the Elo picks' own floor, EP.safe, so it
+   too is the best value over a floor rather than the likeliest pair */
+const epTiers=LV=>LV.map(t=>t[3]?t:[t[0],t[1],t[2],EP.safe]);
 /* the normal curve and its inverse (Acklam's), for moving a chance by a nudge in sd units */
 const ncdf=z=>{ const t=1/(1+0.2316419*Math.abs(z)), d=0.3989423*Math.exp(-z*z/2), p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-p:p; };
 function nq(p){ const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],
@@ -9378,9 +9384,9 @@ function epBest(P,n,floor,memo){
     if(!best||v>best.s||(v===best.s&&e.id<best.e.id)) best={e,s:v}; }
   return best&&best.e;
 }
-/* one level, Suggested Parlays' rule on the Elo chance: Safe (no floor) the likeliest pair; a level with a floor the
-   best expected return over it, else, where no parlay of its size reaches it, the likeliest of its size, marked so;
-   null with fewer than n candidates */
+/* one level, Suggested Parlays' rule on the Elo chance: a level with a floor (every one of the Elo picks', epTiers)
+   the best expected return over it, else, where no parlay of its size reaches it, the likeliest of its size, marked
+   so; one with none the likeliest of its size; null with fewer than n candidates */
 function epLevel(P,t,memo){
   const [,,n,floor]=t; if(P.N<n) return null;
   if(floor){ const r=epBest(P,n,floor,memo); if(r) return r; }
@@ -9407,7 +9413,7 @@ function epFair(legs){
    for a tab nobody opened, as the sets do) */
 let EP_CACHE=null;
 function eloPicks(o){
-  const LV=typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?PB_TIERS:null;
+  const LV=typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?epTiers(PB_TIERS):null;
   if(!LV||typeof parlayProb!=='function'||typeof parlayDec!=='function') return null;
   const all=eloCands(); if(!all) return null;
   const C=epKeep(all);
@@ -9431,7 +9437,7 @@ function eloPicks(o){
   return {tiers,cands:C,candidates:all.length,games:new Set(C.map(l=>l.gid)).size};
 }
 /* how a level was chosen, as its card says it */
-const epRuleOf=t=>t.likeliest?`the likeliest ${t.legs.length} legs`:t.floor?`best value that lands ${Math.round(t.floor*100)}%+ by Elo`:'the likeliest pair';
+const epRuleOf=t=>t.likeliest||!t.floor?(t.legs.length===2?'the likeliest pair':`the likeliest ${t.legs.length} legs`):`best value that lands ${Math.round(t.floor*100)}%+ by Elo`;
 /* each player's mismatch this week where the Props tab's Mismatches has one, Solid and up, as a game's page tags it */
 function epMm(){ const by={}; try{ for(const v of mismatches()) if(mmGrade(v.score)[0]!=='Slight'&&!by[v.pid]) by[v.pid]=v; }catch(e){} return by; }
 /* the side a mismatch favours: every one is a player standing above his position's average against a unit below the
