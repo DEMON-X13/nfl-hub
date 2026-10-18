@@ -11,8 +11,8 @@
  * O). No device keeps a list of its own: the Parlay
  * Builder finishes a parlay as a card to download (nflbets/build/card.html), saved nowhere. There
  * is no owner, no sign-in and no shared store: the page writes nothing anywhere but the browser's
- * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is its choices
- * and the Top 50 lines over the builder, and Suggested Parlays (#suggest, app v111) each prime-time
+ * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the builder
+ * over its choices and the Top 30 lines (app v116), and Suggested Parlays (#suggest, app v111) each prime-time
  * game's own set of four levels, whose Finish opens the same card. The test boots the whole page against a stubbed file
  * and a stubbed ESPN, with the real payload and state, opens the X Parlays tab and checks what the section renders, on a
  * browser with nothing of its own and on one that carries what the retired owner and reader layers
@@ -364,14 +364,14 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
   chk(/^app v\d+/.test(txt(d.getElementById('buildTag'))), 'the page does not say which build it is');
   chk(!/Parlays marked/.test(txt(d.getElementById('lpCard'))), 'the old footer text is in the section');
   /* X Parlays is the whole of its own tab, opened at its address; the builder is the Parlay Builder
-     tab's, under its choices and the Top 50 lines (#pbPanel), and Suggested Parlays (#suggest, app v111)
+     tab's, first on it, over its choices and the Top 30 lines (#pbPanel, app v116), and Suggested Parlays (#suggest, app v111)
      is a tab of its own, without the builder: no list of a visitor's own anywhere */
   const lpc = d.getElementById('lpCard'), tx = d.getElementById('tab-xparlays'), tb = d.getElementById('tab-parlay'), ts = d.getElementById('tab-suggest');
   chk(!!lpc && !!tx && tx.firstElementChild === lpc && !lpc.nextElementSibling && !tx.hidden && tb.hidden && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'X Parlays'
-    && tb.firstElementChild.id === 'pbPanel' && (tb.firstElementChild.nextElementSibling || {}).id === 'parlayBody' && !tb.querySelector('#lpCard')
+    && tb.firstElementChild.id === 'parlayBody' && (tb.firstElementChild.nextElementSibling || {}).id === 'pbPanel' && !tb.querySelector('#lpCard')
     && !!ts && ts.hidden && (ts.firstElementChild || {}).id === 'spPanel' && !ts.querySelector('#parlayBody, #pbPanel, #lpCard')
     && !d.getElementById('suggModal') && !d.getElementById('myCard') && !d.getElementById('myApp') && !d.getElementById('myClear'),
-    'X Parlays is not the whole of its own tab (opened on #xparlays), the builder is not under the Parlay Builder\'s choices on its own tab, Suggested Parlays is not a tab of its own without the builder, or Your parlays is still in the page');
+    'X Parlays is not the whole of its own tab (opened on #xparlays), the builder is not first on the Parlay Builder\'s own tab over its choices, Suggested Parlays is not a tab of its own without the builder, or Your parlays is still in the page');
   chk(!/Your parlays/i.test(txt(tx)), 'the X Parlays tab still says Your parlays');
   { const body = d.body.cloneNode(true); body.querySelectorAll('script, style').forEach(n => n.remove());
     chk(/^X Parlays/.test(txt(lpc.querySelector('h2'))) && !/Live Parlays/i.test(body.textContent) && !/Live Parlays/i.test(d.title), 'the section is still called Live Parlays somewhere a reader sees it'); }

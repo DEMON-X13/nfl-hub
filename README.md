@@ -108,13 +108,17 @@ section's source is `liveparlays/build/page.html`, lifted in by
 closure. The X Bet Log tab is X's week-by-week log from `liveparlays/xbets.json`,
 with the balance from its deposit.
 
-The Parlay Builder is its own tab (`#parlay`). A visitor picks All, Teams only or
+The Parlay Builder is its own tab (`#parlay`), the builder at its top (under the
+list until 18 October 2026). Under it a visitor picks All, Teams only or
 Players only (or ticks moneyline, spread, game total, player overs and player
 unders by hand) and the week's games to build from, types a Bet amount (the
-builder's own stake, one number), and gets the Top 50 lines those choices make
-(the Top 100 until 17 October 2026): the Value picks first, then the other lines,
-each ranked by what $1 on it is expected to make, each with its own Add, over the
-builder. Suggested Parlays (`#suggest`) gives the next Thursday, Sunday or Monday
+builder's own stake, one number), and gets the Top 30 lines those choices make
+(the Top 100 until 17 October 2026, the Top 50 until 18 October 2026): the Value
+picks first, then the other lines, each ranked by what $1 on it is expected to
+make, each with its own Add. A player's line DraftKings has moved since its prices
+were pulled stays on the list at DraftKings' new number once Refresh odds reads it,
+with a line saying what DraftKings' slip will do with it; a suggested parlay takes
+only legs DraftKings' slip can take. Suggested Parlays (`#suggest`) gives the next Thursday, Sunday or Monday
 night game a Safe 2-leg, Medium 3-leg, Aggressive 4-leg and Extreme 5-leg parlay
 of its own, each with its book price, the model's chance and what the Bet amount
 pays, Add to builder and Finish, locked 2 hours before kickoff and graded by the

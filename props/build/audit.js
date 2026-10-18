@@ -130,6 +130,23 @@ setTimeout(async()=>{
     if(l.stat==='any_td') return (l.k==null?1:+l.k)>=2&&str(E[l.pid+'|any_td']);
     const near=l.stat==='ats'?l.pid+'|ats|':l.stat==='total'?'game|total|'+l.side+'|':[l.pid,l.stat,l.main?l.side:'over',''].join('|');
     return Object.keys(E).some(k=>k.startsWith(near)&&k.length>near.length&&isFinite(+k.slice(near.length))&&str(E[k])); };
+  /* (app v115) the Top 50 lines alone keep a player's leg priced from DraftKings' line read by Refresh odds on a kind
+     the estimate has been checked on, whether or not DraftKings has an id at its number (the owner, 18 October 2026:
+     "any idea why the player props are not showing up in the top 50 anymore? :/": a press on a Sunday finds most of
+     the lines the Saturday pull read moved, and ESPN gives no id for a player's line). Worked here on the audit's own
+     reading of the read (espn_rule.js: a tested kind DraftKings lists, at the rule's own price, with no paid price on
+     file for that line), never the page's espn flags. Everything that builds a parlay (a level, a set, a game page's
+     hands, the Elo picks) still takes only a leg dkOk passes */
+  const readTopAud=l=>!!l&&l.src==='dkline'&&!F('isGameLeg')(l)&&(()=>{ const x=ESR.price(l); return ESR.takeable(x)&&x.price===l.price&&!ESR.real(l); })();
+  const dkTopOk=l=>dkOk(l)||readTopAud(l);
+  /* the line such a row carries where the payload carries ids and DraftKings has none at its number: 'moved' where the
+     paid pull read that main line of his at another number (PAY.mkt), 'none' for any other (a touchdown, a rung, a main
+     line the pull had no price for); null where the row needs none */
+  const slipAud=l=>{ if(!readTopAud(l)||dkOk(l)) return null; if(!l.main) return 'none';
+    const L=((((F('PAY').mkt||{})[String(l.week)]||{})[l.pid])||{})[l.stat]; return L&&isFinite(+L.line)&&+L.line!==+l.k?'moved':'none'; };
+  /* its words on the prop model's own page, which has no parlay card to say what the slip does with it (the hub's
+     are the nflbets smoke's, held to the card's own plan) */
+  const SLIP_AUD={moved:'Moved since DraftKings’ prices were pulled',none:'No DraftKings id at this line'};
   /* a made-up id table standing in for the paid pull's, put in place of PAY.dk wholesale (rule (c)): an id
      for every line of the week with a real price on file, as the pull reads one with each price it buys
      (both money lines, each side's spread at its own number, the total's over and under, a player's main
@@ -795,8 +812,10 @@ setTimeout(async()=>{
        qualAud   the legs a suggestion may take on the ticks: a real price (or one from DraftKings' line read
                  by Refresh odds), 45-97%, at or above the price's implied chance, a player leg only once the
                  Elo files are in, none far off the market, DraftKings' id at its line where the payload
-                 carries ids (dkOk), preferred over the 3-point edge with market + form agreeing and thin
-                 below it, and with Game total ticked each total at the book's own chance, its own list
+                 carries ids (dkOk; for the Top 50 alone, top, a player's leg from the read on a tested
+                 kind with or without one, readTopAud: app v115), preferred over the 3-point edge with
+                 market + form agreeing and thin below it, and with Game total ticked each total at the
+                 book's own chance, its own list
        topAud    the Top 50 lines from qualAud (app v112): the preferred legs first, the Value picks, then
                  the other lines, the thin legs and then the totals (after every thin leg, whatever each is
                  expected to make: a total priced on one side only is put at 50%, so at plus money it can be
@@ -872,13 +891,14 @@ setTimeout(async()=>{
   const kindAud=l=>l.stat==='ml'||l.stat==='ats'||l.stat==='total'?l.stat:(l.side==='under'?'under':'over');
   const agreesAud=c=>{ if(typeof w.eloAltP!=='function'||c.grp==='TEAM') return true; if(typeof w.eloLoaded==='function'&&!w.eloLoaded()) return false;
     const a=w.eloAltP(c.pid,c.side,c.price,c.src,c.stat); return a!=null&&a-F('mlProb')(c.price)>=0.03; };
-  const qualAud=(games,u)=>{ const mlP=F('mlProb'), out={pref:[],thin:[],mkt:[],far:0,noId:0}, formOut=typeof w.eloLoaded==='function'&&!w.eloLoaded();
+  /* top: the Top 50 lines' own pool (app v115), which keeps a leg from the read with no id (readTopAud; kept counts them) */
+  const qualAud=(games,u,top)=>{ const mlP=F('mlProb'), out={pref:[],thin:[],mkt:[],far:0,noId:0,kept:0}, formOut=typeof w.eloLoaded==='function'&&!w.eloLoaded();
     const allow=l=>!!u.k[kindAud(l)]&&!u.off.includes(l.gid);
     for(const c of F('pricedLegs')(games)){
       if(!allow(c)||!(c.src==='real'||c.src==='dkline')||!isFinite(c.price)||c.price===0||!(c.p>=0.45&&c.p<0.97)||c.p-mlP(c.price)<0) continue;
       if(c.grp!=='TEAM'&&formOut) continue;
       if(FAIRAUD.isFar(c)){ out.far++; continue; }
-      if(!dkOk(c)){ out.noId++; continue; }
+      if(!dkOk(c)){ if(!(top&&readTopAud(c))){ out.noId++; continue; } out.kept++; }
       (c.p-mlP(c.price)>=0.03&&agreesAud(c)?out.pref:out.thin).push({...c,thin:!(c.p-mlP(c.price)>=0.03&&agreesAud(c))}); }
     if(u.k.total) for(const g of games) for(const side of ['over','under']){ const c=F('totalLeg')(g,side);
       if(c&&allow(c)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97){ if(dkOk(c)) out.mkt.push({...c,thin:false,market:true}); else out.noId++; } }
@@ -893,11 +913,12 @@ setTimeout(async()=>{
   const sameBetAud=q=>{ const isG=F('isGameLeg'), half=k=>Number.isInteger(2*(+k))&&!Number.isInteger(+k), mains=new Map();
     for(const l of [...q.pref,...q.thin]) if(!isG(l)&&!!l.main&&l.side==='over'&&half(l.k)) mains.set([l.gid,l.pid,l.stat,+l.k+0.5].join('|'),l);
     return l=>(!isG(l)&&!l.main&&l.side==='over'&&mains.get([l.gid,l.pid,l.stat,+l.k].join('|')))||null; };
-  /* the list's length, the audit's own copy of the page's PB_TOP_N (never read from the page): 50 since app v113, the
-     owner's call of 17 October 2026, "in parlay builder only do top 50 now instead of 100" (100 from app v111) */
-  const TOP_N_AUD=50;
+  /* the list's length, the audit's own copy of the page's PB_TOP_N (never read from the page): 30 since app v116, the
+     owner's call of 18 October 2026, "its only showing top 30, but honestly top 30 is enough if you want to set it at
+     that" (100 from app v111; 50 from app v113, "in parlay builder only do top 50 now instead of 100") */
+  const TOP_N_AUD=30;
   /* the whole order (full), its first TOP_N_AUD (rows), and the rungs left out with the main line each is (dropped) */
-  const topFullAud=(games,u)=>{ const q=qualAud(games,u), mlD=F('mlToDec'), same=sameBetAud(q), dropped=[];
+  const topFullAud=(games,u)=>{ const q=qualAud(games,u,true), mlD=F('mlToDec'), same=sameBetAud(q), dropped=[];
     const once=list=>list.filter(l=>{ const m=same(l); if(m) dropped.push({rung:l,main:m}); return !m; });
     const rank=(list,grp,part)=>list.map(l=>{ const dec=mlD(l.price); return dec>1?{l,dec,win:dec-1,ev:l.p*dec-1,grp,part}:null; }).filter(Boolean)
       .sort((a,b)=>(b.ev-a.ev)||ordAud(a.l,b.l));
@@ -941,9 +962,14 @@ setTimeout(async()=>{
      on half, +100/+100 with no margin and +110/+105 with less than none on the rest, and a made-up id
      table giving every priced line its id, as the pull reads one with each price) so the player legs and
      the totals are always tried. M9 holds the id rule itself, on made-up games with ids for some legs. */
+  /* the Top 50 lines' check (holdTop, below), for the checks after M that hold the list too (M8 after its press, M14),
+     and how many rows it found carrying the line on a missing DraftKings id, by kind (app v115) */
+  let holdTopF=null; const topSlip={moved:0,none:0};
   { const tab=d.getElementById('tab-parlay'), panel=d.getElementById('pbPanel'), stab=d.getElementById('tab-suggest');
     d.querySelector('#tabs button[data-tab="parlay"]').click();
-    chk(!!panel&&tab.firstElementChild===panel&&panel.nextElementSibling===d.getElementById('parlayBody'),'the Parlay Builder\'s controls and Top 50 lines are not at the top of its tab, over the builder');
+    /* (app v116, the owner, 18 October 2026: "that 5 leg parlay section can we move it up to the top of the page?") the
+       builder first on its tab, the controls and the Top lines under it */
+    chk(!!panel&&tab.firstElementChild===d.getElementById('parlayBody')&&d.getElementById('parlayBody').nextElementSibling===panel&&tab.children.length===2,'the builder is not at the top of the Parlay Builder tab, with its controls and Top lines under it and nothing else');
     /* Suggested Parlays: its own section and tab, after Games (the prop model's Props) and before the Parlay Builder */
     { const tb=[...d.querySelectorAll('#tabs button[data-tab]')].map(b=>b.dataset.tab), si=tb.indexOf('suggest');
       chk(!!stab&&!!d.getElementById('spPanel')&&stab.contains(d.getElementById('spPanel'))&&si>0&&tb[si-1]==='slate'&&tb[si+1]==='parlay'&&d.querySelector('#tabs button[data-tab="suggest"]').textContent==='Suggested Parlays',
@@ -992,10 +1018,10 @@ setTimeout(async()=>{
       topLists++; topRows+=want.length; topOther+=want.filter(x=>x.grp==='other').length; if(want.length&&!want.some(x=>x.grp==='value')) topNoValue++;
       { const at=r.rows.findIndex((x,i)=>!want[i]||legIdAud(x)!==legIdAud(want[i].l));
         chk(r.rows.length<=TOP_N_AUD&&r.rows.length===want.length&&at<0,
-        `${lab}: the Top 50 lines are not the qualifying legs, the Value picks first, then the thin-edge lines, then the totals, each part ranked by expected profit on $1, each bet once: ${r.rows.length} rows where the rule gives ${want.length}${at>=0?`, row ${at+1} ${r.rows[at].name} ${r.rows[at].label} where the rule has ${want[at]?want[at].l.name+' '+want[at].l.label:'none'}`:''}`); }
+        `${lab}: the Top 30 lines are not the qualifying legs, the Value picks first, then the thin-edge lines, then the totals, each part ranked by expected profit on $1, each bet once: ${r.rows.length} rows where the rule gives ${want.length}${at>=0?`, row ${at+1} ${r.rows[at].name} ${r.rows[at].label} where the rule has ${want[at]?want[at].l.name+' '+want[at].l.label:'none'}`:''}`); }
       /* each bet once (app v112): no rung on the list whose same bet, the player's half-point main Over, qualifies */
       { const dup=r.rows.filter(x=>T.same(x));
-        chk(!dup.length,`${lab}: the Top 50 lines list a ladder rung beside the same bet, the player's main Over on the half point: ${dup.slice(0,4).map(x=>{ const m=T.same(x); return `${x.name} ${x.label} (the same bet as ${m.label})`; }).join('; ')}`); }
+        chk(!dup.length,`${lab}: the Top 30 lines list a ladder rung beside the same bet, the player's main Over on the half point: ${dup.slice(0,4).map(x=>{ const m=T.same(x); return `${x.name} ${x.label} (the same bet as ${m.label})`; }).join('; ')}`); }
       /* each main line a rung was left out for: on the list exactly where its rank earns it (its place in the order
          without those rungs), and off it only past the last place the list holds (TOP_N_AUD, the 50th); and the rungs' slots gone to the next lines */
       { const pos=new Map(T.full.map((x,i)=>[legIdAud(x.l),i])), seen=new Set(), bad=[];
@@ -1003,20 +1029,20 @@ setTimeout(async()=>{
           const i=pos.has(id)?pos.get(id):-1, at=r.rows.findIndex(x=>legIdAud(x)===id);
           if(i>=TOP_N_AUD) topSameCut++;
           if(i<0||(i<TOP_N_AUD?at!==i:at>=0)) bad.push(`${main.name} ${main.label} (for ${rung.label}) ranks ${i<0?'nowhere':i+1} by the rule and is ${at<0?'not on the list':'row '+(at+1)}`); }
-        chk(!bad.length,`${lab}: a main line a ladder rung was left out for is not on the Top 50 lines where its rank earns it: ${bad.slice(0,4).join('; ')}`);
+        chk(!bad.length,`${lab}: a main line a ladder rung was left out for is not on the Top 30 lines where its rank earns it: ${bad.slice(0,4).join('; ')}`);
         chk(r.rows.length===Math.min(TOP_N_AUD,T.full.length)&&r.rows.every((x,i)=>!!T.full[i]&&legIdAud(x)===legIdAud(T.full[i].l)),
-          `${lab}: with ${T.dropped.length} ladder rung${T.dropped.length===1?'':'s'} left out as the same bet as a main line, the Top 50 lines are not the first ${Math.min(TOP_N_AUD,T.full.length)} of the order without them (${r.rows.length} rows of ${T.full.length}): their slots did not go to the next lines`);
-        chk((r.same||0)===T.dropped.length,`${lab}: the Top 50 lines count ${r.same} ladder rungs left out as the same bet as a main line, where the rule leaves out ${T.dropped.length}`); }
+          `${lab}: with ${T.dropped.length} ladder rung${T.dropped.length===1?'':'s'} left out as the same bet as a main line, the Top 30 lines are not the first ${Math.min(TOP_N_AUD,T.full.length)} of the order without them (${r.rows.length} rows of ${T.full.length}): their slots did not go to the next lines`);
+        chk((r.same||0)===T.dropped.length,`${lab}: the Top 30 lines count ${r.same} ladder rungs left out as the same bet as a main line, where the rule leaves out ${T.dropped.length}`); }
       /* the totals after every thin-edge line, and the thin-edge lines after every Value pick, each row read by the
          audit's own pool (qualAud), never the page's marks */
       { const pm=new Map([...T.q.mkt.map(l=>[legIdAud(l),2]),...T.q.thin.map(l=>[legIdAud(l),1]),...T.q.pref.map(l=>[legIdAud(l),0])]), part=x=>{ const p=pm.get(legIdAud(x)); return p==null?-1:p; };
         const ps=r.rows.map(part), at=ps.findIndex((p,i)=>p<0||(i>0&&p<ps[i-1]));
         if(ps.includes(1)&&ps.includes(2)) topTotAfter++;
-        chk(at<0,`${lab}: Top 50 row ${at+1} (${at>=0?r.rows[at].name+' '+r.rows[at].label:''}) is ${at>=0&&ps[at]<0?'no qualifying leg':`a ${['Value pick','thin-edge line','game total'][ps[at]]} after a ${['Value pick','thin-edge line','game total'][ps[at-1]]}`}: the Value picks come first, then the thin-edge lines, then every game total`); }
+        chk(at<0,`${lab}: Top 30 row ${at+1} (${at>=0?r.rows[at].name+' '+r.rows[at].label:''}) is ${at>=0&&ps[at]<0?'no qualifying leg':`a ${['Value pick','thin-edge line','game total'][ps[at]]} after a ${['Value pick','thin-edge line','game total'][ps[at-1]]}`}: the Value picks come first, then the thin-edge lines, then every game total`); }
       chk(r.rows.every((x,i)=>!want[i]||(nrz(x.dec,want[i].dec)&&nrz(x.win,want[i].win)&&nrz(x.ev,want[i].ev)&&x.p===want[i].l.p&&x.price===want[i].l.price&&!!x.market===!!want[i].l.market&&!!x.thin===!!want[i].l.thin)),
-        `${lab}: a Top 50 row's price, chance, what $1 wins or is expected to make, or its mark is not its leg's own`);
-      chk(r.rows.every(x=>{ const g=all.find(y=>y.id===x.gid); return !FAIRAUD.isFar(x)&&dkOk(x)&&(x.grp==='TEAM'||F('suggestable')(x.pid))&&!!g&&!F('gameStarted')(g)&&!u.off.includes(x.gid)&&!!u.k[kindAud(x)]; }),`${lab}: a Top 50 line is far off the market, has no DraftKings id at its line, is on a player who may not play, on a game under way or not ticked, or of a bet type not ticked`);
-      chk(r.rows.every(x=>{ const f=FAIRAUD.fairOf(x); return f?(!!x.fc&&nrz(x.fc.p,f.p)&&x.fc.est===f.est):!x.fc; }),`${lab}: a Top 50 row's fair chance is not the book's by the rule`);
+        `${lab}: a Top 30 row's price, chance, what $1 wins or is expected to make, or its mark is not its leg's own`);
+      chk(r.rows.every(x=>{ const g=all.find(y=>y.id===x.gid); return !FAIRAUD.isFar(x)&&dkTopOk(x)&&(x.grp==='TEAM'||F('suggestable')(x.pid))&&!!g&&!F('gameStarted')(g)&&!u.off.includes(x.gid)&&!!u.k[kindAud(x)]; }),`${lab}: a Top 30 line is far off the market, has no DraftKings id at its line (and is no player's line from a Refresh odds read the list keeps), is on a player who may not play, on a game under way or not ticked, or of a bet type not ticked`);
+      chk(r.rows.every(x=>{ const f=FAIRAUD.fairOf(x); return f?(!!x.fc&&nrz(x.fc.p,f.p)&&x.fc.est===f.est):!x.fc; }),`${lab}: a Top 30 row's fair chance is not the book's by the rule`);
       F('renderPb')();
       const P=d.getElementById('pbPanel'), li=[...P.querySelectorAll('ol.pb-top > li.pb-trow')], fm=F('fmtML');
       if(!want.length) W.wording(!li.length&&!!P.querySelector('.pb-top-none')&&P.querySelector('.pb-top-none').textContent.length>10,`${lab}: with no line qualifying the list does not say why`);
@@ -1027,8 +1053,8 @@ setTimeout(async()=>{
          under their headings, each holding exactly its rows, with its count, the second list starting where the
          first ends (app v112) */
       { const ix=want.findIndex(x=>x.grp==='other'), nV=ix<0?want.length:ix, nO=want.length-nV;
-        chk(ix<0||want.slice(ix).every(x=>x.grp==='other'),`${lab}: the audit's own Top 50 mixes its groups`);
-        chk(li.every((row,i)=>!want[i]||row.dataset.pbGrp===want[i].grp),`${lab}: a Top 50 row does not say its group (value, or other): ${li.map(x=>x.dataset.pbGrp).join(',').slice(0,120)} where the rule gives ${want.map(x=>x.grp).join(',').slice(0,120)}`);
+        chk(ix<0||want.slice(ix).every(x=>x.grp==='other'),`${lab}: the audit's own Top 30 mixes its groups`);
+        chk(li.every((row,i)=>!want[i]||row.dataset.pbGrp===want[i].grp),`${lab}: a Top 30 row does not say its group (value, or other): ${li.map(x=>x.dataset.pbGrp).join(',').slice(0,120)} where the rule gives ${want.map(x=>x.grp).join(',').slice(0,120)}`);
         const hs=[...P.querySelectorAll('h3.pb-topsec')], ols=[...P.querySelectorAll('ol.pb-top')], hV=P.querySelector('h3.pb-topsec[data-pb-sec="value"]'), hO=P.querySelector('h3.pb-topsec[data-pb-sec="other"]');
         const oV=P.querySelector('ol.pb-top[data-pb-sec="value"]'), oO=P.querySelector('ol.pb-top[data-pb-sec="other"]'), pill=h=>{ const x=h&&h.querySelector('.pill'); return x?x.textContent:null; };
         const rowsOf=o=>o?[...o.querySelectorAll(':scope > li.pb-trow')].map(x=>+x.dataset.pbRow):[], seq=(a,n)=>Array.from({length:n},(_,i)=>a+i);
@@ -1037,10 +1063,10 @@ setTimeout(async()=>{
         else chk(hs.length===(nO?2:1)&&ols.length===(nV?1:0)+(nO?1:0)&&!!hV&&pill(hV)===(nV?String(nV):null)
             &&(nV?!!oV&&!oV.hasAttribute('start')&&JSON.stringify(rowsOf(oV))===JSON.stringify(seq(1,nV))&&before(hV,oV):!oV&&!P.querySelector('ol.pb-top[data-pb-sec="value"] li'))
             &&(nO?!!hO&&pill(hO)===String(nO)&&!!oO&&(nV?oO.getAttribute('start')===String(nV+1):!oO.hasAttribute('start'))&&JSON.stringify(rowsOf(oO))===JSON.stringify(seq(nV+1,nO))&&before(hO,oO)&&before(hV,hO)&&(!oV||before(oV,hO)):!hO&&!oO),
-          `${lab}: the Top 50 lines are not drawn in their two parts, the ${nV} Value picks under "Value picks" (with their count) and then the ${nO} other lines under "Other lines" (with theirs, the list starting at ${nV+1}): headings ${hs.map(h=>h.dataset.pbSec+':'+pill(h)).join(',')}, lists ${ols.map(o=>o.dataset.pbSec+'@'+(o.getAttribute('start')||'-')+':'+rowsOf(o).length).join(',')}`);
+          `${lab}: the Top 30 lines are not drawn in their two parts, the ${nV} Value picks under "Value picks" (with their count) and then the ${nO} other lines under "Other lines" (with theirs, the list starting at ${nV+1}): headings ${hs.map(h=>h.dataset.pbSec+':'+pill(h)).join(',')}, lists ${ols.map(o=>o.dataset.pbSec+'@'+(o.getAttribute('start')||'-')+':'+rowsOf(o).length).join(',')}`);
         if(want.length){
           const hd=h=>h&&h.firstChild?h.firstChild.textContent.trim():'';
-          W.wording(hd(hV)==='Value picks'&&(!hO||hd(hO)==='Other lines'),`${lab}: the Top 50's parts are not headed Value picks and Other lines: ${hs.map(h=>h.textContent).join(' / ')}`);
+          W.wording(hd(hV)==='Value picks'&&(!hO||hd(hO)==='Other lines'),`${lab}: the Top 30's parts are not headed Value picks and Other lines: ${hs.map(h=>h.textContent).join(' / ')}`);
           const nv=P.querySelector('[data-pb-novalue]');
           W.wording(nV?!nv:(!!nv&&nv.textContent.replace(/\s+/g,' ').trim()==='No line on your picks is a Value pick right now.'),`${lab}: ${nV?'with Value picks on the list, it still says there are none':'with no Value pick on the list, it does not say so under the Value picks heading'}: "${nv?nv.textContent:''}"`);
           /* each part's line under its heading (app v112): what a Value pick is, and what the other lines miss, the
@@ -1057,14 +1083,22 @@ setTimeout(async()=>{
           &&(f?(!!q('[data-pb-fair]')&&nrz(+q('[data-pb-fair]').dataset.pbFair,f.p)&&q('[data-pb-fair]').textContent===pc0(f.p)):!q('[data-pb-fair]'))
           &&nrz(+(q('[data-pb-win]')||{dataset:{}}).dataset.pbWin,win)&&(q('[data-pb-win]')||{}).textContent===m1(win)
           &&nrz(+(q('[data-pb-ev]')||{dataset:{}}).dataset.pbEv,ev)&&(q('[data-pb-ev]')||{}).textContent===m1(ev),
-          `${lab}: Top 50 row ${i+1} does not draw ${l.name} ${l.label} at ${fm(l.price)}${l.src==='dkline'?' est.':''}, model ${pc0(l.p)}, fair ${f?pc0(f.p):'none'}, ${m1(win)} won and ${m1(ev)} expected on $1: "${tx.slice(0,200)}"`);
+          `${lab}: Top 30 row ${i+1} does not draw ${l.name} ${l.label} at ${fm(l.price)}${l.src==='dkline'?' est.':''}, model ${pc0(l.p)}, fair ${f?pc0(f.p):'none'}, ${m1(win)} won and ${m1(ev)} expected on $1: "${tx.slice(0,200)}"`);
         /* (app v114) the matchup bubble a leg's name opens is the hub's (nflbets/build/glance.js), not this page's: here the
            name is the row's own plain text, as before, and no row carries the bubble's button */
         { const nm=q('.nm'), own=nm?[...nm.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim():'';
-          chk(own===l.name&&!row.querySelector('[data-glance], button.glance-name'),`${lab}: Top 50 row ${i+1}'s name is not its own plain text on the prop model's page, or the row carries the hub's matchup bubble: "${nm?nm.innerHTML.slice(0,120):''}"`); }
+          chk(own===l.name&&!row.querySelector('[data-glance], button.glance-name'),`${lab}: Top 30 row ${i+1}'s name is not its own plain text on the prop model's page, or the row carries the hub's matchup bubble: "${nm?nm.innerHTML.slice(0,120):''}"`); }
         { const vm=[...row.querySelectorAll('.pb-valmark')], val=want[i].grp==='value';
-          W.wording((val?vm.length===1&&vm[0].textContent==='Value':!vm.length)&&!row.querySelector('.pb-thinmark')&&!/thin edge|no edge/i.test(tx)&&(!f||/fair/.test(tx)),`${lab}: Top 50 row ${i+1} (${l.name} ${l.label}) is not marked ${val?'Value, and that alone':'with no mark at all'}: "${tx.slice(0,160)}"`); }
-        chk(legAddOk(q('[data-pb-leg]'),l),`${lab}: Top 50 row ${i+1} has no Add of its own on ${l.name} ${l.label}, named for it and pressed only while it is in the builder: ${q('[data-pb-leg]')?q('[data-pb-leg]').outerHTML.slice(0,240):'none'}`); });
+          W.wording((val?vm.length===1&&vm[0].textContent==='Value':!vm.length)&&!row.querySelector('.pb-thinmark')&&!/thin edge|no edge/i.test(tx)&&(!f||/fair/.test(tx)),`${lab}: Top 30 row ${i+1} (${l.name} ${l.label}) is not marked ${val?'Value, and that alone':'with no mark at all'}: "${tx.slice(0,160)}"`); }
+        chk(legAddOk(q('[data-pb-leg]'),l),`${lab}: Top 30 row ${i+1} has no Add of its own on ${l.name} ${l.label}, named for it and pressed only while it is in the builder: ${q('[data-pb-leg]')?q('[data-pb-leg]').outerHTML.slice(0,240):'none'}`);
+        /* (app v115) a row on a player's line from a Refresh odds read with no DraftKings id at its number (where the
+           payload carries ids) carries one quiet line saying why, 'moved' where the paid pull read that main line at
+           another number (slipAud, the audit's own reading), and no other row carries one: blocking, since the leg
+           goes on DraftKings' slip otherwise than the row draws it; its words, the cause alone on this page (W.wording) */
+        { const sl=[...row.querySelectorAll('[data-pb-slip]')], want1=slipAud(l);
+          chk(want1?(sl.length===1&&sl[0].dataset.pbSlip===want1):!sl.length,`${lab}: Top 30 row ${i+1} (${l.name} ${l.label}, ${l.src}) ${want1?`has no DraftKings id at its number and does not carry one line saying so (${want1})`:'carries a line saying it has no DraftKings id at its number'}: ${sl.map(x=>x.dataset.pbSlip+' "'+x.textContent+'"').join(', ')||'none'}`);
+          if(want1&&sl.length===1) W.wording(sl[0].textContent===SLIP_AUD[want1],`${lab}: Top 30 row ${i+1}'s line on its missing DraftKings id reads "${sl[0].textContent}", not "${SLIP_AUD[want1]}"`);
+          if(want1) topSlip[want1]++; } });
       { const tx=P.textContent.replace(/\s+/g,' '), nt=tx.includes(`Game totals are never Value picks: each is priced at the book’s own chance, so the totals come last among the other lines, and on a long list the ${TOP_N_AUD} lines can end before them.`);
         W.wording(nt===!!u.k.total,`${lab}: ${u.k.total?'Game total is ticked and the list does not say a total is never a Value pick':'Game total is not ticked and the list still speaks of totals'}`);
         W.wording(!/thin edge|no edge|thin-edge/i.test(tx),`${lab}: the Parlay Builder still speaks of a thin edge or no edge, the tags app v112 took off`);
@@ -1073,6 +1107,7 @@ setTimeout(async()=>{
           `${lab}: the list's lead or foot does not say the Value picks come before the other lines, and the totals last: "${lead.slice(0,200)}"`);
         W.wording(foot.includes('Each bet is listed once: a ladder rung that is the same bet as the player’s main line (225+ passing yards and Over 224.5) is shown as the main line.'),`${lab}: the list's foot does not say each bet is listed once: "${foot.slice(0,400)}"`); }
       return {r,want}; };
+    holdTopF=holdTop;
     if(!F('pbGames')().length){ chk(/no game is left|nothing left to build from/.test(panel.textContent),'with no game to come the panel does not say so'); console.log('M. suggested parlays: no game to come, and the panel says so'); }
     else {
     chk(!!d.getElementById('pbCard')&&d.querySelectorAll('#pbPanel [data-pb-mix]').length===3&&d.querySelectorAll('#pbPanel [data-pb-kind]').length===5,'the panel has no mix switch (All, Teams only, Players only) or not its five bet types');
@@ -1501,10 +1536,10 @@ setTimeout(async()=>{
             const b3=d.querySelector(sel);
             chk(!S.parlay[key]&&!!b3&&b3.getAttribute('aria-pressed')==='false'&&b3.textContent==='Add'&&d.activeElement===b3,`${lab}: a second press of the leg's Add did not take it out of the builder, or lost the focus`);
             addSaid.push(lab); return true; };
-          /* (app v113) the empty builder points to the list by its length: the Top 50 */
+          /* (app v113) the empty builder points to the list by its length, the Top 30 (app v116), under it (app v116) */
           { S.parlay={}; S.bookPrice=null; F('renderParlay')(); const tx=(d.getElementById('parlayBody')||{textContent:''}).textContent.replace(/\s+/g,' ');
-            W.wording(tx.includes(`or add a parlay from Suggested Parlays or a line from the Top ${TOP_N_AUD} above`),`the empty builder does not point to the Top ${TOP_N_AUD} lines: "${tx.slice(0,240)}"`); }
-          W.coverage(tryAdd('#pbPanel','a Top 50 line'),'with made-up lines on every starter the Top 50 lines have no line to add');
+            W.wording(tx.includes(`or add a parlay from Suggested Parlays or a line from the Top ${TOP_N_AUD} below`),`the empty builder does not point to the Top ${TOP_N_AUD} lines: "${tx.slice(0,240)}"`); }
+          W.coverage(tryAdd('#pbPanel','a Top 30 line'),'with made-up lines on every starter the Top 30 lines have no line to add');
           /* (app v112) the sets with spOn stood in (spAllOn): the Add is held on a set whichever night the tab shows */
           spAllOn(()=>{ F('renderParlay')();
           if(setsM.length&&d.querySelector('#spPanel [data-pb-leg]')) tryAdd('#spPanel','a set\'s leg');
@@ -1547,7 +1582,7 @@ setTimeout(async()=>{
           chk(!!r&&r.legs.filter(l=>l.stat==='ml').length===2&&r.mkt===s[2]-2,`a total took the place of a moneyline with an edge on the ${id} level: ${r?r.legs.map(l=>l.name+' '+l.label).join(', '):'none'}`); } }
       /* market + form gates the player legs once the Elo tab is on the page */
       w.eloLoaded=()=>false; w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()');
-      chk(F('getPbTiers')().tiers.every(t=>!t.legs||t.legs.every(isG))&&F('getPbTop')().rows.every(isG)&&F('spGames')().every(g=>F('spSet')(g.id).tiers.every(t=>!t.legs||t.legs.every(isG))),'before the Elo files load a player leg is suggested, on a level, the Top 50 lines or a set');
+      chk(F('getPbTiers')().tiers.every(t=>!t.legs||t.legs.every(isG))&&F('getPbTop')().rows.every(isG)&&F('spGames')().every(g=>F('spSet')(g.id).tiers.every(t=>!t.legs||t.legs.every(isG))),'before the Elo files load a player leg is suggested, on a level, the Top 30 lines or a set');
       w.eloLoaded=()=>true; w.eloAltP=()=>0.01; w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()');
       chk(F('pbPool')(games).pref.every(isG),'a player leg market + form rates under the book is not marked thin');
       hold('market + form against every player leg'); holdSets('market + form against every player leg');
@@ -1557,7 +1592,7 @@ setTimeout(async()=>{
         w.Date.now=()=>now0.call(w.Date)+off; F('renderParlay')();
         chk(!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`)&&F('getPbTiers')().tiers.every(x=>!x.legs||x.legs.every(l=>l.gid!==g0.id))&&F('getPbTop')().rows.every(l=>l.gid!==g0.id)
           &&!F('spGames')().some(g=>g.id===g0.id)&&!d.querySelector(`#spPanel [data-sp-game="${g0.id}"]`)&&![...d.querySelectorAll('#pbPanel [data-pb-leg]')].some(b=>b.dataset.pbLeg.split('|')[0]===g0.id),
-          'a game that has kicked off is still on the games list, in a level, on the Top 50 lines or given a set');
+          'a game that has kicked off is still on the games list, in a level, on the Top 30 lines or given a set');
         w.Date.now=now0; F('renderParlay')();
         chk(!!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`),'the game did not come back with the clock'); }
       if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
@@ -1888,12 +1923,12 @@ setTimeout(async()=>{
             rung kept); t1's 225+ in a second game (another game: kept); three thin-edge lines and a thin money line,
             each expected to make under 3 cents on $1; and the game's total priced on the over alone at +120, put at
             50%, expected to make 10 cents, which must still rank after every thin-edge line
-         B  more lines than the list holds (TOP_N_AUD, 50 since app v113; 103 here once the rungs are out): eight
-            players each with a Value-pick main Over and its rung at the top of the list (eight slots freed), 94 lines
-            under them, and a thin main Over and its rung expected to make the least of all (its main line ranking past
-            the 50th, off the list, the rung left out all the same): the list is exactly the first 50 of the order
-            without the rungs, so the lines ranked 43 to 50 there, which the rungs would have pushed off, are on it, the
-            51st is not, and the total, last of all, is not
+         B  more lines than the list holds (TOP_N_AUD, 50 from app v113 and 30 since app v116; 103 here once the rungs
+            are out): eight players each with a Value-pick main Over and its rung at the top of the list (eight slots
+            freed), 94 lines under them, and a thin main Over and its rung expected to make the least of all (its main
+            line ranking past the 30th, off the list, the rung left out all the same): the list is exactly the first 30
+            of the order without the rungs, so the lines ranked 23 to 30 there, which the rungs would have pushed off,
+            are on it, the 31st is not, and the total, last of all, is not
        Blocking: which lines, their order and every number (holdTop on each, and the cases' answers); W.wording the words */
     { const cw=F('currentWeek')(), pad=String(cw).padStart(2,'0'), keepU12=JSON.stringify(F('pbUi')()), keepF12=w.eval('[pbGames, pricedLegs]'), putF12=w.eval('(function(a,b){ pbGames=a; pricedLegs=b; })');
       const GP={id:`2099_${pad}_AUP_AUQ`,w:cw,a:'AUP',h:'AUQ',d:'2099-01-04',t:'13:00',tot:44.5,tov:120};
@@ -1930,7 +1965,7 @@ setTimeout(async()=>{
           const thinEv=T.full.filter(x=>x.part==='thin').map(x=>x.ev), tot=T.full.find(x=>legIdAud(x.l)===totA);
           chk(!!tot&&thinEv.length>=4&&thinEv.every(e=>e<tot.ev),`the made-up total on one price is not expected to make more than every thin-edge line (${tot?tot.ev.toFixed(3):'none'} against ${thinEv.map(e=>e.toFixed(3)).join(', ')}), so the case cannot tell the totals' place from the sort`);
           const {r}=holdTop('made-up lines, each bet once and a total on one price'), got=r.rows.map(legIdAud);
-          chk(dropA.every(id=>!got.includes(id))&&keptA.every(id=>got.includes(id))&&r.same===dropA.length,`the Top 50 lines on the made-up game do not leave out exactly the rungs that are the same bet as a main Over (${dropA.filter(id=>got.includes(id)).join(', ')||'none'} listed, ${keptA.filter(id=>!got.includes(id)).join(', ')||'none'} missing, ${r.same} counted)`);
+          chk(dropA.every(id=>!got.includes(id))&&keptA.every(id=>got.includes(id))&&r.same===dropA.length,`the Top 30 lines on the made-up game do not leave out exactly the rungs that are the same bet as a main Over (${dropA.filter(id=>got.includes(id)).join(', ')||'none'} listed, ${keptA.filter(id=>!got.includes(id)).join(', ')||'none'} missing, ${r.same} counted)`);
           const ti=got.indexOf(totA), lastThin=Math.max(...r.rows.map((x,i)=>T.q.thin.some(l=>legIdAud(l)===legIdAud(x))?i:-1));
           chk(ti===got.length-1&&lastThin>=0&&lastThin<ti,`the total on one price at +120 is row ${ti+1} of ${got.length}, where it comes after every thin-edge line (the last at row ${lastThin+1})`);
           said12.push(`A: ${dropA.length} rungs left out as their main Over's bet, ${keptA.length} lines kept (a whole-number line, an Under, a main line under the book and another game among them), the total on one price after ${thinEv.length} thin-edge lines`); }
@@ -2013,7 +2048,7 @@ setTimeout(async()=>{
     /* the suggestions and the builder as they stand: the Top 50 on every box, the sets, the all-games levels, S.parlay */
     const holdSugg=lab=>{ const keepU=JSON.stringify(F('pbUi')()), bad=[]; let n=0;
       try{ const u=F('pbUi')(); for(const k in u.k) u.k[k]=true; u.off=[]; dropCaches();
-        for(const l of F('getPbTop')().rows){ n++; if(offLeg(l)) bad.push(nm(l)+' on the Top 50'); }
+        for(const l of F('getPbTop')().rows){ n++; if(offLeg(l)) bad.push(nm(l)+' on the Top 30'); }
         for(const t of F('getPbTiers')().tiers) for(const l of (t.legs||[])){ n++; if(offLeg(l)) bad.push(nm(l)+' on an all-games level'); }
         for(const g of F('spGames')()){ const s=F('spSet')(g.id), v=F('spShown')(g); for(const t of [...(s?s.tiers:[]),...(v&&v.tiers||[])]) for(const l of ((t&&t.legs)||[])){ n++; if(offLeg(l)) bad.push(nm(l)+` on ${g.id}'s set`); } }
         F('renderParlay')(); spAllOn(()=>F('renderSp')());
@@ -2068,7 +2103,7 @@ setTimeout(async()=>{
         const u=F('pbUi')(); for(const k in u.k) u.k[k]=true; u.off=[]; dropCaches();
         const top=F('getPbTop')().rows, set=F('spSet')(GK.id), setLegs=set?set.tiers.flatMap(t=>t.legs||[]):[];
         chk(has(pl0,'fg_made')&&P.legs.some(k=>statOf(k)==='fg_made')&&P.names.includes((F('MKT').fg_made||{}).lbl)&&has(pool0,'fg_made')&&has(top,'fg_made')&&has(setLegs,'fg_made'),
-          `the made-up kickers' field goals made, a DraftKings market priced as a Value pick with its ids, does not reach ${[has(pl0,'fg_made')?'':'pricedLegs',P.legs.some(k=>statOf(k)==='fg_made')?'':'his game page\'s line boxes',has(pool0,'fg_made')?'':'the hands\' pool',has(top,'fg_made')?'':'the Top 50',has(setLegs,'fg_made')?'':'the set'].filter(Boolean).join(', ')}, so the case cannot tell`);
+          `the made-up kickers' field goals made, a DraftKings market priced as a Value pick with its ids, does not reach ${[has(pl0,'fg_made')?'':'pricedLegs',P.legs.some(k=>statOf(k)==='fg_made')?'':'his game page\'s line boxes',has(pool0,'fg_made')?'':'the hands\' pool',has(top,'fg_made')?'':'the Top 30',has(setLegs,'fg_made')?'':'the set'].filter(Boolean).join(', ')}, so the case cannot tell`);
         holdGames([GK],'a made-up Monday night game with two kickers');
         /* the set's level holding the game's total, drawn quiet: no line on why the total is there, none on thin legs */
         { const tT=set&&set.tiers.find(t=>t.legs&&t.legs.some(l=>l.stat==='total'));
@@ -2099,9 +2134,9 @@ setTimeout(async()=>{
         const fromAdds=Object.values(S.parlay).map(l=>l.stat);
         F('renderParlay')(); const rows=[...d.querySelectorAll('#parlayBody tr.legrow')].map(x=>x.textContent);
         chk(fromPage.includes('fg_made')&&fromAdds.includes('fg_made')&&![...fromPage,...fromAdds].some(s=>!OK.has(s))&&!rows.some(t=>new RegExp(LBL.fg_att,'i').test(t)),
-          `the builder, filled by the made-up game's line boxes (${fromPage.join(', ')||'none'}) and by the Top 50's and the set's Adds (${fromAdds.join(', ')||'none'}), takes no field goals made or takes a bet DraftKings does not post`);
+          `the builder, filled by the made-up game's line boxes (${fromPage.join(', ')||'none'}) and by the Top 30's and the set's Adds (${fromAdds.join(', ')||'none'}), takes no field goals made or takes a bet DraftKings does not post`);
         holdSugg('a made-up Monday night game with two kickers');
-        said13.push(`a made-up Monday night game, two made-up kickers each with FG attempts and field goals made priced as Value picks with ids: field goals made on the game page, priced, in the hands' pool, on the Top 50, in the set and the builder; FG attempts on none`);
+        said13.push(`a made-up Monday night game, two made-up kickers each with FG attempts and field goals made priced as Value picks with ids: field goals made on the game page, priced, in the hands' pool, on the Top 30, in the set and the builder; FG attempts on none`);
         ran=true;
       } catch(e){ chk(false,'M13 (the made-up kickers) threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
       finally {
@@ -2562,7 +2597,7 @@ setTimeout(async()=>{
         chk(r.far===nFar&&r.tiers.every(t=>!t.legs||t.legs.every(l=>!isFar(l))),'a level holds a leg far off the market, or the tiers do not carry the count');
         /* the Top 50 lines: no far leg, and the list says how many it left out and why (the count is a number) */
         { w.eval('PB_TOP_CACHE=new Map()'); const top=F('getPbTop')(); F('renderPb')(); const tx=d.getElementById('pbPanel').textContent.replace(/\s+/g,' ');
-          chk(top.far===nFar&&top.rows.every(l=>!isFar(l)),`the Top 50 lines hold a line far off the market, or count ${top.far} left out where ${nFar} are`);
+          chk(top.far===nFar&&top.rows.every(l=>!isFar(l)),`the Top 30 lines hold a line far off the market, or count ${top.far} left out where ${nFar} are`);
           chk(tx.includes(`${nFar} line${nFar===1?' is':'s are'} left out: the model rates ${nFar===1?'it':'each'} 15 points or more above the book’s fair chance`),
             `the list does not say how many lines it left out far off the market (${nFar}): `+(tx.match(/\d+ lines? (is|are) left out[^.]*\./)||['nothing'])[0]);
           W.wording(/still on the game pages, flagged far off the market/.test(tx),'the list does not say its far-off lines are still on the game pages'); }
@@ -3103,7 +3138,7 @@ setTimeout(async()=>{
               w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}');
               rNew=F('getPbTiers')(); topNew=F('getPbTop')(); setsNew=setSig(); hNew=F('gameTiers')(g0);
               const nDk=topNew.rows.filter(l=>l.src==='dkline').length;
-              chk(lvSig(rNow)===lvSig(rNew)&&topSig(topNow)===topSig(topNew)&&setsNow===setsNew&&drawn===nDk,`right after the press, the levels, the Top 50 lines or a set are not what a build on the read gives (stale from before it), or the list drawn shows ${drawn} lines marked est. where the read gives ${nDk}: ${topSig(topNow).slice(0,160)} against ${topSig(topNew).slice(0,160)}`); }
+              chk(lvSig(rNow)===lvSig(rNew)&&topSig(topNow)===topSig(topNew)&&setsNow===setsNew&&drawn===nDk,`right after the press, the levels, the Top 30 lines or a set are not what a build on the read gives (stale from before it), or the list drawn shows ${drawn} lines marked est. where the read gives ${nDk}: ${topSig(topNow).slice(0,160)} against ${topSig(topNew).slice(0,160)}`); }
             finally{ if(el) el.innerHTML=keepE; }
             chk(hdSig(hNow)===hdSig(hNew),`right after the press, ${g0.id}'s hands (its lines unmoved by the read) are not what a build on the read gives, but the published ones: ${hdSig(hNow).slice(0,160)} against ${hdSig(hNew).slice(0,160)}`);
             /* (app v109) where the payload carries DraftKings' ids, a leg priced from the read has none (ESPN
@@ -4436,7 +4471,8 @@ setTimeout(async()=>{
               const T=F('gameTiers')(g); for(const id of ['high','med','low']) if(T[id]) for(const l of T[id].legs){ n++; chk(pickOk(l,true)&&farOk(l)&&dkOk(l),bad(`${g.id}'s ${id} hand`,l)+farTxt(l)+idTxt(l)); } }
             /* (app v111) the Top 50 lines and each prime-time set the games make, under the same rules as a level */
             w.eval('PB_TOP_CACHE=new Map()');
-            for(const l of F('getPbTop')().rows){ n++; chk(pickOk(l,false)&&dkOk(l),bad('the Top 50 lines',l)+idTxt(l)); }
+            /* (app v115) the Top 50 alone may hold a player's line from the read with no id (readTopAud, the audit's own reading) */
+            for(const l of F('getPbTop')().rows){ n++; chk(pickOk(l,false)&&dkTopOk(l),bad('the Top 30 lines',l)+(dkTopOk(l)?'':idTxt(l))); }
             const sets=F('spGames')().filter(g=>gs.some(x=>x.id===g.id)).map(g=>({g,s:F('spSet')(g.id)}));
             for(const {g,s:x} of sets) for(const t of x.tiers) if(t.legs) for(const l of t.legs){ n++;
               chk(pickOk(l,false)&&dkOk(l)&&(l.src!=='dkline'||(F('suggestable')(l.pid)&&(()=>{ const f=F('legFair')(l); return l.p>=0.45&&l.p<0.97&&l.p>=imp(l.price)&&!!f&&l.p-f.p<FAR-1e-9; })())),bad(`${g.id}'s ${t.id} set level`,l)+idTxt(l)); }
@@ -4475,7 +4511,7 @@ setTimeout(async()=>{
           const holdMarks=(lab,r)=>{ const stab=d.getElementById('tab-suggest'), keepH=stab.hidden, keepOn=w.eval('spOn'); const panel=d.getElementById('pbPanel'); let n=0, any=false;
             try{ stab.hidden=false; spKeyClear(); w.eval('spOn=function(){ return spGames(); }'); F('renderPb')();
             { const rows=F('getPbTop')().rows, li=[...panel.querySelectorAll('ol.pb-top > li.pb-trow')]; any=rows.some(l=>l.src==='dkline'); n++;
-              chk(li.length===rows.length&&rows.every((l,i)=>!!li[i].querySelector('.pb-tc i.est')===(l.src==='dkline')),`${lab}: the Top 50 lines do not mark est. exactly their ${rows.filter(l=>l.src==='dkline').length} lines priced from DraftKings' line`); }
+              chk(li.length===rows.length&&rows.every((l,i)=>!!li[i].querySelector('.pb-tc i.est')===(l.src==='dkline')),`${lab}: the Top 30 lines do not mark est. exactly their ${rows.filter(l=>l.src==='dkline').length} lines priced from DraftKings' line`); }
             for(const {g} of (r.sets||[])){ const v=F('spShown')(g), box=d.querySelector(`#spPanel [data-sp-game="${g.id}"]`);
               for(const t of (v.tiers||[])){ if(!t||!t.legs) continue; const c=box&&box.querySelector(`.pb-tier.${t.id}`), li=c?[...c.querySelectorAll('.pb-legs li')]:[], nd=t.legs.filter(l=>l.src==='dkline').length; n++;
                 chk(li.length===t.legs.length&&t.legs.every((l,i)=>!!li[i].querySelector('.pr i.est')===(l.src==='dkline'))&&!!c&&c.querySelector('.pb-nums').children[1].querySelector('span').textContent===(nd?'price, est.':'price'),
@@ -4505,7 +4541,12 @@ setTimeout(async()=>{
                 S.ui.pb.off=m==='g0'?games.filter(g=>g!==g0).map(g=>g.id):[]; w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()');
                 const {n,r}=holdPicks(`a press${nl}, ${m==='g0'?'players only on '+g0.id:m}`,m==='g0'?[g0]:games); nPick+=n; if(m!=='players') nPick+=holdMarks(`a press${nl}, ${m}`,r);
                 if(m==='g0'&&!dkCarried()) W.coverage(r.tiers.some(t=>t.legs&&t.legs.some(l=>l.src==='dkline')),`with the press's read on ${g0.id} alone, no level holds a leg priced from it: ${r.tiers.map(t=>t.why||t.legs.map(l=>l.src).join('+')).join(' / ')}`);
-                if(m==='g0'&&dkCarried()) chk(r.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline'))&&F('getPbTop')().rows.every(l=>l.src!=='dkline')&&(r.sets||[]).every(({s:x})=>x.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline'))),`with ids carried, a level, a Top 50 line or a set takes a leg priced from the press's read, which has no DraftKings id`); } }
+                /* (app v115) with ids carried, a level and a set take no leg priced from the press's read (it has no DraftKings id),
+                   and the Top 50 lines are the audit's own (holdTop: a player's line from the read kept, with its line on the
+                   missing id), the press having moved some line of g0's the list keeps, where the feed did */
+                if(m==='g0'&&dkCarried()) chk(r.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline'))&&(r.sets||[]).every(({s:x})=>x.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline'))),`with ids carried, a level or a set takes a leg priced from the press's read, which has no DraftKings id`);
+                if(holdTopF){ const s0=topSlip.moved; holdTopF(`a press${nl}, ${m==='g0'?'players only on '+g0.id:m}`);
+                  if(m==='g0'&&dkCarried()) W.coverage(topSlip.moved>s0,`the press's read on ${g0.id} moved no main line the Top 30 lines keep, so the list's line on a moved line went untested on the week (M14 holds it on a made-up game)`); } } }
             finally{ if(pass==='none') dkSet(dkP); S.ui.pb=JSON.parse(keepU); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()'); F('renderPb')(); } }
           nTog+=holdToggle(g0,'a press');
           /* a game's page reads that game alone; the backup's touchdown 2 hours out (his club's lines
@@ -4543,8 +4584,8 @@ setTimeout(async()=>{
               W.wording(rN.tiers.every(t=>t.why===np[0].toUpperCase()+np.slice(1))&&/^no player lines yet: DraftKings had posted none for these games when Refresh odds last read them from ESPN/.test(np),'with a press that found no player lines, the empty levels do not say DraftKings had posted none: '+rN.tiers.map(t=>t.why).join(' / '));
               /* the Top 50 lines on the same ticks: none, saying the same */
               { const tp=F('getPbTop')(); F('renderPb')(); const why=(d.querySelector('#pbPanel .pb-top-none')||{}).textContent||'';
-                chk(!tp.rows.length&&tp.noPlayerPrices,'with a press that found no player lines for the games ticked and no price on file, the Top 50 lines list one');
-                W.wording(why===np[0].toUpperCase()+np.slice(1),'with a press that found no player lines, the empty Top 50 lines do not say DraftKings had posted none: '+why); } }
+                chk(!tp.rows.length&&tp.noPlayerPrices,'with a press that found no player lines for the games ticked and no price on file, the Top 30 lines list one');
+                W.wording(why===np[0].toUpperCase()+np.slice(1),'with a press that found no player lines, the empty Top 30 lines do not say DraftKings had posted none: '+why); } }
             finally{ S.odds=JSON.parse(keepO); if(keepM2==='null') delete P().mkt[wk]; else P().mkt[wk]=JSON.parse(keepM2); S.ui.pb=JSON.parse(keepU); } }
           /* a reload returns the builder to the published prices: the press's game lines put back and its
              read dropped, as a reload finds them, a spread leg it priced goes to the game's published price
@@ -4601,6 +4642,138 @@ setTimeout(async()=>{
       catch(e){ chk(false,'the page could not be drawn again after M8: '+String(e&&e.stack||e).split('\n').slice(0,2).join(' ')); } }
     console.log(`M8. Refresh odds: no request before a press; the reader on ESPN's recorded answers (${nParse} events read as the checks read them, two pages, the answers that leave a game alone, athletes by id, by name and by the clubs' rosters, a name never on a player an id names, a kickoff before and during a read); ${nReq?`a press on the week (${nReq} requests) and a game's page, the game lines and ids applied, each dated by its read, and never saved; the levels and hands fresh right after it, and a reload back on the published prices; the read kept in this browser (${nKeep} checks: written as the page shows it, put back on a reload with no request and the levels and hands as after the press, two presses put back as the page showed them after both, a spread and a total read back to the published number with no prices put back with none, the event the page used, what each read found put back with its half, a read the press left off putting nothing back, set aside for a published game line moved, a newer pull, a kickoff, a value of another season or not the page's, a game not on the schedule or in another week, left alone with no schedule, the parts the page never writes dropped ("__proto__" among them), a half dated after the page's clock dropped, two tabs' writes merged half by half and a half set aside never taken back, nothing set on the page's built-ins, given way to the visitor's state with no room, and (round 5) each game-line field by its own read's time over a newer publish, a block lent only over the same publish, a game the schedule no longer offers carried through a write and pruned by a restore, a line or rung off ESPN's steps dropped and at most 40 rungs, a 'none' for a day at most, and (round 6) a builder game leg kept by its own field, the later block of the same publish in the merge, what a reload does not put back pruned from the key, a money line, spread or total kept as null dropped and lat the latest field put); ${nPx} prices the rule's, ${nDom} drawn on the game page, ${nPick} chosen legs to the rule, ${nTog} ticks`:'no game to come, so no press on the week'}`);
     console.log(`M8. untested markets priced from the press (shown, never suggested): ${Object.keys(untested).length?Object.entries(untested).map(([k,v])=>k+' '+v).join(', '):'none'}`); }
+
+  /* ---- M14. a Refresh odds press that moves DraftKings' player lines, on a made-up game of the audit's own (app v115) ----
+     The owner, Sunday 18 October 2026: "any idea why the player props are not showing up in the top 50 anymore? :/". A
+     press on a Sunday finds most of the player lines DraftKings had when the paid pull read them on Saturday morning
+     moved; each line the read has at another number is priced there by the formula (src dkline, est.), and ESPN gives
+     no DraftKings id for a player's line, so until app v115 the Top 50 lines left every one of them out wherever the
+     payload carries ids (on 18 October's payload, a press moving every priced line half a point took the list from 43
+     player lines to 7). Since app v115 the Top 50 alone keeps them (readTopAud, the audit's own reading); everything
+     that builds a parlay stays slip-only. On a Monday night game of two made-up clubs with four made-up players (rule
+     (c): on the schedule for the run, pbGames stood in, the players in S.players, the paid pull's main lines in PAY.mkt
+     and a made-up id table for them in place of PAY.dk, the players' ESPN ids in place of PAY.espn_ids, the read
+     answered by a fetch stub of the audit's own, and the page's ESPN state and its kept key put back, all on every path,
+     so it holds in any week, at any hour and in the off-season). Each line the read moves is set where the model makes
+     its over about 60%, with the pull's 2 points under it at -110 each way and DraftKings' ids there: the quarterback's
+     passing yards, a receiver's receiving yards and a back's rushing yards (tested kinds), the quarterback's completions
+     (untested); a second receiver's receptions read at the pull's own number (moved nothing) and his receiving yards,
+     which the pull had no price for, read alone; the four on the read's touchdown list, the first receiver's yards
+     ladder listed. Held:
+       - before the press, and after a press whose read is the pull's own lines, the list is the pull's lines alone, the
+         same rows at the same prices with their ids
+       - after the press, the list is the audit's own (holdTop: topAud and every row's line on a missing id); every
+         moved tested line on it at the read's number, never the pull's old one, at the rule's price (espn_rule.js), est.,
+         marked moved, at least one of them and one line from the read the pull had no price for (marked none), so the
+         case can tell; no completions line anywhere; the unmoved receptions at the pull's price with its id and no line
+       - slip-only: no leg from the read with no id in a level (getPbTiers), the game's set (spSet), a hand's pool or a
+         hand (gameLegPool, gameTiers)
+       - the counts: the page's left out for want of an id and kept without one the audit's own, none at another number
+       - with no ids carried (PAY.dk taken away: a payload baked before them), the read's legs on the list as before, no
+         row with the line
+     Blocking (made-up data, rule (c)); the line's words W.wording, on holdTop */
+  { const cw=F('currentWeek')(), pad=String(cw).padStart(2,'0'), PAY0=F('PAY'), said14=[], isG=F('isGameLeg'), clone=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v));
+    const GM={id:`2099_${pad}_AUN_AUO`,w:cw,a:'AUN',h:'AUO',d:'2099-01-05',t:'20:15',sp:-3,tot:44.5,tov:-110,tou:-110};
+    const PL=[['aud-q14','AUO','QB','Made-up Passer'],['aud-w14','AUN','WR','Made-up Catcher'],['aud-r14','AUN','RB','Made-up Runner'],['aud-v14','AUO','WR','Made-up Wideout']];
+    const AID={'aud-q14':'99141001','aud-w14':'99141002','aud-r14':'99141003','aud-v14':'99141004'}, EID='99140001';
+    const mkP=([id,team,grp,n])=>{ const st=w.eval('GRP_STATS')[grp]||[], pv=s=>{ const v=PAY0.prior&&PAY0.prior[grp]&&PAY0.prior[grp][s]; return v!=null&&isFinite(v)&&v>0?v:1; };
+      return {id,n,pos:grp,grp,team,gp:8,base_gp:17,e5:Object.fromEntries(st.map(s=>[s,[pv(s),1]])),e3:Object.fromEntries(st.map(s=>[s,[pv(s),1]])),
+        car:Object.fromEntries(st.map(s=>[s,[pv(s)*40,40]])),py:Object.fromEntries(st.map(s=>[s,pv(s)]))}; };
+    /* what M14 stands in, each put back in the finally below whatever path it leaves by */
+    const keepF=w.eval('[pbGames]'), putF=w.eval('(function(a){ pbGames=a; })'), keepU=JSON.stringify(F('pbUi')()), keepDk=PAY0.dk, keepMk=JSON.stringify((PAY0.mkt||{})[String(cw)]||null), keepIds=PAY0.espn_ids;
+    const keepPar=JSON.stringify(S.parlay||{}), keepFetch=w.fetch, EV=['ESPN_LIVE','ESPN_GL','ESPN_OUT','ESPN_NAMES','ESPN_IDAT','ESPN_KEPT','ESPN_ASIDE','ESPN_KEEP_GONE','ESPN_KEEP_OFF','ESPN_RUN'];
+    const setVar=(n,v)=>w.eval(`(function(v){ ${n}=v; })`)(v), keepE=Object.fromEntries(EV.map(n=>[n,clone(F(n))])), keepSeq=F('ESPN_SEQ');
+    const KK=F('ESPN_KEEP_KEY'), key0=(()=>{ try{ return w.localStorage.getItem(KK); }catch(e){ return null; } })();
+    const KINDS14=['ml','ats','total','over','under'], allOn=()=>{ const u=F('pbUi')(); for(const k of KINDS14) u.k[k]=true; u.off=[]; dropCaches(); };
+    /* the read: a scoreboard of the one made-up event (no game lines on it) and its player lines, served by the stub */
+    let items=[], nReq14=0; const esp=u=>/^https:\/\/(site|sports\.core)\.api\.espn\.com\//.test(u);
+    const ans=(code,body)=>Promise.resolve({ok:code===200,status:code,headers:{get:()=>null},json:async()=>clone(body)});
+    const stub=(u,o)=>{ u=String(u); if(!esp(u)) return keepFetch(u,o); nReq14++;
+      if(/\/scoreboard\?/.test(u)) return ans(200,{events:[{id:EID,date:F('kickoff')(GM).toISOString(),competitions:[{competitors:[{homeAway:'home',team:{abbreviation:GM.h,id:'99142'}},{homeAway:'away',team:{abbreviation:GM.a,id:'99143'}}],odds:[]}]}]});
+      const m=/\/events\/(\d+)\/competitions\/\d+\/odds\/100\/propBets\?(.*)$/.exec(u);
+      if(m&&m[1]===EID){ const pg=+new URLSearchParams(m[2]).get('page')||1; return ans(200,{count:items.length,pageIndex:pg,pageSize:1000,pageCount:Math.max(1,Math.ceil(items.length/1000)),items:items.slice((pg-1)*1000,pg*1000)}); }
+      return ans(404,{error:{code:404}}); };
+    const mainT=Object.fromEntries(Object.entries(ESPN.TYPES.main).map(([k,v])=>[v,k])), mileT=Object.fromEntries(Object.entries(ESPN.TYPES.mile).map(([k,v])=>[v,k]));
+    const ath=pid=>({$ref:`http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/${F('SEASON')}/athletes/${AID[pid]}?lang=en&region=us`});
+    /* read: {pid:{lines:{stat:L}, rungs:{stat:[k]}, td}} as ESPN's items, each main line's twin items as ESPN sends them */
+    const itemsOf=read=>{ const out=[]; for(const [pid,r] of Object.entries(read)){ const a=ath(pid); if(r.td) out.push({type:{id:'31'},athlete:a});
+      for(const [st,L] of Object.entries(r.lines||{})) out.push({type:{id:mainT[st]},athlete:a,current:{target:{value:L}}},{type:{id:mainT[st]},athlete:a,current:{target:{value:L}}});
+      for(const [st,ks] of Object.entries(r.rungs||{})) for(const k of ks) out.push({type:{id:mileT[st]},athlete:a,current:{target:{value:k}}}); } return out; };
+    const clearRead=()=>{ w.eval('ESPN_LIVE={}; ESPN_OUT={}; ESPN_NAMES={}; ESPN_IDAT={}; ESPN_SEQ++'); dropCaches(); };
+    const press=async read=>{ items=itemsOf(read); clearRead(); await F('espnRefresh')(GM.id); dropCaches(); return !!((F('ESPN_LIVE')[String(cw)]||{})[GM.id]); };
+    const legSig=l=>[l.key,l.side,l.k,l.price,l.src].join('|'), rowsSig=()=>{ allOn(); return F('getPbTop')().rows.map(legSig).join(';'); };
+    let ran=false;
+    try{
+      S.sched.push(GM); for(const p of PL) S.players[p[0]]=mkP(p);
+      w.__m14G=[GM]; w.eval('pbGames=function(){ return window.__m14G.filter(g=>!gameStarted(g)&&!hasScore(g)); };');
+      PAY0.espn_ids=Object.fromEntries(Object.entries(AID).map(([pid,aid])=>[aid,pid]));
+      const r0=rosterFor(GM,false), xs=[...r0[GM.a].players,...r0[GM.h].players].filter(x=>AID[x.pl.id]), X=pid=>xs.find(x=>x.pl.id===pid);
+      chk(xs.length===4,`the made-up players are not on their made-up clubs' rosters for the game (${xs.map(x=>x.pl.id).join(', ')||'none'} of 4)`);
+      /* each line where the model makes the over about 60% (the half point nearest it), the pull's 2 points under the moved ones */
+      const at60=(pid,st)=>{ const x=X(pid), pr=x&&F('project')(x.pl,st,x.opp,x.ctx), mu=pr&&pr.mu; if(!(mu>0)) return null; let b=null;
+        for(let L=0.5;L<Math.max(4,mu*3);L+=1){ const p=F('pOver')(x.pl.grp,st,mu,L); if(!b||Math.abs(p-0.6)<Math.abs(b.p-0.6)) b={L,p}; } return b?b.L:null; };
+      const MOVED={'aud-q14':{passing_yards:at60('aud-q14','passing_yards')},'aud-w14':{receiving_yards:at60('aud-w14','receiving_yards')},'aud-r14':{rushing_yards:at60('aud-r14','rushing_yards')}};
+      const UNT={'aud-q14':{completions:at60('aud-q14','completions')}}, STILL=at60('aud-v14','receptions'), ALONE=at60('aud-v14','receiving_yards');
+      const lines=[...Object.values(MOVED),...Object.values(UNT)].flatMap(o=>Object.values(o));
+      chk(lines.every(L=>L!=null&&L-2>=0.5)&&STILL!=null&&ALONE!=null,`the made-up players' lines could not be set where the model makes the over about 60%: ${JSON.stringify({MOVED,UNT,STILL,ALONE})}`);
+      const PULL={}, M=((PAY0.mkt??={})[String(cw)]??={}), E={at:new w.Date(w.Date.now()-3600e3).toISOString(),glat:new w.Date(w.Date.now()-3600e3).toISOString()}; let nId=0;
+      const pull=(pid,st,L)=>{ (PULL[pid]??={})[st]=L; M[pid]={...(M[pid]||{}),[st]:{line:L,over:-110,under:-110,n:S.players[pid].n,g:GM.id}};
+        for(const side of ['over','under']) E[`${pid}|${st}|${side}|${dkPt(L)}`]='0AUDM14'+(++nId); };
+      for(const [pid,o] of Object.entries({...MOVED,'aud-q14':{...MOVED['aud-q14'],...UNT['aud-q14']}})) for(const [st,L] of Object.entries(o)) pull(pid,st,L-2);
+      pull('aud-v14','receptions',STILL);
+      for(const side of ['over','under']) E[`game|total|${side}|${dkPt(GM.tot)}`]='0AUDM14'+(++nId);
+      const T14={[String(cw)]:{[GM.id]:E}}; AUD_DK.add(T14); dkSet(T14); w.fetch=stub; allOn();
+      /* before the press: the pull's lines alone, with their ids */
+      const sig0=rowsSig(), top0=F('getPbTop')().rows;
+      chk(top0.length>0&&top0.every(l=>l.src==='real'&&dkOk(l)),`before a press, the made-up game's Top 30 lines are not the pull's own lines with their ids: ${top0.map(l=>l.label+' '+l.src).join(', ')||'none'}`);
+      if(holdTopF) holdTopF('a made-up game before a press');
+      /* a press whose read is the pull's own lines: nothing moves, nothing changes */
+      { const same={}; for(const [pid,o] of Object.entries(PULL)) same[pid]={lines:{...o}};
+        const ok=await press(same);
+        chk(ok&&rowsSig()===sig0,`a press whose read is the pull's own lines changes the made-up game's Top 30 lines (${ok?'read':'not read'}): ${rowsSig().slice(0,240)} against ${sig0.slice(0,240)}`); }
+      /* the press that moves them */
+      const R={'aud-q14':{lines:{passing_yards:MOVED['aud-q14'].passing_yards,completions:UNT['aud-q14'].completions},td:true},
+        'aud-w14':{lines:{receiving_yards:MOVED['aud-w14'].receiving_yards},td:true,rungs:{receiving_yards:(()=>{ const x=X('aud-w14'), l=x&&F('statLines')(x).find(z=>z.stat==='receiving_yards'); return l?l.rungs.map(r=>r.k).filter(k=>Math.abs(k-0.5-MOVED['aud-w14'].receiving_yards)>1e-9):[]; })()}},
+        'aud-r14':{lines:{rushing_yards:MOVED['aud-r14'].rushing_yards},td:true},
+        'aud-v14':{lines:{receptions:STILL,receiving_yards:ALONE},td:true}};
+      const read=await press(R);
+      chk(read&&nReq14>=4,`the made-up game's press was not read (${nReq14} requests to the stub)`);
+      allOn(); const r1=F('getPbTop')(), top=r1.rows, q=qualAud([GM],F('pbUi')(),true);
+      if(holdTopF) holdTopF('a made-up game after a press that moves its lines');
+      const isMoved=l=>!!l.main&&MOVED[l.pid]&&MOVED[l.pid][l.stat]!=null, mv=top.filter(isMoved);
+      chk(mv.length>0&&mv.every(l=>l.src==='dkline'&&+l.k===MOVED[l.pid][l.stat]&&!!ESR.price(l)&&ESR.price(l).price===l.price&&!ESR.real(l)&&slipAud(l)==='moved'),
+        `after a press that moves them, the made-up game's moved tested lines are not on the Top 30 lines at the read's number at the rule's price, est., marked moved: ${mv.map(l=>`${l.name} ${l.label} ${l.price} ${l.src} (${slipAud(l)})`).join(', ')||'none on the list'}`);
+      chk(!top.some(l=>isMoved(l)&&+l.k===PULL[l.pid][l.stat]),`after the press, the Top 30 lines still offer a moved line at the pull's old number: ${top.filter(l=>isMoved(l)&&+l.k===PULL[l.pid][l.stat]).map(l=>l.name+' '+l.label).join(', ')}`);
+      chk(top.some(l=>slipAud(l)==='none'),`after the press, no line from the read the pull had no price for (a touchdown, a rung, the second receiver's receiving yards) is on the Top 30 lines with its line, so the case cannot tell: ${top.map(l=>l.label+' '+l.src).join(', ')}`);
+      chk(![...F('pricedLegs')([GM]),...top].some(l=>l.stat==='completions'),'after the press, a completions line (an untested kind) is priced for the suggestions or on the Top 30 lines');
+      chk(top.some(l=>l.pid==='aud-v14'&&l.stat==='receptions'&&l.main&&l.src==='real'&&+l.k===STILL&&!!dkIdAud(l)&&slipAud(l)==null),`after the press, the receptions line the read left where the pull had it is not on the Top 30 lines at the pull's price with its id and no line: ${top.filter(l=>l.pid==='aud-v14').map(l=>l.label+' '+l.src).join(', ')||'none of his'}`);
+      chk(r1.noId===q.noId&&(r1.kept||0)===q.kept&&q.kept>0&&!r1.moved,`after the press, the made-up game's Top 30 lines count ${r1.noId} left out for want of a DraftKings id, ${r1.kept} kept without one and ${r1.moved} at another number, where the audit's own are ${q.noId}, ${q.kept} and 0`);
+      F('renderPb')(); W.wording(!/only at another number/.test(d.getElementById('pbPanel').textContent),'after the press, the made-up game\'s Top 30 lines still say lines are left out for DraftKings having them only at another number');
+      /* slip-only: everything that builds a parlay */
+      { const bad=[]; const noId=(where,legs)=>{ for(const l of legs||[]) if(!dkOk(l)) bad.push(`${l.name} ${l.label} (${l.src}) in ${where}`); };
+        for(const t of F('getPbTiers')().tiers) noId(`the ${t.id} level`,t.legs);
+        const s=F('spSet')(GM.id); for(const t of (s?s.tiers:[])) noId(`the set's ${t.id}`,t&&t.legs);
+        noId('the hands\' pool',F('gameLegPool')(GM)); const H=F('gameTiers')(GM); for(const id of ['high','med','low']) if(H&&H[id]) noId(`the ${id} hand`,H[id].legs);
+        chk(!bad.length&&!!s,`after the press, a leg from the read with no DraftKings id goes into something that builds a parlay${s?'':' (or the made-up Monday night game has no set)'}: ${bad.slice(0,5).join('; ')}`); }
+      said14.push(`${top0.length} lines before the press and the same after one that moved nothing; after one that moved them, ${top.length} lines, ${mv.length} moved tested lines at the read's number marked moved, ${top.filter(l=>slipAud(l)==='none').length} from the read the pull had no price for marked none, no completions line, the unmoved line with its id; none in a level, the set or a hand`);
+      /* with no ids carried: the read's legs on the list as before, with no line */
+      dkSet(undefined); allOn(); const topN=F('getPbTop')().rows;
+      chk(topN.some(l=>l.src==='dkline'),'with no DraftKings ids carried, the made-up game\'s Top 30 lines take no leg from the read, as they did before ids');
+      if(holdTopF) holdTopF('a made-up game after the press, no ids carried');
+      F('renderPb')(); chk(!d.querySelector('#pbPanel [data-pb-slip]'),'with no DraftKings ids carried, a Top 30 row carries the line on a missing DraftKings id');
+      said14.push(`with no ids carried, ${topN.filter(l=>l.src==='dkline').length} lines from the read listed as before ids, none with the line`);
+      ran=true;
+    } catch(e){ chk(false,'M14 threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
+    finally {
+      w.fetch=keepFetch; putF(keepF[0]); delete w.__m14G; for(const p of PL) delete S.players[p[0]];
+      { const i=S.sched.findIndex(g=>g.id===GM.id); if(i>=0) S.sched.splice(i,1); }
+      if(keepMk==='null') delete PAY0.mkt[String(cw)]; else PAY0.mkt[String(cw)]=JSON.parse(keepMk);
+      if(keepIds===undefined) delete PAY0.espn_ids; else PAY0.espn_ids=keepIds;
+      for(const n of EV) setVar(n,keepE[n]); setVar('ESPN_SEQ',keepSeq+1);
+      try{ if(key0==null) w.localStorage.removeItem(KK); else w.localStorage.setItem(KK,key0); }catch(e){}
+      dkSet(keepDk); S.ui.pb=JSON.parse(keepU); S.parlay=JSON.parse(keepPar); dropCaches(); F('save')(); F('renderParlay')(); }
+    if(!ran) said14.push('did not run');
+    console.log(`M14. a press that moves DraftKings' player lines, on a made-up Monday night game: ${said14.join('; ')}`); }
 
   /* ---- P. the amount bet: the Bet amount box at the top of the Parlay Builder's controls and the
      builder's own stake are one amount, S.stake, kept with the visitor's state. Every level of every
@@ -4690,7 +4863,7 @@ setTimeout(async()=>{
             chk(w.eval('pbStake()')===20&&box().value==='20'&&paysAll(20)&&pS().value==='20'&&po().textContent==='$'+(20*dec).toFixed(2)&&noNaN(),`a saved amount ${typeof bad==='string'?JSON.stringify(bad):String(bad)} does not read as $20 everywhere: `+paysTxt()); } } }
       /* the Top 50 lines are on $1 and never move with the amount */
       { const t1=[...panel.querySelectorAll('[data-pb-win],[data-pb-ev]')].map(x=>x.textContent).join(); S.stake=77; F('renderParlay')();
-        chk([...panel.querySelectorAll('[data-pb-win],[data-pb-ev]')].map(x=>x.textContent).join()===t1,'the Top 50 lines\' figures on $1 moved with the Bet amount'); }
+        chk([...panel.querySelectorAll('[data-pb-win],[data-pb-ev]')].map(x=>x.textContent).join()===t1,'the Top 30 lines\' figures on $1 moved with the Bet amount'); }
       } finally {
         stab.hidden=keepH; w.eval('spGames=window.__pKeep[0]; spSet=window.__pKeep[1]; spOn=window.__pKeep[2];'); delete w.__pKeep; delete w.__pFix; delete w.__pG; }
       S.parlay={}; S.stake=20; F('renderParlay')(); }
@@ -4716,7 +4889,7 @@ setTimeout(async()=>{
         W.wording(!!d.querySelector('#parlayBody [data-espn-refresh="week"]')&&!!d.querySelector('#parlayBody [data-espn-status="week"][aria-live="polite"]'),'the builder has no Refresh odds of its own with its status line'); } }
     S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; S.stake=was; F('save')(); F('renderParlay')();
     chk(S.stake===was,'the stake did not go back after the amount checks');
-    console.log(`P. the amount bet: one Bet amount box over the Parlay Builder and the builder's stake, ${F('pbGames')().length?'every level of a set paying it times its price as typed and settled, carried by Add to builder, bad entries and saved amounts cleaned, the Top 50 lines on $1 unmoved':'no game to come, so no box'}; the builder's one-tap amounts set it`); }
+    console.log(`P. the amount bet: one Bet amount box over the Parlay Builder and the builder's stake, ${F('pbGames')().length?'every level of a set paying it times its price as typed and settled, carried by Add to builder, bad entries and saved amounts cleaned, the Top 30 lines on $1 unmoved':'no game to come, so no box'}; the builder's one-tap amounts set it`); }
 
   /* ---- P2. the suggestions record at the top of Suggested Parlays (app v111): props/data/suggest_ledger.json,
      beside the payload, read once a load with no-store and kept outside S; its `prime` map, each prime-time
