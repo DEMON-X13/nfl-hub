@@ -996,9 +996,12 @@ and extreme versions. is it touchdowns only or did it just so happen to show tha
 lines:value ratio for ELO mismatches etc": not touchdowns only, but the picks were the first two, three and four
 candidates taken plus money first, one leg a game, and an anytime touchdown is nearly always plus money, 7 of week 6's
 9 legs, 1 of 14 since) they are Suggested Parlays' own four levels, read from the page's `PB_TIERS`, on the Elo chance:
-Safe the likeliest pair, Medium, Aggressive and Extreme the 3-, 4- and 5-leg parlay with the best expected return that
-lands 25%, 12% and 5% by the Elo chance, else the likeliest of that size, marked "the likeliest N legs" only while its
-chance is under the floor (ids `elo-safe`, `elo-med`, `elo-aggr`, `elo-xtrm`; `.pb-tier.elo-xtrm` takes Extreme's
+Safe, Medium, Aggressive and Extreme the 2-, 3-, 4- and 5-leg parlay with the best expected return that lands 35%, 25%,
+12% and 5% by the Elo chance, else the likeliest of that size, marked "the likeliest pair" ("the likeliest N legs") only
+while its chance is under the floor; Safe's 35% is the Elo picks' own (`EP.safe`, `epTiers`: Suggested Parlays' Safe
+has no floor and stays the likeliest pair), the owner's call of 18 October 2026, "yeah safe picked on value too", after
+week 6's Safe was the likeliest pair, Prescott and Brissett at short odds returning $1.06 on $1 where Mahomes and Nacua,
+landing 36%, return $1.32 (ids `elo-safe`, `elo-med`, `elo-aggr`, `elo-xtrm`; `.pb-tier.elo-xtrm` takes Extreme's
 colour in `theme.css`, both looks). The candidates (`eloCands`, `EP` in `tab_elo.html`) are ranked players whose
 matchup says they beat the book's price with its margin out (a real price, or, on a payload baked before `dk`, after a
 Refresh odds press one from DraftKings' line on a tested kind, est.), on the stats where the matchup has held up
@@ -1044,8 +1047,10 @@ level its floor's rule, "likeliest" only under its floor, none worse than the be
 fast sums the parts' to the bit, and on fixtures of its own each level held to a full enumeration (F1 the candidate
 rules, a -115 main line of better value leading a +150 touchdown; F2 four candidates, Extreme empty with its reason;
 F3 ten correlated legs of one game where the quick reading misorders parlays; F4 the likeliest four legs all in
-different games; F5 34 candidates whose favourites the 30 best by value would cut; F6 fifteen seeded one-game slates of
-9 to 12 legs, their chances clustered at each floor, which fail a search pruned at the floor itself), on made-up book
+different games; F5 34 candidates whose favourites the 30 best by value would cut, Safe two of them since only their
+pairs reach 35%; F6 twenty seeded one-game slates of 9 to 12 legs, their chances clustered at each floor, Safe's 35%
+among them, which fail a search pruned at the floor itself; the check's own copy of the levels, `tiersOwn`, gives Safe
+its 35%), on made-up book
 prices, with no error thrown. The walk-forward record in `model.json` is the honest number: each season called by
 a model fitted on the seasons before it. Do not tune the formula on the season in progress.
 

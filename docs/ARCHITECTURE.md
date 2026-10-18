@@ -764,8 +764,9 @@ Parlay Builder's ticked games and player sides by `pbAllows` and, since app v109
 DraftKings' ids, to legs with one at their own line, `dkIdOf`). Since 18 October 2026 they are Suggested Parlays' own
 four levels on the Elo chance (`eloPicks`, `eloSuggest`; ids `elo-safe`, `elo-med`, `elo-aggr`, `elo-xtrm`, which the
 card's `elo|elo-<level>` names): the candidates (`eloCands`) each player's best leg by value, searched from the 30 best
-by value and the 10 likeliest (`epKeep`), Safe the likeliest pair, the others the best expected return over 25%, 12%
-and 5%, legs of one game priced together by the builder's own `parlayProb` and `parlayDec`; the search (`epPrep`,
+by value and the 10 likeliest (`epKeep`), each level the best expected return over its floor, Safe's the Elo picks'
+own 35% (`EP.safe`, `epTiers`, since 18 October 2026; until then the likeliest pair, as Suggested Parlays' Safe still is)
+and the others 25%, 12% and 5%, legs of one game priced together by the builder's own `parlayProb` and `parlayDec`; the search (`epPrep`,
 `epScan`, `epLevel`) a branch and bound over a quick reading (`epGroup`, `epBounds`) whose finalists are worked by fast
 sums equal to the parts' to the bit (`epDraws`, `epSums`, `epDec`), every level worked again by the parts before it is
 drawn (`EP_FAST` off should they differ), built only while the tab is on the screen and cached (`EP_CACHE`; the ELO tab
