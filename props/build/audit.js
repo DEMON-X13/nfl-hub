@@ -1468,10 +1468,14 @@ setTimeout(async()=>{
       chk(U().off.length===games.length-1&&!U().off.includes(one.id),'unticking the games one by one did not leave one ticked');
       hold('one game');
       /* Teams only on one game: a side and its total make two legs at most, so Safe is that pair or
-         says why, and every bigger level says there are too few */
+         says why, and every bigger level says there are too few, "that DraftKings' betslip can take" exactly where
+         the audit's own count has legs on the game left out for want of an id at their line (on a Sunday morning
+         an early game's spread and total are nflverse's numbers, where DraftKings' ids are at its own: the props
+         job's refused run of 18 October 2026, issue #290, which the old wording failed) */
       d.querySelector('#pbPanel [data-pb-mix="teams"]').click();
-      const r1=hold('one game, teams only');
-      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.filter(l=>l.stat==='total').length===1&&t.legs.filter(l=>l.stat!=='total').length===1:(!t.legs&&/^(Only [12] legs?|No legs) on your picks: tick more games or bet types\.$/.test(t.why))),'one game\'s team bets did not make at most a side and its total, or a level too big for them did not say there are too few legs: '+r1.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
+      const r1=hold('one game, teams only'), idP1=qualAud([one],U()).noId>0?' that DraftKings’ betslip can take':'';
+      const few1=new RegExp(`^(Only [12] legs?|No legs) on your picks${idP1}: tick more games or bet types\\.$`);
+      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.filter(l=>l.stat==='total').length===1&&t.legs.filter(l=>l.stat!=='total').length===1:(!t.legs&&few1.test(t.why))),'one game\'s team bets did not make at most a side and its total, or a level too big for them did not say there are too few legs: '+r1.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
       d.querySelector('#pbPanel [data-pb-games="all"]').click(); d.querySelector('#pbPanel [data-pb-mix="all"]').click(); }
     setKinds([]); { const r0=F('getPbTiers')(); chk(r0.tiers.every(t=>!t.legs&&/No bet types ticked/.test(t.why)),'with no bet type ticked the tiers did not say so'); }
     setKinds(KINDS); F('renderPb')();
@@ -1686,7 +1690,9 @@ setTimeout(async()=>{
       /* All on one game: its team bets make two legs at most (a side and its total), so only Safe
          can be built, and every bigger level says both why: too few legs, and no player prices yet */
       U().off=games.slice(1).map(g=>g.id); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()'); const r1=hold('no player prices, all, one game');
-      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.every(isG):(!t.legs&&/^(Only [12] legs?|No legs) on your picks, and /.test(t.why)&&t.why.endsWith(', and '+noPlLow))),
+      /* (the id phrase exactly where the audit's own count has legs on the game left out for want of an id, as above) */
+      const idP3=qualAud([games[0]],U()).noId>0?' that DraftKings’ betslip can take':'', few3=new RegExp(`^(Only [12] legs?|No legs) on your picks${idP3}, and `);
+      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.every(isG):(!t.legs&&few3.test(t.why)&&t.why.endsWith(', and '+noPlLow))),
         'with no player price on file, All on one game does not give both reasons on every tier: '+r1.tiers.map(t=>t.why||'built').join(' / '));
       U().off=[];
       S.odds=JSON.parse(keepO); if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);

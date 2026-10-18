@@ -1720,7 +1720,12 @@ function espnPrice(x,g,stat,kind,k,side){
   const leg={kind,stat,line:L,k,side,grp,recYdsLine:espnLineOf(e,pid,'receiving_yards'),passYdsLine:espnLineOf(e,pid,'passing_yards'),teamImplied:T};
   if(stat==='receptions'){ leg.muRec=mu('receptions'); leg.muRecYds=mu('receiving_yards'); }
   if(stat==='passing_interceptions'||stat==='fg_made') leg.mu=mu(stat);
-  if(kind==='rung'){ const M=marketLine(g.w,pid,stat); if(M&&+M.line===L&&fairPx(M.over)&&fairPx(M.under)) leg.mainFair=devigOver(M.over,M.under); }
+  if(kind==='rung'){ const M=marketLine(g.w,pid,stat); if(M&&+M.line===L&&fairPx(M.over)&&fairPx(M.under)){ leg.mainFair=devigOver(M.over,M.under);
+    /* (app v117) on a count, the rung that is the main Over itself (k-0.5 on the line), where the other rungs stand
+       on the paid pull's price at this line: that price, DraftKings' own for the same bet, so the ladder has one
+       anchor and never climbs (Jordan Love's passing TDs, 18 October 2026: 2+ at 34.6% on the formula's main
+       price, 3+ at 35.5% on the pull's) */
+    if(!DK_YARDS.has(stat)&&Math.abs(+k-0.5-L)<1e-9) return {price:M.over,fair:leg.mainFair,src:'dkline',tested:ESPN_TESTED.main.has(stat),listed:true,line:L,at:e.at,how:'the main line, DraftKings’ own price',mainOver:true}; } }
   const r=estPrice(leg); if(!r||!fairPx(r.price)) return null;
   const mainOver=kind==='rung'&&Math.abs(+k-0.5-L)<1e-9;
   return {price:r.price,fair:r.fair,src:'dkline',tested:(kind==='main'||mainOver?ESPN_TESTED.main:ESPN_TESTED.rung).has(stat),

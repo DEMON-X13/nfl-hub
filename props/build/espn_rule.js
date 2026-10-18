@@ -230,10 +230,15 @@ function make(w) {
     const f = mainFair(inputs); if (!f) return null;
     if (l.main) return { price: sidePrice(f, l.side), fair: l.side === 'under' ? 1 - f.p : f.p, kind: 'main', tested: TESTED.main.includes(l.stat), listed: true, line: L };
     const k = +l.k;
-    if (Math.abs(k - 0.5 - L) < 1e-9) return { price: sidePrice(f, 'over'), fair: f.p, kind: 'rung', tested: TESTED.main.includes(l.stat), listed: true, line: L, mainOver: true };
-    let anchor = YARDS.includes(l.stat) ? 0.5 : f.p;
+    /* a count's anchor: the paid pull's two prices with the margin out where it has them on the read's line, else
+       the formula's main fair chance; a yards ladder's is 50/50 */
+    let anchor = YARDS.includes(l.stat) ? 0.5 : f.p, paid = null;
     if (!YARDS.includes(l.stat)) { const M = (((PAY().mkt || {})[String(l.week)] || {})[l.pid] || {})[l.stat];
-      if (M && +M.line === L && finite(M.over) && M.over !== 0 && finite(M.under) && M.under !== 0) anchor = implied(M.over) / (implied(M.over) + implied(M.under)); }
+      if (M && +M.line === L && finite(M.over) && M.over !== 0 && finite(M.under) && M.under !== 0) { anchor = implied(M.over) / (implied(M.over) + implied(M.under)); paid = M; } }
+    /* the rung that is the main Over itself: on a count standing on the pull's price, that price (app v117: one
+       anchor a ladder, so it never climbs); else the formula's main Over */
+    if (Math.abs(k - 0.5 - L) < 1e-9) return paid ? { price: paid.over, fair: anchor, kind: 'rung', tested: TESTED.main.includes(l.stat), listed: true, line: L, mainOver: true }
+      : { price: sidePrice(f, 'over'), fair: f.p, kind: 'rung', tested: TESTED.main.includes(l.stat), listed: true, line: L, mainOver: true };
     const p = rungFair(l.stat, L, k, anchor), r = e.rungs && e.rungs[l.pid] && e.rungs[l.pid][l.stat];
     return { price: rungPrice(p), fair: p, kind: 'rung', tested: TESTED.rung.includes(l.stat), listed: Array.isArray(r) && r.some(v => +v === k), line: L, mainOver: false };
   }
