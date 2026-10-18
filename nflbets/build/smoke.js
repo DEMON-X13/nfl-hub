@@ -2800,7 +2800,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           for (const t of T) { const lis = card ? [...card.querySelectorAll(`[data-pb-tier="${t.id}"] .pb-legs > li`)] : [];
             t.legs.forEach((l, i) => { const tags = lis[i] ? [...lis[i].querySelectorAll('.pe-mmtag')] : [], v = mm[l.pid] && String(mm[l.pid].game_id) === String(l.gid) ? mm[l.pid] : null;
               if (!v) { if (tags.length) bad.push(`${l.name} wears ${txt(tags[0])} with none this week in his game`); return; }
-              const g = gradeOf(v.score), tg = tags[0], nm = lis[i] && lis[i].querySelector('.nm'), name = nm && [...nm.childNodes].find(x => x.nodeType === 3 && x.textContent.trim());
+              const g = gradeOf(v.score), tg = tags[0], nm = lis[i] && lis[i].querySelector('.nm'), name = nm && (typeof w.hubGlance === 'function' ? nm.querySelector(':scope > button.glance-name') : [...nm.childNodes].find(x => x.nodeType === 3 && x.textContent.trim()));
               if (tags.length !== 1 || txt(tg) !== `${g} mismatch` || tg.dataset.peMmgrade !== g || tg.dataset.peMmtag !== v.score.toFixed(1) || !name || name.nextSibling !== tg || name.textContent !== l.name
                 || tg.title !== `${g} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs a ${v.unitName} ranked ${ord(v.defRank)} of ${v.defN}` || w.getComputedStyle(tg).whiteSpace !== 'nowrap') bad.push(`${l.name}: ${tags.map(txt).join(', ') || 'no tag'} for ${g} (${v.score.toFixed(1)})`);
               else nTag++; }); }

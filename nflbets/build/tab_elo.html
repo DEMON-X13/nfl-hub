@@ -965,7 +965,7 @@ function eloSuggest(){
   const mm=epMm();
   v.querySelectorAll('.pb-tier[data-pb-tier]').forEach(card=>{ const t=r.tiers.find(x=>x.id===card.dataset.pbTier); if(!t) return;
     [...card.querySelectorAll('.pb-legs > li')].forEach((li,i)=>{ const l=t.legs[i], m=l&&mm[l.pid]; if(!m||String(m.game_id)!==String(l.gid)) return;
-      const nm=li.querySelector('.nm'), name=nm&&[...nm.childNodes].find(x=>x.nodeType===3&&x.textContent.trim()); if(name) name.after(epMmTag(m)); }); });
+      const nm=li.querySelector('.nm'), name=nm&&(nm.querySelector(':scope > .glance-name')||[...nm.childNodes].find(x=>x.nodeType===3&&x.textContent.trim())); if(name) name.after(epMmTag(m)); }); });
   v.querySelectorAll('[data-pb-elo-add]').forEach(b=>b.addEventListener('click',()=>{
     const t=r.tiers.find(x=>x.id===b.dataset.pbEloAdd); if(t&&t.legs.length&&typeof pbPut==='function') pbPut(t.legs,`the ${t.label} Elo pick`); }));
 }
