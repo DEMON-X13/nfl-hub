@@ -2684,7 +2684,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
        game 0.353 at most) the worst stray was 2.9 of the 4.5 deviations allowed, at 1.5 and 2 times the table no level
        missed its best, and at 2.6 times (0.92) 6 of 40 one-game slates did, by up to 22%. So the table the page prices
        with stays within twice that, 0.7, between two players of one game (the same player is never two legs of a pick) */
-    { const C0 = JSON.parse(PAYLOAD).corr || {}, big = Object.entries(C0).filter(([k, v]) => /^(team|opp)\|/.test(k) && Math.abs(v) > 0.7);
+    { const C0 = JSON.parse(PAYLOAD_TXT).corr || {}, big = Object.entries(C0).filter(([k, v]) => /^(team|opp)\|/.test(k) && Math.abs(v) > 0.7);
       chk(!big.length, `the payload's correlations between two players of one game go past 0.7, past what the Elo picks' search was measured on (twice the table of October 2026): ${big.slice(0, 3).map(([k, v]) => k + ' ' + v).join(', ')}`); }
     { const MU = JSON.parse(ELO_MU);
       const trusted = (g, st) => { const p = ((MU.record[g + '|' + st] || {}).past); return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
@@ -5946,7 +5946,8 @@ async function glanceChecks() {
     if (nOf('model') !== (l.p * 100).toFixed(0) + '%') bad.push(`model ${nOf('model')}, not ${(l.p * 100).toFixed(0)}%`);
     const f = fo(l), fw = f && f.p != null ? (f.p * 100).toFixed(0) + '%' + (f.est ? ' est.' : '') : 'none';
     if (nOf('fair') !== fw) bad.push(`fair ${nOf('fair')}, not ${fw}`);
-    const mf = kind === 'p' ? mfOwn(l, wantPrice, wantSrc) : null, mu = kind === 'p' ? muOwn(l, wantPrice) : null;
+    /* a player the page has ruled out shows no Elo matchup: his bubble says he has none to show */
+    const mf = kind === 'p' ? mfOwn(l, wantPrice, wantSrc) : null, mu = kind === 'p' && !(typeof w.eloRuledOut === 'function' && w.eloRuledOut(l.pid)) ? muOwn(l, wantPrice) : null;
     if (mf == null ? nOf('mf') !== null : !near(nOf('mf'), mf)) bad.push(`market + form ${nOf('mf')}, not ${mf == null ? 'none' : (mf * 100).toFixed(2)}`);
     if (mu == null ? nOf('mu') !== null : !near(nOf('mu'), mu)) bad.push(`Elo matchup ${nOf('mu')}, not ${mu == null ? 'none' : (mu * 100).toFixed(2)}`);
     return bad; };
@@ -6005,14 +6006,17 @@ async function glanceChecks() {
     for (const t of [a, h]) if (nOf('rec:' + t) !== recOwn(t)) bad.push(`${t} record ${nOf('rec:' + t)}, not ${recOwn(t)}`);
     if (MO.teams && MO.teams[a] && MO.teams[h]) { for (const t of [a, h]) if (nOf('pr:' + t) !== String(MO.teams[t].elo) || nOf('prk:' + t) !== '#' + prRank(t)) bad.push(`${t} Power Rating ${nOf('pr:' + t)} ${nOf('prk:' + t)}, not ${MO.teams[t].elo} #${prRank(t)}`); }
     else if (nOf('nopr') === null || nOf('pr:' + a) !== null) bad.push('a Power Rating drawn for a club the file has none for, or no line saying so');
-    /* the line: the board's (state.json's spread and total, the prop model's total where it has none, the closing moneylines), else the prop model's row */
-    { const sp = g ? (g.spread_line != null && isFinite(g.spread_line) ? +g.spread_line : null) : (r.sp != null && isFinite(r.sp) ? +r.sp : null);
-      let tot = g ? (g.total_line != null && isFinite(g.total_line) ? +g.total_line : null) : (r.tot != null && isFinite(r.tot) ? +r.tot : null);
-      if (tot == null && r && r.tot != null && isFinite(r.tot)) tot = +r.tot;
-      const o = g ? (STATE.odds || {})[gid] : null, mA = g ? (o ? mlOwn(o.away) : null) : mlOwn(r.mla), mH = g ? (o ? mlOwn(o.home) : null) : mlOwn(r.mlh);
+    /* the line the leg stands on: the prop model's own row (its spread, total and moneylines, which the leg, the Top 50
+       and the Game bets card are priced on), DraftKings' named so; the board's (state.json's spread and total, the
+       closing moneylines) only for a game the prop model has no row for (18 October 2026: the board's line sat beside
+       a leg on another number) */
+    { const fin = v => v != null && isFinite(v) ? +v : null;
+      const sp = r ? fin(r.sp) : g ? fin(g.spread_line) : null, tot = r ? fin(r.tot) : g ? fin(g.total_line) : null;
+      const o = !r && g ? (STATE.odds || {})[gid] : null, mA = r ? mlOwn(r.mla) : o ? mlOwn(o.away) : null, mH = r ? mlOwn(r.mlh) : o ? mlOwn(o.home) : null;
       const spT = sp == null ? null : sp > 0 ? `${h} −${sp}` : sp < 0 ? `${a} −${-sp}` : 'Pick\'em', mlT = mA || mH ? `${a} ${mA || '–'} / ${h} ${mH || '–'}` : null;
-      if (nOf('spread') !== spT || nOf('total') !== (tot == null ? null : String(tot)) || nOf('ml') !== mlT || (nOf('noline') !== null) !== (!spT && tot == null && !mlT))
-        bad.push(`line ${nOf('spread')} / ${nOf('total')} / ${nOf('ml')} / ${nOf('noline')}, not ${spT} / ${tot} / ${mlT}`); }
+      const any = !!spT || tot != null || !!mlT, src = r && r.ls === 'dk' && any ? 'DraftKings' : null;
+      if (nOf('spread') !== spT || nOf('total') !== (tot == null ? null : String(tot)) || nOf('ml') !== mlT || (nOf('noline') !== null) !== !any || nOf('lsrc') !== src)
+        bad.push(`line ${nOf('spread')} / ${nOf('total')} / ${nOf('ml')} / ${nOf('noline')} (${nOf('lsrc') || 'no source'}), not the leg's own ${spT} / ${tot} / ${mlT} (${src || 'no source'})`); }
     /* Overall Offense against Overall Defense, each way */
     { const U = MO.units, on = !!U && !!U.off && Object.values(U.off).some(v => v.games || v.carried);
       for (const [o, df] of [[a, h], [h, a]]) { const li = B.querySelector(`[data-glance-poss="${o}-${df}"]`), vo = on && U.off[o], vd = on && U.def[df];
@@ -6173,11 +6177,23 @@ async function glanceChecks() {
       const got = nOf('rec:' + r.h); box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
       P.ST.sched.splice(P.ST.sched.indexOf(extra), 1);
       chk(got === want && want !== before, `the matchup bubble does not count a final the board has that the ratings file has not: ${r.h} ${got}, not ${want} (${before} before it)`); }
+    /* the line is the one the leg stands on: the prop model's row moved off the board's (DraftKings' read a point and a
+       half away, its own moneylines, as a fresh pull or a Refresh odds press leaves it), and the bubble draws the row's,
+       named DraftKings, never the board's closing line beside a leg on another number; every value put back after */
+    { const b = at1(realT), gB = STATE.schedule.find(x => x.game_id === r.id), keep = ['sp', 'tot', 'mla', 'mlh', 'ls'].map(k => [k, Object.prototype.hasOwnProperty.call(r, k), r[k]]);
+      const bsp = gB && gB.spread_line != null && isFinite(gB.spread_line) ? +gB.spread_line : null, btot = gB && gB.total_line != null && isFinite(gB.total_line) ? +gB.total_line : null;
+      Object.assign(r, { sp: bsp == null ? 3.5 : bsp + 1.5, tot: btot == null ? 47.5 : btot + 2.5, mla: 163, mlh: -191, ls: 'dk' });
+      watching = true; b.click(); await wait(20);
+      const bad = bubbleBad(b, realT.price, realT.src), sp = nOf('spread'), src = nOf('lsrc'), tt = nOf('total');
+      box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
+      for (const [k, had, v] of keep) { if (had) r[k] = v; else delete r[k]; }
+      chk(!bad.length && src === 'DraftKings' && tt === String(btot == null ? 47.5 : btot + 2.5) && sp !== (bsp == null ? null : bsp > 0 ? `${r.h} −${bsp}` : bsp < 0 ? `${r.a} −${-bsp}` : 'Pick\'em'),
+        `the matchup bubble's line is not the one the leg stands on (the prop model's row, named DraftKings), with the row moved off the board's: ${sp} total ${tt} (${src || 'no source'}); ${bad.join('; ')}`); }
     /* his status as the page knows it, planted: ruled out (no matchup to show, OUT and why), then questionable */
     { const L = realP || fakeP, b = at1(L), sid = L.pid, keepI = S.inactive[sid], INJ = w.eval('INJ'), keepQ = INJ[sid];
       S.inactive[sid] = { week: wk, status: 'Out', inj: 'Knee' };
       watching = true; b.click(); await wait(20);
-      const s1 = [nOf('inj'), txt(box().querySelector('.glance-why')), nOf('nomu') !== null, !box().querySelector('tr[data-glance-stat]')], bad1 = bubbleBad(b, L.price, L.src);
+      const s1 = [nOf('inj'), txt(box().querySelector('.glance-why')), nOf('nomu') !== null, !box().querySelector('tr[data-glance-stat]'), nOf('mu') === null], bad1 = bubbleBad(b, L.price, L.src);
       box().querySelector('[data-glance-close]').click(); await wait(10);
       if (keepI) S.inactive[sid] = keepI; else delete S.inactive[sid];
       INJ[sid] = { k: 'q', t: 'Q', title: 'Questionable (ankle); limited in practice' };
@@ -6185,7 +6201,7 @@ async function glanceChecks() {
       const s2 = [nOf('inj'), txt(box().querySelector('.glance-why'))], bad2 = bubbleBad(b, L.price, L.src);
       box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
       if (keepQ) INJ[sid] = keepQ; else delete INJ[sid];
-      chk(s1.join('|') === 'OUT|ruled out, knee|true|true' && s2.join('|') === 'Q|Questionable (ankle); limited in practice' && !bad1.length && !bad2.length,
+      chk(s1.join('|') === 'OUT|ruled out, knee|true|true|true' && s2.join('|') === 'Q|Questionable (ankle); limited in practice' && !bad1.length && !bad2.length,
         `the matchup bubble does not say a player is ruled out (and show no matchup) or questionable as the page reads it: ${s1.join('|')} / ${s2.join('|')} ${bad1.concat(bad2).join('; ')}`); }
 
     /* ---- the window itself, on the real player's name and the team's beside it ---- */
@@ -6215,6 +6231,17 @@ async function glanceChecks() {
         if (shown() || !gm || gm.hidden || !tt || tt.join() !== [g.away_team, g.home_team].join()) bad.push(`Open game snapshot does not close the bubble and open ${r.id}'s window (${tt})`);
         w.gameSnapshotClose(); await wait(20);
         if (d.activeElement !== b2) bad.push('closing the game snapshot does not give the name the focus back'); }
+      /* the tab changed by the address (a hash change, as Back makes) with the focus in the bubble: the page clicks the
+         tab's button for the reader, the bubble closes and the focus goes to the chosen tab's button, never the body */
+      { const t0 = d.querySelector('#tabs button[aria-selected="true"]'), sec0 = d.querySelector('main section:not([hidden])');
+        /* the fixture's cards are set in the tab on the screen for this, so the tab change hides the name too */
+        if (sec0) sec0.appendChild(host);
+        b1.click(); await wait(20); box().focus(); const inside = box().contains(d.activeElement);
+        w.location.hash = '#matchups'; await wait(60);
+        const sel = d.querySelector('#tabs button[aria-selected="true"]');
+        if (!inside || shown() || !sel || sel.dataset.tab !== 'pickems' || d.activeElement !== sel || b1.hasAttribute('aria-expanded'))
+          bad.push(`a tab changed by the address does not close the bubble with the focus on the chosen tab's button (${shown() ? 'still open' : 'closed'}, tab ${sel && sel.dataset.tab}, focus on ${d.activeElement && (d.activeElement.id || d.activeElement.dataset.tab || d.activeElement.tagName)})`);
+        if (t0) t0.click(); await wait(20); d.body.appendChild(host); }
       watching = false;
       chk(bad.length === 0, 'the matchup bubble as a window: ' + bad.join('; ')); }
     host.remove();

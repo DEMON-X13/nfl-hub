@@ -32,7 +32,8 @@
    with his recent form and the matchup's projection, and the leg it was opened from: its line, the price its row
    shows, the model's chance, the book's fair chance (legFair), market + form (eloAltP) and the Elo matchup's chance
    (eloMatchupP), both on that price. For a team's or a game's leg, both clubs' records as Team Rankings counts
-   them, the line as the board reads it, each club's Power Rating and rank, Overall Offense against Overall Defense
+   them, the line the leg stands on (the prop model's own row, DraftKings' named so; the board's only for a game it
+   has no row for), each club's Power Rating and rank, Overall Offense against Overall Defense
    each way, each model's pick (the Game snapshot's own readings, window.gsReadings), the leg's team marked "this
    leg" and, on a moneyline alone, each model picking that team to win ticked, the leg, and Open game snapshot.
    What a file has not given says so in its own line, and the rest draws. */
@@ -117,7 +118,10 @@ function legHtml(K){
   if(!/^(t|g):/.test(cur.of)){
     let mf=null; try{ mf=typeof window.eloAltP==='function'?window.eloAltP(l.pid,l.side,price,src,l.stat):null; }catch(e){ mf=null; }
     if(mf!=null) out.push(`<div><dt>Market + form</dt><dd>${N('mf',Math.round(mf*100)+'%')}</dd></div>`);
-    let mu=null; try{ mu=typeof window.eloMatchupP==='function'&&typeof mlProb==='function'&&price!=null&&isFinite(price)?window.eloMatchupP(l,mlProb(price)):null; }catch(e){ mu=null; }
+    /* no Elo matchup for a player the page has ruled out: the bubble says above that he has none to show (the
+       matchups file can be hours behind the report the page reads) */
+    const ruled=typeof window.eloRuledOut==='function'&&window.eloRuledOut(l.pid);
+    let mu=null; try{ mu=!ruled&&typeof window.eloMatchupP==='function'&&typeof mlProb==='function'&&price!=null&&isFinite(price)?window.eloMatchupP(l,mlProb(price)):null; }catch(e){ mu=null; }
     if(mu!=null) out.push(`<div><dt>Elo matchup</dt><dd>${N('mu',Math.round(mu*100)+'%')}</dd></div>`);
   }
   return `<div class="glance-leg" data-glance-legbox><p class="glance-lt"><span class="glance-k">This leg</span> ${N('label',l.label||'')}</p><dl class="glance-nums">${out.join('')}</dl></div>`;
@@ -204,18 +208,27 @@ function teamHtml(){
   const T=R&&F?R.teamsOf(F,g):null;
   if(T) rows.push(`<tr data-glance-row="pr"><th scope="row">Power Rating</th>${[a,h].map(t=>`<td><span class="glance-sh">${shield(T.T[t].elo)}</span>${N('pr:'+t,T.T[t].elo)} <small class="glance-q">${N('prk:'+t,'#'+T.rank(t))}</small></td>`).join('')}</tr>`);
   const tbl=`<table class="glance-vs"><thead><tr><td></td>${col(a)}${col(h)}</tr></thead><tbody>${rows.join('')}</tbody></table>${!F?'<p class="glance-q">Loading the ratings…</p>':!T?'<p class="glance-q" data-glance-n="nopr">No Power Rating for these clubs.</p>':''}`;
-  /* the line, as the board reads it */
+  /* the line the leg stands on: the prop model's own row for the game (its spread, total and moneylines, the numbers
+     the leg, the Top 50 lines and the Game bets card are priced on: DraftKings' while its pull is under a day old or
+     after a Refresh odds press, so named, else nflverse's posted line); the board's (state.json's closing lines) only
+     for a game the prop model has no row for. Until 18 October 2026 it was the board's wherever the board had the
+     game, so a leg "To cover -4.5" at -118 sat under "BUF −5.5 · BUF −258 / LV +210" while the payload had BUF −4.5
+     and BUF −230 / LV +190 */
   let line='';
-  if(G.board&&R&&P){ const Lx=R.lineOf(P,g), parts=[];
+  const pr=propsRow(gid);
+  if(pr){ const parts=[], mm=v=>v!=null&&isFinite(v)&&v?(v>0?'+':'−')+Math.abs(Math.round(v)):null;
+    if(pr.sp!=null&&isFinite(pr.sp)) parts.push(`<span data-glance-n="spread">${pr.sp>0?esc(h)+' −'+pr.sp:pr.sp<0?esc(a)+' −'+(-pr.sp):'Pick\'em'}</span>`);
+    if(pr.tot!=null&&isFinite(pr.tot)) parts.push(`total <span data-glance-n="total">${esc(pr.tot)}</span>`);
+    if(mm(pr.mla)||mm(pr.mlh)) parts.push(`<span data-glance-n="ml">${esc(a)} ${mm(pr.mla)||'–'} / ${esc(h)} ${mm(pr.mlh)||'–'}</span>`);
+    let src=null; try{ src=typeof lineSource==='function'?lineSource(pr):null; }catch(e){ src=null; }
+    line=parts.length?parts.join(' · ')+(pr.ls==='dk'?` <span class="glance-q"${src?` title="${esc(src)}"`:''}>(<span data-glance-n="lsrc">DraftKings</span>)</span>`:'')
+      :'<span class="glance-q" data-glance-n="noline">no line posted yet</span>'; }
+  else if(G.board&&R&&P){ const Lx=R.lineOf(P,g), parts=[];
     if(Lx.spTxt) parts.push(`<span data-glance-n="spread">${esc(Lx.spTxt)}</span>`);
     if(Lx.tot!=null) parts.push(`total <span data-glance-n="total">${esc(Lx.tot)}</span>`);
     if(Lx.mlA||Lx.mlH) parts.push(`<span data-glance-n="ml">${esc(a)} ${esc(Lx.mlA||'–')} / ${esc(h)} ${esc(Lx.mlH||'–')}</span>`);
     line=parts.length?parts.join(' · '):'<span class="glance-q" data-glance-n="noline">no line posted yet</span>'; }
-  else { const r=G.row||{}, parts=[], mm=v=>v!=null&&isFinite(v)&&v?(v>0?'+':'−')+Math.abs(Math.round(v)):null;
-    if(r.sp!=null&&isFinite(r.sp)) parts.push(`<span data-glance-n="spread">${r.sp>0?esc(h)+' −'+r.sp:r.sp<0?esc(a)+' −'+(-r.sp):'Pick\'em'}</span>`);
-    if(r.tot!=null&&isFinite(r.tot)) parts.push(`total <span data-glance-n="total">${esc(r.tot)}</span>`);
-    if(mm(r.mla)||mm(r.mlh)) parts.push(`<span data-glance-n="ml">${esc(a)} ${mm(r.mla)||'–'} / ${esc(h)} ${mm(r.mlh)||'–'}</span>`);
-    line=parts.length?parts.join(' · '):'<span class="glance-q" data-glance-n="noline">no line posted yet</span>'; }
+  else line='<span class="glance-q" data-glance-n="noline">no line posted yet</span>';
   /* Overall Offense against Overall Defense, each way */
   let poss='';
   const X=R&&F?R.unitsOf(F):null;
@@ -313,10 +326,18 @@ function open(btn){
 function close(restore){
   if(!cur) return;
   watch(false);
-  const a=anchor(); cur=null;
+  const a=anchor(), had=!!box&&box.contains(document.activeElement); cur=null;
   if(box){ box.hidden=true; box.innerHTML=''; }
   for(const b of document.querySelectorAll('[data-glance][aria-expanded]')) b.removeAttribute('aria-expanded');
   if(restore&&a){ try{ a.focus({preventScroll:true}); }catch(e){} }
+  /* closed with the focus inside it by something that takes no focus of its own (the tab changed by the address:
+     a hash change or Back clicks the tab's button for the reader): once that click has done its work (the tab
+     switched), the focus goes to its name where that is still on the screen, else to the chosen tab's button, never
+     lost to the page's body */
+  else if(had) setTimeout(()=>{ const at=document.activeElement;
+    if(at&&at!==document.body&&at.isConnected&&!at.closest('[hidden]')) return;
+    const to=a&&a.isConnected&&!a.closest('[hidden]')?a:document.querySelector('#tabs button[aria-selected="true"]');
+    if(to) try{ to.focus({preventScroll:true}); }catch(e){} },0);
 }
 /* the page draws its rows again while a bubble is open (the half-minute look at a kickoff or a lock, a Refresh
    odds press finishing, a level built again, the builder's own redraw): one MutationObserver on the page, connected
