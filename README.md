@@ -118,7 +118,9 @@ builder. Suggested Parlays (`#suggest`) gives the next Thursday, Sunday or Monda
 night game a Safe 2-leg, Medium 3-leg, Aggressive 4-leg and Extreme 5-leg parlay
 of its own, each with its book price, the model's chance and what the Bet amount
 pays, Add to builder and Finish, locked 2 hours before kickoff and graded by the
-props job's suggestions record, with the Elo picks under them. Only the bets
+props job's suggestions record, with the Elo picks under them: the same four levels
+on the Elo matchup's chance, chosen on value. A tap on a player's or a team's name on
+either tab opens the matchup bubble, their matchup for the day at a glance. Only the bets
 DraftKings posts are offered (FG attempts went on 17 October 2026). A game total
 is priced at the book's own chance (`props/research/totals/README.md` says why),
 so it is never a Value pick, and a suggested parlay takes one only where its
