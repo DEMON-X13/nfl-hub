@@ -5664,18 +5664,26 @@ async function lightChecks() {
    heading, the focus moved into it, holding exactly the numbers the files hold, each worked out here on the smoke's
    own reading of players.json, matchups.json, model.json, state.json and the payload, never the bubble's code: a
    player's season Elo, its tier and shield, his rank at his position (and prov.), his status, the game (home or away,
-   the opponent, the kickoff in ET), the unit he faces and its rank among the league's defences, his mismatch's grade
-   and edge where he has one, each trusted stat's recent form and projection, and the leg's line, price, the model's
-   chance, the book's fair chance, market + form and the Elo matchup's chance; a team's or a game's two records as
-   Team Rankings counts them, the line as the board reads it, each club's Power Rating and rank, Overall Offense
-   against Overall Defense each way, every model's pick and its chance with the clicked team's side marked. Escape,
+   the opponent, the kickoff in ET), the defense he faces (model.json's units table for his side of the ball, by the
+   smoke's own map: a quarterback the opponent's Overall Defense, a back its Run Defense, a receiver or tight end its
+   Pass Defense; named and ranked as the file has it, and the rank the ELO Ratings tab's own table draws for that club,
+   read off the tab), his mismatch's grade and edge where he has one with no rank of its own, each trusted stat's
+   recent form and projection, and the leg's line, price, the model's chance, the book's fair chance, market + form and
+   the Elo matchup's chance; a team's or a game's two records as Team Rankings counts them, the line as the board reads
+   it, each club's Power Rating and rank, Overall Offense against Overall Defense each way, every model's pick and its
+   chance, the leg's team marked "this leg" and, on a moneyline alone, each model picking it to win ticked. Escape,
    Close, a click outside and another name close it, the focus back on the name (another name's own bubble taking
    its place), Tab stays inside it, Open game snapshot opens that game's window and closing it gives the name the
    focus back, and nothing is written to the browser's storage. On the week as it stands wherever the page draws a
-   name, and at any hour, the off-season included, on fixtures of its own: a level card drawn by the page's own
-   pbTierCard with a real player's line, his game's team and total, and a made-up player with no Elo row and a team
-   bet on a made-up game with no line; the builder holding those two made-up legs; and a status planted on the real
-   player, Out and then questionable.
+   name (each place drawing a leg once), and at any hour, the off-season included, on fixtures of its own: a level card
+   drawn by the page's own pbTierCard with a real player's line, his game's team (to win and to cover) and total, and
+   a made-up player with no Elo row and a team bet on a made-up game with no line; the builder holding those two
+   made-up legs; a status planted on the real player, Out and then questionable; the page drawing its rows again while
+   a bubble is open (renderParlay with the same leg drawn earlier in the page, renderSp with one leg on two levels of a
+   set and an Elo pick's level of the same id, a builder leg's price moved, the leg taken out of the builder): bound to
+   the same place's copy, marked open, its focus and toggle there, and closed with the focus on its neighbour when the
+   leg is gone; and a builder row whose stored price is not the one it shows (a ladder rung at the book's price now),
+   its market + form and Elo matchup on the price shown, as the bubble's.
    ===================================================================================== */
 async function glanceChecks() {
   const c0 = checks, f0 = fails.length;
@@ -5703,13 +5711,32 @@ async function glanceChecks() {
   const trustOwn = (g, st) => { const r = MU.record && MU.record[g + '|' + st], p = r && r.past; return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
   const LBL = { passing_yards: 'Pass yds', passing_tds: 'Pass TD', attempts: 'Att', completions: 'Comp', passing_interceptions: 'INT', rushing_yards: 'Rush yds', carries: 'Carries',
     receptions: 'Rec', receiving_yards: 'Rec yds', targets: 'Tgt', scrim_yards: 'Rush+rec', any_td: 'TDs' };
-  /* the unit a player faces: the secondary and the line for a quarterback, the secondary for a receiver or tight end,
-     the line and the linebackers for a back, ranked among the league's defences, 1st the best (the highest) */
+  /* the Mismatches' units: the secondary and the line for a quarterback, the secondary for a receiver or tight end, the
+     line and the linebackers for a back (the matchup formula's player ratings, matchups.json), for the grade alone */
   const MM_OWN = { QB: [['DB', 'DL'], 'pass defense'], WR: [['DB'], 'pass defense'], TE: [['DB'], 'pass defense'], RB: [['DL', 'LB'], 'run defense'] };
   const uval = (g, x) => MM_OWN[g][0].reduce((a, k) => a + x[k], 0) / MM_OWN[g][0].length;
-  const unitOwn = v => { if (!MM_OWN[v.group]) return null; const by = {}; for (const x of Object.values(MU.players || {})) if (x.opp_def) by[x.opp] = x.opp_def;
-    Object.assign(by, (MU.league || {}).defs || {}); const order = Object.keys(by).sort((a, b) => uval(v.group, by[b]) - uval(v.group, by[a]));
-    const r = order.indexOf(v.opp) + 1; return r ? { name: MM_OWN[v.group][1], rank: r, n: order.length } : null; };
+  /* the defense a player faces: model.json's units table the Game snapshot's position matchups set against his side of
+     the ball (the smoke's own map: a quarterback the opponent's Overall Defense, a back its Run Defense, a receiver or
+     tight end its Pass Defense), only once a team has a rating and where the file names the table; its name as the
+     tab names it, the club's rank in it, out of the clubs it lists, and carried as the file has it */
+  const FACE_OWN = { QB: 'def', RB: 'run_def', WR: 'pass_def', TE: 'pass_def' };
+  const faceOwn = (grp, opp) => { const U = MO.units, key = FACE_OWN[grp];
+    if (!key || !opp || !U || !U.off || !U.def || !Object.values(U.off).some(v => v.games || v.carried)) return null;
+    const T = U[key], meta = key === 'def' ? null : U.tables && U.tables[key];
+    if (!T || typeof T !== 'object' || (key !== 'def' && !(meta && meta.label))) return null;
+    const v = T[opp]; if (!v || v.rank == null) return null;
+    const pr = U.params || {}, from = pr.carry && pr.carry_from != null ? pr.carry_from : null;
+    return { key, name: key === 'def' ? 'Overall Defense' : String(meta.label), rank: v.rank, n: Object.keys(T).length, carried: !!v.carried && from != null, from }; };
+  /* and the rank the ELO Ratings tab's own table draws for each club (its pill pressed, its # column read off the rows),
+     with the table's heading, so the bubble can never say one rank and the tab another */
+  const TAB_RANK = {};
+  { const body = d.getElementById('peBody'), was = body && body.querySelector('.pe-pos [aria-selected="true"]');
+    for (const key of [...new Set(Object.values(FACE_OWN))]) { const pill = body && body.querySelector(`.pe-pos button[data-unit="${key}"]`); if (!pill) continue;
+      pill.click(); await wait(20); const card = d.getElementById('peUnits'); if (!card) continue;
+      const rows = {}; for (const tr of card.querySelectorAll('tbody tr.pe-tmrow')) rows[tr.dataset.team] = +txt(tr.querySelector('td.pe-rank'));
+      TAB_RANK[key] = { name: txt(card.querySelector('h2')).replace(/\s*\d{4}\b.*$/, '').trim(), rows }; }
+    const back = was && (was.dataset.pos ? body.querySelector(`.pe-pos button[data-pos="${was.dataset.pos}"]`) : body.querySelector(`.pe-pos button[data-unit="${was.dataset.unit}"]`));
+    if (back) { back.click(); await wait(20); } }
   const startedOwn = gid => { const r = S.sched.find(x => x.id === gid); return !!r && isFinite(etKick(r)) && w.Date.now() >= etKick(r); };
   const outOwn = pid => !!((S.inactive && S.inactive[pid]) || (MU.out && MU.out[pid]));
   /* his mismatch: his Elo above his position's norm and the unit he faces below the league's, in standard deviations,
@@ -5800,13 +5827,25 @@ async function glanceChecks() {
       if (e.rank && (nOf('rank') !== '#' + e.rank || nOf('of') !== String(gx.active) || (nOf('prov') === 'prov.') !== !!(row && row.prov))) bad.push(`rank ${nOf('rank')} of ${nOf('of')} ${nOf('prov') || ''}, not #${e.rank} of ${gx.active}${row && row.prov ? ' prov.' : ''}`); }
     else { const sd = Object.values(Pl.groups || {}).flatMap(x => x.sidelined || []).find(x => x.id === pid), want = sd ? 'not ranked: ' + sd.why : 'no Elo rating this season';
       if (nOf('noelo') !== want || nOf('se') !== null) bad.push(`no Elo row said "${nOf('noelo')}", not "${want}"`); }
-    if (r) { const opp = team === r.h ? r.a : team === r.a ? r.h : null;
-      if ((opp && (nOf('ha') !== (team === r.h ? 'vs' : 'at') || nOf('opp') !== opp)) || nOf('kick') !== kickOwn(r.d, r.t)) bad.push(`game ${nOf('ha')} ${nOf('opp')} ${nOf('kick')}, not ${team === r.h ? 'vs' : 'at'} ${opp} ${kickOwn(r.d, r.t)}`); }
+    const opp = r ? (team === r.h ? r.a : team === r.a ? r.h : null) : null;
+    if (r) { if ((opp && (nOf('ha') !== (team === r.h ? 'vs' : 'at') || nOf('opp') !== opp)) || nOf('kick') !== kickOwn(r.d, r.t)) bad.push(`game ${nOf('ha')} ${nOf('opp')} ${nOf('kick')}, not ${team === r.h ? 'vs' : 'at'} ${opp} ${kickOwn(r.d, r.t)}`); }
+    /* the defense he faces: model.json's table for his side of the ball, named and ranked as the file has it, and the
+       rank the ELO Ratings tab's own table draws for that club; none for a kicker or with no such table */
+    { const grp = (e && e.group) || (sp && sp.grp) || (l && l.grp) || '', fw = faceOwn(grp, opp), tb = fw && TAB_RANK[fw.key], tr = tb ? tb.rows[opp] : undefined;
+      if (!fw) { if (nOf('unit') !== null || B.querySelector('[data-glance-faces]')) bad.push(`a Faces line (${nOf('uclub')} ${nOf('unit')} ${nOf('urank')}) where a ${grp || 'player of no position'} faces no table of the file's`); }
+      else {
+        if (nOf('unit') !== fw.name || nOf('uclub') !== opp || nOf('urank') !== ordOwn(fw.rank) || nOf('uof') !== String(fw.n) || (fw.carried ? nOf('ucarry') !== `carried from ${fw.from}` : nOf('ucarry') !== null)
+          || (B.querySelector('[data-glance-faces]') || { dataset: {} }).dataset.glanceFaces !== fw.key)
+          bad.push(`faces ${nOf('uclub')} ${nOf('unit')} ${nOf('urank')} of ${nOf('uof')}${nOf('ucarry') ? ' ' + nOf('ucarry') : ''}, not ${opp} ${fw.name} ${ordOwn(fw.rank)} of ${fw.n}${fw.carried ? ' carried from ' + fw.from : ''}`);
+        if (!tb || tr == null || nOf('urank') !== ordOwn(tr) || nOf('unit') !== tb.name) bad.push(`faces ${opp} ${nOf('unit')} ${nOf('urank')}, where the ELO Ratings tab's own table draws ${tb ? `${tb.name}: ${opp} ${tr == null ? 'not ranked' : ordOwn(tr)}` : 'no such table'}`); }
+      /* one rank for one defense: the mismatch line ranks nothing, and the bubble says "ranked" once at most */
+      const ml = B.querySelector('[data-glance-mm] dd');
+      if (ml && (/\b\d+(st|nd|rd|th)\b|ranked/i.test(txt(ml)) || /\b\d+(st|nd|rd|th)\b|ranked/i.test(ml.title || ''))) bad.push(`the mismatch line states a rank of its own: "${txt(ml)}" (${ml.title})`);
+      if ((txt(B).match(/ranked \d+(st|nd|rd|th)\b/g) || []).length > (fw ? 1 : 0)) bad.push(`the bubble ranks a defense more than once: "${txt(B).slice(0, 300)}"`); }
     const v = MU.players && MU.players[pid];
-    if (!v || v.game_id !== gid || outOwn(pid)) { if (nOf('nomu') === null || B.querySelector('tr[data-glance-stat]') || nOf('unit') !== null) bad.push('a matchup drawn where the file has none for this game, or no line saying so'); }
+    if (!v || v.game_id !== gid || outOwn(pid)) { if (nOf('nomu') === null || B.querySelector('tr[data-glance-stat]') || nOf('mm') !== null) bad.push('a matchup drawn where the file has none for this game, or no line saying so'); }
     else {
-      const u = unitOwn(v), m = mmOwn(pid, gid);
-      if (!u || nOf('unit') !== u.name || nOf('urank') !== ordOwn(u.rank)) bad.push(`faces ${nOf('unit')} ${nOf('urank')}, not ${u && u.name} ${u && ordOwn(u.rank)}`);
+      const m = mmOwn(pid, gid);
       if (m ? nOf('mm') !== m.grade || nOf('gap') !== m.score.toFixed(1) : nOf('mm') !== null) bad.push(`mismatch ${nOf('mm')} ${nOf('gap')}, not ${m ? m.grade + ' ' + m.score.toFixed(1) : 'none'}`);
       const sts = (MU.stats && MU.stats[v.group] || Object.keys(v.stats || {})).filter(s => v.stats && v.stats[s] && trustOwn(v.group, s)), rows = [...B.querySelectorAll('tr[data-glance-stat]')];
       if (rows.map(x => x.dataset.glanceStat).join() !== sts.join()) bad.push(`trusted stats ${rows.map(x => x.dataset.glanceStat).join()}, not ${sts.join()}`);
@@ -5814,14 +5853,15 @@ async function glanceChecks() {
         if (txt(tr.querySelector('th')) !== (LBL[sts[i]] || sts[i]) || txt(f) !== decOwn(a[0]) || txt(p) !== decOwn(a[1])) bad.push(`${sts[i]}: ${txt(tr)}, not ${decOwn(a[0])} -> ${decOwn(a[1])}`); });
       if (!sts.length && nOf('notrust') === null) bad.push('no trusted stat and no line saying so'); }
     return bad; };
-  const teamBad = (gid, me) => {
-    const bad = [], g = STATE.schedule.find(x => x.game_id === gid), r = S.sched.find(x => x.id === gid), B = box();
+  const teamBad = (gid, me, stat) => {
+    const bad = [], g = STATE.schedule.find(x => x.game_id === gid), r = S.sched.find(x => x.id === gid), B = box(), toWin = !!me && stat === 'ml';
+    if (/your bet/i.test(txt(B))) bad.push('it still says "your bet"');
     const a = g ? g.away_team : r.a, h = g ? g.home_team : r.h, neutral = !!g && (g.location === 'Neutral' || g.gametime === '09:30');
     const head = `${TN[a] || a} ${neutral ? 'vs' : 'at'} ${TN[h] || h}`;
     if (txt(d.getElementById('glanceTitle')) !== head) bad.push(`headed ${txt(d.getElementById('glanceTitle'))}, not ${head}`);
     if (nOf('kick') !== kickOwn(g ? g.gameday : r.d, g ? g.gametime : r.t)) bad.push(`kickoff ${nOf('kick')}`);
     const ths = [...B.querySelectorAll('th[data-glance-team]')];
-    if (ths.map(x => x.dataset.glanceTeam).join() !== [a, h].join() || ths.some(x => x.classList.contains('glance-me') !== (x.dataset.glanceTeam === me)) || (me && !/your bet/.test(txt(ths.find(x => x.dataset.glanceTeam === me)))))
+    if (ths.map(x => x.dataset.glanceTeam).join() !== [a, h].join() || ths.some(x => x.classList.contains('glance-me') !== (x.dataset.glanceTeam === me) || !!x.querySelector('.glance-mine') !== (x.dataset.glanceTeam === me)) || (me && txt(ths.find(x => x.dataset.glanceTeam === me).querySelector('.glance-mine')) !== 'this leg'))
       bad.push(`the clubs ${ths.map(x => x.dataset.glanceTeam + (x.classList.contains('glance-me') ? '*' : '')).join()}, not ${a},${h} with ${me || 'none'} marked`);
     for (const t of [a, h]) if (nOf('rec:' + t) !== recOwn(t)) bad.push(`${t} record ${nOf('rec:' + t)}, not ${recOwn(t)}`);
     if (MO.teams && MO.teams[a] && MO.teams[h]) { for (const t of [a, h]) if (nOf('pr:' + t) !== String(MO.teams[t].elo) || nOf('prk:' + t) !== '#' + prRank(t)) bad.push(`${t} Power Rating ${nOf('pr:' + t)} ${nOf('prk:' + t)}, not ${MO.teams[t].elo} #${prRank(t)}`); }
@@ -5846,8 +5886,9 @@ async function glanceChecks() {
         if (!li) { bad.push(`no ${id} line`); continue; }
         if (!ok) { if (li.dataset.pick || nOf('p:' + id) !== null) bad.push(`${id} drawn with a pick the files do not have`); continue; }
         const p = chOwn(x, g);
-        if (li.dataset.pick !== x.pick || !(p == null ? nOf('p:' + id) === '–' : near(nOf('p:' + id), p)) || li.classList.contains('glance-with') !== (!!me && x.pick === me))
-          bad.push(`${id} ${li.dataset.pick} ${nOf('p:' + id)}${li.classList.contains('glance-with') ? ' marked' : ''}, not ${x.pick} ${p == null ? '-' : (p * 100).toFixed(2)}${me && x.pick === me ? ' marked' : ''}`); } }
+        const tick = toWin && x.pick === me;
+        if (li.dataset.pick !== x.pick || !(p == null ? nOf('p:' + id) === '–' : near(nOf('p:' + id), p)) || li.classList.contains('glance-with') !== tick || !!li.querySelector('.glance-chk') !== tick)
+          bad.push(`${id} ${li.dataset.pick} ${nOf('p:' + id)}${li.querySelector('.glance-chk') ? ' ticked' : ''}, not ${x.pick} ${p == null ? '-' : (p * 100).toFixed(2)}${tick ? ' ticked' : ''} (a ${stat || 'leg'} on ${me || 'no team'})`); } }
     else if (B.querySelector('[data-glance-model]')) bad.push('model picks drawn for a game the board does not have');
     return bad; };
   const bubbleBad = (btn, wantPrice, wantSrc) => {
@@ -5862,7 +5903,7 @@ async function glanceChecks() {
     const sn = B.querySelector('button[data-glance-snap]'), onBoard = STATE.schedule.some(x => x.game_id === gid);
     if (!!sn !== onBoard || (sn && (txt(sn) !== 'Open game snapshot' || sn.dataset.glanceSnap !== gid || w.getComputedStyle(sn).minHeight !== '44px'))) bad.push(`Open game snapshot ${sn ? 'drawn' : 'missing'} for a game ${onBoard ? 'on' : 'not on'} the board`);
     if (!K) bad.push('its leg is not kept'); else bad.push(...legBad(kind, K, wantPrice, wantSrc));
-    bad.push(...(kind === 'p' ? playerBad(id, gid, K) : teamBad(gid, kind === 't' ? id : null)));
+    bad.push(...(kind === 'p' ? playerBad(id, gid, K) : teamBad(gid, kind === 't' ? id : null, K ? K.leg.stat : String(btn.dataset.glanceLeg || '').split('|')[2])));
     return bad; };
   /* the browser's storage, watched while bubbles open and close: nothing may be written */
   const SPR = w.Storage.prototype, keepSet = SPR.setItem, keepRm = SPR.removeItem, keepClr = SPR.clear, writes = []; let watching = false;
@@ -5890,6 +5931,12 @@ async function glanceChecks() {
   const L0 = live(), byPlace = {};
   { const bad = L0.map(P => { const x = nameBad(P.row, P.key, P.side, P.k); return x ? `${P.where} ${x}` : ''; }).filter(Boolean);
     chk(bad.length === 0, `a name on a leg is not the matchup bubble's button for its leg: ${bad.slice(0, 4).join(' | ')}`); }
+  /* within one place a leg is drawn once (the builder, the Top 50 lines, each level card of a set or of the Elo picks), so a
+     bubble's place and its leg's key, side and line find one copy after a redraw */
+  { const idOf = b => String(b.dataset.glanceLeg || '').split('|').slice(0, 5).join('|'), dup = [];
+    for (const pl of [d.getElementById('parlayBody'), d.getElementById('pbPanel'), ...d.querySelectorAll('#spPanel .pb-tier')]) { if (!pl) continue; const seen = new Set();
+      for (const b of pl.querySelectorAll('[data-glance]')) { const k = b.dataset.glance + '|' + idOf(b); if (seen.has(k)) dup.push(`${pl.id || pl.dataset.pbTier} ${k}`); seen.add(k); } }
+    chk(dup.length === 0, `a leg is drawn twice in one place, so a bubble opened on it cannot tell its copies apart: ${dup.slice(0, 4).join(' | ')}`); }
   for (const P of L0) { const b = P.row && P.row.querySelector('[data-glance]'); if (!b) continue; const k = P.where + '|' + b.dataset.glance[0]; if (!byPlace[k]) byPlace[k] = { P, b }; }
   for (const { P, b } of Object.values(byPlace)) { const K = w.glanceLeg(b.dataset.glanceLeg); if (!K) continue; const pr = priceOf(P.where, K); await openOn(b, pr.ml, pr.src, P.where + ' (the week as it stands)'); }
 
@@ -5931,7 +5978,13 @@ async function glanceChecks() {
       return { key: legKey(x.game_id, id, st2), gid: x.game_id, pid: id, stat: st2, k: k2, side: 'under', main: true, p: 0.52, price: 105, src: 'real', mu: k2,
         name: sp2.n, pos: sp2.pos, grp: sp2.grp, team: x.team, opp: x.opp, week: g2.w, label: `Under ${k2} ${st2}` }; });
     GRADES_SEEN = Object.keys(graded);
-    const legs = [realP, realT, realG, fakeP, fakeT, ...mmLegs].filter(Boolean), at1 = l => lis[legs.indexOf(l)].querySelector('[data-glance]');
+    /* and a club to cover, the one a model picks to win where one does: a team's leg that is not to win, whose bubble
+       ticks no model all the same (a pick to win says nothing of a cover) */
+    const gB = STATE.schedule.find(x => x.game_id === r.id), cs = gB ? callsOwn(gB) : {};
+    const sT = ['vegas', 'alpha', 'joker', 'elo'].map(k => cs[k] && cs[k].pick).find(t => t === r.a || t === r.h) || r.a, sO = sT === r.h ? r.a : r.h;
+    const realS = { key: legKey(r.id, 'team:' + sT, 'ats'), gid: r.id, pid: 'team:' + sT, stat: 'ats', k: -3.5, side: 'over', main: false, p: 0.53, price: -110, src: 'real', mu: null,
+      name: TN[sT] || sT, pos: 'Game', grp: 'TEAM', team: sT, opp: sO, week: r.w, label: 'To cover -3.5' };
+    const legs = [realP, realT, realS, realG, fakeP, fakeT, ...mmLegs].filter(Boolean), at1 = l => lis[legs.indexOf(l)].querySelector('[data-glance]');
     const host = d.createElement('div'); host.id = 'glFix'; host.className = 'card'; d.body.appendChild(host);
     host.innerHTML = w.pbTierCard({ id: 'glfix', label: 'Fixture', legs, corr: 0.05, dec: 20, fair: null, floor: null }, { quiet: true, kind: 'sp', fid: 'glfix' });
     const lis = [...host.querySelectorAll('.pb-legs li')];
@@ -5991,6 +6044,124 @@ async function glanceChecks() {
       watching = false;
       chk(bad.length === 0, 'the matchup bubble as a window: ' + bad.join('; ')); }
     host.remove();
+
+    /* ---- the page draws its rows again while a bubble is open (the half-minute look at a kickoff or a lock, a Refresh
+       odds press finishing): the bubble stays on its own leg's copy in the place it was opened from, wherever else the
+       page draws the same leg, marked open there, its focus and its toggle there; follows that copy's new price; and,
+       where that place no longer draws the leg, closes with the focus on its neighbour there, never on the page's body ---- */
+    { const bad = [], builder = () => d.getElementById('parlayBody');
+      const part = what => { chk(bad.length === 0, `the matchup bubble across a redraw (${what}): ${bad.join('; ')}`); bad.length = 0; };
+      /* the builder's legs on the made-up game two days out, which no kickoff takes out of the builder at any hour */
+      const fakeH = { ...fakeT, key: legKey(FAKE.id, 'team:XXH', 'ml'), pid: 'team:XXH', name: 'XXH', team: 'XXH', opp: 'XXA', p: 0.48, price: -130 };
+      const fakeS = { ...fakeT, key: legKey(FAKE.id, 'team:XXA', 'ats'), stat: 'ats', k: 2.5, p: 0.51, price: -110, label: 'To cover +2.5' };
+      let L = fakeP, X = fakeT;
+      const copyIn = (pl, l) => pl ? [...pl.querySelectorAll('[data-glance]')].find(b => { const K = w.glanceLeg(b.dataset.glanceLeg);
+        return !!K && K.leg.key === l.key && (K.leg.side || 'over') === (l.side || 'over') && +K.leg.k === +l.k; }) || null : null;
+      const expanded = () => [...d.querySelectorAll('[data-glance][aria-expanded="true"]')];
+      const where = el => !el || el === d.body ? 'the body' : `${el.closest('[id]') ? el.closest('[id]').id : ''} ${el.getAttribute('aria-label') || el.className || el.tagName}`;
+      const key = (el, k) => (el || d.body).dispatchEvent(new w.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+      const tab = t => [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === t).click();
+      const keepP = JSON.stringify(S.parlay), tierOf = (id, label, ls) => ({ id, label, legs: ls, corr: 0.2, dec: 4, fair: null, floor: null });
+      /* the builder drawn again (renderParlay), the same leg drawn earlier in the page than the builder (a card of the smoke's own, first in the body) */
+      tab('parlay'); await wait(40);
+      const early = d.createElement('div'); early.id = 'glEarly'; d.body.insertBefore(early, d.body.firstChild);
+      early.innerHTML = w.pbTierCard(tierOf('safe', 'Safe', [L, X]), { quiet: true, kind: 'sp', fid: 'glearly' });
+      S.parlay = { [L.key]: { ...L }, [X.key]: { ...X } }; w.eval('renderParlay()'); await wait(40);
+      const b0 = copyIn(builder(), L);
+      if (!b0 || !copyIn(early, L)) bad.push('the builder or the early card does not draw the leg');
+      else {
+        b0.click(); await wait(20); w.eval('renderParlay()'); await wait(30);
+        { const b1 = copyIn(builder(), L);
+          if (!shown() || !b1 || b1 === b0 || b1.getAttribute('aria-expanded') !== 'true' || expanded().length !== 1 || !box().contains(d.activeElement))
+            bad.push(`after renderParlay the bubble is not bound to the builder's new copy of ${L.name}, marked open, the focus in it (shown ${shown()}; marked open: ${expanded().map(where).join(', ') || 'none'}; the focus on ${where(d.activeElement)})`); }
+        key(d.activeElement, 'Escape'); await wait(10);
+        if (shown() || d.activeElement !== copyIn(builder(), L)) bad.push(`Escape after renderParlay gives the focus to ${where(d.activeElement)}, not the builder's copy of ${L.name}`);
+        copyIn(builder(), L).click(); await wait(20); w.eval('renderParlay()'); await wait(30); copyIn(builder(), L).click(); await wait(20);
+        if (shown() || expanded().length) bad.push('after renderParlay the builder\'s name pressed again does not close its bubble');
+        /* its price moved under it (a Refresh odds press, a rung's book price): the bubble follows the copy's numbers */
+        copyIn(builder(), L).click(); await wait(20); S.parlay[L.key].price = 105; w.eval('renderParlay()'); await wait(30);
+        { const lp = legPrice(S.parlay[L.key]), c = copyIn(builder(), L);
+          if (!shown() || nOf('price') !== pxOwn(lp.ml) + estOwn(lp.src) || !c || c.getAttribute('aria-expanded') !== 'true')
+            bad.push(`a builder leg's price moved under its open bubble: the bubble says ${nOf('price')}, not ${pxOwn(lp.ml) + estOwn(lp.src)}`); }
+        key(d.activeElement, 'Escape'); await wait(10); }
+      part('renderParlay: the builder\'s copy, its focus, its toggle and a price moved under it');
+      /* the leg taken out of the builder: the bubble closes, the focus on the name now in its place there */
+      S.parlay = Object.fromEntries([fakeP, fakeT, fakeH, fakeS].map(l => [l.key, { ...l }])); w.eval('renderParlay()'); await wait(40);
+      { const n0 = [...builder().querySelectorAll('[data-glance]')], mid = n0[1], Km = mid && w.glanceLeg(mid.dataset.glanceLeg);
+        if (!Km) bad.push('the builder does not draw three legs');
+        else { mid.click(); await wait(20); delete S.parlay[Km.leg.key]; w.eval('renderParlay()'); await wait(30);
+          const n1 = [...builder().querySelectorAll('[data-glance]')];
+          if (shown() || expanded().length || d.activeElement !== n1[1]) bad.push(`with ${Km.leg.name} taken out of the builder, the bubble ${shown() ? 'is still open' : 'closed'} with the focus on ${where(d.activeElement)}, not the leg now in its place`);
+          /* and the builder emptied: the focus on the builder's (or the tab's) first control */
+          n1[0].click(); await wait(20); S.parlay = {}; w.eval('renderParlay()'); await wait(30);
+          const fa = d.activeElement;
+          if (shown() || !fa || fa === d.body || !fa.isConnected || !fa.closest('#tab-parlay')) bad.push(`with the builder emptied under an open bubble, the focus is on ${where(fa)}`); } }
+      part('the leg taken out of the builder');
+      early.remove(); S.parlay = JSON.parse(keepP); w.eval('renderParlay()'); await wait(40);
+
+      /* Suggested Parlays drawn again (renderSp): one leg on a set's Safe and Extreme cards and on an Elo pick's Safe card
+         (the same level id in another section), the page's spGames, spOn and spShown stood in for a set of the smoke's own
+         on the fixture's game, so it holds at any hour; each put back after */
+      tab('suggest'); await wait(40);
+      L = realP || realT; X = realP ? realT : realS;
+      const SP = { games: w.spGames, on: w.spOn, shown: w.spShown }, eloBox = d.getElementById('pbElo'), keepElo = eloBox ? eloBox.innerHTML : null;
+      let tiers = [tierOf('safe', 'Safe', [L, X]), tierOf('extreme', 'Extreme', [realS, realG, L])];
+      w.spGames = () => [r]; w.spOn = () => [r]; w.spShown = () => ({ phase: 'live', lock: w.Date.now() + 864e5, tiers });
+      const eloHtml = () => `<div class="pb-tiers">${w.pbTierCard(tierOf('safe', 'Safe', [L, realG]), { kind: 'elo', what: 'the Elo picks', add: 'data-pb-elo-add="safe"' })}</div>`;
+      w.eval('renderSp()'); if (eloBox) eloBox.innerHTML = eloHtml(); await wait(30);
+      const card = id => d.querySelector(`#spSets [data-sp-game="${r.id}"] .pb-tier[data-pb-tier="${id}"]`);
+      const e0 = copyIn(card('extreme'), L);
+      if (!e0 || !copyIn(card('safe'), L) || (eloBox && !copyIn(eloBox, L))) bad.push('the stood-in set or the Elo pick does not draw the leg on each card');
+      else {
+        e0.click(); await wait(20); w.eval('renderSp()'); await wait(30);
+        { const e1 = copyIn(card('extreme'), L);
+          if (!shown() || !e1 || e1 === e0 || e1.getAttribute('aria-expanded') !== 'true' || expanded().length !== 1 || !box().contains(d.activeElement))
+            bad.push(`after renderSp the bubble is not bound to the Extreme card's new copy of ${L.name}, marked open, the focus in it (marked open: ${expanded().map(x => x.closest('.pb-tier').dataset.pbTier).join(', ') || 'none'})`); }
+        key(d.activeElement, 'Escape'); await wait(10);
+        if (shown() || d.activeElement !== copyIn(card('extreme'), L)) bad.push(`Escape after renderSp gives the focus to ${where(d.activeElement)}${d.activeElement && d.activeElement.closest('.pb-tier') ? ' (' + d.activeElement.closest('.pb-tier').dataset.pbTier + ')' : ''}, not the Extreme card's copy`);
+        copyIn(card('extreme'), L).click(); await wait(20); w.eval('renderSp()'); await wait(30); copyIn(card('extreme'), L).click(); await wait(20);
+        if (shown() || expanded().length) bad.push('after renderSp the Extreme card\'s name pressed again does not close its bubble');
+        part('renderSp: the Extreme card\'s copy, its focus and its toggle');
+        /* the Elo picks' Safe card drawn again: its own copy, not the set's Safe card's before it in the page (renderSp
+           draws the Elo picks again too, the ELO tab's own, so the smoke's card is planted again here) */
+        if (eloBox) { eloBox.innerHTML = eloHtml(); await wait(10); copyIn(eloBox, L).click(); await wait(20); eloBox.innerHTML = eloHtml(); await wait(30);
+          const o1 = copyIn(eloBox, L);
+          if (!shown() || !o1 || o1.getAttribute('aria-expanded') !== 'true' || expanded().length !== 1) bad.push(`after the Elo picks are drawn again the bubble is not bound to their copy (marked open: ${expanded().map(where).join(', ') || 'none'})`);
+          key(d.activeElement, 'Escape'); await wait(10);
+          if (shown() || d.activeElement !== copyIn(eloBox, L)) bad.push(`Escape after the Elo picks are drawn again gives the focus to ${where(d.activeElement)}, not their copy`);
+          part('the Elo picks drawn again: their own Safe card\'s copy, not the set\'s'); }
+        /* the leg gone from the Extreme card (its set built again): the bubble closes, the focus on the leg now in its place there */
+        copyIn(card('extreme'), L).click(); await wait(20);
+        const n0 = [...card('extreme').querySelectorAll('[data-glance]')], i0 = n0.indexOf(copyIn(card('extreme'), L));
+        tiers = [tiers[0], tierOf('extreme', 'Extreme', [realS, realG])]; w.eval('renderSp()'); await wait(30);
+        const n1 = [...card('extreme').querySelectorAll('[data-glance]')], want = n1[Math.min(i0, n1.length - 1)];
+        if (shown() || expanded().length || !want || d.activeElement !== want) bad.push(`with ${L.name} gone from the Extreme card, the bubble ${shown() ? 'is still open' : 'closed'} with the focus on ${where(d.activeElement)}, not the leg now in its place there`); }
+      part('renderSp: the leg gone from its card');
+      w.spGames = SP.games; w.spOn = SP.on; w.spShown = SP.shown; if (eloBox) eloBox.innerHTML = keepElo; w.eval('renderSp()'); await wait(30);
+
+      /* a builder row whose stored price is not the one it shows: a ladder rung added at -174, the book's price on it -114
+         now (legPrice reads the book): the row's own market + form and Elo matchup on the price it shows, as the bubble's */
+      if (realP) { tab('parlay'); await wait(40);
+        /* the real player's line on the made-up game two days out (his market + form and Elo matchup turn on him, not his game) */
+        const kk = Math.max(1, Math.round(realP.k)), rung = { ...realP, key: legKey(FAKE.id, realP.pid, realP.stat), gid: FAKE.id, team: 'XXA', opp: 'XXH', week: FAKE.w, k: kk, main: false, price: -174, src: 'real', label: `${kk}+ ${realP.stat}` };
+        const OD = S.odds = S.odds || {};
+        OD[FAKE.id] = { [realP.pid]: { [realP.stat]: { [String(kk)]: -114 } } };
+        S.parlay = { [rung.key]: rung }; w.eval('renderParlay()'); await wait(40);
+        const tr = builder().querySelector('tr.legrow'), alt = tr && tr.querySelector('.pe-alt:not(.pe-muleg)'), mul = tr && tr.querySelector('.pe-muleg'), lp = legPrice(S.parlay[rung.key]);
+        const mf = mfOwn(rung, -114, 'real'), mu = muOwn(rung, -114), b = tr && tr.querySelector('[data-glance]');
+        if (lp.ml !== -114 || lp.src !== 'real') bad.push(`the rung planted at the book's -114 shows ${lp.ml} ${lp.src}`);
+        if (mf == null ? !!alt : !alt || Math.abs(+alt.dataset.p - mf) > 1e-4) bad.push(`the builder row's market + form is ${alt ? alt.dataset.p : 'none'}, not ${mf == null ? 'none' : mf.toFixed(4)} on the -114 it shows (on the -174 it was stored at: ${(mfOwn(rung, -174, 'real') || 0).toFixed(4)})`);
+        if (mu == null ? !!mul : !mul || !near(txt(mul.querySelector('b')), mu)) bad.push(`the builder row's Elo matchup is ${mul ? txt(mul.querySelector('b')) : 'none'}, not ${mu == null ? 'none' : (mu * 100).toFixed(2)} on the -114 it shows`);
+        if (b) { b.click(); await wait(20);
+          if (alt && nOf('mf') !== txt(alt.querySelector('b'))) bad.push(`the bubble's market + form ${nOf('mf')} is not its row's ${txt(alt.querySelector('b'))}`);
+          if (mul && nOf('mu') !== txt(mul.querySelector('b'))) bad.push(`the bubble's Elo matchup ${nOf('mu')} is not its row's ${txt(mul.querySelector('b'))}`);
+          key(d.activeElement, 'Escape'); await wait(10);
+          await openOn(b, lp.ml, lp.src, 'the builder, a rung at the book\'s price now'); }
+        else bad.push('the rung\'s name is not drawn as the bubble\'s button');
+        delete OD[FAKE.id];
+        S.parlay = JSON.parse(keepP); w.eval('renderParlay()'); await wait(40); }
+      part('a builder row\'s market + form and Elo matchup on the price it shows, as its bubble\'s');
+      tab('suggest'); await wait(40); }
 
     /* ---- the builder at any hour: a made-up player with no Elo row, on no book price (the builder shows the model's
        fair price, as for a line added from a game's page with none: the bubble shows the price the row shows, not the
