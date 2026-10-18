@@ -19,7 +19,7 @@
   "before": "no verdict before 285: until then the summary gives the running numbers and how many of the 285 are in, never a verdict or a word of passing"
  },
  "bar_registered": "2026-10-11T02:01:51Z",
- "run_at": "2026-10-18T14:08:03Z",
+ "run_at": "2026-10-18T17:30:50Z",
  "fits": {
   "2026": {
    "b0": 1.294144,
@@ -31,30 +31,30 @@
  "decision": null,
  "summary": {
   "calls": 42,
-  "to_come": 26,
-  "frozen_awaiting_final": 1,
-  "graded": 15,
+  "to_come": 19,
+  "frozen_awaiting_final": 7,
+  "graded": 16,
   "pushes": 0,
   "graded_without_market_price": 0,
-  "compared": 15,
+  "compared": 16,
   "scores": {
    "model": {
-    "brier": 0.252411,
-    "logloss": 0.697995
+    "brier": 0.252555,
+    "logloss": 0.698282
    },
    "market": {
-    "brier": 0.246912,
-    "logloss": 0.68697
+    "brier": 0.246435,
+    "logloss": 0.686016
    },
-   "brier_diff": 0.005499,
+   "brier_diff": 0.00612,
    "brier_diff_ci90": [
-    -0.005558,
-    0.01758
+    -0.004484,
+    0.017302
    ],
-   "logloss_diff": 0.011025,
+   "logloss_diff": 0.012266,
    "logloss_diff_ci90": [
-    -0.011116,
-    0.035229
+    -0.008972,
+    0.034645
    ]
   },
   "picks": {
@@ -65,7 +65,7 @@
    "units": -1.0,
    "at_est_price": 0
   },
-  "standing": "15 of 285 graded games toward the verdict; the bar is judged at 285, not before"
+  "standing": "16 of 285 graded games toward the verdict; the bar is judged at 285, not before"
  },
  "calls": {
   "2026_05_PHI_JAX": {
@@ -539,7 +539,14 @@
    "called_at": "2026-10-18T09:51:08Z",
    "frozen": true,
    "frozen_at": "2026-10-18T14:08:03Z",
-   "final": null
+   "final": {
+    "home": 31,
+    "away": 34,
+    "total": 65,
+    "result": "over",
+    "units": null,
+    "graded_at": "2026-10-18T17:30:50Z"
+   }
   },
   "2026_06_BAL_CLE": {
    "season": 2026,
@@ -560,8 +567,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-10-16T22:58:48Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-10-18T17:30:50Z",
    "final": null
   },
   "2026_06_CAR_PHI": {
@@ -583,8 +590,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-10-18T14:08:03Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-10-18T17:30:50Z",
    "final": null
   },
   "2026_06_CHI_ATL": {
@@ -606,8 +613,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-10-18T14:08:03Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-10-18T17:30:50Z",
    "final": null
   },
   "2026_06_NO_NYG": {
@@ -629,8 +636,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-10-16T19:44:16Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-10-18T17:30:50Z",
    "final": null
   },
   "2026_06_NYJ_NE": {
@@ -652,8 +659,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-10-17T22:36:01Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-10-18T17:30:50Z",
    "final": null
   },
   "2026_06_PIT_TB": {
@@ -675,8 +682,8 @@
    "pick_price": -102,
    "pick_price_est": false,
    "called_at": "2026-10-17T01:29:02Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-10-18T17:30:50Z",
    "final": null
   },
   "2026_06_TEN_IND": {
@@ -698,8 +705,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-10-18T14:08:03Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-10-18T17:30:50Z",
    "final": null
   },
   "2026_06_ARI_LA": {
@@ -756,17 +763,17 @@
    "home": "KC",
    "kickoff": "2026-10-18T20:25:00Z",
    "line": 41.5,
-   "over_odds": -110,
-   "under_odds": -110,
+   "over_odds": -112,
+   "under_odds": -108,
    "p_model": 0.497301,
-   "p_market": 0.5,
+   "p_market": 0.50433,
    "mu": 41.4108,
    "sd": 13.1937,
    "model_total": 41.857,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-18T14:08:03Z",
+   "called_at": "2026-10-18T17:30:50Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -802,17 +809,17 @@
    "home": "SF",
    "kickoff": "2026-10-20T00:15:00Z",
    "line": 52.5,
-   "over_odds": -102,
-   "under_odds": -118,
-   "p_model": 0.512899,
-   "p_market": 0.482636,
-   "mu": 52.9267,
+   "over_odds": -105,
+   "under_odds": -115,
+   "p_model": 0.511984,
+   "p_market": 0.489166,
+   "mu": 52.8964,
    "sd": 13.1937,
-   "model_total": 50.7934,
+   "model_total": 50.9144,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-18T07:16:19Z",
+   "called_at": "2026-10-18T17:30:50Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
