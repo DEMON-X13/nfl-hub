@@ -2644,10 +2644,14 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
        add an aggressive and extreme versions ... would want to see the best lines:value ratio for ELO mismatches").
        Legs whose Elo matchup (trusted stats only) beats the book's price with its margin out, prices held between
        -200 and +300, one leg a player (his best by value), ranked on value (until that day plus money first, so
-       touchdowns filled them); Safe the likeliest pair by the Elo chance, Medium, Aggressive and Extreme the best
-       return over 25%, 12% and 5% by it, else the likeliest of the size; legs of one game allowed and priced
-       together, every figure the builder's own sums; each leg wearing its mismatch this week where the Props
-       tab's Mismatches has one; built when Suggested Parlays is on the screen */
+       touchdowns filled them), the levels searched from the 30 best by value and the 10 likeliest by the Elo
+       chance, each once (18 October 2026; with the six candidates here, all of them, so the rule worked out below
+       over every parlay of their size is the whole of it; check_tab holds the union on 34 of its own); Safe the
+       likeliest pair by the Elo chance, Medium, Aggressive and Extreme the best return over 25%, 12% and 5% by it,
+       else the likeliest of the size, marked so only under the floor; legs of one game allowed and priced together,
+       every figure the builder's own sums, and the tab's fast sums those sums to the bit; each leg wearing its
+       mismatch this week, where the Props tab's Mismatches has one, on the side it favours; built when Suggested
+       Parlays is on the screen */
     { const MU = JSON.parse(ELO_MU);
       const trusted = (g, st) => { const p = ((MU.record[g + '|' + st] || {}).past); return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
       const cand = [];
@@ -2709,7 +2713,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         /* every level at the builder's own sums on its legs (the Elo chances, a game's legs priced together), its floor
            held, and Suggested Parlays' rule worked out here over every parlay of its size from the candidates */
         { const C = r ? r.cands : [], memo = new Map(), sums = ls => { const k = ls.map(idOf).sort().join(','); let e = memo.get(k);
-            if (!e) { const O = pOrd(ls); e = { k, p: pP(O.map(l => ({ ...l, p: l.pe }))).corr, d: pD(O.map(l => ({ leg: l, ml: l.price }))) }; memo.set(k, e); } return e; };
+            if (!e) { const O = pOrd(ls); e = { k, O, p: pP(O.map(l => ({ ...l, p: l.pe }))).corr, d: pD(O.map(l => ({ leg: l, ml: l.price }))) }; memo.set(k, e); } return e; };
           const sub = (n, f) => { const go = (s0, cur) => { if (cur.length === n) { f(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); }; go(0, []); };
           for (const t of T) { const e = sums(t.legs), O = pOrd(t.legs);
             let best = null, likely = null;
@@ -2718,6 +2722,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             const want = t.floor ? (best || likely) : likely;
             chk(t.legs.every((l, i) => idOf(l) === idOf(O[i])) && new Set(t.legs.map(l => l.pid)).size === t.n && t.p === e.p && t.dec === e.d && e.k === want.k && !!t.likeliest === (!!t.floor && !best),
               `the ${t.label} Elo pick is not Suggested Parlays' rule on the Elo chance (${t.floor ? `best return that lands ${t.floor * 100}%+, else the likeliest` : 'the likeliest pair'}) at the builder's own sums: ${t.legs.map(l => l.name).join(', ')} at ${t.p}, ${t.dec}${t.likeliest ? ' (likeliest)' : ''}; the rule ${want.k} at ${want.p}, ${want.d}`); }
+          /* the search works those sums fast, from parlayProb's draws kept (window.eloSums): parlayProb's and
+             parlayDec's to the bit on every parlay worked out above */
+          { const all = [...memo.values()]; let got = null; try { got = w.eloSums(C, all.map(e => e.O)); } catch (err) { got = null; }
+            const off = all.filter((e, i) => !got || !got[i] || got[i].p !== e.p || got[i].dec !== e.d);
+            chk(all.length > 0 && !off.length, `the Elo picks' fast sums are not parlayProb's and parlayDec's to the bit on ${off.length} of ${all.length} parlays: ${off.slice(0, 2).map(e => e.k + ' ' + e.p + ' ' + e.d).join('; ')}`); }
           /* two legs of one game, taken and priced together: never the legs multiplied */
           const sg = T.filter(t => new Set(t.legs.map(l => l.gid)).size < t.legs.length);
           chk(sg.length > 0 && sg.every(t => t.dec < t.legs.reduce((a, l) => a * dec(l.price), 1) - 1e-6),
@@ -2792,19 +2801,40 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
               return farWant(l) ? !!ff && txt(ff) === `model ${Math.round(l.p * 100)}% · market ${Math.round(f.p * 100)}%${f.est ? ' est.' : ''}: far off the market` : !ff; }); })
             && T.some(t => t.legs.some(farWant)),
             'the Elo picks\' leg far off the market is not flagged, or another is: ' + (card ? [...card.querySelectorAll('[data-pb-far]')].map(txt).join(' / ') : 'no section')); }
-        /* each leg on a player with a Solid mismatch or better this week, in that game, wears it after his name: the
-           game page's tag, its grade in words, the edge and the unit in its title; no other leg wears one */
+        /* each leg on a player with a Solid mismatch or better this week, in that game, on the side it favours, wears it
+           after his name: the game page's tag, its grade in words, the edge and the unit in its title; no other leg
+           wears one. A mismatch is a player above his position's average against a unit below the league's, so it
+           favours him: his over, a ladder rung and his touchdown (side over), never an under on him, nor more of his
+           interceptions (18 October 2026: an Under on Matthew Golden wore "Solid mismatch", which reads as an edge for
+           a bet against him) */
+        const mmSide = l => l.side === 'over' && l.stat !== 'passing_interceptions';
         { const mm = {}; for (const v of (typeof w.eloMismatches === 'function' ? w.eloMismatches() : [])) if (gradeOf(v.score) !== 'Slight' && !mm[v.pid]) mm[v.pid] = v;
           const ord = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
           let nTag = 0; const bad = [];
           for (const t of T) { const lis = card ? [...card.querySelectorAll(`[data-pb-tier="${t.id}"] .pb-legs > li`)] : [];
             t.legs.forEach((l, i) => { const tags = lis[i] ? [...lis[i].querySelectorAll('.pe-mmtag')] : [], v = mm[l.pid] && String(mm[l.pid].game_id) === String(l.gid) ? mm[l.pid] : null;
               if (!v) { if (tags.length) bad.push(`${l.name} wears ${txt(tags[0])} with none this week in his game`); return; }
+              if (!mmSide(l)) { if (tags.length) bad.push(`${l.name}'s ${l.side} wears ${txt(tags[0])}, a bet against the side his mismatch favours`); return; }
               const g = gradeOf(v.score), tg = tags[0], nm = lis[i] && lis[i].querySelector('.nm'), name = nm && (typeof w.hubGlance === 'function' ? nm.querySelector(':scope > button.glance-name') : [...nm.childNodes].find(x => x.nodeType === 3 && x.textContent.trim()));
               if (tags.length !== 1 || txt(tg) !== `${g} mismatch` || tg.dataset.peMmgrade !== g || tg.dataset.peMmtag !== v.score.toFixed(1) || !name || name.nextSibling !== tg || name.textContent !== l.name
                 || tg.title !== `${g} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs a ${v.unitName} ranked ${ord(v.defRank)} of ${v.defN}` || w.getComputedStyle(tg).whiteSpace !== 'nowrap') bad.push(`${l.name}: ${tags.map(txt).join(', ') || 'no tag'} for ${g} (${v.score.toFixed(1)})`);
               else nTag++; }); }
           chk(!bad.length && (!mmC || nTag > 0), 'an Elo pick\'s leg does not wear its player\'s mismatch this week, after his name, or wears one he does not have: ' + (bad.join('; ') || 'no tag on ' + (mmC && mmC.pid))); }
+        /* the side, planted: the mismatch player's leg made an Under at -110 that his matchup favours (his nudge turned
+           against him in the tab's matchups, as Matthew Golden's -2.75 receiving yards stood beside his Solid
+           mismatch), with a made-up DraftKings id of its own; every level that takes it draws it with no tag, where
+           his over above wore one; then all put back and the levels drawn again */
+        if (mmC) { const st = liveMu.players[mmC.pid].stats[mmC.st], keepZ = st[2], sdC = MU.fit[MU.players[mmC.pid].group + '|' + mmC.st].sd;
+          st[2] = -0.2 * sdC;
+          const legsU = legs.map((l, i) => i ? l : { ...l, side: 'under', price: -110, label: 'under test line' });
+          setDkE(dkFixture(legsU, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'ELU'));
+          w.__legs = legsU; w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40);
+          const rU = w.eval('eloPicks()'), held = rU ? rU.tiers.filter(t => t.legs.some(l => l.pid === mmC.pid && l.side === 'under')) : [];
+          const worn = (rU ? rU.tiers : []).flatMap(t => { const lis = [...card.querySelectorAll(`[data-pb-tier="${t.id}"] .pb-legs > li`)];
+            return t.legs.flatMap((l, i) => l.side === 'under' && lis[i] && lis[i].querySelector('.pe-mmtag') ? [`${t.label}: ${l.name} ${txt(lis[i].querySelector('.pe-mmtag'))}`] : []); });
+          chk(held.length > 0 && !worn.length && w.eloMmFor && !w.eloMmFor(legsU[0]) && w.eloMmFor(legs[0]),
+            `an Under on ${mmC.pid}, whose mismatch favours him, wears his mismatch tag (or no level takes it, or the page's rule reads the sides otherwise): ${held.length} levels hold it; ${worn.join('; ') || 'no tag'}`);
+          st[2] = keepZ; w.__legs = legs; setDkE(fixE); w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40); }
         /* (app v112) an Elo pick's legs are chosen on the Elo matchup, not the edge: none is marked Value, and neither
            retired tag is drawn */
         chk(!!card && !card.querySelector('.pb-valmark, .pb-thinmark') && !OLD_TAG.test(txt(card)), 'an Elo pick\'s leg is marked Value, or the Elo picks still say thin edge or no edge: ' + (card ? [...card.querySelectorAll('.pb-valmark')].length + ' marked' : 'no card'));

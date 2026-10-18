@@ -51,17 +51,31 @@
  *   - the money the files feed, on every rated player and every matchup line in them: market + form
  *     (eloAltP, which decides whether a player leg qualifies for the Parlay Builder's suggestions),
  *     the Elo matchup chance (eloMatchupP) and the Elo picks (eloPicks: the candidates the rule's,
- *     worked out here, ranked on value, the best 30; Suggested Parlays' four levels, each at the
- *     builder's own sums, parlayProb on the Elo chances and parlayDec, compiled here from the props
- *     parts' own source, its floor held, and none worse than the best parlay of its size whose legs
- *     are all in different games), on made-up book prices, with no error thrown or logged;
+ *     worked out here, ranked on value, what the levels are searched from the 30 best by value and
+ *     the 10 likeliest by the Elo chance, each once (18 October 2026); Suggested Parlays' four levels,
+ *     each at the builder's own sums, parlayProb on the Elo chances and parlayDec, compiled here from
+ *     the props parts' own source, its floor held, a level marked the likeliest only under its floor,
+ *     and none worse than the best parlay of its size whose legs are all in different games; and the
+ *     tab's fast sums, the search's, parlayProb's and parlayDec's to the bit on the levels and 240
+ *     parlays of the candidates, many with legs of one game), on made-up book prices, with no error
+ *     thrown or logged;
  *   - the Elo picks' four levels (17 October 2026) on made-up players, games, prices, nudges and
  *     correlations of the check's own, so it holds in any week: the candidates the rule's, a -115 main
  *     line of the better value leading a +150 touchdown (never plus money first), every line the rule
  *     refuses refused; every level Suggested Parlays' rule on the Elo chance worked out in full over
  *     every parlay of its size by the builder's own sums (the likeliest pair; the best return over
  *     the floor, else the likeliest, marked so), legs of one game taken and priced together, and a
- *     level with too few candidates empty, saying why. Since October 2026 the whole page's smoke
+ *     level with too few candidates empty, saying why;
+ *   - the search's quality (18 October 2026, after a review found the levels several percent short of
+ *     the best on a one-game slate, and both gates passing with the search cut to one parlay): on two
+ *     sets of made-up candidates where the first search went wrong, every level the rule worked out in
+ *     full by the builder's own sums, and the tab's fast sums those sums to the bit on every parlay:
+ *     F3, ten legs of one game that move together (the stress harness's seed 303, its 22nd set), whose
+ *     quick reading misorders parlays so that the first search marked Aggressive "the likeliest 4 legs"
+ *     at 12.03%, over its 12% floor, and with one parlay worked picked a worse one; F4, six legs of one
+ *     game that move together strongly, which the quick reading overrates, and three games of one leg
+ *     each, where the likeliest four legs are one of each game, a parlay the first search reached only
+ *     as its best parlay of legs all in different games. Since October 2026 the whole page's smoke
  *     (nflbets/build/smoke.js) runs after the Elo job's commit, so this is the gate on the files
  *     reaching the code that touches a chance or a price.
  */
@@ -128,9 +142,12 @@ const CORR = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'p
 /* the Elo picks' rule, the check's own copy (tab_elo.html, EP and eloCands): a rated player, a trusted stat, a
    real price (or one from DraftKings' line read by Refresh odds) from -200 to +300, the Elo chance 30% or more and
    its expected return above 0, one leg a player (his best by value, the main line on a tie, then the lower id),
-   ranked on value, the best 30 kept; never plus money first (until 17 October 2026 the picks were the first of
-   a list sorted plus money first, so an anytime touchdown filled them) */
-const EPC = { lo: -200, hi: 300, floor: 0.30, vig: 1.045, cap: 30 };
+   ranked on value; what the levels are searched from, the 30 best by value and the 10 likeliest by the Elo chance
+   (the better value, then the lower id, on a tie), each once, ranked on value (until 18 October 2026 the 30 best
+   by value alone, so a heavy favourite of thin value was cut before the likeliest pair could see him); never plus
+   money first (until 17 October 2026 the picks were the first of a list sorted plus money first, so an anytime
+   touchdown filled them) */
+const EPC = { lo: -200, hi: 300, floor: 0.30, vig: 1.045, cap: 30, capP: 10 };
 const erfC = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
 const PhiC = z => 0.5 * (1 + erfC(z / Math.SQRT2));
 const invPhiC = p => { let lo = -9, hi = 9; for (let i = 0; i < 90; i++) { const m = (lo + hi) / 2; if (PhiC(m) < p) lo = m; else hi = m; } return (lo + hi) / 2; };
@@ -144,7 +161,8 @@ function eloPOwn(MU, l, imp) {
   const fair = Math.min(0.99, Math.max(0.01, imp / EPC.vig));
   return PhiC(invPhiC(fair) + (l.side === 'under' ? -1 : 1) * a[2] / f.sd);
 }
-/* the candidates by that rule from a list of legs: {all, kept} (every player's best, ranked; the best 30) */
+/* the candidates by that rule from a list of legs: {all, kept} (every player's best, ranked; what the levels are
+   searched from) */
 function candsOwn(legs, MU, players, sums) {
   const c = [];
   for (const l of legs) {
@@ -156,7 +174,8 @@ function candsOwn(legs, MU, players, sums) {
   }
   c.sort((a, b) => (b.ev - a.ev) || ((b.main ? 1 : 0) - (a.main ? 1 : 0)) || cmpC(idC(a), idC(b)));
   const all = [], seen = new Set(); for (const l of c) if (!seen.has(l.pid)) { seen.add(l.pid); all.push(l); }
-  return { all, kept: all.slice(0, EPC.cap) };
+  const likely = [...all].sort((a, b) => (b.pe - a.pe) || (b.ev - a.ev) || cmpC(idC(a), idC(b))).slice(0, EPC.capP), keep = new Set([...all.slice(0, EPC.cap), ...likely]);
+  return { all, kept: all.filter(l => keep.has(l)), byValue: all.slice(0, EPC.cap), likely };
 }
 /* every parlay of each level's size from the candidates, worked in full with the builder's own sums (sums: the
    check's own copy), and each level chosen as Suggested Parlays chooses on the Elo chance: Safe (no floor) the
@@ -177,7 +196,16 @@ function levelsOwn(cands, sums) {
     const r = floor ? (best ? best.e : likely) : likely;
     out.push({ id: 'elo-' + id, label, n, floor, legs: r.legs, p: r.p, dec: r.dec, likeliest: !!floor && !best });
   }
+  out.sums = [...memo.values()];   /* every parlay worked, its legs in the builder's order and its sums */
   return out;
+}
+/* the tab's fast sums (window.eloSums, the search's own) on parlays of the page's candidates C, held to the props
+   parts' sums worked here (each {legs, p, dec}): the problems, at most a few */
+function fastOff(w, C, worked) {
+  const bad = []; let got;
+  try { got = w.eloSums(C, worked.map(e => e.legs)); } catch (err) { return ['threw ' + err.message]; }
+  worked.forEach((e, i) => { const g = got[i]; if (!g || g.p !== e.p || g.dec !== e.dec) bad.push(`${e.legs.map(l => l.pid).join('+')}: ${g ? g.p + ' at ' + g.dec : 'none'}, the sums ${e.p} at ${e.dec}`); });
+  return bad;
 }
 
 /* the page around the tab: the week's schedule with kickoffs on a clock the test moves */
@@ -636,10 +664,10 @@ function page(MU, opts) {
       const C = r.cands || [], ownPe = new Map(own.all.map(l => [idC(l), l.pe]));
       const badC = C.filter(l => !(l.grp !== 'TEAM' && (l.src === 'real' || l.src === 'dkline') && l.price >= EPC.lo && l.price <= EPC.hi && ok01(l.pe) && l.pe >= EPC.floor
         && Math.abs(l.ev - (l.pe * sums.mlToDec(l.price) - 1)) < 1e-12 && l.ev > 0 && ownPe.has(idC(l)) && Math.abs(ownPe.get(idC(l)) - l.pe) < 1e-6));
-      const rest = own.all.filter(l => !C.some(c => c.pid === l.pid));
-      chk(C.length === own.kept.length && r.candidates === own.all.length && !badC.length && new Set(C.map(l => l.pid)).size === C.length && C.every((l, i) => !i || C[i - 1].ev >= l.ev)
-        && (!rest.length || Math.min(...C.map(l => l.ev)) >= Math.max(...rest.map(l => l.ev)) - 1e-6),
-        `the Elo picks' candidates on the files are not the rule's (a rated player's best leg by value, ranked on value, the best ${EPC.cap}): ${C.length} kept of ${r.candidates}, the rule ${own.kept.length} of ${own.all.length}; ${badC.slice(0, 3).map(l => l.pid + ' ' + l.stat + ' ' + l.side + ' ' + l.price + ' ' + l.pe).join('; ')}`);
+      chk(C.length === own.kept.length && C.map(idC).join() === own.kept.map(idC).join() && r.candidates === own.all.length && !badC.length && new Set(C.map(l => l.pid)).size === C.length && C.every((l, i) => !i || C[i - 1].ev >= l.ev),
+        `the Elo picks' candidates on the files are not the rule's (a rated player's best leg by value, ranked on value; searched from the ${EPC.cap} best by value and the ${EPC.capP} likeliest by the Elo chance, each once): ${C.length} kept of ${r.candidates}, the rule ${own.kept.length} of ${own.all.length}; ${badC.slice(0, 3).map(l => l.pid + ' ' + l.stat + ' ' + l.side + ' ' + l.price + ' ' + l.pe).join('; ')}`);
+      /* the union is what is searched: where some of the likeliest are not among the best by value, they are there */
+      notes.push(`the Elo picks' candidates on the files: ${C.length} searched of ${own.all.length}, ${own.likely.filter(l => !own.byValue.includes(l)).length} of the ${EPC.capP} likeliest from past the ${EPC.cap} best by value`);
       chk(r.tiers.length === sums.PB_TIERS.length && r.tiers.every((t, i) => t.id === 'elo-' + sums.PB_TIERS[i][0] && t.label === sums.PB_TIERS[i][1] && t.n === sums.PB_TIERS[i][2] && t.floor === sums.PB_TIERS[i][3]),
         'the Elo picks are not Suggested Parlays\' four levels (PB_TIERS), each elo-<level>: ' + r.tiers.map(t => t.id + ' ' + t.n + ' ' + t.floor).join(', '));
       const sub = (n, f) => { const go = (s0, cur) => { if (cur.length === n) { f(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); }; go(0, []); };
@@ -649,12 +677,26 @@ function page(MU, opts) {
         chk(t.legs.length === t.n && t.legs.every((l, i) => l === L[i] || idC(l) === idC(L[i])) && t.legs.every(l => C.some(c => idC(c) === idC(l))) && new Set(t.legs.map(l => l.pid)).size === t.n
           && ok01(t.p) && t.p === p && t.dec === dec && (!t.floor || t.likeliest || t.p >= t.floor) && (!t.likeliest || t.floor > 0),
           `the ${t.id} Elo pick is not ${t.n} of the candidates, one a player, in the builder's order, at the builder's own sums on their Elo chances and prices, over its floor: ${t.p} at ${t.dec}, the sums ${p} at ${dec}`);
+        /* "the likeliest N legs" only under the floor: a parlay at or over it is the floor's pick */
+        chk(!t.likeliest || (t.floor > 0 && t.p < t.floor), `the ${t.id} Elo pick is marked the likeliest ${t.n} legs at ${t.p}, at or over its ${t.floor} floor`);
         /* the best parlay of its size with every leg in a different game: no level is worse */
         let best = null;
         sub(t.n, ls => { if (new Set(ls.map(l => l.gid)).size !== t.n) return; const pp = ls.reduce((a, l) => a * l.pe, 1), dd = ls.reduce((a, l) => a * sums.mlToDec(l.price), 1);
           if (t.floor && pp < t.floor) return; const sc = t.floor ? pp * dd : pp; if (!best || sc > best.sc) best = { sc, ls }; });
         chk(!best || (t.floor && t.likeliest ? false : (t.floor ? t.p * t.dec : t.p) >= best.sc * (1 - 1e-9)),
-          `the ${t.id} Elo pick (${t.likeliest ? 'the likeliest' : t.floor ? 'best return ' + (t.p * t.dec).toFixed(4) : 'chance ' + t.p.toFixed(4)}) is worse than ${best && best.ls.map(l => l.pid + ' ' + l.stat).join(', ')}, legs all in different games (${best && best.sc.toFixed(4)})`); } }
+          `the ${t.id} Elo pick (${t.likeliest ? 'the likeliest' : t.floor ? 'best return ' + (t.p * t.dec).toFixed(4) : 'chance ' + t.p.toFixed(4)}) is worse than ${best && best.ls.map(l => l.pid + ' ' + l.stat).join(', ')}, legs all in different games (${best && best.sc.toFixed(4)})`); }
+      /* the search's fast sums, parlayProb's and parlayDec's to the bit: on the levels and on 240 parlays of the
+         candidates, two to five legs, most with two or three of one game (a fixed draw of its own) */
+      { let seed = 20261018; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+        const byG = {}; for (const l of C) (byG[l.gid] = byG[l.gid] || []).push(l); const multi = Object.values(byG).filter(g => g.length > 1);
+        const sets = r.tiers.filter(t => t.legs.length).map(t => t.legs);
+        for (let q = 0; q < 240 && C.length >= 5; q++) { const n = 2 + (q % 4), pick = new Set();
+          if (multi.length && q % 5) { const g = multi[Math.floor(rnd() * multi.length)]; for (let j = 0; j < Math.min(g.length, 2 + (q % 2)) && pick.size < n; j++) pick.add(g[Math.floor(rnd() * g.length)]); }
+          while (pick.size < n) pick.add(C[Math.floor(rnd() * C.length)]);
+          sets.push([...pick]); }
+        const worked = sets.map(ls => { const O = sums.pbOrder(ls); return { legs: O, p: sums.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr, dec: sums.parlayDec(O.map(l => ({ leg: l, ml: l.price }))) }; });
+        const bad = fastOff(w, C, worked);
+        chk(!bad.length, `the Elo picks' fast sums are not parlayProb's and parlayDec's to the bit on ${bad.length} of ${worked.length} parlays of the files' candidates: ${bad.slice(0, 3).join('; ')}`); } }
     chk(!errors.length, `the tab threw or logged an error on the files: ${errors.slice(0, 3).join('; ')}`);
     notes.push(`money paths: market + form on ${alt} player legs, the Elo matchup chance on ${mu} of ${legs.length} lines, the Elo picks' ${r && r.tiers ? r.tiers.filter(t => t.legs.length).length : 0} levels from ${r && r.cands ? r.cands.length : 0} of ${r && r.candidates || 0} candidates`); }
 
@@ -703,6 +745,37 @@ function page(MU, opts) {
     /* the same-game pairs that move together, by the builder's keys (rel|grp:stat|grp:stat) */
     const CORR_FX = { 'team|QB:passing_yards|WR:receiving_yards': 0.45, 'opp|QB:passing_yards|TE:any_td': 0.08, 'opp|TE:any_td|WR:receiving_yards': 0.05,
       'opp|RB:rushing_yards|WR:receptions': -0.10, 'team|TE:any_td|WR:receiving_yards': -0.06, 'opp|QB:passing_tds|TE:any_td': 0.12, 'opp|QB:passing_tds|WR:receiving_yards': 0.10 };
+    /* F3 (18 October 2026): ten legs of one game that move together, the stress harness's seed 303 and its 22nd set
+       (props/build's own correlations for these pairs, copied here so the fixture is the check's), where the
+       quick reading misorders parlays: the first search marked Aggressive "the likeliest 4 legs" at 12.03%, over its
+       12% floor, and with one parlay worked (fin 1, tol 1) picked one of 11.95%; the Elo chances as the harness had
+       them, to six places */
+    const G3 = '2026_06_FXG_FXH';
+    const ROWS3 = [
+      ['fx-p009', 'WR', 'FXH', 'FXG', G3, 'receptions', 'over', 1.5, 117, 0.529182], ['fx-p002', 'WR', 'FXH', 'FXG', G3, 'any_td', 'over', 1.5, 108, 0.54943],
+      ['fx-p008', 'QB', 'FXG', 'FXH', G3, 'completions', 'under', 1.5, 191, 0.391457], ['fx-p007', 'WR', 'FXG', 'FXH', G3, 'receptions', 'under', 1.5, 232, 0.340325],
+      ['fx-p004', 'RB', 'FXH', 'FXG', G3, 'rushing_yards', 'over', 1.5, -157, 0.66656], ['fx-p000', 'TE', 'FXG', 'FXH', G3, 'any_td', 'over', 1.5, -126, 0.604264],
+      ['fx-p006', 'TE', 'FXG', 'FXH', G3, 'any_td', 'over', 1.5, -101, 0.539813], ['fx-p005', 'QB', 'FXG', 'FXH', G3, 'passing_tds', 'over', 1.5, 220, 0.331885],
+      ['fx-p001', 'RB', 'FXG', 'FXH', G3, 'scrim_yards', 'over', 1.5, -114, 0.541961], ['fx-p003', 'QB', 'FXH', 'FXG', G3, 'passing_yards', 'over', 1.5, 160, 0.387538]];
+    const CORR_F3 = { 'team|RB:rushing_yards|WR:receptions': -0.054, 'opp|TE:any_td|WR:receptions': 0.032, 'opp|QB:passing_tds|WR:receptions': 0.076, 'team|QB:passing_yards|WR:receptions': 0.305,
+      'opp|QB:completions|WR:any_td': 0.113, 'opp|WR:any_td|WR:receptions': 0.051, 'opp|QB:passing_tds|WR:any_td': 0.059, 'team|QB:passing_yards|WR:any_td': 0.163, 'team|QB:completions|WR:receptions': 0.335,
+      'team|QB:completions|TE:any_td': 0.066, 'team|QB:completions|RB:scrim_yards': -0.033, 'opp|QB:completions|QB:passing_yards': 0.04, 'team|QB:passing_tds|WR:receptions': 0.116,
+      'team|RB:scrim_yards|WR:receptions': -0.046, 'opp|QB:passing_yards|WR:receptions': 0.036, 'opp|QB:passing_tds|RB:rushing_yards': -0.047, 'opp|RB:rushing_yards|RB:scrim_yards': -0.102,
+      'team|QB:passing_yards|RB:rushing_yards': -0.11, 'team|QB:passing_tds|TE:any_td': 0.246, 'opp|QB:passing_yards|TE:any_td': 0.038, 'team|QB:passing_tds|RB:scrim_yards': 0.056,
+      'opp|QB:passing_tds|QB:passing_yards': 0.148 };
+    /* F4: six receivers of one club whose yards move together strongly (0.4 a pair), each 31% at +230, which the quick
+       reading overrates when several are taken, and three backs of three other games, each 65% at -170: the likeliest
+       four legs (no four reach 12%) are one receiver and the three backs, all in different games, which the first
+       search reached only as its best parlay of legs all in different games */
+    const G4 = ['2026_06_FXJ_FXK', '2026_06_FXL_FXM', '2026_06_FXN_FXO', '2026_06_FXP_FXQ'];
+    const ROWS4 = [...[0, 1, 2, 3, 4, 5].map(i => ['fx-a' + i, 'WR', 'FXJ', 'FXK', G4[0], 'receiving_yards', 'over', 1.5, 230, 0.31]),
+      ...[1, 2, 3].map(i => ['fx-b' + (i - 1), 'RB', G4[i].slice(8, 11), G4[i].slice(12), G4[i], 'rushing_yards', 'over', 1.5, -170, 0.65])];
+    const CORR_F4 = { 'team|WR:receiving_yards|WR:receiving_yards': 0.4 };
+    /* F5: thirty legs at +150 and four heavy favourites at -190 of thinner value, each in a game of its own: the levels
+       are searched from the 30 best by value and the 10 likeliest, so the favourites are there and Safe, the likeliest
+       pair, is two of them (until 18 October 2026 the 30 best by value alone cut all four) */
+    const ROWS5 = [...[...Array(30)].map((_, i) => ['fx-v' + String(i).padStart(2, '0'), 'WR', 'FV' + String.fromCharCode(65 + (i % 26)) + Math.floor(i / 26), 'FW' + i, `2026_06_FV${i}_FW${i}`, 'receiving_yards', 'over', 49.5, 150, 0.45 + i * 0.0005]),
+      ...[0, 1, 2, 3].map(i => ['fx-f' + i, 'RB', 'FF' + i, 'FG' + i, `2026_06_FF${i}_FG${i}`, 'rushing_yards', 'over', 59.5, -190, 0.72 - i * 0.01])];
     const sums = sumsOwn(CORR_FX);
     const build = rows => {
       const MUf = JSON.parse(JSON.stringify(MU0 || { week: 6, players: {}, fit: {}, record: {} }));
@@ -720,9 +793,10 @@ function page(MU, opts) {
           name: 'Fixture ' + pid.slice(3).toUpperCase(), team, opp, week: 6, label: side + ' ' + k + ' ' + stat, mu: k, why: x.why || null }); }
       return { MUf, Pf, legs: legs.map(({ why, ...l }) => l), whys: legs.filter(l => l.why) };
     };
-    for (const [nm, rows] of [['F1', ROWS1], ['F2', ROWS2]]) {
+    for (const [nm, rows, corr] of [['F1', ROWS1, CORR_FX], ['F2', ROWS2, CORR_FX], ['F3', ROWS3, CORR_F3], ['F4', ROWS4, CORR_F4], ['F5', ROWS5, {}]]) {
       const { MUf, Pf, legs, whys } = build(rows), errors = [], { w } = page(MUf, { errors, P: Pf }); await wait(60);
-      sumsInto(w, CORR_FX);
+      sumsInto(w, corr);
+      const sums = sumsOwn(corr);
       w.__fx = legs; w.eval('function pricedLegs(){ return window.__fx.map(l=>Object.assign({},l)); }');
       let r; try { r = w.eloPicks(); } catch (err) { r = 'threw ' + err.message; }
       if (!r || !Array.isArray(r.tiers)) { chk(false, `${nm}: the Elo picks do not build on the check's own lines: ${typeof r === 'string' ? r : JSON.stringify(r)}`); continue; }
@@ -730,7 +804,20 @@ function page(MU, opts) {
       chk(C.map(idC).join() === own.kept.map(idC).join() && C.every((l, i) => Math.abs(l.pe - own.kept[i].pe) < 1e-6) && r.candidates === own.all.length,
         `${nm}: the Elo picks' candidates are not the rule's, ranked on value: ${C.map(l => l.pid + ' ' + l.stat + ' ' + l.price).join(', ')}; the rule ${own.kept.map(l => l.pid + ' ' + l.stat + ' ' + l.price).join(', ')}`);
       chk(!C.some(l => whys.some(x => idC(x) === idC(l))), `${nm}: a line that is no candidate is one: ` + C.filter(l => whys.some(x => idC(x) === idC(l))).map(l => whys.find(x => idC(x) === idC(l)).why).join('; '));
+      if (nm === 'F5') {
+        /* all 34 searched, the four favourites among them, and Safe two of them: the likeliest pair, worked out here */
+        let likely = null; for (let i = 0; i < C.length; i++) for (let j = i + 1; j < C.length; j++) { const O = sums.pbOrder([C[i], C[j]]), p = sums.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr, k = O.map(idC).sort().join(',');
+          if (!likely || p > likely.p || (p === likely.p && k < likely.k)) likely = { O, p, k }; }
+        const safe = r.tiers.find(t => t.id === 'elo-safe');
+        chk(C.length === 34 && ['fx-f0', 'fx-f1', 'fx-f2', 'fx-f3'].every(pid => C.some(l => l.pid === pid)) && !!safe && safe.legs.map(idC).sort().join(',') === likely.k && safe.p === likely.p
+          && safe.legs.every(l => /^fx-f/.test(l.pid)),
+          `F5: the Elo picks are not searched from the 30 best by value and the 10 likeliest, or Safe is not the likeliest pair: ${C.length} searched; Safe ${safe ? safe.legs.map(l => l.pid).join('+') + ' at ' + safe.p : 'none'}, the likeliest pair ${likely.O.map(l => l.pid).join('+')} at ${likely.p}`);
+        notes.push(`the Elo picks on 34 candidates, four heavy favourites of thin value among them: ${C.length} searched, Safe ${safe ? safe.legs.map(l => l.pid.slice(3)).join('+') : 'none'}`);
+        chk(!errors.length, `${nm}: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); continue; }
       const want = levelsOwn(C, sums);
+      /* the search's fast sums are the props parts' to the bit on every parlay worked out here */
+      { const bad = fastOff(w, C, want.sums);
+        chk(!bad.length, `${nm}: the Elo picks' fast sums are not parlayProb's and parlayDec's to the bit on ${bad.length} of ${want.sums.length} parlays: ${bad.slice(0, 3).join('; ')}`); }
       for (const t of want) { const g = r.tiers.find(x => x.id === t.id);
         if (t.none) { chk(!!g && !g.legs.length && g.why === `Only ${C.length} players on your picks qualify: this level takes ${t.n}.`, `${nm}: the ${t.label} Elo pick is not empty, saying why, with ${C.length} candidates: ${JSON.stringify(g && (g.why || g.legs.map(idC)))}`); continue; }
         chk(!!g && g.legs.map(idC).join() === t.legs.map(idC).join() && g.p === t.p && g.dec === t.dec && !!g.likeliest === t.likeliest,
@@ -748,10 +835,14 @@ function page(MU, opts) {
           `F1: no Elo pick takes two legs of one game that move together, or one is priced as its legs multiplied: ${r.tiers.map(t => t.id + ' ' + t.legs.map(l => l.gid.slice(-3)).join('/') + ' ' + t.p + ' ' + t.dec).join('; ')}`);
         chk(r.tiers.every(t => t.legs.length === t.n), 'F1: an Elo pick level is empty with eight candidates');
         notes.push(`the Elo picks on the check's own lines: ${r.tiers.map(t => `${t.label} ${t.legs.map(l => l.pid.slice(3)).join('+')} ${(t.p * 100).toFixed(1)}% at ${t.dec.toFixed(2)}${t.likeliest ? ' (likeliest)' : ''}`).join('; ')}`); }
-      else {
+      else if (nm === 'F2') {
         chk(r.tiers.filter(t => t.likeliest).length >= 2 && r.tiers.every(t => !t.likeliest || (t.floor && t.p < t.floor)),
           `F2: the levels no parlay of whose size reaches the floor are not the likeliest of their size, marked so: ${r.tiers.map(t => t.id + (t.likeliest ? ' likeliest' : '') + ' ' + t.p).join(', ')}`);
         notes.push(`the Elo picks on four candidates: ${r.tiers.map(t => t.legs.length ? `${t.label} ${t.legs.length}${t.likeliest ? ' (likeliest)' : ''}` : `${t.label} empty`).join('; ')}`); }
+      else {
+        /* every level here is held above to the rule worked out in full; and none is marked the likeliest at or over its floor */
+        chk(r.tiers.every(t => !t.likeliest || (t.floor && t.p < t.floor)), `${nm}: a level is marked the likeliest at or over its floor: ${r.tiers.map(t => t.id + (t.likeliest ? ' likeliest' : '') + ' ' + t.p).join(', ')}`);
+        notes.push(`the Elo picks on ${nm}'s ${C.length} candidates (${want.sums.length} parlays worked in full): ${r.tiers.map(t => `${t.label} ${(t.p * 100).toFixed(2)}%${t.likeliest ? ' (likeliest)' : ''} in ${new Set(t.legs.map(l => l.gid)).size} game${new Set(t.legs.map(l => l.gid)).size > 1 ? 's' : ''}`).join('; ')}`); }
       chk(!errors.length, `${nm}: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); }
   }
 
