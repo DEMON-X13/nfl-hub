@@ -912,6 +912,16 @@ window.eloMismatches=mismatches;
 /* and the way a Mismatches bubble brings a player's row into view and highlights it, for the Game
    snapshot's Starters names (the board's openOnProps) */
 window.eloFocusPlayer=mmFocus;
+/* the hub's matchup bubble (glance.js, 17 October 2026) reads a player's matchup as this tab does: the stats where
+   the Elo part has held up (muTrusted) and their labels, the unit he faces ranked among the league's defences as the
+   Mismatches rank it (for every expected starter, not only those with a mismatch), a mismatch's grade, and why the
+   matchups file has him out */
+function unitFaced(v){ const u=v&&MM_UNIT[v.group]; if(!u||!D.mu) return null; const byTeam={};
+  for(const x of Object.values(D.mu.players||{})) if(x.opp_def) byTeam[x.opp]=x.opp_def;
+  if(D.mu.league&&D.mu.league.defs) Object.assign(byTeam,D.mu.league.defs);
+  const val=d=>u.units.reduce((a,k)=>a+d[k],0)/u.units.length, order=Object.keys(byTeam).sort((a,b)=>val(byTeam[b])-val(byTeam[a]));
+  const r=order.indexOf(v.opp)+1; return r?{name:u.name,rank:r,n:order.length}:null; }
+window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,outWhy};
 if(typeof renderSlate==='function'){ const drawSlate=renderSlate;
   renderSlate=function(){ const r=drawSlate.apply(this,arguments); try{ mismatchCard(); }catch(e){} return r; }; }
 if(typeof renderGame==='function'){ const drawGame=renderGame;
