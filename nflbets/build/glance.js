@@ -19,13 +19,13 @@
    or a level card in its set or in the Elo picks: placeOf) and the leg's key, side and line, and when the page draws
    its rows again while it is open (a MutationObserver, connected only then) it is bound to that place's copy of the
    leg (marked open, placed again, drawn again where the copy's price moved), or closed, the focus on the leg's
-   neighbour there, where that place no longer draws the leg.
+   neighbour there, where that place no longer draws the leg. Placed again, it keeps where the reader had scrolled it.
 
    What it shows is a few lines, no paragraphs, every number read from what the page already has (nothing is
    fetched, nothing is saved): for a player his club and position, his status on the injury report as the page
    reads it, his season Elo with its shield, tier and rank at his position (players.json; prov. where provisional),
    the game (the opponent, home or away, the kickoff in ET), the defense he faces as the ELO Ratings tab's own table
-   for his side of the ball names and ranks it (model.json's units: a quarterback the opponent's Overall Defense, a
+   for his leg's side of the ball names and ranks it (model.json's units: a quarterback the opponent's Overall Defense, a
    back its Run Defense, a receiver or tight end its Pass Defense, as the Game snapshot's position matchups set them:
    window.eloGlance.unit), his mismatch's grade and edge where the Props tab's Mismatches have one (matchups.json,
    window.eloMismatches; no rank of its own), the stats where the Elo part of the matchup has held up (muTrusted)
@@ -130,7 +130,10 @@ function snapBtn(gid){
 function playerHtml(){
   const pid=cur.id, gid=cur.gid, K=legOf(cur.sig), L=K&&K.leg, G=gameView(gid), F=FILES;
   const Pl=F&&F.players, e=Pl&&Pl.players&&Pl.players[pid]||null, sp=Sx()&&Sx().players&&Sx().players[pid]||null, mu=F&&F.mu;
-  const name=(L&&L.name)||(e&&e.name)||(sp&&sp.n)||pid, grp=(e&&e.group)||(sp&&sp.grp)||(L&&L.grp)||'';
+  /* his side of the ball is the leg's (a receiving line is an offense's, whatever position he is rated at: Travis
+     Hunter, rated a defensive back, has receiving lines), so the defense he faces follows the leg; his Elo and rank
+     stay the ratings file's, at the position he is rated at, which the rank line names */
+  const name=(L&&L.name)||(e&&e.name)||(sp&&sp.n)||pid, grp=(L&&L.grp)||(sp&&sp.grp)||(e&&e.group)||'';
   const pos=(L&&L.pos)||(sp&&sp.pos)||grp, team=(L&&L.team)||(sp&&sp.team)||(e&&e.team)||'';
   const opp=G?(team===G.h?G.a:team===G.a?G.h:(L&&L.opp)||''):(L&&L.opp)||'', home=G?team===G.h:null;
   const lines=[];
@@ -260,14 +263,17 @@ const sheet=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-widt
 const ROOM_MIN=160;
 /* below the name, above it where there is no room below, inside the screen; a sheet across the foot of the screen
    at 640px and under, and wherever neither side of the name has ROOM_MIN for it (a landscape phone, about 330px
-   tall or less), since a bubble held to its floor there would cover the name and run off the screen */
+   tall or less), since a bubble held to its floor there would cover the name and run off the screen. Where the
+   reader has scrolled the bubble, the scroll is kept: measuring its whole height clears its max-height, and the
+   browser takes the scroll back to the top on that measure (any redraw on the page, or a resize, placed it again) */
 function place(){
   if(!box||box.hidden) return;
+  const scrolled=box.scrollTop||0;
   let sh=sheet();
   if(!sh){
     /* the name's own block (the name and its line under it), so the bubble never covers what the leg is */
     const a=anchor(), at=a&&(a.closest('.nm,td.plr')||a); let r=null; try{ r=at?at.getBoundingClientRect():null; }catch(e){ r=null; }
-    if(!r){ box.classList.remove('glance-sheet'); return; }
+    if(!r){ box.classList.remove('glance-sheet'); if(scrolled) box.scrollTop=scrolled; return; }
     const de=document.documentElement, vw=de.clientWidth||window.innerWidth||0, vh=window.innerHeight||de.clientHeight||0, pad=8, gap=6;
     box.classList.remove('glance-sheet'); box.style.maxHeight='';   /* its whole height as a bubble, border and all (border-box), before the room is chosen */
     const bw=box.offsetWidth||0, bh=box.offsetHeight||0, below=vh-r.bottom-gap-pad, above=r.top-gap-pad;
@@ -281,6 +287,7 @@ function place(){
   }
   box.classList.toggle('glance-sheet',sh);
   if(sh){ box.style.left=''; box.style.top=''; box.style.maxHeight=''; }
+  if(scrolled) box.scrollTop=scrolled;
 }
 function draw(){
   if(!cur||!box) return;

@@ -1484,12 +1484,16 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const n = await holdSets('this week, as published');
         { const N = shownHere(); console.log(`  (Suggested Parlays on the published week: ${primeHere().map(g => g.id).join(', ') || 'no prime-time game to come'}, ${N.on.length ? N.on.map(g => g.id).join(', ') + ' on the tab' : N.games.length ? 'none on the tab until ' + isoOwn(N.open) : 'none on the tab'}, ${n} levels built)`); }
         await openPb(); }
-      /* made-up lines on every starter (each a few points off his own projection) and a price on
-         every other total, so the tiers are built on any day of the week; then Add to builder and
-         Finish on one of them */
+      /* made-up lines on every starter (each a few points off his own projection), a made-up total of 44.5 on
+         every game with none posted (a week the payload has no lines for yet: a clock far past the bake, the
+         off-season replay, where weeks 8 to 18 of a mid-October payload have no total) and a price on every
+         other total, so the tiers, and the totals' checks, are built on any day of the week; then Add to
+         builder and Finish on one of them */
       const keepPay = w.eval('JSON.stringify({m:PAY.mkt[String(currentWeek())]||null,t:S.sched.map(g=>[g.tov,g.tou])})');
       w.eval(`(function(){ const cw=currentWeek(), M=(PAY.mkt[String(cw)]=PAY.mkt[String(cw)]||{}); let J=0;
-        pbGames().forEach((g,gi)=>{ if(gi%2===0){ g.tov=-105; g.tou=-115; }
+        window.__totPlanted=[];
+        pbGames().forEach((g,gi)=>{ if(g.tot==null||!isFinite(g.tot)){ window.__totPlanted.push({g,had:Object.prototype.hasOwnProperty.call(g,'tot'),v:g.tot}); g.tot=44.5; }
+          if(gi%2===0){ g.tov=-105; g.tou=-115; }
           const ro=rosterFor(g,false); for(const tm in ro) ro[tm].players.forEach((x,i)=>{ if(!x.starter) return;
             for(const l of statLines(x)){ if(l.prob||!(l.mu>2)) continue;
               /* one line in three priced so the book's fair chance on the model's side is 25 points under the
@@ -1832,6 +1836,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (planted) { for (const x of planted) Object.assign(x.g, x.was); w.eval('SP_CACHE=new Map()'); }
       w.eval(`(function(){ const k=${keepPay}, cw=currentWeek(); if(k.m) PAY.mkt[String(cw)]=k.m; else delete PAY.mkt[String(cw)];
         S.sched.forEach((g,i)=>{ g.tov=k.t[i][0]; g.tou=k.t[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
+        for(const x of window.__totPlanted||[]){ if(x.had) x.g.tot=x.v; else delete x.g.tot; } delete window.__totPlanted;
         const kd=${keepDkM}; if(kd===null) delete PAY.dk; else PAY.dk=kd; PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay(); })()`);
       await wait(40); }
   }
@@ -5682,8 +5687,13 @@ async function lightChecks() {
    a bubble is open (renderParlay with the same leg drawn earlier in the page, renderSp with one leg on two levels of a
    set and an Elo pick's level of the same id, a builder leg's price moved, the leg taken out of the builder): bound to
    the same place's copy, marked open, its focus and toggle there, and closed with the focus on its neighbour when the
-   leg is gone; and a builder row whose stored price is not the one it shows (a ladder rung at the book's price now),
-   its market + form and Elo matchup on the price shown, as the bubble's.
+   leg is gone; the reader's scroll in the bubble kept through a redraw and a resize, as a bubble and as the sheet a short
+   screen falls back to (jsdom lays nothing out: the browser's rule, a measure with the max-height cleared taking the
+   scroll to the top, is stood in on the bubble alone); a player the ratings file rates on the other side of the ball
+   from his leg (Travis Hunter, a defensive back there, on a receiving line) set against the defense his leg faces, his
+   rank kept at his rated position; a club yet to play this season marked carried from last season on the Faces line;
+   and a builder row whose stored price is not the one it shows (a ladder rung at the book's price now), its market +
+   form and Elo matchup on the price shown, as the bubble's.
    ===================================================================================== */
 async function glanceChecks() {
   const c0 = checks, f0 = fails.length;
@@ -5829,9 +5839,11 @@ async function glanceChecks() {
       if (nOf('noelo') !== want || nOf('se') !== null) bad.push(`no Elo row said "${nOf('noelo')}", not "${want}"`); }
     const opp = r ? (team === r.h ? r.a : team === r.a ? r.h : null) : null;
     if (r) { if ((opp && (nOf('ha') !== (team === r.h ? 'vs' : 'at') || nOf('opp') !== opp)) || nOf('kick') !== kickOwn(r.d, r.t)) bad.push(`game ${nOf('ha')} ${nOf('opp')} ${nOf('kick')}, not ${team === r.h ? 'vs' : 'at'} ${opp} ${kickOwn(r.d, r.t)}`); }
-    /* the defense he faces: model.json's table for his side of the ball, named and ranked as the file has it, and the
-       rank the ELO Ratings tab's own table draws for that club; none for a kicker or with no such table */
-    { const grp = (e && e.group) || (sp && sp.grp) || (l && l.grp) || '', fw = faceOwn(grp, opp), tb = fw && TAB_RANK[fw.key], tr = tb ? tb.rows[opp] : undefined;
+    /* the defense he faces: model.json's table for his side of the ball, the leg's (a receiving line is an offense's,
+       whatever position the ratings file rates him at: Travis Hunter, a defensive back there, has receiving lines),
+       named and ranked as the file has it, and the rank the ELO Ratings tab's own table draws for that club; none for
+       a kicker or with no such table */
+    { const grp = (l && l.grp) || (sp && sp.grp) || (e && e.group) || '', fw = faceOwn(grp, opp), tb = fw && TAB_RANK[fw.key], tr = tb ? tb.rows[opp] : undefined;
       if (!fw) { if (nOf('unit') !== null || B.querySelector('[data-glance-faces]')) bad.push(`a Faces line (${nOf('uclub')} ${nOf('unit')} ${nOf('urank')}) where a ${grp || 'player of no position'} faces no table of the file's`); }
       else {
         if (nOf('unit') !== fw.name || nOf('uclub') !== opp || nOf('urank') !== ordOwn(fw.rank) || nOf('uof') !== String(fw.n) || (fw.carried ? nOf('ucarry') !== `carried from ${fw.from}` : nOf('ucarry') !== null)
@@ -5984,13 +5996,48 @@ async function glanceChecks() {
     const sT = ['vegas', 'alpha', 'joker', 'elo'].map(k => cs[k] && cs[k].pick).find(t => t === r.a || t === r.h) || r.a, sO = sT === r.h ? r.a : r.h;
     const realS = { key: legKey(r.id, 'team:' + sT, 'ats'), gid: r.id, pid: 'team:' + sT, stat: 'ats', k: -3.5, side: 'over', main: false, p: 0.53, price: -110, src: 'real', mu: null,
       name: TN[sT] || sT, pos: 'Game', grp: 'TEAM', team: sT, opp: sO, week: r.w, label: 'To cover -3.5' };
-    const legs = [realP, realT, realS, realG, fakeP, fakeT, ...mmLegs].filter(Boolean), at1 = l => lis[legs.indexOf(l)].querySelector('[data-glance]');
+    /* and a player the ratings file rates on the other side of the ball from his leg, on a receiving line in the
+       fixture's game (Travis Hunter, a defensive back in players.json, has receiving lines in the payload): one the
+       payload carries so, else a ranked defender of the file's planted on a receiver's line; his bubble sets him
+       against the Pass Defense his leg faces, and keeps his Elo and rank at the position he is rated at */
+    const twoId = Object.keys(S.players).find(id => Pl.players[id] && Pl.players[id].se != null && Pl.players[id].rank && FACE_OWN[S.players[id].grp] && !FACE_OWN[Pl.players[id].group])
+      || Object.keys(Pl.players || {}).find(id => Pl.players[id].se != null && Pl.players[id].rank && !FACE_OWN[Pl.players[id].group] && Pl.players[id].group !== 'K' && id !== pid)
+      || Object.keys(Pl.players || {}).find(id => Pl.players[id].group && !FACE_OWN[Pl.players[id].group] && Pl.players[id].group !== 'K' && id !== pid);
+    const twoP = twoId ? { key: legKey(r.id, twoId, 'receiving_yards'), gid: r.id, pid: twoId, stat: 'receiving_yards', k: 40.5, side: 'over', main: true, p: 0.55, price: -115, src: 'real', mu: 42,
+      name: S.players[twoId] ? S.players[twoId].n : Pl.players[twoId].name, pos: 'WR', grp: 'WR', team: r.a, opp: r.h, week: r.w, label: 'Over 40.5 receiving yards' } : null;
+    chk(!!twoP, 'the matchup bubble: no player in the ratings file rated on the other side of the ball to plant on a receiving line');
+    const legs = [realP, realT, realS, realG, fakeP, fakeT, twoP, ...mmLegs].filter(Boolean), at1 = l => lis[legs.indexOf(l)].querySelector('[data-glance]');
     const host = d.createElement('div'); host.id = 'glFix'; host.className = 'card'; d.body.appendChild(host);
     host.innerHTML = w.pbTierCard({ id: 'glfix', label: 'Fixture', legs, corr: 0.05, dec: 20, fair: null, floor: null }, { quiet: true, kind: 'sp', fid: 'glfix' });
     const lis = [...host.querySelectorAll('.pb-legs li')];
     { const bad = legs.map((l, i) => { const x = lis[i] ? nameBad(lis[i].querySelector('.nm'), l.key, l.side, l.k) : `${l.key}: not drawn`; return x; }).filter(Boolean);
       chk(lis.length === legs.length && bad.length === 0, `the matchup bubble: a name on a level card of the smoke's own is not the bubble's button for its leg: ${bad.join(' | ')}`); }
     for (let i = 0; i < lis.length; i++) { const b = lis[i].querySelector('[data-glance]'); if (b) await openOn(b, legs[i].price, legs[i].src, `a level card of the smoke's own (${legs[i].name}, ${legs[i].label})`); }
+    /* the player rated on the other side of the ball: his receiving line sets him against the Pass Defense (the leg's
+       side), where the file has one for the club, and his rank stays the one at his rated position */
+    if (twoP) { const fw = faceOwn('WR', twoP.opp), e2 = Pl.players[twoP.pid], g2 = Pl.groups && Pl.groups[e2.group], b = at1(twoP);
+      watching = true; b.click(); await wait(20);
+      const fc = box().querySelector('[data-glance-faces]'), got = [fc ? fc.dataset.glanceFaces : null, nOf('uclub'), nOf('rank'), nOf('of')].join(' ');
+      box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
+      const rk2 = e2.se != null && e2.rank, want = [fw ? fw.key : null, fw ? twoP.opp : null, rk2 ? '#' + e2.rank : null, rk2 && g2 && g2.active ? String(g2.active) : null].join(' ');
+      chk(got === want, `the matchup bubble of ${twoP.name}, rated a ${e2.group} and on a receiver's line, does not set him against the defense his leg faces with his rank at his rated position: ${got}, not ${want}`); }
+    /* a club yet to play this season, on the rating carried from last season (week 1, or a team on its bye then): the
+       Faces line marks it "carried from <season>", as the ELO Ratings tab marks it, on the same rank. Planted on the
+       page's own copy of model.json (eloFiles) and the smoke's alike, every value put back after */
+    { const L = realP || twoP, F = await w.eloFiles(), U = F && F.model && F.model.units, key = L && FACE_OWN[L.grp], club = L && L.opp;
+      const T = U && key && U[key], T0 = T && MO.units && MO.units[key];
+      if (!T || !T[club] || !T0 || !T0[club] || !faceOwn(L.grp, club)) chk(false, `the matchup bubble: no ${key || 'unit'} table rating for ${club || 'the fixture\'s opponent'} to mark carried`);
+      else {
+        const keep = { v: T[club].carried, v0: T0[club].carried, p: U.params, p0: MO.units.params }, from = season - 1;
+        const P1 = { ...(U.params || {}), carry: (U.params && U.params.carry) || 0.42, carry_from: from };
+        T[club].carried = true; T0[club].carried = true; U.params = P1; MO.units.params = { ...P1 };
+        const b = at1(L); watching = true; b.click(); await wait(20);
+        const bad = bubbleBad(b, L.price, L.src), cw = nOf('ucarry'), rk = nOf('urank');
+        box().querySelector('[data-glance-close]').click(); await wait(10); watching = false;
+        const put = (o, k, v) => { if (v === undefined) delete o[k]; else o[k] = v; };
+        put(T[club], 'carried', keep.v); put(T0[club], 'carried', keep.v0); put(U, 'params', keep.p); put(MO.units, 'params', keep.p0);
+        chk(cw === `carried from ${from}` && rk === ordOwn(T[club].rank) && !bad.length,
+          `the matchup bubble does not mark a club carried from last season on its Faces line, on the rank the tab draws: "${cw}" ${rk} (${bad.join('; ')})`); } }
     /* a final the board has and the ratings file has not counted yet (the betting job graded it before the Elo job ran):
        the record counts it, as Team Rankings does, planted on the board's own schedule for a made-up opponent */
     { const P = w.pkBoard, b = at1(realT), extra = { game_id: `${season}_01_XXZ_${r.h}`, week: 1, game_type: 'REG', gameday: '2026-09-10', gametime: '13:00', away_team: 'XXZ', home_team: r.h, home_score: 30, away_score: 3, result: 27 };
@@ -6085,6 +6132,25 @@ async function glanceChecks() {
             bad.push(`a builder leg's price moved under its open bubble: the bubble says ${nOf('price')}, not ${pxOwn(lp.ml) + estOwn(lp.src)}`); }
         key(d.activeElement, 'Escape'); await wait(10); }
       part('renderParlay: the builder\'s copy, its focus, its toggle and a price moved under it');
+      /* the reader's place in the bubble kept through a redraw and a resize: scrolled to its foot (the leg's own box), a
+         redraw on the page that leaves the leg as it was, or a resize, places it again and must not take it back to the
+         top. jsdom lays nothing out, so the browser's rule is stood in on the bubble alone: a measure of its height with
+         its max-height cleared takes its scroll back to the top, as Chromium does (offsetHeight there, 400px); the
+         screen's height stood in too, for the sheet a short screen falls back to; all put back after */
+      if (b0) { const B = box(); let st = 0;
+        const keepH = Object.getOwnPropertyDescriptor(w, 'innerHeight');
+        Object.defineProperty(B, 'scrollTop', { configurable: true, get: () => st, set: v => { st = Math.max(0, +v || 0); } });
+        Object.defineProperty(B, 'offsetHeight', { configurable: true, get: () => { if (!B.style.maxHeight) st = 0; return 400; } });
+        try {
+          for (const [lab, hgt] of [['as a bubble', 900], ['as the sheet a short screen falls back to', 150]]) {
+            Object.defineProperty(w, 'innerHeight', { configurable: true, writable: true, value: hgt });
+            copyIn(builder(), L).click(); await wait(20); B.scrollTop = 225;
+            w.eval('renderParlay()'); await wait(30); const a1 = st, sheet1 = B.classList.contains('glance-sheet');
+            w.dispatchEvent(new w.Event('resize')); await wait(10); const a2 = st;
+            if (!shown() || a1 !== 225 || a2 !== 225 || sheet1 !== (hgt < 400)) bad.push(`${lab}, scrolled 225px down, the bubble is at ${a1}px after renderParlay and ${a2}px after a resize${sheet1 !== (hgt < 400) ? `, ${sheet1 ? '' : 'not '}a sheet` : ''}`);
+            key(d.activeElement, 'Escape'); await wait(10); } }
+        finally { delete B.scrollTop; delete B.offsetHeight; if (keepH) Object.defineProperty(w, 'innerHeight', keepH); else delete w.innerHeight; }
+        part('the reader\'s scroll in the bubble across a redraw and a resize'); }
       /* the leg taken out of the builder: the bubble closes, the focus on the name now in its place there */
       S.parlay = Object.fromEntries([fakeP, fakeT, fakeH, fakeS].map(l => [l.key, { ...l }])); w.eval('renderParlay()'); await wait(40);
       { const n0 = [...builder().querySelectorAll('[data-glance]')], mid = n0[1], Km = mid && w.glanceLeg(mid.dataset.glanceLeg);
