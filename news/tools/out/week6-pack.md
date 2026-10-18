@@ -1,6 +1,6 @@
 # Week 6 reading pack
 
-Generated 2026-10-17. Facts below are pulled; everything narrative still has to be read and written.
+Generated 2026-10-18. Facts below are pulled; everything narrative still has to be read and written.
 
 ## Games
 
@@ -83,8 +83,9 @@ Searches to run:
 - "NFL week 6 picks HOU JAX"
 
 Houston Texans, injuries:
+- Jawhar Jordan (RB) Active: The Texans elevated Jordan from the practice squad ahead of Sunday's game against the Jaguars, Aaron Wilson of KPRC 2 Houston reports.
+- Henry To'oTo'o (LB) Questionable, Shoulder: The Texans activated To'oTo'o (shoulder) from injured reserve Saturday, Aaron Wilson of KPRC 2 Houston reports.
 - Ja'Marcus Ingram (CB) Questionable, Elbow: questionable
-- Henry To'oTo'o (LB) Questionable, Shoulder: questionable
 - Jake Hansen (LB) Active
 - Azeez Al-Shaair (LB) Active
 - Jalen Pitre (S) Out, Shoulder - AC Joint: Pitre (shoulder) is ruled out for Sunday's game against Jacksonville.
@@ -107,7 +108,6 @@ Houston Texans, injuries:
 - Dalton Schultz (TE) Active: Schultz caught three of four targets for 30 yards during Sunday's 26-3 win over the Titans.
 - Xavier Hutchinson (WR) Active: Hutchinson caught four of five targets for 65 yards in Sunday's 26-3 win over the Titans.
 - Jaylin Noel (WR) Active: Noel caught all five of his targets for 41 yards and a touchdown during Sunday's 26-3 win over Tennessee.
-- C.J. Stroud (QB) Active: Stroud completed 26 of 34 passes for 261 yards and a touchdown in Sunday's 26-3 win over the Titans. He added five rushing yards and a TD on six carries.
 
 Houston Texans, ESPN headlines:
 
@@ -151,11 +151,11 @@ Searches to run:
 - "NFL week 6 picks CHI ATL"
 
 Chicago Bears, injuries:
+- Anthony Johnson Jr. (S) Out, Undisclosed: out
+- Dayo Odeyingbo (DE) Injured Reserve, Quadriceps: The Bears placed Odeyingbo (quadriceps) on injured reserve Saturday.
 - Zavier Scott (RB) Active: The Bears elevated Scott from the practice squad ahead of Sunday's game against the Falcons.
 - Kyler Gordon (CB) Questionable, Calf: The Bears activated Gordon (calf) from reserve/PUP on Saturday.
-- Anthony Johnson Jr. (S) Out, Undisclosed: out
 - Caleb Williams (QB) Questionable, Hamstring: Williams (hamstring) is expected to start Sunday's game against the Falcons, Adam Schefter of ESPN reports.
-- Dayo Odeyingbo (DE) Injured Reserve, Quadriceps: ir
 - Keyshaun Elliott (LB) Out, Quadriceps: Elliott (quadriceps) has been ruled out for Sunday's game against the Falcons.
 - Tyrique Stevenson Sr. (CB) Questionable, Hip: Stevenson (hip) is questionable for Sunday's game against the Falcons.
 - T.J. Edwards (LB) Out, Hamstring: Edwards (hamstring) has been ruled out for Sunday's game against the Falcons.
@@ -423,6 +423,7 @@ Searches to run:
 - "NFL week 6 picks NO NYG"
 
 New Orleans Saints, injuries:
+- Cedric Tillman (WR) Active: The Saints elevated Tillman from the practice squad Saturday.
 - Zach Wood (LS) Questionable, Calf: questionable
 - Vernon Broughton (DT) Active: Broughton (illness) does not have an injury designation for Sunday's game against the Giants, Jeff Nowak of The Big 870 New Orleans reports.
 - Anfernee Jennings (LB) Out, Knee: Jennings (knee) has been ruled out for Sunday's game against the Giants, Jeff Nowak of The Big 870 New Orleans reports.
@@ -447,7 +448,6 @@ New Orleans Saints, injuries:
 - Christen Miller (DT) Active: Miller is active for Sunday's game against the Vikings.
 - Julian Blackmon (S) Active: Blackmon (shoulder) is active for Sunday's game against the Vikings.
 - Barion Brown (WR) Active: Brown (thigh) is active for Sunday's game against the Vikings.
-- Davon Godchaux (DT) Active: Godchaux (groin) does not have an injury designation for Sunday's game against the Vikings.
 
 New Orleans Saints, ESPN headlines:
 
@@ -491,13 +491,13 @@ Searches to run:
 - "NFL week 6 picks CAR PHI"
 
 Carolina Panthers, injuries:
-- Tershawn Wharton (DT) Questionable, Neck: questionable
+- Tershawn Wharton (DT) Questionable, Neck: The Panthers activated Wharton (neck) from the reserve/PUP list Saturday.
+- Trevor Etienne (RB) Questionable, Ankle: The Panthers activated Etienne (ankle) from injured reserve Saturday.
 - Taylor Moton (OT) Questionable, Illness: Moton (illness) is questionable for Sunday's game against the Eagles.
 - Monroe Freeling (OT) Doubtful, Knee: Freeling (knee) is listed as doubtful against the Eagles on Sunday.
 - Damien Lewis (G) Questionable, Elbow: Lewis (elbow) is listed as questionable for Sunday's game against Philadelphia.
 - Tommy Tremble (TE) Active: Tremble (ribs) has no injury designation ahead of Sunday's game against the Eagles.
 - Jaelan Phillips (LB) Questionable, Hamstring: Phillips (hamstring) is listed as questionable for Sunday's game against the Eagles.
-- Trevor Etienne (RB) Questionable, Ankle: Etienne (ankle) is listed as questionablefor Sunday's game against the Eagles.
 - AJ Dillon (RB) Out, Ankle: Dillon (ankle) has been ruled out for Sunday's game against the Eagles.
 - Darren Waller (TE) Active: Waller (toe) doesn't have an injury designation for Sunday's game at Philadelphia.
 - Jonathon Brooks (RB) Injured Reserve, Abdomen: Brooks (core) was seen jogging at practice Thursday, Sheena Quick of Fox Sports Radio 1340 reports.
@@ -685,7 +685,7 @@ Los Angeles Rams, injuries:
 Los Angeles Rams, ESPN headlines:
 
 ### Los Angeles Chargers at Kansas City Chiefs
-Sun, Oct 18, 4:25 PM ET, CBS, Arrowhead Stadium, Kansas City. Line: KC -7.5, O/U 40.5
+Sun, Oct 18, 4:25 PM ET, CBS, Arrowhead Stadium, Kansas City. Line: KC -7.5, O/U 41.5
 
 Searches to run:
 - "Los Angeles Chargers Kansas City Chiefs preview week 6"
@@ -831,10 +831,10 @@ Searches to run:
 - "NFL week 6 picks DAL GB"
 
 Dallas Cowboys, injuries:
+- DeMarvion Overshown (LB) Out, Hamstring: Dallas has downgraded Overshown (hamstring) to out for Sunday night's game against the Packers, Mike Garafolo of NFL Network reports.
 - Drew Shelton (OT) Out, Hamstring: Shelton (hamstring) has ben ruled out for Sunday's game against the Packers, Patrik Walker of the Cowboys' official site reports.
 - Cobie Durant (CB) Out, Hamstring: Durant (hamstring) has been ruled out for Sunday's game against the Packers, Patrik Walker of the Cowboys' official site reports.
 - Joey Porter Jr. (CB) Questionable, Ankle: Porter (ankle) is listed as questionable for Sunday's game against the Packers, Patrik Walker of the Cowboys' official site reports.
-- DeMarvion Overshown (LB) Out, Hamstring: Overshown (hamstring) is listed as questionable for Sunday's game against the Packers, Patrik Walker of the Cowboys' official site reports.
 - George Pickens (WR) Active: With CeeDee Lamb (quadriceps) healthy and cleared to play Sunday night against the Packers, Pickens will handle his normal role as Dallas' WR2.
 - LT Overton (DT) Questionable, Foot: questionable
 - Malachi Lawrence (LB) Active: Lawrence is expected to get more opportunities on the Cowboys' defense moving forward, Jon Machota of The Athletic reports.
@@ -928,8 +928,8 @@ Washington Commanders, injuries:
 Washington Commanders, ESPN headlines:
 
 San Francisco 49ers, injuries:
+- Romello Height (DE) Active
 - Kaelon Black (RB) Active: Black was excused from Saturday's practice to address a personal matter but does not have an injury designation for Monday's Week 6 matchup against Washington, Nick Wagoner of ESPN.com reports.
-- Romello Height (DE) Questionable, Hand: questionable
 - James Thompson Jr. (DT) Active
 - Colton McKivitz (OT) Active
 - Christian Kirk (WR) Injured Reserve, Calf: Head coach Kyle Shanahan said Saturday that the 49ers may activate Kirk (calf) from injured reserve ahead of Monday's game against the Commanders, Nick Wagoner of ESPN.com reports.
