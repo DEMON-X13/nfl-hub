@@ -6897,7 +6897,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='5506ea0';
+const PAGE_HASH='a5dad92';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -9696,13 +9696,17 @@ function draw(){
      published before kickoff (frozen there, never regraded), and the backtest of the games it
      was never called on beforehand (weeks 1-2 of 2026, made after the games on pre-game ratings);
      the calls on the Joker's baseline apart from the Elo-alone calls before them */
-  const pub=r&&r.published, bt=r&&r.backtest, jb=r&&r.joker_base, jfrom=r&&r.joker_base_from_week;
+  const pub=r&&r.published, bt=r&&r.backtest, jb=r&&r.joker_base, jfrom=r&&r.joker_base_from_week, rp=r&&r.repicked, rw=r&&r.repicked_was;
   if(pub){ const ln=(x,lab)=>x&&(x[0]+x[1])?`${x[0]}–${x[1]} ${lab}`:'';
-    const onJ=jb&&jfrom!=null, eloPub=onJ?[pub[0]-jb[0],pub[1]-jb[1]]:pub;
-    const parts=[onJ?(jb[0]+jb[1]?`${jb[0]}–${jb[1]} on the Joker (from week ${jfrom})`:`on the Joker from week ${jfrom}, none graded yet`):'',
-      ln(eloPub,onJ?'on Elo alone before it':'called before kickoff'),ln(bt,'backtest')].filter(Boolean);
+    /* the games played before the Joker's baseline, re-picked on it after they were played (`was` on each
+       graded call; repicked and repicked_was here), apart from the backtests and the Elo-alone calls left */
+    const onJ=jb&&jfrom!=null, re=!!(rp&&rw&&rp[0]+rp[1]>0);
+    const eloPub=onJ?[pub[0]-jb[0],pub[1]-jb[1]]:pub, btLeft=re&&bt?[bt[0]-rp[0],bt[1]-rp[1]]:bt;
+    const parts=[re?`${rp[0]}–${rp[1]} re-picked on the Joker after the games (${rw[0]}–${rw[1]} as first picked)`:'',
+      onJ?(jb[0]+jb[1]?`${jb[0]}–${jb[1]} picked on the Joker before kickoff (from week ${jfrom})`:`on the Joker before kickoff from week ${jfrom}, none graded yet`):'',
+      ln(eloPub,onJ?'on Elo alone':'called before kickoff'),ln(btLeft,'backtest')].filter(Boolean);
     const cr=el('peCallRec'); cr.textContent=parts.length?`ELO Model ${r.season}: ${parts.join(', ')}`:'';
-    cr.title=`The Pick'em Record grades each game on the call published before its kickoff${r.published_from_week?` (from week ${r.published_from_week})`:''}.${onJ?` From week ${jfrom} the calls start from the Joker's chance and the Elo matchup moves it; the calls before were the Elo game model's alone.`:''} A backtest is a game the model was not published for until after it was played: called on the ratings it had before the game, but not ahead of time.`; }
+    cr.title=`The Pick'em Record grades each game on the ELO Model's call.${onJ?` From week ${jfrom} the calls start from the Joker's chance and the Elo matchup moves it, made before kickoff.`:` It grades the call published before kickoff${r.published_from_week?` (from week ${r.published_from_week})`:''}.`}${re?` The games played before that were re-picked the same way after they were played, on what was known before each kickoff (the Joker's call as frozen at kickoff, the pre-game ratings and lineups); as first picked, on the Elo game model alone, they went ${rw[0]}–${rw[1]}.`:''} A backtest is a game the model was not published for until after it was played: called on the ratings it had before the game, but not ahead of time.`; }
   const d=new Date(D.model.built_at);
   el('peStamp').textContent=isNaN(d)?'':'rated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
