@@ -1573,7 +1573,11 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             && d.getElementById('pcDk').getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + [DK_ML2.a, DK_RB].map(x => x.replace(/#/g, '%23')).join('+'),
             `${how}: Finish on a locked set does not open the record's set, its legs, price, chance and the amount: ` + txt(d.getElementById('pcView')) + ' / ' + d.getElementById('pcDk').getAttribute('href'));
           if (lf) { d.getElementById('pcClose').click(); chk(d.activeElement === lf, `${how}: closing the locked set's card did not give the focus back to its Finish`); }
-          chk(w.localStorage.getItem('props_sp_lock_v1') === null, `${how}: a locked set the record has was kept in the browser as the page's own`);
+          /* (its own game alone: a real prime-time game whose lock has passed with no entry in the record planted here,
+             as Sunday night's game from 22:20 UTC, is the page's own and kept, rightly; the check read the whole key
+             until the night of 18 October 2026, when it failed on main for that) */
+          { let kept = null; try { kept = JSON.parse(w.localStorage.getItem('props_sp_lock_v1') || 'null'); } catch (e) { kept = 'junk'; }
+            chk(kept !== 'junk' && !(kept && kept.games && kept.games[g2.id]), `${how}: a locked set the record has was kept in the browser as the page's own`); }
           /* the record keeps both legs as Value picks (thin false, no total): the locked card marks each Value (app v112) */
           chk(!!set() && [...set().querySelectorAll('[data-pb-tier="safe"] .pb-legs li')].length === 2 && [...set().querySelectorAll('[data-pb-tier="safe"] .pb-legs li')].every(li => li.querySelectorAll('i.pb-valmark').length === 1 && txt(li.querySelector('i.pb-valmark')) === 'Value')
             && !/\bthin[ -]edge\b|\bno edge\b/i.test(txt(set())), `${how}: the locked set's legs, kept as Value picks, are not each marked Value, or the set still says thin edge or no edge`);

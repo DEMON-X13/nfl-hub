@@ -218,6 +218,9 @@ props/
                                  (#parlayBody) first on the Parlay Builder tab, over the
                                  choices and the list (#pbPanel); pbLegClick keeps a pressed
                                  Add where it was on the screen (its docstring is the design)
+  build/patch_ladder_anchor.py   app v117: after a press, a count's rung that is the main Over
+                                 is priced at the paid pull's own Over on the read's line, the
+                                 anchor its other rungs stand on, so a ladder never climbs
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
                                  answers (audit M8, the nflbets smoke)
   build/fixtures/espn/           ESPN's recorded answers for week 6 of 2026 (the scoreboard, two
