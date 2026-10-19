@@ -571,6 +571,15 @@ games; the record counts the calls on the Joker apart (`record.joker_base`, and 
 was published, `joker_base_from_week`). The game model itself is unchanged: it is still fitted,
 graded walk-forward (`walk_forward`) and read by the power ratings; only the call stands on the
 Joker. Never refit BETA on the season in play.
+The season's games played before the first build on the Joker (JOKER_FROM) were re-picked on it (the owner's
+call of the same day: "i just dont see any changes in the ELO model pickem record and i wanted you to change it
+based on what it would have picked"): each such game the Joker has a call for, graded with a call on no base, is
+called again once, after the game, on what was known before its kickoff (the Joker's call as frozen at kickoff, the
+game model fitted before the season on the pre-game ratings and lineups, as any backtest is), marked a backtest,
+with the call first made kept beside it in `was` (in the ledger and on the graded call), so the record grades the
+re-pick and still says what was first picked (`record.repicked` and `repicked_was`): 62-29 where the first picks
+went 52-39, 24 picks turned round, 17 of them right. A game that kicked off after JOKER_FROM is called on the Joker
+before its kickoff and never re-picked.
 
 THE SEASON comes from games.csv alone. The newest schedule nflverse has posted is the season
 in play once its first game kicked off UNDER_WAY hours ago; before that (from the spring
@@ -635,6 +644,9 @@ JOKER_BASE = {"beta": 0.2058, "fit": "2021-2025", "test": "2022-2025", "walk_for
 JOKER_STATE = os.path.join(os.path.dirname(HERE), 'betting', 'state.json')   # the betting job's published state: the Joker's calls
 JOKER_CLIP = 0.01       # the Joker's chance is held within 1% and 99% before it is moved
 CALL_KEEP = ('base', 'p_joker', 'p_elo', 'm')      # what a call keeps beside its pick and chance
+# the first build that called on the Joker's baseline: a game of the season that kicked off before it is
+# re-picked on it once, after the game, its first call kept in `was` (THE JOKER BASELINE)
+JOKER_FROM = datetime.datetime(2026, 10, 19, 15, 20, tzinfo=datetime.timezone.utc)
 # the clubs that moved, from the code of the day (games.csv, the depth charts, the injury
 # reports) to today's (the player stats, rosters and play-by-play): THE SOURCES
 TEAM_NOW = {'OAK': 'LV', 'SD': 'LAC', 'STL': 'LA'}
@@ -1920,19 +1932,31 @@ def main():
     w_grade = fit_before(last)
     # THE JOKER BASELINE: the Joker's chance for every game it has called (betting/state.json)
     joker = joker_calls()
+    kick_at = dict(zip(games.game_id, games.kick))
     graded = []
     for r in game_feat:
         if r['season'] != last or r['result'] is None:
             continue
         c = ledger.get(r['game_id'])
+        x = [r['x'][g] for g in GROUPS]
         if c is None:
-            c = make_call(w_grade, r['hf'], [r['x'][g] for g in GROUPS], joker.get(r['game_id']))
+            c = make_call(w_grade, r['hf'], x, joker.get(r['game_id']))
             c = ledger[r['game_id']] = {'pick': r['home'] if c['p_home'] >= 0.5 else r['away'], 'p_home': c['p_home'], 'at': stamp,
                                         'src': 'backtest', **{k: c[k] for k in CALL_KEEP if k in c}}
+        elif not c.get('base') and r['game_id'] in joker and kick_at.get(r['game_id']) is not None and kick_at[r['game_id']] < JOKER_FROM:
+            # the owner's call of 19 October 2026: the season's games played before the Joker's baseline are re-picked
+            # on it, after the game, on what was known before kickoff (the Joker's call as frozen at kickoff, the
+            # pre-game ratings and lineups), as a backtest; the call first made is kept beside it in `was`
+            n = make_call(w_grade, r['hf'], x, joker[r['game_id']])
+            c = ledger[r['game_id']] = {'pick': r['home'] if n['p_home'] >= 0.5 else r['away'], 'p_home': n['p_home'], 'at': stamp,
+                                        'src': 'backtest', **{k: n[k] for k in CALL_KEEP if k in n},
+                                        'was': {k: c[k] for k in ('pick', 'p_home', 'at', 'src') if k in c}}
         winner = r['home'] if r['result'] > 0 else r['away'] if r['result'] < 0 else None
         graded.append({'game_id': r['game_id'], 'p_home': c['p_home'], 'pick': c['pick'],
                        'correct': None if winner is None else c['pick'] == winner, 'src': c['src'],
-                       **({'base': c['base']} if c.get('base') else {})})
+                       **({'base': c['base']} if c.get('base') else {}),
+                       **({'was': {'pick': c['was']['pick'], 'src': c['was'].get('src'),
+                                   'correct': None if winner is None else c['was']['pick'] == winner}} if c.get('was') else {})})
     graded_ids = {g['game_id'] for g in graded}
     # a game under way, or final but not yet rated (its player stats lag the score by a night),
     # keeps its frozen call in `next`, so its pick does not vanish between kickoff and the
@@ -2023,6 +2047,10 @@ def main():
     jb_weeks = sorted({int(wk_of[gid]) for gid, e in ledger.items() if e.get('base') == 'joker' and e.get('src') == 'published'
                        and gid.startswith(f'{last}_') and gid in wk_of})
     record['joker_base_from_week'] = jb_weeks[0] if jb_weeks else None
+    # the games re-picked on the Joker's baseline after they were played, and the same games as first picked
+    rd = [g for g in graded if g.get('was') and g['correct'] is not None]
+    record['repicked'] = [sum(1 for g in rd if g['correct']), sum(1 for g in rd if not g['correct'])]
+    record['repicked_was'] = [sum(1 for g in rd if g['was']['correct']), sum(1 for g in rd if not g['was']['correct'])]
     # the season's place in the calendar, for the page: the regular season, the playoffs, or over
     sg = games[games.season == last]
     reg_left = bool((sg.game_type == 'REG').any() and sg[sg.game_type == 'REG'].home_score.isna().any())
