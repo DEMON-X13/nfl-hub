@@ -144,8 +144,8 @@ week called every player of a bye club a free agent (Mahomes, Kelce, Bryce Young
 Hubbard in week 5, the players map without a single Chief or Panther). Off the roster (a free
 agent), on injured reserve or the PUP list, suspended or retired: not ranked and not in a
 lineup. The injury report, for each club's next game: once the club files its game statuses,
-Out and Doubtful are out, Questionable is listed with a Q unless he did not practise at the
-last report, which counts him out. Before it files (Tuesday to Friday for a Sunday game), a
+Out and Doubtful are out, Questionable is listed with a Q, practised or not (until 19 October
+2026 one who did not practise at the last report was counted out: Mike Evans, SF, played). Before it files (Tuesday to Friday for a Sunday game), a
 player Out or Doubtful at the club's previous report, or inactive for its last game after
 being on that report, stays out until this week's report clears him: he practises (Full or
 Limited), or the club files a practice report he is not on. Inactive is the roster's word: status
@@ -1324,8 +1324,8 @@ def availability(roster, inj, next_week):
     roster at all is a free agent too (why_out).
 
     The injury report, for each club's next game (next_week): once the club has filed its game
-    statuses for that week, Out and Doubtful are out, and Questionable is listed (a Q tag) unless
-    he did not practise at the last report, which counts him out. Before the statuses are filed
+    statuses for that week, Out and Doubtful are out, and Questionable is listed (a Q tag),
+    practised or not (until 19 October 2026 one who did not practise was counted out). Before the statuses are filed
     (Tuesday to Friday for a Sunday game), a player Out or Doubtful at the club's previous report,
     or inactive for its last game after being on that report, stays out until this week's report
     clears him: he practises (Full or Limited), or the club files a report he is not on. Each
@@ -1367,10 +1367,10 @@ def availability(roster, inj, next_week):
                 elif s == 'Doubtful':
                     reasons[row.gsis_id] = f'doubtful{what(row)}, week {w}: counted out'
                 elif s == 'Questionable':
-                    if isinstance(row.practice_status, str) and 'Did Not' in row.practice_status:
-                        reasons[row.gsis_id] = f'questionable{what(row)}, week {w}, and did not practise at the last report: counted out'
-                    else:
-                        q[row.gsis_id] = f'questionable{what(row)}, week {w}'
+                    # listed with a Q whether or not he practised (19 October 2026: Mike Evans,
+                    # Questionable and no practice, counted out, played)
+                    dnp = isinstance(row.practice_status, str) and 'Did Not' in row.practice_status
+                    q[row.gsis_id] = f'questionable{what(row)}, week {w}' + (', did not practise at the last report' if dnp else '')
         elif len(before):
             pw = int(before.week.max())
             prev = before[before.week == pw]
