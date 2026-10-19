@@ -242,15 +242,17 @@ for (const need of ['function parlayLegs', 'function parlayProb', 'function legP
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
 /* the Elo picks' four levels (17 October 2026): Suggested Parlays' own (PB_TIERS, which the tab reads from the
    page, Safe given the Elo picks' own floor by epTiers since 18 October 2026), each named elo-<level> (elo-safe,
-   elo-med, elo-aggr, elo-xtrm), its Finish "elo|elo-<level>", which the card finds by that id in window.eloPicks() */
+   elo-med, elo-aggr, elo-xtrm); since app v118 each unit's own (a night game's, the Sunday slot's: window.eloUnit),
+   drawn in the unit by the props parts with the ELO tab's card options (window.eloCardOpt), its Finish
+   "sp|<unit>:elo-<level>", which the card finds by window.spTier as it finds the unit's other levels */
 { const elo = rd('nflbets', 'build', 'tab_elo.html');
-  if (!elo.includes("kind:'elo'") || !elo.includes('window.eloPicks=eloPicks;') || !elo.includes("getElementById('pbElo')")
-    || !elo.includes("id:'elo-'+id") || !elo.includes("typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?epTiers(PB_TIERS):null") || !elo.includes('add:`data-pb-elo-add="${t.id}"`'))
-    throw new Error("the Elo picks' levels, their ids, their place on Suggested Parlays or window.eloPicks moved; the parlay card finishes an Elo pick on every device");
-  if (!part3.includes('const PB_TIERS=['))
-    throw new Error("Suggested Parlays' levels (PB_TIERS) moved; the Elo picks are built on them");
-  if (!CARD_JS.includes("kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)"))
-    throw new Error("the parlay card no longer finds an Elo pick's level by its id in window.eloPicks()"); }
+  if (!elo.includes('window.eloUnit=(gids,o)=>') || !elo.includes('window.eloCardOpt=') || !elo.includes('window.eloPicks=eloPicks;')
+    || !elo.includes("id:'elo-'+id") || !elo.includes("typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?epTiers(PB_TIERS):null") || elo.includes("getElementById('pbElo')"))
+    throw new Error("the Elo picks' levels, their ids, window.eloUnit or window.eloCardOpt moved; Suggested Parlays draws each unit's Elo picks with them");
+  if (!part3.includes('const PB_TIERS=[') || !part3.includes("window.eloCardOpt(t)") || !part3.includes('add:`data-sp-add="${g.id}:${t.id}"`'))
+    throw new Error("Suggested Parlays' levels (PB_TIERS) or its drawing of a unit's Elo picks moved; the Elo picks are built on them");
+  if (!CARD_JS.includes("const elo=!!t.elo;") || !CARD_JS.includes("t=kind==='sp'?(typeof window.spTier==='function'?window.spTier(id):null):null;"))
+    throw new Error("the parlay card no longer finds an Elo pick's level by window.spTier"); }
 /* X Parlays: X's parlays from the file, the whole of its tab, read only; a quiet line under the
    heading says when the file last changed them */
 const LIVE_SECTION = `<div class="card" id="lpCard">

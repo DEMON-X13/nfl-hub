@@ -48,7 +48,7 @@ by hand when a source changes, and reads the models' data on every load, every f
 | `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what the page reads) | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what the page reads); the app itself lives inside the page, the root's `index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to the root): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`, still written though no page reads them since the Stat breakdown went on 16 October 2026), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches with `units.json` | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
-| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, locked 2 hours before kickoff and graded by the props job's suggestions record, and the Elo picks), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 30 lines, Value picks first, each bet once, on the bet types and games a visitor ticks), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, a Game snapshot of every game on the Matchups board (with the news job's preview and Deep Dive), and a matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css` and `theme.js` |
+| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (two sections since app v118, each with its own record: Night games, each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, and the Sunday slot, one set across the week's Sunday games before 7 pm Eastern; each set with its own four Elo picks, locked 2 hours before its kickoff, the slot's first, and graded by the props job's suggestions record, weeks 3 to 6 replayed as a backtest), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 30 lines, Value picks first, each bet once, on the bet types and games a visitor ticks), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, a Game snapshot of every game on the Matchups board (with the news job's preview and Deep Dive), and a matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css` and `theme.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Matchups board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `cfb/` | retired: CFB Hub (then X College Football Bets) moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
@@ -67,7 +67,10 @@ at the next refresh:
 - `props/data/suggest_ledger.json` (by `props/build/suggest_ledger.js` in the props job: each prime-time
   game's Suggested Parlays set, shown on the tab or not, locked 2 hours before its kickoff and graded after, beside the retired all-games
   panel's entries, frozen at each wave's kickoff, so a hand edit there rewrites the record and the script's
-  guard refuses it)
+  guard refuses it; since app v118 each set's Elo picks too, and the Sunday slot's sets in its `slot` map)
+- `props/data/suggest_backtest.json` (by `props/build/suggest_backtest.js`, run by hand, never by a job: the record's
+  weeks before it took them, rebuilt from git at each lock and graded; the file only grows, and `--check` and the
+  record's test refuse it moved)
 - `news/data/results.js`, `news/data/stats2026.js` and its twin `news/data/stats.json`, `news/data/units2026.js` and its twin `news/data/units.json`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (`news/tools/.cache/` is gitignored; the game notes, `news/data/notes/`, are source, written by hand)
 - `props/research/totals/shadow/ledger.json` (by `shadow.py` in the betting job: the game-totals shadow's calls, frozen at kickoff, and its pre-registered bar, so a hand edit there rewrites the record and `shadow_check.py` fails it)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
@@ -616,6 +619,19 @@ held and does not hold now, the level's `updated` the last one recorded for it);
 this run's; a grade that does not follow its legs; a summary that does not follow from the entries: refused, the
 file put back (the last commit's where the copy on disk had moved), exit 1. It never refuses the run or turns it
 red: `weekly.py` logs the refusal in its report and publishes the payload. It spends no credit.
+Since app v118 (under "Bets and Stats: the loop", **Two sections, the Sunday slot and each set's own Elo picks**) every
+entry it takes carries the set's Elo picks too (`elo`, the four `elo-<level>`s by the page's `spEloSet`, each leg with its
+Elo chance `pe` and its `thin` and `market` null), taken, locked, replaced and graded with the model's levels, their grades
+beside them in `grade`, and `prime_summary` and `slot_summary` carry the Elo picks' own (`elo`); and the `slot` map
+(`slot_since`, `slot_summary`) holds each week's Sunday slot (`spSlotNext`, the week's own while none of its games has
+kicked off), keyed `season|WW|first kickoff|<season>_<WW>_SUN`, with its `games` and `last` kickoff, by the same rules from
+its lock, 2 hours before its first kickoff. The guard holds a slot entry to its own id, a Sunday before 7 pm Eastern
+(`slotTime`, through `Intl`), games of its own season and week and legs on them, and the Elo picks to the four ids, their
+legs' Elo chances and, once locked, no Elo picks added or changed but by a replacement. An entry taken before app v118 has
+no `elo`. `ready()` waits for the ELO tab's files (`eloFiles()`, the matchups read after the ratings), and a set the page
+could not build Elo picks for is taken without them and said. The record's weeks before it took them are
+`props/data/suggest_backtest.json` (**The backtest**, under "Bets and Stats: the loop"), which this script neither reads
+nor writes.
 `node test_suggest_ledger.js` (about a minute) runs it on made-up weeks cut from the payload, the prime-time games
 it stands on moved where each stage needs them (a week of too few games for them, the divisional round on and the
 off-season, gets the rest made up between clubs of the test's own; `SL_TEST_PAYLOAD=<file>` runs it on another
@@ -629,7 +645,11 @@ pushes worked out from the raw rows, the payload's snaps (planted) and the injur
 no stat line on zero; one his club's snaps leave out, void; one Out with no snap counts yet, void; neither,
 pending), a grade kept that a payload can no longer settle, last season's entries never regraded on this season's
 rows, an old parlay two waves froze counted once and a game's level two kickoffs hold counted once, no game to come,
-and the guard end to end, on hand-made ledgers (every rule above) and on a copy of the real ledger. A change to the
+and the guard end to end, on hand-made ledgers (every rule above) and on a copy of the real ledger; since app v118 the
+week's Sunday slot (worked out on its own, `slotAt`) taken, following the schedule's moves, locked and graded, every set's
+Elo picks held to their rules, the Elo picks' and the slot's summaries worked out from the grades, the next week's slot
+taken, hand-made slot entries and Elo picks refused for every rule, and the real backtest held to `suggest_backtest.js
+--check`'s rules. A change to the
 script comes with a run of it.
 
 **Who played** (app v101, after the review of Sunday 11 October 2026: Tory Horton, SEA, ran 11 offensive
@@ -1071,7 +1091,7 @@ beside the model's chance and graded against it, week by week, at the top of the
 model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`; a player out, who is kept out of the map so nothing prices him, keeps his in `past` beside it), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
 starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
 shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield; what they rank is the matchup formula's units, the player ratings of the defenders he faces, and since 18 October 2026 their words say so, "vs the LAC secondary and defensive line, 32nd by player Elo" (`mmLine`, `mmTitle`, `mmAgainst`), as do a game page's MISMATCH title, the Game snapshot's Mismatches and an Elo pick's tag, since "pass defense ranked" on the page is the ELO Ratings tab's Pass Defense table alone, which can rank the same club far apart: LAC 32nd of the one for Patrick Mahomes in week 6, 4th of the other); on a game's page each player with a Solid, Big or Huge one wears MISMATCH beside his name in the Diamond shield's blue, `pe-mmtag`, each leg in the builder carries its Elo matchup chance, and the Elo picks
-(their own section at the foot of Suggested Parlays since app v111, `#pbElo`, until then of the Parlay Builder's suggested parlays; their legs wear no Value mark, since they are chosen on the Elo matchup, not the edge: app v112) are built on it.
+(since app v118 each Suggested Parlays set's own, on that night game's or Sunday slot's games alone, whatever the Parlay Builder's ticks say, `window.eloUnit`, locked and recorded with the set: under "Bets and Stats: the loop", **Two sections, the Sunday slot and each set's own Elo picks**; from app v111 to v117 their own section at the foot of Suggested Parlays, `#pbElo`, on the Parlay Builder's ticked games and player sides, until then of the Parlay Builder's suggested parlays; their legs wear no Value mark, since they are chosen on the Elo matchup, not the edge: app v112) are built on it.
 Since 18 October 2026 (the owner's call of 17 October: "for the ELO picks suggestions, can we also add an aggressive
 and extreme versions. is it touchdowns only or did it just so happen to show that? would want to see the best
 lines:value ratio for ELO mismatches etc": not touchdowns only, but the picks were the first two, three and four
@@ -1321,6 +1341,68 @@ it is up, that game's set and no line. A check that needs the cards of a game th
 smoke's card checks, the audit's `spAllOn`) stands `spOn` in with every prime-time game to come (`spGames`) and puts
 it back after (the audit in `try`/`finally`, so a section that throws leaves nothing stood in for the next; the smoke
 on its own path, since a thrown error ends the smoke at once), so it holds at any hour of the week.
+
+**Two sections, the Sunday slot and each set's own Elo picks** (app v118, `patch_slots.py`, whose docstring is the
+design, the owner's calls of 19 October 2026: "i noticed that the elo picks section in the suggest parlays tab does not
+have a record anymore and did not have any picks yesterday. any reason why? I would like it to have ELO picks for the slot
+of Sunday games. also i noticed there is only records for this week, can we retroactively look back and find what we would
+have suggested and count it to the record?", and then "if you can also backfill the records for the suggested parlays as
+well. but maybe for that one do a separate section for night games and then the sunday slot of games"). The Elo picks had
+been one set at the tab's foot over the games and player sides ticked on the Parlay Builder tab (`pbAllows`), so with the
+priced Sunday games unticked there they were empty all of Sunday 18 October, and they never had a record (the sentence
+app v113 took off their lead was the matchup nudge's record). The tab is now two sections, `section.sp-sec`, Night games
+(`data-sp-sec="night"`, the night rule's games as before) and the Sunday slot (`"slot"`), each headed `h3.sp-sech` with its
+own record (`.sp-rec[data-sp-recsec]`, below). The Sunday slot (`spSlotUnit`, `spSlotNext`) is every Sunday game of a
+week kicking off before 7:00 pm Eastern (the 1pm and 4pm windows and a game abroad that morning), in kickoff order, one
+set of the four levels across them, built as a night game's is (`pbPool` on the slot's games, `SP_SLOT_SEARCH`, every
+rule a set's leg keeps), id `<season>_<WW>_SUN`; it goes up by the night rule's own opening (`spOpenAt`: 6:00 AM Eastern
+the morning after the prime-time night before its Sunday, so Friday's, a wait line before it), locks 2 hours before its
+first kickoff, and stays on the tab to its last kickoff, from its first kickoff under way (`data-sp-phase="under"`: its
+levels as they locked, with no Add, Add to builder or Finish, `pbTierCard`'s `o.acts` false, and `spTier` finding none),
+then gives way to the next week's wait line. Nothing of the page's own is built once the slot is under way (a set built
+then would be of the games left, never locked: with no record entry and nothing kept, one line, "... Under way since
+<time>. The site’s set was not published in time.", and no card; a set this browser kept before its first kickoff is shown
+under way with its own note), nor at any lock before the Elo files are in (a set built without the ratings has no player
+legs: "Loading the site’s set…" until they are), and no level is built again for a player ruled out once it is under way,
+as the record replaces none after the first kickoff. The record is read again whenever a unit reaches its lock with the
+page open, or is first seen at or past it (`pbWatchTick`, `spSides`: each unit's side of its lock in `spState`, l, k, u
+under way, w not up yet), so a slot read while it waited, or a tab hidden through its lock, takes the record's locked set.
+A night game or the slot is a unit (`spUnit`: a schedule game, or the slot's
+object with `games`), and every set function takes one (`spSet`, `spShown`, `spRebuild`, `spLedgerOf`, `spLegIn`, the kept
+browser copy, `spState`, which carries the slot's side of its opening, lock and first kickoff, `spOnAll`). Each unit
+carries its own four Elo picks under its model parlays (`h5.sp-sub` Model parlays, then Elo picks, each `.pb-tiers` with
+`data-sp-kind`): the ELO tab's four levels on that unit's games alone (`window.eloUnit`, `eloCands`' `games`, no
+`pbAllows`; each empty level saying why, with when the player prices come where the unit has none, `spEloSet`), drawn
+with the ELO tab's card options (`window.eloCardOpt`: the Elo chance, each player's shield, the rule) and the set's own
+buttons (`data-sp-add="<unit>:elo-<level>"`, `data-pc-finish="sp|<unit>:elo-<level>"`, the card's kicker "Safe Elo pick
+· the Sunday slot"), their mismatch tags put on after the draw (`eloDecorate`, wrapping `renderSp`); live before the
+lock, then the record's (the entry's `elo`), else this browser's own built once and kept beside the set
+(`props_sp_lock_v1`'s `elo`, `eloOwn`, said in one line), a level holding a player ruled out after the lock built again
+as a model level is. `#pbElo`, `eloSuggest` and `data-pb-elo-add` are gone, and `window.eloPicks()` (every game, no ticks)
+is kept for `check_tab.js`. The props job's record takes them (under Props, the suggestions record: each entry's `elo`
+beside its `tiers`, and the `slot` map). The record at each section's head (`spRecSum(L, sec, kind, B)`, `spRecHtml(sec)`)
+is two rows, Model parlays and Elo picks (`data-sp-reckind`), a pill a level (`data-sp-rec="<sec>:<level>"`, the Elo picks'
+`elo-<level>`), each unit's level counted once, from the record wherever it holds that unit's levels of the kind (all
+four as it took them, so a level with no parlay or still pending is the record's) and else from the backtest
+(**The backtest**, next), each pill's title saying how many came from the backtest and the wins expected by the book's
+fair chance and by the level's own chance (the model's, or the Elo's), with one chip, `data-sp-rec="<sec>:bt"`, "Incl.
+backtest, weeks 3–6", wherever some of it is.
+
+**The backtest** (app v118, `props/build/suggest_backtest.js`, run by hand, never by a job). Every night game and Sunday
+slot of the weeks before the record took them, from week 3 (the first week the props job published a payload before its
+locks), whose lock has passed and whose games are all final, rebuilt by today's page on exactly the files of the last
+commit on the main line before its lock (`git rev-list --first-parent --before`, the payload, the Elo files and every
+file the page reads), its clock held at the lock less a minute, read by the page's own `spSet`, `spEloSet` and
+`spTierOut`, then graded on today's files by `suggest_ledger.js`'s own `gradeTier`; written to
+`props/data/suggest_backtest.json` in the record's shape (`prime`, `slot`, their summaries), the files from the site's
+own line (`origin/main`'s first parents, never a branch's commits, which `--check` holds where git has that line), and
+only for a unit locked before the record first took Elo picks (the earliest `taken_at` of an entry with them): a unit
+after that is the record's, and one it missed stays ungraded, as the tab says. Each entry `src:
+'backtest'` with `from` {commit, committed}. A unit already in the file is kept as it is but for its grades, so the file
+only grows; `--check` holds every entry to the record's guard (`primeEntryBad`) and to its mark, and the record's test
+runs it on the real file. On 19 October 2026 it built all 15 units of weeks 3 to 6 (11 night games, 4 Sunday slots,
+every one with its Elo picks; weeks 1 and 2 have no payload published before their locks), and its replay of week 6's
+Sunday night game, Cowboys at Packers, was the set the props job had locked, leg for leg and to the chance and price.
 
 **Value picks** (app v112, `patch_suggested_night.py`, the owner's call of 17 October 2026, after app v111's tags:
 first "i don't really understand what the no edge and thin edge tags are", then "can we do reverse tags? like get rid
@@ -1796,7 +1878,7 @@ matchups.json's own games and threw once they had kicked off). `SMOKE_PAYLOAD=<f
 payload, to try a week the job has not baked, and `SMOKE_NOW=<ISO time>` runs it as if it were then
 (Node's clock and every page's, the shift above laid over it; `props/build/test_audit_phases.py` uses both). `--season-over` gives every game a result first; run it after a change to the smoke or
 to the Matchups board. Both smokes end on their own: a mistake in the smoke's code exits 1 at once
-with its stack, a run still going after ten minutes stops and fails, and one left waiting on
+with its stack, a run still going after fifteen minutes stops and fails (smoke_live.js after ten), and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
 
 **The Game snapshot.** A tap on a game on the Matchups board opens its Game snapshot straight away (the owner's
@@ -2170,7 +2252,8 @@ may quietly outrank what the job published:
   cleared from X Parlays on that device, the Refresh odds reads they pressed for -- and nothing of X's. That cleared list only hides; it
   never changes or outranks the file, and it is pruned to the file on every load. The one thing the
   page keeps of its own making is a Suggested Parlays set it built at a game's lock where the record had none
-  (`props_sp_lock_v1`, to kickoff), and the record's locked set takes its place as soon as a load reads one.
+  (`props_sp_lock_v1`, to kickoff; since app v118 its Elo picks too, and the Sunday slot's to its last kickoff), and the
+  record's locked set takes its place as soon as a load reads one.
   Schedule, scores, stats, prices, ratings and projections are read from
   `props/data/payload.json` and `betting/state.json` on every load, and X's parlays and the X
   Bet Log from `liveparlays/`, and friends' picks from `picks/friends.json`. The prop model keys its

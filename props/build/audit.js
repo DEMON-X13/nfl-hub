@@ -885,6 +885,43 @@ setTimeout(async()=>{
   const spOnPut=w.eval('(function(f){ spOn=f; })');
   const spAllOn=f=>{ const keep=w.eval('spOn');
     try{ w.eval('spOn=function(){ return spGames(); }'); return f(); } finally { spOnPut(keep); } };
+  /* (app v118) the Sunday slot, the audit's own copy of the rule (the owner's calls of 19 October 2026: "I would like it to
+     have ELO picks for the slot of Sunday games", and "do a separate section for night games and then the sunday slot of
+     games"): a week's Sunday games kicking off before 7:00 pm Eastern, in kickoff order (the schedule's on a tie), are one
+     unit, <season>_<WW>_SUN. The tab is on the current week's slot (the earliest week with a game not final: a score, or
+     four hours past its kickoff), else the next week's, whichever still has a game to kick off with no score; it is set
+     out from 6:00 AM Eastern on the day after the latest prime-time night before its Sunday anywhere on the schedule
+     (none before it: at once), locked 2 hours before its first kickoff, under way from that kickoff, and gone at its
+     last. Every date and instant through the time zone database (kickAud, etDateAud, primeAud), never the page's
+     spSlotUnit, spSlotNext, spOpenAt or currentWeek */
+  const etWdHAud=ms=>Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'2-digit',hourCycle:'h23'}).formatToParts(ms).map(x=>[x.type,x.value]));
+  const scoredAud=g=>g.hs!=null&&g.as!=null&&isFinite(g.hs)&&isFinite(g.as);
+  const slotGamesAud=(sched,wk)=>(sched||[]).map((g,i)=>({g,i,k:kickAud(g)})).filter(x=>+x.g.w===+wk&&x.k!=null&&(p=>p.weekday==='Sun'&&+p.hour<19)(etWdHAud(x.k)))
+    .sort((a,b)=>(a.k-b.k)||(a.i-b.i)).map(x=>x.g);
+  const liveWeekAud=(sched,now)=>{ const ws=[...new Set(F('PAY').sched.map(g=>+g.w))].sort((a,b)=>a-b);
+    for(const wk of ws) if((sched||[]).some(g=>+g.w===wk&&!(scoredAud(g)||(kickAud(g)!=null&&now>=kickAud(g)+4*3600e3)))) return wk;
+    return ws[ws.length-1]; };
+  const slotRuleAud=(sched,now,cw)=>{ for(const wk of [cw,cw+1]){ const G=slotGamesAud(sched,wk); if(!G.length||!G.some(g=>now<kickAud(g)&&!scoredAud(g))) continue;
+      const ks=G.map(kickAud), first=Math.min(...ks), last=Math.max(...ks), D=etDateAud(first);
+      const prev=(sched||[]).filter(primeAud).map(g=>etDateAud(kickAud(g))).filter(x=>x<D).sort().pop()||null;
+      const open=prev?kickAud({d:dayAfterAud(prev),t:'06:00'}):null, lock=first-2*3600e3, up=open==null||now>=open;
+      return {w:+wk,id:`${F('SEASON')}_${String(wk).padStart(2,'0')}_SUN`,games:G,first,last,open,prev,prevN:prev?(sched||[]).filter(g=>primeAud(g)&&etDateAud(kickAud(g))===prev).length:0,lock,up,
+        phase:!up?'wait':now<lock?'live':now<first?'locked':'under'}; }
+    return null; };
+  /* the slot the tab stands on now, by that rule on the page's clock and schedule; the token spState carries for it */
+  const slotNowAud=()=>{ const now=w.Date.now(); return slotRuleAud(S.sched,now,liveWeekAud(S.sched,now)); };
+  const slotTokAud=R=>'s='+(R?R.id+':'+({wait:'w',live:'l',locked:'k',under:'u'})[R.phase]:'');
+  /* the slot's own words, worked here: its wait line, its head (its week and games, its first kickoff to its last, in
+     Eastern time), and the line that says why a level of it is empty */
+  const nightOfAud=dd=>({Thu:'Thursday night',Sun:'Sunday night',Mon:'Monday night'})[new Date(dd+'T12:00:00Z').toLocaleString('en-US',{timeZone:'UTC',weekday:'short'})];
+  const slotWaitAud=R=>`Next up: week ${R.w}’s Sunday slot, ${R.games.length} game${R.games.length===1?'':'s'}. Its sets go up ${etAud(R.open)}, the morning after ${nightOfAud(R.prev)||'the night game before it'}’s ${R.prevN>1?'games':'game'}.`;
+  const slotHeadAud=R=>{ const day=new Date(R.first).toLocaleDateString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric'}), t=ms=>new Date(ms).toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'})+' ET';
+    return {h:`Week ${R.w}, ${R.games.length} game${R.games.length===1?'':'s'}`,small:`${day} · ${t(R.first)}${t(R.last)!==t(R.first)?' to '+t(R.last):''}`}; };
+  /* a check that holds the slot's cards before the tab sets it out stands in the page's spSlotNext to say it is up (its
+     own answer otherwise), and puts it back on every path, as spAllOn does for the nights */
+  const slotPut=w.eval('(function(f){ spSlotNext=f; })');
+  const slotAllOn=f=>{ const keep=w.eval('spSlotNext');
+    try{ slotPut(function(){ const s=keep(); return s?{...s,up:true}:s; }); return f(); } finally { slotPut(keep); } };
   const SPEC_AUD=[['safe','Safe',2,0],['med','Medium',3,0.25],['aggr','Aggressive',4,0.12],['xtrm','Extreme',5,0.05]];
   const ALL_U={k:{ml:true,ats:true,total:true,over:true,under:true},off:[]};
   const legIdAud=l=>l.key+'|'+l.side+'|'+l.k, ordAud=(a,b)=>legIdAud(a).localeCompare(legIdAud(b));
@@ -962,6 +999,11 @@ setTimeout(async()=>{
      on half, +100/+100 with no margin and +110/+105 with less than none on the rest, and a made-up id
      table giving every priced line its id, as the pull reads one with each price) so the player legs and
      the totals are always tried. M9 holds the id rule itself, on made-up games with ids for some legs. */
+  /* (app v118) the page's own half-minute look (pbWatch) is stopped from here: the sections below move the page's clock and
+     plant the record as they go, and call the look (pbWatchTick) themselves where they hold it; a look on the real clock in
+     between (it reads the record again for any unit at or past its lock it had not seen there) would read the stub's
+     record over a planted one, at a moment that turns on how fast the run is */
+  try{ w.eval('if(typeof pbWatch==="function"&&pbWatch.on){ clearInterval(pbWatch.on); }'); }catch(e){}
   /* the Top 50 lines' check (holdTop, below), for the checks after M that hold the list too (M8 after its press, M14),
      and how many rows it found carrying the line on a missing DraftKings id, by kind (app v115) */
   let holdTopF=null; const topSlip={moved:0,none:0};
@@ -1280,7 +1322,16 @@ setTimeout(async()=>{
        less 2 hours, the line saying when it locks; from then the set this browser built, kept, where the
        audit's page has no record), each level's legs with an Add of its own, a Value pick marked Value and no
        other leg marked, chance, price, payout on the Bet amount, fair chance first, and Add to builder. Blocking
-       but the wording and the choice of parlay */
+       but the wording and the choice of parlay.
+       (app v118) The same for the Sunday slot the tab stands on (slotRuleAud, worked here: the page's spSlotNext
+       its unit, its games in the same order, up from the same instant), one set of the four levels across its games:
+       every leg on one of the slot's own games that qualifies (qualAud on them all), every rule above, one side and
+       one total of each game; its section drawn as the rule says (the line saying which slot is next and when its
+       sets go up, the set from then, or the line that none is to come), the state's s= token the rule's, and its
+       cards held as a night's, its opening stood in where it is not up yet (slotAllOn), with nothing to add or
+       finish once its first game has kicked off. And the tab's shape: its head, then the two sections, Night games
+       and the Sunday slot, each its heading and its own record first; on this page, the prop model's own, with no
+       ELO tab, no Elo picks (no #pbElo, no unit's Elo block) and each unit's model parlays under their heading */
     let setsBuilt=0, setLevels=0, setsSaid=0, setsLocked=0, setMktSeen=0, setThinSeen=0; const nightSaid=[];
     const SPS=w.eval('SP_SEARCH'), r4=v=>Math.round(v*1e4)/1e4, r3=v=>Math.round(v*1e3)/1e3;
     const maxAud=list=>{ const pl=new Set(), gs=new Set(); for(const l of list){ if(isG(l)) gs.add(l.gid+(l.stat==='total'?'|t':'|s')); else pl.add(l.pid); } return pl.size+gs.size; };
@@ -1294,37 +1345,57 @@ setTimeout(async()=>{
       if(!pl.some(dkOk)) return `${what}, and `+(pl.length?`no player leg DraftKings’ betslip can take yet: a player’s line read by Refresh odds carries no DraftKings id, and DraftKings’ own come with its player prices, which for this game are pulled ${when}.`
         :read?`no player lines yet: DraftKings had posted none for it when Refresh odds last read it, and its own player prices are pulled ${when}.`:`no player prices yet: they are pulled ${when}.`);
       return `${what}: a parlay takes one leg a player, and one side and one total a game.`; };
+    /* (app v118) why a level of the Sunday slot is empty, as the rule words it: the slot's own words for too few legs, and
+       its player prices' (the afternoon games' on Saturday morning, the early games' never) */
+    const spWhySlotAud=(G,n,q,cap)=>{ const pq={pref:capAud(q.pref,cap),thin:capAud(q.thin,cap),mkt:capAud(q.mkt,cap)}, m=maxAud([...pq.pref,...pq.thin,...pq.mkt]);
+      const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in the Sunday slot${q.noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in the Sunday slot`;
+      const pl=F('pricedLegs')(G).filter(l=>!isG(l));
+      if(!pl.some(dkOk)) return `${what}, and no player ${pl.length?'leg DraftKings’ betslip can take':'prices'} yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET).`;
+      return `${what}: a parlay takes one leg a player, and one side and one total a game.`; };
+    let slotsBuilt=0, slotLevels=0, slotsLocked=0; const slotSaid=[];
     const holdSets=(lab)=>{
       const now=w.Date.now(), mine=F('pbGames')().filter(primeAud), page=F('spGames')();
       chk(page.map(g=>g.id).join()===mine.map(g=>g.id).join(),`${lab}: Suggested Parlays has sets for ${page.map(g=>g.id).join(', ')||'no game'}, where the week's prime-time games to come are ${mine.map(g=>g.id).join(', ')||'none'}`);
       spKeyClear(); dropCaches();
       const out=[], idsOf=list=>list.map(legIdAud).sort().join();
-      for(const g of mine){ const s=F('spSet')(g.id), q=qualAud([g],ALL_U), pool=F('pbPool')([g],w.eval('SP_ALL'),SPS); setsBuilt++;
-        chk(idsOf(pool.pref)===idsOf(capAud(q.pref,SPS.cap))&&idsOf(pool.thin)===idsOf(capAud(q.thin,SPS.cap))&&idsOf(pool.mkt)===idsOf(capAud(q.mkt,SPS.cap)),
+      /* (app v118) the Sunday slot the tab stands on, by the audit's own rule (slotRuleAud), and the page's own answer
+         for it (spSlotNext): the same unit, its games in the same order, up from the same instant */
+      const SL=slotNowAud(), pSL=F('spSlotNext')(), gs=a=>(a||[]).map(g=>g.id).join();
+      chk(SL?(!!pSL&&pSL.id===SL.id&&gs(pSL.games)===gs(SL.games)&&pSL.up===SL.up&&(pSL.open==null?null:+pSL.open)===SL.open):!pSL,
+        `${lab}: the page's Sunday slot is ${pSL?`${pSL.id} (${gs(pSL.games)}), ${pSL.up?'up':'not up'}${pSL.open!=null?' from '+isoAud(pSL.open):''}`:'none'}, where the rule gives ${SL?`${SL.id} (${gs(SL.games)}), ${SL.up?'up':'not up'}${SL.open!=null?' from '+isoAud(SL.open):''}`:'none'}`);
+      /* the units held: each prime-time game to come, and the slot (its games the audit's own) */
+      const units=[...mine.map(g=>({g,G:[g],slot:null})),...(SL&&pSL&&pSL.id===SL.id?[{g:F('spUnit')(SL.id),G:SL.games,slot:SL}]:[])];
+      for(const {g,G,slot} of units){ if(!g) continue;
+        const SPw=slot?w.eval('SP_SLOT_SEARCH'):SPS, gids=new Set(G.map(x=>x.id)), uname=slot?`week ${slot.w}'s Sunday slot`:`${g.a} at ${g.h}`;
+        const s=F('spSet')(g.id), q=qualAud(G,ALL_U), pool=F('pbPool')(G,w.eval('SP_ALL'),SPw); if(slot) slotsBuilt++; else setsBuilt++;
+        chk(idsOf(pool.pref)===idsOf(capAud(q.pref,SPw.cap))&&idsOf(pool.thin)===idsOf(capAud(q.thin,SPw.cap))&&idsOf(pool.mkt)===idsOf(capAud(q.mkt,SPw.cap)),
           `${lab}: ${g.id}'s set is searched from other legs than its own that qualify: ${pool.pref.length}/${pool.thin.length}/${pool.mkt.length} preferred, thin and totals where the rule gives ${q.pref.length}/${q.thin.length}/${q.mkt.length}`);
         chk(!!s&&s.tiers.length===4&&s.tiers.map(t=>t.id+t.n).join()===SPEC_AUD.map(x=>x[0]+x[2]).join(),`${lab}: ${g.id}'s set is not Safe, Medium, Aggressive and Extreme at 2, 3, 4 and 5 legs`);
         if(!s) continue;
         /* the boxes never move a set: with some unticked, the set is the one every box ticked builds */
         if(KINDS.some(k=>!U().k[k])||U().off.length){ const keepT=JSON.stringify(U()), sg=x=>JSON.stringify(x.tiers.map(t=>t.why||t.legs.map(legIdAud).join()+'@'+t.corr+'@'+t.dec));
-          const forget=w.eval('(function(g){ SP_CACHE.delete(spSig(g)); })');
-          for(const k of KINDS) U().k[k]=true; U().off=[]; forget(g); const s2=F('spSet')(g.id); S.ui.pb=JSON.parse(keepT); forget(g);
+          const forget=w.eval('(function(id){ SP_CACHE.delete(spSig(spUnit(id))); })');
+          for(const k of KINDS) U().k[k]=true; U().off=[]; forget(g.id); const s2=F('spSet')(g.id); S.ui.pb=JSON.parse(keepT); forget(g.id);
           chk(!!s2&&sg(s2)===sg(F('spSet')(g.id)),`${lab}: ${g.id}'s set moves with the Parlay Builder's boxes`); }
-        const byId=new Map([...q.pref,...q.thin,...q.mkt].map(l=>[legIdAud(l),l])), mx=maxAud([...capAud(q.pref,SPS.cap),...capAud(q.thin,SPS.cap),...capAud(q.mkt,SPS.cap)]);
+        const byId=new Map([...q.pref,...q.thin,...q.mkt].map(l=>[legIdAud(l),l])), mx=maxAud([...capAud(q.pref,SPw.cap),...capAud(q.thin,SPw.cap),...capAud(q.mkt,SPw.cap)]);
         const from0={pref:pool.pref,thin:pool.thin};
-        for(const t of s.tiers){ const sp=SPEC_AUD.find(x=>x[0]===t.id); if(!sp) continue; const [,,n,floor]=sp, gl=`${lab}, ${g.a} at ${g.h}: the ${t.id} level`;
-          if(!t.legs){ setsSaid++;
-            W.compose(mx<n,`${gl} is empty though the game's lines make ${mx} legs, enough for ${n}: ${t.why}`);
-            W.wording(t.why===spWhyAud(g,n,q),`${gl} is empty and says "${t.why}", not "${spWhyAud(g,n,q)}"`);
+        for(const t of s.tiers){ const sp=SPEC_AUD.find(x=>x[0]===t.id); if(!sp) continue; const [,,n,floor]=sp, gl=`${lab}, ${uname}: the ${t.id} level`;
+          if(!t.legs){ if(!slot) setsSaid++;
+            const why=slot?spWhySlotAud(G,n,q,SPw.cap):spWhyAud(g,n,q);
+            W.compose(mx<n,`${gl} is empty though the ${slot?'slot\'s':'game\'s'} lines make ${mx} legs, enough for ${n}: ${t.why}`);
+            W.wording(t.why===why,`${gl} is empty and says "${t.why}", not "${why}"`);
             continue; }
-          setLevels++;
-          chk(t.legs.length===n&&mx>=n,`${gl} has ${t.legs.length} legs, not ${n}, or more than the game's lines make (${mx})`);
+          if(slot) slotLevels++; else setLevels++;
+          chk(t.legs.length===n&&mx>=n,`${gl} has ${t.legs.length} legs, not ${n}, or more than the ${slot?'slot\'s':'game\'s'} lines make (${mx})`);
           for(const l of t.legs){ const x=byId.get(legIdAud(l)), gg=S.sched.find(y=>y.id===l.gid);
-            chk(l.gid===g.id&&!!x&&l.thin===x.thin&&!!x.market===!!l.market&&l.p===x.p&&l.price===x.price,`${gl} holds ${l.name} ${l.label}, which is not one of this game's own legs that qualify, or not as the rule marks it (thin ${String(l.thin)} where the rule has ${String(x&&x.thin)})`);
+            chk(gids.has(l.gid)&&!!x&&l.thin===x.thin&&!!x.market===!!l.market&&l.p===x.p&&l.price===x.price,`${gl} holds ${l.name} ${l.label}, which is not one of ${slot?'the slot\'s games\'':'this game\'s'} own legs that qualify, or not as the rule marks it (thin ${String(l.thin)} where the rule has ${String(x&&x.thin)})`);
             chk(!!gg&&!F('gameStarted')(gg)&&takenPrice(l)&&isFinite(l.price)&&l.price!==0&&l.p>=0.45&&l.p<0.97&&(l.market?l.stat==='total'&&!l.thin:l.p>=mlP(l.price)&&l.stat!=='total'),
               `${gl}: ${l.name} ${l.label} is on a game under way, on no real price, out of 45-97%, under the book, or a total that is not a market leg`);
             chk(dkOk(l)&&(isG(l)||F('suggestable')(l.pid))&&!FAIRAUD.isFar(l),`${gl}: ${l.name} ${l.label} has no DraftKings id at its line, is on a player who may not play, or is far off the market`); }
-          { const gl2=t.legs.filter(isG), sd=gl2.filter(l=>l.stat!=='total'), tt=gl2.filter(l=>l.stat==='total'), pl=t.legs.filter(l=>!isG(l));
-            chk(new Set(t.legs.map(l=>l.key)).size===n&&sd.length<=1&&tt.length<=1&&new Set(pl.map(l=>l.pid)).size===pl.length,`${gl} has one line twice, two sides or two totals, or two legs on one player`); }
+          /* one line once, one leg a player, and of each game one side (to win or to cover) and one total: the slot's
+             legs are of many games, each held on its own */
+          { const gl2=t.legs.filter(isG), pl=t.legs.filter(l=>!isG(l)), per=[...gids].every(id=>gl2.filter(l=>l.gid===id&&l.stat!=='total').length<=1&&gl2.filter(l=>l.gid===id&&l.stat==='total').length<=1);
+            chk(new Set(t.legs.map(l=>l.key)).size===n&&per&&new Set(pl.map(l=>l.pid)).size===pl.length,`${gl} has one line twice, two sides or two totals of a game, or two legs on one player`); }
           chk(t.legs.map(l=>l.key).join()===[...t.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join(),`${gl}'s legs are not in the builder's order`);
           chk(pp(t.legs).corr===t.corr&&pd(t.legs.map(l=>({leg:l,ml:l.price})))===t.dec,`${gl}'s chance or price is not what parlayProb and parlayDec say`);
           { const fs=t.legs.map(l=>F('legFair')(l));
@@ -1334,18 +1405,35 @@ setTimeout(async()=>{
           chk(t.thin===t.legs.filter(l=>l.thin).length&&(t.mkt||0)===t.legs.filter(l=>l.market).length&&(!t.likeliest||!!floor),`${gl} miscounts its thin legs or totals, or Safe is marked a fallback`);
           /* the choice of parlay, by the page's own search at the set's widths (W.compose) and in full where it can be */
           const from=t.mkt?{pref:[...pool.pref,...pool.thin],thin:pool.mkt}:from0, kTop=t.mkt?Math.max(0,n-maxAud(from.pref)):undefined;
-          if(t.mkt) W.compose(F('pbTier')(sp,from0,new Map(),SPS)===null,`${gl} took a game total where the game's legs with an edge make a parlay of its size`);
-          if(t.likeliest) W.compose(!!bestRet&&bestRet(sp,from,new Map(),kTop,SPS)===null,`${gl} fell back to the likeliest ${n} legs though a ${n}-leg parlay of the game clears its ${floor*100}% floor`);
-          else if(floor&&bestRet){ const b=bestRet(sp,from,new Map(),kTop,SPS); W.compose(!!b&&b.legs.map(legIdAud).join()===t.legs.map(legIdAud).join(),`${gl} is not its best return over its floor`); }
+          if(t.mkt) W.compose(F('pbTier')(sp,from0,new Map(),SPw)===null,`${gl} took a game total where the ${slot?'slot\'s':'game\'s'} legs with an edge make a parlay of its size`);
+          if(t.likeliest) W.compose(!!bestRet&&bestRet(sp,from,new Map(),kTop,SPw)===null,`${gl} fell back to the likeliest ${n} legs though a ${n}-leg parlay of the ${slot?'slot':'game'} clears its ${floor*100}% floor`);
+          else if(floor&&bestRet){ const b=bestRet(sp,from,new Map(),kTop,SPw); W.compose(!!b&&b.legs.map(legIdAud).join()===t.legs.map(legIdAud).join(),`${gl} is not its best return over its floor`); }
           if(t.likeliest||!floor){ const all=[...from.pref,...from.thin], fill=t.mkt?t.mkt:t.thin;
             if(noMovers(all)){ const b=likeliestOf(all,n,fill,!!t.mkt);
               if(b) W.compose(t.corr>=b.best-1e-12,`${gl}, "${ruleFor(t)}", lands ${(t.corr*100).toFixed(2)}% where ${orderF(b.legs).map(l=>l.name+' '+l.label).join(', ')} land ${(b.best*100).toFixed(2)}% with as many thin legs`); } } }
-        out.push({g,s,q}); }
-      /* the tab as it draws them: which games it sets out, by the night rule worked here */
+        if(slot) out.slot={g,s,q,R:slot}; else out.push({g,s,q}); }
+      /* the tab as it draws them: which games it sets out, by the night rule worked here (app v118: in its Night games
+         section; the Sunday slot is its own section, below) */
       F('renderSp')();
+      const NS='#spPanel [data-sp-sec="night"]';
       const N=nightRuleAud(mine,S.sched,now), onG=N.up?N.games:[], ids=a=>a.map(g=>g.id).sort().join(), byK=a=>[...a].sort((x,y)=>(kickAud(x)-kickAud(y))||String(x.id).localeCompare(String(y.id))).map(g=>g.id).join();
       nightSaid.push(`${lab}: ${!mine.length?'no prime-time game to come':N.up?`${ids(onG)} set out${mine.length>onG.length?`, ${mine.length-onG.length} later game${mine.length-onG.length===1?'':'s'} not yet`:''}`:`the next night (${ids(N.games)}) not up until ${isoAud(N.open)}, said so`}`);
-      { const pOn=F('spOn')(), drawnIds=[...d.querySelectorAll('#spPanel [data-sp-game]')].map(x=>x.dataset.spGame), say=`the night rule gives ${ids(onG)||'none'} (the next night ${ids(N.games)||'none'}, ${N.prev?`the night before it ${N.prev}, so up from ${isoAud(N.open)}`:'none before it, so up at once'})`;
+      /* (app v118) the tab is two sections in order, Night games and the Sunday slot, each headed by its own record; the
+         record is no longer at the tab's head, and this page, the prop model's own, with no ELO tab, draws no Elo picks
+         (each unit's, .pb-tiers[data-sp-kind="elo"], which the hub's ELO tab fills) and no #pbElo, only each unit's
+         model parlays under their heading */
+      { const sets=d.getElementById('spSets'), kids=sets?[...sets.children]:[];
+        chk(!!d.querySelector('#spPanel > #spCard > #spHead')&&!!d.querySelector('#spPanel > #spCard > #spSets')&&kids.length===2&&kids.every((x,i)=>x.tagName==='SECTION'&&x.classList.contains('sp-sec')&&x.dataset.spSec===['night','slot'][i])
+          &&kids.every(x=>{ const h=x.firstElementChild, r=h&&h.nextElementSibling; return !!h&&h.tagName==='H3'&&h.classList.contains('sp-sech')&&h.id===`spsec-${x.dataset.spSec}`&&x.getAttribute('aria-labelledby')===h.id&&!!r&&r.classList.contains('sp-rec')&&r.dataset.spRecsec===x.dataset.spSec; })
+          &&!d.getElementById('spRec')&&!d.querySelector('#spHead .sp-rec,#spHead [data-sp-rec]'),
+          `${lab}: Suggested Parlays is not its head and two sections, Night games then the Sunday slot, each its heading and its own record first: ${kids.map(x=>x.tagName+(x.dataset.spSec?'['+x.dataset.spSec+']':'')).join(', ')||'no sections'}`);
+        W.wording(kids.length===2&&kids.map(x=>(x.querySelector('h3.sp-sech')||{}).textContent).join('|')==='Night games|Sunday slot',`${lab}: the two sections are not headed Night games and Sunday slot`);
+        const units=[...d.querySelectorAll('#spPanel .sp-game')].filter(b=>!b.querySelector('[data-sp-phase="wait"],[data-sp-phase="loading"]'));
+        chk(!F('spEloOn')()&&!d.querySelector('#pbElo,#spPanel [data-sp-kind="elo"],#spPanel [data-sp-elo-wait]')
+          &&units.every(b=>b.querySelectorAll('h5.sp-sub[data-sp-kind="model"]').length===1&&b.querySelectorAll('.pb-tiers[data-sp-kind="model"]').length===1&&b.querySelector('h5.sp-sub[data-sp-kind="model"]').nextElementSibling===b.querySelector('.pb-tiers[data-sp-kind="model"]')),
+          `${lab}: the prop model's own page, which has no ELO tab, draws Elo picks (#pbElo, a unit's Elo block or its loading line), or a unit's model parlays are not under their heading`);
+        W.wording(units.every(b=>b.querySelector('h5.sp-sub[data-sp-kind="model"]').textContent==='Model parlays'),`${lab}: a unit's model parlays are not headed Model parlays`); }
+      { const pOn=F('spOn')(), drawnIds=[...d.querySelectorAll(`${NS} [data-sp-game]`)].map(x=>x.dataset.spGame), say=`the night rule gives ${ids(onG)||'none'} (the next night ${ids(N.games)||'none'}, ${N.prev?`the night before it ${N.prev}, so up from ${isoAud(N.open)}`:'none before it, so up at once'})`;
         chk(ids(pOn)===ids(onG),`${lab}: Suggested Parlays sets out ${ids(pOn)||'no game'}, where ${say}`);
         chk([...drawnIds].sort().join()===ids(onG),`${lab}: Suggested Parlays draws sets for ${drawnIds.join(', ')||'no game'}, where ${say}`);
         W.order(drawnIds.join()===byK(onG),`${lab}: the night's sets are not drawn in kickoff order: ${drawnIds.join(', ')}`);
@@ -1353,7 +1441,7 @@ setTimeout(async()=>{
         for(const {g} of out){ const t=(F('spShown')(g).tiers||[]).find(y=>y&&y.legs), x=t&&F('spTier')(`${g.id}:${t.id}`), on=onG.some(y=>y.id===g.id);
           if(t) chk(on?!!x&&x.legs.map(legIdAud).join()===t.legs.map(legIdAud).join():x===null,
             `${lab}: the ${t.id} level of ${g.a} at ${g.h}, ${on?'set out':'not set out yet'}, is ${x?'':'not '}found for its Finish (spTier)`); }
-        const wt=d.querySelectorAll('#spPanel [data-sp-wait]'), w0=wt[0];
+        const wt=d.querySelectorAll(`${NS} [data-sp-wait]`), w0=wt[0];
         if(mine.length&&!N.up){
           chk(wt.length===1&&w0.dataset.spWait===isoAud(N.open)&&[...String(w0.dataset.spNext||'').split(' ')].sort().join()===ids(N.games),
             `${lab}: with the next night (${ids(N.games)}) not up until ${isoAud(N.open)}, the tab does not say which game is next and when its set goes up: ${w0?w0.outerHTML.slice(0,300):'no line'}`);
@@ -1362,7 +1450,7 @@ setTimeout(async()=>{
           W.wording(!!w0&&w0.textContent===want,`${lab}: the line before the next night is up reads "${w0?w0.textContent:''}", not "${want}"`); }
         else chk(!wt.length,`${lab}: the tab says the next night is not up yet, where ${say}`); }
       const stake=w.eval('pbStake()'), fm=F('fmtML'), dml=F('decToML');
-      const drawSets=list=>{ for(const {g,s,q} of list){ const box=d.querySelector(`#spPanel [data-sp-game="${g.id}"]`), lock=kickAud(g)-2*3600e3, live=now<lock, gl=`${lab}, ${g.a} at ${g.h}`;
+      const drawSets=list=>{ for(const {g,s,q} of list){ const box=d.querySelector(`${NS} [data-sp-game="${g.id}"]`), lock=kickAud(g)-2*3600e3, live=now<lock, gl=`${lab}, ${g.a} at ${g.h}`;
         /* which legs are Value picks, thin-edge legs and totals: the audit's own pool of the game (qualAud), never the
            page's thin and market flags (a preferred leg whose flag the page dropped would otherwise pass unmarked) */
         const qV=new Set(q.pref.map(legIdAud)), qT=new Set(q.thin.map(legIdAud)), qM=new Set(q.mkt.map(legIdAud));
@@ -1375,7 +1463,8 @@ setTimeout(async()=>{
            the lock this browser's own set (the audit's page has no record) or the record's */
         { const want=live?`Locks ${etAud(lock)}, 2 hours before kickoff.`:v.own?`Locked since ${etAud(lock)}. This browser’s own set: the site’s was not published in time, so the record does not grade it.`:`Locked since ${etAud(lock)}.`;
           W.wording(!!ph&&ph.textContent===want,`${gl}: the ${live?'live':v.own?'locked (this browser\'s own)':'locked'} set's line reads "${ph?ph.textContent:''}", not "${want}"`); }
-        W.wording((box.querySelector('h3')||{}).textContent===`${F('TEAM_NAMES')[g.a]||g.a} at ${F('TEAM_NAMES')[g.h]||g.h}`&&(box.querySelector('.sp-hd .pill')||{}).textContent===nightAud(g),`${gl}: the set is not headed with the game and its night`);
+        /* (app v118) its head an h4 under its section's h3, the unit labelled by it */
+        W.wording((box.querySelector('h4')||{}).textContent===`${F('TEAM_NAMES')[g.a]||g.a} at ${F('TEAM_NAMES')[g.h]||g.h}`&&(box.querySelector('h4')||{}).id===`spg-${g.id}`&&box.getAttribute('aria-labelledby')===`spg-${g.id}`&&(box.querySelector('.sp-hd .pill')||{}).textContent===nightAud(g),`${gl}: the set is not headed with the game and its night`);
         /* locked: the set kept is the one built at the lock, its legs as built; its chance and price are the
            builder's own sums on the legs as kept (each leg's chance to 4 places), so what the card says is what
            Add to builder pays, and within the record's rounding of the set as built */
@@ -1383,12 +1472,18 @@ setTimeout(async()=>{
         if(!live){ setsLocked++; chk(shown.length===4&&shown.every((t,i)=>{ const b=s.tiers[i]; return t.id===b.id&&(b.legs?(!!t.legs&&t.legs.map(legIdAud).join()===b.legs.map(legIdAud).join()
               &&t.corr===pp(t.legs).corr&&t.dec===pd(t.legs.map(l=>({leg:l,ml:l.price})))&&Math.abs(t.corr-b.corr)<2e-3&&Math.abs(t.dec-b.dec)<=Math.max(2e-3,b.dec*2e-3)):!t.legs); }),
           `${gl}: the locked set this browser keeps is not the set built at the lock, or its chance and price are not the builder's sums on its legs`); }
+        cardsHeld(box,shown,{g,qV,qT,qM,gl,ro:false}); } };
+      /* each level's card of a unit, as drawn: its legs, each with an Add of its own named for it (none, nor Add to
+         builder, nor Finish, where ro: the Sunday slot under way), its chance and price, its payout on the Bet amount, the
+         Value mark on its Value picks alone, quiet, its fair chance first and its words */
+      const cardsHeld=(box,shown,{g,qV,qT,qM,gl,ro})=>{
         for(const t of shown){ const c=box.querySelector(`.pb-tier.${t.id}`), tl=`${gl}: the ${t.id} card`;
           if(!c){ chk(false,`${tl} is not drawn`); continue; }
           if(!t.legs){ W.wording((c.querySelector('.pb-why')||{}).textContent===t.why&&!c.querySelector('[data-sp-add]'),`${tl} does not give its reason, or offers Add to builder`); continue; }
           const li=[...c.querySelectorAll('.pb-legs li')], tx=c.textContent.replace(/\s+/g,' ');
-          chk(li.length===t.legs.length&&t.legs.every((l,i)=>li[i].textContent.includes(l.name)&&li[i].textContent.includes(l.label)&&legAddOk(li[i].querySelector('[data-pb-leg]'),l))
-            &&tx.includes(`${(t.corr*100).toFixed(0)}%`)&&tx.includes(fm(dml(t.dec)))&&!!c.querySelector(`[data-sp-add="${g.id}:${t.id}"]`),`${tl} does not show its legs, each with an Add of its own named for it, its chance and price, or Add to builder`);
+          chk(li.length===t.legs.length&&t.legs.every((l,i)=>li[i].textContent.includes(l.name)&&li[i].textContent.includes(l.label)&&(ro?!li[i].querySelector('[data-pb-leg]'):legAddOk(li[i].querySelector('[data-pb-leg]'),l)))
+            &&tx.includes(`${(t.corr*100).toFixed(0)}%`)&&tx.includes(fm(dml(t.dec)))&&(ro?!c.querySelector('[data-sp-add],[data-pc-finish]'):!!c.querySelector(`[data-sp-add="${g.id}:${t.id}"]`)),
+            ro?`${tl} does not show its legs, chance and price as it locked, or still offers an Add, Add to builder or Finish with its games under way`:`${tl} does not show its legs, each with an Add of its own named for it, its chance and price, or Add to builder`);
           chk(payOk(c.querySelector('[data-pb-pay]'),stake,t.dec),`${tl} does not pay the Bet amount (${amtTxt(stake)}) times its price ${t.dec}`);
           /* (app v112) a Value pick (a preferred leg of the audit's own pool) wears Value, and no other leg any mark.
              (app v113) a set's card is quiet: it draws no line saying why it holds a total (pbMktLine) and none
@@ -1402,15 +1497,58 @@ setTimeout(async()=>{
           { const th=[...c.querySelectorAll('p.pb-thin:not(.pb-espnline):not(.sp-upd)')];
             W.wording(!th.length&&!/not (a )?Value picks?: the model rates/.test(tx),
               `${tl} holds ${nTh} thin leg${nTh===1?'':'s'} and still draws a line under its legs: "${th.map(p=>p.textContent).join(' / ')}"`); }
-          fairShown(c,t,gl,'model'); cardWords(c,t,gl); } } };
+          fairShown(c,t,gl,'model'); cardWords(c,t,gl); } };
       { const onIds=new Set(onG.map(g=>g.id)), shownOut=out.filter(x=>onIds.has(x.g.id)), hidOut=out.filter(x=>!onIds.has(x.g.id));
         drawSets(shownOut);
         /* the games the night rule hides, drawn with spOn stood in: their cards are what the tab draws once their night is up */
         if(hidOut.length) spAllOn(()=>{ F('renderSp')(); drawSets(hidOut); });
         if(hidOut.length) F('renderSp')(); }
+      /* (app v118) the Sunday slot as the tab draws it, by the audit's own rule (slotRuleAud): before it is set out, its
+         section's one line saying which slot is next and when its sets go up (data-sp-wait the instant, data-sp-next its
+         id), and its Finish found for no level; from then to its last kickoff its set, live, locked (this browser's own
+         set, the audit's page having no record) and, from its first kickoff, under way: shown as it locked with nothing
+         to add or finish (no leg's Add, no Add to builder, no Finish, spTier null for every level); with none to come,
+         the line that says so. Then its cards as the tab draws them once it is up, its opening stood in where it is not
+         (slotAllOn): blocking but the words and the choice of parlay, as a night's */
+      { const SS='#spPanel [data-sp-sec="slot"]', sec=d.querySelector(SS), boxes=[...d.querySelectorAll(`${SS} [data-sp-game]`)], wt=[...d.querySelectorAll(`${SS} [data-sp-wait]`)], nn=d.querySelector(`${SS} [data-sp-none="slot"]`);
+        const tok=(F('spState')().split(',').find(x=>x.startsWith('s='))||'(none)');
+        chk(tok===slotTokAud(SL),`${lab}: the page's state carries ${tok} for the Sunday slot, where the rule gives ${slotTokAud(SL)}`);
+        if(!SL){ chk(!boxes.length&&!wt.length&&!!nn,`${lab}: with no Sunday slot to come, the slot's section draws ${boxes.length?'a set':wt.length?'a wait line':'no line saying so'}`);
+          const cw=liveWeekAud(S.sched,now), want=F('seasonOver')()?`The ${F('SEASON')} regular season is over: no Sunday slot is left.`:`No Sunday game of week ${cw} is still to kick off.`;
+          W.wording(!!nn&&nn.textContent===want,`${lab}: with no Sunday slot to come, its section reads "${nn?nn.textContent:''}", not "${want}"`);
+          slotSaid.push(`${lab}: none to come`); }
+        else if(!SL.up){ chk(!boxes.length&&!nn&&wt.length===1&&wt[0].dataset.spWait===isoAud(SL.open)&&wt[0].dataset.spNext===SL.id,
+            `${lab}: with ${SL.id} not set out until ${isoAud(SL.open)}, the slot's section does not draw its one line saying which slot is next and when its sets go up: ${wt[0]?wt[0].outerHTML.slice(0,300):boxes.length?'a set drawn':'no line'}`);
+          W.wording(!!wt[0]&&wt[0].textContent===slotWaitAud(SL),`${lab}: the line before the Sunday slot is up reads "${wt[0]?wt[0].textContent:''}", not "${slotWaitAud(SL)}"`);
+          if(out.slot) for(const t of out.slot.s.tiers.filter(t=>t.legs)) chk(F('spTier')(`${SL.id}:${t.id}`)===null,`${lab}: the ${t.id} level of ${SL.id}, not set out yet, is found for its Finish (spTier)`);
+          slotSaid.push(`${lab}: ${SL.id} (${SL.games.length} games) waited for, up from ${isoAud(SL.open)}`); }
+        else { chk(boxes.length===1&&boxes[0].dataset.spGame===SL.id&&boxes[0].classList.contains('sp-slot')&&!wt.length&&!nn,`${lab}: with ${SL.id} up (${SL.phase}), the slot's section draws ${boxes.map(b=>b.dataset.spGame).join(', ')||'no set'}${wt.length?' and a wait line':''}`);
+          slotSaid.push(`${lab}: ${SL.id} (${SL.games.length} games) ${SL.phase}`); }
+        const drawSlot=({g,s,q,R})=>{ const box=d.querySelector(`${SS} [data-sp-game="${g.id}"]`), gl=`${lab}, week ${R.w}'s Sunday slot`, ph0=now<R.lock?'live':now<R.first?'locked':'under';
+          const qV=new Set(q.pref.map(legIdAud)), qT=new Set(q.thin.map(legIdAud)), qM=new Set(q.mkt.map(legIdAud));
+          chk(!!box,`${gl}: Suggested Parlays draws no set for it`); if(!box) return;
+          const v=F('spShown')(g), ph=box.querySelector('[data-sp-phase]'), want=ph0==='live'?'live':ph0==='under'?'under':(v.own?'own':'locked');
+          chk(v.phase===(ph0==='live'?'live':'locked')&&(ph0==='live'||v.own===!w.eval('PB_REC'))&&!!v.under===(ph0==='under')&&!!ph&&ph.dataset.spPhase===want,
+            `${gl}: the set is ${v.phase}${v.own?' (built here)':''}${v.under?' (under way)':''} and drawn ${ph?ph.dataset.spPhase:'with no line'}, where its lock (${isoAud(R.lock)}) and first kickoff (${isoAud(R.first)}) make it ${ph0}`);
+          chk(!!ph&&ph.textContent.includes(etAud(R.lock))&&(ph0!=='under'||ph.textContent.includes(etAud(R.first))),`${gl}: the set's line does not say it locks at ${etAud(R.lock)}${ph0==='under'?`, under way since ${etAud(R.first)}`:''}: "${ph?ph.textContent:''}"`);
+          { const wantL=ph0==='live'?`Locks ${etAud(R.lock)}, 2 hours before the first kickoff.`:ph0==='under'?`Locked since ${etAud(R.lock)}. Under way since ${etAud(R.first)}.${v.none?' The site’s set was not published in time.':v.own?' This browser’s own set: the site’s was not published in time, so the record does not grade it.':''}`
+              :v.own?`Locked since ${etAud(R.lock)}. This browser’s own set: the site’s was not published in time, so the record does not grade it.`:`Locked since ${etAud(R.lock)}.`;
+            W.wording(!!ph&&ph.textContent===wantL,`${gl}: the ${ph0} set's line reads "${ph?ph.textContent:''}", not "${wantL}"`); }
+          { const H=slotHeadAud(R), h=box.querySelector('.sp-hd h4'), sm=box.querySelector('.sp-hd small');
+            W.wording(!!h&&h.id===`spg-${g.id}`&&box.getAttribute('aria-labelledby')===h.id&&h.textContent===H.h&&!!sm&&sm.textContent===H.small,`${gl}: the slot is headed "${h?h.textContent:''}" "${sm?sm.textContent:''}", not "${H.h}" "${H.small}"`); }
+          const shown=ph0==='live'?s.tiers:v.tiers;
+          if(ph0!=='live'){ slotsLocked++; chk(shown.length===4&&shown.every((t,i)=>{ const b=s.tiers[i]; return t.id===b.id&&(b.legs?(!!t.legs&&t.legs.map(legIdAud).join()===b.legs.map(legIdAud).join()
+                &&t.corr===pp(t.legs).corr&&t.dec===pd(t.legs.map(l=>({leg:l,ml:l.price})))&&Math.abs(t.corr-b.corr)<2e-3&&Math.abs(t.dec-b.dec)<=Math.max(2e-3,b.dec*2e-3)):!t.legs); }),
+            `${gl}: the locked set this browser keeps is not the set built at the lock, or its chance and price are not the builder's sums on its legs`); }
+          cardsHeld(box,shown,{g,qV,qT,qM,gl,ro:ph0==='under'});
+          if(ph0==='under') chk(!box.querySelector('[data-sp-add],[data-pb-leg],[data-pc-finish]'),`${gl}: under way since its first kickoff, the slot still offers an Add, an Add to builder or a Finish`);
+          /* its Finish (spTier) finds each level with its own legs, the slot named, until its first kickoff; none after */
+          for(const t of shown.filter(t=>t.legs)){ const x=F('spTier')(`${g.id}:${t.id}`);
+            chk(ph0==='under'?x===null:(!!x&&x.legs.map(legIdAud).join()===t.legs.map(legIdAud).join()),`${gl}: the ${t.id} level, ${ph0}, is ${x?'':'not '}found for its Finish (spTier)`);
+            if(x) W.wording(x.game==='the Sunday slot',`${gl}: the ${t.id} level's Finish names it "${x.game}", not the Sunday slot`); } };
+        if(out.slot){ if(SL.up) drawSlot(out.slot); else { slotAllOn(()=>{ F('renderSp')(); drawSlot(out.slot); }); F('renderSp')(); } } }
       /* (app v113, the owner's "get rid of all the long paragraph description stuff. we dont need to clutter the page") the
-         tab's lead under its heading and the foot under the sets are gone, and nothing of their paragraphs is left above
-         the Elo picks (#pbElo keeps its own lead, the ELO tab's) */
+         tab's lead under its heading and the foot under the sets are gone, and nothing of their paragraphs is left */
       { const box=['#spHead','#spSets'].map(s=>d.querySelector('#spPanel '+s)).filter(Boolean), tx=box.map(x=>x.textContent).join(' ').replace(/\s+/g,' ');
         const left=box.flatMap(x=>[...x.querySelectorAll('.pb-lead,.pb-foot,.sp-rec-line')]);
         W.wording(box.length===2&&!left.length&&!/A leg marked Value is one of the model’s best|where none of that size gets there, the likeliest of that size|One night is shown at a time|The record starts with this change/.test(tx),
@@ -1602,7 +1740,7 @@ setTimeout(async()=>{
       if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
       S.sched.forEach((g,i)=>{ g.tov=keepT[i][0]; g.tou=keepT[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
       dkSet(keepDk);
-      console.log(`M. Top ${TOP_N_AUD} lines: ${topLists} lists held on as many sets of ticks, ${topRows} rows in their two parts (${topRows-topOther} Value picks, ${topOther} other lines after them, the totals after every thin-edge line, ${topTotAfter} lists with both; ${topNoValue} lists with no Value pick; each bet once, ${topSame} main lines a ladder rung was left out for, ${topSameCut} of them past the ${TOP_N_AUD}th; M12 holds both on made-up games); Suggested Parlays: ${setsBuilt} sets of the week's prime-time games, ${setLevels} levels built and ${setsSaid} that said why, ${setsLocked} drawn locked, ${setThinSeen} cards with a thin leg and ${setMktSeen} with a total drawn quiet (no line on either); ${nightSaid.join('; ')}`);
+      console.log(`M. Top ${TOP_N_AUD} lines: ${topLists} lists held on as many sets of ticks, ${topRows} rows in their two parts (${topRows-topOther} Value picks, ${topOther} other lines after them, the totals after every thin-edge line, ${topTotAfter} lists with both; ${topNoValue} lists with no Value pick; each bet once, ${topSame} main lines a ladder rung was left out for, ${topSameCut} of them past the ${TOP_N_AUD}th; M12 holds both on made-up games); Suggested Parlays: ${setsBuilt} sets of the week's prime-time games, ${setLevels} levels built and ${setsSaid} that said why, ${setsLocked} drawn locked, ${setThinSeen} cards with a thin leg and ${setMktSeen} with a total drawn quiet (no line on either); ${nightSaid.join('; ')}; the Sunday slot: ${slotsBuilt} sets held, ${slotLevels} levels built, ${slotsLocked} drawn locked or under way; ${slotSaid.join('; ')}`);
       console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, ${corrTiers} of one game's tiers on legs that move together, over this week's ${games.length} games and ${nL} made-up player lines`); }
     /* the thin-edge line says, for each kind of leg it is on, what it lacked: a team bet has no
        market + form (a player leg's second price), so it never reads as wanting it (a game total
@@ -1673,7 +1811,7 @@ setTimeout(async()=>{
       setKinds(KINDS); const rA=hold('no player prices, all');
       /* each prime-time set: no player leg, and each empty level says when its game's player prices come */
       { const sets=holdSets('no player prices');
-        chk(sets.every(({s})=>s.tiers.every(t=>!t.legs||t.legs.every(isG))),'with no player price on file a set holds a player leg'); }
+        chk([...sets,...(sets.slot?[sets.slot]:[])].every(({s})=>s.tiers.every(t=>!t.legs||t.legs.every(isG))),'with no player price on file a set (a night\'s or the Sunday slot\'s) holds a player leg'); }
       chk(rA.noPlayerPrices&&rA.tiers.every(t=>t.legs?t.legs.every(isG):t.why.endsWith(', and '+noPlLow)),'with no player price on file, All builds a player leg, or an empty tier does not say no player prices are on file: '+rA.tiers.map(t=>t.why||'built').join(' / '));
       /* a level built with no player price on file says nothing of the missing player legs, so the
          panel does, whenever one is built; and player bets with Game total build their levels from
@@ -1898,16 +2036,17 @@ setTimeout(async()=>{
       w.eval('pbGames=window.__m4Keep[0]; pricedLegs=window.__m4Keep[1]; PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map();'); delete w.__m4Keep; delete w.__m4Games; delete w.__m4Legs;
       S.ui.pb=JSON.parse(keepU4); F('renderPb')(); } }
     /* with no game to come the panel says so and offers nothing: the regular season over, or every game of the week under way */
-    { w.__pbKeep=w.eval('[pbGames, seasonOver]');
+    /* (app v118) the Sunday slot stood in too (spSlotNext, none to come), as no game to come leaves none: its section says so */
+    { w.__pbKeep=w.eval('[pbGames, seasonOver, spSlotNext]');
       try{
-      w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; renderParlay();');
-      const sp=d.getElementById('spPanel');
-      chk(/regular season is over: no game is left/.test(panel.textContent)&&!panel.querySelector('[data-pb-mix],.pb-tier,[data-pb-add],[data-pb-leg]')&&!sp.querySelector('[data-sp-game],.pb-tier,[data-sp-add],[data-pb-leg]'),'with the season over the panel does not say so, or the list or Suggested Parlays still offers something');
-      W.wording(/regular season is over: no Thursday, Sunday or Monday night game is left/.test(sp.textContent),'with the season over Suggested Parlays does not say so');
+      w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; spSlotNext=function(){ return null; }; renderParlay();');
+      const sp=d.getElementById('spPanel'), slotTx=()=>((sp.querySelector('[data-sp-sec="slot"] [data-sp-none="slot"]')||{}).textContent||'');
+      chk(/regular season is over: no game is left/.test(panel.textContent)&&!panel.querySelector('[data-pb-mix],.pb-tier,[data-pb-add],[data-pb-leg]')&&!sp.querySelector('[data-sp-game],.pb-tier,[data-sp-add],[data-pb-leg],[data-sp-wait]'),'with the season over the panel does not say so, or the list or Suggested Parlays still offers something');
+      W.wording(/regular season is over: no Thursday, Sunday or Monday night game is left/.test(sp.textContent)&&slotTx()===`The ${F('SEASON')} regular season is over: no Sunday slot is left.`,'with the season over Suggested Parlays does not say so, in each of its sections');
       w.eval('seasonOver=function(){ return false; }; renderParlay();');
-      chk(/has kicked off, so there is nothing left to build from/.test(panel.textContent)&&!sp.querySelector('[data-sp-game]'),'with every game of the week under way the panel does not say so, or Suggested Parlays still offers a set');
-      W.wording(/No Thursday, Sunday or Monday night game of week \d+ is still to kick off/.test(sp.textContent),'with every game of the week under way Suggested Parlays does not say so');
-      } finally { w.eval('pbGames=window.__pbKeep[0]; seasonOver=window.__pbKeep[1];'); delete w.__pbKeep; } }
+      chk(/has kicked off, so there is nothing left to build from/.test(panel.textContent)&&!sp.querySelector('[data-sp-game],[data-sp-wait]'),'with every game of the week under way the panel does not say so, or Suggested Parlays still offers a set');
+      W.wording(/No Thursday, Sunday or Monday night game of week \d+ is still to kick off/.test(sp.textContent)&&/^No Sunday game of week \d+ is still to kick off\.$/.test(slotTx()),'with every game of the week under way Suggested Parlays does not say so, in each of its sections');
+      } finally { w.eval('pbGames=window.__pbKeep[0]; seasonOver=window.__pbKeep[1]; spSlotNext=window.__pbKeep[2];'); delete w.__pbKeep; } }
     S.ui.pb=JSON.parse(keepU); F('save')(); F('renderParlay')(); }
     /* ---- M12. the Top 50 lines on made-up games: each bet once, and the totals after every thin-edge line (app v112) ----
        The owner, 17 October 2026: "why there are several instances of this where it's only a half yard difference? i
@@ -2207,7 +2346,8 @@ setTimeout(async()=>{
     const LN=[tm(GN,'AUM','ml',0,0.6,-130),pl(GN,'aud-n1','receptions',4,0.66,-160,'4+ receptions'),pl(GN,'aud-n2','receptions',5,0.6,-130,'5+ receptions')];
     w.__spG=[GN,GA,GB]; w.__spL=[...LA,...LB,...LN];
     const keepF=w.eval('[pbGames, pricedLegs]'), keepTab=d.getElementById('tab-suggest').hidden, keepPar=JSON.stringify(S.parlay||{}), keepBP=S.bookPrice, keepS=S.stake, INJ=F('INJ'), keepInj=INJ['aud-a7'];
-    const fetch0=w.fetch, loadRec=async body=>{ w.fetch=u=>/suggest_ledger/.test(String(u))?Promise.resolve(body===404?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(body))}):fetch0(u);
+    /* (the backtest, app v118, is left to the page's own fetch, with the options the page gave it) */
+    const fetch0=w.fetch, loadRec=async body=>{ w.fetch=(u,o)=>/suggest_ledger/.test(String(u))?Promise.resolve(body===404?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(body))}):fetch0(u,o);
       try{ await w.pbRecLoad(); } finally { w.fetch=fetch0; } };
     let said=[];
     try{
@@ -2456,7 +2596,8 @@ setTimeout(async()=>{
       w.eval(`pbGames=function(){ const up=window.__m11.FX.filter(g=>!gameStarted(g)&&!hasScore(g)); return up.length?up.filter(g=>g.w===up[0].w):[]; };
         pricedLegs=function(){ return []; }; spSet=function(gid){ return window.__m11.sets[gid]||null; };`);
       const toCome=()=>FX.filter(g=>kickAud(g)>w.Date.now()), wkOf=()=>{ const u=toCome(); return u.length?u.filter(g=>g.w===u[0].w):[]; };
-      const idsS=a=>a.map(g=>g.id).sort().join(), drawnIds=()=>[...d.querySelectorAll('#spPanel [data-sp-game]')].map(x=>x.dataset.spGame).sort().join();
+      /* (app v118) the nights are the tab's Night games section; the Sunday slot, its own section, is M15's */
+      const NS='#spPanel [data-sp-sec="night"]', idsS=a=>a.map(g=>g.id).sort().join(), drawnIds=()=>[...d.querySelectorAll(`${NS} [data-sp-game]`)].map(x=>x.dataset.spGame).sort().join();
       const TN=F('TEAM_NAMES'), nm=g=>`${TN[g.a]||g.a} at ${TN[g.h]||g.h}`;
       /* [the moment, the games set out, or (when none) the night waited for and the instant it goes up and the line's words] */
       const CASES=[
@@ -2476,13 +2617,13 @@ setTimeout(async()=>{
         const own=nightRuleAud(wkOf(),S.sched,ms), want=on||[], ownOn=own.up?own.games:[];
         chk(idsS(ownOn)===idsS(want)&&(on?true:idsS(own.games)===idsS(next)&&own.open===Z(open)),`M11, ${lab}: the audit's own night rule gives ${idsS(ownOn)||'none'} set out (the next night ${idsS(own.games)}, up from ${own.open!=null?isoAud(own.open):'the start'}), not the case's answer`);
         chk(idsS(F('spOn')())===idsS(want)&&drawnIds()===idsS(want),`M11, ${lab}: the tab sets out ${idsS(F('spOn')())||'no game'} and draws ${drawnIds()||'none'}, where the rule sets out ${idsS(want)||'none'}`);
-        const wt=d.querySelectorAll('#spPanel [data-sp-wait]');
+        const wt=d.querySelectorAll(`${NS} [data-sp-wait]`);
         if(on) chk(!wt.length,`M11, ${lab}: the tab says the next night is not up yet, and it is`);
         else { chk(wt.length===1&&wt[0].dataset.spWait===open&&String(wt[0].dataset.spNext||'').split(' ').sort().join()===idsS(next),`M11, ${lab}: the tab does not say the next night is ${idsS(next)}, up from ${open}: ${wt[0]?wt[0].outerHTML.slice(0,300):'no line'}`);
           W.wording(!!wt[0]&&wt[0].textContent===line,`M11, ${lab}: the line reads "${wt[0]?wt[0].textContent:''}", not "${line}"`); }
         /* each set out drawn with its Safe level's Value pick marked Value and its thin leg unmarked, and (app v113) no
            line under it saying why that leg is not a Value pick: a set's cards are quiet (the made-up set holds one of each) */
-        for(const g of want){ const c=d.querySelector(`#spPanel [data-sp-game="${g.id}"] .pb-tier.safe`), L=w.__m11.sets[g.id].tiers[0].legs, li=c?[...c.querySelectorAll('.pb-legs li')]:[];
+        for(const g of want){ const c=d.querySelector(`${NS} [data-sp-game="${g.id}"] .pb-tier.safe`), L=w.__m11.sets[g.id].tiers[0].legs, li=c?[...c.querySelectorAll('.pb-legs li')]:[];
           chk(li.length===L.length&&L.every((l,i)=>{ const m=li[i].querySelectorAll('.pb-valmark'); return l.thin?!m.length:m.length===1&&m[0].textContent==='Value'; })&&!/thin edge|no edge/i.test(c.textContent),
             `M11, ${lab}: ${g.id}'s Safe card does not mark Value its Value pick alone`);
           W.wording(!!c&&!c.querySelector('p.pb-thin:not(.pb-espnline):not(.sp-upd)')&&!/is not a Value pick: the model rates/.test(c.textContent),`M11, ${lab}: ${g.id}'s Safe card still draws a line saying why its thin leg is not a Value pick, which a set's cards no longer draw`); }
@@ -2496,8 +2637,8 @@ setTimeout(async()=>{
         at(Z(before)); dropCaches(); F('renderParlay')();
         const st0=F('spState')(), gm0=F('pbGames')().map(g=>g.id).join(), drawn0=drawnIds(), stale0=F('pbStale')();
         at(Z(turn)); const st1=F('spState')(), gm1=F('pbGames')().map(g=>g.id).join(), stale1=F('pbStale')();
-        w.pbWatchTick(); const drawn1=drawnIds(), node=d.querySelector('#spPanel [data-sp-game]'); w.pbWatchTick();
-        chk(!drawn0&&!stale0&&gm0===gm1&&st0!==st1&&stale1&&drawn1===idsS(want)&&d.querySelector('#spPanel [data-sp-game]')===node&&!F('pbStale')(),
+        w.pbWatchTick(); const drawn1=drawnIds(), node=d.querySelector(`${NS} [data-sp-game]`); w.pbWatchTick();
+        chk(!drawn0&&!stale0&&gm0===gm1&&st0!==st1&&stale1&&drawn1===idsS(want)&&d.querySelector(`${NS} [data-sp-game]`)===node&&!F('pbStale')(),
           `M11, ${lab}: at the turn the page's state did not move, or its look did not redraw it once with the night's sets: drawn ${drawn0||'none'} then ${drawn1||'none'}, stale ${stale0} then ${stale1}, the games to come ${gm0===gm1?'the same':'moved'}`); }
     } catch(e){ chk(false,'M11 threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
     finally {
@@ -2506,6 +2647,187 @@ setTimeout(async()=>{
       spKeyClear(); try{ if(spKey0!=null) w.localStorage.setItem(SPK,spKey0); }catch(e){}
       stab.hidden=keepTab; S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; dropCaches(); F('save')(); F('renderParlay')(); }
     console.log(`M11. one night at a time, on made-up nights of 2019: ${nCase} moments (a first night up at once; Sunday night up the Friday morning after Thursday's, a Saturday night and a Sunday afternoon game no night before it; Monday's doubleheader together from Monday 6:00 am, its second game alone once the first kicked off; a Thursday the Tuesday after; 6:00 am Eastern on either clock), each with its Finish; ${nTurn} turns redrawn by the page's own look`); }
+
+  /* ---- M15. the Sunday slot (app v118, the owner's calls of 19 October 2026: "I would like it to have ELO picks for the
+     slot of Sunday games", and "do a separate section for night games and then the sunday slot of games") ----
+     Every Sunday game of a week kicking off before 7:00 pm Eastern (the 1pm and 4pm windows and a game abroad that
+     morning) is one unit, <season>_<WW>_SUN, in its own section of the tab: the current week's slot, else the next
+     week's, whichever still has a game to kick off. Its set goes up at 6:00 AM Eastern on the day after the latest
+     prime-time night before its Sunday on the schedule (none before it: at once), as a night's does, and until then one
+     line says which slot is next and when its sets go up (data-sp-wait, the instant; data-sp-next, its id); it is live
+     until 2 hours before its first kickoff, then locked (this browser's own set where the record has none, the record's
+     slot entry where it has one, which a look at the lock reads again), and from its first kickoff to its last under
+     way: shown as it locked with nothing to add or finish (no leg's Add, no Add to builder, no Finish, and spTier finds
+     none of its levels); at its last kickoff it is gone, for the next week's line. The state the page watches (spState,
+     its s= token) moves at each turn, so the half-minute look (pbWatchTick) redraws an open page once. Held on a
+     schedule of the audit's own (rule (c)): made-up weeks in October and November 2019, before every game the payload
+     holds, so no night of its own comes before them: a Sunday with no prime-time night before it, a week with a Thursday
+     night, a Saturday night game (no prime-time night), a game abroad at 9:30 am, two at 1:00 pm (the schedule's order
+     kept on the tie), one at 6:59 pm and a Sunday night game at 7:00 pm (prime time, not the slot), a week of two Sunday
+     games, and the Sunday the clocks went back. The page's currentWeek (the made-up week of the first made-up game not
+     final, as liveWeek reads a week), pricedLegs and spSet stood in, each in a slot of its own and put back on every
+     path, the games put on the schedule and taken off after, the page's clock set to each moment and put back, and the
+     record read through a stub that answers for it alone. Each moment's answer is written beside it, and the audit's own
+     rule (slotRuleAud, through the time zone database) must give it too. Blocking: which games, the unit's id, the
+     instant, the phase, what can be added or finished, the levels kept and the record's, the token, the redraw;
+     W.wording the words */
+  { const nowM=w.Date.now, at=ms=>{ w.Date.now=()=>ms; }, stab=d.getElementById('tab-suggest'), keepTab=stab.hidden, keepPar=JSON.stringify(S.parlay||{}), keepBP=S.bookPrice;
+    const mk=(id,wk,dd,tt)=>({id:`2019_${wk}_${id}`,w:wk,d:dd,t:tt,a:'A'+id,h:'H'+id,mla:110,mlh:-130,sp:2.5,spa:-110,sph:-110});
+    /* week 96, a Sunday alone; week 97, Thursday night, a Saturday night game, the slot (09:30 abroad, two at 13:00 with
+       E2 before E1 on the schedule, 18:59), Sunday night at 19:00 and Monday night; week 98, Thursday, two Sunday games,
+       Sunday and Monday nights; week 99, the same around the Sunday the clocks went back */
+    const A1=mk('A1',96,'2019-10-13','13:00'), A2=mk('A2',96,'2019-10-13','16:25');
+    const T1=mk('T1',97,'2019-10-17','20:20'), SA=mk('SA',97,'2019-10-19','20:15'), L1=mk('L1',97,'2019-10-20','09:30'), E2=mk('E2',97,'2019-10-20','13:00'), E1=mk('E1',97,'2019-10-20','13:00'),
+      LT=mk('LT',97,'2019-10-20','18:59'), N7=mk('N7',97,'2019-10-20','19:00'), M7=mk('M7',97,'2019-10-21','20:15');
+    const T2=mk('T2',98,'2019-10-24','20:15'), B1=mk('B1',98,'2019-10-27','13:00'), B2=mk('B2',98,'2019-10-27','16:05'), N8=mk('N8',98,'2019-10-27','20:20'), M8=mk('M8',98,'2019-10-28','20:15');
+    const T3=mk('T3',99,'2019-10-31','20:20'), C1=mk('C1',99,'2019-11-03','13:00'), C2=mk('C2',99,'2019-11-03','16:25'), N9=mk('N9',99,'2019-11-03','20:20'), M9=mk('M9',99,'2019-11-04','20:15');
+    const FX=[A1,A2,T1,SA,L1,E2,E1,LT,N7,M7,T2,B1,B2,N8,M8,T3,C1,C2,N9,M9], Z=s=>Date.parse(s), SEA=F('SEASON'), sid=wk=>`${SEA}_${wk}_SUN`;
+    /* the made-up sets: a home side to win on each game, priced -125 and -120 where the schedule has -130, so a leg put in
+       at the line as it stands now (toggleLeg's reading) is told from one put in as it was locked; a night game's Safe its
+       home side and its away cover, the slot's Safe and Medium across its first games in kickoff order */
+    const legOf=(g,p,price)=>({key:`${g.id}|team:${g.h}|ml`,gid:g.id,pid:'team:'+g.h,stat:'ml',k:0,side:'over',main:false,p,price,src:'real',mu:null,name:'Slot '+g.h,pos:'Game',grp:'TEAM',team:g.h,opp:g.a,week:g.w,label:'To win',thin:false});
+    const lvl=(id,legs)=>{ const sp=SPEC_AUD.find(x=>x[0]===id), why=`Made up: no ${sp[2]}-leg parlay.`;
+      if(!legs||legs.length!==sp[2]) return {id,label:sp[1],n:sp[2],floor:sp[3],why};
+      const L=F('pbOrder')(legs), pr=F('parlayProb')(L); return {id,label:sp[1],n:sp[2],floor:sp[3],legs:L,corr:pr.corr,indep:pr.indep,dec:F('parlayDec')(L.map(l=>({leg:l,ml:l.price}))),thin:0,mkt:0,likeliest:!!sp[3]&&pr.corr<sp[3]}; };
+    const slotSet=(G,pick)=>{ const P=[[0.62,-125],[0.6,-120],[0.58,-115]], L=G.slice(0,3).map((g,i)=>legOf(g,...P[i])), o=pick||[0,1];
+      return {gid:null,tiers:[lvl('safe',o.map(i=>L[i]).filter(Boolean)),lvl('med',L.length>=3?L:null),lvl('aggr',null),lvl('xtrm',null)]}; };
+    const nightSet=g=>({gid:g.id,tiers:[lvl('safe',[legOf(g,0.6,-125),{...legOf(g,0.56,-110),key:`${g.id}|team:${g.a}|ats`,pid:'team:'+g.a,stat:'ats',k:2.5,name:'Slot '+g.a,team:g.a,opp:g.h,label:'To cover +2.5'}]),lvl('med',null),lvl('aggr',null),lvl('xtrm',null)]});
+    const SETS={}; for(const g of FX) if(primeAud(g)) SETS[g.id]=nightSet(g);
+    for(const wk of [96,97,98,99]){ const G=slotGamesAud(FX,wk); SETS[sid(wk)]={...slotSet(G),gid:sid(wk)}; }
+    /* the stand-ins' own week: that of the first made-up game not final (a score, or four hours past its kickoff), as the
+       page's liveWeek reads one; the last made-up week once every one is */
+    const cwAud=now=>{ const up=FX.filter(g=>!(scoredAud(g)||now>=kickAud(g)+4*3600e3)); return up.length?up[0].w:FX[FX.length-1].w; };
+    const keepF=w.eval('[currentWeek, pricedLegs, spSet]'), fetch0=w.fetch, asked=[];
+    /* the record answered by a stub of its own (the backtest left to the page's fetch, which answers nothing here) */
+    let recBody=404; const recStub=(u,o)=>{ if(/suggest_ledger/.test(String(u))){ asked.push(o&&o.cache); return Promise.resolve(recBody===404?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(recBody))}); } return fetch0(u,o); };
+    const SS='#spPanel [data-sp-sec="slot"]', slotBox=()=>d.querySelector(`${SS} [data-sp-game]`), tokOf=()=>(F('spState')().split(',').find(x=>x.startsWith('s='))||'(none)');
+    const legsDrawn=box=>SPEC_AUD.map(([id])=>{ const c=box&&box.querySelector(`.pb-tier.${id}`); return c&&c.querySelector('.pb-legs')?[...c.querySelectorAll('.pb-legs li')].map(li=>li.textContent.replace(/\s+/g,' ').trim()).join(' | '):null; });
+    const legsOf=tiers=>tiers.map(t=>t&&t.legs?t.legs.map(l=>l.gid+'|'+l.pid+'|'+l.stat).join():null);
+    let nCase=0, nTurn=0; const said15=[];
+    try{
+      S.sched.push(...FX); S.parlay={}; S.bookPrice=null; stab.hidden=false; spKeyClear();
+      w.__m15={FX,SETS,cw:cwAud};
+      w.eval(`currentWeek=function(){ return window.__m15.cw(Date.now()); };
+        pricedLegs=function(){ return []; }; spSet=function(gid){ return window.__m15.SETS[gid]||null; };`);
+      w.fetch=recStub; await w.pbRecLoad(); w.fetch=fetch0;
+      /* the moments, in order: [what, the moment, the slot's week or null for none, its phase, the instant it goes up (wait),
+         its games] */
+      const CASES=[
+        ['a Sunday with no prime-time night before it on the schedule: up at once','2019-10-12T12:00:00Z',96,'live',null,[A1,A2]],
+        ['that Sunday at its last kickoff, 4:25 pm ET: gone, the next week\'s slot waited for','2019-10-13T20:25:00Z',97,'wait','2019-10-18T10:00:00Z',[L1,E2,E1,LT]],
+        ['Friday 5:59 am ET, the morning after Thursday night','2019-10-18T09:59:00Z',97,'wait','2019-10-18T10:00:00Z',[L1,E2,E1,LT]],
+        ['Friday 6:00 am ET: up','2019-10-18T10:00:00Z',97,'live',null,[L1,E2,E1,LT]],
+        ['the Saturday, a Saturday night game to come (no prime-time night)','2019-10-19T16:00:00Z',97,'live',null,[L1,E2,E1,LT]],
+        ['Sunday 7:29 am ET, a minute before its lock (2 hours before the 9:30 am game abroad)','2019-10-20T11:29:00Z',97,'live',null,[L1,E2,E1,LT]],
+        ['Sunday 7:30 am ET: locked, this browser\'s own set','2019-10-20T11:30:00Z',97,'locked',null,[L1,E2,E1,LT]],
+        ['Sunday 9:30 am ET, its first kickoff: under way','2019-10-20T13:30:00Z',97,'under',null,[L1,E2,E1,LT]],
+        ['Sunday 6:58 pm ET, still under way before its 6:59 pm game','2019-10-20T22:58:00Z',97,'under',null,[L1,E2,E1,LT]],
+        ['Sunday 6:59 pm ET, its last kickoff: gone, with Sunday night\'s 7:00 pm game no part of it','2019-10-20T22:59:00Z',98,'wait','2019-10-25T10:00:00Z',[B1,B2]],
+        ['the Sunday the clocks went back: Friday 5:59 am EDT','2019-11-01T09:59:00Z',99,'wait','2019-11-01T10:00:00Z',[C1,C2]],
+        ['that Sunday at 10:59 am EST, a minute before its lock (1:00 pm EST less 2 hours)','2019-11-03T15:59:00Z',99,'live',null,[C1,C2]],
+        ['11:00 am EST: locked','2019-11-03T16:00:00Z',99,'locked',null,[C1,C2]],
+        ['1:00 pm EST: under way','2019-11-03T18:00:00Z',99,'under',null,[C1,C2]],
+        ['4:25 pm EST, its last kickoff, no later week: none','2019-11-03T21:25:00Z',null,null,null,[]]];
+      for(const [lab,t,wk,phase,open,games] of CASES){ nCase++; const ms=Z(t); at(ms); dropCaches(); F('renderParlay')();
+        const R=slotRuleAud(S.sched,ms,cwAud(ms)), gl=`M15, ${lab}`, ids=a=>a.map(g=>g.id).join();
+        /* the audit's own rule gives the case's answer */
+        chk(wk==null?!R:(!!R&&R.w===wk&&R.id===sid(wk)&&R.phase===phase&&ids(R.games)===ids(games)&&(phase!=='wait'||R.open===Z(open))),
+          `${gl}: the audit's own rule gives ${R?`${R.id} (${ids(R.games)}) ${R.phase}${R.open!=null?', up from '+isoAud(R.open):''}`:'none'}, not the case's answer`);
+        /* the page's own answer is the rule's */
+        const pS=F('spSlotNext')();
+        chk(R?(!!pS&&pS.id===R.id&&ids(pS.games)===ids(R.games)&&pS.up===R.up&&(pS.open==null?null:+pS.open)===R.open):!pS,
+          `${gl}: the page's Sunday slot is ${pS?`${pS.id} (${ids(pS.games)}), ${pS.up?'up':'not up'}`:'none'}, where the rule gives ${R?`${R.id} (${ids(R.games)}), ${R.up?'up':'not up'}`:'none'}`);
+        chk(tokOf()===slotTokAud(R),`${gl}: the page's state carries ${tokOf()} for the Sunday slot, where the rule gives ${slotTokAud(R)}`);
+        const box=slotBox(), wt=[...d.querySelectorAll(`${SS} [data-sp-wait]`)], nn=d.querySelector(`${SS} [data-sp-none="slot"]`), lv=R?SETS[R.id].tiers.filter(x=>x.legs):[];
+        if(!R){ chk(!box&&!wt.length&&!!nn,`${gl}: with no slot to come its section draws ${box?'a set':wt.length?'a wait line':'no line saying so'}`);
+          W.wording(!!nn&&nn.textContent===`No Sunday game of week ${cwAud(ms)} is still to kick off.`,`${gl}: the slot's section reads "${nn?nn.textContent:''}"`);
+          for(const g of [L1,C1]) chk(F('spTier')(`${sid(g.w)}:safe`)===null,`${gl}: a gone slot's Safe is found for its Finish`); continue; }
+        if(phase==='wait'){ chk(!box&&!nn&&wt.length===1&&wt[0].dataset.spWait===open&&wt[0].dataset.spNext===R.id,`${gl}: the slot's section does not say ${R.id} is next, up from ${open}: ${wt[0]?wt[0].outerHTML.slice(0,300):box?'a set drawn':'no line'}`);
+          W.wording(!!wt[0]&&wt[0].textContent===slotWaitAud(R),`${gl}: the line reads "${wt[0]?wt[0].textContent:''}", not "${slotWaitAud(R)}"`);
+          for(const x of lv) chk(F('spTier')(`${R.id}:${x.id}`)===null,`${gl}: the ${x.id} level of the slot, not set out yet, is found for its Finish`);
+          continue; }
+        /* set out: the unit, its line, its head, its cards and what can be added or finished */
+        const ph=box&&box.querySelector('[data-sp-phase]'), v=F('spShown')(F('spUnit')(R.id)), want=phase==='live'?'live':phase==='under'?'under':(v.own?'own':'locked');
+        chk(!!box&&box.dataset.spGame===R.id&&box.classList.contains('sp-slot')&&!wt.length&&!nn&&!!ph&&ph.dataset.spPhase===want&&(phase!=='locked'||v.own),
+          `${gl}: the slot's section draws ${box?box.dataset.spGame+' '+(ph?ph.dataset.spPhase:'with no line'):'no set'}, where ${R.id} is ${phase}${phase==='locked'?' (this browser\'s own set, the record having none)':''}`);
+        { const wantL=phase==='live'?`Locks ${etAud(R.lock)}, 2 hours before the first kickoff.`:phase==='under'?`Locked since ${etAud(R.lock)}. Under way since ${etAud(R.first)}.${v.none?' The site’s set was not published in time.':v.own?' This browser’s own set: the site’s was not published in time, so the record does not grade it.':''}`:`Locked since ${etAud(R.lock)}. This browser’s own set: the site’s was not published in time, so the record does not grade it.`;
+          W.wording(!!ph&&ph.textContent===wantL,`${gl}: the slot's line reads "${ph?ph.textContent:''}", not "${wantL}"`);
+          const H=slotHeadAud(R), h=box&&box.querySelector('.sp-hd h4'), sm=box&&box.querySelector('.sp-hd small');
+          W.wording(!!h&&h.textContent===H.h&&!!sm&&sm.textContent===H.small,`${gl}: the slot is headed "${h?h.textContent:''}" "${sm?sm.textContent:''}", not "${H.h}" "${H.small}"`); }
+        if(!box) continue;
+        const shown=phase==='live'?SETS[R.id].tiers:(v.tiers||[]);
+        chk(JSON.stringify(legsOf(shown))===JSON.stringify(legsOf(SETS[R.id].tiers)),`${gl}: the slot's ${phase} set is not the one built for it${phase==='live'?'':' and kept at its lock'}`);
+        for(const x of shown.filter(y=>y&&y.legs)){ const c=box.querySelector(`.pb-tier.${x.id}`), f=F('spTier')(`${R.id}:${x.id}`);
+          if(phase==='under') chk(!!c&&c.querySelectorAll('.pb-legs li').length===x.legs.length&&!c.querySelector('[data-pb-leg],[data-sp-add],[data-pc-finish]')&&f===null,
+            `${gl}: under way, the slot's ${x.id} level is not drawn as it locked with nothing to add or finish, or is found for its Finish`);
+          else chk(!!c&&x.legs.every(l=>!!c.querySelector(`[data-pb-leg="${l.key}"][data-side="${l.side}"]`))&&!!c.querySelector(`[data-sp-add="${R.id}:${x.id}"]`)&&!!f&&f.legs.map(legIdAud).join()===x.legs.map(legIdAud).join(),
+            `${gl}: the slot's ${x.id} level is not drawn with each leg's Add and Add to builder, or not found for its Finish with its own legs`); }
+        if(phase==='under') chk(!box.querySelector('[data-sp-add],[data-pb-leg],[data-pc-finish]'),`${gl}: under way, the slot still offers an Add, an Add to builder or a Finish`);
+        /* at its lock with no record: the set this browser built kept under the slot's id and first kickoff; and a locked
+           leg's own Add, and the level's Add to builder, put each leg in as it was locked (its price, -125 or -120, where the
+           schedule says -130 now), never as the line stands now */
+        if(phase==='locked'){ const K=spKeyGet(), e=K&&K.games&&K.games[R.id];
+          chk(!!e&&e.own===true&&e.kickoff===isoAud(R.first)&&Array.isArray(e.tiers)&&JSON.stringify(e.tiers.map(x=>x.legs?x.legs.map(l=>l.gid+'|'+l.pid+'|'+l.stat).join():null))===JSON.stringify(legsOf(SETS[R.id].tiers)),
+            `${gl}: at the slot's lock with no record, this browser does not keep the set it built under ${R.id} and its first kickoff: ${String(JSON.stringify(e)).slice(0,240)}`);
+          const t0=shown.find(y=>y.id==='safe'), l1=t0&&t0.legs[1], key=l1&&l1.key, sel=`${SS} .pb-tier.safe [data-pb-leg="${key}"][data-side="over"]`;
+          S.parlay={}; F('renderParlay')(); const b=key&&d.querySelector(sel); if(b){ b.focus(); b.click(); }
+          const x=key&&S.parlay[key];
+          chk(!!b&&!!x&&Object.keys(S.parlay).length===1&&x.price===l1.price&&x.p===l1.p&&x.k===l1.k,`${gl}: the Add on a leg of the slot's locked Safe did not put it in as it was locked (${l1&&l1.name} at ${l1&&l1.price}, ${l1&&l1.p}): ${x?`at ${x.price}, ${x.p}`:'nothing put in'}`);
+          S.parlay={}; F('renderParlay')();
+          const ab=d.querySelector(`${SS} [data-sp-add="${R.id}:safe"]`); if(ab) ab.click();
+          chk(!!ab&&Object.keys(S.parlay).length===t0.legs.length&&t0.legs.every(l=>!!S.parlay[l.key]&&S.parlay[l.key].price===l.price&&S.parlay[l.key].p===l.p),`${gl}: the slot's locked Safe's Add to builder did not put its legs in as they were locked`);
+          S.parlay={}; F('renderParlay')(); }
+        said15.push(`${t.slice(5,16)} ${R.id.slice(5)} ${phase}`); }
+      /* the turns on an open page, each on the record read as the page last read it (none): drawn a minute before, then the
+         page's half-minute look at the turn redraws it once, because the slot's token in the state it watches has moved
+         (the opening, the lock, the first kickoff, the last), and a second look redraws nothing. At the lock the look reads
+         the record again, once, with no-store, and the record's slot entry (taken before the lock) is then the set drawn,
+         locked, for every visitor, through to its games under way */
+      const recSet=slotSet(slotGamesAud(FX,97),[0,2]), recOut=recSet.tiers.map(x=>F('spTierOut')(x));
+      const REC={how:'made up',prime:{},slot:{[`${SEA}|97|${isoAud(kickAud(L1))}|${sid(97)}`]:{season:SEA,week:97,gid:sid(97),kickoff:isoAud(kickAud(L1)),lock:isoAud(kickAud(L1)-7200e3),baked_at:'2019-10-20T09:00:00Z',taken_at:'2019-10-20T09:00:00Z',games:slotGamesAud(FX,97).map(g=>g.id),pool:{pref:4,thin:0,mkt:0},tiers:recOut}}};
+      chk(JSON.stringify(legsOf(recSet.tiers))!==JSON.stringify(legsOf(SETS[sid(97)].tiers)),'M15: the record\'s made-up slot set is the page\'s own, so the case cannot tell them apart');
+      /* [the turn, a minute before it, the turn, the slot's token before and after, whether it is a lock (the record read
+         again), the record the read again answers with (the first lock's: its slot entry; the second's: none, so this
+         browser's own set stands)] */
+      for(const [lab,before,turn,s0,s1,lockT,rec] of [['the opening','2019-10-18T09:59:00Z','2019-10-18T10:00:00Z',`s=${sid(97)}:w`,`s=${sid(97)}:l`,false,null],
+          ['the lock','2019-10-20T11:29:00Z','2019-10-20T11:30:00Z',`s=${sid(97)}:l`,`s=${sid(97)}:k`,true,REC],
+          ['the first kickoff','2019-10-20T13:29:00Z','2019-10-20T13:30:00Z',`s=${sid(97)}:k`,`s=${sid(97)}:u`,false,null],
+          ['the last kickoff','2019-10-20T22:58:00Z','2019-10-20T22:59:00Z',`s=${sid(97)}:u`,`s=${sid(98)}:w`,false,null],
+          ['the lock after the clocks went back','2019-11-03T15:59:00Z','2019-11-03T16:00:00Z',`s=${sid(99)}:l`,`s=${sid(99)}:k`,true,null]]){ nTurn++;
+        at(Z(before)); if(lab==='the opening'||lab==='the lock after the clocks went back'){ spKeyClear(); recBody=404; } dropCaches();
+        /* the record read now, as a load would (PB_REC_STATE: which side of its lock the slot was on when it was read) */
+        w.fetch=recStub; await w.pbRecLoad(); w.fetch=fetch0; F('renderParlay')();
+        const st0=tokOf(), stale0=F('pbStale')(), n0=asked.length;
+        at(Z(turn)); const st1=tokOf(), stale1=F('pbStale')();
+        if(rec) recBody=REC;
+        w.fetch=recStub;
+        try{ w.pbWatchTick(); const node=d.querySelector(SS)&&d.querySelector(SS).firstElementChild; w.pbWatchTick();
+          const one=asked.length-n0, same=!!node&&d.querySelector(SS)&&d.querySelector(SS).firstElementChild===node, stale2=F('pbStale')();
+          await sleep(30);
+          chk(st0===s0&&st1===s1&&!stale0&&stale1&&same&&!stale2,`M15, ${lab}: the slot's token moved ${st0} to ${st1} (the rule: ${s0} to ${s1}), stale ${stale0} then ${stale1}, or the page's look did not redraw it once`);
+          chk(lockT?(one===1&&asked[asked.length-1]==='no-store'):one===0,`M15, ${lab}: the look asked for the record ${one} time${one===1?'':'s'}${lockT?', not once with no-store':', where no set reached its lock'}`); }
+        finally { w.fetch=fetch0; }
+        const R=slotRuleAud(S.sched,Z(turn),cwAud(Z(turn))), box=slotBox(), ph=box&&box.querySelector('[data-sp-phase]');
+        if(rec){ const v=F('spShown')(F('spUnit')(sid(97)));
+          const sTx=legsDrawn(box)[0]||'';
+          chk(!!ph&&ph.dataset.spPhase==='locked'&&!v.own&&v.ledger&&JSON.stringify(legsOf(v.tiers))===JSON.stringify(legsOf(recSet.tiers))&&sTx.includes('Slot HE1')&&!sTx.includes('Slot HE2'),
+            `M15, ${lab}: read again at the lock, the record's slot entry is not the set drawn, locked: ${ph?ph.dataset.spPhase:'no line'}, ${JSON.stringify(legsOf(v.tiers||[]))}`);
+          W.wording(!!ph&&ph.textContent===`Locked since ${etAud(R.lock)}.`,`M15, ${lab}: the record's locked slot reads "${ph?ph.textContent:''}", not "Locked since ${etAud(R.lock)}."`); }
+        if(lab==='the first kickoff'){ const v=F('spShown')(F('spUnit')(sid(97)));
+          chk(!!ph&&ph.dataset.spPhase==='under'&&!!v.under&&JSON.stringify(legsOf(v.tiers))===JSON.stringify(legsOf(recSet.tiers))&&!box.querySelector('[data-sp-add],[data-pb-leg],[data-pc-finish]')&&F('spTier')(`${sid(97)}:safe`)===null,
+            `M15, ${lab}: under way, the slot is not the record's set as it locked, with nothing to add or finish`); }
+        if(lockT&&!rec){ const v=F('spShown')(F('spUnit')(sid(99)));
+          chk(!!ph&&ph.dataset.spPhase==='own'&&v.own&&JSON.stringify(legsOf(v.tiers))===JSON.stringify(legsOf(SETS[sid(99)].tiers)),`M15, ${lab}: read again at the lock and the record holding no entry for it, the slot is not this browser's own set: ${ph?ph.dataset.spPhase:'no line'}`); }
+        if(lab==='the last kickoff') chk(!box&&!!d.querySelector(`${SS} [data-sp-wait][data-sp-next="${sid(98)}"]`),`M15, ${lab}: at its last kickoff the slot is still drawn, or the next week's is not waited for`); }
+      said15.push(`${nTurn} turns redrawn once by the page's own look, the record read again at the lock and its slot entry drawn`);
+    } catch(e){ chk(false,'M15 threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
+    finally {
+      w.Date.now=nowM; w.fetch=fetch0; for(const g of FX){ const i=S.sched.findIndex(x=>x.id===g.id); if(i>=0) S.sched.splice(i,1); }
+      w.__m15k=keepF; w.eval('currentWeek=window.__m15k[0]; pricedLegs=window.__m15k[1]; spSet=window.__m15k[2];'); delete w.__m15k; delete w.__m15;
+      recBody=404; w.fetch=recStub; try{ await w.pbRecLoad(); } finally { w.fetch=fetch0; }
+      spKeyClear(); try{ if(spKey0!=null) w.localStorage.setItem(SPK,spKey0); }catch(e){}
+      stab.hidden=keepTab; S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; dropCaches(); F('save')(); F('renderParlay')(); }
+    console.log(`M15. the Sunday slot, on made-up weeks of 2019: ${nCase} moments (${said15.join('; ')})`); }
 
   /* ---- M7. the book's fair chance, and legs far off it ----
      A leg's fair chance is DraftKings' own: where both sides of its line are priced (a player's main
@@ -2610,15 +2932,17 @@ setTimeout(async()=>{
         /* every set's levels: none holds a far leg, and each card leads with its fair chance (fairShown is held
            in holdSets too), its labels free to wrap, its floor said to be on the model's chance */
         { spKeyClear(); const stab=d.getElementById('tab-suggest'), keepH=stab.hidden; stab.hidden=false; let nC=0;
-          /* every prime-time game's cards, those the night rule hides drawn with spOn stood in (spAllOn) */
-          try{ spAllOn(()=>{ F('renderSp')(); for(const g of F('spGames')()){ const v=F('spShown')(g);
+          /* every prime-time game's cards, those the night rule hides drawn with spOn stood in (spAllOn), and (app v118) the
+             Sunday slot's, its opening stood in where it is not up yet (slotAllOn) */
+          try{ spAllOn(()=>slotAllOn(()=>{ F('renderSp')(); const SL=slotNowAud(), su=SL&&F('spUnit')(SL.id);
+            for(const g of [...F('spGames')(),...(su?[su]:[])]){ const v=F('spShown')(g), nm=g.slot?`week ${g.w}'s Sunday slot`:`${g.a} at ${g.h}`;
               for(const t of (v.tiers||[]).filter(t=>t.legs)){ const c=d.querySelector(`#spPanel [data-sp-game="${g.id}"] .pb-tier.${t.id}`); nC++;
-                chk(t.legs.every(l=>!isFar(l)),`the ${t.id} level of ${g.a} at ${g.h} holds a leg far off the market`);
-                chk(!!c&&c.querySelector('.pb-nums').firstElementChild.classList.contains('pb-chance')&&!c.querySelector('[data-pb-far]'),`the ${t.id} card of ${g.a} at ${g.h} does not lead with its chance, or flags a leg far off`);
+                chk(t.legs.every(l=>!isFar(l)),`the ${t.id} level of ${nm} holds a leg far off the market`);
+                chk(!!c&&c.querySelector('.pb-nums').firstElementChild.classList.contains('pb-chance')&&!c.querySelector('[data-pb-far]'),`the ${t.id} card of ${nm} does not lead with its chance, or flags a leg far off`);
                 /* the chance's label and the model's figure wrap inside their box: four levels side by side just
                    over 1100px leave it about 85px, and "FAIR CHANCE, EST." in 10px capitals is about 98 */
                 chk(!!c&&['.pb-chance span','.pb-chance small'].every(q=>{ const el=c.querySelector(q); return !el||w.getComputedStyle(el).whiteSpace==='normal'; }),`the ${t.id} card's fair-chance label is held to one line, and can run out of its box`);
-                chk(!!c&&(!t.floor||t.likeliest||c.querySelector('.pb-rule').textContent.endsWith(' by the model')),`the ${t.id} card does not say its floor is on the model's chance`); } } }); }
+                chk(!!c&&(!t.floor||t.likeliest||c.querySelector('.pb-rule').textContent.endsWith(' by the model')),`the ${t.id} card does not say its floor is on the model's chance`); } } })); }
           finally{ stab.hidden=keepH; F('renderSp')(); }
           W.coverage(nC>0||!F('spGames')().length,'the made-up lines built no level on a prime-time game to hold the far-off rule to'); }
         /* a game page's hands: no leg far off, and each hand's fair chance parlayProb on its legs at theirs */
@@ -3105,7 +3429,7 @@ setTimeout(async()=>{
           /* g0's page drawn before the press, so its hands stand cached on the published prices */
           const lvSig=r=>JSON.stringify(r.tiers.map(t=>t.why||t.legs.map(l=>[l.key,l.side,l.k,l.price,l.src]))), hdSig=t=>JSON.stringify(['high','med','low'].map(id=>t[id]?t[id].legs.map(l=>[l.key,l.side,l.k,l.price,l.src]):null));
           /* (app v111) the Top 50 lines and each prime-time game's set, built before the press too, so their caches stand on the published prices */
-          const topSig=r=>JSON.stringify(r.rows.map(l=>[l.key,l.side,l.k,l.price,l.src])), setSig=()=>JSON.stringify(F('spGames')().map(g=>{ const x=F('spSet')(g.id); return [g.id,x?x.tiers.map(t=>t.why||t.legs.map(l=>[l.key,l.side,l.k,l.price,l.src])):null]; }));
+          const topSig=r=>JSON.stringify(r.rows.map(l=>[l.key,l.side,l.k,l.price,l.src])), setSig=()=>JSON.stringify([...F('spGames')().map(g=>g.id),...(slotNowAud()?[slotNowAud().id]:[])].map(id=>{ const x=F('spSet')(id); return [id,x?x.tiers.map(t=>t.why||t.legs.map(l=>[l.key,l.side,l.k,l.price,l.src])):null]; }));
           S.ui.game=g0.id; F('renderGame')(); const hands0=hdSig(F('gameTiers')(g0)), levels0=lvSig(F('getPbTiers')()), top0=topSig(F('getPbTop')()), sets0=setSig(); S.ui.game=null; F('closeGameModal')();
           /* the press: the Parlay Builder's button, a second press while it runs, then the read */
           const dkPre=clone(P().dk);   /* the paid pull's ids as the press finds them (a reload's, below) */
@@ -3124,28 +3448,31 @@ setTimeout(async()=>{
              dropped: what a build from nothing gives on the read, never what stood before it (the press
              drops PB_CACHE and GAME_TIER_CACHE, and ESPN_SEQ is in pbDataSig and gameSuggestSig) */
           /* the est. marks drawn: the Top 50 lines' (each a leg priced from DraftKings' line read by the press),
-             and the sets' on Suggested Parlays, where the Elo picks (#pbElo, at the tab's foot, drawn by the ELO
-             tab with the same cards) may take a leg priced from the read, and theirs are never a set's */
+             and the sets' on Suggested Parlays, where (app v118) each unit's Elo picks (.pb-tiers[data-sp-kind="elo"],
+             drawn on the hub by its ELO tab with the same cards) may take a leg priced from the read, and theirs are
+             never a set's model parlays */
           const estTop=()=>d.querySelectorAll('#pbPanel ol.pb-top i.est').length;
-          const estAll=()=>[...d.querySelectorAll('#spPanel .pb-tier .pb-legs li .pr i.est')], estLv=()=>estAll().filter(e=>!e.closest('#pbElo')).length;
+          const estAll=()=>[...d.querySelectorAll('#spPanel .pb-tier .pb-legs li .pr i.est')], estLv=()=>estAll().filter(e=>!e.closest('[data-sp-kind="elo"]')).length;
           /* planted before the count and kept through the main check, so the count is held whatever the
-             week's Elo picks take: an Elo pick of the page's own card with a leg priced from the read, in
-             #pbElo; its est. mark is drawn and the levels' count does not take it in (the audit loads no Elo
-             files, so its #pbElo is otherwise empty, and a count that took the Elo picks in would pass) */
-          { const el=d.getElementById('pbElo'), keepE=el?el.innerHTML:null, nAll0=estAll().length, nLv0=estLv();
+             week's Elo picks take: a unit of the audit's own at the foot of the sets (taken out after, on every path)
+             holding an Elo pick of the page's own card, as the hub draws a unit's, with a leg priced from the read;
+             its est. mark is drawn and the levels' count does not take it in (this page, with no ELO tab, draws no
+             Elo picks of its own, so a count that took them in would pass) */
+          { const host=d.getElementById('spSets'), el=host?d.createElement('div'):null, nAll0=estAll().length, nLv0=estLv();
             let rNow, drawn, hNow, rNew, hNew, topNow, topNew, setsNow, setsNew;
-            if(!el) W.coverage(false,'the panel has no Elo picks section to plant an Elo pick in');
+            if(!el) W.coverage(false,'Suggested Parlays has no sets to plant a unit\'s Elo pick in');
             try{
               if(el){ const leg={key:g0.id+'|00-AUDIT-ELO|receptions',gid:g0.id,week:+wk,pid:'00-AUDIT-ELO',name:'Planted Elopick',label:'Over 3.5 receptions',stat:'receptions',k:3.5,side:'over',main:true,
                     p:0.5,price:120,src:'dkline',grp:'WR',pos:'WR',team:g0.h,opp:g0.a,espn:{at:new w.Date(w.Date.now()).toISOString(),fair:0.45,tested:true,listed:true}};
-                el.innerHTML=`<div class="pb-tiers">${F('pbTierCard')({id:'elo2',label:'Elo 2-leg',legs:[leg],p:0.5,dec:2.2,fair:null},{chance:0.5,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:'data-pb-elo-add="elo2"',legP:l=>l.p})}</div>`;
+                el.className='sp-game'; el.dataset.spGame='aud-elo-plant'; host.appendChild(el);
+                el.innerHTML=`<h5 class="sp-sub" data-sp-kind="elo">Elo picks</h5><div class="pb-tiers" data-sp-kind="elo">${F('pbTierCard')({id:'elo-safe',label:'Safe',n:1,legs:[leg],p:0.5,dec:2.2,fair:null},{chance:0.5,chanceBy:'Elo chance',by:'Elo',kind:'sp',add:'data-sp-add="aud-elo-plant:elo-safe"',legP:l=>l.p,quiet:true})}</div>`;
                 chk(estAll().length===nAll0+1&&estLv()===nLv0,`an Elo pick's leg priced from the read is counted with the sets' est. marks, or not drawn est.: ${estLv()} of ${estAll().length} against the sets' ${nLv0}`); }
               rNow=F('getPbTiers')(); topNow=F('getPbTop')(); drawn=estTop(); setsNow=setSig(); hNow=F('gameTiers')(g0);
               w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}');
               rNew=F('getPbTiers')(); topNew=F('getPbTop')(); setsNew=setSig(); hNew=F('gameTiers')(g0);
               const nDk=topNew.rows.filter(l=>l.src==='dkline').length;
               chk(lvSig(rNow)===lvSig(rNew)&&topSig(topNow)===topSig(topNew)&&setsNow===setsNew&&drawn===nDk,`right after the press, the levels, the Top 30 lines or a set are not what a build on the read gives (stale from before it), or the list drawn shows ${drawn} lines marked est. where the read gives ${nDk}: ${topSig(topNow).slice(0,160)} against ${topSig(topNew).slice(0,160)}`); }
-            finally{ if(el) el.innerHTML=keepE; }
+            finally{ if(el) el.remove(); }
             chk(hdSig(hNow)===hdSig(hNew),`right after the press, ${g0.id}'s hands (its lines unmoved by the read) are not what a build on the read gives, but the published ones: ${hdSig(hNow).slice(0,160)} against ${hdSig(hNew).slice(0,160)}`);
             /* (app v109) where the payload carries DraftKings' ids, a leg priced from the read has none (ESPN
                gives none for a player's line) and suggests nowhere, and g0's own lines are held where the read
@@ -4479,7 +4806,9 @@ setTimeout(async()=>{
             w.eval('PB_TOP_CACHE=new Map()');
             /* (app v115) the Top 50 alone may hold a player's line from the read with no id (readTopAud, the audit's own reading) */
             for(const l of F('getPbTop')().rows){ n++; chk(pickOk(l,false)&&dkTopOk(l),bad('the Top 30 lines',l)+(dkTopOk(l)?'':idTxt(l))); }
-            const sets=F('spGames')().filter(g=>gs.some(x=>x.id===g.id)).map(g=>({g,s:F('spSet')(g.id)}));
+            /* (app v118) and the Sunday slot, where any of its games is one of these */
+            const SLp=slotNowAud(), suP=SLp&&SLp.games.some(g=>gs.some(x=>x.id===g.id))?F('spUnit')(SLp.id):null;
+            const sets=[...F('spGames')().filter(g=>gs.some(x=>x.id===g.id)),...(suP?[suP]:[])].map(g=>({g,s:F('spSet')(g.id)}));
             for(const {g,s:x} of sets) for(const t of x.tiers) if(t.legs) for(const l of t.legs){ n++;
               chk(pickOk(l,false)&&dkOk(l)&&(l.src!=='dkline'||(F('suggestable')(l.pid)&&(()=>{ const f=F('legFair')(l); return l.p>=0.45&&l.p<0.97&&l.p>=imp(l.price)&&!!f&&l.p-f.p<FAR-1e-9; })())),bad(`${g.id}'s ${t.id} set level`,l)+idTxt(l)); }
             const r=F('getPbTiers')(); r.sets=sets;
@@ -4514,8 +4843,8 @@ setTimeout(async()=>{
           /* the est. marks drawn: each Top 50 line priced from DraftKings' line marked est. and no other, the list's
              note on them there exactly when one is; each set's level the same, its price "price, est." with one */
           /* (app v112) every set's cards, those the night rule hides drawn with spOn stood in (spAllOn) */
-          const holdMarks=(lab,r)=>{ const stab=d.getElementById('tab-suggest'), keepH=stab.hidden, keepOn=w.eval('spOn'); const panel=d.getElementById('pbPanel'); let n=0, any=false;
-            try{ stab.hidden=false; spKeyClear(); w.eval('spOn=function(){ return spGames(); }'); F('renderPb')();
+          const holdMarks=(lab,r)=>{ const stab=d.getElementById('tab-suggest'), keepH=stab.hidden, keepOn=w.eval('spOn'), keepSl=w.eval('spSlotNext'); const panel=d.getElementById('pbPanel'); let n=0, any=false;
+            try{ stab.hidden=false; spKeyClear(); w.eval('spOn=function(){ return spGames(); }'); slotPut(function(){ const s=keepSl(); return s?{...s,up:true}:s; }); F('renderPb')();
             { const rows=F('getPbTop')().rows, li=[...panel.querySelectorAll('ol.pb-top > li.pb-trow')]; any=rows.some(l=>l.src==='dkline'); n++;
               chk(li.length===rows.length&&rows.every((l,i)=>!!li[i].querySelector('.pb-tc i.est')===(l.src==='dkline')),`${lab}: the Top 30 lines do not mark est. exactly their ${rows.filter(l=>l.src==='dkline').length} lines priced from DraftKings' line`); }
             for(const {g} of (r.sets||[])){ const v=F('spShown')(g), box=d.querySelector(`#spPanel [data-sp-game="${g.id}"]`);
@@ -4524,7 +4853,7 @@ setTimeout(async()=>{
                   `${lab}: ${g.id}'s ${t.id} card does not mark est. exactly its ${nd} legs priced from DraftKings' line, or its price "${nd?'price, est.':'price'}"`);
                 W.wording(!!c&&!!c.querySelector('.pb-espnline')===nd>0,`${lab}: ${g.id}'s ${t.id} card's line on legs priced from DraftKings' line is ${nd?'missing':'there with none'}`); } }
             W.wording(/A player line marked est\. is priced from DraftKings’ line read on ESPN by Refresh odds/.test(panel.textContent)===any,`${lab}: the list's note on lines priced from DraftKings' line is ${any?'missing':'there with none listed'}`);
-            } finally { stab.hidden=keepH; spOnPut(keepOn); F('renderPb')(); }
+            } finally { stab.hidden=keepH; spOnPut(keepOn); slotPut(keepSl); F('renderPb')(); }
             for(const g of F('pbGames')().slice(0,3)){ const T=F('gameTiers')(g), b=d.createElement('div'); b.innerHTML=F('gameSuggestCard')(g,false);
               for(const [i,id] of ['high','med','low'].entries()){ const t=T[id]; if(!t) continue; const blk2=b.querySelectorAll('.gsugg-tier')[i], li=blk2?[...blk2.querySelectorAll('.gsugg-legs li')]:[]; n++;
                 chk(li.length===t.legs.length&&t.legs.every((l,j)=>!!li[j].querySelector('.pr i.est')===(l.src!=='real'))&&!!blk2.querySelector('[data-gsugg-est]')===t.legs.some(l=>l.src==='dkline'),
@@ -4897,77 +5226,205 @@ setTimeout(async()=>{
     chk(S.stake===was,'the stake did not go back after the amount checks');
     console.log(`P. the amount bet: one Bet amount box over the Parlay Builder and the builder's stake, ${F('pbGames')().length?'every level of a set paying it times its price as typed and settled, carried by Add to builder, bad entries and saved amounts cleaned, the Top 30 lines on $1 unmoved':'no game to come, so no box'}; the builder's one-tap amounts set it`); }
 
-  /* ---- P2. the suggestions record at the top of Suggested Parlays (app v111): props/data/suggest_ledger.json,
-     beside the payload, read once a load with no-store and kept outside S; its `prime` map, each prime-time
-     game's four levels as the props job locked them, graded after the game. A line a level, as the ELO
-     Ratings tab's record bar: won-lost and units on $1, a push and a pending level counted apart, each
-     season's game and level once, from the last key that holds it (a kickoff the league moved makes a new
-     key), from the entries' own grades, worked out here (recAud) and on hand for the made-up record; a level
-     with no parlay, another season's game and an entry still to come each as the rule says. The all-games
-     record (`entries`) stays in the file and is drawn nowhere. Nothing drawn while there is no file (this
-     audit's page has none) or a file that is not a record ---- */
+  /* ---- P2. the suggestions record on Suggested Parlays (app v111; app v118: a section at a time, with the backtest):
+     props/data/suggest_ledger.json, the props job's record, and props/data/suggest_backtest.json, the weeks before the
+     record took them rebuilt and graded once (suggest_backtest.js), each read beside the payload once a load with no-store
+     and kept outside S. Since app v118 (the owner's calls of 19 October 2026: "i noticed that the elo picks section in the
+     suggest parlays tab does not have a record anymore", "can we retroactively look back and find what we would have
+     suggested and count it to the record?", "do a separate section for night games and then the sunday slot of games")
+     the tab is two sections, Night games (the files' prime map) and the Sunday slot (their slot map), each headed by its
+     own record: a row for the model's parlays (an entry's tiers, safe to xtrm) and one for the Elo picks (its elo, elo-safe
+     to elo-xtrm), a pill a level, as the ELO Ratings tab's record bar: won-lost and units on $1, a push and a pending level
+     counted apart, each season's unit and level once. A level is taken from the backtest and then from the record over
+     it, each file in key order, so the record's grade for a level wins over the backtest's and, within a file, the last
+     key holding the level's grade (a kickoff the league moved makes a new key); only a level with legs and a grade
+     counts. Each pill's title gives the levels graded and won, the wins expected by the book's fair chance (on how many
+     had one) and by the level's own chance (the model's, or the Elo's), the pushes and how many came from the backtest,
+     and where any came from it one chip says which weeks. All worked here on the audit's own (recAud), on hand for the
+     made-up files, then held on the page: on the real files read from disk, on a made-up record and backtest (a level only
+     in the backtest, one in both with other results, a push, a pending level, a push-shortened win, a level with no
+     parlay, another season's game, an entry still to come, Elo levels), on the backtest alone, on a backtest that is junk
+     or missing (the record drawn as with none), on a record with nothing graded and on files that are not records
+     (nothing drawn). The numbers are blocking (the pills' won-lost and units, each title's counts, the pending and none
+     pills, the chip's weeks), the words W.wording. The all-games record (`entries`) stays in the file and is drawn
+     nowhere. Nothing drawn while there is neither file (this audit's page has none) ---- */
   { d.querySelector('#tabs button[data-tab="suggest"]').click();
-    const rec=()=>d.getElementById('spRec'), txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'';
-    const ask=BOOT_CALLS.filter(c=>/suggest_ledger\.json/.test(c.url)), later=calls.filter(c=>/suggest_ledger\.json/.test(c.url));
-    chk(ask.length===1&&/^\.\.\/data\/suggest_ledger\.json\?t=\d+$/.test(ask[0].url)&&ask[0].cache==='no-store'&&later.every(c=>c.cache==='no-store'),'the page did not ask for the suggestions record beside its payload, once as it loaded, with no-store: '+JSON.stringify(ask));
-    chk(!!rec()&&rec().hidden&&!txt(rec()),'with no record file Suggested Parlays draws a record anyway: '+txt(rec()));
-    chk(!d.getElementById('pbRec')&&!!d.querySelector('#spCard #spHead #spRec'),'the all-games record is still drawn, or the record is not at the top of Suggested Parlays');
-    const fetch0=w.fetch, load=async body=>{ w.fetch=()=>Promise.resolve(body===404?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(body))});
+    const txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'', recBox=sec=>d.querySelector(`#spSets [data-sp-sec="${sec}"] > .sp-rec[data-sp-recsec="${sec}"]`);
+    const SECS=['night','slot'], SEC_MAP={night:'prime',slot:'slot'}, KINDS_R={model:{pre:'',f:'tiers',by:'the model',name:'Model parlays'},elo:{pre:'elo-',f:'elo',by:'the Elo chance',name:'Elo picks'}};
+    /* the two files, each asked for once as the page loaded, beside its payload, with no-store; the backtest, which never
+       changes once written, never again (a set reaching its lock has the record read again alone) */
+    { const askL=BOOT_CALLS.filter(c=>/suggest_ledger\.json/.test(c.url)), askB=BOOT_CALLS.filter(c=>/suggest_backtest\.json/.test(c.url));
+      const later=calls.filter(c=>/suggest_(ledger|backtest)\.json/.test(c.url));
+      chk(askL.length===1&&/^\.\.\/data\/suggest_ledger\.json\?t=\d+$/.test(askL[0].url)&&askL[0].cache==='no-store'&&askB.length===1&&/^\.\.\/data\/suggest_backtest\.json\?t=\d+$/.test(askB[0].url)&&askB[0].cache==='no-store'&&later.every(c=>c.cache==='no-store'),
+        'the page did not ask for the suggestions record and its backtest beside its payload, each once as it loaded, with no-store: '+JSON.stringify([...askL,...askB])); }
+    F('renderSp')();
+    chk(SECS.every(sec=>{ const b=recBox(sec); return !!b&&b.hidden&&!txt(b); }),'with no record file and no backtest Suggested Parlays draws a record anyway: '+SECS.map(s=>txt(recBox(s))).join(' / '));
+    chk(!d.getElementById('pbRec')&&!d.getElementById('spRec')&&!d.querySelector('#spHead .sp-rec,#spHead [data-sp-rec]')&&SECS.every(sec=>{ const b=recBox(sec); return !!b&&b.previousElementSibling&&b.previousElementSibling.matches('h3.sp-sech'); }),
+      'the all-games record is still drawn, the record is still at the head of Suggested Parlays, or a section\'s record is not right under its heading');
+    /* each file answered by its own name (the record or the backtest; 404 where none is given) */
+    const fetch0=w.fetch, ans=b=>b===404||b===undefined?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(b))};
+    const load=async (body,bt)=>{ w.fetch=u=>Promise.resolve(/suggest_backtest/.test(String(u))?ans(bt):ans(body));
       try{ await w.pbRecLoad(); } finally { w.fetch=fetch0; } F('renderSp')(); };
     const LAB={safe:'Safe',med:'Medium',aggr:'Aggressive',xtrm:'Extreme'};
-    const T=(id,n,p,fair,dec,tag)=>({id,label:LAB[id],n,floor:0,legs:Array.from({length:n},(_,i)=>({gid:'g'+tag,week:6,pid:'p'+tag+id+i,stat:'receptions',k:3.5,side:'over',main:true,price:-110,src:'real',name:'P'+i,label:'Over 3.5 receptions',p:0.6})),p,fair,dec});
+    const isMapA=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
+    /* which files are a record and a backtest, by the audit's own reading: a record with an entries, prime or slot map,
+       a backtest with a prime or slot map */
+    const recOkA=v=>isMapA(v)&&(isMapA(v.entries)||isMapA(v.prime)||isMapA(v.slot)), btOkA=v=>isMapA(v)&&(isMapA(v.prime)||isMapA(v.slot));
+    /* the record of one section's one kind, worked here: the backtest first and the record over it, each in key order,
+       each season's unit and level once (the last that holds a grade for it), a unit the record holds levels of this kind
+       for taken from the record whole (the backtest's of it left out); a level with legs and a grade counted, a
+       pending one apart, a push apart, the units on $1 (a win at what it was graded to pay), the wins expected by the
+       book's fair chance (on how many had one) and by the level's own chance, how many came from the backtest and from
+       which weeks */
+    const recAud=(L0,B0,sec,kind)=>{ const K=KINDS_R[kind], map=SEC_MAP[sec], ids=Object.keys(LAB).map(id=>K.pre+id), last=new Map();
+      const held=new Set(Object.values(isMapA(L0)&&isMapA(L0[map])?L0[map]:{}).filter(e=>isMapA(e)&&Array.isArray(e[K.f])).map(e=>`${e.season}|${e.gid}`));
+      for(const [src,bt] of [[B0,true],[L0,false]]){ const P0=isMapA(src)&&isMapA(src[map])?src[map]:{};
+        for(const k of Object.keys(P0).sort()){ const e=P0[k]; if(!isMapA(e)||!Array.isArray(e[K.f])||(bt&&held.has(`${e.season}|${e.gid}`))) continue;
+          for(const t of e[K.f]){ const g=t&&isMapA(e.grade)?e.grade[t.id]:null; if(!g||!ids.includes(t.id)||!Array.isArray(t.legs)) continue;
+            last.set(`${e.season}|${e.gid}|${t.id}`,{t,g,bt,wk:+e.week}); } } }
+      const o=Object.fromEntries(Object.keys(LAB).map(id=>[id,{won:0,lost:0,push:0,units:0,fair:0,fairN:0,model:0,bt:0}])); let pending=0; const weeks=new Set();
+      for(const {t,g,bt,wk} of last.values()){ const s=o[t.id.slice(K.pre.length)];
+        if(g.result==='pending'){ pending++; continue; }
+        if(g.result!=='won'&&g.result!=='lost'&&g.result!=='push') continue;
+        if(bt){ s.bt++; if(wk) weeks.add(wk); }
+        if(g.result==='push'){ s.push++; continue; }
+        if(g.result==='won'){ s.won++; s.units+=(isFinite(+g.payout)?+g.payout:0)-1; } else { s.lost++; s.units-=1; }
+        s.model+=isFinite(+t.p)?+t.p:0; if(t.fair!=null&&isFinite(+t.fair)){ s.fair+=+t.fair; s.fairN++; } }
+      return {o,pending,weeks:[...weeks].sort((a,b)=>a-b)}; };
+    /* the numbers each level's pill states in its title: graded and won, the wins expected by the book's fair chance (on
+       how many had one) and by the level's own chance, the pushes, how many from the backtest; read from the title and held
+       to the record worked here (blocking: they are numbers the page states, whatever the words around them) */
+    const titleNums=p=>{ const t=p&&p.title||'', m=/: (\d+) graded, (\d+) won/.exec(t), f=/wins expected (\d+\.\d) by the book’s fair chance(?: \(on the (\d+) with one\))?/.exec(t),
+        mo=/(?:wins expected |, )(\d+\.\d) by (?:the model|the Elo chance)/.exec(t), pu=/; (\d+) push(?:es)?, the stake back/.exec(t), bt=/; (\d+) of them from the backtest/.exec(t);
+      return {graded:m?+m[1]:null,won:m?+m[2]:null,fair:f?f[1]:null,fairOn:f&&f[2]?+f[2]:null,model:mo?mo[1]:null,push:pu?+pu[1]:0,bt:bt?+bt[1]:0}; };
+    const titleWant=s=>{ const graded=s.won+s.lost; return {graded,won:s.won,fair:graded&&s.fairN?s.fair.toFixed(1):null,fairOn:graded&&s.fairN&&s.fairN<graded?s.fairN:null,model:graded?s.model.toFixed(1):null,push:s.push,bt:s.bt}; };
+    const un=v=>(v>0.0005?'+':v<-0.0005?'−':'')+Math.abs(v).toFixed(2);
+    const pillOf=(id,s)=>`${LAB[id]} ${s.won}–${s.lost}${s.won+s.lost+s.push?' '+un(s.units)+' units':''}`;
+    /* a pill as drawn against the record worked here: its level, won-lost, and units (where any is graded or pushed) to the
+       cent, the half cent either way where the sum sits on one (the page adds the same figures, and the order of a sum can
+       move its last bit there); and a title's counts exactly, its expected wins to the tenth the same way */
+    const pillOk=(p,id,s)=>{ const m=/^(\S+) (\d+)–(\d+)(?: ([+−]?)(\d+\.\d\d) units)?$/.exec(txt(p)); if(!m||m[1]!==LAB[id]||+m[2]!==s.won||+m[3]!==s.lost) return false;
+      if(!(s.won+s.lost+s.push)) return m[5]===undefined;
+      if(m[5]===undefined) return false; const v=(m[4]==='−'?-1:1)*+m[5]; return Math.abs(v-s.units)<=0.005+1e-9&&(m[4]==='+'?s.units>0.0005:m[4]==='−'?s.units<-0.0005:Math.abs(s.units)<=0.0005); };
+    const titleOk=(got,s)=>{ const want=titleWant(s), near=(a,b,v)=>a===b||(a!=null&&v!=null&&Math.abs(+a-v)<=0.05+1e-9), graded=s.won+s.lost;
+      return got.graded===want.graded&&got.won===want.won&&got.fairOn===want.fairOn&&got.push===want.push&&got.bt===want.bt
+        &&(want.fair==null?got.fair==null:near(got.fair,want.fair,s.fair))&&(want.model==null?got.model==null:near(got.model,want.model,s.model)); };
+    /* the chip's weeks: a run of weeks as first–last, else each */
+    const chipOf=W0=>`Incl. backtest, week${W0.length>1?'s':''} ${W0.length>1&&W0[W0.length-1]-W0[0]===W0.length-1?W0[0]+'–'+W0[W0.length-1]:W0.join(', ')}`;
+    const chipWeeks=s=>{ const m=/weeks? ([\d–, ]+)$/.exec(s||''); if(!m) return null; const r=/^(\d+)–(\d+)$/.exec(m[1].trim());
+      return r?Array.from({length:+r[2]-+r[1]+1},(_,i)=>+r[1]+i):m[1].split(',').map(x=>+x.trim()); };
+    /* the record as drawn, held to the record worked here: each section, each kind's row, each level's pill and title, the
+       pending and none pills, the chip */
+    let recHeld=0;
+    const holdRec=(lab,L0,B0)=>{ const Lv=recOkA(L0)?L0:null, Bv=btOkA(B0)?B0:null, said=[];
+      for(const sec of SECS){ const box=recBox(sec);
+        if(!Lv&&!Bv){ chk(!!box&&box.hidden&&!txt(box),`${lab}: with neither a record nor a backtest the ${sec} section draws a record: `+txt(box)); continue; }
+        chk(!!box&&!box.hidden,`${lab}: the ${sec} section draws no record`); if(!box) continue;
+        const wk=new Set();
+        for(const kind of Object.keys(KINDS_R)){ const K=KINDS_R[kind], R=recAud(Lv,Bv,sec,kind), row=box.querySelector(`.bar[data-sp-reckind="${kind}"]`), any=Object.values(R.o).some(s=>s.won+s.lost+s.push>0);
+          R.weeks.forEach(x=>wk.add(x));
+          chk(!!row,`${lab}: the ${sec} record has no row for the ${K.name}`); if(!row) continue;
+          W.wording(txt(row.querySelector('.sp-reck'))===K.name,`${lab}: the ${sec} record's ${kind} row is headed "${txt(row.querySelector('.sp-reck'))}", not "${K.name}"`);
+          if(any){ for(const id of Object.keys(LAB)){ const p=box.querySelector(`[data-sp-rec="${sec}:${K.pre}${id}"]`); recHeld++;
+              chk(!!p&&p.closest('.bar')===row&&pillOk(p,id,R.o[id]),`${lab}: the ${sec} record's ${K.name} ${LAB[id]} pill reads "${txt(p)}", not "${pillOf(id,R.o[id])}"`);
+              chk(titleOk(titleNums(p),R.o[id]),`${lab}: the ${sec} record's ${K.name} ${LAB[id]} pill's title states ${JSON.stringify(titleNums(p))}, where the grades give ${JSON.stringify(titleWant(R.o[id]))}: "${p?p.title:''}"`);
+              W.wording(!!p&&p.title.startsWith(`${K.name}, ${LAB[id]}: `)&&(!(R.o[id].won+R.o[id].lost)||p.title.includes(` by ${K.by}`)),`${lab}: the ${sec} record's ${K.name} ${LAB[id]} pill's title does not name its kind and level, or the chance it expects by: "${p?p.title:''}"`); }
+            chk(!row.querySelector(`[data-sp-rec="${sec}:${kind}:none"]`),`${lab}: the ${sec} record's ${K.name} row says none is graded, and some are`); }
+          else { const nn=row.querySelector(`[data-sp-rec="${sec}:${kind}:none"]`);
+            chk(!!nn&&![...row.querySelectorAll('[data-sp-rec]')].some(x=>Object.keys(LAB).some(id=>x.dataset.spRec===`${sec}:${K.pre}${id}`)),`${lab}: the ${sec} record's ${K.name} row, with nothing graded, does not say so, or counts a level: ${txt(row)}`);
+            W.wording(txt(nn)==='None graded yet',`${lab}: the ${sec} record's ${K.name} row with nothing graded reads "${txt(nn)}", not "None graded yet"`); }
+          { const pe=row.querySelector(`[data-sp-rec="${sec}:${kind}:pending"]`);
+            chk(R.pending?txt(pe)===`Pending ${R.pending}`:!pe,`${lab}: the ${sec} record's ${K.name} row does not count its ${R.pending} pending level${R.pending===1?'':'s'} apart: "${txt(pe)}"`); }
+          said.push(`${sec} ${kind} ${Object.keys(LAB).map(id=>`${R.o[id].won}-${R.o[id].lost}`).join(' ')}${R.pending?` (${R.pending} pending)`:''}`); }
+        { const W0=[...wk].sort((a,b)=>a-b), chip=box.querySelector(`[data-sp-rec="${sec}:bt"]`), got=chip?chipWeeks(txt(chip)):null;
+          chk(W0.length?!!chip&&!!chip.closest('.bar.sp-recbtbar')&&JSON.stringify(got)===JSON.stringify(W0):!chip,`${lab}: the ${sec} record's backtest chip ${chip?`gives weeks ${JSON.stringify(got)}`:'is not drawn'}, where the levels it counts from the backtest are of ${W0.length?'weeks '+W0.join(', '):'none'}`);
+          W.wording(!chip||txt(chip)===chipOf(W0),`${lab}: the ${sec} record's backtest chip reads "${txt(chip)}", not "${chipOf(W0)}"`);
+          if(W0.length) said.push(`${sec} backtest weeks ${W0.join(',')}`); }
+        /* (app v113) the record is its pills alone: no sentence under them */
+        W.wording(!box.querySelector('p,.sp-rec-line')&&!/The record starts with this change|Refresh odds never changes it/.test(txt(box)),`${lab}: the ${sec} record still draws a sentence beside its pills: `+txt(box)); }
+      return said; };
+    /* the made-up files: the levels, their chances, prices and grades named in each entry */
+    const T=(id,n,p,fair,dec,tag,elo)=>({id:(elo?'elo-':'')+id,label:LAB[id],n,floor:0,legs:Array.from({length:n},(_,i)=>({gid:'g'+tag,week:6,pid:'p'+tag+id+i,stat:'receptions',k:3.5,side:'over',main:true,price:-110,src:'real',name:'P'+i,label:'Over 3.5 receptions',p:0.6,...(elo?{pe:0.55}:{})})),p,fair,dec});
+    const TE=(id,n,p,fair,dec,tag)=>T(id,n,p,fair,dec,tag,true);
     const G=(result,n,payout)=>({result,legs:Array.from({length:n},()=>result==='lost'?'loss':result==='push'?'void':result==='pending'?null:'win'),...(payout!=null?{payout}:{})});
-    const E=(season,week,kick,gid,tiers,grade)=>({season,week,gid,away:'A',home:'H',kickoff:kick,lock:new Date(Date.parse(kick)-7200e3).toISOString().replace(/\.000Z$/,'Z'),taken_at:'2026-10-01T00:00:00Z',tiers,...(grade?{grade}:{})});
+    const E=(season,week,kick,gid,tiers,grade,elo,o)=>({season,week,gid,away:'A',home:'H',kickoff:kick,lock:new Date(Date.parse(kick)-7200e3).toISOString().replace(/\.000Z$/,'Z'),taken_at:'2026-10-01T00:00:00Z',tiers,...(elo?{elo}:{}),...(grade?{grade}:{}),...(o||{})});
     const L={how:'made up',since:'2026-10-12',entries:{'2026|05|2026-10-11T17:00:00Z':{kickoff:'2026-10-11T17:00:00Z',tiers:[T('safe',2,0.4,0.3,3,'o')],grade:{safe:G('won',2,3)}}},prime_since:'2026-10-16',prime:{
+      /* another season's game: counted, as each season's unit and level is once */
       '2025|18|2026-01-05T01:20:00Z|2025_18_XA_XB':E(2025,18,'2026-01-05T01:20:00Z','2025_18_XA_XB',[T('safe',2,0.5,0.4,2.5,'x')],{safe:G('won',2,2.5)}),
       /* a kickoff the league moved: the older key's grades give way to the newer key's, level by level */
       '2026|06|2026-10-16T00:10:00Z|2026_06_PIT_CIN':E(2026,6,'2026-10-16T00:10:00Z','2026_06_PIT_CIN',[T('safe',2,0.5,0.4,9,'b'),T('med',3,0.3,0.2,5,'b')],{safe:G('won',2,9),med:G('won',3,5)}),
       '2026|06|2026-10-16T00:15:00Z|2026_06_PIT_CIN':E(2026,6,'2026-10-16T00:15:00Z','2026_06_PIT_CIN',[T('safe',2,0.52,0.44,3.1,'c'),T('med',3,0.3,0.21,5.1,'c'),T('aggr',4,0.15,0.1,9,'c'),T('xtrm',5,0.07,0.05,20,'c')],
-        {safe:G('won',2,3.1),med:G('lost',3,0),aggr:G('push',4,1),xtrm:G('pending',5)}),
-      /* a Medium a push shortened: won at what it was graded to pay, not its price; an Extreme with no parlay never counted */
+        {safe:G('won',2,3.1),med:G('lost',3,0),aggr:G('push',4,1),xtrm:G('pending',5),'elo-safe':G('won',2,2.8),'elo-med':G('lost',3,0)},[TE('safe',2,0.45,0.4,2.8,'c'),TE('med',3,0.3,0.25,5,'c')]),
+      /* a Medium a push shortened: won at what it was graded to pay, not its price; an Extreme with no parlay never counted;
+         an Elo Safe pushed and an Elo Aggressive pending. In the backtest too, where each of its levels is graded otherwise:
+         the record's grades stand */
       '2026|06|2026-10-19T00:20:00Z|2026_06_DAL_GB':E(2026,6,'2026-10-19T00:20:00Z','2026_06_DAL_GB',[T('safe',2,0.55,0.47,2.6,'d'),T('med',3,0.28,null,6.2,'d'),T('aggr',4,0.13,0.09,12,'d'),{id:'xtrm',label:'Extreme',n:5,floor:0.05,why:'made up'}],
-        {safe:G('lost',2,0),med:{result:'won',legs:['win','push','win'],payout:3.7},aggr:G('won',4,12),xtrm:G('won',5,30)}),
-      '2026|07|2026-10-23T00:15:00Z|2026_07_XC_XD':E(2026,7,'2026-10-23T00:15:00Z','2026_07_XC_XD',[T('safe',2,0.5,0.4,3,'e')])}};
-    /* the record worked out here: each season's game and level once, from the last key holding its grade */
-    const recAud=L0=>{ const P0=L0&&L0.prime&&typeof L0.prime==='object'&&!Array.isArray(L0.prime)?L0.prime:{}, last=new Map();
-      for(const k of Object.keys(P0).sort()){ const e=P0[k]; if(!e||!Array.isArray(e.tiers)) continue;
-        for(const t of e.tiers){ const g=e.grade&&t&&e.grade[t.id]; if(!g||!LAB[t.id]||!Array.isArray(t.legs)) continue; last.set(`${e.season}|${e.gid}|${t.id}`,{t,g}); } }
-      const o=Object.fromEntries(Object.keys(LAB).map(id=>[id,{won:0,lost:0,push:0,units:0,fair:0,fairN:0,model:0}])); let pending=0;
-      for(const {t,g} of last.values()){ const s=o[t.id]; if(g.result==='pending'){ pending++; continue; } if(g.result==='push'){ s.push++; continue; }
-        if(g.result!=='won'&&g.result!=='lost') continue;
-        if(g.result==='won'){ s.won++; s.units+=g.payout-1; } else { s.lost++; s.units-=1; }
-        s.model+=t.p; if(t.fair!=null){ s.fair+=t.fair; s.fairN++; } }
-      return {o,pending}; };
-    /* the numbers each level's pill states in its title: graded and won, the wins expected by the book's fair
-       chance (on how many had one) and by the model's, the pushes; read from the title and held to the record
-       worked out here (blocking: they are numbers the page states, whatever the words around them) */
-    const titleNums=p=>{ const t=p&&p.title||'', m=/: (\d+) graded, (\d+) won/.exec(t), f=/wins expected (\d+\.\d) by the book’s fair chance(?: \(on the (\d+) with one\))?/.exec(t),
-        mo=/(?:wins expected |, )(\d+\.\d) by the model/.exec(t), pu=/; (\d+) push(?:es)?, the stake back/.exec(t);
-      return {graded:m?+m[1]:null,won:m?+m[2]:null,fair:f?f[1]:null,fairOn:f&&f[2]?+f[2]:null,model:mo?mo[1]:null,push:pu?+pu[1]:0}; };
-    const titleWant=s=>{ const graded=s.won+s.lost; return {graded,won:s.won,fair:graded&&s.fairN?s.fair.toFixed(1):null,fairOn:graded&&s.fairN&&s.fairN<graded?s.fairN:null,model:graded?s.model.toFixed(1):null,push:s.push}; };
-    const un=v=>(v>0.0005?'+':v<-0.0005?'−':'')+Math.abs(v).toFixed(2);
-    const pillOf=(id,s)=>`${LAB[id]} ${s.won}–${s.lost}${s.won+s.lost+s.push?' '+un(s.units)+' units':''}`;
-    await load(L);
-    { const R=recAud(L), hand={safe:'Safe 2–1 +2.60 units',med:'Medium 1–1 +1.70 units',aggr:'Aggressive 1–0 +11.00 units',xtrm:'Extreme 0–0'};
-      chk(Object.keys(LAB).every(id=>pillOf(id,R.o[id])===hand[id])&&R.pending===1,'the audit\'s own working of the made-up record is not the record worked by hand: '+Object.keys(LAB).map(id=>pillOf(id,R.o[id])).join(' / '));
-      chk(!!rec()&&!rec().hidden,'a made-up record is not drawn at the top of Suggested Parlays');
-      for(const id of Object.keys(LAB)){ const p=d.querySelector(`#spRec [data-sp-rec="${id}"]`);
-        chk(!!p&&txt(p)===pillOf(id,R.o[id]),`the record's ${id} line reads "${txt(p)}", not "${pillOf(id,R.o[id])}"`);
-        chk(JSON.stringify(titleNums(p))===JSON.stringify(titleWant(R.o[id])),`the record's ${id} line's title states ${JSON.stringify(titleNums(p))}, where the record's grades give ${JSON.stringify(titleWant(R.o[id]))}: "${p?p.title:''}"`); }
-      { const hand={safe:{graded:3,won:2,fair:'1.3',fairOn:null,model:'1.6',push:0},med:{graded:2,won:1,fair:'0.2',fairOn:1,model:'0.6',push:0},aggr:{graded:1,won:1,fair:'0.1',fairOn:null,model:'0.1',push:1},xtrm:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0}};
-        chk(Object.keys(LAB).every(id=>JSON.stringify(titleWant(R.o[id]))===JSON.stringify(hand[id])),'the audit\'s own working of the made-up record\'s expected wins is not the record worked by hand: '+JSON.stringify(Object.keys(LAB).map(id=>titleWant(R.o[id])))); }
-      chk(txt(d.querySelector('#spRec [data-sp-rec="pending"]'))===`Pending ${R.pending}`,`the record does not count its ${R.pending} pending level apart: "${txt(d.querySelector('#spRec [data-sp-rec="pending"]'))}"`);
-      /* (app v113, the owner's "get rid of all the long paragraph description stuff") the record is its pills alone: the
-         sentence under them is gone, and each pill's title still names its pushes */
-      W.wording(/push/.test((d.querySelector('#spRec [data-sp-rec="aggr"]')||{title:''}).title)&&!rec().querySelector('p,.sp-rec-line')&&!/The record starts with this change|Refresh odds never changes it/.test(txt(rec())),'the record still draws its sentence under the pills, or its Aggressive pill\'s title does not name its push: '+txt(rec())); }
-    w.eval('store.set(S)'); chk(!/made up|suggest_ledger|2026_06_PIT_CIN/.test(String(mem))&&!('rec' in S),'the record was saved with the visitor\'s state');
-    /* nothing graded yet, and a file with only the all-games record: the bar says so, and the old record draws nothing */
+        {safe:G('lost',2,0),med:{result:'won',legs:['win','push','win'],payout:3.7},aggr:G('won',4,12),xtrm:G('won',5,30),'elo-safe':G('push',2,1),'elo-aggr':G('pending',4)},[TE('safe',2,0.5,0.42,2.4,'d'),TE('aggr',4,0.14,0.1,11,'d')]),
+      /* an entry still to come: no grade, nothing counted */
+      '2026|07|2026-10-23T00:15:00Z|2026_07_XC_XD':E(2026,7,'2026-10-23T00:15:00Z','2026_07_XC_XD',[T('safe',2,0.5,0.4,3,'e')])},
+      slot_since:'2026-10-19',slot:{
+      '2026|06|2026-10-18T13:30:00Z|2026_06_SUN':E(2026,6,'2026-10-18T13:30:00Z','2026_06_SUN',[T('safe',2,0.5,0.4,3,'f'),T('med',3,0.3,0.25,6,'f')],{safe:G('won',2,3),med:G('lost',3,0),'elo-safe':G('won',2,3)},[TE('safe',2,0.4,0.35,3,'f')],{games:['2026_06_A_B','2026_06_C_D']})}};
+    const BT={how:'made up',from_week:3,prime:{
+      /* a game only in the backtest (week 3) */
+      '2026|03|2026-09-25T00:15:00Z|2026_03_AUX_BUX':E(2026,3,'2026-09-25T00:15:00Z','2026_03_AUX_BUX',[T('safe',2,0.5,0.45,2.8,'g'),T('med',3,0.3,0.25,5.5,'g')],
+        {safe:G('lost',2,0),med:G('won',3,5.5),'elo-safe':G('won',2,2.5),'elo-xtrm':G('lost',5,0)},[TE('safe',2,0.45,0.4,2.5,'g'),TE('xtrm',5,0.06,0.04,25,'g')],{src:'backtest'}),
+      /* the record's game too, every level graded otherwise, and its Elo Medium in the backtest alone: a unit the record
+         holds levels of a kind for is the record's whole, so none of these counts (the Elo Medium neither) */
+      '2026|06|2026-10-19T00:20:00Z|2026_06_DAL_GB':E(2026,6,'2026-10-19T00:20:00Z','2026_06_DAL_GB',[T('safe',2,0.55,0.47,2.6,'h'),T('med',3,0.28,0.2,6.2,'h'),T('aggr',4,0.13,0.09,12,'h'),{id:'xtrm',label:'Extreme',n:5,floor:0.05,why:'made up'}],
+        {safe:G('won',2,2.6),med:G('lost',3,0),aggr:G('lost',4,0),'elo-safe':G('lost',2,0),'elo-med':G('won',3,4.5)},[TE('safe',2,0.5,0.42,2.4,'h'),TE('med',3,0.36,0.32,4.5,'h')],{src:'backtest'}),
+      /* week 5: a push, every leg void, and a win */
+      '2026|05|2026-10-09T00:15:00Z|2026_05_TB_DAL':E(2026,5,'2026-10-09T00:15:00Z','2026_05_TB_DAL',[T('safe',2,0.5,0.45,2.7,'i'),T('aggr',4,0.14,0.08,10,'i')],{safe:G('push',2,1),aggr:G('won',4,10)},null,{src:'backtest'})},
+      slot:{
+      '2026|04|2026-10-04T13:30:00Z|2026_04_SUN':E(2026,4,'2026-10-04T13:30:00Z','2026_04_SUN',[T('safe',2,0.56,0.46,2.9,'j'),T('med',3,0.3,0.22,7,'j')],{safe:G('won',2,2.9),med:G('lost',3,0),'elo-safe':G('lost',2,0)},[TE('safe',2,0.42,0.38,2.6,'j')],{src:'backtest'}),
+      /* the record's slot too: its Aggressive, which the record's entry has no parlay for, is left out with the rest */
+      '2026|06|2026-10-18T13:30:00Z|2026_06_SUN':E(2026,6,'2026-10-18T13:30:00Z','2026_06_SUN',[T('safe',2,0.5,0.4,3,'k'),T('med',3,0.3,0.25,6,'k'),T('aggr',4,0.13,0.1,11,'k')],{safe:G('lost',2,0),med:G('won',3,6),aggr:G('won',4,11)},null,{src:'backtest'})}};
+    /* the record worked by hand from the files above, against which the audit's own working is held first */
+    const HAND={night:{model:{pills:{safe:'Safe 2–2 +1.60 units',med:'Medium 2–1 +6.20 units',aggr:'Aggressive 2–0 +20.00 units',xtrm:'Extreme 0–0'},pending:1,
+        titles:{safe:{graded:4,won:2,fair:'1.8',fairOn:null,model:'2.1',push:1,bt:2},med:{graded:3,won:2,fair:'0.5',fairOn:2,model:'0.9',push:0,bt:1},aggr:{graded:2,won:2,fair:'0.2',fairOn:null,model:'0.3',push:1,bt:1},xtrm:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0}}},
+      elo:{pills:{safe:'Safe 2–0 +3.30 units',med:'Medium 0–1 −1.00 units',aggr:'Aggressive 0–0',xtrm:'Extreme 0–1 −1.00 units'},pending:1,
+        titles:{safe:{graded:2,won:2,fair:'0.8',fairOn:null,model:'0.9',push:1,bt:1},med:{graded:1,won:0,fair:'0.3',fairOn:null,model:'0.3',push:0,bt:0},aggr:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0},xtrm:{graded:1,won:0,fair:'0.0',fairOn:null,model:'0.1',push:0,bt:1}}},weeks:[3,5]},
+      slot:{model:{pills:{safe:'Safe 2–0 +3.90 units',med:'Medium 0–2 −2.00 units',aggr:'Aggressive 0–0',xtrm:'Extreme 0–0'},pending:0,
+        titles:{safe:{graded:2,won:2,fair:'0.9',fairOn:null,model:'1.1',push:0,bt:1},med:{graded:2,won:0,fair:'0.5',fairOn:null,model:'0.6',push:0,bt:1},aggr:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0},xtrm:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0}}},
+      elo:{pills:{safe:'Safe 1–1 +1.00 units',med:'Medium 0–0',aggr:'Aggressive 0–0',xtrm:'Extreme 0–0'},pending:0,
+        titles:{safe:{graded:2,won:1,fair:'0.7',fairOn:null,model:'0.8',push:0,bt:1},med:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0},aggr:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0},xtrm:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0}}},weeks:[4]}};
+    { const bad=[];
+      for(const sec of SECS){ const wk=new Set(); for(const kind of Object.keys(KINDS_R)){ const R=recAud(L,BT,sec,kind), H=HAND[sec][kind]; R.weeks.forEach(x=>wk.add(x));
+          for(const id of Object.keys(LAB)){ if(pillOf(id,R.o[id])!==H.pills[id]) bad.push(`${sec} ${kind} ${id} pill ${pillOf(id,R.o[id])}`);
+            if(JSON.stringify(titleWant(R.o[id]))!==JSON.stringify(H.titles[id])) bad.push(`${sec} ${kind} ${id} title ${JSON.stringify(titleWant(R.o[id]))}`); }
+          if(R.pending!==H.pending) bad.push(`${sec} ${kind} pending ${R.pending}`); }
+        if([...wk].sort((a,b)=>a-b).join()!==HAND[sec].weeks.join()) bad.push(`${sec} weeks ${[...wk].join()}`); }
+      chk(!bad.length,'the audit\'s own working of the made-up record and backtest is not the record worked by hand: '+bad.join('; ')); }
+    const saidP2=[];
+    /* the real files, as the props job and suggest_backtest.js wrote them, read from disk */
+    { const rd=f=>{ try{ return JSON.parse(fs.readFileSync(f,'utf8')); }catch(e){ return 404; } }, RL=rd('../data/suggest_ledger.json'), RB=rd('../data/suggest_backtest.json');
+      await load(RL,RB); saidP2.push('the real files: '+holdRec('the real record and backtest',RL,RB).join(', ')); }
+    /* the made-up record and backtest together */
+    await load(L,BT); holdRec('a made-up record and backtest',L,BT);
+    w.eval('store.set(S)'); chk(!/made up|suggest_ledger|suggest_backtest|2026_06_PIT_CIN|2026_03_AUX_BUX/.test(String(mem))&&!('rec' in S),'the record or its backtest was saved with the visitor\'s state');
+    /* the backtest alone, and a smaller one whose weeks run on (3 and 4: "weeks 3–4") or are one ("week 4") */
+    await load(404,BT); holdRec('the made-up backtest alone',null,BT);
+    { const B2={how:'made up',prime:{'2026|04|2026-10-02T00:15:00Z|2026_04_X_Y':E(2026,4,'2026-10-02T00:15:00Z','2026_04_X_Y',[T('safe',2,0.5,0.4,2.5,'m')],{safe:G('won',2,2.5)})},
+        slot:{'2026|03|2026-09-27T17:00:00Z|2026_03_SUN':E(2026,3,'2026-09-27T17:00:00Z','2026_03_SUN',[T('safe',2,0.5,0.4,2.5,'n')],{safe:G('lost',2,0)}),
+          '2026|04|2026-10-04T13:30:00Z|2026_04_SUN':E(2026,4,'2026-10-04T13:30:00Z','2026_04_SUN',[T('med',3,0.3,0.25,6,'n')],{med:G('won',3,6)})}};
+      await load({how:'made up',prime:{}},B2); holdRec('a record with nothing graded and a backtest of weeks 3 and 4',{how:'made up',prime:{}},B2);
+      chk(txt(d.querySelector('#spSets [data-sp-rec="night:bt"]'))==='Incl. backtest, week 4'&&txt(d.querySelector('#spSets [data-sp-rec="slot:bt"]'))==='Incl. backtest, weeks 3–4',
+        'the backtest chips of a backtest of week 4, and of weeks 3 and 4, do not read "week 4" and "weeks 3–4": '+SECS.map(s=>txt(d.querySelector(`#spSets [data-sp-rec="${s}:bt"]`))).join(' / ')); }
+    /* a backtest that is junk or missing: the record drawn as it is with none, no chip */
+    for(const bt of [404,'junk',[],{prime:[]},{entries:{}},{how:'x'}]){ await load(L,bt); holdRec(`the made-up record with a backtest file that is not one (${JSON.stringify(bt)})`,L,bt);
+      chk(!d.querySelector('#spSets .sp-recbt,#spSets [data-sp-rec$=":bt"]'),`with a backtest file that is not one (${JSON.stringify(bt)}) the record still says some of it is the backtest`); }
+    saidP2.push('a made-up record and backtest, the backtest alone, a backtest of weeks 3 and 4, and six backtests that are not one');
+    /* nothing graded yet, and a file with only the all-games record: each row says so, and the old record draws nothing */
     for(const [lab,body] of [['an empty prime map',{how:'made up',prime:{}}],['only the all-games record',{how:'made up',entries:L.entries}]]){ await load(body);
-      chk(!!rec()&&!rec().hidden&&!!d.querySelector('#spRec [data-sp-rec="none"]')&&!d.querySelector('#spRec [data-sp-rec="safe"]'),`a record with ${lab} does not say no prime-time set is graded yet, or counts something: `+txt(rec())); }
+      holdRec(`a record with ${lab}`,body,null);
+      chk(SECS.every(sec=>!!d.querySelector(`#spSets [data-sp-rec="${sec}:model:none"]`)&&!!d.querySelector(`#spSets [data-sp-rec="${sec}:elo:none"]`)&&!d.querySelector(`#spSets [data-sp-rec="${sec}:safe"]`)),`a record with ${lab} does not say none is graded in each section and kind, or counts something: `+SECS.map(s=>txt(recBox(s))).join(' / ')); }
+    /* files that are not a record and no backtest: nothing drawn, nothing thrown */
     for(const bad of [404,[],{how:'x'},{entries:[]},{prime:[]},'junk']){ await load(bad);
-      chk(!!rec()&&rec().hidden&&!txt(rec()),`a record file that is not one (${JSON.stringify(bad)}) drew something: `+txt(rec())); }
+      chk(SECS.every(sec=>{ const b=recBox(sec); return !!b&&b.hidden&&!txt(b); }),`a record file that is not one (${JSON.stringify(bad)}), with no backtest, drew something: `+SECS.map(s=>txt(recBox(s))).join(' / ')); }
+    /* a record file that is not one beside the backtest: the backtest alone */
+    await load('junk',BT); holdRec('a record file that is not one beside the made-up backtest','junk',BT);
+    await load(404);
     d.querySelector('#tabs button[data-tab="parlay"]').click();
-    console.log('P2. the suggestions record: asked for once with no-store, nothing drawn without a file; a made-up record of prime-time sets drawn a level a line (won-lost, units, pending apart), each game and level once from its last key; an empty one and the all-games record alone say none is graded; a junk one draws nothing'); }
+    console.log(`P2. the suggestions record, a section at a time (Night games, the Sunday slot) and a kind at a time (the model's parlays, the Elo picks), the backtest under the record: both files asked for once with no-store, nothing drawn without them; ${recHeld} pills held to the audit's own working; ${saidP2.join('; ')}; an empty record and the all-games record alone say none is graded; a junk one draws nothing`); }
 
   /* ---- L. record chips beside the week dropdown ---- */
   { const main=F('trackRecord')().filter(r=>r.kind==='main'); const wkx=main.length?main[0].w:1;

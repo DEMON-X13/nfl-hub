@@ -50,7 +50,15 @@
         this run; a key, lock or night not its own; a leg on another game or a level short of legs; a grade
         before kickoff or not its legs'; either summary not its entries').
      G  the real ledger, copied, on the real payload at the real clock: refused nothing, every frozen old
-        entry the same to the byte but its grade (only facts that hold at any hour are checked). */
+        entry the same to the byte but its grade (only facts that hold at any hour are checked); and the real
+        backtest (suggest_backtest.json) held to its rules (suggest_backtest.js --check's).
+   Since app v118 the stages hold the Sunday slot and the Elo picks too: A, the week's Sunday slot (its Sunday games
+   before 7 pm Eastern, worked out here on its own, slotAt) taken as one set while its lock (2 hours before its first
+   kickoff) is to come, keyed on its id, its games those, every leg on one of them, and every set (each night game's and
+   the slot's) carrying the four Elo picks, each leg on its unit's games with its Elo chance; B, the slot's games
+   following the schedule's moves; C, the slot locked as B left it; D, the slot's levels and every set's Elo picks graded
+   by the legs (the same own settlement), the slot's and the Elo picks' summaries worked out here, the next week's slot
+   taken; E, nothing new; F, check() on hand-made slot entries and Elo picks (every rule above). */
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -77,6 +85,8 @@ const etKick = g => { const naive = Date.parse(`${g.d}T${g.t || '13:00'}:00Z`);
 /* prime time, this test's own copy: a Thursday, Sunday or Monday at or after 7 pm in New York */
 const NYF = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hourCycle: 'h23' });
 const primeAt = ms => { const p = Object.fromEntries(NYF.formatToParts(new Date(ms)).map(x => [x.type, x.value])); return ['Thu', 'Sun', 'Mon'].includes(p.weekday) && +p.hour >= 19; };
+/* the Sunday slot's day, this test's own copy: a Sunday before 7 pm in New York */
+const slotAt = ms => { const p = Object.fromEntries(NYF.formatToParts(new Date(ms)).map(x => [x.type, x.value])); return p.weekday === 'Sun' && +p.hour < 19; };
 const addDays = (d, k) => new Date(Date.parse(d + 'T12:00:00Z') + k * DAY).toISOString().slice(0, 10);
 const dow = d => new Date(d + 'T12:00:00Z').getUTCDay();
 const dec = ml => ml > 0 ? ml / 100 + 1 : 100 / -ml + 1;
@@ -94,7 +104,7 @@ function run(pay, now, extra = {}) {
 const read = () => JSON.parse(fs.readFileSync(LEDGER, 'utf8'));
 const bytes = () => fs.readFileSync(LEDGER, 'utf8');
 /* a ledger written in the script's own style, its summaries worked by the script's own rule (a hand plant) */
-const write = x => { x.summary = SL.summarize(x.entries || {}); if (x.prime) x.prime_summary = SL.summarizePrime(x.prime); fs.writeFileSync(LEDGER, SL.dumps(x) + '\n'); };
+const write = x => { x.summary = SL.summarize(x.entries || {}); if (x.prime) x.prime_summary = SL.summarizePrime(x.prime); if (x.slot) x.slot_summary = SL.summarizePrime(x.slot); fs.writeFileSync(LEDGER, SL.dumps(x) + '\n'); };
 /* an entry's text in the file, its grade lines left out: what "the same to the byte" is held to */
 function block(text, map, key) {
   const top = text.indexOf(`\n "${map}": {`); if (top < 0) return null;
@@ -185,6 +195,20 @@ const stamp = (pay, t) => { pay.baked_at = iso(t).replace(/Z$/, '+00:00'); retur
 const kOf = (g, mv) => etKick(mv[g.id] ? { ...g, ...mv[g.id] } : g);
 const keyOf = (g, mv) => `${season}|${WW}|${iso(kOf(g, mv))}|${g.id}`;
 const primesUnder = mv => realW.filter(g => primeAt(kOf(g, mv)));
+/* the week's Sunday slot under a schedule's moves, worked out here: its games in kickoff order (the schedule's on a
+   tie), its key and its lock; null with no Sunday game before 7 pm */
+const slotUnder = (mv, gs = realW) => { const G = gs.map((g, i) => ({ g, i, k: kOf(g, mv) })).filter(x => slotAt(x.k)).sort((a, b) => a.k - b.k || a.i - b.i);
+  if (!G.length) return null; const k = G[0].k, id = `${season}_${pad(+G[0].g.w)}_SUN`;
+  return { id, games: G.map(x => x.g.id), kick: k, lock: k - LOCK, key: `${season}|${pad(+G[0].g.w)}|${iso(k)}|${id}` }; };
+/* a set's Elo picks (since app v118): the four, each a parlay of its size on the unit's games with every leg's Elo
+   chance, or why it has none */
+const eloHeld = (e, games, lab) => {
+  chk(Array.isArray(e.elo) && e.elo.map(t => t.id).join() === SL.ELO_TIERS.join(), `${lab}: its Elo picks are not the four: ${JSON.stringify((e.elo || []).map(t => t.id))}`);
+  for (const x of e.elo || []) {
+    if (!x.legs) { chk(typeof x.why === 'string' && x.why.length > 0, `${lab} ${x.id}: an Elo pick with no parlay says no why`); continue; }
+    chk(x.legs.length === x.n && x.p > 0 && x.p < 1 && x.dec > 1 && x.legs.every(l => games.includes(l.gid) && l.pe > 0 && l.pe < 1 && l.grp !== 'TEAM' && l.thin === null),
+      `${lab} ${x.id}: an Elo pick is not a parlay of its size on the unit's games, each a player's leg with its Elo chance and no Value mark`);
+    chk(new Set(x.legs.map(l => l.pid)).size === x.legs.length, `${lab} ${x.id}: an Elo pick takes a player twice`); } };
 
 const primesA = primesUnder(MOVE);
 const minLock = Math.min(...primesA.map(g => kOf(g, MOVE) - LOCK));
@@ -237,6 +261,23 @@ for (const g of primesA) {
 const eA = L.prime[KP];
 chk(!!eA && eA.tiers.some(t => t.legs), `A: the made-up week gives gP (${gP.id}, ${rowsOf(gP.id)} price rows) no parlay to hold the rewrite to`);
 chk(L.prime_summary && L.prime_summary.entries === keysA.length && L.prime_summary.graded_entries === 0, 'A: the prime-time summary does not count the sets, none graded');
+/* (app v118) every set's Elo picks, and the week's Sunday slot: one set while its lock is to come */
+for (const g of primesA) { const e = L.prime[keyOf(g, MOVE)]; if (e) eloHeld(e, [g.id], `A: ${g.id}`); }
+const slotA = slotUnder(MOVE), KS = slotA && slotA.key;
+chk(L.slot_since === SL.SLOT_SINCE && L.slot && typeof L.slot === 'object', 'A: no slot map, or slot_since is not the record\'s');
+if (slotA && slotA.lock > tA) {
+  const e = L.slot[KS];
+  chk(!!e && Object.keys(L.slot).join() === KS, `A: the Sunday slot is not one set keyed ${KS}: ${Object.keys(L.slot).join(', ')}`);
+  if (e) {
+    chk(e.season === season && e.week === W && e.gid === slotA.id && JSON.stringify(e.games) === JSON.stringify(slotA.games) && e.kickoff === iso(slotA.kick) && e.lock === iso(slotA.lock) && e.taken_at === iso(tA) && !e.grade,
+      `A: the slot is not dated, keyed and locked as its games are, or holds other games: ${JSON.stringify({ ...e, tiers: undefined, elo: undefined })} against ${JSON.stringify(slotA)}`);
+    chk(e.tiers.map(t => t.id).join() === SL.TIERS.join(), 'A: the slot does not hold the four levels');
+    for (const t of e.tiers.filter(t => t.legs)) {
+      chk(t.legs.length === t.n && t.legs.every(l => slotA.games.includes(l.gid)), `A: the slot's ${t.id} holds a leg on a game not its own, or is short`);
+      const pl = t.legs.filter(l => l.grp !== 'TEAM');
+      chk(new Set(pl.map(l => l.pid)).size === pl.length, `A: the slot's ${t.id} takes a player twice`); }
+    eloHeld(e, slotA.games, 'A: the slot'); }
+} else chk(!Object.keys(L.slot || {}).length, 'A: a Sunday slot was taken after its lock');
 
 /* B: hours later, gP's player prices gone and the schedule moved */
 const tB = tA + 2 * H;
@@ -254,6 +295,10 @@ chk(!Object.values(L.prime).some(e => e.gid === gSat.id), `B: ${gSat.id}, moved 
 chk(!!L.prime[keyOf(gMon, MOVE_B)] && L.prime[keyOf(gMon, MOVE_B)].taken_at === iso(tB), `B: ${gMon.id}, moved to Monday 7:15 pm, has no set`);
 chk(Object.keys(L.prime).sort().join() === primesUnder(MOVE_B).map(g => keyOf(g, MOVE_B)).sort().join(), 'B: the sets are not one for each prime-time game: ' + Object.keys(L.prime).join(', '));
 chk(LXtext() === LX0, 'B: the old panel\'s frozen entry is not the same to the byte');
+/* the slot under B's moves (a game moved to Sunday 4:25 pm joins it, one moved to a Saturday night leaves it) */
+const slotB = slotUnder(MOVE_B), KSB = slotB && slotB.key;
+if (slotB && slotB.lock > tB) chk(!!L.slot[KSB] && JSON.stringify(L.slot[KSB].games) === JSON.stringify(slotB.games) && Object.keys(L.slot).join() === KSB,
+  `B: the Sunday slot does not follow the schedule's moves: ${JSON.stringify(Object.values(L.slot).map(e => e.games))} against ${JSON.stringify(slotB.games)}`);
 const ledgerB = bytes();
 /* B2: nothing changed, nothing written */
 r = run(P0b, tB + H);
@@ -273,6 +318,7 @@ chk(r.code === 0, 'C: the run failed: ' + r.out.slice(-400));
 chk(!!eC && JSON.stringify(eC) === JSON.stringify(eB), 'C: gP\'s set moved after its lock (the page would build another now; the record keeps the last run\'s before it)');
 chk(!Object.values(L.prime).some(e => e.gid === gN.id), `C: ${gN.id}, moved to a prime-time kickoff whose lock had passed, got a set no run took before its lock`);
 chk(LXtext() === LX0, 'C: the old panel\'s frozen entry is not the same to the byte');
+if (slotB && slotB.lock > tB && slotB.lock < tC) chk(JSON.stringify(L.slot[KSB]) === JSON.stringify(JSON.parse(ledgerB).slot[KSB]), 'C: the Sunday slot moved after its lock');
 const ledgerC = bytes();
 
 /* R: half an hour later, a player of a locked level ruled Out */
@@ -280,7 +326,10 @@ const tR = tC + H / 2;
 const RULED = plLeg('XX-RULED', gP, gP.h, 'receptions', 3.5, 'over', true, -120, { name: 'Ruled Out Jr.' });
 const FINE = ['XX-FINE1', 'XX-FINE2', 'XX-FINE3'].map(pid => plLeg(pid, gP, gP.a, 'receiving_yards', 30.5, 'over', true, -110));
 const SAFE_R = tier('safe', 2, [teamLeg(gP, gP.h, 'ml', 0, -150), RULED]), AGGR_R = tier('aggr', 4, [...FINE, teamLeg(gP, gP.a, 'ats', 3.5, -110)]);
-{ const x = JSON.parse(ledgerC); const e = x.prime[KP]; e.tiers = e.tiers.map(t => t.id === 'safe' ? SAFE_R : t.id === 'aggr' ? AGGR_R : t); write(x); }
+/* (app v118) and its Elo Safe holding him too, so the Elo picks' replacement is held end to end beside the model's */
+const ELO_R = { ...tier('safe', 2, [{ ...RULED, pe: 0.6, thin: null, market: null }, { ...FINE[0], pe: 0.55, thin: null, market: null }]), id: 'elo-safe', floor: 0.35 };
+{ const x = JSON.parse(ledgerC); const e = x.prime[KP]; e.tiers = e.tiers.map(t => t.id === 'safe' ? SAFE_R : t.id === 'aggr' ? AGGR_R : t);
+  if (Array.isArray(e.elo)) e.elo = e.elo.map(t => t.id === 'elo-safe' ? ELO_R : t); write(x); }
 const plantedR = read(), ledgerR0 = bytes();
 const out = (pay, pid, team) => { pay.injuries = [...(pay.injuries || []), { season: String(season), week: WS, gsis_id: pid, team, report_status: 'Out', practice_status: 'Did Not Participate In Practice', injury: 'Knee' }]; return pay; };
 const PR = stamp(out(clone(PC), 'XX-RULED', gP.h), tR - H);
@@ -291,11 +340,16 @@ chk(r.code === 0 && /replaced /.test(r.last), 'R: the run did not replace the le
 chk(sR.updated && sR.updated.pid === 'XX-RULED' && sR.updated.name === 'Ruled Out Jr.' && typeof sR.updated.reason === 'string' && sR.updated.reason && sR.updated.at === iso(tR),
   'R: the replaced level is not marked updated with the player, the reason and the run\'s time: ' + JSON.stringify(sR.updated));
 chk(!(sR.legs || []).some(l => l.pid === 'XX-RULED') && (!sR.legs || (sR.legs.length === 2 && sR.legs.every(l => l.gid === gP.id))), 'R: the replaced level still holds him, or is not a pair on its own game');
-chk(JSON.stringify(eR.updates) === JSON.stringify([{ tier: 'safe', ...sR.updated }]), 'R: the replacement is not recorded in updates: ' + JSON.stringify(eR.updates));
-chk(['med', 'aggr', 'xtrm'].every(id => JSON.stringify(eR.tiers.find(t => t.id === id)) === JSON.stringify(pR.tiers.find(t => t.id === id))), 'R: a level with no one ruled out moved');
-{ const strip = e => { const { tiers, updates, ...c } = e; return JSON.stringify(c); };
+const eS = (eR.elo || []).find(t => t.id === 'elo-safe') || {};
+chk(Array.isArray(pR.elo), 'R: the locked set has no Elo picks to plant a ruled-out player in (the run that took it built none)');
+chk(eS.updated && eS.updated.pid === 'XX-RULED' && eS.updated.at === iso(tR) && !(eS.legs || []).some(l => l.pid === 'XX-RULED') && (!eS.legs || (eS.legs.length === 2 && eS.legs.every(l => l.gid === gP.id && l.pe > 0 && l.pe < 1))),
+  'R: the Elo Safe holding the player ruled out was not built again for him, marked updated, on its own game: ' + JSON.stringify(eS).slice(0, 300));
+chk(JSON.stringify(eR.updates) === JSON.stringify([{ tier: 'safe', ...sR.updated }, { tier: 'elo-safe', ...eS.updated }]), 'R: the replacements are not recorded in updates, the model\'s then the Elo pick\'s: ' + JSON.stringify(eR.updates));
+chk(['med', 'aggr', 'xtrm'].every(id => JSON.stringify(eR.tiers.find(t => t.id === id)) === JSON.stringify(pR.tiers.find(t => t.id === id)))
+  && ['elo-med', 'elo-aggr', 'elo-xtrm'].every(id => JSON.stringify((eR.elo || []).find(t => t.id === id)) === JSON.stringify((pR.elo || []).find(t => t.id === id))), 'R: a level with no one ruled out moved');
+{ const strip = e => { const { tiers, elo, updates, ...c } = e; return JSON.stringify(c); };
   chk(strip(eR) === strip(pR), 'R: the locked set moved beyond the level replaced'); }
-chk(L.prime_summary.updates === 1, 'R: the prime-time summary does not count the replacement');
+chk(L.prime_summary.updates === 2, 'R: the prime-time summary does not count the two replacements');
 const ledgerR = bytes();
 r = run(PR, tR + 5 * 60e3);
 chk(r.code === 0 && /^suggest ledger: unchanged/.test(r.last) && bytes() === ledgerR, 'R2: the same run again wrote the ledger: ' + r.last);
@@ -459,9 +513,9 @@ function expect(t) {
 }
 const same = (g, w) => !!g && g.result === w.result && JSON.stringify(g.legs) === JSON.stringify(w.legs) && (w.payout == null ? g.result !== 'won' || g.payout > 1 : Math.abs(g.payout - w.payout) < 0.0015);
 let graded = 0, pend = 0;
-for (const map of ['entries', 'prime']) for (const [k, e] of Object.entries(L[map])) {
+for (const map of ['entries', 'prime', 'slot']) for (const [k, e] of Object.entries(L[map])) {
   if (Date.parse(e.kickoff) > tD) { chk(!e.grade, `D: ${k}, still to come, has a grade`); continue; }
-  for (const t of e.tiers.filter(t => t.legs)) {
+  for (const t of SL.levelsOf(e).filter(t => t.legs)) {
     const g = e.grade && e.grade[t.id], w = expect(t);
     if (k === kPS || k === pkey(PPS)) { chk(JSON.stringify(g) === JSON.stringify((k === kPS ? PS : PPS).grade[t.id]), `D: last season's ${k} ${t.id} was regraded on this season's week ${W}: ${JSON.stringify(g)}`); continue; }
     if (k === oldKey(kY) && t.id === 'safe') { chk(JSON.stringify(g) === JSON.stringify(Y.grade.safe), 'D: a grade made before was undone by a payload that cannot settle it'); continue; }
@@ -524,6 +578,18 @@ for (const [map, sum, idOf] of [['entries', 'summary', (e, t) => [e.season, e.we
   if (map === 'prime' && PWb) chk((w.once.get([season, gWin.id, 'safe'].join('#')) || {}).g.result === 'lost', 'D: a game\'s level two kickoffs hold is not counted from the last');
 }
 chk(graded >= 8, `D: only ${graded} levels graded on a week played out`);
+/* (app v118) the Elo picks' summaries and the Sunday slots', worked here from the grades: each season's unit and level
+   once, from the last key that holds it */
+for (const [map, sum] of [['prime', 'prime_summary'], ['slot', 'slot_summary']]) for (const [ids, part] of [[SL.TIERS, x => x], [SL.ELO_TIERS, x => x.elo]]) {
+  const once = new Map(); let pending = 0; const own = Object.fromEntries(ids.map(id => [id, { graded: 0, won: 0, push: 0, exp_model: 0, units: 0 }]));
+  for (const k of Object.keys(L[map]).sort()) { const e = L[map][k]; for (const t of SL.levelsOf(e)) { const g = (e.grade || {})[t.id]; if (!g || !t.legs || !own[t.id]) continue; once.set([e.season, e.gid, t.id].join('#'), { t, g }); } }
+  for (const { t, g } of once.values()) { if (g.result === 'pending') { pending++; continue; } const s = own[t.id]; if (g.result === 'push') { s.push++; continue; } s.graded++; if (g.result === 'won') s.won++; s.exp_model += t.p; s.units += g.payout - 1; }
+  const S0 = part(L[sum] || {}) || {};
+  for (const id of ids) { const a = (S0.tiers || {})[id] || {}, b = own[id];
+    chk(a.graded === b.graded && a.won === b.won && a.push === b.push && Math.abs(a.exp_model - b.exp_model) < 1e-3 && Math.abs(a.units - b.units) < 2e-3, `D: the ${sum}'s ${id} is not its grades': ${JSON.stringify(a)} against ${JSON.stringify(b)}`); }
+  chk(S0.pending === pending, `D: the ${sum} counts ${S0.pending} pending ${ids === SL.TIERS ? 'model levels' : 'Elo picks'}, the grades ${pending}`); }
+{ const nextSlot = slotUnder({}, REAL.sched.filter(g => +g.w === W + 1));
+  if (nextSlot && nextSlot.lock > tD) chk(!!L.slot[nextSlot.key], `D: the next week's Sunday slot ${nextSlot.key} has no set`); }
 { const t0 = X.tiers[0], three = {}; for (const h of [5, 4, 3]) three[`${season}|01|${iso(kX - h * H)}`] = { season, week: 1, kickoff: iso(kX - h * H), tiers: [{ ...t0, legs: h === 4 ? [...t0.legs].reverse() : t0.legs }], grade: { safe: { result: 'won', legs: ['win', 'win'], payout: t0.dec } } };
   const sm = SL.summarize(three);
   chk(sm.tiers.safe.graded === 1 && sm.tiers.safe.won === 1 && Math.abs(sm.tiers.safe.units - (t0.dec - 1)) < 2e-3 && sm.repeats === 2 && sm.frozen_entries === 3,
@@ -541,7 +607,7 @@ const early = games.filter(g => etKick(g) < lastPrime);
 const P3 = stamp(moved(week(clone(REAL), { scored: early, stats: rowsFor(early) }), MOVE_C), tE - H);
 const keysC = Object.keys(JSON.parse(ledgerC).prime).join();
 r = run(P3, tE);
-chk(r.code === 0 && /no prime-time game to come/.test(r.last) && Object.keys(read().prime).join() === keysC, 'E: a run with no prime-time game to come took or dropped a set: ' + r.last);
+chk(r.code === 0 && /no prime-time game to come/.test(r.last) && Object.keys(read().prime).join() === keysC && Object.keys(read().slot).join() === Object.keys(JSON.parse(ledgerC).slot).join(), 'E: a run with no prime-time game to come took or dropped a set: ' + r.last);
 const e1 = bytes(); r = run(P3, tE + 60e3);
 chk(r.code === 0 && bytes() === e1, 'E2: the same run again wrote the ledger');
 
@@ -574,7 +640,7 @@ chk(r.code === 1 && /^suggest ledger: refused/.test(r.last) && bytes() === ledge
 /* check() on hand-made ledgers */
 { const base = JSON.parse(ledgerC), now = tF, runAt = iso(now);
   const t = (what, f, want, prevF) => { try { const prev = clone(base); if (prevF) prevF(prev); const x = clone(prev); f(x, prev);
-      if (!/summary/.test(what)) { x.summary = SL.summarize(x.entries); x.prime_summary = SL.summarizePrime(x.prime); }
+      if (!/summary/.test(what)) { x.summary = SL.summarize(x.entries); x.prime_summary = SL.summarizePrime(x.prime); x.slot_summary = SL.summarizePrime(x.slot || {}); }
       const bad = SL.check(x, prev, now, runAt); chk(want ? bad.some(b => want.test(b)) : !bad.length, `F: check() on ${what}: ${JSON.stringify(bad)}`); }
     catch (e) { chk(false, `F: check() on ${what} could not be set up on the ledger C left: ${e.message}`); } };
   const SAFE = tier('safe', 2, [teamLeg(gP, gP.h, 'ml', 0, -150), RULED]);
@@ -618,6 +684,45 @@ chk(r.code === 1 && /^suggest ledger: refused/.test(r.last) && bytes() === ledge
   t('an old entry new and not this run\'s', x => { const e = clone(x.entries[oldKey(LXk)]); delete e.grade; e.kickoff = iso(now + DAY); e.taken_at = iso(now - H); x.entries[oldKey(now + DAY)] = e; }, /not taken by this run before its kickoff/);
   t('a summary that is not the entries\'', x => { x.summary = SL.summarize(x.entries); x.prime_summary = SL.summarizePrime(x.prime); x.summary.tiers.safe.won += 1; }, /summary does not follow/);
   t('a prime-time summary that is not the sets\'', x => { x.summary = SL.summarize(x.entries); x.prime_summary = SL.summarizePrime(x.prime); x.prime_summary.pending += 1; }, /prime-time summary does not follow/);
+  /* (app v118) the Elo picks and the Sunday slot, on sets of this test's own */
+  const eloT = (id, legs) => ({ ...tier(id.replace(/^elo-/, ''), legs.length, legs.map(l => ({ ...l, pe: 0.55, thin: null, market: null }))), id });
+  const eloWhy = id => ({ ...why(id.replace(/^elo-/, '')), id });
+  const fourE = (...ts) => SL.ELO_TIERS.map(id => ts.find(x => x.id === id) || eloWhy(id));
+  const UE = () => ({ ...clone(U), elo: fourE(eloT('elo-safe', [plLeg('XX-E1', gU, 'BBB', 'receiving_yards', 50.5, 'over', true, -110), plLeg('XX-E2', gU, 'AAA', 'rushing_yards', 40.5, 'over', true, 120)])) });
+  const addUE = (x, f) => { const e = UE(); if (f) f(e); x.prime[pkey(e)] = e; return e; };
+  t('a set new with its Elo picks, by this run', x => addUE(x), null);
+  t('a set\'s Elo picks not the four', x => addUE(x, e => { e.elo = e.elo.slice(1); }), /Elo picks are not the four/);
+  t('an Elo pick\'s leg with no Elo chance', x => addUE(x, e => { delete e.elo[0].legs[0].pe; }), /with no Elo chance/);
+  t('an Elo pick\'s leg on another game', x => addUE(x, e => { e.elo[0].legs[0].gid = gP.id; }), /a leg on another game/);
+  t('an Elo pick short of legs', x => addUE(x, e => { e.elo[0].legs.pop(); }), /legs on a level of 2/);
+  t('Elo picks added to a locked set', x => { x.prime[KP].elo = fourE(); }, /its levels changed/, p => { delete p.prime[KP].elo; });
+  t('a locked set\'s Elo pick changed with no player ruled out', x => { x.prime[KP].elo[0].floor = 0.4; }, /changed with no player ruled out/, p => { p.prime[KP].elo = fourE(eloT('elo-safe', [plLeg('XX-E1', gP, gP.h, 'receiving_yards', 50.5, 'over', true, -110), plLeg('XX-E3', gP, gP.a, 'receiving_yards', 30.5, 'over', true, -110)])); });
+  t('a locked set\'s Elo pick replaced by this run for a player it held', x => { const u = upd({ pid: 'XX-E1', name: 'E1' }); x.prime[KP].elo[0] = { ...eloWhy('elo-safe'), updated: u }; x.prime[KP].updates = [...(x.prime[KP].updates || []), { tier: 'elo-safe', ...u }]; }, null,
+    p => { p.prime[KP].elo = fourE(eloT('elo-safe', [plLeg('XX-E1', gP, gP.h, 'receiving_yards', 50.5, 'over', true, -110), plLeg('XX-E3', gP, gP.a, 'receiving_yards', 30.5, 'over', true, -110)])); });
+  /* a Sunday slot of this test's own, new and still to lock: the Sunday after now, 1 pm and 4:25 pm, two games */
+  const sunAt = (from, h, m) => { for (let tt = Math.ceil(from / (15 * 60e3)) * 15 * 60e3; tt < from + 9 * DAY; tt += 5 * 60e3) {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(tt)).map(x => [x.type, x.value]));
+    if (p.weekday === 'Sun' && +p.hour === h && +p.minute === m) return tt; } return null; };
+  const sk = sunAt(now + 3 * H, 13, 0), wk = W + 1, sid = `${season}_${pad(wk)}_SUN`, sg = [`${season}_${pad(wk)}_AAA_BBB`, `${season}_${pad(wk)}_CCC_DDD`];
+  const gS1 = { id: sg[0], a: 'AAA', h: 'BBB' }, gS2 = { id: sg[1], a: 'CCC', h: 'DDD' };
+  const SLOT = { season, week: wk, gid: sid, games: sg, kickoff: iso(sk), last: iso(sk + 3.4 * H), lock: iso(sk - LOCK), baked_at: null, pool: { pref: 0, thin: 0, mkt: 0, far: 0 },
+    tiers: four(tier('safe', 2, [teamLeg(gS1, 'BBB', 'ml', 0, -150), teamLeg(gS2, 'DDD', 'ml', 0, 120)])), elo: fourE(), taken_at: runAt };
+  const addS = (x, f) => { const e = clone(SLOT); if (f) f(e); x.slot = x.slot || {}; x.slot[pkey(e)] = e; return e; };
+  t('a Sunday slot new, by this run', x => addS(x), null);
+  t('a Sunday slot not the slot of its own week', x => addS(x, e => { e.gid = `${season}_${pad(wk + 1)}_SUN`; }), /not the Sunday slot of its own season and week/);
+  t('a Sunday slot on a Sunday night', x => addS(x, e => { const k2 = sunAt(now + 3 * H, 20, 20); e.kickoff = iso(k2); e.lock = iso(k2 - LOCK); }), /not a Sunday before 7 pm Eastern/);
+  t('a Sunday slot on a Monday', x => addS(x, e => { const k2 = sk + DAY; e.kickoff = iso(k2); e.lock = iso(k2 - LOCK); }), /not a Sunday before 7 pm Eastern/);
+  t('a Sunday slot naming a game of another week', x => addS(x, e => { e.games = [sg[0], `${season}_${pad(wk + 1)}_EEE_FFF`]; }), /its games are not games of its own season and week/);
+  t('a Sunday slot with no games', x => addS(x, e => { e.games = []; }), /its games are not games/);
+  t('a Sunday slot with a leg on a game not its own', x => addS(x, e => { e.tiers[0].legs[1].gid = `${season}_${pad(wk)}_EEE_FFF`; }), /a leg on another game/);
+  t('a Sunday slot taken at its lock', x => addS(x, e => { e.taken_at = e.lock; }), /at or after its lock/);
+  t('a Sunday slot changed not by this run', x => addS(x, e => { e.taken_at = iso(now - H); }), /not taken by this run before its lock/);
+  t('a Sunday slots\' summary that is not the sets\'', x => { addS(x); x.summary = SL.summarize(x.entries); x.prime_summary = SL.summarizePrime(x.prime); x.slot_summary = SL.summarizePrime(x.slot); x.slot_summary.pending += 1; }, /Sunday slots' summary does not follow/);
+  { const LK = sk - LOCK, prevS = clone(base); prevS.slot = { [pkey(SLOT)]: { ...clone(SLOT), taken_at: iso(LK - H) } }; prevS.slot_summary = SL.summarizePrime(prevS.slot);
+    const x = clone(prevS); x.slot[pkey(SLOT)].games = [sg[0]];
+    chk(SL.primeMoved(x, prevS, LK + 60e3, iso(LK + 60e3), 'slot').some(b => /locked at .*changed \(games\)/.test(b)), 'F: a locked Sunday slot whose games changed was not refused');
+    const y = clone(prevS); delete y.slot[pkey(SLOT)];
+    chk(SL.primeMoved(y, prevS, LK + 60e3, iso(LK + 60e3), 'slot').some(b => /is gone/.test(b)), 'F: a locked Sunday slot gone was not refused'); }
   /* against the last commit (runAt null): an earlier run's replacement, not yet committed, is not a move */
   { const head = clone(base); held(head); const x = clone(head); replace(x, { at: iso(lockP + 10 * 60e3) });
     chk(!SL.primeMoved(x, head, now, null).length, 'F: an earlier run\'s replacement was read as a locked set moved, against the last commit');
@@ -637,11 +742,15 @@ chk(r.code === 1 && /^suggest ledger: refused/.test(r.last) && bytes() === ledge
     if (Date.parse(e.kickoff) > now - 60e3) continue;
     chk(!!A2.entries[k] && block(after, 'entries', k) === block(realText, 'entries', k), `G: the real frozen entry ${k} is not the same to the byte but its grade`);
   }
-  for (const [k, e] of Object.entries(realL.prime || {})) {
+  for (const map of ['prime', 'slot']) for (const [k, e] of Object.entries(realL[map] || {})) {
     if (Date.parse(e.lock) > now - 60e3) continue;
-    const strip = x => { const { grade, tiers, updates, ...c } = x || {}; return SL.canon(c); };
-    chk(!!A2.prime[k] && strip(A2.prime[k]) === strip(e), `G: the real locked set ${k} moved`);
+    const strip = x => { const { grade, tiers, elo, updates, ...c } = x || {}; return SL.canon(c); };
+    chk(!!A2[map][k] && strip(A2[map][k]) === strip(e), `G: the real locked set ${k} moved`);
   }
+  /* the backtest beside it (suggest_backtest.js, by hand): held to its rules, the record's guard on each entry */
+  { const BT = path.join(ROOT, 'props', 'data', 'suggest_backtest.json');
+    if (fs.existsSync(BT)) { const bad = require('./suggest_backtest.js').checkFile(JSON.parse(fs.readFileSync(BT, 'utf8')), now, realL);
+      chk(!bad.length, 'G: the real backtest does not hold to its rules: ' + bad.slice(0, 4).join('; ')); } }
 }
 
 console.log(`week ${W} made up (${games.length} games, prime-time sets ${primesA.length}; gP ${gP.id}); ${graded} levels graded and ${pend} pending at D`);

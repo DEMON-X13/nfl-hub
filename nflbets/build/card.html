@@ -344,21 +344,21 @@ window.PARLAY_CARD=(function(){
       priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
       chance:q.pr.corr,chanceBy:'Model',fair:q.fair,stake:q.stake});
   }
-  /* from a level of Suggested Parlays (kind sp, id "<game id>:<level>": window.spTier, the level as the tab
-     shows it, live or locked) or an Elo pick (kind elo, id elo-<level>: elo-safe, elo-med, elo-aggr or elo-xtrm,
-     the level of window.eloPicks; an empty level has no legs and opens nothing), on the amount its tier pays on: the Bet amount box, which is
-     the builder's own stake (pbStake) */
+  /* from a level of Suggested Parlays (kind sp, id "<unit>:<level>": window.spTier, the level as the tab shows it,
+     live or locked, of a night game or the Sunday slot; since app v118 an Elo pick is one of a unit's levels too, id
+     "<unit>:elo-<level>", marked elo; an empty level has no legs and opens nothing), on the amount its tier pays on: the
+     Bet amount box, which is the builder's own stake (pbStake) */
   function fromTier(kind,id){
     let t=null;
-    try{ t=kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)
-      :kind==='sp'?(typeof window.spTier==='function'?window.spTier(id):null):null;
+    try{ t=kind==='sp'?(typeof window.spTier==='function'?window.spTier(id):null):null;
       if(t&&!Array.isArray(t.legs)) t=null; }catch(e){ t=null; }
     if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
     const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
     /* a tier with a leg priced from DraftKings' line read on ESPN is priced on that estimate, and says
        so as the builder does */
-    return card({source:kind,kicker:kind==='elo'?t.label+' Elo pick':t.label+' parlay'+(t.game?' \u00b7 '+t.game:''),legs,dec:t.dec,priceNote:t.legs.some(l=>l.src&&l.src!=='real')?'estimated price':'book price',
-      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',fair:t.fair,stake:pbStake()});
+    const elo=!!t.elo;
+    return card({source:elo?'elo':kind,kicker:(elo?t.label+' Elo pick':t.label+' parlay')+(t.game?' \u00b7 '+t.game:''),legs,dec:t.dec,priceNote:t.legs.some(l=>l.src&&l.src!=='real')?'estimated price':'book price',
+      chance:elo?t.p:t.corr,chanceBy:elo?'Elo':'Model',fair:t.fair,stake:pbStake()});
   }
 
   /* the chance, in two lines: the book's fair chance (est. where a leg is priced on one side only),
@@ -691,7 +691,7 @@ window.PARLAY_CARD=(function(){
     nb.addEventListener('click',()=>{ const m=fromBuilder(); if(m) open(m,nb); });
     return true;
   }
-  /* a suggested tier's Finish (data-pc-finish="sp|2026_06_SEA_DEN:med", "elo|elo-med"): the tab draws the button
+  /* a suggested tier's Finish (data-pc-finish="sp|2026_06_SEA_DEN:med", "sp|2026_07_SUN:elo-med"): the tab draws the button
      wherever this card is on the page, and one listener opens the card for whichever is pressed */
   function finishFrom(btn){
     /* a game kicked off since the panel was drawn: redraw it rather than open a parlay nobody saw */

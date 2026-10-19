@@ -140,10 +140,18 @@ props/
                                  void) -> data/suggest_ledger.json's prime, each game's
                                  level counted once; the retired all-games panel's
                                  entries kept, frozen and graded; its guard refuses a
-                                 ledger whose frozen or locked entries moved
+                                 ledger whose frozen or locked entries moved; since app
+                                 v118 each set's Elo picks (elo) too, and the Sunday
+                                 slot's sets in its slot map
   build/test_suggest_ledger.js   its test: made-up weeks cut from the payload, the
                                  rewrite, the lock, a run hours late, the ruled-out
-                                 level, a book's settlement, the guard (about a minute)
+                                 level, a book's settlement, the guard, the Sunday slot
+                                 and the Elo picks (about a minute)
+  build/suggest_backtest.js      by hand, never by a job: the record's weeks before it
+                                 took them (from week 3), each night game and Sunday slot
+                                 rebuilt by today's page on the files of the last commit
+                                 before its lock, graded -> data/suggest_backtest.json;
+                                 --check holds the file to the record's guard
   build/season.py                the season, read from SEASON in part2.js (the one place it
                                  is set), and the raw files named after it
   build/names.py                 a book's player name onto a player id, within the line's
@@ -221,6 +229,12 @@ props/
   build/patch_ladder_anchor.py   app v117: after a press, a count's rung that is the main Over
                                  is priced at the paid pull's own Over on the read's line, the
                                  anchor its other rungs stand on, so a ladder never climbs
+  build/patch_slots.py           app v118: Suggested Parlays in two sections, Night games and
+                                 the Sunday slot (spSlotUnit, every Sunday game before 7 pm
+                                 Eastern, one set), each with its record (the model's row and
+                                 the Elo picks', the backtest counted where the record has no
+                                 entry), and each set's own Elo picks (window.eloUnit),
+                                 locked, kept and recorded with it (its docstring is the design)
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
                                  answers (audit M8, the nflbets smoke)
   build/fixtures/espn/           ESPN's recorded answers for week 6 of 2026 (the scoreboard, two
@@ -233,7 +247,12 @@ props/
                                  each prime-time game's set as the job locked it and its
                                  grade, read by Suggested Parlays (its locked sets and its
                                  record); entries, the all-games panel's from 12 to 16
-                                 October 2026, frozen, graded and drawn nowhere
+                                 October 2026, frozen, graded and drawn nowhere; slot
+                                 (app v118), each Sunday slot's set; each set's elo
+  data/suggest_backtest.json     written by suggest_backtest.js by hand, never edited: the
+                                 record's prime and slot maps for weeks 3 to 6, each entry
+                                 src backtest with the commit it was rebuilt from; the
+                                 page counts a level from it where the record has none
   data/*.csv, *.json             prices, lines, fitted model pieces (scale.json and
                                  tdrate.json are carried into the payload); the week files
                                  are this season's, last season's are in data/archive/
@@ -785,7 +804,9 @@ The same script puts the Mismatches card on the Props tab (games still to kick o
 a MISMATCH tag beside the name of each player with a Solid, Big or Huge mismatch that week (`mmTags`), a ranked player's shield and his
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
-and the Elo picks at the foot of Suggested Parlays since app v111 (`#pbElo`, until then the foot of the Parlay
+and the Elo picks, since app v118 each Suggested Parlays set's own on its night game's or Sunday slot's games alone
+(`window.eloUnit`, drawn by the props parts with `window.eloCardOpt`, the mismatch tags put on by `eloDecorate`, no
+longer on the Parlay Builder's ticks), from app v111 to v117 at the foot of Suggested Parlays (`#pbElo`, until then the foot of the Parlay
 Builder's suggested parlays; drawn with the sets' own `pbTierCard`, each leg with its own Add and no Value mark,
 since `pricedLegs` sets neither `thin` nor `market` and the picks are chosen on the Elo matchup, and kept to the
 Parlay Builder's ticked games and player sides by `pbAllows` and, since app v109, wherever the payload carries
@@ -852,10 +873,14 @@ night at a time and its legs tagged Value by app v112, below): for each
 prime-time game of the week still to come a set of four levels from that game's lines alone (the tab sets out the
 next night's alone, from its morning), the lock that holds
 each set from 2 hours before its kickoff, the record of the locked sets at the top (below, with the suggestions
-record) and the Elo picks at the foot. `renderSp()` draws it, the frame once (`#spHead`, `#spSets`, `#pbElo`, so
-the Elo picks keep their place while the rest redraws), from `renderPb()` (so the ELO tab's wrap of `renderPb`
-still draws the Elo picks last) and on a click of its tab's button, since a live set is built only while the tab is
-on the screen. A prime-time game (`spPrime`) kicks off on a Thursday, Sunday or Monday at or after 19:00 Eastern,
+record) and the Elo picks at the foot. `renderSp()` draws it, the frame once (`#spHead`, `#spSets`; until app v118
+`#pbElo` too), from `renderPb()` and on a click of its tab's button, since a live set is built only while the tab is
+on the screen. Since app v118 (`patch_slots.py`) `#spSets` is two sections, Night games and the Sunday slot (every
+Sunday game before 7 pm Eastern, one set, `spSlotUnit`, up from the night rule's opening, `spOpenAt`, locked 2 hours
+before its first kickoff, under way with nothing to add from it to its last), each headed by its record (`spRecHtml(sec)`:
+a row for the model's parlays and one for the Elo picks, the backtest, `suggest_backtest.json`, counted where the record
+has no entry and said in a chip), and each unit (`spUnit`: a night game or the slot) its model parlays and its own Elo
+picks (`spEloSet`, the ELO tab's `window.eloUnit`), locked, kept and recorded together. A prime-time game (`spPrime`) kicks off on a Thursday, Sunday or Monday at or after 19:00 Eastern,
 read from the schedule's `g.d` and `g.t`, which are Eastern already: Thursday, Sunday and Monday night football,
 both games of a Monday doubleheader, Thanksgiving's night game and a Christmas night game on one of those days;
 never a day game, a Saturday or a Friday. `spGames()` is those of `pbGames()` (the week's games still to kick off,
