@@ -366,10 +366,8 @@ const PB_TIERS_OWN = ['safe', 'med', 'aggr', 'xtrm'];
    only want to show legs that draft kings does"): targets and FG attempts are projected and never a line, a leg or a
    suggestion anywhere. The smoke's own copies, never read from the page (its PB_TOP_N and NO_BET) */
 const PB_TOP_N_OWN = 30;
-/* (app v115) the Top lines' check (holdTop), for the Refresh odds checks far below it; and how many rows the smoke held
-   with the line on a missing DraftKings id, by kind (moved, none), so each kind is met */
+/* the Top lines' check (holdTop), for the Refresh odds checks far below it */
 let holdTopF = null;
-const SLIP_SEEN = { moved: 0, none: 0 };
 const NO_BET_OWN = new Set(['targets', 'fg_att']);
 const primeOwn = g => !!g && /^\d{4}-\d\d-\d\d$/.test(g.d || '') && PRIME_NIGHT[new Date(g.d + 'T12:00:00Z').getUTCDay()] != null && /^\d\d:\d\d$/.test(g.t || '') && g.t >= '19:00';
 const etSay = ms => new Date(ms).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET';
@@ -1149,29 +1147,25 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      only once the Elo files are in, never 15 points or more above the book's fair chance (fairRule), and
      DraftKings' id at its own line wherever the payload carries ids (dkTakes); preferred with 3 points of
      edge and, on a player's line, market + form 3 points above the book too, else thin; and with Game total
-     ticked both sides of each game's posted total on a real price, a list of its own, no edge. o.read (app v115, the
-     Top lines alone; the owner, 18 October 2026: "any idea why the player props are not showing up in the top 50
-     anymore? :/"): a player's leg priced from DraftKings' line read by Refresh odds that takenRule takes (a tested kind
-     DraftKings lists, at the rule's own price, no real price on file for that line) stands as one with an id, since a
-     press on a Sunday finds most of the Saturday pull's lines moved and ESPN gives no id for a player's line; every set
-     and level is held without it, slip-only */
+     ticked both sides of each game's posted total on a real price, a list of its own, no edge. The Top lines take
+     the same (app v119, the owner's call of 19 October 2026: "only ones i can add via id"; from app v115 they kept a
+     player's leg from a Refresh odds read with no id) */
   const impOwn = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), decOwn = a => a > 0 ? 1 + a / 100 : 1 + 100 / -a;
   const kindOwn = l => ['ml', 'ats', 'total'].includes(l.stat) ? l.stat : l.side === 'under' ? 'under' : 'over';
   const maxOwn = list => { const pl = new Set(), gm = new Set(); for (const l of list) { if (/^(team:|game$)/.test(l.pid) || ['ml', 'ats', 'total'].includes(l.stat)) gm.add(l.gid + (l.stat === 'total' ? '|t' : '|s')); else pl.add(l.pid); } return pl.size + gm.size; };
   const qualOwn = (u, on, o) => {
-    const out = { pref: [], thin: [], mkt: [], plId: false }, read = !!(o && o.read);
+    const out = { pref: [], thin: [], mkt: [], plId: false };
     if (!hasPb || !on.length) return out;
     const isG = w.eval('isGameLeg'), started = w.eval('gameStarted'), taken = takenRule(w), fo = fairRule(w), FAR = w.eval('FAR_OFF'), D = w.eval('PAY').dk, DK = D && typeof D === 'object' ? D : null;
     const loaded = w.eval('typeof window.eloLoaded') !== 'function' || w.eval('window.eloLoaded()'), alt = typeof w.eloAltP === 'function' ? w.eloAltP : null;
     const st = l => { const g = w.eval('S').sched.find(x => x.id === l.gid); return !!g && started(g); };
     const priced = c => c.price != null && isFinite(c.price) && c.price !== 0 && c.p >= 0.45 && c.p < 0.97;
-    const kept = c => read && c.src === 'dkline' && !isG(c) && taken(c);
     for (const c of w.eval('pricedLegs')(on)) {
-      if (!isG(c) && (dkTakes(DK, c, st(c)) || kept(c))) out.plId = true;
+      if (!isG(c) && dkTakes(DK, c, st(c))) out.plId = true;
       if (!u.k[kindOwn(c)] || u.off.includes(c.gid) || st(c) || !taken(c) || !priced(c) || c.p < impOwn(c.price)) continue;
       if (!isG(c) && !loaded) continue;
       const f = fo(c); if (f && c.p - f.p >= FAR - 1e-9) continue;
-      if (!dkTakes(DK, c, st(c)) && !kept(c)) continue;
+      if (!dkTakes(DK, c, st(c))) continue;
       const form = isG(c) || !alt || (() => { const a = alt(c.pid, c.side, c.price, c.src, c.stat); return a != null && a - impOwn(c.price) >= 0.03; })();
       (c.p - impOwn(c.price) >= 0.03 && form ? out.pref : out.thin).push(c); }
     if (u.k.total) for (const g of on) if (!u.off.includes(g.id)) for (const side of ['over', 'under']) { const c = w.eval('totalLeg')(g, side);
@@ -1199,7 +1193,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   const gameLegOwn = l => ['ml', 'ats', 'total'].includes(l.stat);
   const sameBetOwn = legs => { const half = new Set(legs.filter(l => !gameLegOwn(l) && l.main && l.side === 'over' && Math.abs(+l.k % 1) === 0.5).map(l => `${l.gid}|${l.pid}|${l.stat}|${+l.k + 0.5}`));
     return l => !gameLegOwn(l) && !l.main && l.side === 'over' && half.has(`${l.gid}|${l.pid}|${l.stat}|${+l.k}`); };
-  const pbTopOwn = (u, on) => { const q = qualOwn(u, on, { read: true }), ord = (a, b) => legId(a).localeCompare(legId(b)), same = sameBetOwn([...q.pref, ...q.thin]);
+  const pbTopOwn = (u, on) => { const q = qualOwn(u, on), ord = (a, b) => legId(a).localeCompare(legId(b)), same = sameBetOwn([...q.pref, ...q.thin]);
     const rank = list => list.filter(x => !same(x.c)).map(x => ({ ...x, win: decOwn(x.c.price) - 1, ev: x.c.p * decOwn(x.c.price) - 1 })).sort((a, b) => (b.ev - a.ev) || ord(a.c, b.c));
     const rows = [...rank(q.pref.map(c => ({ c, value: true, thin: false, market: false }))), ...rank(q.thin.map(c => ({ c, value: false, thin: true, market: false }))),
       ...rank(q.mkt.map(c => ({ c, value: false, thin: false, market: true })))];
@@ -1225,22 +1219,6 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   let SPH = null;
   const money1 = v => (v < -0.0005 ? '−' : '+') + '$' + Math.abs(v).toFixed(2);
   const addName = (l, on) => `${on ? 'Remove' : 'Add'} ${l.name}, ${l.label}, ${on ? 'from' : 'to'} the builder`;
-  /* (app v115) the line a Top row carries where its leg is priced from DraftKings' line read by Refresh odds and has
-     no DraftKings id at its own number, where the payload carries ids for its game (a table the page made for a press
-     on a payload baked before ids does not count: DK_PRESS_MADE): "Moved since DraftKings’ prices were pulled" where the
-     paid pull read that main line of his at another number (PAY.mkt), else "No DraftKings id at this line", and after
-     it what DraftKings' slip does with the leg, by the parlay card's own plan for it (dkPlan, which smoke_live.js
-     holds): with no id, add it by hand; a moved line the card puts on at the pull's number, the old line; else the
-     line the card puts on instead. Without the card (the prop model's own page), the cause alone. Null: no line */
-  const slipOwn = l => {
-    const DKc = w.eval('PAY.dk&&typeof PAY.dk==="object"&&!DK_PRESS_MADE.has(PAY.dk)?PAY.dk:null');
-    if (!l || l.src !== 'dkline' || gameLegOwn(l) || !DKc) return null;
-    const E = (DKc[String(l.week)] || {})[l.gid]; if (!E || typeof E !== 'object' || dkOwnId(DKc, l, false)) return null;
-    const M = l.main ? ((((w.eval('PAY').mkt || {})[String(l.week)] || {})[l.pid]) || {})[l.stat] : null, moved = !!M && isFinite(+M.line) && +M.line !== +l.k;
-    const C = w.PARLAY_CARD; let tail = '';
-    if (C && typeof C.dkPlan === 'function') { const x = C.dkPlan([Object.assign({}, l, { card: { tag: 'est.' } })]).each[0];
-      tail = !x.id ? ': add it on DraftKings by hand' : moved && x.now != null && +x.now === +M.line ? `: the slip link has the old line, ${+x.now}` : `: the slip link has ${x.swap} instead`; }
-    return { type: moved ? 'moved' : 'none', text: (moved ? 'Moved since DraftKings’ prices were pulled' : 'No DraftKings id at this line') + tail }; };
   const holdTop = (lab, u, on) => {
     const want = pbTopOwn(u, on), rows = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')], fo = fairRule(w), fmt = w.eval('fmtML'), P = w.eval('S').parlay, bad = [];
     const inB = l => { const x = P[l.key]; return !!x && x.k === l.k && x.side === l.side && !!x.main === !!l.main; };
@@ -1265,10 +1243,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         bad.push(`row ${i + 1}, ${l.name} ${l.label}, reads ${got.join(' | ')}, ${marks.length} Value mark${marks.length === 1 ? '' : 's'}${OLD_TAG.test(txt(r)) ? ', an old tag' : ''}, not ${exp.join(' | ')}${x.value ? ', marked Value' : ', unmarked'}`);
       else if (b.getAttribute('aria-label') !== addName(l, on2) || b.getAttribute('aria-pressed') !== String(on2) || txt(b) !== (on2 ? 'Added' : 'Add') || w.getComputedStyle(b).minHeight !== '44px')
         bad.push(`row ${i + 1}'s Add is not a 44px button named "${addName(l, on2)}": ${b.getAttribute('aria-label')} ${w.getComputedStyle(b).minHeight}`);
-      else { const sl = slipOwn(l), ln = [...r.querySelectorAll('[data-pb-slip]')];
-        if (sl ? ln.length !== 1 || ln[0].tagName !== 'SMALL' || !ln[0].classList.contains('pb-tslip') || ln[0].dataset.pbSlip !== sl.type || txt(ln[0]) !== sl.text || !ln[0].closest('.nm') : ln.length)
-          bad.push(`row ${i + 1}, ${l.name} ${l.label} (${l.src}), ${sl ? `does not carry the one line "${sl.text}" (${sl.type})` : 'carries a line on a missing DraftKings id it does not need'}: ${ln.map(x => `${x.dataset.pbSlip} "${txt(x)}"`).join(', ') || 'none'}`);
-        else if (sl) SLIP_SEEN[sl.type]++; } });
+      /* (app v119) no row carries app v115's line on a missing DraftKings id: every row has its id */
+      else if (r.querySelector('[data-pb-slip], .pb-tslip'))
+        bad.push(`row ${i + 1}, ${l.name} ${l.label} (${l.src}), carries a line on a missing DraftKings id, which app v119 took off: "${txt(r.querySelector('[data-pb-slip], .pb-tslip'))}"`); });
     /* the two parts as drawn: the Value picks' heading (its count, or with none a line saying so), its list, then the
        other lines' heading and count and their list starting at the next rank, in that order and nothing else */
     { const nV = want.filter(x => x.value).length, nO = want.length - nV, H = [...panel.querySelectorAll('h3.pb-topsec')], O = [...panel.querySelectorAll('ol.pb-top')];
@@ -1860,7 +1837,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           chk(lost > 0 && p1.noId >= lost && p1.noIdPl === p1.noId && p1.moved === 0, `with ${gX.id}'s player ids taken out the pool counts ${p1.noId} legs left out for want of an id (${p1.noIdPl} players', ${p1.moved} at another number) where at least ${lost} went, all players' and none at another number`);
           /* (where his game is the only one with player prices, as on a Monday night with one game left, the
              panel says instead that no player line can go on the slip yet, as with every id out below) */
-          const lone = !qualOwn(U(), on, { read: true }).plId, nLone = noteOf(/No player line on your picks can go on DraftKings’ betslip yet[^]*?\(before 4pm ET\)\./);
+          const lone = !qualOwn(U(), on).plId, nLone = noteOf(/No player line on your picks can go on DraftKings’ betslip yet[^]*?\(before 4pm ET\)\./);
           if (lone) chk(!panel.querySelector('ol.pb-top li') || (nLone.startsWith('No player line on your picks can go on DraftKings’ betslip yet, so the list below has no player lines: ') && nLone.includes(PULLED_W)),
             `with ${gX.id}, the only game with player prices, without its player ids, the panel does not say no player line can go on DraftKings' betslip yet, and when they are pulled: "${nLone || txt(panel).slice(0, 200)}"`);
           else chk(note.startsWith(`${p1.noId} line${p1.noId === 1 ? ' is' : 's are'} left out: the list takes only lines DraftKings’ betslip can take, by DraftKings’ own id at the line`)
@@ -3929,16 +3906,15 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             /* (app v109) on a payload baked with DraftKings' ids, a leg priced from the read (no id: ESPN gives
                none for a player's line) is in no level, set or Elo pick, and every leg they hold has DraftKings' id
                at its own line, the press's own game-line ids among them (dkOwnId, here on the ids as they stand).
-               (app v115) The Top lines alone may keep a player's leg from the read the rule takes (takenRule) with
-               no id, each with its line on the missing id (holdTop); every other leg on them has its id */
+               (app v119) The Top lines the same: every row with its id (from app v115 they kept the read's legs) */
             if (keep.dk !== undefined) { const DKn = w.eval('PAY').dk, st = l => w.eval('gameStarted')(S.sched.find(x => x.id === l.gid) || {}), eloL = ((typeof w.eloPicks === 'function' && w.eloPicks()) || { tiers: [] }).tiers.flatMap(t => t.legs)
                 .concat(w.eval('spOnAll()').flatMap(u => { const v = w.eval('spShown')(u); return v.phase === 'live' && Array.isArray(v.elo) ? v.elo.flatMap(t => t.legs || []) : []; }));
               const lv = rNew.tiers.flatMap(t => t.legs || []).concat(G0.flatMap(x => w.eval('spSet')(x.id).tiers.flatMap(t => t.legs || []))), tk = takenRule(w), isGt = w.eval('isGameLeg');
-              const keptT = l => l.src === 'dkline' && !isGt(l) && tk(l), badT = tNew.rows.filter(l => !dkTakes(DKn, l, st(l)) && !keptT(l));
+              const badT = tNew.rows.filter(l => !dkTakes(DKn, l, st(l)));
               /* (a game the table has no entry for is taken as before ids, so a leg from the read stands only there) */
               chk(lv.concat(eloL).every(l => dkTakes(DKn, l, st(l))) && !badT.length,
-                `on a payload baked with DraftKings' ids, after the press a level, a set or an Elo pick holds a leg priced from the read, or one with no DraftKings id at its line, or the Top lines one the rule does not keep: ` + lv.concat(eloL).filter(l => !dkTakes(DKn, l, st(l))).concat(badT).slice(0, 4).map(l => l.name + ' ' + l.label + ' ' + l.src).join(', '));
-              console.log(`  (after the press, DraftKings' ids baked: the Top lines keep ${tNew.rows.filter(l => !dkTakes(DKn, l, st(l)) && keptT(l)).length} of their ${tNew.rows.length} rows from the read with no DraftKings id; no level, set or Elo pick holds one)`);
+                `on a payload baked with DraftKings' ids, after the press a level, a set or an Elo pick holds a leg priced from the read, or one with no DraftKings id at its line, or the Top lines one with no DraftKings id at its line: ` + lv.concat(eloL).filter(l => !dkTakes(DKn, l, st(l))).concat(badT).slice(0, 4).map(l => l.name + ' ' + l.label + ' ' + l.src).join(', '));
+              console.log(`  (after the press, DraftKings' ids baked: all ${tNew.rows.length} Top lines have DraftKings' id at their line; no level, set or Elo pick holds a leg from the read)`);
               if (holdTopF) holdTopF('the Top lines right after the press, DraftKings\' ids baked', S.ui.pb, w.eval('pbGames()').filter(x => !S.ui.pb.off.includes(x.id))); }
           } finally { if (pl) pl.remove(); }
           w.eval('renderParlay()'); await wait(20); }
@@ -4406,45 +4382,15 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           chk(fromRead.length > 0 && rA.tiers.every(t => !t.legs && typeof t.why === 'string' && t.why.startsWith('No player legs DraftKings’ betslip can take yet: a player’s line read by Refresh odds carries no DraftKings id') && t.why.includes(PULLED_W))
             && ![...pA.pref, ...pA.thin].some(l => l.src === 'dkline') && pA.noIdPl === pA.noId && !hA.some(l => l.src === 'dkline') && hA.every(l => dkOwnId(P.dk, l, false)) && !eloA.some(l => l.src === 'dkline'),
             `on a payload baked with DraftKings' ids, the ${fromRead.length} legs priced from the read (none with an id) are suggested, or the levels do not say they are empty for want of DraftKings' ids: ` + rA.tiers.map(t => t.why || t.legs.map(l => l.label + ' ' + l.src).join('+')).join(' / '));
-          /* (app v115, the owner, 18 October 2026: "any idea why the player props are not showing up in the top 50
-             anymore? :/") the Top lines on these ticks, by contrast, keep the read's legs takenRule takes with no
-             DraftKings id at their number, each with its line on the missing id (holdTop: "No DraftKings id at this
-             line" here, the game's own player prices being out, so none has moved since a pull, then what the card's
-             plan does with it). And with the pull planted on one of the read's main lines at another number (PAY.mkt,
-             DraftKings' ids there, the game's player prices dated), that row says it moved since DraftKings' prices
-             were pulled and that the slip link has the old line, and the old number is offered nowhere on the list;
-             without the parlay card (the prop model's own page), the cause alone. Each plant put back */
-          { const tk = takenRule(w), onT = w.eval('pbGames()').filter(x => !S.ui.pb.off.includes(x.id)), pnlT = d.getElementById('pbPanel'), seen0 = { ...SLIP_SEEN };
-            w.eval('renderPb()'); await wait(20);
-            const tR = w.eval('getPbTop()').rows, kR = tR.filter(l => l.src === 'dkline' && !dkOwnId(P.dk, l, false));
-            chk(kR.length > 0 && kR.every(tk), `on a payload baked with DraftKings' ids, the Top lines after the press keep no line priced from the read (${kR.length} of ${tR.length} rows), or one the rule does not take: ` + kR.filter(l => !tk(l)).map(l => l.name + ' ' + l.label).join(', '));
+          /* (app v119, the owner's call of 19 October 2026: "i dont want to include those in the parlay builder, only ones i
+             can add via id") the Top lines on these ticks take none of the read's legs either: every row has DraftKings'
+             id at its line, and none carries a line on a missing id (holdTop). From app v115 to v118 they kept them */
+          { const onT = w.eval('pbGames()').filter(x => !S.ui.pb.off.includes(x.id));
+            w.eval('PB_TOP_CACHE=new Map(); renderPb()'); await wait(20);
+            const tR = w.eval('getPbTop()').rows, kR = tR.filter(l => !dkOwnId(P.dk, l, false));
+            chk(!kR.length, `on a payload baked with DraftKings' ids, the Top lines after the press hold ${kR.length} of ${tR.length} rows with no DraftKings id at their line: ` + kR.slice(0, 4).map(l => l.name + ' ' + l.label + ' ' + l.src).join(', '));
             if (holdTopF) holdTopF(`${g.id}'s player lines after a press, DraftKings' ids baked`, S.ui.pb, onT);
-            const M0 = P.mkt[wk] = P.mkt[wk] || {}, W0 = P.dk[wk] = P.dk[wk] || {}, E0 = W0[g.id] = W0[g.id] || {};
-            let moved = null;
-            for (const c of kR.filter(l => l.main && Math.abs(+l.k % 1) === 0.5).slice(0, 6)) {
-              for (const dx of [2, -2, 1, -1]) { const L0 = +c.k + dx; if (L0 < 0.5) continue;
-                const keepM = JSON.stringify(M0[c.pid] === undefined ? null : M0[c.pid]), keepE = JSON.stringify(E0);
-                M0[c.pid] = { ...(M0[c.pid] || {}), [c.stat]: { line: L0, over: -110, under: -110, n: c.name, g: g.id } };
-                for (const sd of ['over', 'under']) E0[`${c.pid}|${c.stat}|${sd}|${dkPt(L0)}`] = `SMKMV#${sd}${dkPt(L0)}`;
-                if (!E0.at) E0.at = new Date(w.eval('Date.now()') - 7200e3).toISOString().slice(0, 16) + 'Z';
-                w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); renderPb()'); await wait(20);
-                const t2 = w.eval('getPbTop()').rows, i2 = t2.findIndex(l => l.key === c.key && l.side === c.side && l.main && +l.k === +c.k), m2 = t2[i2];
-                if (m2 && m2.src === 'dkline') { const row = [...pnlT.querySelectorAll('ol.pb-top > li.pb-trow')][i2], ln = row && row.querySelector('[data-pb-slip]');
-                  chk(!!ln && ln.dataset.pbSlip === 'moved' && txt(ln) === `Moved since DraftKings’ prices were pulled: the slip link has the old line, ${L0}` && !t2.some(l => l.key === c.key && l.main && +l.k === L0),
-                    `with the pull planted at ${L0} on ${c.name}'s ${c.label}, which the read moved, its Top row does not say it moved since DraftKings' prices were pulled with the slip link on the old line, or the old number is still offered: ${ln ? ln.dataset.pbSlip + ' "' + txt(ln) + '"' : 'no line'}`);
-                  if (holdTopF) holdTopF(`${g.id}'s player lines after a press, ${c.name}'s ${c.label} planted as moved since the pull`, S.ui.pb, onT);
-                  moved = { c, L0 }; }
-                if (keepM === 'null') delete M0[c.pid]; else M0[c.pid] = JSON.parse(keepM);
-                for (const k of Object.keys(E0)) delete E0[k]; Object.assign(E0, JSON.parse(keepE));
-                if (moved) break; }
-              if (moved) break; }
-            w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); renderPb()'); await wait(20);
-            chk(!!moved, `with the pull planted at another number on the read's main lines in turn (${kR.filter(l => l.main).length} on the list), none stayed on the Top lines to show a line moved since the pull, so the case cannot tell`);
-            { const pc = w.PARLAY_CARD; w.PARLAY_CARD = undefined; w.eval('PB_TOP_CACHE=new Map(); renderPb()'); await wait(20);
-              if (holdTopF) holdTopF(`${g.id}'s player lines after a press, without the parlay card`, S.ui.pb, onT);
-              w.PARLAY_CARD = pc; w.eval('PB_TOP_CACHE=new Map(); renderPb()'); await wait(20); }
-            chk(SLIP_SEEN.none > seen0.none && SLIP_SEEN.moved > seen0.moved, `the Top lines after the press held ${SLIP_SEEN.none - seen0.none} rows with "No DraftKings id at this line" and ${SLIP_SEEN.moved - seen0.moved} with "Moved since DraftKings’ prices were pulled", so a kind went unchecked`);
-            console.log(`  (the Top lines after the press: ${kR.length} of ${tR.length} rows priced from the read with no DraftKings id, each with its line; ${moved ? `${moved.c.name}'s ${moved.c.label} planted as the pull's at ${moved.L0}, marked moved` : 'none planted as moved'})`); } }
+            console.log(`  (the Top lines after the press: all ${tR.length} rows with DraftKings' id at their line, the ${fromRead.length} legs priced from the read left out)`); } }
         delete P.dk;
         w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); renderParlay()'); await wait(40);
         const r = w.eval('getPbTiers()'), taken = takenRule(w), legsAll = r.tiers.filter(t => t.legs).flatMap(t => t.legs), UNTESTED = l => ['completions', 'carries'].includes(l.stat) || (!l.main && l.stat === 'receptions');

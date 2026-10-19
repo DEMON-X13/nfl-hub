@@ -2111,12 +2111,10 @@ function pbCap(list,cap){
 }
 /* the legs on the reader's picks (u, the choices: the reader's own by default): preferred (the full bar)
    and thin (at or above the book, no more), uncapped (the Top 30 lines rank them all); pbPool caps them.
-   o.read (app v115, the Top lines alone): a player leg priced from DraftKings' line read by Refresh odds is
-   kept with no DraftKings id at its own number (kept counts them), since a press finds most of a Sunday's lines
-   moved since the Saturday pull and ESPN gives no id for a player's line; every level, set, hand and Elo pick
-   is built without it, slip-only */
-function pbLegs(games,u,o){
-  u=u||pbUi(); const read=!!(o&&o.read);
+   (app v119: the Top lines' read option of app v115, which kept a line from a Refresh odds read with no
+   DraftKings id, is gone, the owner's call: only lines DraftKings' betslip can take by id) */
+function pbLegs(games,u){
+  u=u||pbUi();
   const edge=c=>c.p-mlProb(c.price), formOut=typeof window.eloLoaded==='function'&&!window.eloLoaded();
   /* (app v109) where the payload carries DraftKings' ids, a leg qualifies only with one at its own line,
      so every leg a level suggests goes on DraftKings' betslip. A game counts as having player prices only
@@ -2124,11 +2122,9 @@ function pbLegs(games,u,o){
      would have qualified but for the id are counted for the panel's note (noId, noIdPl the players'; moved,
      movedPl those DraftKings had at another number). A game the payload has no ids for is as before */
   const hasId=c=>!dkCarries(c)||!!dkIdOf(c);
-  /* (app v115) with o.read, a leg from the read on a tested kind (pricedLegs gives no other) stands as one with an id */
-  const readKept=c=>read&&c.src==='dkline'&&!isGameLeg(c)&&!!c.espn&&!!c.espn.tested&&!!c.espn.listed;
-  const pref=[], thin=[], plGames=new Set(), plNoId=new Set(), fm={}; let far=0, farDk=0, noId=0, noIdPl=0, moved=0, movedPl=0, kept=0;
+  const pref=[], thin=[], plGames=new Set(), plNoId=new Set(), fm={}; let far=0, farDk=0, noId=0, noIdPl=0, moved=0, movedPl=0;
   for(const c of pricedLegs(games)){
-    const id=hasId(c)||readKept(c);
+    const id=hasId(c);
     if(!isGameLeg(c)) (id?plGames:plNoId).add(c.gid);
     if(!pbAllows(c,u)||!(c.src==='real'||c.src==='dkline')||!isFinite(c.price)||c.price===0||!(c.p>=PB_PMIN&&c.p<PB_PMAX)||edge(c)<0) continue;
     /* until the Elo files are in, no player leg qualifies at all, as before */
@@ -2138,7 +2134,6 @@ function pbLegs(games,u,o){
     /* no DraftKings id at its line: it cannot go on the slip, so it is not suggested (a leg far off
        the market is counted as that, above, as before) */
     if(!id){ const pl=!isGameLeg(c); noId++; if(pl) noIdPl++; if(dkAtAnother(c)){ moved++; if(pl) movedPl++; } continue; }
-    if(!hasId(c)) kept++;
     if(edge(c)>=PB_EDGE&&formAgrees(c)) pref.push({...c,thin:false}); else thin.push({...c,thin:true});
   }
   /* the totals, with Game total ticked: both sides of each ticked game's posted total on a real
@@ -2150,7 +2145,7 @@ function pbLegs(games,u,o){
     if(c&&pbAllows(c,u)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=PB_PMIN&&c.p<PB_PMAX){
       /* a total with no DraftKings id at its number is counted for the note too */
       if(hasId(c)) mkt.push({...c,thin:false,market:true}); else { noId++; if(dkAtAnother(c)) moved++; } } }
-  return {pref,thin,mkt,plGames:plGames.size,far,farDk,noId,noIdPl,moved,movedPl,kept,plNoId:[...plNoId].filter(id=>!plGames.has(id)).length};
+  return {pref,thin,mkt,plGames:plGames.size,far,farDk,noId,noIdPl,moved,movedPl,plNoId:[...plNoId].filter(id=>!plGames.has(id)).length};
 }
 /* the legs a level is searched from: each list cut to the likeliest and best-paying (opt.cap, 40 for the
    panel), so the search stays quick */
@@ -2663,9 +2658,9 @@ function pbTierCard(t,o){
 window.pbTierCard=pbTierCard;
 /* ---------- the Parlay Builder's Top lines (app v111; 50 since app v113, 30 since app v116) ----------
    Every leg on the reader's ticks that qualifies as a suggestion's leg does (pbLegs: a real price, or a
-   tested DraftKings line read by Refresh odds; DraftKings' id at its line where the payload carries ids,
-   except (app v115, pbLegs' read option) a player's line from the read, which has none, marked by pbTopSlip;
-   the 45-97% band at or above the book's implied chance, preferred with the
+   tested DraftKings line read by Refresh odds on a payload baked before ids; DraftKings' id at its line
+   where the payload carries ids, a line from the read included (app v119: from app v115 the list kept one
+   with no id); the 45-97% band at or above the book's implied chance, preferred with the
    3-point edge and market + form, thin without; the far-off guard; V6, in pricedLegs; and, with Game total
    ticked, both sides of each ticked game's total at the book's own chance), in two parts: every preferred
    leg first, the Value picks (pbIsValue), then the other lines, every thin-edge leg (one that missed the
@@ -2683,11 +2678,11 @@ const PB_TOP_N=30;
 let PB_TOP_CACHE=new Map();
 function pbTopBuild(){
   const u=pbUi(), all=pbGames(), games=all.filter(g=>!u.off.includes(g.id)), kinds=PB_KINDS.map(([k])=>k).filter(k=>u.k[k]);
-  const out={games:all.length,ticked:games.length,kinds:kinds.length,rows:[],pref:0,thin:0,mkt:0,far:0,farDk:0,noId:0,noIdPl:0,moved:0,movedPl:0,kept:0,plNoId:0,noPlayerPrices:false,espnRead:false};
+  const out={games:all.length,ticked:games.length,kinds:kinds.length,rows:[],pref:0,thin:0,mkt:0,far:0,farDk:0,noId:0,noIdPl:0,moved:0,movedPl:0,plNoId:0,noPlayerPrices:false,espnRead:false};
   if(!all.length||!kinds.length||!games.length) return out;
-  const r=pbLegs(games,u,{read:true}), fm={};
+  const r=pbLegs(games,u), fm={};
   out.pref=r.pref.length; out.thin=r.thin.length; out.mkt=r.mkt.length; out.far=r.far; out.farDk=r.farDk||0;
-  out.noId=r.noId||0; out.noIdPl=r.noIdPl||0; out.moved=r.moved||0; out.movedPl=r.movedPl||0; out.kept=r.kept||0; out.plNoId=r.plNoId||0;
+  out.noId=r.noId||0; out.noIdPl=r.noIdPl||0; out.moved=r.moved||0; out.movedPl=r.movedPl||0; out.plNoId=r.plNoId||0;
   out.noPlayerPrices=!!(u.k.over||u.k.under)&&!r.plGames;
   out.espnRead=games.some(g=>ESPN_OUT[g.id]&&(ESPN_OUT[g.id].st==='ok'||ESPN_OUT[g.id].st==='none'));
   const rank=list=>list.map(l=>{ const dec=mlToDec(l.price); return dec>1?{...l,dec,win:dec-1,ev:l.p*dec-1,fc:legFair(l,fm)}:null; })
@@ -2723,25 +2718,12 @@ function pbTopWhy(r,u){
   return `No line on your picks qualifies yet${r.noId?' that DraftKings’ betslip can take':''}: tick more games or bet types.`;
 }
 const pbMoney1=v=>(v<-0.0005?'−':'+')+'$'+Math.abs(v).toFixed(2);
-/* (app v115) a row whose leg is priced from DraftKings' line read by Refresh odds and has no DraftKings id at its
-   own number, where the payload carries ids: one quiet line saying why and what DraftKings' slip does with it, read
-   from the parlay card's own plan for the leg (dkSlipRows, as the builder's rows read it). A main line the pull read
-   at another number has moved since DraftKings' prices were pulled, and the card puts on the slip the id the pull
-   read at the old number; any other leg (a touchdown, a rung, a main line the pull had no price for) has no id at
-   its line. Without the card (the prop model's own page) the cause alone */
-function pbTopSlip(l){
-  if(!l||l.src!=='dkline'||isGameLeg(l)||!dkCarries(l)||dkIdOf(l)) return '';
-  const M=l.main?marketLine(l.week,l.pid,l.stat):null, moved=!!M&&isFinite(+M.line)&&+M.line!==+l.k;
-  const x=(dkSlipRows([l],[{ml:l.price,src:'dkline'}])||[])[0];
-  const tail=!x?'':!x.id?': add it on DraftKings by hand':moved&&x.now!=null&&+x.now===+M.line?`: the slip link has the old line, ${+x.now}`:`: the slip link has ${x.swap||'it'} instead`;
-  return `<small class="pb-tslip" data-pb-slip="${moved?'moved':'none'}">${esc((moved?'Moved since DraftKings’ prices were pulled':'No DraftKings id at this line')+tail)}</small>`;
-}
 function pbTopRow(l,i){
   const g=(S.sched||[]).find(x=>x.id===l.gid), pc=v=>(v*100).toFixed(0)+'%';
   const est=l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:'';
   const mark=pbValMark(l);
   return `<li class="pb-trow" data-pb-row="${i+1}" data-pb-grp="${pbIsValue(l)?'value':'other'}"><span class="pb-trk">${i+1}</span>
-    <span class="nm">${glanceName(l)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}${pbTopSlip(l)}</span>
+    <span class="nm">${glanceName(l)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}</span>
     <span class="pb-tcs"><span class="pb-tc"><b>${fmtML(l.price)}${est}</b><small>price</small></span><span class="pb-tc"><b data-pb-model="${l.p}">${pc(l.p)}</b><small>model</small></span><span class="pb-tc"><b${l.fc?` data-pb-fair="${l.fc.p}"`:''}>${l.fc?pc(l.fc.p):'–'}</b><small>${l.fc?(l.fc.est?'fair, est.':'fair'):'no fair'}</small></span><span class="pb-tc"><b data-pb-win="${l.win}">${pbMoney1(l.win)}</b><small>wins on $1</small></span><span class="pb-tc"><b data-pb-ev="${l.ev}">${pbMoney1(l.ev)}</b><small>expected on $1</small></span></span>
     ${pbLegAddBtn(l)}</li>`;
 }

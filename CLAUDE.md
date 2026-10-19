@@ -566,6 +566,15 @@ line, while no level, set or Elo pick holds one; a plant of the pull at another 
 marked moved with "the slip link has the old line", the old number offered nowhere; without the parlay card the cause
 alone; and both kinds met (`SLIP_SEEN`).
 
+**Reversed in app v119: the Top lines take only lines with an id** (`patch_top_id_only.py`, the owner's call of 19
+October 2026: "why am i still seeing No DraftKings id at this line. i dont want to include those in the parlay builder,
+only ones i can add via id"). The paragraph above is history: `pbTopBuild` calls `pbLegs(games,u)` with no read option
+(the option, its `kept` count and `pbTopSlip`'s line are gone), so wherever the payload carries ids the Top 30 lines
+take a line only with DraftKings' id at its own number, as every set, level, hand and Elo pick does, and a line a press
+found moved is counted with the others left out for want of an id. On a payload baked before ids the read's lines are
+listed as always. The audit (`dkTopOk` is `dkOk`; M14 now holds the moved lines left out) and the nflbets smoke
+(`holdTop` fails any row carrying `data-pb-slip`) hold it.
+
 Once the audit is clean, `weekly.py` runs the **suggestions record**, `node suggest_ledger.js` (the third change
 after the review of Sunday 11 October 2026, the owner's call; since app v111 the record of Suggested Parlays, the
 owner's call of 16 October 2026: "do similar tracking/grading as ELO tracking"): each prime-time game's four levels

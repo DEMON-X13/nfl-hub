@@ -130,23 +130,13 @@ setTimeout(async()=>{
     if(l.stat==='any_td') return (l.k==null?1:+l.k)>=2&&str(E[l.pid+'|any_td']);
     const near=l.stat==='ats'?l.pid+'|ats|':l.stat==='total'?'game|total|'+l.side+'|':[l.pid,l.stat,l.main?l.side:'over',''].join('|');
     return Object.keys(E).some(k=>k.startsWith(near)&&k.length>near.length&&isFinite(+k.slice(near.length))&&str(E[k])); };
-  /* (app v115) the Top 50 lines alone keep a player's leg priced from DraftKings' line read by Refresh odds on a kind
-     the estimate has been checked on, whether or not DraftKings has an id at its number (the owner, 18 October 2026:
-     "any idea why the player props are not showing up in the top 50 anymore? :/": a press on a Sunday finds most of
-     the lines the Saturday pull read moved, and ESPN gives no id for a player's line). Worked here on the audit's own
-     reading of the read (espn_rule.js: a tested kind DraftKings lists, at the rule's own price, with no paid price on
-     file for that line), never the page's espn flags. Everything that builds a parlay (a level, a set, a game page's
-     hands, the Elo picks) still takes only a leg dkOk passes */
+  /* (app v119, the owner's call of 19 October 2026: "i dont want to include those in the parlay builder, only ones i can
+     add via id") the Top lines take a leg only as every suggestion does, with DraftKings' id at its line where the
+     payload carries ids (dkOk); from app v115 they kept a player's line from a Refresh odds read with none.
+     readTopAud is the audit's own reading of such a leg (a tested kind DraftKings lists, at the rule's own price, with
+     no paid price on file for that line), for M14, which holds that the list now leaves it out */
   const readTopAud=l=>!!l&&l.src==='dkline'&&!F('isGameLeg')(l)&&(()=>{ const x=ESR.price(l); return ESR.takeable(x)&&x.price===l.price&&!ESR.real(l); })();
-  const dkTopOk=l=>dkOk(l)||readTopAud(l);
-  /* the line such a row carries where the payload carries ids and DraftKings has none at its number: 'moved' where the
-     paid pull read that main line of his at another number (PAY.mkt), 'none' for any other (a touchdown, a rung, a main
-     line the pull had no price for); null where the row needs none */
-  const slipAud=l=>{ if(!readTopAud(l)||dkOk(l)) return null; if(!l.main) return 'none';
-    const L=((((F('PAY').mkt||{})[String(l.week)]||{})[l.pid])||{})[l.stat]; return L&&isFinite(+L.line)&&+L.line!==+l.k?'moved':'none'; };
-  /* its words on the prop model's own page, which has no parlay card to say what the slip does with it (the hub's
-     are the nflbets smoke's, held to the card's own plan) */
-  const SLIP_AUD={moved:'Moved since DraftKings’ prices were pulled',none:'No DraftKings id at this line'};
+  const dkTopOk=l=>dkOk(l);
   /* a made-up id table standing in for the paid pull's, put in place of PAY.dk wholesale (rule (c)): an id
      for every line of the week with a real price on file, as the pull reads one with each price it buys
      (both money lines, each side's spread at its own number, the total's over and under, a player's main
@@ -812,8 +802,8 @@ setTimeout(async()=>{
        qualAud   the legs a suggestion may take on the ticks: a real price (or one from DraftKings' line read
                  by Refresh odds), 45-97%, at or above the price's implied chance, a player leg only once the
                  Elo files are in, none far off the market, DraftKings' id at its line where the payload
-                 carries ids (dkOk; for the Top 50 alone, top, a player's leg from the read on a tested
-                 kind with or without one, readTopAud: app v115), preferred over the 3-point edge with
+                 carries ids (dkOk; the Top lines too since app v119, which from app v115 kept a player's
+                 leg from the read with none), preferred over the 3-point edge with
                  market + form agreeing and thin below it, and with Game total ticked each total at the
                  book's own chance, its own list
        topAud    the Top 50 lines from qualAud (app v112): the preferred legs first, the Value picks, then
@@ -928,14 +918,14 @@ setTimeout(async()=>{
   const kindAud=l=>l.stat==='ml'||l.stat==='ats'||l.stat==='total'?l.stat:(l.side==='under'?'under':'over');
   const agreesAud=c=>{ if(typeof w.eloAltP!=='function'||c.grp==='TEAM') return true; if(typeof w.eloLoaded==='function'&&!w.eloLoaded()) return false;
     const a=w.eloAltP(c.pid,c.side,c.price,c.src,c.stat); return a!=null&&a-F('mlProb')(c.price)>=0.03; };
-  /* top: the Top 50 lines' own pool (app v115), which keeps a leg from the read with no id (readTopAud; kept counts them) */
-  const qualAud=(games,u,top)=>{ const mlP=F('mlProb'), out={pref:[],thin:[],mkt:[],far:0,noId:0,kept:0}, formOut=typeof w.eloLoaded==='function'&&!w.eloLoaded();
+  /* top: the Top lines' own pool, the same rule since app v119 (from app v115 it kept a leg from the read with no id) */
+  const qualAud=(games,u,top)=>{ const mlP=F('mlProb'), out={pref:[],thin:[],mkt:[],far:0,noId:0}, formOut=typeof w.eloLoaded==='function'&&!w.eloLoaded();
     const allow=l=>!!u.k[kindAud(l)]&&!u.off.includes(l.gid);
     for(const c of F('pricedLegs')(games)){
       if(!allow(c)||!(c.src==='real'||c.src==='dkline')||!isFinite(c.price)||c.price===0||!(c.p>=0.45&&c.p<0.97)||c.p-mlP(c.price)<0) continue;
       if(c.grp!=='TEAM'&&formOut) continue;
       if(FAIRAUD.isFar(c)){ out.far++; continue; }
-      if(!dkOk(c)){ if(!(top&&readTopAud(c))){ out.noId++; continue; } out.kept++; }
+      if(!dkOk(c)){ out.noId++; continue; }
       (c.p-mlP(c.price)>=0.03&&agreesAud(c)?out.pref:out.thin).push({...c,thin:!(c.p-mlP(c.price)>=0.03&&agreesAud(c))}); }
     if(u.k.total) for(const g of games) for(const side of ['over','under']){ const c=F('totalLeg')(g,side);
       if(c&&allow(c)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97){ if(dkOk(c)) out.mkt.push({...c,thin:false,market:true}); else out.noId++; } }
@@ -1004,9 +994,8 @@ setTimeout(async()=>{
      between (it reads the record again for any unit at or past its lock it had not seen there) would read the stub's
      record over a planted one, at a moment that turns on how fast the run is */
   try{ w.eval('if(typeof pbWatch==="function"&&pbWatch.on){ clearInterval(pbWatch.on); }'); }catch(e){}
-  /* the Top 50 lines' check (holdTop, below), for the checks after M that hold the list too (M8 after its press, M14),
-     and how many rows it found carrying the line on a missing DraftKings id, by kind (app v115) */
-  let holdTopF=null; const topSlip={moved:0,none:0};
+  /* the Top lines' check (holdTop, below), for the checks after M that hold the list too (M8 after its press, M14) */
+  let holdTopF=null;
   { const tab=d.getElementById('tab-parlay'), panel=d.getElementById('pbPanel'), stab=d.getElementById('tab-suggest');
     d.querySelector('#tabs button[data-tab="parlay"]').click();
     /* (app v116, the owner, 18 October 2026: "that 5 leg parlay section can we move it up to the top of the page?") the
@@ -1133,14 +1122,8 @@ setTimeout(async()=>{
         { const vm=[...row.querySelectorAll('.pb-valmark')], val=want[i].grp==='value';
           W.wording((val?vm.length===1&&vm[0].textContent==='Value':!vm.length)&&!row.querySelector('.pb-thinmark')&&!/thin edge|no edge/i.test(tx)&&(!f||/fair/.test(tx)),`${lab}: Top 30 row ${i+1} (${l.name} ${l.label}) is not marked ${val?'Value, and that alone':'with no mark at all'}: "${tx.slice(0,160)}"`); }
         chk(legAddOk(q('[data-pb-leg]'),l),`${lab}: Top 30 row ${i+1} has no Add of its own on ${l.name} ${l.label}, named for it and pressed only while it is in the builder: ${q('[data-pb-leg]')?q('[data-pb-leg]').outerHTML.slice(0,240):'none'}`);
-        /* (app v115) a row on a player's line from a Refresh odds read with no DraftKings id at its number (where the
-           payload carries ids) carries one quiet line saying why, 'moved' where the paid pull read that main line at
-           another number (slipAud, the audit's own reading), and no other row carries one: blocking, since the leg
-           goes on DraftKings' slip otherwise than the row draws it; its words, the cause alone on this page (W.wording) */
-        { const sl=[...row.querySelectorAll('[data-pb-slip]')], want1=slipAud(l);
-          chk(want1?(sl.length===1&&sl[0].dataset.pbSlip===want1):!sl.length,`${lab}: Top 30 row ${i+1} (${l.name} ${l.label}, ${l.src}) ${want1?`has no DraftKings id at its number and does not carry one line saying so (${want1})`:'carries a line saying it has no DraftKings id at its number'}: ${sl.map(x=>x.dataset.pbSlip+' "'+x.textContent+'"').join(', ')||'none'}`);
-          if(want1&&sl.length===1) W.wording(sl[0].textContent===SLIP_AUD[want1],`${lab}: Top 30 row ${i+1}'s line on its missing DraftKings id reads "${sl[0].textContent}", not "${SLIP_AUD[want1]}"`);
-          if(want1) topSlip[want1]++; } });
+        /* (app v119) no row carries the line app v115 drew on a missing DraftKings id: no row lacks one (dkTopOk, above) */
+        chk(!row.querySelector('[data-pb-slip], .pb-tslip'),`${lab}: Top 30 row ${i+1} (${l.name} ${l.label}, ${l.src}) carries a line on a missing DraftKings id, which app v119 took off`); });
       { const tx=P.textContent.replace(/\s+/g,' '), nt=tx.includes(`Game totals are never Value picks: each is priced at the book’s own chance, so the totals come last among the other lines, and on a long list the ${TOP_N_AUD} lines can end before them.`);
         W.wording(nt===!!u.k.total,`${lab}: ${u.k.total?'Game total is ticked and the list does not say a total is never a Value pick':'Game total is not ticked and the list still speaks of totals'}`);
         W.wording(!/thin edge|no edge|thin-edge/i.test(tx),`${lab}: the Parlay Builder still speaks of a thin edge or no edge, the tags app v112 took off`);
@@ -4823,7 +4806,7 @@ setTimeout(async()=>{
               const T=F('gameTiers')(g); for(const id of ['high','med','low']) if(T[id]) for(const l of T[id].legs){ n++; chk(pickOk(l,true)&&farOk(l)&&dkOk(l),bad(`${g.id}'s ${id} hand`,l)+farTxt(l)+idTxt(l)); } }
             /* (app v111) the Top 50 lines and each prime-time set the games make, under the same rules as a level */
             w.eval('PB_TOP_CACHE=new Map()');
-            /* (app v115) the Top 50 alone may hold a player's line from the read with no id (readTopAud, the audit's own reading) */
+            /* (app v119) the Top lines too: every leg with its id where the payload carries them */
             for(const l of F('getPbTop')().rows){ n++; chk(pickOk(l,false)&&dkTopOk(l),bad('the Top 30 lines',l)+(dkTopOk(l)?'':idTxt(l))); }
             /* (app v118) and the Sunday slot, where any of its games is one of these */
             const SLp=slotNowAud(), suP=SLp&&SLp.games.some(g=>gs.some(x=>x.id===g.id))?F('spUnit')(SLp.id):null;
@@ -4896,11 +4879,9 @@ setTimeout(async()=>{
                 const {n,r}=holdPicks(`a press${nl}, ${m==='g0'?'players only on '+g0.id:m}`,m==='g0'?[g0]:games); nPick+=n; if(m!=='players') nPick+=holdMarks(`a press${nl}, ${m}`,r);
                 if(m==='g0'&&!dkCarried()) W.coverage(r.tiers.some(t=>t.legs&&t.legs.some(l=>l.src==='dkline')),`with the press's read on ${g0.id} alone, no level holds a leg priced from it: ${r.tiers.map(t=>t.why||t.legs.map(l=>l.src).join('+')).join(' / ')}`);
                 /* (app v115) with ids carried, a level and a set take no leg priced from the press's read (it has no DraftKings id),
-                   and the Top 50 lines are the audit's own (holdTop: a player's line from the read kept, with its line on the
-                   missing id), the press having moved some line of g0's the list keeps, where the feed did */
+                   and the Top lines are the audit's own (holdTop: since app v119 every row with its id) */
                 if(m==='g0'&&dkCarried()) chk(r.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline'))&&(r.sets||[]).every(({s:x})=>x.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline'))),`with ids carried, a level or a set takes a leg priced from the press's read, which has no DraftKings id`);
-                if(holdTopF){ const s0=topSlip.moved; holdTopF(`a press${nl}, ${m==='g0'?'players only on '+g0.id:m}`);
-                  if(m==='g0'&&dkCarried()) W.coverage(topSlip.moved>s0,`the press's read on ${g0.id} moved no main line the Top 30 lines keep, so the list's line on a moved line went untested on the week (M14 holds it on a made-up game)`); } } }
+                if(holdTopF) holdTopF(`a press${nl}, ${m==='g0'?'players only on '+g0.id:m}`); } }
             finally{ if(pass==='none') dkSet(dkP); S.ui.pb=JSON.parse(keepU); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()'); F('renderPb')(); } }
           nTog+=holdToggle(g0,'a press');
           /* a game's page reads that game alone; the backup's touchdown 2 hours out (his club's lines
@@ -5003,8 +4984,9 @@ setTimeout(async()=>{
      moved; each line the read has at another number is priced there by the formula (src dkline, est.), and ESPN gives
      no DraftKings id for a player's line, so until app v115 the Top 50 lines left every one of them out wherever the
      payload carries ids (on 18 October's payload, a press moving every priced line half a point took the list from 43
-     player lines to 7). Since app v115 the Top 50 alone keeps them (readTopAud, the audit's own reading); everything
-     that builds a parlay stays slip-only. On a Monday night game of two made-up clubs with four made-up players (rule
+     player lines to 7). From app v115 the Top lines alone kept them; since app v119 (the owner's call of 19 October
+     2026: "i dont want to include those in the parlay builder, only ones i can add via id") they leave them out again,
+     as everything that builds a parlay does. On a Monday night game of two made-up clubs with four made-up players (rule
      (c): on the schedule for the run, pbGames stood in, the players in S.players, the paid pull's main lines in PAY.mkt
      and a made-up id table for them in place of PAY.dk, the players' ESPN ids in place of PAY.espn_ids, the read
      answered by a fetch stub of the audit's own, and the page's ESPN state and its kept key put back, all on every path,
@@ -5016,13 +4998,13 @@ setTimeout(async()=>{
      ladder listed. Held:
        - before the press, and after a press whose read is the pull's own lines, the list is the pull's lines alone, the
          same rows at the same prices with their ids
-       - after the press, the list is the audit's own (holdTop: topAud and every row's line on a missing id); every
-         moved tested line on it at the read's number, never the pull's old one, at the rule's price (espn_rule.js), est.,
-         marked moved, at least one of them and one line from the read the pull had no price for (marked none), so the
-         case can tell; no completions line anywhere; the unmoved receptions at the pull's price with its id and no line
+       - after the press, the list is the audit's own (holdTop: topAud, no row with a line on a missing id); no leg on it
+         without its DraftKings id, the moved lines neither at the read's number nor at the pull's old one, while the
+         read gives moved tested lines and lines the pull had no price for that qualify but for the id (readTopAud), so
+         the case can tell; no completions line anywhere; the unmoved receptions at the pull's price with its id
        - slip-only: no leg from the read with no id in a level (getPbTiers), the game's set (spSet), a hand's pool or a
          hand (gameLegPool, gameTiers)
-       - the counts: the page's left out for want of an id and kept without one the audit's own, none at another number
+       - the counts: the page's left out for want of an id the audit's own, and more than none
        - with no ids carried (PAY.dk taken away: a payload baked before them), the read's legs on the list as before, no
          row with the line
      Blocking (made-up data, rule (c)); the line's words W.wording, on holdTop */
@@ -5094,22 +5076,20 @@ setTimeout(async()=>{
       chk(read&&nReq14>=4,`the made-up game's press was not read (${nReq14} requests to the stub)`);
       allOn(); const r1=F('getPbTop')(), top=r1.rows, q=qualAud([GM],F('pbUi')(),true);
       if(holdTopF) holdTopF('a made-up game after a press that moves its lines');
-      const isMoved=l=>!!l.main&&MOVED[l.pid]&&MOVED[l.pid][l.stat]!=null, mv=top.filter(isMoved);
-      chk(mv.length>0&&mv.every(l=>l.src==='dkline'&&+l.k===MOVED[l.pid][l.stat]&&!!ESR.price(l)&&ESR.price(l).price===l.price&&!ESR.real(l)&&slipAud(l)==='moved'),
-        `after a press that moves them, the made-up game's moved tested lines are not on the Top 30 lines at the read's number at the rule's price, est., marked moved: ${mv.map(l=>`${l.name} ${l.label} ${l.price} ${l.src} (${slipAud(l)})`).join(', ')||'none on the list'}`);
+      const isMoved=l=>!!l.main&&MOVED[l.pid]&&MOVED[l.pid][l.stat]!=null, readL=F('pricedLegs')([GM]).filter(l=>readTopAud(l)&&!dkOk(l));
+      chk(top.every(l=>dkOk(l)),`after the press, the made-up game's Top 30 lines hold a line with no DraftKings id at its number (app v119 takes only lines the slip can take by id): ${top.filter(l=>!dkOk(l)).map(l=>`${l.name} ${l.label} ${l.price} ${l.src}`).join(', ')}`);
+      chk(readL.some(isMoved)&&readL.some(l=>!isMoved(l)),`after the press, the read gives no moved tested line or no line the pull had no price for, so the case cannot tell: ${readL.map(l=>l.label+' '+l.src).join(', ')||'none'}`);
       chk(!top.some(l=>isMoved(l)&&+l.k===PULL[l.pid][l.stat]),`after the press, the Top 30 lines still offer a moved line at the pull's old number: ${top.filter(l=>isMoved(l)&&+l.k===PULL[l.pid][l.stat]).map(l=>l.name+' '+l.label).join(', ')}`);
-      chk(top.some(l=>slipAud(l)==='none'),`after the press, no line from the read the pull had no price for (a touchdown, a rung, the second receiver's receiving yards) is on the Top 30 lines with its line, so the case cannot tell: ${top.map(l=>l.label+' '+l.src).join(', ')}`);
       chk(![...F('pricedLegs')([GM]),...top].some(l=>l.stat==='completions'),'after the press, a completions line (an untested kind) is priced for the suggestions or on the Top 30 lines');
-      chk(top.some(l=>l.pid==='aud-v14'&&l.stat==='receptions'&&l.main&&l.src==='real'&&+l.k===STILL&&!!dkIdAud(l)&&slipAud(l)==null),`after the press, the receptions line the read left where the pull had it is not on the Top 30 lines at the pull's price with its id and no line: ${top.filter(l=>l.pid==='aud-v14').map(l=>l.label+' '+l.src).join(', ')||'none of his'}`);
-      chk(r1.noId===q.noId&&(r1.kept||0)===q.kept&&q.kept>0&&!r1.moved,`after the press, the made-up game's Top 30 lines count ${r1.noId} left out for want of a DraftKings id, ${r1.kept} kept without one and ${r1.moved} at another number, where the audit's own are ${q.noId}, ${q.kept} and 0`);
-      F('renderPb')(); W.wording(!/only at another number/.test(d.getElementById('pbPanel').textContent),'after the press, the made-up game\'s Top 30 lines still say lines are left out for DraftKings having them only at another number');
+      chk(top.some(l=>l.pid==='aud-v14'&&l.stat==='receptions'&&l.main&&l.src==='real'&&+l.k===STILL&&!!dkIdAud(l)),`after the press, the receptions line the read left where the pull had it is not on the Top 30 lines at the pull's price with its id: ${top.filter(l=>l.pid==='aud-v14').map(l=>l.label+' '+l.src).join(', ')||'none of his'}`);
+      chk(r1.noId===q.noId&&q.noId>0,`after the press, the made-up game's Top 30 lines count ${r1.noId} left out for want of a DraftKings id, where the audit's own are ${q.noId} (and must be more than none)`);
       /* slip-only: everything that builds a parlay */
       { const bad=[]; const noId=(where,legs)=>{ for(const l of legs||[]) if(!dkOk(l)) bad.push(`${l.name} ${l.label} (${l.src}) in ${where}`); };
         for(const t of F('getPbTiers')().tiers) noId(`the ${t.id} level`,t.legs);
         const s=F('spSet')(GM.id); for(const t of (s?s.tiers:[])) noId(`the set's ${t.id}`,t&&t.legs);
         noId('the hands\' pool',F('gameLegPool')(GM)); const H=F('gameTiers')(GM); for(const id of ['high','med','low']) if(H&&H[id]) noId(`the ${id} hand`,H[id].legs);
         chk(!bad.length&&!!s,`after the press, a leg from the read with no DraftKings id goes into something that builds a parlay${s?'':' (or the made-up Monday night game has no set)'}: ${bad.slice(0,5).join('; ')}`); }
-      said14.push(`${top0.length} lines before the press and the same after one that moved nothing; after one that moved them, ${top.length} lines, ${mv.length} moved tested lines at the read's number marked moved, ${top.filter(l=>slipAud(l)==='none').length} from the read the pull had no price for marked none, no completions line, the unmoved line with its id; none in a level, the set or a hand`);
+      said14.push(`${top0.length} lines before the press and the same after one that moved nothing; after one that moved them, ${top.length} lines, all with ids, ${readL.length} lines from the read with no id left out, no completions line, the unmoved line with its id; none in a level, the set or a hand`);
       /* with no ids carried: the read's legs on the list as before, with no line */
       dkSet(undefined); allOn(); const topN=F('getPbTop')().rows;
       chk(topN.some(l=>l.src==='dkline'),'with no DraftKings ids carried, the made-up game\'s Top 30 lines take no leg from the read, as they did before ids');
