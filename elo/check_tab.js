@@ -279,10 +279,12 @@ function page(MU, opts) {
     /* the record on calls made before kickoff, the ones on the Joker's baseline apart from the Elo-alone
        ones before them (elo/build.py, THE JOKER BASELINE), each worked out here from the record */
     const barWant = r => {
-      const pub = r.published || [0, 0], jb = r.joker_base, jf = r.joker_base_from_week;
-      if (!(jb && jf != null)) return pub[0] + pub[1] > 0 ? [`${pub[0]}–${pub[1]} called before kickoff`] : [];
-      const out = [jb[0] + jb[1] ? `${jb[0]}–${jb[1]} on the Joker (from week ${jf})` : `on the Joker from week ${jf}, none graded yet`];
-      if (pub[0] - jb[0] + pub[1] - jb[1] > 0) out.push(`${pub[0] - jb[0]}–${pub[1] - jb[1]} on Elo alone before it`);
+      const pub = r.published || [0, 0], jb = r.joker_base, jf = r.joker_base_from_week, rp = r.repicked, rw = r.repicked_was;
+      const out = [], onJ = !!(jb && jf != null), re = !!(rp && rw && rp[0] + rp[1] > 0);
+      if (re) out.push(`${rp[0]}–${rp[1]} re-picked on the Joker after the games (${rw[0]}–${rw[1]} as first picked)`);
+      if (onJ) out.push(jb[0] + jb[1] ? `${jb[0]}–${jb[1]} picked on the Joker before kickoff (from week ${jf})` : `on the Joker before kickoff from week ${jf}, none graded yet`);
+      const eloPub = onJ ? [pub[0] - jb[0], pub[1] - jb[1]] : pub;
+      if (eloPub[0] + eloPub[1] > 0) out.push(`${eloPub[0]}–${eloPub[1]} ${onJ ? 'on Elo alone' : 'called before kickoff'}`);
       return out;
     };
     const bar = txt(d.getElementById('peCallRec'));
@@ -299,11 +301,18 @@ function page(MU, opts) {
     void w; }
   /* the same bar on a copy of the record with calls on the Joker graded: the two parts and the backtest */
   { const had = JSON.stringify(M.record || {});
-    M.record = Object.assign({}, M.record, { published: [40, 30], joker_base: [5, 2], joker_base_from_week: 7, backtest: [20, 13] });
-    const { d } = page(MU0); await wait(60);
-    const bar = txt(d.getElementById('peCallRec'));
-    chk(bar === `ELO Model ${M.record.season}: 5–2 on the Joker (from week 7), 35–28 on Elo alone before it, 20–13 backtest`,
-      'the bar does not split a record with calls on the Joker graded: ' + bar);
+    M.record = Object.assign({}, M.record, { published: [40, 30], joker_base: [5, 2], joker_base_from_week: 7, backtest: [20, 13], repicked: [0, 0], repicked_was: [0, 0] });
+    { const { d } = page(MU0); await wait(60);
+      const bar = txt(d.getElementById('peCallRec'));
+      chk(bar === `ELO Model ${M.record.season}: 5–2 picked on the Joker before kickoff (from week 7), 35–28 on Elo alone, 20–13 backtest`,
+        'the bar does not split a record with calls on the Joker graded: ' + bar); }
+    /* every game before the baseline re-picked on it: 60-31 re-picked (50-41 as first), 3 backtests that were not re-picks */
+    M.record = Object.assign({}, M.record, { published: [4, 1], joker_base: [4, 1], joker_base_from_week: 7, backtest: [62, 32], repicked: [60, 31], repicked_was: [50, 41] });
+    { const { d } = page(MU0); await wait(60);
+      const cr = d.getElementById('peCallRec'), bar = txt(cr);
+      chk(bar === `ELO Model ${M.record.season}: 60–31 re-picked on the Joker after the games (50–41 as first picked), 4–1 picked on the Joker before kickoff (from week 7), 2–1 backtest`
+        && /re-picked the same way after they were played/.test(cr.title) && /they went 50–41/.test(cr.title),
+        'the bar does not give the re-picked games apart, with their first picks: ' + bar + ' / ' + cr.title); }
     M.record = JSON.parse(had); }
   /* a questionable player stays ranked, with a Q (checked with the top quarterback made
      questionable in this copy of the file only) */

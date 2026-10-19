@@ -55,6 +55,15 @@ all pass. What each one would have caught is said beside it.
              lowers it, the Joker's 0% and 100% are held within 1% and 99%, and with no Joker call
              the call is the game model's own. (A call that silently fell back to Elo alone where
              the Joker had a call, or stood on another chance than the Joker's, would publish green.)
+             The re-picks (the owner's call of 19 October 2026: the season's games played before the
+             first build on the Joker re-picked on it after they were played): an entry carrying
+             `was` is a backtest on the Joker of a game that kicked off before build.JOKER_FROM, on
+             the Joker's call as frozen at kickoff, its `was` the call the last publish had for it
+             (pick, chance, time and src: RECORD lets that one change through, and holds the re-pick
+             and its `was` as they stand on every run after) and the one held to elo/history/; every
+             game of the season played before JOKER_FROM that the Joker called is re-picked; each
+             graded call's `was` is the ledger's; and the record's `repicked` and `repicked_was` count
+             the graded re-picks and their first calls.
   SOURCES    the season's injury report, roster and play-by-play are present, and the play-by-play
              of the season before the units' (which they carry in); no group is empty.
   GAMES      the game model's walk-forward counts, for every finished season, every final games.csv
@@ -1066,7 +1075,32 @@ def main():
         if e.get('base') == 'joker' and (not all(isinstance(e.get(k), (int, float)) for k in ('p_joker', 'p_elo', 'm'))
                                          or abs(own(e['p_joker'], e['m']) - e['p_home']) > 2e-4):
             bad.append(f'the ledger\'s {gid} is on the Joker but is not the rule\'s on its own numbers: {e}')
+    kick_j = dict(zip(games.game_id, games.kick))
+    # the re-picks: only a game that kicked off before the first build on the Joker, on the Joker's call as frozen
+    # at kickoff, a backtest, its first call in `was`; every such game of the season the Joker called is re-picked
+    for gid, e in ((L or {}).get('calls') or {}).items():
+        if not e.get('was'):
+            continue
+        if not (e.get('base') == 'joker' and e.get('src') == 'backtest' and gid in kick_j and kick_j[gid] < build.JOKER_FROM):
+            bad.append(f'{gid} is re-picked but is not a backtest on the Joker of a game played before {build.JOKER_FROM:%d %b %H:%M} UTC')
+        elif gid in joker and e.get('p_joker') != round(joker[gid], 4):
+            bad.append(f'{gid} is re-picked on the Joker at {e.get("p_joker")}, but the Joker\'s call is {joker[gid]}')
+        elif not all(k in e['was'] for k in ('pick', 'at', 'src')):
+            bad.append(f'{gid} is re-picked with no first call kept: {e["was"]}')
+    for c in (M.get('graded') or []):
+        gid = c['game_id']
+        e = ((L or {}).get('calls') or {}).get(gid) or {}
+        if gid in joker and gid in kick_j and kick_j[gid] < build.JOKER_FROM and int(gid[:4]) == season and e.get('base') != 'joker':
+            bad.append(f'{gid}, played before the first build on the Joker, is not re-picked on it')
+        if (c.get('was') or {}).get('pick') != (e.get('was') or {}).get('pick'):
+            bad.append(f'{gid} is graded with a first call of {c.get("was")} where the ledger has {e.get("was")}')
     chk(not bad, f'JOKER: {"; ".join(bad[:4])}{" ..." if len(bad) > 4 else ""}')
+    rg = [c for c in (M.get('graded') or []) if c.get('was') and c['correct'] is not None]
+    want_rp = [sum(1 for c in rg if c['correct']), sum(1 for c in rg if not c['correct'])]
+    want_rw = [sum(1 for c in rg if c['was']['correct']), sum(1 for c in rg if not c['was']['correct'])]
+    rec = M.get('record') or {}
+    chk(rec.get('repicked') == want_rp and rec.get('repicked_was') == want_rw,
+        f'JOKER: the record counts {rec.get("repicked")} re-picked ({rec.get("repicked_was")} as first picked), the graded calls {want_rp} ({want_rw})')
     ledger_calls = (L or {}).get('calls') or {}
     chk(all(c.get('base') == (ledger_calls.get(c['game_id']) or {}).get('base') for c in (M.get('graded') or [])),
         'JOKER: a graded call does not carry the ledger\'s base')
@@ -1227,7 +1261,15 @@ def main():
         if gid not in byid:
             continue
         cur = ledger.get(gid)
-        want = cur if in_time(gid, cur) and at(cur) > at(e) else e
+        # a game re-picked on the Joker's baseline keeps the call first made in `was`: that is the one held
+        # to the history here, and the record grades the re-pick (JOKER)
+        first = (cur or {}).get('was') or cur
+        want = first if in_time(gid, first) and at(first) > at(e) else e
+        if cur and cur.get('was'):
+            if first['pick'] != want['pick'] or first.get('src') != want['src']:
+                wrong.append(gid)
+                continue
+            want = cur
         if byid[gid]['pick'] != want['pick'] or byid[gid].get('src') != want['src']:
             wrong.append(gid)
     chk(not wrong, f'RECORD: graded other than as published (or as first called, for a backtest): {sorted(wrong)[:6]}{" ..." if len(wrong) > 6 else ""} of {len(wrong)}')
@@ -1243,7 +1285,12 @@ def main():
             if gid not in kick or int(gid[:4]) < keep_from or kick[gid] > built + lead:
                 continue
             cur = ledger.get(gid)
-            if cur is None or cur['pick'] != e['pick'] or cur.get('src') != e.get('src'):
+            if cur is not None and cur.get('was') and not e.get('was'):
+                # re-picked on the Joker this run: the call the last publish had is the one kept in `was`
+                if any(cur['was'].get(k) != e.get(k) for k in ('pick', 'p_home', 'at', 'src')):
+                    moved_calls.append(gid)
+                continue
+            if cur is None or cur['pick'] != e['pick'] or cur.get('src') != e.get('src') or cur.get('was') != e.get('was'):
                 moved_calls.append(gid)
         chk(not moved_calls, f'RECORD: calls the last publish had frozen were changed or dropped: {sorted(moved_calls)[:6]}{" ..." if len(moved_calls) > 6 else ""} of {len(moved_calls)}')
     elif L is not None:

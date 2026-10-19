@@ -998,8 +998,16 @@ beside it, in `next` and in the ledger, so the test can be read both ways; `reco
 on the Joker from `joker_base_from_week`, and the tab's bar draws them apart from the Elo-alone calls before them and
 gives the baseline's walk-forward (its title the Joker's and the game model's alone). `elo/check.py` (JOKER) works the
 rule out on its own on every coming call and ledger entry against `betting/state.json`, and `check_tab.js` holds the bar.
-The game model is unchanged (fitted, its walk-forward graded, read by the power ratings): never refit BETA on the season
-in play. Tiers are the betting app's Elo shields, lifted with
+The season's games played before the first build on the Joker (`JOKER_FROM`, 19 October 2026 15:20 UTC) were
+re-picked on it the same day, the owner's call ("i just dont see any changes in the ELO model pickem record and i wanted
+you to change it based on what it would have picked"): each called again once, after the game, on what was known before
+its kickoff (the Joker's call as frozen at kickoff, the game model fitted before the season on the pre-game ratings and
+lineups), marked a backtest, the call first made kept in `was` (ledger and graded call), so the Pick'em Record grades the
+re-pick: 62-29 where the first picks went 52-39 (`record.repicked`, `repicked_was`; the tab's bar names both). The gate
+allows exactly that change to a frozen call (JOKER and RECORD: a game kicked off before `JOKER_FROM`, on the Joker's
+frozen call, a backtest, its `was` the call the last publish had, every such game re-picked, and the re-pick held as it
+stands on every run after). The game model is unchanged (fitted, its walk-forward graded, read by the power ratings):
+never refit BETA on the season in play. Tiers are the betting app's Elo shields, lifted with
 its tag into the page and reshaped at build time by `betting/tools/tiers.js` (both builds apply it): Wood League under 1350,
 Iron, Bronze, Silver, Gold, Platinum, Diamond, Master, Elite (the app's Challenger tier, renamed while a Challenger
 model stood on the Pick'em Record, and kept) from 1700, and HOF from 1750, worn as a gem. The tab is the rankings card: a bell-curve

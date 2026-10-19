@@ -361,8 +361,9 @@ elo/
                                  projections, each club's expected lineup and who is out of it
   data/calls.json                generated: the ledger of the ELO Model's calls as published
                                  before each kickoff (on the Joker's baseline from 19 October
-                                 2026, each with its `p_joker`, `p_elo` and `m`); the record
-                                 grades these
+                                 2026, each with its `p_joker`, `p_elo` and `m`; the season's
+                                 games before that re-picked on it as backtests, the call first
+                                 made kept in `was`); the record grades these
   requirements.txt               pandas, numpy, tzdata, pinned
 
 news/
