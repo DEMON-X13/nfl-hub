@@ -2819,7 +2819,7 @@
   },
   "SF": {
    "kick": "2026-10-20T00:15Z",
-   "built_at": "2026-10-18T07:57:49.283Z",
+   "built_at": "2026-10-19T17:47:08.645Z",
    "units": {
     "qb": [
      {
@@ -2869,6 +2869,12 @@
     ],
     "rec": [
      {
+      "id": "00-0031408",
+      "n": "Mike Evans",
+      "pos": "WR",
+      "q": "questionable: ribs"
+     },
+     {
       "id": "00-0033288",
       "n": "George Kittle",
       "pos": "TE"
@@ -2876,11 +2882,6 @@
      {
       "id": "00-0039365",
       "n": "Jacob Cowing",
-      "pos": "WR"
-     },
-     {
-      "id": "00-0031236",
-      "n": "Brandin Cooks",
       "pos": "WR"
      }
     ],
