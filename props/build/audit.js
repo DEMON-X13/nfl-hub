@@ -1352,7 +1352,7 @@ setTimeout(async()=>{
       const pl=F('pricedLegs')(G).filter(l=>!isG(l));
       if(!pl.some(dkOk)) return `${what}, and no player ${pl.length?'leg DraftKings’ betslip can take':'prices'} yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET).`;
       return `${what}: a parlay takes one leg a player, and one side and one total a game.`; };
-    let slotsBuilt=0, slotLevels=0, slotsLocked=0; const slotSaid=[];
+    let slotsBuilt=0, slotLevels=0, slotsLocked=0, slotsNone=0, slotsUnderway=0; const slotSaid=[];
     const holdSets=(lab)=>{
       const now=w.Date.now(), mine=F('pbGames')().filter(primeAud), page=F('spGames')();
       chk(page.map(g=>g.id).join()===mine.map(g=>g.id).join(),`${lab}: Suggested Parlays has sets for ${page.map(g=>g.id).join(', ')||'no game'}, where the week's prime-time games to come are ${mine.map(g=>g.id).join(', ')||'none'}`);
@@ -1367,7 +1367,12 @@ setTimeout(async()=>{
       const units=[...mine.map(g=>({g,G:[g],slot:null})),...(SL&&pSL&&pSL.id===SL.id?[{g:F('spUnit')(SL.id),G:SL.games,slot:SL}]:[])];
       for(const {g,G,slot} of units){ if(!g) continue;
         const SPw=slot?w.eval('SP_SLOT_SEARCH'):SPS, gids=new Set(G.map(x=>x.id)), uname=slot?`week ${slot.w}'s Sunday slot`:`${g.a} at ${g.h}`;
-        const s=F('spSet')(g.id), q=qualAud(G,ALL_U), pool=F('pbPool')(G,w.eval('SP_ALL'),SPw); if(slot) slotsBuilt++; else setsBuilt++;
+        const s=F('spSet')(g.id), q=qualAud(G,ALL_U);
+        /* (app v118) the Sunday slot under way: from its first kickoff the page builds and shows no set of its own (the
+           locked one, the record's or kept, else its one line), finds none for a Finish and rebuilds no level, so its
+           live build, which would stand on the games left, is held to nothing here; drawSlot holds what the tab shows */
+        if(slot&&slot.phase==='under'){ slotsUnderway++; out.slot={g,s,q,R:slot}; continue; }
+        const pool=F('pbPool')(G,w.eval('SP_ALL'),SPw); if(slot) slotsBuilt++; else setsBuilt++;
         chk(idsOf(pool.pref)===idsOf(capAud(q.pref,SPw.cap))&&idsOf(pool.thin)===idsOf(capAud(q.thin,SPw.cap))&&idsOf(pool.mkt)===idsOf(capAud(q.mkt,SPw.cap)),
           `${lab}: ${g.id}'s set is searched from other legs than its own that qualify: ${pool.pref.length}/${pool.thin.length}/${pool.mkt.length} preferred, thin and totals where the rule gives ${q.pref.length}/${q.thin.length}/${q.mkt.length}`);
         chk(!!s&&s.tiers.length===4&&s.tiers.map(t=>t.id+t.n).join()===SPEC_AUD.map(x=>x[0]+x[2]).join(),`${lab}: ${g.id}'s set is not Safe, Medium, Aggressive and Extreme at 2, 3, 4 and 5 legs`);
@@ -1428,7 +1433,9 @@ setTimeout(async()=>{
           &&!d.getElementById('spRec')&&!d.querySelector('#spHead .sp-rec,#spHead [data-sp-rec]'),
           `${lab}: Suggested Parlays is not its head and two sections, Night games then the Sunday slot, each its heading and its own record first: ${kids.map(x=>x.tagName+(x.dataset.spSec?'['+x.dataset.spSec+']':'')).join(', ')||'no sections'}`);
         W.wording(kids.length===2&&kids.map(x=>(x.querySelector('h3.sp-sech')||{}).textContent).join('|')==='Night games|Sunday slot',`${lab}: the two sections are not headed Night games and Sunday slot`);
-        const units=[...d.querySelectorAll('#spPanel .sp-game')].filter(b=>!b.querySelector('[data-sp-phase="wait"],[data-sp-phase="loading"]'));
+        /* the units that draw a set: not one waiting to go up or for the record, nor the Sunday slot under way with
+           nothing to show (no record entry and nothing kept: its one line, held in drawSlot below) */
+        const units=[...d.querySelectorAll('#spPanel .sp-game')].filter(b=>!b.querySelector('[data-sp-phase="wait"],[data-sp-phase="loading"]')&&!(F('spShown')(F('spUnit')(b.dataset.spGame))||{}).none);
         chk(!F('spEloOn')()&&!d.querySelector('#pbElo,#spPanel [data-sp-kind="elo"],#spPanel [data-sp-elo-wait]')
           &&units.every(b=>b.querySelectorAll('h5.sp-sub[data-sp-kind="model"]').length===1&&b.querySelectorAll('.pb-tiers[data-sp-kind="model"]').length===1&&b.querySelector('h5.sp-sub[data-sp-kind="model"]').nextElementSibling===b.querySelector('.pb-tiers[data-sp-kind="model"]')),
           `${lab}: the prop model's own page, which has no ELO tab, draws Elo picks (#pbElo, a unit's Elo block or its loading line), or a unit's model parlays are not under their heading`);
@@ -1527,8 +1534,11 @@ setTimeout(async()=>{
         const drawSlot=({g,s,q,R})=>{ const box=d.querySelector(`${SS} [data-sp-game="${g.id}"]`), gl=`${lab}, week ${R.w}'s Sunday slot`, ph0=now<R.lock?'live':now<R.first?'locked':'under';
           const qV=new Set(q.pref.map(legIdAud)), qT=new Set(q.thin.map(legIdAud)), qM=new Set(q.mkt.map(legIdAud));
           chk(!!box,`${gl}: Suggested Parlays draws no set for it`); if(!box) return;
-          const v=F('spShown')(g), ph=box.querySelector('[data-sp-phase]'), want=ph0==='live'?'live':ph0==='under'?'under':(v.own?'own':'locked');
-          chk(v.phase===(ph0==='live'?'live':'locked')&&(ph0==='live'||v.own===!w.eval('PB_REC'))&&!!v.under===(ph0==='under')&&!!ph&&ph.dataset.spPhase===want,
+          const v=F('spShown')(g), ph=box.querySelector('[data-sp-phase]'), want=ph0==='live'?'live':ph0==='under'?'under':(v.own?'own':'locked'), noRec=!w.eval('PB_REC');
+          /* locked, this page (no record) builds its own once; under way it builds nothing (a set built then would be of
+             the games left), and holdSets emptied the browser's key first, so with no record there is nothing to show */
+          const ownOk=ph0==='live'?true:ph0==='under'?(noRec?(v.none===true&&!v.own&&!v.tiers):!v.none):v.own===noRec;
+          chk(v.phase===(ph0==='live'?'live':'locked')&&ownOk&&!!v.under===(ph0==='under')&&!!ph&&ph.dataset.spPhase===want,
             `${gl}: the set is ${v.phase}${v.own?' (built here)':''}${v.under?' (under way)':''} and drawn ${ph?ph.dataset.spPhase:'with no line'}, where its lock (${isoAud(R.lock)}) and first kickoff (${isoAud(R.first)}) make it ${ph0}`);
           chk(!!ph&&ph.textContent.includes(etAud(R.lock))&&(ph0!=='under'||ph.textContent.includes(etAud(R.first))),`${gl}: the set's line does not say it locks at ${etAud(R.lock)}${ph0==='under'?`, under way since ${etAud(R.first)}`:''}: "${ph?ph.textContent:''}"`);
           { const wantL=ph0==='live'?`Locks ${etAud(R.lock)}, 2 hours before the first kickoff.`:ph0==='under'?`Locked since ${etAud(R.lock)}. Under way since ${etAud(R.first)}.${v.none?' The site’s set was not published in time.':v.own?' This browser’s own set: the site’s was not published in time, so the record does not grade it.':''}`
@@ -1536,8 +1546,17 @@ setTimeout(async()=>{
             W.wording(!!ph&&ph.textContent===wantL,`${gl}: the ${ph0} set's line reads "${ph?ph.textContent:''}", not "${wantL}"`); }
           { const H=slotHeadAud(R), h=box.querySelector('.sp-hd h4'), sm=box.querySelector('.sp-hd small');
             W.wording(!!h&&h.id===`spg-${g.id}`&&box.getAttribute('aria-labelledby')===h.id&&h.textContent===H.h&&!!sm&&sm.textContent===H.small,`${gl}: the slot is headed "${h?h.textContent:''}" "${sm?sm.textContent:''}", not "${H.h}" "${H.small}"`); }
+          /* under way with nothing to show: its line alone, no card, nothing to add or finish, and no level found */
+          if(v.none){ slotsNone++;
+            chk(ph0==='under'&&!box.querySelector('.pb-tier,.pb-tiers,h5.sp-sub,[data-sp-add],[data-pb-leg],[data-pc-finish]'),`${gl}: with the site's set not published in time, the slot ${ph0==='under'?'still draws a card, a heading or a button':'is said to have nothing to show before its first kickoff'}`);
+            for(const t of (s?s.tiers:[]).filter(t=>t.legs)) chk(F('spTier')(`${g.id}:${t.id}`)===null,`${gl}: the ${t.id} level, under way with the site's set not published in time, is found for its Finish (spTier)`);
+            return; }
           const shown=ph0==='live'?s.tiers:v.tiers;
-          if(ph0!=='live'){ slotsLocked++; chk(shown.length===4&&shown.every((t,i)=>{ const b=s.tiers[i]; return t.id===b.id&&(b.legs?(!!t.legs&&t.legs.map(legIdAud).join()===b.legs.map(legIdAud).join()
+          /* locked, the set kept is the one built at the lock (nothing has kicked off); under way the live build stands on
+             the games left, so a set kept is held to the builder's own sums on its legs alone */
+          if(ph0==='under'){ slotsLocked++; chk(shown.length===4&&shown.every((t,i)=>t.id===SPEC_AUD[i][0]&&(!t.legs||(t.corr===pp(t.legs).corr&&t.dec===pd(t.legs.map(l=>({leg:l,ml:l.price})))))),
+            `${gl}: under way, the set this browser kept is not its four levels at the builder's sums on their legs`); }
+          else if(ph0!=='live'){ slotsLocked++; chk(shown.length===4&&shown.every((t,i)=>{ const b=s.tiers[i]; return t.id===b.id&&(b.legs?(!!t.legs&&t.legs.map(legIdAud).join()===b.legs.map(legIdAud).join()
                 &&t.corr===pp(t.legs).corr&&t.dec===pd(t.legs.map(l=>({leg:l,ml:l.price})))&&Math.abs(t.corr-b.corr)<2e-3&&Math.abs(t.dec-b.dec)<=Math.max(2e-3,b.dec*2e-3)):!t.legs); }),
             `${gl}: the locked set this browser keeps is not the set built at the lock, or its chance and price are not the builder's sums on its legs`); }
           cardsHeld(box,shown,{g,qV,qT,qM,gl,ro:ph0==='under'});
@@ -1740,7 +1759,7 @@ setTimeout(async()=>{
       if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
       S.sched.forEach((g,i)=>{ g.tov=keepT[i][0]; g.tou=keepT[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
       dkSet(keepDk);
-      console.log(`M. Top ${TOP_N_AUD} lines: ${topLists} lists held on as many sets of ticks, ${topRows} rows in their two parts (${topRows-topOther} Value picks, ${topOther} other lines after them, the totals after every thin-edge line, ${topTotAfter} lists with both; ${topNoValue} lists with no Value pick; each bet once, ${topSame} main lines a ladder rung was left out for, ${topSameCut} of them past the ${TOP_N_AUD}th; M12 holds both on made-up games); Suggested Parlays: ${setsBuilt} sets of the week's prime-time games, ${setLevels} levels built and ${setsSaid} that said why, ${setsLocked} drawn locked, ${setThinSeen} cards with a thin leg and ${setMktSeen} with a total drawn quiet (no line on either); ${nightSaid.join('; ')}; the Sunday slot: ${slotsBuilt} sets held, ${slotLevels} levels built, ${slotsLocked} drawn locked or under way; ${slotSaid.join('; ')}`);
+      console.log(`M. Top ${TOP_N_AUD} lines: ${topLists} lists held on as many sets of ticks, ${topRows} rows in their two parts (${topRows-topOther} Value picks, ${topOther} other lines after them, the totals after every thin-edge line, ${topTotAfter} lists with both; ${topNoValue} lists with no Value pick; each bet once, ${topSame} main lines a ladder rung was left out for, ${topSameCut} of them past the ${TOP_N_AUD}th; M12 holds both on made-up games); Suggested Parlays: ${setsBuilt} sets of the week's prime-time games, ${setLevels} levels built and ${setsSaid} that said why, ${setsLocked} drawn locked, ${setThinSeen} cards with a thin leg and ${setMktSeen} with a total drawn quiet (no line on either); ${nightSaid.join('; ')}; the Sunday slot: ${slotsBuilt} sets held, ${slotLevels} levels built, ${slotsLocked} drawn locked or under way${slotsUnderway?` (${slotsUnderway} under way, its live build not held: the page builds none then)`:''}${slotsNone?`, ${slotsNone} under way with the site's set not published in time (its line alone)`:''}; ${slotSaid.join('; ')}`);
       console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, ${corrTiers} of one game's tiers on legs that move together, over this week's ${games.length} games and ${nL} made-up player lines`); }
     /* the thin-edge line says, for each kind of leg it is on, what it lacked: a team bet has no
        market + form (a player leg's second price), so it never reads as wanting it (a game total
