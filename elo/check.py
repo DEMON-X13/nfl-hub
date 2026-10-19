@@ -39,6 +39,22 @@ all pass. What each one would have caught is said beside it.
              last publish had for a game this build could no longer call is kept as it was; a
              call in the ledger marked published was made before its kickoff. (2026_03_SEA_WAS
              was shown as WAS and graded as SEA; a build that regrades the season must fail.)
+  JOKER      the calls on the Joker's baseline (THE JOKER BASELINE in the build, 19 October 2026: the
+             owner's test of the ELO Model's picks standing on the Joker's). Every coming call
+             (`next`, not frozen) of a game the Joker has called in betting/state.json stands on
+             that call: `base` joker, `p_joker` the state's chance, and the chance shown the gate's
+             own working of the rule, the Joker's log-odds (held within 1% and 99%) plus BETA times
+             the call's matchup `m`; a game the Joker has not called is the game model's own chance
+             with no `base`; every call's `p_elo` the game model's matchup plus its home field
+             (`coef`, 0 at a neutral site), and its pick the side its chance favours. Every ledger
+             entry on the Joker keeps its Joker chance, matchup and game model's chance and its
+             chance is the rule's on them; a graded call carries the ledger's `base`; the record's
+             `joker_base` counts the graded published calls on the Joker, and model.json carries
+             the build's JOKER_BASE. On fixtures (the build's on_joker and make_call): a matchup of
+             0 leaves the Joker's chance as it is, one for the home side raises it and one against
+             lowers it, the Joker's 0% and 100% are held within 1% and 99%, and with no Joker call
+             the call is the game model's own. (A call that silently fell back to Elo alone where
+             the Joker had a call, or stood on another chance than the Joker's, would publish green.)
   SOURCES    the season's injury report, roster and play-by-play are present, and the play-by-play
              of the season before the units' (which they carry in); no group is empty.
   GAMES      the game model's walk-forward counts, for every finished season, every final games.csv
@@ -179,6 +195,22 @@ def unit_checks():
     p1 = float(build.predict(w, np.array([[1.0] + [0.0] * 8]))[0])
     chk(abs(p0 - 0.5) < 1e-9, f'UNITS: two equal teams at a neutral site are not 50/50 ({p0:.4f}): home field is applied where there is none')
     chk(p1 > 0.53, f'UNITS: two equal teams at the home side\'s ground should lean home ({p1:.4f})')
+    # the Joker's baseline (THE JOKER BASELINE): no matchup leaves the Joker's chance as it is; a matchup
+    # for the home side raises it and one against lowers it; 0% and 100% are held within 1% and 99%;
+    # with no Joker call the call is the game model's own
+    chk(abs(build.on_joker(0.62, 0.0) - 0.62) < 1e-12, 'JOKER: a matchup of 0 moved the Joker\'s chance')
+    chk(build.on_joker(0.62, 0.5) > 0.62 > build.on_joker(0.62, -0.5), 'JOKER: the Elo matchup does not move the Joker\'s chance its way')
+    chk(abs(build.on_joker(1.0, 0.0) - 0.99) < 1e-12 and abs(build.on_joker(0.0, 0.0) - 0.01) < 1e-12,
+        'JOKER: the Joker\'s chance is not held within 1% and 99%')
+    wj = np.array([0.25] + [0.5] * 8)
+    xj = [0.3, -0.1, 0.2, 0.0, 0.1, -0.2, 0.0, 0.4]
+    alone, on = build.make_call(wj, 1.0, xj, None), build.make_call(wj, 1.0, xj, 0.4)
+    mj = float(np.dot(wj[1:], xj))
+    chk(alone.get('base') is None and alone['p_home'] == alone['p_elo'] == round(1 / (1 + math.exp(-(0.25 + mj))), 4),
+        f'JOKER: with no Joker call the call is not the game model\'s own: {alone}')
+    chk(on.get('base') == 'joker' and on['p_joker'] == 0.4 and on['p_elo'] == alone['p_elo'] and abs(on['m'] - mj) < 1e-4
+        and on['p_home'] == round(1 / (1 + math.exp(-(math.log(0.4 / 0.6) + build.JOKER_BASE['beta'] * mj))), 4),
+        f'JOKER: a call on the Joker\'s 40% is not the rule\'s: {on}')
     # the depth chart: a fullback at rank 1 sorts after the running backs
     ranked = build._ranked([('RB', 'rb1', (0, 1)), ('RB', 'fb', (1, 1)), ('RB', 'rb2', (0, 2)), ('RB', 'rb3', (0, 3))])
     chk([p for p, _ in ranked['RB']][:2] == ['rb1', 'rb2'], f'UNITS: a fullback took the second running back\'s place: {ranked["RB"]}')
@@ -947,6 +979,7 @@ def main():
     ap.add_argument('--cache', default=os.path.join(HERE, 'cache'))
     ap.add_argument('--history', default=os.path.join(HERE, 'history'))
     ap.add_argument('--prev', help='the previously published players.json (default: the last commit\'s)')
+    ap.add_argument('--joker-state', default=build.JOKER_STATE, help='the betting state the Joker\'s calls are read from')
     a = ap.parse_args()
 
     unit_checks()
@@ -998,6 +1031,48 @@ def main():
         fin = games[(games.season == int(s)) & games.result.notna() & (games.result != 0)]
         chk(v.get('games') == len(fin), f'GAMES: the game model\'s walk-forward has {v.get("games")} games for {s}, games.csv '
             f'{len(fin)} decided finals: games were left out of the fit (a club\'s code not matched?)')
+
+    # ---- JOKER: the calls on the Joker's baseline (THE JOKER BASELINE) ----
+    joker = build.joker_calls(a.joker_state)
+    beta = build.JOKER_BASE['beta']
+    jb = M.get('joker_base') or {}
+    chk(all(jb.get(k) == v for k, v in build.JOKER_BASE.items()), 'JOKER: model.json does not carry the build\'s JOKER_BASE')
+    sigm = lambda z: 1 / (1 + math.exp(-z))
+    own = lambda pj, m: sigm(math.log(min(0.99, max(0.01, pj)) / (1 - min(0.99, max(0.01, pj)))) + beta * m)
+    hf_of = {gid: 0.0 if loc == 'Neutral' else 1.0 for gid, loc in zip(games.game_id, games.location)}
+    side = {gid: (h, w) for gid, h, w in zip(games.game_id, games.home_team, games.away_team)}
+    home_w = float((M.get('coef') or {}).get('home', 0))
+    bad = []
+    for c in (M.get('next') or {}).get('games', []):
+        gid = c['game_id']
+        if c.get('frozen'):
+            continue
+        if not all(isinstance(c.get(k), (int, float)) for k in ('p_elo', 'm')) or gid not in side:
+            bad.append(f'{gid} has no game model chance or matchup')
+            continue
+        if abs(sigm(home_w * hf_of[gid] + c['m']) - c['p_elo']) > 2e-4:
+            bad.append(f'{gid}: p_elo {c["p_elo"]} is not the game model\'s matchup {c["m"]} with its home field')
+        pj = joker.get(gid)
+        if pj is None:
+            if c.get('base') or c['p_home'] != c['p_elo']:
+                bad.append(f'{gid}: the Joker has not called it, yet it is not the game model\'s own chance')
+        elif c.get('base') != 'joker' or c.get('p_joker') != round(pj, 4):
+            bad.append(f'{gid}: the Joker has it at {pj}, but the call stands on {c.get("base")} {c.get("p_joker")}')
+        elif abs(own(pj, c['m']) - c['p_home']) > 2e-4:
+            bad.append(f'{gid}: {c["p_home"]} is not the Joker\'s {pj} moved by the matchup {c["m"]} ({own(pj, c["m"]):.4f})')
+        if c['pick'] != side[gid][0 if c['p_home'] >= 0.5 else 1]:
+            bad.append(f'{gid}: picks {c["pick"]} on a home chance of {c["p_home"]}')
+    for gid, e in ((L or {}).get('calls') or {}).items():
+        if e.get('base') == 'joker' and (not all(isinstance(e.get(k), (int, float)) for k in ('p_joker', 'p_elo', 'm'))
+                                         or abs(own(e['p_joker'], e['m']) - e['p_home']) > 2e-4):
+            bad.append(f'the ledger\'s {gid} is on the Joker but is not the rule\'s on its own numbers: {e}')
+    chk(not bad, f'JOKER: {"; ".join(bad[:4])}{" ..." if len(bad) > 4 else ""}')
+    ledger_calls = (L or {}).get('calls') or {}
+    chk(all(c.get('base') == (ledger_calls.get(c['game_id']) or {}).get('base') for c in (M.get('graded') or [])),
+        'JOKER: a graded call does not carry the ledger\'s base')
+    jg = [c for c in (M.get('graded') or []) if c.get('src') == 'published' and c.get('base') == 'joker' and c['correct'] is not None]
+    want = [sum(1 for c in jg if c['correct']), sum(1 for c in jg if not c['correct'])]
+    chk((M.get('record') or {}).get('joker_base') == want, f'JOKER: the record counts {(M.get("record") or {}).get("joker_base")} on the Joker, the graded calls {want}')
 
     # ---- SOURCES ----
     for g in groups:

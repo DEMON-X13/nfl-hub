@@ -324,6 +324,12 @@ elo/
   tools/deepdive_vs_units.py     the Deep Dive's rows against the Overall Offense and Defense
                                  units (and the units with the carry), the same team-games,
                                  2018-2025, by stretch of the season; a test, run by hand
+  tools/joker_base_fit.py        the ELO Model's calls on the Joker's baseline (19 October 2026,
+                                 the owner's test): how far the Elo matchup moves the Joker's
+                                 chance (JOKER_BASE's BETA), fitted on 2021-2025 on study 4's
+                                 walk-forward calls and features.json, tested walk-forward on
+                                 2022-2025 against each model alone; run by hand after a build;
+                                 says whether the build carries it
   tools/seed_calls.py            recovers the calls published before the ledger began, from
                                  the commits that changed data/model.json (HEAD's history, or
                                  a ref given), into history/
@@ -337,7 +343,10 @@ elo/
   data/model.json                generated: the fitted position weights (`coef`), the
                                  walk-forward record (and the who-played one, for comparison),
                                  this season's graded calls, frozen at kickoff, and the coming
-                                 week's (the Pick'em Record's ELO Model), `teams`, the team
+                                 week's (the Pick'em Record's ELO Model: since 19 October 2026
+                                 the Joker's chance moved by the Elo matchup, `base` joker, with
+                                 `p_elo`, `p_joker` and `m` beside it; `joker_base`, its
+                                 constant and walk-forward; `record.joker_base`), `teams`, the team
                                  ratings of this season's results, every game re-scored against
                                  what its opponent has turned out to be (Power Ratings), `units` (Overall
                                  Offense and Overall Defense: each team's rating, its start and
@@ -351,7 +360,9 @@ elo/
                                  terms and spread), its walk-forward record, the coming week's
                                  projections, each club's expected lineup and who is out of it
   data/calls.json                generated: the ledger of the ELO Model's calls as published
-                                 before each kickoff; the record grades these
+                                 before each kickoff (on the Joker's baseline from 19 October
+                                 2026, each with its `p_joker`, `p_elo` and `m`); the record
+                                 grades these
   requirements.txt               pandas, numpy, tzdata, pinned
 
 news/

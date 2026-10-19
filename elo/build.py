@@ -545,6 +545,33 @@ elo/history/calls_<season>.json, recovered from model.json's git history by
 elo/tools/seed_calls.py. A game under way, or final but not yet rated (its player stats lag
 the score by a night), stays in `next` with its frozen call, so its pick does not vanish.
 
+THE JOKER BASELINE (the owner's call of 19 October 2026: "the elo model has been underperforming
+pretty significantly so I want to do a test. I want it to apply the ELO matchups to still predict
+outcomes but I want it to use the model the Joker as a baseline to make its picks"). From that day a
+call is not the game model's own chance but the Joker's, moved by the Elo matchup:
+    log-odds(home wins) = log-odds(the Joker's chance, held within 1% and 99%) + BETA * m
+The Joker's chance is the betting job's (betting/state.json's `joker`, every game it has called,
+frozen there at kickoff) as it stands when this build runs. m is the game model's matchup alone:
+over the position groups, its weight (`coef`) times the expected lineups' Elo gap, home minus away,
+in hundreds, with home field left out, since the Joker's chance already carries the home edge and a
+neutral site. BETA (JOKER_BASE, 0.2058: a typical game's matchup moves the Joker's log-odds about
+0.17, some 4 points of chance) is elo/tools/joker_base_fit.py's, fitted once on 2021-2025, the
+seasons both models were called walk-forward in research study 4 (models_compare,
+results/after_team_codes): the Joker's chance held as it is, only how far the matchup moves it
+fitted. Walk forward on 2022-2025, BETA fitted on the seasons before each: 707-377 (65.2%) and a log
+loss of 0.6345, against the Joker alone 687-397 (63.4%, 0.6354) and the game model alone 698-386
+(64.4%, 0.6343) on the same 1,084 games; the matchup turned the Joker's pick round in 46 of them
+(4.2%) and was right in 33. Tried and not kept: the Joker's log-odds given a weight of their own,
+711-373 and 0.6283, which is a mix of the two models, not the Joker as the baseline; a home-field
+term beside m, 704-380. A game the Joker has not called (its step failed, or a new season's week 1
+before the betting job has the schedule) is called by the game model alone, as before, with no
+`base`. Each call keeps the game model's own chance beside it (`p_elo`), and the Joker's (`p_joker`)
+where it stands on it, in `next` and in the ledger, so the test can be read both ways on the same
+games; the record counts the calls on the Joker apart (`record.joker_base`, and the first week one
+was published, `joker_base_from_week`). The game model itself is unchanged: it is still fitted,
+graded walk-forward (`walk_forward`) and read by the power ratings; only the call stands on the
+Joker. Never refit BETA on the season in play.
+
 THE SEASON comes from games.csv alone. The newest schedule nflverse has posted is the season
 in play once its first game kicked off UNDER_WAY hours ago; before that (from the spring
 release of a schedule to its opener) the page stays on the finished season, and the new one's
@@ -603,6 +630,11 @@ FIRST = 2012
 # the formula's version: bumped with a deliberate change to the ratings, the lineups or the game
 # model, so elo/check.py knows a reshuffled table is the change and not a fault
 FORMULA = '2026-10-13'
+# THE JOKER BASELINE: a call is the Joker's chance moved by the Elo matchup, by elo/tools/joker_base_fit.py
+JOKER_BASE = {"beta": 0.2058, "fit": "2021-2025", "test": "2022-2025", "walk_forward": {"2022": {"games": 269, "beta": 0.2277, "right": 171, "logloss": 0.633, "joker": 166, "joker_logloss": 0.6332, "elo": 167, "elo_logloss": 0.6368}, "2023": {"games": 272, "beta": 0.1844, "right": 173, "logloss": 0.6702, "joker": 167, "joker_logloss": 0.6711, "elo": 166, "elo_logloss": 0.6537}, "2024": {"games": 272, "beta": 0.1667, "right": 190, "logloss": 0.6025, "joker": 185, "joker_logloss": 0.6124, "elo": 189, "elo_logloss": 0.5988}, "2025": {"games": 271, "beta": 0.2862, "right": 173, "logloss": 0.6323, "joker": 169, "joker_logloss": 0.6247, "elo": 176, "elo_logloss": 0.6481}}}
+JOKER_STATE = os.path.join(os.path.dirname(HERE), 'betting', 'state.json')   # the betting job's published state: the Joker's calls
+JOKER_CLIP = 0.01       # the Joker's chance is held within 1% and 99% before it is moved
+CALL_KEEP = ('base', 'p_joker', 'p_elo', 'm')      # what a call keeps beside its pick and chance
 # the clubs that moved, from the code of the day (games.csv, the depth charts, the injury
 # reports) to today's (the player stats, rosters and play-by-play): THE SOURCES
 TEAM_NOW = {'OAK': 'LV', 'SD': 'LAC', 'STL': 'LA'}
@@ -1576,6 +1608,40 @@ def read_json(path):
         return None
 
 
+def joker_calls(path=None):
+    """the Joker's chance for the home side of every game it has called, from the betting job's
+    published state ({game_id: pHome}); {} when there is no state or no call (THE JOKER BASELINE)"""
+    out = {}
+    for gid, c in ((read_json(path or JOKER_STATE) or {}).get('joker') or {}).items():
+        p = c.get('pHome') if isinstance(c, dict) else None
+        if isinstance(p, (int, float)) and not isinstance(p, bool) and 0 < p < 1:
+            out[gid] = float(p)
+    return out
+
+
+def matchup_logit(w, x):
+    """the game model's matchup alone: its weights times the lineups' Elo gaps, home field left out"""
+    return float(np.dot(w[1:], x))
+
+
+def on_joker(p_joker, m, beta=None):
+    """THE JOKER BASELINE: the Joker's chance for the home side, moved by the Elo matchup m"""
+    pj = min(1 - JOKER_CLIP, max(JOKER_CLIP, float(p_joker)))
+    return 1 / (1 + math.exp(-(math.log(pj / (1 - pj)) + (JOKER_BASE['beta'] if beta is None else beta) * m)))
+
+
+def make_call(w, hf, x, p_joker):
+    """a game's call: the game model's own chance (p_elo), the matchup (m) and, where the Joker has
+    called the game, its chance moved by the matchup (THE JOKER BASELINE); else the game model's"""
+    m = matchup_logit(w, x)
+    p_elo = float(predict(w, np.array([[hf] + list(x)]))[0])
+    p = on_joker(p_joker, m) if p_joker is not None else p_elo
+    c = {'p_home': round(p, 4), 'p_elo': round(p_elo, 4), 'm': round(m, 4)}
+    if p_joker is not None:
+        c.update(base='joker', p_joker=round(float(p_joker), 4))
+    return c
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--offline', action='store_true')
@@ -1848,27 +1914,33 @@ def main():
                 continue
             cur = ledger.get(c['game_id'])
             if cur is None or (cur.get('at') or '') < live_model['built_at']:
-                ledger[c['game_id']] = {'pick': c['pick'], 'p_home': c['p_home'], 'at': live_model['built_at'], 'src': 'published'}
+                ledger[c['game_id']] = {'pick': c['pick'], 'p_home': c['p_home'], 'at': live_model['built_at'], 'src': 'published',
+                                        **{k: c[k] for k in CALL_KEEP if k in c}}
     stamp = now.isoformat(timespec='minutes')
     w_grade = fit_before(last)
+    # THE JOKER BASELINE: the Joker's chance for every game it has called (betting/state.json)
+    joker = joker_calls()
     graded = []
     for r in game_feat:
         if r['season'] != last or r['result'] is None:
             continue
         c = ledger.get(r['game_id'])
         if c is None:
-            p = float(predict(w_grade, X([r]))[0])
-            c = ledger[r['game_id']] = {'pick': r['home'] if p >= 0.5 else r['away'], 'p_home': round(p, 4), 'at': stamp, 'src': 'backtest'}
+            c = make_call(w_grade, r['hf'], [r['x'][g] for g in GROUPS], joker.get(r['game_id']))
+            c = ledger[r['game_id']] = {'pick': r['home'] if c['p_home'] >= 0.5 else r['away'], 'p_home': c['p_home'], 'at': stamp,
+                                        'src': 'backtest', **{k: c[k] for k in CALL_KEEP if k in c}}
         winner = r['home'] if r['result'] > 0 else r['away'] if r['result'] < 0 else None
         graded.append({'game_id': r['game_id'], 'p_home': c['p_home'], 'pick': c['pick'],
-                       'correct': None if winner is None else c['pick'] == winner, 'src': c['src']})
+                       'correct': None if winner is None else c['pick'] == winner, 'src': c['src'],
+                       **({'base': c['base']} if c.get('base') else {})})
     graded_ids = {g['game_id'] for g in graded}
     # a game under way, or final but not yet rated (its player stats lag the score by a night),
     # keeps its frozen call in `next`, so its pick does not vanish between kickoff and the
     # morning it is graded
     held = games[(games.season >= last) & (games.kick <= lead) & (games.kick > now - datetime.timedelta(days=10))
                  & ~games.game_id.isin(graded_ids)].sort_values(['kick', 'game_id'], kind='mergesort')
-    calls = [{'game_id': gid, 'p_home': ledger[gid]['p_home'], 'pick': ledger[gid]['pick'], 'frozen': True}
+    calls = [{'game_id': gid, 'p_home': ledger[gid]['p_home'], 'pick': ledger[gid]['pick'], 'frozen': True,
+              **{k: ledger[gid][k] for k in CALL_KEEP if k in ledger[gid]}}
              for gid in held.game_id if gid in ledger]
     shown = []      # the console's line per call: the teams and the quarterbacks expected to start
     coming = []
@@ -1887,12 +1959,16 @@ def main():
                 coming.append({'game_id': row.game_id, 'team': team, 'opp': other, 'home': home, 'parts': parts,
                                'opp_strength': st_opp, 'rating': {pid: R.get(pid, REPLACEMENT) for pid, _ in parts}})
             hf = 0.0 if row.location == 'Neutral' else 1.0
-            p = float(predict(w_all, np.array([[hf] + [(sh[g] - sa[g]) / 100 for g in GROUPS]]))[0])
+            # the call: the Joker's chance moved by the Elo matchup, else the game model's own (THE JOKER BASELINE)
+            c = make_call(w_all, hf, [(sh[g] - sa[g]) / 100 for g in GROUPS], joker.get(row.game_id))
+            p = c['p_home']
             qb = lambda parts: next((info[pid]['name'] for pid, g in parts if g == 'QB' and pid in info), None)
             pick = row.home_team if p >= 0.5 else row.away_team
-            calls.append({'game_id': row.game_id, 'p_home': round(p, 4), 'pick': pick})
-            ledger[row.game_id] = {'pick': pick, 'p_home': round(p, 4), 'at': stamp, 'src': 'published'}
-            shown.append(f"{row.away_team}@{row.home_team} {pick} {max(p, 1 - p):.0%} ({qb(ea)} v {qb(eh)})")
+            calls.append({'game_id': row.game_id, 'p_home': p, 'pick': pick, **{k: c[k] for k in CALL_KEEP if k in c}})
+            ledger[row.game_id] = {'pick': pick, 'p_home': p, 'at': stamp, 'src': 'published', **{k: c[k] for k in CALL_KEEP if k in c}}
+            base = (f"on the Joker {c['p_joker']:.0%} home, Elo alone {c['p_elo']:.0%}" if c.get('base')
+                    else f'Elo alone: the Joker has no call')
+            shown.append(f"{row.away_team}@{row.home_team} {pick} {max(p, 1 - p):.0%} [{base}] ({qb(ea)} v {qb(eh)})")
     next_week_no = int(upcoming[(upcoming.season == call_season) & (upcoming.ord == next_ord)].week.min()) if next_ord is not None else None
     # ---- each team on its own: the power ratings (see THE POWER RATINGS) ----
     # the lineup part: each team's expected lineup for the coming week (a team on its bye or
@@ -1940,6 +2016,13 @@ def main():
     wk_of = dict(zip(games.game_id, games.week))
     pub_weeks = sorted({int(wk_of[g['game_id']]) for g in graded if g['src'] == 'published' and g['game_id'] in wk_of})
     record['published_from_week'] = pub_weeks[0] if pub_weeks else None
+    # the calls made on the Joker's baseline, counted apart (THE JOKER BASELINE), from the first week
+    # one was published (graded or still to come)
+    jb = [g for g in graded if g['src'] == 'published' and g.get('base') == 'joker' and g['correct'] is not None]
+    record['joker_base'] = [sum(1 for g in jb if g['correct']), sum(1 for g in jb if not g['correct'])]
+    jb_weeks = sorted({int(wk_of[gid]) for gid, e in ledger.items() if e.get('base') == 'joker' and e.get('src') == 'published'
+                       and gid.startswith(f'{last}_') and gid in wk_of})
+    record['joker_base_from_week'] = jb_weeks[0] if jb_weeks else None
     # the season's place in the calendar, for the page: the regular season, the playoffs, or over
     sg = games[games.season == last]
     reg_left = bool((sg.game_type == 'REG').any() and sg[sg.game_type == 'REG'].home_score.isna().any())
@@ -1977,6 +2060,7 @@ def main():
         'season': last, 'phase': phase, 'groups': GROUPS, 'coef': coef,
         'walk_forward': walk, 'walk_forward_who_played': walk_played, 'record': record,
         'graded': graded, 'next': {'week': next_week_no, 'season': call_season, 'games': calls},
+        'joker_base': {**JOKER_BASE, 'joker_calls_read': len(joker)},
         'teams': team_rows,
         'units': units,
         'sources': sources,
@@ -2178,7 +2262,8 @@ def main():
              'calls.json': {'built_at': model['built_at'], 'season': last,
                             'about': 'each game\'s ELO Model call as last published before its kickoff (src published), or, for a game '
                                      'never called before it, as first called after it (src backtest); written by elo/build.py, '
-                                     'never edited: the record grades these',
+                                     'never edited: the record grades these. From 19 October 2026 a call with base joker is the '
+                                     'Joker\'s chance (p_joker) moved by the Elo matchup (m), and p_elo is the game model\'s own',
                             'calls': dict(sorted(keep.items()))}}
     if mu:
         files['matchups.json'] = mu
