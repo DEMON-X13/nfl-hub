@@ -81,6 +81,14 @@
  *     floor falls, every level held to every parlay of its size worked out in full (a review planted two
  *     slips, a partial parlay pruned at the floor itself and the price-first pass reading the quick
  *     chance as its most, which passed every other check);
+ *   - each unit's Elo picks (app v118, the owner's call of 19 October 2026: "I would like it to have ELO picks for the
+ *     slot of Sunday games"): window.eloUnit, which Suggested Parlays draws in each night game and in the Sunday slot,
+ *     on the files for each game of the matchups' week with lines and for that week's Sunday games before 7 pm Eastern
+ *     together (from the published payload's schedule), and on the check's own games (F1 and F2: a game alone and two
+ *     as a slot): the candidates the rule's on those games' legs alone, every level the rule worked out in full by the
+ *     builder's own sums (or held as the week's are, past a size), an empty level handed over saying why "in this game"
+ *     or "in the Sunday slot", all of it the same with the Parlay Builder's ticks planted to nothing (eloPicks() too,
+ *     over every game), and null until the ratings and the matchups are both in;
  *   - the Mismatches bubbles' words (18 October 2026): what an edge ranks is the matchup formula's units
  *     by their players' Elo ("vs the LAC secondary and defensive line, 32nd by player Elo"), never "a
  *     pass defense ranked", which on the page is the ELO Ratings tab's Pass Defense table. Since October 2026 the whole page's smoke
@@ -147,6 +155,17 @@ const sumsOwn = corr => new Function('PAY', SUMS_SRC + '\nreturn {parlayProb,par
 const sumsInto = (w, corr) => { w.eval(`var PAY={corr:${JSON.stringify(corr || {})}};\n${SUMS_SRC.replace(/^const /gm, 'var ')}`); };   /* a top-level const in eval'd code is the eval's own: var makes it the page's */
 /* the published payload's correlation table, the one the page prices same-game legs with */
 const CORR = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8')).corr || {}; } catch (e) { return {}; } })();
+/* (app v118) and its schedule, whose dates and kickoffs (Eastern) say which of a week's games are its Sunday slot */
+const SCHED = (() => { try { const s = JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8')).sched; return Array.isArray(s) ? s : []; } catch (e) { return []; } })();
+/* a leg for every matchup line in a matchups file, over and under, at -110 and +150: what the checks price the files on */
+const linesOf = MU => { const legs = [];
+  for (const [pid, pl] of Object.entries((MU && MU.players) || {})) for (const st of Object.keys(pl.stats || {})) {
+    const proj = (pl.stats[st] || [])[1], k = isFinite(proj) ? Math.floor(proj) + 0.5 : 0.5;
+    for (const side of ['over', 'under']) for (const price of [-110, 150])
+      legs.push({ key: `${pl.game_id}|${pid}|${st}`, gid: pl.game_id, pid, stat: st, grp: pl.group, k, side, price, src: 'real', name: pid, label: st }); }
+  return legs; };
+/* the page's pricedLegs stood in by a list of legs, answering for the games it is asked about as the props parts' does */
+const PRICED_BY = name => `function pricedLegs(games){ const G=games?new Set(games.map(g=>g.id)):null; return window.${name}.filter(l=>!G||G.has(l.gid)).map(l=>Object.assign({},l)); }`;
 /* F6's correlation table, the check's own: the published payload's pairs of two players of one game among the stats
    its slates draw, as they stood on 18 October 2026 (so only a code change can fail it) */
 const CORR_F6 = {
@@ -240,6 +259,76 @@ function fastOff(w, C, worked) {
   return bad;
 }
 
+/* ---- (app v118) each unit's Elo picks: window.eloUnit ----
+   Suggested Parlays draws each unit's own Elo picks, a night game's or the Sunday slot's (a week's Sunday games before
+   7 pm Eastern, together), from window.eloUnit(the unit's game ids, {where}): the ELO tab's four levels on those games'
+   legs alone, whatever the Parlay Builder's ticks say (the owner's call of 19 October 2026: until then the picks were one
+   set over the games and player sides ticked on the Parlay Builder tab, and a reader with the priced games unticked saw
+   them empty all of Sunday 18 October 2026). unitHeld holds a page to it on a list of legs (the page's pricedLegs stood in
+   by them, as the checks above stand it in) and units ({lab, gids, where}): the candidates the rule's on the unit's
+   games' legs alone (candsOwn), every one of those games; Suggested Parlays' four levels on the Elo picks' floors, each
+   the rule worked out in full by the builder's own sums over every parlay of its size (levelsOwn) where the candidates
+   make at most UNIT_FULL parlays, else held as the week's levels are above (its legs the candidates', one a player, in
+   the builder's order, at the builder's own sums, over its floor or the likeliest only under it, and never worse than the
+   best parlay of its size whose legs are all in different games); an empty level handed over with no legs, exactly
+   {id, label, n, floor, why}, saying why in the unit's own words ("Only 2 players in this game qualify: this level takes
+   3.", "... in the Sunday slot ...") by the count of players who qualify; eloUnit's levels eloPicks' own on the same
+   games; and then all of it again with the Parlay Builder's ticks planted to nothing (no game, no bet type, no player
+   side: pbAllows and pbPlayerSides refusing everything, S.ui.pb unticked), put back after on every path. Returns how many
+   levels it held worked out in full and how many empty (full, empty) */
+const UNIT_FULL = 2500;
+const binom = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1); return Math.round(r); };
+function unitHeld(nm, w, legs, MU, players, corr, units) {
+  const sums = sumsOwn(corr), ok01 = v => typeof v === 'number' && isFinite(v) && v > 0 && v < 1, memo = new Map();
+  let full = 0, empty = 0;
+  const one = (u, tag) => {
+    const lab = `${nm}, ${u.lab}${tag}`, uLegs = legs.filter(l => u.gids.includes(l.gid)), own = candsOwn(uLegs, MU, players, sums);
+    let r, rp; try { r = w.eloUnit(u.gids, { where: u.where }); rp = w.eloPicks({ games: u.gids, where: u.where }); } catch (err) { r = 'threw ' + err.message; }
+    if (!r || typeof r !== 'object' || !Array.isArray(r.tiers) || !rp || !Array.isArray(rp.cands) || !Array.isArray(rp.tiers)) {
+      chk(false, `${lab}: window.eloUnit does not build the unit's Elo picks on the files: ${typeof r === 'string' ? r : JSON.stringify(r)}`); return; }
+    const C = rp.cands, N = own.all.length;
+    chk(r.candidates === N && C.map(idC).join() === own.kept.map(idC).join() && C.every((l, i) => Math.abs(l.pe - own.kept[i].pe) < 1e-6) && C.every(l => u.gids.includes(l.gid)),
+      `${lab}: the Elo picks' candidates are not the rule's on the unit's games' legs alone: ${C.map(l => l.pid + ' ' + l.stat + ' ' + l.gid.slice(-7)).join(', ') || 'none'} of ${r.candidates}; the rule ${own.kept.map(l => l.pid + ' ' + l.stat + ' ' + l.gid.slice(-7)).join(', ') || 'none'} of ${N}`);
+    const LT = tiersOwn(sums.PB_TIERS);
+    chk(r.tiers.length === LT.length && r.tiers.every((t, i) => t && t.id === 'elo-' + LT[i][0] && t.label === LT[i][1] && t.n === LT[i][2] && t.floor === LT[i][3])
+      && rp.tiers.length === r.tiers.length && r.tiers.every((t, i) => (t.legs ? t.legs : []).map(idC).join() === (rp.tiers[i].legs || []).map(idC).join()),
+      `${lab}: window.eloUnit does not hand over Suggested Parlays' four levels on the Elo picks' floors, eloPicks' own on the unit's games: ${r.tiers.map(t => t && t.id + ' ' + t.n + ' ' + t.floor).join(', ')}`);
+    const key = u.gids.join() + '|' + C.map(idC).join(), size = LT.reduce((a, t) => a + binom(C.length, t[2]), 0);
+    if (!memo.has(key)) memo.set(key, size <= UNIT_FULL ? levelsOwn(C, sums) : null);
+    const want = memo.get(key); if (want && !tag) full += want.filter(t => !t.none).length;
+    for (const t of r.tiers) {
+      if (!t) continue;
+      if (C.length < t.n) { const why = `Only ${N} player${N === 1 ? '' : 's'} ${u.where} qualif${N === 1 ? 'ies' : 'y'}: this level takes ${t.n}.`; if (!tag) empty++;
+        chk(Object.keys(t).sort().join() === 'floor,id,label,n,why' && t.why === why, `${lab}: the ${t.label} Elo pick, with ${C.length} candidates, is not handed over empty saying why ${u.where} ("${why}"): ${JSON.stringify(t)}`); continue; }
+      if (want) { const f = want.find(x => x.id === t.id);
+        chk(!!f && Array.isArray(t.legs) && t.legs.map(idC).join() === f.legs.map(idC).join() && t.p === f.p && t.dec === f.dec && !!t.likeliest === f.likeliest,
+          `${lab}: the ${t.label} Elo pick is not Suggested Parlays' rule on the Elo chance worked out in full on the unit's candidates: it holds ${Array.isArray(t.legs) ? t.legs.map(l => l.pid).join(', ') + ' at ' + t.p + ', ' + t.dec + (t.likeliest ? ' (likeliest)' : '') : JSON.stringify(t)}, the rule ${f ? f.legs.map(l => l.pid).join(', ') + ' at ' + f.p + ', ' + f.dec + (f.likeliest ? ' (likeliest)' : '') : 'none'}`);
+        continue; }
+      const L = Array.isArray(t.legs) ? sums.pbOrder(t.legs) : [], p = L.length ? sums.parlayProb(L.map(l => ({ ...l, p: l.pe }))).corr : NaN, dec = L.length ? sums.parlayDec(L.map(l => ({ leg: l, ml: l.price }))) : NaN;
+      chk(L.length === t.n && t.legs.every((l, i) => idC(l) === idC(L[i])) && t.legs.every(l => C.some(c => idC(c) === idC(l))) && new Set(t.legs.map(l => l.pid)).size === t.n
+        && ok01(t.p) && t.p === p && t.dec === dec && (!t.floor || t.likeliest || t.p >= t.floor) && (!t.likeliest || (t.floor > 0 && t.p < t.floor)),
+        `${lab}: the ${t.label} Elo pick is not ${t.n} of the unit's candidates, one a player, in the builder's order, at the builder's own sums on their Elo chances and prices, over its floor: ${t.p} at ${t.dec}, the sums ${p} at ${dec}`);
+      let best = null; const go = (s0, cur) => { if (cur.length === t.n) { if (new Set(cur.map(l => l.gid)).size !== t.n) return; const pp = cur.reduce((a, l) => a * l.pe, 1), dd = cur.reduce((a, l) => a * sums.mlToDec(l.price), 1);
+          if (t.floor && pp < t.floor) return; const sc = t.floor ? pp * dd : pp; if (!best || sc > best.sc) best = { sc, cur }; return; }
+        for (let i = s0; i <= C.length - (t.n - cur.length); i++) go(i + 1, cur.concat(C[i])); };
+      go(0, []);
+      chk(!best || (t.floor && t.likeliest ? false : (t.floor ? t.p * t.dec : t.p) >= best.sc * (1 - 1e-9)),
+        `${lab}: the ${t.label} Elo pick is worse than ${best && best.cur.map(l => l.pid + ' ' + l.stat).join(', ')}, legs all in different games`); }
+  };
+  for (const u of units) one(u, '');
+  /* the Parlay Builder's ticks planted to nothing, and put back */
+  const had = { pbAllows: Object.prototype.hasOwnProperty.call(w, 'pbAllows') ? w.pbAllows : undefined, pbPlayerSides: Object.prototype.hasOwnProperty.call(w, 'pbPlayerSides') ? w.pbPlayerSides : undefined },
+    ui = JSON.stringify(w.eval('S.ui.pb === undefined ? null : S.ui.pb'));
+  try {
+    w.pbAllows = () => false; w.pbPlayerSides = () => false;
+    w.eval(`S.ui.pb={k:{ml:false,ats:false,total:false,over:false,under:false},off:${JSON.stringify([...new Set(legs.map(l => l.gid))])},open:false};`);
+    for (const u of units) one(u, ' (the Parlay Builder\'s ticks planted to nothing)');
+  } finally {
+    for (const k of Object.keys(had)) { if (had[k] === undefined) delete w[k]; else w[k] = had[k]; }
+    w.eval(ui === 'null' ? 'delete S.ui.pb;' : `S.ui.pb=${ui};`); }
+  return { full, empty };
+}
+
 /* the page around the tab: the week's schedule with kickoffs on a clock the test moves */
 function page(MU, opts) {
   const style = TAB.slice(TAB.indexOf('<style>'), TAB.indexOf('</style>') + 8);
@@ -262,8 +351,10 @@ function page(MU, opts) {
     window.pkTag=t=>'<span class="pk-ttag">'+t+'</span>';
     window.pkTierDefs='<svg><defs><linearGradient id="tg-x"></linearGradient></defs></svg>';`);
   const files = { 'players.json': (opts && opts.P) || P, 'model.json': (opts && opts.M) || M, 'matchups.json': MU };
-  w.fetch = u => { const f = Object.keys(files).find(k => String(u).includes('elo/data/' + k));
-    return Promise.resolve(f && files[f] ? { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(files[f])) } : { ok: false, status: 404 }); };
+  /* opts.hold: a file's answer held until its promise settles (a file still being read) */
+  w.fetch = u => { const f = Object.keys(files).find(k => String(u).includes('elo/data/' + k)), h = opts && opts.hold && f ? opts.hold[f] : null;
+    const answer = () => f && files[f] ? { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(files[f])) } : { ok: false, status: 404 };
+    return h ? h.then(answer) : Promise.resolve(answer()); };
   w.eval(script);
   return { w, d: w.document, games };
 }
@@ -776,8 +867,47 @@ function page(MU, opts) {
         const worked = sets.map(ls => { const O = sums.pbOrder(ls); return { legs: O, p: sums.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr, dec: sums.parlayDec(O.map(l => ({ leg: l, ml: l.price }))) }; });
         const bad = fastOff(w, C, worked);
         chk(!bad.length, `the Elo picks' fast sums are not parlayProb's and parlayDec's to the bit on ${bad.length} of ${worked.length} parlays of the files' candidates: ${bad.slice(0, 3).join('; ')}`); } }
+    /* (app v118) window.eloPicks() with no games is every game the page prices, whatever the Parlay Builder's ticks say:
+       the same levels with the ticks planted to nothing (until app v118 it took only the games and player sides ticked) */
+    if (r && Array.isArray(r.tiers)) {
+      const sig = x => x && Array.isArray(x.tiers) ? x.tiers.map(t => t.id + ':' + (t.legs || []).map(idC).join('+') + ':' + t.p + ':' + t.dec).join(' | ') : String(x);
+      w.pbAllows = () => false; w.pbPlayerSides = () => false; w.eval('S.ui.pb={k:{ml:false,ats:false,total:false,over:false,under:false},off:S.sched.map(g=>g.id),open:false};');
+      let r2; try { r2 = w.eloPicks(); } catch (err) { r2 = 'threw ' + err.message; } finally { delete w.pbAllows; delete w.pbPlayerSides; w.eval('delete S.ui.pb;'); }
+      chk(sig(r2) === sig(r), `window.eloPicks() moves with the Parlay Builder's ticks planted to nothing: ${sig(r2).slice(0, 200)} for ${sig(r).slice(0, 200)}`); }
+    /* (app v118) each unit's Elo picks on the files (unitHeld): each game of the matchups' week with priced legs, alone,
+       "in this game", and that week's Sunday games before 7 pm Eastern together, "in the Sunday slot" (which games those
+       are worked out here from the published payload's schedule: the matchups' season and week, a Sunday, a kickoff
+       before 19:00, both Eastern as the schedule writes them; the games of it already played have no lines, so the slot
+       can hand over four empty levels, each saying why) */
+    { w.eval(PRICED_BY('__legs'));
+      const gids = [...new Set(legs.map(l => l.gid))].sort(), wk = MU0 && MU0.week;
+      const slot = SCHED.filter(g => +g.w === +wk && (!MU0 || !MU0.season || String(g.id).startsWith(MU0.season + '_')) && /^\d{4}-\d\d-\d\d$/.test(g.d || '')
+        && new Date(g.d + 'T12:00:00Z').getUTCDay() === 0 && /^\d\d:\d\d$/.test(g.t || '') && g.t < '19:00').map(g => g.id);
+      const units = [...gids.map(g => ({ lab: `the files' ${g} alone`, gids: [g], where: 'in this game' })), ...(slot.length ? [{ lab: `the files' week ${wk} Sunday slot (${slot.length} games)`, gids: slot, where: 'in the Sunday slot' }] : [])];
+      if (!units.length) notes.push('no game in the matchups\' week has lines and the schedule has no Sunday slot for it: the units\' Elo picks are held on the check\'s own games alone');
+      else { const nf = unitHeld('the files', w, legs, MU0, P.players || {}, CORR, units);
+        notes.push(`each unit's Elo picks on the files: ${gids.length} game${gids.length === 1 ? '' : 's'} alone${slot.length ? ` and week ${wk}'s Sunday slot of ${slot.length} (${slot.filter(g => gids.includes(g)).length} with lines)` : ', no Sunday slot on the schedule'}, ${nf.full} levels worked out in full, ${nf.empty} empty`); } }
     chk(!errors.length, `the tab threw or logged an error on the files: ${errors.slice(0, 3).join('; ')}`);
     notes.push(`money paths: market + form on ${alt} player legs, the Elo matchup chance on ${mu} of ${legs.length} lines, the Elo picks' ${r && r.tiers ? r.tiers.filter(t => t.legs.length).length : 0} levels from ${r && r.cands ? r.cands.length : 0} of ${r && r.candidates || 0} candidates`); }
+
+  /* ---- (app v118) window.eloUnit hands over nothing until the ratings and the matchups are both in ----
+     Suggested Parlays says it is loading the Elo ratings while eloUnit gives null, and draws each unit's picks once it
+     gives levels (a pick stands on both: the player's rating and his matchup). So: null before any file has answered;
+     null with the ratings and the model in (market + form prices a player) and the matchups still being read (held
+     here); the four levels once the matchups answer */
+  { let release = null; const hold = new Promise(res => { release = res; }), errors = [], { w } = page(MU0, { errors, hold: { 'matchups.json': hold } });
+    sumsInto(w, CORR); w.__legs = linesOf(MU0); w.eval(PRICED_BY('__legs'));
+    const gids = [...new Set(w.__legs.map(l => l.gid))].slice(0, 1), at = () => { try { return w.eloUnit(gids, { where: 'in this game' }); } catch (err) { return 'threw ' + err.message; } };
+    const pid = Object.keys(P.players || {}).find(k => ['QB', 'RB', 'WR', 'TE'].includes((P.players[k] || {}).group));
+    const r0 = at(); await wait(60);
+    /* the ratings in is the tab's own word for it (eloLoaded: its players file read), not a market + form price, which the
+       page works out with no Elo at all */
+    const rated = typeof w.eloLoaded === 'function' && w.eloLoaded() === true ? (pid ? w.eloAltP(pid, 'over', -110, 'real', 'receptions') : 0) : 'not loaded', r1 = at();
+    release(); await wait(60);
+    const r2 = at();
+    chk(r0 === null && typeof rated === 'number' && r1 === null && !!r2 && typeof r2 === 'object' && Array.isArray(r2.tiers) && r2.tiers.map(t => t.id).join() === 'elo-safe,elo-med,elo-aggr,elo-xtrm',
+      `window.eloUnit does not give null until the ratings and the matchups are both in, and the four levels once they are: before any file ${JSON.stringify(r0)}, with the ratings in (market + form ${rated}) and the matchups held ${JSON.stringify(r1)}, once they answer ${typeof r2 === 'string' ? r2 : JSON.stringify(r2 && r2.tiers && r2.tiers.map(t => t.id))}`);
+    chk(!errors.length, `the tab threw or logged an error while its files were still being read: ${errors.slice(0, 3).join('; ')}`); }
 
   /* ---- the Elo picks' four levels on made-up lines of the check's own (17 October 2026, the owner's call: "for
      the ELO picks suggestions, can we also add an aggressive and extreme versions. is it touchdowns only or did it
@@ -926,6 +1056,16 @@ function page(MU, opts) {
         /* every level here is held above to the rule worked out in full; and none is marked the likeliest at or over its floor */
         chk(r.tiers.every(t => !t.likeliest || (t.floor && t.p < t.floor)), `${nm}: a level is marked the likeliest at or over its floor: ${r.tiers.map(t => t.id + (t.likeliest ? ' likeliest' : '') + ' ' + t.p).join(', ')}`);
         notes.push(`the Elo picks on ${nm}'s ${C.length} candidates (${want.sums.length} parlays worked in full): ${r.tiers.map(t => `${t.label} ${(t.p * 100).toFixed(2)}%${t.likeliest ? ' (likeliest)' : ''} in ${new Set(t.legs.map(l => l.gid)).size} game${new Set(t.legs.map(l => l.gid)).size > 1 ? 's' : ''}`).join('; ')}`); }
+      /* (app v118) each unit's Elo picks on the check's own games (unitHeld), so it holds in any week: game A alone, "in
+         this game", and games B and C together as a Sunday slot, "in the Sunday slot" (eloUnit takes the unit's games as
+         Suggested Parlays hands them over). F1's game A has three of its eight candidates, so its Aggressive and Extreme are
+         empty, saying why, and B and C five; F2's two and two, so every level past Safe is; the check fails unless it met
+         both a level worked out in full and an empty one, and a unit whose candidates are not the whole week's */
+      if (nm === 'F1' || nm === 'F2') { w.eval(PRICED_BY('__fx'));
+        const nf = unitHeld(nm, w, legs, MUf, Pf.players, corr, [{ lab: 'game A alone', gids: [GA], where: 'in this game' }, { lab: 'games B and C as a Sunday slot', gids: [GB, GC], where: 'in the Sunday slot' }]);
+        const nA = candsOwn(legs.filter(l => l.gid === GA), MUf, Pf.players, sums).all.length;
+        chk(nf.full > 0 && nf.empty > 0 && nA > 0 && nA < own.all.length, `${nm}: the units' check met ${nf.full} levels worked out in full and ${nf.empty} empty, and game A has ${nA} of ${own.all.length} candidates: it holds less than it says`);
+        notes.push(`each unit's Elo picks on ${nm}: game A alone (${nA} candidates) and games B and C as a Sunday slot, ${nf.full} levels worked out in full, ${nf.empty} empty`); }
       chk(!errors.length, `${nm}: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); }
   }
 

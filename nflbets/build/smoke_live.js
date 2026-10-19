@@ -13,7 +13,9 @@
  * is no owner, no sign-in and no shared store: the page writes nothing anywhere but the browser's
  * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the builder
  * over its choices and the Top 30 lines (app v116), and Suggested Parlays (#suggest, app v111) each prime-time
- * game's own set of four levels, whose Finish opens the same card. The test boots the whole page against a stubbed file
+ * game's own set of four levels, whose Finish opens the same card; since app v118 in two sections, Night games and the
+ * Sunday slot (every Sunday game before 7 pm Eastern, one set), each with its record, and each unit with its own Elo
+ * picks beside its model parlays, whose Finish (sp|<unit>:elo-<level>) opens the card as an Elo pick. The test boots the whole page against a stubbed file
  * and a stubbed ESPN, with the real payload and state, opens the X Parlays tab and checks what the section renders, on a
  * browser with nothing of its own and on one that carries what the retired owner and reader layers
  * left (their flags, their copies of the old shared document), which must show exactly the file
@@ -25,7 +27,9 @@
  * number (app v109), named under the buttons, in the shared text and under its row in the builder, and
  * a leg with nothing to convert to named with why; and a Suggested Parlays set finished from its own
  * tab (app v111), live and then locked from the record's entry, each of its legs with an Add of its
- * own. jsdom and PapaParse are borrowed from props/build; run npm ci there first.
+ * own; its Elo picks (app v118) finished as an Elo pick, live, locked from the record and as this browser's own;
+ * and the Sunday slot's section held to its rule at the fixture's clock and through a slot of the fixture's own (not
+ * up, live, locked, under way with nothing to add or finish, past). jsdom and PapaParse are borrowed from props/build; run npm ci there first.
  */
 'use strict';
 const fs = require('fs');
@@ -84,6 +88,80 @@ const etSayL = ms => new Date(ms).toLocaleString('en-US', { timeZone: 'America/N
 /* when a night (its first game g, the schedule sched) goes up: null for at once, and the line the tab says until then */
 const nightOpenL = (g, sched) => { const prev = sched.filter(x => primeL(x) && x.d < g.d).map(x => x.d).sort().pop() || null;
   return { prev, open: prev ? etAtL(new Date(Date.parse(prev + 'T12:00:00Z') + 86400e3).toISOString().slice(0, 10), '06:00') : null, pg: prev ? sched.filter(x => primeL(x) && x.d === prev).length : 0 }; };
+/* (app v118) the Sunday slot, by the owner's rule of 19 October 2026 ("I would like it to have ELO picks for the slot of
+   Sunday games", then "do a separate section for night games and then the sunday slot of games"), worked out here on its
+   own: a week's Sunday games (the schedule's date, which is Eastern) kicking off before 7:00 pm Eastern, in kickoff order
+   and the schedule's own on a tie, one set across them, id <season>_<WW>_SUN. It goes up as a night does (nightOpenL, on
+   its first game: 6:00 AM Eastern on the morning after the latest prime-time night before its Sunday anywhere on the
+   schedule; none, at once), locks 2 hours before its first kickoff, is under way from that kickoff to its last (shown as
+   it locked, with nothing to add or finish) and off the tab after. The week it is looked for in is the page's own (the
+   first with a game not final, a score or four hours past its kickoff, else the last: the props parts' liveWeek, copied
+   here, its weeks the payload's), then the next, the first whose slot has a game still to kick off with no score.
+   Eastern time through the time zone database (etAtL), never the page's kickoff, spOpenAt or spSlotNext */
+const dowL = d => /^\d{4}-\d\d-\d\d$/.test(d || '') ? new Date(d + 'T12:00:00Z').getUTCDay() : null;
+const etKickL = g => /^\d{4}-\d\d-\d\d$/.test(g.d || '') ? etAtL(g.d, g.t || '13:00') : NaN;
+const scoredL = g => g.hs != null && g.as != null && isFinite(g.hs) && isFinite(g.as);
+const finalL = (g, now) => scoredL(g) || (isFinite(etKickL(g)) && now >= etKickL(g) + 4 * 3600e3);
+const liveWeekL = (weeks, sched, now) => { const ws = [...new Set(weeks.map(Number))].sort((a, b) => a - b);
+  const w = ws.find(x => sched.some(g => +g.w === x && !finalL(g, now))); return w != null ? w : ws[ws.length - 1]; };
+const slotL = (sched, wk, season) => {
+  const G = sched.map((g, i) => ({ g, i })).filter(({ g }) => +g.w === +wk && dowL(g.d) === 0 && /^\d\d:\d\d$/.test(g.t || '') && g.t < '19:00' && isFinite(etKickL(g)))
+    .sort((a, b) => (etKickL(a.g) - etKickL(b.g)) || (a.i - b.i)).map(x => x.g);
+  if (!G.length) return null;
+  const first = etKickL(G[0]);
+  return { id: `${season}_${String(wk).padStart(2, '0')}_SUN`, w: +wk, games: G, first, last: Math.max(...G.map(etKickL)), lock: first - 2 * 3600e3, ...nightOpenL(G[0], sched) }; };
+const slotNextL = (weeks, sched, now, season) => { const w0 = liveWeekL(weeks, sched, now);
+  for (const wk of [w0, w0 + 1]) { const u = slotL(sched, wk, season); if (u && u.games.some(g => now < etKickL(g) && !scoredL(g))) return { ...u, up: u.open == null || now >= u.open }; }
+  return null; };
+/* a kickoff's day and time as a set's head says them ("Sun, Jan 3", "9:30 AM ET"), through Intl */
+const etDayL = ms => new Date(ms).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });
+const etTimeL = ms => new Date(ms).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }) + ' ET';
+/* the Sunday slot's section of Suggested Parlays as drawn, held to the rule at the page's clock (now): after the night
+   games' section, headed "Sunday slot", its record next; no slot to come, one line saying so (the regular season over,
+   or no Sunday game of the page's week still to kick off) and no set; not up, one line naming it, its games and when its
+   sets go up, word for word, and no set; up, its one unit (.sp-game.sp-slot, a group named by its h4: "Week N, K games",
+   its first kickoff's day and the window of its kickoffs), with one line, word for word: live until its lock, then
+   locked (the record's set, or this browser's own where the record has none: own), and from its first kickoff under
+   way, when nothing in it can be added or finished. Every number and the games are the rule's; the problems, or none */
+const slotHeldL = (d, U, now, wk, over, season, own) => {
+  const bad = [], secs = [...d.querySelectorAll('#spSets > section.sp-sec')].map(s => s.dataset.spSec), sec = d.querySelector('#spSets section.sp-sec[data-sp-sec="slot"]');
+  if (secs.join() !== 'night,slot') bad.push(`the sections are ${secs.join(', ') || 'none'}, not Night games then the Sunday slot`);
+  if (!sec) return bad.concat('there is no Sunday slot section').join('; ');
+  const h = sec.querySelector(':scope > h3.sp-sech'), rec = h && h.nextElementSibling;
+  if (txt(h) !== 'Sunday slot' || !rec || !rec.matches('div.sp-rec[data-sp-recsec="slot"]')) bad.push(`the section is not headed "Sunday slot" with its own record under it: ${txt(h)}`);
+  const el = sec.querySelector('[data-sp-wait]'), units = [...sec.querySelectorAll('.sp-game')], none = sec.querySelector('[data-sp-none="slot"]');
+  if (!U) {
+    const want = over ? `The ${season} regular season is over: no Sunday slot is left.` : `No Sunday game of week ${wk} is still to kick off.`;
+    if (el || units.length || !none) bad.push(`no Sunday slot is to come, and the section draws ${el ? 'a wait line' : units.length ? 'a set' : 'no line saying so'}`);
+    else if (txt(none) !== want) bad.push(`its line reads "${txt(none)}", not "${want}"`);
+    return bad.length ? bad.join('; ') : null; }
+  if (!U.up) {
+    const want = `Next up: week ${U.w}’s Sunday slot, ${U.games.length} game${U.games.length === 1 ? '' : 's'}. Its sets go up ${etSayL(U.open)}, the morning after ${PRIME_NIGHT_L[dowL(U.prev)]}’s ${U.pg > 1 ? 'games' : 'game'}.`;
+    if (!el) bad.push(`no wait line where the slot ${U.id} is not up until ${new Date(U.open).toISOString()}`);
+    else { if (el.dataset.spWait !== new Date(U.open).toISOString().replace(/\.\d{3}Z$/, 'Z')) bad.push(`data-sp-wait ${el.dataset.spWait}, not ${new Date(U.open).toISOString()}`);
+      if (el.dataset.spNext !== U.id) bad.push(`data-sp-next ${el.dataset.spNext}, not ${U.id}`);
+      if (txt(el) !== want) bad.push(`it reads "${txt(el)}", not "${want}"`); }
+    if (units.length || none) bad.push('a set or a none line is drawn beside it');
+    return bad.length ? bad.join('; ') : null; }
+  if (el || none) bad.push(`a ${el ? 'wait' : 'none'} line is drawn where the slot ${U.id} is up: ${txt(el || none)}`);
+  const u = units[0];
+  if (units.length !== 1 || u.dataset.spGame !== U.id || !u.classList.contains('sp-slot')) return bad.concat(`the section draws ${units.map(x => x.dataset.spGame).join(', ') || 'no unit'}, not the slot ${U.id}`).join('; ');
+  const h4 = u.querySelector('.sp-hd h4'), sm = u.querySelector('.sp-hd small'), lastG = U.games[U.games.length - 1];
+  const small = `${etDayL(U.first)} · ${etTimeL(U.first)}${etTimeL(etKickL(lastG)) !== etTimeL(U.first) ? ' to ' + etTimeL(etKickL(lastG)) : ''}`;
+  if (!h4 || h4.id !== 'spg-' + U.id || u.getAttribute('aria-labelledby') !== 'spg-' + U.id || u.getAttribute('role') !== 'group' || txt(h4) !== `Week ${U.w}, ${U.games.length} game${U.games.length === 1 ? '' : 's'}` || txt(sm) !== small || u.querySelector('.sp-hd .pill'))
+    bad.push(`the slot is not a group named by its h4, "Week ${U.w}, ${U.games.length} games", over "${small}": ${txt(u.querySelector('.sp-hd'))}`);
+  const phase = now < U.lock ? 'live' : now < U.first ? (own ? 'own' : 'locked') : 'under', mark = 'Locked since ' + etSayL(U.lock) + '.';
+  /* under way, the record's set as it locked, or (own: the record has none) this browser's own kept from before the
+     first kickoff, said so, or none at all, since nothing is built of the page's own once the slot is under way */
+  const ownNote = ' This browser’s own set: the site’s was not published in time, so the record does not grade it.', underAt = `${mark} Under way since ${etSayL(U.first)}.`;
+  const wants = { live: [`Locks ${etSayL(U.lock)}, 2 hours before the first kickoff.`], own: [mark + ownNote], locked: [mark],
+    under: own ? [underAt + ownNote, underAt + ' The site’s set was not published in time.'] : [underAt] }[phase];
+  const ph = u.querySelector(':scope > p.sp-lock[data-sp-phase]');
+  /* live with the tab off the screen: the set is not built until it is opened, and the unit says so (the page's rule) */
+  const hidden = !!d.getElementById('tab-suggest') && d.getElementById('tab-suggest').hidden;
+  const waitOk = phase === 'live' && hidden && !!ph && ph.dataset.spPhase === 'wait' && txt(ph) === 'Built when this tab is open.';
+  if (!waitOk && (!ph || ph.dataset.spPhase !== phase || !wants.includes(txt(ph)))) bad.push(`its line is ${ph ? ph.dataset.spPhase + ' "' + txt(ph) + '"' : 'missing'}, not ${phase} "${wants.join('" or "')}"`);
+  return bad.length ? bad.join('; ') : null; };
 /* jsdom draws nothing, so the card's image is checked on a recorder: a canvas whose 2D context
    keeps every piece of text drawn on it (and the font it was drawn in), a toBlob that hands back a
    blob of the type asked for, a blob address, and a download that is an anchor clicked, recorded.
@@ -1448,24 +1526,69 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         const setLegs = [ml2, builder(side)[rbKey]].map(l => Object.assign({ key: l.gid + '|' + l.pid + '|' + l.stat }, l));
         const WHY = 'Only 2 legs in this game: a parlay takes one leg a player, and one side and one total a game.';
         const dk = dkMade(); dk[String(wk)][g2.id][`team:${g2.h}|ml`] = DK_ML2.h; dk[String(wk)][g2.id][`team:${g2.a}|ml`] = DK_ML2.a;
+        /* (app v118) the Elo picks' two made-up players beside the runner, each with DraftKings' id at his own line */
+        const DK_WR = 'SMOKE4#rec_555', DK_TE = 'SMOKE4#rcp_35';
+        dk[String(wk)][g2.id]['card-wr|receiving_yards|over|55.5'] = DK_WR; dk[String(wk)][g2.id]['card-te|receptions|over|3.5'] = DK_TE;
+        /* a unit other than this game (the Sunday slot below) is built from the set made up for it there (window.__spOther),
+           and with none, all four levels empty */
         w.eval(`(()=>{ const g=S.sched.find(x=>x.id===${JSON.stringify(g2.id)}); g.d='2099-12-31'; g.t='20:15'; g.mla=${ML_G2.a}; g.mlh=${ML_G2.h};
           PAY.dk=${JSON.stringify(dk)};
           pbGames=function(){ return S.sched.filter(x=>x.id===${JSON.stringify(g2.id)}); };
-          spBuild=function(g){ return {gid:g.id,pref:2,thin:0,mkt:0,far:0,farDk:0,noId:0,moved:0,plGames:1,plNoId:0,tiers:[
+          spBuild=function(g){ if(g.id!==${JSON.stringify(g2.id)}){ const o=typeof window.__spOther==='function'?window.__spOther(g):null; if(o) return o;
+              const why='Nothing in this smoke\\u2019s made-up sets for this unit.';
+              return {gid:g.id,pref:0,thin:0,mkt:0,far:0,farDk:0,noId:0,moved:0,plGames:1,plNoId:0,tiers:[['safe','Safe',2,0],['med','Medium',3,0.25],['aggr','Aggressive',4,0.12],['xtrm','Extreme',5,0.05]].map(([id,label,n,floor])=>({id,label,n,floor,why}))}; }
+            return {gid:g.id,pref:2,thin:0,mkt:0,far:0,farDk:0,noId:0,moved:0,plGames:1,plNoId:0,tiers:[
             {id:'safe',label:'Safe',n:2,floor:0,legs:${JSON.stringify(setLegs)},corr:0.41,indep:0.38,dec:3.1,thin:0,mkt:0,fair:{p:0.33,est:false,miss:0}},
             {id:'med',label:'Medium',n:3,floor:0.25,why:${JSON.stringify(WHY)}},{id:'aggr',label:'Aggressive',n:4,floor:0.12,why:${JSON.stringify(WHY)}},{id:'xtrm',label:'Extreme',n:5,floor:0.05,why:${JSON.stringify(WHY)}}]}; };
           SP_CACHE=new Map(); renderParlay(); })()`);
         await wait(20);
+        /* (app v118) each unit's Elo picks (the owner's call of 19 October 2026): the ELO tab's four levels on the unit's
+           games alone, which window.eloUnit hands Suggested Parlays, made up here as the set is (the rule itself is held
+           by elo/check_tab.js and the nflbets smoke; here, what the tab and the card do with what it hands over). This
+           game's Safe is two players' main lines, the runner's and a receiver's, each with its Elo chance (pe) and
+           DraftKings' id at its own line, its Elo chance all land and its price the builder's own sums on them; the record's
+           (below) the runner's and a tight end's, so the two are told apart; the other three levels empty, saying why, as
+           eloUnit hands an empty level over. A unit not made up here gets four empty levels. Stood in below, with spOn,
+           and put back with it */
+        const PO = w.eval('pbOrder'), PP = w.eval('parlayProb'), PD = w.eval('parlayDec');
+        const eloLeg = (gid, pid, stat, k, price, pe, name, team, opp, grp, words) => ({ key: `${gid}|${pid}|${stat}`, gid, pid, stat, k, side: 'over', main: true, p: 0.55, pe, price, src: 'real', mu: k, name, pos: grp, grp, team, opp, week: wk, label: `Over ${k} ${words}` });
+        const ELO_EMPTY = [['med', 'Medium', 3, 0.25], ['aggr', 'Aggressive', 4, 0.12], ['xtrm', 'Extreme', 5, 0.05]];
+        const eloWhy = (where, n, m = 2) => `Only ${m} player${m === 1 ? '' : 's'} ${where} qualif${m === 1 ? 'ies' : 'y'}: this level takes ${n}.`;
+        const eloSafe = (legs, fair) => { const L = PO(legs).map(l => ({ ...l })), p = PP(L.map(l => ({ ...l, p: l.pe }))).corr, dec = PD(L.map(l => ({ leg: l, ml: l.price })));
+          return { id: 'elo-safe', label: 'Safe', n: 2, floor: 0.35, legs: L, p, dec, ...(fair != null ? { fair: { p: fair, est: false } } : {}) }; };
+        const eloSet = (safe, where) => ({ tiers: [safe, ...ELO_EMPTY.map(([id, label, n, floor]) => ({ id: 'elo-' + id, label, n, floor, why: eloWhy(where, n) }))], candidates: safe ? 2 : 0 });
+        const RB_E = eloLeg(g2.id, 'card-rb', 'rushing_yards', 64.5, 105, 0.58, 'Card Runner', g2.h, g2.a, 'RB', 'rushing yards');
+        const WR_E = eloLeg(g2.id, 'card-wr', 'receiving_yards', 55.5, -115, 0.62, 'Card Catcher', g2.a, g2.h, 'WR', 'receiving yards');
+        const TE_E = eloLeg(g2.id, 'card-te', 'receptions', 3.5, -125, 0.66, 'Card End', g2.h, g2.a, 'TE', 'receptions');
+        const NIGHT_E = eloSafe([RB_E, WR_E], 0.30);
+        /* the Sunday slot's made-up sets, filled in by the slot's own block below: its game ids (sorted) and its Elo picks */
+        const SLOT_E = { ids: null, safe: null };
+        const eloStand = (gids, o) => { const ids = [...(gids || [])].map(String).sort().join(), where = (o && o.where) || 'on your picks';
+          const r = ids === g2.id ? eloSet(NIGHT_E, where) : SLOT_E.ids && ids === SLOT_E.ids ? eloSet(SLOT_E.safe, where)
+            : { tiers: [['safe', 'Safe', 2, 0.35], ...ELO_EMPTY].map(([id, label, n, floor]) => ({ id: 'elo-' + id, label, n, floor, why: eloWhy(where, n, 0) })), candidates: 0 };
+          return w.JSON.parse(JSON.stringify(r)); };
+        /* the Sunday slot's section at the fixture's own clock, before anything stands in for the tab's rules: the rule
+           worked out here (slotNextL) on the schedule as the fixture has it, every number and word the rule's. The
+           fixture's own slot, with its live, locked and under-way sets, is made up further down */
+        const slotNow = () => { const now = w.eval('Date.now()'), S0 = w.eval('S'), weeks = w.eval('PAY.sched').map(g => g.w);
+          return { now, U: slotNextL(weeks, S0.sched, now, SEA), wk: liveWeekL(weeks, S0.sched, now), over: S0.sched.length > 0 && S0.sched.every(g => finalL(g, now)) }; };
+        { const s = slotNow(), bad = slotHeldL(d, s.U, s.now, s.wk, s.over, SEA, true);
+          chk(!bad, `${how}: at the fixture's clock, the Sunday slot's section is not as its rule has it (${s.U ? s.U.id + (s.U.up ? ' up' : ' not up') : 'none to come, week ' + s.wk}): ` + bad); }
         /* the night rule on this set as the page has it, before anything stands in for it: the Thursday night game is
            the next night, and goes up on the morning after the last prime-time night before it on the schedule (the
            season's own last one), so until then the tab names it and says when, and draws no set; once that morning
            has come, its set. Then the tab's one question of which games it sets out (spOn) is stood in by every
            prime-time game, so the card checks below hold on any day; put back at the end */
         { const S0 = w.eval('S'), G0 = S0.sched.find(x => x.id === g2.id), no = nightOpenL(G0, S0.sched), up = no.open == null || w.eval('Date.now()') >= no.open;
-          const el = d.querySelector('#spSets [data-sp-wait]'), on = [...d.querySelectorAll('#spSets .sp-game[data-sp-game]')].map(x => x.dataset.spGame).join();
+          /* (app v118) in the Night games section: the Sunday slot's has a wait line and a set of its own */
+          const NS = '#spSets section.sp-sec[data-sp-sec="night"]';
+          const el = d.querySelector(`${NS} [data-sp-wait]`), on = [...d.querySelectorAll(`${NS} .sp-game[data-sp-game]`)].map(x => x.dataset.spGame).join();
           const TNl = w.eval('TEAM_NAMES'), say = `Next up: Thursday night, ${TNl[g2.a] || g2.a} at ${TNl[g2.h] || g2.h}.` + (no.open != null ? ` Its set goes up ${etSayL(no.open)}, the morning after ${PRIME_NIGHT_L[new Date(no.prev + 'T12:00:00Z').getUTCDay()]}’s ${no.pg > 1 ? 'games' : 'game'}.` : '');
           chk(primeL(G0) && (up ? on === g2.id && !el : on === '' && !!el && el.dataset.spWait === new Date(no.open).toISOString().replace(/\.\d{3}Z$/, 'Z') && el.dataset.spNext === g2.id && txt(el) === say && w.eval('spTier')(fid) === null),
             `${how}: by the night rule the Thursday night game's set is ${up ? 'up' : 'not up until ' + new Date(no.open).toISOString()}, and the tab ${on ? 'sets out ' + on : el ? 'says "' + txt(el) + '"' : 'draws neither a set nor a line'}${up ? '' : ', not "' + say + '"'}`); }
+        /* (app v118) and the Elo picks each unit is handed (eloStand above), put back with spOn */
+        const realNow0 = w.Date.now;
+        w.__eloUnitL = w.eloUnit; w.eloUnit = eloStand;
         w.eval('window.__spOnL=spOn; spOn=function(){ return spGames(); }; SP_SHOWN=null; renderParlay()'); await wait(20);
         /* (put back whatever happens below, in its own slot) */
         try {
@@ -1479,13 +1602,33 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
            no line under a level saying why a leg is not a Value pick or a total is there */
         chk(!!set() && txt(set().querySelector('[data-sp-phase="live"]')) === 'Locks Thu 6:15 PM ET, 2 hours before kickoff.',
           `${how}: the Thursday night game's set does not say in one short line that it is live until its lock, 2 hours before kickoff: ` + txt(set()));
-        chk(!!set() && ![...set().querySelectorAll('p.pb-thin')].some(p => !p.classList.contains('pb-espnline') && !p.classList.contains('sp-upd')) && !sp.querySelector('#spHead .pb-lead, #spSets .pb-foot, #spRec p')
+        chk(!!set() && ![...set().querySelectorAll('p.pb-thin')].some(p => !p.classList.contains('pb-espnline') && !p.classList.contains('sp-upd')) && !sp.querySelector('#spHead .pb-lead, #spSets .pb-foot, #spSets .sp-rec p, #spHead .sp-rec')
           && !/Refresh odds updates it until then|is not a Value pick|are not Value picks|One night is shown at a time|Each set is built from its game|The record starts with this change/.test(txt(sp.querySelector('#spHead')) + ' ' + txt(sp.querySelector('#spSets'))),
           `${how}: Suggested Parlays still draws one of its long paragraphs (a lead, a foot, the record's sentence or a level's why-line): ` + txt(sp.querySelector('#spSets')).slice(0, 200));
         const tb = d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`);
         chk(!!tb && /^Finish$/.test(txt(tb)) && !!d.querySelector(`#spPanel [data-sp-add="${fid}"]`) && !d.querySelector(`#spPanel [data-pc-finish="sp|${g2.id}:med"]`) && !d.querySelector(`#spPanel [data-sp-add="${g2.id}:med"]`)
           && txt(set() && set().querySelector('.pb-tier.med .pb-why')) === WHY,
           `${how}: a set's level has no Finish and Add to builder, or an empty level offers one or does not say why`);
+        /* (app v118) the unit's two kinds of level, in this order: "Model parlays" over its four cards, then "Elo picks"
+           over the four Elo cards, elo-safe to elo-xtrm (the Elo picks are each unit's own since that day, no longer one
+           section at the tab's foot over the Parlay Builder's ticks); the Elo Safe's two legs each with an Add, its Add to
+           builder and Finish named for the unit and the level (sp|<unit>:elo-safe); the empty three saying why, "in this
+           game", with neither. Nothing is left of the old section (#pbElo, its Add, its "elo|" Finish, its wait line), and
+           with no record and no backtest read (this smoke's fetch stub serves neither) each section's record is hidden */
+        { const tierId = c => c.dataset.pbTier || [...c.classList].find(k => k !== 'pb-tier' && k !== 'none');
+          const parts = set() ? [...set().children].filter(x => x.matches('h5.sp-sub, div.pb-tiers')).map(x => `${x.tagName.toLowerCase()}:${x.dataset.spKind}:${x.tagName === 'H5' ? txt(x) : [...x.children].filter(c => c.matches('.pb-tier')).map(tierId).join('+')}`).join(' / ') : '';
+          const wantParts = 'h5:model:Model parlays / div:model:safe+med+aggr+xtrm / h5:elo:Elo picks / div:elo:elo-safe+elo-med+elo-aggr+elo-xtrm';
+          const E = k => set() && set().querySelector(`.pb-tiers[data-sp-kind="elo"] > .pb-tier.${k}`);
+          chk(parts === wantParts, `${how}: the unit does not draw its model parlays and then its Elo picks, each under its own heading: ${parts}`);
+          chk(!!E('elo-safe') && E('elo-safe').querySelectorAll('[data-pb-leg]').length === 2 && !!E('elo-safe').querySelector(`[data-sp-add="${g2.id}:elo-safe"]`)
+            && /^Finish$/.test(txt(E('elo-safe').querySelector(`[data-pc-finish="sp|${g2.id}:elo-safe"]`)))
+            && ELO_EMPTY.every(([id, , n]) => !!E('elo-' + id) && txt(E('elo-' + id).querySelector('.pb-why')) === eloWhy('in this game', n) && !E('elo-' + id).querySelector('[data-sp-add], [data-pc-finish], [data-pb-leg]')),
+            `${how}: the unit's Elo Safe has not its two legs' Adds, an Add to builder and a Finish named sp|${g2.id}:elo-safe, or an empty Elo level does not say why in this game, or offers a button: ` + (set() ? txt(set().querySelector('.pb-tiers[data-sp-kind="elo"]')).slice(0, 300) : 'no set'));
+          chk(!d.getElementById('pbElo') && !d.querySelector('[data-pb-elo-add], [data-pc-finish^="elo|"], [data-pb-elo-wait], #spSets [data-sp-elo-wait]'),
+            `${how}: something of the Elo picks' old section is still on the page (#pbElo, its Add, its "elo|" Finish or its wait line), or the unit waits on the Elo ratings it was handed`);
+          const recs = [...d.querySelectorAll('#spSets .sp-rec')].map(r => `${r.dataset.spRecsec}:${r.hidden ? 'hidden' : 'shown'}:${r.previousElementSibling && r.previousElementSibling.matches('h3.sp-sech') ? txt(r.previousElementSibling) : '-'}`).join(' / ');
+          chk(recs === 'night:hidden:Night games / slot:hidden:Sunday slot' && !d.querySelector('#spHead .sp-rec, #spHead [data-sp-rec], #spRec'),
+            `${how}: with no record and no backtest, the two sections' records are not each hidden under their own heading, or a record is at the tab's head: ${recs}`); }
         /* each leg of a set has its own Add, 44px, named for the leg, pressed while the leg is in the
            builder: the runner's main line is (the builder holds it from above), the home money line is not */
         const legBtn = key => set() && set().querySelector(`[data-pb-tier="safe"] [data-pb-leg="${key}"]`);
@@ -1541,6 +1684,39 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             chk(!!L && Object.keys(w.eval('S').parlay).length === 2 && L.price === ML_G2.h && L.src === 'real' && L.stat === 'ml' && L.team === g2.h
               && !!a3 && a3.getAttribute('aria-pressed') === 'true' && txt(a3) === 'Added' && a3.getAttribute('aria-label') === 'Remove Home Side, To win, from the builder' && d.activeElement === a3,
               `${how}: a leg's Add did not put that leg in the builder at the game's own moneyline, or does not read Added with the focus on it: ` + JSON.stringify(L)); } }
+        /* (app v118) an Elo pick's Finish (data-pc-finish="sp|<unit>:elo-<level>") opens the card on the level as the tab
+           shows it, as an Elo pick: its kicker "<Label> Elo pick · <game>", every leg with its book price, the price its
+           sums give, the chance the Elo's (the book's fair chance first, then "Elo says" and the price's), what the Bet
+           amount pays, and both legs on DraftKings' slip at their own ids, in the card's order; Escape gives the focus back
+           to the Finish. Its Add to builder leaves exactly its legs in the builder, the focus kept on it. eloCard: what the
+           card holds, against a level (t, its legs as drawn) and its fair chance, the Elo chance worked by the builder's own
+           sums on the legs' Elo chances (pe) */
+        const fmtL = p => p > 0 ? '+' + p : '−' + Math.abs(p), mny2 = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const DK_OF = { 'card-rb': DK_RBS.over, 'card-wr': DK_WR, 'card-te': DK_TE };
+        const eloCard = (t, fair, kick, stake, dkIds) => { const view = d.getElementById('pcView'), lis = view ? [...view.querySelectorAll('.pc-legs > li')] : [], bad = [];
+          const L = PO(t.legs.map(l => ({ ...l }))), p = PP(L.map(l => ({ ...l, p: l.pe }))).corr, dec = PD(L.map(l => ({ leg: l, ml: l.price })));
+          if (md.hidden) return 'the card did not open';
+          if (txt(view.querySelector('.pc-kick')) !== kick) bad.push(`its kicker is "${txt(view.querySelector('.pc-kick'))}", not "${kick}"`);
+          const pr = w.eval('fmtML')(w.eval('decToML')(dec)).replace('-', '−'); if (txt(view.querySelector('.pc-price')) !== pr) bad.push(`its price is ${txt(view.querySelector('.pc-price'))}, not ${pr}`);
+          if (lis.length !== L.length || !L.every(l => lis.some(li => txt(li.querySelector('.pc-who')) === l.name && txt(li.querySelector('.pc-what')) === l.label && txt(li.querySelector('.pc-lp')).startsWith(fmtL(l.price)))))
+            bad.push(`its legs are ${lis.map(li => txt(li)).join(' | ')}, not ${L.map(l => l.name + ' ' + l.label + ' ' + fmtL(l.price)).join(' | ')}`);
+          const ch = `Fair chance all ${L.length} land ${(fair * 100).toFixed(1)}% Elo says ${(p * 100).toFixed(1)}% · the price says ${(100 / dec).toFixed(1)}%`;
+          if (!txt(view.querySelector('.pc-chance')).startsWith(ch)) bad.push(`its chance reads "${txt(view.querySelector('.pc-chance'))}", not "${ch}"`);
+          if (cash() !== `${mny2(stake)} | ${mny2(stake * dec)} | +${mny2(stake * dec - stake)}`) bad.push(`it pays ${cash()} on ${mny2(stake)}`);
+          if (dkIds) { const want = 'https://sportsbook.draftkings.com/?outcomes=' + lis.map(li => dkIds[(L.find(l => l.name === txt(li.querySelector('.pc-who'))) || {}).pid] || 'none').map(x => x.replace(/#/g, '%23')).join('+');
+            if (d.getElementById('pcDk').getAttribute('href') !== want) bad.push(`Open in DraftKings is ${d.getElementById('pcDk').getAttribute('href')}, not ${want}`); }
+          return bad.length ? bad.join('; ') : null; };
+        { const ef = d.querySelector(`#spPanel [data-pc-finish="sp|${g2.id}:elo-safe"]`);
+          if (ef) { ef.click(); await wait(20); }
+          const bad = ef ? eloCard(NIGHT_E, 0.30, `Safe Elo pick · ${g2.a} at ${g2.h}`, 12.5, DK_OF) : 'no Finish on the Elo Safe';
+          chk(!bad, `${how}: Finish on the night game's Elo Safe does not open the card on it as an Elo pick: ` + bad);
+          if (ef) { d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            chk(md.hidden && d.activeElement === ef, `${how}: Escape on an Elo pick's card did not close it, or the focus did not go back to its Finish`); }
+          const ea = d.querySelector(`#spPanel [data-sp-add="${g2.id}:elo-safe"]`);
+          if (ea) { ea.click(); await wait(30); }
+          const inB = Object.keys(w.eval('S').parlay).sort().join();
+          chk(!!ea && inB === NIGHT_E.legs.map(l => l.key).sort().join() && d.activeElement === d.querySelector(`#spPanel [data-sp-add="${g2.id}:elo-safe"]`),
+            `${how}: an Elo pick's Add to builder did not leave exactly its legs in the builder, or lost the focus: ${inB}`); }
         /* locked: from 2 hours before kickoff the set is the site's, the record's entry for the game (the
            props job's suggest_ledger.json, its prime map, made up here: this smoke's fetch stub serves no
            record), taken before the lock on other legs than the live set's, the away money line and the
@@ -1554,12 +1730,29 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
              to builder then pays, never the rounded figures */
           const safeLegs = [legOut(away, 0.45), legOut(builder(side)[rbKey], 0.5)], L2 = w.eval('pbOrder')(safeLegs.map(l => ({ ...l, key: `${l.gid}|${l.pid}|${l.stat}` })));
           const pj = w.eval('parlayProb')(L2).corr, dj = w.eval('parlayDec')(L2.map(l => ({ leg: l, ml: l.price }))), mny = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          /* (app v118) the record's Elo picks for the game beside its set, as the job keeps them (spTierOut): each leg with
+             its Elo chance (pe), the level's Elo chance all land and its price rounded as the record rounds them, its fair
+             chance the book's at the lock; the runner's line and the tight end's, so the record's are told from the live
+             ones (the runner's and the receiver's) */
+          const eloOut = l => ({ gid: l.gid, week: wk, pid: l.pid, team: l.team, grp: l.grp, stat: l.stat, k: l.k, side: l.side, main: !!l.main, price: l.price, src: 'real', name: l.name, label: l.label, p: l.p, pe: l.pe, fair: null, fair_est: false, thin: null, market: null });
+          const REC_E = eloSafe([RB_E, TE_E], 0.27);
+          const eloRec = [{ id: 'elo-safe', label: 'Safe', n: 2, floor: 0.35, legs: REC_E.legs.map(eloOut), p: Math.round(REC_E.p * 1e4) / 1e4, fair: 0.27, fair_est: false, dec: Math.round(REC_E.dec * 1e3) / 1e3, likeliest: false, thin: 0, mkt: 0 },
+            ...ELO_EMPTY.map(([id, label, n, floor]) => ({ id: 'elo-' + id, label, n, floor, why: eloWhy('in this game', n) }))];
           const entry = { season: SEA, week: wk, gid: g2.id, away: g2.a, home: g2.h, kickoff: kIso, lock: new Date(LOCK).toISOString().replace(/\.\d{3}Z$/, 'Z'), baked_at: taken, pool: {}, taken_at: taken,
             tiers: [{ id: 'safe', label: 'Safe', n: 2, floor: 0, legs: safeLegs, p: Math.round(pj * 1e4) / 1e4, fair: 0.25, fair_est: false, dec: Math.round(dj * 1e3) / 1e3, likeliest: false, thin: 0, mkt: 0 },
-              ...[['med', 'Medium', 3, 0.25], ['aggr', 'Aggressive', 4, 0.12], ['xtrm', 'Extreme', 5, 0.05]].map(([id, label, n, floor]) => ({ id, label, n, floor, why: WHY }))] };
-          w.eval(`PB_REC=${JSON.stringify({ prime: { [`${SEA}|${String(wk).padStart(2, '0')}|${kIso}|${g2.id}`]: entry } })}; PB_REC_DONE=true;`);
+              ...[['med', 'Medium', 3, 0.25], ['aggr', 'Aggressive', 4, 0.12], ['xtrm', 'Extreme', 5, 0.05]].map(([id, label, n, floor]) => ({ id, label, n, floor, why: WHY }))], elo: eloRec };
+          const recKey = `${SEA}|${String(wk).padStart(2, '0')}|${kIso}|${g2.id}`;
+          w.eval(`PB_REC=${JSON.stringify({ prime: { [recKey]: entry } })}; PB_REC_DONE=true; PB_REC_STATE=spState();`);
           w.Date.now = () => KICK - 3600e3;
           w.eval('renderParlay()'); await wait(30);
+          /* (app v118) with a record read, each section's record is drawn under its own heading, a row for the model's
+             parlays and one for the Elo picks, each "None graded yet" where nothing of it is graded (this entry has no
+             grade yet, and the Sunday slot no entry), and no record at the tab's head */
+          { const rows = sec => { const r = d.querySelector(`#spSets section.sp-sec[data-sp-sec="${sec}"] > h3.sp-sech + div.sp-rec[data-sp-recsec="${sec}"]`);
+              return !r ? 'no record under its heading' : r.hidden ? 'hidden' : [...r.querySelectorAll(':scope > .bar[data-sp-reckind]')].map(b => `${b.dataset.spReckind}:${txt(b.querySelector('.sp-reck'))}:${[...b.querySelectorAll('[data-sp-rec]')].map(x => x.dataset.spRec + '=' + txt(x)).join('+')}`).join(' / '); };
+            const want = sec => `model:Model parlays:${sec}:model:none=None graded yet / elo:Elo picks:${sec}:elo:none=None graded yet`;
+            chk(rows('night') === want('night') && rows('slot') === want('slot') && !d.querySelector('#spHead .sp-rec, #spHead [data-sp-rec]'),
+              `${how}: with a record read and nothing graded, a section's record is not its two rows saying none is graded yet, under its heading: ${rows('night')} | ${rows('slot')}`); }
           const ph = set() && set().querySelector('[data-sp-phase]');
           /* (app v113) one short line: the record's set is the one shown (its legs, below), "Locked since Thu 6:15 PM ET." */
           chk(!!ph && ph.getAttribute('data-sp-phase') === 'locked' && txt(ph) === 'Locked since Thu 6:15 PM ET.' && !!ph.querySelector('.sp-lockmark') && txt(ph.querySelector('.sp-lockmark')) === 'Locked',
@@ -1581,8 +1774,112 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           /* the record keeps both legs as Value picks (thin false, no total): the locked card marks each Value (app v112) */
           chk(!!set() && [...set().querySelectorAll('[data-pb-tier="safe"] .pb-legs li')].length === 2 && [...set().querySelectorAll('[data-pb-tier="safe"] .pb-legs li')].every(li => li.querySelectorAll('i.pb-valmark').length === 1 && txt(li.querySelector('i.pb-valmark')) === 'Value')
             && !/\bthin[ -]edge\b|\bno edge\b/i.test(txt(set())), `${how}: the locked set's legs, kept as Value picks, are not each marked Value, or the set still says thin edge or no edge`);
+          /* (app v118) the locked Elo picks are the record's too (its entry's elo), drawn under the set's, with no line saying
+             they are this browser's own; Finish on the Elo Safe opens the card on the record's legs, its Elo chance worked
+             again by the builder's own sums on their Elo chances as kept, its fair chance the one kept */
+          const eSafe = () => set() && set().querySelector('.pb-tiers[data-sp-kind="elo"] [data-pb-tier="elo-safe"]');
+          const keptG = () => { let k = null; try { k = JSON.parse(w.localStorage.getItem('props_sp_lock_v1') || 'null'); } catch (e) { return 'junk'; } return k && k.games ? k.games[g2.id] || null : null; };
+          chk(!!eSafe() && /Card Runner/.test(txt(eSafe())) && /Card End/.test(txt(eSafe())) && !/Card Catcher/.test(txt(eSafe())) && !set().querySelector('[data-sp-phase="eloown"]'),
+            `${how}: an hour before kickoff the Elo picks drawn are not the record's (the runner's and the tight end's lines), or say they are this browser's own: ` + txt(eSafe()));
+          { const ef = eSafe() && eSafe().querySelector(`[data-pc-finish="sp|${g2.id}:elo-safe"]`);
+            if (ef) { ef.click(); await wait(20); }
+            const bad = ef ? eloCard({ legs: REC_E.legs }, 0.27, `Safe Elo pick · ${g2.a} at ${g2.h}`, 12.5, DK_OF) : 'no Finish on the locked Elo Safe';
+            chk(!bad, `${how}: Finish on the locked Elo Safe does not open the card on the record's Elo pick: ` + bad);
+            if (ef) d.getElementById('pcClose').click(); }
+          /* where the record's entry carries no Elo picks (one taken before the job took them), the page builds its own at
+             the lock, once, and keeps them in the browser beside nothing of the game's set (the set is the record's), with
+             one line saying so, word for word; Finish opens the card on them. An entry that carries them then takes their
+             place, and the browser keeps none */
+          { const { elo: _none, ...noElo } = entry;
+            w.eval(`PB_REC=${JSON.stringify({ prime: { [recKey]: noElo } })}; PB_REC_STATE=spState(); renderParlay()`); await wait(30);
+            const line = set() && set().querySelector('p.sp-lock[data-sp-phase="eloown"]'), kg = keptG();
+            chk(!!line && txt(line) === 'This browser’s own Elo picks: the site’s were not published in time, so the record does not grade them.' && txt(set().querySelector('[data-sp-phase]')) === 'Locked since Thu 6:15 PM ET.'
+              && !!kg && kg !== 'junk' && kg.eloOwn === true && Array.isArray(kg.elo) && kg.elo.map(t => t && t.id).join() === 'elo-safe,elo-med,elo-aggr,elo-xtrm' && Array.isArray(kg.elo[0].legs) && kg.elo[0].legs.map(l => l.pid).sort().join() === 'card-rb,card-wr'
+              && !kg.own && !kg.tiers && /Card Catcher/.test(txt(eSafe())) && !/Card End/.test(txt(eSafe())),
+              `${how}: with no Elo picks in the record's entry, the page's own are not drawn, kept in the browser alone (beside the record's set) and said in one line: ${txt(line)} / ${JSON.stringify(kg).slice(0, 200)}`);
+            const ef = eSafe() && eSafe().querySelector(`[data-pc-finish="sp|${g2.id}:elo-safe"]`);
+            if (ef) { ef.click(); await wait(20); }
+            const bad = ef ? eloCard(NIGHT_E, 0.30, `Safe Elo pick · ${g2.a} at ${g2.h}`, 12.5, DK_OF) : 'no Finish on this browser\'s own Elo Safe';
+            chk(!bad, `${how}: Finish on this browser's own locked Elo Safe does not open the card on it: ` + bad);
+            if (ef) d.getElementById('pcClose').click();
+            w.eval(`PB_REC=${JSON.stringify({ prime: { [recKey]: entry } })}; PB_REC_STATE=spState(); renderParlay()`); await wait(30);
+            const kg2 = keptG();
+            chk(kg2 !== 'junk' && !(kg2 && (kg2.elo || kg2.eloOwn || kg2.own)) && !!eSafe() && /Card End/.test(txt(eSafe())) && !/Card Catcher/.test(txt(eSafe())) && !set().querySelector('[data-sp-phase="eloown"]'),
+              `${how}: the record's Elo picks, once read, did not take the place of this browser's own: ${JSON.stringify(kg2).slice(0, 200)} / ${txt(eSafe())}`); }
           w.Date.now = realNow; w.eval('PB_REC=null; renderParlay()'); await wait(20); }
-        } finally { w.eval('spOn=window.__spOnL; delete window.__spOnL; SP_SHOWN=null; renderParlay()'); }
+        /* (app v118) the Sunday slot (the owner's call of 19 October 2026: "I would like it to have ELO picks for the slot of
+           Sunday games"), on a slot of the fixture's own: week wk's games but the two pinned above moved to Sunday 3 January
+           2100, the first at 9:30 am Eastern (a game abroad), the last two at 4:05 and 4:25 pm and the rest at 1:00, so by
+           the rule it goes up at 6:00 am on the Friday after this Thursday night game and locks at 7:30 am on the Sunday.
+           Its model Safe is the home money lines of its first two games, its Elo Safe two made-up players of those games
+           (the stand-ins above read them from here), each pair priced by the builder's own sums, the rest empty. With no
+           record read, the page's clock is moved through it: the Thursday an hour before this night game's kickoff (not
+           up), the Saturday at noon (up, live), the Sunday at 8:00 am (locked, this browser's own set), at 10:00 am (under
+           way) and at 5:00 pm (past its last kickoff). At each, the section is held to the rule worked out here (slotHeldL
+           on slotNextL: its line word for word, its head, the games and every time the rule's); up and live, Finish on its
+           Elo Safe opens the card as "Safe Elo pick · the Sunday slot", with the Elo chance and every leg, and on its model
+           Safe as "Safe parlay · the Sunday slot"; locked, a leg's own Add puts the leg in as it was locked, never the line
+           as it stands now; under way, its levels are drawn as they locked with nothing to add or finish, and before it is
+           up, under way and after it, no level of it can be finished (spTier). The check fails unless it met all five.
+           Everything moved is put back */
+        { const S1 = w.eval('S'), mv = S1.sched.filter(x => +x.w === wk && x.id !== g1.id && x.id !== g2.id), was = mv.map(x => [x, x.d, x.t, x.mlh]);
+          try {
+            chk(mv.length >= 2, `${how}: week ${wk} has ${mv.length} games beside the two pinned ones, too few to make a Sunday slot of`);
+            mv.forEach((x, i) => { x.d = '2100-01-03'; x.t = i === 0 ? '09:30' : i === mv.length - 1 ? '16:25' : i === mv.length - 2 && mv.length >= 4 ? '16:05' : '13:00'; });
+            const U0 = slotL(S1.sched, wk, SEA), G = U0 ? U0.games : [], TN = w.eval('TEAM_NAMES'), phases = [];
+            if (U0 && G.length >= 2) {
+              const mlLeg = (g, price, p) => ({ key: `${g.id}|team:${g.h}|ml`, gid: g.id, pid: 'team:' + g.h, stat: 'ml', k: 0, side: 'over', main: false, p, price, src: 'real', mu: null, name: TN[g.h] || g.h, pos: 'Game', grp: 'TEAM', team: g.h, opp: g.a, week: wk, label: 'To win' });
+              const ML = PO([mlLeg(G[0], -150, 0.64), mlLeg(G[1], -120, 0.58)]).map(l => ({ ...l })), mc = PP(ML).corr, mdec = PD(ML.map(l => ({ leg: l, ml: l.price })));
+              /* the first leg's game's home money line as it stands now, moved off the locked leg's price (put back below) */
+              G.find(g => g.id === ML[0].gid).mlh = -180;
+              const SWHY = 'Only 2 legs in the Sunday slot: a parlay takes one leg a player, and one side and one total a game.';
+              const slotSet = { pref: 2, thin: 0, mkt: 0, far: 0, farDk: 0, noId: 0, moved: 0, plGames: 1, plNoId: 0, tiers: [{ id: 'safe', label: 'Safe', n: 2, floor: 0, legs: ML, corr: mc, indep: mc, dec: mdec, thin: 0, mkt: 0, fair: { p: 0.5, est: false, miss: 0 } },
+                ...[['med', 'Medium', 3, 0.25], ['aggr', 'Aggressive', 4, 0.12], ['xtrm', 'Extreme', 5, 0.05]].map(([id, label, n, floor]) => ({ id, label, n, floor, why: SWHY }))] };
+              SLOT_E.ids = G.map(g => g.id).sort().join();
+              SLOT_E.safe = eloSafe([eloLeg(G[0].id, 'slot-qb', 'passing_yards', 224.5, -110, 0.6, 'Slot Passer', G[0].h, G[0].a, 'QB', 'passing yards'),
+                eloLeg(G[1].id, 'slot-wr', 'receiving_yards', 59.5, 100, 0.57, 'Slot Catcher', G[1].a, G[1].h, 'WR', 'receiving yards')], 0.33);
+              w.__spOther = g => g && g.slot && Array.isArray(g.games) && g.games.map(x => x.id).sort().join() === SLOT_E.ids ? w.JSON.parse(JSON.stringify({ gid: g.id, ...slotSet })) : null;
+              const sid = U0.id, moments = [['the Thursday an hour before the night game', KICK - 3600e3], ['the Saturday at noon', etAtL('2100-01-02', '12:00')],
+                ['the Sunday at 8:00 am', etAtL('2100-01-03', '08:00')], ['the Sunday at 10:00 am', etAtL('2100-01-03', '10:00')], ['the Sunday at 5:00 pm', etAtL('2100-01-03', '17:00')]];
+              for (const [when, t] of moments) {
+                w.Date.now = () => t; w.eval('SP_SHOWN=null; renderParlay()'); await wait(30);
+                const s = slotNow(), bad = slotHeldL(d, s.U, s.now, s.wk, s.over, SEA, true);
+                const ph = !s.U ? 'none' : !s.U.up ? 'wait' : t < s.U.lock ? 'live' : t < s.U.first ? 'locked' : 'under';
+                phases.push(ph);
+                chk(!bad, `${how}: ${when}, the Sunday slot's section is not as its rule has it (${s.U ? s.U.id + ' ' + ph : 'none to come, week ' + s.wk}): ` + bad);
+                const u = d.querySelector(`#spSets [data-sp-game="${sid}"]`), fin = ['safe', 'med', 'aggr', 'xtrm'].flatMap(id => [id, 'elo-' + id]).filter(id => w.eval('spTier')(`${sid}:${id}`) != null);
+                if (ph === 'wait' || ph === 'none' || ph === 'under')
+                  chk(!fin.length && !(u && u.querySelector('[data-sp-add], [data-pc-finish], [data-pb-leg]')), `${how}: ${when}, the Sunday slot (${ph}) still lets ${fin.join(', ') || 'a card of it'} be added or finished`);
+                if (ph === 'locked') {
+                  /* a leg's own Add on the locked slot puts that leg in as it was locked, its line and price, never the line
+                     as it stands now: the first leg's game has its home money line moved to -180 since (put back below),
+                     its locked leg is at its own price */
+                  w.eval('S.parlay={}; save(); renderParlay()'); await wait(20);
+                  const key = ML[0].key, uu = d.querySelector(`#spSets [data-sp-game="${sid}"]`), b = uu && uu.querySelector(`.pb-tier[data-pb-tier="safe"] [data-pb-leg="${key}"]`);
+                  if (b) { b.click(); await wait(30); }
+                  const L = w.eval('S').parlay[key];
+                  chk(!!b && !!L && L.price === ML[0].price && L.stat === 'ml' && L.team === ML[0].team && Object.keys(w.eval('S').parlay).length === 1,
+                    `${how}: ${when}, a leg's own Add on the locked Sunday slot does not put that leg in as it was locked (${fmtL(ML[0].price)}), but ${L ? 'at ' + fmtL(L.price) : 'nothing'}`);
+                  w.eval('S.parlay={}; save(); renderParlay()'); await wait(20); }
+                if (ph === 'under')
+                  chk(!!u && ['safe', 'elo-safe'].every(id => !!u.querySelector(`.pb-tier[data-pb-tier="${id}"] .pb-legs li`)) && !u.querySelector('.pb-acts'),
+                    `${how}: ${when}, the Sunday slot under way does not show its levels as they locked, with no Add to builder or Finish: ` + txt(u).slice(0, 200));
+                if (ph === 'live') {
+                  const ef = u && u.querySelector(`[data-pc-finish="sp|${sid}:elo-safe"]`);
+                  if (ef) { ef.click(); await wait(20); }
+                  const bad2 = ef ? eloCard(SLOT_E.safe, 0.33, 'Safe Elo pick · the Sunday slot', 12.5, null) : 'no Finish on its Elo Safe';
+                  chk(!bad2, `${how}: ${when}, Finish on the Sunday slot's Elo Safe does not open the card on it as an Elo pick: ` + bad2);
+                  if (ef) d.getElementById('pcClose').click();
+                  const mf = u && u.querySelector(`[data-pc-finish="sp|${sid}:safe"]`);
+                  if (mf) { mf.click(); await wait(20); }
+                  chk(!!mf && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === 'Safe parlay · the Sunday slot' && d.querySelectorAll('#pcView .pc-legs > li').length === 2 && ML.every(l => txt(d.getElementById('pcView')).includes(l.name)),
+                    `${how}: ${when}, Finish on the Sunday slot's model Safe does not open the card on it: ` + txt(d.querySelector('#pcView .pc-head')));
+                  if (mf) d.getElementById('pcClose').click(); }
+              }
+            }
+            chk(phases.join() === 'wait,live,locked,under,none', `${how}: the fixture's Sunday slot did not pass through each of its phases by the rule (${phases.join(', ') || 'no slot made'}): the check met fewer than it holds`);
+          } finally { was.forEach(([x, dd, tt, mh]) => { x.d = dd; x.t = tt; if (mh === undefined) delete x.mlh; else x.mlh = mh; }); SLOT_E.ids = null; w.__spOther = null; w.Date.now = realNow0; w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderParlay()'); await wait(20); } }
+        } finally { w.Date.now = realNow0; w.eloUnit = w.__eloUnitL; delete w.__eloUnitL; w.__spOther = null; w.eval('PB_REC=null; spOn=window.__spOnL; delete window.__spOnL; SP_SHOWN=null; renderParlay()'); }
         await wait(20);
         chk(w.eval('S').saved.map(p => p.id).join() === 'saved-before' && reads(), `${how}: finishing a suggestion saved it`); }
     }

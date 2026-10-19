@@ -45,7 +45,6 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-alt{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
 .pe-alt b{color:var(--ink-2);font-weight:600}
 .pe-altsum{margin:10px 0 0;font-size:12px;color:var(--ink-2)}
-/* Elo picks: the last section of Suggested Parlays (#pbElo, at the tab's foot since app v111), styled with its own tier cards */
 /* mismatches: five bubbles over the Props game list, the rest in a window */
 .pe-mm{margin:0 0 16px}
 .pe-mm h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -104,17 +103,16 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-pl td.pe-n b{font-family:var(--display);font-size:14px}
 .pe-pl tr.pe-weak td{opacity:.55}
 @media(max-width:640px){ .pe-pl-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
-#pbElo .pb-legs .nm .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:-2px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
-#pbElo .pb-legs .nm .pe-badge .tierbadge{width:16px;height:18px;flex:none}
-/* the Elo picks' four levels (17 October 2026), side by side as Suggested Parlays' are, each topped in its
-   level's colour (Extreme's own, the theme's, in theme.css) */
-#pbElo .pb-tiers{grid-template-columns:repeat(4,minmax(0,1fr))}
-@media(max-width:1100px){ #pbElo .pb-tiers{grid-template-columns:repeat(2,minmax(0,1fr))} }
-@media(max-width:640px){ #pbElo .pb-tiers{grid-template-columns:minmax(0,1fr)} }
+/* the Elo picks' cards on Suggested Parlays (in each unit since app v118; at the tab's foot, #pbElo, from app v111):
+   each player's shield before his name */
+.pb-tiers[data-sp-kind="elo"] .pb-legs .nm .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:-2px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.pb-tiers[data-sp-kind="elo"] .pb-legs .nm .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+/* the Elo picks' four levels (17 October 2026), side by side as the model's are, each topped in its level's colour
+   (Extreme's own, the theme's, in theme.css) */
 .pb-tier.elo-safe{border-top-color:var(--pick)} .pb-tier.elo-med{border-top-color:var(--gold)} .pb-tier.elo-aggr{border-top-color:var(--miss)} .pb-tier.elo-xtrm{border-top-color:#7C4DFF}
 /* a leg's mismatch this week on an Elo pick, after the name: the game page's tag, its grade in words
    (white on #2563EB to #1E4FA8 is 5.2:1 and up, in either look) */
-#pbElo .pb-legs .nm .pe-mmtag{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-family:var(--body);font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;line-height:1.3;vertical-align:1px;white-space:nowrap;box-shadow:0 0 0 1px rgba(59,130,246,.35)}
+.pb-tiers[data-sp-kind="elo"] .pb-legs .nm .pe-mmtag{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-family:var(--body);font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;line-height:1.3;vertical-align:1px;white-space:nowrap;box-shadow:0 0 0 1px rgba(59,130,246,.35)}
 .pe-track table{margin-top:6px}
 .pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
 /* Overall Offense and Overall Defense, then (16 October 2026) Run Defense, Pass Defense and Pass
@@ -820,16 +818,20 @@ window.eloMatchupP=muP;
 const epId=l=>l.key+'|'+l.side+'|'+l.k;
 const epCmp=(a,b)=>a<b?-1:a>b?1:0;
 /* the candidates: every leg the rules above allow, one a player (his best by value, the main line on a
-   tie, then the lower id), ranked on value, best first; null where the page cannot price a leg */
-function eloCands(){
+   tie, then the lower id), ranked on value, best first; null where the page cannot price a leg. o.games: the games
+   they are drawn from (app v118: a night game's, or the Sunday slot's), else every game the page prices this week.
+   Until app v118 they were the games and player sides ticked on the Parlay Builder tab (pbAllows), so a reader who
+   had unticked the priced games saw no Elo picks at all (Sunday 18 October 2026) */
+function eloCands(o){
   if(!D.players||typeof pricedLegs!=='function'||typeof mlProb!=='function'||typeof mlToDec!=='function') return null;
-  let legs; try{ legs=pricedLegs(); }catch(e){ return null; }
+  const G=o&&Array.isArray(o.games)?new Set(o.games):null;
+  let legs; try{ legs=G&&typeof S==='object'&&S&&Array.isArray(S.sched)?pricedLegs(S.sched.filter(g=>G.has(g.id))):pricedLegs(); }catch(e){ return null; }
   const c=[];
   for(const l of legs){
     /* a real price, or (app v107) one worked from DraftKings' line read on ESPN by Refresh odds, which
        pricedLegs offers only on the kinds the estimate has been checked on */
     if(l.grp==='TEAM'||!(l.src==='real'||l.src==='dkline')||!isFinite(l.price)||l.price<EP.lo||l.price>EP.hi) continue;
-    if(typeof pbAllows==='function'&&!pbAllows(l)) continue;   /* the Parlay Builder's ticked games and player sides */
+    if(G&&!G.has(l.gid)) continue;
     /* (app v109) a leg DraftKings' betslip can take, as the Parlay Builder's levels: DraftKings' own id at
        its line, wherever the payload carries ids for its game (a line read by Refresh odds has none) */
     if(typeof dkCarries==='function'&&dkCarries(l)&&!(typeof dkIdOf==='function'&&dkIdOf(l))) continue;
@@ -1071,16 +1073,17 @@ function epFair(legs){
    which Add to builder and the parlay card's Finish name. o.kept: only what is already built, else {wait}
    (the section, drawn while Suggested Parlays is off the screen, builds nothing: a load of the hub pays nothing
    for a tab nobody opened, as the sets do) */
-let EP_CACHE=null;
+const EP_CACHE=new Map();
 function eloPicks(o){
   const LV=typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?epTiers(PB_TIERS):null;
   if(!LV||typeof parlayProb!=='function'||typeof parlayDec!=='function') return null;
-  const all=eloCands(); if(!all) return null;
+  const all=eloCands(o); if(!all) return null;
+  const where=o&&o.where?o.where:'on your picks';
   const C=epKeep(all);
   /* what the levels stand on: the payload, the levels, the candidates and how each pair of them in one game moves together */
   const rho=[]; for(let i=0;i<C.length;i++) for(let j=i+1;j<C.length;j++) if(C[i].gid===C[j].gid) rho.push(typeof legRho==='function'?legRho(C[i],C[j]):0);
-  const sig=JSON.stringify([typeof PAY==='object'&&PAY?PAY.baked_at||null:null,LV,C,rho]);
-  let base=EP_CACHE&&EP_CACHE.sig===sig?EP_CACHE.base:null;
+  const sig=JSON.stringify([typeof PAY==='object'&&PAY?PAY.baked_at||null:null,LV,C,rho,where]);
+  let base=EP_CACHE.get(sig)||null;
   if(!base&&o&&o.kept) return {tiers:null,wait:true,cands:C,candidates:all.length,games:new Set(C.map(l=>l.gid)).size};
   if(!base){
     /* each level's figures are the props parts' own sums on its legs, worked again; the fast sums are theirs to the
@@ -1088,11 +1091,11 @@ function eloPicks(o){
     const build=()=>{ const P=epPrep(C), memo=new Map();
       return LV.map(t=>{ const [id,label,n,floor]=t, r=epLevel(P,t,memo), x=r&&epExact(r.legs);
         return r?{id:'elo-'+id,label,n,floor,legs:x.legs,p:x.p,dec:x.dec,...(floor&&x.p<floor?{likeliest:true}:{}),same:x.p===r.p&&x.dec===r.dec}
-          :{id:'elo-'+id,label,n,floor,legs:[],why:`Only ${all.length} player${all.length===1?'':'s'} on your picks qualif${all.length===1?'ies':'y'}: this level takes ${n}.`}; }); };
+          :{id:'elo-'+id,label,n,floor,legs:[],why:`Only ${all.length} player${all.length===1?'':'s'} ${where} qualif${all.length===1?'ies':'y'}: this level takes ${n}.`}; }); };
     base=build();
     if(EP_FAST&&base.some(t=>t.legs.length&&!t.same)){ EP_FAST=false; base=build(); }
     base=base.map(({same,...t})=>t);
-    EP_CACHE={sig,base}; }
+    EP_CACHE.set(sig,base); if(EP_CACHE.size>16) EP_CACHE.delete(EP_CACHE.keys().next().value); }
   const tiers=base.map(t=>t.legs.length?{...t,fair:epFair(t.legs),sig:'elo|'+t.legs.map(epId).join(',')}:t);
   return {tiers,cands:C,candidates:all.length,games:new Set(C.map(l=>l.gid)).size};
 }
@@ -1112,45 +1115,45 @@ function epMmTag(v){
   t.title=mmTitle(v);
   t.textContent=g+' mismatch'; return t;
 }
-/* the Elo picks, as their own section at the foot of Suggested Parlays (app v111; until then the Parlay
-   Builder's suggested parlays): built from the games and player sides ticked on the Parlay Builder tab, as
-   they always were, each level added to the builder, a leg at a time or whole, or finished as a card like
-   the sets' own; each leg on a player with a mismatch this week, on the side it favours, wears it after his name */
-function eloSuggest(){
-  const v=document.getElementById('pbElo'); if(!v) return;
-  const tab=document.getElementById('tab-suggest'), shown=!tab||!tab.hidden;
-  const r=eloPicks(shown?undefined:{kept:true}); if(!r||typeof pbTierCard!=='function'){ v.innerHTML=''; return; }
-  const w=typeof currentWeek==='function'?currentWeek():'', sides=typeof pbPlayerSides!=='function'||pbPlayerSides();
-  let body;
-  if(!sides) body=`<p class="pb-why">Tick Player overs or Player unders on the Parlay Builder tab for the Elo picks: every leg is a player's line.</p>`;
-  else if(r.wait) body=`<p class="pb-why" data-pb-elo-wait>Built when this tab is open.</p>`;
-  else if(!r.tiers.some(t=>t.legs.length)) body=`<p class="pb-why">No Elo picks on your picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price on the games and sides ticked'
-    :'only one ranked player beats a book price on the games and sides ticked, and a pick takes two'}. ${typeof dkCarries==='function'&&typeof pbGames==='function'&&pbGames().some(g=>dkCarries({week:g.w,gid:g.id}))
-    ?'A pick takes only legs DraftKings’ betslip can take, by DraftKings’ own id, which comes with its player prices: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET). A line read by Refresh odds carries no id.'
-    :`Player prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET)${typeof espnOn==='function'&&espnOn()?'; DraftKings’ lines read by Refresh odds count too, at our estimate of its price':''}.`}</p>`;
-  else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',by:'Elo',kind:'elo',what:'the Elo picks',add:`data-pb-elo-add="${t.id}"`,
-      rule:`<span class="pb-rule">${epRuleOf(t)}</span>`,badge:l=>badge(l.pid),legP:l=>l.pe})).join('')}</div>`;
-  v.innerHTML=`<h3>Elo picks <span class="pill">week ${w}</span></h3>
-    <p class="muted pb-lead" style="margin:0 0 12px">Players whose Elo matchup beats the book's price, on the games and player sides ticked on the Parlay Builder tab.</p>${body}`;
-  if(!r.tiers) return;
+/* (app v118) the Elo picks of one unit of Suggested Parlays, a night game or the Sunday slot: the four levels on that
+   unit's games alone, whatever the Parlay Builder's ticks say (the owner's call of 19 October 2026: "I would like it to
+   have ELO picks for the slot of Sunday games"), each an empty level with no legs (as a set's own) where it cannot be
+   filled; null until the ratings and the matchups are both in (the matchups are read after the ratings, and a pick
+   needs both), and {error} once either has failed to load, so the unit says so rather than loading for good; o.kept:
+   only what is already built, else {wait} (a hidden tab builds nothing). Suggested Parlays draws
+   them in each unit with its own buttons, and locks, keeps and records them with the unit's set. Until app v118 they
+   were one section at the tab's foot (#pbElo) over the games and player sides ticked on the Parlay Builder tab */
+window.eloUnit=(gids,o)=>{
+  if(D.err) return {error:'The Elo ratings did not load, so there are no Elo picks this time.'};
+  if(!D.players||!D.muDone) return null;
+  if(!D.mu) return {error:'The Elo matchups did not load, so there are no Elo picks this time.'};
+  const r=eloPicks({games:gids,where:o&&o.where,kept:!!(o&&o.kept)}); if(!r) return null;
+  if(r.wait) return {wait:true};
+  return {tiers:r.tiers.map(t=>t.legs&&t.legs.length?t:{id:t.id,label:t.label,n:t.n,floor:t.floor,why:t.why}),candidates:r.candidates};
+};
+/* an Elo pick's card, as Suggested Parlays draws it (pbTierCard): the Elo chance, each leg's own Elo chance, each
+   player's shield, how the level was chosen */
+window.eloCardOpt=t=>({chance:t.p,chanceBy:'Elo chance',by:'Elo',badge:l=>badge(l.pid),legP:l=>l.pe,...(t&&t.legs&&t.legs.length?{rule:`<span class="pb-rule">${epRuleOf(t)}</span>`}:{})});
+/* the Elo picks drawn in each unit of Suggested Parlays: each leg on a player with a mismatch this week, on the side it
+   favours, wears it after his name */
+function eloDecorate(){
+  const panel=document.getElementById('spPanel'); if(!panel||typeof window.spShown!=='function'||typeof window.spUnit!=='function') return;
   const mm=epMm();
-  v.querySelectorAll('.pb-tier[data-pb-tier]').forEach(card=>{ const t=r.tiers.find(x=>x.id===card.dataset.pbTier); if(!t) return;
-    [...card.querySelectorAll('.pb-legs > li')].forEach((li,i)=>{ const l=t.legs[i], m=l&&mm[l.pid]; if(!m||String(m.game_id)!==String(l.gid)||!epMmFor(l)) return;
+  panel.querySelectorAll('.sp-game .pb-tier[data-pb-tier^="elo-"]').forEach(card=>{
+    /* the level as the unit shows it (spShown, under way too, where spTier, for Add and Finish, finds none) */
+    const el=card.closest('.sp-game'), u=el&&window.spUnit(el.dataset.spGame), v=u&&window.spShown(u), t=v&&v.elo&&v.elo.find(x=>x&&x.id===card.dataset.pbTier); if(!t||!t.legs) return;
+    [...card.querySelectorAll('.pb-legs > li')].forEach((li,i)=>{ const l=t.legs[i], m=l&&mm[l.pid]; if(!m||String(m.game_id)!==String(l.gid)||!epMmFor(l)||li.querySelector('.pe-mmtag')) return;
       const nm=li.querySelector('.nm'), name=nm&&(nm.querySelector(':scope > .glance-name')||[...nm.childNodes].find(x=>x.nodeType===3&&x.textContent.trim())); if(name) name.after(epMmTag(m)); }); });
-  v.querySelectorAll('[data-pb-elo-add]').forEach(b=>b.addEventListener('click',()=>{
-    const t=r.tiers.find(x=>x.id===b.dataset.pbEloAdd); if(t&&t.legs.length&&typeof pbPut==='function') pbPut(t.legs,`the ${t.label} Elo pick`); }));
 }
 window.eloPicks=eloPicks;
 /* for the checks: the fast sums on parlays of the given candidates (each a list of them), as the search works them,
    to be held to parlayProb's and parlayDec's own; and the side a leg's mismatch tag reads for */
 window.eloSums=(cands,sets)=>{ const P=epPrep(cands), at=new Map(P.C.map((l,i)=>[l,i])); return sets.map(ls=>epSums(P,ls.map(l=>at.get(l)).sort((a,b)=>a-b))); };
 window.eloMmFor=epMmFor;
-/* drawn after Suggested Parlays' own sets, wherever they are drawn (renderPb draws them last, and the tab's
-   opening draws them alone), so the Elo picks are built as the tab comes on the screen */
+/* the Elo picks' mismatch tags, after Suggested Parlays draws its units, wherever it is drawn (renderPb draws it
+   last, and the tab's opening draws it alone) */
 if(typeof renderSp==='function'){ const drawSp=renderSp;
-  renderSp=function(){ const r=drawSp.apply(this,arguments); try{ eloSuggest(); }catch(e){} return r; }; }
-else if(typeof renderPb==='function'){ const drawPb=renderPb;
-  renderPb=function(){ const r=drawPb.apply(this,arguments); try{ eloSuggest(); }catch(e){} return r; }; }
+  renderSp=function(){ const r=drawSp.apply(this,arguments); try{ eloDecorate(); }catch(e){} return r; }; }
 if(typeof renderTrack==='function'){ const drawTrack=renderTrack;
   renderTrack=function(){ const r=drawTrack.apply(this,arguments); trackAlt(); return r; }; }
 if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
@@ -1350,6 +1353,7 @@ async function boot(){
   }catch(e){ D.err='The ratings could not be loaded: '+(e.message||e); }
   let muErr=null;
   try{ D.mu=await get(MU_URL); }catch(e){ muErr=String(e&&e.message||e); }
+  D.muDone=true;
   filesRead({players:D.players,model:D.model,mu:D.mu,err:D.err||null,muErr});
   draw();
   /* the Parlay Builder's suggestions stand on market + form, so they are drawn again now */

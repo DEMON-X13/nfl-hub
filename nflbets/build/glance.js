@@ -80,8 +80,9 @@ const legOf=sig=>sig&&typeof window.glanceLeg==='function'?window.glanceLeg(sig)
 let cur=null, box=null;
 /* where a name is drawn, worked out from the page when the bubble opens, so a redraw finds the same copy of it: the
    builder (#parlayBody), the Top lines (#pbPanel), or a level card (.pb-tier[data-pb-tier]) in its section, a
-   set's under its game ([data-sp-game], inside #spPanel) and an Elo pick's under #pbElo, since a set's level ids and
-   the Elo picks' are the same four; anywhere else the nearest element with an id. One leg is often drawn in several
+   set's and an Elo pick's under its unit ([data-sp-game], a night game or the Sunday slot, inside #spPanel; an Elo
+   pick's level ids are elo-<level>, so a unit's eight cards are eight places); anywhere else the nearest element with
+   an id. One leg is often drawn in several
    places at once (a Top row and its builder row, one set's Safe to Extreme cards, a set's card and an Elo pick's),
    but within one of these once: the builder holds one leg a stat, the list each bet once, a card one leg a player.
    A leg is known there by its key, side and line (its signature less the price, its source and the model's chance,
@@ -89,7 +90,7 @@ let cur=null, box=null;
 const qv=v=>'"'+String(v).replace(/["\\]/g,'\\$&')+'"';
 const legId=sig=>{ const p=String(sig||'').split('|'); return p.length>3?p.slice(0,-3).join('|'):p.join('|'); };
 function placeOf(btn){
-  const sec=btn.closest('#parlayBody,#pbPanel,#pbElo,[data-sp-game]')||btn.closest('[id]'); if(!sec) return null;
+  const sec=btn.closest('#parlayBody,#pbPanel,[data-sp-game]')||btn.closest('[id]'); if(!sec) return null;
   const s=sec.id?`[id=${qv(sec.id)}]`:`[data-sp-game=${qv(sec.dataset.spGame)}]`, card=btn.closest('.pb-tier[data-pb-tier]');
   return card&&sec.contains(card)?`${s} .pb-tier[data-pb-tier=${qv(card.dataset.pbTier)}]`:s;
 }
