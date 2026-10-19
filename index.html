@@ -6897,7 +6897,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='4a75d10';
+const PAGE_HASH='61cce26';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -8551,7 +8551,8 @@ boot();
 <script>
 /* ---------- the Player Elo tab ----------
    Every player rated by position, game by game since 2012, and a third game model built on
-   nothing but those ratings. elo/build.py does the work on the job's schedule and writes
+   those ratings, whose calls since 19 October 2026 start from the Joker's chance and the Elo
+   matchup moves it (THE JOKER BASELINE in elo/build.py). elo/build.py does the work on the job's schedule and writes
    elo/data/players.json, model.json and matchups.json; this reads them on every load. The
    model's calls and its record live on the Pick'em Record tab beside the other models'; this
    tab is the rankings, and a click on a player opens his window: his rating and his matchup
@@ -9681,16 +9682,27 @@ function draw(){
   body.querySelectorAll('.pe-curve').forEach(c=>curveHover(c.parentElement));
   const r=D.model.record, wf=D.model.walk_forward||{}, ws=Object.keys(wf).sort();
   const prior=ws.filter(s=>+s<r.season);
-  if(prior.length){ const tot=prior.reduce((a,s)=>a+wf[s].games,0), ok=prior.reduce((a,s)=>a+Math.round(wf[s].accuracy*wf[s].games),0);
-    el('peWalkRec').textContent=`${prior[0]}–${prior[prior.length-1]} ${pct(ok/tot)} walk-forward`; }
+  const alone=prior.length?(()=>{ const tot=prior.reduce((a,s)=>a+wf[s].games,0), ok=prior.reduce((a,s)=>a+Math.round(wf[s].accuracy*wf[s].games),0);
+    return `${prior[0]}–${prior[prior.length-1]} ${pct(ok/tot)} walk-forward`; })():'';
+  /* the calls on the Joker's baseline (elo/build.py, THE JOKER BASELINE: the owner's test of 19 October
+     2026): the Joker's chance moved by the Elo matchup, its walk-forward test beside the Joker's and
+     the game model's own on the same games (`joker_base` in model.json) */
+  const JB=D.model.joker_base, jw=JB&&JB.walk_forward?Object.keys(JB.walk_forward).sort():[];
+  if(jw.length){ const sum=k=>jw.reduce((a,s)=>a+(+JB.walk_forward[s][k]||0),0), n=sum('games');
+    const wr=el('peWalkRec'); wr.textContent=`On the Joker: ${jw[0]}–${jw[jw.length-1]} ${pct(sum('right')/n)} walk-forward`;
+    wr.title=`The ELO Model's calls start from the Joker's chance, and the Elo matchup (each team's expected lineup by position) moves it. Called walk-forward on ${jw[0]}–${jw[jw.length-1]} (${n} games): ${sum('right')} right (${pct(sum('right')/n)}), against the Joker alone ${sum('joker')} (${pct(sum('joker')/n)}) and the Elo game model alone ${sum('elo')} (${pct(sum('elo')/n)}).${alone?` The Elo game model alone: ${alone}.`:''}`; }
+  else if(alone) el('peWalkRec').textContent=alone;
   /* the ELO Model's season record as the Pick'em Record counts it, split the honest way: calls
      published before kickoff (frozen there, never regraded), and the backtest of the games it
-     was never called on beforehand (weeks 1-2 of 2026, made after the games on pre-game ratings) */
-  const pub=r&&r.published, bt=r&&r.backtest;
+     was never called on beforehand (weeks 1-2 of 2026, made after the games on pre-game ratings);
+     the calls on the Joker's baseline apart from the Elo-alone calls before them */
+  const pub=r&&r.published, bt=r&&r.backtest, jb=r&&r.joker_base, jfrom=r&&r.joker_base_from_week;
   if(pub){ const ln=(x,lab)=>x&&(x[0]+x[1])?`${x[0]}–${x[1]} ${lab}`:'';
-    const parts=[ln(pub,'called before kickoff'),ln(bt,'backtest')].filter(Boolean);
+    const onJ=jb&&jfrom!=null, eloPub=onJ?[pub[0]-jb[0],pub[1]-jb[1]]:pub;
+    const parts=[onJ?(jb[0]+jb[1]?`${jb[0]}–${jb[1]} on the Joker (from week ${jfrom})`:`on the Joker from week ${jfrom}, none graded yet`):'',
+      ln(eloPub,onJ?'on Elo alone before it':'called before kickoff'),ln(bt,'backtest')].filter(Boolean);
     const cr=el('peCallRec'); cr.textContent=parts.length?`ELO Model ${r.season}: ${parts.join(', ')}`:'';
-    cr.title=`The Pick'em Record grades each game on the call published before its kickoff${r.published_from_week?` (from week ${r.published_from_week})`:''}. A backtest is a game the model was not published for until after it was played: called on the ratings it had before the game, but not ahead of time.`; }
+    cr.title=`The Pick'em Record grades each game on the call published before its kickoff${r.published_from_week?` (from week ${r.published_from_week})`:''}.${onJ?` From week ${jfrom} the calls start from the Joker's chance and the Elo matchup moves it; the calls before were the Elo game model's alone.`:''} A backtest is a game the model was not published for until after it was played: called on the ratings it had before the game, but not ahead of time.`; }
   const d=new Date(D.model.built_at);
   el('peStamp').textContent=isNaN(d)?'':'rated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }

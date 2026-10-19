@@ -276,10 +276,35 @@ function page(MU, opts) {
     chk(pill === want, `the rankings pill says "${pill}", the build says "${want}"`);
     if (P.through_week) chk(!/through week/.test(pill) || new RegExp('through week ' + P.through_week + '\\b').test(pill), 'the pill claims a week the build has not finished');
     const rec = M.record || {};
-    if (rec.published && rec.published[0] + rec.published[1] > 0)
-      chk(new RegExp(`${rec.published[0]}–${rec.published[1]} called before kickoff`).test(txt(d.getElementById('peCallRec'))),
-        'the bar does not give the ELO Model\'s record on calls made before kickoff: ' + txt(d.getElementById('peCallRec')));
+    /* the record on calls made before kickoff, the ones on the Joker's baseline apart from the Elo-alone
+       ones before them (elo/build.py, THE JOKER BASELINE), each worked out here from the record */
+    const barWant = r => {
+      const pub = r.published || [0, 0], jb = r.joker_base, jf = r.joker_base_from_week;
+      if (!(jb && jf != null)) return pub[0] + pub[1] > 0 ? [`${pub[0]}–${pub[1]} called before kickoff`] : [];
+      const out = [jb[0] + jb[1] ? `${jb[0]}–${jb[1]} on the Joker (from week ${jf})` : `on the Joker from week ${jf}, none graded yet`];
+      if (pub[0] - jb[0] + pub[1] - jb[1] > 0) out.push(`${pub[0] - jb[0]}–${pub[1] - jb[1]} on Elo alone before it`);
+      return out;
+    };
+    const bar = txt(d.getElementById('peCallRec'));
+    for (const want of barWant(rec))
+      chk(bar.includes(want), `the bar does not give the ELO Model's record on calls made before kickoff ("${want}"): ` + bar);
+    /* the walk-forward on the Joker's baseline, summed here from the file's own seasons */
+    const JB = M.joker_base;
+    if (JB && JB.walk_forward) {
+      const ss = Object.keys(JB.walk_forward).sort(), sum = k => ss.reduce((a, s) => a + JB.walk_forward[s][k], 0);
+      const wr = d.getElementById('peWalkRec'), want = `On the Joker: ${ss[0]}–${ss[ss.length - 1]} ${Math.round(sum('right') / sum('games') * 100)}% walk-forward`;
+      chk(txt(wr) === want && wr.title.includes(`${sum('joker')} (`) && wr.title.includes(`${sum('elo')} (`),
+        `the bar's walk-forward is not the Joker baseline's ("${want}"): ` + txt(wr) + ' / ' + wr.title);
+    }
     void w; }
+  /* the same bar on a copy of the record with calls on the Joker graded: the two parts and the backtest */
+  { const had = JSON.stringify(M.record || {});
+    M.record = Object.assign({}, M.record, { published: [40, 30], joker_base: [5, 2], joker_base_from_week: 7, backtest: [20, 13] });
+    const { d } = page(MU0); await wait(60);
+    const bar = txt(d.getElementById('peCallRec'));
+    chk(bar === `ELO Model ${M.record.season}: 5–2 on the Joker (from week 7), 35–28 on Elo alone before it, 20–13 backtest`,
+      'the bar does not split a record with calls on the Joker graded: ' + bar);
+    M.record = JSON.parse(had); }
   /* a questionable player stays ranked, with a Q (checked with the top quarterback made
      questionable in this copy of the file only) */
   { const had = P.groups.QB.top[0].q; P.groups.QB.top[0].q = 'questionable (ankle), week 9';

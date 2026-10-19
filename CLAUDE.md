@@ -913,6 +913,7 @@ node elo/check_tab.js            # the ELO Ratings tab on the new files (jsdom f
 node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
 python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offense/Defense: refits its constants on 2012-2017 (the carry's share too); "the build carries these constants"
 python3 elo/tools/def_units_fit.py   # the same for the six position tables, Run, Pass and Pass Rush/Protection a side (their stats' constants and UNIT_TABLES); "the build carries these constants"
+python3 elo/tools/joker_base_fit.py   # after a build: the ELO Model's calls on the Joker's baseline (JOKER_BASE), fitted on 2021-2025, walk-forward on 2022-2025; "the build carries these constants"
 ```
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
@@ -981,7 +982,24 @@ played last game where a chart is silent, with home field 0 at a neutral site; `
 number and `walk_forward_who_played` the hindsight one, kept for comparison only. The ELO Model's record grades the call
 published before each kickoff, frozen in the ledger `elo/data/calls.json` (the calls before the ledger began are in
 `elo/history/`, recovered by `elo/tools/seed_calls.py`), never one recomputed after the game; weeks 1-2 of 2026 were never
-called ahead of time and are kept as a backtest (`src` on each graded call, the split on the tab's bar). Tiers are the betting app's Elo shields, lifted with
+called ahead of time and are kept as a backtest (`src` on each graded call, the split on the tab's bar). **The ELO
+Model's calls stand on the Joker** (the owner's test of 19 October 2026: "the elo model has been underperforming pretty
+significantly so I want to do a test. I want it to apply the ELO matchups to still predict outcomes but I want it to use
+the model the Joker as a baseline to make its picks"; THE JOKER BASELINE in `elo/build.py`): a call is the Joker's chance
+for the game (`betting/state.json`'s `joker`, as the build finds it, held within 1% and 99%) moved by the Elo matchup,
+log-odds plus `JOKER_BASE`'s BETA (0.2058) times `m`, the game model's position-group lineup gaps by its weights with home
+field left out (the Joker's chance has it). BETA is `elo/tools/joker_base_fit.py`'s, fitted once on 2021-2025, where
+research study 4 has both models' walk-forward calls, the Joker's chance held as it is: walk forward on 2022-2025, 707-377
+(65.2%, log loss 0.6345) against the Joker alone 687-397 (63.4%, 0.6354) and the game model alone 698-386 (64.4%,
+0.6343), the matchup turning the Joker's pick round in 4.2% of games, right in 33 of 46. Not kept: the Joker's log-odds
+weighted too (a mix of the two, 711-373, 0.6283), which is not the Joker as the baseline. A game the Joker has not
+called is the game model's own, with no `base`. Each call keeps `p_elo` (the game model's own chance), `p_joker` and `m`
+beside it, in `next` and in the ledger, so the test can be read both ways; `record.joker_base` counts the published calls
+on the Joker from `joker_base_from_week`, and the tab's bar draws them apart from the Elo-alone calls before them and
+gives the baseline's walk-forward (its title the Joker's and the game model's alone). `elo/check.py` (JOKER) works the
+rule out on its own on every coming call and ledger entry against `betting/state.json`, and `check_tab.js` holds the bar.
+The game model is unchanged (fitted, its walk-forward graded, read by the power ratings): never refit BETA on the season
+in play. Tiers are the betting app's Elo shields, lifted with
 its tag into the page and reshaped at build time by `betting/tools/tiers.js` (both builds apply it): Wood League under 1350,
 Iron, Bronze, Silver, Gold, Platinum, Diamond, Master, Elite (the app's Challenger tier, renamed while a Challenger
 model stood on the Pick'em Record, and kept) from 1700, and HOF from 1750, worn as a gem. The tab is the rankings card: a bell-curve
