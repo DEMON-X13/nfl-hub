@@ -675,7 +675,7 @@ async function xbetLog() {
   check(![...da.querySelectorAll('#tab-record th, .pickgrid th')].some(th => th.textContent.trim() === 'You'), 'admin: no You column survives');
   check(!!da.getElementById('oddsFetch'), 'admin: moneylines card kept');
   check((graded.length ? SA.processed[first].myPick : SA.myPicks[first]) === loser && SA.bets[1].returned === 35 && SA.bank.lastAmt === 35, 'admin: picks, bets and stake come from the same browser store as the viewer');
-  check(!graded.length ? /No graded games yet/.test(da.getElementById('recordTable').textContent) : /straight-up, \d+ of \d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
+  check(!graded.length ? /No graded games yet/.test(da.getElementById('recordTable').textContent) : /Vegas Record, \d+\/\d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
 
   // Power Ratings carries the Impact absences table and not the rank-tag note
   // what the block says depends on the week's files, so the checks are on the shape: the element
@@ -733,7 +733,7 @@ async function xbetLog() {
   const de = e.window.document;
   check(de.documentElement.classList.contains('embed'), 'embed: the page marks itself embedded');
   check(!de.getElementById('tab-record').hidden && de.getElementById('tab-picks').hidden, 'embed: EMBED_TAB opens the Records tab');
-  check(!graded.length || /straight-up, \d+ of \d+/.test(de.getElementById('recordStats').textContent), 'embed: the record renders');
+  check(!graded.length || /Vegas Record, \d+\/\d+/.test(de.getElementById('recordStats').textContent), 'embed: the record renders');
   check(embedFetched.some(u => u === PAGE_STATE), 'embed: the season is not read from ' + PAGE_STATE + ': ' + embedFetched.join(', '));
   check(embedFetched.some(u => u.replace(/\?.*$/, '') === PAGE_ELO) && !embedFetched.some(u => /\.\.\//.test(u)),
     'embed: the Elo model is not read from ' + PAGE_ELO + ', where the page says (window.ELO_URL), or a file is read from a parent folder, which from the site\'s root leaves the site: ' + embedFetched.join(', '));
@@ -767,7 +767,7 @@ async function xbetLog() {
       let c = 0, n = 0; for (const [gid, r] of Object.entries(SE.processed)) { if (r.result == null || r.result === 0) continue; const o = (SE.odds || {})[gid];
         if (!o || !o.home || !o.away) continue; const ph = im(o.home) / (im(o.home) + im(o.away)); n++; if ((ph >= 0.5 ? r.home : r.away) === win(r)) c++; }
       const tiles = de.getElementById('recordStats').textContent.replace(/\s+/g, ' ');
-      check(n > 0 && tiles.includes(`Vegas straight-up, ${c} of ${n}`), `embed: the headline tiles should be Vegas's ${c} of ${n}: ` + tiles.slice(0, 120)); }
+      check(n > 0 && tiles.includes(`Vegas Record, ${c}/${n}`), `embed: the headline tiles should be Vegas Record, ${c}/${n}: ` + tiles.slice(0, 120)); }
     check(!/Main Model|main model/.test(de.body.textContent), 'embed: the page still says Main Model somewhere');
     /* the Bet Log as a bankroll: a Balance view (the account from the deposit, its reference line
        labelled, the latest balance at the line's end) and a Weekly P&L view (a column a week from $0,

@@ -116,7 +116,7 @@ function recordViz(rows){
       games.forEach(g=>{ const t=tier(g.conf)[0]; if(band[t]){ band[t][1]++; if(g.ok) band[t][0]++; } });
       const errs=games.filter(g=>g.err!=null), mae=errs.length?errs.reduce((a,g)=>a+g.err,0)/errs.length:null;
       const b=(k,lab)=>`<div class="stat"><b>${band[k][1]?Math.round(100*band[k][0]/band[k][1])+'%':'\u2013'}</b><span>${lab}, ${band[k][0]}/${band[k][1]}</span></div>`;
-      tiles.innerHTML=`<div class="stat"><b>${(100*c/games.length).toFixed(1)}%</b><span>Vegas straight-up, ${c} of ${games.length}</span></div>`
+      tiles.innerHTML=`<div class="stat"><b>${(100*c/games.length).toFixed(1)}%</b><span>Vegas Record, ${c}/${games.length}</span></div>`
         +b('high','high confidence')+b('med','medium')+b('low','low')+b('coin','50/50')
         +(mae!=null?`<div class="stat"><b>${mae.toFixed(1)}</b><span>spread's avg miss, pts</span></div>`:''); } }
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
