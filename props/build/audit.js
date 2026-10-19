@@ -6240,8 +6240,9 @@ setTimeout(async()=>{
           msg+=`${held.length} held out as inactive after their club's last report (${held.map(id=>SV.players[id].n).slice(0,4).join(', ')||'none this week'}); `; }
         /* the rules: out in his team's last game and no word yet is pending (treated as out); not on
            his team's report once it is filed, or with a final report that gives him no status, he is
-           cleared; Questionable with no practice is out; Questionable wears a Q and, like a player who
-           did not practise, stays out of the suggestions; limited practice is only a tag */
+           cleared; Questionable wears a Q, practised or not (app v120: until then Questionable with no
+           practice was out) and, like a player who did not practise, stays out of the suggestions;
+           limited practice is only a tag */
         const g2=SV.sched.find(g=>+g.w>=2&&F('prevTeamWeek')(g.h,+g.w)!=null);
         if(g2){ const T=g2.h, W=+g2.w, PW=F('prevTeamWeek')(T,W), row=(id,wk,st,pr)=>({season:SEASON,week:wk,gsis_id:id,team:T,report_status:st||'',practice_status:pr||'',injury:'Knee'});
           const ii=F('ingestInjuries'), inact=()=>w.eval('S').inactive, tag=id=>(w.eval('INJ')[id]||{}).k||null, sug=F('suggestable');
@@ -6270,7 +6271,7 @@ setTimeout(async()=>{
           /* the final report: game statuses filed */
           const fin=[...filed,row('V4',W,'Questionable','Did Not Participate In Practice'),row('V5',W,'Questionable','Limited Participation in Practice'),row('V6',W,'Out','')];
           ii(fin,W);
-          chk(inact().V4&&inact().V6,'Questionable with no practice, or Out, is not ruled out');
+          chk(!inact().V4&&tag('V4')==='q'&&!sug('V4')&&inact().V6,'Questionable with no practice is ruled out, untagged or suggested (app v120 lists him with a Q), or Out is not ruled out');
           chk(!inact().V5&&tag('V5')==='q'&&!sug('V5'),'Questionable is not tagged Q, or is suggested');
           chk(!inact().V2&&!tag('V7')&&sug('V7'),'a final report that gives a player no status does not clear him');
           chk(!inact().V14,'a final report that gives an inactive player no status does not clear him');

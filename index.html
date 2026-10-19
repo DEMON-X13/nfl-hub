@@ -2231,7 +2231,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v119 \u00b7 2026-10-19';
+const APP_BUILD='app v120 \u00b7 2026-10-19';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3994,7 +3994,7 @@ function ingestInjuries(rows,week,replay){
     const r=cur[id], st=String(r.report_status||r.game_status||'').trim(), pr=practiceOf(r.practice_status), inj=String(r.injury||'').trim();
     if(st==='Out'||st==='Doubtful'){ rule(id,st,{inj}); continue; }
     if(replay) continue;
-    if(st==='Questionable'&&pr==='DNP'){ rule(id,'Questionable, no practice',{inj}); continue; }
+    /* (app v120) Questionable is listed with a Q whether or not he practised: the club's game-time call */
     if(st==='Questionable'){ INJ[id]={k:'q',t:'Q',title:'Questionable'+(inj?' ('+inj.toLowerCase()+')':'')+(pr?'; '+pr.toLowerCase()+' in practice':'')}; continue; }
     if(final[r.team]) continue;                      /* his team's final report gives him no status: cleared */
     if(pr==='DNP') INJ[id]={k:'dnp',t:'DNP',title:'Did not practise'+(inj?' ('+inj.toLowerCase()+')':'')+'; no game status yet'};
@@ -7048,7 +7048,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='e51117c';
+const PAGE_HASH='75fcb2f';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){

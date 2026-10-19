@@ -666,7 +666,7 @@ function ingestInjuries(rows,week,replay){
     const r=cur[id], st=String(r.report_status||r.game_status||'').trim(), pr=practiceOf(r.practice_status), inj=String(r.injury||'').trim();
     if(st==='Out'||st==='Doubtful'){ rule(id,st,{inj}); continue; }
     if(replay) continue;
-    if(st==='Questionable'&&pr==='DNP'){ rule(id,'Questionable, no practice',{inj}); continue; }
+    /* (app v120) Questionable is listed with a Q whether or not he practised: the club's game-time call */
     if(st==='Questionable'){ INJ[id]={k:'q',t:'Q',title:'Questionable'+(inj?' ('+inj.toLowerCase()+')':'')+(pr?'; '+pr.toLowerCase()+' in practice':'')}; continue; }
     if(final[r.team]) continue;                      /* his team's final report gives him no status: cleared */
     if(pr==='DNP') INJ[id]={k:'dnp',t:'DNP',title:'Did not practise'+(inj?' ('+inj.toLowerCase()+')':'')+'; no game status yet'};

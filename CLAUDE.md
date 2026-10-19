@@ -998,8 +998,9 @@ units: `K_UNIT` is 120 so a unit is rated as far from the average as it really i
 They are of players who can play, the rest listed under the table where they would have stood: each club's
 current roster is its rows at that club's own latest week (a club on its bye has none for the bye week, and reading
 only the league's latest week once called every Chief and Panther a free agent); for each club's next game the
-injury report's Out and Doubtful are out, Questionable stays listed with a Q unless he did not practise at the last
-report, and before a club files its statuses a player out at its previous report (or inactive after being on it: the roster's
+injury report's Out and Doubtful are out, Questionable stays listed with a Q, practised or not (until 19 October 2026,
+app v120, one who did not practise at the last report was counted out, there and on the props page: Mike Evans, SF,
+Questionable and no practice in week 6, played), and before a club files its statuses a player out at its previous report (or inactive after being on it: the roster's
 INA, or an active row with nflverse's inactive code I01 or I02, as the props page's `ina` reads it; Caleb Williams's week 6 row
 is ACT and I01, and the build read INA alone until 13 October 2026) stays
 out until he practises or the club files a report he is not on (WHO PLAYS in the build). The game model scores every

@@ -276,7 +276,7 @@ def unit_checks():
     out, team, q, _ = build.availability(roster, inj, {'A': 6, 'B': 5, 'C': 5})
     chk(out.get('a1') is not None and 'not filed' in out['a1'], f'UNITS: a player out at his club\'s last report, with this week\'s not filed, should stay out: {out.get("a1")}')
     chk(out.get('b1') is None and 'b1' in q, f'UNITS: a questionable player who practised should be listed with a Q: {out.get("b1")} {q.get("b1")}')
-    chk(out.get('b3') is not None, 'UNITS: a questionable player who did not practise at the last report should be counted out')
+    chk(out.get('b3') is None and 'b3' in q, f'UNITS: a questionable player who did not practise at the last report should be listed with a Q, not counted out: {out.get("b3")} {q.get("b3")}')
     chk(out.get('a3') is not None and 'inactive' in out['a3'] and out.get('a4') is None,
         f'UNITS: an active row coded inactive (I01) after being on the last report should stay out until he practises, and one coded active should not: {out.get("a3")}, {out.get("a4")}')
     chk(out.get('a2') == 'on injured reserve', 'UNITS: an injured reserve player on a club on its bye lost his status')
