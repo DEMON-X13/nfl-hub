@@ -1,9 +1,9 @@
 r"""app v117: after a Refresh odds press, a count's ladder stands on one anchor.
 
-The props job refused its runs from 15:45 UTC on Sunday 18 October 2026 (issue #290), and by that night the audit
-on main failed one more check: after a press, Jordan Love's passing touchdowns ladder read 1+ 88.0%, 2+ 34.6%,
-3+ 35.5%, 4+ 16.1%, the 3+ priced likelier than the 2+. On a count (receptions, passing touchdowns and the other
-counts the formula prices from DraftKings' line), a rung k+ from the read is priced by a Poisson anchored on the
+The props job refused its run at 15:45 UTC on Sunday 18 October 2026 (issue #290, on two of the audit's checks
+that turned on the hour), and by that night the audit on main failed one more check: after a press, Jordan Love's
+passing touchdowns ladder read 1+ 88.0%, 2+ 34.6%, 3+ 35.5%, 4+ 16.1%, the 3+ priced likelier than the 2+.
+On a count (receptions, passing touchdowns and the other counts the formula prices from DraftKings' line), a rung k+ from the read is priced by a Poisson anchored on the
 main line's fair chance, and where the paid pull has a price on the very line the read has (the main line then
 stands at the pull's real price), that anchor is the pull's two prices with the margin out. But the rung that IS
 the main Over (k-0.5 on the line, 2+ on a line of 1.5) took the formula's own main price instead, a second anchor

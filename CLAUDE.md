@@ -763,8 +763,8 @@ passing touchdowns and the formula's other counts) every rung from a read is a P
 the paid pull's two prices with the margin out where it has them on the read's line, else the formula's main fair
 chance, and since app v117 (`patch_ladder_anchor.py`) the rung that is the main Over itself (2+ on a line of 1.5) is
 priced at the pull's own Over price there, so a ladder has one anchor and never climbs (until then it took the
-formula's main price, a second anchor: after the props job's refusals of 18 October 2026, issue #290, the audit's
-press read Jordan Love's passing touchdowns 2+ at 34.6% and 3+ at 35.5%); a yards ladder is anchored at 50/50 and
+formula's main price, a second anchor: on the night of the props job's refusal of 18 October 2026, issue #290, the
+audit on main read Jordan Love's passing touchdowns 2+ at 34.6% and 3+ at 35.5% after its press); a yards ladder is anchored at 50/50 and
 keeps the formula's main price, and such a rung is never suggested (`mainOver`). The formula was fitted
 on DraftKings' own prices only (2026 weeks 2-3, and its DET at BUF ladders of week 2), never on a result,
 and tested once on weeks 4-5 (`props/README.md`, "Refresh odds", has the full table): the median gap, in
