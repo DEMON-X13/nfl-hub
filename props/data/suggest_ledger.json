@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-10-19T07:41:40Z",
+ "updated": "2026-10-19T13:02:03Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -315,49 +315,39 @@
    "home": "SF",
    "kickoff": "2026-10-20T00:15:00Z",
    "lock": "2026-10-19T22:15:00Z",
-   "baked_at": "2026-10-19T00:23+00:00",
-   "pool": {"pref":0,"thin":1,"mkt":2,"far":0},
+   "baked_at": "2026-10-19T13:00+00:00",
+   "pool": {"pref":0,"thin":1,"mkt":0,"far":0},
    "tiers": [
     {
      "id": "safe",
      "label": "Safe",
      "n": 2,
      "floor": 0,
-     "legs": [
-      {"gid":"2026_06_WAS_SF","week":6,"pid":"team:WAS","team":"WAS","grp":"TEAM","stat":"ats","k":7.5,"side":"over","main":false,"price":-110,"src":"real","name":"Commanders","label":"To cover +7.5","p":0.5324,"fair":0.5,"fair_est":false,"thin":true,"market":false},
-      {"gid":"2026_06_WAS_SF","week":6,"pid":"game","team":"WAS","grp":"TEAM","stat":"total","k":52.5,"side":"under","main":true,"price":-115,"src":"real","name":"Commanders at 49ers","label":"Under 52.5 points","p":0.5108,"fair":0.5108,"fair_est":false,"thin":false,"market":true}
-     ],
-     "p": 0.272,
-     "fair": 0.2554,
-     "fair_est": false,
-     "dec": 3.198,
-     "likeliest": false,
-     "thin": 1,
-     "mkt": 1
+     "why": "Only 1 leg in this game that DraftKings’ betslip can take, and no player prices yet: they are pulled on Monday, the day of the game."
     },
     {
      "id": "med",
      "label": "Medium",
      "n": 3,
      "floor": 0.25,
-     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Monday, the day of the game."
+     "why": "Only 1 leg in this game that DraftKings’ betslip can take, and no player prices yet: they are pulled on Monday, the day of the game."
     },
     {
      "id": "aggr",
      "label": "Aggressive",
      "n": 4,
      "floor": 0.12,
-     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Monday, the day of the game."
+     "why": "Only 1 leg in this game that DraftKings’ betslip can take, and no player prices yet: they are pulled on Monday, the day of the game."
     },
     {
      "id": "xtrm",
      "label": "Extreme",
      "n": 5,
      "floor": 0.05,
-     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Monday, the day of the game."
+     "why": "Only 1 leg in this game that DraftKings’ betslip can take, and no player prices yet: they are pulled on Monday, the day of the game."
     }
    ],
-   "taken_at": "2026-10-19T00:24:09Z"
+   "taken_at": "2026-10-19T13:02:03Z"
   }
  }
 }
