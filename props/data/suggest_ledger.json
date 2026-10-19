@@ -1,7 +1,7 @@
 {
- "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
+ "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. Since app v118 each entry holds the unit's Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe), taken, locked, replaced and graded with the model's levels; and slot holds each week's Sunday slot (every Sunday game before 7 pm Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary, slot_summary (each with its elo) and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-10-19T15:45:11Z",
+ "updated": "2026-10-19T21:31:28Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -207,6 +207,15 @@
    "xtrm": {"label":"Extreme","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.0332,"fair_n":1,"exp_model":0.0989,"units":-1}
   },
   "pending": 0,
+  "elo": {
+   "tiers": {
+    "elo-safe": {"label":"Safe","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+    "elo-med": {"label":"Medium","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+    "elo-aggr": {"label":"Aggressive","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+    "elo-xtrm": {"label":"Extreme","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0}
+   },
+   "pending": 0
+  },
   "games": 2,
   "entries": 2,
   "graded_entries": 1,
@@ -315,7 +324,7 @@
    "home": "SF",
    "kickoff": "2026-10-20T00:15:00Z",
    "lock": "2026-10-19T22:15:00Z",
-   "baked_at": "2026-10-19T15:42+00:00",
+   "baked_at": "2026-10-19T21:28+00:00",
    "pool": {"pref":3,"thin":15,"mkt":2,"far":5},
    "tiers": [
     {
@@ -393,7 +402,107 @@
      "mkt": 0
     }
    ],
-   "taken_at": "2026-10-19T15:45:11Z"
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0.35,
+     "legs": [
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0037834","team":"SF","grp":"QB","stat":"passing_yards","k":252.5,"side":"over","main":true,"price":-111,"src":"real","name":"Brock Purdy","label":"Over 252.5 passing yards","p":0.4933,"pe":0.57,"fair":0.4989,"fair_est":false,"thin":null,"market":null},
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0039910","team":"WAS","grp":"QB","stat":"passing_yards","k":208.5,"side":"over","main":true,"price":-114,"src":"real","name":"Jayden Daniels","label":"Over 208.5 passing yards","p":0.389,"pe":0.5832,"fair":0.5042,"fair_est":false,"thin":null,"market":null}
+     ],
+     "p": 0.3507,
+     "fair": 0.2711,
+     "fair_est": false,
+     "dec": 2.954,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "legs": [
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0037834","team":"SF","grp":"QB","stat":"passing_yards","k":252.5,"side":"over","main":true,"price":-111,"src":"real","name":"Brock Purdy","label":"Over 252.5 passing yards","p":0.4933,"pe":0.57,"fair":0.4989,"fair_est":false,"thin":null,"market":null},
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0039910","team":"WAS","grp":"QB","stat":"passing_yards","k":208.5,"side":"over","main":true,"price":-114,"src":"real","name":"Jayden Daniels","label":"Over 208.5 passing yards","p":0.389,"pe":0.5832,"fair":0.5042,"fair_est":false,"thin":null,"market":null},
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0035659","team":"WAS","grp":"WR","stat":"receptions","k":3.5,"side":"over","main":true,"price":-134,"src":"real","name":"Terry McLaurin","label":"Over 3.5 receptions","p":0.5636,"pe":0.5831,"fair":0.54,"fair_est":false,"thin":null,"market":null}
+     ],
+     "p": 0.2338,
+     "fair": 0.1742,
+     "fair_est": false,
+     "dec": 4.476,
+     "likeliest": true,
+     "thin": 0,
+     "mkt": 0
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "legs": [
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0037834","team":"SF","grp":"QB","stat":"passing_yards","k":252.5,"side":"over","main":true,"price":-111,"src":"real","name":"Brock Purdy","label":"Over 252.5 passing yards","p":0.4933,"pe":0.57,"fair":0.4989,"fair_est":false,"thin":null,"market":null},
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0033280","team":"SF","grp":"RB","stat":"rushing_yards","k":61.5,"side":"over","main":true,"price":-114,"src":"real","name":"Christian McCaffrey","label":"Over 61.5 rushing yards","p":0.4875,"pe":0.5771,"fair":0.5042,"fair_est":false,"thin":null,"market":null},
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0039910","team":"WAS","grp":"QB","stat":"passing_yards","k":208.5,"side":"over","main":true,"price":-114,"src":"real","name":"Jayden Daniels","label":"Over 208.5 passing yards","p":0.389,"pe":0.5832,"fair":0.5042,"fair_est":false,"thin":null,"market":null},
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0035659","team":"WAS","grp":"WR","stat":"receptions","k":3.5,"side":"over","main":true,"price":-134,"src":"real","name":"Terry McLaurin","label":"Over 3.5 receptions","p":0.5636,"pe":0.5831,"fair":0.54,"fair_est":false,"thin":null,"market":null}
+     ],
+     "p": 0.1316,
+     "fair": 0.0852,
+     "fair_est": false,
+     "dec": 8.884,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "legs": [
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0033699","team":"WAS","grp":"RB","stat":"rushing_yards","k":20.5,"side":"over","main":true,"price":-116,"src":"real","name":"Austin Ekeler","label":"Over 20.5 rushing yards","p":0.3673,"pe":0.5523,"fair":0.5084,"fair_est":false,"thin":null,"market":null},
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0037834","team":"SF","grp":"QB","stat":"passing_yards","k":252.5,"side":"over","main":true,"price":-111,"src":"real","name":"Brock Purdy","label":"Over 252.5 passing yards","p":0.4933,"pe":0.57,"fair":0.4989,"fair_est":false,"thin":null,"market":null},
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0033280","team":"SF","grp":"RB","stat":"rushing_yards","k":61.5,"side":"over","main":true,"price":-114,"src":"real","name":"Christian McCaffrey","label":"Over 61.5 rushing yards","p":0.4875,"pe":0.5771,"fair":0.5042,"fair_est":false,"thin":null,"market":null},
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0039910","team":"WAS","grp":"QB","stat":"passing_yards","k":208.5,"side":"over","main":true,"price":-114,"src":"real","name":"Jayden Daniels","label":"Over 208.5 passing yards","p":0.389,"pe":0.5832,"fair":0.5042,"fair_est":false,"thin":null,"market":null},
+      {"gid":"2026_06_WAS_SF","week":6,"pid":"00-0035659","team":"WAS","grp":"WR","stat":"receptions","k":3.5,"side":"over","main":true,"price":-134,"src":"real","name":"Terry McLaurin","label":"Over 3.5 receptions","p":0.5636,"pe":0.5831,"fair":0.54,"fair_est":false,"thin":null,"market":null}
+     ],
+     "p": 0.062,
+     "fair": 0.0345,
+     "fair_est": false,
+     "dec": 19.352,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0
+    }
+   ],
+   "taken_at": "2026-10-19T21:31:28Z"
   }
- }
+ },
+ "slot_since": "2026-10-19",
+ "slot_summary": {
+  "tiers": {
+   "safe": {"label":"Safe","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+   "med": {"label":"Medium","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+   "aggr": {"label":"Aggressive","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+   "xtrm": {"label":"Extreme","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0}
+  },
+  "pending": 0,
+  "elo": {
+   "tiers": {
+    "elo-safe": {"label":"Safe","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+    "elo-med": {"label":"Medium","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+    "elo-aggr": {"label":"Aggressive","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+    "elo-xtrm": {"label":"Extreme","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0}
+   },
+   "pending": 0
+  },
+  "games": 0,
+  "entries": 0,
+  "graded_entries": 0,
+  "updates": 0
+ },
+ "slot": {}
 }
