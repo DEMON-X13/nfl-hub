@@ -20,6 +20,14 @@
      the buttons names any leg it cannot open and why. Share link sends the parlay as a few lines of
      text with that link, by the share sheet or the clipboard. Neither touches the image.
 
+     Since 19 October 2026 (the owner, on Monday night's Commanders at 49ers: "same thing again.... put in
+     that link and its only showing" one leg of four) the card checks DraftKings' current lines when it
+     opens: the page's own Refresh odds reader (espnRefresh in props/build/part3.js) reads the parlay's games
+     alone, one at a time, and while it reads Open in DraftKings and Share link wait (at most CHECK_CAP_MS);
+     then the plan is worked again, so a total or spread DraftKings has moved goes on at its current number
+     on the id the read found, and a player's line DraftKings has moved since the pull read its id is said
+     to add by hand at its new number, since the slip drops a moved id (dkLeg's moved rule, below).
+
      Nothing is saved: not to the prop model's saved list, not to X's parlays, not to any key of
      this page. The builder keeps its legs, so the parlay can be changed and finished again; Start
      over clears it. A suggested parlay (a tier of the Parlay Builder's suggestions, or one of its
@@ -82,6 +90,9 @@
 .pc-dk p{margin:0 0 4px}
 .pc-dk ul{margin:2px 0 4px;padding-left:18px}
 .pc-dk a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px}
+/* while the card checks DraftKings' current lines, Open in DraftKings and Share link wait, looking as a
+   disabled button does on the page (.btn:disabled), each still in its place */
+#pcModal .pc-actions [aria-disabled="true"]{opacity:.6;cursor:progress;transform:none;filter:none}
 .pc-msg{min-height:1.4em;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
 .pc-note{font-size:12px;color:var(--ink-2);margin:2px 0 0;line-height:1.5}
 @media(max-width:430px){
@@ -190,6 +201,25 @@ window.PARLAY_CARD=(function(){
      (espnIdAt in part3.js keeps the time of each id it gave or found as the pull had it); any other id
      by its pull, so a paid id at a number the press shows DraftKings has moved off keeps its own date */
   function dkIdAt(l,key,at){ try{ const t=typeof espnIdAt==='function'?espnIdAt(l.gid,key):null; return t&&(!at||t>+at)?new Date(t):at; }catch(e){ return at; } }
+  /* the moved rule (19 October 2026, the owner's Monday night: "same thing again.... put in that link and its
+     only showing" one leg of four, McLaurin's receiving yards among those dropped, read by the pull at 47.5 and
+     moved by DraftKings to 49.5 since). An id names one outcome at one number, and DraftKings re-posts a player's
+     line it moves under a new id and drops the old one without a word; ESPN carries no id for a player's line,
+     so no free read gives the new one. What a read does give is DraftKings' main line for him now: the newest
+     read of his game's player lines (a Refresh odds press, or this card's own read when it opens; espnGame, as
+     the page keeps it, null where it was read at or after kickoff). Where that read came after the pull read the
+     id and has DraftKings' main line for the player and stat at another number than the id's own, the id is
+     dead and the leg goes on no slip: the plan says DraftKings has moved it and to add it by hand there. A read
+     with no line for him on the stat says nothing (DraftKings may simply not list it there: the id stands), and
+     the anytime touchdown and 2+ touchdowns have no number to move. What no read can catch: a line moved and
+     moved back, or re-posted at the same number, which also takes a new id (the note's caution stands for it) */
+  function dkReadLine(l){
+    try{ const g=game(l.gid), wk=l.week!=null?l.week:(g&&g.w), e=typeof espnGame==='function'?espnGame(l.gid,wk):null; if(!e) return null;
+      const at=Date.parse(e.at), q=typeof espnLineOf==='function'?espnLineOf(e,l.pid,l.stat):null;
+      return isFinite(at)&&q!=null?{at,q}:null; }catch(e){ return null; } }
+  /* the reason a leg on a dead id gives, in full and in a few words (Share link's text, the builder's row) */
+  const dkMoved=(l,R,at)=>({why:`DraftKings has moved his ${statLbl(l.stat)} line to ${pt(R.q)} since its prices were read (${readOf(at)}), and its slip drops a moved line: add it by hand at ${pt(R.q)}`,
+    brief:`moved to ${pt(R.q)} since it was read`,moved:R.q});
   /* the player markets the price pull reads (oddsfetch.py's DEFAULT: DraftKings' main line on each,
      and the anytime touchdown); --full, which reads the rest and the alternate ladders, is never run */
   const DK_READ=['passing_yards','passing_tds','rushing_yards','receiving_yards','receptions','any_td'];
@@ -254,6 +284,12 @@ window.PARLAY_CARD=(function(){
     /* prices read for its game, and no id for it */
     if(!D) return miss(unread||{why:'no DraftKings ids were read for its game',brief:'no DraftKings ids read for its game'});
     const side=s=>s==='under'?'Under':'Over';
+    /* the moved rule (above): a player's id at number p, read by the pull before the newest read of his game's
+       player lines, which has DraftKings' main line for him on the stat at another number, is dead. Such ids are
+       left out wherever the plan looks for one; where the only one there was is dead, the leg says so */
+    const R=player&&l.stat!=='any_td'?dkReadLine(l):null;
+    let sawDead=null;
+    const dead=(p,k)=>{ if(!R) return false; const t=dkIdAt(l,k,at), d=!!t&&+t<R.at&&isFinite(+p)&&+p!==R.q; if(d) sawDead=t; return d; };
     let key=null, near=null, say=null;
     if(l.stat==='ml') key=l.pid+'|ml';
     else if(l.stat==='ats'){ key=l.pid+'|ats|'+pt(l.k); near=l.pid+'|ats|'; say=signed; }
@@ -263,19 +299,24 @@ window.PARLAY_CARD=(function(){
     else {
       /* a rung, k or more: DraftKings' Over k-0.5 is the same bet (an Over on a whole k-1 is the
          line the price file read it from, as oddsfetch's threshold() does) */
-      for(const p of [+l.k-0.5,+l.k-1]){ const k=[l.pid,l.stat,'over',pt(p)].join('|'), id=D[k]; if(id) return {id,at:dkIdAt(l,k,at)}; }
+      for(const p of [+l.k-0.5,+l.k-1]){ const k=[l.pid,l.stat,'over',pt(p)].join('|'), id=D[k]; if(id&&!dead(p,k)) return {id,at:dkIdAt(l,k,at)}; }
       /* else the player's Over at DraftKings' closest number for that stat */
-      const c=dkNear(l,D,[l.pid,l.stat,'over',''].join('|'),+l.k-0.5,null,false);
+      const c=dkNear(l,D,[l.pid,l.stat,'over',''].join('|'),+l.k-0.5,null,false,dead);
       if(c) return {id:c.id,at:dkIdAt(l,c.key,at),swap:'Over '+pt(c.p)+' '+statLbl(l.stat),now:c.p};
+      /* every id there was is one DraftKings has dropped since: moved */
+      if(sawDead) return dkMoved(l,R,sawDead);
       /* his prices read and no line of his on the stat: DraftKings had none then (a rung the card prices
          from the book has an id unless it was dropped: neutral) */
       return miss(unread||(dkBooked(l)?{why:'not among the DraftKings lines read for its game',brief:'not among the lines read'}
         :{why:`DraftKings had no ${statLbl(l.stat)} line of his when its prices were read`+(at?` (${readOf(at)})`:''),brief:`no ${statLbl(l.stat)} line of his read`})); }
     if(!near){ if(D[key]) return {id:D[key],at:dkIdAt(l,key,at)}; }
     else{
-      const c=dkNear(l,D,near,+l.k,key,!team&&l.stat!=='total');
+      const c=dkNear(l,D,near,+l.k,key,!team&&l.stat!=='total',player?dead:null);
       if(c&&c.key===key) return {id:c.id,at:dkIdAt(l,key,at)};
-      if(c) return {id:c.id,at:dkIdAt(l,c.key,at),swap:say(c.p),now:c.p}; }
+      if(c) return {id:c.id,at:dkIdAt(l,c.key,at),swap:say(c.p),now:c.p};
+      /* a player's line whose only ids are ones DraftKings has dropped since (a dkline leg's too, rather than
+         its own reason): moved */
+      if(sawDead) return dkMoved(l,R,sawDead); }
     /* a player's leg on no book price, on a game whose player prices were read: DraftKings did not
        offer it then (a leg the card prices from the book has an id unless it was dropped: neutral) */
     if(unread) return miss(unread);
@@ -288,10 +329,11 @@ window.PARLAY_CARD=(function(){
      the exact one (key) unless a newer read has DraftKings at another number since (a Refresh odds press
      dates each id it gave or found, espnIdAt; the pull's own share its read), else the newest a press
      read, else (a player's main line, mkt) the main line the page has for him where DraftKings has it,
-     else the closest number to want (ties to the lower). Null where DraftKings has none */
-  function dkNear(l,D,near,want,key,mkt){
+     else the closest number to want (ties to the lower). Null where DraftKings has none. dead (a player's
+     line: dkLeg's moved rule) leaves out each id DraftKings has dropped since */
+  function dkNear(l,D,near,want,key,mkt,dead){
     const c=Object.keys(D).filter(k=>k.startsWith(near)&&k.length>near.length).map(k=>({key:k,p:+k.slice(near.length),id:D[k]}))
-      .filter(x=>isFinite(x.p)&&x.id&&typeof x.id==='string');
+      .filter(x=>isFinite(x.p)&&x.id&&typeof x.id==='string'&&!(dead&&dead(x.p,x.key)));
     if(!c.length) return null;
     const pressT=x=>{ try{ const t=typeof espnIdAt==='function'?espnIdAt(l.gid,x.key):null; return t||0; }catch(e){ return 0; } };
     c.forEach(x=>{ x.t=pressT(x); });
