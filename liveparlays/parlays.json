@@ -1,6 +1,6 @@
 {
  "how": "X's placed parlays: what X Parlays shows, on every device, read only. Claude keeps this file from the slips the owner sends in chat; the page only reads it, on every load, so a change here is what every device sees on its next load. A parlay is id (any name not used before), week, stake, price (the American odds it was placed at), payout (what it pays, stake included), note (optional) and legs. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet, total for the game's points. A whole-game bet takes line 0 (the spread for ats), team set to the side you are on, and player set to whatever you want it called; a total takes the line and side over or under. A line the book moved before X placed the bet is written as the line X took. A parlay X has cleared (settled, and no longer wanted on the page) stays here as history with \"cleared\": true and is not drawn. A finished one clears itself: the betting job marks it cleared (cleared_by auto, cleared_on the date) two Eastern days after its last game, once every game has a final in games.csv (liveparlays/tools/autoclear.py), so it shows in full on its game day and the next day. updated is when this file last changed what X Parlays shows.",
- "updated": "2026-10-18T23:02:42Z",
+ "updated": "2026-10-19T23:17:36Z",
  "games": [
   "2026_02_NO_BAL",
   "2026_02_PHI_TEN",
@@ -44,7 +44,8 @@
   "2026_06_BUF_LV",
   "2026_06_LAC_KC",
   "2026_06_ARI_LA",
-  "2026_06_DAL_GB"
+  "2026_06_DAL_GB",
+  "2026_06_WAS_SF"
  ],
  "parlays": [
   {
@@ -1945,6 +1946,98 @@
      "line": 1,
      "side": "over",
      "main": false
+    }
+   ]
+  },
+  {
+   "id": "w6-dk-wassf-5",
+   "week": 6,
+   "stake": 1,
+   "price": 2200,
+   "payout": 23.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 43,
+     "player": "Terry McLaurin",
+     "team": "WAS",
+     "stat": "receiving_yards",
+     "line": 48.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 43,
+     "player": "Commanders at 49ers",
+     "team": "SF",
+     "stat": "total",
+     "line": 51.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 43,
+     "player": "Jayden Daniels",
+     "team": "WAS",
+     "stat": "rushing_yards",
+     "line": 40,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 43,
+     "player": "Antonio Williams",
+     "team": "WAS",
+     "stat": "receiving_yards",
+     "line": 20,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 43,
+     "player": "Christian McCaffrey",
+     "team": "SF",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w6-dk-wassf-3-boost",
+   "week": 6,
+   "stake": 1,
+   "price": 449,
+   "payout": 5.49,
+   "note": "same game · +30% boost",
+   "legs": [
+    {
+     "game": 43,
+     "player": "Jayden Daniels",
+     "team": "WAS",
+     "stat": "passing_yards",
+     "line": 210.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 43,
+     "player": "Terry McLaurin",
+     "team": "WAS",
+     "stat": "receptions",
+     "line": 3.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 43,
+     "player": "Brock Purdy",
+     "team": "SF",
+     "stat": "passing_yards",
+     "line": 250.5,
+     "side": "over",
+     "main": true
     }
    ]
   }
