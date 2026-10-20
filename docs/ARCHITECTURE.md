@@ -1475,6 +1475,32 @@ DraftKings did not offer when read, 2+ touchdowns with no anytime touchdown of h
 ("DraftKings had no <stat> line of his", dated), a `dkline` leg the pull's ids have nothing for (`DKLINE_WHY`), or a game kicked off;
 until app v109 a line DraftKings had elsewhere was named too, "DraftKings had it at 79.5 when its lines were
 last read", and left off the slip, where it now goes on at 79.5).
+Since 19 October 2026 (the owner's report on Monday night's Commanders at 49ers, "same thing again.... put in that
+link and its only showing" one leg of four: the pull's ids for the total and McLaurin's receiving yards dead by the
+evening, DraftKings having moved both lines) the card checks DraftKings' current lines as it opens: `open()` reads each
+game of its legs still to kick off in turn through the page's Refresh odds reader, `espnRefresh(gid)`, unless its player
+lines were read (answered or found not posted, `ESPN_OUT`) in the last two minutes, waiting for a press already running.
+While it reads, Open in DraftKings ("Checking DraftKings’ lines…", no `href`, `aria-disabled`, `aria-busy`) and Share
+link wait (a press of Share link says "Checking DraftKings’ lines first…"), the note under them is its waiting line
+alone, with no leg's own link (`data-pc-dkwait`), and Download, Start over and Close work; it waits at most `CHECK_CAP_MS` (10 seconds), then works on the plan
+as it stands with the line "Could not check DraftKings’ current lines: …", as a read that fails does, and a read ending
+later still updates the same card. Done, it works `dkPlan` again on the same legs (`m.dkLegs`) and draws only its
+DraftKings part (`paintDk`: the button and `#pcDkNote`, which ends "Checked against DraftKings’ lines at <time> ET."),
+the focus kept, and says the outcome in its status line (`#pcMsg`); `ck` is the open card's check, so a card closed or replaced is never drawn from an older read, and
+`PARLAY_CARD.checking()` (a promise) and `checkState()` say where it stands. A moved total or spread then goes on at
+DraftKings' current number on the read's id (`dkNear`), and `dkLeg`'s moved rule (`dkReadLine`, `dkMoved`) leaves off a
+player's id read by the pull before the newest read of his game's player lines where that read has his main line on the
+stat at another number ("DraftKings has moved his receiving yards line to 49.5 since its prices were read (…), and its
+slip drops a moved line: add it by hand at 49.5"; brief "moved to 49.5 since it was read"; a ladder rung whose main line
+moved to anything but its own number, k-0.5 or the whole k-1, names its own bet: "add 4+ receptions by hand (DraftKings’
+Over 4.5 is another bet)"). A line moved and moved back, or re-posted at its number, takes a new id no free read can see:
+the note's caution stands for it. The read is a press for those games (a live set of them re-picks on it), and the page
+under the card is drawn once, after the last game is read: the card holds the page's `espnRedraw` back during its own
+reads (`holdRedraw`), since each redraw empties every cache and draws the tabs again (about half a second on Suggested
+Parlays in Chromium). The page under an open card never scrolls (`keepModal` puts body's `modal-open` back whatever
+redraw takes it off), a control a redraw replaces is found again by an attribute it keeps (`lastFocus`, `refind`), and a
+closed card's focus goes to its Finish or the one standing for it, its set's Add to builder or heading, or the chosen
+tab's button, never a hidden tab's control or the body (`backTo`).
 **Share link** sends the parlay as one text (`linkText`: a line a leg, each price marked est. or fair
 where it is not the book's and the title's likewise, the stake and what it pays, the chances, then the
 button's link, always a DraftKings one, alone on its line under what it opens -- "DraftKings betslip (opens 2
@@ -1547,7 +1573,13 @@ one, a press's newer number taken over the pull's and an older one not, each nam
 text, and "Open N of M legs" where one still is not on; the builder's line under each such leg and under
 no other, and none on the prop model's own page; the same text copied without a share sheet; nothing
 promising every leg), Escape, Tab and Start over, and that finishing writes
-nothing. Both record every request a page
+nothing; and (J2) the card's check of DraftKings' lines as it opens, on an ESPN of its own that holds or fails an
+answer (the waiting buttons and note, the cap, the moved rule and a rung's own bet, a line the read has none for, the
+converted total, the two lines and the status line, one redraw a read, the requests exactly the parlay's games' with a
+third game of the week never asked about, a card opened again, closed or replaced while its read runs, an older read
+never painting a newer card, a card waiting on a press of its game, a payload baked before ids, and the focus after Start
+over and after a level the tab no longer draws). `smoke.js` holds each card's read to its
+own games (`cardReads`). Both record every request a page
 makes, and a request to the retired store or its sign-in services, or anything but a read, fails
 them. The elo job runs `smoke.js`, after its commit (a page check, never a gate on the Elo data),
 every morning, playoffs and off-season included, so it holds in any week: the board's week is

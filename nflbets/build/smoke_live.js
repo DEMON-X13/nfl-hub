@@ -25,7 +25,9 @@
  * figure whole on a long shot, and that finishing writes nothing anywhere; Open in DraftKings and Share
  * link on made-up ids, a leg DraftKings has only at another number going on the slip at DraftKings'
  * number (app v109), named under the buttons, in the shared text and under its row in the builder, and
- * a leg with nothing to convert to named with why; and a Suggested Parlays set finished from its own
+ * a leg with nothing to convert to named with why; (J2, 19 October 2026) the card's check of DraftKings' current lines
+ * as it opens, on an ESPN of the section's own that can hold or fail an answer: the buttons waiting, the 10-second cap,
+ * the moved rule and a moved total, the requests the parlay's games' alone; and a Suggested Parlays set finished from its own
  * tab (app v111), live and then locked from the record's entry, each of its legs with an Add of its
  * own; its Elo picks (app v118) finished as an Elo pick, live, locked from the record and as this browser's own;
  * and the Sunday slot's section held to its rule at the fixture's clock and through a slot of the fixture's own (not
@@ -74,6 +76,11 @@ const status = row => txt(row.querySelector('.status'));
 const who = row => txt(row.querySelector('.who'));
 const target = row => txt(row.querySelector('.tgt'));
 const wait = ms => new Promise(r => setTimeout(r, ms));
+/* (19 October 2026) the parlay card checks DraftKings' current lines as it opens: cardSettled waits until its DraftKings
+   part is final (the read done, or its cap passed), and cardCheck is its check ({state, at, games}, null with no card
+   open); a card without them (the card before that day) settles at once and has no check, so its checks fail, never throw */
+const cardSettled = w => w.PARLAY_CARD && typeof w.PARLAY_CARD.checking === 'function' ? w.PARLAY_CARD.checking() : Promise.resolve();
+const cardCheck = w => w.PARLAY_CARD && typeof w.PARLAY_CARD.checkState === 'function' ? w.PARLAY_CARD.checkState() : undefined;
 /* (app v112) Suggested Parlays sets out one night at a time (the owner's call of 17 October 2026: "just show the next
    night game dont stack the mondy night game until monday morning"): the next prime-time night's games, from 6:00 AM
    Eastern on the morning after the latest prime-time night before it on the schedule (any week; none before it, at
@@ -225,6 +232,9 @@ const FILE = {
 /* the prop model's own key, from part2, as the build hands it to the page */
 const PART2_SEASON = fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 'utf8').match(/const SEASON=(\d{4}), KEY='([^']+)';/);
 const PROP_KEY = PART2_SEASON[2], SEA = +PART2_SEASON[1];
+/* the kept Refresh odds read's own key (props_press_v1, app v108), which a press, and since 19 October 2026 the parlay
+   card's check of DraftKings' lines, write */
+const PRESS_KEY = 'props_press_v1';
 /* the betting app's own key and season, which the X Bet Log's keys are named for */
 const { BET_KEY, SEASON: BET_SEASON } = require(path.join(ROOT, 'betting', 'tools', 'build.js'));
 /* the two models' own storage, written exactly as they write it */
@@ -249,9 +259,11 @@ const betBlob = () => JSON.stringify({ myPicks: {}, bets: {}, bank: { build: [
 /* the parlay file a run reads in place of the real one (file), what the scoreboard says (state:
    pre, in or post), whether ESPN and the file answer (espn, data), what the browser holds before
    the page opens (seed), the payload as changed for the run (pay), and the X Bet Log's file
-   (xbets). Every request is in calls, with its method; a request to the retired store, or one
-   that is not a read, is refused and kept in BAD_CALLS, which fails the smoke. */
-function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {}, pay = x => x, xbets = null, url = URL_ } = {}) {
+   (xbets). esp, where given, answers ESPN first (a request it returns null for gets the rest of the stub):
+   section J's own ESPN, which the parlay card reads DraftKings' current lines from as it opens. Every
+   request is in calls, with its method; a request to the retired store, or one that is not a read, is
+   refused and kept in BAD_CALLS, which fails the smoke. */
+function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {}, pay = x => x, xbets = null, url = URL_, esp = null } = {}) {
   return new Promise(resolve => {
     const calls = [], methods = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
@@ -268,6 +280,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
           if (s.includes('payload.json')) return Promise.resolve({ ok: true, status: 200, json: async () => pay(JSON.parse(PAYLOAD)) });
           if (s.includes('state.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(STATE) });
           if (!/espn\.com/.test(s)) return Promise.resolve({ ok: false, status: 404 });
+          { const r = esp ? esp(s, o, w) : null; if (r) return r; }
           return espn === 'ok'
             ? Promise.resolve({ ok: true, status: 200, json: async () => s.includes('/summary?') ? SUM : sb(state) })
             : Promise.resolve({ ok: false, status: 403 });
@@ -984,14 +997,29 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     const myOld = JSON.stringify({ lines: { 'prop|saved-before|0': 4 }, removed: {}, kept: {} });
     const all = w => { const o = {}; for (let i = 0; i < w.localStorage.length; i++) { const k = w.localStorage.key(i); o[k] = w.localStorage.getItem(k); } return o; };
     /* what finishing must leave as it was: every key but the prop model's own, which the model
-       rewrites as it likes, and in that one the saved list and the builder */
-    const snap = x => { const a = all(x.w), pk = JSON.parse(a[PROP_KEY] || '{}'); delete a[PROP_KEY];
+       rewrites as it likes, and in that one the saved list and the builder; and but the kept Refresh odds read
+       (props_press_v1), which the card's check of DraftKings' lines keeps as a press does (19 October 2026: held
+       on its own, pressKept below) */
+    const snap = x => { const a = all(x.w), pk = JSON.parse(a[PROP_KEY] || '{}'); delete a[PROP_KEY]; delete a[PRESS_KEY];
       return JSON.stringify({ a, saved: pk.saved, parlay: Object.keys(pk.parlay || {}).sort(), S: x.w.eval('JSON.stringify([S.saved, Object.keys(S.parlay).sort(), S.stake])') }); };
     /* every device finishes a parlay the same way: a plain browser, and one that was the owner's
        (the owner link's secret and a session still in it, which mean nothing now) */
     const wasOwner = w => { w.localStorage.setItem('nflowner_v1', 'the-old-owner-secret'); w.localStorage.setItem('nflsync_owner_v1', JSON.stringify({ uid: 'u', refreshToken: 'rt' })); };
+    /* section J's ESPN. Since 19 October 2026 the card checks DraftKings' current lines as it opens, through the page's
+       own Refresh odds reader, for the parlay's games alone (J2 below holds it). Here the press's scoreboard
+       (scoreboard?dates=) has the pinned games under event ids of its own, dated far off so no clock a check moves
+       passes them, with no DraftKings odds, and no player lines posted (a 404): the read changes nothing the checks
+       stand on, and each card says when it checked. Every other ESPN request is the run's stub's */
+    const EVT = { [g1.id]: '7101', [g2.id]: '7102' }, FAR = '2100-06-01T00:00Z';
+    const sbEv = (x, id, odds) => ({ id, date: FAR, competitions: [{ competitors: [{ homeAway: 'home', team: { abbreviation: x.h } }, { homeAway: 'away', team: { abbreviation: x.a } }], ...(odds ? { odds: [odds] } : {}) }] });
+    const jsonR = (code, body) => Promise.resolve({ ok: code === 200, status: code, headers: { get: () => null }, json: async () => JSON.parse(JSON.stringify(body)) });
+    const NO_PROPS = { error: { message: 'No propBets found', code: 404 } };
+    const jEsp = s => /\/scoreboard\?dates=/.test(s) ? jsonR(200, { events: [sbEv(g1, EVT[g1.id]), sbEv(g2, EVT[g2.id])] }) : /\/propBets\?/.test(s) ? jsonR(404, NO_PROPS) : null;
+    /* what the card's reads kept in this browser is a press's: the kept read's own shape, of the pinned games alone */
+    const pressKept = x => { const r = x.w.localStorage.getItem(PRESS_KEY); if (r == null) return true;
+      try { const k = JSON.parse(r); return k.v === 1 && k.season === SEA && Object.keys(k.games || {}).every(id => id === g1.id || id === g2.id); } catch (e) { return false; } };
     for (const [how, extra, side] of [['a plain browser', () => {}, 'over'], ['a browser that was the owner\'s', wasOwner, 'under']]) {
-      const v = await run({ url: URL_PB, pay: P => pin(P, side), file: { updated: null, games: [], parlays: [] }, seed: w => { w.localStorage.setItem(PROP_KEY, blob(side)); w.localStorage.setItem('my_parlays_v1', myOld); extra(w); } });
+      const v = await run({ url: URL_PB, pay: P => pin(P, side), file: { updated: null, games: [], parlays: [] }, esp: jEsp, seed: w => { w.localStorage.setItem(PROP_KEY, blob(side)); w.localStorage.setItem('my_parlays_v1', myOld); extra(w); } });
       const DK_RB = DK_RBS[side], rbLabel = Side(side) + ' 64.5 rushing yards';
       const { w, d } = v, tab = d.getElementById('tab-parlay');
       const reads = () => v.methods.every(m => m === 'GET');
@@ -1009,7 +1037,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       chk(!!fin && !d.getElementById('pSave') && /^Finish parlay$/.test(txt(fin)) && !fin.disabled, `${how}: the builder's save is not Finish parlay: ` + txt(d.querySelector('#parlayBody .actions')));
       if (!fin) continue;
       const before = snap(v), bad0 = BAD_CALLS.length;
-      fin.click(); await wait(30);
+      fin.click(); await wait(30); await cardSettled(w);
       const md = d.getElementById('pcModal'), view = d.getElementById('pcView'), q = w.PARLAY_CARD.quote();
       const price = w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))').replace('-', '−');
       chk(!!md && !md.hidden && d.body.classList.contains('modal-open') && md.querySelector('[role="dialog"][aria-modal="true"]'), `${how}: Finish did not open the card's window`);
@@ -1119,7 +1147,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
          with why, and the button says how many of the legs it opens; none at all: the button and Share link
          still open DraftKings, the game's page where every leg is in one game, else its NFL page, every leg
          named with why (the owner's Monday night, 12 October 2026: Share link sent only the site's address) */
-      { const reopen = async () => { d.getElementById('pcClose').click(); await wait(10); d.getElementById('pFinish').click(); await wait(20); };
+      { const reopen = async () => { d.getElementById('pcClose').click(); await wait(10); d.getElementById('pFinish').click(); await wait(20); await cardSettled(w); };
         const nRb = q.legs.findIndex(l => l.pid === 'card-rb') + 1, shared = [];
         Object.defineProperty(w.navigator, 'share', { value: async x => { shared.push(x); }, configurable: true });
         /* the runner's own line gone from DraftKings' ids, two others in its place, 63.5 and 65. In the
@@ -1464,7 +1492,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         d.getElementById('pcClose').click();
         delete w.navigator.canShare; delete w.navigator.share; }
       /* finishing wrote nothing: not the saved list, not the builder, no key, not the store */
-      chk(snap(v) === before && reads() && BAD_CALLS.length === bad0 && w.localStorage.getItem('my_parlays_v1') === myOld && w.localStorage.getItem('live_parlays_v1') === null,
+      chk(snap(v) === before && pressKept(v) && reads() && BAD_CALLS.length === bad0 && w.localStorage.getItem('my_parlays_v1') === myOld && w.localStorage.getItem('live_parlays_v1') === null,
         `${how}: finishing a parlay changed what the browser keeps, or sent something other than a read (${v.methods.filter(m => m !== 'GET').length} writes)`);
       chk(w.eval('S').saved.map(p => p.id).join() === 'saved-before' && ![...d.querySelectorAll('#tab-parlay .savedp')].some(c => /Card Runner/.test(txt(c))), `${how}: a finished parlay went into the saved list or onto the page`);
       /* the builder changed and finished again is the new parlay */
@@ -1504,7 +1532,10 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       d.getElementById('pcAgain').click(); await wait(30);
       chk(md.hidden && Object.keys(w.eval('S').parlay).length === 0 && !d.getElementById('pFinish') && w.eval('S').saved.map(p => p.id).join() === 'saved-before' && reads(),
         `${how}: Start over did not clear the builder alone`);
-      chk(d.activeElement === (d.querySelector('#pbPanel [data-pb-mix]') || d.body) && d.activeElement !== d.getElementById('pcAgain'), `${how}: after Start over the focus is lost`);
+      /* the focus on the Parlay Builder's choices, or with no game to build from (no choices drawn) on the chosen tab's
+         button: never the page's body (the review of 19 October 2026) */
+      { await wait(60); const want = d.querySelector('#pbPanel [data-pb-mix]') || d.querySelector('#tabs button[aria-selected="true"]');
+        chk(!!want && d.activeElement === want && d.activeElement !== d.body && d.activeElement !== d.getElementById('pcAgain'), `${how}: after Start over the focus is lost: ` + (d.activeElement === d.body ? 'the page\'s body' : d.activeElement ? d.activeElement.outerHTML.slice(0, 80) : 'nothing')); }
       /* two weeks in the builder cannot be one parlay: Finish says so, as Save did */
       w.eval(`S.parlay=${JSON.stringify(builder(side))}; S.parlay['other|team:${other ? other.h : 'X'}|ml']=${JSON.stringify({ gid: other ? other.id : 'x', pid: 'team:' + (other ? other.h : 'X'), stat: 'ml', k: 0, side: 'over', main: false, p: 0.5, price: 100, src: 'real', name: 'Elsewhere', pos: 'Game', grp: 'TEAM', team: other ? other.h : 'X', opp: other ? other.a : 'Y', week: other ? +other.w : wk + 1, label: 'To win' })}; save(); renderParlay()`);
       await wait(20);
@@ -1650,6 +1681,24 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             `${how}: the set's card does not open its legs in DraftKings in the level's order: ` + tA.getAttribute('href'));
           d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
           chk(md.hidden && d.activeElement === tb, `${how}: Escape on the card did not close it, or the focus did not go back to the set's Finish`); }
+        /* (the review of 19 October 2026) a level the tab no longer draws when its card closes (the card's read re-picked
+           the set, say): the focus goes back to its set's Add to builder, else (none of the set's buttons left) the set's
+           heading, else (the set gone) the chosen tab's button, and never the builder's Finish on the hidden Parlay
+           Builder tab or the page's body. Each made here by taking those buttons out of the tab, which is drawn again after */
+        if (tb) {
+          const unit = () => d.querySelector(`#spPanel [data-sp-game="${g2.id}"]`), esc = () => d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+          const at = () => d.activeElement ? (d.activeElement === d.body ? 'body' : d.activeElement.id || d.activeElement.getAttribute('data-sp-add') || d.activeElement.getAttribute('data-tab') || d.activeElement.outerHTML.slice(0, 60)) : 'none';
+          const gone = [];
+          for (const [step, cut, want, what] of [
+            ['its Finish gone', () => { const f = unit() && unit().querySelector(`[data-pc-finish="sp|${fid}"]`); if (f) f.remove(); }, () => d.querySelector(`#spPanel [data-sp-add="${fid}"]`), 'the same level\'s Add to builder'],
+            ['every button of its set gone', () => { if (unit()) unit().querySelectorAll('[data-sp-add], [data-pc-finish]').forEach(b => b.remove()); }, () => d.getElementById('spg-' + g2.id), 'its set\'s heading'],
+            ['its set gone', () => { if (unit()) unit().remove(); }, () => tabBtn('suggest'), 'the chosen tab\'s button (Suggested Parlays)']]) {
+            const f = d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`); if (f) { f.click(); await wait(20); await cardSettled(w); }
+            cut(); esc(); await wait(20);
+            const t = want();
+            if (!(f && md.hidden && !!t && d.activeElement === t && !d.activeElement.closest('[hidden]') && tabBtn('suggest').getAttribute('aria-selected') === 'true')) gone.push(`${step}: the focus is on ${at()}, not ${what}`);
+            w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderParlay()'); await wait(30); }
+          chk(!gone.length, `${how}: a level the tab no longer draws when its card closes does not give the focus back to its set or the tab: ` + gone.join(' | ')); }
         /* an amount of the visitor's own in the Bet amount box, on the Parlay Builder tab: the set pays on
            it, Finish opens the card on it, and Add to builder leaves it in the builder, whose own Finish
            is on it too */
@@ -1765,7 +1814,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             && cash() === `${mny(12.5)} | ${mny(12.5 * dj)} | +${mny(12.5 * dj - 12.5)}`
             && d.getElementById('pcDk').getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + [DK_ML2.a, DK_RB].map(x => x.replace(/#/g, '%23')).join('+'),
             `${how}: Finish on a locked set does not open the record's set, its legs, price, chance and the amount: ` + txt(d.getElementById('pcView')) + ' / ' + d.getElementById('pcDk').getAttribute('href'));
-          if (lf) { d.getElementById('pcClose').click(); chk(d.activeElement === lf, `${how}: closing the locked set's card did not give the focus back to its Finish`); }
+          /* the focus goes back to the set's Finish: the button that opened the card, or the one standing for it where the
+             card's check of DraftKings' lines (a press, as it opens) redrew the tab under it */
+          if (lf) { d.getElementById('pcClose').click(); chk(d.activeElement === lf || d.activeElement === d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`), `${how}: closing the locked set's card did not give the focus back to its Finish`); }
           /* (its own game alone: a real prime-time game whose lock has passed with no entry in the record planted here,
              as Sunday night's game from 22:20 UTC, is the page's own and kept, rightly; the check read the whole key
              until the night of 18 October 2026, when it failed on main for that) */
@@ -1870,7 +1921,8 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
                   const bad2 = ef ? eloCard(SLOT_E.safe, 0.33, 'Safe Elo pick · the Sunday slot', 12.5, null) : 'no Finish on its Elo Safe';
                   chk(!bad2, `${how}: ${when}, Finish on the Sunday slot's Elo Safe does not open the card on it as an Elo pick: ` + bad2);
                   if (ef) d.getElementById('pcClose').click();
-                  const mf = u && u.querySelector(`[data-pc-finish="sp|${sid}:safe"]`);
+                  /* the tab as the card's check of DraftKings' lines (a press, as the card opens) redrew it under the card */
+                  const mf = d.querySelector(`#spSets [data-sp-game="${sid}"] [data-pc-finish="sp|${sid}:safe"]`);
                   if (mf) { mf.click(); await wait(20); }
                   chk(!!mf && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === 'Safe parlay · the Sunday slot' && d.querySelectorAll('#pcView .pc-legs > li').length === 2 && ML.every(l => txt(d.getElementById('pcView')).includes(l.name)),
                     `${how}: ${when}, Finish on the Sunday slot's model Safe does not open the card on it: ` + txt(d.querySelector('#pcView .pc-head')));
@@ -1882,6 +1934,306 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         } finally { w.Date.now = realNow0; w.eloUnit = w.__eloUnitL; delete w.__eloUnitL; w.__spOther = null; w.eval('PB_REC=null; spOn=window.__spOnL; delete window.__spOnL; SP_SHOWN=null; renderParlay()'); }
         await wait(20);
         chk(w.eval('S').saved.map(p => p.id).join() === 'saved-before' && reads(), `${how}: finishing a suggestion saved it`); }
+    }
+    /* ---- J2. the card checks DraftKings' current lines as it opens (19 October 2026, the owner on Monday night's
+       Commanders at 49ers: "same thing again.... put in that link and its only showing" one leg of four, the other
+       three ids the morning's pull had read at numbers DraftKings had moved off by the evening). A parlay of seven legs
+       on the two pinned games, each with DraftKings' id at its own line as the pull read it (the player ids two hours
+       ago, the game lines five): the first game's total, Over 43.5, and on the second the runner's rushing yards main
+       line (Over 64.5), a receiver's receiving yards main line (Over 55.5), his receptions (Over 5.5) and his anytime
+       touchdown, a tight end's 4+ receptions (a rung: DraftKings' Over 3.5) and his 2+ touchdowns (on his anytime
+       touchdown). This ESPN answers the card's read with DraftKings' total moved to 44.5 (its over and under with ids of
+       their own), the runner's line moved to 66.5 and the tight end's to 4.5, the receiver's receiving yards where the
+       pull had them, no receptions line of his at all (the id stands: a read with no line says nothing) and his
+       touchdown offered, each player under an ESPN id of his own; the first game has no player lines posted, and a third
+       game of the week (the payload's own, pinned to the far future and its score taken off, else one made up between
+       two clubs the two games do not have) is on the scoreboard and never asked about. Its answers can be held (until the
+       check lets them go, or a request's own timeout aborts it, as a real fetch is), and the scoreboard can fail. Every
+       expectation is worked out here from those made-up lines, the moved rule's words, the cap (10 seconds, on the real
+       clock) and the card's own lines, the check's own copies. After the review of 19 October 2026: the note while the
+       card reads (the waiting line alone, no leg's link), a rung moved off its own number naming its own bet, the page
+       redrawn once a read, the page kept from scrolling under a card that waited for a press, the focus a redraw takes
+       found again, the outcome in the status line, a stale read never painting a newer card, and a payload baked before
+       ids still read */
+    {
+      const CAP_MS = 10000, FRESH_MS = 2 * 60e3;
+      const DKU = ids => 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(x => x.replace(/#/g, '%23')).join('+');
+      const ID = { tot: 'J2#o435', totU: 'J2#u435', tot2: 'J2#o445', tot2U: 'J2#u445', rb: 'J2#rb645', rbU: 'J2#rb645u', wr: 'J2#wr555', wrRec: 'J2#wrrec55', wrTd: 'J2#wrtd', te: 'J2#te35', teTd: 'J2#tetd' };
+      const AID = { 'card-rb': '9101', 'card-wr': '9102', 'card-te': '9103' }, EV3 = '7103';
+      /* the third game: the week's own, else one made up between two clubs neither pinned game has */
+      const g3r = (byWeek[wk] || []).find(x => x !== g1 && x !== g2), used = new Set([g1.a, g1.h, g2.a, g2.h]);
+      const pair3 = g3r ? null : (P0.sched.find(x => !used.has(x.a) && !used.has(x.h) && x.a !== x.h) || {});
+      const g3 = g3r || { id: `${SEA}_${String(wk).padStart(2, '0')}_${pair3.a}_${pair3.h}`, w: wk, a: pair3.a, h: pair3.h };
+      const dk2 = () => ({ [String(wk)]: {
+        [g1.id]: { event: '880001', 'game|total|over|43.5': ID.tot, 'game|total|under|43.5': ID.totU, glat: AT_G },
+        [g2.id]: { event: '880002', 'card-rb|rushing_yards|over|64.5': ID.rb, 'card-rb|rushing_yards|under|64.5': ID.rbU, 'card-wr|receiving_yards|over|55.5': ID.wr,
+          'card-wr|receptions|over|5.5': ID.wrRec, 'card-wr|any_td': ID.wrTd, 'card-te|receptions|over|3.5': ID.te, 'card-te|any_td': ID.teTd, at: AT_P, glat: AT_G } } });
+      const pin2 = P => { pin(P, 'over');
+        for (const x of P.sched) { if (x.id === g1.id) { x.tot = 43.5; x.tov = -110; x.tou = -110; }
+          /* the three games readable at any hour of any season: to come, with no score */
+          if (x.id === g1.id || x.id === g2.id || x.id === g3.id) { delete x.hs; delete x.as; }
+          if (x.id === g3.id) { x.d = '2099-12-31'; x.t = '13:00'; } }
+        if (!g3r) P.sched.push({ id: g3.id, w: wk, d: '2099-12-31', t: '13:00', a: g3.a, h: g3.h });
+        P.espn_ids = Object.fromEntries(Object.entries(AID).map(([pid, aid]) => [aid, pid])); P.dk = dk2(); return P; };
+      const L2 = o => Object.assign({ gid: g2.id, side: 'over', main: true, src: 'real', pos: 'WR', grp: 'WR', team: g2.h, opp: g2.a, week: wk }, o);
+      const totKey = `${g1.id}|game|total`, wrKey = `${g2.id}|card-wr|receiving_yards`, wrRecKey = `${g2.id}|card-wr|receptions`;
+      const legs2 = {
+        [totKey]: { gid: g1.id, pid: 'game', stat: 'total', k: 43.5, side: 'over', main: true, p: 0.5, price: -110, src: 'real', mu: 43.5, name: `${g1.a} at ${g1.h}`, pos: 'Game', grp: 'TEAM', team: g1.a, opp: g1.h, week: wk, label: 'Over 43.5 points' },
+        [rbKey]: builder('over')[rbKey],
+        [wrKey]: L2({ pid: 'card-wr', stat: 'receiving_yards', k: 55.5, p: 0.53, price: -110, mu: 58, name: 'Card Receiver', label: 'Over 55.5 receiving yards' }),
+        [wrRecKey]: L2({ pid: 'card-wr', stat: 'receptions', k: 5.5, p: 0.5, price: -115, mu: 5.6, name: 'Card Receiver', label: 'Over 5.5 receptions' }),
+        [`${g2.id}|card-wr|any_td`]: L2({ pid: 'card-wr', stat: 'any_td', k: 1, main: false, p: 0.36, price: 175, mu: null, name: 'Card Receiver', label: 'Scores a touchdown' }),
+        [`${g2.id}|card-te|receptions`]: L2({ pid: 'card-te', stat: 'receptions', k: 4, main: false, p: 0.45, price: 120, src: 'est', mu: 3.6, name: 'Card End', pos: 'TE', grp: 'TE', label: '4+ receptions' }),
+        [`${g2.id}|card-te|any_td`]: L2({ pid: 'card-te', stat: 'any_td', k: 2, main: false, p: 0.05, price: 1400, src: 'est', mu: null, name: 'Card End', pos: 'TE', grp: 'TE', label: '2+ touchdowns' }) };
+      /* the ESPN of this check: what the card's read is answered, held or failed */
+      const net = { hold: null, fail: false, log: [] };
+      const gate = () => { let go; const p = new Promise(r => { go = r; }); return { p, go }; };
+      const ath = aid => ({ $ref: `http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/${SEA}/athletes/${aid}?lang=en&region=us` });
+      const items = [{ type: { id: '12' }, athlete: ath(AID['card-rb']), current: { target: { value: 66.5 } } }, { type: { id: '12' }, athlete: ath(AID['card-rb']), current: { target: { value: 66.5 } } },
+        { type: { id: '13' }, athlete: ath(AID['card-wr']), current: { target: { value: 55.5 } } }, { type: { id: '31' }, athlete: ath(AID['card-wr']) },
+        { type: { id: '14' }, athlete: ath(AID['card-te']), current: { target: { value: 4.5 } } }];
+      const lk = (ev, oc) => ({ href: `https://sportsbook.draftkings.com/gateway?preurl=${encodeURIComponent(`https://sportsbook.draftkings.com/event/${ev}?outcomes=${encodeURIComponent(oc)}`)}` });
+      const odds1 = { provider: { id: '100' }, total: { over: { close: { line: 'o44.5', odds: '-110', link: lk('880001', ID.tot2) } }, under: { close: { line: 'u44.5', odds: '-110', link: lk('880001', ID.tot2U) } } } };
+      const answer = s => { if (/\/scoreboard\?dates=/.test(s)) return net.fail ? [500, {}] : [200, { events: [sbEv(g1, EVT[g1.id], odds1), sbEv(g2, EVT[g2.id]), sbEv(g3, EV3)] }];
+        const m = /\/events\/(\d+)\/competitions\/\d+\/odds\/100\/propBets\?/.exec(s);
+        if (m) return m[1] === EVT[g2.id] ? [200, { count: items.length, pageIndex: 1, pageSize: 1000, pageCount: 1, items }] : [404, NO_PROPS];
+        return [404, {}]; };
+      const esp2 = (s, o) => { if (!/\/scoreboard\?dates=|sports\.core\.api\.espn\.com/.test(s)) return null;
+        net.log.push(s); const [code, body] = answer(s), h = net.hold;
+        if (!h) return jsonR(code, body);
+        return new Promise((res, rej) => { h.p.then(() => res(jsonR(code, body)));
+          const sg = o && o.signal; if (sg) sg.addEventListener('abort', () => rej(new Error('The operation was aborted'))); }); };
+      const v = await run({ url: URL_PB, pay: pin2, file: { updated: null, games: [], parlays: [] }, esp: esp2,
+        seed: x => x.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 25, saved: [], parlay: legs2 })) });
+      const { w, d } = v, rec = stubDraw(w), md = d.getElementById('pcModal'), dkA = d.getElementById('pcDk'), link = d.getElementById('pcLink');
+      const note = () => d.getElementById('pcDkNote'), msg = () => txt(d.getElementById('pcMsg')), ckS = () => cardCheck(w) || {}, how = 'the card\'s check of DraftKings\' lines';
+      const shared = []; Object.defineProperty(w.navigator, 'share', { value: async x => { shared.push(x); }, configurable: true });
+      /* how often the page under the card is drawn again for a read: the page's own espnRedraw, counted */
+      w.eval('window.__rd=0; { const r0=window.espnRedraw; window.espnRedraw=function(){ window.__rd++; return r0.apply(this,arguments); }; }');
+      const q = w.PARLAY_CARD.quote(), L = q ? q.legs : [], nOf = (pid, stat) => L.findIndex(l => l.pid === pid && l.stat === stat) + 1, NL = Object.keys(legs2).length;
+      const n = { tot: nOf('game', 'total'), rb: nOf('card-rb', 'rushing_yards'), wr: nOf('card-wr', 'receiving_yards'), wrRec: nOf('card-wr', 'receptions'), wrTd: nOf('card-wr', 'any_td'), te: nOf('card-te', 'receptions'), teTd: nOf('card-te', 'any_td') };
+      chk(L.length === NL && Object.values(n).every(x => x > 0) && !!d.getElementById('pFinish') && !d.getElementById('pFinish').disabled, `${how}: the builder does not hold the ${NL} made-up legs ready to finish: ` + L.map(l => l.pid + ' ' + l.stat).join(', '));
+      chk(w.eval(`!!S.sched.find(x=>x.id===${JSON.stringify(g3.id)}&&!gameStarted(x)&&!hasScore(x))`), `${how}: the third game of the week (${g3.id}), which the card must never ask about, is not one to come on the page, so the check could not tell`);
+      if (L.length === NL) {
+        /* the ids the link carries, in the card's order: the pull's, before the read; after it, the total on the read's
+           Over 44.5 and the runner and the tight end on no slip */
+        const order = m => [...Array(NL)].map((_, i) => m[Object.keys(n).find(k => n[k] === i + 1)]).filter(Boolean);
+        const PRE = order({ tot: ID.tot, rb: ID.rb, wr: ID.wr, wrRec: ID.wrRec, wrTd: ID.wrTd, te: ID.te, teTd: ID.teTd }), POST = order({ tot: ID.tot2, wr: ID.wr, wrRec: ID.wrRec, wrTd: ID.wrTd, teTd: ID.teTd });
+        const COULD = 'Could not check DraftKings’ current lines: a leg DraftKings has moved since its prices were read will not be on the slip.';
+        const WAIT = 'Checking DraftKings’ current lines for this parlay’s games…', FIRST = 'Checking DraftKings’ lines first…';
+        const checked = t => `Checked against DraftKings’ lines at ${readTxt(t)}.`, said = (ok, of) => `DraftKings’ lines checked: Open in DraftKings opens ${ok === of ? (of === 1 ? 'the leg' : `the ${of} legs`) : `${ok} of the ${of} legs`}.`;
+        /* the moved rule's words: a main line, or a rung whose DraftKings line moved to its own number (k-0.5 or the whole
+           k-1), added by hand there; a rung moved to any other, its own bet named and the main line said to be another */
+        const movedWhy = (stat, at, k, main) => `DraftKings has moved his ${stat} line to ${at} since its prices were read (${readTxt(AT_P)}), and its slip drops a moved line: `
+          + (main || at === k - 0.5 || at === k - 1 ? `add it by hand at ${at}` : `add ${k}+ ${stat} by hand (DraftKings’ Over ${at} is another bet)`);
+        const movedBrief = (at, k, main) => main || at === k - 0.5 || at === k - 1 ? `moved to ${at} since it was read` : `moved to ${at} since it was read; add ${k}+ by hand, not Over ${at}`;
+        const moved = (key, who, what, stat, at, k, main) => `${n[key]}. ${who}, ${what}: ` + movedWhy(stat, at, k, main);
+        const RB_MOVED = moved('rb', 'Card Runner', 'Over 64.5 rushing yards', 'rushing yards', 66.5, 64.5, true), TE_MOVED = moved('te', 'Card End', '4+ receptions', 'receptions', 4.5, 4, false);
+        const missOf = k => txt(note().querySelector(`[data-pc-dkmiss="${n[k]}"]`)), swapOf = k => txt(note().querySelector(`[data-pc-dkswap="${n[k]}"]`));
+        const idle = () => !dkA.hasAttribute('aria-disabled') && !dkA.hasAttribute('aria-busy') && !dkA.hasAttribute('role') && !dkA.hasAttribute('tabindex') && !link.hasAttribute('aria-disabled') && !link.hasAttribute('aria-busy');
+        /* while the card reads: the button waiting, Share link too, and the note its waiting line alone, with no leg's own
+           link (the plan before the read may stand on ids the read finds dead), no list and no check line */
+        const waitingNow = () => ckS().state === 'busy' && !dkA.hidden && txt(dkA) === 'Checking DraftKings’ lines…' && !dkA.hasAttribute('href') && dkA.getAttribute('aria-disabled') === 'true' && dkA.getAttribute('aria-busy') === 'true'
+          && link.getAttribute('aria-disabled') === 'true' && txt(note()) === WAIT && note().querySelectorAll('p').length === 1 && !!note().querySelector('[data-pc-dkwait]')
+          && !note().querySelector('[data-pc-dkleg], a[href], [data-pc-dkmiss], [data-pc-dkswap], [data-pc-dkcheck], [data-pc-dkread]');
+        const isSb = u => /\/scoreboard\?dates=/.test(u), evOf = u => (/\/events\/(\d+)\/competitions\//.exec(u) || [])[1] || null;
+        const wkQ = wk <= 18 ? `seasontype=2&week=${wk}` : `seasontype=3&week=${wk >= 22 ? 5 : wk - 18}`;
+        const slipRows = () => Object.fromEntries([...d.querySelectorAll('#parlayBody tr.legrow')].map(r => [txt((r.querySelectorAll('td')[1] || r).querySelector('b')), (x => x ? txt(x) : null)(r.querySelector('small.dkslip'))]));
+        const espnIdle = async () => { for (let i = 0; i < 400 && w.eval('ESPN_RUN.busy'); i++) await wait(25); await wait(40); };
+        const S0 = w.eval('JSON.stringify([S.parlay, S.saved, S.stake])');
+        const keys0 = Object.keys(all(w)).filter(k => k !== PROP_KEY && k !== PRESS_KEY).sort().join();
+        /* (a) the scoreboard fails: the buttons work on the plan as it was, every leg on the pull's own id, and the card
+           says it could not check, in the note and in its status line; the read asked for the scoreboard once a game and
+           nothing else */
+        net.fail = true; let n0 = net.log.length;
+        d.getElementById('pFinish').click(); await wait(20); await cardSettled(w); await wait(10);
+        chk(!md.hidden && ckS().state === 'failed' && idle() && dkA.getAttribute('href') === DKU(PRE) && txt(dkA) === 'Open in DraftKings'
+          && txt(note()).endsWith(COULD) && note().querySelectorAll('[data-pc-dkcheck]').length === 1 && !!note().querySelector('[data-pc-dkcheck="failed"]') && !note().querySelector('[data-pc-dkmiss]') && msg() === COULD,
+          `${how}: with ESPN's scoreboard failing (500) the card does not open every leg on the pull's ids with the line (and its status line) saying it could not check: ` + txt(dkA) + ' ' + dkA.getAttribute('href') + ' / ' + txt(note()).slice(-220) + ' / ' + msg());
+        chk(net.log.slice(n0).length === 2 && net.log.slice(n0).every(u => isSb(u) && u.includes(`dates=${SEA}&${wkQ}&`)), `${how}: with the scoreboard failing, the read asked for more than the parlay's week's scoreboard once a game: ` + net.log.slice(n0).join(' | '));
+        d.getElementById('pcClose').click(); await wait(10); net.fail = false;
+        /* (b) the read held: the buttons wait (their words, no address, aria-disabled and aria-busy, a press of either doing
+           nothing but Share link's saying the card is checking first) while Download works, and the note says only that
+           it is checking; past the cap they work on the plan as it stands and the card says it could not check; let go
+           after the cap, the read still updates the same card, the page under it drawn once for its two games. The focus,
+           on Open in DraftKings while it waits and then on the receiver's own link in the note, stays on each */
+        net.hold = gate(); n0 = net.log.length;
+        const tOpen = Date.now(); d.getElementById('pFinish').click(); await wait(30);
+        w.eval('window.__rd=0');
+        chk(waitingNow(), `${how}: while the card reads, Open in DraftKings does not wait ("Checking DraftKings’ lines…", no address, aria-disabled and aria-busy), Share link is not aria-disabled, or the note is not its waiting line alone with no leg's own link: ` + dkA.outerHTML + ' / ' + link.outerHTML + ' / ' + note().innerHTML);
+        { const ev = new w.MouseEvent('click', { bubbles: true, cancelable: true }), went = dkA.dispatchEvent(ev); link.click(); await wait(30);
+          chk(!went && shared.length === 0 && !md.hidden && msg() === FIRST && ckS().state === 'busy', `${how}: while the card reads, a press of Open in DraftKings did something, or one of Share link did more than say "${FIRST}": ` + JSON.stringify({ went, shared: shared.length, msg: msg() })); }
+        { const c0 = rec.clicks.length; d.getElementById('pcDownload').click(); await wait(80);
+          chk(rec.clicks.length === c0 + 1 && ckS().state === 'busy' && !md.hidden, `${how}: Download does not work at once while the card reads`); }
+        { const f = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && !el.hidden && !el.closest('[hidden]')).map(el => el.id || 'leg' + el.getAttribute('data-pc-dkleg')).join(' ');
+          chk(f === 'pcClose pcDk pcLink pcDownload pcAgain', `${how}: while the card reads its controls are not Close, Open in DraftKings (waiting, in its place), Share link, Download and Start over alone: ` + f); }
+        chk(net.log.slice(n0).length === 1 && isSb(net.log[n0]), `${how}: the held read asked for more than its first game's scoreboard: ` + net.log.slice(n0).join(' | '));
+        dkA.focus();
+        /* the cap, on the real clock: still waiting a second and a half before it, and past it within a few seconds of its
+           time (on a loaded machine Node runs a timer from the loop's own clock, which can lag the real one, so the card's
+           and this check's timers are each held only to that much) */
+        await wait(Math.max(0, CAP_MS - 1500 - (Date.now() - tOpen)));
+        const early = ckS().state, earlyWait = waitingNow(), tEarly = Date.now() - tOpen;
+        for (let i = 0; i < 240 && ckS().state === 'busy'; i++) await wait(25);
+        chk(early === 'busy' && earlyWait, `${how}: the card stopped waiting for its read before its 10-second cap, or did not wait as it should (${early} at ${tEarly} ms${earlyWait ? '' : ', not waiting as above: ' + txt(dkA) + ' / ' + txt(note()).slice(0, 120)})`);
+        const wrLink = () => note().querySelector(`a[data-pc-dkleg="${n.wr}"]`);
+        chk(ckS().state === 'late' && idle() && dkA.getAttribute('href') === DKU(PRE) && txt(dkA) === 'Open in DraftKings' && txt(note()).endsWith(COULD) && msg() === COULD && !!wrLink() && d.activeElement === dkA,
+          `${how}: past its 10-second cap the card does not open every leg on the plan as it stood, say (in the note and its status line) it could not check, and keep the focus on Open in DraftKings: ` + ckS().state + ' ' + txt(dkA) + ' / ' + txt(note()).slice(-200) + ' / ' + msg() + ' / focus ' + (d.activeElement && (d.activeElement.id || d.activeElement.outerHTML.slice(0, 60))));
+        link.click(); await wait(30);
+        chk(shared.length === 1 && shared[0].text.split('\n').includes(DKU(PRE)), `${how}: past the cap Share link does not send the plan as it stands: ` + JSON.stringify(shared[0] || null));
+        if (wrLink()) wrLink().focus();
+        const tGo = w.Date.now(); net.hold.go(); net.hold = null; await espnIdle(); for (let i = 0; i < 400 && ckS().state === 'late'; i++) await wait(25); const tDone = w.Date.now();
+        const OUT = w.eval('ESPN_OUT'), whens = [g1.id, g2.id].map(id => OUT[id] && OUT[id].when), t1 = Math.min(...whens);
+        const ok = POST.length;
+        chk(ckS().state === 'done' && idle() && txt(dkA) === `Open ${ok} of ${NL} legs in DraftKings` && dkA.getAttribute('href') === DKU(POST),
+          `${how}: once the read let go after the cap answers, the card does not open the ${ok} legs DraftKings still has, the total at its new number: ` + ckS().state + ' ' + txt(dkA) + ' ' + dkA.getAttribute('href'));
+        chk(msg() === said(ok, NL), `${how}: once the read is done the card's status line does not say what Open in DraftKings opens now (${said(ok, NL)}): ` + msg());
+        chk(w.eval('window.__rd') === 1, `${how}: the page under the card was drawn ${w.eval('window.__rd')} times for the card's read of its two games, not once when the last was read`);
+        chk(missOf('rb') === RB_MOVED && missOf('te') === TE_MOVED && note().querySelectorAll('[data-pc-dkmiss]').length === 2,
+          `${how}: a player's main line and a rung DraftKings has moved since the pull read their ids are not left off, each with the moved rule's words (the rung, moved off its own number, naming its own bet): ` + JSON.stringify([missOf('rb'), missOf('te')]));
+        chk(swapOf('tot') === `${n.tot}. ${g1.a} at ${g1.h}, Over 43.5 points: goes on as Over 44.5` && swapOf('teTd') === `${n.teTd}. Card End, 2+ touchdowns: goes on as anytime touchdown` && note().querySelectorAll('[data-pc-dkswap]').length === 2,
+          `${how}: the total DraftKings has moved does not go on at its new number on the read's id, said so, or the 2+ touchdowns not as his anytime touchdown: ` + [...note().querySelectorAll('[data-pc-dkswap]')].map(txt).join(' | '));
+        chk(whens.every(t => t >= tGo && t <= tDone) && txt(note()).endsWith(checked(t1)) && note().querySelectorAll('[data-pc-dkcheck]').length === 1 && !!note().querySelector('[data-pc-dkcheck="done"]'),
+          `${how}: the note does not end on when the card checked DraftKings' lines (${checked(t1)}), or still says it could not: ` + txt(note()).slice(-200));
+        chk(!!wrLink() && d.activeElement === wrLink() && wrLink().getAttribute('href') === DKU([ID.wr]) && md.contains(d.activeElement) && d.body.classList.contains('modal-open'),
+          `${how}: the focus did not stay on the receiver's own link through the read's redraw, his unmoved line lost its id, or the page under the card was let scroll again`);
+        { const got = net.log.slice(n0), sbs = got.filter(isSb), evs = got.filter(u => !isSb(u)).map(evOf);
+          chk(sbs.length === 2 && sbs.every(u => u.includes(`dates=${SEA}&${wkQ}&`)) && evs.slice().sort().join() === [EVT[g1.id], EVT[g2.id]].sort().join() && !got.some(u => u.includes('/events/' + EV3 + '/')) && got.every(u => isSb(u) || /\/propBets\?/.test(u)),
+            `${how}: the card's read did not ask for exactly the parlay's games (its week's scoreboard once a game and each game's own player lines), or asked about another game: ` + got.map(u => u.replace(/https:\/\/[^/]+/, '').slice(0, 90)).join(' | ')); }
+        link.click(); await wait(30);
+        { const t2 = (shared[1] || {}).text || '', hand = [n.rb, n.te].sort((a, b) => a - b);
+          chk(t2.includes(`DraftKings betslip (opens ${ok} of the ${NL} legs as DraftKings had them; add legs ${hand[0]} and ${hand[1]} by hand):\n${DKU(POST)}\n`)
+            && t2.includes(`\n${n.rb}. Card Runner Over 64.5 rushing yards (${movedBrief(66.5, 64.5, true)})`) && t2.includes(`\n${n.te}. Card End 4+ receptions (${movedBrief(4.5, 4, false)})`)
+            && t2.includes(`On DraftKings’ slip at its own line: ${[['tot', 'Over 44.5'], ['teTd', 'anytime touchdown']].sort((a, b) => n[a[0]] - n[b[0]]).map(([k, x]) => `leg ${n[k]} as ${x}`).join('; ')} (DraftKings prices them at its own line, so its payout can differ)`),
+            `${how}: Share link's text does not open the ${ok} legs and name the two DraftKings has moved, each with the moved rule's few words: ` + JSON.stringify(t2)); }
+        /* the builder's rows say it too, from the card's own plan, as the read's redraw drew them; the receiver's receptions,
+           which the read has no line for, on his id with nothing under it */
+        { const r = slipRows(), want = { 'Over 43.5 points': 'On DraftKings as Over 44.5', 'Over 64.5 rushing yards': `Not on DraftKings’ slip yet: ${movedBrief(66.5, 64.5, true)}`, 'Over 55.5 receiving yards': null,
+            'Over 5.5 receptions': null, 'Scores a touchdown': null, '4+ receptions': `Not on DraftKings’ slip yet: ${movedBrief(4.5, 4, false)}`, '2+ touchdowns': 'On DraftKings as anytime touchdown' };
+          chk(Object.keys(want).every(k => r[k] === want[k]), `${how}: the builder's rows do not say what DraftKings' slip does with each leg after the card's read: ` + JSON.stringify(r)); }
+        /* the anytime touchdown and 2+ touchdowns have no number to move: on their ids whatever the read says (the tight
+           end's touchdown is not among the read's at all); the receiver's receptions, with no line of his in the read, keep
+           his id; every leg's own link is the plan's */
+        chk(!missOf('wrTd') && !missOf('teTd') && !missOf('wrRec') && [...note().querySelectorAll('a[data-pc-dkleg]')].map(a => a.getAttribute('href')).join(' ') === POST.map(x => DKU([x])).join(' '),
+          `${how}: an anytime touchdown, 2+ touchdowns or a line the read has none for was taken for a moved line, or a leg's own link is not the plan's`);
+        /* the moved rule on legs of the check's own, on the read as it stands: the runner's 67+ (DraftKings' Over 66.5, so
+           his moved line is the same bet) added by hand at 66.5; his 70+ naming its own bet; and with the read of his game
+           older than the pull (the read's time moved back three hours, put back after), his main line on the pull's id */
+        { const R = (k, lbl) => ({ gid: g2.id, pid: 'card-rb', stat: 'rushing_yards', k, side: 'over', main: false, p: 0.4, price: 150, src: 'est', mu: 66, name: 'Card Runner', pos: 'RB', grp: 'RB', team: g2.h, opp: g2.a, week: wk, label: lbl });
+          const one = l => { const p = w.PARLAY_CARD.dkPlan([l]); return p && p.each && p.each[0] ? { id: p.each[0].id || null, why: p.each[0].why || null, brief: p.each[0].brief || null } : {}; };
+          const r67 = one(R(67, '67+ rushing yards')), r70 = one(R(70, '70+ rushing yards'));
+          chk(!r67.id && r67.why === movedWhy('rushing yards', 66.5, 67, false) && r67.brief === movedBrief(66.5, 67, false) && !r70.id && r70.why === movedWhy('rushing yards', 66.5, 70, false) && r70.brief === movedBrief(66.5, 70, false),
+            `${how}: a rung DraftKings' moved main line is the same bet for (67+ at 66.5) is not said to add by hand at 66.5, or one it is not (70+) does not name its own bet: ` + JSON.stringify([r67, r70]));
+          const back = w.eval(`(()=>{ const W=ESPN_LIVE[String(${wk})], e=W&&W[${JSON.stringify(g2.id)}]; if(!e) return null; const was=e.at; e.at=new Date(Date.parse(${JSON.stringify(AT_P)})-3*3600e3).toISOString(); return was; })()`);
+          let rOld = {}; if (back != null) { try { rOld = one(legs2[rbKey]); } finally { w.eval(`ESPN_LIVE[String(${wk})][${JSON.stringify(g2.id)}].at=${JSON.stringify(back)}`); } }
+          chk(back != null && rOld.id === ID.rb && !rOld.why, `${how}: ` + (back == null ? 'the card read no player lines of the second game, so an id the pull read after that read could not be held' : 'an id the pull read after the newest read of his game\'s lines was taken for a dead one: ' + JSON.stringify(rOld))); }
+        /* nothing of the visitor's own moved: the builder, the saved list and the stake, and no key but the prop model's own
+           and the kept read, which is a press's */
+        chk(w.eval('JSON.stringify([S.parlay, S.saved, S.stake])') === S0 && Object.keys(all(w)).filter(k => k !== PROP_KEY && k !== PRESS_KEY).sort().join() === keys0 && pressKept(v)
+          && w.localStorage.getItem(PRESS_KEY) != null && JSON.stringify(JSON.parse(w.localStorage.getItem(PROP_KEY)).parlay) === JSON.stringify(JSON.parse(S0)[0]),
+          `${how}: the card's read wrote to the visitor's builder, saved list or stake, or kept anything but a press's read`);
+        /* (c) opened again within two minutes: nothing read, and the same plan and line at once */
+        d.getElementById('pcClose').click(); await wait(10);
+        { const n3 = net.log.length; d.getElementById('pFinish').click(); const st = ckS().state; await wait(30);
+          chk(net.log.length === n3 && st === 'done' && idle() && dkA.getAttribute('href') === DKU(POST) && txt(note()).endsWith(checked(t1)) && missOf('rb') === RB_MOVED,
+            `${how}: opened again within two minutes, the card read again or did not stand at once on the read a moment ago: ` + JSON.stringify({ asked: net.log.slice(n3), st })); }
+        d.getElementById('pcClose').click(); await wait(10);
+        /* the reads above made three minutes ago (the page's own record of them, moved back), so a card opened now reads again */
+        const older = (ids = [g1.id, g2.id]) => w.eval(`for (const id of ${JSON.stringify(ids)}) if (ESPN_OUT[id]) ESPN_OUT[id].when -= ${FRESH_MS + 60e3}`);
+        const setParlay = async o => { w.eval(`S.parlay=${JSON.stringify(o)}; save(); renderParlay()`); await wait(20); };
+        /* (d) a card closed before its read ends is never drawn again from it, and the focus that went back to Finish
+           stays there though the read's redraw replaces that button */
+        older(); net.hold = gate();
+        d.getElementById('pFinish').click(); await wait(30);
+        chk(ckS().state === 'busy', `${how}: a card opened three minutes after the last read did not read again`);
+        d.getElementById('pcClose').click(); await wait(10);
+        { const was = [dkA.outerHTML, note().innerHTML].join('|'), back = d.activeElement === d.getElementById('pFinish');
+          net.hold.go(); net.hold = null; await espnIdle();
+          chk(back && md.hidden && cardCheck(w) === null && [dkA.outerHTML, note().innerHTML].join('|') === was && d.activeElement === d.getElementById('pFinish') && !!d.activeElement,
+            `${how}: a card closed before its read ended was drawn again from it, opened again, or the focus left Finish when the read redrew the page`); }
+        /* (e) a second card opened while the first one's read runs shows its own leg, waits for that read (a press already
+           running), then stands on its own game's read: the receiver's line alone, on its id */
+        const oneLeg = () => d.querySelectorAll('#pcView .pc-legs > li').length === 1;
+        const oneNote = () => txt(note()).includes('opens the leg as DraftKings had it') && note().querySelectorAll('a[data-pc-dkleg]').length === 0;
+        const onePlan = () => oneLeg() && oneNote() && idle() && txt(dkA) === 'Open in DraftKings' && dkA.getAttribute('href') === DKU([ID.wr]);
+        older(); net.hold = gate();
+        d.getElementById('pFinish').click(); await wait(30);
+        d.getElementById('pcClose').click(); await wait(10);
+        await setParlay({ [wrKey]: legs2[wrKey] });
+        d.getElementById('pFinish').click(); await wait(30);
+        chk(ckS().state === 'busy' && oneLeg() && waitingNow(), `${how}: a second card opened while the first one's read runs does not show its own leg, waiting: ` + txt(note()).slice(0, 200));
+        { const n5 = net.log.length; net.hold.go(); net.hold = null; await espnIdle(); await cardSettled(w); await espnIdle();
+          chk(!md.hidden && ckS().state === 'done' && onePlan() && !!note().querySelector('[data-pc-dkcheck="done"]') && d.body.classList.contains('modal-open')
+            && ckS().games.join() === g2.id && net.log.slice(n5).filter(u => !isSb(u)).map(evOf).includes(EVT[g2.id]) && !net.log.some(u => u.includes('/events/' + EV3 + '/')),
+            `${how}: the second card did not end on its own plan (the receiver's line on its id) after reading its own game, or the first card's read drew on it: ` + txt(dkA) + ' ' + dkA.getAttribute('href') + ' / ' + txt(note()).slice(0, 200)); }
+        d.getElementById('pcClose').click(); await wait(10);
+        /* (e2) an older card's read never paints a newer card, though both are open in turn and the newer one is done at
+           once: the receiver's card read a moment ago (so it is done at once when opened again), the seven-leg card opened
+           on its other game read afresh and closed while that read is held, the receiver's card opened again, and then the
+           held read let go: the receiver's card keeps its own one-leg plan to the end */
+        older(); await setParlay({ [wrKey]: legs2[wrKey] });
+        d.getElementById('pFinish').click(); await wait(30); await cardSettled(w); await espnIdle();
+        chk(ckS().state === 'done' && ckS().games.join() === g2.id && onePlan(), `${how}: the receiver's card did not read its game and stand on its own plan: ` + ckS().state);
+        d.getElementById('pcClose').click(); await wait(10);
+        older([g1.id]); await setParlay(legs2);
+        net.hold = gate();
+        d.getElementById('pFinish').click(); await wait(30);
+        const busy7 = ckS().state === 'busy';
+        d.getElementById('pcClose').click(); await wait(10);
+        await setParlay({ [wrKey]: legs2[wrKey] });
+        { const n6 = net.log.length; d.getElementById('pFinish').click(); const st = ckS().state; await wait(30);
+          chk(busy7 && st === 'done' && net.log.length === n6 && onePlan(), `${how}: with its game read a moment ago, the receiver's card opened again did not stand at once on its own plan with nothing read: ` + JSON.stringify({ busy7, st, asked: net.log.slice(n6) })); }
+        net.hold.go(); net.hold = null; await espnIdle(); await wait(60);
+        chk(!md.hidden && ckS().state === 'done' && onePlan() && txt(dkA) === 'Open in DraftKings' && !/of 7 legs|7 legs/.test(txt(dkA) + ' ' + txt(note())),
+          `${how}: the seven-leg card's read, let go after that card closed, painted its plan on the receiver's card open since: ` + txt(dkA) + ' ' + dkA.getAttribute('href') + ' / ' + txt(note()).slice(0, 200));
+        d.getElementById('pcClose').click(); await wait(10);
+        /* (g) a card opened while a press of Refresh odds on its own game runs waits for it and stands on it, reading
+           nothing itself, and the page under it stays held (the press's redraw closes the game window and lets body's
+           modal-open go, which the card puts back): the press here is the page's own, on the receiver's game */
+        older(); await setParlay({ [wrKey]: legs2[wrKey] });
+        net.hold = gate();
+        { const n7 = net.log.length; w.eval(`espnRefresh(${JSON.stringify(g2.id)})`); await wait(20);
+          d.getElementById('pFinish').click(); await wait(30);
+          const st = ckS().state, asked0 = net.log.length - n7;
+          net.hold.go(); net.hold = null; await espnIdle(); await cardSettled(w); await wait(40);
+          const asked = net.log.slice(n7);
+          chk(st === 'busy' && !md.hidden && ckS().state === 'done' && onePlan() && !!note().querySelector('[data-pc-dkcheck="done"]') && d.body.classList.contains('modal-open')
+            && asked0 === 1 && asked.filter(isSb).length === 1 && asked.filter(u => !isSb(u)).map(evOf).join() === EVT[g2.id],
+            `${how}: a card opened during a press of its game did not wait for it and stand on it, read again itself, or let the page under it scroll: ` + JSON.stringify({ st, end: ckS().state, modal: d.body.classList.contains('modal-open'), asked: asked.map(u => u.replace(/https:\/\/[^/]+/, '').slice(0, 70)) })); }
+        d.getElementById('pcClose').click(); await wait(10);
+        /* (h) a payload baked before ids (no PAY.dk; put back on every path) still reads: the first game's total goes on at
+           DraftKings' number on the id the read found, which the press keeps in the PAY.dk it makes */
+        older([g1.id]); await setParlay({ [totKey]: legs2[totKey] });
+        { const n8 = net.log.length; w.eval('window.__dkWas=PAY.dk; delete PAY.dk');
+          let st = '', asked = [], sw = '', made = false, href = '';
+          try { d.getElementById('pFinish').click(); await wait(30); await cardSettled(w); await espnIdle();
+            st = ckS().state; asked = net.log.slice(n8); sw = txt(note().querySelector('[data-pc-dkswap="1"]')); href = dkA.getAttribute('href'); made = w.eval('!!PAY.dk&&DK_PRESS_MADE.has(PAY.dk)');
+          } finally { if (!md.hidden) d.getElementById('pcClose').click(); w.eval('PAY.dk=window.__dkWas; delete window.__dkWas'); await wait(10); }
+          chk(st === 'done' && asked.filter(isSb).length === 1 && asked.filter(isSb).every(u => u.includes(`dates=${SEA}&${wkQ}&`)) && asked.filter(u => !isSb(u)).map(evOf).join() === EVT[g1.id]
+            && href === DKU([ID.tot2]) && sw === `1. ${g1.a} at ${g1.h}, Over 43.5 points: goes on as Over 44.5` && made,
+            `${how}: on a payload baked before ids the card did not read its game (one scoreboard and that game alone) and put the total on at DraftKings' number on the read's id: ` + JSON.stringify({ st, href, sw, made, asked: asked.map(u => u.replace(/https:\/\/[^/]+/, '').slice(0, 70)) })); }
+        await setParlay(legs2);
+        /* (f) Start over works at once while the card reads, and the read ending after it opens nothing and fills no
+           builder; the focus it gave to the Parlay Builder's choices is found again on them when the read's redraw draws
+           them again, never left on the page's body. The choices are drawn only while the page's own week has a game to
+           come, so where it has none at this hour (a Monday night under way, the season's end) one of its games is moved
+           to the far future, its score taken off, for this step alone */
+        const lwMoved = w.eval(`(()=>{ if(pbGames().length) return null; const W=currentWeek(), G=gamesIn(W), g=G.find(x=>!gameFinal(x))||G[0]; if(!g) return null;
+          window.__lwWas={g,d:g.d,t:g.t,hs:g.hs,as:g.as}; g.d='2099-12-31'; g.t='13:00'; delete g.hs; delete g.as; PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); renderParlay(); return g.id; })()`);
+        await wait(20);
+        chk(!!d.querySelector('#pbPanel [data-pb-mix]'), `${how}: the Parlay Builder draws no choices${lwMoved ? ` though ${lwMoved} was moved to the far future` : ''}, so Start over's focus could not be held`);
+        older(); net.hold = gate();
+        d.getElementById('pFinish').click(); await wait(30);
+        d.getElementById('pcAgain').click(); await wait(30);
+        { const ok0 = md.hidden && Object.keys(w.eval('S').parlay).length === 0, mix0 = d.activeElement, on0 = !!mix0 && mix0.hasAttribute('data-pb-mix');
+          net.hold.go(); net.hold = null; await espnIdle(); await wait(40);
+          const a = d.activeElement;
+          chk(ok0 && md.hidden && Object.keys(w.eval('S').parlay).length === 0 && cardCheck(w) === null, `${how}: Start over did not work at once while the card read, or the read ending after it opened the card or filled the builder`);
+          chk(on0 && !!a && a !== d.body && a.isConnected && a.hasAttribute('data-pb-mix') && a.getAttribute('data-pb-mix') === mix0.getAttribute('data-pb-mix') && !a.closest('[hidden]'),
+            `${how}: after Start over, the read's redraw left the focus on ${a === d.body ? 'the page\'s body' : a ? a.outerHTML.slice(0, 80) : 'nothing'}, not on the Parlay Builder's choice it was on${on0 ? (mix0.isConnected ? ' (that one was not drawn again, so the check did not meet the case)' : '') : ' (Start over did not put it there)'}`); }
+        if (lwMoved) w.eval('{ const o=window.__lwWas; o.g.d=o.d; o.g.t=o.t; if(o.hs!=null) o.g.hs=o.hs; if(o.as!=null) o.g.as=o.as; delete window.__lwWas; }');
+        chk(v.methods.every(m => m === 'GET'), `${how}: the card's read sent something other than a read`);
+      }
     }
 
   }

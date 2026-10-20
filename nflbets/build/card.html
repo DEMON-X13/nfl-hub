@@ -217,9 +217,14 @@ window.PARLAY_CARD=(function(){
     try{ const g=game(l.gid), wk=l.week!=null?l.week:(g&&g.w), e=typeof espnGame==='function'?espnGame(l.gid,wk):null; if(!e) return null;
       const at=Date.parse(e.at), q=typeof espnLineOf==='function'?espnLineOf(e,l.pid,l.stat):null;
       return isFinite(at)&&q!=null?{at,q}:null; }catch(e){ return null; } }
-  /* the reason a leg on a dead id gives, in full and in a few words (Share link's text, the builder's row) */
-  const dkMoved=(l,R,at)=>({why:`DraftKings has moved his ${statLbl(l.stat)} line to ${pt(R.q)} since its prices were read (${readOf(at)}), and its slip drops a moved line: add it by hand at ${pt(R.q)}`,
-    brief:`moved to ${pt(R.q)} since it was read`,moved:R.q});
+  /* the reason a leg on a dead id gives, in full and in a few words (Share link's text, the builder's row). A main
+     line is added by hand at DraftKings' new number, as a leg DraftKings has at another number is converted (app
+     v109). A ladder rung k+ is DraftKings' Over k-0.5 (or the whole k-1), so only at one of those is the main line
+     the same bet; at any other (4+ receptions with the main line moved to 4.5, which is 5+) the leg's own bet is
+     named, and that the main line is another (the review of 19 October 2026) */
+  const dkMoved=(l,R,at)=>{ const q=pt(R.q), s=statLbl(l.stat), head=`DraftKings has moved his ${s} line to ${q} since its prices were read (${readOf(at)}), and its slip drops a moved line: `;
+    if(l.main||+R.q===+l.k-0.5||+R.q===+l.k-1) return {why:head+`add it by hand at ${q}`,brief:`moved to ${q} since it was read`,moved:R.q};
+    return {why:head+`add ${pt(l.k)}+ ${s} by hand (DraftKings’ Over ${q} is another bet)`,brief:`moved to ${q} since it was read; add ${pt(l.k)}+ by hand, not Over ${q}`,moved:R.q}; };
   /* the player markets the price pull reads (oddsfetch.py's DEFAULT: DraftKings' main line on each,
      and the anytime touchdown); --full, which reads the rest and the alternate ladders, is never run */
   const DK_READ=['passing_yards','passing_tds','rushing_yards','receiving_yards','receptions','any_td'];
@@ -373,7 +378,8 @@ window.PARLAY_CARD=(function(){
       fairDk:legs.some(x=>x&&x.src==='dkline'),
       made:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),site:SITE,
       file:'parlay-'+(w==null?'':(w<=18?'week'+w:'playoffs-week'+w)+'-')+n+(n===1?'leg':'legs')+'.png',
-      dk:dkPlan(legs)};
+      /* the legs the DraftKings plan is worked on, kept so the card's check can work it again when it ends */
+      dk:dkPlan(legs),dkLegs:legs};
     return m;
   }
   /* from the builder: the legs as they stand, priced as the builder prices them */
@@ -457,7 +463,7 @@ window.PARLAY_CARD=(function(){
   const dkWhich=dk=>dk.miss.length?dk.ok.length+' of the '+dk.n+' legs':(dk.n===1?'the leg':'the '+dk.n+' legs');
   /* the legs to add by hand, by number: "leg 2", "legs 3 and 4", "legs 2, 3 and 5" */
   const legNums=xs=>{ const n=xs.map(x=>x.n); return (n.length===1?'leg ':'legs ')+(n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]:n[0]); };
-  let cur=null, opener=null, flashT=null;
+  let cur=null, opener=null, openKey=null, flashT=null;
   const isOpen=()=>{ const md=$('pcModal'); return !!md&&!md.hidden; };
   const say=t=>{ clearTimeout(flashT); const e=$('pcMsg'); if(e) e.textContent=t||''; };
   /* a word that goes again after a moment */
@@ -468,39 +474,218 @@ window.PARLAY_CARD=(function(){
     try{ return typeof navigator!=='undefined'&&typeof navigator.canShare==='function'&&typeof navigator.share==='function'&&typeof File==='function'
       &&navigator.canShare({files:[new File([new Blob([''],{type:'image/png'})],'card.png',{type:'image/png'})]}); }catch(e){ return false; }
   }
+  /* ---- the card's check of DraftKings' current lines, when it opens (19 October 2026) ----
+     The owner, on Monday night's Commanders at 49ers ("same thing again.... put in that link and its only
+     showing" one leg of four): every id on the link was the payload's own, read by the morning's paid pull,
+     and DraftKings dropped three of them, since a DraftKings id names one outcome at one number and two of
+     those numbers had moved by the evening (the total from 51.5 to 52.5, McLaurin's receiving yards from 47.5
+     to 49.5). ESPN's free feed has DraftKings' game lines with their ids, and DraftKings' player lines with no
+     id; the page's Refresh odds reader reads both, but only when pressed, and he had not pressed it. So the
+     card presses it for him, for the parlay's own games alone: opening the card is the visitor asking, and
+     nothing is read on load, on a timer or for any other game. Each game of the legs still to kick off is read
+     in turn by espnRefresh(gid) (part3.js: its week's scoreboard and that game's player lines), skipping one
+     whose player lines were read, answered or found not posted, in the last CHECK_FRESH_MS (a card opened
+     again), and waiting for a press already running rather than skipping it. While it reads, Open in
+     DraftKings and Share link wait (their words, aria-disabled and aria-busy; a press of either does
+     nothing), and Download, Start over and Close work at once. At most CHECK_CAP_MS: then the buttons work on
+     the plan as it stands, and one line says the lines could not be checked; a read that fails says the
+     same, and a read that ends after the cap still updates the card while it is the same card. Once read,
+     the plan is worked again on the same legs: a total or spread DraftKings has moved goes on at its current
+     number on the id the read found (dkNear's newest read), and a player's line it has moved since the pull
+     read his id goes on no slip, said so (dkLeg's moved rule). Only the DraftKings part is drawn again, the
+     focus kept where it is. ck is the open card's check; a closed card, or one opened since, is never touched
+     by an older card's read. What the read keeps is a press's (ESPN_LIVE, ESPN_GL, ESPN_OUT, PAY.dk's ids and
+     props_press_v1), never S.
+
+     After the review of 19 October 2026: while it reads, the note under the buttons says only that it is checking (the
+     plan before the read is not drawn, so no leg's own link opens an id the read may find dead); the page under the card
+     is redrawn once, when the read of the last game is done, not once a game (each espnRefresh ends in espnRedraw, which
+     empties every cache and draws the tabs again, about half a second on Suggested Parlays in Chromium: the card holds
+     the page's espnRedraw back while its own reads run and draws once after, holdRedraw); the page under an open card
+     never scrolls (body's modal-open put back whatever redraw takes it off, modalKeep); the focus a redraw takes away is
+     found again by a stable attribute (lastFocus, refind), and a closed card's focus goes back to the button now
+     standing for its Finish, its set's Add to builder or heading, or the chosen tab's button, never a control on a
+     hidden tab (backTo); and the outcome is said in the card's status line (#pcMsg), as is a press of Share link while
+     it waits. The read is a press of Refresh odds for those games, so a live set of them re-picks on what it read as it
+     does after a press (a locked set never) */
+  const CHECK_CAP_MS=10000, CHECK_FRESH_MS=2*60e3;
+  const COULD='Could not check DraftKings’ current lines: a leg DraftKings has moved since its prices were read will not be on the slip.';
+  let ck=null;
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const espnOut=gid=>{ try{ return typeof ESPN_OUT==='object'&&ESPN_OUT?ESPN_OUT[gid]||null:null; }catch(e){ return null; } };
+  const espnBusy=()=>{ try{ return typeof ESPN_RUN==='object'&&!!ESPN_RUN&&!!ESPN_RUN.busy; }catch(e){ return false; } };
+  /* a game the press could read: on the schedule, not kicked off and with no score (espnRefresh's own rule) */
+  const readable=gid=>{ try{ const g=game(gid); return !!g&&typeof gameStarted==='function'&&!gameStarted(g)&&!(typeof hasScore==='function'&&hasScore(g)); }catch(e){ return false; } };
+  /* its player lines read (or found not posted) a moment ago: what a card opened again stands on */
+  const fresh=gid=>{ const o=espnOut(gid), age=o?Date.now()-(+o.when||0):NaN; return !!o&&(o.st==='ok'||o.st==='none')&&age>=0&&age<CHECK_FRESH_MS; };
+  /* the check's time: the oldest read of the parlay's games that answered */
+  const checkedAt=gids=>{ const t=gids.map(espnOut).filter(o=>o&&(o.st==='ok'||o.st==='none')&&isFinite(+o.when)&&+o.when>0).map(o=>+o.when); return t.length?Math.min(...t):null; };
+  /* the page under the card. visible: on the page and on no hidden tab. A control the visitor was on, found again by an
+     attribute a redraw keeps (STABLE), first where it was (PLACES); lastFocus is the last control focused outside the
+     card, kept by a focusin listener (and by close and Start over, which move the focus themselves) */
+  const visible=el=>!!el&&!!el.isConnected&&!(el.closest&&el.closest('[hidden]'));
+  const STABLE=['data-pc-finish','data-sp-add','data-pb-leg','data-pb-mix','data-espn-refresh','data-tab','id'];
+  const PLACES=['#parlayBody','#pbPanel','#spPanel','#gameView','#tabs'];
+  function keyOf(el){ try{ if(!el||!el.getAttribute||el===document.body) return null;
+    for(const a of STABLE){ const v=el.getAttribute(a); if(v) return {a,v,place:PLACES.find(s=>el.closest(s))||null}; } }catch(e){} return null; }
+  function refind(k){ if(!k) return null;
+    const pick=root=>[...root.querySelectorAll('['+k.a+']')].find(x=>x.getAttribute(k.a)===k.v&&visible(x))||null;
+    const r=k.place&&document.querySelector(k.place); return (r&&pick(r))||pick(document); }
+  const chosenTab=()=>{ const t=document.querySelector('#tabs button[aria-selected="true"]'); return visible(t)?t:null; };
+  let lastFocus=null;
+  const keepFocus=el=>{ lastFocus=el?{el,k:keyOf(el)}:null; };
+  document.addEventListener('focusin',e=>{ const t=e.target, md=$('pcModal'); if(!t||t===document.body||!t.getAttribute||(md&&md.contains(t))) return; keepFocus(t); },true);
+  /* where the focus goes back to: the button that opened the card, else (a redraw replaced it) the one now standing
+     for it (the same Finish of the same level, data-pc-finish); a Suggested Parlays level no longer drawn, its set's
+     Add to builder (the same level's, else another's), else the set's heading; the builder's, its Finish; else the
+     chosen tab's button. Never a control on a hidden tab */
+  const finishKey=el=>el&&el.getAttribute?el.getAttribute('data-pc-finish'):null;
+  const byFinish=k=>k?[...document.querySelectorAll('[data-pc-finish]')].find(b=>b.getAttribute('data-pc-finish')===k&&visible(b))||null:null;
+  function backTo(){
+    if(visible(opener)) return opener;
+    const f=byFinish(openKey); if(f) return f;
+    const sp=/^sp\|([^:]+):(.+)$/.exec(openKey||'');
+    if(sp){ const adds=[...document.querySelectorAll('[data-sp-add]')].filter(x=>visible(x)&&String(x.getAttribute('data-sp-add')).split(':')[0]===sp[1]);
+      const a=adds.find(x=>x.getAttribute('data-sp-add')===sp[1]+':'+sp[2])||adds[0]; if(a) return a;
+      const hd=document.getElementById('spg-'+sp[1]); if(visible(hd)){ if(!hd.hasAttribute('tabindex')) hd.setAttribute('tabindex','-1'); return hd; } }
+    else{ const p=$('pFinish'); if(visible(p)) return p; }
+    return chosenTab();
+  }
+  /* while the card is open the page under it never scrolls: a redraw under it (the Props tab's, renderSlate, closes
+     the game window and takes body's modal-open off with it) is undone at once, whatever path it came by */
+  let modalKeep=null;
+  function keepModal(on){ try{ if(modalKeep){ modalKeep.disconnect(); modalKeep=null; }
+    if(on&&typeof MutationObserver==='function'){ modalKeep=new MutationObserver(()=>{ if(isOpen()&&!document.body.classList.contains('modal-open')) document.body.classList.add('modal-open'); });
+      modalKeep.observe(document.body,{attributes:true,attributeFilter:['class']}); } }catch(e){} }
+  /* the page's espnRedraw held back while the card's own reads run (only espnRefresh calls it, and no other press can
+     start while one runs): each read's redraw is owed, and drawn once after the last (flushRedraw). Where the page's
+     redraw is not this global (a part that wraps it), nothing is held and each read draws as a press does */
+  function holdRedraw(owe){ let real=null; try{ real=window.espnRedraw; if(typeof real!=='function') return null; window.espnRedraw=function(){ owe(); }; }catch(e){ return null; }
+    const held=window.espnRedraw; return {real,put:()=>{ try{ if(window.espnRedraw===held) window.espnRedraw=real; }catch(e){} }}; }
+  function check(m){
+    const gids=[...new Set((m.dkLegs||[]).map(l=>l.gid))].filter(readable);
+    const c={m,gids,state:'none',at:null,cap:null,res:null};
+    c.ready=new Promise(r=>{ c.res=r; });
+    if(!gids.length||typeof espnRefresh!=='function'){ c.res(); return c; }
+    /* every game read a moment ago: nothing to read again */
+    if(gids.every(fresh)){ c.state='done'; c.at=checkedAt(gids); c.res(); return c; }
+    c.state='busy';
+    return c;
+  }
+  /* what the card's status line says once the check settles: the slip it opens, or that it could not check */
+  function checkSay(c){ const dk=c.m.dk||{}; if(!dk.n) return '';
+    if(c.state!=='done') return COULD;
+    return 'DraftKings’ lines checked: '+(dk.url?`Open in DraftKings opens ${dkWhich(dk)}.`:`${dk.n===1?'this leg cannot':'none of these legs can'} go on the betslip from here.`); }
+  async function runCheck(c){
+    let bad=false, owed=false, real=null;
+    try{
+      for(const gid of c.gids){
+        if(c!==ck) return;
+        if(fresh(gid)) continue;
+        /* a press already running: its end (and its redraw), then this game, unless that press read it */
+        if(espnBusy()){ while(espnBusy()){ await sleep(100); if(c!==ck) return; } afterRedraw(); }
+        if(fresh(gid)) continue;
+        if(!readable(gid)) continue;
+        const t0=Date.now(), h=holdRedraw(()=>{ owed=true; }); if(h&&!real) real=h.real;
+        let done;
+        try{ done=await espnRefresh(gid); }finally{ if(h) h.put(); }
+        if(c!==ck) return;
+        const o=espnOut(gid);
+        if(done===false){ if(readable(gid)) bad=true; continue; }
+        if(!o||!(+o.when>=t0)||!['ok','none','kicked'].includes(o.st)) bad=true;
+      }
+    }catch(e){ bad=true; }
+    finally{
+      /* the page drawn once on what the reads found, closed card or not */
+      if(owed&&real){ try{ real(); }catch(e){ console.error(e); } }
+      afterRedraw();
+    }
+    if(c!==ck) return;
+    clearTimeout(c.cap);
+    const was=c.state;
+    c.state=bad?'failed':'done'; c.at=bad?null:checkedAt(c.gids);
+    /* the plan worked again on the same legs, on what the read found */
+    try{ c.m.dk=dkPlan(c.m.dkLegs||[]); }catch(e){}
+    paintDk(c.m);
+    if(was==='busy'||was==='late') say(checkSay(c));
+    c.res();
+  }
+  /* after a redraw of the page: the card still open keeps the page from scrolling under it, and where the card was
+     closed and the control the visitor was on is gone with the redraw, the one now standing for it takes the focus
+     (or the chosen tab's button), never the page's body */
+  function afterRedraw(){ try{ if(isOpen()){ document.body.classList.add('modal-open'); return; }
+    const L=lastFocus; if(!L||!L.el||L.el.isConnected) return;
+    const at=document.activeElement; if(at&&at!==document.body&&at.isConnected) return;
+    const b=refind(L.k)||chosenTab(); if(b){ b.focus({preventScroll:true}); keepFocus(b); } }catch(e){} }
+  /* the card's DraftKings part, drawn on its own: the button's words, address and title, Share link's
+     waiting, and the note under the buttons, with the check's line; the focus kept where it is. While the card
+     checks, the note says that alone: the plan before the read is not drawn, so no leg's own link stands on an id
+     the read may find dead */
+  function paintDk(m){
+    const dk=m.dk||{}, a=$('pcDk'), link=$('pcLink'), note=$('pcDkNote'), them=dk.n===1?'the leg':'the legs', c=ck&&ck.m===m?ck:null, busy=!!c&&c.state==='busy';
+    const act=document.activeElement, legAt=act&&note&&note.contains(act)?act.getAttribute('data-pc-dkleg'):null;
+    a.hidden=!dk.n;
+    if(busy){
+      a.removeAttribute('href'); a.setAttribute('role','link'); a.tabIndex=0; a.setAttribute('aria-disabled','true'); a.setAttribute('aria-busy','true');
+      a.textContent='Checking DraftKings’ lines…'; a.title='Checking DraftKings’ current lines for this parlay’s games on ESPN before it opens the slip';
+      link.setAttribute('aria-disabled','true'); link.setAttribute('aria-busy','true');
+      note.innerHTML=dk.n?'<p data-pc-dkwait>Checking DraftKings’ current lines for this parlay’s games…</p>':'';
+      return;
+    }
+    /* the address first, so a focused button stays focusable as its waiting attributes go */
+    a.href=dk.url||dk.home||DKNFL;
+    a.removeAttribute('role'); a.removeAttribute('tabindex'); a.removeAttribute('aria-disabled'); a.removeAttribute('aria-busy');
+    link.removeAttribute('aria-disabled'); link.removeAttribute('aria-busy');
+    a.textContent=dk.url?(dk.miss&&dk.miss.length?`Open ${dk.ok.length} of ${dk.n} legs in DraftKings`:'Open in DraftKings'):dk.event?'Open game in DraftKings':'Open DraftKings';
+    a.title=!dk.url?(dk.event?`Opens the game’s page in DraftKings, in a new tab, to add ${them} by hand`:`Opens DraftKings’ NFL page, in a new tab, to add ${them} by hand`)
+      :`Opens ${dkWhich(dk)} on DraftKings’ betslip, in a new tab, as DraftKings’ lines were ${dk.read?'read '+readOf(dk.read):'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
+    /* the check's line, last: when the lines were checked, or that they could not be */
+    const line=!c||c.state==='none'?'':c.state==='done'?(c.at?`<p data-pc-dkcheck="done">Checked against DraftKings’ lines at ${h(readOf(new Date(c.at)))}.</p>`:'')
+      :`<p data-pc-dkcheck="failed">${COULD}</p>`;
+    note.innerHTML=dkHtml(dk)+(dk.n?line:'');
+    /* a leg's own link that had the focus is the same leg's after the redraw */
+    if(legAt!=null){ const f=note.querySelector(`[data-pc-dkleg="${legAt}"]`)||(!a.hidden&&a.hasAttribute('href')?a:$('pcDownload')); try{ if(f) f.focus({preventScroll:true}); }catch(e){} }
+  }
+  const waiting=()=>!!ck&&ck.state==='busy';
   function open(m,from){
     const md=$('pcModal'); if(!md||!m) return false;
-    cur=m; opener=from||document.activeElement||null;
+    if(ck){ clearTimeout(ck.cap); ck.res(); }
+    cur=m; opener=from||document.activeElement||null; openKey=finishKey(opener);
     $('pcView').innerHTML=html(m);
     $('pcAgain').hidden=m.source!=='builder';
     /* DraftKings: the betslip link where any leg has an id there, and what it opens; where none has,
-       the game's page (or DraftKings' NFL page) to add the legs by hand */
-    { const dk=m.dk||{}, a=$('pcDk'), them=dk.n===1?'the leg':'the legs';
-      a.hidden=!dk.n; a.href=dk.url||dk.home||DKNFL;
-      a.textContent=dk.url?(dk.miss&&dk.miss.length?`Open ${dk.ok.length} of ${dk.n} legs in DraftKings`:'Open in DraftKings'):dk.event?'Open game in DraftKings':'Open DraftKings';
-      a.title=!dk.url?(dk.event?`Opens the game\u2019s page in DraftKings, in a new tab, to add ${them} by hand`:`Opens DraftKings\u2019 NFL page, in a new tab, to add ${them} by hand`)
-        :`Opens ${dkWhich(dk)} on DraftKings\u2019 betslip, in a new tab, as DraftKings\u2019 lines were ${dk.read?'read '+readOf(dk.read):'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
-      $('pcDkNote').innerHTML=dkHtml(dk); }
+       the game's page (or DraftKings' NFL page) to add the legs by hand. First the check of DraftKings'
+       current lines (above): while it reads, the link and Share link wait */
+    const c=ck=check(m);
+    paintDk(m);
     /* on a phone the share sheet is the way to Photos, so it leads; the download stays beside it */
     const share=canShareFiles();
     $('pcShare').hidden=!share;
     $('pcShare').className='btn '+(share?'go':'quiet'); $('pcDownload').className='btn '+(share?'quiet':'go');
     say('');
-    md.hidden=false; document.body.classList.add('modal-open'); md.scrollTop=0;
+    md.hidden=false; document.body.classList.add('modal-open'); md.scrollTop=0; keepModal(true);
     /* the window opens at its top (the title, the price and Close in view); focus must not scroll it down to the buttons */
     try{ $(share?'pcShare':'pcDownload').focus({preventScroll:true}); }catch(e){}
     md.scrollTop=0;
+    /* the read, once the window is up. Past the cap the buttons work on the plan as it stands, and the card says
+       it could not check; a read that ends later still updates the card while it is this one */
+    if(c.state==='busy'){
+      c.cap=setTimeout(()=>{ if(c!==ck||c.state!=='busy') return; c.state='late'; afterRedraw(); try{ c.m.dk=dkPlan(c.m.dkLegs||[]); }catch(e){} paintDk(c.m); say(checkSay(c)); c.res(); },CHECK_CAP_MS);
+      runCheck(c);
+    }
     return true;
   }
   function close(){
     const md=$('pcModal'); if(!md||md.hidden) return;
-    md.hidden=true; cur=null;
+    md.hidden=true; cur=null; keepModal(false);
+    /* the check stops here: what it still reads is the page's, and this card is not drawn again from it */
+    if(ck){ clearTimeout(ck.cap); ck.res(); } ck=null;
     if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open');
-    /* focus goes back where it came from: the button that opened it, or the builder's Finish
-       if a redraw has replaced that one */
-    const back=opener&&opener.isConnected?opener:$('pFinish');
-    opener=null;
+    /* focus goes back where it came from: the button that opened it, or the one a redraw has put in its place */
+    const back=backTo();
+    opener=null; openKey=null;
     try{ if(back) back.focus(); }catch(e){}
+    keepFocus(back);
   }
 
   /* ---- the image: the same card on a canvas, twice its size for a sharp picture ---- */
@@ -696,7 +881,10 @@ window.PARLAY_CARD=(function(){
     finally{ ta.remove(); try{ if(back&&back.focus) back.focus({preventScroll:true}); }catch(e){} }
   }
   async function shareLink(){
+    /* while the card checks DraftKings' current lines, Share link waits: the text would carry the plan before it. A
+       press says so in the card's status line, so it is never a press that does nothing */
     const m=cur; if(!m) return false;
+    if(waiting()){ flash('Checking DraftKings’ lines first…'); return false; }
     /* title and text only: the link is in the text (see linkText), never a url of its own */
     const s=linkText(m), data={title:s.title,text:s.text};
     if(typeof navigator.share==='function'){
@@ -715,8 +903,10 @@ window.PARLAY_CARD=(function(){
     close();
     try{ if(typeof renderParlay==='function') renderParlay(); if(S.ui&&S.ui.game&&typeof renderGame==='function') renderGame(); }catch(e){}
     /* Finish went with the legs: the focus goes to the first control of the tab on the screen (the Parlay
-       Builder's choices, or Suggested Parlays' first Add to builder) */
-    try{ const b=document.querySelector('main section:not([hidden]) [data-pb-mix]')||document.querySelector('main section:not([hidden]) [data-sp-add]')||document.querySelector('#pbPanel [data-pb-mix]'); if(b) b.focus(); }catch(e){}
+       Builder's choices, or Suggested Parlays' first Add to builder), else (no game to build from) the chosen tab's
+       button, never the page's body */
+    try{ const b=[...document.querySelectorAll('main section:not([hidden]) [data-pb-mix], #pbPanel [data-pb-mix]')].find(visible)||[...document.querySelectorAll('main section:not([hidden]) [data-sp-add]')].find(visible)||chosenTab();
+      if(b){ b.focus(); keepFocus(b); } }catch(e){}
   }
 
   /* ---- on every device: Finish where Save was ---- */
@@ -749,6 +939,8 @@ window.PARLAY_CARD=(function(){
     $('pcDownload').addEventListener('click',download);
     $('pcShare').addEventListener('click',share);
     $('pcLink').addEventListener('click',shareLink);
+    /* Open in DraftKings while the card checks DraftKings' lines: no address, and a press does nothing */
+    $('pcDk').addEventListener('click',e=>{ if($('pcDk').getAttribute('aria-disabled')==='true'||!$('pcDk').hasAttribute('href')){ e.preventDefault(); } });
     $('pcAgain').addEventListener('click',again);
     md.addEventListener('click',e=>{ if(e.target===md) close(); });
     window.addEventListener('keydown',e=>{
@@ -765,6 +957,10 @@ window.PARLAY_CARD=(function(){
       if(b&&!b.disabled&&!md.contains(b)) finishFrom(b); });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
-  return {quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,shareLink,linkText,chanceLines,dkPlan,finishBuilder,finishFrom,current:()=>cur};
+  /* checking(): a promise that settles once the open card's DraftKings part is final (its read done, or the cap
+     passed); checkState(): the open card's check, {state: none, busy, done, failed or late (the cap passed), at, games} */
+  const checking=()=>ck?ck.ready:Promise.resolve();
+  const checkState=()=>ck?{state:ck.state,at:ck.at,games:ck.gids.slice()}:null;
+  return {quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,shareLink,linkText,chanceLines,dkPlan,finishBuilder,finishFrom,checking,checkState,current:()=>cur};
 })();
 </script>
