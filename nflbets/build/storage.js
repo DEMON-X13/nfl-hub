@@ -1,10 +1,13 @@
 /* This browser's storage, and nothing beyond it.
  *
  * X's parlays and the X Bet Log are files in the repository (liveparlays/parlays.json and
- * liveparlays/xbets.json), which Claude edits from what the owner sends and every device reads,
- * read only, on every load. Nothing on this page writes anywhere but this browser's own storage:
- * there is no owner, no sign-in and no shared store. (Until 10 October 2026 a Firebase database
- * held both, written from the owner's devices; it is retired, and its last state is in the files.)
+ * liveparlays/xbets.json), which Claude edits from what the owner sends, read only, on every load of
+ * the site owner's browser (the admin link, nflbets/build/admin.js, since 20 October 2026) and on no
+ * one else's. Nothing on this page writes anywhere but this browser's own storage: there is no
+ * sign-in and no shared store. (Until 10 October 2026 a Firebase database held both, written from
+ * the owner's devices; it is retired, and its last state is in the files.) The admin link's key,
+ * nflhub_admin_v1, is admin.js's alone: this file never reads, writes or removes it (build.js refuses
+ * this file if it names it in quotes), and its name is none of the retired ones below.
  *
  * Two things are left here, both run before the prop model's script.
  *
@@ -16,21 +19,21 @@
  * those four characters.
  *
  * And what the retired layers left in a browser, taken out once on load. Their flags go: the
- * owner link's secret (nflowner_v1), the sign-in session (nflsync_owner_v1), the device id
- * (nflsync_device_v1), the reader's mark (xparlays_v1) and the rev last seen (nflsync_v1). So do
- * their copies of the shared parlay document (nflsync_base_v1, a merge base, and xparlays_cache_v1,
- * a reader's last look), whose last state is in liveparlays/parlays.json. The section's old key
- * (live_parlays_v1: corrected lines, deletions, builders kept at kickoff, betting slips) goes only
- * where everything in it is in the file or was deleted: the one corrected line the store last
- * held (file|w3-dk-sgp-5|4 at 239.5, leg 4 of that parlay, which is the file's line), deletions,
- * and betting slips it deleted itself. Any other corrected line (on a parlay of the browser's own,
- * on another of X's legs, or on that leg at another number: a browser last opened before the store
- * may hold one), a kept builder, a slip it did not delete, or a key this page never wrote, and the
- * key stays where it is, unread. The X Bet Log's leftovers are
- * xbets.js's, once its file has been read. Nothing that holds a visitor's own data is touched: the
- * prop model's key (the builder, the saved parlays, the stake), my_parlays_v1, the betting app's
- * key and x_nfl_bets_preshare_<season> stay exactly as they are, and so does lp_cleared_here_v1,
- * the parlays this visitor cleared from X Parlays on this device (the X Parlays section's own key,
+ * retired owner link's secret (nflowner_v1, never the admin link's key), the sign-in session
+ * (nflsync_owner_v1), the device id (nflsync_device_v1), the reader's mark (xparlays_v1) and the
+ * rev last seen (nflsync_v1). So do their copies of the shared parlay document (nflsync_base_v1, a
+ * merge base, and xparlays_cache_v1, a reader's last look), whose last state is in
+ * liveparlays/parlays.json. The section's old key (live_parlays_v1: corrected lines, deletions,
+ * builders kept at kickoff, betting slips) goes only where everything in it is in the file or was
+ * deleted: the one corrected line the store last held (file|w3-dk-sgp-5|4 at 239.5, leg 4 of that
+ * parlay, which is the file's line), deletions, and betting slips it deleted itself. Any other
+ * corrected line (on a parlay of the browser's own, on another of X's legs, or on that leg at
+ * another number: a browser last opened before the store may hold one), a kept builder, a slip it
+ * did not delete, or a key this page never wrote, and the key stays where it is, unread. The X Bet
+ * Log's leftovers are xbets.js's. Nothing that holds a visitor's own data is touched: the prop
+ * model's key (the builder, the saved parlays, the stake), my_parlays_v1, the betting app's key
+ * and x_nfl_bets_preshare_<season> stay exactly as they are, and so does lp_cleared_here_v1, the
+ * parlays this visitor cleared from X Parlays on this device (the X Parlays section's own key,
  * which it prunes itself; build.js refuses this file if it names it). */
 (function(){
   /* the prop model's key: the build writes part2's own KEY over this default */

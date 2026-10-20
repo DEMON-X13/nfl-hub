@@ -33,12 +33,14 @@
  * the Super Bowl, a season the Joker cannot call): BETTING_STATE names a made-up state to test one.
  *
  * Section 6 is the X Bet Log: the app handed a stub of the page's window.XBETS (X's weeks and
- * deposit, as nflbets/build/xbets.js reads them from liveparlays/xbets.json), the same on every
- * device: X's weeks and balance, read only (no form, Remove, deposit box, backup card or Save), a
- * note never drawn as markup, the browser's own log and deposit left in its key as they were
- * whatever a frame saves, a file with no deposit, one that arrives late, one that could not be
- * read and one for another season. Without XBETS -- the app on its own -- every check above runs
- * on the browser's own log.
+ * deposit, as nflbets/build/xbets.js reads them from liveparlays/xbets.json on the site owner's
+ * browser, the admin link's, since 20 October 2026): X's weeks and balance, read only (no form,
+ * Remove, deposit box, backup card or Save), a note never drawn as markup, the browser's own log and
+ * deposit left in its key as they were whatever a frame saves, a file with no deposit, one that
+ * arrives late, one that could not be read and one for another season; and a visitor's page, whose
+ * XBETS says it has no log (enabled() false): the frame is not read only and shows the browser's own
+ * log, as the app on its own does, never a week of X's. Without XBETS -- the app on its own -- every
+ * check above runs on the browser's own log.
  */
 'use strict';
 const fs = require('fs');
@@ -515,14 +517,15 @@ async function reality() {
 }
 
 /* ---------------------------------------------------------------- 6. the X Bet Log, handed in
-   Inside the Bets and Stats page the frame is handed window.XBETS (nflbets/build/xbets.js): X's
-   weeks and deposit, read from liveparlays/xbets.json, the same on every device and read only. A
-   stub stands in for it here: it hands back what it is given, notes and all, so the app's own
-   escaping is what is tested, and it has nothing to write with. */
-function stubXB({ weeks, deposit = null, at = '2026-10-10T17:28:44Z', ok = true, other = null }) {
+   Inside NFL Hub the frame is handed window.XBETS (nflbets/build/xbets.js): X's weeks and deposit,
+   read from liveparlays/xbets.json, read only, on the site owner's browser alone (the admin link);
+   on a visitor's page it says it has no log (enabled() false) and reads nothing. A stub stands in for
+   it here: it hands back what it is given, notes and all, so the app's own escaping is what is tested,
+   and it has nothing to write with. */
+function stubXB({ weeks, deposit = null, at = '2026-10-10T17:28:44Z', ok = true, other = null, on = true }) {
   const subs = [];
   const X = { weeks: JSON.parse(JSON.stringify(weeks)), deposit,
-    enabled: () => true, ready: async () => {}, onChange: f => { subs.push(f); },
+    enabled: () => on, ready: async () => {}, onChange: f => { subs.push(f); },
     get: () => ({ weeks: JSON.parse(JSON.stringify(X.weeks)), deposit: X.deposit, season: APP_SEASON,
       status: { applied: ok, ok, err: ok ? null : 'HTTP 404', at, other } }),
     fire: () => subs.forEach(f => f()) };
@@ -568,9 +571,9 @@ async function xbetLog() {
     check(!v.d.querySelector('#betTable img') && !v.w.__xss, '6: a note was drawn as markup by the app\'s own Bet Log table');
     v.w.eval('renderBets()');
     { const note = v.d.getElementById('xbNote').textContent;
-      check(v.d.querySelector('#tab-bets h2').textContent === 'X Bet Log' && /Every week X bet/.test(note) && /read only/.test(note) && /Updated /.test(note)
-        && !/owner|Synced|sign|Not synced|store/i.test(note) && !v.d.getElementById('xbSignOut') && !v.d.getElementById('xbBackup'),
-        '6: the X Bet Log is not headed so, does not say what it is and when it changed, or still speaks of an owner, a sign-in or a store: ' + note); }
+      check(v.d.querySelector('#tab-bets h2').textContent === 'X Bet Log' && note.startsWith('Every week X bet: what went in and what came back, from X\u2019s file, read only.') && /Updated /.test(note)
+        && !/owner|Synced|sign|Not synced|store|every device/i.test(note) && !v.d.getElementById('xbSignOut') && !v.d.getElementById('xbBackup'),
+        '6: the X Bet Log is not headed so, does not say what it is ("Every week X bet: what went in and what came back, from X\u2019s file, read only.") and when it changed, or still speaks of an owner, a sign-in, a store or every device: ' + note); }
     check(!/Week 5|mine/.test(v.d.getElementById('betTable').textContent) && !/\$40\.00/.test(v.d.getElementById('betChart').textContent), '6: the browser\'s own old log or deposit is shown as X\'s');
     /* a click that saves the app's whole state (the chart's switch) leaves this browser's own log
        and deposit as they were, and keeps the view the viewer chose */
@@ -604,6 +607,19 @@ async function xbetLog() {
   { const X = stubXB({ weeks: {}, other: APP_SEASON - 1 });
     const v = loadXB(X, 'bets'); await sleep(700);
     check(new RegExp(String(APP_SEASON - 1)).test(v.d.getElementById('xbNote').textContent) && rows(v.d).length === 0, '6: a log for another season is not said'); }
+  /* a visitor's page (20 October 2026: the X Bet Log is the site owner's alone): its XBETS says it has no log. The frame is
+     not read only and shows the browser's own log, as the app on its own does, never a week or the deposit of X's, and says
+     nothing of X's file; a save leaves the browser's own log as it was */
+  { const X = stubXB({ weeks: { 1: { staked: 10, returned: 8.71, note: 'X week' } }, deposit: 100, on: false });
+    const mine = { myPicks: {}, bets: { 5: { staked: 5, returned: 0, note: 'mine' } }, bank: { lastAmt: 20, filter: 'all', build: [], mode: 'straight', deposit: 40 } };
+    const v = loadXB(X, 'bets', mine); await sleep(700);
+    const note = (v.d.getElementById('xbNote') || { textContent: '' }).textContent;
+    check(v.errors.length === 0 && !v.d.documentElement.classList.contains('xbets-ro') && rows(v.d).join() === 'Week 5' && !/X week|\$100\.00/.test(v.d.getElementById('betTable').textContent + v.d.getElementById('betChart').textContent)
+      && !/Every week X bet|X\u2019s bet log/.test(note) && !v.d.getElementById('betSave').disabled,
+      '6: on a visitor\'s page (XBETS.enabled() false) the frame is read only, shows X\'s weeks or deposit, or speaks of X\'s file: ' + rows(v.d).join() + ' / ' + note + ' / ' + v.errors.join('; '));
+    v.d.querySelector('[data-bv="pnl"]').click(); await sleep(400);
+    const kept = JSON.parse(v.w.localStorage.getItem(MINE));
+    check(Object.keys(kept.bets).join() === '5' && kept.bets[5].note === 'mine' && kept.bank.deposit === 40, '6: on a visitor\'s page a save wrote X\'s log over the browser\'s own: ' + JSON.stringify(kept)); }
 }
 
 (async () => {
