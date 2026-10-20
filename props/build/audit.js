@@ -952,10 +952,44 @@ setTimeout(async()=>{
     const full=[...rank(once(q.pref),'value','pref'),...rank(once(q.thin),'other','thin'),...rank(once(q.mkt),'other','mkt')];
     return {q,same,dropped,full,rows:full.slice(0,TOP_N_AUD)}; };
   const topAud=(games,u)=>topFullAud(games,u).rows;
-  /* a parlay that can be made: no line twice, one side (to win or to cover) and one total a game, one leg a player */
+  /* (app v121) two legs of one game DraftKings will not take on one slip, the audit's own copy of the rule, worked from the
+     legs alone and never by the page's dkClash or dkClashWhy. The owner, 19 October 2026: "If your parlay already has a
+     receiver anytime TD, a team total, or the game total, adding the QB's passing TD over often gets blocked", and "Some
+     combos contradict each other, like QB under 1.5 passing TDs alongside two of his receivers to score. The book rejects
+     it outright". Of one game: a player's passing touchdowns (over or under, a main line or a rung) with an anytime
+     touchdown of another player of his club ('td'), or his passing touchdowns over with the game's total ('total'),
+     either leg first; null for any other pair, and for two legs of different games */
+  const clashAud=(a,b)=>{ const isG=F('isGameLeg'); if(!a||!b||a.gid!==b.gid) return null;
+    for(const [q,o] of [[a,b],[b,a]]){ if(isG(q)||q.stat!=='passing_tds') continue;
+      if(!isG(o)&&o.stat==='any_td'&&o.team===q.team&&o.pid!==q.pid) return 'td';
+      if(isG(o)&&o.stat==='total'&&q.side!=='under') return 'total'; }
+    return null; };
+  /* every such pair in a parlay, by the legs' places in it */
+  const clashPairsAud=legs=>{ const out=[]; (legs||[]).forEach((a,i)=>legs.slice(i+1).forEach((b,k)=>{ const x=clashAud(a,b); if(x) out.push([i,i+1+k,x]); })); return out; };
+  const clashTxt=legs=>clashPairsAud(legs).map(([i,j,x])=>`${legs[i].name} ${legs[i].label} with ${legs[j].name} ${legs[j].label} (${x})`).join('; ');
+  /* a parlay that can be made: no line twice, one side (to win or to cover) and one total a game, one leg a player, and
+     (app v121) no pair DraftKings will not take on one slip (clashAud) */
   const fitsAud=(cur,c)=>{ const isG=F('isGameLeg'); if(cur.some(l=>l.key===c.key)) return false;
+    if(cur.some(l=>clashAud(l,c))) return false;
     if(isG(c)) return !cur.some(l=>isG(l)&&l.gid===c.gid&&(l.stat==='total')===(c.stat==='total'));
     return !cur.some(l=>!isG(l)&&l.pid===c.pid); };
+  /* (app v121) whether a list of legs makes any parlay of n that can be made (fitsAud): since a pair DraftKings will not take
+     can rule a size out, the count of players, sides and totals (a level's "the lines make n legs") is no longer the same
+     as a parlay of n. true, false, or null where the search ran past its bound */
+  const existsAud=(list,n,cap=200000)=>{ let seen=0, hit=false;
+    const rec=(i0,cur)=>{ if(hit||seen>cap) return; if(cur.length===n){ hit=true; return; }
+      for(let i=i0;i<list.length&&!hit;i++){ seen++; if(!fitsAud(cur,list[i])) continue; cur.push(list[i]); rec(i+1,cur); cur.pop(); } };
+    rec(0,[]); return hit?true:seen>cap?null:false; };
+  /* (app v121) the Sunday slot's rule, the audit's own copy (never the page's spSlotBetter or spSlotBuild): each level of
+     the slot is the best of its games' own levels of that size: a parlay before none; one with no game total before one
+     with one; one that meets its floor before the likeliest of its size; the fewer thin legs; then the better expected
+     return (chance times price) where it met a floor, else the higher chance (Safe's, and a likeliest one's); and on a
+     tie the earlier game of the slot. levels: each game's own level, in the slot's order (null or empty where it has none) */
+  const slotKeyAud=(r,floor)=>[r.mkt?1:0,floor&&r.likeliest?1:0,r.thin||0];
+  const slotBetterAud=(a,b,floor)=>{ const ka=slotKeyAud(a,floor), kb=slotKeyAud(b,floor);
+    for(let i=0;i<ka.length;i++) if(ka[i]!==kb[i]) return ka[i]<kb[i];
+    const v=r=>floor&&!r.likeliest?r.corr*r.dec:r.corr; return v(a)>v(b); };
+  const slotBestAud=(levels,floor)=>{ let best=null; for(const r of levels) if(r&&r.legs&&r.legs.length&&(!best||slotBetterAud(r,best,floor))) best=r; return best; };
   /* every cache a suggestion stands on dropped (a check that changes the data under the same signature) */
   const dropCaches=()=>w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}');
   /* a leg's own Add: that leg's key, number and side, named for it, pressed while it is in the builder */
@@ -1216,8 +1250,9 @@ setTimeout(async()=>{
         if(!t.legs){ said++;
           W.wording(typeof t.why==='string'&&t.why.length>10,`${lab}: the ${t.id} tier is empty and does not say why`);
           if(maxLegs<n) W.wording(/^(Only \d+ legs?|No legs|No games|No bet types|No player prices|No player legs DraftKings’ betslip can take)/.test(t.why),`${lab}: ${maxLegs} legs on the picks and the ${n}-leg tier does not say there are too few: ${t.why}`);
-          /* every level shows a parlay whenever the picks make that many legs: empty only when they do not */
-          W.compose(maxLegs<n,`${lab}: the ${t.id} tier is empty though the picks make ${maxLegs} legs, enough for ${n}: ${t.why}`);
+          /* every level shows a parlay whenever the picks make that many legs: empty only when they do not (app v121: or
+             when no parlay of that many can be made of them, a pair DraftKings will not take ruling it out) */
+          W.compose(maxLegs<n||existsAud([...pool.pref,...pool.thin,...mkt],n)===false,`${lab}: the ${t.id} tier is empty though the picks make ${maxLegs} legs, enough for ${n}: ${t.why}`);
           W.wording(!/of the time or more|lands \d+%/.test(t.why),`${lab}: the empty ${t.id} tier speaks of its floor, which every level now falls back from: ${t.why}`);
           if(pooled) W.wording(/no player prices yet/i.test(t.why)===(noPl&&!noId)&&/no player legs DraftKings’ betslip can take yet/i.test(t.why)===noId&&(!noPl||tmOn||(t.why===(noId?NO_ID:NO_PL)&&!/tick more/.test(t.why))),
             `${lab}: the empty ${t.id} tier ${noPl?(noId?'does not say plainly that no player leg on file has a DraftKings id yet':'does not say plainly that no player prices are on file yet'):'says no player prices are on file, and some are'}: ${t.why}`);
@@ -1242,6 +1277,8 @@ setTimeout(async()=>{
         const sides=gl.filter(l=>l.stat!=='total'), tots=gl.filter(l=>l.stat==='total');
         chk(new Set(sides.map(l=>l.gid)).size===sides.length&&new Set(tots.map(l=>l.gid)).size===tots.length,`${lab}: the ${t.id} tier has two sides, or two totals, on one game`);
         chk(new Set(pl.map(l=>l.pid)).size===pl.length,`${lab}: the ${t.id} tier has two legs on one player`);
+        /* (app v121) no pair DraftKings will not take on one slip, by the audit's own copy of the rule (clashAud) */
+        chk(!clashPairsAud(t.legs).length,`${lab}: the ${t.id} tier holds a pair DraftKings will not take on one slip: ${clashTxt(t.legs)}`);
         /* the card's numbers are the builder's own sums on the legs as the builder orders them */
         const order=t.legs.map(l=>l.key).join(), want=[...t.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join();
         chk(order===want,`${lab}: the ${t.id} tier's legs are not in the builder's order`);
@@ -1307,12 +1344,18 @@ setTimeout(async()=>{
        other leg marked, chance, price, payout on the Bet amount, fair chance first, and Add to builder. Blocking
        but the wording and the choice of parlay.
        (app v118) The same for the Sunday slot the tab stands on (slotRuleAud, worked here: the page's spSlotNext
-       its unit, its games in the same order, up from the same instant), one set of the four levels across its games:
-       every leg on one of the slot's own games that qualifies (qualAud on them all), every rule above, one side and
-       one total of each game; its section drawn as the rule says (the line saying which slot is next and when its
-       sets go up, the set from then, or the line that none is to come), the state's s= token the rule's, and its
-       cards held as a night's, its opening stood in where it is not up yet (slotAllOn), with nothing to add or
-       finish once its first game has kicked off. And the tab's shape: its head, then the two sections, Night games
+       its unit, its games in the same order, up from the same instant): every leg on one of the slot's own games that
+       qualifies (qualAud on them all), every rule above; its section drawn as the rule says (the line saying which slot
+       is next and when its sets go up, the set from then, or the line that none is to come), the state's s= token the
+       rule's, and its cards held as a night's, its opening stood in where it is not up yet (slotAllOn), with nothing to
+       add or finish once its first game has kicked off. (app v121, the owner, 19 October 2026: "the legs need to be part
+       of the same game parlay only, and anytime there's a mix it bombs the hyperlink") Each level of the slot is one
+       game's legs, blocking; each of its games' own set is searched as a night game's is (that game's own legs that
+       qualify, cut as SP_SEARCH cuts them) and held to the night sets' choice of parlay on that game's own pool; and the
+       slot's level is its game's own level (spSet on that game) and no other game of the slot's own level beats it by
+       the audit's own copy of the slot rule (slotBestAud), both W.compose; an empty level says so of any one game
+       (spWhySlotAud, W.wording). Every level, a night's and the slot's, holds no pair DraftKings will not take on one
+       slip (clashAud), blocking. And the tab's shape: its head, then the two sections, Night games
        and the Sunday slot, each its heading and its own record first; on this page, the prop model's own, with no
        ELO tab, no Elo picks (no #pbElo, no unit's Elo block) and each unit's model parlays under their heading */
     let setsBuilt=0, setLevels=0, setsSaid=0, setsLocked=0, setMktSeen=0, setThinSeen=0; const nightSaid=[];
@@ -1329,12 +1372,16 @@ setTimeout(async()=>{
         :read?`no player lines yet: DraftKings had posted none for it when Refresh odds last read it, and its own player prices are pulled ${when}.`:`no player prices yet: they are pulled ${when}.`);
       return `${what}: a parlay takes one leg a player, and one side and one total a game.`; };
     /* (app v118) why a level of the Sunday slot is empty, as the rule words it: the slot's own words for too few legs, and
-       its player prices' (the afternoon games' on Saturday morning, the early games' never) */
-    const spWhySlotAud=(G,n,q,cap)=>{ const pq={pref:capAud(q.pref,cap),thin:capAud(q.thin,cap),mkt:capAud(q.mkt,cap)}, m=maxAud([...pq.pref,...pq.thin,...pq.mkt]);
-      const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in the Sunday slot${q.noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in the Sunday slot`;
+       its player prices' (the afternoon games' on Saturday morning, the early games' never). (app v121) A parlay of the slot
+       is one game's legs, so "too few" is of any one game: the most legs any one of its games makes (each cut as a night
+       game's set is, SP_SEARCH), worked from the audit's own reading of each game (qualAud), and "that DraftKings' betslip
+       can take" where any one game left legs out for want of an id */
+    const spWhySlotAud=(G,n)=>{ let m=0, noId=false;
+      for(const x of G){ const q=qualAud([x],ALL_U); m=Math.max(m,maxAud([...capAud(q.pref,SPS.cap),...capAud(q.thin,SPS.cap),...capAud(q.mkt,SPS.cap)])); if(q.noId) noId=true; }
+      const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in any one game of the Sunday slot${noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in any one game of the Sunday slot`;
       const pl=F('pricedLegs')(G).filter(l=>!isG(l));
       if(!pl.some(dkOk)) return `${what}, and no player ${pl.length?'leg DraftKings’ betslip can take':'prices'} yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET).`;
-      return `${what}: a parlay takes one leg a player, and one side and one total a game.`; };
+      return `${what}: a parlay takes one game’s legs, one leg a player, and one side and one total a game.`; };
     let slotsBuilt=0, slotLevels=0, slotsLocked=0, slotsNone=0, slotsUnderway=0; const slotSaid=[];
     const holdSets=(lab)=>{
       const now=w.Date.now(), mine=F('pbGames')().filter(primeAud), page=F('spGames')();
@@ -1349,15 +1396,21 @@ setTimeout(async()=>{
       /* the units held: each prime-time game to come, and the slot (its games the audit's own) */
       const units=[...mine.map(g=>({g,G:[g],slot:null})),...(SL&&pSL&&pSL.id===SL.id?[{g:F('spUnit')(SL.id),G:SL.games,slot:SL}]:[])];
       for(const {g,G,slot} of units){ if(!g) continue;
-        const SPw=slot?w.eval('SP_SLOT_SEARCH'):SPS, gids=new Set(G.map(x=>x.id)), uname=slot?`week ${slot.w}'s Sunday slot`:`${g.a} at ${g.h}`;
+        const gids=new Set(G.map(x=>x.id)), uname=slot?`week ${slot.w}'s Sunday slot`:`${g.a} at ${g.h}`;
         const s=F('spSet')(g.id), q=qualAud(G,ALL_U);
         /* (app v118) the Sunday slot under way: from its first kickoff the page builds and shows no set of its own (the
            locked one, the record's or kept, else its one line), finds none for a Finish and rebuilds no level, so its
            live build, which would stand on the games left, is held to nothing here; drawSlot holds what the tab shows */
         if(slot&&slot.phase==='under'){ slotsUnderway++; out.slot={g,s,q,R:slot}; continue; }
-        const pool=F('pbPool')(G,w.eval('SP_ALL'),SPw); if(slot) slotsBuilt++; else setsBuilt++;
-        chk(idsOf(pool.pref)===idsOf(capAud(q.pref,SPw.cap))&&idsOf(pool.thin)===idsOf(capAud(q.thin,SPw.cap))&&idsOf(pool.mkt)===idsOf(capAud(q.mkt,SPw.cap)),
-          `${lab}: ${g.id}'s set is searched from other legs than its own that qualify: ${pool.pref.length}/${pool.thin.length}/${pool.mkt.length} preferred, thin and totals where the rule gives ${q.pref.length}/${q.thin.length}/${q.mkt.length}`);
+        if(slot) slotsBuilt++; else setsBuilt++;
+        /* each game's own legs and the set it is searched from: a night game's, and (app v121) each of the slot's games',
+           whose own set is built exactly as a night game's is (SP_SEARCH on that game's own legs), the slot's levels the
+           best of theirs. Each game's pool is the audit's own reading of its legs that qualify, cut as the search cuts it */
+        const per=G.map(x=>{ const qx=G.length===1?q:qualAud([x],ALL_U), px=F('pbPool')([x],w.eval('SP_ALL'),SPS), cut=[...capAud(qx.pref,SPS.cap),...capAud(qx.thin,SPS.cap),...capAud(qx.mkt,SPS.cap)];
+          chk(idsOf(px.pref)===idsOf(capAud(qx.pref,SPS.cap))&&idsOf(px.thin)===idsOf(capAud(qx.thin,SPS.cap))&&idsOf(px.mkt)===idsOf(capAud(qx.mkt,SPS.cap)),
+            `${lab}: ${x.id}'s set${slot?` (a game of ${uname})`:''} is searched from other legs than its own that qualify: ${px.pref.length}/${px.thin.length}/${px.mkt.length} preferred, thin and totals where the rule gives ${qx.pref.length}/${qx.thin.length}/${qx.mkt.length}`);
+          return {x,q:qx,pool:px,cut,mx:maxAud(cut),s:slot?F('spSet')(x.id):s}; });
+        const perOf=gid=>per.find(p=>p.x.id===gid)||null;
         chk(!!s&&s.tiers.length===4&&s.tiers.map(t=>t.id+t.n).join()===SPEC_AUD.map(x=>x[0]+x[2]).join(),`${lab}: ${g.id}'s set is not Safe, Medium, Aggressive and Extreme at 2, 3, 4 and 5 legs`);
         if(!s) continue;
         /* the boxes never move a set: with some unticked, the set is the one every box ticked builds */
@@ -1365,25 +1418,33 @@ setTimeout(async()=>{
           const forget=w.eval('(function(id){ SP_CACHE.delete(spSig(spUnit(id))); })');
           for(const k of KINDS) U().k[k]=true; U().off=[]; forget(g.id); const s2=F('spSet')(g.id); S.ui.pb=JSON.parse(keepT); forget(g.id);
           chk(!!s2&&sg(s2)===sg(F('spSet')(g.id)),`${lab}: ${g.id}'s set moves with the Parlay Builder's boxes`); }
-        const byId=new Map([...q.pref,...q.thin,...q.mkt].map(l=>[legIdAud(l),l])), mx=maxAud([...capAud(q.pref,SPw.cap),...capAud(q.thin,SPw.cap),...capAud(q.mkt,SPw.cap)]);
-        const from0={pref:pool.pref,thin:pool.thin};
+        /* the most legs one parlay of the unit can hold (one game's: the slot's most is that of any one of its games) */
+        const byId=new Map([...q.pref,...q.thin,...q.mkt].map(l=>[legIdAud(l),l])), mx=Math.max(0,...per.map(p=>p.mx));
         for(const t of s.tiers){ const sp=SPEC_AUD.find(x=>x[0]===t.id); if(!sp) continue; const [,,n,floor]=sp, gl=`${lab}, ${uname}: the ${t.id} level`;
           if(!t.legs){ if(!slot) setsSaid++;
-            const why=slot?spWhySlotAud(G,n,q,SPw.cap):spWhyAud(g,n,q);
-            W.compose(mx<n,`${gl} is empty though the ${slot?'slot\'s':'game\'s'} lines make ${mx} legs, enough for ${n}: ${t.why}`);
+            const why=slot?spWhySlotAud(G,n):spWhyAud(g,n,q);
+            /* empty only where no game of the unit makes a parlay of n (app v121: of its players, sides and totals, and with
+               no pair DraftKings will not take) */
+            const can=per.filter(p=>p.mx>=n&&existsAud(p.cut,n)!==false);
+            W.compose(!can.length,`${gl} is empty though ${slot?`${can.map(p=>p.x.id).join(', ')} of the slot make`:'the game\'s lines make'} ${slot?'':mx+' legs, '}a parlay of ${n}: ${t.why}`);
+            if(slot) W.compose(per.every(p=>!p.s||!(p.s.tiers.find(x=>x.id===t.id)||{}).legs),`${gl} is empty though a game of the slot has a ${t.id} level of its own: ${per.filter(p=>p.s&&(p.s.tiers.find(x=>x.id===t.id)||{}).legs).map(p=>p.x.id).join(', ')}`);
             W.wording(t.why===why,`${gl} is empty and says "${t.why}", not "${why}"`);
             continue; }
           if(slot) slotLevels++; else setLevels++;
-          chk(t.legs.length===n&&mx>=n,`${gl} has ${t.legs.length} legs, not ${n}, or more than the ${slot?'slot\'s':'game\'s'} lines make (${mx})`);
+          /* (app v121) one game's legs, a game of the unit's own (the slot's: one of its games, every leg of it) */
+          const xg=t.legs[0].gid, P=perOf(xg);
+          chk(t.legs.every(l=>l.gid===xg)&&!!P,`${gl} holds legs of ${[...new Set(t.legs.map(l=>l.gid))].join(' and ')}: a parlay takes one game's legs${slot?', a game of the slot':''}`);
+          chk(t.legs.length===n&&!!P&&P.mx>=n,`${gl} has ${t.legs.length} legs, not ${n}, or more than ${slot?'its game\'s':'the game\'s'} lines make (${P?P.mx:0})`);
           for(const l of t.legs){ const x=byId.get(legIdAud(l)), gg=S.sched.find(y=>y.id===l.gid);
             chk(gids.has(l.gid)&&!!x&&l.thin===x.thin&&!!x.market===!!l.market&&l.p===x.p&&l.price===x.price,`${gl} holds ${l.name} ${l.label}, which is not one of ${slot?'the slot\'s games\'':'this game\'s'} own legs that qualify, or not as the rule marks it (thin ${String(l.thin)} where the rule has ${String(x&&x.thin)})`);
             chk(!!gg&&!F('gameStarted')(gg)&&takenPrice(l)&&isFinite(l.price)&&l.price!==0&&l.p>=0.45&&l.p<0.97&&(l.market?l.stat==='total'&&!l.thin:l.p>=mlP(l.price)&&l.stat!=='total'),
               `${gl}: ${l.name} ${l.label} is on a game under way, on no real price, out of 45-97%, under the book, or a total that is not a market leg`);
             chk(dkOk(l)&&(isG(l)||F('suggestable')(l.pid))&&!FAIRAUD.isFar(l),`${gl}: ${l.name} ${l.label} has no DraftKings id at its line, is on a player who may not play, or is far off the market`); }
-          /* one line once, one leg a player, and of each game one side (to win or to cover) and one total: the slot's
-             legs are of many games, each held on its own */
-          { const gl2=t.legs.filter(isG), pl=t.legs.filter(l=>!isG(l)), per=[...gids].every(id=>gl2.filter(l=>l.gid===id&&l.stat!=='total').length<=1&&gl2.filter(l=>l.gid===id&&l.stat==='total').length<=1);
-            chk(new Set(t.legs.map(l=>l.key)).size===n&&per&&new Set(pl.map(l=>l.pid)).size===pl.length,`${gl} has one line twice, two sides or two totals of a game, or two legs on one player`); }
+          /* one line once, one leg a player, and one side (to win or to cover) and one total */
+          { const gl2=t.legs.filter(isG), pl=t.legs.filter(l=>!isG(l)), one=gl2.filter(l=>l.stat!=='total').length<=1&&gl2.filter(l=>l.stat==='total').length<=1;
+            chk(new Set(t.legs.map(l=>l.key)).size===n&&one&&new Set(pl.map(l=>l.pid)).size===pl.length,`${gl} has one line twice, two sides or two totals of a game, or two legs on one player`); }
+          /* (app v121) no pair DraftKings will not take on one slip (clashAud, the audit's own copy) */
+          chk(!clashPairsAud(t.legs).length,`${gl} holds a pair DraftKings will not take on one slip: ${clashTxt(t.legs)}`);
           chk(t.legs.map(l=>l.key).join()===[...t.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join(),`${gl}'s legs are not in the builder's order`);
           chk(pp(t.legs).corr===t.corr&&pd(t.legs.map(l=>({leg:l,ml:l.price})))===t.dec,`${gl}'s chance or price is not what parlayProb and parlayDec say`);
           { const fs=t.legs.map(l=>F('legFair')(l));
@@ -1391,14 +1452,23 @@ setTimeout(async()=>{
               &&(fs.every(Boolean)?(!!t.fair&&t.fair.p===pp(t.legs.map((l,i)=>({...l,p:fs[i].p}))).corr&&t.fair.est===fs.some(f=>f.est)):(!!t.fair&&t.fair.p===null)),`${gl}'s fair chance is not parlayProb on its legs at the book's fair chances`); }
           if(floor&&!t.likeliest) chk(t.corr>=floor,`${gl} lands ${(t.corr*100).toFixed(1)}%, under its ${floor*100}% floor, and is not marked the likeliest of its size`);
           chk(t.thin===t.legs.filter(l=>l.thin).length&&(t.mkt||0)===t.legs.filter(l=>l.market).length&&(!t.likeliest||!!floor),`${gl} miscounts its thin legs or totals, or Safe is marked a fallback`);
-          /* the choice of parlay, by the page's own search at the set's widths (W.compose) and in full where it can be */
+          if(!P) continue;
+          /* the choice of parlay, on its game's own pool, by the page's own search at a set's widths (W.compose) and in
+             full where it can be: a night game's, and the slot's level's own game's */
+          const pool=P.pool, from0={pref:pool.pref,thin:pool.thin}, gw=slot?`its game's (${xg})`:'the game\'s';
           const from=t.mkt?{pref:[...pool.pref,...pool.thin],thin:pool.mkt}:from0, kTop=t.mkt?Math.max(0,n-maxAud(from.pref)):undefined;
-          if(t.mkt) W.compose(F('pbTier')(sp,from0,new Map(),SPw)===null,`${gl} took a game total where the ${slot?'slot\'s':'game\'s'} legs with an edge make a parlay of its size`);
-          if(t.likeliest) W.compose(!!bestRet&&bestRet(sp,from,new Map(),kTop,SPw)===null,`${gl} fell back to the likeliest ${n} legs though a ${n}-leg parlay of the ${slot?'slot':'game'} clears its ${floor*100}% floor`);
-          else if(floor&&bestRet){ const b=bestRet(sp,from,new Map(),kTop,SPw); W.compose(!!b&&b.legs.map(legIdAud).join()===t.legs.map(legIdAud).join(),`${gl} is not its best return over its floor`); }
+          if(t.mkt) W.compose(F('pbTier')(sp,from0,new Map(),SPS)===null,`${gl} took a game total where ${gw} legs with an edge make a parlay of its size`);
+          if(t.likeliest) W.compose(!!bestRet&&bestRet(sp,from,new Map(),kTop,SPS)===null,`${gl} fell back to the likeliest ${n} legs though a ${n}-leg parlay of ${slot?'its game':'the game'} clears its ${floor*100}% floor`);
+          else if(floor&&bestRet){ const b=bestRet(sp,from,new Map(),kTop,SPS); W.compose(!!b&&b.legs.map(legIdAud).join()===t.legs.map(legIdAud).join(),`${gl} is not its best return over its floor`); }
           if(t.likeliest||!floor){ const all=[...from.pref,...from.thin], fill=t.mkt?t.mkt:t.thin;
             if(noMovers(all)){ const b=likeliestOf(all,n,fill,!!t.mkt);
-              if(b) W.compose(t.corr>=b.best-1e-12,`${gl}, "${ruleFor(t)}", lands ${(t.corr*100).toFixed(2)}% where ${orderF(b.legs).map(l=>l.name+' '+l.label).join(', ')} land ${(b.best*100).toFixed(2)}% with as many thin legs`); } } }
+              if(b) W.compose(t.corr>=b.best-1e-12,`${gl}, "${ruleFor(t)}", lands ${(t.corr*100).toFixed(2)}% where ${orderF(b.legs).map(l=>l.name+' '+l.label).join(', ')} land ${(b.best*100).toFixed(2)}% with as many thin legs`); } }
+          /* (app v121) the slot's level is its game's own level, and no other game of the slot's own level beats it by the
+             slot's rule (slotBestAud, the audit's own copy; the earlier game on a tie): which correctly priced parlay is picked */
+          if(slot){ const own=P.s&&P.s.tiers.find(x=>x.id===t.id), sig=x=>x&&x.legs?x.legs.map(legIdAud).join()+'@'+x.corr+'@'+x.dec:'none';
+            W.compose(sig(own)===sig(t),`${gl} is not ${xg}'s own ${t.id} level (spSet on the game): ${sig(t)} where the game's own is ${sig(own)}`);
+            const best=slotBestAud(per.map(p=>p.s&&p.s.tiers.find(x=>x.id===t.id)),floor);
+            W.compose(!!best&&best.legs[0].gid===xg&&sig(best)===sig(t),`${gl} is ${xg}'s, where by the slot's rule the best of its games' own ${t.id} levels is ${best?best.legs[0].gid+"'s":'none'} (${sig(best)})`); } }
         if(slot) out.slot={g,s,q,R:slot}; else out.push({g,s,q}); }
       /* the tab as it draws them: which games it sets out, by the night rule worked here (app v118: in its Night games
          section; the Sunday slot is its own section, below) */
@@ -1466,9 +1536,16 @@ setTimeout(async()=>{
       /* each level's card of a unit, as drawn: its legs, each with an Add of its own named for it (none, nor Add to
          builder, nor Finish, where ro: the Sunday slot under way), its chance and price, its payout on the Bet amount, the
          Value mark on its Value picks alone, quiet, its fair chance first and its words */
-      const cardsHeld=(box,shown,{g,qV,qT,qM,gl,ro})=>{
+      const cardsHeld=(box,shown,{g,qV,qT,qM,gl,ro,slot})=>{
         for(const t of shown){ const c=box.querySelector(`.pb-tier.${t.id}`), tl=`${gl}: the ${t.id} card`;
           if(!c){ chk(false,`${tl} is not drawn`); continue; }
+          /* (app v121) a card of the Sunday slot names the game its legs are of, under its title, right after the legs'
+             pill (data-pb-tgame its id; the game and its kickoff in Eastern time); a night's card, whose unit is its game,
+             and an empty level name none */
+          { const tg=[...c.querySelectorAll('.pb-tgame')], gg=t.legs&&t.legs.length?S.sched.find(x=>x.id===t.legs[0].gid):null, TN=F('TEAM_NAMES');
+            const want=gg?`${TN[gg.a]||gg.a} at ${TN[gg.h]||gg.h} · ${etAud(kickAud(gg))}`:'';
+            W.wording(slot&&gg?tg.length===1&&tg[0].dataset.pbTgame===gg.id&&tg[0].textContent===want&&!!tg[0].previousElementSibling&&tg[0].previousElementSibling.classList.contains('pill')&&tg[0].parentElement.classList.contains('pb-th'):!tg.length,
+              `${tl} ${slot&&gg?`does not name its game under its title ("${want}", ${gg.id})`:'names a game'}: ${tg.map(x=>`"${x.textContent}" (${x.dataset.pbTgame})`).join(', ')||'none'}`); }
           if(!t.legs){ W.wording((c.querySelector('.pb-why')||{}).textContent===t.why&&!c.querySelector('[data-sp-add]'),`${tl} does not give its reason, or offers Add to builder`); continue; }
           const li=[...c.querySelectorAll('.pb-legs li')], tx=c.textContent.replace(/\s+/g,' ');
           chk(li.length===t.legs.length&&t.legs.every((l,i)=>li[i].textContent.includes(l.name)&&li[i].textContent.includes(l.label)&&(ro?!li[i].querySelector('[data-pb-leg]'):legAddOk(li[i].querySelector('[data-pb-leg]'),l)))
@@ -1542,7 +1619,7 @@ setTimeout(async()=>{
           else if(ph0!=='live'){ slotsLocked++; chk(shown.length===4&&shown.every((t,i)=>{ const b=s.tiers[i]; return t.id===b.id&&(b.legs?(!!t.legs&&t.legs.map(legIdAud).join()===b.legs.map(legIdAud).join()
                 &&t.corr===pp(t.legs).corr&&t.dec===pd(t.legs.map(l=>({leg:l,ml:l.price})))&&Math.abs(t.corr-b.corr)<2e-3&&Math.abs(t.dec-b.dec)<=Math.max(2e-3,b.dec*2e-3)):!t.legs); }),
             `${gl}: the locked set this browser keeps is not the set built at the lock, or its chance and price are not the builder's sums on its legs`); }
-          cardsHeld(box,shown,{g,qV,qT,qM,gl,ro:ph0==='under'});
+          cardsHeld(box,shown,{g,qV,qT,qM,gl,ro:ph0==='under',slot:true});
           if(ph0==='under') chk(!box.querySelector('[data-sp-add],[data-pb-leg],[data-pc-finish]'),`${gl}: under way since its first kickoff, the slot still offers an Add, an Add to builder or a Finish`);
           /* its Finish (spTier) finds each level with its own legs, the slot named, until its first kickoff; none after */
           for(const t of shown.filter(t=>t.legs)){ const x=F('spTier')(`${g.id}:${t.id}`);
@@ -2830,6 +2907,217 @@ setTimeout(async()=>{
       spKeyClear(); try{ if(spKey0!=null) w.localStorage.setItem(SPK,spKey0); }catch(e){}
       stab.hidden=keepTab; S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; dropCaches(); F('save')(); F('renderParlay')(); }
     console.log(`M15. the Sunday slot, on made-up weeks of 2019: ${nCase} moments (${said15.join('; ')})`); }
+
+  /* ---- M16. one game's legs a parlay, and no pair DraftKings will not take on one slip (app v121) ----
+     The owner, 19 October 2026, after reading how DraftKings builds a same-game parlay: "If your parlay already has a
+     receiver anytime TD, a team total, or the game total, adding the QB's passing TD over often gets blocked", and "Some
+     combos contradict each other, like QB under 1.5 passing TDs alongside two of his receivers to score. The book rejects
+     it outright"; then "i think also the legs need to be part of the same game parlay only, and anytime there's a mix it
+     bombs the hyperlink". Held on a made-up week of the audit's own (rule (c): week 93, its games on the schedule in
+     January 2099, so always still to come, at any hour of the week and in the off-season; pricedLegs stood in with made-up
+     lines on made-up players, each a real price with an edge and none far off the market, none moving with another (no
+     correlation for their made-up group), so every parlay is a plain product and every level is worked out in full here;
+     no DraftKings id table for the week, as a payload baked before ids; every stand-in put back on every path):
+       the rule      the audit's own copy (clashAud) and the page's dkClashWhy on the same cases, each answer written
+                     beside it: a quarterback's passing TDs over or under, a main line or a rung, with a teammate's
+                     touchdown, either leg first; over with the game total, either side of it; and none for his passing
+                     TDs under with the total, with an opponent's touchdown or his own, with a teammate's touchdown in
+                     another game, for his passing yards, or for a teammate's touchdown with the total
+       the nights    a Thursday, a Monday doubleheader and a Sunday night game, each set worked out in full against every
+                     parlay of each size by the audit's own copy of a set's rule (the levels of M10, the game's total the
+                     last fill) on the parlays that can be made (fitsAud), and each case says what the rule is held on:
+                     GQ's likeliest pair without the rule is its quarterback's passing TDs over with his receiver's
+                     touchdown (the rule's is his passing TDs with the opponent's receiver's touchdown), and its Extreme
+                     takes his passing TDs with the total; GT's Aggressive without the rule pairs his passing TDs over with
+                     the total alone; GV's likeliest pair without the rule is his passing TDs under with his receiver's
+                     touchdown; GU's Aggressive keeps his passing TDs under with the total, which the rule allows. No
+                     level holds a pair (clashAud)
+       the hands     no hand of any made-up game holds a pair, and GH's High, where the best pair without the rule is its
+                     quarterback's passing TDs with his receiver's touchdown, is the best pair the rule allows
+       the slot      four Sunday games before 7:00 pm Eastern (1:00, 4:05, and two at 4:25 alike leg for leg), and a Sunday
+                     night game that is no part of it; the best parlay across its games beats every one game's (so a slot
+                     searched across its games, as before app v121, fails here). Every level of the slot one game's legs,
+                     that game's own level (worked in full, as a night's), and the best of its games' own levels by the
+                     audit's own copy of the slot rule (slotBestAud), each case's answer written beside it: Safe the
+                     likelier pair, the earlier of the two alike; Medium and Aggressive the better return of those that
+                     meet their floor, never the likeliest that returns more; Extreme the one with no game total, though
+                     the likeliest of its size; and each card of the slot names its game
+       the builder   a parlay holding both pairs says so under its legs, the pairs in the builder's order and words; this
+                     page, which has no parlay card, says nothing of a same-game parlay mixed with another game's leg
+     Blocking (made-up data); W.wording the words */
+  { const WK=93, isG=F('isGameLeg'), pp=F('parlayProb'), pd=F('parlayDec'), order=F('pbOrder'), said16=[], SEA=F('SEASON');
+    /* the rule on its own cases: the audit's copy gives each case's answer, and so does the page */
+    { const P=o=>({gid:'g1',pid:'qb',team:'AAA',stat:'passing_tds',side:'over',main:true,k:1.5,...o}), TDL=o=>P({pid:'wr',stat:'any_td',main:false,k:1,...o}), TOT=o=>({gid:'g1',pid:'game',team:'BBB',stat:'total',side:'over',main:true,k:44.5,...o});
+      const C=[['his passing TDs over with a teammate\'s touchdown',P(),TDL(),'td'],['the same, the touchdown first',TDL(),P(),'td'],
+        ['his passing TDs under with a teammate\'s touchdown',P({side:'under'}),TDL(),'td'],['a rung of his passing TDs (2+) with a teammate\'s touchdown',P({main:false,k:2}),TDL(),'td'],
+        ['his passing TDs over with the game total over',P(),TOT(),'total'],['his passing TDs over with the game total under',P(),TOT({side:'under'}),'total'],['the total first',TOT(),P(),'total'],
+        ['his passing TDs under with the game total',P({side:'under'}),TOT(),null],['his passing TDs with an opponent\'s touchdown',P(),TDL({team:'BBB'}),null],
+        ['his passing TDs with his own touchdown',P(),TDL({pid:'qb'}),null],['his passing TDs with a teammate\'s touchdown in another game',P(),TDL({gid:'g2'}),null],
+        ['his passing yards with a teammate\'s touchdown',P({stat:'passing_yards',k:249.5}),TDL(),null],['a teammate\'s touchdown with the game total',TDL(),TOT(),null],
+        ['his passing TDs with his club to win',P(),{gid:'g1',pid:'team:AAA',team:'AAA',stat:'ml',side:'over',k:0},null]];
+      const dkWhy=w.eval("typeof dkClashWhy==='function'?dkClashWhy:null"); chk(!!dkWhy,'M16: the page has no pair rule of its own (dkClashWhy)');
+      let nR=0; for(const [lab,a,b,want] of C){ nR++; const mine=clashAud(a,b), page=dkWhy?dkWhy(a,b):undefined;
+        chk(mine===want&&page===want,`M16, the pair rule on ${lab}: the audit's own copy says ${mine}, the page ${page}, the case ${want}`); }
+      said16.push(`${nR} cases of the pair rule`); }
+    /* the made-up games: a Thursday night (GU), a Saturday night game (GH, held for its hands), the Sunday slot's four (S1 at
+       1:00, S4 at 4:05, S2 and S3 at 4:25, S2 first on the schedule), Sunday night (GV, no part of the slot) and a Monday
+       doubleheader (GT at 7:15, GQ at 8:15); every total -110 both ways */
+    const mk=(a,h,dd,tt,mla,mlh)=>({id:`2099_${WK}_${a}_${h}`,w:WK,a,h,d:dd,t:tt,mla,mlh,tot:44.5,tov:-110,tou:-110});
+    const GU=mk('AWA','AWH','2099-01-01','20:15',130,-150), GH=mk('AHA','AHH','2099-01-03','20:15',-105,-115);
+    const S1=mk('AXA','AXH','2099-01-04','13:00',-140,120), S4=mk('ABA','ABH','2099-01-04','16:05',-125,105), S2=mk('AYA','AYH','2099-01-04','16:25',155,-175), S3=mk('AZA','AZH','2099-01-04','16:25',155,-175);
+    const GV=mk('AVA','AVH','2099-01-04','20:20',120,-140), GT=mk('ATA','ATH','2099-01-05','19:15',130,-150), GQ=mk('AQA','AQH','2099-01-05','20:15',150,-170);
+    const FX=[GU,GH,S1,S4,S2,S3,GV,GT,GQ], SLOT=[S1,S4,S2,S3], NIGHTS=[GU,GV,GT,GQ];
+    const pl=(g,id,team,stat,k,side,main,p,price,label)=>({key:`${g.id}|aud16-${id}|${stat}`,gid:g.id,pid:'aud16-'+id,stat,k,side,main,p,price,src:'real',mu:null,name:'Made-up '+id,pos:'WR',grp:'AUD',team,opp:team===g.h?g.a:g.h,week:WK,label});
+    const ml=(g,p)=>({key:`${g.id}|team:${g.h}|ml`,gid:g.id,pid:'team:'+g.h,stat:'ml',k:0,side:'over',main:false,p,price:g.mlh,src:'real',mu:null,name:'Made-up '+g.h,pos:'Game',grp:'TEAM',team:g.h,opp:g.a,week:WK,label:'To win'});
+    const TDo=(g,id,p,pr)=>pl(g,id,g.h,'passing_tds',1.5,'over',true,p,pr,'Over 1.5 passing TDs'), TDu=(g,id,p,pr)=>pl(g,id,g.h,'passing_tds',1.5,'under',true,p,pr,'Under 1.5 passing TDs');
+    const PY=(g,id,k,p,pr)=>pl(g,id,g.h,'passing_yards',k,'over',true,p,pr,`Over ${k} passing yards`), TD=(g,id,team,p,pr)=>pl(g,id,team,'any_td',1,'over',false,p,pr,'Scores a touchdown');
+    const RG=(g,id,team,stat,k,p,pr,lbl)=>pl(g,id,team,stat,k,'over',false,p,pr,`${k}+ ${lbl}`);
+    const L16=[
+      /* GQ: his passing TDs over the likeliest and the best-paying leg, his receiver's touchdown next, the opponent's receiver's after */
+      TDo(GQ,'q1',0.80,-230),PY(GQ,'q1',249.5,0.60,-120),TD(GQ,'q2',GQ.h,0.76,-210),TD(GQ,'q3',GQ.a,0.72,-200),ml(GQ,0.67),
+      /* GT and GU: three legs a parlay can hold (the quarterback, the opponent's receiver, a side), so Aggressive takes the total */
+      TDo(GT,'t1',0.78,-220),PY(GT,'t1',239.5,0.60,-120),RG(GT,'t2',GT.a,'receptions',5,0.66,-150,'receptions'),ml(GT,0.64),
+      TDu(GU,'u1',0.78,-220),PY(GU,'u1',229.5,0.55,-105),RG(GU,'u2',GU.a,'receptions',5,0.66,-150,'receptions'),ml(GU,0.64),
+      TDu(GV,'v1',0.80,-230),PY(GV,'v1',219.5,0.60,-120),TD(GV,'v2',GV.h,0.76,-210),RG(GV,'v3',GV.a,'receiving_yards',60,0.63,-130,'receiving yards'),ml(GV,0.62),
+      /* GH: at plus money, his passing TDs and his receiver's touchdown the best pair a High hand could take */
+      TDo(GH,'h1',0.60,105),TD(GH,'h2',GH.h,0.60,105),RG(GH,'h3',GH.a,'receptions',4,0.61,-110,'receptions'),ml(GH,0.58),
+      /* the slot: S1 five legs at plus money (each of its parlays of 3 to 5 the likeliest of its size, returning the most);
+         S4 four nearer evens (its Medium and Aggressive the best returns that meet their floor); S2 and S3 alike, four
+         heavy favourites (the likeliest pair) */
+      RG(S1,'x1',S1.h,'receptions',5,0.55,120,'receptions'),RG(S1,'x2',S1.h,'receiving_yards',70,0.545,120,'receiving yards'),RG(S1,'x3',S1.a,'rushing_yards',60,0.54,120,'rushing yards'),RG(S1,'x4',S1.a,'receptions',6,0.535,120,'receptions'),ml(S1,0.53),
+      RG(S4,'z1',S4.h,'receptions',4,0.66,-125,'receptions'),RG(S4,'z2',S4.h,'rushing_yards',50,0.65,-120,'rushing yards'),RG(S4,'z3',S4.a,'receiving_yards',40,0.63,-110,'receiving yards'),ml(S4,0.56),
+      ...[[S2,'s2'],[S3,'s3']].flatMap(([g,x])=>[RG(g,x+'y1',g.h,'receptions',6,0.80,-230,'receptions'),RG(g,x+'y2',g.h,'receiving_yards',50,0.78,-220,'receiving yards'),RG(g,x+'y3',g.a,'rushing_yards',40,0.74,-190,'rushing yards'),ml(g,0.70)])];
+    /* a parlay that can be made without the pair rule: fitsAud as it was before app v121, for each case to show what it holds */
+    const fitsNoRule=(cur,c)=>{ if(cur.some(l=>l.key===c.key)) return false;
+      if(isG(c)) return !cur.some(l=>isG(l)&&l.gid===c.gid&&(l.stat==='total')===(c.stat==='total'));
+      return !cur.some(l=>!isG(l)&&l.pid===c.pid); };
+    const slots16=list=>{ const pl=new Set(), gs=new Set(); for(const l of list){ if(isG(l)) gs.add(l.gid+(l.stat==='total'?'|t':'|s')); else pl.add(l.pid); } return pl.size+gs.size; };
+    /* one game's level of n legs, the audit's own copy of a set's rule, worked out in full: every parlay of n of its legs with
+       an edge that can be made (fits); Safe the likeliest pair, the others the best return over their floor, else the
+       likeliest of their size, each with the fewest thin legs; where the legs with an edge make no parlay of n, the game's
+       total as the last fill, exactly as many as those legs leave to fill */
+    const level16=(q,n,floor,fits)=>{ const edge=[...q.pref,...q.thin];
+      const all=(legs,fillOf)=>{ const out=[], rec=(i0,cur)=>{ if(cur.length===n){ const L=order(cur.map(l=>({...l}))), pr=pp(L).corr, dec=pd(L.map(l=>({leg:l,ml:l.price})));
+            out.push({L,pr,dec,ev:pr*dec,fill:L.filter(fillOf).length,thin:L.filter(l=>l.thin).length,mkt:L.filter(l=>l.market).length,id:L.map(legIdAud).sort().join()}); return; }
+          for(let i=i0;i<legs.length;i++){ if(!fits(cur,legs[i])) continue; cur.push(legs[i]); rec(i+1,cur); cur.pop(); } };
+        rec(0,[]); return out; };
+      const top=(list,f)=>{ const m=Math.max(...list.map(f)); return {best:list.filter(c=>f(c)>=m-1e-12),m}; };
+      const pick=c=>{ if(!c.length) return null; const km=Math.min(...c.map(x=>x.fill)), lk=top(c.filter(x=>x.fill===km),x=>x.pr);
+        if(!floor) return {kind:'pair',...lk};
+        const clear=c.filter(x=>x.pr>=floor);
+        if(clear.length){ const kc=Math.min(...clear.map(x=>x.fill)); return {kind:'floor',...top(clear.filter(x=>x.fill===kc),x=>x.ev)}; }
+        return {kind:'likeliest',...lk}; };
+      const r=pick(all(edge,l=>!!l.thin)); if(r||!q.mkt.length) return r;
+      const kTop=Math.max(0,n-slots16(edge));
+      return pick(all([...edge,...q.mkt],l=>!!l.market).filter(x=>x.mkt===kTop)); };
+    /* a level worked out here, as the slot's rule reads one */
+    const asLvl=b=>b?{legs:b.best[0].L,corr:b.best[0].pr,dec:b.best[0].dec,thin:b.best[0].thin,mkt:b.best[0].mkt,likeliest:b.kind==='likeliest'}:null;
+    const kindsOf=legs=>clashPairsAud(legs).map(x=>x[2]).sort().join('+');
+    const names=legs=>(legs||[]).map(l=>`${l.name} ${l.label}`).join(', ');
+    /* a page level held to the audit's own working of it: its kind, its number, its legs among the best, its thin legs and totals */
+    const held=(t,b,n,lab)=>{ const kind=t&&t.legs?(t.likeliest?'likeliest':t.floor?'floor':'pair'):'empty';
+      if(!b){ chk(kind==='empty',`${lab} is ${kind} (${t&&t.legs?names(t.legs):''}) where no parlay of ${n} of the game's legs can be made`); return; }
+      const f=b.kind==='floor'?(x=>x.corr*x.dec):(x=>x.corr), id=t&&t.legs?t.legs.map(legIdAud).sort().join():'', c=b.best.find(x=>x.id===id);
+      chk(kind===b.kind&&!!c&&Math.abs(f(t)-b.m)<1e-12&&t.thin===c.thin&&(t.mkt||0)===c.mkt,
+        `${lab} is ${kind} at ${t&&t.legs?f(t).toFixed(6):'-'} (${t&&t.legs?names(t.legs):t&&t.why}), where every parlay of ${n} that can be made worked out gives ${b.kind} at ${b.m.toFixed(6)}: ${names(b.best[0].L)}`); };
+    const keepF=w.eval('[pricedLegs, spSlotNext]'), stab=d.getElementById('tab-suggest'), keepTab=stab.hidden, keepPar=JSON.stringify(S.parlay||{}), keepBP=S.bookPrice;
+    try{
+      S.sched.push(...FX); w.__m16L=L16;
+      w.eval(`pricedLegs=function(games){ return window.__m16L.filter(l=>(games||[]).some(g=>g.id===l.gid&&!gameStarted(g))&&(l.grp==='TEAM'||suggestable(l.pid))).map(l=>({...l})); };`);
+      dropCaches();
+      /* every made-up line qualifies as the case means it to: a Value pick (the 3-point edge), none far off the market */
+      { const q=qualAud(FX,ALL_U), bad=L16.filter(l=>!q.pref.some(x=>legIdAud(x)===legIdAud(l)));
+        chk(!bad.length&&q.mkt.length===2*FX.length&&!q.far,`M16: the made-up lines are not each a Value pick, and every game's total on the market list (${names(bad)||'every line a Value pick'}; ${q.mkt.length} totals, ${q.far} far off), so the cases cannot tell`); }
+      /* the nights: every level worked out in full, with the pair rule and without it */
+      const CASE={[GQ.id]:{safe:'td',med:'td',aggr:'td',xtrm:'td+total'},[GT.id]:{aggr:'total'},[GV.id]:{safe:'td',med:'td',aggr:'td',xtrm:'td'},[GU.id]:{}};
+      let nWorked=0;
+      for(const g of NIGHTS){ const q=qualAud([g],ALL_U), s=F('spSet')(g.id), gl=`M16, ${g.a} at ${g.h}`;
+        chk(primeAud(g)&&F('spPrime')(g),`${gl} is not a prime-time game, so the case is not a night's set`);
+        chk(!!s&&s.tiers.length===4,`${gl}: no set of four levels`); if(!s) continue;
+        for(const [id,,n,floor] of SPEC_AUD){ const t=s.tiers.find(x=>x.id===id), b=level16(q,n,floor,fitsAud), b0=level16(q,n,floor,fitsNoRule), want=CASE[g.id][id]||'';
+          /* what the case stands on: without the rule the level's best holds the pair named (and only where named) */
+          chk(want?(!!b0&&b0.best.every(c=>kindsOf(c.L)===want)):(!b0||b0.best.every(c=>!kindsOf(c.L))),`${gl}: without the pair rule the ${id} level's best is ${b0?names(b0.best[0].L):'none'}, holding ${b0?kindsOf(b0.best[0].L)||'no pair':'nothing'} where the case stands on ${want||'no pair'}, so it cannot tell`);
+          held(t,b,n,`${gl}: the ${id} level`); nWorked++;
+          chk(!t||!t.legs||!clashPairsAud(t.legs).length,`${gl}: the ${id} level holds a pair DraftKings will not take on one slip: ${t&&t.legs?clashTxt(t.legs):''}`); }
+        /* GQ's Safe takes his passing TDs with the opponent's receiver's touchdown (a pair of two clubs is no pair); GU's
+           Aggressive keeps his passing TDs under with the total (the rule's total is of his passing TDs over) */
+        if(g===GQ){ const t=s.tiers.find(x=>x.id==='safe'); chk(!!t&&!!t.legs&&t.legs.some(l=>l.pid==='aud16-q1'&&l.stat==='passing_tds')&&t.legs.some(l=>l.pid==='aud16-q3'),`${gl}: Safe is not his passing TDs with the opponent's receiver's touchdown: ${t&&t.legs?names(t.legs):''}`); }
+        if(g===GU){ const t=s.tiers.find(x=>x.id==='aggr'); chk(!!t&&!!t.legs&&t.legs.some(l=>l.stat==='passing_tds'&&l.side==='under')&&t.legs.some(l=>l.stat==='total'),`${gl}: Aggressive does not keep his passing TDs under with the game total: ${t&&t.legs?names(t.legs):''}`); } }
+      { const nmG=id=>{ const g=FX.find(x=>x.id===id); return `${g.a} at ${g.h}`; }, held0=Object.entries(CASE).filter(([,c])=>Object.keys(c).length).map(([id,c])=>`${nmG(id)}'s ${Object.keys(c).join(', ')}`);
+        said16.push(`${NIGHTS.length} night games' sets worked out in full (${nWorked} levels; without the rule ${held0.join('; ')} hold a pair, and the rule leaves ${nmG(GU.id)}'s passing TDs under with the total)`); }
+      /* the hands: none holds a pair; GH's High the best pair the rule allows, where without it the best is the pair */
+      { const bad=[]; let nH=0;
+        for(const g of FX){ const T=F('gameTiers')(g); for(const id of ['high','med','low']) if(T&&T[id]){ nH++; if(clashPairsAud(T[id].legs).length) bad.push(`${g.id}'s ${id} hand: ${clashTxt(T[id].legs)}`); } }
+        chk(!bad.length,`M16: a game page's hand holds a pair DraftKings will not take on one slip: ${bad.join('; ')}`);
+        const pool=F('gameLegPool')(GH), T=F('gameTiers')(GH);
+        const fitsH=(a,b,rule)=>a.key!==b.key&&!(a.grp==='TEAM'&&b.grp==='TEAM')&&(!rule||!clashAud(a,b));
+        const bestPair=rule=>{ for(const [fd,mp] of [[2,0.35],[1,0]]){ let best=null;
+            for(let i=0;i<pool.length;i++) for(let j=i+1;j<pool.length;j++){ const a=pool[i], b=pool[j]; if(!fitsH(a,b,rule)) continue;
+              const pr=pp([a,b],2500).corr, dd=pd([{leg:a,ml:a.price},{leg:b,ml:b.price}],1500); if(dd<fd||pr<mp) continue;
+              if(!best||pr*dd>best.ev) best={ev:pr*dd,L:[a,b],relaxed:fd===1}; }
+            if(best) return best; }
+          return null; };
+        const b0=bestPair(false), b=bestPair(true), h=T&&T.high;
+        chk(pool.length===4&&!!b0&&!b0.relaxed&&kindsOf(b0.L)==='td',`M16: without the pair rule GH's best High pair is ${b0?names(b0.L):'none'} (${pool.length} lines in its pool), not his passing TDs with his receiver's touchdown at +100 or more and 35% or more, so the case cannot tell`);
+        chk(!!h&&!!b&&!h.relaxed&&!b.relaxed&&!clashPairsAud(h.legs).length&&Math.abs(h.corr*h.dec-b.ev)<1e-12,`M16: GH's High hand is ${h?names(h.legs):'none'}${h?` returning ${(h.corr*h.dec).toFixed(6)}`:''}, where the best pair the rule allows returns ${b?b.ev.toFixed(6):'-'} (${b?names(b.L):'none'})`);
+        said16.push(`${nH} hands of ${FX.length} games, none holding a pair, GH's High the best pair the rule allows`); }
+      /* the Sunday slot: its games, then each level one game's own, the best by the slot's rule */
+      const SID=`${SEA}_${WK}_SUN`, u=F('spUnit')(SID), ids=a=>(a||[]).map(g=>g.id).join();
+      chk(!!u&&u.slot&&ids(u.games)===ids(SLOT)&&ids(slotGamesAud(S.sched,WK))===ids(SLOT),`M16: the made-up week's Sunday slot is ${u?ids(u.games):'none'} (the audit's own rule: ${ids(slotGamesAud(S.sched,WK))}), not its four Sunday games before 7:00 pm Eastern in kickoff order, the schedule's on a tie, without Sunday night's`);
+      const per=SLOT.map(x=>{ const q=qualAud([x],ALL_U), s=F('spSet')(x.id);
+        return {x,q,s,b:Object.fromEntries(SPEC_AUD.map(([id,,n,floor])=>[id,level16(q,n,floor,fitsAud)]))}; });
+      /* each game's own set, worked out in full as a night's */
+      for(const P of per) for(const [id,,n] of SPEC_AUD) held(P.s&&P.s.tiers.find(x=>x.id===id),P.b[id],n,`M16, the slot's game ${P.x.a} at ${P.x.h}: its own ${id} level`);
+      /* the slot's rule on the levels worked here gives each case's answer */
+      const WANT={safe:S2,med:S4,aggr:S4,xtrm:S1}, ss=F('spSet')(SID);
+      chk(!!ss&&ss.tiers.length===4,'M16: the made-up Sunday slot has no set of four levels');
+      for(const [id,,n,floor] of SPEC_AUD){ const best=slotBestAud(per.map(P=>asLvl(P.b[id])),floor), g=WANT[id], gl=`M16, the Sunday slot's ${id} level`;
+        chk(!!best&&best.legs[0].gid===g.id,`${gl}: the audit's own slot rule gives ${best?best.legs[0].gid:'none'}, not the case's ${g.id}`);
+        const t=ss&&ss.tiers.find(x=>x.id===id);
+        chk(!!t&&!!t.legs&&t.legs.every(l=>l.gid===g.id),`${gl} holds ${t&&t.legs?[...new Set(t.legs.map(l=>l.gid))].join(' and ')+"'s legs":'no parlay'}, not one game's, ${g.id}'s: ${t&&t.legs?names(t.legs):t&&t.why}`);
+        held(t,per.find(P=>P.x===g).b[id],n,gl);
+        chk(!!t&&!!t.legs&&!clashPairsAud(t.legs).length,`${gl} holds a pair DraftKings will not take on one slip`); }
+      /* what the cases stand on: S2 and S3 alike (the tie to the earlier); S1's likeliest Medium and Aggressive return more
+         than the levels that meet their floor (a rule on the return alone takes S1); S1's Extreme the likeliest of its
+         size, every other game's taking the total (a rule on the floor first takes S4) */
+      { const lv=(P,id)=>asLvl(P.b[id]), [P1,P4,P2,P3]=per, ev=x=>x.corr*x.dec;
+        chk(['safe','med','aggr','xtrm'].every(id=>{ const a=lv(P2,id), b=lv(P3,id); return a&&b&&a.corr===b.corr&&a.dec===b.dec; }),'M16: the slot\'s two games alike are not alike level for level, so the tie cannot tell');
+        chk(['med','aggr'].every(id=>{ const a=lv(P1,id), b=lv(P4,id); return a&&b&&a.likeliest&&!b.likeliest&&ev(a)>ev(b); }),'M16: S1\'s Medium and Aggressive are not the likeliest of their size returning more than S4\'s, so the floor before the return cannot tell');
+        chk(lv(P1,'xtrm')&&lv(P1,'xtrm').likeliest&&!lv(P1,'xtrm').mkt&&[P4,P2,P3].every(P=>{ const x=lv(P,'xtrm'); return x&&!x.likeliest&&x.mkt===1; }),'M16: S1\'s Extreme is not the likeliest of its size with no total where the other games\' meet their floor with one, so the total first cannot tell');
+        /* and a slot searched across its games, as before: its best pair, and its best Medium over its floor, are of two games */
+        const U16=per.flatMap(P=>[...P.q.pref,...P.q.thin]), xb=n=>{ let best=null; const rec=(i0,cur)=>{ if(cur.length===n){ const L=order(cur.map(l=>({...l}))), pr=pp(L).corr, dec=pd(L.map(l=>({leg:l,ml:l.price}))), v=n===2?pr:(pr>=0.25?pr*dec:-1);
+              if(!best||v>best.v) best={v,L}; return; } for(let i=i0;i<U16.length;i++){ if(!fitsAud(cur,U16[i])) continue; cur.push(U16[i]); rec(i+1,cur); cur.pop(); } }; rec(0,[]); return best; };
+        const two=xb(2), three=xb(3), oneOf=b=>!!b&&new Set(b.L.map(l=>l.gid)).size>1;
+        chk(oneOf(two)&&oneOf(three)&&two.v>lv(P2,'safe').corr&&three.v>ev(lv(P4,'med')),`M16: the best parlays across the slot's games (${two?names(two.L):'none'}; ${three?names(three.L):'none'}) do not beat every one game's, so the case cannot tell a slot of one game's legs from one across them`);
+        said16.push(`the Sunday slot (${SLOT.length} games, its best pair and Medium across games beating any one game's): Safe ${WANT.safe.a} at ${WANT.safe.h} (the earlier of two alike), Medium and Aggressive ${WANT.med.a} at ${WANT.med.h} (over the likeliest returning more), Extreme ${WANT.xtrm.a} at ${WANT.xtrm.h} (no total, though the likeliest), each one game's own level`); }
+      /* each card of the slot names its game, as the tab draws it (the slot stood in as up, put back after) */
+      { const keepN=w.eval('spSlotNext'); stab.hidden=false;
+        try{ w.eval(`spSlotNext=function(){ const u=spSlotUnit(${WK}); return u?{...u,open:null,prev:null,up:true}:null; };`); F('renderSp')();
+          const box=d.querySelector(`#spPanel [data-sp-sec="slot"] [data-sp-game="${SID}"]`), TN=F('TEAM_NAMES');
+          chk(!!box,`M16: the made-up Sunday slot (${SID}) is not drawn with its set`);
+          for(const [id] of SPEC_AUD){ const g=WANT[id], c=box&&box.querySelector(`.pb-tier.${id}`), tg=c?[...c.querySelectorAll('.pb-th .pb-tgame')]:[];
+            chk(tg.length===1&&tg[0].dataset.pbTgame===g.id,`M16: the slot's ${id} card does not name its game, ${g.id}: ${tg.map(x=>x.dataset.pbTgame).join(', ')||'none'}`);
+            W.wording(!!tg[0]&&tg[0].textContent===`${TN[g.a]||g.a} at ${TN[g.h]||g.h} · ${etAud(kickAud(g))}`,`M16: the slot's ${id} card names its game "${tg[0]?tg[0].textContent:''}"`); } }
+        finally { slotPut(keepN); stab.hidden=keepTab; F('renderSp')(); } }
+      /* the builder: GQ's game total over, his passing TDs over and his receiver's touchdown (both pairs), and GT's side */
+      { const tot=F('totalLeg')(GQ,'over'), q1=L16.find(l=>l.pid==='aud16-q1'&&l.stat==='passing_tds'), q2=L16.find(l=>l.pid==='aud16-q2'), mT=L16.find(l=>l.gid===GT.id&&l.stat==='ml');
+        S.parlay={}; S.bookPrice=null; for(const l of [tot,q1,q2,mT]) S.parlay[l.key]={...l}; F('renderParlay')();
+        const legs=F('parlayLegs')(), cp=clashPairsAud(legs), body=d.getElementById('parlayBody'), el=body&&body.querySelector('[data-pb-clash]');
+        const DKW={td:'a quarterback’s passing TDs with a teammate’s touchdown',total:'a quarterback’s passing TDs over with the game total'}, nm=l=>`${l.name}, ${l.label}`;
+        const want=`DraftKings may refuse ${cp.length===1?'this pair':'these pairs'} on one slip: ${cp.map(([i,j,k])=>`${nm(legs[i])}, with ${nm(legs[j])} (${DKW[k]})`).join('; ')}.`;
+        chk(cp.length===2&&cp.map(x=>x[2]).sort().join()==='td,total'&&!!el&&el.dataset.pbClash==='2',`M16: the builder holding his passing TDs with the total and with his receiver's touchdown does not say it holds ${cp.length} pairs DraftKings may refuse: ${el?el.outerHTML.slice(0,240):'no line'}`);
+        W.wording(!!el&&el.textContent===want,`M16: the builder's line on the pairs reads "${el?el.textContent:''}", not "${want}"`);
+        chk(!body.querySelector('[data-pb-multigame]'),'M16: the prop model\'s own page, which has no parlay card, says the card gives each game a link of its own');
+        /* with neither pair, no line */
+        delete S.parlay[q1.key]; F('renderParlay')();
+        chk(!d.querySelector('#parlayBody [data-pb-clash]'),'M16: with no pair left in the builder, it still says DraftKings may refuse one');
+        said16.push('the builder says both pairs, in its order and words, and nothing of a mix of games on this page'); }
+    } catch(e){ chk(false,'M16 threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
+    finally {
+      w.__m16k=keepF; w.eval('pricedLegs=window.__m16k[0]; spSlotNext=window.__m16k[1];'); delete w.__m16k; delete w.__m16L;
+      for(const g of FX){ const i=S.sched.findIndex(x=>x.id===g.id); if(i>=0) S.sched.splice(i,1); }
+      stab.hidden=keepTab; S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; dropCaches(); F('save')(); F('renderParlay')(); }
+    console.log(`M16. one game's legs a parlay, and no pair DraftKings will not take on one slip, on a made-up week: ${said16.join('; ')}`); }
 
   /* ---- M7. the book's fair chance, and legs far off it ----
      A leg's fair chance is DraftKings' own: where both sides of its line are priced (a player's main
@@ -5563,10 +5851,15 @@ setTimeout(async()=>{
       chk(t.legs.every(l=>l.p>=0.40),`the ${id} tier has a leg under a 40% chance`);
       W.compose(t.legs.length===n,`the ${id} tier has ${t.legs.length} legs, not ${n}`);
       chk(t.legs.every(l=>l.gid===g.id)&&t.legs.filter(l=>l.grp==='TEAM').length<=1&&t.legs.every(l=>t.legs.filter(x=>x.pid===l.pid).length<=2)&&new Set(t.legs.map(l=>l.key)).size===n,`the ${id} tier breaks the leg rules`);
+      /* (app v121) and no pair DraftKings will not take on one slip, by the audit's own copy of the rule (clashAud) */
+      chk(!clashPairsAud(t.legs).length,`the ${id} hand of ${g.id} holds a pair DraftKings will not take on one slip: ${clashTxt(t.legs)}`);
       chk(t.legs.every(l=>isFinite(l.price)&&l.price!==0),`the ${id} tier has a leg with no price`);
       chk(t.legs.every(l=>l.price>=MIN),`the ${id} tier has a leg shorter than ${MIN}`);
       chk(t.corr>0&&t.corr<1&&t.dec>1,`the ${id} tier has a nonsense chance or price`);
       chk(t.relaxed||t.dec>=1+floor/100-0.02,`the ${id} tier pays ${t.dec.toFixed(2)}, under its +${floor} floor, without saying so`); }
+    /* (app v121) every game of the week still to come: no hand holds a pair DraftKings will not take on one slip */
+    { const bad=[]; for(const x of F('pbGames')()){ const H=F('gameTiers')(x); for(const [id] of spec) if(H&&H[id]&&clashPairsAud(H[id].legs).length) bad.push(`${x.id}'s ${id} hand: ${clashTxt(H[id].legs)}`); }
+      chk(!bad.length,`a game page's hand holds a pair DraftKings will not take on one slip: ${bad.slice(0,4).join('; ')}`); }
     /* each tier grows the one before */
     if(T.high&&T.med) W.compose(T.high.legs.every(l=>T.med.legs.some(x=>x.key===l.key&&x.k===l.k)),'Medium does not grow High');
     if(T.med&&T.low) W.compose(T.med.legs.every(l=>T.low.legs.some(x=>x.key===l.key&&x.k===l.k)),'Low does not grow Medium');
