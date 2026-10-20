@@ -1,7 +1,11 @@
 """Pull NFL player-prop prices from the-odds-api.com (hyphens) into the files the payload is baked from.
 
-Run by props/build/weekly.py on every price pull of .github/workflows/props.yml (the key is the
-ODDS_API_KEY repository secret). By hand, run --events first, which costs no credits.
+By hand only: no job runs this since 20 October 2026 (the owner's call: no scheduled paid pull; every run
+of the props job reads DraftKings' lines from ESPN for free instead, props/build/espn_read.js), and no
+workflow maps the key. It was run by props/build/weekly.py on four price pulls a week until then; its files
+for weeks 1-6 stay in data/ and are still baked, and a pull run by hand is baked by the next run the same
+way. MARKETS, DEFAULT, FULL_EXTRA and TEAMS stay as the reference for the parlay card's Pull from DraftKings
+(the admin's own key, in his browser). Run --events first, which costs no credits.
 
 Usage (never put the key on the command line; the shell history would keep it):
     set ODDS_API_KEY=...            (Windows)      export ODDS_API_KEY=...   (mac/linux)
@@ -10,20 +14,15 @@ Usage (never put the key on the command line; the shell history would keep it):
     python oddsfetch.py --week 2 --sample saved.json   parse a saved event response instead (no key)
 
     python oddsfetch.py --week 2 --teams NE,SEA          only the games those teams play (Thursday)
-    python oddsfetch.py --week 2 --hours 40 --missing    only games not yet priced and not yet started:
-                       the catch-up weekly.py runs on every score-only run, so a scheduled pull that
-                       GitHub dropped costs a game its prices only until the next run of the job
+    python oddsfetch.py --week 2 --hours 40 --missing    only games not yet priced and not yet started
+                       (the catch-up weekly.py ran on every score-only run while the job pulled prices)
 A game that has kicked off is never priced, in any mode: an in-play price is not a pre-game line.
 Sunday's early games (kickoff before 4pm Eastern) are never bought player prices either, in any
 mode, unless --early says so (EARLY_SUNDAY_BEFORE below): their game lines still come in the
 slate's one game-lines call.
-A game priced less than REPRICE_HOURS ago is skipped too (--force prices it anyway), so a manual
-pull followed by the scheduled one GitHub delivered hours late does not buy the same game twice,
-nor does a scheduled pull a catch-up has just done the work of. Each pull prices up to the next
-slot plus the lateness allowance, so two pulls' windows overlap only where a game sits in the
-allowance: a day apart, as the Wednesday and Thursday pulls are for Thanksgiving's early game, the
-second pull's fresher prices are worth the credits. choose() is the rule, and
-props/build/test_pull_schedule.py drives it over the season's schedule at every lateness.
+A game priced less than REPRICE_HOURS ago is skipped too (--force prices it anyway), so two pulls by
+hand an hour apart do not buy the same game twice. choose() is the rule (props/build/test_pull_schedule.py
+drove it over the season's schedule while the job pulled; it went with the scheduled pulls).
 Outputs (in data/), MERGED into existing files for the week so a Thursday pull and a Saturday
 pull add up; a game pulled twice keeps the newer prices:
     wk{W}_lines.csv    game_id,stat,player,line,over,under   main lines: the point where over and
