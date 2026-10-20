@@ -1803,6 +1803,13 @@ lines), the build adds
 button, kept because the prop model draws into them: `tab-track` (Track Record, the Prop
 Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 
+The games list and a game's head (app v122). `renderSlate` draws each game as the Matchups board's row in the
+prop model's own names (`button.game[data-game]` with `sl-` cells: date, matchup, win probability, confidence,
+score prediction, final score), worked from the prop model's own lines (`slateCall`, `slateTier`, `slateCols`,
+`slateNeutral`, `slateOutcome`, `slateResult`, `slatePred` in part3). What the row showed before (kickoff,
+matchup, biggest projections, expected score, total points, Vegas pick) is the head card of the game's page,
+`gameHeadCard` (`.ghead`), the first card `renderGame` draws after its controls.
+
 ### Vocabulary
 
 - **leg** -- one line on a parlay. Keyed `gid|pid|stat` (`legKey()`), plus a

@@ -62,6 +62,119 @@ function renderRecords(w){
   wr.innerHTML=`Week ${w} <b>${line(main.filter(r=>+r.w===+w))}</b>`;
   sr.innerHTML=`Season <b>${line(main)}</b>`;
 }
+/* ---------- the games list's rows and a game's head (app v122) ----------
+   The owner's call of 20 October 2026, with the list's row, the board's row and a game's page in three
+   screenshots: the list's rows look like the Matchups board's, and what they showed until then goes to the
+   head of each game's page. */
+
+/* the call the list draws on a game, the board's rule on this page's own lines (the ones a game's page prices
+   from, a Refresh odds press included): the home side's chance from the two moneylines with the book's margin
+   taken out, else from the spread, a margin spread MARGIN_SD about it; with no line posted at all, the model's
+   own chance (gameBet; src 'model'). null for a pick'em spread with no moneylines, which the board leaves
+   without a call too. pick is the side at 50% or more, the home side on an even split, as on the board */
+function slateCall(g){
+  const ml=x=>x!=null&&isFinite(x)&&+x!==0, imp=x=>x<0?-x/(-x+100):100/(x+100);
+  let pH=null, src='market';
+  if(ml(g.mla)&&ml(g.mlh)){ const h=imp(+g.mlh), a=imp(+g.mla); pH=h/(h+a); }
+  else if(g.sp!=null&&isFinite(g.sp)){ if(+g.sp!==0) pH=gbNorm(+g.sp/MARGIN_SD); }
+  else { pH=gameBet(g,g.h,'ml').p; src='model'; }
+  if(pH==null||!isFinite(pH)) return null;
+  return {pH,pick:pH>=0.5?g.h:g.a,conf:Math.max(pH,1-pH),src};
+}
+/* the Matchups board's confidence band on the favourite's chance */
+function slateTier(c){ const r=Math.round(c*100)/100; return r>=0.75?['high','HIGH']:r>=0.60?['med','MED']:r>=0.55?['low','LOW']:['coin','50/50']; }
+/* the win-probability bar's two colours, the board's rule (probCols in tab_pickems.html) on this page's own
+   tag colours: each side its tag's colour with its percentage in textOn's ink; where the two would read as one
+   colour (two reds), the home side the first of its own colours that does not, else a slate */
+function slateCols(a,h){
+  const hsl=c=>{ const [r,g,b]=hex2rgb(c).map(v=>v/255), mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+    const hh=!d?0:mx===r?((g-b)/d+6)%6:mx===g?(b-r)/d+2:(r-g)/d+4; return [hh*60,d,(mx+mn)/2]; };
+  const near=(x,y)=>{ const [h1,c1,l1]=hsl(x), [h2,c2,l2]=hsl(y), dh=Math.min(Math.abs(h1-h2),360-Math.abs(h1-h2));
+    return c1<.15||c2<.15 ? c1<.15&&c2<.15&&Math.abs(l1-l2)<.15 : dh<28&&Math.abs(l1-l2)<.18; };
+  const ca=tagBg(tagColor(a));
+  let ch=tagBg(tagColor(h));
+  if(near(ca,ch)) ch=teamCols(h).map(tagBg).find(c=>!near(ca,c))||'#475068';
+  return [{bg:ca,ink:textOn(ca)},{bg:ch,ink:textOn(ch)}];
+}
+/* a game at a neutral site: the hub's Matchups board says so where it has the game (the betting job's
+   schedule marks most of them Neutral); without it, a 9:30am Eastern kickoff, which is one played abroad */
+function slateNeutral(g){
+  try{ const B=window.pkBoard; if(B&&B.ST&&Array.isArray(B.ST.sched)&&typeof B.neutral==='function'){
+    const r=B.ST.sched.find(x=>x.game_id===g.id); if(r) return !!B.neutral(r); } }catch(e){}
+  return g.t==='09:30';
+}
+/* where a game stands: the payload's final score, else what the scoreboard said when Refresh scores last
+   read it (LIVE); null before kickoff or with nothing read */
+function slateOutcome(g){
+  if(hasScore(g)) return {final:true,live:false,as:+g.as,hs:+g.hs,clock:''};
+  const s=LIVE.slate?LIVE.games[g.id]:null;
+  if(s&&s.as!=null&&s.hs!=null&&isFinite(s.as)&&isFinite(s.hs)&&s.state!=='pre')
+    return {final:s.state==='post',live:s.state!=='post',as:+s.as,hs:+s.hs,clock:s.clock||''};
+  return null;
+}
+/* the final-score cell: 0 : 0 to come; LIVE once kicked off with no scoreboard read, Final with none four hours
+   on; on now, the side leading and the clock, in the pick's colour by whether it leads; played, the side that
+   won and whether the pick hit */
+function slateResult(g,c){
+  const o=slateOutcome(g);
+  if(!o){
+    if(gameFinal(g)) return '<b class="sl-sc sl-pend">Final</b><span class="sl-sub">score with the next update</span>';
+    if(gameStarted(g)) return '<b class="sl-sc sl-pend">LIVE</b><span class="sl-sub">Refresh scores reads it</span>';
+    return '<b class="sl-sc sl-pend">0 : 0</b>';
+  }
+  const win=o.as>o.hs?g.a:(o.hs>o.as?g.h:null), score=`${num(o.as,0)}–${num(o.hs,0)}`;
+  if(o.live){ const cls=!c||!win?'tie':(c.pick===win?'ok':'bad');
+    return `<span class="sl-mwin sl-${cls}">${win?esc(win)+' leading '+score:'Tied '+score}</span><span class="sl-sub">${esc(o.clock)}</span>`; }
+  const hit=c&&win?c.pick===win:null;
+  return `<span class="sl-mwin sl-${hit==null?'tie':(hit?'ok':'bad')}">${win?esc(win)+' won '+score:'Tie '+score}</span><span class="sl-sub">${hit==null?'':(hit?'Pick hit':'Pick missed')}</span>`;
+}
+/* the score prediction: the score the game's projections stand on (gameCtx: the posted spread split around the
+   posted total, or the model's own points with no line), each side rounded once, so the margin under it is the
+   difference of the two numbers shown; "even" where they are level */
+function slatePred(g){
+  const ca=gameCtx(g,g.a), ch=gameCtx(g,g.h), sa=+ca.implied.toFixed(0), sh=+ch.implied.toFixed(0);
+  const lead=sa>sh?g.a:g.h;
+  const by=sa===sh?'<span class="sl-pby">even</span>'
+    :`<span class="sl-pby">${tag(lead).replace('class="ttag"','class="ttag sl-mini"')} by ${Math.abs(sa-sh)}</span>`;
+  return `<span class="sl-plab">Predicted</span><span class="sl-psc" title="${esc(g.a)} ${sa}, ${esc(g.h)} ${sh}: ${ca.src==='market'?`the posted spread split around the posted total of ${g.tot}`:'our model, no line posted yet'}">${sa}–${sh}</span>${by}${ca.src==='model'?'<span class="sl-sub">no line yet, our model</span>':''}`;
+}
+/* (app v122) a game's head on its page: what the list's row showed of the game until this version, each figure
+   under the list's own heading for it: the kickoff (or the live score and clock, or FINAL), the matchup, the three
+   biggest projections (each against what the player did once the game's stats are in), the score the game's
+   projections stand on, its total and the pick it makes, every number worked as the row worked it */
+function gameHeadCard(g){
+  const ca=gameCtx(g,g.a), ch=gameCtx(g,g.h), d=fmtDate(g);
+  /* the scores as the head shows them, rounded once: the pick and its margin are read from these,
+     so "22 - 20" never reads "by 3" */
+  const sa=+ca.implied.toFixed(0), sh=+ch.implied.toFixed(0);
+  const started=gameStarted(g), fin=gameFinal(g);
+  const lab=t=>`<span class="gh-lab">${t}</span>`;
+  const lead=gameHeadline(g).map(x=>{
+    const st={pass:'passing_yards',rush:'rushing_yards',rec:'receiving_yards'}[x.k];
+    const a=fin?actualFor(g.w,x.v.pl.id):null;
+    const av=a?a[st]:null;
+    const band=av==null?'':hitBand(av,x.v.mu);
+    return `<div><span class="cat">${x.k}</span><span class="nm">${esc(shortName(x.v.pl.n))}</span><span class="v">${x.v.mu.toFixed(0)}<em>yds</em>${
+      av!=null?`<span class="va ${band}">${num(av,0)}<em>yds</em></span>`:(fin?'<span class="va pend">–</span>':'')}</span></div>`;}).join('');
+  const pick=(()=>{
+    if(sa===sh){ const even='<span class="none">–</span><small>even</small>';
+      if(!hasScore(g)) return even;
+      return even+`<small class="act">(${g.as===g.hs?'tie':`${g.as>g.hs?g.a:g.h} by ${Math.abs(g.as-g.hs)}`})</small>`; }
+    const p=sa>sh?g.a:g.h, by=Math.abs(sa-sh);
+    if(!hasScore(g)) return tag(p)+`<small>by ${by}</small>`+(ca.src==='model'?'<small class="muted">no line yet, our model</small>':'');
+    if(g.as===g.hs) return tag(p)+`<small>by ${by}</small><small class="act">(tie)</small>`;
+    const real=g.as>g.hs?g.a:g.h, right=real===p;
+    return tag(p)+`<small>by ${by}</small><small class="act ${right?'right':'wrong'}">${right?'✓ ':'✗ '}${real} by ${Math.abs(g.as-g.hs)}</small>`;
+  })();
+  return `<div class="card ghead" data-ghead="${esc(g.id)}"><div class="gh-grid">
+    <div class="gh-when">${lab('Kickoff')}<div class="when"><b>${d.day}</b>${fin?'<span class="pill ok">FINAL</span>'+liveWhen(g,true):(started?liveWhen(g):d.t)}</div></div>
+    <div class="gh-match">${lab('Matchup')}<h2>${tag(g.a)}${winMark(g,g.a)} <span class="at">at</span> ${tag(g.h)}${winMark(g,g.h)}</h2></div>
+    <div class="gh-lead">${lab('Biggest projections')}<div class="lead">${lead||'<span class="muted">No projections for this game yet</span>'}</div></div>
+    <div class="tot">${lab('Expected score')}<b>${sa} – ${sh}</b><small>${g.a} / ${g.h}</small>${hasScore(g)?`<small class="act">(actual ${g.as} – ${g.hs})</small>`:liveScoreLine(g)}</div>
+    <div class="totpts${ca.src==='model'?' assumed':''}">${lab('Total pt')}<b>${(ca.implied+ch.implied).toFixed(0)}</b><small>${ca.src==='market'?'points':'our model'}</small>${hasScore(g)?`<small class="act">(actual ${g.as+g.hs})</small>`:''}</div>
+    <div class="winner">${lab('Vegas pick')}${pick}</div>
+  </div></div>`;
+}
 function renderSlate(){
   if(S.ui.game){ const g=S.sched.find(x=>x.id===S.ui.game); if(!g||!weekOpen(+g.w)) S.ui.game=null; }
   if(!S.ui.game) closeGameModal();
@@ -91,35 +204,27 @@ function renderSlate(){
     </div>`;
     return;
   }
+  /* (app v122) the Matchups board's row: the date, the matchup, the win probability, the confidence band, the
+     score prediction and the final score; what the row showed until then is at the head of the game's page */
   const card=g=>{
-    const ca=gameCtx(g,g.a), ch=gameCtx(g,g.h), d=fmtDate(g);
-    /* the scores as the row shows them, rounded once: the pick and its margin are read from these,
-       so "22 - 20" never reads "by 3" */
-    const sa=+ca.implied.toFixed(0), sh=+ch.implied.toFixed(0);
-    const started=gameStarted(g), fin=gameFinal(g);
-    return `<button class="game${fin?' final':(started?' locked':'')}" data-game="${g.id}">
-      <div class="when"><b>${d.day}</b>${fin?'<span class="pill ok">FINAL</span>'+liveWhen(g,true):(started?liveWhen(g):d.t)}</div>
-      <div class="matchup">${tag(g.a)}<span class="at">at</span>${tag(g.h)}</div>
-      <div class="lead">${gameHeadline(g).map(x=>{
-        const st={pass:'passing_yards',rush:'rushing_yards',rec:'receiving_yards'}[x.k];
-        const a=fin?actualFor(g.w,x.v.pl.id):null;
-        const av=a?a[st]:null;
-        const band=av==null?'':hitBand(av,x.v.mu);
-        return `<div><span class="cat">${x.k}</span><span class="nm">${esc(shortName(x.v.pl.n))}</span><span class="v">${x.v.mu.toFixed(0)}<em>yds</em>${
-          av!=null?`<span class="va ${band}">${num(av,0)}<em>yds</em></span>`:(fin?'<span class="va pend">\u2013</span>':'')}</span></div>`;}).join('')}</div>
-      <div class="tot"><b>${sa} \u2013 ${sh}</b><small>${g.a} / ${g.h}</small>${hasScore(g)?`<small class="act">(actual ${g.as} \u2013 ${g.hs})</small>`:liveScoreLine(g)}</div>
-      <div class="totpts${ca.src==='model'?' assumed':''}"><b>${(ca.implied+ch.implied).toFixed(0)}</b><small>${ca.src==='market'?'points':'our model'}</small>${hasScore(g)?`<small class="act">(actual ${g.as+g.hs})</small>`:''}</div>
-      <div class="winner">${(()=>{
-        if(sa===sh){ const even='<span class="none">\u2013</span><small>even</small>';
-          if(!hasScore(g)) return even;
-          return even+`<small class="act">(${g.as===g.hs?'tie':`${g.as>g.hs?g.a:g.h} by ${Math.abs(g.as-g.hs)}`})</small>`; }
-        const pick=sa>sh?g.a:g.h, by=Math.abs(sa-sh);
-        if(!hasScore(g)) return tag(pick)+`<small>by ${by}</small>`+(ca.src==='model'?'<small class="muted">no line yet, our model</small>':'');
-        if(g.as===g.hs) return tag(pick)+`<small>by ${by}</small><small class="act">(tie)</small>`;
-        const real=g.as>g.hs?g.a:g.h, right=real===pick;
-        return tag(pick)+`<small>by ${by}</small><small class="act ${right?'right':'wrong'}">${right?'\u2713 ':'\u2717 '}${real} by ${Math.abs(g.as-g.hs)}</small>`;
-      })()}</div>
-      <div class="chev">\u203a</div></button>`;
+    const c=slateCall(g), d=fmtDate(g), o=slateOutcome(g), fin=gameFinal(g), started=gameStarted(g);
+    const pa=c?Math.round((1-c.pH)*100):50, ph=100-pa, pc=slateCols(g.a,g.h), [tc,tl]=c?slateTier(c.conf):['',''];
+    const pick=c?c.pick:null, neu=slateNeutral(g);
+    const win=o&&o.final&&o.as!==o.hs?(o.as>o.hs?g.a:g.h):null, hit=win&&c?c.pick===win:null;
+    const mk=t=>win===t&&hit!=null?`<span class="sl-res ${hit?'sl-ok':'sl-bad'}" title="${hit?'Pick hit':'Pick missed'}">${hit?'✓':'✗'}</span>`:'';
+    const tg=t=>pick===t?tag(t).replace('class="ttag"','class="ttag sl-win"'):tag(t);
+    return `<button type="button" class="game${fin?' final':(started?' locked':'')}" data-game="${g.id}">
+      <div class="when"><b>${d.day}</b>${d.t}</div>
+      <div class="matchup"><span class="sl-tw sl-away">${tg(g.a)}${mk(g.a)}</span>${neu?'<span class="at neutral" title="Neutral site">vs</span>':'<span class="at">at</span>'}<span class="sl-tw sl-home">${tg(g.h)}${mk(g.h)}</span></div>
+      <div class="sl-probrow" aria-label="${esc(g.a)} ${pa}%, ${esc(g.h)} ${ph}%">
+        <span class="sl-tlab${pick===g.a?' sl-win':''}">${esc(g.a)}</span>
+        <div class="sl-prob"><div class="sl-a" style="width:${pa}%;background:${pc[0].bg};color:${pc[0].ink}"><span class="${pick===g.a?'sl-w':''}">${pa>=14?pa+'%':''}</span></div><div class="sl-h" style="width:${ph}%;background:${pc[1].bg};color:${pc[1].ink}"><span class="${pick===g.h?'sl-w':''}">${ph>=14?ph+'%':''}</span></div></div>
+        <span class="sl-tlab${pick===g.h?' sl-win':''}">${esc(g.h)}</span>
+      </div>
+      <div class="sl-conf">${c?`<span class="sl-tier sl-${tc}">${tl} ${Math.round(c.conf*100)}%</span>`:'<span class="sl-tier">no call yet</span>'}</div>
+      <div class="sl-pred">${slatePred(g)}</div>
+      <div class="sl-result">${slateResult(g,c)}</div>
+    </button>`;
   };
   /* the games still to play, live ones too, first in kickoff order; the finals under a heading */
   const todo=gs.filter(g=>!gameFinal(g)), done=gs.filter(g=>gameFinal(g));
@@ -286,10 +391,7 @@ function renderGame(){
     <span class="muted">${haveStats?'Each player below shows what the model projected against what he actually did.'
       :(liveOn?'Each player below shows what he has done so far, live from the scoreboard, against what was projected. These are not the settled numbers: the season\u2019s stats arrive with the next update, and those are what settle a leg.'
         :'Player stats come out some hours after the final whistle and appear with the next update. Press Refresh stats to read them live from the scoreboard in the meantime.')}${hasScore(g)||lg?'':' The final score appears after the next refresh.'}</span></div>`;
-  html+=`
-  <div class="card">
-    <h2 style="display:flex;align-items:center;gap:10px;margin:0">${tag(g.a)}${winMark(g,g.a)} <span class="muted" style="font-family:var(--body);font-size:15px;font-weight:400">at</span> ${tag(g.h)}${winMark(g,g.h)}</h2>
-  </div>`;
+  html+=gameHeadCard(g);
   html+=gameSuggestCard(g,locked);
   html+=gameBetsCard(g,locked);
   if(!showRungs()&&Object.values(S.parlay||{}).some(l=>l.gid===g.id&&!l.main&&l.stat!=='ml'&&l.stat!=='ats'&&l.stat!=='any_td'))
