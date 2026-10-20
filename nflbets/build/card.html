@@ -915,7 +915,7 @@ window.PARLAY_CARD=(function(){
     else if(dk.multi){
       /* (app v121) a same-game parlay mixed with other games: a link for each game's, since one with them all does not open */
       /* (app v122) every leg on one slip first, as the try, then a link for each game as the fallback */
-      lines.push(`DraftKings betslip, every leg on one slip (DraftKings may not open a same-game parlay mixed with other games; if it does not, use each game’s link below)${miss.length?`; add ${legNums(miss)} by hand`:''}:`, dk.all);
+      lines.push(`DraftKings betslip, ${miss.length?dkWhich(dk):'every leg'} on one slip (DraftKings may not open a same-game parlay mixed with other games; if it does not, use each game’s link below)${miss.length?`; add ${legNums(miss)} by hand`:''}:`, dk.all);
       lines.push('Each game on its own:');
       for(const G of dk.games) lines.push(`${G.name}, ${legNums(G.ok)}:`, G.url);
       lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`);

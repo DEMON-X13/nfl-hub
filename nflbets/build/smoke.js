@@ -3158,7 +3158,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     /* the builder's line on a same-game parlay mixed with other games, from the plan: the games with legs on the slip alone */
     /* (app v122) DraftKings' betslip may not open that mix as one, so the card gives each game a link of its own beside
        the one for every leg */
-    const multiNoteOwn = ls => { const p = planOwn(ls); return p.multi ? `These legs mix a same-game parlay with other games. DraftKings’ betslip may not open that mix as one, so the parlay card gives each of the ${p.games.length} games a link of its own beside the one for every leg.` : null; };
+    const multiNoteOwn = ls => { const p = planOwn(ls); return p.multi ? `These legs mix a same-game parlay with other games. DraftKings’ betslip may not open that mix as one, so the parlay card gives each of the ${p.games.length} games a link of its own beside one that tries them on one slip.` : null; };
     const notesOf = () => { const c = body() && body().querySelector('[data-pb-clash]'), m = body() && body().querySelector('[data-pb-multigame]');
       return { clash: c ? txt(c) : null, clashN: c ? c.dataset.pbClash : null, multi: m ? txt(m) : null, multiN: m ? m.dataset.pbMultigame : null }; };
     try {
@@ -3309,7 +3309,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             || (note.querySelector('[data-pc-dkread]') || { dataset: {} }).dataset.pcDkread !== new Date(p.read).toISOString())
             bad.push(`the note does not say the all-legs link tries every leg on one slip and each game has a link of its own for when it comes up short, dated by the oldest read of the legs on the slip (${readTxtOwn(p.read)}): ` + txt(p0).slice(0, 400));
           /* Share link's text: the all-legs link first, alone on its line, then each game's under "Each game on its own:" */
-          const lines = tx.split('\n'), i0 = lines.indexOf(`DraftKings betslip, every leg on one slip (DraftKings may not open a same-game parlay mixed with other games; if it does not, use each game’s link below)${byHand}:`), j0 = i0 + 3 + 2 * p.games.length;
+          const lines = tx.split('\n'), i0 = lines.indexOf(`DraftKings betslip, ${p.miss.length ? which : 'every leg'} on one slip (DraftKings may not open a same-game parlay mixed with other games; if it does not, use each game’s link below)${byHand}:`), j0 = i0 + 3 + 2 * p.games.length;
           if (i0 < 0 || lines[i0 + 1] !== allUrl || lines[i0 + 2] !== 'Each game on its own:' || p.games.some((G, i) => lines[i0 + 3 + 2 * i] !== `${name(G.gid)}, ${nums(G.ok.map(x => x.n))}:` || lines[i0 + 4 + 2 * i] !== dkUrlOwn(G.ok.map(y => y.id)))
             || lines[j0] !== `DraftKings lines as read ${readTxtOwn(p.read)}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`
             || lt.url !== null || JSON.stringify(lt.urls) !== JSON.stringify([allUrl, ...p.games.map(G => dkUrlOwn(G.ok.map(y => y.id)))]) || tx.includes('DraftKings betslip (opens') || lines.filter(x => x === allUrl).length !== 1)

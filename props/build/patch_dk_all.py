@@ -9,14 +9,14 @@ says it may not open and that the games' links are there for when it does not, a
 the games' links after it. A parlay of one leg a game, or of one game, is as it was: one link.
 
 The props part here is the builder's line about a mix (data-pb-multigame), which said DraftKings' betslip link does
-not open that mix: it now says it may not, and that the card gives each game a link of its own beside the one for
-every leg. Nothing about which legs a suggestion takes, or when the line is drawn, moves.
+not open that mix: it now says it may not, and that the card gives each game a link of its own beside one that tries
+them on one slip. Nothing about which legs a suggestion takes, or when the line is drawn, moves.
 """
 import io
 
 FILES = {'p2': 'part2.js', 'p3': 'part3.js'}
 T = {k: io.open(f, encoding='utf-8').read() for k, f in FILES.items()}
-assert 'beside the one for every leg' not in T['p3'], 'patch_dk_all.py has already been applied'
+assert 'beside one that tries them on one slip' not in T['p3'], 'patch_dk_all.py has already been applied'
 
 
 def sub1(k, old, new, what):
@@ -27,7 +27,7 @@ def sub1(k, old, new, what):
 sub1('p2', "const APP_BUILD='app v121 \\u00b7 2026-10-20';", "const APP_BUILD='app v122 \\u00b7 2026-10-20';", 'APP_BUILD')
 
 sub1('p3', """These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${nG} games a link of its own.</p>`; } }""",
-     """These legs mix a same-game parlay with other games. DraftKings’ betslip may not open that mix as one, so the parlay card gives each of the ${nG} games a link of its own beside the one for every leg.</p>`; } }""",
+     """These legs mix a same-game parlay with other games. DraftKings’ betslip may not open that mix as one, so the parlay card gives each of the ${nG} games a link of its own beside one that tries them on one slip.</p>`; } }""",
      'builder multigame note')
 
 for k, f in FILES.items():
