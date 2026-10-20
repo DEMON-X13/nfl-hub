@@ -103,7 +103,7 @@ try:
     for lab, out, want_rc, want_rec, want_say in [('warnings only', WARNED, 0, True, 'what it built was published'),
                                                     ('a failure', FAILED, 1, False, 'nothing was published')]:
         weekly.problems[:] = []; weekly.report[:] = []; weekly.PUBLISHED[0] = None; took = []
-        weekly.run = lambda args, cwd, label, soft=False, env=None, out=out: (0, out)   # the audit exits 0 and says it all in its summary
+        weekly.run = lambda args, cwd, label, soft=False, env=None, out=out, **kw: (0, out)   # the audit exits 0 and says it all in its summary (**kw: run()'s timeout)
         weekly.suggestions_record = lambda offline=False: took.append(1)
         with contextlib.redirect_stdout(io.StringIO()):
             weekly.audit_step(types.SimpleNamespace(offline=True))

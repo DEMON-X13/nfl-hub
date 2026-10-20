@@ -9,6 +9,10 @@ is the proof, not the claim -- the "used" figure it reports does not move betwee
 two runs back to back.
 
 Needs ODDS_API_KEY in the environment. Prints nothing sensitive: never the key.
+
+By hand only since 20 October 2026 (the owner's call: no scheduled paid pull): no job runs this or maps the key,
+and data/credits.json stays as its last run left it (the hidden Weekly Update panel still shows it). The admin's
+own balance comes with every request his parlay card's Pull from DraftKings makes (x-requests-remaining).
 """
 import os, sys, json, urllib.request, urllib.parse, urllib.error, datetime
 

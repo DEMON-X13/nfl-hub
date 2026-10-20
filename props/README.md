@@ -167,7 +167,12 @@ with that day's rosters and depth charts, so browsers holding the September 8 bu
 rebuild their state on first load and need week 1 re-uploaded. On Windows run the
 steps with `python`, not `python3`, and expect CRLF in the built HTML.
 
-**Odds feed (`data/oddsfetch.py`, run by `weekly.py` on every price pull).** With the key
+**Odds feed (`data/oddsfetch.py`, by hand only since 20 October 2026).** The props job ran it on
+four scheduled price pulls a week until the owner's call of 20 October 2026 (no scheduled paid pull: every
+run reads DraftKings' lines from ESPN for free instead, under "Weekly build" below); no job runs it now, and
+no workflow maps the key. Its files for weeks 1-6 stay in `data/` and are still baked (the Track Record grades
+on them), and a pull run by hand, with the key in your own environment, is baked the same way by the next
+run. With the key
 in `ODDS_API_KEY` it writes `wk{W}_lines.csv` (each line with its game), `prices_wk{W}.csv`
 (every Over as the app's X+ rungs) and `gamelines_wk{W}.csv` (DraftKings' moneylines,
 spreads and totals, stamped with the time of the pull), and `weekly.py` bakes them into the
@@ -222,15 +227,39 @@ projection, the band partition, the old-snapshot path and the render.
 
 `python weekly.py` does the whole week unattended: downloads scores and lines, this
 season's player stats, rosters, injuries and depth charts; works out the current week;
-pulls prices for the games kicking off before the next scheduled pull is likely to land
-(`PULL_SLOTS`, plus `LATE`, 10 hours, because GitHub fires this repo's crons about 2-9.4 hours late)
-if `ODDS_API_KEY` is set; rebuilds the payload; bakes every finished game's player stats,
+rebuilds the payload; bakes every finished game's player stats,
 the injury report (this week's in full, earlier weeks' Outs), every skill player's roster
 status, every week's main lines matched onto the players of their own game, and every price
-file with the player each row belongs to INTO the payload; assembles; audits; leaves the
-commit to the workflow (it never commits; off GitHub it skips the price pull unless given
-`--local`); prints a REPORT block. Only games with a final score in games.csv are baked, so
-a game in progress is never graded.
+file with the player each row belongs to INTO the payload; assembles; reads DraftKings' lines from
+ESPN and publishes the read (below); audits; leaves the commit to the workflow (it never commits);
+prints a REPORT block. Only games with a final score in games.csv are baked, so
+a game in progress is never graded. It buys no prices and reads no key: `--no-odds`, `--catch-up`,
+`--hours` and `--local` are still accepted and do nothing.
+
+**The ESPN read** (since 20 October 2026, the owner's call: no scheduled paid pull). After the bake,
+`build/espn_read.js` boots the page `assemble.py` just wrote in jsdom on the payload just baked, as a visitor's
+browser boots it, and calls the page's own reader, `espnReadWeek` (part3.js: the function a visitor's Refresh
+odds press runs), on the week's games still to come: the scoreboard (DraftKings' moneylines, spreads and totals
+with their prices, ids and event), and each game's player lines, every page, each athlete placed on a player by
+`PAY.espn_ids`, else by name within the game's two clubs. Every request goes through `lib/netfetch.js` (a plain
+User-Agent first, a 403 tried again with none, a 5xx or a timeout after 2 and 5 seconds, a 404 at once: DraftKings
+has posted none); at 150 seconds whatever is still waiting is settled as not reached, so the read always ends. It
+writes `raw/espn/read.json` (each game's outcome, game lines, player block, and who each player is and how he was
+placed, for the audit's V-ESPN) and records every answer beside it (`raw/espn/`, ignored; `--offline` replays them,
+and so does the props gate's base run). A week's read is about 16 requests and a second or two.
+`weekly.py`'s `apply_espn` then writes `PAY.espn` (`{v:1, read_at, games:{gid:{w, gl, pl, out}}}`: each game still
+to come, its game lines and ids, its player lines cleaned by the page's own rules, and what the last read of them
+found, each half with its own read's time) and puts each game's lines on the schedule as a press does (`ls 'dk'`,
+`lat` the read's time, `lsr 'espn'`) while under a day old and newer than any DraftKings pull by hand. A game this
+run could not read keeps the last read the site published; a `none` (DraftKings has withdrawn the lines) drops
+the block; nothing at or after a kickoff is kept, and nothing of the read goes into `mkt`, `prices` or `dk` (a line
+read from ESPN is never a book price). `payload.py` never carries `espn` forward: `apply_espn` works it out again
+every run. The page installs the read at boot (`espnPublished`, app v123), for every visitor and for the
+suggestions record, which so takes each set from the lines the job last read before its lock. ESPN not answering
+never refuses the run: a game kicking off within 48 hours whose lines no run has read for 24 is a problem (the run
+goes red after its commit), as is a reader that crashed or a page with no `espnReadWeek`; an error applying the
+read refuses it. `build/test_espn_read.js` (the reader, on a local server answering from `build/fixtures/espn/`)
+and `build/test_apply_espn.py` (every rule above, and the real page installing exactly what it publishes) hold it.
 
 **The season** is `SEASON` in `part2.js` and nowhere else: `build/season.py` reads it there
 for `weekly.py`, `payload.py` and `mktbuild.py` (the baselines are the season before), the raw
@@ -240,28 +269,27 @@ The baselines come from `raw/feat.pkl`, committed, whose seasons run from `FIRST
 `season.py` (`research/features.py` takes them from there); on the first run of a new season
 the table lacks the season just finished, so `weekly.py` fetches nflverse's weekly player stats
 for those seasons, rebuilds it (the seasons it held come out as they were) and the workflow
-commits it with the payload. A rebuild that cannot finish refuses the run before any credit is
-spent. The audit's week-1 fixture takes the page's season as it is read. So the rollover is
+commits it with the payload. A rebuild that cannot finish refuses the run before anything is
+baked. The audit's week-1 fixture takes the page's season as it is read. So the rollover is
 the one line in `part2.js`: `nflbets/build/build.js` reads it (and stops if its shape changes)
 and writes its KEY into `nflbets/build/storage.js`, so neither needs an edit; a refit of the
 coefficients (`fit4.py`, not in this repo) is a separate research step the job does not need.
 Kickoffs are turned into instants by the US daylight-time rule for each game's own year.
 The data/ week files are named by week alone, so at a rollover `weekly.py` moves last
 season's (`wk*_lines.csv`, `prices_wk*.csv`, `gamelines_wk*.csv`, every game id another
-season's) to `data/archive/<season>/` before the new season's first pull, bakes only rows of
-this season's games wherever they are, and carries none of a last-season payload's lines
+season's) to `data/archive/<season>/` before the new season's first bake, bakes only rows of
+this season's games wherever they are, and carries none of a last-season payload's lines (nor its ESPN read)
 forward; the page drops a price row that names a game its week does not have.
 Once every regular-season game is final the page says the season is over and the job stops
-pulling prices: playoff games are neither projected nor priced.
+reading ESPN: playoff games are neither projected nor priced.
 
 **When a download fails.** A runner starts with an empty `raw/`, so there is no old copy to
 fall back on. The schedule, the player stats, the roster and the injury report are required:
 if one fails or comes back wrong, `weekly.py` exits 1 before the workflow's commit step, so
 nothing is published and the last good payload stays live (the run goes red and says why).
 A bake whose stats would cover fewer team-games than the published payload's is refused the
-same way. These are all checked before the price pull, so a refused run spends nothing on
-prices; one refused later (the audit) has the prices it bought kept by the workflow, which
-commits the price files but never `payload.json`. The depth charts are the one optional file:
+same way, as is a run whose ESPN read cannot be applied or whose audit is not clean; a refused run
+commits nothing, and since no run buys anything, nothing is held for the next. The depth charts are the one optional file:
 the last payload's are carried forward, the run goes red (before the season's first kickoff,
 while last season's chart is all there is, it does not), and the game page says how old the
 chart is.
@@ -298,26 +326,26 @@ price-sheet upload any more. When the data build changes, the visitor's parlays,
 saved tickets carry over and the baked weeks replay, so a rebuild no longer costs
 anything. Audit section I covers it.
 
-Scheduled by `.github/workflows/props.yml`: four price pulls (Mon, Wed, Thu, and Saturday 05:17
-UTC for Saturday's games and the whole Sunday slate, on the site by Saturday morning Pacific) and
-eight post-game and stats runs a week, two Saturday catch-ups for a dropped weekend pull, plus a
-daily injury-report run at 12:07 UTC, which lands after nflverse's afternoon posting (the
-catch-ups spend a credit only on a game a dropped pull left unpriced); the key is the
-`ODDS_API_KEY` repository secret. `build/test_pull_schedule.py` replays the season through the
-pulls' windows offline. Off GitHub Actions `weekly.py` skips the price pull unless given
-`--local`, and it never commits, so the schedule that ran it from the Claude desktop app
-before the workflow (Thursday and Saturday 8:00 local) spends nothing and changes nothing
-if it still fires; it can be deleted in the desktop app.
+Scheduled by `.github/workflows/props.yml`, every run free and each one a full refresh with its own ESPN
+read: Monday, Wednesday and Thursday 08:17 and Saturday 05:17 UTC (the old price pulls' slots), Sunday 04:47 UTC
+(for the Sunday slot's set, which locks 2 hours before the first Sunday kickoff), eight post-game and stats runs a
+week, Saturday 16:07 and 23:07, and a daily run at 12:07 UTC, which lands after nflverse's afternoon posting and
+before Thursday, Sunday and Monday nights' locks. GitHub fires this repo's crons 2 to 9.4 hours late, so
+`build/test_lock_runs.py` holds the crons to every set's lock of the season: some run sure to land before it,
+reading no more than 12 hours before it (24 with that run dropped). No key is mapped. It never commits, so the
+schedule that ran it from the Claude desktop app before the workflow (Thursday and Saturday 8:00 local) spends
+nothing and changes nothing if it still fires; it can be deleted in the desktop app.
 
 A refused run opens an issue labelled `props-refused` (or comments on the open one) with
-`build/refused_note.py`'s text: why it refused, the games whose prices were bought and are held with
-each kickoff in ET and the hours left, and what to do (merge a fix, then dispatch props.yml with
-`no_odds`); the next clean publish closes it. Before a change lands, the props gate
-(`.github/workflows/props-gate.yml`) runs `weekly.py --no-odds` on its code and today's data, the page
-smoke on that payload, and every case of `build/test_audit_phases.py` (the smoke cases alone when only
-the page changed; the audit replayed on past payloads at their own moment, `PROPS_AUDIT_NOW`), each
-failure run again on the base's code (the PR's base, or on a push the commit before it) so only the
-change's own fail it.
+`build/refused_note.py`'s text: why it refused, what is on the site (the last good payload and its read) and the
+next game's kickoff, and what to do (merge a fix, then `gh workflow run props.yml`; the `no_odds` input is still
+accepted and does nothing); the next clean publish closes it. Before a change lands, the props gate
+(`.github/workflows/props-gate.yml`) runs `weekly.py --no-odds` on its code and today's data (and today's ESPN
+read, recorded so the base replays the same answers), the page smoke and `elo/check_tab.js` on that payload,
+every case of `build/test_audit_phases.py` (the smoke cases alone when only the page changed; the audit replayed on
+past payloads at their own moment, `PROPS_AUDIT_NOW`), and the props job's and the page's unit tests (`UNITS` in
+`.github/scripts/props_gate.py`), each failure run again on the base's code (the PR's base, or on a push the
+commit before it) so only the change's own fail it.
 
 ## Refresh odds (app v107, 15 October 2026)
 
@@ -325,8 +353,10 @@ The owner asked for free odds "without the prices" and a best-guess price from t
 refresh odds button that will pull the live lines on demand ... rather than like a constant job". So the
 page reads DraftKings' lines from ESPN's free feed in the visitor's browser, only when **Refresh odds**
 is pressed (the Parlay Builder's controls and its builder, Suggested Parlays and the Props tab's game list
-read every game of the week still to come; a game's page reads that game alone), and nothing reads ESPN
-on a schedule: the props job's only part is `PAY.espn_ids`, the ESPN athlete id of every player the page
+read every game of the week still to come; a game's page reads that game alone). Since 20 October 2026 the
+props job reads ESPN on every run too, with the same reader, and publishes the read (under "Weekly build"), so a
+visitor starts from the job's read and a press reads anew, newer. The press stands on `PAY.espn_ids`, the ESPN
+athlete id of every player the page
 can project (this season's stat rows, the payload's players and the depth chart) from the nflverse roster
 it already downloads (`weekly.py` `espn_ids`, held by `build/test_espn_ids.py`); an athlete it lacks is
 placed by name within his game, on a player no ESPN id names. The reader, the formula and the precedence
@@ -360,6 +390,10 @@ read is suggested only on a payload baked before ids (or on a game it has none f
 between Monday night's final and the next week's first pull); the game-line ids a press reads do count, so a team
 leg it re-priced can be. The parlay card looks a leg priced from the read up in the pull's ids like any
 other, and puts a leg DraftKings has only at another number on the slip at DraftKings' number, saying so.
+Since 20 October 2026 no scheduled pull bakes ids (`PAY.dk` is `{}`), and a game entry a read makes (a press, the
+card's check, the job's published read) never counts as carrying them, the page judging an entry by what it holds
+(app v123), so the rule is dormant: player legs priced from the read are suggested again, and Open in DraftKings
+opens team legs and totals, the player legs going on by hand.
 
 The formula was fitted on DraftKings' own prices only (2026 weeks 2-3, and its DET at BUF ladders of
 week 2), never on a result. Held out on weeks 4-5, the gap in implied-chance points between the guess and
@@ -385,7 +419,8 @@ from a press to `build/espn_rule.js`, the checks' own copy of the formula.
 
 ## Manual fallback
 
-Run the props workflow by hand (workflow_dispatch; tick `no_odds` to spend nothing).
+Run the props workflow by hand (`gh workflow run props.yml`, or workflow_dispatch: every run is free; the
+`no_odds` box is still there and does nothing).
 The Weekly Update tab's uploads are still in the page but have no button on the site;
 everything is baked by `weekly.py`. The slate still warns when spreads and totals are
 more than three days old with games inside three days, because expected points are the

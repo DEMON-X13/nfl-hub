@@ -2,7 +2,8 @@ name: Props gate
 
 # The props job and the Bets and Stats page run on a change's code before it is merged, against today's
 # data and the shapes the job has published (.github/scripts/props_gate.py says how). It spends nothing:
-# weekly.py runs with --no-odds and no secret is mapped here, so it could never buy a price. Nothing is
+# weekly.py buys no prices since 20 October 2026 (it reads DraftKings' lines from ESPN's free feed, its answers
+# recorded so the base replays the same ones) and no secret is mapped here, so it could never buy one. Nothing is
 # committed. Every PR gets the check, so it always reports: a PR that touches nothing the props job or
 # the page runs passes in seconds. A PR the gate covers is merged once its props-gate check is green
 # (`gh pr checks <n> --watch`); a failure that also fails on the base is reported and does not hold it.
@@ -80,13 +81,14 @@ jobs:
         run: python3 .github/scripts/props_gate.py classify --event "${{ github.event_name }}" --before "${{ github.event.before }}"
 
   bake:
-    # job A: the props job on this code and today's nflverse files (no prices bought), then the page
-    # smoke on the payload it baked; a failure is run again on the base's code (the same downloads)
+    # job A: the props job on this code, today's nflverse files and today's read of ESPN (nothing bought), then the
+    # page smoke and elo/check_tab.js on the payload it baked; a failure is run again on the base's code (the same
+    # downloads and ESPN answers). About 6 minutes, and up to about 20 when a failure is run on the base as well
     name: props job and page smoke (fresh bake)
     needs: paths
     if: needs.paths.outputs.audit == 'true' || needs.paths.outputs.page == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
         with:
@@ -100,7 +102,7 @@ jobs:
           node-version: 22
       - run: npm ci
         working-directory: props/build
-      - name: weekly.py --no-odds, then the page smoke on its payload (each against the base on a failure)
+      - name: weekly.py --no-odds, then the page smoke and check_tab.js on its payload (each against the base on a failure)
         env:
           ODDS_API_KEY: ""
           PYTHONUTF8: "1"
@@ -135,19 +137,46 @@ jobs:
           PYTHONUTF8: "1"
         run: python3 .github/scripts/props_gate.py phase --base "${{ needs.paths.outputs.base }}" --case "${{ matrix.case }}"
 
+  units:
+    # job C: the props job's own tests and the page's (UNITS in props_gate.py: the ESPN read and its application, the
+    # runs against the locks, the ids, the names, who played, the downloads, the audit's verdict, the admin link),
+    # seconds each on fixtures of their own, beside jobs A and B; a failure is run again on the base's code
+    name: unit tests
+    needs: paths
+    if: needs.paths.outputs.audit == 'true' || needs.paths.outputs.page == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r props/requirements.txt
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: props/build
+      - name: the unit tests (each against the base on a failure)
+        env:
+          PYTHONUTF8: "1"
+        run: python3 .github/scripts/props_gate.py units --base "${{ needs.paths.outputs.base }}"
+
   verdict:
     # the one check to wait for: green when every job that ran passed (a job skipped because nothing it
     # covers changed counts as passed), red otherwise
     name: props-gate
-    needs: [paths, bake, phase]
+    needs: [paths, bake, phase, units]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: every part that ran passed
         run: |
-          echo "what changed: ${{ needs.paths.result }}; fresh bake: ${{ needs.bake.result }}; phase replays: ${{ needs.phase.result }}"
-          for r in "${{ needs.paths.result }}" "${{ needs.bake.result }}" "${{ needs.phase.result }}"; do
+          echo "what changed: ${{ needs.paths.result }}; fresh bake: ${{ needs.bake.result }}; phase replays: ${{ needs.phase.result }}; unit tests: ${{ needs.units.result }}"
+          for r in "${{ needs.paths.result }}" "${{ needs.bake.result }}" "${{ needs.phase.result }}" "${{ needs.units.result }}"; do
             case "$r" in success|skipped) ;; *) echo "::error::the props gate did not pass ($r): see the job above"; exit 1 ;; esac
           done
           echo "the props gate passed"

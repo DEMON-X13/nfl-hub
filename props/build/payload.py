@@ -167,10 +167,14 @@ out['mkt_scale']=json.load(open('../data/scale.json'))
 out['tdrate']={g:{k:round(float(v),5) for k,v in r.items()} for g,r in json.load(open('../data/tdrate.json')).items()}
 if _depth is not None: out['depth']=_depth; out['depth_dt']=_depth_dt
 # carry forward anything the build does not regenerate, so one-off additions survive rebuilds;
-# a key nothing reads any more is retired here, or the carry would keep it for ever
+# a key nothing reads any more is retired here, or the carry would keep it for ever. espn, the props
+# job's read of DraftKings' lines on ESPN, is never carried: weekly.py's apply_espn works it out again
+# on every run from the published payload's and this run's read, and a run that cannot must never
+# publish the old read as if it were this one's (it refuses instead, and the last good payload stays)
 _RETIRED={'roster_season'}
+_REDERIVED={'espn'}
 for _k,_v in _prev.items():
-    if _k not in out and _k not in _RETIRED: out[_k]=_v
+    if _k not in out and _k not in _RETIRED and _k not in _REDERIVED: out[_k]=_v
 # DATA_BUILD (bug 3): derived from the roster/schedule content, so it changes exactly when a
 # browser's cached state needs rebuilding and never when only scores or lines moved.
 import hashlib, datetime
