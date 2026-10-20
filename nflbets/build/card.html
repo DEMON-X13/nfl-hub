@@ -2,9 +2,9 @@
      into the Bets and Stats page the way it sets the Pick'ems and Player Elo tabs in, every class
      and id prefixed pc-, the script one closure.
 
-     Visitors come to the site to see X's parlays (liveparlays/parlays.json, which every device
-     reads and nobody's page writes), so no device keeps a list of its own: the Parlay Builder is
-     everyone's to use, and its Save and lock is Finish parlay on every device. Finish parlay opens
+     X's parlays are a file (liveparlays/parlays.json, which nobody's page writes; since app v124 shown on the
+     admin's devices alone), so no device keeps a list of its own: the Parlay Builder is everyone's to use,
+     and its Save and lock is Finish parlay on every device (Pull from DraftKings, below, on the admin's alone). Finish parlay opens
      this window with the parlay drawn as a card -- every leg with its price, the parlay's price,
      the stake and what it pays, the book's fair chance first (DraftKings' prices with the margin
      taken out, parlayFair in the props parts; est. where a leg is priced on one side only), the

@@ -4,14 +4,17 @@
  *   node nflbets/build/smoke_live.js        (from the hub root)
  *
  * The section reads liveparlays/parlays.json, the scoreboard and the box scores, and draws one
- * list, X Parlays: the parlays in the file, the same on every device, read only everywhere. A
+ * list, X Parlays: the parlays in the file, read only. Since app v124 (the owner's call of 20 October
+ * 2026, "hide only") the tab is on the admin's devices alone (nflbets/build/admin.js, the #owner= link):
+ * run() boots the admin's browser unless a section asks for a visitor's, whose page has no X Parlays
+ * tab and reads nothing for it (sections N and V). A
  * parlay the file marks cleared is not drawn. Every card has an X at its top right, the same for
  * every visitor: it asks "Clear this parlay?" and Clear takes the parlay off X Parlays in that
  * browser alone, kept under the section's own key (lp_cleared_here_v1) and sent nowhere (section
  * O). No device keeps a list of its own: the Parlay
  * Builder finishes a parlay as a card to download (nflbets/build/card.html), saved nowhere. There
- * is no owner, no sign-in and no shared store: the page writes nothing anywhere but the browser's
- * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the builder
+ * is no sign-in and no shared store: the page writes nothing anywhere but the browser's own storage
+ * (the admin's key among it, on the admin's devices alone, sent only to The Odds API). X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the builder
  * over its choices and the Top 30 lines (app v116), and Suggested Parlays (#suggest, app v111) each prime-time
  * game's own set of four levels, whose Finish opens the same card; since app v118 in two sections, Night games and the
  * Sunday slot (every Sunday game before 7 pm Eastern, one set), each with its record, and each unit with its own Elo
@@ -491,7 +494,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     chk(/^X Parlays/.test(txt(lpc.querySelector('h2'))) && !/Live Parlays/i.test(body.textContent) && !/Live Parlays/i.test(d.title), 'the section is still called Live Parlays somewhere a reader sees it'); }
   chk(!d.getElementById('savedCard') && !d.getElementById('betParlays'), 'the old cards are still drawn');
 
-  // ---- D1. X's parlays are read only on every device: nothing to delete, clear or bring back ----
+  // ---- D1. X's parlays are read only (on the admin's device, the only one that shows them): nothing to delete, clear or bring back ----
   {
     const live = await run({ state: 'in' });
     chk(!live.d.getElementById('clear') && !live.d.getElementById('restoreAll'), 'Clear settled, or the way back, is still on the page');
