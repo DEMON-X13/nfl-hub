@@ -1071,22 +1071,53 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       if (T) out.forEach(G => { G.at = oldestOwn(G.reads); });
       return out; };
     const multiOf = G => G.length > 1 && G.some(x => x.ids.length > 1);
-    /* the note's first paragraph on such a mix, dated by the older read as the one link's is, promising nothing */
-    const multiNote = (n, at, hand) => `${at ? 'DraftKings’ lines as read ' + readTxt(at) : 'When DraftKings’ lines were read is not recorded'}: these legs mix a same-game parlay with other games, and a DraftKings link with that mix does not open, so each of the ${n} games has a link of its own: open them one after another. Each opens its game’s legs as DraftKings had them ${at ? 'then' : 'when last read'}; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.${hand ? ' Add by hand:' : ''}`;
+    /* (app v122, the owner, 20 October 2026: "can we add a different color button for all legs parlays on top of the
+       individual ones? id like to still test those but have the inidividuals as a fallback plan") on such a mix the card
+       keeps a link for every leg on the slip all the same, first, in ice (pc-dkall), as the try, and the games' buttons
+       after it as the fallback. Worked out here on its own from the games above: okOf, how many legs are on the slip;
+       allIdsOf, their ids in the card's order (each game's legs by number, the games merged back); whichOwn, the legs a
+       link opens ("2 of the 3 legs", "the leg", "the 3 legs"); allWords, the all-legs link's words ("Open all 3 legs in
+       DraftKings", or "Open 3 of 4 legs in DraftKings" where a leg is added by hand); allTitle, its title, dated by the
+       oldest read of the legs on the slip as the note is */
+    const okOf = G => G.reduce((s, x) => s + x.ids.length, 0);
+    const allIdsOf = G => G.flatMap(x => x.ns.map((n, i) => [n, x.ids[i]])).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+    const whichOwn = (ok, of) => ok < of ? `${ok} of the ${of} legs` : of === 1 ? 'the leg' : `the ${of} legs`;
+    const allWords = (ok, of) => ok < of ? `Open ${ok} of ${of} legs in DraftKings` : `Open all ${ok} legs in DraftKings`;
+    const allTitle = (ok, of, at) => `Tries ${whichOwn(ok, of)} on one DraftKings betslip, in a new tab, as DraftKings’ lines were ${at ? 'read ' + readTxt(at) : 'last read'}: DraftKings may not open a same-game parlay mixed with other games, so if the slip comes up short, open each game’s link instead`;
+    /* the note's first paragraph on such a mix, dated by the older read as the one link's is, promising nothing: the
+       all-legs link's words named in it, the games counted, and "Add by hand:" where a leg of the card's of is off the slip */
+    const multiNote = (G, at, of) => `${at ? 'DraftKings’ lines as read ' + readTxt(at) : 'When DraftKings’ lines were read is not recorded'}: these legs mix a same-game parlay with other games, which DraftKings may not open on one slip; ${allWords(okOf(G), of)} tries it all the same, and each of the ${G.length} games has a link of its own for when that slip comes up short. Each opens its legs as DraftKings had them ${at ? 'then' : 'when last read'}; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.${okOf(G) < of ? ' Add by hand:' : ''}`;
     const gameTitle = (G, at) => `Opens ${numsOwn(G.ns)} (${G.name}) on DraftKings’ betslip, in a new tab, as DraftKings’ lines were ${at ? 'read ' + readTxt(at) : 'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
-    /* Share link's DraftKings lines on such a mix: the line saying a link a game and why (and any legs to add by hand),
-       each game's line, its link alone on the next, then the read */
-    const multiLines = (G, at, hand) => `\nDraftKings betslip, a link for each game (a link mixing a same-game parlay with other games does not open)${hand ? `; add ${hand} by hand` : ''}:\n`
+    /* Share link's DraftKings lines on such a mix (app v122): the line saying every leg goes on one slip, that DraftKings
+       may not open it and to use each game's link below (and any legs to add by hand), the all-legs link alone on the
+       next; then "Each game on its own:", each game's line and its link alone on the next; then the read */
+    const multiLines = (G, at, hand) => `\nDraftKings betslip, every leg on one slip (DraftKings may not open a same-game parlay mixed with other games; if it does not, use each game’s link below)${hand ? `; add ${hand} by hand` : ''}:\n${DKU(allIdsOf(G))}\nEach game on its own:\n`
       + G.map(x => `${x.name}, ${numsOwn(x.ns)}:\n${DKU(x.ids)}`).join('\n') + `\nDraftKings lines as ${at ? 'read ' + readTxt(at) : 'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet\n`;
-    /* the game buttons as the card in d draws them, against the games worked out above (none: the row hidden and empty,
-       Open in DraftKings straight before it and Share link straight after); a game dated by its own legs (gamesIn with the
-       case's table) is titled with its own read, else with at. The problems, or none */
-    const gameBtnsIn = (d, G, at) => { const gb = d.getElementById('pcDkGames'), dkA = d.getElementById('pcDk'), bad = [];
+    /* the lines of a text that are exactly a link: how many (the all-legs link is on its own line once) */
+    const linesOf = (t, url) => t.split('\n').filter(x => x === url).length;
+    /* the links in el to url: on a mix, exactly the all-legs link, #pcDk, and nothing else */
+    const linksTo = (el, url) => [...el.querySelectorAll('a[href]')].filter(a => a.getAttribute('href') === url);
+    /* the action row as the card in d draws it, against the games worked out above. None (a plain parlay, a parlay of one
+       game, a card that waits): the row of game buttons hidden and empty, Open in DraftKings straight before it and Share
+       link straight after, and nothing in the all-legs link's colour (pc-dkall). A mix (app v122): Open in DraftKings
+       shown as the all-legs link, its colour (pc-dkall, on it alone), its words for of, the card's legs, to every id on
+       the slip in the card's order, in a new tab, titled with the oldest read of them all (by the case's table where
+       gamesIn dated the games, else at), not waiting; then a button a game, each titled with its own game's read (by the
+       table), else with at. The problems, or none */
+    const gameBtnsIn = (d, G, at, of) => { const gb = d.getElementById('pcDkGames'), dkA = d.getElementById('pcDk'), bad = [];
       if (!gb) return 'there is no place for the game buttons (#pcDkGames)';
       if (dkA.nextElementSibling !== gb || gb.nextElementSibling !== d.getElementById('pcLink') || !gb.closest('.pc-actions')) bad.push('the game buttons are not in the action row, where Open in DraftKings stands, before Share link');
-      if (!G) { if (!gb.hidden || gb.children.length || gb.textContent.trim()) bad.push(`a plain parlay has game buttons: ${gb.outerHTML}`); return bad.length ? bad.join('; ') : null; }
+      const dkall = [...d.querySelectorAll('.pc-dkall')];
+      if (!G) { if (!gb.hidden || gb.children.length || gb.textContent.trim()) bad.push(`a plain parlay has game buttons: ${gb.outerHTML}`);
+        if (dkall.length) bad.push(`a card with no mix on the slip (or one still checking) has the all-legs link's colour, pc-dkall: ${dkall.map(e => e.outerHTML).join(' ')}`);
+        return bad.length ? bad.join('; ') : null; }
       if (gb.hidden || gb.closest('[hidden]')) bad.push('the row of game buttons is hidden');
-      if (!dkA.hidden) bad.push('Open in DraftKings, one link for every leg, is still shown');
+      { const ok = okOf(G), allAt = G.every(x => 'at' in x) ? oldestOwn(G.flatMap(x => x.reads)) : at, url = DKU(allIdsOf(G));
+        if (!(ok > 0 && of >= ok)) bad.push(`the check was given ${of} as the card's count of legs, for the ${ok} on the slip`);
+        else if (dkA.hidden || dkA.closest('[hidden]') || dkA.tagName !== 'A' || !dkA.classList.contains('pc-dkall') || dkall.length !== 1 || dkall[0] !== dkA || dkA.getAttribute('href') !== url
+          || dkA.getAttribute('target') !== '_blank' || !/\bnoopener\b/.test(dkA.getAttribute('rel') || '') || txt(dkA) !== allWords(ok, of) || dkA.getAttribute('title') !== allTitle(ok, of, allAt)
+          || dkA.hasAttribute('aria-disabled') || dkA.hasAttribute('aria-busy') || dkA.hasAttribute('role'))
+          bad.push(`Open in DraftKings is ${dkA.outerHTML}${dkall.some(e => e !== dkA) ? ' (and pc-dkall is on ' + dkall.filter(e => e !== dkA).map(e => e.outerHTML).join(' ') + ')' : ''}, not the all-legs link: shown, pc-dkall, "${allWords(ok, of)}", to ${url}, in a new tab, titled "${allTitle(ok, of, allAt)}"`); }
       const bs = [...gb.children];
       if (bs.length !== G.length || !bs.every(b => b.matches('a.btn.pc-dkbtn[data-pc-dkgame]'))) bad.push(`it holds ${bs.map(b => b.outerHTML).join(' ') || 'nothing'}, not ${G.length} game buttons`);
       G.forEach((x, i) => { const b = bs[i];
@@ -1214,10 +1245,10 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         chk(/display:inline-flex/.test(r) && /min-height:44px/.test(r), `${how}: a leg's own link under the card's buttons is not a row with a 44px target: ` + (r || 'no rule')); }
       /* (app v121's second round) every button under the card a 44px target, its words centred in it, by one rule that
          leaves a hidden button alone (a display set on a hidden one would show it: Open in DraftKings is hidden where
-         each game has its own button): .pc-actions .btn:not([hidden]). jsdom lays nothing out, so the rule's text is held,
-         its selector and every declaration, as the legs' own links' rule is above; and that its selector reaches every
-         button shown under the card and none hidden (actRule: here, where Share or save is hidden, and in (a), where Open
-         in DraftKings is and each game has its own) */
+         there is nothing to open, and the row of game buttons where there is no mix): .pc-actions .btn:not([hidden]).
+         jsdom lays nothing out, so the rule's text is held, its selector and every declaration, as the legs' own links'
+         rule is above; and that its selector reaches every button shown under the card and none hidden (actRule: here,
+         where Share or save is hidden, and in (a), where the all-legs link and each game's button are shown) */
       const ACT_SEL = '.pc-actions .btn:not([hidden])';
       { const css = [...d.querySelectorAll('style')].map(e => e.textContent).join('\n').replace(/\/\*[\s\S]*?\*\//g, ''), rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => [m[1].trim(), m[2]]);
         const r = (rules.find(([sel]) => sel.split(',').map(x => x.trim()).includes(ACT_SEL)) || [])[1] || '';
@@ -1231,21 +1262,49 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         return wrong.length ? wrong.map(b => (b.id || 'game ' + b.getAttribute('data-pc-dkgame')) + (b.hidden ? ' (hidden)' : ' (shown)')).join(', ') : null; };
       { const bad = actRule(), hid = [...d.querySelectorAll('#pcModal .pc-actions .btn')].filter(b => b.hidden).map(b => b.id).join();
         chk(!bad && hid === 'pcShare', `${how}: the 44px rule does not reach every button shown under the card, or reaches a hidden one (hidden here: ${hid || 'none'}): ` + bad); }
+      /* (app v122) the all-legs link on a mix wears ice beside the games' gold buttons, by the theme's own rules (laid over
+         every other style, in #hubTheme). jsdom computes no cascade, so the rules' text is held as the 44px rule's is: the
+         link's ice (background and border var(--ice), its words #1E2230), its hover on var(--ice-2), and on the light look
+         its words #FFFFFF; every rule in the page's styles that names pc-dkall one of those three, each in the theme; the
+         tokens they stand on, the dark --ice #5FD4FF and the light #085F86 (and each look's --ice-2), worked out to 4.5:1 or
+         more under the link's words on each (lum, ratioOf: WCAG's relative luminance and contrast, the check's own) */
+      { const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, ''), rulesIn = css => [...strip(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => [m[1].trim(), m[2]]);
+        const declOf = r => Object.fromEntries((r || '').split(';').map(x => { const i = x.indexOf(':'); return i < 0 ? [x.trim()] : [x.slice(0, i).trim(), x.slice(i + 1).trim()]; }).filter(x => x[0]));
+        const th = d.getElementById('hubTheme'), mine = th ? rulesIn(th.textContent) : [], every = rulesIn([...d.querySelectorAll('style')].map(e => e.textContent).join('\n'));
+        const BASE = '.pc-actions .btn.pc-dkall', HOVER = BASE + ':hover', LIGHT = 'html[data-theme="light"] ' + BASE;
+        const sels = r => r[0].split(',').map(x => x.trim()), ruleFor = (R, sel) => R.filter(r => sels(r).includes(sel));
+        const one = sel => { const f = ruleFor(mine, sel); return f.length === 1 ? declOf(f[0][1]) : null; };
+        const same = (a, b) => !!a && JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort());
+        const base = one(BASE), hover = one(HOVER), light = one(LIGHT);
+        const named = every.flatMap(r => sels(r).filter(s => /pc-dkall/.test(s))).sort(), want = [BASE, HOVER, LIGHT].sort();
+        const tok = sel => Object.assign({}, ...mine.filter(r => r[0] === sel).map(r => declOf(r[1])));
+        const dark = tok(':root'), lite = tok('html[data-theme="light"]');
+        const lum = hex => { const c = /^#([0-9a-f]{6})$/i.exec(hex || ''); if (!c) return NaN;
+          const [r, g, b] = [0, 2, 4].map(i => parseInt(c[1].slice(i, i + 2), 16) / 255).map(u => u <= 0.03928 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+        const ratioOf = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+        const pairs = [['#1E2230', dark['--ice']], ['#1E2230', dark['--ice-2']], ['#FFFFFF', lite['--ice']], ['#FFFFFF', lite['--ice-2']]];
+        chk(!!th && same(base, { background: 'var(--ice)', 'border-color': 'var(--ice)', color: '#1E2230' }) && same(hover, { background: 'var(--ice-2)', 'border-color': 'var(--ice-2)' })
+          && !!light && light.color === '#FFFFFF' && JSON.stringify(named) === JSON.stringify(want) && ruleFor(mine, LIGHT).length === 1
+          && dark['--ice'] === '#5FD4FF' && lite['--ice'] === '#085F86' && pairs.every(([f, b]) => ratioOf(f, b) >= 4.5),
+          `${how}: the all-legs link's colour is not the theme's ice (${BASE}{background:var(--ice);border-color:var(--ice);color:#1E2230}, its hover on --ice-2, #FFFFFF on the light look; dark --ice #5FD4FF, light #085F86, each 4.5:1 or more): `
+            + JSON.stringify({ theme: !!th, base, hover, light, named, ice: [dark['--ice'], dark['--ice-2'], lite['--ice'], lite['--ice-2']], ratios: pairs.map(([f, b]) => +ratioOf(f, b).toFixed(2)) })); }
       /* (app v121, the owner's call of 19 October 2026: "the legs need to be part of the same game parlay only, and anytime
          there's a mix it bombs the hyperlink") where the legs on the slip mix a same-game parlay (two or more legs of one
-         game) with legs of other games, DraftKings' betslip link does not open: there is no link for them all (Open in
-         DraftKings is hidden) but, in its place before Share link, a button for each game's legs (#pcDkGames), the games
-         in the order their first legs come, each its legs in the card's order. One leg a game is a plain parlay and keeps
-         its one link. Worked out here on its own, by the section's helpers above (numsOwn, readOwn, oldestOwn, gamesIn,
-         multiOf, multiNote, gameTitle, multiLines, gameBtnsIn): gamesOf, the games of the legs on the slip ({gid, name, ns,
-         ids}), each game's button dated by its own legs (app v121's second round), the note and Share link by them all;
-         given the case's table, gamesOf dates each game (at) by its own legs; gameBtns, the game buttons as drawn, against
-         them (none: the row hidden and empty) */
+         game) with legs of other games, DraftKings' betslip link may not open: (app v122) Open in DraftKings is the
+         all-legs link all the same, in ice, as the try, and after it, before Share link, a button for each game's legs
+         (#pcDkGames), the fallback, the games in the order their first legs come, each its legs in the card's order. One
+         leg a game is a plain parlay and keeps its one link, in no ice. Worked out here on its own, by the section's
+         helpers above (numsOwn, readOwn, oldestOwn, gamesIn, multiOf, okOf, allIdsOf, allWords, allTitle, multiNote,
+         gameTitle, multiLines, gameBtnsIn): gamesOf, the games of the legs on the slip ({gid, name, ns, ids}), each game's
+         button dated by its own legs (app v121's second round), the all-legs link, the note and Share link by them all;
+         given the case's table, gamesOf dates each game (at) by its own legs; gameBtns, the action row as drawn, against
+         them and the card's count of legs (none: the row hidden and empty, nothing in ice) */
       const gamesOf = (legs, ids, T) => gamesIn(w.eval('S').sched, legs, ids, T);
-      const gameBtns = (G, at) => gameBtnsIn(d, G, at);
+      const gameBtns = (G, at, of) => gameBtnsIn(d, G, at, of);
       /* the builder says so too (app v121): where its legs mix a same-game parlay with other games, and the parlay card is
-         on the page (the hub; the prop model's own page has none), one line, word for word, naming how many games */
-      const multiB = n => `These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${n} games a link of its own.`;
+         on the page (the hub; the prop model's own page has none), one line, word for word, naming how many games (app
+         v122: and that the card keeps the link for every leg beside the games' own) */
+      const multiB = n => `These legs mix a same-game parlay with other games. DraftKings’ betslip may not open that mix as one, so the parlay card gives each of the ${n} games a link of its own beside the one for every leg.`;
       /* (app v121's second round) the builder's line follows the card's plan: it counts only the legs that go on the slip,
          so it is there exactly where the card gives each game its own link, and names that many games. builderWant: the
          line builderNote should read, from the games of the legs on the slip as the case worked them out (gamesOf), or
