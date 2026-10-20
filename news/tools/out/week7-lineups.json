@@ -4,7 +4,7 @@
  "teams": {
   "NE": {
    "kick": "2026-10-23T00:15Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-20T19:09:27.870Z",
    "units": {
     "qb": [
      {
@@ -20,10 +20,9 @@
       "pos": "T"
      },
      {
-      "id": "00-0036979",
-      "n": "Alijah Vera-Tucker",
-      "pos": "G",
-      "q": "questionable: hamstring"
+      "id": "00-0034417",
+      "n": "Matt Pryor",
+      "pos": "T"
      },
      {
       "id": "00-0040147",
@@ -31,10 +30,9 @@
       "pos": "C"
      },
      {
-      "id": "00-0037413",
-      "n": "Ben Brown",
-      "pos": "C",
-      "q": "questionable: knee"
+      "id": "00-0039828",
+      "n": "Walter Rouse",
+      "pos": "T"
      },
      {
       "id": "00-0031330",
@@ -1043,7 +1041,7 @@
   },
   "NYG": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-20T19:09:27.870Z",
    "units": {
     "qb": [
      {
@@ -1074,9 +1072,10 @@
       "pos": "T"
      },
      {
-      "id": "00-0040181",
-      "n": "Marcus Mbow",
-      "pos": "T"
+      "id": "00-0033290",
+      "n": "Jermaine Eluemunor",
+      "pos": "T",
+      "q": "questionable: calf"
      }
     ],
     "rb": [
@@ -1251,7 +1250,7 @@
   },
   "IND": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-20T19:09:27.870Z",
    "units": {
     "qb": [
      {
@@ -1311,9 +1310,10 @@
       "pos": "WR"
      },
      {
-      "id": "00-0032951",
-      "n": "Laquon Treadwell",
-      "pos": "WR"
+      "id": "00-0040128",
+      "n": "Tyler Warren",
+      "pos": "TE",
+      "q": "questionable: groin"
      }
     ],
     "front": [
@@ -1667,7 +1667,7 @@
   },
   "CLE": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-20T19:09:27.870Z",
    "units": {
     "qb": [
      {
@@ -1705,13 +1705,14 @@
     ],
     "rb": [
      {
-      "id": "00-0038794",
-      "n": "Jaleel McLaughlin",
-      "pos": "RB"
+      "id": "00-0040784",
+      "n": "Quinshon Judkins",
+      "pos": "RB",
+      "q": "questionable: ankle"
      },
      {
-      "id": "00-0039373",
-      "n": "Audric Estimé",
+      "id": "00-0038794",
+      "n": "Jaleel McLaughlin",
       "pos": "RB"
      }
     ],
@@ -1739,14 +1740,15 @@
       "pos": "DT"
      },
      {
+      "id": "00-0040685",
+      "n": "Mason Graham",
+      "pos": "DT",
+      "q": "questionable: knee - mcl"
+     },
+     {
       "id": "00-0038574",
       "n": "Isaiah McGuire",
       "pos": "DE"
-     },
-     {
-      "id": "00-0040255",
-      "n": "Adin Huntington",
-      "pos": "DT"
      }
     ],
     "db": [
@@ -2080,7 +2082,7 @@
   },
   "GB": {
    "kick": "2026-10-25T20:25Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-20T19:09:27.870Z",
    "units": {
     "qb": [
      {
@@ -2096,9 +2098,10 @@
       "pos": "G"
      },
      {
-      "id": "00-0032234",
-      "n": "Laken Tomlinson",
-      "pos": "G"
+      "id": "00-0036551",
+      "n": "Aaron Banks",
+      "pos": "G",
+      "q": "questionable: toe"
      },
      {
       "id": "00-0037076",
@@ -2286,7 +2289,7 @@
   },
   "LAR": {
    "kick": "2026-10-25T20:25Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-20T19:09:27.870Z",
    "units": {
     "qb": [
      {
@@ -2380,9 +2383,10 @@
       "pos": "SS"
      },
      {
-      "id": "00-0037195",
-      "n": "Jaylen Watson",
-      "pos": "CB"
+      "id": "00-0037191",
+      "n": "Trent McDuffie",
+      "pos": "CB",
+      "q": "questionable: groin"
      }
     ]
    }

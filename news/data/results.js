@@ -472,7 +472,7 @@ const LINES = {
  "wk7:NE-CHI": "CHI -3, O/U 50.5",
  "wk7:PIT-NO": "PIT -3.5, O/U 44.5",
  "wk7:SF-ATL": "SF -3, O/U 50.5",
- "wk7:CIN-BAL": "BAL -2.5, O/U 51.5",
+ "wk7:CIN-BAL": "BAL -3, O/U 51.5",
  "wk7:TB-CAR": "CAR -3.5, O/U 44.5",
  "wk7:NYG-HOU": "HOU -10, O/U 42.5",
  "wk7:IND-MIN": "MIN -6.5, O/U 41.5",
@@ -482,6 +482,20 @@ const LINES = {
  "wk7:GB-DET": "DET -3, O/U 53.5",
  "wk7:LAR-LV": "LAR -4.5, O/U 47.5",
  "wk7:KC-SEA": "SEA -2.5, O/U 42.5",
- "wk7:DAL-PHI": "DAL -4.5, O/U 44.5"
+ "wk7:DAL-PHI": "DAL -4.5, O/U 44.5",
+ "wk8:CAR-GB": "O/U 45.5",
+ "wk8:BAL-BUF": "BUF -2.5, O/U 53.5",
+ "wk8:TEN-CIN": "CIN -10.5, O/U 45.5",
+ "wk8:ARI-DAL": "DAL -6.5, O/U 51.5",
+ "wk8:MIN-DET": "O/U 48.5",
+ "wk8:IND-JAX": "JAX -7.5, O/U 47.5",
+ "wk8:LV-NYJ": "NYJ -1.5, O/U 43.5",
+ "wk8:CLE-PIT": "PIT -4.5, O/U 39.5",
+ "wk8:ATL-TB": "TB -1.5, O/U 44.5",
+ "wk8:LAC-LAR": "LAR -7.5, O/U 45.5",
+ "wk8:KC-DEN": "KC -1.5, O/U 42.5",
+ "wk8:NE-MIA": "NE -8.5, O/U 43.5",
+ "wk8:PHI-WAS": "WAS -3.5, O/U 40.5",
+ "wk8:CHI-SEA": "O/U 46.5"
 };
 const LINES_ASOF = "2026-10-20";
