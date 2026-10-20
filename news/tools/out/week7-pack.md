@@ -141,7 +141,7 @@ New Orleans Saints, injuries:
 New Orleans Saints, ESPN headlines:
 
 ### San Francisco 49ers at Atlanta Falcons
-Sun, Oct 25, 1:00 PM ET, Fox, Mercedes-Benz Stadium, Atlanta. Line: SF -3.5, O/U 50.5
+Sun, Oct 25, 1:00 PM ET, Fox, Mercedes-Benz Stadium, Atlanta. Line: SF -3, O/U 50.5
 
 Searches to run:
 - "San Francisco 49ers Atlanta Falcons preview week 7"
@@ -151,11 +151,11 @@ Searches to run:
 - "NFL week 7 picks SF ATL"
 
 San Francisco 49ers, injuries:
+- Mike Evans (WR) Questionable, Achilles: Head coach Kyle Shanahan said after Monday's 23-17 win over the Commanders that Evans' early exit was due to right Achilles tendinitis, but he doesn't believe the wideout will require further testing or imaging, Nick Wagoner of ESPN.com reports. "I hope he recovers throughout the week, but you don't think it's a long-term thing, but right now it ended up costing him two quarters and hopefully he'll be able to play [Sunday in Atlanta]," Shanahan said.
 - Brandin Cooks (WR) Active: Cooks brought in one of two targets for 13 yards in the 49ers' 23-17 win over the Commanders on Monday night.
 - Kaelon Black (RB) Active: Black rushed eight times for 34 yards and brought in his only target for three yards in the 49ers' 23-17 win over the Commanders on Monday night.
 - George Kittle (TE) Active: Kittle brought in five of eight targets for 69 yards and a touchdown in the 49ers' 23-17 win over the Commanders on Monday night.
 - Brock Purdy (QB) Active: Purdy completed 21 of 29 passes for 264 yards with one touchdown and no interceptions while adding five rushes for 28 yards in the 49ers' 23-17 win over the Commanders on Monday night.
-- Mike Evans (WR) Doubtful, Achilles: doubtful
 - Christian McCaffrey (RB) Active: McCaffrey rushed 16 times for 64 yards and two touchdowns and brought in nine of 10 targets for 53 yards in the 49ers' 23-17 win over the Commanders on Monday night. He also lost a fumble.
 - Luke Gifford (LB) Questionable, Groin: Gifford (groin) is questionable to return to Monday's game against the Commanders, Nick Wagoner of ESPN.com reports.
 - Mykel Williams (DE) Active: Williams (knee) is active for Monday night's game against the Commanders, Brooke Evans of the team's official site reports.
@@ -248,11 +248,11 @@ Cleveland Browns, injuries:
 Cleveland Browns, ESPN headlines:
 
 Tennessee Titans, injuries:
+- Jordan Elliott (DT) Active
 - Calvin Ridley (WR) Active: Ridley failed to haul in either of his two targets during the Titans' 26-20 win over the Colts on Sunday.
 - Gunnar Helm (TE) Active: Helm was on the field for 33 of 46 offensive snaps (71.7 percent) but didn't show up on the box score otherwise during the Titans' 26-20 win over the Colts on Sunday.
 - Joey Slye (PK) Active: Slye went 4-for-4 on field-goal tries and made both of his PATs during Sunday's 26-20 win over the Colts.
 - Kevin Winston Jr. (S) Out, Quadriceps: out
-- Jordan Elliott (DT) Out, Personal: out
 - Kylen Granson (TE) Active
 - Jackie Marshall (DT) Active
 - Nicholas Singleton (RB) Active
@@ -355,6 +355,7 @@ Searches to run:
 - "NFL week 7 picks MIA NYJ"
 
 Miami Dolphins, injuries:
+- Storm Duck (CB) Active
 - Jonah Savaiinaea (G) Questionable, Ankle: Savaiinaea (ankle) was a limited participant at the Dolphins' practice Monday, C. Isaiah Smalls II of the Miami Herald reports.
 - Malik Willis (QB) Active: Head coach Jeff Hafley said that Willis should be ready to play Sunday against the Jets after tending to a minor undisclosed injury coming out of the Dolphins' Week 5 loss to the Bengals, David Furones of the South Florida Sun Sentinel reports. "I foresee him being good to go," Hafley said.
 - Caleb Douglas (WR) Questionable, Ankle: Dolphins head coach Jeff Hafley said that Douglas (ankle) will be a limited participant in Monday's informal practice, David Furones of the South Florida Sun Sentinel reports.
@@ -366,7 +367,6 @@ Miami Dolphins, injuries:
 - DJ Campbell (G) Active
 - Chukwuebuka Godrick (OT) Active
 - Kaytron Allen (RB) Active
-- Riley Patterson (PK) Active: Patterson made his lone field-goal attempt and went 1-for-2 one extra-point tries during the Dolphins' 31-24 loss to the Bengals on Sunday.
 - Kevin Coleman Jr. (WR) Active: Coleman caught three of seven targets for 30 yards and a touchdown during Sunday's 31-24 loss to the Bengals.
 - Malik Washington (WR) Active: Washington secured six of eight targets for 43 yards, rushed once for 18 yards, returned two kickoffs for 45 yards and ran back one punt for 28 yards in the Dolphins' 31-24 loss to the Bengals on Sunday.
 - Ollie Gordon II (RB) Active: Gordon rushed 18 times for 88 yards and a touchdown in the Dolphins' 31-24 loss to the Bengals on Sunday.
@@ -375,11 +375,11 @@ Miami Dolphins, injuries:
 - Jordyn Brooks (LB) Active: Brooks (foot) returned to Sunday's game against the Bengals in the third quarter, Travis Wingfield of the Dolphins' official site reports.
 - Jackson Woodard (LB) Active: Woodard (ankle) is listed as active for Sunday's game against the Bengals.
 - Jaylen Wright (RB) Active: Wright (foot) is active for Sunday's game against the Bengals.
-- Storm Duck (CB) Out, Knee: Duck (knee) has been downgraded to out for Sunday's game against the Bengals, David Furones of the South Florida Sun Sentinel reports.
 - Kenneth Grant (DT) Active: The Dolphins activated Grant (toe) from injured reserve Saturday.
 - Dante Trader Jr. (S) Active: Trader (shin) does not have an injury designation against the Bengals on Sunday, Paul Dehner Jr. of The Athletic reports.
 - Chris Bell (WR) Active: Bell (knee) does not have an injury designation for Sunday's game against the Bengals, Paul Dehner Jr. of The Athletic reports.
 - Austin Jackson (OT) Active
+- Tucker Addington (LS) Active
 
 Miami Dolphins, ESPN headlines:
 
@@ -579,11 +579,11 @@ New York Giants, injuries:
 - Darnell Mooney (WR) Questionable, Neck: Mooney (neck) is questionable to return to Sunday's game against the Saints, Ross Jackson of WWL Louisiana reports.
 - Greg Newsome II (CB) Questionable, Concussion: Newsome (concussion) has been ruled out for the remainder of Sunday's game against the Saints, Jordan Raanan of ESPN.com reports.
 - Abdul Carter (LB) Active: Carter (calf) is active for Sunday's game against the Saints, Dan Salomone of the team's official site reports.
-- Najee Harris (RB) Active: Harris is expected to serve as the Giants' starting running back in Sunday's game against the Saints, Jeremy Fowler of ESPN.com reports.
 - Jason Pinnock (S) Active: Pinnock (concussion) doesn't carry an injury designation for Sunday's game against the Saints.
 - Malik Harrison (LB) Active
 - Braxton Berrios (WR) Injured Reserve, Foot: Berrios (foot) underwent successful surgery Friday to repair a Lisfranc injury, Jordan Raanan of ESPN.com reports.
 - Dru Phillips (CB) Active: Phillips had five total tackles (five solo) and 2.0 sacks in Sunday's 27-27 tie with the Commanders.
+- Nikko Reed (CB) Active
 
 New York Giants, ESPN headlines:
 
@@ -708,7 +708,7 @@ Green Bay Packers, injuries:
 - Jordan Love (QB) Active: Love completed 23 of 41 passes for 276 yards, one touchdown and one interception in Sunday's 23-13 win over the Cowboys. He also rushed twice for 14 yards and a touchdown.
 - Pierre Strong Jr. (RB) Active: Strong rushed 11 times for 28 yards in Sunday night's 23-13 win over the Cowboys. He caught five of six targets for 39 yards.
 - Tucker Kraft (TE) Active: Kraft caught five of eight targets for 37 yards in Sunday night's 23-13 win over the Cowboys.
-- Brandon Cisse (CB) Questionable, Neck: Cisse (neck) is questionable to return to Sunday night's contest against Dallas.
+- Brandon Cisse (CB) Questionable, Shoulder: Cisse (neck) is questionable to return to Sunday night's contest against Dallas.
 - Jacob Monk (C) Active: Monk (quadriceps) is active for Sunday night's game against the Cowboys.
 - Aaron Banks (G) Out, Toe: Banks (toe) is inactive for Sunday night's game against Dallas.
 - Anthony Campbell (DT) Active: Campbell (ankle) is active for Sunday night's game against the Cowboys.
@@ -769,7 +769,7 @@ Los Angeles Rams, injuries:
 - Blake Grupe (PK) Injured Reserve, Knee - ACL: Rams head coach Sean McVay announced Monday that Grupe will miss the remainder of the season after sustaining a torn ACL in Sunday's 18-16 loss to the Cardinals, Greg Beacham of the Associated Press reports.
 - Kobie Turner (DE) Out, Groin: Rams head coach Sean McVay said Monday that Turner is expected to go on injured reserve after sustaining a groin strain in Sunday's 18-16 loss to the Cardinals, Nate Atkins of The Athletic reports.
 - Myles Garrett (DE) Injured Reserve, Knee: Rams head coach Sean McVay said Monday that Garrett (knee) won't have his 21-day practice window opened this week, Adam Grosbard of The Orange County Register reports.
-- Davante Adams (WR) Out, Hamstring: Adams sustained a ruptured left hamstring in Sunday's 18-16 loss to the Cardinals and is slated to undergo a procedure that he hopes will allow him to return a little after the Rams' Week 11 bye, Ian Rapoport of NFL Network reports.
+- Davante Adams (WR) Out, Hamstring: Adams sustained a ruptured left hamstring in Sunday's 18-16 loss to the Cardinals and is slated to undergo a procedure that he hopes will allow him to return "a little after" the Rams' Week 11 bye, Ian Rapoport of NFL Network reports.
 - CJ Daniels (WR) Active
 - Larrell Murchison (DE) Active
 - Bill Murray (G) Active

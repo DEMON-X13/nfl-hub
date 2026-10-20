@@ -423,7 +423,7 @@
   },
   "SF": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-20T15:50:49.054Z",
    "units": {
     "qb": [
      {
@@ -473,6 +473,12 @@
     ],
     "rec": [
      {
+      "id": "00-0031408",
+      "n": "Mike Evans",
+      "pos": "WR",
+      "q": "questionable: achilles"
+     },
+     {
       "id": "00-0033288",
       "n": "George Kittle",
       "pos": "TE"
@@ -480,11 +486,6 @@
      {
       "id": "00-0031236",
       "n": "Brandin Cooks",
-      "pos": "WR"
-     },
-     {
-      "id": "00-0039365",
-      "n": "Jacob Cowing",
       "pos": "WR"
      }
     ],
@@ -629,7 +630,7 @@
   },
   "CIN": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-20T15:50:49.054Z",
    "units": {
     "qb": [
      {
@@ -689,9 +690,9 @@
       "pos": "WR"
      },
      {
-      "id": "00-0040785",
-      "n": "Dohnte Meyers",
-      "pos": "WR"
+      "id": "00-0034829",
+      "n": "Mike Gesicki",
+      "pos": "TE"
      }
     ],
     "front": [
@@ -1353,7 +1354,7 @@
   },
   "MIN": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-20T15:50:49.054Z",
    "units": {
     "qb": [
      {
@@ -1414,9 +1415,10 @@
       "pos": "WR"
      },
      {
-      "id": "00-0040154",
-      "n": "Tai Felton",
-      "pos": "WR"
+      "id": "00-0038994",
+      "n": "Jordan Addison",
+      "pos": "WR",
+      "q": "questionable: hamstring"
      }
     ],
     "front": [
