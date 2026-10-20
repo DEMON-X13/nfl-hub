@@ -1431,7 +1431,7 @@ The builder says what DraftKings will refuse: a
 line where two of its legs are such a pair (`data-pb-clash`), and on the hub, where its legs mix a same-game parlay (two or
 more legs of one game) with legs of other games, that DraftKings' betslip link does not open that mix and the parlay card
 gives each game a link of its own (`data-pb-multigame`, read off the card's own plan, `dkSlipPlan`, so only the legs that
-go on the slip count). The parlay card (`card.html`'s `dkPlan`: `games`, `multi`,
+go on the slip count, and only where the legs are of one week, as Finish asks). The parlay card (`card.html`'s `dkPlan`: `games`, `multi`,
 `clash`) then has no link for every leg but a button for each game's (`#pcDkGames`, `a.pc-dkbtn[data-pc-dkgame]`, its
 legs in the card's order, each titled with its own game's read, #pcDk hidden), says why, sends a link per game in Share
 link's text ("Links copied" where it copies them), and on every card with two or more legs on the slip lists every leg's

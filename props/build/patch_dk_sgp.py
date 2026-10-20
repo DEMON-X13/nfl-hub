@@ -44,7 +44,8 @@ passing TDs over with the game total.", the Elo picks' words; the slot's "No 3 l
 go together ..."). A slot level built again for a player ruled out (spRebuild) is built from each game's lines as they
 stand (spSlotLevel), never the cache, since a player ruled out in the open page moves no signature. The builder's line
 about a mix reads the parlay card's own plan (dkSlipPlan), which counts only the legs that go on the slip, so it never
-promises a game a link the card does not give (a leg with no DraftKings id is added by hand). SP_SLOT_SEARCH, the
+promises a game a link the card does not give (a leg with no DraftKings id is added by hand), and says nothing of the
+card where its legs are of two weeks (Finish then waits for one week). SP_SLOT_SEARCH, the
 slot's own search, is gone.
 """
 import io
@@ -301,12 +302,12 @@ sub1('p3', """  /* (app v121) a pair DraftKings will not take on one slip (dkCla
      page). One leg a game is a plain parlay, which opens as one link */""",
      """  /* (app v121) a pair DraftKings will not take on one slip (dkClash), and a same-game parlay mixed with legs of other
      games, whose one betslip link DraftKings does not open: the parlay card gives each game its own (where it is on the
-     page), read off the card's own plan, which counts the legs that go on the slip alone. One leg a game is a plain
-     parlay, which opens as one link */""", 'builder notes comment')
+     page), read off the card's own plan, which counts the legs that go on the slip alone, and only where the card can
+     be finished (the legs of one week). One leg a game is a plain parlay, which opens as one link */""", 'builder notes comment')
 sub1('p3', """    const byG={}; for(const l of legs) byG[l.gid]=(byG[l.gid]||0)+1;
     const nG=Object.keys(byG).length;
     if(nG>1&&Object.values(byG).some(c=>c>1)&&window.PARLAY_CARD) html+=`<p class="muted" style="margin:10px 0 0;font-size:12px" data-pb-multigame="${nG}">These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${nG} games a link of its own.</p>`; }""",
-     """    if(plan&&plan.multi&&Array.isArray(plan.games)){ const nG=plan.games.length;
+     """    if(plan&&plan.multi&&Array.isArray(plan.games)&&wks.length===1){ const nG=plan.games.length;
       html+=`<p class="muted" style="margin:10px 0 0;font-size:12px" data-pb-multigame="${nG}">These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${nG} games a link of its own.</p>`; } }""", 'builder multigame note')
 
 for k, f in FILES.items():

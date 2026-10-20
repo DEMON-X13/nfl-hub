@@ -990,6 +990,62 @@ setTimeout(async()=>{
     for(let i=0;i<ka.length;i++) if(ka[i]!==kb[i]) return ka[i]<kb[i];
     const v=r=>floor&&!r.likeliest?r.corr*r.dec:r.corr; return v(a)>v(b); };
   const slotBestAud=(levels,floor)=>{ let best=null; for(const r of levels) if(r&&r.legs&&r.legs.length&&(!best||slotBetterAud(r,best,floor))) best=r; return best; };
+  /* the most legs of a list one parlay can hold by their count alone: one a player, and one side (to win or to cover) and
+     one total a game; the audit's own count, never the page's pbMaxLegs */
+  const maxAud=list=>{ const isG=F('isGameLeg'), pl=new Set(), gs=new Set(); for(const l of list||[]){ if(isG(l)) gs.add(l.gid+(l.stat==='total'?'|t':'|s')); else pl.add(l.pid); } return pl.size+gs.size; };
+  /* (app v121, the review's round) the most legs of a list one parlay can take with no pair DraftKings will not take on one
+     slip: the audit's own copy of the page's pbMaxFit, worked from the legs alone and never by it. A pair (clashAud) needs a
+     player's passing touchdowns, so a player with another line takes that one; a player every one of whose legs is his
+     passing touchdowns clashes with a teammate every one of whose legs is his anytime touchdown and, where none of his is
+     an under, with the game's total. Those two kinds never clash among themselves, so the most a game keeps is its
+     players, its side and its total less the most clashes that can be had at once with no leg in two (a maximum matching,
+     by König's theorem). A level's totals fill (pbTotalsFill: as many totals as the legs with an edge, counted so, leave to
+     fill) and the words of a level a game makes in number but not on one slip stand on it. It is what can really be had
+     together (M16 holds it to existsAud, the audit's own enumeration, on its cases and its made-up games) but where a club
+     has two players priced on passing touchdowns, one with an under and the other with an over and an anytime touchdown
+     beside the total, which no club is (DraftKings prices one quarterback a club's passing touchdowns); where the audit
+     asks whether a level can be made at all it asks the enumeration too */
+  const fitAud=list=>{ const isG=F('isGameLeg'), games=new Map(); let all=0;
+    for(const l of list||[]){ const G=games.get(l.gid)||{pl:new Map(),side:0,tot:0}; games.set(l.gid,G);
+      if(isG(l)){ if(l.stat==='total') G.tot=1; else G.side=1; } else G.pl.set(l.pid,[...(G.pl.get(l.pid)||[]),l]); }
+    for(const G of games.values()){ const P=[...G.pl.entries()];
+      const qs=P.filter(([,ls])=>ls.every(l=>l.stat==='passing_tds')), os=P.filter(([,ls])=>ls.every(l=>l.stat==='any_td'));
+      /* each such quarterback's clashes: his teammates' touchdowns, and the total unless he has an under */
+      const nb=qs.map(([pid,ls])=>{ const r=os.filter(([o,ol])=>o!==pid&&ol[0].team===ls[0].team).map(([o])=>'p:'+o); if(G.tot&&ls.every(l=>l.side!=='under')) r.push('total'); return r; });
+      const owner=new Map(), tryQ=(i,used)=>nb[i].some(v=>{ if(used.has(v)) return false; used.add(v);
+        if(!owner.has(v)||tryQ(owner.get(v),used)){ owner.set(v,i); return true; } return false; });
+      let matched=0; for(let i=0;i<qs.length;i++) if(tryQ(i,new Set())) matched++;
+      all+=P.length+G.side+G.tot-matched; }
+    return all; };
+  /* (app v121, the review's round) why a level a game's legs make in number has no parlay that goes on one slip, the
+     audit's own copy of the page's words */
+  const CLASH_WHY_AUD='it takes no quarterback’s passing TDs with a teammate’s touchdown, or his passing TDs over with the game total.';
+  /* a game's day in US Eastern, and when its player prices (and DraftKings' ids with them) are pulled */
+  const dayAud=g=>{ const k=kickAud(g); return k==null?null:new Date(k).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short'}); };
+  const pulledAud=g=>({Thu:'on Thursday, the day of the game',Mon:'on Monday, the day of the game',Sun:'on Saturday morning'})[dayAud(g)];
+  /* why a level of one game is empty, as the rule words it: too few legs, and why there are no player legs; (app v121, the
+     review's round) with player legs and legs enough in number (maxAud), none that go together on one slip (fitAud). Each
+     list cut as the set's search cuts it (SP_SEARCH) */
+  const spWhyAud=(g,n,q)=>{ const isG=F('isGameLeg'), cap=w.eval('SP_SEARCH').cap, cut=[...capAud(q.pref,cap),...capAud(q.thin,cap),...capAud(q.mkt,cap)], m=maxAud(cut);
+    const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in this game${q.noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in this game`;
+    const pl=F('pricedLegs')([g]).filter(l=>!isG(l)), when=pulledAud(g), O=F('ESPN_OUT')[g.id], read=!!O&&(O.st==='ok'||O.st==='none');
+    if(!pl.some(dkOk)) return `${what}, and `+(pl.length?`no player leg DraftKings’ betslip can take yet: a player’s line read by Refresh odds carries no DraftKings id, and DraftKings’ own come with its player prices, which for this game are pulled ${when}.`
+      :read?`no player lines yet: DraftKings had posted none for it when Refresh odds last read it, and its own player prices are pulled ${when}.`:`no player prices yet: they are pulled ${when}.`);
+    if(m>=n&&fitAud(cut)<n) return `No ${n} of this game’s legs go together on DraftKings’ slip: ${CLASH_WHY_AUD}`;
+    return `${what}: a parlay takes one leg a player, and one side and one total a game.`; };
+  /* (app v118) why a level of the Sunday slot is empty, as the rule words it: the slot's own words for too few legs, and
+     its player prices' (the afternoon games' on Saturday morning, the early games' never). (app v121) A parlay of the slot
+     is one game's legs, so "too few" is of any one game: the most legs any one of its games makes (each cut as a night
+     game's set is, SP_SEARCH), worked from the audit's own reading of each game (qualAud), and "that DraftKings' betslip
+     can take" where any one game left legs out for want of an id; and (the review's round) with player legs and some game
+     making legs enough in number, where none makes that many that go together on one slip (fitAud), that */
+  const spWhySlotAud=(G,n)=>{ const isG=F('isGameLeg'), cap=w.eval('SP_SEARCH').cap; let m=0, f=0, noId=false;
+    for(const x of G){ const q=qualAud([x],ALL_U), cut=[...capAud(q.pref,cap),...capAud(q.thin,cap),...capAud(q.mkt,cap)]; m=Math.max(m,maxAud(cut)); f=Math.max(f,fitAud(cut)); if(q.noId) noId=true; }
+    const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in any one game of the Sunday slot${noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in any one game of the Sunday slot`;
+    const pl=F('pricedLegs')(G).filter(l=>!isG(l));
+    if(!pl.some(dkOk)) return `${what}, and no player ${pl.length?'leg DraftKings’ betslip can take':'prices'} yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET).`;
+    if(m>=n&&f<n) return `No ${n} legs of any one game of the Sunday slot go together on DraftKings’ slip: ${CLASH_WHY_AUD}`;
+    return `${what}: a parlay takes one game’s legs, one leg a player, and one side and one total a game.`; };
   /* every cache a suggestion stands on dropped (a check that changes the data under the same signature) */
   const dropCaches=()=>w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}');
   /* a leg's own Add: that leg's key, number and side, named for it, pressed while it is in the builder */
@@ -1195,7 +1251,7 @@ setTimeout(async()=>{
        return, a level that fell back the likeliest parlay of its size */
     const bestRet=w.eval("typeof pbBestReturn==='function'?pbBestReturn:null");
     chk(!!bestRet,'the page has no search for a level\'s best return over its floor on its own (pbBestReturn)');
-    const maxLegsOf=F('pbMaxLegs'), pbIdOf=l=>l.key+'|'+l.side+'|'+l.k;
+    const maxLegsOf=maxAud, pbIdOf=l=>l.key+'|'+l.side+'|'+l.k;
     const ruleFor=t=>t.likeliest?`the likeliest ${t.n} legs`:t.floor?`best return that lands ${Math.round(t.floor*100)}%+ by the model`:'the likeliest pair';
     /* the reason a tier gives with no player price on file: when they really come (PR #213: the
        Sunday slate on Saturday morning, every other game on its day or the day before) */
@@ -1226,7 +1282,7 @@ setTimeout(async()=>{
       const r=F('getPbTiers')(), games=F('pbGames')(), u=U();
       chk(r.tiers.length===4&&r.tiers.map(t=>t.id+t.n).join()===SPEC.map(s=>s[0]+s[2]).join(),`${lab}: the tiers are not Safe, Medium, Aggressive and Extreme at 2, 3, 4 and 5 legs`);
       const pool=games.length&&KINDS.some(k=>u.k[k])&&games.some(g=>!u.off.includes(g.id))?F('pbPool')(games.filter(g=>!u.off.includes(g.id))):{pref:[],thin:[],mkt:[]};
-      const mkt=pool.mkt||[], maxLegs=F('pbMaxLegs')([...pool.pref,...pool.thin,...mkt]);
+      const mkt=pool.mkt||[], maxLegs=maxAud([...pool.pref,...pool.thin,...mkt]);
       /* the market list: only totals, only with Game total ticked, each on a ticked game at the
          market's own chance (totalLeg's) on a real price, 45-97%, never thin */
       chk(mkt.every(c=>c.stat==='total'&&c.market===true&&c.thin===false&&c.src==='real'&&c.p>=0.45&&c.p<0.97&&!u.off.includes(c.gid)
@@ -1255,7 +1311,7 @@ setTimeout(async()=>{
           if(maxLegs<n) W.wording(/^(Only \d+ legs?|No legs|No games|No bet types|No player prices|No player legs DraftKings’ betslip can take)/.test(t.why),`${lab}: ${maxLegs} legs on the picks and the ${n}-leg tier does not say there are too few: ${t.why}`);
           /* every level shows a parlay whenever the picks make that many legs: empty only when they do not (app v121: or
              when no parlay of that many can be made of them, a pair DraftKings will not take ruling it out) */
-          W.compose(maxLegs<n||existsAud([...pool.pref,...pool.thin,...mkt],n)===false,`${lab}: the ${t.id} tier is empty though the picks make ${maxLegs} legs, enough for ${n}: ${t.why}`);
+          W.compose(fitAud([...pool.pref,...pool.thin,...mkt])<n||existsAud([...pool.pref,...pool.thin,...mkt],n)===false,`${lab}: the ${t.id} tier is empty though the picks make ${maxLegs} legs, enough for ${n}: ${t.why}`);
           W.wording(!/of the time or more|lands \d+%/.test(t.why),`${lab}: the empty ${t.id} tier speaks of its floor, which every level now falls back from: ${t.why}`);
           if(pooled) W.wording(/no player prices yet/i.test(t.why)===(noPl&&!noId)&&/no player legs DraftKings’ betslip can take yet/i.test(t.why)===noId&&(!noPl||tmOn||(t.why===(noId?NO_ID:NO_PL)&&!/tick more/.test(t.why))),
             `${lab}: the empty ${t.id} tier ${noPl?(noId?'does not say plainly that no player leg on file has a DraftKings id yet':'does not say plainly that no player prices are on file yet'):'says no player prices are on file, and some are'}: ${t.why}`);
@@ -1298,14 +1354,16 @@ setTimeout(async()=>{
         /* a level falls back to the likeliest parlay of its size only when no parlay of that size
            clears its floor at any count of thin legs (its best-return search finds none), never
            Safe; it prefers the fewest thin legs, as Safe does: as many as the preferred legs leave */
-        /* a level with a total was built on every leg with an edge as its base and the totals as fill */
-        const from=t.mkt?{pref:[...pool.pref,...pool.thin],thin:mkt}:{pref:pool.pref,thin:pool.thin}, fill=t.mkt?t.mkt:t.thin, kTop=t.mkt?Math.max(0,n-maxLegsOf(from.pref)):undefined;
+        /* a level with a total was built on every leg with an edge as its base and the totals as fill: (app v121, the
+           review's round) as many as those legs leave to fill counted as one parlay can take them (fitAud), a quarterback's
+           passing TDs and his teammate's touchdown the room of one leg */
+        const from=t.mkt?{pref:[...pool.pref,...pool.thin],thin:mkt}:{pref:pool.pref,thin:pool.thin}, fill=t.mkt?t.mkt:t.thin, kTop=t.mkt?Math.max(0,n-fitAud(from.pref)):undefined;
         /* every level with totals takes exactly as many as the legs with an edge leave to fill */
         if(t.mkt) W.compose(t.mkt===kTop,`${lab}: the ${t.id} tier takes ${t.mkt} totals where the legs with an edge leave ${kTop} to fill`);
         if(t.likeliest){ likeliestSeen++;
           W.compose(!!floor,`${lab}: Safe is marked as a fallback to the likeliest pair`);
           W.compose(!!bestRet&&bestRet(SPEC.find(s=>s[0]===t.id),from,new Map(),kTop)===null,`${lab}: the ${t.id} tier fell back to the likeliest ${n} legs though a ${n}-leg parlay clears its ${floor*100}% floor`);
-          W.compose(fill===Math.max(0,n-maxLegsOf(from.pref)),`${lab}: the likeliest ${n} legs take ${fill} ${t.mkt?'totals':'thin legs'} where the ${t.mkt?'legs with an edge':'preferred legs'} leave ${Math.max(0,n-maxLegsOf(from.pref))} to fill`); }
+          W.compose(fill===Math.max(0,n-fitAud(from.pref)),`${lab}: the likeliest ${n} legs take ${fill} ${t.mkt?'totals':'thin legs'} where the ${t.mkt?'legs with an edge':'preferred legs'} leave ${Math.max(0,n-fitAud(from.pref))} to fill`); }
         /* the likeliest pair, and a level's likeliest of its size, worked out in full where every
            parlay is a plain product: no parlay of its size with as many thin legs lands likelier */
         if(t.likeliest||!floor){ const all=[...from.pref,...from.thin];
@@ -1363,28 +1421,8 @@ setTimeout(async()=>{
        ELO tab, no Elo picks (no #pbElo, no unit's Elo block) and each unit's model parlays under their heading */
     let setsBuilt=0, setLevels=0, setsSaid=0, setsLocked=0, setMktSeen=0, setThinSeen=0; const nightSaid=[];
     const SPS=w.eval('SP_SEARCH'), r4=v=>Math.round(v*1e4)/1e4, r3=v=>Math.round(v*1e3)/1e3;
-    const maxAud=list=>{ const pl=new Set(), gs=new Set(); for(const l of list){ if(isG(l)) gs.add(l.gid+(l.stat==='total'?'|t':'|s')); else pl.add(l.pid); } return pl.size+gs.size; };
-    const dayAud=g=>{ const k=kickAud(g); return k==null?null:new Date(k).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short'}); };
-    const pulledAud=g=>({Thu:'on Thursday, the day of the game',Mon:'on Monday, the day of the game',Sun:'on Saturday morning'})[dayAud(g)];
+    /* (maxAud, dayAud, pulledAud, spWhyAud and spWhySlotAud are the audit's own, before M, so M16 reads them too) */
     const nightAud=g=>({Thu:'Thursday night',Sun:'Sunday night',Mon:'Monday night'})[dayAud(g)];
-    /* why a level of one game is empty, as the rule words it: too few legs, and why there are no player legs */
-    const spWhyAud=(g,n,q)=>{ const pq={pref:capAud(q.pref,SPS.cap),thin:capAud(q.thin,SPS.cap),mkt:capAud(q.mkt,SPS.cap)}, m=maxAud([...pq.pref,...pq.thin,...pq.mkt]);
-      const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in this game${q.noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in this game`;
-      const pl=F('pricedLegs')([g]).filter(l=>!isG(l)), when=pulledAud(g), O=F('ESPN_OUT')[g.id], read=!!O&&(O.st==='ok'||O.st==='none');
-      if(!pl.some(dkOk)) return `${what}, and `+(pl.length?`no player leg DraftKings’ betslip can take yet: a player’s line read by Refresh odds carries no DraftKings id, and DraftKings’ own come with its player prices, which for this game are pulled ${when}.`
-        :read?`no player lines yet: DraftKings had posted none for it when Refresh odds last read it, and its own player prices are pulled ${when}.`:`no player prices yet: they are pulled ${when}.`);
-      return `${what}: a parlay takes one leg a player, and one side and one total a game.`; };
-    /* (app v118) why a level of the Sunday slot is empty, as the rule words it: the slot's own words for too few legs, and
-       its player prices' (the afternoon games' on Saturday morning, the early games' never). (app v121) A parlay of the slot
-       is one game's legs, so "too few" is of any one game: the most legs any one of its games makes (each cut as a night
-       game's set is, SP_SEARCH), worked from the audit's own reading of each game (qualAud), and "that DraftKings' betslip
-       can take" where any one game left legs out for want of an id */
-    const spWhySlotAud=(G,n)=>{ let m=0, noId=false;
-      for(const x of G){ const q=qualAud([x],ALL_U); m=Math.max(m,maxAud([...capAud(q.pref,SPS.cap),...capAud(q.thin,SPS.cap),...capAud(q.mkt,SPS.cap)])); if(q.noId) noId=true; }
-      const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in any one game of the Sunday slot${noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in any one game of the Sunday slot`;
-      const pl=F('pricedLegs')(G).filter(l=>!isG(l));
-      if(!pl.some(dkOk)) return `${what}, and no player ${pl.length?'leg DraftKings’ betslip can take':'prices'} yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET).`;
-      return `${what}: a parlay takes one game’s legs, one leg a player, and one side and one total a game.`; };
     let slotsBuilt=0, slotLevels=0, slotsLocked=0, slotsNone=0, slotsUnderway=0; const slotSaid=[];
     const holdSets=(lab)=>{
       const now=w.Date.now(), mine=F('pbGames')().filter(primeAud), page=F('spGames')();
@@ -1429,7 +1467,7 @@ setTimeout(async()=>{
             const why=slot?spWhySlotAud(G,n):spWhyAud(g,n,q);
             /* empty only where no game of the unit makes a parlay of n (app v121: of its players, sides and totals, and with
                no pair DraftKings will not take) */
-            const can=per.filter(p=>p.mx>=n&&existsAud(p.cut,n)!==false);
+            const can=per.filter(p=>fitAud(p.cut)>=n&&existsAud(p.cut,n)!==false);
             W.compose(!can.length,`${gl} is empty though ${slot?`${can.map(p=>p.x.id).join(', ')} of the slot make`:'the game\'s lines make'} ${slot?'':mx+' legs, '}a parlay of ${n}: ${t.why}`);
             if(slot) W.compose(per.every(p=>!p.s||!(p.s.tiers.find(x=>x.id===t.id)||{}).legs),`${gl} is empty though a game of the slot has a ${t.id} level of its own: ${per.filter(p=>p.s&&(p.s.tiers.find(x=>x.id===t.id)||{}).legs).map(p=>p.x.id).join(', ')}`);
             W.wording(t.why===why,`${gl} is empty and says "${t.why}", not "${why}"`);
@@ -1460,8 +1498,10 @@ setTimeout(async()=>{
           /* the choice of parlay, on its game's own pool, by the page's own search at a set's widths (W.compose) and in
              full where it can be: a night game's, and the slot's level's own game's */
           const pool=P.pool, from0={pref:pool.pref,thin:pool.thin}, gw=slot?`its game's (${xg})`:'the game\'s';
-          const from=t.mkt?{pref:[...pool.pref,...pool.thin],thin:pool.mkt}:from0, kTop=t.mkt?Math.max(0,n-maxAud(from.pref)):undefined;
+          /* (app v121, the review's round) the totals as many as the legs with an edge leave, counted as one parlay can take them (fitAud) */
+          const from=t.mkt?{pref:[...pool.pref,...pool.thin],thin:pool.mkt}:from0, kTop=t.mkt?Math.max(0,n-fitAud(from.pref)):undefined;
           if(t.mkt) W.compose(F('pbTier')(sp,from0,new Map(),SPS)===null,`${gl} took a game total where ${gw} legs with an edge make a parlay of its size`);
+          if(t.mkt) W.compose(t.mkt===kTop,`${gl} takes ${t.mkt} totals where ${gw} legs with an edge leave ${kTop} to fill`);
           if(t.likeliest) W.compose(!!bestRet&&bestRet(sp,from,new Map(),kTop,SPS)===null,`${gl} fell back to the likeliest ${n} legs though a ${n}-leg parlay of ${slot?'its game':'the game'} clears its ${floor*100}% floor`);
           else if(floor&&bestRet){ const b=bestRet(sp,from,new Map(),kTop,SPS); W.compose(!!b&&b.legs.map(legIdAud).join()===t.legs.map(legIdAud).join(),`${gl} is not its best return over its floor`); }
           if(t.likeliest||!floor){ const all=[...from.pref,...from.thin], fill=t.mkt?t.mkt:t.thin;
@@ -2935,7 +2975,15 @@ setTimeout(async()=>{
                      takes his passing TDs with the total; GT's Aggressive without the rule pairs his passing TDs over with
                      the total alone; GV's likeliest pair without the rule is his passing TDs under with his receiver's
                      touchdown; GU's Aggressive keeps his passing TDs under with the total, which the rule allows. No
-                     level holds a pair (clashAud)
+                     level holds a pair (clashAud). (The review's round) GN, a third Monday night game, whose quarterback's
+                     only line is his passing TDs over, beside his receiver's touchdown and his club to win: its Medium is
+                     the side, the touchdown and the total, the totals fill counted as one slip takes the legs (fitAud),
+                     where counted by number alone (as before the round) it was empty; its Aggressive empty, as no 4 of
+                     its legs go on one slip, saying so in the round's words; every empty level's words the audit's own
+                     (spWhyAud, W.wording)
+       the count     the audit's own count of the legs one parlay can take (fitAud), on its own cases with each answer
+                     written beside it, held to the audit's own enumeration (existsAud) and the page's pbMaxFit there, and
+                     to the enumeration on every made-up game's lists
        the hands     no hand of any made-up game holds a pair, and GH's High, where the best pair without the rule is its
                      quarterback's passing TDs with his receiver's touchdown, is the best pair the rule allows
        the slot      four Sunday games before 7:00 pm Eastern (1:00, 4:05, and two at 4:25 alike leg for leg), and a Sunday
@@ -2945,11 +2993,19 @@ setTimeout(async()=>{
                      audit's own copy of the slot rule (slotBestAud), each case's answer written beside it: Safe the
                      likelier pair, the earlier of the two alike; Medium and Aggressive the better return of those that
                      meet their floor, never the likeliest that returns more; Extreme the one with no game total, though
-                     the likeliest of its size; and each card of the slot names its game
+                     the likeliest of its size; and each card of the slot names its game. (The review's round) The slot's
+                     Safe built again (spRebuild) with the player it holds ruled out in the open page, the sets' cache left
+                     as it is (no signature reads the report): the level holds no leg of his and is the best of the slot's
+                     games' own Safe levels on the lines as they stand, worked out in full (S3's, where his game's own is
+                     now its next pair), where a level read off the games' cached sets kept him
+       the slot 2    week 94's Sunday slot of two games, each its side, a quarterback whose only line is his passing TDs
+                     over, his receiver's touchdown and its total: four legs a game in number, three on one slip. Each level
+                     the best of its games' own worked out in full; Medium a game's side, touchdown and total; Aggressive
+                     empty, saying no 4 legs of any one game of the slot go together on DraftKings' slip; Extreme too few
        the builder   a parlay holding both pairs says so under its legs, the pairs in the builder's order and words; this
                      page, which has no parlay card, says nothing of a same-game parlay mixed with another game's leg
      Blocking (made-up data); W.wording the words */
-  { const WK=93, isG=F('isGameLeg'), pp=F('parlayProb'), pd=F('parlayDec'), order=F('pbOrder'), said16=[], SEA=F('SEASON');
+  { const WK=93, WK2=94, isG=F('isGameLeg'), pp=F('parlayProb'), pd=F('parlayDec'), order=F('pbOrder'), said16=[], SEA=F('SEASON');
     /* the rule on its own cases: the audit's copy gives each case's answer, and so does the page */
     { const P=o=>({gid:'g1',pid:'qb',team:'AAA',stat:'passing_tds',side:'over',main:true,k:1.5,...o}), TDL=o=>P({pid:'wr',stat:'any_td',main:false,k:1,...o}), TOT=o=>({gid:'g1',pid:'game',team:'BBB',stat:'total',side:'over',main:true,k:44.5,...o});
       const C=[['his passing TDs over with a teammate\'s touchdown',P(),TDL(),'td'],['the same, the touchdown first',TDL(),P(),'td'],
@@ -2963,6 +3019,25 @@ setTimeout(async()=>{
       let nR=0; for(const [lab,a,b,want] of C){ nR++; const mine=clashAud(a,b), page=dkWhy?dkWhy(a,b):undefined;
         chk(mine===want&&page===want,`M16, the pair rule on ${lab}: the audit's own copy says ${mine}, the page ${page}, the case ${want}`); }
       said16.push(`${nR} cases of the pair rule`); }
+    /* (the review's round) the count of the legs one parlay can take, on its own cases, each answer written beside it: the
+       audit's own count (fitAud), the audit's own enumeration (existsAud: a parlay of that many, none of one more) and the
+       page's pbMaxFit each give it */
+    { const L=(pid,team,stat,side,o)=>({gid:'g1',pid,team,stat,side,k:stat==='passing_tds'?1.5:stat==='total'?44.5:1,main:true,...o}), kd=l=>({...l,key:`${l.gid}|${l.pid}|${l.stat}|${l.side}|${l.k}`});
+      const QB=o=>L('qb','AAA','passing_tds','over',o), WR=o=>L('wr','AAA','any_td','over',{main:false,...o}), TE=o=>WR({pid:'te',...o}), TOT=o=>L('game','BBB','total','over',o), ML=o=>L('team:AAA','AAA','ml','over',{k:0,...o});
+      const C=[['his passing TDs over (his only line), a teammate\'s touchdown and his club to win',[QB(),WR(),ML()],2],
+        ['the same with the game\'s total',[QB(),WR(),ML(),TOT()],3],['his passing TDs over with the total',[QB(),TOT()],1],['his passing TDs under with the total',[QB({side:'under'}),TOT()],2],
+        ['his passing TDs under, a teammate\'s touchdown and the total',[QB({side:'under'}),WR(),TOT()],2],
+        ['his passing TDs over and his passing yards, a teammate\'s touchdown and the total',[QB(),QB({stat:'passing_yards',k:249.5}),WR(),TOT()],3],
+        ['his passing TDs 2+ and under 1.5, a teammate\'s touchdown and the total',[QB({main:false,k:2}),QB({side:'under'}),WR(),TOT()],2],
+        ['two teammates\' touchdowns and the total',[QB(),WR(),TE(),TOT()],3],
+        ['both clubs\' quarterbacks and receivers, and the total',[QB(),QB({pid:'qb2',team:'BBB'}),WR(),WR({pid:'wr2',team:'BBB'}),TOT()],3],
+        ['a teammate with his touchdown and his receiving yards, and the total',[QB(),WR(),WR({stat:'receiving_yards',k:59.5,main:true}),TOT()],2],
+        ['an opponent\'s touchdown and his club to win',[QB(),WR({team:'BBB'}),ML()],3],
+        ['the first case beside a second game\'s side',[QB(),WR(),ML(),ML({gid:'g2'})],3]];
+      const pageFit=w.eval("typeof pbMaxFit==='function'?pbMaxFit:null"); chk(!!pageFit,'M16: the page has no count of the legs one parlay can take (pbMaxFit)');
+      let nF=0; for(const [lab,legs,want] of C){ nF++; const list=legs.map(kd), mine=fitAud(list), page=pageFit?pageFit(list):undefined, ex=[existsAud(list,want),existsAud(list,want+1)];
+        chk(mine===want&&page===want&&ex[0]===true&&ex[1]===false,`M16, the count on ${lab}: the audit's own count ${mine}, the page's ${page}, the audit's enumeration a parlay of ${want} ${ex[0]} and of ${want+1} ${ex[1]}, the case ${want}`); }
+      said16.push(`${nF} cases of the count`); }
     /* the made-up games: a Thursday night (GU), a Saturday night game (GH, held for its hands), the Sunday slot's four (S1 at
        1:00, S4 at 4:05, S2 and S3 at 4:25, S2 first on the schedule), Sunday night (GV, no part of the slot) and a Monday
        doubleheader (GT at 7:15, GQ at 8:15); every total -110 both ways */
@@ -2970,7 +3045,10 @@ setTimeout(async()=>{
     const GU=mk('AWA','AWH','2099-01-01','20:15',130,-150), GH=mk('AHA','AHH','2099-01-03','20:15',-105,-115);
     const S1=mk('AXA','AXH','2099-01-04','13:00',-140,120), S4=mk('ABA','ABH','2099-01-04','16:05',-125,105), S2=mk('AYA','AYH','2099-01-04','16:25',155,-175), S3=mk('AZA','AZH','2099-01-04','16:25',155,-175);
     const GV=mk('AVA','AVH','2099-01-04','20:20',120,-140), GT=mk('ATA','ATH','2099-01-05','19:15',130,-150), GQ=mk('AQA','AQH','2099-01-05','20:15',150,-170);
-    const FX=[GU,GH,S1,S4,S2,S3,GV,GT,GQ], SLOT=[S1,S4,S2,S3], NIGHTS=[GU,GV,GT,GQ];
+    /* (the review's round) a third Monday night game (GN), and week 94's Sunday slot of two games (SA at 1:00, SB at 4:25) */
+    const GN=mk('ANA','ANH','2099-01-05','21:30',130,-150), mk2=(...x)=>{ const g=mk(...x); return {...g,id:g.id.replace(`_${WK}_`,`_${WK2}_`),w:WK2}; };
+    const SA=mk2('APA','APH','2099-01-11','13:00',130,-150), SB=mk2('ARA','ARH','2099-01-11','16:25',130,-150);
+    const FX=[GU,GH,S1,S4,S2,S3,GV,GT,GQ,GN,SA,SB], SLOT=[S1,S4,S2,S3], SLOT2=[SA,SB], NIGHTS=[GU,GV,GT,GQ,GN];
     const pl=(g,id,team,stat,k,side,main,p,price,label)=>({key:`${g.id}|aud16-${id}|${stat}`,gid:g.id,pid:'aud16-'+id,stat,k,side,main,p,price,src:'real',mu:null,name:'Made-up '+id,pos:'WR',grp:'AUD',team,opp:team===g.h?g.a:g.h,week:WK,label});
     const ml=(g,p)=>({key:`${g.id}|team:${g.h}|ml`,gid:g.id,pid:'team:'+g.h,stat:'ml',k:0,side:'over',main:false,p,price:g.mlh,src:'real',mu:null,name:'Made-up '+g.h,pos:'Game',grp:'TEAM',team:g.h,opp:g.a,week:WK,label:'To win'});
     const TDo=(g,id,p,pr)=>pl(g,id,g.h,'passing_tds',1.5,'over',true,p,pr,'Over 1.5 passing TDs'), TDu=(g,id,p,pr)=>pl(g,id,g.h,'passing_tds',1.5,'under',true,p,pr,'Under 1.5 passing TDs');
@@ -2990,16 +3068,22 @@ setTimeout(async()=>{
          heavy favourites (the likeliest pair) */
       RG(S1,'x1',S1.h,'receptions',5,0.55,120,'receptions'),RG(S1,'x2',S1.h,'receiving_yards',70,0.545,120,'receiving yards'),RG(S1,'x3',S1.a,'rushing_yards',60,0.54,120,'rushing yards'),RG(S1,'x4',S1.a,'receptions',6,0.535,120,'receptions'),ml(S1,0.53),
       RG(S4,'z1',S4.h,'receptions',4,0.66,-125,'receptions'),RG(S4,'z2',S4.h,'rushing_yards',50,0.65,-120,'rushing yards'),RG(S4,'z3',S4.a,'receiving_yards',40,0.63,-110,'receiving yards'),ml(S4,0.56),
-      ...[[S2,'s2'],[S3,'s3']].flatMap(([g,x])=>[RG(g,x+'y1',g.h,'receptions',6,0.80,-230,'receptions'),RG(g,x+'y2',g.h,'receiving_yards',50,0.78,-220,'receiving yards'),RG(g,x+'y3',g.a,'rushing_yards',40,0.74,-190,'rushing yards'),ml(g,0.70)])];
+      ...[[S2,'s2'],[S3,'s3']].flatMap(([g,x])=>[RG(g,x+'y1',g.h,'receptions',6,0.80,-230,'receptions'),RG(g,x+'y2',g.h,'receiving_yards',50,0.78,-220,'receiving yards'),RG(g,x+'y3',g.a,'rushing_yards',40,0.74,-190,'rushing yards'),ml(g,0.70)]),
+      /* (the review's round) GN, SA and SB: a side, a quarterback whose only line is his passing TDs over, and his receiver's
+         touchdown, with the game's total on the schedule. Without the pair rule his passing TDs and the touchdown are the
+         likeliest pair; with it, the side and his passing TDs; Medium (the side, the touchdown and the total) lands over its
+         floor on GN and SA, and under it on SB */
+      TDo(GN,'n1',0.80,-230),TD(GN,'n2',GN.h,0.76,-210),ml(GN,0.70),
+      ...[TDo(SA,'pa1',0.80,-230),TD(SA,'pa2',SA.h,0.76,-210),ml(SA,0.70),TDo(SB,'pb1',0.78,-220),TD(SB,'pb2',SB.h,0.74,-210),ml(SB,0.66)].map(l=>({...l,week:WK2}))];
     /* a parlay that can be made without the pair rule: fitsAud as it was before app v121, for each case to show what it holds */
     const fitsNoRule=(cur,c)=>{ if(cur.some(l=>l.key===c.key)) return false;
       if(isG(c)) return !cur.some(l=>isG(l)&&l.gid===c.gid&&(l.stat==='total')===(c.stat==='total'));
       return !cur.some(l=>!isG(l)&&l.pid===c.pid); };
-    const slots16=list=>{ const pl=new Set(), gs=new Set(); for(const l of list){ if(isG(l)) gs.add(l.gid+(l.stat==='total'?'|t':'|s')); else pl.add(l.pid); } return pl.size+gs.size; };
     /* one game's level of n legs, the audit's own copy of a set's rule, worked out in full: every parlay of n of its legs with
        an edge that can be made (fits); Safe the likeliest pair, the others the best return over their floor, else the
        likeliest of their size, each with the fewest thin legs; where the legs with an edge make no parlay of n, the game's
-       total as the last fill, exactly as many as those legs leave to fill */
+       total as the last fill, exactly as many as those legs leave to fill: (the review's round) counted as one slip takes
+       them (fitAud), and without the pair rule (fitsNoRule, as before app v121) by their number alone (maxAud) */
     const level16=(q,n,floor,fits)=>{ const edge=[...q.pref,...q.thin];
       const all=(legs,fillOf)=>{ const out=[], rec=(i0,cur)=>{ if(cur.length===n){ const L=order(cur.map(l=>({...l}))), pr=pp(L).corr, dec=pd(L.map(l=>({leg:l,ml:l.price})));
             out.push({L,pr,dec,ev:pr*dec,fill:L.filter(fillOf).length,thin:L.filter(l=>l.thin).length,mkt:L.filter(l=>l.market).length,id:L.map(legIdAud).sort().join()}); return; }
@@ -3012,7 +3096,7 @@ setTimeout(async()=>{
         if(clear.length){ const kc=Math.min(...clear.map(x=>x.fill)); return {kind:'floor',...top(clear.filter(x=>x.fill===kc),x=>x.ev)}; }
         return {kind:'likeliest',...lk}; };
       const r=pick(all(edge,l=>!!l.thin)); if(r||!q.mkt.length) return r;
-      const kTop=Math.max(0,n-slots16(edge));
+      const kTop=Math.max(0,n-(fits===fitsNoRule?maxAud:fitAud)(edge));
       return pick(all([...edge,...q.mkt],l=>!!l.market).filter(x=>x.mkt===kTop)); };
     /* a level worked out here, as the slot's rule reads one */
     const asLvl=b=>b?{legs:b.best[0].L,corr:b.best[0].pr,dec:b.best[0].dec,thin:b.best[0].thin,mkt:b.best[0].mkt,likeliest:b.kind==='likeliest'}:null;
@@ -3033,7 +3117,12 @@ setTimeout(async()=>{
       { const q=qualAud(FX,ALL_U), bad=L16.filter(l=>!q.pref.some(x=>legIdAud(x)===legIdAud(l)));
         chk(!bad.length&&q.mkt.length===2*FX.length&&!q.far,`M16: the made-up lines are not each a Value pick, and every game's total on the market list (${names(bad)||'every line a Value pick'}; ${q.mkt.length} totals, ${q.far} far off), so the cases cannot tell`); }
       /* the nights: every level worked out in full, with the pair rule and without it */
-      const CASE={[GQ.id]:{safe:'td',med:'td',aggr:'td',xtrm:'td+total'},[GT.id]:{aggr:'total'},[GV.id]:{safe:'td',med:'td',aggr:'td',xtrm:'td'},[GU.id]:{}};
+      /* (the review's round) the audit's own count (fitAud) is what its own enumeration finds, on every made-up game's legs
+         with an edge and with the total: a parlay of that many legs, and none of one more */
+      { const bad=[]; for(const g of FX){ const q=qualAud([g],ALL_U), edge=[...q.pref,...q.thin];
+          for(const list of [edge,[...edge,...q.mkt]]){ const f=fitAud(list); if(existsAud(list,f)!==true||existsAud(list,f+1)!==false) bad.push(`${g.id} (${list.length} legs): ${f}`); } }
+        chk(!bad.length,`M16: the audit's own count of the legs one parlay can take is not what its own enumeration finds: ${bad.join('; ')}`); }
+      const CASE={[GQ.id]:{safe:'td',med:'td',aggr:'td',xtrm:'td+total'},[GT.id]:{aggr:'total'},[GV.id]:{safe:'td',med:'td',aggr:'td',xtrm:'td'},[GU.id]:{},[GN.id]:{safe:'td',med:'td',aggr:'td+total'}};
       let nWorked=0;
       for(const g of NIGHTS){ const q=qualAud([g],ALL_U), s=F('spSet')(g.id), gl=`M16, ${g.a} at ${g.h}`;
         chk(primeAud(g)&&F('spPrime')(g),`${gl} is not a prime-time game, so the case is not a night's set`);
@@ -3042,13 +3131,27 @@ setTimeout(async()=>{
           /* what the case stands on: without the rule the level's best holds the pair named (and only where named) */
           chk(want?(!!b0&&b0.best.every(c=>kindsOf(c.L)===want)):(!b0||b0.best.every(c=>!kindsOf(c.L))),`${gl}: without the pair rule the ${id} level's best is ${b0?names(b0.best[0].L):'none'}, holding ${b0?kindsOf(b0.best[0].L)||'no pair':'nothing'} where the case stands on ${want||'no pair'}, so it cannot tell`);
           held(t,b,n,`${gl}: the ${id} level`); nWorked++;
-          chk(!t||!t.legs||!clashPairsAud(t.legs).length,`${gl}: the ${id} level holds a pair DraftKings will not take on one slip: ${t&&t.legs?clashTxt(t.legs):''}`); }
+          chk(!t||!t.legs||!clashPairsAud(t.legs).length,`${gl}: the ${id} level holds a pair DraftKings will not take on one slip: ${t&&t.legs?clashTxt(t.legs):''}`);
+          /* an empty level says why in the audit's own words (spWhyAud) */
+          if(t&&!t.legs){ const why=spWhyAud(g,n,q); W.wording(t.why===why,`${gl}: the empty ${id} level says "${t.why}", not "${why}"`); } }
+        /* (the review's round) GN: its quarterback's only line is his passing TDs over, so his passing TDs and his receiver's
+           touchdown are the room of one leg (three legs with an edge, two on one slip; four with the total, three on one
+           slip). Medium is the side, the touchdown and the total, one total as those legs, counted so, leave to fill (by
+           their number alone none, and the level was empty); Aggressive is empty, no 4 of its legs going on one slip (the
+           enumeration's, blocking through held), and says so in the round's words */
+        if(g===GN){ const edge=[...q.pref,...q.thin], all=[...edge,...q.mkt], md=s.tiers.find(x=>x.id==='med'), ag=s.tiers.find(x=>x.id==='aggr');
+          chk(edge.length===3&&maxAud(edge)===3&&fitAud(edge)===2&&maxAud(all)===4&&fitAud(all)===3&&existsAud(all,3)===true&&existsAud(all,4)===false,
+            `${gl}: its legs do not make 3 with an edge (2 on one slip) and 4 with the total (3 on one slip, and no parlay of 4), so the case cannot tell: ${names(all)}`);
+          chk(!!md&&!!md.legs&&md.mkt===1&&md.legs.some(l=>l.stat==='ml')&&md.legs.some(l=>l.pid==='aud16-n2')&&md.legs.some(l=>l.stat==='total')&&!md.legs.some(l=>l.pid==='aud16-n1'),
+            `${gl}: Medium is not its side, the receiver's touchdown and the total (one total): ${md&&md.legs?names(md.legs):md&&md.why}`);
+          const want=`No 4 of this game’s legs go together on DraftKings’ slip: ${CLASH_WHY_AUD}`;
+          W.wording(!!ag&&!ag.legs&&ag.why===want,`${gl}: the empty Aggressive says "${ag&&ag.why}", not "${want}"`); }
         /* GQ's Safe takes his passing TDs with the opponent's receiver's touchdown (a pair of two clubs is no pair); GU's
            Aggressive keeps his passing TDs under with the total (the rule's total is of his passing TDs over) */
         if(g===GQ){ const t=s.tiers.find(x=>x.id==='safe'); chk(!!t&&!!t.legs&&t.legs.some(l=>l.pid==='aud16-q1'&&l.stat==='passing_tds')&&t.legs.some(l=>l.pid==='aud16-q3'),`${gl}: Safe is not his passing TDs with the opponent's receiver's touchdown: ${t&&t.legs?names(t.legs):''}`); }
         if(g===GU){ const t=s.tiers.find(x=>x.id==='aggr'); chk(!!t&&!!t.legs&&t.legs.some(l=>l.stat==='passing_tds'&&l.side==='under')&&t.legs.some(l=>l.stat==='total'),`${gl}: Aggressive does not keep his passing TDs under with the game total: ${t&&t.legs?names(t.legs):''}`); } }
       { const nmG=id=>{ const g=FX.find(x=>x.id===id); return `${g.a} at ${g.h}`; }, held0=Object.entries(CASE).filter(([,c])=>Object.keys(c).length).map(([id,c])=>`${nmG(id)}'s ${Object.keys(c).join(', ')}`);
-        said16.push(`${NIGHTS.length} night games' sets worked out in full (${nWorked} levels; without the rule ${held0.join('; ')} hold a pair, and the rule leaves ${nmG(GU.id)}'s passing TDs under with the total)`); }
+        said16.push(`${NIGHTS.length} night games' sets worked out in full (${nWorked} levels; without the rule ${held0.join('; ')} hold a pair, and the rule leaves ${nmG(GU.id)}'s passing TDs under with the total; ${nmG(GN.id)}'s Medium its side, touchdown and total, its Aggressive empty for want of 4 legs on one slip)`); }
       /* the hands: none holds a pair; GH's High the best pair the rule allows, where without it the best is the pair */
       { const bad=[]; let nH=0;
         for(const g of FX){ const T=F('gameTiers')(g); for(const id of ['high','med','low']) if(T&&T[id]){ nH++; if(clashPairsAud(T[id].legs).length) bad.push(`${g.id}'s ${id} hand: ${clashTxt(T[id].legs)}`); } }
@@ -3103,6 +3206,44 @@ setTimeout(async()=>{
             chk(tg.length===1&&tg[0].dataset.pbTgame===g.id,`M16: the slot's ${id} card does not name its game, ${g.id}: ${tg.map(x=>x.dataset.pbTgame).join(', ')||'none'}`);
             W.wording(!!tg[0]&&tg[0].textContent===`${TN[g.a]||g.a} at ${TN[g.h]||g.h} · ${etAud(kickAud(g))}`,`M16: the slot's ${id} card names its game "${tg[0]?tg[0].textContent:''}"`); } }
         finally { slotPut(keepN); stab.hidden=keepTab; F('renderSp')(); } }
+      /* (the review's round) week 94's Sunday slot: each game four legs in number and three on one slip, so its Aggressive
+         is empty in the round's words; each level the best of its games' own, worked out in full */
+      { const SID2=`${SEA}_${WK2}_SUN`, u2=F('spUnit')(SID2), s2=F('spSet')(SID2), gl0=`M16, week ${WK2}'s Sunday slot`;
+        chk(!!u2&&u2.slot&&ids(u2.games)===ids(SLOT2)&&ids(slotGamesAud(S.sched,WK2))===ids(SLOT2),`${gl0} is ${u2?ids(u2.games):'none'} (the audit's own rule: ${ids(slotGamesAud(S.sched,WK2))}), not ${ids(SLOT2)}`);
+        const per2=SLOT2.map(x=>{ const q=qualAud([x],ALL_U), edge=[...q.pref,...q.thin]; return {x,q,edge,b:Object.fromEntries(SPEC_AUD.map(([id,,n,floor])=>[id,level16(q,n,floor,fitsAud)]))}; });
+        chk(per2.every(P=>P.edge.length===3&&maxAud(P.edge)===3&&fitAud(P.edge)===2&&maxAud([...P.edge,...P.q.mkt])===4&&fitAud([...P.edge,...P.q.mkt])===3&&existsAud([...P.edge,...P.q.mkt],4)===false),
+          `${gl0}: its games' legs do not each make 3 with an edge (2 on one slip) and 4 with the total (3 on one slip, no parlay of 4), so the case cannot tell`);
+        chk(!!s2&&s2.tiers.length===4,`${gl0} has no set of four levels`);
+        const got=[];
+        for(const [id,,n,floor] of SPEC_AUD){ const t=s2&&s2.tiers.find(x=>x.id===id), best=slotBestAud(per2.map(P=>asLvl(P.b[id])),floor), gl=`${gl0}: its ${id} level`;
+          if(!best){ held(t,null,n,gl); const why=spWhySlotAud(SLOT2,n); W.wording(!!t&&t.why===why,`${gl} is empty and says "${t&&t.why}", not "${why}"`); got.push(`${id} empty`); continue; }
+          chk(!!t&&!!t.legs&&t.legs.every(l=>l.gid===best.legs[0].gid),`${gl} is not one game's, ${best.legs[0].gid}'s: ${t&&t.legs?names(t.legs):t&&t.why}`);
+          held(t,per2.find(P=>P.x.id===best.legs[0].gid).b[id],n,gl); got.push(`${id} ${best.legs[0].gid.split('_').slice(2).join(' at ')}'s`); }
+        /* the cases: Medium SA's side, touchdown and total (over its floor, where SB's lands under it); Aggressive's words the
+           round's; Extreme too few legs in any one game */
+        { const md=s2&&s2.tiers.find(x=>x.id==='med'), ag=s2&&s2.tiers.find(x=>x.id==='aggr'), xt=s2&&s2.tiers.find(x=>x.id==='xtrm');
+          chk(!!md&&!!md.legs&&md.mkt===1&&!md.likeliest&&md.legs.every(l=>l.gid===SA.id)&&md.legs.some(l=>l.pid==='aud16-pa2')&&md.legs.some(l=>l.stat==='ml')&&md.legs.some(l=>l.stat==='total'),
+            `${gl0}: Medium is not SA's side, its receiver's touchdown and the total, over its floor: ${md&&md.legs?names(md.legs):md&&md.why}`);
+          const wantA=`No 4 legs of any one game of the Sunday slot go together on DraftKings’ slip: ${CLASH_WHY_AUD}`, wantX='Only 4 legs in any one game of the Sunday slot: a parlay takes one game’s legs, one leg a player, and one side and one total a game.';
+          W.wording(!!ag&&!ag.legs&&ag.why===wantA,`${gl0}: the empty Aggressive says "${ag&&ag.why}", not "${wantA}"`);
+          W.wording(!!xt&&!xt.legs&&xt.why===wantX,`${gl0}: the empty Extreme says "${xt&&xt.why}", not "${wantX}"`); }
+        said16.push(`week ${WK2}'s Sunday slot (four legs a game, three on one slip): ${got.join(', ')}`); }
+      /* (the review's round) the slot's Safe built again (spRebuild) for the player it holds ruled out in the open page: the
+         report is read by no signature, so the sets' cache is left as it is and still holds him; the level built again holds
+         no leg of his and is the best of the slot's games' own Safe levels on the lines as they stand, worked out in full */
+      { const INJ=F('INJ'), t0=ss&&ss.tiers.find(x=>x.id==='safe'), out=t0&&t0.legs?t0.legs.find(l=>!isG(l)):null, had=!!out&&Object.prototype.hasOwnProperty.call(INJ,out.pid), keep=out?INJ[out.pid]:undefined;
+        chk(!!out&&out.gid===S2.id,`M16: the slot's Safe (${t0&&t0.legs?names(t0.legs):'none'}) holds no player of S2's, so the case cannot tell`);
+        if(out){ try{
+          INJ[out.pid]={k:'out',t:'OUT',title:'Out'};
+          const cached=F('spSet')(SID).tiers.find(x=>x.id==='safe'), gl=`M16, the slot's Safe built again with ${out.name} ruled out`;
+          chk(F('suggestable')(out.pid)===false&&!!cached&&!!cached.legs&&cached.legs.some(l=>l.pid===out.pid),`${gl}: the slot's cached set no longer holds him, or he is still one a suggestion may take, so the case cannot tell a level built from the cache from one built on the lines as they stand`);
+          const r=F('spRebuild')(SID,'safe'), per3=SLOT.map(x=>({x,b:level16(qualAud([x],ALL_U),2,0,fitsAud)})), best=slotBestAud(per3.map(P=>asLvl(P.b)),0);
+          chk(!!r&&!!r.legs&&!r.legs.some(l=>l.pid===out.pid),`${gl} still holds him: ${r&&r.legs?names(r.legs):r&&r.why}`);
+          chk(!!best&&best.legs[0].gid===S3.id,`${gl}: the audit's own slot rule gives ${best?best.legs[0].gid+"'s":'none'}, not the case's S3's`);
+          chk(!!r&&!!r.legs&&!!best&&r.legs.every(l=>l.gid===best.legs[0].gid),`${gl} is not ${best?best.legs[0].gid:'-'}'s: ${r&&r.legs?names(r.legs):''}`);
+          held(r,best?per3.find(P=>P.x.id===best.legs[0].gid).b:null,2,gl);
+          said16.push(`the slot's Safe built again with ${out.name} ruled out, the cache left as it is: S3's, holding none of his`);
+        } finally { if(had) INJ[out.pid]=keep; else delete INJ[out.pid]; dropCaches(); } } }
       /* the builder: GQ's game total over, his passing TDs over and his receiver's touchdown (both pairs), and GT's side */
       { const tot=F('totalLeg')(GQ,'over'), q1=L16.find(l=>l.pid==='aud16-q1'&&l.stat==='passing_tds'), q2=L16.find(l=>l.pid==='aud16-q2'), mT=L16.find(l=>l.gid===GT.id&&l.stat==='ml');
         S.parlay={}; S.bookPrice=null; for(const l of [tot,q1,q2,mT]) S.parlay[l.key]={...l}; F('renderParlay')();

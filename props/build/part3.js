@@ -3433,11 +3433,11 @@ function renderParlay(o){
   if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">These legs are in different weeks (${wks.join(', ')}). A parlay has to settle together, so a sportsbook won't take this as one ticket.</p>`;
   /* (app v121) a pair DraftKings will not take on one slip (dkClash), and a same-game parlay mixed with legs of other
      games, whose one betslip link DraftKings does not open: the parlay card gives each game its own (where it is on the
-     page), read off the card's own plan, which counts the legs that go on the slip alone. One leg a game is a plain
-     parlay, which opens as one link */
+     page), read off the card's own plan, which counts the legs that go on the slip alone, and only where the card can
+     be finished (the legs of one week). One leg a game is a plain parlay, which opens as one link */
   { const cp=dkClashPairs(legs), nm=l=>`${esc(l.name)}, ${esc(l.label)}`;
     if(cp.length) html+=`<p class="delta down" style="margin:10px 0 0" data-pb-clash="${cp.length}">DraftKings may refuse ${cp.length===1?'this pair':'these pairs'} on one slip: ${cp.map(([i,j,k])=>`${nm(legs[i])}, with ${nm(legs[j])} (${DK_CLASH[k]})`).join('; ')}.</p>`;
-    if(plan&&plan.multi&&Array.isArray(plan.games)){ const nG=plan.games.length;
+    if(plan&&plan.multi&&Array.isArray(plan.games)&&wks.length===1){ const nG=plan.games.length;
       html+=`<p class="muted" style="margin:10px 0 0;font-size:12px" data-pb-multigame="${nG}">These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${nG} games a link of its own.</p>`; } }
   /* what it pays, inside the same card, then the two actions as buttons only */
   html+=`<div class="pays"><h3>What it pays</h3>
