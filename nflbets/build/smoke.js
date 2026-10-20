@@ -18,7 +18,10 @@
  * which is the prop model's Games tab running in this page; the Parlay Builder (the builder, its
  * choices and the Top lines), Suggested Parlays (its two sections, Night games and the Sunday slot,
  * each headed by its record and backtest, each unit's model parlays and Elo picks, Add to builder,
- * Finish, the lock), and X Parlays on a tab of its own. X Parlays and the X Bet Log are the
+ * Finish, the lock; since app v121 every level one game's legs, the Sunday slot's the best of its
+ * games' own, and no pair DraftKings refuses on one slip, worked out here on the smoke's own copies),
+ * the builder's notes on such a pair and on a same-game parlay mixed with other games, the parlay
+ * card's link for each game, and X Parlays on a tab of its own. X Parlays and the X Bet Log are the
  * files liveparlays/parlays.json and liveparlays/xbets.json, read only on every device: there is
  * no owner and no shared store, every request a page makes is recorded, and one to the retired
  * store or its sign-in services, or anything but a read, fails the smoke. A browser that still
@@ -371,6 +374,60 @@ function dkTakes(DK, l, started) {
   const W = DK[String(l.week)], E = W && typeof W === 'object' ? W[l.gid] : null;
   return !(E && typeof E === 'object') || !!dkOwnId(DK, l, started);
 }
+/* (app v121) the pairs DraftKings will not take on one slip, by the owner's words of 19 October 2026 ("If your parlay
+   already has a receiver anytime TD, a team total, or the game total, adding the QB's passing TD over often gets
+   blocked", and "Some combos contradict each other, like QB under 1.5 passing TDs alongside two of his receivers to
+   score. The book rejects it outright"), worked out here on their own, never by the page's dkClash: two legs of one
+   game, one a player's passing touchdowns (over or under, a main line or a rung) and the other a teammate's anytime
+   touchdown ('td'), or the passing touchdowns an over and the other the game's total ('total'); and the words the
+   page says each in. No suggestion may hold such a pair (blocking: a legality rule) */
+const isGameOwn = l => !!l && ['ml', 'ats', 'total'].includes(l.stat);
+const clashOwn = (a, b) => { if (!a || !b || a.gid !== b.gid) return null;
+  const one = (q, o) => isGameOwn(q) || q.stat !== 'passing_tds' ? null : !isGameOwn(o) && o.stat === 'any_td' && o.team === q.team && o.pid !== q.pid ? 'td' : q.side !== 'under' && o.stat === 'total' ? 'total' : null;
+  return one(a, b) || one(b, a); };
+const clashPairsOwn = legs => { const out = []; (legs || []).forEach((a, i) => legs.slice(i + 1).forEach((b, k) => { const x = clashOwn(a, b); if (x) out.push([i, i + 1 + k, x]); })); return out; };
+const CLASH_SAY_OWN = { td: 'a quarterback’s passing TDs with a teammate’s touchdown', total: 'a quarterback’s passing TDs over with the game total' };
+/* (app v121, the review's round) why a level a game's legs make in number has no parlay of them on one slip, in the
+   page's words: the end of a set's empty level that its game (or, on the Sunday slot, some one of its games) makes
+   that many legs and none that many that go together */
+const CLASH_WHY_OWN = 'it takes no quarterback’s passing TDs with a teammate’s touchdown, or his passing TDs over with the game total.';
+/* a parlay's pairs DraftKings refuses, as a check names them ('' for none) */
+const clashTxt = legs => clashPairsOwn(legs).map(([i, j, k]) => `${legs[i].name} ${legs[i].label} with ${legs[j].name} ${legs[j].label} (${k})`).join('; ');
+/* the most legs one parlay can take of a list, worked out here: one leg a player, one side and one total a game, and
+   no pair DraftKings refuses. Only a player every one of whose legs is his passing touchdowns can clash whatever he is
+   given (a quarterback with another line takes that), against a teammate every one of whose legs is his anytime
+   touchdown, and, where none of his is an under, the game's total; so a game takes its players, its side and its
+   total less the most of those clashes that can be had apart (a bipartite matching, Kuhn's) */
+const maxFitOwn = list => { const byG = new Map(); let n = 0;
+  for (const l of list || []) { if (!byG.has(l.gid)) byG.set(l.gid, []); byG.get(l.gid).push(l); }
+  for (const L of byG.values()) { const pl = new Map(); let side = 0, tot = 0;
+    for (const l of L) { if (isGameOwn(l)) { if (l.stat === 'total') tot = 1; else side = 1; } else { if (!pl.has(l.pid)) pl.set(l.pid, []); pl.get(l.pid).push(l); } }
+    const P = [...pl.values()], Q = P.filter(ls => ls.every(l => l.stat === 'passing_tds')), O = P.filter(ls => ls.every(l => l.stat === 'any_td'));
+    const adj = Q.map(ls => [...O.filter(o => o[0].team === ls[0].team).map(o => o[0].pid), ...(tot && !ls.some(l => l.side === 'under') ? ['#total'] : [])]);
+    const mate = new Map(), aug = (i, seen) => { for (const r of adj[i]) { if (seen.has(r)) continue; seen.add(r); if (!mate.has(r) || aug(mate.get(r), seen)) { mate.set(r, i); return true; } } return false; };
+    let M = 0; adj.forEach((_, i) => { if (aug(i, new Set())) M++; });
+    n += P.length + side + tot - M; }
+  return n; };
+/* (app v121) the Sunday slot, one game a level (the owner, 19 October 2026: "the legs need to be part of the same game
+   parlay only, and anytime there's a mix it bombs the hyperlink"), worked out here on its own, never by the page's
+   spSlotBetter: each of the slot's games has its own set, built as a night game's is, and each level of the slot is the
+   best of its games' own levels of that size: a parlay before none; one with no game total before one with one; one that
+   meets its floor before the likeliest of its size; the fewer thin legs; then the better expected return (chance times
+   price) where it met a floor, else the higher chance; then the earlier game of the slot. slotPickOwn gives the place,
+   in the slot's order, of the game whose level it is (-1 for none) */
+const slotBetterOwn = (a, b, floor) => { const k = r => [r.mkt ? 1 : 0, floor && r.likeliest ? 1 : 0, r.thin || 0], ka = k(a), kb = k(b);
+  for (let i = 0; i < 3; i++) if (ka[i] !== kb[i]) return ka[i] < kb[i];
+  const v = r => floor && !r.likeliest ? r.corr * r.dec : r.corr; return v(a) > v(b); };
+const slotPickOwn = (levels, floor) => { let b = -1; levels.forEach((r, i) => { if (r && r.legs && r.legs.length && (b < 0 || slotBetterOwn(r, levels[b], floor))) b = i; }); return b; };
+/* the Elo picks of the slot the same way: each game's own four (its candidates alone), each level the best of theirs,
+   one that meets its floor before the likeliest of its size, then the better expected return on the Elo chance where it
+   met its floor, else the higher Elo chance, then the earlier game */
+const eloSlotBetterOwn = (a, b) => { const la = a.likeliest ? 1 : 0, lb = b.likeliest ? 1 : 0; if (la !== lb) return la < lb;
+  const v = x => x.floor && !x.likeliest ? x.p * x.dec : x.p; return v(a) > v(b); };
+const eloSlotPickOwn = levels => { let b = -1; levels.forEach((r, i) => { if (r && r.legs && r.legs.length && (b < 0 || eloSlotBetterOwn(r, levels[b]))) b = i; }); return b; };
+/* the slot's game a card names under its title (app v121), in the smoke's own words: "Seahawks at Broncos · Sun 4:25 PM
+   ET" (the clubs' names, the kickoff in Eastern time by the time zone database) */
+const tgameOwn = (g, TN) => `${(TN && TN[g.a]) || g.a} at ${(TN && TN[g.h]) || g.h} · ${etSay(etKick(g))}`;
 /* the Parlay Builder panel's own text (its choices, notes and Top 50 lines). The Elo picks are on Suggested
    Parlays since app v111 (in each of its units since app v118); one inside it would be left out all the same, since
    their own words on DraftKings' betslip are not the panel's notes */
@@ -1150,7 +1207,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      land likelier. That holds whatever the legs are priced at, so a fallback chosen by any other
      measure (the best return under the floor, say) fails it on the week's own picks. Bounded, so
      a long list never stalls the smoke */
-  const fitsF = hasPb ? w.eval('pbFits') : null, orderF = hasPb ? w.eval('pbOrder') : null, rhoF = hasPb ? w.eval('legRho') : null, ppF = hasPb ? w.eval('parlayProb') : null, LIKELY_CAP = 250000;
+  /* (app v121) a leg that can join a parlay: the page's pbFits (one a player, one side and one total a game, no line
+     twice), and never beside a leg DraftKings refuses it with (clashOwn, the smoke's own) */
+  const fitsP = hasPb ? w.eval('pbFits') : null, fitsF = hasPb ? (cur, c) => fitsP(cur, c) && !cur.some(l => clashOwn(l, c)) : null, orderF = hasPb ? w.eval('pbOrder') : null, rhoF = hasPb ? w.eval('legRho') : null, ppF = hasPb ? w.eval('parlayProb') : null, LIKELY_CAP = 250000;
   const noMovers = list => list.every((a, i) => list.slice(i + 1).every(b => !fitsF([a], b) || Math.abs(rhoF(a, b)) < 0.03));
   const likeliestOf = (list, n, thin) => { let best = -1, legs = null, seen = 0;
     const rec = (i0, cur, th) => { if (seen > LIKELY_CAP) return;
@@ -1311,7 +1370,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const kindOf = w.eval('pbKind'), mlProb = w.eval('mlProb'), isG = w.eval('isGameLeg'), started = w.eval('gameStarted');
     /* the legs the picks make, and the most a parlay can take of them (one a player, one side and one total a game) */
     const maxLegs = () => { const u = U(), on = games.filter(g => !u.off.includes(g.id));
-      if (!on.length || !KINDS.some(k => u.k[k])) return 0; const p = w.eval('pbPool')(on); return w.eval('pbMaxLegs')([...p.pref, ...p.thin, ...(p.mkt || [])]); };
+      if (!on.length || !KINDS.some(k => u.k[k])) return 0; const p = w.eval('pbPool')(on); return maxFitOwn([...p.pref, ...p.thin, ...(p.mkt || [])]); };
     /* what a card's rule says it is: Safe the likeliest pair, a level over its floor its best
        return, a level none of whose parlays reaches its floor the likeliest of its size */
     const ruleFor = t => t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best return that lands ${Math.round(t.floor * 100)}%+ by the model` : 'the likeliest pair';
@@ -1334,9 +1393,12 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       chk(t.legs.every(l => allow(l) && !startedL(l)), `${lab}: the ${t.id} tier has a leg of a kind or a game not ticked, or one that has kicked off`);
       chk(t.legs.every(l => takenRule(w)(l) && (l.market || l.p >= mlProb(l.price)) && l.p >= 0.45 && l.p < 0.97), `${lab}: the ${t.id} tier has a leg with no real price (nor the rule's own from DraftKings' line on ESPN, on a kind it may take) or rated below the book`);
       chk(!dkNow() || t.legs.every(ownId), `${lab}: the ${t.id} tier has a leg DraftKings has no id for at its own line, so it cannot go on the slip: ` + t.legs.filter(l => !ownId(l)).map(l => l.name + ' ' + l.label).join(', '));
+      /* (app v121) how many the legs with an edge leave to fill is the most of them one parlay can take with no pair
+         DraftKings refuses (maxFitOwn), and no level holds such a pair (clashOwn) */
       chk(t.legs.every(l => (l.stat === 'total') === !!l.market) && (t.mkt || 0) === t.legs.filter(l => l.market).length
-        && (!t.mkt || t.mkt === Math.max(0, t.n - w.eval('pbMaxLegs')([...pool.pref, ...pool.thin]))),
+        && (!t.mkt || t.mkt === Math.max(0, t.n - maxFitOwn([...pool.pref, ...pool.thin]))),
         `${lab}: the ${t.id} tier holds a total that is not a market leg, or more totals than the legs with an edge leave to fill`);
+      chk(!clashPairsOwn(t.legs).length, `${lab}: the ${t.id} tier holds a pair DraftKings will not take on one slip: ` + clashTxt(t.legs));
       { const sd = t.legs.filter(l => isG(l) && l.stat !== 'total'), tt = t.legs.filter(l => l.stat === 'total'), pl = t.legs.filter(l => !isG(l));
         chk(new Set(sd.map(l => l.gid)).size === sd.length && new Set(tt.map(l => l.gid)).size === tt.length && new Set(pl.map(l => l.pid)).size === pl.length,
           `${lab}: the ${t.id} tier has two sides or two totals on one game, or two legs on one player`); }
@@ -1382,6 +1444,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const headHeld = (el, u) => { const H = unitHead(u), h4 = el && el.querySelector(':scope > .sp-hd > h4'), pill = el && el.querySelector(':scope > .sp-hd > .pill'), sm = el && el.querySelector(':scope > .sp-hd > small');
       return !!el && !!h4 && h4.id === 'spg-' + u.id && txt(h4) === H.h && (H.pill ? !!pill && txt(pill) === H.pill : !pill) && (!H.small || (!!sm && txt(sm) === H.small))
         && el.getAttribute('role') === 'group' && el.getAttribute('aria-labelledby') === 'spg-' + u.id && el.classList.contains('sp-slot') === !!u.slot && !el.querySelector('h3'); };
+    /* (app v121) a level card's game, which only the Sunday slot's cards name (the owner, 19 October 2026: "the legs need
+       to be part of the same game parlay only"): x the game its legs are of, or null where the card names none; the span
+       in its title right after the legs' count and before its rule, its game id and its words the smoke's own (tgameOwn) */
+    const tgameHeld = (c, x) => { const all = c ? [...c.querySelectorAll('.pb-tgame')] : [];
+      if (!x) return !all.length;
+      const th = c.querySelector(':scope > .pb-th'), kids = th ? [...th.children] : [], i = kids.findIndex(e => e.matches('span.pb-tgame'));
+      return all.length === 1 && i === 2 && kids[1].matches('.pill') && (!kids[3] || kids[3].matches('.pb-rule')) && kids[i].dataset.pbTgame === x.id && txt(kids[i]) === tgameOwn(x, TN); };
     /* (app v118) a drawn unit's blocks, in order: its heading, its one phase line, then "Model parlays" over its four
        levels and "Elo picks" over theirs (each a .pb-tiers marked data-sp-kind), the Elo picks' only where the ELO tab is
        on the page, which it is on the hub; "Loading the Elo ratings…" in their place only while the Elo files are not
@@ -1436,24 +1505,49 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const b = best[l.pid], id = legId(l); if (!b || ev > b.ev || (ev === b.ev && (!!l.main > !!b.l.main || (!!l.main === !!b.l.main && id < legId(b.l))))) best[l.pid] = { l, pe, ev }; }
       return Object.values(best).sort((a, b) => (b.ev - a.ev) || ((b.l.main ? 1 : 0) - (a.l.main ? 1 : 0)) || (legId(a.l) < legId(b.l) ? -1 : 1)); };
     const eloSumsOwn = legs => { const O = w.eval('pbOrder')(legs); return { O, p: w.eval('parlayProb')(O.map(l => ({ ...l, p: l.pe }))).corr, d: w.eval('parlayDec')(O.map(l => ({ leg: l, ml: l.price }))) }; };
+    /* (app v121) never a parlay holding a pair DraftKings refuses (clashOwn: a quarterback's passing touchdowns with a
+       teammate's touchdown, the only kind the Elo picks' candidates, all players' lines, can make) */
     const eloRuleOwn = (C, n, floor) => { const memo = new Map(); let best = null, likely = null;
       const go = (s0, cur) => { if (cur.length === n) { const k = cur.map(legId).sort().join(','), x = memo.get(k) || (() => { const e = { k, ...eloSumsOwn(cur) }; memo.set(k, e); return e; })();
           if (!likely || x.p > likely.p || (x.p === likely.p && x.k < likely.k)) likely = x;
           if (floor && x.p >= floor && (!best || x.p * x.d > best.p * best.d || (x.p * x.d === best.p * best.d && x.k < best.k))) best = x; return; }
-        for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); };
+        for (let i = s0; i <= C.length - (n - cur.length); i++) { if (cur.some(y => clashOwn(y, C[i]))) continue; go(i + 1, cur.concat(C[i])); } };
       go(0, []); return floor ? (best || likely) : likely; };
-    const eloLevelsHeld = (lab, u, T, o) => { const bad = [], G = unitGames(u), gids = new Set(G.map(g => g.id)), C = eloCandsOwn(G), byId = new Map(C.map(c => [legId(c.l), c])), LV = ELO_LV_OWN();
-      if (!Array.isArray(T) || T.map(t => t && t.id).join() !== LV.map(x => x[0]).join()) { chk(false, `${lab}, ${u.id}: the unit's Elo picks are not its four levels, elo-safe to elo-xtrm: ` + JSON.stringify((T || []).map(t => t && t.id))); return; }
-      const plId = qualOwn(SPU, G, { read: false }).plId;
+    /* one unit of games' Elo picks (G, its candidates C) held to the rule, each level its legs or why it is empty; where
+       the empty level's words: the unit's own ('in this game', 'in the Sunday slot' for a slot of one game) */
+    const eloUnitBad = (G, C, T, LV, where, plId, pulled) => { const bad = [], gids = new Set(G.map(g => g.id)), byId = new Map(C.map(c => [legId(c.l), c])), fit = maxFitOwn(C.map(c => c.l));
       T.forEach((t, i) => { const [id, label, n, floor] = LV[i];
-        if (!t.legs || !t.legs.length) { const N = C.length, why = plId ? `Only ${N} player${N === 1 ? '' : 's'} in ${unitWhere(u)} qualif${N === 1 ? 'ies' : 'y'}: this level takes ${n}.` : null;
-          if (N >= n || (why ? t.why !== why : !(typeof t.why === 'string' && t.why.startsWith('No player ') && t.why.endsWith(`in ${unitWhere(u)} yet: ${unitPulled(u)}.`)))) bad.push(`${id} is empty (${t.why}) with ${N} candidates for its ${n}`);
+        if (!t || !t.legs || !t.legs.length) { const N = C.length;
+          /* (app v121) empty where its candidates are fewer than it takes, or where no n of them go together on DraftKings'
+             slip, each said so; with no player prices in the unit, when they come */
+          const why = !plId ? null : N >= n ? `No ${n} of the ${N} players ${where} go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.` : `Only ${N} player${N === 1 ? '' : 's'} ${where} qualif${N === 1 ? 'ies' : 'y'}: this level takes ${n}.`;
+          if (fit >= n || (where == null ? false : why ? t.why !== why : !(typeof t.why === 'string' && t.why.startsWith('No player ') && t.why.endsWith(`${where} yet: ${pulled}.`)))) bad.push(`${id} is empty (${t && t.why}) with ${N} candidates for its ${n}, ${fit} of them going together`);
           return; }
         const e = eloSumsOwn(t.legs);
         if (t.label !== label || t.n !== n || t.legs.length !== n || new Set(t.legs.map(l => l.pid)).size !== n || t.legs.some(l => !gids.has(l.gid))) bad.push(`${id} is not ${n} different players' legs on the unit's games: ${t.legs.map(l => l.gid + ' ' + l.name).join(', ')}`);
+        else if (clashPairsOwn(t.legs).length) bad.push(`${id} holds a pair DraftKings will not take on one slip: ${clashTxt(t.legs)}`);
         else if (t.legs.some(l => { const c = byId.get(legId(l)); return !c || Math.abs(c.pe - l.pe) > 1e-12; })) bad.push(`${id} holds a leg the rule does not make a candidate of this unit: ${t.legs.filter(l => !byId.get(legId(l))).map(l => l.name + ' ' + l.label + ' ' + l.price).join(', ')}`);
         else if (t.p !== e.p || t.dec !== e.d || (!t.likeliest && floor && t.p < floor) || (!!t.likeliest && !(floor && t.p < floor))) bad.push(`${id}'s chance ${t.p} or price ${t.dec} is not the builder's sums on its legs' Elo chances (${e.p}, ${e.d}), or its floor ${floor} is not kept (likeliest ${!!t.likeliest})`);
         else if (C.length <= 8) { const r = eloRuleOwn(C.map(c => ({ ...c.l, pe: c.pe })), n, floor); if (!r || r.k !== t.legs.map(legId).sort().join(',')) bad.push(`${id} is not the rule's answer over every parlay of ${n} of the ${C.length} candidates: ${t.legs.map(l => l.name).join(', ')} where the rule gives ${r ? r.k : 'none'}`); } });
+      return bad; };
+    const eloLevelsHeld = (lab, u, T, o) => { const G = unitGames(u), gids = new Set(G.map(g => g.id)), C = eloCandsOwn(G), LV = ELO_LV_OWN();
+      if (!Array.isArray(T) || T.map(t => t && t.id).join() !== LV.map(x => x[0]).join()) { chk(false, `${lab}, ${u.id}: the unit's Elo picks are not its four levels, elo-safe to elo-xtrm: ` + JSON.stringify((T || []).map(t => t && t.id))); return; }
+      const plId = qualOwn(SPU, G, { read: false }).plId; let bad;
+      if (!u.slot || G.length < 2) bad = eloUnitBad(G, C, T, LV, `in ${unitWhere(u)}`, plId, unitPulled(u));
+      else {
+        /* (app v121) the Sunday slot of two games or more: each game's own four, as the page builds a night game's (its
+           eloUnit on the game alone), held to the rule on that game's candidates, and each level of the slot one of them,
+           the best by the rule worked out here (eloSlotPickOwn); empty only where every game's is, saying so of any one
+           game: none of them has as many candidates, or one has and no that many of them go together on DraftKings' slip */
+        bad = []; const per = G.map(x => ({ x, C: eloCandsOwn([x]), T: ((typeof w.eloUnit === 'function' && w.eloUnit([x.id], { where: 'in this game' })) || {}).tiers }));
+        for (const P of per) { if (!Array.isArray(P.T) || P.T.length !== 4) { bad.push(`its game ${P.x.id}'s own Elo picks are not four levels`); continue; }
+          bad.push(...eloUnitBad([P.x], P.C, P.T, LV, null, plId, '').map(b => `its game ${P.x.id}'s own ${b}`)); }
+        const most = Math.max(0, ...per.map(P => P.C.length)), sig = r => r && r.legs && r.legs.length ? r.legs.map(legId).join(',') + '|' + r.p + '|' + r.dec : 'none';
+        T.forEach((t, i) => { const [id, , n] = LV[i], levels = per.map(P => P.T && P.T[i]), k = eloSlotPickOwn(levels), want = k < 0 ? null : levels[k];
+          if (sig(t) !== sig(want)) bad.push(`the slot's ${id} is not the best of its games' own ${id} by the slot's rule: ${t.legs && t.legs.length ? t.legs.map(l => l.gid + ' ' + l.name).join(', ') : t.why} where the rule gives ${want ? per[k].x.id + ': ' + want.legs.map(l => l.name).join(', ') : 'none'}`);
+          else if (!want) { const why = !plId ? null : most >= n ? `No ${n} players in any one game of the Sunday slot go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.`
+              : `Only ${most} player${most === 1 ? '' : 's'} in any one game of the Sunday slot qualif${most === 1 ? 'ies' : 'y'}: this level takes ${n}.`;
+            if (why ? t.why !== why : !(typeof t.why === 'string' && t.why.startsWith('No player ') && t.why.endsWith(`in the Sunday slot yet: ${unitPulled(u)}.`))) bad.push(`the slot's ${id} is empty and says "${t.why}"${why ? `, not "${why}"` : ', not when its player prices come'}`); } }); }
       if (o && o.cands != null && o.cands !== C.length) bad.push(`the page counts ${o.cands} candidates where the rule makes ${C.length}`);
       chk(!bad.length, `${lab}, ${u.id}: the unit's Elo picks are not the ELO tab's rule on its own games (${C.length} candidates): ` + bad.slice(0, 3).join('; '));
       /* the same with the Parlay Builder's ticks planted to nothing */
@@ -1468,16 +1562,20 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
        kickoff, the slot's first, said in Eastern time), each level a card with its legs, each leg's own Add, the set's
        Add to builder and Finish, or why it is empty, then its Elo picks (blocksHeld, eloLevelsHeld). Safe, the likeliest
        pair, is worked out in full on the unit's own legs with two legs together computed here (pairOwn), since a set's
-       legs are one game's and move together (the slot's across its games, where they do not). (app v112) vis: whether
+       legs are one game's and move together (app v121: the Sunday slot's too, each level the best of its games' own
+       levels by the slot's rule, slotPickOwn, each game's own set held as a night game's is). (app v112) vis: whether
        the night rule (nightOwn) sets the game out now (the slot's own rule for the slot). Every prime-time game's set is
        held to the rules (the props job's record takes them all, shown or not); one the rule hides is not on the tab at
        all, no card, leg, Add or Finish of it, and its levels cannot be finished from the tab (spTier) */
     const hiddenHeld = (lab, g) => { const el = spOf(g.id), any = d.querySelector(`#spSets [data-sp-add^="${g.id}:"], #spSets [data-pc-finish^="sp|${g.id}:"]${g.slot ? '' : `, #spSets [data-pb-leg^="${g.id}|"]`}`), fin = PB_TIERS_OWN.flatMap(id => [id, 'elo-' + id]).filter(id => w.eval('spTier')(`${g.id}:${id}`) != null);
       chk(!el && !any && !fin.length, `${lab}, ${g.id}: the ${g.slot ? 'slot\'s rule' : 'night rule'} hides its set until ${isoOwn((g.slot ? g.open : nightOwn(primeHere(), w.eval('S').sched, w.eval('Date.now()')).open) || 0)}, and the tab draws it, a leg or a button of it, or a level of it can still be finished (${fin.join(', ') || 'none'})`); };
     const holdSet = (lab, g, vis = true) => { if (w.eval('Date.now()') >= unitLock(g)) return holdLocked(lab, g, vis);
-      const G = unitGames(g), gids = new Set(G.map(x => x.id));
-      const s = w.eval('spSet')(g.id), el = spOf(g.id), q = qualOwn(SPU, G), all = [...q.pref, ...q.thin], allM = [...all, ...q.mkt];
-      const ownSet = new Map(allM.map(c => [legId(c), c])), thinOf = new Set(q.thin.map(legId)), mktOf = new Set(q.mkt.map(legId)), prefOf = new Set(q.pref.map(legId));
+      const G = unitGames(g);
+      const s = w.eval('spSet')(g.id), el = spOf(g.id), q = qualOwn(SPU, G);
+      /* (app v121) every level is one game's legs, held to that game's own rules: a night game's its own, and each game of
+         the Sunday slot its own (qualOwn on that game alone), as the page builds each of the slot's games' sets as it builds
+         a night game's */
+      const QG = new Map(G.map(x => [x.id, G.length === 1 ? q : qualOwn(SPU, [x])]));
       chk(!!s && s.tiers.map(t => t.id + t.n).join() === 'safe2,med3,aggr4,xtrm5', `${lab}, ${g.id}: the set is not Safe 2, Medium 3, Aggressive 4, Extreme 5`);
       if (!s) return 0;
       const lockOwn = unitLock(g), lk = el && el.querySelector(':scope > [data-sp-phase]');
@@ -1487,32 +1585,31 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           `${lab}, ${g.id}: the set does not say it locks at ${etSay(lockOwn)}, 2 hours before ${g.slot ? 'the first kickoff' : 'kickoff'}: ${lk ? lk.dataset.spPhase + ' ' + txt(lk) : 'no set drawn'}`);
         chk(headHeld(el, g), `${lab}, ${g.id}: the set is not headed ${g.slot ? 'with its week, its games and their window' : `with its game and its night (${nightOf(g)})`}, an h4 that names the group: ${el ? txt(el.querySelector('.sp-hd')) : 'none'}`);
         blocksHeld(lab, g, { phase: 'live' }, el); }
-      let built = 0; const m = maxOwn(allM);
-      for (const t of s.tiers) { const c = el && el.querySelector(`:scope > .pb-tiers[data-sp-kind="model"] > .pb-tier.${t.id}`);
-        if (!t.legs) {
-          const what = m ? `Only ${m} leg${m === 1 ? '' : 's'} in ${unitWhere(g)}` : `No legs in ${unitWhere(g)}`;
-          chk(m < t.n && typeof t.why === 'string' && t.why.startsWith(what) && (q.plId ? t.why.endsWith('a parlay takes one leg a player, and one side and one total a game.') : t.why.includes(g.slot ? unitPulled(g) : pulledOwn(g))) && (!vis || (!!c && c.classList.contains('none') && txt(c.querySelector('.pb-why')) === t.why)),
-            `${lab}, ${g.id}: the ${t.id} level is empty though the ${g.slot ? 'slot\'s' : 'game\'s'} legs make ${m} of its ${t.n}, or it does not say so${q.plId ? '' : ' and when its player prices (and DraftKings\' ids) come, ' + (g.slot ? unitPulled(g) : pulledOwn(g))}: ${t.why}`);
-          continue; }
-        built++;
-        holdTier(`${lab}, ${g.id}`, t, { pref: q.pref, thin: q.thin }, l => gids.has(l.gid));
-        chk(t.legs.every(l => ownSet.has(legId(l)) && !!l.thin === thinOf.has(legId(l)) && !!l.market === mktOf.has(legId(l))), `${lab}, ${g.id}: the ${t.id} level holds a leg the rules do not let a suggestion take, or keeps one thin or a total wrongly: ` + t.legs.filter(l => !ownSet.has(legId(l))).map(l => l.name + ' ' + l.label).join(', '));
-        /* Safe: no pair with as many legs from the preferred list lands likelier, two legs worked out here */
-        if (!t.floor && !t.mkt) { const kMin = [0, 1, 2].find(k => maxOwn(q.pref) >= 2 - k && maxOwn(all) >= 2), need = 2 - kMin, cand = capOwn(q.pref).concat(capOwn(q.thin));
+      /* one level of game x's legs, held to the rules on x's own legs (qx) and, where it is drawn (c), as its card in unit g */
+      const tierHeld = (lab2, x, t, c) => { const qx = QG.get(x.id), all = [...qx.pref, ...qx.thin], allM = [...all, ...qx.mkt];
+        const ownSet = new Map(allM.map(l => [legId(l), l])), thinOf = new Set(qx.thin.map(legId)), mktOf = new Set(qx.mkt.map(legId)), prefOf = new Set(qx.pref.map(legId));
+        holdTier(lab2, t, { pref: qx.pref, thin: qx.thin }, l => l.gid === x.id);
+        chk(t.legs.every(l => ownSet.has(legId(l)) && !!l.thin === thinOf.has(legId(l)) && !!l.market === mktOf.has(legId(l))), `${lab2}: the ${t.id} level holds a leg the rules do not let a suggestion take, or keeps one thin or a total wrongly: ` + t.legs.filter(l => !ownSet.has(legId(l))).map(l => l.name + ' ' + l.label).join(', '));
+        /* Safe: no pair of the game's legs with as many from the preferred list lands likelier, two legs worked out here
+           (never a pair DraftKings refuses: fitsF) */
+        if (!t.floor && !t.mkt) { const kMin = [0, 1, 2].find(k => maxFitOwn(qx.pref) >= 2 - k && maxFitOwn(all) >= 2), need = 2 - kMin, cand = capOwn(qx.pref).concat(capOwn(qx.thin));
           let best = -1, bl = null; for (let i = 0; i < cand.length; i++) for (let j = i + 1; j < cand.length; j++) { const a = cand[i], b = cand[j];
-            if (!fitsF([a], b) || [a, b].filter(x => !thinOf.has(legId(x))).length < need) continue; const pj = pairOwn(a, b, rhoF(a, b)); if (pj > best) { best = pj; bl = [a, b]; } }
+            if (!fitsF([a], b) || [a, b].filter(y => !thinOf.has(legId(y))).length < need) continue; const pj = pairOwn(a, b, rhoF(a, b)); if (pj > best) { best = pj; bl = [a, b]; } }
           const mine = pairOwn(t.legs[0], t.legs[1], rhoF(t.legs[0], t.legs[1]));
           chk(t.thin === t.legs.filter(l => l.thin).length && t.legs.filter(l => !l.thin).length >= need && Math.abs(t.corr - mine) < 0.012 && mine >= best - 0.015,
-            `${lab}, ${g.id}: Safe lands ${(mine * 100).toFixed(1)}% worked out here (${(t.corr * 100).toFixed(1)}% shown) where ${bl ? bl.map(l => l.name + ' ' + l.label).join(' + ') : 'no pair'} land ${(best * 100).toFixed(1)}%: it is not the likeliest pair on the ${g.slot ? 'slot\'s' : 'game\'s'} legs`); }
+            `${lab2}: Safe lands ${(mine * 100).toFixed(1)}% worked out here (${(t.corr * 100).toFixed(1)}% shown) where ${bl ? bl.map(l => l.name + ' ' + l.label).join(' + ') : 'no pair'} land ${(best * 100).toFixed(1)}%: it is not the likeliest pair on the game's legs`); }
         /* the card: its legs each with its own Add (44px, named for the leg), its rule, the fair chance first,
            Add to builder and Finish named for the unit, no lock (a set the night rule hides has no card: above) */
-        if (!vis) continue;
-        const lis = c ? [...c.querySelectorAll('.pb-legs li')] : [], P = w.eval('S').parlay, inB = l => { const x = P[l.key]; return !!x && x.k === l.k && x.side === l.side && !!x.main === !!l.main; };
-        const ab = c && c.querySelector(`[data-sp-add="${g.id}:${t.id}"]`), fb = c && c.querySelector(`[data-pc-finish="sp|${g.id}:${t.id}"]`), what = `the ${t.label} ${/^elo-/.test(t.id) ? 'Elo pick' : 'parlay'} for ${unitWhat(g)}`;
-        chk(!!c && c.dataset.pbTier === t.id && lis.length === t.n && t.legs.every((l, i) => { const b = lis[i].querySelector('button[data-pb-leg]');
+        if (!c) return;
+        const lis = [...c.querySelectorAll('.pb-legs li')], P = w.eval('S').parlay, inB = l => { const y = P[l.key]; return !!y && y.k === l.k && y.side === l.side && !!y.main === !!l.main; };
+        const ab = c.querySelector(`[data-sp-add="${g.id}:${t.id}"]`), fb = c.querySelector(`[data-pc-finish="sp|${g.id}:${t.id}"]`), what = `the ${t.label} ${/^elo-/.test(t.id) ? 'Elo pick' : 'parlay'} for ${unitWhat(g)}`;
+        chk(c.dataset.pbTier === t.id && lis.length === t.n && t.legs.every((l, i) => { const b = lis[i].querySelector('button[data-pb-leg]');
             return nmOk(lis[i].querySelector('.nm'), l) && !!b && b.dataset.pbLeg === l.key && +b.dataset.k === +l.k && b.dataset.side === l.side && b.getAttribute('aria-label') === addName(l, inB(l)) && txt(b) === (inB(l) ? 'Added' : 'Add') && w.getComputedStyle(b).minHeight === '44px'; })
           && !!ab && !!fb && /^(Add|In the builder:) the /.test(ab.getAttribute('aria-label') || '') && (ab.getAttribute('aria-label') || '').includes(what) && fb.getAttribute('aria-label') === 'Finish ' + what && !c.querySelector('[data-pb-lock], [data-pb-turn], [data-pb-reset]'),
-          `${lab}, ${g.id}: the ${t.id} card does not show its legs, each with its own 44px Add named for it, and Add to builder and Finish named for ${what}`);
+          `${lab2}: the ${t.id} card does not show its legs, each with its own 44px Add named for it, and Add to builder and Finish named for ${what}`);
+        /* (app v121) a card of the Sunday slot names its game under its title, right after the legs' count and before its
+           rule ("Seahawks at Broncos · Sun 4:25 PM ET"), and a night game's card names none (its unit's heading does) */
+        chk(tgameHeld(c, g.slot ? x : null), `${lab2}: the ${t.id} card ${g.slot ? `does not name its game, "${tgameOwn(x, TN)}", in its title after the legs' count` : 'names a game in its title, which only the Sunday slot\'s cards do'}: ${txt(c.querySelector('.pb-th'))}`);
         /* (app v112) the reversed tags: Value on each of its legs that is a Value pick (the preferred list, worked
            out here: qualOwn's pref) and on no other, no thin edge or no edge anywhere. (app v113, the owner's call of
            17 October 2026: "in suggest parlays, get rid of all the long paragraph description stuff") A set's level
@@ -1520,22 +1617,59 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
            holds (pbTierCard's quiet; the cards drawn as the retired Elo picks' section drew theirs keep theirs, held on
            cards of the smoke's own below); the est. line (a price that is an estimate) and a ruled-out player's Updated
            line stay */
-        if (c) { const bad = [];
+        { const bad = [];
           t.legs.forEach((l, i) => { const mk = lis[i] ? [...lis[i].querySelectorAll('i.pb-valmark')] : [], val = prefOf.has(legId(l));
             if (mk.length !== (val ? 1 : 0) || (val && (txt(mk[0]) !== 'Value' || !mk[0].closest('.nm small')))) bad.push(`${l.name} ${l.label} ${val ? 'is a Value pick and is not marked Value' : 'is not a Value pick and is marked Value'}`); });
           if (OLD_TAG.test(txt(c)) || c.querySelector('.pb-thinmark')) bad.push('the card still says thin edge or no edge: ' + (txt(c).match(/.{0,40}(thin[ -]edge|no edge).{0,30}/i) || [''])[0]);
           const nT = t.legs.filter(l => thinOf.has(legId(l))).length, nM = t.legs.filter(l => mktOf.has(legId(l))).length;
           const lines = [...c.querySelectorAll('p.pb-thin')].filter(p => !p.classList.contains('pb-espnline') && !p.classList.contains('sp-upd')).map(txt);
           if (lines.length || WHY_GONE.test(txt(c))) bad.push(`it holds ${nT} legs that are not Value picks and ${nM} totals, and draws the line${lines.length === 1 ? '' : 's'} saying why: ${JSON.stringify(lines.length ? lines : [(txt(c).match(WHY_GONE) || [''])[0]])}`);
-          chk(!bad.length, `${lab}, ${g.id}: the ${t.id} card does not mark Value exactly its Value picks, or still says why a leg is not one or why a total is there: ` + bad.slice(0, 3).join('; ')); }
-        if (c) { const first = c.querySelector('.pb-nums > div'), qq = x => first && first.querySelector(x), F = t.fair, pc = v => (v * 100).toFixed(0) + '%', rule = c.querySelector('.pb-rule'), rest = c.cloneNode(true);
-          rest.querySelectorAll('.pb-legs, .pb-thin, .pb-rule').forEach(x => x.remove());
+          chk(!bad.length, `${lab2}: the ${t.id} card does not mark Value exactly its Value picks, or still says why a leg is not one or why a total is there: ` + bad.slice(0, 3).join('; ')); }
+        { const first = c.querySelector('.pb-nums > div'), qq = y => first && first.querySelector(y), F = t.fair, pc = v => (v * 100).toFixed(0) + '%', rule = c.querySelector('.pb-rule'), rest = c.cloneNode(true);
+          rest.querySelectorAll('.pb-legs, .pb-thin, .pb-rule, .pb-tgame').forEach(y => y.remove());
           chk(!!first && first.classList.contains('pb-chance') && (F && F.p != null ? txt(qq('b')) === pc(F.p) && txt(qq('span')) === (F.est ? 'fair chance, est.' : 'fair chance') && txt(qq('small')) === `model says ${pc(t.corr)}`
             : txt(qq('b')) === pc(t.corr) && txt(qq('small')) === 'no fair chance: a leg has no book price')
             && !!rule && txt(rule) === ruleFor(t) && ![...c.querySelectorAll('p')].some(p => !p.classList.contains('pb-thin')) && !/floor|usual|below|short of|of the time|%\+(?!\d)/i.test(txt(rest)),
-            `${lab}, ${g.id}: the ${t.id} card does not lead with its fair chance beside the model's under its rule "${ruleFor(t)}", or carries a note: ${first ? txt(first) : 'no figures'} / ${rule ? txt(rule) : ''}`); } }
-      /* (app v118) its Elo picks, live: the ELO tab's rule on its games alone, drawn as the page's spEloSet has them */
-      if (vis) { const e = w.eval('spEloSet')(g.id), eu = typeof w.eloUnit === 'function' ? w.eloUnit(G.map(x => x.id), { where: `in ${unitWhere(g)}` }) : null;
+            `${lab2}: the ${t.id} card does not lead with its fair chance beside the model's under its rule "${ruleFor(t)}", or carries a note: ${first ? txt(first) : 'no figures'} / ${rule ? txt(rule) : ''}`); } };
+      /* (app v121) the Sunday slot: each of its games' own set as the page builds it (spSet on the game), every level of it
+         held as a night game's level is, on that game's own legs (nothing of it drawn), and empty only where that game does
+         not make that many legs with no pair DraftKings refuses (maxFitOwn); the slot's level is one of them, the best by
+         the rule worked out here (slotPickOwn), and empty only where every game's is */
+      const per = g.slot ? G.map(x => ({ x, s: w.eval('spSet')(x.id) })) : null;
+      if (per) for (const { x, s: sx } of per) {
+        chk(!!sx && sx.tiers.map(t => t.id + t.n).join() === 'safe2,med3,aggr4,xtrm5', `${lab}, ${g.id}: its game ${x.id}'s own set is not Safe 2, Medium 3, Aggressive 4, Extreme 5`);
+        if (sx) for (const t of sx.tiers) { const qx = QG.get(x.id), mx = maxFitOwn([...qx.pref, ...qx.thin, ...qx.mkt]);
+          if (t.legs) tierHeld(`${lab}, ${g.id}, its game ${x.id}'s own set`, x, t, null);
+          else chk(mx < t.n, `${lab}, ${g.id}: its game ${x.id}'s own ${t.id} level is empty though the game's legs make ${mx} of its ${t.n} with no pair DraftKings refuses: ${t.why}`); } }
+      let built = 0;
+      s.tiers.forEach((t, ti) => { const c = el && el.querySelector(`:scope > .pb-tiers[data-sp-kind="model"] > .pb-tier.${t.id}`);
+        if (per) { const levels = per.map(P => P.s && P.s.tiers[ti]), k = slotPickOwn(levels, t.floor), want = k < 0 ? null : levels[k], sig = r => r && r.legs ? r.legs.map(legId).join(',') + '|' + r.corr + '|' + r.dec : 'none';
+          chk(sig(t) === sig(want) && (!t.legs || t.legs.every(l => l.gid === per[k].x.id)),
+            `${lab}, ${g.id}: the slot's ${t.id} level is not the best of its games' own ${t.id} levels by the slot's rule (one game's legs, a parlay before none, no total before one, its floor met before the likeliest, the fewer thin legs, then the better return or chance, the earlier game on a tie): ${t.legs ? t.legs.map(l => l.gid + ' ' + l.name + ' ' + l.label).join(', ') : t.why} where the rule gives ${want ? per[k].x.id + ': ' + want.legs.map(l => l.name + ' ' + l.label).join(', ') : 'none'}`); }
+        if (!t.legs) {
+          /* why it is empty: none of its legs (a night game), or none of any one of its games (the slot), make that many,
+             or they do and no parlay of them that many is one DraftKings takes */
+          const ms = G.map(x => { const qx = QG.get(x.id); return maxOwn([...qx.pref, ...qx.thin, ...qx.mkt]); }), m = Math.max(0, ...ms), where = g.slot ? 'any one game of the Sunday slot' : 'this game';
+          const fit = Math.max(0, ...G.map(x => { const qx = QG.get(x.id); return maxFitOwn([...qx.pref, ...qx.thin, ...qx.mkt]); }));
+          const what = m < t.n ? `${m ? `Only ${m} leg${m === 1 ? '' : 's'}` : 'No legs'} in ${where}` : `No ${t.n}-leg parlay in ${where}`;
+          const tail = q.plId ? (g.slot ? 'a parlay takes one game’s legs, one leg a player, and one side and one total a game.' : 'a parlay takes one leg a player, and one side and one total a game.') : (g.slot ? unitPulled(g) : pulledOwn(g));
+          /* (app v121, the review's round) where its player prices are in (before them, the words on when they come, as
+             before) and the game (on the slot, some one game) makes legs enough in number for the level and no that many
+             of them that go together on DraftKings' slip, it says that, in words of its own: "No 4 of this game’s legs go
+             together on DraftKings’ slip: ...", the slot's "No 5 legs of any one game of the Sunday slot go together ..." */
+          const clash = q.plId && m >= t.n && fit < t.n;
+          const said = clash ? (g.slot ? `No ${t.n} legs of any one game of the Sunday slot go together on DraftKings’ slip: ${CLASH_WHY_OWN}` : `No ${t.n} of this game’s legs go together on DraftKings’ slip: ${CLASH_WHY_OWN}`) : null;
+          chk(fit < t.n && typeof t.why === 'string' && (clash ? t.why === said : t.why.startsWith(what) && (q.plId ? t.why.endsWith(tail) : t.why.includes(tail))) && (!vis || (!!c && c.classList.contains('none') && txt(c.querySelector('.pb-why')) === t.why && !c.querySelector('.pb-tgame'))),
+            `${lab}, ${g.id}: the ${t.id} level is empty though the ${g.slot ? 'legs of one of the slot\'s games' : 'game\'s legs'} make ${fit} of its ${t.n} with no pair DraftKings refuses, or it does not say so (${clash ? `"${said}": ${m} legs by count, ${fit} that go together` : `"${what}" ... "${tail}"`})${q.plId ? '' : ', with when its player prices (and DraftKings\' ids) come'}: ${t.why}`);
+          return; }
+        built++;
+        const x = g.slot ? (G.find(y => y.id === t.legs[0].gid) || g) : g;
+        chk(t.legs.every(l => l.gid === x.id), `${lab}, ${g.id}: the ${t.id} level is not one game's legs: ` + t.legs.map(l => l.gid).join(', '));
+        tierHeld(`${lab}, ${g.id}`, x, t, vis ? (c || null) : null);
+        if (vis && !c) chk(false, `${lab}, ${g.id}: the ${t.id} level is not drawn`); });
+      /* (app v118) its Elo picks, live: the ELO tab's rule on its games alone (app v121: the slot's on each of its games
+         alone, each level the best of theirs), drawn as the page's spEloSet has them */
+      if (vis) { const e = w.eval('spEloSet')(g.id), eu = typeof w.eloUnit === 'function' ? w.eloUnit(G.map(x => x.id), { where: `in ${unitWhere(g)}`, perGame: !!g.slot }) : null;
         eloLevelsHeld(lab, g, e && e.tiers, { cands: eu ? eu.candidates : null, ticks: true });
         eloCardsHeld(lab, g, e && e.tiers, el, false); }
       return built; };
@@ -1547,7 +1681,12 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (!Array.isArray(T)) return; if (!box) { chk(false, `${lab}, ${u.id}: the unit's Elo picks are not drawn`); return; }
       const ruleOf = t => t.likeliest || !t.floor ? (t.n === 2 ? 'the likeliest pair' : `the likeliest ${t.n} legs`) : `best value that lands ${Math.round(t.floor * 100)}%+ by Elo`;
       for (const t of T) { const c = box.querySelector(`:scope > .pb-tier.${t.id}`); if (!c) { bad.push(`${t.id} not drawn`); continue; }
-        if (!t.legs || !t.legs.length) { if (!c.classList.contains('none') || txt(c.querySelector('.pb-why')) !== t.why) bad.push(`${t.id} is empty and does not say why: ${txt(c)}`); continue; }
+        if (!t.legs || !t.legs.length) { if (!c.classList.contains('none') || txt(c.querySelector('.pb-why')) !== t.why || c.querySelector('.pb-tgame')) bad.push(`${t.id} is empty and does not say why: ${txt(c)}`); continue; }
+        /* (app v121) the slot's Elo picks are each one game's, the card naming it; a night game's names none */
+        { const gx = u.slot ? unitGames(u).find(x => x.id === t.legs[0].gid) : null;
+          if (u.slot && (!gx || t.legs.some(l => l.gid !== gx.id))) bad.push(`${t.id} is not one game's legs of the slot: ${t.legs.map(l => l.gid).join(', ')}`);
+          else if (!tgameHeld(c, gx)) bad.push(`${t.id} ${gx ? `does not name its game, "${tgameOwn(gx, TN)}", in its title` : 'names a game, which only the Sunday slot\'s cards do'}: ${txt(c.querySelector('.pb-th'))}`); }
+        if (clashPairsOwn(t.legs).length) bad.push(`${t.id} holds a pair DraftKings will not take on one slip: ${clashTxt(t.legs)}`);
         const lis = [...c.querySelectorAll('.pb-legs > li')], first = c.querySelector('.pb-nums > div'), F = t.fair;
         if (lis.length !== t.legs.length || t.legs.some((l, i) => { const b = lis[i].querySelector('button[data-pb-leg]'), em = lis[i].querySelector('.pr em'), sh = lis[i].querySelector('.nm .pe-badge');
             return !nmOk(lis[i].querySelector('.nm'), l) || txt(em) !== pc(l.pe) || lis[i].querySelector('.pb-valmark') || !!sh !== !!(P[l.pid] && P[l.pid].rank && P[l.pid].se != null)
@@ -1591,6 +1730,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const sd = t.legs.filter(l => isG(l) && l.stat !== 'total'), tt = t.legs.filter(l => l.stat === 'total'), pl = t.legs.filter(l => !isG(l));
         chk(t.legs.length === t.n && new Set(t.legs.map(l => l.key)).size === t.n && t.legs.every(l => gids.has(l.gid)) && new Set(sd.map(l => l.gid)).size === sd.length && new Set(tt.map(l => l.gid)).size === tt.length && new Set(pl.map(l => l.pid)).size === pl.length,
           `${gl}: the locked ${t.id} level is not ${t.n} different lines of the ${g.slot ? 'slot\'s games' : 'game'}, one a player and one side and one total a game`);
+        /* (app v121) one game's legs, the Sunday slot's too, with no pair DraftKings refuses, and a card of the slot
+           naming its game in its title (a night game's naming none) */
+        { const gx = G.find(x => x.id === t.legs[0].gid);
+          chk((!g.slot || (!!gx && t.legs.every(l => l.gid === gx.id))) && !clashPairsOwn(t.legs).length && (!c || tgameHeld(c, g.slot ? gx || null : null)),
+            `${gl}: the locked ${t.id} level is not one game's legs, holds a pair DraftKings will not take on one slip (${clashTxt(t.legs) || 'none'}), or its card does not name its game as the slot's cards do: ${t.legs.map(l => l.gid).join(', ')} / ${c ? txt(c.querySelector('.pb-th')) : 'not drawn'}`); }
         /* before the first kickoff no level holds a player the rules hold out (one ruled out since the lock is built again);
            under way (the Sunday slot from its first kickoff) none is built again, as the record replaces none after it: a
            level the page built again carries a time before the first kickoff, and every other is the record's own, or this
@@ -1614,7 +1758,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
          on its legs' Elo chances, drawn as its card */
       if (Array.isArray(v.elo)) { const bad = [];
         for (const t of v.elo) { if (!t || !t.legs || !t.legs.length) continue; const e = eloSumsOwn(t.legs);
-          if (t.legs.length !== t.n || new Set(t.legs.map(l => l.pid)).size !== t.n || t.legs.some(l => !gids.has(l.gid) || !(l.pe > 0 && l.pe < 1)) || Math.abs(t.p - e.p) > 1e-12 || Math.abs(t.dec - e.d) > 1e-9) bad.push(`${t.id}: ${t.legs.map(l => l.gid + ' ' + l.name + ' ' + l.pe).join(', ')} at ${t.p}, ${t.dec} (the sums ${e.p}, ${e.d})`); }
+          if (t.legs.length !== t.n || new Set(t.legs.map(l => l.pid)).size !== t.n || t.legs.some(l => !gids.has(l.gid) || !(l.pe > 0 && l.pe < 1)) || Math.abs(t.p - e.p) > 1e-12 || Math.abs(t.dec - e.d) > 1e-9) bad.push(`${t.id}: ${t.legs.map(l => l.gid + ' ' + l.name + ' ' + l.pe).join(', ')} at ${t.p}, ${t.dec} (the sums ${e.p}, ${e.d})`);
+          /* (app v121) one game's legs, and no pair DraftKings refuses */
+          else if (new Set(t.legs.map(l => l.gid)).size !== 1 || clashPairsOwn(t.legs).length) bad.push(`${t.id} is not one game's legs, or holds a pair DraftKings will not take on one slip: ${t.legs.map(l => l.gid + ' ' + l.name).join(', ')} ${clashTxt(t.legs)}`); }
         chk(v.elo.map(t => t && t.id).join() === PB_TIERS_OWN.map(id => 'elo-' + id).join() && !bad.length, `${gl}: the locked unit's Elo picks are not its four levels on its own games at the builder's sums on their Elo chances: ` + bad.slice(0, 2).join('; '));
         eloCardsHeld(lab, g, v.elo, el, under); }
       if (under) { const fin = PB_TIERS_OWN.flatMap(id => [id, 'elo-' + id]).filter(id => w.eval('spTier')(`${g.id}:${id}`) != null);
@@ -1658,6 +1804,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(!WHY_GONE.test(sx) && !WHY_GONE.test(hx) && !spPanel.querySelector(PAR) && !/Players whose Elo matchup beats the book/.test(txt(spPanel)),
           `${lab}${how}: Suggested Parlays still draws one of its long paragraphs (the lead, the foot, the record's sentence, a level's why-line, a long lock line or the Elo picks' lead): ` + ((sx + ' ' + hx).match(new RegExp('.{0,60}(' + WHY_GONE.source + ').{0,40}')) || [spPanel.querySelector(PAR) ? 'a paragraph drawn' : txt(spPanel).match(/.{0,40}Players whose Elo matchup.{0,40}/) ? 'the Elo picks\' lead' : ''])[0]); };
       noOld('');
+      /* (app v121) a game named in a card's title on the Sunday slot's cards alone */
+      { const stray = [...d.querySelectorAll('.pb-tgame')].filter(e => !e.closest(`${SEC_SLOT} .sp-game.sp-slot .pb-tier > .pb-th`));
+        chk(!stray.length, `${lab}: a card outside the Sunday slot names a game in its title: ` + stray.map(e => txt(e.closest('.pb-tier') || e)).slice(0, 2).join(' / ')); }
       /* then every prime-time game's set held to the rules and as drawn, its cards, legs, Adds, Finish, Value marks,
          the lines under a level, the fair chance first and its rule, at every hour as before the night rule: where
          the rule hides a game now, the tab's one question of which games it sets out (spOn) is stood in by every
@@ -1679,7 +1828,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
        on made-up games at clocks of their own) may stand it in */
     const SP_ON_REAL = w.eval('typeof spOn') === 'function' ? w.eval('spOn') : null;
     const standOn = all => { w.__spOnReal = SP_ON_REAL; w.eval(all ? 'spOn=function(){ return spGames(); }' : 'spOn=window.__spOnReal'); w.eval('SP_SHOWN=null; renderSp()'); };
-    holdSetF = holdSet; SPH = { blocksHeld, headHeld, eloLevelsHeld, eloCardsHeld, eloSumsOwn, eloCandsOwn, eloRuleOwn, eloIn, holdLocked, unitGames, ELO_LV_OWN };
+    holdSetF = holdSet; SPH = { blocksHeld, headHeld, eloLevelsHeld, eloCardsHeld, eloSumsOwn, eloCandsOwn, eloRuleOwn, eloIn, holdLocked, unitGames, ELO_LV_OWN, SPU };
     if (!games.length) chk(/no game is left|nothing left to build from/.test(txt(panel)), 'with no game to come the panel does not say so: ' + txt(panel).slice(0, 160));
     else {
       chk(d.querySelectorAll('#pbPanel [data-pb-game]').length === games.length && games.every(g => !started(g)), 'the panel\'s games are not this week\'s still to kick off');
@@ -2731,7 +2880,14 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const LS = [leg(S1, 'team:H43', 'TEAM', S1.h, 'ml', 0, 0.6, -125, 'To win'), leg(S1, 'team:H43', 'TEAM', S1.h, 'ats', -3.5, 0.56, -110, 'To cover -3.5'), leg(S1, 'S43-WR1', 'WR', S1.h, 'receiving_yards', 60, 0.58, -105, '60+ rec yds'),
       leg(S3, 'team:H45', 'TEAM', S3.h, 'ml', 0, 0.62, -140, 'To win'), leg(S3, 'S45-RB1', 'RB', S3.a, 'rushing_yards', 50, 0.59, -110, '50+ rush yds'),
       leg(S2, 'team:H44', 'TEAM', S2.h, 'ml', 0, 0.57, -110, 'To win'), leg(S2, 'S44-QB1', 'QB', S2.a, 'passing_yards', 240, 0.56, 105, '240+ pass yds'),
-      leg(S4, 'team:H46', 'TEAM', S4.h, 'ml', 0, 0.58, -115, 'To win'), leg(S4, 'S46-TE1', 'TE', S4.h, 'receptions', 4, 0.55, 110, '4+ rec')];
+      leg(S4, 'team:H46', 'TEAM', S4.h, 'ml', 0, 0.58, -115, 'To win'), leg(S4, 'S46-TE1', 'TE', S4.h, 'receptions', 4, 0.55, 110, '4+ rec'),
+      /* (app v121) every level of the slot is one game's legs (the owner, 19 October 2026: "the legs need to be part of
+         the same game parlay only"), so the 4:25 pm game is given legs enough for every level (five players and its
+         side), among them its quarterback's passing touchdowns and a teammate's touchdown, a pair DraftKings refuses;
+         the other games make two legs each at most, and the likeliest pair across the slot's games (two of their money
+         lines, both Value picks) lands likelier than any one game's, so a slot built across its games would show it */
+      leg(S4, 'S46-WR3', 'WR', S4.h, 'receiving_yards', 70, 0.6, -110, '70+ rec yds'), leg(S4, 'S46-RB4', 'RB', S4.a, 'rushing_yards', 60, 0.57, 100, '60+ rush yds'),
+      leg(S4, 'S46-QB5', 'QB', S4.h, 'passing_tds', 2, 0.62, -105, '2+ pass TDs'), leg(S4, 'S46-WR6', 'WR', S4.h, 'any_td', 1, 0.6, 105, 'Scores a touchdown')];
     const LO = [leg(X1, 'team:H42', 'TEAM', X1.h, 'ml', 0, 0.7, -105, 'To win'), leg(N1, 'team:H47', 'TEAM', N1.h, 'ml', 0, 0.7, -105, 'To win'), leg(T1, 'team:H52', 'TEAM', T1.h, 'ml', 0, 0.6, -120, 'To win'), leg(T2, 'team:H53', 'TEAM', T2.h, 'ml', 0, 0.6, -120, 'To win')];
     const keep = { sched: Sx.sched, pb: w.eval('[pbGames, pricedLegs]'), dk: w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), rec: w.eval('PB_REC'), done: w.eval('PB_REC_DONE'), key: w.localStorage.getItem(KK), parlay: w.eval('JSON.stringify(S.parlay)') };
     const at = ms => { const sh = ms - D0.now(); w.Date = class extends D0 { constructor(...a) { if (a.length) super(...a); else super(D0.now() + sh); } static now() { return D0.now() + sh; } }; };
@@ -2749,7 +2905,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const TM = (id, label, n, floor, ls) => ({ id, label, n, floor, legs: ls.map(l => out(l)), p: Math.round(prodP(ls, l => l.p) * 1e4) / 1e4, fair: 0.3, fair_est: false, dec: Math.round(decs(ls) * 1e3) / 1e3, likeliest: false, thin: ls.length, mkt: 0 });
     const TE = (id, label, n, floor, lp) => ({ id, label, n, floor, legs: lp.map(([l, pe]) => out(l, { pe, thin: null, market: null })), p: Math.round(prodP(lp, x => x[1]) * 1e4) / 1e4, fair: 0.25, fair_est: false, dec: Math.round(decs(lp.map(x => x[0])) * 1e3) / 1e3, likeliest: false, thin: 0, mkt: 0 });
     const TW = (id, label, n, floor, why) => ({ id, label, n, floor, why });
-    const [mlS1, , wrS1, mlS3, rbS3, mlS2, qbS2, mlS4, teS4] = LS;
+    const [mlS1, , wrS1, mlS3, rbS3, mlS2, qbS2, mlS4, teS4, wrS4, rbS4] = LS;
     const sumsM = t => { const L = w.eval('pbOrder')(t.legs.map(l => ({ ...l, key: `${l.gid}|${l.pid}|${l.stat}` }))); return { p: w.eval('parlayProb')(L).corr, d: w.eval('parlayDec')(L.map(l => ({ leg: l, ml: l.price }))) }; };
     const keptDrawn = (list, k) => list.map(t => { if (!t.legs) return `${t.id} none: ${t.why}`; const e = k === 'elo' ? SPH.eloSumsOwn(t.legs.map(l => ({ ...l, key: `${l.gid}|${l.pid}|${l.stat}` }))) : sumsM(t);
       return `${t.id}: ` + t.legs.map(l => `${l.name} ${l.label}` + (k === 'elo' ? ' ' + pc(l.pe) : '')).sort().join(' + ') + ` | ${pc(t.fair)} | ${k === 'elo' ? 'Elo' : 'model'} says ${pc(e.p)} | ${mlOwn(e.d)}`; }).join(' / ');
@@ -2784,26 +2940,89 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const nS = holdSetF(lab + ', live', U, true);
         const L0 = w.eval('spSet')(ID), gids = new Set(U.games.map(g => g.id));
         chk(nS >= 3 && L0.tiers.every(t => !t.legs || t.legs.every(l => gids.has(l.gid))), `${lab}: live, the slot builds ${nS} levels, or one holds a leg of a game not in the slot: ` + L0.tiers.map(t => t.legs ? t.legs.map(l => l.gid).join('/') : t.why).join(' | '));
+        /* (app v121) one game a level, on the fixture as it was made for it: Safe is the 1:00 pm game's likeliest pair (its
+           money line and its back), though the likeliest pair across the slot's games (two money lines, both Value picks,
+           of the 9:30 am and the other 1:00 pm game, unrelated) lands likelier, which a slot built across its games took
+           until app v121; Medium, Aggressive and Extreme are the 4:25 pm game's, the one game that makes that many legs,
+           and none holds its quarterback's passing TDs with his teammate's touchdown (Extreme takes five of its six legs
+           for it); worked out here (pairOwn, clashOwn) */
+        { const T0 = Object.fromEntries(L0.tiers.map(t => [t.id, t])), sf = T0.safe, cross = pairOwn(mlS1, mlS3, rhoF(mlS1, mlS3)), qbS4 = LS.find(l => l.pid === 'S46-QB5'), tdS4 = LS.find(l => l.pid === 'S46-WR6');
+          const one = (t, x) => !!t && !!t.legs && t.legs.length === t.n && t.legs.every(l => l.gid === x.id);
+          chk(one(sf, S3) && sf.thin === 1 && cross > sf.corr + 0.003 && ['med', 'aggr', 'xtrm'].every(id => one(T0[id], S4) && !clashPairsOwn(T0[id].legs).length) && clashOwn(qbS4, tdS4) === 'td'
+            && T0.xtrm.legs.filter(l => l === qbS4 || l.pid === qbS4.pid || l.pid === tdS4.pid).length === 1,
+            `${lab}: live, the slot's levels are not one game's each (Safe the 1:00 pm game's likeliest pair, ${(sf && sf.corr * 100 || 0).toFixed(1)}%, under the two money lines across games, ${(cross * 100).toFixed(1)}%; the rest the 4:25 pm game's, with no pair DraftKings refuses): ` + L0.tiers.map(t => t.id + ' ' + (t.legs ? t.legs.map(l => l.gid.slice(-3) + ' ' + l.name).join('+') : t.why)).join(' | ')); }
         /* Finish on a level: the card names it for the slot */
         const t = L0.tiers.filter(x => x.legs).slice(-1)[0], fb = t && elS(ID).querySelector(`[data-pc-finish="sp|${ID}:${t.id}"]`); if (fb) { fb.click(); await wait(40); }
         const v0 = d.getElementById('pcView');
         chk(!!fb && !d.getElementById('pcModal').hidden && txt(v0).includes(`${t.label} parlay · the Sunday slot`) && t.legs.every(l => txt(v0).includes(l.name)), `${lab}: Finish on its ${t ? t.label : 'level'} does not open the card named for the Sunday slot: ` + (v0 ? txt(v0).slice(0, 160) : ''));
-        w.eval('PARLAY_CARD.close()'); await wait(20); }
+        w.eval('PARLAY_CARD.close()'); await wait(20);
+        /* (app v121, the review's round) the 4:25 pm game one player short (its tight end's line taken off the fixture's
+           lines, put back after): its side and four players make five legs by count, but its quarterback's passing TDs and
+           his teammate's touchdown do not go together, so four on one slip, and no other game of the slot makes more than
+           two. So the slot's Extreme is empty and says no five legs of any one game of the slot go together on DraftKings'
+           slip (until the round it said "No 5-leg parlay in any one game of the Sunday slot: a parlay takes one game’s
+           legs, ...", which is not why), and its Aggressive is the 4:25 pm game's four that do; holdSet holds the rest */
+        { const all = w.__slt.L;
+          try {
+            w.__slt.L = all.filter(l => l !== teS4); w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderParlay()'); await wait(40);
+            const qq = qualOwn(SPH.SPU, [S4]), q4 = [...qq.pref, ...qq.thin, ...qq.mkt];
+            holdSetF(lab + ', live, its 4:25 pm game one player short', U, true);
+            const T5 = Object.fromEntries((w.eval('spSet')(ID) || { tiers: [] }).tiers.map(t => [t.id, t]));
+            chk(maxOwn(q4) === 5 && maxFitOwn(q4) === 4 && !!T5.xtrm && !T5.xtrm.legs && T5.xtrm.why === `No 5 legs of any one game of the Sunday slot go together on DraftKings’ slip: ${CLASH_WHY_OWN}`
+              && !!T5.aggr && !!T5.aggr.legs && T5.aggr.legs.length === 4 && T5.aggr.legs.every(l => l.gid === S4.id) && !clashPairsOwn(T5.aggr.legs).length,
+              `${lab}: with its 4:25 pm game one player short (${maxOwn(q4)} legs by count, ${maxFitOwn(q4)} that go together, worked out here), the slot's Extreme does not say no five legs of any one game go together on DraftKings' slip, or its Aggressive is not that game's four: ` + (T5.xtrm ? T5.xtrm.why || 'built' : 'none') + ' / ' + (T5.aggr && T5.aggr.legs ? T5.aggr.legs.map(l => l.name).join('+') : T5.aggr ? T5.aggr.why : 'none'));
+          } finally { w.__slt.L = all; w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderParlay()'); await wait(40); } } }
       /* at the lock, the record not read yet: the line says so, and nothing else is drawn */
       at(U0.lock + 60e3); w.eval('PB_REC_DONE=false'); await view(U0.lock + 60e3);
       chk(phaseLine(ID) === 'loading Locked since Sun 7:30 AM ET. Loading the site’s set…' && sToken() === `s=${ID}:k`, `${lab}: at its lock, with the record not read yet, the slot does not say it is reading the site's set (${sToken()}): ${phaseLine(ID)}`);
       SPH.blocksHeld(lab + ', loading', unitOf(U0.lock + 60e3), w.eval('spShown')(unitOf(U0.lock + 60e3)), elS(ID));
       /* the record's slot entry: its set and its Elo picks, drawn as the record has them */
       const takenAt = isoS(U0.lock - 3 * 3600e3);
-      const TIERS = [TM('safe', 'Safe', 2, 0, [mlS1, mlS3]), TM('med', 'Medium', 3, 0.25, [mlS1, rbS3, qbS2]), TM('aggr', 'Aggressive', 4, 0.12, [mlS1, mlS3, mlS2, teS4]), TW('xtrm', 'Extreme', 5, 0.05, 'No 5-leg parlay in the Sunday slot.')];
-      const ELO = [TE('elo-safe', 'Safe', 2, 0.35, [[wrS1, 0.64], [rbS3, 0.62]]), TE('elo-med', 'Medium', 3, 0.25, [[wrS1, 0.64], [qbS2, 0.6], [teS4, 0.58]]), TW('elo-aggr', 'Aggressive', 4, 0.12, 'Only 3 players in the Sunday slot qualify: this level takes 4.'), TW('elo-xtrm', 'Extreme', 5, 0.05, 'Only 3 players in the Sunday slot qualify: this level takes 5.')];
+      /* (app v121) each level one game's legs, as the props job takes the slot's set from now on */
+      const TIERS = [TM('safe', 'Safe', 2, 0, [mlS3, rbS3]), TM('med', 'Medium', 3, 0.25, [mlS4, wrS4, rbS4]), TM('aggr', 'Aggressive', 4, 0.12, [mlS4, wrS4, rbS4, teS4]), TW('xtrm', 'Extreme', 5, 0.05, 'No 5-leg parlay in any one game of the Sunday slot: a parlay takes one game’s legs, one leg a player, and one side and one total a game.')];
+      const ELO = [TE('elo-safe', 'Safe', 2, 0.35, [[wrS4, 0.64], [rbS4, 0.62]]), TE('elo-med', 'Medium', 3, 0.25, [[wrS4, 0.64], [rbS4, 0.6], [teS4, 0.58]]), TW('elo-aggr', 'Aggressive', 4, 0.12, 'Only 3 players in any one game of the Sunday slot qualify: this level takes 4.'), TW('elo-xtrm', 'Extreme', 5, 0.05, 'Only 3 players in any one game of the Sunday slot qualify: this level takes 5.')];
       const REC = { entries: {}, prime: {}, slot: { [`${SEAS}|${String(W1).padStart(2, '0')}|${isoS(U0.first)}|${ID}`]: { season: SEAS, week: W1, gid: ID, games: U0.games.map(g => g.id), kickoff: isoS(U0.first), last: isoS(U0.last), lock: isoS(U0.lock), baked_at: takenAt, taken_at: takenAt, pool: {}, tiers: TIERS, elo: ELO } } };
       w.__sltRec = REC; w.eval('PB_REC=window.__sltRec; PB_REC_DONE=true'); await view(U0.lock + 60e3);
       const wantM = keptDrawn(TIERS, 'model'), wantE = keptDrawn(ELO, 'elo');
       chk(phaseLine(ID) === 'locked Locked since Sun 7:30 AM ET.' && drawnS(ID, 'model') === wantM && drawnS(ID, 'elo') === wantE,
         `${lab}: from its lock the slot does not draw the record's set and Elo picks as they stand: ${phaseLine(ID)} / ${drawnS(ID, 'model')} / want ${wantM} / ${drawnS(ID, 'elo')} / want ${wantE}`);
       SPH.holdLocked(lab + ', locked, the record\'s', unitOf(U0.lock + 60e3), true);
-      { const t = w.eval('spTier')(`${ID}:elo-med`); chk(!!t && t.elo === true && t.game === 'the Sunday slot' && t.legs.map(l => l.pid).sort().join() === [wrS1, qbS2, teS4].map(l => l.pid).sort().join(), `${lab}: locked, the card would not finish the record's Elo Medium for the Sunday slot`); }
+      { const t = w.eval('spTier')(`${ID}:elo-med`); chk(!!t && t.elo === true && t.game === 'the Sunday slot' && t.legs.map(l => l.pid).sort().join() === [wrS4, rbS4, teS4].map(l => l.pid).sort().join(), `${lab}: locked, the card would not finish the record's Elo Medium for the Sunday slot`); }
+      /* (app v121, the review's round) a player ruled out after the slot's lock, on a page left open: the record's Medium is
+         the 4:25 pm game's own Medium as the page builds it from these lines (each of the slot's games' sets in the page's
+         cache, as an open page keeps them from before the lock: nothing they are signed on moves when a player is ruled
+         out), and its first player is then ruled out (Out on the report, planted and put back) with the cache left as it
+         is. Every level of the record's that holds him is built again from the lines as they stand: one game's legs of its
+         size, none on him and no pair DraftKings refuses, the best of the slot's games' own levels by the slot's rule worked
+         out here (slotPickOwn) on each game's set built afresh once the tab is drawn, marked Updated in this browser with
+         his name and when, and kept in the browser; every other level as the record has it. Until the round the slot's
+         level built again was read off each game's cached set, so it held him still */
+      { const U = unitOf(U0.lock + 60e3), INJ = w.eval('INJ'), live = U.games.map(x => w.eval('spSet')(x.id)), i4 = U.games.findIndex(x => x.id === S4.id);
+        const med4 = i4 >= 0 && live[i4] ? live[i4].tiers.find(t => t.id === 'med') : null, gone = med4 && med4.legs ? med4.legs.find(l => !/^team:/.test(l.pid)) : null;
+        if (!gone) chk(false, `${lab}: the 4:25 pm game's own Medium has no player to rule out: ` + JSON.stringify(med4 && (med4.legs ? med4.legs.map(l => l.pid) : med4.why)));
+        else { const R2 = JSON.parse(JSON.stringify(REC)), e2 = R2.slot[Object.keys(R2.slot)[0]], keepI = INJ[gone.pid];
+          e2.tiers[1] = TM('med', 'Medium', 3, 0.25, med4.legs);
+          const hold = e2.tiers.filter(t => t.legs && t.legs.some(l => l.pid === gone.pid)).map(t => t.id), sigL = ls => (ls || []).map(l => `${l.gid}|${l.pid}|${l.stat}|${l.side}|${+l.k}`).sort().join(',');
+          try {
+            w.__sltRec2 = R2; w.eval('PB_REC=window.__sltRec2; PB_REC_DONE=true; SP_KEEP=null'); w.localStorage.removeItem(KK);
+            INJ[gone.pid] = { k: 'out', s: 'Out' }; w.eval('SP_SHOWN=null; renderParlay()'); await wait(40);
+            const K = (() => { try { return JSON.parse(w.localStorage.getItem(KK)); } catch (e) { return null; } })(), rep = (K && K.games && K.games[ID] && K.games[ID].rep) || {}, bad = [];
+            const shown = Object.fromEntries(PB_TIERS_OWN.map(id => [id, w.eval('spTier')(`${ID}:${id}`)]));
+            /* each game's own set afresh, now, with him out: what the slot's level built again is held to */
+            w.eval('SP_CACHE=new Map()'); const fresh = U.games.map(x => w.eval('spSet')(x.id));
+            for (const [ti, t] of e2.tiers.entries()) { const c = elS(ID) && elS(ID).querySelector(`:scope > .pb-tiers[data-sp-kind="model"] > .pb-tier.${t.id}`), u = c && c.querySelector('[data-sp-upd]'), now = shown[t.id];
+              if (!hold.includes(t.id)) { if (t.legs ? !now || sigL(now.legs) !== sigL(t.legs) : !!(now && now.legs)) bad.push(`${t.id}, which does not hold him, is not the record's`); if (u) bad.push(`${t.id}, which does not hold him, says it was built again`); continue; }
+              const levels = fresh.map(f => f && f.tiers[ti]), k = slotPickOwn(levels, t.floor), want = k < 0 ? null : levels[k], r = rep[t.id];
+              if (!now || !now.legs || now.legs.length !== t.n || now.legs.some(l => l.pid === gone.pid) || new Set(now.legs.map(l => l.gid)).size !== 1 || !U.games.some(x => x.id === now.legs[0].gid) || clashPairsOwn(now.legs).length)
+                bad.push(`${t.id} built again is not ${t.n} legs of one of the slot's games with no pair DraftKings refuses and none on ${gone.name}: ` + (now ? (now.legs ? now.legs.map(l => l.gid.slice(-3) + ' ' + l.name + ' ' + l.label).join(' + ') : now.why) : 'none'));
+              else if (!want || sigL(now.legs) !== sigL(want.legs)) bad.push(`${t.id} built again is not the best of the slot's games' own ${t.id} levels by the slot's rule, built afresh: ${sigL(now.legs)} where the rule gives ${want ? sigL(want.legs) : 'none'}`);
+              if (!u || u.dataset.spUpd !== gone.pid || !r || r.pid !== gone.pid || txt(u) !== `Updated in this browser: ${gone.name} held out (${etSay(Date.parse(r.at))}); this level was built again.`)
+                bad.push(`${t.id} is not marked Updated in this browser for ${gone.name}, and kept: ${u ? txt(u) : 'no line'} / ${JSON.stringify(r ? { pid: r.pid, at: r.at } : null)}`); }
+            chk(hold.includes('med') && !bad.length, `${lab}: with ${gone.name}, in the record's Medium (${hold.join(', ')} hold him), ruled out after the lock on a page left open (its games' sets in the cache), the levels that hold him are not built again from the lines as they stand without him, the best of the slot's games' own, marked Updated: ` + bad.slice(0, 3).join('; '));
+            SPH.holdLocked(lab + `, locked, the record's, ${gone.name} ruled out after it`, U, true);
+          } finally {
+            if (keepI) INJ[gone.pid] = keepI; else delete INJ[gone.pid];
+            delete w.__sltRec2; w.eval('PB_REC=window.__sltRec; PB_REC_DONE=true; SP_KEEP=null'); w.localStorage.removeItem(KK); await view(U0.lock + 60e3); } } }
       /* no entry for it in the record: the page builds the set once (and its Elo picks), says it is this browser's own,
          keeps it outside S, and a reload shows it again */
       w.eval('PB_REC={entries:{}}; SP_KEEP=null'); w.localStorage.removeItem(KK); await view(U0.lock + 60e3);
@@ -2853,6 +3072,212 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (keep.key == null) w.localStorage.removeItem(KK); else w.localStorage.setItem(KK, keep.key);
       delete w.__slt; delete w.__sltKeep; delete w.__sltRec;
       w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); SP_SHOWN=null; renderParlay(); renderSp()'); await wait(30);
+      tabBtn('parlay').click(); await wait(40); } }
+  /* ---- (app v121) the pairs DraftKings refuses, and a link a game, on made-up games of the smoke's own (the owner's calls
+     of 19 October 2026: "If your parlay already has a receiver anytime TD, a team total, or the game total, adding the QB's
+     passing TD over often gets blocked", "Some combos contradict each other, like QB under 1.5 passing TDs alongside two
+     of his receivers to score. The book rejects it outright", then "the legs need to be part of the same game parlay
+     only, and anytime there's a mix it bombs the hyperlink. also thinking about maybe adding links for each individual
+     one may reduce the issues?"). Two made-up games are put on the schedule for the block (pbGames, pricedLegs, the
+     night rule's spOn, the slot's spSlotNext, DraftKings' ids, one correlation and the builder stood in for, each put back
+     whatever happens), so it holds on any day, the off-season included: a Monday night game whose quarterback's passing
+     TDs and his receiver's touchdown are its two likeliest legs and move together strongly, so the likeliest pair and the
+     best Medium a rule with no such pair would take are those two; and a Sunday afternoon game with a money line.
+     Worked out here, each on its own: the night game's set holds neither that pair nor any other DraftKings refuses (and
+     holdSet holds it to every rule); the builder says so of a pair it holds, word for word (data-pb-clash), the
+     passing TDs' over with the game's total too and his under with his teammate's touchdown, and nothing of a parlay
+     with none; it says one link a game where its legs mix two legs of one game with a leg of another (data-pb-multigame,
+     on the hub only), and nothing of one leg a game; and the parlay card gives that mix a button for each game, its own
+     legs' ids in the card's order, none for them all, every leg's own link, the pairs DraftKings refuses by their numbers,
+     and the Share link's text a link for each game; one leg a game one link, as before ---- */
+  if (hasPb && holdSetF && SPH) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), wk2 = String(cw).padStart(2, '0'), KK = 'props_sp_lock_v1';
+    const mk = (n, d0, t0) => ({ id: `2099_${wk2}_A${n}_H${n}`, w: cw, a: 'A' + n, h: 'H' + n, d: d0, t: t0 });
+    const C1 = mk(61, '2099-01-05', '20:15'), C2 = mk(62, '2099-01-04', '13:00'), C3 = { ...mk(63, '2099-01-05', '20:15'), tot: 44.5, tov: -110, tou: -110 };
+    const leg = (g, tag, grp, team, stat, k, p, price, label, extra) => ({ key: `${g.id}|${tag}|${stat}`, gid: g.id, pid: tag, stat, k, side: 'over', main: false, p, price, src: 'real', mu: null,
+      name: tag.startsWith('team:') ? 'Made-up ' + tag.slice(5) : 'Pair ' + tag.split('-')[1], pos: grp === 'TEAM' ? 'Game' : grp, grp, team, opp: team === g.h ? g.a : g.h, week: cw, label, ...(extra || {}) });
+    /* every leg thin (no Elo rating for a made-up player, and the money line's edge under 3 points), so the likeliest pair
+       is the likeliest of all */
+    const QB = leg(C1, 'C61-QB1', 'QB', C1.h, 'passing_tds', 2, 0.66, -170, '2+ pass TDs'), TD = leg(C1, 'C61-WR1', 'WR', C1.h, 'any_td', 1, 0.64, -160, 'Scores a touchdown');
+    const RB = leg(C1, 'C61-RB1', 'RB', C1.a, 'rushing_yards', 60, 0.58, -125, '60+ rush yds'), TE = leg(C1, 'C61-TE1', 'TE', C1.a, 'receptions', 4, 0.56, -115, '4+ rec');
+    const WR2 = leg(C1, 'C61-WR2', 'WR', C1.a, 'receiving_yards', 50, 0.57, -120, '50+ rec yds'), ML1 = leg(C1, 'team:H61', 'TEAM', C1.h, 'ml', 0, 0.58, -130, 'To win');
+    const ML2 = leg(C2, 'team:H62', 'TEAM', C2.h, 'ml', 0, 0.58, -130, 'To win');
+    const QBU = leg(C1, 'C61-QB1', 'QB', C1.h, 'passing_tds', 1.5, 0.5, 110, 'Under 1.5 passing TDs', { side: 'under', main: true });
+    const TOT = { key: `${C1.id}|game|total`, gid: C1.id, pid: 'game', stat: 'total', k: 44.5, side: 'over', main: true, p: 0.5, price: -110, src: 'real', mu: null, name: 'Pair game total', pos: 'Game', grp: 'TEAM', team: C1.a, opp: C1.h, week: cw, label: 'Over 44.5 points' };
+    /* and a second Monday night game whose legs with an edge are its money line (a Value pick), its quarterback's
+       passing TDs and his teammate's touchdown, with its total posted: three legs with an edge, but no three of them that
+       DraftKings takes, so its Medium is the money line, the touchdown and a total (the totals fill what the legs with an
+       edge leave to fill with no pair DraftKings refuses), and its Aggressive is empty, the game making three legs that go
+       together and no four */
+    const QB3 = leg(C3, 'C63-QB1', 'QB', C3.h, 'passing_tds', 2, 0.62, -150, '2+ pass TDs'), TD3 = leg(C3, 'C63-WR1', 'WR', C3.h, 'any_td', 1, 0.6, -140, 'Scores a touchdown'), ML3 = leg(C3, 'team:H63', 'TEAM', C3.h, 'ml', 0, 0.6, -110, 'To win');
+    /* (app v121, the review's round) and, for the builder and the card alone (none of them is a line pricedLegs gives, so no
+       set takes them): the night game's home side to cover -3.5, which DraftKings has only at -4.5 (the card puts it on
+       there), and a player of the Sunday game and one of the second Monday night game with no DraftKings id at all */
+    const ATS1 = leg(C1, 'team:H61', 'TEAM', C1.h, 'ats', -3.5, 0.55, -110, 'To cover -3.5'), NOID2 = leg(C2, 'C62-RB9', 'RB', C2.a, 'rushing_yards', 50, 0.57, -110, '50+ rush yds'), NOID3 = leg(C3, 'C63-TE9', 'TE', C3.a, 'receptions', 4, 0.56, -115, '4+ rec');
+    const L1 = [QB, TD, RB, TE, WR2, ML1], LALL = [...L1, ML2, QB3, TD3, ML3], CK = 'team|QB:passing_tds|WR:any_td', lab = `a made-up Monday night game (${C1.id}) whose quarterback's passing TDs and receiver's touchdown are its likeliest pair`;
+    const keep = { pb: w.eval('[pbGames, pricedLegs]'), dk: w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), corr: w.eval(`(function(){ const v=PAY.corr&&PAY.corr[${JSON.stringify(CK)}]; return v===undefined?null:v; })()`), parlay: w.eval('JSON.stringify(S.parlay)'),
+      on: w.eval('typeof spOn') === 'function' ? w.eval('spOn') : null, slot: w.eval('typeof spSlotNext') === 'function' ? w.eval('spSlotNext') : null, key: w.localStorage.getItem(KK), card: w.PARLAY_CARD };
+    const read = new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', DKF = dkFixture([...LALL, QBU, TOT, ...['over', 'under'].map(side => ({ gid: C3.id, week: cw, pid: 'game', stat: 'total', k: 44.5, side, main: true }))], read, 'PAIR');
+    /* (app v121, the review's round) the Sunday game's lines read six hours before the night games' (its game lines and its
+       player prices alike), so a card over both dates each game's link by its own read and its note by the older; and
+       DraftKings' spread of the night game's home side at -4.5 alone */
+    const read2 = new Date(Date.parse(read) - 6 * 3600e3).toISOString().slice(0, 16) + 'Z';
+    Object.assign(DKF[String(cw)][C2.id], { at: read2, glat: read2 }); DKF[String(cw)][C1.id]['team:H61|ats|-4.5'] = 'PAIRATS#team:H61|ats|-4.5';
+    const strip = l => { const { key, ...x } = l; return x; }, sortB = ls => [...ls].sort((a, b) => (a.week - b.week) || a.name.localeCompare(b.name));
+    const putB = async ls => { w.__prB = Object.fromEntries(ls.map(l => [l.key, strip(l)])); w.eval('S.parlay=JSON.parse(JSON.stringify(window.__prB)); renderParlay()'); await wait(30); };
+    const body = () => d.getElementById('parlayBody'), dkUrlOwn = ids => 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+'), idOwn = l => dkOwnId(DKF, l, false);
+    /* the builder's note on the pairs, in the page's words, worked out here from the builder's order (the week, then the name) */
+    const clashNoteOwn = ls => { const B = sortB(ls), P = clashPairsOwn(B); return !P.length ? null : `DraftKings may refuse ${P.length === 1 ? 'this pair' : 'these pairs'} on one slip: ${P.map(([i, j, k]) => `${B[i].name}, ${B[i].label}, with ${B[j].name}, ${B[j].label} (${CLASH_SAY_OWN[k]})`).join('; ')}.`; };
+    /* (app v121, the review's round) what DraftKings' slip takes of each leg, worked out here on the fixture's own ids (the
+       card's plan, as far as this fixture goes): DraftKings' id at the leg's own line; else, for a spread, the same team's
+       id at DraftKings' closest number (the lower on a tie), the leg going on there (swap, in the card's words: "-4.5");
+       else none, the leg added by hand. No press is made in the block, so no read is newer than the fixture's, and every
+       other leg here has its id at its own line or none at all. Each leg is dated by the read of its game's ids it is
+       looked up in (a team's line and the total by the game lines', a player's by the player prices') */
+    const slipOwn = l => { const id = idOwn(l); if (id) return { id, swap: null };
+      if (l.stat === 'ats') { const D = ((DKF[String(l.week)] || {})[l.gid]) || {}, pre = `${l.pid}|ats|`, ps = Object.keys(D).filter(k => k.startsWith(pre)).map(k => +k.slice(pre.length)).filter(isFinite).sort((x, y) => (Math.abs(x - l.k) - Math.abs(y - l.k)) || (x - y));
+        if (ps.length) return { id: D[pre + dkPt(ps[0])], swap: dkSigned(ps[0]) }; }
+      return { id: null, swap: null }; };
+    const readAtOwn = l => { const D = ((DKF[String(l.week)] || {})[l.gid]) || {}; return Date.parse(['ml', 'ats', 'total'].includes(l.stat) ? D.glat : D.at); };
+    /* the parlay as the card plans it, here: its legs in the builder's order, numbered; those that go on the slip (ok) and
+       those that do not (miss); the games of the legs on the slip, in the order their first legs come, each dated by the
+       oldest read of its own legs; a mix (multi) where those games are two or more and one of them has two or more legs on
+       the slip, so a leg with no DraftKings id counts for nothing; and the read of them all, the oldest */
+    const planOwn = ls => { const B = sortB(ls), each = B.map((l, i) => ({ l, n: i + 1, ...slipOwn(l), at: readAtOwn(l) })), ok = each.filter(x => x.id), miss = each.filter(x => !x.id), games = [];
+      for (const x of ok) { let G = games.find(y => y.gid === x.l.gid); if (!G) games.push(G = { gid: x.l.gid, ok: [] }); G.ok.push(x); }
+      games.forEach(G => { G.read = Math.min(...G.ok.map(x => x.at)); });
+      return { B, each, ok, miss, games, gs: games.map(G => G.gid), multi: games.length > 1 && games.some(G => G.ok.length > 1), read: ok.length ? Math.min(...ok.map(x => x.at)) : null }; };
+    const readTxtOwn = ms => new Date(ms).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }) + ' ET';
+    /* the builder's line on a same-game parlay mixed with other games, from the plan: the games with legs on the slip alone */
+    const multiNoteOwn = ls => { const p = planOwn(ls); return p.multi ? `These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${p.games.length} games a link of its own.` : null; };
+    const notesOf = () => { const c = body() && body().querySelector('[data-pb-clash]'), m = body() && body().querySelector('[data-pb-multigame]');
+      return { clash: c ? txt(c) : null, clashN: c ? c.dataset.pbClash : null, multi: m ? txt(m) : null, multiN: m ? m.dataset.pbMultigame : null }; };
+    try {
+      Sx.sched.push(C1, C2, C3); w.__prG = { G: [C1, C2, C3], L: LALL };
+      w.eval('pbGames=function(){ return window.__prG.G.filter(g=>!gameStarted(g)&&!hasScore(g)); }; pricedLegs=function(games){ return window.__prG.L.filter(l=>(games||[]).some(g=>g.id===l.gid)&&(isGameLeg(l)||suggestable(l.pid))).map(l=>({...l})); };');
+      if (keep.on) w.eval('spOn=function(){ return spGames(); }');
+      if (keep.slot) w.eval('spSlotNext=function(){ return null; }');
+      w.eval(`PAY.dk=${JSON.stringify(DKF)}; PAY.corr=PAY.corr||{}; PAY.corr[${JSON.stringify(CK)}]=0.5; S.parlay={}; SP_CACHE=new Map(); PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_SHOWN=null; renderParlay()`);
+      tabBtn('suggest').click(); await wait(80);
+      /* the night game's set: every rule a set keeps (holdSet, the pairs DraftKings refuses among them); and the fixture as
+         it was made, worked out here with no such rule: the likeliest pair the quarterback's passing TDs and the
+         touchdown, and the best Medium over its 25% (else the likeliest three) holding both, by the builder's own sums */
+      const nB = holdSetF(lab, C1, true), s1 = w.eval('spSet')(C1.id), T1 = s1 ? Object.fromEntries(s1.tiers.map(t => [t.id, t])) : {};
+      { const fitsNo = (cur, c) => !cur.some(l => l.key === c.key) && (isGameOwn(c) ? !cur.some(l => isGameOwn(l) && l.gid === c.gid && (l.stat === 'total') === (c.stat === 'total')) : !cur.some(l => !isGameOwn(l) && l.pid === c.pid));
+        let bp = -1, bl = null; for (let i = 0; i < L1.length; i++) for (let j = i + 1; j < L1.length; j++) { if (!fitsNo([L1[i]], L1[j])) continue; const pj = pairOwn(L1[i], L1[j], rhoF(L1[i], L1[j])); if (pj > bp) { bp = pj; bl = [L1[i], L1[j]]; } }
+        let mb = null, ml = null; for (let i = 0; i < L1.length; i++) for (let j = i + 1; j < L1.length; j++) for (let k = j + 1; k < L1.length; k++) { const ls = [L1[i], L1[j], L1[k]];
+          if (!fitsNo([L1[i]], L1[j]) || !fitsNo([L1[i], L1[j]], L1[k])) continue; const O = orderF(ls), pr = ppF(O).corr, dc = w.eval('parlayDec')(O.map(l => ({ leg: l, ml: l.price }))), x = { ls, pr, ev: pr * dc };
+          if (!ml || pr > ml.pr) ml = x; if (pr >= 0.25 && (!mb || x.ev > mb.ev)) mb = x; }
+        const has2 = ls => !!ls && ls.includes(QB) && ls.includes(TD), med = mb || ml, held = t => !!t && !!t.legs && t.legs.some(l => l.pid === QB.pid) && t.legs.some(l => l.pid === TD.pid);
+        chk(nB === 4 && clashOwn(QB, TD) === 'td' && has2(bl) && has2(med && med.ls) && !held(T1.safe) && !held(T1.med) && Object.values(T1).every(t => !t.legs || !clashPairsOwn(t.legs).length),
+          `${lab}: the set does not build its four levels with no pair DraftKings refuses, where with no such rule its likeliest pair and its Medium would hold the quarterback's passing TDs and the touchdown (${nB} levels; no rule: ${bl ? bl.map(l => l.name).join('+') : 'none'}, ${med ? med.ls.map(l => l.name).join('+') : 'none'}; the set: ` + s1.tiers.map(t => t.id + ' ' + (t.legs ? t.legs.map(l => l.name).join('+') : t.why)).join(' | ') + ')'); }
+      /* the second game: its set held to every rule (holdSet: a level empty only where the game's legs make too few with
+         no pair DraftKings refuses), and, as it was made for it, its Medium the money line, the touchdown and a total */
+      { const lab3 = `a made-up Monday night game (${C3.id}) whose quarterback's passing TDs and his teammate's touchdown are two of its three legs with an edge, its total posted`;
+        holdSetF(lab3, C3, true); const s3 = w.eval('spSet')(C3.id), M3 = s3 && s3.tiers.find(t => t.id === 'med'), q3 = qualOwn(SPH.SPU, [C3]);
+        chk(q3.pref.length + q3.thin.length === 3 && q3.mkt.length === 2 && maxFitOwn([...q3.pref, ...q3.thin]) === 2 && !!M3 && !!M3.legs && M3.mkt === 1 && M3.legs.some(l => l.pid === TD3.pid) && M3.legs.some(l => l.pid === ML3.pid) && !M3.legs.some(l => l.pid === QB3.pid),
+          `${lab3}: its Medium is not the money line, the touchdown and a total, the one three-leg parlay of the game DraftKings takes (the legs with an edge make three by count and two that go together, so a total fills the third): ` + (M3 ? (M3.legs ? M3.legs.map(l => l.name + ' ' + l.label).join(' + ') : M3.why) : 'no Medium')
+          + ` (${q3.pref.length} Value picks, ${q3.thin.length} thin, ${q3.mkt.length} totals worked out here)`);
+        /* (app v121, the review's round) and its two empty levels as it was made for them: Aggressive, four legs by count
+           (the two players, the side and the total) and three that go together, says no four of its legs go together on
+           DraftKings' slip; Extreme, five, says the game has only four, as before. Until the round Aggressive said "No
+           4-leg parlay in this game: a parlay takes one leg a player, and one side and one total a game.", which is not
+           why */
+        const A3 = s3 && s3.tiers.find(t => t.id === 'aggr'), X3 = s3 && s3.tiers.find(t => t.id === 'xtrm'), all3 = [...q3.pref, ...q3.thin, ...q3.mkt];
+        chk(maxOwn(all3) === 4 && maxFitOwn(all3) === 3 && !!A3 && !A3.legs && A3.why === `No 4 of this game’s legs go together on DraftKings’ slip: ${CLASH_WHY_OWN}`
+          && !!X3 && !X3.legs && X3.why === 'Only 4 legs in this game: a parlay takes one leg a player, and one side and one total a game.',
+          `${lab3}: its Aggressive does not say no four of its legs go together on DraftKings' slip, or its Extreme that the game has only four legs (${maxOwn(all3)} by count, ${maxFitOwn(all3)} together, worked out here): ${A3 ? A3.why || 'built' : 'none'} / ${X3 ? X3.why || 'built' : 'none'}`); }
+      /* a game page's hands (gameTiers, its own fits) the same: none holds a pair DraftKings refuses */
+      { let GT = null; try { GT = w.eval('GAME_TIER_CACHE={}; gameTiers')(C1); } catch (e) { GT = null; console.log(`  (${C1.id}'s game page hands could not be built on made-up clubs: ${e && e.message})`); }
+        if (GT) { const hs = ['high', 'med', 'low'].map(id => GT[id]).filter(h => h && Array.isArray(h.legs));
+          chk(hs.every(h => !clashPairsOwn(h.legs).length), `${lab}: a game page's hand holds a pair DraftKings will not take on one slip: ` + hs.map(h => clashTxt(h.legs)).filter(Boolean).join(' | '));
+          if (!hs.some(h => h.legs.some(l => l.pid === QB.pid)) || !hs.length) console.log(`  (${C1.id}'s game page hands: ${hs.map(h => h.legs.map(l => l.name).join('+')).join(' | ') || 'none'})`); } }
+      /* the builder: a pair DraftKings refuses said so, word for word, under its legs; the passing TDs' over with the
+         game's total and with the touchdown, two pairs; his under with the touchdown (either side) and not with the total
+         (an over only); a parlay with none says nothing of it, and one game's legs, or one leg a game, nothing of a link a
+         game; two legs of one game with a leg of another, that the card gives each game a link of its own (on the hub
+         only, where the card is) */
+      tabBtn('parlay').click(); await wait(40);
+      const cases = [['the quarterback\'s passing TDs and his teammate\'s touchdown', [QB, TD]], ['the passing TDs\' over with the game\'s total and the touchdown', [QB, TD, TOT]],
+        ['his passing TDs\' under with the touchdown and the total', [QBU, TD, TOT]], ['one game\'s legs with no such pair', [QB, RB, TE]], ['one leg a game', [QB, ML2]], ['two legs of one game with a leg of another', [QB, RB, ML2]],
+        ['a pair DraftKings refuses beside a leg of another game', [QB, TD, ML2]],
+        /* (app v121, the review's round) the mix line reads the card's own plan, so a leg DraftKings' slip cannot take counts
+           for nothing: one leg a game on the slip beside a second leg of one of them with no id is a plain parlay on the
+           slip, and says nothing of a link a game (until the round it said the card gives each of the 2 games a link);
+           two legs of one game and one of another on the slip beside a third game's leg with no id is the mix, of 2 games
+           (until the round it said 3); and a leg going on at DraftKings' number counts as on the slip */
+        ['one leg a game on DraftKings\' slip, beside a second leg of one of those games with no DraftKings id', [QB, ML2, NOID2]],
+        ['two legs of one game and one of another on the slip, beside a third game\'s leg with no DraftKings id', [QB, RB, ML2, NOID3]],
+        ['two legs of one game, one going on at DraftKings\' number, with a leg of another', [QB, ATS1, ML2]]];
+      for (const [what, ls] of cases) { await putB(ls); const got = notesOf(), wc = clashNoteOwn(ls), wm = multiNoteOwn(ls), np = clashPairsOwn(sortB(ls)).length, p = planOwn(ls), ng = p.games.length;
+        chk(got.clash === wc && (wc ? got.clashN === String(np) : got.clashN === null) && got.multi === wm && (wm ? got.multiN === String(ng) : got.multiN === null),
+          `the builder holding ${what} does not say what DraftKings refuses and whether the card gives each game a link, word for word ("${wc}", "${wm}"): ${JSON.stringify(got)}`);
+        /* and under each leg's row what the slip does with it, from the same plan: at DraftKings' number said so, no id said
+           not on the slip yet, and nothing under a leg that goes on as built */
+        { const rows = [...body().querySelectorAll('tr.legrow')].map(r => { const x = r.querySelector('small.dkslip'); return x ? txt(x) : null; });
+          chk(rows.length === p.each.length && p.each.every((x, i) => x.swap ? rows[i] === `On DraftKings as ${x.swap}` : x.id ? rows[i] === null : !!rows[i] && rows[i].startsWith('Not on DraftKings’ slip yet: ')),
+            `the builder holding ${what} does not say under each leg's row what DraftKings' slip does with it (at DraftKings' number, not on the slip, or nothing): ${JSON.stringify(rows)}`); } }
+      /* the prop model's own page has no parlay card: the pairs still said, no link a game */
+      { await putB([QB, TD, ML2]); w.PARLAY_CARD = undefined; w.eval('renderParlay()'); await wait(20); const got = notesOf(); w.PARLAY_CARD = keep.card; w.eval('renderParlay()'); await wait(20);
+        chk(got.clash === clashNoteOwn([QB, TD, ML2]) && got.multi === null, 'without the parlay card (the prop model\'s own page) the builder does not say what DraftKings refuses, or still says the card gives each game a link: ' + JSON.stringify(got)); }
+      /* the card, from the builder: Finish on each parlay, its DraftKings buttons and note worked out here from the ids the
+         fixture planted (dkOwnId, the card's order the builder's) */
+      const cardOf = async ls => { await putB(ls); const fin = d.getElementById('pFinish'); if (fin && !fin.disabled) { fin.click(); await wait(40); } return !!fin && !d.getElementById('pcModal').hidden; };
+      /* every leg on the slip its own link, a row each, numbered as on the card, its own id alone; (app v121, the review's
+         round) a leg going on at DraftKings' number says so in its row and its name, "(on DraftKings as -4.5)" */
+      const legsHeld = p => { const ul = d.querySelector('#pcDkNote ul.pc-dklegs'), as = ul ? [...ul.querySelectorAll('li > a[data-pc-dkleg]')] : [], sw = x => x.swap ? ` (on DraftKings as ${x.swap})` : '';
+        return p.ok.length < 2 ? !ul : !!ul && as.length === p.ok.length && p.ok.every((x, i) => as[i].dataset.pcDkleg === String(x.n) && as[i].getAttribute('href') === dkUrlOwn([x.id]) && txt(as[i]) === `${x.n}. ${x.l.name}, ${x.l.label}${sw(x)}`
+          && as[i].getAttribute('target') === '_blank' && /noopener/.test(as[i].getAttribute('rel') || '') && as[i].getAttribute('aria-label') === `Open leg ${x.n}, ${x.l.name} ${x.l.label}${sw(x)}, in DraftKings` && w.getComputedStyle(as[i]).minHeight === '44px'); };
+      const nums = xs => (xs.length === 1 ? 'leg ' : 'legs ') + (xs.length > 1 ? xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1] : xs[0]);
+      const clashCardOwn = B => { const P = clashPairsOwn(B); return !P.length ? null : `DraftKings may refuse ${P.length === 1 ? 'this pair' : 'these pairs'} on one slip: ${P.map(([i, j, k]) => `legs ${i + 1} and ${j + 1} (${CLASH_SAY_OWN[k]})`).join('; ')}.`; };
+      /* (app v121, the review's round) and the card on a leg it cannot take, beside one leg a game and beside the mix, and on
+         a leg it puts on at DraftKings' number in the mix: the games' buttons each dated by its own game's read (the Sunday
+         game's six hours before the night game's), the note and Share link's text by the older */
+      for (const [what, ls] of [['one game\'s legs, a pair DraftKings refuses among them', [QB, TD, TOT]], ['one leg a game', [QB, ML2]], ['two legs of one game with a leg of another', [QB, RB, ML2]],
+        ['one leg a game on the slip, beside a second leg of one of those games with no DraftKings id', [QB, ML2, NOID2]], ['two legs of one game and one of another on the slip, beside a third game\'s leg with no DraftKings id', [QB, RB, ML2, NOID3]],
+        ['two legs of one game, one going on at DraftKings\' number, with a leg of another', [QB, ATS1, ML2]]]) {
+        const opened = await cardOf(ls), p = planOwn(ls), { B, gs, multi } = p, a = d.getElementById('pcDk'), gb = d.getElementById('pcDkGames'), note = d.getElementById('pcDkNote'), bad = [];
+        const okOf = gid => p.ok.filter(x => x.l.gid === gid), byHand = p.miss.length ? `; add ${nums(p.miss.map(x => x.n))} by hand` : '';
+        const gbs = gb ? [...gb.querySelectorAll('a.pc-dkbtn[data-pc-dkgame]')] : [], cl = note && note.querySelector('[data-pc-dkclash]'), lt = w.PARLAY_CARD.linkText(w.PARLAY_CARD.current() || w.PARLAY_CARD.fromBuilder()), tx = lt ? lt.text : '';
+        const name = gid => { const g = [C1, C2, C3].find(x => x.id === gid); return g.a + ' at ' + g.h; };
+        if (!opened) bad.push('Finish did not open the card');
+        if (multi) {
+          if (!a || !a.hidden || !gb || gb.hidden || gb.previousElementSibling !== a || gb.nextElementSibling !== d.getElementById('pcLink')) bad.push('Open in DraftKings is shown, or the games\' buttons are not right after it and before Share link');
+          /* (app v121, the review's round) each button's title dated by its own game's legs' read, the oldest of them */
+          const gTitle = G => `Opens ${nums(G.ok.map(x => x.n))} (${name(G.gid)}) on DraftKings’ betslip, in a new tab, as DraftKings’ lines were read ${readTxtOwn(G.read)}: a line moved or pulled since will not be on it, so check each leg is there`;
+          if (gbs.length !== p.games.length || p.games.some((G, i) => { const x = gbs[i];
+            return !x || x.dataset.pcDkgame !== G.gid || x.getAttribute('href') !== dkUrlOwn(G.ok.map(y => y.id)) || txt(x) !== `Open ${name(G.gid)} in DraftKings` || x.getAttribute('target') !== '_blank'
+              || x.getAttribute('title') !== gTitle(G); }))
+            bad.push('the games\' buttons are not one a game with legs on the slip, in the order their first legs come, each opening its own legs\' ids and dated by their own read: ' + gbs.map(x => `${txt(x)} ${x.getAttribute('href')} "${x.getAttribute('title')}"`).join(' / ') + ' / want ' + p.games.map(gTitle).join(' / '));
+          if (!txt(note).includes(`DraftKings’ lines as read ${readTxtOwn(p.read)}: these legs mix a same-game parlay with other games, and a DraftKings link with that mix does not open, so each of the ${p.games.length} games has a link of its own: open them one after another. Each opens its game’s legs as DraftKings had them then; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.${byHand ? ' Add by hand:' : ''}`)
+            || (note.querySelector('[data-pc-dkread]') || { dataset: {} }).dataset.pcDkread !== new Date(p.read).toISOString())
+            bad.push(`the note does not say each game has a link of its own, dated by the oldest read of the legs on the slip (${readTxtOwn(p.read)}): ` + txt(note).slice(0, 300));
+          const lines = tx.split('\n'), i0 = lines.indexOf(`DraftKings betslip, a link for each game (a link mixing a same-game parlay with other games does not open)${byHand}:`), j0 = i0 + 1 + 2 * p.games.length;
+          if (i0 < 0 || p.games.some((G, i) => lines[i0 + 1 + 2 * i] !== `${name(G.gid)}, ${nums(G.ok.map(x => x.n))}:` || lines[i0 + 2 + 2 * i] !== dkUrlOwn(G.ok.map(y => y.id)))
+            || lines[j0] !== `DraftKings lines as read ${readTxtOwn(p.read)}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`
+            || lt.url !== null || JSON.stringify(lt.urls) !== JSON.stringify(p.games.map(G => dkUrlOwn(G.ok.map(y => y.id)))) || tx.includes('DraftKings betslip (opens'))
+            bad.push('Share link\'s text is not a link for each game, each under its game and legs, then the oldest read: ' + tx.slice(0, 500));
+        } else {
+          const one = dkUrlOwn(p.ok.map(x => x.id)), which = p.miss.length ? `${p.ok.length} of the ${B.length} legs` : `the ${B.length} legs`;
+          if (!a || a.hidden || a.getAttribute('href') !== one || txt(a) !== (p.miss.length ? `Open ${p.ok.length} of ${B.length} legs in DraftKings` : 'Open in DraftKings') || !gb || !gb.hidden || gbs.length) bad.push(`it is not one link for every leg on the slip with no button for each game: ${a ? txt(a) + ' ' + a.getAttribute('href') + ' hidden ' + a.hidden : 'no link'} / ${gbs.length} game buttons`);
+          if (!tx.includes(`DraftKings betslip (opens ${which} as DraftKings had them${byHand}):\n${one}\n`) || !lt || lt.url !== one || JSON.stringify(lt.urls) !== JSON.stringify([lt.url])) bad.push('Share link\'s text is not the one link: ' + tx.slice(0, 300));
+          if (/a link of its own|mix a same-game parlay/.test(txt(note))) bad.push('the note speaks of a link a game');
+          if (/One leg at a time/.test(txt(note))) bad.push('the note still has the old inline links, "One leg at a time"'); }
+        if (!legsHeld(p)) bad.push('every leg\'s own link is not a row of its own under "Each leg on its own:", 44px, its id alone, one going on at DraftKings\' number saying so: ' + [...(note ? note.querySelectorAll('ul.pc-dklegs a') : [])].map(x => `${txt(x)} ${x.getAttribute('href')}`).join(' / '));
+        if (p.ok.length > 1 && txt(note && note.querySelector('p.pc-dkone')) !== 'Each leg on its own:') bad.push('no "Each leg on its own:" over the legs\' own links');
+        /* the legs it cannot take named by their numbers, and those it puts on at DraftKings' number */
+        { const ms = [...d.querySelectorAll('#pcDkNote [data-pc-dkmiss]')].map(x => +x.dataset.pcDkmiss), ss = [...d.querySelectorAll('#pcDkNote [data-pc-dkswap]')].map(x => +x.dataset.pcDkswap);
+          if (ms.join() !== p.miss.map(x => x.n).join() || ss.join() !== p.ok.filter(x => x.swap).map(x => x.n).join()) bad.push(`the card does not name exactly legs ${p.miss.map(x => x.n).join(', ') || 'none'} to add by hand and legs ${p.ok.filter(x => x.swap).map(x => x.n).join(', ') || 'none'} going on at DraftKings' number: ${ms.join(', ')} / ${ss.join(', ')}`); }
+        { const want = clashCardOwn(B); if (want ? !cl || txt(cl) !== want || cl.dataset.pcDkclash !== String(clashPairsOwn(B).length) : !!cl) bad.push(`the card does not say ${want ? `"${want}"` : 'nothing'} of the pairs DraftKings refuses: ${cl ? txt(cl) : 'none'}`); }
+        chk(!bad.length, `the parlay card on ${what} (${B.map(l => l.gid.slice(-7) + ' ' + l.name).join(', ')}): ` + bad.slice(0, 3).join('; '));
+        w.eval('PARLAY_CARD.close()'); await wait(20); }
+    } finally {
+      w.PARLAY_CARD = keep.card; for (const g of [C1, C2, C3]) { const i = Sx.sched.indexOf(g); if (i >= 0) Sx.sched.splice(i, 1); }
+      w.__prKeep = keep; w.eval('pbGames=window.__prKeep.pb[0]; pricedLegs=window.__prKeep.pb[1]; if(window.__prKeep.on) spOn=window.__prKeep.on; if(window.__prKeep.slot) spSlotNext=window.__prKeep.slot;');
+      w.eval(`(function(){ const k=${keep.dk}; if(k===null) delete PAY.dk; else PAY.dk=k; const c=${JSON.stringify(keep.corr)}; if(c===null) delete PAY.corr[${JSON.stringify(CK)}]; else PAY.corr[${JSON.stringify(CK)}]=c; S.parlay=${keep.parlay}; save(); })()`);
+      if (keep.key == null) w.localStorage.removeItem(KK); else w.localStorage.setItem(KK, keep.key);
+      delete w.__prG; delete w.__prKeep; delete w.__prB;
+      if (!d.getElementById('pcModal').hidden) w.eval('PARLAY_CARD.close()');
+      w.eval('SP_CACHE=new Map(); PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_SHOWN=null; renderParlay(); renderSp()'); await wait(30);
       tabBtn('parlay').click(); await wait(40); } }
   /* ---- X Parlays: X's parlays from the file, the whole of its own tab, read only, the same on
      every device: nothing of the browser's own is drawn, there is no list of its own ---- */
@@ -3241,12 +3666,15 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         /* what the block stands in, each put back in the finally below whatever path it leaves by */
         const keepMu = {}; let undoDk = null, undoCorr = null, undoMkt = null, undoSlot = null;
         try {
-        /* the third is put in the first one's game, so two legs of one game are there to be taken and priced together;
-           the second the prop model rates at 90%, far off the market: an Elo pick is chosen on its own chance, so it
-           stays, flagged. Each nudge is the smoke's own, set in the tab's matchups (the file the page holds, every entry
-           put back below), so the levels stand on numbers of the smoke's choosing whatever the week's file says: the
-           second the likeliest and the best value, the first and third next, so a level takes the game's two together */
-        const GAME_OF = [0, 1, 0, 2, 3, 4], Z = [0.35, 0.5, 0.3, 0.25, 0.2, 0.15];
+        /* all six are put in the first made-up game (app v121: the Sunday slot's Elo picks are each one game's, the owner's
+           call of 19 October 2026, "the legs need to be part of the same game parlay only", so one game has candidates
+           enough for all four levels, Extreme's five among them, and the slot's picks are that game's, which eloPicks on
+           every game gives too; until then they were spread over five games, a level taking legs of several), so a game's
+           legs are taken and priced together; the second the prop model rates at 90%, far off the market: an Elo pick is
+           chosen on its own chance, so it stays, flagged. Each nudge is the smoke's own, set in the tab's matchups (the file
+           the page holds, every entry put back below), so the levels stand on numbers of the smoke's choosing whatever the
+           week's file says: the second the likeliest and the best value, the first and third next */
+        const GAME_OF = [0, 0, 0, 0, 0, 0], Z = [0.35, 0.5, 0.3, 0.25, 0.2, 0.15];
         const B = byGame.map((c, i) => ({ ...c, gid: EG[GAME_OF[i]].id, z: Z[i] }));
         for (const c of B) { keepMu[c.pid] = JSON.stringify(liveMu.players[c.pid]); liveMu.players[c.pid].stats[c.st][2] = c.z * MU.fit[liveMu.players[c.pid].group + '|' + c.st].sd; }
         const nudgeOf = c => c.z * MU.fit[liveMu.players[c.pid].group + '|' + c.st].sd;
@@ -3280,12 +3708,21 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const keepDkE = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), fixE = dkFixture(legs, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'ELO');
         const setDkE = o => w.eval(o === null ? 'delete PAY.dk' : `PAY.dk=${JSON.stringify(o)}`);
         setDkE(fixE); undoDk = () => w.eval(`(function(){ const k=${keepDkE}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
-        /* the two legs of one game move together strongly (a correlation of the smoke's own in the page's table, put
-           back below), so a level takes them, priced together */
-        const ka = legs[0].grp + ':' + legs[0].stat, kb = legs[2].grp + ':' + legs[2].stat, ck = 'team|' + (ka < kb ? ka + '|' + kb : kb + '|' + ka);
-        const keepCorr = w.eval(`(function(){ const v=PAY.corr&&PAY.corr[${JSON.stringify(ck)}]; return v===undefined?null:v; })()`);
-        w.eval(`PAY.corr=PAY.corr||{}; PAY.corr[${JSON.stringify(ck)}]=0.6`);
-        undoCorr = () => w.eval(keepCorr === null ? `delete PAY.corr[${JSON.stringify(ck)}]` : `PAY.corr[${JSON.stringify(ck)}]=${keepCorr}`);
+        /* the legs of the game move together (correlations of the smoke's own in the page's table, put back below), so a
+           level's legs are taken and priced together below the legs multiplied, whatever the week's table says of their
+           stats. (app v121) All six being of one game, every two of them get the same 0.2, one value on every key their
+           stats make: the table is keyed by position and stat, not by player, so two players of one position and stat
+           share a key, and the earlier plant (0.6 on one key, 0.15 on the rest) put 0.6 on every quarterback's passing
+           yards with every back's rushing yards, a matrix no Cholesky factor takes (two quarterbacks and two backs: an
+           eigenvalue of 1.15 - 1.2 < 0), so parlayProb shrank it, the fast sums stood aside and the search's bounds no
+           longer held. One value r on every pair is r times all ones plus 1 - r on the diagonal, positive for any r under
+           1 and any number of legs, and 0.2 is within the table's own (two players of a club run to 0.353) */
+        const ckOf = (a, b) => { const x = a.grp + ':' + a.stat, y = b.grp + ':' + b.stat; return (a.team === b.team ? 'team|' : 'opp|') + (x < y ? x + '|' + y : y + '|' + x); };
+        const CK = new Map();
+        for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) if (legs[i].pid !== legs[j].pid) CK.set(ckOf(legs[i], legs[j]), 0.2);
+        const keepCorr = w.eval(`(function(){ const o={}; for(const k of ${JSON.stringify([...CK.keys()])}){ const v=PAY.corr&&PAY.corr[k]; o[k]=v===undefined?null:v; } return JSON.stringify(o); })()`);
+        w.eval(`PAY.corr=PAY.corr||{}; Object.assign(PAY.corr,${JSON.stringify(Object.fromEntries(CK))})`);
+        undoCorr = () => w.eval(`(function(){ const o=${keepCorr}; for(const k in o){ if(o[k]===null) delete PAY.corr[k]; else PAY.corr[k]=o[k]; } })()`);
         /* a leg priced on one side has as its fair chance that price over the week's typical overround on two-sided lines,
            and a week with none (the last week of a season played out, where the made-up games fall in the off-season)
            gives none, so the leg far off the market could not be told: where the made-up games' week has no two-sided
@@ -3321,7 +3758,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
            held, and Suggested Parlays' rule worked out here over every parlay of its size from the candidates */
         { const C = r ? r.cands : [], memo = new Map(), sums = ls => { const k = ls.map(idOf).sort().join(','); let e = memo.get(k);
             if (!e) { const O = pOrd(ls); e = { k, O, p: pP(O.map(l => ({ ...l, p: l.pe }))).corr, d: pD(O.map(l => ({ leg: l, ml: l.price }))) }; memo.set(k, e); } return e; };
-          const sub = (n, f) => { const go = (s0, cur) => { if (cur.length === n) { f(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); }; go(0, []); };
+          /* (app v121) every parlay but one holding a pair DraftKings refuses (clashOwn) */
+          const sub = (n, f) => { const go = (s0, cur) => { if (cur.length === n) { f(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) { if (cur.some(y => clashOwn(y, C[i]))) continue; go(i + 1, cur.concat(C[i])); } }; go(0, []); };
           for (const t of T) { if (!t.legs || !t.legs.length) { chk(false, `the ${t.label} Elo pick has no legs to hold to the rule: ${t.why || 'no reason given'}`); continue; }
             const e = sums(t.legs), O = pOrd(t.legs), lv = LV.find(x => 'elo-' + x[0] === t.id), fl = lv ? lv[3] : NaN;
             let best = null, likely = null;
@@ -3402,31 +3840,102 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40);
         /* the unit drawn: its blocks, and its Elo picks the ELO tab's rule on its own games (worked out here, every parlay
            of each level's size from the candidates) at the builder's sums, the very levels eloPicks gives on every game
-           (the unit holds them all), each its card; then the rule on a unit of three of its games and on one game alone
-           (a night game's: two candidates, Safe alone filled, the rest saying why), and the same with the Parlay Builder's
-           ticks planted to nothing, no leg of another game in any */
+           (the unit holds them all, every candidate being of its first game), each its card; then the rule on a slot of
+           three of its games (each level one game's, app v121) and on one game alone (a night game's), and the same with the
+           Parlay Builder's ticks planted to nothing, no leg of another game in any */
         { const uo = { id: SLOT_E, slot: true, w: wkE, games: EG, first: Math.min(...EG.map(etKick)), last: Math.max(...EG.map(etKick)) }, UT = PB_TIERS_OWN.map(id => w.eval('spTier')(`${SLOT_E}:elo-${id}`));
           chk(SPH.blocksHeld('the Elo picks\' made-up games as the Sunday slot', uo, { phase: 'live' }, unitE()) && UT.every((u, i) => !!u && u.elo === true && u.game === 'the Sunday slot' && !!T[i]
               && u.legs.map(idOf).join() === T[i].legs.map(idOf).join() && u.p === T[i].p && u.dec === T[i].dec),
             'the unit\'s Elo picks are not the levels eloPicks gives on the same games (every game here), or the card would not finish them as Elo picks of the Sunday slot: ' + UT.map(u => u ? u.id + ' ' + u.legs.map(l => l.name).join('+') : 'none').join(' / '));
           SPH.eloLevelsHeld('the Elo picks\' made-up games as the Sunday slot', uo, w.eval('spEloSet')(SLOT_E).tiers, { ticks: true });
           SPH.eloCardsHeld('the Elo picks\' made-up games as the Sunday slot', uo, w.eval('spEloSet')(SLOT_E).tiers, unitE(), false);
+          /* (app v121) the ELO tab's levels on a unit worked out here, wholly on its own: each game's candidates alone (pg,
+             the Sunday slot of two games or more) or the unit's (a night game, one game alone), each level the rule's answer
+             over every parlay of its size from them (eloRuleOwn, no pair DraftKings refuses), the slot's the best of its
+             games' by the slot's rule (eloSlotPickOwn), and an empty level's words: of any one game of the slot, else of the
+             unit, none of them having as many candidates, or one having and no that many of them going together */
+          const eloOwnUnit = (G2, CC, where, pg) => LV.map(([id, , n, fl]) => { const per = pg && G2.length > 1 ? G2.map(g => CC.filter(l => l.gid === g.id)) : [CC];
+            const own = per.map(Cg => { const x = Cg.length >= n ? SPH.eloRuleOwn(Cg, n, fl) : null; return x ? { legs: x.O, p: x.p, dec: x.d, floor: fl, likeliest: !!fl && x.p < fl, k: x.k } : null; });
+            const k = eloSlotPickOwn(own); if (k >= 0) return { id: 'elo-' + id, n, ...own[k] };
+            const N = pg && G2.length > 1 ? Math.max(0, ...per.map(c => c.length)) : CC.length, of = pg && G2.length > 1 ? 'in any one game of the Sunday slot' : where;
+            return { id: 'elo-' + id, n, why: N >= n ? (pg && G2.length > 1 ? `No ${n} players ${of} go together` : `No ${n} of the ${N} players ${of} go together`) + ' on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.'
+              : `Only ${N} player${N === 1 ? '' : 's'} ${of} qualif${N === 1 ? 'ies' : 'y'}: this level takes ${n}.` }; });
+          const eloOwnBad = (R, OWN, gids) => { const bad = [];
+            R.tiers.forEach((t, i) => { const want = OWN[i];
+              if (!want.legs) { if ((t.legs && t.legs.length) || t.why !== want.why) bad.push(`${t.id} is not empty saying "${want.why}": ${t.why || t.legs.map(l => l.name).join('+')}`); return; }
+              const e = t.legs && t.legs.length ? SPH.eloSumsOwn(t.legs) : null;
+              if (!e || t.legs.some(l => !gids.has(l.gid)) || new Set(t.legs.map(l => l.gid)).size !== 1 || t.legs.map(idOf).sort().join(',') !== want.k || t.p !== e.p || t.dec !== e.d || !!t.likeliest !== want.likeliest)
+                bad.push(`${t.id} is ${t.legs && t.legs.length ? t.legs.map(l => l.gid + ' ' + l.name).join(', ') : t.why}, where the rule on these games gives ${want.k}`); });
+            return bad; };
           const C = r ? r.cands : [], sub = [EG[0], EG[1], EG[2]], one = [EG[0]];
-          for (const [lab2, G2, where] of [['three of its games', sub, 'in the Sunday slot'], ['one of its games alone', one, 'in this game']]) {
+          for (const [lab2, G2, where, pg] of [['three of its games as the Sunday slot', sub, 'in the Sunday slot', true], ['one of its games alone', one, 'in this game', false]]) {
             const gids = new Set(G2.map(g => g.id)), CC = C.filter(l => gids.has(l.gid)), sig = R => JSON.stringify(((R && R.tiers) || []).map(t => t.legs && t.legs.length ? [t.id, t.legs.map(idOf), t.p, t.dec] : [t.id, t.why]));
-            const R = w.eloUnit(G2.map(g => g.id), { where }), bad = [];
+            const R = w.eloUnit(G2.map(g => g.id), { where, perGame: pg }), bad = [];
             if (!R || !Array.isArray(R.tiers) || R.candidates !== CC.length) bad.push(`it counts ${R && R.candidates} candidates where the rule makes ${CC.length}`);
-            else R.tiers.forEach((t, i) => { const lv = LV[i], fl = lv[3], n = lv[2];
-              if (CC.length < n) { const want = `Only ${CC.length} player${CC.length === 1 ? '' : 's'} ${where} qualif${CC.length === 1 ? 'ies' : 'y'}: this level takes ${n}.`; if ((t.legs && t.legs.length) || t.why !== want) bad.push(`${t.id} is not empty saying "${want}": ${t.why || t.legs.map(l => l.name).join('+')}`); return; }
-              const want = SPH.eloRuleOwn(CC, n, fl), e = t.legs && t.legs.length ? SPH.eloSumsOwn(t.legs) : null;
-              if (!e || !want || t.legs.some(l => !gids.has(l.gid)) || t.legs.map(idOf).sort().join(',') !== want.k || t.p !== e.p || t.dec !== e.d) bad.push(`${t.id} is ${t.legs ? t.legs.map(l => l.gid + ' ' + l.name).join(', ') : t.why}, where the rule on these games gives ${want ? want.k : 'none'}`); });
+            else bad.push(...eloOwnBad(R, eloOwnUnit(G2, CC, where, pg), gids));
             /* the Parlay Builder's ticks planted to nothing: the same levels */
             const Sx2 = w.eval('S'), keepU = JSON.stringify(Sx2.ui.pb);
             try { Sx2.ui.pb = { k: { ml: false, ats: false, total: false, over: false, under: false }, off: EG.map(g => g.id).concat(w.eval('pbGames()').map(g => g.id)), gx: false };
-              const R2 = w.eloUnit(G2.map(g => g.id), { where }); if (sig(R2) !== sig(R)) bad.push('with every game unticked and both player sides off they are ' + sig(R2).slice(0, 160)); }
+              const R2 = w.eloUnit(G2.map(g => g.id), { where, perGame: pg }); if (sig(R2) !== sig(R)) bad.push('with every game unticked and both player sides off they are ' + sig(R2).slice(0, 160)); }
             finally { Sx2.ui.pb = JSON.parse(keepU); }
-            chk(!bad.length && (G2 === one ? R.tiers[0].legs && R.tiers[0].legs.length === 2 && R.tiers.slice(1).every(t => !t.legs || !t.legs.length) : true),
-              `the Elo picks of a unit of ${lab2} are not the ELO tab's rule on those games alone, whatever the Parlay Builder's ticks: ` + bad.slice(0, 3).join('; ')); } }
+            chk(!bad.length && R.tiers.every(t => t.legs && t.legs.length === t.n),
+              `the Elo picks of a unit of ${lab2} are not the ELO tab's rule on those games alone, each level one game's and all four filled from the six in its first game, whatever the Parlay Builder's ticks: ` + bad.slice(0, 3).join('; ')); }
+          /* (app v121) the Sunday slot of two made-up games of its own where the best Elo pick across them beats every one-game
+             pick (the owner, 19 October 2026: "the legs need to be part of the same game parlay only, and anytime there's a
+             mix it bombs the hyperlink"): the second made-up game holds a player of the best value and one of the worst, of
+             two clubs, the third a quarterback's passing touchdowns and a teammate's anytime touchdown (a pair DraftKings
+             refuses) and one more player, of the other club. The five are any rated quarterback in the tab's matchups, any
+             rated back, receiver or tight end with an anytime touchdown fit, and three of the block's six besides them (a
+             week's matchups may hold no quarterback the six do not already take: week 6's Monday night alone held two), and
+             every nudge on their five lines and the matchups' trust in the two touchdown stats are the smoke's own, set for
+             the case and put back after it, so it stands on numbers of the smoke's choosing at any hour. Across the two games
+             Safe would take the quarterback with the best-value player, landing above its 35% and paying more than any one
+             game's pair; each level of the slot is one game's, the best by the slot's rule, Medium empty saying no three
+             players of any one game go together on DraftKings' slip, Aggressive and Extreme saying no game has as many
+             players; and the third game alone says its three do not go together */
+          { const rated = pid => !!eloP.players[pid] && !!liveMu.players[pid], mmPid = mmC.pid, inB = pid => B.some(c => c.pid === pid);
+            const pick = (ok, not) => { const all = Object.keys(liveMu.players).filter(pid => rated(pid) && ok(liveMu.players[pid]) && !not.includes(pid)), score = pid => (inB(pid) ? 2 : 0) + (pid === mmPid ? 4 : 0) + (w.eloRuledOut(pid) ? 1 : 0);
+              return all.sort((a, b) => (score(a) - score(b)) || (a < b ? -1 : 1))[0] || null; };
+            const qbId = pick(v => v.group === 'QB', []), tdId = qbId && pick(v => ['RB', 'WR', 'TE'].includes(v.group) && !!MU.fit[v.group + '|any_td'], [qbId]);
+            const rest = B.filter(c => c.pid !== qbId && c.pid !== tdId && c.pid !== mmPid).slice(0, 3);
+            if (!qbId || !tdId || rest.length < 3 || !MU.fit['QB|passing_tds']) console.log('  (the Elo picks\' two-game slot: no rated quarterback, or no rated back, receiver or tight end beside him, in the tab\'s matchups: skipped)');
+            else { const tdG = liveMu.players[tdId].group, keepRec = { qb: JSON.stringify(liveMu.record['QB|passing_tds'] || null), td: JSON.stringify(liveMu.record[tdG + '|any_td'] || null) }, keepG = w.__eloSlot.G, keepL = w.eval('pricedLegs');
+              const keepX = Object.fromEntries([qbId, tdId, ...rest.map(c => c.pid)].map(pid => [pid, JSON.stringify(liveMu.players[pid].stats)]));
+              try {
+                const trust = { past: { rmse_elo: 1, rmse_form: 2, right_top: 0.6 } }; liveMu.record['QB|passing_tds'] = trust; liveMu.record[tdG + '|any_td'] = trust;
+                const plant = (pid, st, z) => { const v = liveMu.players[pid], sd = MU.fit[v.group + '|' + st].sd; v.stats[st] = [1, 1, z * sd]; };
+                const [hi, lo, ot] = rest; plant(qbId, 'passing_tds', 0.5); plant(tdId, 'any_td', 0.45); plant(hi.pid, hi.st, 0.5); plant(lo.pid, lo.st, 0.15); plant(ot.pid, ot.st, 0.2);
+                const qbP = [qbId], wrP = [tdId];
+                const G3 = [EG[1], EG[2]], cX = (c, gid, team) => ({ ...c, gid, team });
+                const LX = [L(cX(hi, EG[1].id), -110, 'over', { team: 'X' }), L(cX(lo, EG[1].id), -105, 'over', { team: 'Y', opp: 'X' }),
+                  L({ pid: qbId, st: 'passing_tds', gid: EG[2].id }, 120, 'over', { k: 1.5, team: 'X', label: 'Over 1.5 passing TDs' }), L({ pid: tdId, st: 'any_td', gid: EG[2].id }, 130, 'over', { team: 'X', label: 'Scores a touchdown' }),
+                  L(cX(ot, EG[2].id), -110, 'over', { team: 'Y', opp: 'X' })];
+                LX.forEach(l => { l.key = l.gid + '|' + l.pid + '|' + l.stat; });
+                w.__legsX = LX; w.eval('pricedLegs=function(){ return window.__legsX.map(l=>Object.assign({},l)); }');
+                setDkE(dkFixture(LX, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'ELX'));
+                w.__eloSlot.G = G3; w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderSp()'); await wait(60);
+                const uo3 = { id: SLOT_E, slot: true, w: wkE, games: G3, first: Math.min(...G3.map(etKick)), last: Math.max(...G3.map(etKick)) };
+                const CC = G3.flatMap(g => SPH.eloCandsOwn([g]).map(c => ({ ...c.l, pe: c.pe }))), gids3 = new Set(G3.map(g => g.id)), OWN = eloOwnUnit(G3, CC, 'in the Sunday slot', true), e3 = w.eval('spEloSet')(SLOT_E);
+                const cross = SPH.eloRuleOwn(CC, 2, LV[0][3]), val = x => x.p * (x.d != null ? x.d : x.dec);
+                /* the fixture as it was made: five candidates, two in one game and three in the other, the quarterback and his
+                   teammate refused together, and the best Safe across the two games a mix of them that beats either game's */
+                chk(CC.length === 5 && CC.filter(l => l.gid === EG[1].id).length === 2 && clashOwn(CC.find(l => l.pid === qbP[0]), CC.find(l => l.pid === wrP[0])) === 'td'
+                  && !!cross && new Set(cross.O.map(l => l.gid)).size === 2 && cross.p >= LV[0][3] && !!OWN[0].legs && val(cross) > val(OWN[0]) + 1e-9,
+                  `the Elo picks' two-game slot: the fixture is not five candidates over two games, the quarterback's passing TDs and his teammate's touchdown among them, with a Safe across the two games better than any one game's (${CC.map(l => l.gid.slice(-7) + ' ' + l.name + ' ' + l.stat).join(', ')}; across ${cross ? cross.k + ' ' + val(cross).toFixed(3) : 'none'}, one game's ${OWN[0].legs ? OWN[0].k + ' ' + val(OWN[0]).toFixed(3) : 'none'})`);
+                const bad = !e3 || !Array.isArray(e3.tiers) ? ['no Elo picks'] : eloOwnBad(e3, OWN, gids3);
+                chk(!bad.length && !!OWN[1].why && /^No 3 players in any one game of the Sunday slot go together on DraftKings’ slip/.test(OWN[1].why) && /^Only 3 players in any one game of the Sunday slot qualify/.test(OWN[2].why || ''),
+                  'the Elo picks of a Sunday slot of two games are not each one game\'s, the best by the slot\'s rule, with the empty levels saying why of any one game (no three going together on DraftKings\' slip, then too few players): ' + bad.slice(0, 3).join('; ') + ' / ' + OWN.map(t => t.why || t.k).join(' | '));
+                SPH.eloLevelsHeld('the Elo picks\' two-game slot', uo3, e3 && e3.tiers, {});
+                SPH.eloCardsHeld('the Elo picks\' two-game slot', uo3, e3 && e3.tiers, unitE(), false);
+                /* the third game alone, a night game's way: its three players do not go together, so Medium says so of them */
+                { const C3 = CC.filter(l => l.gid === EG[2].id), R3 = w.eloUnit([EG[2].id], { where: 'in this game' }), b3 = R3 && Array.isArray(R3.tiers) ? eloOwnBad(R3, eloOwnUnit([EG[2]], C3, 'in this game', false), new Set([EG[2].id])) : ['no Elo picks'];
+                  chk(!b3.length && !!R3 && R3.tiers[1].why === 'No 3 of the 3 players in this game go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.',
+                    'the Elo picks of a game whose three players include a quarterback\'s passing TDs and his teammate\'s touchdown are not the rule on its own, or its Medium does not say they do not go together: ' + b3.slice(0, 2).join('; ') + ' / ' + (R3 ? R3.tiers.map(t => t.why || t.legs.map(l => l.name).join('+')).join(' | ') : 'none')); } }
+              finally {
+                w.__eloSlot.G = keepG; w.__keepLX = keepL; w.eval('pricedLegs=window.__keepLX; delete window.__keepLX; delete window.__legsX');
+                for (const [k, v] of [['QB|passing_tds', keepRec.qb], [tdG + '|any_td', keepRec.td]]) { const o = JSON.parse(v); if (o === null) delete liveMu.record[k]; else liveMu.record[k] = o; }
+                for (const [pid, v] of Object.entries(keepX)) liveMu.players[pid].stats = JSON.parse(v);
+                setDkE(fixE); w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderSp()'); await wait(40); } } } }
         /* each card leads with the fair chance, the Elo's beside it, and says how its level was chosen */
         { const pc = v => (v * 100).toFixed(0) + '%', rule = t => { const lv = LV.find(x => 'elo-' + x[0] === t.id), fl = lv && lv[3];
             return t.likeliest || !fl ? (t.n === 2 ? 'the likeliest pair' : `the likeliest ${t.n} legs`) : `best value that lands ${Math.round(fl * 100)}%+ by Elo`; };
@@ -3768,7 +4277,30 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (q) { const bad = cardReads(calls.slice(c0).map(c => c.url), q.legs, id => { const x = S.sched.find(y => y.id === id); return !x || started(x); });
         chk(!bad, 'Finish on the builder\'s parlay on the payload\'s own ids: the card\'s check of DraftKings\' lines did not read exactly its own games (their week\'s scoreboard once a game), or read anything else: ' + bad); }
       const a = d.getElementById('pcDk'), ids = plan.map(p => p.id), sws = plan.map((p, i) => p.swap ? i + 1 : 0).filter(Boolean);
-      chk(!!q && q.legs.length === (under ? 2 : 1) + (gS ? 1 : 0) && ids.every(Boolean) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
+      /* (app v121) the money line and the Under are two legs of one game, so with the other game's spread they mix a
+         same-game parlay with another game, which one DraftKings link does not open: a button for each game, its own legs'
+         ids in the card's order (the games in the order their first legs come), and none for them all (multiOwn, worked
+         out here); one game's legs alone, or one leg a game, are one link as before */
+      const gOrd = q ? [...new Set(q.legs.map(l => l.gid))] : [], multi = gOrd.length > 1 && gOrd.some(gid => q.legs.filter(l => l.gid === gid).length > 1);
+      const gb = d.getElementById('pcDkGames'), gbs = gb ? [...gb.querySelectorAll('a.pc-dkbtn[data-pc-dkgame]')] : [];
+      chk(!!q && !!gb && (multi ? !gb.hidden && !!a && a.hidden && gbs.length === gOrd.length && gOrd.every((gid, i) => gbs[i].dataset.pcDkgame === gid
+          && gbs[i].getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + q.legs.map((l, j) => l.gid === gid ? ids[j] : null).filter(Boolean).map(encodeURIComponent).join('+'))
+        : gb.hidden && !gbs.length),
+        `Open in DraftKings on the payload's own ids for ${g.id}${multi ? ' (two legs of it and one of another game)' : ''} is not ${multi ? 'a button for each game, each its own legs\' ids, and none for them all' : 'one link, with no button for each game'}: ` + gbs.map(x => x.dataset.pcDkgame + ' ' + x.getAttribute('href')).join(' / '));
+      /* (app v121, the review's round) each game's button dated by the oldest read of its own legs (a team's line by the game
+         lines' read, glat, a player's by the player prices', at; "last read" where one is undated), and, among every leg's
+         own link, the spread going on at DraftKings' number saying so in its row, "(on DraftKings as +3)", and no other */
+      if (multi && q) { const readOwn = l => { const D = (DK[String(l.week)] || {})[l.gid] || {}, t = Date.parse(['ml', 'ats', 'total'].includes(l.stat) ? D.glat : D.at); return isFinite(t) ? t : null; };
+        const say = ms => new Date(ms).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }) + ' ET';
+        const nm = gid => { const x = S.sched.find(y => y.id === gid); return x ? x.a + ' at ' + x.h : gid; }, numsO = ns => (ns.length === 1 ? 'leg ' : 'legs ') + (ns.length > 1 ? ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1] : ns[0]);
+        const want = gOrd.map(gid => { const ls = q.legs.map((l, j) => ({ l, n: j + 1 })).filter(x => x.l.gid === gid && ids[x.n - 1]), rs = ls.map(x => readOwn(x.l)), rd = rs.some(x => x == null) ? null : Math.min(...rs);
+          return `Opens ${numsO(ls.map(x => x.n))} (${nm(gid)}) on DraftKings’ betslip, in a new tab, as DraftKings’ lines were ${rd == null ? 'last read' : 'read ' + say(rd)}: a line moved or pulled since will not be on it, so check each leg is there`; });
+        const rows = [...d.querySelectorAll('#pcDkNote ul.pc-dklegs a[data-pc-dkleg]')].map(x => ({ n: +x.dataset.pcDkleg, t: txt(x), a: x.getAttribute('aria-label') || '' }));
+        chk(gbs.length === want.length && gbs.every((x, i) => x.getAttribute('title') === want[i])
+          && rows.length === ids.filter(Boolean).length && rows.every(r => { const sw = plan[r.n - 1] && plan[r.n - 1].swap, tail = sw ? ` (on DraftKings as ${sw})` : null;
+            return tail ? r.t.endsWith(tail) && r.a.endsWith(`${tail}, in DraftKings`) : !/\(on DraftKings as /.test(r.t + r.a); }),
+          `the card on the payload's own ids for ${g.id} does not date each game's button by its own legs' read, or does not say in a leg's own row that it goes on at DraftKings' number: ` + gbs.map(x => `"${x.getAttribute('title')}"`).join(' / ') + ' want ' + want.map(x => `"${x}"`).join(' / ') + ' / ' + rows.map(r => r.t).join(' / ')); }
+      if (!multi) chk(!!q && q.legs.length === (under ? 2 : 1) + (gS ? 1 : 0) && ids.every(Boolean) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
         && txt(a) === 'Open in DraftKings' && !d.querySelector('#pcDkNote [data-pc-dkmiss]')
         && [...d.querySelectorAll('#pcDkNote [data-pc-dkswap]')].map(x => +x.dataset.pcDkswap).join() === sws.join() && sws.every(n => txt(d.querySelector(`#pcDkNote [data-pc-dkswap="${n}"]`)).endsWith(`: goes on as ${plan[n - 1].swap}`)),
         `Open in DraftKings on the payload's own ids for ${g.id} (its money line${under ? ' and ' + under.L.n + '\'s Under ' + under.L.line : ''}${gS ? ', and ' + gS.a + ' to cover in ' + gS.id : ''}) is not those ids in the card's order under "Open in DraftKings", each at DraftKings' number said so: ` + (a ? txt(a) + ' ' + a.getAttribute('href') + ' hidden ' + a.hidden : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 300));

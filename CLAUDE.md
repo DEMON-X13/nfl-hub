@@ -1401,6 +1401,54 @@ four as it took them, so a level with no parlay or still pending is the record's
 fair chance and by the level's own chance (the model's, or the Elo's), with one chip, `data-sp-rec="<sec>:bt"`, "Incl.
 backtest, weeks 3–6", wherever some of it is.
 
+**One game a parlay, and the pairs DraftKings refuses** (app v121, `patch_dk_sgp.py`, whose docstring is the design, the
+owner's calls of 19 October 2026: "The book won't let you combine legs that depend on each other. If your parlay already
+has a receiver anytime TD, a team total, or the game total, adding the QB's passing TD over often gets blocked", "Some
+combos contradict each other, like QB under 1.5 passing TDs alongside two of his receivers to score", and then "the legs
+need to be part of the same game parlay only, and anytime there's a mix it bombs the hyperlink. also thinking about maybe
+adding links for each individual one may reduce the issues?"). Of the 121 suggested parlays the record and its backtest
+held that day, 5 paired a quarterback's passing TDs with a teammate's touchdown, every one an Elo pick. `dkClashWhy` (with
+`dkClash`, `dkClashPairs` and `DK_CLASH` in `part3.js`, on `window` too): two legs of one game DraftKings will not take on
+one slip, a quarterback's passing touchdowns, over or under, a main line or a rung, with a teammate's anytime touchdown
+(`td`), or his passing touchdowns over with the game's total (`total`). No suggestion takes such a pair: `pbFits` (every
+level's search: the all-games levels, each night set, each Sunday slot game's set), a game page's hands (`gameTiers`' own
+`fits`) and the Elo picks' search (`epScan`'s `P.cl` in `tab_elo.html`, whose empty level says "No 3 of the 3 players in
+this game go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown."). The
+Sunday slot's levels are each one game's legs: the slot builds each of its games' own set exactly as a night game's is
+(`spSet` on the game, `SP_SEARCH`) and each level is the best of theirs (`spSlotBuild`, `spSlotBetter`: a parlay before
+none, without a game total before with one, its floor met before the likeliest of its size, the fewer thin legs, then the
+better expected return where it met a floor, else the higher chance, then the earlier game), its empty level said of "any
+one game of the Sunday slot" (`spWhySlot`), its Elo picks chosen the same way per game (`eloUnit`'s `perGame`,
+`epSlotBetter`), and each of its cards naming its game (`span.pb-tgame[data-pb-tgame]` in `.pb-th`); a level built again
+for a player ruled out is built the same way, one level from each game's lines as they stand, never the cache
+(`spSlotLevel`), and the record takes the sets as before (its slot entries before app v121,
+and the backtest's weeks 3 to 6, stay as they were built, across games). The slot costs a priced afternoon game's set
+each, about a second and a half in jsdom (week 6's three priced afternoon games: 5 s, where the one search across the slot
+took 0.8 s), paid only while the tab is on the screen and once a publish or a press. A level's totals fill counts the legs
+with an edge as one parlay can take them (`pbMaxFit`: one leg a player, one side and one total a game, less the most
+refused pairs that can be had apart, a bipartite matching), so a level whose quarterback and teammate's touchdown cannot
+both go takes the game total in their stead; and a level a game's legs make in number but not on one slip says so ("No 4
+of this game’s legs go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown, or
+his passing TDs over with the game total.", the slot's "No 4 legs of any one game of the Sunday slot go together ...").
+The builder says what DraftKings will refuse: a
+line where two of its legs are such a pair (`data-pb-clash`), and on the hub, where its legs mix a same-game parlay (two or
+more legs of one game) with legs of other games, that DraftKings' betslip link does not open that mix and the parlay card
+gives each game a link of its own (`data-pb-multigame`, read off the card's own plan, `dkSlipPlan`, so only the legs that
+go on the slip count, and only where the legs are of one week, as Finish asks). The parlay card (`card.html`'s `dkPlan`: `games`, `multi`,
+`clash`) then has no link for every leg but a button for each game's (`#pcDkGames`, `a.pc-dkbtn[data-pc-dkgame]`, its
+legs in the card's order, each titled with its own game's read, #pcDk hidden; while the card checks DraftKings'
+lines as it opens, the waiting Open in DraftKings alone, since the read can change the plan, the focus on it moving to
+the first game's button once they are drawn, and the status line then "DraftKings’ lines checked: the 2 games’ links open 5
+of the 7 legs."), says why, sends a link per game in Share
+link's text ("Links copied" where it copies them), and on every card with two or more legs on the slip lists every leg's
+own link, a 44px row each, a leg converted to DraftKings' number saying "(on DraftKings as Over 64.5 receiving yards)" (`ul.pc-dklegs`, until app v121 a row of numbers,
+"One leg at a time: 1 · 2 · 3"), and names any pair DraftKings may refuse (`data-pc-dkclash`). A parlay of one leg a game
+is a plain parlay and still opens as one link (the owner's word was for the mix; if those fail too, split them as well).
+The audit (its own `clashAud`, fill and slot rule; M16 on made-up games), the nflbets smoke (`clashOwn`, the slot's one-game rule
+and the Elo picks' per game, the builder's notes, the card's buttons on made-up ids), `smoke_live.js` section J (the card's
+buttons, per-leg list, Share link text, clash line and Tab order) and `elo/check_tab.js` (the rule loaded into the search
+it drives, its own copy in the full enumeration, F7) hold it.
+
 **The backtest** (app v118, `props/build/suggest_backtest.js`, run by hand, never by a job). Every night game and Sunday
 slot of the weeks before the record took them, from week 3 (the first week the props job published a payload before its
 locks), whose lock has passed and whose games are all final, rebuilt by today's page on exactly the files of the last
@@ -1777,7 +1825,8 @@ it, read from the card's own `dkPlan` (`dkSlipRows`, `dkSlipLine` in `part3.js`;
 `--ink-2`): "On DraftKings as Over 64.5 receiving yards" where the card converts it, or "Not on DraftKings'
 slip yet: " and its reason in a few words; nothing under a leg that goes on as built, and nothing on the
 prop model's own page, which has no card. Under the buttons the card says what it
-opens, gives each leg's own link too (DraftKings documents no link for several outcomes), and names every
+opens, gives each leg's own link too (DraftKings documents no link for several outcomes; since app v121 a list, a row each, and a
+button for each game where the legs mix a same-game parlay with other games), and names every
 leg it still cannot open and why, from what the payload holds: its game's DraftKings prices not pulled yet, or
 its game's lines read and none of its player prices yet (both with when they are pulled, the Parlay
 Builder panel's words, and said only of a leg on no book price in a game with no DraftKings player price
