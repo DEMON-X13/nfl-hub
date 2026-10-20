@@ -760,7 +760,9 @@ const plName=(F,pid)=>(F.players&&F.players.players&&F.players.players[pid]&&F.p
 const plSe=(F,pid)=>{ const e=F.players&&F.players.players&&F.players.players[pid]; return e&&e.se!=null?e.se:null; };
 /* each defence's units ranked among the league's, 1st the best (the matchup formula's units) */
 const UNIT_NAME={DL:'Pass rush and run front',LB:'Linebackers',DB:'Secondary'};
-const defRank=(mu,t,u)=>{ const defs=mu&&mu.league&&mu.league.defs||{}; if(!defs[t]) return null; const order=Object.keys(defs).sort((x,y)=>defs[y][u]-defs[x][u]); return order.indexOf(t)+1; };
+/* a club's unit among the league's (mu.league.defs), 1st the best; clubs level on it share a rank, as the ELO tab's
+   Mismatches and a player's window rank them */
+const defRank=(mu,t,u)=>{ const defs=mu&&mu.league&&mu.league.defs||{}; if(!defs[t]) return null; return 1+Object.keys(defs).filter(x=>defs[x][u]>defs[t][u]).length; };
 
 /* ---- the preview: the week's note on the game, or an automatic line until it is written ---- */
 /* a note's text as the page shows it: escaped first, then each player it marks, **Pat Surtain II** (one
