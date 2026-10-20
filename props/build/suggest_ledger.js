@@ -119,7 +119,13 @@
    The page runs on the run's clock held still (SUGGEST_NOW or the machine's at the start), so a boot
    that takes seconds cannot carry it past a lock or kickoff the script itself still counts as to come.
 
-   SUGGEST_NOW (the clock), SUGGEST_PAYLOAD, SUGGEST_LEDGER and SUGGEST_PREV are for the test,
+   Since app v121 (the owner's call of 20 October 2026: no scheduled paid pull) the sets stand on the props job's own
+   read of DraftKings' lines on ESPN, which the payload carries (PAY.espn) and the page installs at boot: so the record
+   is refused where the payload carries a read of player lines for a game still to come and the page applied none
+   (the job and the page shipped out of order would record sets of team legs only), and where the page asked ESPN for
+   player lines on load (the record stands on the payload alone).
+
+   SUGGEST_NOW (the clock), SUGGEST_PAYLOAD, SUGGEST_LEDGER, SUGGEST_PREV and SUGGEST_PAGE are for the test,
    test_suggest_ledger.js. No odds-API credit is ever spent: the page reads local files only.
    Exit 0: written, or unchanged and not written. Exit 1: refused, nothing written. The last line
    starts "suggest ledger:". */
@@ -132,7 +138,8 @@ const LEDGER_REL = 'props/data/suggest_ledger.json';
 const LEDGER = process.env.SUGGEST_LEDGER || path.join(ROOT, LEDGER_REL);
 const PAYLOAD = process.env.SUGGEST_PAYLOAD || path.join(ROOT, 'props', 'data', 'payload.json');
 /* NFL Hub, the site's root page since 17 October 2026 (nflbets/ before; nflbets/build/build.js writes it) */
-const PAGE = path.join(ROOT, 'index.html');
+/* the page the record is taken from: the site's own (SUGGEST_PAGE, for the test alone: a page that drops the payload's ESPN read) */
+const PAGE = process.env.SUGGEST_PAGE || path.join(ROOT, 'index.html');
 const PAGE_URL = 'https://demon-x13.github.io/nfl-hub/';
 const SINCE = '2026-10-12', PRIME_SINCE = '2026-10-16';
 /* the levels (PB_TIERS in part3.js; a run whose page has others is refused) */
@@ -227,7 +234,7 @@ function boot(payloadText, now) {
   const Papa = require(path.join(HERE, 'node_modules', 'papaparse'));
   const html = fs.readFileSync(PAGE, 'utf8');
   return new Promise((resolve, reject) => {
-    const errs = [];
+    const errs = [], asked = [];
     const vc = new VirtualConsole();
     vc.on('jsdomError', e => { if (!/navigation/i.test(String(e && e.message))) errs.push('jsdom: ' + (e && e.message)); });
     const timer = setTimeout(() => reject(new Error('the page did not say app-ready within 60 s')), 60000);
@@ -243,6 +250,7 @@ function boot(payloadText, now) {
         /* the payload just baked, and the page's other files from this checkout; nothing else (the record
            itself answers 404, so the page builds every set from the data, never from the ledger) */
         w.fetch = u => {
+          asked.push(String(u));
           const url = new URL(String(u), PAGE_URL), rel = url.pathname.replace(/^\/nfl-hub\//, '');
           const ok = t => Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(t), text: async () => t });
           if (url.host === 'demon-x13.github.io' && rel === 'props/data/payload.json') return ok(payloadText);
@@ -250,12 +258,12 @@ function boot(payloadText, now) {
             const t = readText(path.join(ROOT, rel)); if (t != null) return ok(t); }
           return Promise.resolve({ ok: false, status: 404, json: async () => { throw new Error('404'); }, text: async () => '' });
         };
-        w.document.addEventListener('app-ready', () => { clearTimeout(timer); resolve({ w, errs }); });
+        w.document.addEventListener('app-ready', () => { clearTimeout(timer); resolve({ w, errs, asked }); });
       } });
   });
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-async function ready(w, errs, payload) {
+async function ready(w, errs, payload, asked) {
   for (let i = 0; i < 300 && !w.eval("typeof window.eloLoaded==='function'&&window.eloLoaded()"); i++) await sleep(100);
   /* the Elo picks stand on the matchups too, which the ELO tab reads after the ratings */
   try { await Promise.race([w.eval("typeof window.eloFiles==='function'?window.eloFiles():null"), sleep(30000)]); } catch (e) {}
@@ -269,6 +277,22 @@ async function ready(w, errs, payload) {
     .filter(f => w.eval(`typeof ${f}`) !== 'function');
   if (missing.length) why.push("the page has no Suggested Parlays sets to take (no " + missing.join(', ') + ')');
   else if (w.eval('SP_LOCK_MS') !== LOCK_MS) why.push('the page locks a set at another time than 2 hours before kickoff');
+  /* (app v121) the props job's own read of DraftKings' lines on ESPN, in the payload (PAY.espn): where it carries a
+     well-formed block of player lines for a game still to come, read before its kickoff, the page must have applied it
+     (espnGame), or every set would hold team legs only (the job and the page shipped out of order) */
+  const E = payload && payload.espn;
+  if (E && E.v === 1 && E.games && typeof E.games === 'object' && !Array.isArray(E.games)) {
+    const toCome = w.eval('(function(id,wk,at){ const g=S.sched.find(x=>x.id===id); if(!g||String(g.w)!==String(wk)||gameStarted(g)||hasScore(g)) return false; const k=kickoff(g), t=Date.parse(at); return !!k&&isFinite(t)&&t<k.getTime(); })');
+    const blocks = Object.entries(E.games).filter(([gid, e]) => e && typeof e === 'object' && e.pl && typeof e.pl === 'object' && e.pl.lines && typeof e.pl.lines === 'object'
+      && Object.keys(e.pl.lines).length && typeof e.pl.at === 'string' && toCome(gid, e.w, e.pl.at));
+    const espnGame = w.eval("typeof espnGame==='function'?espnGame:null");
+    if (blocks.length && !(espnGame && blocks.some(([gid, e]) => !!espnGame(gid, String(e.w)))))
+      why.push(`the page did not apply the payload's ESPN read (${blocks.length} game${blocks.length === 1 ? '' : 's'} with player lines, none read by the page)`);
+  }
+  /* nothing asked of ESPN's player lines on load: the record stands on the payload alone (the board's scoreboard on
+     site.api answers 404 here, as ever) */
+  const core = (asked || []).filter(u => /^https:\/\/sports\.core\.api\.espn\.com\//.test(u));
+  if (core.length) why.push(`the page asked ESPN for player lines on load (${core.length}: ${core[0]})`);
   return why;
 }
 
@@ -560,8 +584,8 @@ async function main() {
   if (start === undefined) throw new Error(LEDGER + ' is not JSON');
   const payloadText = readText(PAYLOAD); if (payloadText == null) throw new Error('no payload at ' + PAYLOAD);
   const payload = JSON.parse(payloadText);
-  const { w, errs } = await boot(payloadText, now);
-  const why = await ready(w, errs, payload);
+  const { w, errs, asked } = await boot(payloadText, now);
+  const why = await ready(w, errs, payload, asked);
   if (why.length) throw new Error(why.join('; '));
 
   const base = start || { how: HOW, since: SINCE, updated: null, summary: null, entries: {} };
