@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. Since app v118 each entry holds the unit's Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe), taken, locked, replaced and graded with the model's levels; and slot holds each week's Sunday slot (every Sunday game before 7 pm Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary, slot_summary (each with its elo) and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-10-19T21:31:28Z",
+ "updated": "2026-10-20T11:24:23Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -201,24 +201,24 @@
  "prime_since": "2026-10-16",
  "prime_summary": {
   "tiers": {
-   "safe": {"label":"Safe","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.2625,"fair_n":1,"exp_model":0.3805,"units":-1},
-   "med": {"label":"Medium","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.1252,"fair_n":1,"exp_model":0.2658,"units":-1},
-   "aggr": {"label":"Aggressive","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.0647,"fair_n":1,"exp_model":0.1564,"units":-1},
-   "xtrm": {"label":"Extreme","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.0332,"fair_n":1,"exp_model":0.0989,"units":-1}
+   "safe": {"label":"Safe","graded":2,"won":0,"lost":2,"push":0,"exp_fair":0.5125,"fair_n":2,"exp_model":0.7164,"units":-2},
+   "med": {"label":"Medium","graded":2,"won":0,"lost":2,"push":0,"exp_fair":0.2451,"fair_n":2,"exp_model":0.5166,"units":-2},
+   "aggr": {"label":"Aggressive","graded":2,"won":0,"lost":2,"push":0,"exp_fair":0.1274,"fair_n":2,"exp_model":0.2967,"units":-2},
+   "xtrm": {"label":"Extreme","graded":2,"won":0,"lost":2,"push":0,"exp_fair":0.0594,"fair_n":2,"exp_model":0.173,"units":-2}
   },
   "pending": 0,
   "elo": {
    "tiers": {
-    "elo-safe": {"label":"Safe","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
-    "elo-med": {"label":"Medium","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
-    "elo-aggr": {"label":"Aggressive","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
-    "elo-xtrm": {"label":"Extreme","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0}
+    "elo-safe": {"label":"Safe","graded":1,"won":1,"lost":0,"push":0,"exp_fair":0.2711,"fair_n":1,"exp_model":0.3507,"units":1.954},
+    "elo-med": {"label":"Medium","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.1742,"fair_n":1,"exp_model":0.2338,"units":-1},
+    "elo-aggr": {"label":"Aggressive","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.0852,"fair_n":1,"exp_model":0.1316,"units":-1},
+    "elo-xtrm": {"label":"Extreme","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.0345,"fair_n":1,"exp_model":0.062,"units":-1}
    },
    "pending": 0
   },
-  "games": 2,
-  "entries": 2,
-  "graded_entries": 1,
+  "games": 5,
+  "entries": 5,
+  "graded_entries": 2,
   "updates": 0
  },
  "prime": {
@@ -478,7 +478,263 @@
      "mkt": 0
     }
    ],
-   "taken_at": "2026-10-19T21:31:28Z"
+   "taken_at": "2026-10-19T21:31:28Z",
+   "grade": {
+    "safe": {"result":"lost","legs":["loss","loss"],"payout":0},
+    "med": {"result":"lost","legs":["win","loss","loss"],"payout":0},
+    "aggr": {"result":"lost","legs":["win","loss","loss","loss"],"payout":0},
+    "xtrm": {"result":"lost","legs":["win","loss","loss","loss","loss"],"payout":0},
+    "elo-safe": {"result":"won","legs":["win","win"],"payout":2.954},
+    "elo-med": {"result":"lost","legs":["win","win","loss"],"payout":0},
+    "elo-aggr": {"result":"lost","legs":["win","win","win","loss"],"payout":0},
+    "elo-xtrm": {"result":"lost","legs":["loss","win","win","win","loss"],"payout":0}
+   }
+  },
+  "2026|07|2026-10-23T00:15:00Z|2026_07_NE_CHI": {
+   "season": 2026,
+   "week": 7,
+   "gid": "2026_07_NE_CHI",
+   "away": "NE",
+   "home": "CHI",
+   "kickoff": "2026-10-23T00:15:00Z",
+   "lock": "2026-10-22T22:15:00Z",
+   "baked_at": "2026-10-20T11:20+00:00",
+   "pool": {"pref":0,"thin":2,"mkt":2,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_07_NE_CHI","week":7,"pid":"team:NE","team":"NE","grp":"TEAM","stat":"ats","k":3,"side":"over","main":false,"price":-118,"src":"real","name":"Patriots","label":"To cover +3","p":0.5458,"fair":0.5174,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_07_NE_CHI","week":7,"pid":"game","team":"NE","grp":"TEAM","stat":"total","k":50.5,"side":"over","main":true,"price":-115,"src":"real","name":"Patriots at Bears","label":"Over 50.5 points","p":0.5108,"fair":0.5108,"fair_est":false,"thin":false,"market":true}
+     ],
+     "p": 0.2788,
+     "fair": 0.2643,
+     "fair_est": false,
+     "dec": 3.095,
+     "likeliest": false,
+     "thin": 1,
+     "mkt": 1
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Thursday, the day of the game."
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Thursday, the day of the game."
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Thursday, the day of the game."
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0.35,
+     "why": "No player prices in this game yet: they are pulled on Thursday, the day of the game."
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "No player prices in this game yet: they are pulled on Thursday, the day of the game."
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "No player prices in this game yet: they are pulled on Thursday, the day of the game."
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "No player prices in this game yet: they are pulled on Thursday, the day of the game."
+    }
+   ],
+   "taken_at": "2026-10-20T11:24:23Z"
+  },
+  "2026|07|2026-10-26T00:20:00Z|2026_07_KC_SEA": {
+   "season": 2026,
+   "week": 7,
+   "gid": "2026_07_KC_SEA",
+   "away": "KC",
+   "home": "SEA",
+   "kickoff": "2026-10-26T00:20:00Z",
+   "lock": "2026-10-25T22:20:00Z",
+   "baked_at": "2026-10-20T11:20+00:00",
+   "pool": {"pref":2,"thin":0,"mkt":2,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_07_KC_SEA","week":7,"pid":"game","team":"KC","grp":"TEAM","stat":"total","k":42.5,"side":"over","main":true,"price":-110,"src":"real","name":"Chiefs at Seahawks","label":"Over 42.5 points","p":0.5,"fair":0.5,"fair_est":false,"thin":false,"market":true},
+      {"gid":"2026_07_KC_SEA","week":7,"pid":"team:SEA","team":"SEA","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-135,"src":"real","name":"Seahawks","label":"To win","p":0.6774,"fair":0.5514,"fair_est":false,"thin":false,"market":false}
+     ],
+     "p": 0.3387,
+     "fair": 0.2757,
+     "fair_est": false,
+     "dec": 2.978,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 1
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Saturday morning."
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Saturday morning."
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Saturday morning."
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0.35,
+     "why": "No player prices in this game yet: they are pulled on Saturday morning."
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "No player prices in this game yet: they are pulled on Saturday morning."
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "No player prices in this game yet: they are pulled on Saturday morning."
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "No player prices in this game yet: they are pulled on Saturday morning."
+    }
+   ],
+   "taken_at": "2026-10-20T11:24:23Z"
+  },
+  "2026|07|2026-10-27T00:15:00Z|2026_07_DAL_PHI": {
+   "season": 2026,
+   "week": 7,
+   "gid": "2026_07_DAL_PHI",
+   "away": "DAL",
+   "home": "PHI",
+   "kickoff": "2026-10-27T00:15:00Z",
+   "lock": "2026-10-26T22:15:00Z",
+   "baked_at": "2026-10-20T11:20+00:00",
+   "pool": {"pref":1,"thin":0,"mkt":2,"far":1},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"game","team":"DAL","grp":"TEAM","stat":"total","k":44.5,"side":"over","main":true,"price":-110,"src":"real","name":"Cowboys at Eagles","label":"Over 44.5 points","p":0.5,"fair":0.5,"fair_est":false,"thin":false,"market":true},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ats","k":4.5,"side":"over","main":false,"price":-108,"src":"real","name":"Eagles","label":"To cover +4.5","p":0.6443,"fair":0.4957,"fair_est":false,"thin":false,"market":false}
+     ],
+     "p": 0.3222,
+     "fair": 0.2478,
+     "fair_est": false,
+     "dec": 3.294,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 1
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Monday, the day of the game."
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Monday, the day of the game."
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 2 legs in this game, and no player prices yet: they are pulled on Monday, the day of the game."
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0.35,
+     "why": "No player prices in this game yet: they are pulled on Monday, the day of the game."
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "No player prices in this game yet: they are pulled on Monday, the day of the game."
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "No player prices in this game yet: they are pulled on Monday, the day of the game."
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "No player prices in this game yet: they are pulled on Monday, the day of the game."
+    }
+   ],
+   "taken_at": "2026-10-20T11:24:23Z"
   }
  },
  "slot_since": "2026-10-19",
@@ -499,10 +755,129 @@
    },
    "pending": 0
   },
-  "games": 0,
-  "entries": 0,
+  "games": 1,
+  "entries": 1,
   "graded_entries": 0,
   "updates": 0
  },
- "slot": {}
+ "slot": {
+  "2026|07|2026-10-25T13:30:00Z|2026_07_SUN": {
+   "season": 2026,
+   "week": 7,
+   "gid": "2026_07_SUN",
+   "games": ["2026_07_PIT_NO","2026_07_SF_ATL","2026_07_CIN_BAL","2026_07_TB_CAR","2026_07_NYG_HOU","2026_07_IND_MIN","2026_07_MIA_NYJ","2026_07_CLE_TEN","2026_07_DEN_ARI","2026_07_GB_DET","2026_07_LA_LV"],
+   "kickoff": "2026-10-25T13:30:00Z",
+   "last": "2026-10-25T20:25:00Z",
+   "lock": "2026-10-25T11:30:00Z",
+   "baked_at": "2026-10-20T11:20+00:00",
+   "pool": {"pref":5,"thin":8,"mkt":22,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_07_MIA_NYJ","week":7,"pid":"team:MIA","team":"MIA","grp":"TEAM","stat":"ats","k":4.5,"side":"over","main":false,"price":-102,"src":"real","name":"Dolphins","label":"To cover +4.5","p":0.6007,"fair":0.4826,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_07_LA_LV","week":7,"pid":"team:LA","team":"LA","grp":"TEAM","stat":"ats","k":-4.5,"side":"over","main":false,"price":-105,"src":"real","name":"Rams","label":"To cover -4.5","p":0.5738,"fair":0.4892,"fair_est":false,"thin":false,"market":false}
+     ],
+     "p": 0.3447,
+     "fair": 0.2361,
+     "fair_est": false,
+     "dec": 3.866,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "legs": [
+      {"gid":"2026_07_MIA_NYJ","week":7,"pid":"team:MIA","team":"MIA","grp":"TEAM","stat":"ats","k":4.5,"side":"over","main":false,"price":-102,"src":"real","name":"Dolphins","label":"To cover +4.5","p":0.6007,"fair":0.4826,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_07_LA_LV","week":7,"pid":"team:LA","team":"LA","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-225,"src":"real","name":"Rams","label":"To win","p":0.6982,"fair":0.6636,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_07_CIN_BAL","week":7,"pid":"team:BAL","team":"BAL","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-148,"src":"real","name":"Ravens","label":"To win","p":0.6043,"fair":0.5721,"fair_est":false,"thin":true,"market":false}
+     ],
+     "p": 0.2535,
+     "fair": 0.1832,
+     "fair_est": false,
+     "dec": 4.793,
+     "likeliest": false,
+     "thin": 2,
+     "mkt": 0
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "legs": [
+      {"gid":"2026_07_TB_CAR","week":7,"pid":"team:TB","team":"TB","grp":"TEAM","stat":"ats","k":3.5,"side":"over","main":false,"price":-115,"src":"real","name":"Buccaneers","label":"To cover +3.5","p":0.5531,"fair":0.5108,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_07_MIA_NYJ","week":7,"pid":"team:MIA","team":"MIA","grp":"TEAM","stat":"ats","k":4.5,"side":"over","main":false,"price":-102,"src":"real","name":"Dolphins","label":"To cover +4.5","p":0.6007,"fair":0.4826,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_07_SF_ATL","week":7,"pid":"team:ATL","team":"ATL","grp":"TEAM","stat":"ats","k":3.5,"side":"over","main":false,"price":-105,"src":"real","name":"Falcons","label":"To cover +3.5","p":0.5374,"fair":0.4892,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_07_LA_LV","week":7,"pid":"team:LA","team":"LA","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-225,"src":"real","name":"Rams","label":"To win","p":0.6982,"fair":0.6636,"fair_est":false,"thin":true,"market":false}
+     ],
+     "p": 0.1247,
+     "fair": 0.08,
+     "fair_est": false,
+     "dec": 10.441,
+     "likeliest": false,
+     "thin": 3,
+     "mkt": 0
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "legs": [
+      {"gid":"2026_07_MIA_NYJ","week":7,"pid":"team:MIA","team":"MIA","grp":"TEAM","stat":"ats","k":4.5,"side":"over","main":false,"price":-102,"src":"real","name":"Dolphins","label":"To cover +4.5","p":0.6007,"fair":0.4826,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_07_SF_ATL","week":7,"pid":"team:ATL","team":"ATL","grp":"TEAM","stat":"ats","k":3.5,"side":"over","main":false,"price":-105,"src":"real","name":"Falcons","label":"To cover +3.5","p":0.5374,"fair":0.4892,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_07_LA_LV","week":7,"pid":"team:LA","team":"LA","grp":"TEAM","stat":"ats","k":-4.5,"side":"over","main":false,"price":-105,"src":"real","name":"Rams","label":"To cover -4.5","p":0.5738,"fair":0.4892,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_07_CIN_BAL","week":7,"pid":"team:BAL","team":"BAL","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-148,"src":"real","name":"Ravens","label":"To win","p":0.6043,"fair":0.5721,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_07_PIT_NO","week":7,"pid":"team:NO","team":"NO","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":154,"src":"real","name":"Saints","label":"To win","p":0.4543,"fair":0.3775,"fair_est":false,"thin":false,"market":false}
+     ],
+     "p": 0.0509,
+     "fair": 0.0249,
+     "fair_est": false,
+     "dec": 32.13,
+     "likeliest": false,
+     "thin": 2,
+     "mkt": 0
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0.35,
+     "why": "No player prices in the Sunday slot yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET)."
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "No player prices in the Sunday slot yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET)."
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "No player prices in the Sunday slot yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET)."
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "No player prices in the Sunday slot yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET)."
+    }
+   ],
+   "taken_at": "2026-10-20T11:24:23Z"
+  }
+ }
 }
