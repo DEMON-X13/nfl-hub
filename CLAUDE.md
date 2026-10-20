@@ -1437,7 +1437,9 @@ gives each game a link of its own (`data-pb-multigame`, read off the card's own 
 go on the slip count, and only where the legs are of one week, as Finish asks). The parlay card (`card.html`'s `dkPlan`: `games`, `multi`,
 `clash`) then has no link for every leg but a button for each game's (`#pcDkGames`, `a.pc-dkbtn[data-pc-dkgame]`, its
 legs in the card's order, each titled with its own game's read, #pcDk hidden; while the card checks DraftKings'
-lines as it opens, the waiting Open in DraftKings alone, since the read can change the plan), says why, sends a link per game in Share
+lines as it opens, the waiting Open in DraftKings alone, since the read can change the plan, the focus on it moving to
+the first game's button once they are drawn, and the status line then "DraftKings’ lines checked: the 2 games’ links open 5
+of the 7 legs."), says why, sends a link per game in Share
 link's text ("Links copied" where it copies them), and on every card with two or more legs on the slip lists every leg's
 own link, a 44px row each, a leg converted to DraftKings' number saying "(on DraftKings as Over 64.5 receiving yards)" (`ul.pc-dklegs`, until app v121 a row of numbers,
 "One leg at a time: 1 · 2 · 3"), and names any pair DraftKings may refuse (`data-pc-dkclash`). A parlay of one leg a game

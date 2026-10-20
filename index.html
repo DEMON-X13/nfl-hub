@@ -7158,7 +7158,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='cd2bd92';
+const PAGE_HASH='6c9119a';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -8216,7 +8216,7 @@ window.PARLAY_CARD=(function(){
   /* what the card's status line says once the check settles: the slip it opens, or that it could not check */
   function checkSay(c){ const dk=c.m.dk||{}; if(!dk.n) return '';
     if(c.state!=='done') return COULD;
-    return 'DraftKings’ lines checked: '+(dk.url?`Open in DraftKings opens ${dkWhich(dk)}.`:dk.multi?`each of the ${dk.games.length} games has a link of its own.`:`${dk.n===1?'this leg cannot':'none of these legs can'} go on the betslip from here.`); }
+    return 'DraftKings’ lines checked: '+(dk.url?`Open in DraftKings opens ${dkWhich(dk)}.`:dk.multi?`the ${dk.games.length} games’ links open ${dkWhich(dk)}.`:`${dk.n===1?'this leg cannot':'none of these legs can'} go on the betslip from here.`); }
   async function runCheck(c){
     let bad=false, owed=false, real=null;
     try{

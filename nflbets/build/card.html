@@ -605,7 +605,7 @@ window.PARLAY_CARD=(function(){
   /* what the card's status line says once the check settles: the slip it opens, or that it could not check */
   function checkSay(c){ const dk=c.m.dk||{}; if(!dk.n) return '';
     if(c.state!=='done') return COULD;
-    return 'DraftKings’ lines checked: '+(dk.url?`Open in DraftKings opens ${dkWhich(dk)}.`:dk.multi?`each of the ${dk.games.length} games has a link of its own.`:`${dk.n===1?'this leg cannot':'none of these legs can'} go on the betslip from here.`); }
+    return 'DraftKings’ lines checked: '+(dk.url?`Open in DraftKings opens ${dkWhich(dk)}.`:dk.multi?`the ${dk.games.length} games’ links open ${dkWhich(dk)}.`:`${dk.n===1?'this leg cannot':'none of these legs can'} go on the betslip from here.`); }
   async function runCheck(c){
     let bad=false, owed=false, real=null;
     try{
