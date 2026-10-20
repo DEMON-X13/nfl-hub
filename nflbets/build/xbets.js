@@ -1,8 +1,11 @@
-/* The X Bet Log: X's week-by-week bets, the same on every device, read only.
+/* The X Bet Log: X's week-by-week bets, read only, on the site owner's devices alone.
  *
  * It is a file in the repository, liveparlays/xbets.json, beside X's placed parlays, which Claude
- * edits from what the owner sends (the week, what was staked, what came back) and every device
- * reads on every load, never from a cache:
+ * edits from what the owner sends (the week, what was staked, what came back). Since 20 October 2026
+ * (the owner's call: X Parlays and the X Bet Log "hide only", the admin link, nflbets/build/admin.js)
+ * it is read on every load of the admin's browser, never from a cache, and on no one else's: a
+ * visitor's page has no X Bet Log tab and asks for no file (enabled() is false, ready() resolves at
+ * once). The file itself stays public, where it is:
  *
  *   {how, season, updated, deposit, weeks:{w1:{staked, returned, note}, ...}}
  *
@@ -16,16 +19,17 @@
  * 140 characters at most, and the deposit is a number of 0 or more, or none. A file for another
  * season than the betting app's shows no weeks (status.other says which season it holds).
  *
- * Once the file has been read, what the retired shared store left of the X Bet Log in this browser
- * goes: its last copy of the log (xbets_cache_<season>), the mark that the browser's weeks had moved
- * in (xbets_joined_<season>), and a week that never reached the store (xbets_pending_<season>) when
- * the file has that week as it was written; a pending week the file does not have stays where it
- * is, unread. This browser's own log (the app's key) and the copy kept aside when the log was
- * shared (x_nfl_bets_preshare_<season>) stay.
+ * What the retired shared store left of the X Bet Log in this browser goes: its last copy of the
+ * log (xbets_cache_<season>) and the mark that the browser's weeks had moved in
+ * (xbets_joined_<season>) on every load, and, once the admin's load has read the file, a week that
+ * never reached the store (xbets_pending_<season>) when the file has that week as it was written; a
+ * pending week the file does not have stays where it is, unread. This browser's own log (the app's
+ * key) and the copy kept aside when the log was shared (x_nfl_bets_preshare_<season>) stay.
  *
  * window.XBETS, for the frames:
- *   enabled()    true: the page has an X Bet Log
- *   ready()      a promise: the file has been read, or could not be (a few seconds at most)
+ *   enabled()    true on the admin's browser, the one page with an X Bet Log; false on a visitor's
+ *   ready()      a promise: the file has been read, or could not be (a few seconds at most); at once
+ *                on a visitor's, with no request
  *   get()        {weeks:{N:{staked,returned,note}}, deposit, season, status:{applied, ok, err, at, other}}
  *   onChange(f)  f() when the file arrives after a frame has asked for it
  */
@@ -60,10 +64,11 @@ window.XBETS=(function(){
   }
   const cleanDep=v=>v==null||v===''||!isFinite(+v)||+v<0?null:cents(+v);
 
-  /* the retired store's leftovers, once the file is in: a week waiting to be written goes when the
-     file has it as it was written (or a removed week the file does not have) */
+  /* the retired store's leftovers. Its last copy of the log and its mark go on every load, the
+     admin's or a visitor's: they need no file. A week waiting to be written goes, on the admin's
+     load, once the file is in and has it as it was written (or a removed week the file does not have) */
+  ls.del(CACHE); ls.del(JOINED);
   function tidy(){
-    ls.del(CACHE); ls.del(JOINED);
     const p=parse(ls.get(PENDING)), ops=isObj(p)&&isObj(p.ops)?p.ops:null;
     if(!ops){ ls.del(PENDING); return; }
     const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
@@ -74,6 +79,8 @@ window.XBETS=(function(){
     if(done) ls.del(PENDING);
   }
 
+  /* the admin's browser (admin.js, in the page's head): a visitor reads no file */
+  const on=()=>{ try{ return !!(window.HUB_ADMIN&&window.HUB_ADMIN.on()); }catch(e){ return false; } };
   let readP=null;
   function read(){
     if(!readP) readP=(async()=>{
@@ -94,10 +101,10 @@ window.XBETS=(function(){
     })();
     return readP;
   }
-  read();
+  if(on()) read();
   return {
-    enabled:()=>true,
-    ready(){ return Promise.race([read(),new Promise(r=>setTimeout(r,READY_MS))]); },
+    enabled:()=>on(),
+    ready(){ if(!on()) return Promise.resolve(); return Promise.race([read(),new Promise(r=>setTimeout(r,READY_MS))]); },
     get(){ return {weeks:JSON.parse(JSON.stringify(st.weeks)), deposit:st.deposit, season:SEASON,
       status:{applied:st.applied, ok:st.ok, err:st.err, at:st.at, other:st.other}}; },
     onChange(f){ listeners.push(f); },

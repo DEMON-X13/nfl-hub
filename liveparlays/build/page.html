@@ -164,7 +164,7 @@ footer a{color:var(--ink-2)}
     <div class="lp-dlg-panel" role="alertdialog" aria-modal="true" aria-labelledby="lpAskTitle" aria-describedby="lpAskWhat lpAskText">
       <h3 id="lpAskTitle">Clear this parlay?</h3>
       <p class="lp-dlg-what" id="lpAskWhat"></p>
-      <p class="lp-dlg-text" id="lpAskText">It is cleared from X Parlays on this device only, and nothing is sent anywhere; you can show it again at the foot of the list. X’s parlays clear themselves for everyone the day after their last game.</p>
+      <p class="lp-dlg-text" id="lpAskText">It is cleared from X Parlays on this device only, and nothing is sent anywhere; you can show it again at the foot of the list. X’s parlays clear themselves the day after their last game.</p>
       <div class="lp-dlg-btns"><button type="button" class="btn quiet" id="lpAskNo">Cancel</button><button type="button" class="btn danger" id="lpAskYes">Clear</button></div>
     </div>
   </div><!-- /lpAsk -->
@@ -182,29 +182,36 @@ const isGameLeg=l=>l.stat==='ml'||l.stat==='ats'||l.stat==='total';
 const nameOf=n=>typeof normName==='function'?normName(n):String(n||'').toLowerCase().replace(/[^a-z ]/g,'').trim();
 
 /* ---- the section: X's parlays, from one file ----
-   X Parlays is X's, the same on every device and read only everywhere: the parlays X placed at
-   the book, in the repository's liveparlays/parlays.json, which Claude keeps from the slips the
-   owner sends in chat. A browser has no way to commit to GitHub without a credential and a
-   static page has nowhere safe to keep one, so the file is edited in the repository and the
-   section picks the change up on the next load. It reads the file on every load (and on Refresh
-   now), never from a cache, follows each parlay live against ESPN's scoreboard and box scores,
-   and sends nothing anywhere. A parlay the file marks "cleared" (settled, and no longer wanted
+   X Parlays is X's, read only: the parlays X placed at the book, in the repository's
+   liveparlays/parlays.json, which Claude keeps from the slips the owner sends in chat. Since 20
+   October 2026 it is shown on the site owner's devices alone (the owner's call, "hide only": the
+   admin link, nflbets/build/admin.js, in the page's head, whose window.HUB_ADMIN says whose browser
+   this is). On anyone else's page its tab is off the bar and the section reads nothing at all,
+   neither the file nor ESPN, and draws nothing; the file itself stays public, where it is. A
+   browser has no way to commit to GitHub without a credential and a static page has nowhere safe
+   to keep one, so the file is edited in the repository and the section picks the change up on the
+   next load. It reads the file on every load of the admin's page (and on Refresh now), never from
+   a cache, follows each parlay live against ESPN's scoreboard and box scores, and sends nothing
+   anywhere. A parlay the file marks "cleared" (settled, and no longer wanted
    on the page) stays there as history and is not drawn, nor are its games read. A line the book
    moved before X placed a bet is in the file as the line X took.
 
-   Every card has an X at its top right, the same for every visitor: it asks "Clear this parlay?"
-   and, on Clear, takes that parlay off X Parlays on this device. That is the visitor's own choice
-   of what to see here, never X's data: it is kept in this browser's storage alone, under
-   lp_cleared_here_v1 (the parlay ids, each with when it was cleared), and nothing is sent or
-   changed anywhere else. X's parlays clear themselves for everyone the day after their last game
-   (the file's "cleared"), so the list is pruned of any id the file no longer has or has cleared
-   itself. Show them again empties it.
+   Every card has an X at its top right: it asks "Clear this parlay?" and, on Clear, takes that
+   parlay off X Parlays on this device. That is this browser's own choice of what to see here,
+   never X's data: it is kept in this browser's storage alone, under lp_cleared_here_v1 (the parlay
+   ids, each with when it was cleared), and nothing is sent or changed anywhere else. X's parlays
+   clear themselves the day after their last game (the file's "cleared"), so the list is pruned of
+   any id the file no longer has or has cleared itself. Show them again empties it.
 
    Nothing a browser holds is drawn here: the Parlay Builder above stays the visitor's to use, and
    finishing a parlay there opens it as a card to download (nflbets/build/card.html), saved
    nowhere. What a browser saved before (the prop model's saved parlays, my_parlays_v1) is left
    in its storage untouched and not drawn. */
 const DATA='parlays.json';
+/* the admin's browser (admin.js): on() is fixed as the page loads, and false again after Sign out. The
+   page around the section asks it too, when the prop model comes up (nflbets/build/build.js) */
+const lpAdmin=()=>{ try{ return !!(window.HUB_ADMIN&&window.HUB_ADMIN.on()); }catch(e){ return false; } };
+window.lpAdmin=lpAdmin;
 /* a price as a number, whatever the file carried */
 const money=x=>x!=null&&x!==''&&isFinite(+x)?+x:null;
 
@@ -282,6 +289,9 @@ const shown=()=>STATE.parlays.filter(p=>!isHere(p.id));
 const legGames=ps=>{ const s2=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s2.add(l.gid); return s2; };
 async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function refresh(){
+  /* a visitor's page reads nothing for X Parlays: not the file, not ESPN (Refresh now, Show again and
+     another tab's change all come here) */
+  if(!lpAdmin()) return;
   if(STATE.busy) return;
   STATE.busy=true; document.getElementById('dot').classList.add('on');
   /* the file first: it is the list of what to watch */
@@ -535,9 +545,15 @@ const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; r
 const isGone=p=>p.legs.some(l=>{ const r=liveFor(l); return r&&r.state==='missed'; });
 const isSettled=p=>isDone(p)||isGone(p);
 function draw(){
+  if(!lpAdmin()) return;
   drawList();
   foot();
 }
+/* Sign out (admin.js): the section is emptied, and a Clear this parlay? window left open closes */
+document.addEventListener('hub-admin',()=>{ if(lpAdmin()) return;
+  askClose(false,true);
+  const a=document.getElementById('app'), up=document.getElementById('lpUpdated');
+  if(a) a.innerHTML=''; if(up) up.textContent=''; });
 /* the quiet line saying what this device has cleared, with the way back */
 function hereLine(n){
   return `<div class="lp-here"><span>You cleared ${n} parlay${n===1?'':'s'} on this device</span><button type="button" class="btn quiet" id="lpShowAll">Show ${n===1?'it':'them'} again</button></div>`;
