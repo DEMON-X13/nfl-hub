@@ -1,0 +1,2907 @@
+{
+ "season": 2026,
+ "week": 7,
+ "teams": {
+  "NE": {
+   "kick": "2026-10-23T00:15Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0039851",
+      "n": "Drake Maye",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0040699",
+      "n": "Will Campbell",
+      "pos": "T"
+     },
+     {
+      "id": "00-0036979",
+      "n": "Alijah Vera-Tucker",
+      "pos": "G",
+      "q": "questionable: hamstring"
+     },
+     {
+      "id": "00-0040147",
+      "n": "Jared Wilson",
+      "pos": "C"
+     },
+     {
+      "id": "00-0037413",
+      "n": "Ben Brown",
+      "pos": "C",
+      "q": "questionable: knee"
+     },
+     {
+      "id": "00-0031330",
+      "n": "Morgan Moses",
+      "pos": "T",
+      "q": "questionable: foot"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0036875",
+      "n": "Rhamondre Stevenson",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0040734",
+      "n": "TreVeyon Henderson",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0038621",
+      "n": "DeMario Douglas",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0033090",
+      "n": "Hunter Henry",
+      "pos": "TE"
+     },
+     {
+      "id": "00-0035676",
+      "n": "A.J. Brown",
+      "pos": "WR",
+      "q": "questionable: ankle"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0040574",
+      "n": "Elijah Ponder",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0036981",
+      "n": "Christian Barmore",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0035678",
+      "n": "Dre'Mont Jones",
+      "pos": "OLB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0033132",
+      "n": "Kevin Byard",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0037253",
+      "n": "Marcus Jones",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0040716",
+      "n": "Craig Woodson",
+      "pos": "SS"
+     }
+    ]
+   }
+  },
+  "CHI": {
+   "kick": "2026-10-23T00:15Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0039918",
+      "n": "Caleb Williams",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0039459",
+      "n": "Theo Benedet",
+      "pos": "T"
+     },
+     {
+      "id": "00-0032391",
+      "n": "Joe Thuney",
+      "pos": "G"
+     },
+     {
+      "id": "00-0035588",
+      "n": "Garrett Bradbury",
+      "pos": "C"
+     },
+     {
+      "id": "00-0036258",
+      "n": "Jonah Jackson",
+      "pos": "G",
+      "q": "questionable: hip"
+     },
+     {
+      "id": "00-0038932",
+      "n": "Darnell Wright",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0036275",
+      "n": "D'Andre Swift",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0039021",
+      "n": "Roschon Johnson",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0040735",
+      "n": "Luther Burden III",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0039919",
+      "n": "Rome Odunze",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0040126",
+      "n": "Colston Loveland",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0039840",
+      "n": "Austin Booker",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0035525",
+      "n": "Devin Bush",
+      "pos": "MLB"
+     },
+     {
+      "id": "00-0034320",
+      "n": "Kentavius Street",
+      "pos": "DT"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0041538",
+      "n": "Dillon Thieneman",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0036292",
+      "n": "Jaylon Johnson",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0035357",
+      "n": "Cam Lewis",
+      "pos": "FS"
+     }
+    ]
+   }
+  },
+  "PIT": {
+   "kick": "2026-10-25T13:30Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0023459",
+      "n": "Aaron Rodgers",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0039871",
+      "n": "Troy Fautanu",
+      "pos": "T"
+     },
+     {
+      "id": "00-0039358",
+      "n": "Mason McCormick",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039896",
+      "n": "Zach Frazier",
+      "pos": "C"
+     },
+     {
+      "id": "00-0037336",
+      "n": "Brock Hoffman",
+      "pos": "C"
+     },
+     {
+      "id": "00-0041482",
+      "n": "Max Iheanachor",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0037228",
+      "n": "Jaylen Warren",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0036139",
+      "n": "Rico Dowdle",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0035640",
+      "n": "DK Metcalf",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0041489",
+      "n": "Germie Bernard",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0038558",
+      "n": "Darnell Washington",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0033886",
+      "n": "T.J. Watt",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0036333",
+      "n": "Alex Highsmith",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0039741",
+      "n": "Payton Wilson",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0038135",
+      "n": "Jaquan Brisker",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0033055",
+      "n": "Jalen Ramsey",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0036617",
+      "n": "Asante Samuel Jr.",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "NO": {
+   "kick": "2026-10-25T13:30Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0040743",
+      "n": "Tyler Shough",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0038601",
+      "n": "Asim Richards",
+      "pos": "T"
+     },
+     {
+      "id": "00-0035668",
+      "n": "David Edwards",
+      "pos": "G"
+     },
+     {
+      "id": "00-0035242",
+      "n": "Erik McCoy",
+      "pos": "C"
+     },
+     {
+      "id": "00-0036408",
+      "n": "Cesar Ruiz",
+      "pos": "G",
+      "q": "questionable: knee"
+     },
+     {
+      "id": "00-0039339",
+      "n": "Taliese Fuaga",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0033906",
+      "n": "Alvin Kamara",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0038551",
+      "n": "Kendre Miller",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0037239",
+      "n": "Chris Olave",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0039424",
+      "n": "Devaughn Vele",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0036040",
+      "n": "Juwan Johnson",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0036321",
+      "n": "Chase Young",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0035402",
+      "n": "Carl Granderson",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0036927",
+      "n": "Pete Werner",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0034361",
+      "n": "Justin Reid",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0036253",
+      "n": "Julian Blackmon",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0039860",
+      "n": "Kool-Aid McKinstry",
+      "pos": "CB",
+      "q": "questionable: migraine"
+     }
+    ]
+   }
+  },
+  "SF": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0037834",
+      "n": "Brock Purdy",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0027857",
+      "n": "Trent Williams",
+      "pos": "T"
+     },
+     {
+      "id": "00-0040245",
+      "n": "Connor Colby",
+      "pos": "G"
+     },
+     {
+      "id": "00-0032701",
+      "n": "Jake Brendel",
+      "pos": "C"
+     },
+     {
+      "id": "00-0039351",
+      "n": "Dominick Puni",
+      "pos": "G"
+     },
+     {
+      "id": "00-0036256",
+      "n": "Colton McKivitz",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0033280",
+      "n": "Christian McCaffrey",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0041052",
+      "n": "Kaelon Black",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0033288",
+      "n": "George Kittle",
+      "pos": "TE"
+     },
+     {
+      "id": "00-0031236",
+      "n": "Brandin Cooks",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0039365",
+      "n": "Jacob Cowing",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0039148",
+      "n": "Keion White",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0036942",
+      "n": "Osa Odighizuwa",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0041557",
+      "n": "Gracen Halton",
+      "pos": "DT"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0039345",
+      "n": "Renardo Green",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0038554",
+      "n": "Ji'Ayir Brown",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0036563",
+      "n": "Deommodore Lenoir",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "ATL": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0039917",
+      "n": "Michael Penix Jr.",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0031279",
+      "n": "Jake Matthews",
+      "pos": "T"
+     },
+     {
+      "id": "00-0039048",
+      "n": "Matthew Bergeron",
+      "pos": "G"
+     },
+     {
+      "id": "00-0036833",
+      "n": "Ryan Neuzil",
+      "pos": "C"
+     },
+     {
+      "id": "00-0035630",
+      "n": "Chris Lindstrom",
+      "pos": "G"
+     },
+     {
+      "id": "00-0035237",
+      "n": "Jawaan Taylor",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0038542",
+      "n": "Bijan Robinson",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0037746",
+      "n": "Brian Robinson",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0037238",
+      "n": "Drake London",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0037741",
+      "n": "Jahan Dotson",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0036970",
+      "n": "Kyle Pitts",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0037815",
+      "n": "Cameron Thomas",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0033945",
+      "n": "Samson Ebukam",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0039859",
+      "n": "Brandon Dorlus",
+      "pos": "DT"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0040148",
+      "n": "Xavier Watts",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0034675",
+      "n": "Jessie Bates",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0034843",
+      "n": "Mike Hughes",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "CIN": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0036442",
+      "n": "Joe Burrow",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0034752",
+      "n": "Orlando Brown",
+      "pos": "T"
+     },
+     {
+      "id": "00-0040140",
+      "n": "Dylan Fairchild",
+      "pos": "G"
+     },
+     {
+      "id": "00-0032445",
+      "n": "Ted Karras",
+      "pos": "C"
+     },
+     {
+      "id": "00-0035702",
+      "n": "Dalton Risner",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039925",
+      "n": "Amarius Mims",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0038597",
+      "n": "Chase Brown",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0033526",
+      "n": "Samaje Perine",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0036410",
+      "n": "Tee Higgins",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0036900",
+      "n": "Ja'Marr Chase",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0040785",
+      "n": "Dohnte Meyers",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0035683",
+      "n": "Dexter Lawrence",
+      "pos": "NT"
+     },
+     {
+      "id": "00-0033523",
+      "n": "Jonathan Allen",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0038133",
+      "n": "Boye Mafe",
+      "pos": "DE"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0038560",
+      "n": "Jordan Battle",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0038549",
+      "n": "DJ Turner II",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0037743",
+      "n": "Daxton Hill",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "BAL": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0035993",
+      "n": "Tyler Huntley",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0032965",
+      "n": "Ronnie Stanley",
+      "pos": "T"
+     },
+     {
+      "id": "00-0036369",
+      "n": "John Simpson",
+      "pos": "G"
+     },
+     {
+      "id": "00-0040866",
+      "n": "Olaivavega Ioane",
+      "pos": "G"
+     },
+     {
+      "id": "00-0040068",
+      "n": "Emery Jones Jr.",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039233",
+      "n": "Roger Rosengarten",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0032764",
+      "n": "Derrick Henry",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0034975",
+      "n": "Justice Hill",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0039064",
+      "n": "Zay Flowers",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0034753",
+      "n": "Mark Andrews",
+      "pos": "TE"
+     },
+     {
+      "id": "00-0036550",
+      "n": "Rashod Bateman",
+      "pos": "WR",
+      "q": "questionable: shoulder"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0038505",
+      "n": "Tavius Robinson",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0034874",
+      "n": "Roquan Smith",
+      "pos": "ILB"
+     },
+     {
+      "id": "00-0033935",
+      "n": "Trey Hendrickson",
+      "pos": "OLB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0039232",
+      "n": "Nate Wiggins",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0040688",
+      "n": "Malaki Starks",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0038038",
+      "n": "Kyle Hamilton",
+      "pos": "SS"
+     }
+    ]
+   }
+  },
+  "TB": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0041251",
+      "n": "Jalon Daniels",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0036406",
+      "n": "Tristan Wirfs",
+      "pos": "T"
+     },
+     {
+      "id": "00-0036132",
+      "n": "Ben Bredeson",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039905",
+      "n": "Graham Barton",
+      "pos": "C"
+     },
+     {
+      "id": "00-0039157",
+      "n": "Cody Mauch",
+      "pos": "G"
+     },
+     {
+      "id": "00-0037835",
+      "n": "Luke Goedeke",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0039361",
+      "n": "Bucky Irving",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0036919",
+      "n": "Kenny Gainwell",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0040129",
+      "n": "Emeka Egbuka",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0033921",
+      "n": "Chris Godwin Jr.",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0038129",
+      "n": "Cade Otton",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0041502",
+      "n": "Josiah Trotter",
+      "pos": "ILB"
+     },
+     {
+      "id": "00-0039068",
+      "n": "Yaya Diaby",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0033914",
+      "n": "Alex Anzalone",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0037268",
+      "n": "Zyon McCollum",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0039846",
+      "n": "Tykee Smith",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0040143",
+      "n": "Jacob Parrish",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "CAR": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0039150",
+      "n": "Bryce Young",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0037196",
+      "n": "Rasheed Walker",
+      "pos": "T"
+     },
+     {
+      "id": "00-0036417",
+      "n": "Damien Lewis",
+      "pos": "G"
+     },
+     {
+      "id": "00-0037814",
+      "n": "Luke Fortner",
+      "pos": "C"
+     },
+     {
+      "id": "00-0036325",
+      "n": "Robert Hunt",
+      "pos": "G"
+     },
+     {
+      "id": "00-0033284",
+      "n": "Taylor Moton",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0036555",
+      "n": "Chuba Hubbard",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0040644",
+      "n": "Trevor Etienne",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0040124",
+      "n": "Tetairoa McMillan",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0039491",
+      "n": "Jalen Coker",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0037005",
+      "n": "Tommy Tremble",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0036934",
+      "n": "Jaelan Phillips",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0037244",
+      "n": "Devin Lloyd",
+      "pos": "ILB"
+     },
+     {
+      "id": "00-0035687",
+      "n": "Bobby Okereke",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0036962",
+      "n": "Tre'von Moehrig",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0041063",
+      "n": "Will Lee III",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0035669",
+      "n": "Nick Scott",
+      "pos": "FS"
+     }
+    ]
+   }
+  },
+  "NYG": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0031503",
+      "n": "Jameis Winston",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0036386",
+      "n": "Andrew Thomas",
+      "pos": "T"
+     },
+     {
+      "id": "00-0036246",
+      "n": "Jon Runyan",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039446",
+      "n": "Bryan Hudson",
+      "pos": "C"
+     },
+     {
+      "id": "00-0041505",
+      "n": "Francis Mauigoa",
+      "pos": "T"
+     },
+     {
+      "id": "00-0040181",
+      "n": "Marcus Mbow",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0040715",
+      "n": "Cam Skattebo",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0039384",
+      "n": "Tyrone Tracy Jr.",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0039337",
+      "n": "Malik Nabers",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0037838",
+      "n": "Isaiah Likely",
+      "pos": "TE"
+     },
+     {
+      "id": "00-0041042",
+      "n": "Malachi Fields",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0040677",
+      "n": "Abdul Carter",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0034673",
+      "n": "Tremaine Edmunds",
+      "pos": "ILB",
+      "q": "questionable: shoulder"
+     },
+     {
+      "id": "00-0041509",
+      "n": "Arvell Reese",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0036998",
+      "n": "Jevon Holland",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0036996",
+      "n": "Greg Newsome II",
+      "pos": "CB",
+      "q": "questionable: concussion"
+     },
+     {
+      "id": "00-0039821",
+      "n": "Andru Phillips",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "HOU": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0039163",
+      "n": "C.J. Stroud",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0040745",
+      "n": "Aireontae Ersery",
+      "pos": "T"
+     },
+     {
+      "id": "00-0041532",
+      "n": "Keylan Rutledge",
+      "pos": "G"
+     },
+     {
+      "id": "00-0034495",
+      "n": "Evan Brown",
+      "pos": "C"
+     },
+     {
+      "id": "00-0038131",
+      "n": "Ed Ingram",
+      "pos": "G"
+     },
+     {
+      "id": "00-0032071",
+      "n": "Trent Brown",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0040583",
+      "n": "Woody Marks",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0033854",
+      "n": "Dare Ogunbowale",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0034383",
+      "n": "Dalton Schultz",
+      "pos": "TE"
+     },
+     {
+      "id": "00-0036554",
+      "n": "Nico Collins",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0040138",
+      "n": "Jaylin Noel",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0039108",
+      "n": "Will Anderson Jr.",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0031565",
+      "n": "Danielle Hunter",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0032759",
+      "n": "Sheldon Rankins",
+      "pos": "DT"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0039343",
+      "n": "Kamari Lassiter",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0037237",
+      "n": "Derek Stingley Jr.",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0039838",
+      "n": "Calen Bullock",
+      "pos": "FS"
+     }
+    ]
+   }
+  },
+  "IND": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0035710",
+      "n": "Daniel Jones",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0037757",
+      "n": "Bernhard Raimann",
+      "pos": "T"
+     },
+     {
+      "id": "00-0034342",
+      "n": "Quenton Nelson",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039744",
+      "n": "Tanor Bortolini",
+      "pos": "C"
+     },
+     {
+      "id": "00-0039736",
+      "n": "Matt Goncalves",
+      "pos": "G"
+     },
+     {
+      "id": "00-0040163",
+      "n": "Jalen Travis",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0036223",
+      "n": "Jonathan Taylor",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0041125",
+      "n": "Seth McGowan",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0038997",
+      "n": "Josh Downs",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0030279",
+      "n": "Keenan Allen",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0032951",
+      "n": "Laquon Treadwell",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0032378",
+      "n": "DeForest Buckner",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0039340",
+      "n": "Laiatu Latu",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0033952",
+      "n": "Grover Stewart",
+      "pos": "DT"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0036629",
+      "n": "Camryn Bynum",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0034573",
+      "n": "Charvarius Ward",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0041043",
+      "n": "A.J. Haulcy",
+      "pos": "SS"
+     }
+    ]
+   }
+  },
+  "MIN": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0035228",
+      "n": "Kyler Murray",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0037404",
+      "n": "Ryan Van Demark",
+      "pos": "T"
+     },
+     {
+      "id": "00-0040500",
+      "n": "Joe Huber",
+      "pos": "G"
+     },
+     {
+      "id": "00-0036347",
+      "n": "Blake Brandel",
+      "pos": "C"
+     },
+     {
+      "id": "00-0036483",
+      "n": "Will Fries",
+      "pos": "G"
+     },
+     {
+      "id": "00-0034158",
+      "n": "Brian O'Neill",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0033293",
+      "n": "Aaron Jones",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0036425",
+      "n": "DeeJay Dallas",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0035229",
+      "n": "T.J. Hockenson",
+      "pos": "TE",
+      "q": "questionable: concussion"
+     },
+     {
+      "id": "00-0036322",
+      "n": "Justin Jefferson",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0040154",
+      "n": "Tai Felton",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0039924",
+      "n": "Dallas Turner",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0035272",
+      "n": "Andrew Van Ginkel",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0035276",
+      "n": "Blake Cashman",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0036348",
+      "n": "Josh Metellus",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0035236",
+      "n": "Byron Murphy",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0036222",
+      "n": "Isaiah Rodgers",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "MIA": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0038128",
+      "n": "Malik Willis",
+      "pos": "QB",
+      "q": "not practising"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0039899",
+      "n": "Patrick Paul",
+      "pos": "T"
+     },
+     {
+      "id": "00-0041521",
+      "n": "Kadyn Proctor",
+      "pos": "T"
+     },
+     {
+      "id": "00-0036171",
+      "n": "Aaron Brewer",
+      "pos": "C"
+     },
+     {
+      "id": "00-0040742",
+      "n": "Jonah Savaiinaea",
+      "pos": "G",
+      "q": "questionable: ankle"
+     },
+     {
+      "id": "00-0036248",
+      "n": "Austin Jackson",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0040198",
+      "n": "Ollie Gordon II",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0039874",
+      "n": "Jaylen Wright",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0039880",
+      "n": "Malik Washington",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0041529",
+      "n": "Kevin Coleman Jr.",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0037252",
+      "n": "Greg Dulcich",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0034285",
+      "n": "Zach Sieler",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0039911",
+      "n": "Chop Robinson",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0036159",
+      "n": "Joshua Uche",
+      "pos": "OLB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0041533",
+      "n": "Chris Johnson",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0040178",
+      "n": "Jason Marshall Jr.",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0040182",
+      "n": "Dante Trader Jr.",
+      "pos": "FS"
+     }
+    ]
+   }
+  },
+  "NYJ": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0030565",
+      "n": "Geno Smith",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0039790",
+      "n": "Olumuyiwa Fashanu",
+      "pos": "T"
+     },
+     {
+      "id": "00-0036604",
+      "n": "Jordan Meredith",
+      "pos": "C"
+     },
+     {
+      "id": "00-0036622",
+      "n": "Josh Myers",
+      "pos": "C"
+     },
+     {
+      "id": "00-0039145",
+      "n": "Joe Tippmann",
+      "pos": "G"
+     },
+     {
+      "id": "00-0040123",
+      "n": "Armand Membou",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0039794",
+      "n": "Braelon Allen",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0039798",
+      "n": "Isaiah Davis",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0037740",
+      "n": "Garrett Wilson",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0040736",
+      "n": "Mason Taylor",
+      "pos": "TE"
+     },
+     {
+      "id": "00-0041511",
+      "n": "Omar Cooper Jr.",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0041026",
+      "n": "David Bailey",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0029607",
+      "n": "Demario Davis",
+      "pos": "ILB"
+     },
+     {
+      "id": "00-0037083",
+      "n": "Kingsley Enagbare",
+      "pos": "OLB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0040133",
+      "n": "Azareye'h Thomas",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0038123",
+      "n": "Dane Belton",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0036987",
+      "n": "Brandon Stephens",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "CLE": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0033537",
+      "n": "Deshaun Watson",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0041030",
+      "n": "Spencer Fano",
+      "pos": "T"
+     },
+     {
+      "id": "00-0037818",
+      "n": "Zion Johnson",
+      "pos": "G"
+     },
+     {
+      "id": "00-0035526",
+      "n": "Elgton Jenkins",
+      "pos": "C"
+     },
+     {
+      "id": "00-0041049",
+      "n": "Austin Barber",
+      "pos": "T"
+     },
+     {
+      "id": "00-0035234",
+      "n": "Tytus Howard",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0038794",
+      "n": "Jaleel McLaughlin",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0039373",
+      "n": "Audric Estimé",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0041547",
+      "n": "KC Concepcion",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0041037",
+      "n": "Denzel Boston",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0040663",
+      "n": "Harold Fannin Jr.",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0033131",
+      "n": "Maliek Collins",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0038574",
+      "n": "Isaiah McGuire",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0040255",
+      "n": "Adin Huntington",
+      "pos": "DT"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0034856",
+      "n": "Denzel Ward",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0038715",
+      "n": "Ronnie Hickman Jr.",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0036282",
+      "n": "Grant Delpit",
+      "pos": "SS",
+      "q": "questionable: concussion"
+     }
+    ]
+   }
+  },
+  "TEN": {
+   "kick": "2026-10-25T17:00Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0040676",
+      "n": "Cam Ward",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0036869",
+      "n": "Dan Moore Jr.",
+      "pos": "T"
+     },
+     {
+      "id": "00-0039034",
+      "n": "Peter Skoronski",
+      "pos": "G"
+     },
+     {
+      "id": "00-0034112",
+      "n": "Austin Schlottmann",
+      "pos": "C"
+     },
+     {
+      "id": "00-0038586",
+      "n": "Atonio Mafi",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039731",
+      "n": "JC Latham",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0035261",
+      "n": "Tony Pollard",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0039032",
+      "n": "Tyjae Spears",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0041438",
+      "n": "Carnell Tate",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0038117",
+      "n": "Wan'Dale Robinson",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0040170",
+      "n": "Elic Ayomanor",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0035643",
+      "n": "Jeffery Simmons",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0037663",
+      "n": "Jermaine Johnson II",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0034805",
+      "n": "John Franklin-Myers",
+      "pos": "DE"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0035632",
+      "n": "Amani Hooker",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0037758",
+      "n": "Cordale Flott",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0040201",
+      "n": "Marcus Harris",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "DEN": {
+   "kick": "2026-10-25T20:05Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0039732",
+      "n": "Bo Nix",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0033538",
+      "n": "Garett Bolles",
+      "pos": "T"
+     },
+     {
+      "id": "00-0034978",
+      "n": "Ben Powers",
+      "pos": "G"
+     },
+     {
+      "id": "00-0037278",
+      "n": "Luke Wattenberg",
+      "pos": "C"
+     },
+     {
+      "id": "00-0037001",
+      "n": "Quinn Meinerz",
+      "pos": "G"
+     },
+     {
+      "id": "00-0034847",
+      "n": "Mike McGlinchey",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0036158",
+      "n": "J.K. Dobbins",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0040730",
+      "n": "RJ Harvey",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0036613",
+      "n": "Jaylen Waddle",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0034348",
+      "n": "Courtland Sutton",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0033881",
+      "n": "Evan Engram",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0035248",
+      "n": "Zach Allen",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0037249",
+      "n": "Nik Bonitto",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0031898",
+      "n": "Alex Singleton",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0036221",
+      "n": "Brandon Jones",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0038552",
+      "n": "Riley Moss",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0037384",
+      "n": "Ja'Quan McMillian",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "ARI": {
+   "kick": "2026-10-25T20:05Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0033119",
+      "n": "Jacoby Brissett",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0041113",
+      "n": "Jayden Williams",
+      "pos": "T"
+     },
+     {
+      "id": "00-0032954",
+      "n": "Isaac Seumalo",
+      "pos": "G"
+     },
+     {
+      "id": "00-0035258",
+      "n": "Hjalte Froholdt",
+      "pos": "C"
+     },
+     {
+      "id": "00-0038571",
+      "n": "Jon Gaines II",
+      "pos": "C"
+     },
+     {
+      "id": "00-0033676",
+      "n": "Elijah Wilkinson",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0037263",
+      "n": "Tyler Allgeier",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0037157",
+      "n": "Bam Knight",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0037744",
+      "n": "Trey McBride",
+      "pos": "TE"
+     },
+     {
+      "id": "00-0038559",
+      "n": "Michael Wilson",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0033307",
+      "n": "Kendrick Bourne",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0034381",
+      "n": "Josh Sweat",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0038623",
+      "n": "Dante Stills",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0040706",
+      "n": "Walter Nolen",
+      "pos": "DT"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0033890",
+      "n": "Budda Baker",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0040195",
+      "n": "Denzel Burke",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0039807",
+      "n": "Max Melton",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "GB": {
+   "kick": "2026-10-25T20:25Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0036264",
+      "n": "Jordan Love",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0039904",
+      "n": "Jordan Morgan",
+      "pos": "G"
+     },
+     {
+      "id": "00-0032234",
+      "n": "Laken Tomlinson",
+      "pos": "G"
+     },
+     {
+      "id": "00-0037076",
+      "n": "Sean Rhyan",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039819",
+      "n": "Travis Glover",
+      "pos": "T"
+     },
+     {
+      "id": "00-0040726",
+      "n": "Anthony Belton",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0039811",
+      "n": "MarShawn Lloyd",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0038098",
+      "n": "Pierre Strong",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0040667",
+      "n": "Matthew Golden",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0038124",
+      "n": "Christian Watson",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0038996",
+      "n": "Tucker Kraft",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0039112",
+      "n": "Lukas Van Ness",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0037075",
+      "n": "Devonte Wyatt",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0034431",
+      "n": "Zaire Franklin",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0039813",
+      "n": "Evan Williams",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0036388",
+      "n": "Xavier McKinney",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0035133",
+      "n": "Keisean Nixon",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "DET": {
+   "kick": "2026-10-25T20:25Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0033106",
+      "n": "Jared Goff",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0036880",
+      "n": "Penei Sewell",
+      "pos": "T"
+     },
+     {
+      "id": "00-0039408",
+      "n": "Christian Mahogany",
+      "pos": "G"
+     },
+     {
+      "id": "00-0038936",
+      "n": "Juice Scruggs",
+      "pos": "G"
+     },
+     {
+      "id": "00-0040728",
+      "n": "Tate Ratledge",
+      "pos": "G"
+     },
+     {
+      "id": "00-0041439",
+      "n": "Blake Miller",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0039139",
+      "n": "Jahmyr Gibbs",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0039364",
+      "n": "Sione Vaki",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0036963",
+      "n": "Amon-Ra St. Brown",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0039065",
+      "n": "Sam LaPorta",
+      "pos": "TE"
+     },
+     {
+      "id": "00-0037240",
+      "n": "Jameson Williams",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0037236",
+      "n": "Aidan Hutchinson",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0036624",
+      "n": "Alim McNeill",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0036964",
+      "n": "Derrick Barnes",
+      "pos": "OLB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0034384",
+      "n": "D.J. Reed",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0033294",
+      "n": "Chuck Clark",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0038125",
+      "n": "Roger McCreary",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "LAR": {
+   "kick": "2026-10-25T20:25Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0026498",
+      "n": "Matthew Stafford",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0030097",
+      "n": "David Quessenberry",
+      "pos": "T"
+     },
+     {
+      "id": "00-0039058",
+      "n": "Steve Avila",
+      "pos": "G"
+     },
+     {
+      "id": "00-0034114",
+      "n": "Coleman Shelton",
+      "pos": "C"
+     },
+     {
+      "id": "00-0036339",
+      "n": "Kevin Dotson",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039077",
+      "n": "Warren McClendon Jr.",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0037840",
+      "n": "Kyren Williams",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0039738",
+      "n": "Blake Corum",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0039075",
+      "n": "Puka Nacua",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0040590",
+      "n": "Konata Mumpfield",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0036244",
+      "n": "Colby Parkinson",
+      "pos": "TE"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0039137",
+      "n": "Byron Young",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0039774",
+      "n": "Omar Speights",
+      "pos": "ILB"
+     },
+     {
+      "id": "00-0039734",
+      "n": "Braden Fiske",
+      "pos": "DT"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0037841",
+      "n": "Quentin Lake",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0036349",
+      "n": "Kam Curl",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0037195",
+      "n": "Jaylen Watson",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "LV": {
+   "kick": "2026-10-25T20:25Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0029604",
+      "n": "Kirk Cousins",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0034759",
+      "n": "Kolton Miller",
+      "pos": "T"
+     },
+     {
+      "id": "00-0037829",
+      "n": "Spencer Burford",
+      "pos": "G"
+     },
+     {
+      "id": "00-0037825",
+      "n": "Tyler Linderbaum",
+      "pos": "C"
+     },
+     {
+      "id": "00-0040150",
+      "n": "Caleb Rogers",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039349",
+      "n": "DJ Glaze",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0040122",
+      "n": "Ashton Jeanty",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0040878",
+      "n": "Mike Washington Jr.",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0039338",
+      "n": "Brock Bowers",
+      "pos": "TE"
+     },
+     {
+      "id": "00-0038563",
+      "n": "Tre Tucker",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0035891",
+      "n": "Cody White",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0034973",
+      "n": "Maxx Crosby",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0036479",
+      "n": "Kwity Paye",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0037615",
+      "n": "Nakobe Dean",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0036293",
+      "n": "Jeremy Chinn",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0036901",
+      "n": "Eric Stokes",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0034376",
+      "n": "Taron Johnson",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "KC": {
+   "kick": "2026-10-26T00:20Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0033873",
+      "n": "Patrick Mahomes",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0041019",
+      "n": "Kahlil Benson",
+      "pos": "T"
+     },
+     {
+      "id": "00-0039844",
+      "n": "Kingsley Suamataia",
+      "pos": "G"
+     },
+     {
+      "id": "00-0036623",
+      "n": "Creed Humphrey",
+      "pos": "C"
+     },
+     {
+      "id": "00-0036660",
+      "n": "Trey Smith",
+      "pos": "G"
+     },
+     {
+      "id": "00-0036557",
+      "n": "Jaylon Moore",
+      "pos": "T",
+      "q": "questionable: concussion"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0038134",
+      "n": "Kenneth Walker III",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0041013",
+      "n": "Emmett Johnson",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0039894",
+      "n": "Xavier Worthy",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0030506",
+      "n": "Travis Kelce",
+      "pos": "TE"
+     },
+     {
+      "id": "00-0040646",
+      "n": "Jalen Royals",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0037192",
+      "n": "George Karlaftis",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0039006",
+      "n": "Felix Anudike-Uzomah",
+      "pos": "DE"
+     },
+     {
+      "id": "00-0035262",
+      "n": "Drue Tranquill",
+      "pos": "OLB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0040670",
+      "n": "Nohl Williams",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0036380",
+      "n": "Alohi Gilman",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0036374",
+      "n": "L'Jarius Sneed",
+      "pos": "CB"
+     }
+    ]
+   }
+  },
+  "SEA": {
+   "kick": "2026-10-26T00:20Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0034869",
+      "n": "Sam Darnold",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0037821",
+      "n": "Charles Cross",
+      "pos": "T"
+     },
+     {
+      "id": "00-0040639",
+      "n": "Grey Zabel",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039926",
+      "n": "Jalen Sundell",
+      "pos": "C"
+     },
+     {
+      "id": "00-0039839",
+      "n": "Christian Haynes",
+      "pos": "G"
+     },
+     {
+      "id": "00-0037812",
+      "n": "Abraham Lucas",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0038797",
+      "n": "Emanuel Wilson",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0039299",
+      "n": "George Holani",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0038543",
+      "n": "Jaxon Smith-Njigba",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0037545",
+      "n": "Rashid Shaheed",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0033908",
+      "n": "Cooper Kupp",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0031933",
+      "n": "Leonard Williams",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0039309",
+      "n": "Byron Murphy II",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0036994",
+      "n": "Ernest Jones",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0037137",
+      "n": "Josh Jobe",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0039169",
+      "n": "Devon Witherspoon",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0034974",
+      "n": "Julian Love",
+      "pos": "SS"
+     }
+    ]
+   }
+  },
+  "DAL": {
+   "kick": "2026-10-27T00:15Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0033077",
+      "n": "Dak Prescott",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0039341",
+      "n": "Tyler Guyton",
+      "pos": "T"
+     },
+     {
+      "id": "00-0037243",
+      "n": "Tyler Smith",
+      "pos": "G"
+     },
+     {
+      "id": "00-0039348",
+      "n": "Cooper Beebe",
+      "pos": "C"
+     },
+     {
+      "id": "00-0040007",
+      "n": "Tyler Booker",
+      "pos": "G"
+     },
+     {
+      "id": "00-0036036",
+      "n": "Terence Steele",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0036997",
+      "n": "Javonte Williams",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0037120",
+      "n": "Tyler Goodson",
+      "pos": "RB"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0036358",
+      "n": "CeeDee Lamb",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0037247",
+      "n": "George Pickens",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0039410",
+      "n": "Ryan Flournoy",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0035718",
+      "n": "Quinnen Williams",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0034967",
+      "n": "Rashan Gary",
+      "pos": "OLB"
+     },
+     {
+      "id": "00-0033120",
+      "n": "Kenny Clark",
+      "pos": "DT"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0037275",
+      "n": "DaRon Bland",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0040865",
+      "n": "Caleb Downs",
+      "pos": "FS"
+     },
+     {
+      "id": "00-0033877",
+      "n": "Malik Hooker",
+      "pos": "SS"
+     }
+    ]
+   }
+  },
+  "PHI": {
+   "kick": "2026-10-27T00:15Z",
+   "built_at": "2026-10-20T11:56:02.569Z",
+   "units": {
+    "qb": [
+     {
+      "id": "00-0038400",
+      "n": "Tanner McKee",
+      "pos": "QB"
+     }
+    ],
+    "ol": [
+     {
+      "id": "00-0034429",
+      "n": "Jordan Mailata",
+      "pos": "T"
+     },
+     {
+      "id": "00-0040631",
+      "n": "Willie Lampkin",
+      "pos": "C"
+     },
+     {
+      "id": "00-0040422",
+      "n": "Jake Majors",
+      "pos": "C"
+     },
+     {
+      "id": "00-0039001",
+      "n": "Tyler Steen",
+      "pos": "G"
+     },
+     {
+      "id": "00-0041554",
+      "n": "Markel Bell",
+      "pos": "T"
+     }
+    ],
+    "rb": [
+     {
+      "id": "00-0037258",
+      "n": "Dameon Pierce",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0039325",
+      "n": "Carson Steele",
+      "pos": "RB",
+      "q": "questionable: shoulder"
+     }
+    ],
+    "rec": [
+     {
+      "id": "00-0036912",
+      "n": "DeVonta Smith",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0038393",
+      "n": "Dontayvion Wicks",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0040867",
+      "n": "Makai Lemon",
+      "pos": "WR"
+     }
+    ],
+    "front": [
+     {
+      "id": "00-0038386",
+      "n": "Jalen Carter",
+      "pos": "DT"
+     },
+     {
+      "id": "00-0039013",
+      "n": "Nolan Smith",
+      "pos": "OLB",
+      "q": "questionable: concussion"
+     },
+     {
+      "id": "00-0036418",
+      "n": "Zack Baun",
+      "pos": "ILB"
+     }
+    ],
+    "db": [
+     {
+      "id": "00-0040749",
+      "n": "Andrew Mukuba",
+      "pos": "SS"
+     },
+     {
+      "id": "00-0039841",
+      "n": "Cooper DeJean",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0039888",
+      "n": "Quinyon Mitchell",
+      "pos": "CB"
+     }
+    ]
+   }
+  }
+ }
+}
