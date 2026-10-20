@@ -269,9 +269,28 @@ for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 
 for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-sp-add="${g.id}:${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${o.fid||t.id}\"", 'function spTier(', 'function pbStake(', 'id="pbStake"', 'data-pb-pay="${t.dec}"'])
   if (!part3.includes(need)) throw new Error("the builder's save or Suggested Parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
 CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
+/* Pull from DraftKings (the owner's call of 20 October 2026), on the admin's device alone: the card places a book's
+   name on a player by the job's own rule, props/build/names.py's, whose nicknames are props/build/nicknames.json, set
+   into the card's NICKNAMES slot here, so the two read one table; its club names (DK_TEAMS) are held equal to The Odds
+   API's as props/data/oddsfetch.py's TEAMS has them; and it reaches The Odds API through window.HUB_ADMIN (admin.js)
+   alone, which holds the key: the card never names the API's host, its key parameter or this browser's storage, and
+   asks nothing of anything itself (no fetch of its own) */
+{ const NICK = JSON.parse(rd('props', 'build', 'nicknames.json'));
+  if (!NICK || typeof NICK !== 'object' || !Object.keys(NICK).some(k => !k.startsWith('_') && Array.isArray(NICK[k]))) throw new Error('props/build/nicknames.json is not the table of nicknames the name rule reads');
+  CARD_JS = sub1(CARD_JS, '/*NICKNAMES*/{}', JSON.stringify(NICK).replace(/</g, '\\u003c'), "the card's NICKNAMES slot");
+  const pairs = s => [...s.matchAll(/'([^']+)'\s*:\s*'([^']+)'/g)].map(m => m[1] + '=' + m[2]).sort().join('|');
+  const py = rd('props', 'data', 'oddsfetch.py').match(/\nTEAMS=\{([^}]*)\}/), js = CARD_JS.match(/const DK_TEAMS=\{([^}]*)\};/);
+  if (!py || !js) throw new Error("the parlay card's DK_TEAMS or props/data/oddsfetch.py's TEAMS is not where nflbets/build expects it");
+  if (pairs(py[1]) !== pairs(js[1]) || pairs(js[1]).split('|').length !== 32)
+    throw new Error("the parlay card's DK_TEAMS is not props/data/oddsfetch.py's TEAMS, club for club: The Odds API's names would match the wrong games");
+  for (const need of ['window.HUB_ADMIN', 'window.HUB_ADMIN.odds(', 'window.dkPulledFor=', 'function dkNameRule(', '/* ---- the name rule (props/build/names.py', '/* ---- end of the name rule ---- */', 'function pullFor(', 'function pullPlan(', "data-pc-pull", 'PULL_MOVED_MS=15*60e3'])
+    if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need + ': Pull from DraftKings is read through window.HUB_ADMIN, placed by the job\'s name rule and handed to the props parts by window.dkPulledFor');
+  for (const gone of ['apiKey', 'api.the-odds-api.com', 'localStorage', 'sessionStorage', 'indexedDB', 'XMLHttpRequest', 'sendBeacon', 'fetch(', 'nflhub_admin_v1'])
+    if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html has ' + gone + ': the card reaches The Odds API through window.HUB_ADMIN alone, never with a key or a request of its own, and keeps nothing in this browser'); }
 for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "window.spTier(", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'", 'PAY.dk', 'function dkPlan(', 'function shareLink('])
   if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
-/* Finish on every device: nothing in the card asks whose device it is */
+/* Finish on every device: the card asks whose device it is only for Pull from DraftKings (window.HUB_ADMIN, above),
+   never for Finish, and none of the retired owner layers' names is in it */
 for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
   if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html still has ' + gone + ': the builder finishes a parlay on every device');
 for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function spTier(', 'function gameStarted', 'function marketLine'])
