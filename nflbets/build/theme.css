@@ -125,6 +125,18 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 /* the win-probability bars are in the two clubs' own colours (probCols in tab_pickems.html), as the NBA
    Hub's and the NHL Hub's are, split by a line of the page's own graphite */
 .pk-prob .pk-a{border-right:2px solid var(--bg)}
+/* the Props list's rows, the board's row in the prop model's own names since app v122 (the owner's call of 20
+   October 2026, "change the matchup to look like" the board's): the same card, stripe, bar, band and score */
+.game,.game.locked{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);box-shadow:none;position:relative;overflow:hidden}
+.game::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent)}
+.game.final::before{background:linear-gradient(180deg,var(--muted),transparent)}
+.game:hover{border-color:var(--line-2);box-shadow:var(--sh-md)}
+.sl-prob{background:var(--panel-3);box-shadow:none}
+.sl-prob .sl-a{border-right:2px solid var(--bg)}
+.sl-tier{background:var(--panel-3);color:var(--ink-2)}
+.sl-tier.sl-high{background:var(--pick-soft);color:var(--pick)} .sl-tier.sl-med{background:var(--gold-soft);color:var(--gold)} .sl-tier.sl-coin{background:var(--miss-soft);color:var(--miss)}
+.sl-sc{font-weight:900}
+.sl-tw .sl-res{background:var(--panel)}
 .pe-pos button[aria-selected="true"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}
 /* the ELO Ratings tab and the Mismatches */
 .pe-mm-n{background:var(--ink);color:#1E2230}
@@ -245,7 +257,7 @@ html[data-theme="light"] .pill.warn,html[data-theme="light"] .log .warn,html[dat
 html[data-theme="light"] .when .cl,html[data-theme="light"] .tot .lv,html[data-theme="light"] .totpts .lv,html[data-theme="light"] .conf.med,
 html[data-theme="light"] .pays .box.tier.med b,html[data-theme="light"] .pays .box.tier.med span,html[data-theme="light"] .pe-q,html[data-theme="light"] .xb-status.bad,
 html[data-theme="light"] .inj.inj-dnp,html[data-theme="light"] .plrbtn .who .inj.inj-dnp,html[data-theme="light"] .finchip.live,
-html[data-theme="light"] .bigp .hero small,html[data-theme="light"] .faroff,html[data-theme="light"] .pk-tier.pk-med,html[data-theme="light"] .pk-note,
+html[data-theme="light"] .bigp .hero small,html[data-theme="light"] .faroff,html[data-theme="light"] .pk-tier.pk-med,html[data-theme="light"] .sl-tier.sl-med,html[data-theme="light"] .pk-note,
 html[data-theme="light"] #lpCard .note,html[data-theme="light"] #lpCard .gm.tie,html[data-theme="light"] #lpCard .gm.tie em,html[data-theme="light"] #lpCard .stamp.bad,
 html[data-theme="light"] #lpCard .res.tie,html[data-theme="light"] .xp-own,html[data-theme="light"] .xp-mark,html[data-theme="light"] .tier.med,
 html[data-theme="light"] .lead .va.near,html[data-theme="light"] .lv.warnc,html[data-theme="light"] .tile .tv.near,html[data-theme="light"] .tile .td.near,

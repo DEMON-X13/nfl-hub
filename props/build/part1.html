@@ -84,12 +84,14 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .empty{padding:44px 20px;text-align:center;color:var(--muted);background:var(--panel);border:1.5px dashed var(--line-2);border-radius:var(--r-lg)}
 .delta.up{color:var(--pick)} .delta.down{color:var(--miss)}
 .ttag{display:inline-block;text-align:center;font-family:var(--display);font-size:12px;font-weight:700;line-height:1;padding:5px 8px;border-radius:7px;border:1.5px solid;letter-spacing:.03em;flex:none;box-shadow:0 1px 2px rgba(15,27,45,.18),inset 0 1px 0 rgba(255,255,255,.18);text-shadow:0 1px 0 rgba(0,0,0,.12)}
-/* game rows */
-.gamehead,.game{display:grid;grid-template-columns:120px 175px 1fr 138px 78px 78px 26px;gap:14px;align-items:center}
+/* game rows: the Matchups board's row (app v122), date, matchup, win probability, confidence, score
+   prediction and final score, at the board's sizes, so the two tabs read as one page */
+.gamehead,.game{display:grid;grid-template-columns:120px 175px minmax(274px,358px) 138px 136px 136px;gap:14px;align-items:center;justify-content:space-between}
 .gamehead{padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .gamehead .c{text-align:center}
 .game{background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit;box-shadow:var(--sh-sm);transition:box-shadow .2s var(--ease),transform .2s var(--ease)}
 .game:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
+.game:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .game>div{min-width:0}
 .game .when{color:var(--ink-2);font-size:12px;line-height:1.35}
 .game .when b{color:var(--ink);font-weight:600;display:block;font-size:13px;margin-bottom:5px}
@@ -101,7 +103,68 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .tot{text-align:center;line-height:1.2}
 .tot b{display:block;color:var(--ink);font-weight:700;font-family:var(--display);font-size:20px;letter-spacing:-.3px;margin-bottom:3px;font-variant-numeric:tabular-nums}
 .tot small{display:block;font-size:11px;color:var(--ink-2);line-height:1.3}
-.chev{text-align:right;color:var(--muted);font-size:20px}
+/* (app v122) the board's cells in this page's own names: the pick's tag raised, a tick or cross on the winner's,
+   the split bar in the two clubs' colours, the band, the prediction and the final score */
+.game .matchup .ttag{padding:4px 5px;min-width:40px;vertical-align:-1px}
+.ttag.sl-win{font-weight:800;box-shadow:0 2px 6px -1px rgba(15,27,45,.35),inset 0 1px 0 rgba(255,255,255,.18)}
+.matchup .at.neutral{color:var(--ink-2);font-weight:600}
+.sl-tw{position:relative;display:inline-flex;flex:none}
+.sl-res{position:absolute;top:-8px;width:16px;height:16px;border-radius:50%;background:var(--panel);border:1.5px solid currentColor;font-size:11px;font-weight:800;line-height:13px;text-align:center;font-family:var(--body);box-shadow:0 1px 2px rgba(15,27,45,.2)}
+.sl-away .sl-res{left:-9px} .sl-home .sl-res{right:-9px}
+.sl-res.sl-ok{color:var(--pick)} .sl-res.sl-bad{color:var(--miss)}
+.sl-probrow{display:flex;align-items:center;gap:10px;padding:0 14px;justify-content:center;min-width:0}
+.sl-tlab{font-family:var(--display);font-size:15px;font-weight:700;color:var(--muted);letter-spacing:.02em;flex:none;min-width:40px;text-align:center}
+.sl-tlab.sl-win{color:var(--ink);font-weight:800}
+.sl-probrow .sl-prob{flex:1;min-width:0}
+.sl-prob{position:relative;height:28px;border-radius:999px;overflow:hidden;background:#E6EBF1;display:flex;box-shadow:inset 0 1px 3px rgba(15,27,45,.12)}
+.sl-prob .sl-a,.sl-prob .sl-h{display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden}
+.sl-prob .sl-a{justify-content:flex-start;border-right:1px solid rgba(15,27,45,.18)} .sl-prob .sl-h{justify-content:flex-end;margin-left:auto}
+.sl-prob .sl-w{font-weight:800}
+.sl-conf{text-align:center}
+.sl-tier{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 10px 4px 8px;border-radius:999px;background:#E9EEF4;color:var(--ink-2);white-space:nowrap}
+.sl-tier::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
+.sl-tier.sl-high{background:var(--pick-soft);color:var(--pick)} .sl-tier.sl-med{background:var(--gold-soft);color:#8A5E05} .sl-tier.sl-coin{background:#FCECEA;color:#A8453A}
+.sl-pred,.sl-result{text-align:center;line-height:1.2;white-space:nowrap}
+.sl-pred .sl-psc{display:block;font-family:var(--display);font-size:17px;font-weight:700;color:var(--ink-2);letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
+.sl-pred .sl-plab{display:none}
+.sl-pred .sl-pby{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;color:var(--muted);line-height:1.3}
+.ttag.sl-mini{font-size:10px;padding:3px 5px;min-width:32px;border-radius:5px;border-width:1px}
+.sl-sub{display:block;font-size:11px;color:var(--ink-2);line-height:1.3;white-space:normal}
+.sl-sc{display:block;font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.sl-sc.sl-pend{color:var(--muted)}
+.sl-result .sl-mwin{display:block;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
+.sl-mwin.sl-ok{color:var(--pick)} .sl-mwin.sl-bad{color:var(--miss)} .sl-mwin.sl-tie{color:var(--ink-2)}
+/* between the phone card and a wide screen the board's narrower columns, the bar taking what is left and its
+   team labels dropped (the matchup names the teams), so the list never scrolls sideways */
+@media(min-width:901px) and (max-width:1160px){
+  .gamehead,.game{grid-template-columns:96px 146px minmax(150px,1fr) 104px 112px 136px;gap:10px;justify-content:normal}
+  .gamehead{padding:0 12px 8px}
+  .game{padding:13px 12px}
+  .sl-probrow{padding:0 4px}
+  .sl-probrow .sl-tlab{display:none}
+}
+/* (app v122) a game's head on its page: the list's row as it was, each figure under its heading, the six side by
+   side on a wide window and in three columns at 980px and under */
+.ghead .gh-grid{display:grid;grid-template-columns:minmax(104px,auto) minmax(130px,auto) minmax(250px,1fr) 120px 76px 108px;gap:12px 16px;align-items:start}
+.ghead .gh-grid>div{min-width:0}
+.gh-lab{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;line-height:1.25}
+.ghead .tot .gh-lab,.ghead .totpts .gh-lab,.ghead .winner .gh-lab,.ghead .gh-lead .gh-lab{text-align:center}
+.ghead h2{display:flex;align-items:center;gap:10px;margin:0;flex-wrap:wrap}
+.ghead h2 .at{color:var(--ink-2);font-family:var(--body);font-size:15px;font-weight:400}
+.ghead .when{color:var(--ink-2);font-size:12px;line-height:1.35}
+.ghead .when b{color:var(--ink);font-weight:600;display:block;font-size:13px;margin-bottom:5px}
+.ghead .gh-lead{display:flex;flex-direction:column;align-items:center}
+.ghead .winner .ttag{font-size:13px}
+@media(max-width:980px){
+  .ghead .gh-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .ghead .gh-when{grid-column:1;grid-row:1}
+  .ghead .gh-match{grid-column:2/4;grid-row:1}
+  .ghead .gh-lead{grid-column:1/-1;grid-row:2;align-items:stretch;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0}
+  .ghead .gh-lead .gh-lab{text-align:left}
+  .ghead .lead div{grid-template-columns:34px minmax(0,1fr) auto}
+  .ghead .tot{grid-column:1;grid-row:3} .ghead .totpts{grid-column:2;grid-row:3} .ghead .winner{grid-column:3;grid-row:3}
+  .ghead .tot b,.ghead .totpts b{font-size:18px}
+}
 /* prop tables */
 .plr{font-weight:600}
 .plr small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
@@ -120,20 +183,18 @@ body.modal-open{overflow:hidden}
 @media(max-width:760px){ .modal{padding:0} .modal-panel{border-radius:0;border:0;min-height:100%;padding:12px 12px 24px} }
 @media(max-width:900px){
   .gamehead{display:none}
-  /* one card per game, laid out explicitly so nothing lands in the wrong cell */
-  .game{grid-template-columns:1fr 1fr auto;gap:6px 10px;padding:13px 14px}
+  /* one card per game, laid out as the Matchups board lays its out, explicitly so nothing lands in the wrong cell */
+  .game{grid-template-columns:1fr 1fr auto;gap:6px 10px;padding:13px 14px;justify-content:normal}
   .game .when{grid-column:1/3;grid-row:1;display:flex;gap:8px;align-items:baseline}
-  .game .when b{display:inline;font-size:13px}
-  .game .winner{grid-column:3;grid-row:1/3;align-self:center;padding-left:6px}
-  .matchup{grid-column:1/3;grid-row:2}
-  .lead{grid-column:1/-1;grid-row:3;justify-self:stretch;margin-top:4px;
-    border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
-  .lead div{grid-template-columns:34px 1fr auto}
-  .game .tot{grid-column:1;grid-row:4;text-align:left}
-  .game .tot b{font-size:18px}
-  .game .totpts{grid-column:2;grid-row:4;text-align:left}
-  .game .totpts b{font-size:18px}
-  .game .chev{display:none}
+  .game .when b{display:inline;font-size:13px;margin:0}
+  .game .sl-result{grid-column:3;grid-row:1/3;align-self:center;padding-left:6px}
+  .game .matchup{grid-column:1/3;grid-row:2}
+  .game .sl-probrow{grid-column:1/-1;grid-row:3;margin-top:4px;padding:0}
+  .game .sl-conf{grid-column:1/3;grid-row:4;text-align:left}
+  .game .sl-pred{grid-column:3;grid-row:4;text-align:right;padding-left:6px}
+  .sl-pred .sl-psc{display:inline;font-size:15px;margin:0}
+  .sl-pred .sl-plab{display:inline;font-size:11px;color:var(--muted);margin-right:6px}
+  .sl-pred .sl-pby,.sl-pred .sl-sub{display:none}
   main{padding:14px} header{padding:14px 14px 0}
   table{font-size:13px} th,td{padding:7px 6px}
   .brand h1{font-size:27px}
@@ -559,8 +620,8 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
     <p id="lineNote" class="muted" style="margin:-6px 0 12px;font-size:12px" hidden></p>
     <div id="slateOdds" hidden></div>
     <div class="gamehead">
-      <div>Kickoff</div><div>Matchup</div><div class="c">Biggest projections</div>
-      <div class="c">Expected score</div><div class="c">Total pt</div><div class="c">Vegas pick</div><div></div>
+      <div>Date</div><div>Matchup</div><div class="c">Win probability</div>
+      <div class="c">Confidence</div><div class="c">Score prediction</div><div class="c">Final score</div>
     </div>
     <div id="gamesList"></div>
   </div>

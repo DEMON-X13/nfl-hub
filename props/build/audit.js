@@ -187,30 +187,91 @@ setTimeout(async()=>{
   }
   console.log(`A. game context: ${nGames} games, ${nMkt/2} priced by market, ${nModel/2} by our model`);
 
-  /* ---- A2. the slate's rows: the margin beside the pick is the difference of the two scores the
-     row shows, and the side picked is the one with the bigger number on the row; scores that show
-     a tie read "even", with no pick. Every rendered row of every week (a week not open yet renders
-     none; the current week always has some), then two lines set on the rounding itself ---- */
-  { const ws=d.getElementById('weekSel'), keep=ws.value; let rows=0, evens=0;
+  /* ---- A2. the games list's rows and each game's head. Since app v122 a row is the Matchups board's: its win
+     probability the audit's own reading of the game's lines (the two moneylines with the book's margin out,
+     else the spread about a 13.5-point margin, else, with no line posted, the model's margin about the same;
+     a pick'em spread with no moneylines, no call), each side's share of the bar, the board's band (HIGH from
+     75%, MED from 60%, LOW from 55%, else 50/50) with the favourite's chance, the favourite's tag raised and
+     no other; its prediction the scores gameCtx gives, each rounded once, the margin beside it the difference
+     of the two shown and its tag the side with the bigger number, "even" with no tag where they are level;
+     a game with a score, who won it and whether the pick hit; one without, 0 : 0 to come, LIVE once kicked off
+     and Final four hours on (no scoreboard read here). The head of a game's page carries what the row showed
+     until then: the same scores, the total, the pick with its margin (or even) and gameHeadline's three
+     biggest projections, under the list's own headings. Every rendered row of every week (a week not open
+     yet renders none; the current week always has some), the head of every game of the current week, then
+     two lines set on the rounding itself, row and head ---- */
+  { const ws=d.getElementById('weekSel'), keep=ws.value; let rows=0, evens=0, calls=0, heads=0;
     const show=wk=>{ ws.value=String(wk); ws.dispatchEvent(new w.Event('change')); };
-    const read=b=>{ const sc=((b.querySelector('.tot b')||{}).textContent||'').trim(), m=sc.match(/^(\d+) \u2013 (\d+)$/), win=b.querySelector('.winner');
-      const by=[...(win?win.querySelectorAll('small'):[])].map(x=>x.textContent.trim().match(/^by (\d+)$/)).find(Boolean);
-      return {sc,ok:!!(m&&win),A:m?+m[1]:NaN,H:m?+m[2]:NaN,even:!!(win&&win.querySelector('.none')),by:by?+by[1]:null,pick:((win&&win.querySelector('.ttag'))||{}).textContent||null}; };
-    const rowOk=(g,r)=>r.ok&&(r.even?(r.A===r.H&&r.by==null&&!r.pick):(r.A!==r.H&&r.by===Math.abs(r.A-r.H)&&r.pick===(r.A>r.H?g.a:g.h)));
+    const ncdf=z=>{ const t=1/(1+0.2316419*Math.abs(z)), dd=0.3989423*Math.exp(-z*z/2), q=dd*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-q:q; };
+    const callAud=g=>{ const ml=x=>x!=null&&isFinite(x)&&+x!==0, imp=x=>x<0?-x/(-x+100):100/(x+100); let pH=null;
+      if(ml(g.mla)&&ml(g.mlh)) pH=imp(+g.mlh)/(imp(+g.mlh)+imp(+g.mla));
+      else if(g.sp!=null&&isFinite(g.sp)){ if(+g.sp!==0) pH=ncdf(+g.sp/13.5); }
+      else pH=ncdf(F('modelMargin')(g)/13.5);
+      if(pH==null||!isFinite(pH)) return null;
+      const conf=Math.max(pH,1-pH), r=Math.round(conf*100)/100;
+      return {pa:Math.round((1-pH)*100),pick:pH>=0.5?g.h:g.a,band:`${r>=0.75?'HIGH':r>=0.60?'MED':r>=0.55?'LOW':'50/50'} ${Math.round(conf*100)}%`}; };
+    const scoresAud=g=>{ const ca=gameCtx(g,g.a), ch=gameCtx(g,g.h); return {A:+ca.implied.toFixed(0),H:+ch.implied.toFixed(0),T:(ca.implied+ch.implied).toFixed(0)}; };
+    const tx=n=>((n||{}).textContent||'').trim();
+    const readRow=b=>{ const sa=b.querySelector('.sl-prob .sl-a'), sh=b.querySelector('.sl-prob .sl-h'), pby=b.querySelector('.sl-pred .sl-pby');
+      const m=tx(b.querySelector('.sl-pred .sl-psc')).match(/^(\d+)–(\d+)$/), by=tx(pby).match(/by (\d+)$/);
+      return {wA:sa?parseFloat(sa.style.width):NaN,wH:sh?parseFloat(sh.style.width):NaN,tA:tx(sa),tH:tx(sh),band:tx(b.querySelector('.sl-conf .sl-tier')),
+        raised:[...b.querySelectorAll('.matchup .ttag.sl-win')].map(tx),A:m?+m[1]:NaN,H:m?+m[2]:NaN,sc:tx(b.querySelector('.sl-pred .sl-psc')),
+        even:tx(pby)==='even'&&!(pby&&pby.querySelector('.ttag')),by:by?+by[1]:null,lead:pby&&pby.querySelector('.ttag')?tx(pby.querySelector('.ttag')):null,res:tx(b.querySelector('.sl-result'))}; };
+    const resAud=(g,c)=>{ if(F('hasScore')(g)){ const win=g.as>g.hs?g.a:(g.hs>g.as?g.h:null), sc=`${g.as}–${g.hs}`;
+        return (win?`${win} won ${sc}`:`Tie ${sc}`)+(c&&win?(c.pick===win?'Pick hit':'Pick missed'):''); }
+      return F('gameFinal')(g)?/^Final/:(F('gameStarted')(g)?/^LIVE/:'0 : 0'); };
+    const rowBad=(g,r)=>{ const c=callAud(g), s=scoresAud(g), want=resAud(g,c), out=[];
+      if(c){ calls++; if(r.wA!==c.pa||r.wH!==100-c.pa) out.push(`its bar ${r.wA}/${r.wH}, not ${c.pa}/${100-c.pa}`);
+        if(r.tA!==(c.pa>=14?c.pa+'%':'')||r.tH!==(100-c.pa>=14?(100-c.pa)+'%':'')) out.push(`its bar reads "${r.tA}"/"${r.tH}"`);
+        if(r.band!==c.band) out.push(`its band "${r.band}", not "${c.band}"`);
+        if(r.raised.join()!==c.pick) out.push(`raised tag ${r.raised.join()||'none'}, not ${c.pick}`); }
+      else { if(r.wA!==50||r.band!=='no call yet'||r.raised.length) out.push(`no call, yet "${r.band}" with ${r.raised.join()||'no'} tag raised`); }
+      if(r.A!==s.A||r.H!==s.H) out.push(`its prediction "${r.sc}", not ${s.A}–${s.H}`);
+      else if(s.A===s.H?!(r.even&&r.by==null):(r.even||r.by!==Math.abs(s.A-s.H)||r.lead!==(s.A>s.H?g.a:g.h))) out.push(`its prediction "${r.sc}" beside ${r.even?'"even"':`"${r.lead} by ${r.by}"`}`);
+      if(want instanceof RegExp?!want.test(r.res):r.res!==want) out.push(`its final score "${r.res}", not ${want}`);
+      return out; };
     for(const o of [...ws.options]){ show(o.value);
       for(const b of d.querySelectorAll('#gamesList .game[data-game]')){ rows++;
-        const g=S.sched.find(x=>x.id===b.dataset.game), r=read(b); if(r.even) evens++;
-        chk(!!g&&rowOk(g,r),`slate row ${b.dataset.game}: "${r.sc}" beside ${r.even?'"even"':`"${r.pick} by ${r.by}"`}`); } }
+        const g=S.sched.find(x=>x.id===b.dataset.game), r=g?readRow(b):null; if(r&&r.even) evens++;
+        const bad=g?rowBad(g,r):['no such game'];
+        chk(!bad.length,`slate row ${b.dataset.game}: ${bad.join('; ')}`); } }
     chk(rows>0,'the slate rendered no game rows in any week');
+    const rowCalls=calls;
+    /* the head of a game's page, read as the row was read before app v122 */
+    const HEADS=['Kickoff','Matchup','Biggest projections','Expected score','Total pt','Vegas pick'];
+    const readHead=()=>{ const h=d.querySelector('#gameView .ghead'); if(!h) return null;
+      const sc=tx(h.querySelector('.tot b')), m=sc.match(/^(\d+) – (\d+)$/), win=h.querySelector('.winner');
+      const by=[...(win?win.querySelectorAll('small'):[])].map(x=>tx(x).match(/^by (\d+)$/)).find(Boolean);
+      return {labs:[...h.querySelectorAll('.gh-lab')].map(tx),sc,A:m?+m[1]:NaN,H:m?+m[2]:NaN,T:tx(h.querySelector('.totpts b')),even:!!(win&&win.querySelector('.none')),
+        by:by?+by[1]:null,pick:win&&win.querySelector('.ttag')?tx(win.querySelector('.ttag')):null,
+        lead:[...h.querySelectorAll('.lead > div')].map(x=>`${tx(x.querySelector('.cat'))}|${tx(x.querySelector('.nm'))}|${(tx(x.querySelector('.v')).match(/^(\d+)yds/)||[])[1]}`).join(' ')}; };
+    const headBad=g=>{ const H=readHead(), s=scoresAud(g), out=[]; if(!H) return ['no head card'];
+      if(H.labs.join('|')!==HEADS.join('|')) out.push(`its headings ${H.labs.join(', ')}`);
+      if(H.A!==s.A||H.H!==s.H) out.push(`its expected score "${H.sc}", not ${s.A} – ${s.H}`);
+      else if(s.A===s.H?!(H.even&&H.by==null&&!H.pick):(H.even||H.by!==Math.abs(s.A-s.H)||H.pick!==(s.A>s.H?g.a:g.h))) out.push(`"${H.sc}" beside ${H.even?'"even"':`"${H.pick} by ${H.by}"`}`);
+      if(H.T!==s.T) out.push(`its total ${H.T}, not ${s.T}`);
+      const want=F('gameHeadline')(g).map(x=>`${x.k}|${F('shortName')(x.v.pl.n)}|${x.v.mu.toFixed(0)}`).join(' ');
+      if(H.lead!==want) out.push(`its biggest projections "${H.lead}", not "${want}"`);
+      return out; };
+    { const cw=F('currentWeek')(), keepUi=JSON.stringify({game:S.ui.game,open:S.ui.open});
+      try{ show(cw);
+        for(const g of F('gamesIn')(cw)){ if(!F('weekOpen')(+g.w)) continue; S.ui.game=g.id; S.ui.open={}; F('renderGame')(); heads++;
+          const bad=headBad(g); chk(!bad.length,`${g.id}'s page head: ${bad.join('; ')}`); } }
+      finally { const ku=JSON.parse(keepUi); S.ui.game=ku.game; S.ui.open=ku.open||{}; F('closeGameModal')(); } }
+    chk(heads>0,'no game of the current week drew its page head');
     /* 22.4 - 19.6 shows "22 - 20", whose margin is 2 though the unrounded gap rounds to 3; 21.3 -
-       20.9 shows "21 - 21", which is even though one side leads */
+       20.9 shows "21 - 21", which is even though one side leads: on the row and on the head */
     const g=S.sched.find(x=>F('weekOpen')(+x.w)), was={sp:g.sp,tot:g.tot};
-    for(const [tot,sp,want] of [[42,-2.8,'22 \u2013 20|by 2'],[42.2,-0.4,'21 \u2013 21|even']]){
-      g.tot=tot; g.sp=sp; show(g.w);
-      const b=d.querySelector(`#gamesList [data-game="${g.id}"]`), r=b?read(b):{sc:'(no row)',ok:false};
-      chk(!!b&&rowOk(g,r)&&`${r.sc}|${r.even?'even':'by '+r.by}`===want,`slate row on the rounding: lines ${tot}/${sp} show "${r.sc}" beside ${r.even?'"even"':`"${r.pick} by ${r.by}"`}, not ${want.replace('|',' beside ')}`); }
-    g.sp=was.sp; g.tot=was.tot; show(keep);
-    console.log(`A2. slate rows: ${rows} rows over ${ws.options.length} weeks (${evens} even), each margin the difference of the scores shown`); }
+    try{ for(const [tot,sp,want] of [[42,-2.8,'22|20|by 2'],[42.2,-0.4,'21|21|even']]){
+        g.tot=tot; g.sp=sp; show(g.w);
+        const b=d.querySelector(`#gamesList [data-game="${g.id}"]`), r=b?readRow(b):null;
+        const got=r?`${r.A}|${r.H}|${r.even?'even':'by '+r.by}`:'(no row)';
+        chk(!!r&&got===want&&!rowBad(g,r).length,`slate row on the rounding: lines ${tot}/${sp} show ${got}, not ${want}`);
+        S.ui.game=g.id; S.ui.open={}; F('renderGame')(); const H=readHead(), gotH=H?`${H.A}|${H.H}|${H.even?'even':'by '+H.by}`:'(no head)';
+        chk(!!H&&gotH===want&&!headBad(g).length,`page head on the rounding: lines ${tot}/${sp} show ${gotH}, not ${want}`);
+        S.ui.game=null; F('closeGameModal')(); } }
+    finally { g.sp=was.sp; g.tot=was.tot; S.ui.game=null; F('closeGameModal')(); show(keep); }
+    console.log(`A2. slate rows: ${rows} rows over ${ws.options.length} weeks (${rowCalls} with a call, ${evens} even), each bar, band, pick, prediction and result the audit's own; ${heads} page heads carrying the row's old figures`); }
 
   /* ---- B. rosters: no duplicates, right teams, depth caps ---- */
   let nPl=0, dupes=0, wrongTeam=0, capViol=0, gaps=0;
@@ -6307,11 +6368,12 @@ setTimeout(async()=>{
         const ws=d.getElementById('weekSel');
         if(ws.value!==String(wk)){ ws.value=String(wk); ws.dispatchEvent(new w.Event('change')); }
         const shownWk=wk;
-        const before=d.querySelector('[data-game="'+started[0].id+'"] .when').textContent;
+        /* (app v122) the row's final-score cell, the Matchups board's, carries the live score and clock */
+        const before=d.querySelector('[data-game="'+started[0].id+'"] .sl-result').textContent;
         chk(/LIVE/.test(before),'a started game should read LIVE until the scoreboard is read: '+before);
         d.getElementById('slateNow').click();
         await new Promise(r=>setTimeout(r,120));
-        const after=d.querySelector('[data-game="'+started[0].id+'"] .when').textContent;
+        const after=d.querySelector('[data-game="'+started[0].id+'"] .sl-result').textContent;
         chk(/13.21/.test(after),'the score did not reach the card: '+after);
         chk(/Q2 4:01/.test(after),'the clock did not reach the card: '+after);
         chk(sbCalls===1,'the slate asked for the scoreboard '+sbCalls+' times, not once');
@@ -6325,11 +6387,10 @@ setTimeout(async()=>{
         { const done=S.sched.filter(g2=>+g2.w===+shownWk&&F('gameFinal')(g2));
           for(const g2 of done){
             const card=d.querySelector('[data-game="'+g2.id+'"]'); if(!card) continue;
-            chk(!/\bLIVE\b/.test(card.querySelector('.when').textContent),
-              'a finished game still reads LIVE: '+g2.id);
-            const lv=card.querySelector('.tot .lv');
-            chk(!lv||/^final /.test(lv.textContent),
-              'a finished game calls its score live: '+g2.id+' '+(lv&&lv.textContent)); } }
+            const res=card.querySelector('.sl-result').textContent;
+            chk(!/\bLIVE\b/.test(res),'a finished game still reads LIVE: '+g2.id);
+            chk(!/leading|Tied /.test(res)&&/ won |^Tie |^Final/.test(res.trim()),
+              'a finished game calls its score live: '+g2.id+' '+res); } }
       }
       /* a week is graded a game at a time: one game's stats must never speak for another */
       { const wks=Object.keys(S.actuals||{});
