@@ -84,11 +84,25 @@
  *   - each unit's Elo picks (app v118, the owner's call of 19 October 2026: "I would like it to have ELO picks for the
  *     slot of Sunday games"): window.eloUnit, which Suggested Parlays draws in each night game and in the Sunday slot,
  *     on the files for each game of the matchups' week with lines and for that week's Sunday games before 7 pm Eastern
- *     together (from the published payload's schedule), and on the check's own games (F1 and F2: a game alone and two
- *     as a slot): the candidates the rule's on those games' legs alone, every level the rule worked out in full by the
- *     builder's own sums (or held as the week's are, past a size), an empty level handed over saying why "in this game"
- *     or "in the Sunday slot", all of it the same with the Parlay Builder's ticks planted to nothing (eloPicks() too,
- *     over every game), and null until the ratings and the matchups are both in;
+ *     (from the published payload's schedule), and on the check's own games (F1, F2 and F7: a game alone and two or
+ *     three as a slot): the candidates the rule's on those games' legs alone, every level the rule worked out in full by
+ *     the builder's own sums (or held as the week's are, past a size), an empty level handed over saying why "in this
+ *     game", all of it the same with the Parlay Builder's ticks planted to nothing (eloPicks() too, over every game), and
+ *     null until the ratings and the matchups are both in; the Sunday slot one game a level since app v121 (the owner,
+ *     19 October 2026: "the legs need to be part of the same game parlay only, and anytime there's a mix it bombs the
+ *     hyperlink"): each of its games held alone, and each slot level one game's legs, the best of its games' own by the
+ *     check's own copy of the slot's rule (one that meets its floor before the likeliest, then the better return over its
+ *     floor, else the higher Elo chance, then the earlier game), an empty one saying so of "any one game of the Sunday
+ *     slot";
+ *   - the pairs DraftKings will not take on one slip (app v121, the owner, 19 October 2026: "If your parlay already has a
+ *     receiver anytime TD, a team total, or the game total, adding the QB's passing TD over often gets blocked"): the
+ *     props parts' rule (dkClash) loaded beside the tab, as the hub has it, and the same as the check's own copy
+ *     (clashOwn) on every pair of F7's legs and of game legs beside them; no Elo pick level, on the files, the check's
+ *     fixtures, a unit or the slot, holding a quarterback's passing TDs with a teammate's touchdown; every level worked out
+ *     in full over the parlays with no such pair (F1 to F7, the units, F6's slates); and a level whose candidates are
+ *     enough but none of whose parlays goes on one slip empty, saying "No 3 of the 3 players in this game go together on
+ *     DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown." (F7: a quarterback's passing
+ *     TDs, his receivers' touchdowns, the levels the page took before app v121 shown to hold such pairs);
  *   - the Mismatches bubbles' words (18 October 2026): what an edge ranks is the matchup formula's units
  *     by their players' Elo ("vs the LAC secondary and defensive line, 32nd by player Elo"), never "a
  *     pass defense ranked", which on the page is the ELO Ratings tab's Pass Defense table. Since October 2026 the whole page's smoke
@@ -147,9 +161,14 @@ function srcOf(src, head) {
   else { let depth = 0; for (let j = i; j < src.length; j++) { const c = src[j]; if ('{[('.includes(c)) depth++; else if ('}])'.includes(c)) depth--; else if (c === ';' && depth === 0) return src.slice(i, j + 1); } }
   throw new Error('could not read ' + head + ' from the props parts');
 }
+/* (app v121) with them the props parts' DraftKings pair rule (dkPassTd, dkClashWhy, dkClash: a quarterback's passing
+   TDs with a teammate's anytime touchdown, or his passing TDs over with the game's total), which the tab's search reads
+   as the page has it (epPrep's P.cl, where dkClash is a function), so the search the checks drive here applies it as the
+   hub does; every level is held below to the check's own copy of the rule (clashOwn), never this one */
 const SUMS_SRC = [[PART2, 'const clip='], [PART2, 'const TOTAL_RHO='], [PART2, 'function isGameLeg('], [PART2, 'function legRho('], [PART2, 'function invNorm('],
   [PART2, 'function cholesky('], [PART2, 'function mulberry('], [PART2, 'function parlayProb('], [PART2, 'function mlProb('], [PART3, 'function mlToDec('],
-  [PART3, 'const SGP_HOLD='], [PART3, 'function parlayDec('], [PART3, 'const PB_TIERS='], [PART3, 'const pbOrder=']].map(([s, h]) => srcOf(s, h)).join('\n');
+  [PART3, 'const SGP_HOLD='], [PART3, 'function parlayDec('], [PART3, 'const PB_TIERS='], [PART3, 'const pbOrder='],
+  [PART3, 'const dkPassTd='], [PART3, 'function dkClashWhy('], [PART3, 'const dkClash=']].map(([s, h]) => srcOf(s, h)).join('\n');
 const sumsOwn = corr => new Function('PAY', SUMS_SRC + '\nreturn {parlayProb,parlayDec,pbOrder,PB_TIERS,mlProb,mlToDec,legRho};')({ corr: corr || {} });
 /* the same into a tab's page, with its PAY's correlation table */
 const sumsInto = (w, corr) => { w.eval(`var PAY={corr:${JSON.stringify(corr || {})}};\n${SUMS_SRC.replace(/^const /gm, 'var ')}`); };   /* a top-level const in eval'd code is the eval's own: var makes it the page's */
@@ -157,12 +176,13 @@ const sumsInto = (w, corr) => { w.eval(`var PAY={corr:${JSON.stringify(corr || {
 const CORR = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8')).corr || {}; } catch (e) { return {}; } })();
 /* (app v118) and its schedule, whose dates and kickoffs (Eastern) say which of a week's games are its Sunday slot */
 const SCHED = (() => { try { const s = JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8')).sched; return Array.isArray(s) ? s : []; } catch (e) { return []; } })();
-/* a leg for every matchup line in a matchups file, over and under, at -110 and +150: what the checks price the files on */
+/* a leg for every matchup line in a matchups file, over and under, at -110 and +150: what the checks price the files on,
+   each on its player's club as the page's legs are (since app v121 the pair rule reads it: a teammate's touchdown) */
 const linesOf = MU => { const legs = [];
   for (const [pid, pl] of Object.entries((MU && MU.players) || {})) for (const st of Object.keys(pl.stats || {})) {
     const proj = (pl.stats[st] || [])[1], k = isFinite(proj) ? Math.floor(proj) + 0.5 : 0.5;
     for (const side of ['over', 'under']) for (const price of [-110, 150])
-      legs.push({ key: `${pl.game_id}|${pid}|${st}`, gid: pl.game_id, pid, stat: st, grp: pl.group, k, side, price, src: 'real', name: pid, label: st }); }
+      legs.push({ key: `${pl.game_id}|${pid}|${st}`, gid: pl.game_id, pid, stat: st, grp: pl.group, team: pl.team, opp: pl.opp, k, side, price, src: 'real', name: pid, label: st }); }
   return legs; };
 /* the page's pricedLegs stood in by a list of legs, answering for the games it is asked about as the props parts' does */
 const PRICED_BY = name => `function pricedLegs(games){ const G=games?new Set(games.map(g=>g.id)):null; return window.${name}.filter(l=>!G||G.has(l.gid)).map(l=>Object.assign({},l)); }`;
@@ -199,6 +219,30 @@ const EPC = { lo: -200, hi: 300, floor: 0.30, vig: 1.045, cap: 30, capP: 10, saf
    35%, so it is the best value over it like the others (the owner's call of 18 October 2026, "yeah safe picked on
    value too"; until then Safe was the likeliest pair) */
 const tiersOwn = LV => LV.map(t => t[3] ? t : [t[0], t[1], t[2], EPC.safe]);
+/* (app v121) the pairs DraftKings will not take on one slip, the check's own copy of the props parts' rule (dkClashWhy;
+   the owner, 19 October 2026: "If your parlay already has a receiver anytime TD, a team total, or the game total, adding
+   the QB's passing TD over often gets blocked", and "Some combos contradict each other, like QB under 1.5 passing TDs
+   alongside two of his receivers to score. The book rejects it outright."): two legs of one game, one a player's passing
+   touchdowns (over or under, a main line or a rung) and the other a teammate's anytime touchdown, 'td'; or his passing
+   touchdowns over with the game's total, 'total'; none for any other pair. No level may hold such a pair. The Elo picks'
+   candidates are player legs, so only 'td' meets them; 'total' is here so the copy is the whole rule */
+const GAME_STAT = new Set(['ml', 'ats', 'total']);
+const passTdOwn = l => !!l && !GAME_STAT.has(l.stat) && l.stat === 'passing_tds';
+function clashOwn(a, b) {
+  if (!a || !b || a.gid !== b.gid) return null;
+  const one = (q, o) => !passTdOwn(q) ? null : (!GAME_STAT.has(o.stat) && o.stat === 'any_td' && o.team === q.team && o.pid !== q.pid) ? 'td' : (q.side !== 'under' && o.stat === 'total') ? 'total' : null;
+  return one(a, b) || one(b, a);
+}
+const clashIn = legs => legs.some((a, i) => legs.some((b, j) => j > i && clashOwn(a, b)));
+/* the words an Elo pick level says when its candidates are enough but no parlay of its size goes on one slip (eloPicks's) */
+const CLASH_WHY = (n, N, where) => `No ${n} of the ${N} players ${where} go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.`;
+/* whether any n of the candidates go on one slip (one leg a player, as the candidates are): a search of its own, stopping
+   at the first */
+function anyAllowed(C, n) {
+  const go = (s0, cur) => { if (cur.length === n) return true;
+    for (let i = s0; i <= C.length - (n - cur.length); i++) if (!cur.some(l => clashOwn(l, C[i])) && go(i + 1, cur.concat(C[i]))) return true; return false; };
+  return go(0, []);
+}
 const erfC = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
 const PhiC = z => 0.5 * (1 + erfC(z / Math.SQRT2));
 const invPhiC = p => { let lo = -9, hi = 9; for (let i = 0; i < 90; i++) { const m = (lo + hi) / 2; if (PhiC(m) < p) lo = m; else hi = m; } return (lo + hi) / 2; };
@@ -232,10 +276,13 @@ function candsOwn(legs, MU, players, sums) {
    check's own copy), and each level chosen as Suggested Parlays chooses on the Elo chance, on the Elo picks' floors
    (tiersOwn: Safe's 35% too): the best expected return (chance times price) over the floor, else the likeliest of
    its size (likeliest); a tie to the lower ids. legs: the page's candidates (their Elo chances, so the sums
-   are the page's to the bit) */
-function levelsOwn(cands, sums) {
-  const out = [], memo = new Map();
-  const subsets = (n, start, cur, f) => { if (cur.length === n) { f(cur); return; } for (let i = start; i <= cands.length - (n - cur.length); i++) subsets(n, i + 1, cur.concat(i), f); };
+   are the page's to the bit). Since app v121 only parlays with no pair DraftKings will not take on one slip (clashOwn),
+   a level none of whose parlays goes on one slip empty (none, clash); o.free works it without that rule, as the page
+   did before, to show a fixture would have caught it */
+function levelsOwn(cands, sums, o) {
+  const out = [], memo = new Map(), free = !!(o && o.free);
+  const subsets = (n, start, cur, f) => { if (cur.length === n) { f(cur); return; }
+    for (let i = start; i <= cands.length - (n - cur.length); i++) if (free || !cur.some(j => clashOwn(cands[j], cands[i]))) subsets(n, i + 1, cur.concat(i), f); };
   const sumOf = ids => { const k = ids.join(','); let e = memo.get(k); if (e) return e;
     const L = sums.pbOrder(ids.map(i => cands[i])); e = { legs: L, p: sums.parlayProb(L.map(l => ({ ...l, p: l.pe }))).corr, dec: sums.parlayDec(L.map(l => ({ leg: l, ml: l.price }))), id: L.map(idC).sort().join(',') }; memo.set(k, e); return e; };
   for (const [id, label, n, floor] of tiersOwn(sums.PB_TIERS)) {
@@ -244,6 +291,7 @@ function levelsOwn(cands, sums) {
     subsets(n, 0, [], ids => { const e = sumOf(ids);
       if (!likely || e.p > likely.p || (e.p === likely.p && e.id < likely.id)) likely = e;
       if (floor && e.p >= floor) { const s = e.p * e.dec; if (!best || s > best.s || (s === best.s && e.id < best.e.id)) best = { e, s }; } });
+    if (!likely) { out.push({ id: 'elo-' + id, label, n, floor, none: true, clash: true }); continue; }
     const r = floor ? (best ? best.e : likely) : likely;
     out.push({ id: 'elo-' + id, label, n, floor, legs: r.legs, p: r.p, dec: r.dec, likeliest: !!floor && !best });
   }
@@ -261,31 +309,48 @@ function fastOff(w, C, worked) {
 
 /* ---- (app v118) each unit's Elo picks: window.eloUnit ----
    Suggested Parlays draws each unit's own Elo picks, a night game's or the Sunday slot's (a week's Sunday games before
-   7 pm Eastern, together), from window.eloUnit(the unit's game ids, {where}): the ELO tab's four levels on those games'
+   7 pm Eastern), from window.eloUnit(the unit's game ids, {where, perGame}): the ELO tab's four levels on those games'
    legs alone, whatever the Parlay Builder's ticks say (the owner's call of 19 October 2026: until then the picks were one
    set over the games and player sides ticked on the Parlay Builder tab, and a reader with the priced games unticked saw
    them empty all of Sunday 18 October 2026). unitHeld holds a page to it on a list of legs (the page's pricedLegs stood in
-   by them, as the checks above stand it in) and units ({lab, gids, where}): the candidates the rule's on the unit's
-   games' legs alone (candsOwn), every one of those games; Suggested Parlays' four levels on the Elo picks' floors, each
-   the rule worked out in full by the builder's own sums over every parlay of its size (levelsOwn) where the candidates
-   make at most UNIT_FULL parlays, else held as the week's levels are above (its legs the candidates', one a player, in
-   the builder's order, at the builder's own sums, over its floor or the likeliest only under it, and never worse than the
-   best parlay of its size whose legs are all in different games); an empty level handed over with no legs, exactly
-   {id, label, n, floor, why}, saying why in the unit's own words ("Only 2 players in this game qualify: this level takes
-   3.", "... in the Sunday slot ...") by the count of players who qualify; eloUnit's levels eloPicks' own on the same
-   games; and then all of it again with the Parlay Builder's ticks planted to nothing (no game, no bet type, no player
-   side: pbAllows and pbPlayerSides refusing everything, S.ui.pb unticked), put back after on every path. Returns how many
-   levels it held worked out in full and how many empty (full, empty) */
+   by them, as the checks above stand it in) and units ({lab, gids, where, perGame}): the candidates the rule's on the
+   unit's games' legs alone (candsOwn), every one of those games; Suggested Parlays' four levels on the Elo picks' floors,
+   each the rule worked out in full by the builder's own sums over every parlay of its size (levelsOwn) where the
+   candidates make at most UNIT_FULL parlays, else held as the week's levels are above (its legs the candidates', one a
+   player, in the builder's order, at the builder's own sums, over its floor or the likeliest only under it, and never
+   worse than the best parlay of its size whose legs are all in different games); no level holding a pair DraftKings will
+   not take on one slip (app v121, clashOwn); an empty level handed over with no legs, exactly {id, label, n, floor, why},
+   saying why in the unit's own words by the count of players who qualify ("Only 2 players in this game qualify: this
+   level takes 3."), or, with enough of them and none of its parlays on one slip, "No 3 of the 3 players in this game go
+   together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown." (app v121); eloUnit's
+   levels eloPicks' own on the same games; and then all of it again with the Parlay Builder's ticks planted to nothing (no
+   game, no bet type, no player side: pbAllows and pbPlayerSides refusing everything, S.ui.pb unticked), put back after on
+   every path.
+   The Sunday slot of more than one game (perGame, as Suggested Parlays asks for it since app v121; the owner, 19 October
+   2026: "the legs need to be part of the same game parlay only, and anytime there's a mix it bombs the hyperlink"): each
+   of its games held alone as a night game's ("in this game"), and each of the slot's levels one game's legs, the best of
+   its games' own levels by the check's own copy of the slot's rule (slotBetterOwn: one that meets its floor before the
+   likeliest of its size, then the better expected return where it met its floor, else the higher Elo chance, then the
+   earlier game of the slot); a level no game fills empty, saying so of "any one game of the Sunday slot" by the most
+   players who qualify in one game; its candidates the count over its games. Until app v121 a slot level was one parlay
+   across its games. Returns how many levels it held worked out in full, how many empty, and how many slot levels it held
+   to its games' own (full, empty, slot) */
 const UNIT_FULL = 2500;
 const binom = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1); return Math.round(r); };
+/* (app v121) the Sunday slot's Elo picks, the check's own copy of the rule a slot level is chosen by among its games' own
+   levels (a level with legs: {floor, likeliest, p, dec}); a tie keeps the earlier game */
+const slotBetterOwn = (a, b) => { const la = a.likeliest ? 1 : 0, lb = b.likeliest ? 1 : 0; if (la !== lb) return la < lb;
+  const v = x => x.floor && !x.likeliest ? x.p * x.dec : x.p; return v(a) > v(b); };
 function unitHeld(nm, w, legs, MU, players, corr, units) {
   const sums = sumsOwn(corr), ok01 = v => typeof v === 'number' && isFinite(v) && v > 0 && v < 1, memo = new Map();
-  let full = 0, empty = 0;
+  let full = 0, empty = 0, slot = 0;
+  /* one unit as eloUnit hands it over, held; its four levels as the rule gives them (each {legs, p, dec, likeliest, floor}
+     or {none}) and how many players qualify, for the slot's check, or null where it does not build */
   const one = (u, tag) => {
     const lab = `${nm}, ${u.lab}${tag}`, uLegs = legs.filter(l => u.gids.includes(l.gid)), own = candsOwn(uLegs, MU, players, sums);
-    let r, rp; try { r = w.eloUnit(u.gids, { where: u.where }); rp = w.eloPicks({ games: u.gids, where: u.where }); } catch (err) { r = 'threw ' + err.message; }
+    let r, rp; try { r = w.eloUnit(u.gids, { where: u.where, ...(u.perGame ? { perGame: true } : {}) }); rp = w.eloPicks({ games: u.gids, where: u.where }); } catch (err) { r = 'threw ' + err.message; }
     if (!r || typeof r !== 'object' || !Array.isArray(r.tiers) || !rp || !Array.isArray(rp.cands) || !Array.isArray(rp.tiers)) {
-      chk(false, `${lab}: window.eloUnit does not build the unit's Elo picks on the files: ${typeof r === 'string' ? r : JSON.stringify(r)}`); return; }
+      chk(false, `${lab}: window.eloUnit does not build the unit's Elo picks on the files: ${typeof r === 'string' ? r : JSON.stringify(r)}`); return null; }
     const C = rp.cands, N = own.all.length;
     chk(r.candidates === N && C.map(idC).join() === own.kept.map(idC).join() && C.every((l, i) => Math.abs(l.pe - own.kept[i].pe) < 1e-6) && C.every(l => u.gids.includes(l.gid)),
       `${lab}: the Elo picks' candidates are not the rule's on the unit's games' legs alone: ${C.map(l => l.pid + ' ' + l.stat + ' ' + l.gid.slice(-7)).join(', ') || 'none'} of ${r.candidates}; the rule ${own.kept.map(l => l.pid + ' ' + l.stat + ' ' + l.gid.slice(-7)).join(', ') || 'none'} of ${N}`);
@@ -296,14 +361,24 @@ function unitHeld(nm, w, legs, MU, players, corr, units) {
     const key = u.gids.join() + '|' + C.map(idC).join(), size = LT.reduce((a, t) => a + binom(C.length, t[2]), 0);
     if (!memo.has(key)) memo.set(key, size <= UNIT_FULL ? levelsOwn(C, sums) : null);
     const want = memo.get(key); if (want && !tag) full += want.filter(t => !t.none).length;
+    const levels = [];
     for (const t of r.tiers) {
-      if (!t) continue;
+      if (!t) { levels.push(null); continue; }
+      const has = Array.isArray(t.legs) && t.legs.length > 0, f = want ? want.find(x => x.id === t.id) : null;
       if (C.length < t.n) { const why = `Only ${N} player${N === 1 ? '' : 's'} ${u.where} qualif${N === 1 ? 'ies' : 'y'}: this level takes ${t.n}.`; if (!tag) empty++;
-        chk(Object.keys(t).sort().join() === 'floor,id,label,n,why' && t.why === why, `${lab}: the ${t.label} Elo pick, with ${C.length} candidates, is not handed over empty saying why ${u.where} ("${why}"): ${JSON.stringify(t)}`); continue; }
-      if (want) { const f = want.find(x => x.id === t.id);
-        chk(!!f && Array.isArray(t.legs) && t.legs.map(idC).join() === f.legs.map(idC).join() && t.p === f.p && t.dec === f.dec && !!t.likeliest === f.likeliest,
-          `${lab}: the ${t.label} Elo pick is not Suggested Parlays' rule on the Elo chance worked out in full on the unit's candidates: it holds ${Array.isArray(t.legs) ? t.legs.map(l => l.pid).join(', ') + ' at ' + t.p + ', ' + t.dec + (t.likeliest ? ' (likeliest)' : '') : JSON.stringify(t)}, the rule ${f ? f.legs.map(l => l.pid).join(', ') + ' at ' + f.p + ', ' + f.dec + (f.likeliest ? ' (likeliest)' : '') : 'none'}`);
-        continue; }
+        chk(Object.keys(t).sort().join() === 'floor,id,label,n,why' && t.why === why, `${lab}: the ${t.label} Elo pick, with ${C.length} candidates, is not handed over empty saying why ${u.where} ("${why}"): ${JSON.stringify(t)}`);
+        levels.push({ none: true }); continue; }
+      /* (app v121) enough candidates, and none of its parlays on one slip (the full enumeration's word, else a search of
+         the check's own): empty, saying so; and never empty where one is */
+      if (!has || (f && f.none)) { const none = f ? !!f.none : !anyAllowed(C, t.n), why = CLASH_WHY(t.n, N, u.where); if (!tag) empty++;
+        chk(none && !has && Object.keys(t).sort().join() === 'floor,id,label,n,why' && t.why === why,
+          `${lab}: the ${t.label} Elo pick, with ${C.length} candidates ${none ? `of which no ${t.n} go on one slip, is not handed over empty saying so ("${why}")` : `of which some ${t.n} go on one slip, is empty`}: ${JSON.stringify(has ? t.legs.map(idC) : t)}`);
+        levels.push({ none: true }); continue; }
+      chk(!clashIn(t.legs), `${lab}: the ${t.label} Elo pick holds a pair DraftKings will not take on one slip (a quarterback's passing TDs with a teammate's touchdown): ${t.legs.map(l => l.pid + ' ' + l.stat + ' ' + l.team).join(', ')}`);
+      if (f) {
+        chk(Array.isArray(t.legs) && t.legs.map(idC).join() === f.legs.map(idC).join() && t.p === f.p && t.dec === f.dec && !!t.likeliest === f.likeliest,
+          `${lab}: the ${t.label} Elo pick is not Suggested Parlays' rule on the Elo chance worked out in full on the unit's candidates: it holds ${Array.isArray(t.legs) ? t.legs.map(l => l.pid).join(', ') + ' at ' + t.p + ', ' + t.dec + (t.likeliest ? ' (likeliest)' : '') : JSON.stringify(t)}, the rule ${f.legs.map(l => l.pid).join(', ') + ' at ' + f.p + ', ' + f.dec + (f.likeliest ? ' (likeliest)' : '')}`);
+        levels.push(f); continue; }
       const L = Array.isArray(t.legs) ? sums.pbOrder(t.legs) : [], p = L.length ? sums.parlayProb(L.map(l => ({ ...l, p: l.pe }))).corr : NaN, dec = L.length ? sums.parlayDec(L.map(l => ({ leg: l, ml: l.price }))) : NaN;
       chk(L.length === t.n && t.legs.every((l, i) => idC(l) === idC(L[i])) && t.legs.every(l => C.some(c => idC(c) === idC(l))) && new Set(t.legs.map(l => l.pid)).size === t.n
         && ok01(t.p) && t.p === p && t.dec === dec && (!t.floor || t.likeliest || t.p >= t.floor) && (!t.likeliest || (t.floor > 0 && t.p < t.floor)),
@@ -313,20 +388,47 @@ function unitHeld(nm, w, legs, MU, players, corr, units) {
         for (let i = s0; i <= C.length - (t.n - cur.length); i++) go(i + 1, cur.concat(C[i])); };
       go(0, []);
       chk(!best || (t.floor && t.likeliest ? false : (t.floor ? t.p * t.dec : t.p) >= best.sc * (1 - 1e-9)),
-        `${lab}: the ${t.label} Elo pick is worse than ${best && best.cur.map(l => l.pid + ' ' + l.stat).join(', ')}, legs all in different games`); }
+        `${lab}: the ${t.label} Elo pick is worse than ${best && best.cur.map(l => l.pid + ' ' + l.stat).join(', ')}, legs all in different games`);
+      levels.push({ id: t.id, n: t.n, floor: t.floor, legs: t.legs, p: t.p, dec: t.dec, likeliest: !!t.likeliest }); }
+    return { levels, N };
   };
-  for (const u of units) one(u, '');
+  /* (app v121) the Sunday slot, one game a level */
+  const slotOne = (u, tag) => {
+    const lab = `${nm}, ${u.lab}${tag}`;
+    let r; try { r = w.eloUnit(u.gids, { where: u.where, perGame: true }); } catch (err) { r = 'threw ' + err.message; }
+    if (!r || typeof r !== 'object' || !Array.isArray(r.tiers)) { chk(false, `${lab}: window.eloUnit does not build the slot's Elo picks one game a level: ${typeof r === 'string' ? r : JSON.stringify(r)}`); return; }
+    const per = u.gids.map(g => one({ lab: `${u.lab}, ${g} alone`, gids: [g], where: 'in this game' }, tag));
+    if (per.some(x => !x)) return;
+    const LT = tiersOwn(sums.PB_TIERS), most = Math.max(0, ...per.map(x => x.N)), sum = per.reduce((a, x) => a + x.N, 0), where = 'in any one game of ' + u.where.replace(/^in /, '');
+    chk(r.candidates === sum && r.tiers.length === LT.length && r.tiers.every((t, i) => t && t.id === 'elo-' + LT[i][0] && t.label === LT[i][1] && t.n === LT[i][2] && t.floor === LT[i][3]),
+      `${lab}: window.eloUnit does not hand over the slot's four levels on the Elo picks' floors with its games' candidates counted (${sum}): ${r.candidates}; ${r.tiers.map(t => t && t.id + ' ' + t.n + ' ' + t.floor).join(', ')}`);
+    LT.forEach(([, label, n], i) => {
+      const t = r.tiers[i]; if (!t) return;
+      let best = null, bi = -1; per.forEach((x, gi) => { const L = x.levels[i]; if (L && !L.none && (!best || slotBetterOwn(L, best))) { best = L; bi = gi; } });
+      const has = Array.isArray(t.legs) && t.legs.length > 0;
+      if (!best) { const why = most >= n ? `No ${n} players ${where} go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.`
+          : `Only ${most} player${most === 1 ? '' : 's'} ${where} qualif${most === 1 ? 'ies' : 'y'}: this level takes ${n}.`; if (!tag) empty++;
+        chk(!has && Object.keys(t).sort().join() === 'floor,id,label,n,why' && t.why === why, `${lab}: the ${label} Elo pick, which no game of the slot fills, is not handed over empty saying why ("${why}"): ${JSON.stringify(has ? t.legs.map(idC) : t)}`);
+        return; }
+      if (!tag) slot++;
+      chk(has && t.legs.length === n && new Set(t.legs.map(l => l.gid)).size === 1 && !clashIn(t.legs),
+        `${lab}: the ${label} Elo pick is not ${n} legs of one game with no pair DraftKings refuses (a parlay takes one game's legs in the Sunday slot): ${has ? t.legs.map(l => l.pid + ' ' + l.gid.slice(-7)).join(', ') : JSON.stringify(t)}`);
+      chk(has && t.legs.map(idC).join() === best.legs.map(idC).join() && t.p === best.p && t.dec === best.dec && !!t.likeliest === !!best.likeliest,
+        `${lab}: the ${label} Elo pick is not the best of its games' own ${label} by the slot's rule (one that meets its floor before the likeliest, then the better return over its floor, else the higher Elo chance, then the earlier game): it holds ${has ? t.legs.map(l => l.pid).join(', ') + ' at ' + t.p + ', ' + t.dec + (t.likeliest ? ' (likeliest)' : '') : 'nothing'}, the rule ${u.gids[bi]}'s ${best.legs.map(l => l.pid).join(', ')} at ${best.p}, ${best.dec}${best.likeliest ? ' (likeliest)' : ''}`); });
+  };
+  const each = tag => { for (const u of units) { if (u.perGame && u.gids.length > 1) slotOne(u, tag); else one(u, tag); } };
+  each('');
   /* the Parlay Builder's ticks planted to nothing, and put back */
   const had = { pbAllows: Object.prototype.hasOwnProperty.call(w, 'pbAllows') ? w.pbAllows : undefined, pbPlayerSides: Object.prototype.hasOwnProperty.call(w, 'pbPlayerSides') ? w.pbPlayerSides : undefined },
     ui = JSON.stringify(w.eval('S.ui.pb === undefined ? null : S.ui.pb'));
   try {
     w.pbAllows = () => false; w.pbPlayerSides = () => false;
     w.eval(`S.ui.pb={k:{ml:false,ats:false,total:false,over:false,under:false},off:${JSON.stringify([...new Set(legs.map(l => l.gid))])},open:false};`);
-    for (const u of units) one(u, ' (the Parlay Builder\'s ticks planted to nothing)');
+    each(' (the Parlay Builder\'s ticks planted to nothing)');
   } finally {
     for (const k of Object.keys(had)) { if (had[k] === undefined) delete w[k]; else w[k] = had[k]; }
     w.eval(ui === 'null' ? 'delete S.ui.pb;' : `S.ui.pb=${ui};`); }
-  return { full, empty };
+  return { full, empty, slot };
 }
 
 /* the page around the tab: the week's schedule with kickoffs on a clock the test moves */
@@ -793,6 +895,10 @@ function page(MU, opts) {
      mlProb and mlToDec, stubbed here as the page has them) ---- */
   { const errors = [], { w } = page(MU0, { errors }); await wait(60);
     sumsInto(w, CORR);   /* mlProb, mlToDec and the builder's sums, the props parts' own, as the page has them */
+    /* (app v121) and the props parts' DraftKings pair rule, which the tab's search reads where it is a function: without
+       it the search would take a quarterback's passing TDs with a teammate's touchdown, as it did until app v121 */
+    chk(typeof w.dkClash === 'function' && typeof w.dkClashWhy === 'function' && typeof w.dkPassTd === 'function',
+      `the props parts' DraftKings pair rule (dkPassTd, dkClashWhy, dkClash) is not loaded into the tab's page: the Elo picks' search would take pairs DraftKings refuses on one slip (${typeof w.dkClash}, ${typeof w.dkClashWhy}, ${typeof w.dkPassTd})`);
     const ok01 = v => typeof v === 'number' && isFinite(v) && v > 0 && v < 1;
     let alt = 0; const badAlt = [];
     for (const [pid, e] of Object.entries(P.players || {})) {
@@ -811,12 +917,12 @@ function page(MU, opts) {
           nDk++; if (r !== k || x !== null) badDk.push(`${e.name || pid} ${side}: real ${r}, dkline ${k}, est ${x}`); }
         if (nDk >= 400) break; }
       chk(nDk > 0 && !badDk.length, `market + form does not read a price from DraftKings' line as a book price (or reads the model's estimate) on ${badDk.length} of ${nDk} legs: ${badDk.slice(0, 3).join('; ')}`); }
-    /* a leg for every matchup line in the file, over and under, at -110 and +150 */
+    /* a leg for every matchup line in the file, over and under, at -110 and +150, on its player's club */
     const legs = [];
     for (const [pid, pl] of Object.entries((MU0 && MU0.players) || {})) for (const st of Object.keys(pl.stats || {})) {
       const proj = (pl.stats[st] || [])[1], k = isFinite(proj) ? Math.floor(proj) + 0.5 : 0.5;
       for (const side of ['over', 'under']) for (const price of [-110, 150])
-        legs.push({ key: `${pl.game_id}|${pid}|${st}`, gid: pl.game_id, pid, stat: st, grp: pl.group, k, side, price, src: 'real', name: pid, label: st }); }
+        legs.push({ key: `${pl.game_id}|${pid}|${st}`, gid: pl.game_id, pid, stat: st, grp: pl.group, team: pl.team, opp: pl.opp, k, side, price, src: 'real', name: pid, label: st }); }
     let mu = 0; const badMu = [];
     for (const l of legs) { let v; try { v = w.eloMatchupP(l, w.mlProb(l.price)); } catch (err) { v = 'threw ' + err.message; }
       if (v === null) continue; mu++; if (!ok01(v)) badMu.push(`${l.pid} ${l.stat} ${l.side} ${l.price}: ${v}`); }
@@ -843,6 +949,10 @@ function page(MU, opts) {
       const sub = (n, f) => { const go = (s0, cur) => { if (cur.length === n) { f(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); }; go(0, []); };
       for (const t of r.tiers) {
         if (C.length < t.n) { chk(!t.legs.length && /^Only \d+ players? on your picks qualif(y|ies): this level takes \d\.$/.test(t.why || ''), `the ${t.id} Elo pick is not empty with its reason where only ${C.length} players qualify: ${JSON.stringify(t)}`); continue; }
+        /* (app v121) enough candidates, and none of its parlays on one slip by the check's own rule: empty, saying so */
+        if (!t.legs.length) { const why = CLASH_WHY(t.n, r.candidates, 'on your picks');
+          chk(!anyAllowed(C, t.n) && t.why === why, `the ${t.id} Elo pick, with ${C.length} candidates, is empty where ${anyAllowed(C, t.n) ? `some ${t.n} of them go on one slip` : `none go on one slip and it does not say so ("${why}")`}: ${JSON.stringify(t)}`); continue; }
+        chk(!clashIn(t.legs), `the ${t.id} Elo pick on the files holds a pair DraftKings will not take on one slip (a quarterback's passing TDs with a teammate's touchdown): ${t.legs.map(l => l.pid + ' ' + l.stat + ' ' + l.team).join(', ')}`);
         const L = sums.pbOrder(t.legs), p = L.length ? sums.parlayProb(L.map(l => ({ ...l, p: l.pe }))).corr : NaN, dec = L.length ? sums.parlayDec(L.map(l => ({ leg: l, ml: l.price }))) : NaN;
         chk(t.legs.length === t.n && t.legs.every((l, i) => l === L[i] || idC(l) === idC(L[i])) && t.legs.every(l => C.some(c => idC(c) === idC(l))) && new Set(t.legs.map(l => l.pid)).size === t.n
           && ok01(t.p) && t.p === p && t.dec === dec && (!t.floor || t.likeliest || t.p >= t.floor) && (!t.likeliest || t.floor > 0),
@@ -875,18 +985,18 @@ function page(MU, opts) {
       let r2; try { r2 = w.eloPicks(); } catch (err) { r2 = 'threw ' + err.message; } finally { delete w.pbAllows; delete w.pbPlayerSides; w.eval('delete S.ui.pb;'); }
       chk(sig(r2) === sig(r), `window.eloPicks() moves with the Parlay Builder's ticks planted to nothing: ${sig(r2).slice(0, 200)} for ${sig(r).slice(0, 200)}`); }
     /* (app v118) each unit's Elo picks on the files (unitHeld): each game of the matchups' week with priced legs, alone,
-       "in this game", and that week's Sunday games before 7 pm Eastern together, "in the Sunday slot" (which games those
-       are worked out here from the published payload's schedule: the matchups' season and week, a Sunday, a kickoff
-       before 19:00, both Eastern as the schedule writes them; the games of it already played have no lines, so the slot
-       can hand over four empty levels, each saying why) */
+       "in this game", and that week's Sunday games before 7 pm Eastern, "in the Sunday slot", one game a level since app
+       v121 (perGame, as Suggested Parlays asks for it; which games those are worked out here from the published payload's
+       schedule: the matchups' season and week, a Sunday, a kickoff before 19:00, both Eastern as the schedule writes them;
+       the games of it already played have no lines, so the slot can hand over four empty levels, each saying why) */
     { w.eval(PRICED_BY('__legs'));
       const gids = [...new Set(legs.map(l => l.gid))].sort(), wk = MU0 && MU0.week;
       const slot = SCHED.filter(g => +g.w === +wk && (!MU0 || !MU0.season || String(g.id).startsWith(MU0.season + '_')) && /^\d{4}-\d\d-\d\d$/.test(g.d || '')
         && new Date(g.d + 'T12:00:00Z').getUTCDay() === 0 && /^\d\d:\d\d$/.test(g.t || '') && g.t < '19:00').map(g => g.id);
-      const units = [...gids.map(g => ({ lab: `the files' ${g} alone`, gids: [g], where: 'in this game' })), ...(slot.length ? [{ lab: `the files' week ${wk} Sunday slot (${slot.length} games)`, gids: slot, where: 'in the Sunday slot' }] : [])];
+      const units = [...gids.map(g => ({ lab: `the files' ${g} alone`, gids: [g], where: 'in this game' })), ...(slot.length ? [{ lab: `the files' week ${wk} Sunday slot (${slot.length} games)`, gids: slot, where: 'in the Sunday slot', perGame: true }] : [])];
       if (!units.length) notes.push('no game in the matchups\' week has lines and the schedule has no Sunday slot for it: the units\' Elo picks are held on the check\'s own games alone');
       else { const nf = unitHeld('the files', w, legs, MU0, P.players || {}, CORR, units);
-        notes.push(`each unit's Elo picks on the files: ${gids.length} game${gids.length === 1 ? '' : 's'} alone${slot.length ? ` and week ${wk}'s Sunday slot of ${slot.length} (${slot.filter(g => gids.includes(g)).length} with lines)` : ', no Sunday slot on the schedule'}, ${nf.full} levels worked out in full, ${nf.empty} empty`); } }
+        notes.push(`each unit's Elo picks on the files: ${gids.length} game${gids.length === 1 ? '' : 's'} alone${slot.length ? ` and week ${wk}'s Sunday slot of ${slot.length} (${slot.filter(g => gids.includes(g)).length} with lines)` : ', no Sunday slot on the schedule'}, ${nf.full} levels worked out in full, ${nf.empty} empty, ${nf.slot} slot levels held to their games' own`); } }
     chk(!errors.length, `the tab threw or logged an error on the files: ${errors.slice(0, 3).join('; ')}`);
     notes.push(`money paths: market + form on ${alt} player legs, the Elo matchup chance on ${mu} of ${legs.length} lines, the Elo picks' ${r && r.tiers ? r.tiers.filter(t => t.legs.length).length : 0} levels from ${r && r.cands ? r.cands.length : 0} of ${r && r.candidates || 0} candidates`); }
 
@@ -1017,7 +1127,7 @@ function page(MU, opts) {
       if (nm === 'F5') {
         /* all 34 searched, the four favourites among them, and Safe two of them: the best value over 35%, worked out here
            over every pair (the likeliest pair where none reaches it) */
-        let likely = null, best = null; for (let i = 0; i < C.length; i++) for (let j = i + 1; j < C.length; j++) { const O = sums.pbOrder([C[i], C[j]]), p = sums.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr,
+        let likely = null, best = null; for (let i = 0; i < C.length; i++) for (let j = i + 1; j < C.length; j++) { if (clashOwn(C[i], C[j])) continue; const O = sums.pbOrder([C[i], C[j]]), p = sums.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr,
             d = sums.parlayDec(O.map(l => ({ leg: l, ml: l.price }))), k = O.map(idC).sort().join(',');
           if (!likely || p > likely.p || (p === likely.p && k < likely.k)) likely = { O, p, k };
           if (p >= EPC.safe && (!best || p * d > best.v || (p * d === best.v && k < best.k))) best = { O, p, k, v: p * d }; }
@@ -1032,7 +1142,9 @@ function page(MU, opts) {
       { const bad = fastOff(w, C, want.sums);
         chk(!bad.length, `${nm}: the Elo picks' fast sums are not parlayProb's and parlayDec's to the bit on ${bad.length} of ${want.sums.length} parlays: ${bad.slice(0, 3).join('; ')}`); }
       for (const t of want) { const g = r.tiers.find(x => x.id === t.id);
-        if (t.none) { chk(!!g && !g.legs.length && g.why === `Only ${C.length} players on your picks qualify: this level takes ${t.n}.`, `${nm}: the ${t.label} Elo pick is not empty, saying why, with ${C.length} candidates: ${JSON.stringify(g && (g.why || g.legs.map(idC)))}`); continue; }
+        if (t.none) { const why = t.clash ? CLASH_WHY(t.n, r.candidates, 'on your picks') : `Only ${C.length} players on your picks qualify: this level takes ${t.n}.`;
+          chk(!!g && !g.legs.length && g.why === why, `${nm}: the ${t.label} Elo pick is not empty, saying why ("${why}"), with ${C.length} candidates: ${JSON.stringify(g && (g.why || g.legs.map(idC)))}`); continue; }
+        chk(!!g && !clashIn(g.legs), `${nm}: the ${t.label} Elo pick holds a pair DraftKings will not take on one slip (a quarterback's passing TDs with a teammate's touchdown): ${g ? g.legs.map(l => l.pid + ' ' + l.stat + ' ' + l.team).join(', ') : 'none'}`);
         chk(!!g && g.legs.map(idC).join() === t.legs.map(idC).join() && g.p === t.p && g.dec === t.dec && !!g.likeliest === t.likeliest,
           `${nm}: the ${t.label} Elo pick is not Suggested Parlays' rule on the Elo chance worked out in full (${t.likeliest ? 'the likeliest ' + t.n + ' legs' : t.floor ? 'best return over ' + t.floor : 'the likeliest pair'}): it holds ${g ? g.legs.map(l => l.pid).join(', ') + ' at ' + g.p + ', ' + g.dec + (g.likeliest ? ' (likeliest)' : '') : 'nothing'}, the rule ${t.legs.map(l => l.pid).join(', ')} at ${t.p}, ${t.dec}`); }
       if (nm === 'F1') {
@@ -1057,16 +1169,138 @@ function page(MU, opts) {
         chk(r.tiers.every(t => !t.likeliest || (t.floor && t.p < t.floor)), `${nm}: a level is marked the likeliest at or over its floor: ${r.tiers.map(t => t.id + (t.likeliest ? ' likeliest' : '') + ' ' + t.p).join(', ')}`);
         notes.push(`the Elo picks on ${nm}'s ${C.length} candidates (${want.sums.length} parlays worked in full): ${r.tiers.map(t => `${t.label} ${(t.p * 100).toFixed(2)}%${t.likeliest ? ' (likeliest)' : ''} in ${new Set(t.legs.map(l => l.gid)).size} game${new Set(t.legs.map(l => l.gid)).size > 1 ? 's' : ''}`).join('; ')}`); }
       /* (app v118) each unit's Elo picks on the check's own games (unitHeld), so it holds in any week: game A alone, "in
-         this game", and games B and C together as a Sunday slot, "in the Sunday slot" (eloUnit takes the unit's games as
-         Suggested Parlays hands them over). F1's game A has three of its eight candidates, so its Aggressive and Extreme are
-         empty, saying why, and B and C five; F2's two and two, so every level past Safe is; the check fails unless it met
-         both a level worked out in full and an empty one, and a unit whose candidates are not the whole week's */
+         this game", and games B and C together as a Sunday slot, one game a level since app v121 (eloUnit takes the unit's
+         games as Suggested Parlays hands them over, perGame for the slot). F1's game A has three of its eight candidates,
+         so its Aggressive and Extreme are empty, saying why, and B two and C three, so the slot's Safe is the better of
+         theirs, its Medium C's and its Aggressive and Extreme empty, "Only 3 players in any one game of the Sunday slot
+         qualify"; F2's two, one and one, so every level of the slot is ("Only 1 player ... qualifies"); the check fails
+         unless it met a level worked out in full, an empty one and a slot level held to its games' own (F1), and a unit
+         whose candidates are not the whole week's */
       if (nm === 'F1' || nm === 'F2') { w.eval(PRICED_BY('__fx'));
-        const nf = unitHeld(nm, w, legs, MUf, Pf.players, corr, [{ lab: 'game A alone', gids: [GA], where: 'in this game' }, { lab: 'games B and C as a Sunday slot', gids: [GB, GC], where: 'in the Sunday slot' }]);
+        const nf = unitHeld(nm, w, legs, MUf, Pf.players, corr, [{ lab: 'game A alone', gids: [GA], where: 'in this game' }, { lab: 'games B and C as a Sunday slot', gids: [GB, GC], where: 'in the Sunday slot', perGame: true }]);
         const nA = candsOwn(legs.filter(l => l.gid === GA), MUf, Pf.players, sums).all.length;
-        chk(nf.full > 0 && nf.empty > 0 && nA > 0 && nA < own.all.length, `${nm}: the units' check met ${nf.full} levels worked out in full and ${nf.empty} empty, and game A has ${nA} of ${own.all.length} candidates: it holds less than it says`);
-        notes.push(`each unit's Elo picks on ${nm}: game A alone (${nA} candidates) and games B and C as a Sunday slot, ${nf.full} levels worked out in full, ${nf.empty} empty`); }
+        chk(nf.full > 0 && nf.empty > 0 && (nm !== 'F1' || nf.slot > 0) && nA > 0 && nA < own.all.length, `${nm}: the units' check met ${nf.full} levels worked out in full, ${nf.empty} empty and ${nf.slot} slot levels held to their games' own, and game A has ${nA} of ${own.all.length} candidates: it holds less than it says`);
+        notes.push(`each unit's Elo picks on ${nm}: game A alone (${nA} candidates) and games B and C as a Sunday slot, ${nf.full} levels worked out in full, ${nf.empty} empty, ${nf.slot} slot levels held to their games' own`); }
       chk(!errors.length, `${nm}: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); }
+
+    /* ---- F7 (app v121): the pairs DraftKings will not take on one slip, and the Sunday slot one game a level ----
+       The owner, 19 October 2026: "If your parlay already has a receiver anytime TD, a team total, or the game total,
+       adding the QB's passing TD over often gets blocked", "Some combos contradict each other, like QB under 1.5 passing
+       TDs alongside two of his receivers to score. The book rejects it outright.", and then "the legs need to be part of
+       the same game parlay only, and anytime there's a mix it bombs the hyperlink". Made-up players in four made-up games
+       of the check's own, on a correlation table of its own (the published payload's pairs, as F6's), so it holds in any
+       week:
+       - R at S: a quarterback's passing TDs over 1.5 and two of his receivers' anytime touchdowns, with his back and the
+         other club's quarterback, receiver and tight end; his passing TDs and his receivers' touchdowns move together
+         (0.323), so that with no rule Safe is him and his first receiver (the owner's case), and Aggressive and Extreme
+         hold a pair too;
+       - T at U: three candidates, a quarterback's passing TDs under 1.5 and his receiver's touchdown among them, so Medium,
+         which takes all three, is the rule's to empty: "No 3 of the 3 players in this game go together on DraftKings’
+         slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.";
+       - V at W and X at Y: two candidates each, one game the other's mirror, so their Safe pairs tie to the bit, each
+         likelier than R at S's Safe and of less value.
+       Held: the props parts' rule as loaded into the page (dkClashWhy) the check's own (clashOwn) on every pair of R at
+       S's legs and of made-up legs beside them (his passing TDs under and a rung of them, his own touchdown, the game's
+       total over and under, a moneyline, a leg of another game), both kinds met; R at S and T at U each alone as a night
+       game's (unitHeld: every level the rule worked out in full, no pair on any level, the empty levels' words); the
+       Sunday slot, one game a level, of T at U and V at W (Medium "No 3 players in any one game of the Sunday slot go
+       together on DraftKings’ slip: ...", Aggressive "Only 3 players in any one game of the Sunday slot qualify: this
+       level takes 4."), of T at U, V at W and R at S (R at S's levels, Safe on value though V at W's is likelier), and of
+       V at W and X at Y both ways (the tie to the earlier game); and eloPicks() over all four games, each level the rule
+       worked out in full on the tab's fast sums (which the checks above hold to the props parts' sums to the bit) over
+       the parlays a quarter of which hold a pair, no level holding one. And the fixture is held to mean what it says:
+       worked out with no rule, R at S's Safe, Aggressive and Extreme and T at U's Medium each hold a pair, as the page
+       took them before app v121 (over all four games, where the mirror games' likely legs fill every level, the levels
+       hold no pair with no rule either, so the note only counts them there). */
+    { const G7 = '2026_06_FXR_FXS', G7B = '2026_06_FXT_FXU', G7C = '2026_06_FXV_FXW', G7D = '2026_06_FXX_FXY';
+      /* pid, group, team, opp, game, stat, side, line, price, the Elo chance wanted */
+      const ROWS7 = [
+        ['fx-q7', 'QB', 'FXR', 'FXS', G7, 'passing_tds', 'over', 1.5, 120, 0.58],
+        ['fx-w7', 'WR', 'FXR', 'FXS', G7, 'any_td', 'over', 1, 150, 0.535],
+        ['fx-w8', 'WR', 'FXR', 'FXS', G7, 'any_td', 'over', 1, 170, 0.46],
+        ['fx-r7', 'RB', 'FXR', 'FXS', G7, 'rushing_yards', 'over', 59.5, -115, 0.60],
+        ['fx-t7', 'TE', 'FXS', 'FXR', G7, 'any_td', 'over', 1, 200, 0.38],
+        ['fx-q8', 'QB', 'FXS', 'FXR', G7, 'passing_yards', 'over', 229.5, -110, 0.58],
+        ['fx-w9', 'WR', 'FXS', 'FXR', G7, 'receiving_yards', 'over', 64.5, -105, 0.56],
+        ['fx-qt', 'QB', 'FXT', 'FXU', G7B, 'passing_tds', 'under', 1.5, -120, 0.62],
+        ['fx-wt', 'WR', 'FXT', 'FXU', G7B, 'any_td', 'over', 1, 140, 0.47],
+        ['fx-ru', 'RB', 'FXU', 'FXT', G7B, 'rushing_yards', 'over', 54.5, -110, 0.59],
+        ['fx-qv', 'QB', 'FXV', 'FXW', G7C, 'passing_yards', 'over', 239.5, -125, 0.66],
+        ['fx-ww', 'WR', 'FXW', 'FXV', G7C, 'receptions', 'over', 4.5, -130, 0.68],
+        ['fx-qx', 'QB', 'FXX', 'FXY', G7D, 'passing_yards', 'over', 239.5, -125, 0.66],
+        ['fx-wy', 'WR', 'FXY', 'FXX', G7D, 'receptions', 'over', 4.5, -130, 0.68]];
+      const CORR_F7 = { 'team|QB:passing_tds|WR:any_td': 0.323, 'team|QB:passing_tds|RB:rushing_yards': 0.03, 'opp|QB:passing_tds|TE:any_td': 0.031, 'opp|QB:passing_tds|QB:passing_yards': 0.148,
+        'opp|QB:passing_tds|WR:receiving_yards': 0.07, 'team|WR:any_td|WR:any_td': -0.032, 'opp|TE:any_td|WR:receiving_yards': 0.039, 'team|QB:passing_yards|WR:receiving_yards': 0.353,
+        'opp|QB:passing_yards|WR:any_td': 0.099, 'opp|QB:passing_yards|TE:any_td': 0.038, 'opp|QB:passing_tds|RB:rushing_yards': -0.047, 'opp|QB:passing_yards|WR:receptions': 0.036,
+        'opp|RB:rushing_yards|WR:receiving_yards': -0.037, 'team|TE:any_td|WR:receiving_yards': 0.03 };
+      const { MUf, Pf, legs } = build(ROWS7), errors = [], { w } = page(MUf, { errors, P: Pf }); await wait(60);
+      sumsInto(w, CORR_F7); w.__f7 = legs; w.eval(PRICED_BY('__f7'));
+      const sums7 = sumsOwn(CORR_F7), by = pid => legs.find(l => l.pid === pid), ids = ls => ls.map(idC).sort().join(',');
+      /* the rule as the page has it loaded, against the check's own, on every ordered pair */
+      { const q = by('fx-q7'), wt = by('fx-wt');
+        const more = [{ ...q, k: 2.5, main: false, label: 'over 2.5 passing_tds' }, { ...q, side: 'under', label: 'under 1.5 passing_tds' },
+          { ...q, key: `${G7}|fx-q7|any_td`, stat: 'any_td', k: 1, main: false, label: 'any_td' },
+          ...['over', 'under'].map(side => ({ key: `${G7}|total`, gid: G7, pid: 'game:' + G7, grp: 'TEAM', stat: 'total', side, k: 47.5, price: -110, name: 'R at S', label: side + ' 47.5', week: 6 })),
+          { key: `${G7}|team:FXR|ml`, gid: G7, pid: 'team:FXR', grp: 'TEAM', team: 'FXR', opp: 'FXS', stat: 'ml', side: 'over', k: 0, price: -150, name: 'FXR', label: 'to win', week: 6 }, wt];
+        const L = [...legs.filter(l => l.gid === G7), ...more], bad = [], met = new Set(); let n = 0;
+        for (const a of L) for (const b of L) { if (a === b) continue; n++; const want = clashOwn(a, b); let got; try { got = w.dkClashWhy(a, b); } catch (err) { got = 'threw ' + err.message; }
+          met.add(String(want)); if (got !== want) bad.push(`${a.pid} ${a.stat} ${a.side} with ${b.pid} ${b.stat} ${b.side}: ${got}, the rule ${want}`); }
+        chk(!bad.length && ['td', 'total', 'null'].every(k => met.has(k)) && typeof w.dkClash === 'function' && L.every(a => L.every(b => a === b || w.dkClash(a, b) === !!clashOwn(a, b))),
+          `F7: the props parts' DraftKings pair rule, as loaded beside the tab, is not the rule (a quarterback's passing TDs with a teammate's anytime touchdown, or his passing TDs over with the game's total), on ${bad.length} of ${n} pairs (kinds met: ${[...met].join(', ')}): ${bad.slice(0, 3).join('; ')}`); }
+      /* the fixture means what it says: with no rule, the levels the page took before app v121 hold a pair */
+      { const cands = g => { const r = w.eloPicks({ games: [g], where: 'in this game' }); return r && Array.isArray(r.cands) ? r.cands : []; };
+        const freeR = levelsOwn(cands(G7), sums7, { free: true }), freeT = levelsOwn(cands(G7B), sums7, { free: true });
+        const pairIn = (lv, id) => { const t = lv.find(x => x.id === id); return !!t && !t.none && clashIn(t.legs); };
+        chk(['elo-safe', 'elo-aggr', 'elo-xtrm'].every(id => pairIn(freeR, id)) && pairIn(freeT, 'elo-med') && freeR.find(t => t.id === 'elo-safe').legs.every(l => ['fx-q7', 'fx-w7'].includes(l.pid)),
+          `F7: worked out with no rule, R at S's Safe (the quarterback's passing TDs and his receiver's touchdown), Aggressive and Extreme and T at U's Medium do not each hold a pair DraftKings refuses, so the fixture no longer tells the page from the one before app v121: ${freeR.map(t => t.id + ' ' + (t.legs || []).map(l => l.pid).join('+')).join('; ')}; T at U's Medium ${(freeT.find(t => t.id === 'elo-med').legs || []).map(l => l.pid).join('+')}`); }
+      /* each game alone and the Sunday slots, by unitHeld (the ticks planted to nothing too) */
+      const nf = unitHeld('F7', w, legs, MUf, Pf.players, CORR_F7, [
+        { lab: 'R at S alone', gids: [G7], where: 'in this game' }, { lab: 'T at U alone', gids: [G7B], where: 'in this game' },
+        { lab: 'the Sunday slot of T at U and V at W', gids: [G7B, G7C], where: 'in the Sunday slot', perGame: true },
+        { lab: 'the Sunday slot of T at U, V at W and R at S', gids: [G7B, G7C, G7], where: 'in the Sunday slot', perGame: true },
+        { lab: 'the Sunday slot of V at W and X at Y', gids: [G7C, G7D], where: 'in the Sunday slot', perGame: true },
+        { lab: 'the Sunday slot of X at Y and V at W', gids: [G7D, G7C], where: 'in the Sunday slot', perGame: true }]);
+      /* the words, as the owner reads them, and the branches the slots were made to meet */
+      { const unit = (g, o) => { try { return w.eloUnit(g, o); } catch (err) { return { error: 'threw ' + err.message }; } }, lv = (u, id) => u && Array.isArray(u.tiers) ? u.tiers.find(t => t.id === id) || null : null;
+        const t1 = lv(unit([G7B], { where: 'in this game' }), 'elo-med');
+        chk(!!t1 && !t1.legs && t1.why === 'No 3 of the 3 players in this game go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.',
+          `F7: T at U's Medium, its three players holding a quarterback's passing TDs and his receiver's touchdown, is not empty saying "No 3 of the 3 players in this game go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.": ${JSON.stringify(t1)}`);
+        const s2 = unit([G7B, G7C], { where: 'in the Sunday slot', perGame: true });
+        const w2 = ['elo-med', 'elo-aggr', 'elo-xtrm'].map(id => (lv(s2, id) || {}).why);
+        chk(w2.join('|') === ['No 3 players in any one game of the Sunday slot go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.',
+          'Only 3 players in any one game of the Sunday slot qualify: this level takes 4.', 'Only 3 players in any one game of the Sunday slot qualify: this level takes 5.'].join('|') && !!lv(s2, 'elo-safe') && Array.isArray(lv(s2, 'elo-safe').legs),
+          `F7: the Sunday slot of T at U and V at W does not say why its Medium, Aggressive and Extreme are empty of any one game: ${w2.join(' | ')}`);
+        const s3 = unit([G7B, G7C, G7], { where: 'in the Sunday slot', perGame: true }), vw = lv(unit([G7C], { where: 'in this game' }), 'elo-safe'), s3s = lv(s3, 'elo-safe');
+        chk(!!s3s && Array.isArray(s3s.legs) && s3s.legs.every(l => l.gid === G7) && !!vw && Array.isArray(vw.legs) && vw.p > s3s.p && vw.p * vw.dec < s3s.p * s3s.dec
+          && s3.tiers.every(t => Array.isArray(t.legs) && t.legs.every(l => l.gid === G7)),
+          `F7: the Sunday slot of T at U, V at W and R at S does not take R at S's levels, its Safe on value over V at W's likelier pair: ${s3 && s3.tiers ? s3.tiers.map(t => t.id + ' ' + (t.legs || []).map(l => l.pid).join('+')).join('; ') : JSON.stringify(s3)}`);
+        const tie = [[G7C, G7D], [G7D, G7C]].map(g => lv(unit(g, { where: 'in the Sunday slot', perGame: true }), 'elo-safe')), xy = lv(unit([G7D], { where: 'in this game' }), 'elo-safe');
+        chk(tie.every((t, i) => !!t && Array.isArray(t.legs) && t.legs.every(l => l.gid === [G7C, G7D][i])) && !!xy && !!vw && xy.p === vw.p && xy.dec === vw.dec,
+          `F7: two games whose Safe pairs tie to the bit do not give the Sunday slot the earlier game's, each way round: ${tie.map(t => t && t.legs ? t.legs.map(l => l.pid).join('+') : 'none').join(' / ')}`); }
+      /* eloPicks() over every game: each level the rule worked out in full, on the tab's fast sums for every parlay of two to
+         five candidates in one batch (the props parts' own where those give none), and its figures the parts' own sums */
+      { let r; try { r = w.eloPicks(); } catch (err) { r = 'threw ' + err.message; }
+        if (!r || !Array.isArray(r.tiers) || !Array.isArray(r.cands)) chk(false, `F7: the Elo picks do not build over every game: ${typeof r === 'string' ? r : JSON.stringify(r)}`);
+        else { const C = r.cands, sets = [];
+          for (let n = 2; n <= 5; n++) { const go = (s0, cur) => { if (cur.length === n) { sets.push(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); }; go(0, []); }
+          let fast; try { fast = w.eloSums(C, sets); } catch (err) { fast = []; }
+          const e = sets.map((ls, i) => { const f = fast[i], O = sums7.pbOrder(ls), x = f || { p: sums7.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr, dec: sums7.parlayDec(O.map(l => ({ leg: l, ml: l.price }))) };
+            return { legs: ls, p: x.p, dec: x.dec, id: ids(ls), cl: clashIn(ls) }; });
+          const pick = (n, floor, free) => { let best = null, likely = null;
+            for (const x of e) { if (x.legs.length !== n || (x.cl && !free)) continue;
+              if (!likely || x.p > likely.p || (x.p === likely.p && x.id < likely.id)) likely = x;
+              if (x.p >= floor) { const v = x.p * x.dec; if (!best || v > best.v || (v === best.v && x.id < best.x.id)) best = { x, v }; } }
+            return best ? { ...best.x, likeliest: false } : likely ? { ...likely, likeliest: true } : null; };
+          const bad = []; let freeCl = 0;
+          for (const [id, label, n, floor] of tiersOwn(sums7.PB_TIERS)) { const t = r.tiers.find(x => x.id === 'elo-' + id), want = pick(n, floor, false), free = pick(n, floor, true);
+            if (free && free.cl) freeCl++;
+            const L = t && t.legs.length ? sums7.pbOrder(t.legs) : [], p = L.length ? sums7.parlayProb(L.map(l => ({ ...l, p: l.pe }))).corr : null, dec = L.length ? sums7.parlayDec(L.map(l => ({ leg: l, ml: l.price }))) : null;
+            if (!t || !want || ids(t.legs) !== want.id || !!t.likeliest !== want.likeliest || clashIn(t.legs) || t.p !== p || t.dec !== dec)
+              bad.push(`${label}: ${t ? t.legs.map(l => l.pid).join('+') + ' at ' + t.p + ', ' + t.dec + (t.likeliest ? ' (likeliest)' : '') : 'none'}, the rule ${want ? want.legs.map(l => l.pid).join('+') + (want.likeliest ? ' (likeliest)' : '') : 'none'}`); }
+          chk(!bad.length, `F7: the Elo picks over every game are not the rule worked out in full on every parlay of their size that DraftKings takes on one slip (${e.length} worked): ${bad.join('; ')}`);
+          notes.push(`the Elo picks on F7's ${C.length} candidates in four games (${e.length} parlays worked on the fast sums, ${e.filter(x => x.cl).length} holding a pair DraftKings refuses; ${freeCl} of the levels would hold one with no rule): ${r.tiers.map(t => `${t.label} ${t.legs.map(l => l.pid.slice(3)).join('+')}`).join('; ')}; ${nf.full} levels worked out in full on units, ${nf.empty} empty, ${nf.slot} slot levels held to their games' own`); } }
+      chk(nf.full > 0 && nf.empty > 0 && nf.slot > 0, `F7: the units' check met ${nf.full} levels worked out in full, ${nf.empty} empty and ${nf.slot} slot levels held to their games' own: it holds less than it says`);
+      chk(!errors.length, `F7: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); }
   }
 
   /* ---- F6 (18 October 2026): the search's pruning and its bounds, on seeded one-game slates of the check's own ----
@@ -1080,10 +1314,13 @@ function page(MU, opts) {
      published payload's pairs among the stats drawn, as of October 2026), and every level the search picks (the tab's
      own code, compiled here on its own, so it is quick) held to every parlay of its size worked out in full by the
      tab's fast sums, which the checks above hold to the props parts' sums to the bit (the parts' own where they give
-     none). Planted, the two slips fail it 4 and 3 times. */
+     none). Planted, the two slips fail it 4 and 3 times. Since app v121 the search compiled here carries the props parts'
+     DraftKings pair rule (SUMS_SRC), the slates' quarterbacks' passing TDs and their teammates' touchdowns among them, and
+     every parlay worked out in full is one with no such pair (clashOwn). */
   { const a0 = TAB.indexOf('const EP={'), b0 = TAB.indexOf("/* a parlay's fair chance (parlayFair,");
-    let F = null; try { F = new Function('PAY', 'window', SUMS_SRC + '\n' + TAB.slice(a0, b0) + '\nreturn {PB_TIERS,mlToDec,epPrep,epLevel,epSums,epExact};')({ corr: CORR_F6 }, {}); } catch (err) { F = 'threw ' + err.message; }
+    let F = null; try { F = new Function('PAY', 'window', SUMS_SRC + '\n' + TAB.slice(a0, b0) + '\nreturn {PB_TIERS,mlToDec,epPrep,epLevel,epSums,epExact,dkClash};')({ corr: CORR_F6 }, {}); } catch (err) { F = 'threw ' + err.message; }
     if (a0 < 0 || b0 < a0 || !F || typeof F === 'string') chk(false, `F6: the tab's search could not be read on its own (EP to parlayFair): ${typeof F === 'string' ? F : 'not found'}`);
+    else if (typeof F.dkClash !== 'function') chk(false, 'F6: the props parts\' DraftKings pair rule (dkClash) is not loaded beside the tab\'s search compiled on its own');
     else {
       let s = 20261018; const rnd = () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
       const STATS = { QB: ['passing_yards', 'passing_tds', 'completions'], RB: ['rushing_yards', 'scrim_yards', 'receptions'], WR: ['receptions', 'receiving_yards', 'any_td'], TE: ['receiving_yards', 'any_td'] };
@@ -1100,18 +1337,18 @@ function page(MU, opts) {
         for (const [id, , n, floor] of tiersOwn(F.PB_TIERS)) { let best = null, likely = null; const idx = [];
           const go = (st, d) => { if (d === n) { const e = sumOf(idx.slice()); if (!likely || e.p > likely.p || (e.p === likely.p && e.id < likely.id)) likely = e;
               if (floor && e.p >= floor) { const v = e.p * e.dec; if (!best || v > best.v || (v === best.v && e.id < best.e.id)) best = { e, v }; } return; }
-            for (let i = st; i <= C.length - (n - d); i++) { idx[d] = i; go(i + 1, d + 1); } };
-          go(0, 0); out[id] = floor ? (best ? { ...best.e, likeliest: false } : { ...likely, likeliest: true }) : { ...likely, likeliest: false }; }
+            for (let i = st; i <= C.length - (n - d); i++) { if (idx.slice(0, d).some(j => clashOwn(C[j], C[i]))) continue; idx[d] = i; go(i + 1, d + 1); } };
+          go(0, 0); out[id] = !likely ? { id: null, likeliest: false, none: true } : floor ? (best ? { ...best.e, likeliest: false } : { ...likely, likeliest: true }) : { ...likely, likeliest: false }; }
         return out; };
-      const bad = []; let sets = 0, levels = 0, near = 0;
+      const bad = []; let sets = 0, levels = 0, near = 0, withCl = 0;
       for (const [floor, at] of [[0.35, 0.592], [0.25, 0.63], [0.12, 0.589], [0.05, 0.549]]) for (let i = 0; i < 5; i++) {
-        const C = slate(sets++, at), P = F.epPrep(C), want = full(P), memo = new Map();
+        const C = slate(sets++, at), P = F.epPrep(C), want = full(P), memo = new Map(); if (C.some((a, i) => C.some((b, j) => j > i && clashOwn(a, b)))) withCl++;
         for (const t of tiersOwn(F.PB_TIERS)) { const [id, label, , fl] = t, w = want[id]; let r = null; try { r = F.epLevel(P, t, memo); } catch (err) { r = { err: err.message }; }
           levels++; if (fl && Math.abs(w.p - fl) < 0.004) near++;
           const got = r && r.legs ? r.legs.map(idC).sort().join(',') : null;
           if (got !== w.id || !!(r && r.likeliest) !== w.likeliest) bad.push(`slate ${sets - 1} (${C.length} legs, ${floor * 100}%) ${label}: ${r && r.legs ? `${(r.p * 100).toFixed(2)}% at ${r.dec.toFixed(2)}${r.likeliest ? ' (likeliest)' : ''}` : r && r.err ? 'threw ' + r.err : 'none'}, the best ${(w.p * 100).toFixed(2)}% at ${w.dec.toFixed(2)}${w.likeliest ? ' (likeliest)' : ''}`); } }
       chk(!bad.length, `F6: on ${bad.length} of ${levels} levels of the check's seeded one-game slates, the search does not pick the best its rule allows, every parlay of its size worked out in full: ${bad.slice(0, 3).join('; ')}`);
-      notes.push(`the Elo picks' search on ${sets} seeded one-game slates of 9 to 12 legs near the floors: ${levels - bad.length} of ${levels} levels the full enumeration's, ${near} of them within 0.4 points of a floor`); } }
+      notes.push(`the Elo picks' search on ${sets} seeded one-game slates of 9 to 12 legs near the floors: ${levels - bad.length} of ${levels} levels the full enumeration's, ${near} of them within 0.4 points of a floor, ${withCl} slates with a pair DraftKings refuses`); } }
 
   console.log(`elo tab check: ${checks} checks, ${fails.length} failures`);
   for (const n of notes) console.log('  note: ' + n);

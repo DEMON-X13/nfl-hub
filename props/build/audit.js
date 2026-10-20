@@ -1018,7 +1018,10 @@ setTimeout(async()=>{
      fill, a market leg marked so, where the same level from the legs with an edge is empty, with
      one line saying so whenever Game total is ticked; and (app v109) wherever the payload carries
      DraftKings' ids, every leg a tier may take or holds has DraftKings' id at its own line, by the
-     audit's own rule (dkOk), so it goes on DraftKings' betslip. Run on the week as it is, and again on
+     audit's own rule (dkOk), so it goes on DraftKings' betslip; and (app v121) no tier holds a pair
+     DraftKings will not take on one slip, by the audit's own copy of the rule (clashAud), blocking, and
+     one is empty only where no parlay of its size can be made of the legs (existsAud, which honours it).
+     Run on the week as it is, and again on
      made-up lines (each starter's main line set off his own projection, a price on every total: -105/-115
      on half, +100/+100 with no margin and +110/+105 with less than none on the rest, and a made-up id
      table giving every priced line its id, as the pull reads one with each price) so the player legs and
@@ -1415,7 +1418,8 @@ setTimeout(async()=>{
         if(!s) continue;
         /* the boxes never move a set: with some unticked, the set is the one every box ticked builds */
         if(KINDS.some(k=>!U().k[k])||U().off.length){ const keepT=JSON.stringify(U()), sg=x=>JSON.stringify(x.tiers.map(t=>t.why||t.legs.map(legIdAud).join()+'@'+t.corr+'@'+t.dec));
-          const forget=w.eval('(function(id){ SP_CACHE.delete(spSig(spUnit(id))); })');
+          /* (app v121) the slot's levels are its games' own sets', each cached on its own, so each is forgotten too */
+          const forget1=w.eval('(function(id){ SP_CACHE.delete(spSig(spUnit(id))); })'), forget=id=>{ forget1(id); if(slot) for(const x of G) forget1(x.id); };
           for(const k of KINDS) U().k[k]=true; U().off=[]; forget(g.id); const s2=F('spSet')(g.id); S.ui.pb=JSON.parse(keepT); forget(g.id);
           chk(!!s2&&sg(s2)===sg(F('spSet')(g.id)),`${lab}: ${g.id}'s set moves with the Parlay Builder's boxes`); }
         /* the most legs one parlay of the unit can hold (one game's: the slot's most is that of any one of its games) */
@@ -5872,7 +5876,8 @@ setTimeout(async()=>{
       W.compose(!plIds||pool.some(c=>!c.main&&c.grp!=='TEAM'&&c.stat!=='any_td'),'the leg pool has no threshold ladders'); }
     /* the high pair is the best payout for its chance among its seeds, not a safe nothing */
     if(T.high){ const one=c=>c.p*F('mlToDec')(c.price), pool=F('gameLegPool')(g).sort((a,b)=>one(b)-one(a));
-      const a=pool[0], b=pool.find(c=>c.key!==a.key&&!(c.grp==='TEAM'&&a.grp==='TEAM'));
+      /* (app v121) a pair a hand can take: not a pair DraftKings will not take on one slip (clashAud, the audit's own copy) */
+      const a=pool[0], b=pool.find(c=>c.key!==a.key&&!(c.grp==='TEAM'&&a.grp==='TEAM')&&!clashAud(a,c));
       if(a&&b){ const pd=F('parlayDec')([{leg:a,ml:a.price},{leg:b,ml:b.price}]), pr=F('parlayProb')([a,b],20000).corr;
         const [,,,hf,hp]=spec[0];
         /* only a pair High could take: the tier's own payout and chance floors, with room for simulation noise */

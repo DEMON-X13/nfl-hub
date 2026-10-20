@@ -18,7 +18,10 @@
  * which is the prop model's Games tab running in this page; the Parlay Builder (the builder, its
  * choices and the Top lines), Suggested Parlays (its two sections, Night games and the Sunday slot,
  * each headed by its record and backtest, each unit's model parlays and Elo picks, Add to builder,
- * Finish, the lock), and X Parlays on a tab of its own. X Parlays and the X Bet Log are the
+ * Finish, the lock; since app v121 every level one game's legs, the Sunday slot's the best of its
+ * games' own, and no pair DraftKings refuses on one slip, worked out here on the smoke's own copies),
+ * the builder's notes on such a pair and on a same-game parlay mixed with other games, the parlay
+ * card's link for each game, and X Parlays on a tab of its own. X Parlays and the X Bet Log are the
  * files liveparlays/parlays.json and liveparlays/xbets.json, read only on every device: there is
  * no owner and no shared store, every request a page makes is recorded, and one to the retired
  * store or its sign-in services, or anything but a read, fails the smoke. A browser that still
@@ -1795,7 +1798,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
        on made-up games at clocks of their own) may stand it in */
     const SP_ON_REAL = w.eval('typeof spOn') === 'function' ? w.eval('spOn') : null;
     const standOn = all => { w.__spOnReal = SP_ON_REAL; w.eval(all ? 'spOn=function(){ return spGames(); }' : 'spOn=window.__spOnReal'); w.eval('SP_SHOWN=null; renderSp()'); };
-    holdSetF = holdSet; SPH = { blocksHeld, headHeld, eloLevelsHeld, eloCardsHeld, eloSumsOwn, eloCandsOwn, eloRuleOwn, eloIn, holdLocked, unitGames, ELO_LV_OWN };
+    holdSetF = holdSet; SPH = { blocksHeld, headHeld, eloLevelsHeld, eloCardsHeld, eloSumsOwn, eloCandsOwn, eloRuleOwn, eloIn, holdLocked, unitGames, ELO_LV_OWN, SPU };
     if (!games.length) chk(/no game is left|nothing left to build from/.test(txt(panel)), 'with no game to come the panel does not say so: ' + txt(panel).slice(0, 160));
     else {
       chk(d.querySelectorAll('#pbPanel [data-pb-game]').length === games.length && games.every(g => !started(g)), 'the panel\'s games are not this week\'s still to kick off');
@@ -3058,7 +3061,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       /* the second game: its set held to every rule (holdSet: a level empty only where the game's legs make too few with
          no pair DraftKings refuses), and, as it was made for it, its Medium the money line, the touchdown and a total */
       { const lab3 = `a made-up Monday night game (${C3.id}) whose quarterback's passing TDs and his teammate's touchdown are two of its three legs with an edge, its total posted`;
-        holdSetF(lab3, C3, true); const s3 = w.eval('spSet')(C3.id), M3 = s3 && s3.tiers.find(t => t.id === 'med'), q3 = qualOwn(SPU, [C3]);
+        holdSetF(lab3, C3, true); const s3 = w.eval('spSet')(C3.id), M3 = s3 && s3.tiers.find(t => t.id === 'med'), q3 = qualOwn(SPH.SPU, [C3]);
         chk(q3.pref.length + q3.thin.length === 3 && q3.mkt.length === 2 && maxFitOwn([...q3.pref, ...q3.thin]) === 2 && !!M3 && !!M3.legs && M3.mkt === 1 && M3.legs.some(l => l.pid === TD3.pid) && M3.legs.some(l => l.pid === ML3.pid) && !M3.legs.some(l => l.pid === QB3.pid),
           `${lab3}: its Medium is not the money line, the touchdown and a total, the one three-leg parlay of the game DraftKings takes (the legs with an edge make three by count and two that go together, so a total fills the third): ` + (M3 ? (M3.legs ? M3.legs.map(l => l.name + ' ' + l.label).join(' + ') : M3.why) : 'no Medium')
           + ` (${q3.pref.length} Value picks, ${q3.thin.length} thin, ${q3.mkt.length} totals worked out here)`); }
@@ -3519,8 +3522,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
            legs are taken and priced together; the second the prop model rates at 90%, far off the market: an Elo pick is
            chosen on its own chance, so it stays, flagged. Each nudge is the smoke's own, set in the tab's matchups (the file
            the page holds, every entry put back below), so the levels stand on numbers of the smoke's choosing whatever the
-           week's file says: the second the likeliest and the best value, the first and third next, the first and third
-           moving together strongly */
+           week's file says: the second the likeliest and the best value, the first and third next */
         const GAME_OF = [0, 0, 0, 0, 0, 0], Z = [0.35, 0.5, 0.3, 0.25, 0.2, 0.15];
         const B = byGame.map((c, i) => ({ ...c, gid: EG[GAME_OF[i]].id, z: Z[i] }));
         for (const c of B) { keepMu[c.pid] = JSON.stringify(liveMu.players[c.pid]); liveMu.players[c.pid].stats[c.st][2] = c.z * MU.fit[liveMu.players[c.pid].group + '|' + c.st].sd; }
@@ -3555,14 +3557,18 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const keepDkE = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), fixE = dkFixture(legs, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'ELO');
         const setDkE = o => w.eval(o === null ? 'delete PAY.dk' : `PAY.dk=${JSON.stringify(o)}`);
         setDkE(fixE); undoDk = () => w.eval(`(function(){ const k=${keepDkE}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
-        /* the two legs of one game move together strongly (a correlation of the smoke's own in the page's table, put
-           back below), so a level takes them, priced together */
-        /* (app v121) and, all six being of one game now, every other two of them a little (0.15, the table's own for two
-           players of a club run to 0.35), so no level's legs move apart and every level is priced together below the
-           legs multiplied, whatever the week's table says of their stats */
+        /* the legs of the game move together (correlations of the smoke's own in the page's table, put back below), so a
+           level's legs are taken and priced together below the legs multiplied, whatever the week's table says of their
+           stats. (app v121) All six being of one game, every two of them get the same 0.2, one value on every key their
+           stats make: the table is keyed by position and stat, not by player, so two players of one position and stat
+           share a key, and the earlier plant (0.6 on one key, 0.15 on the rest) put 0.6 on every quarterback's passing
+           yards with every back's rushing yards, a matrix no Cholesky factor takes (two quarterbacks and two backs: an
+           eigenvalue of 1.15 - 1.2 < 0), so parlayProb shrank it, the fast sums stood aside and the search's bounds no
+           longer held. One value r on every pair is r times all ones plus 1 - r on the diagonal, positive for any r under
+           1 and any number of legs, and 0.2 is within the table's own (two players of a club run to 0.353) */
         const ckOf = (a, b) => { const x = a.grp + ':' + a.stat, y = b.grp + ':' + b.stat; return (a.team === b.team ? 'team|' : 'opp|') + (x < y ? x + '|' + y : y + '|' + x); };
-        const ck = ckOf(legs[0], legs[2]), CK = new Map([[ck, 0.6]]);
-        for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) { const k = ckOf(legs[i], legs[j]); if (!CK.has(k) && legs[i].pid !== legs[j].pid) CK.set(k, 0.15); }
+        const CK = new Map();
+        for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) if (legs[i].pid !== legs[j].pid) CK.set(ckOf(legs[i], legs[j]), 0.2);
         const keepCorr = w.eval(`(function(){ const o={}; for(const k of ${JSON.stringify([...CK.keys()])}){ const v=PAY.corr&&PAY.corr[k]; o[k]=v===undefined?null:v; } return JSON.stringify(o); })()`);
         w.eval(`PAY.corr=PAY.corr||{}; Object.assign(PAY.corr,${JSON.stringify(Object.fromEntries(CK))})`);
         undoCorr = () => w.eval(`(function(){ const o=${keepCorr}; for(const k in o){ if(o[k]===null) delete PAY.corr[k]; else PAY.corr[k]=o[k]; } })()`);
@@ -3725,25 +3731,34 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
               `the Elo picks of a unit of ${lab2} are not the ELO tab's rule on those games alone, each level one game's and all four filled from the six in its first game, whatever the Parlay Builder's ticks: ` + bad.slice(0, 3).join('; ')); }
           /* (app v121) the Sunday slot of two made-up games of its own where the best Elo pick across them beats every one-game
              pick (the owner, 19 October 2026: "the legs need to be part of the same game parlay only, and anytime there's a
-             mix it bombs the hyperlink"): the second made-up game holds the block's best-value player and its worst, the
-             third a quarterback's passing touchdowns and a teammate's anytime touchdown (a pair DraftKings refuses, their
-             nudges and the matchups' trust in the two stats the smoke's own, put back below) and one more player of the
-             other club. Across the two games Safe would take the quarterback with the best-value player, landing above its
-             35% and paying more than any one game's pair; each level of the slot is one game's, the best by the slot's rule,
-             Medium empty saying no three players of any one game go together on DraftKings' slip, Aggressive and Extreme
-             saying no game has as many players; and the third game alone says its three do not go together */
-          { const qbP = Object.entries(MU.players).find(([pid, v]) => v.group === 'QB' && eloP.players[pid] && !w.eloRuledOut(pid) && !B.some(c => c.pid === pid)),
-              wrP = Object.entries(MU.players).find(([pid, v]) => v.group === 'WR' && eloP.players[pid] && !w.eloRuledOut(pid) && !B.some(c => c.pid === pid));
-            if (!qbP || !wrP || !MU.fit['QB|passing_tds'] || !MU.fit['WR|any_td']) console.log('  (the Elo picks\' two-game slot: no rated quarterback and receiver free to stand the pair DraftKings refuses on, or no fit for their stats: skipped)');
-            else { const keepRec = { qb: JSON.stringify(liveMu.record['QB|passing_tds'] || null), wr: JSON.stringify(liveMu.record['WR|any_td'] || null) }, keepG = w.__eloSlot.G, keepL = w.eval('pricedLegs');
+             mix it bombs the hyperlink"): the second made-up game holds a player of the best value and one of the worst, of
+             two clubs, the third a quarterback's passing touchdowns and a teammate's anytime touchdown (a pair DraftKings
+             refuses) and one more player, of the other club. The five are any rated quarterback in the tab's matchups, any
+             rated back, receiver or tight end with an anytime touchdown fit, and three of the block's six besides them (a
+             week's matchups may hold no quarterback the six do not already take: week 6's Monday night alone held two), and
+             every nudge on their five lines and the matchups' trust in the two touchdown stats are the smoke's own, set for
+             the case and put back after it, so it stands on numbers of the smoke's choosing at any hour. Across the two games
+             Safe would take the quarterback with the best-value player, landing above its 35% and paying more than any one
+             game's pair; each level of the slot is one game's, the best by the slot's rule, Medium empty saying no three
+             players of any one game go together on DraftKings' slip, Aggressive and Extreme saying no game has as many
+             players; and the third game alone says its three do not go together */
+          { const rated = pid => !!eloP.players[pid] && !!liveMu.players[pid], mmPid = mmC.pid, inB = pid => B.some(c => c.pid === pid);
+            const pick = (ok, not) => { const all = Object.keys(liveMu.players).filter(pid => rated(pid) && ok(liveMu.players[pid]) && !not.includes(pid)), score = pid => (inB(pid) ? 2 : 0) + (pid === mmPid ? 4 : 0) + (w.eloRuledOut(pid) ? 1 : 0);
+              return all.sort((a, b) => (score(a) - score(b)) || (a < b ? -1 : 1))[0] || null; };
+            const qbId = pick(v => v.group === 'QB', []), tdId = qbId && pick(v => ['RB', 'WR', 'TE'].includes(v.group) && !!MU.fit[v.group + '|any_td'], [qbId]);
+            const rest = B.filter(c => c.pid !== qbId && c.pid !== tdId && c.pid !== mmPid).slice(0, 3);
+            if (!qbId || !tdId || rest.length < 3 || !MU.fit['QB|passing_tds']) console.log('  (the Elo picks\' two-game slot: no rated quarterback, or no rated back, receiver or tight end beside him, in the tab\'s matchups: skipped)');
+            else { const tdG = liveMu.players[tdId].group, keepRec = { qb: JSON.stringify(liveMu.record['QB|passing_tds'] || null), td: JSON.stringify(liveMu.record[tdG + '|any_td'] || null) }, keepG = w.__eloSlot.G, keepL = w.eval('pricedLegs');
+              const keepX = Object.fromEntries([qbId, tdId, ...rest.map(c => c.pid)].map(pid => [pid, JSON.stringify(liveMu.players[pid].stats)]));
               try {
-                const trust = { past: { rmse_elo: 1, rmse_form: 2, right_top: 0.6 } }; liveMu.record['QB|passing_tds'] = trust; liveMu.record['WR|any_td'] = trust;
-                const plant = (pid, st, z) => { if (!(pid in keepMu)) keepMu[pid] = JSON.stringify(liveMu.players[pid]); const v = liveMu.players[pid], sd = MU.fit[v.group + '|' + st].sd; v.stats[st] = [1, 1, z * sd]; };
-                plant(qbP[0], 'passing_tds', 0.5); plant(wrP[0], 'any_td', 0.45);
+                const trust = { past: { rmse_elo: 1, rmse_form: 2, right_top: 0.6 } }; liveMu.record['QB|passing_tds'] = trust; liveMu.record[tdG + '|any_td'] = trust;
+                const plant = (pid, st, z) => { const v = liveMu.players[pid], sd = MU.fit[v.group + '|' + st].sd; v.stats[st] = [1, 1, z * sd]; };
+                const [hi, lo, ot] = rest; plant(qbId, 'passing_tds', 0.5); plant(tdId, 'any_td', 0.45); plant(hi.pid, hi.st, 0.5); plant(lo.pid, lo.st, 0.15); plant(ot.pid, ot.st, 0.2);
+                const qbP = [qbId], wrP = [tdId];
                 const G3 = [EG[1], EG[2]], cX = (c, gid, team) => ({ ...c, gid, team });
-                const LX = [L(cX(B[1], EG[1].id), -110, 'over', { team: 'X' }), L(cX(B[5], EG[1].id), -105, 'over', { team: 'X' }),
-                  L({ pid: qbP[0], st: 'passing_tds', gid: EG[2].id }, 120, 'over', { k: 1.5, team: 'X', label: 'Over 1.5 passing TDs' }), L({ pid: wrP[0], st: 'any_td', gid: EG[2].id }, 130, 'over', { team: 'X', label: 'Scores a touchdown' }),
-                  L(cX(B[4], EG[2].id), -110, 'over', { team: 'Y' })];
+                const LX = [L(cX(hi, EG[1].id), -110, 'over', { team: 'X' }), L(cX(lo, EG[1].id), -105, 'over', { team: 'Y', opp: 'X' }),
+                  L({ pid: qbId, st: 'passing_tds', gid: EG[2].id }, 120, 'over', { k: 1.5, team: 'X', label: 'Over 1.5 passing TDs' }), L({ pid: tdId, st: 'any_td', gid: EG[2].id }, 130, 'over', { team: 'X', label: 'Scores a touchdown' }),
+                  L(cX(ot, EG[2].id), -110, 'over', { team: 'Y', opp: 'X' })];
                 LX.forEach(l => { l.key = l.gid + '|' + l.pid + '|' + l.stat; });
                 w.__legsX = LX; w.eval('pricedLegs=function(){ return window.__legsX.map(l=>Object.assign({},l)); }');
                 setDkE(dkFixture(LX, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'ELX'));
@@ -3767,7 +3782,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
                     'the Elo picks of a game whose three players include a quarterback\'s passing TDs and his teammate\'s touchdown are not the rule on its own, or its Medium does not say they do not go together: ' + b3.slice(0, 2).join('; ') + ' / ' + (R3 ? R3.tiers.map(t => t.why || t.legs.map(l => l.name).join('+')).join(' | ') : 'none')); } }
               finally {
                 w.__eloSlot.G = keepG; w.__keepLX = keepL; w.eval('pricedLegs=window.__keepLX; delete window.__keepLX; delete window.__legsX');
-                for (const [k, v] of [['QB|passing_tds', keepRec.qb], ['WR|any_td', keepRec.wr]]) { const o = JSON.parse(v); if (o === null) delete liveMu.record[k]; else liveMu.record[k] = o; }
+                for (const [k, v] of [['QB|passing_tds', keepRec.qb], [tdG + '|any_td', keepRec.td]]) { const o = JSON.parse(v); if (o === null) delete liveMu.record[k]; else liveMu.record[k] = o; }
+                for (const [pid, v] of Object.entries(keepX)) liveMu.players[pid].stats = JSON.parse(v);
                 setDkE(fixE); w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderSp()'); await wait(40); } } } }
         /* each card leads with the fair chance, the Elo's beside it, and says how its level was chosen */
         { const pc = v => (v * 100).toFixed(0) + '%', rule = t => { const lv = LV.find(x => 'elo-' + x[0] === t.id), fl = lv && lv[3];
