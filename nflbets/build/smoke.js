@@ -161,8 +161,10 @@ function finish(why) {
    stack, so a mistake in the smoke is a fast exit 1, never a run that waits on open windows. */
 process.on('unhandledRejection', e => { checks++; fails.push('the page threw in an async handler: ' + (e && e.stack || e)); });
 /* and it never hangs: the elo job runs it every morning with no time limit of its own, so a run
-   still going after fifteen minutes stops with what it has, and fails (it takes six to eight here, the
-   upper end on a payload whose Sunday slot is live, since app v118 checks the slot's set; ten until then) */
+   still going after fifteen minutes stops with what it has, and fails (it took six to eight minutes, the
+   upper end on a payload whose Sunday slot is live, since app v118 checks the slot's set; ten until then. Since app
+   v123, with the admin's boots and the published read's checks, about ten and a half on a 4-core box beside another
+   heavy check, eleven on a payload carrying the read) */
 const SMOKE_LIMIT_MS = 15 * 60 * 1000;
 setTimeout(() => finish(`the smoke did not finish in ${Math.round(SMOKE_LIMIT_MS / 1000)} s: stopped with what it had`), SMOKE_LIMIT_MS).unref();
 /* nor does it pass by running out of things to wait on: a body stuck on a promise nothing will
@@ -5294,18 +5296,22 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             hands: [sigB.hands.length, sigC.hands.length], top: [sigB.top.length, sigC.top.length], elo: [sigB.cands, sigC.cands] }).slice(0, 900));
         console.log(`  (after a press on PAY.dk {}: ${sigB.tiers.filter(t => / dkline/.test(t)).length} of 4 levels, ${sigB.hands.filter(t => / dkline/.test(t)).length} hand legs, ${sigB.top.filter(t => / dkline/.test(t)).length} Top lines and ${sigB.cands} Elo candidates on ${g.id}'s read, as with no table)`);
         /* (app v123) and the same read published by the props job in place of the press (PAY.espn: g's player lines as the
-           press read them, found 'ok' then), installed by the page's own espnPublished() over a payload baked with
-           PAY.dk {}, as every run bakes it now: the block in ESPN_LIVE is the published one (no press's), and the read's
-           legs are suggested exactly as the press's were with no table (sigC). The press's own block and the payload's
-           state put back after */
+           press read them, found 'ok' then, and its game-line ids and event), installed by the page's own espnPublished()
+           over a payload baked with PAY.dk {}, as every run bakes it now and as a load installs it (the table it merges
+           the read's ids into is the payload's, ESPN_PUB_DK cleared first as at boot): the block in ESPN_LIVE is the
+           published one (no press's), the game's entry in PAY.dk holds the read's ids alone (so it carries none of a
+           pull's), and the read's legs are suggested exactly as the press's were with no table (sigC). The press's own
+           block and the payload's state put back after */
         { const LVW = w.eval('ESPN_LIVE')[wk], pressBlk = LVW[g.id], espn0 = P.espn, hadE = 'espn' in P, pubDk0 = w.eval('ESPN_PUB_DK');
+          const glIds = { [`team:${g.h}|ml`]: '0MLSMOKEPUB_1', [`team:${g.a}|ml`]: '0MLSMOKEPUB_3' };
           try {
-            delete LVW[g.id]; P.dk = {}; P.espn = { v: 1, read_at: blk.at, games: { [g.id]: { w: wk, pl: clone(blk), out: { st: 'ok', at: blk.at } } } };
-            const nPub = w.eval('espnPublished()'); await flush();
-            const inst = (w.eval('ESPN_LIVE')[wk] || {})[g.id], pubOf = w.eval('espnPubOf')(g.id, wk), sigP = sigOn();
-            chk(nPub === 1 && !!inst && !!pubOf && pubOf.block === inst && JSON.stringify(inst) === JSON.stringify(blk) && !w.eval('espnPressed')(g.id, wk) && JSON.stringify(sigP) === JSON.stringify(sigC),
-              `with ${g.id}'s player lines published by the props job (PAY.espn) over PAY.dk {}, the page does not install them as the published read, or does not suggest the read's legs as a press's with no table: `
-              + JSON.stringify({ installed: nPub, same: !!inst && JSON.stringify(inst) === JSON.stringify(blk), levels: sigP.tiers.map(t => t.slice(0, 60)), withNone: sigC.tiers.map(t => t.slice(0, 60)), pool: [sigP.pref.length, sigP.thin.length, sigC.pref.length, sigC.thin.length],
+            delete LVW[g.id]; P.dk = {}; P.espn = { v: 1, read_at: blk.at, games: { [g.id]: { w: wk, pl: clone(blk), out: { st: 'ok', at: blk.at }, gl: { at: blk.at, lines: {}, ids: glIds, event: '9300999' } } } };
+            const nPub = w.eval('ESPN_PUB_DK=null; espnPublished()'); await flush();
+            const inst = (w.eval('ESPN_LIVE')[wk] || {})[g.id], pubOf = w.eval('espnPubOf')(g.id, wk), sigP = sigOn(), entP = ((P.dk[wk] || {})[g.id]) || null;
+            chk(nPub === 1 && !!inst && !!pubOf && pubOf.block === inst && JSON.stringify(inst) === JSON.stringify(blk) && !w.eval('espnPressed')(g.id, wk) && JSON.stringify(sigP) === JSON.stringify(sigC)
+              && !!entP && Object.keys(glIds).every(k => entP[k] === glIds[k]) && entP.event === '9300999' && !dkEntryOwn(entP),
+              `with ${g.id}'s player lines and game-line ids published by the props job (PAY.espn) over PAY.dk {}, the page does not install them as the published read (its ids in the game's entry, which carries none of a pull's), or does not suggest the read's legs as a press's with no table: `
+              + JSON.stringify({ installed: nPub, same: !!inst && JSON.stringify(inst) === JSON.stringify(blk), entry: entP ? Object.keys(entP) : null, levels: sigP.tiers.map(t => t.slice(0, 60)), withNone: sigC.tiers.map(t => t.slice(0, 60)), pool: [sigP.pref.length, sigP.thin.length, sigC.pref.length, sigC.thin.length],
                 hands: [sigP.hands.length, sigC.hands.length], top: [sigP.top.length, sigC.top.length], elo: [sigP.cands, sigC.cands] }).slice(0, 900));
           } finally {
             if (hadE) P.espn = espn0; else delete P.espn;
