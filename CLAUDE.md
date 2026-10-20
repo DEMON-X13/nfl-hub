@@ -1436,14 +1436,23 @@ more legs of one game) with legs of other games, that DraftKings' betslip link d
 gives each game a link of its own (`data-pb-multigame`, read off the card's own plan, `dkSlipPlan`, so only the legs that
 go on the slip count, and only where the legs are of one week, as Finish asks). The parlay card (`card.html`'s `dkPlan`: `games`, `multi`,
 `clash`) then has no link for every leg but a button for each game's (`#pcDkGames`, `a.pc-dkbtn[data-pc-dkgame]`, its
-legs in the card's order, each titled with its own game's read, #pcDk hidden; while the card checks DraftKings'
-lines as it opens, the waiting Open in DraftKings alone, since the read can change the plan, the focus on it moving to
-the first game's button once they are drawn, and the status line then "DraftKings’ lines checked: the 2 games’ links open 5
-of the 7 legs."), says why, sends a link per game in Share
+legs in the card's order, each titled with its own game's read; while the card checks DraftKings' lines as it opens,
+the waiting Open in DraftKings alone, since the read can change the plan), says why, sends a link per game in Share
 link's text ("Links copied" where it copies them), and on every card with two or more legs on the slip lists every leg's
 own link, a 44px row each, a leg converted to DraftKings' number saying "(on DraftKings as Over 64.5 receiving yards)" (`ul.pc-dklegs`, until app v121 a row of numbers,
 "One leg at a time: 1 · 2 · 3"), and names any pair DraftKings may refuse (`data-pc-dkclash`). A parlay of one leg a game
 is a plain parlay and still opens as one link (the owner's word was for the mix; if those fail too, split them as well).
+Since app v122 (`patch_dk_all.py`, the owner's call of 20 October 2026: "can we add a different color button for all legs
+parlays on top of the individual ones? id like to still test those but have the inidividuals as a fallback plan") a mixed
+parlay keeps its all-legs link too, first and in ice where the games' links are the hub's gold (`#pcDk` with
+`.pc-dkall`, "Open all 3 legs in DraftKings", or "Open 3 of 4 legs in DraftKings" with a leg to add by hand; dkPlan's
+`all`; theme.css's `.pc-actions .btn.pc-dkall`, ice with dark text, white on the light look's darker ice), titled and
+said in the note to be a try DraftKings may not open, the games' links there for when it does not; the focus on the
+waiting button stays on it once the check settles, the status line then "DraftKings’ lines checked: the all-legs link
+tries 5 of the 7 legs on one slip, and the 2 games’ links open them a game at a time.", Share link sends it first
+("DraftKings betslip, every leg on one slip (...):") and the games' links under "Each game on its own:", and the
+builder's line says DraftKings "may not open that mix as one" and that the card gives each game a link "beside the one
+for every leg".
 The audit (its own `clashAud`, fill and slot rule; M16 on made-up games), the nflbets smoke (`clashOwn`, the slot's one-game rule
 and the Elo picks' per game, the builder's notes, the card's buttons on made-up ids), `smoke_live.js` section J (the card's
 buttons, per-leg list, Share link text, clash line and Tab order) and `elo/check_tab.js` (the rule loaded into the search

@@ -21,7 +21,7 @@
  * Finish, the lock; since app v121 every level one game's legs, the Sunday slot's the best of its
  * games' own, and no pair DraftKings refuses on one slip, worked out here on the smoke's own copies),
  * the builder's notes on such a pair and on a same-game parlay mixed with other games, the parlay
- * card's link for each game, and X Parlays on a tab of its own. X Parlays and the X Bet Log are the
+ * card's link for every leg and its link for each game on such a mix, and X Parlays on a tab of its own. X Parlays and the X Bet Log are the
  * files liveparlays/parlays.json and liveparlays/xbets.json, read only on every device: there is
  * no owner and no shared store, every request a page makes is recorded, and one to the retired
  * store or its sign-in services, or anything but a read, fails the smoke. A browser that still
@@ -2192,10 +2192,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           const btn = n === t.legs.length ? 'Open in DraftKings' : `Open ${n} of ${t.legs.length} legs in DraftKings`;
           if (!n) console.log(`  (no leg of the ${t.label} level has a DraftKings key: none goes on the slip, and each is named to add by hand)`);
           else chk(ids.length === n && ids.every(x => /^SMK\d/.test(x)) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+') && txt(a) === btn
-            && d.querySelectorAll('#pcDkNote [data-pc-dkmiss]').length === t.legs.length - n && !d.querySelector('#pcDkNote [data-pc-dkswap]') && !/goes on as|at its own line/.test(txt(d.getElementById('pcDkNote'))) && !d.getElementById('pcLink').hidden
+            && !a.classList.contains('pc-dkall') && d.querySelectorAll('#pcDkNote [data-pc-dkmiss]').length === t.legs.length - n && !d.querySelector('#pcDkNote [data-pc-dkswap]') && !/goes on as|at its own line/.test(txt(d.getElementById('pcDkNote'))) && !d.getElementById('pcLink').hidden
             && /^DraftKings’ lines as read .* ET: Open in DraftKings opens /.test(txt(d.getElementById('pcDkNote'))) && txt(d.getElementById('pcDkNote')).includes(`opens ${n < t.legs.length ? n + ' of the ' + t.legs.length + ' legs' : 'the ' + t.n + ' legs'} as DraftKings had ${n === 1 ? 'it' : 'them'} then; a leg whose line DraftKings has moved or pulled since will not be on the slip`)
             && !/\bputs all\b|\ball \d+ legs on\b/.test(txt(d.getElementById('pcDkNote')) + ' ' + a.getAttribute('title')),
-            `Open in DraftKings on the ${t.label} level does not open its legs' own ids (${ids.length} of ${n} keyed, ${t.legs.length} legs) under "${btn}": ` + (a ? txt(a) + ' ' + a.getAttribute('href') + ' hidden ' + a.hidden : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 200)); }
+            `Open in DraftKings on the ${t.label} level does not open its legs' own ids (${ids.length} of ${n} keyed, ${t.legs.length} legs) under "${btn}", one link with no all-legs class: ` + (a ? txt(a) + ' ' + a.getAttribute('href') + ' hidden ' + a.hidden + ' class "' + a.className + '"' : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 200)); }
         w.eval(`(function(){ const k=${keepDk}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
         w.eval('PARLAY_CARD.close()'); await wait(20);
         chk(d.getElementById('pcModal').hidden && d.activeElement === d.querySelector(finSel), 'closing the card did not give the focus back to the level\'s Finish');
@@ -2250,11 +2250,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             const a = d.getElementById('pcDk'), note = txt(d.getElementById('pcDkNote')), sw = d.querySelector(`#pcDkNote [data-pc-dkswap="${swI + 1}"]`);
             const btn = ids.length === L.length ? 'Open in DraftKings' : `Open ${ids.length} of ${L.length} legs in DraftKings`;
             chk(!!fin && !d.getElementById('pcModal').hidden && !!a && !a.hidden && txt(a) === btn && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
-              && !!sw && txt(sw).startsWith(`${swI + 1}. `) && txt(sw).endsWith(`: goes on as ${swap}`) && d.querySelectorAll('#pcDkNote [data-pc-dkswap]').length === 1
+              && !a.classList.contains('pc-dkall') && !!sw && txt(sw).startsWith(`${swI + 1}. `) && txt(sw).endsWith(`: goes on as ${swap}`) && d.querySelectorAll('#pcDkNote [data-pc-dkswap]').length === 1
               && note.includes('On DraftKings’ slip at its own line:') && note.includes('DraftKings prices a changed leg at its own line, so its slip’s payout can differ from this card’s.')
               && !!d.querySelector(`#pcDkNote [data-pc-dkmiss="${goneI + 1}"]`) && d.querySelectorAll('#pcDkNote [data-pc-dkmiss]').length === L.length - ids.length
               && note.includes(`opens ${ids.length} of the ${L.length} legs as DraftKings had them then`),
-              `Finish does not open ${ids.length} of ${L.length} legs under "${btn}", leg ${swI + 1} at DraftKings' ${swap} and said so, and leg ${goneI + 1} to add by hand: ` + (a ? txt(a) + ' ' + a.getAttribute('href') : 'no link') + ' / ' + note.slice(0, 400));
+              `Finish does not open ${ids.length} of ${L.length} legs under "${btn}" (one link, no all-legs class), leg ${swI + 1} at DraftKings' ${swap} and said so, and leg ${goneI + 1} to add by hand: ` + (a ? txt(a) + ' ' + a.getAttribute('href') : 'no link') + ' / ' + note.slice(0, 400));
             { const lt = w.PARLAY_CARD.linkText(w.PARLAY_CARD.fromBuilder()), tx = lt ? lt.text : '', missN = L.map((l, i) => i + 1).filter(n => !on[n - 1]);
               chk(tx.includes(`On DraftKings’ slip at its own line: leg ${swI + 1} as ${swap} (DraftKings prices it at its own line, so its payout can differ)`)
                 && tx.includes(`DraftKings betslip (opens ${ids.length} of the ${L.length} legs as DraftKings had them; add ${missN.length === 1 ? 'leg ' + missN[0] : 'legs ' + missN.slice(0, -1).join(', ') + ' and ' + missN[missN.length - 1]} by hand):\n` + a.getAttribute('href') + '\n'),
@@ -3088,8 +3088,16 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      passing TDs' over with the game's total too and his under with his teammate's touchdown, and nothing of a parlay
      with none; it says one link a game where its legs mix two legs of one game with a leg of another (data-pb-multigame,
      on the hub only), and nothing of one leg a game; and the parlay card gives that mix a button for each game, its own
-     legs' ids in the card's order, none for them all, every leg's own link, the pairs DraftKings refuses by their numbers,
-     and the Share link's text a link for each game; one leg a game one link, as before ---- */
+     legs' ids in the card's order, every leg's own link, the pairs DraftKings refuses by their numbers, and the Share
+     link's text a link for each game; one leg a game one link, as before. (app v122, the owner's call of 20 October 2026:
+     "do you think maybe we can add a different color button for all legs parlays on top of the individual ones? id like
+     to still test those but have the inidividuals as a fallback plan") On that mix Open in DraftKings is kept, as the
+     all-legs link (pc-dkall, the ice button), every leg on the slip in the card's order, in its own words and title, the
+     games' buttons right after it as the fallback; the note, the status line once the card has checked DraftKings'
+     lines (a stand-in for the page's reader on these made-up games, each answering that DraftKings has posted no
+     player lines, so the check is done and the plan as it was), Share link's text (that link first, then each game's)
+     and the Tab order say so, and the focus on it while the card checks stays on it; a one-link card's never wears
+     the class ---- */
   if (hasPb && holdSetF && SPH) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), wk2 = String(cw).padStart(2, '0'), KK = 'props_sp_lock_v1';
     const mk = (n, d0, t0) => ({ id: `2099_${wk2}_A${n}_H${n}`, w: cw, a: 'A' + n, h: 'H' + n, d: d0, t: t0 });
     const C1 = mk(61, '2099-01-05', '20:15'), C2 = mk(62, '2099-01-04', '13:00'), C3 = { ...mk(63, '2099-01-05', '20:15'), tot: 44.5, tov: -110, tou: -110 };
@@ -3115,7 +3123,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const ATS1 = leg(C1, 'team:H61', 'TEAM', C1.h, 'ats', -3.5, 0.55, -110, 'To cover -3.5'), NOID2 = leg(C2, 'C62-RB9', 'RB', C2.a, 'rushing_yards', 50, 0.57, -110, '50+ rush yds'), NOID3 = leg(C3, 'C63-TE9', 'TE', C3.a, 'receptions', 4, 0.56, -115, '4+ rec');
     const L1 = [QB, TD, RB, TE, WR2, ML1], LALL = [...L1, ML2, QB3, TD3, ML3], CK = 'team|QB:passing_tds|WR:any_td', lab = `a made-up Monday night game (${C1.id}) whose quarterback's passing TDs and receiver's touchdown are its likeliest pair`;
     const keep = { pb: w.eval('[pbGames, pricedLegs]'), dk: w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), corr: w.eval(`(function(){ const v=PAY.corr&&PAY.corr[${JSON.stringify(CK)}]; return v===undefined?null:v; })()`), parlay: w.eval('JSON.stringify(S.parlay)'),
-      on: w.eval('typeof spOn') === 'function' ? w.eval('spOn') : null, slot: w.eval('typeof spSlotNext') === 'function' ? w.eval('spSlotNext') : null, key: w.localStorage.getItem(KK), card: w.PARLAY_CARD };
+      on: w.eval('typeof spOn') === 'function' ? w.eval('spOn') : null, slot: w.eval('typeof spSlotNext') === 'function' ? w.eval('spSlotNext') : null, key: w.localStorage.getItem(KK), card: w.PARLAY_CARD, ref: w.eval('espnRefresh') };
     const read = new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', DKF = dkFixture([...LALL, QBU, TOT, ...['over', 'under'].map(side => ({ gid: C3.id, week: cw, pid: 'game', stat: 'total', k: 44.5, side, main: true }))], read, 'PAIR');
     /* (app v121, the review's round) the Sunday game's lines read six hours before the night games' (its game lines and its
        player prices alike), so a card over both dates each game's link by its own read and its note by the older; and
@@ -3148,7 +3156,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       return { B, each, ok, miss, games, gs: games.map(G => G.gid), multi: games.length > 1 && games.some(G => G.ok.length > 1), read: ok.length ? Math.min(...ok.map(x => x.at)) : null }; };
     const readTxtOwn = ms => new Date(ms).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }) + ' ET';
     /* the builder's line on a same-game parlay mixed with other games, from the plan: the games with legs on the slip alone */
-    const multiNoteOwn = ls => { const p = planOwn(ls); return p.multi ? `These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${p.games.length} games a link of its own.` : null; };
+    /* (app v122) DraftKings' betslip may not open that mix as one, so the card gives each game a link of its own beside
+       the one for every leg */
+    const multiNoteOwn = ls => { const p = planOwn(ls); return p.multi ? `These legs mix a same-game parlay with other games. DraftKings’ betslip may not open that mix as one, so the parlay card gives each of the ${p.games.length} games a link of its own beside the one for every leg.` : null; };
     const notesOf = () => { const c = body() && body().querySelector('[data-pb-clash]'), m = body() && body().querySelector('[data-pb-multigame]');
       return { clash: c ? txt(c) : null, clashN: c ? c.dataset.pbClash : null, multi: m ? txt(m) : null, multiN: m ? m.dataset.pbMultigame : null }; };
     try {
@@ -3220,8 +3230,28 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       { await putB([QB, TD, ML2]); w.PARLAY_CARD = undefined; w.eval('renderParlay()'); await wait(20); const got = notesOf(); w.PARLAY_CARD = keep.card; w.eval('renderParlay()'); await wait(20);
         chk(got.clash === clashNoteOwn([QB, TD, ML2]) && got.multi === null, 'without the parlay card (the prop model\'s own page) the builder does not say what DraftKings refuses, or still says the card gives each game a link: ' + JSON.stringify(got)); }
       /* the card, from the builder: Finish on each parlay, its DraftKings buttons and note worked out here from the ids the
-         fixture planted (dkOwnId, the card's order the builder's) */
-      const cardOf = async ls => { await putB(ls); const fin = d.getElementById('pFinish'); if (fin && !fin.disabled) { fin.click(); await wait(40); } return !!fin && !d.getElementById('pcModal').hidden; };
+         fixture planted (dkOwnId, the card's order the builder's). (app v122) The card checks DraftKings' lines for its
+         games as it opens, through the page's reader (espnRefresh): here a stand-in for it on these made-up games, put
+         back below, each read answering a moment later that DraftKings has posted no player lines for it, so the check
+         is done with the plan as planted; every card's games are read afresh, their last read set aside first. While
+         the card checks, the focus is put on Open in DraftKings, as a visitor tabbing to it would; the waiting link is
+         then what it is on any card (no address, no all-legs class, no game's button) */
+      const IDS = [C1.id, C2.id, C3.id], unread = () => w.eval(`(function(){ for(const id of ${JSON.stringify(IDS)}) delete ESPN_OUT[id]; })()`);
+      w.__prReads = []; w.eval(`espnRefresh=async function(gid){ window.__prReads.push(gid); await new Promise(r=>setTimeout(r,5)); ESPN_OUT[gid]={st:'none',why:'DraftKings has posted no player lines for it yet',when:Date.now()}; return true; }`);
+      const cardOf = async ls => { await putB(ls); unread(); w.__prReads.length = 0;
+        const fin = d.getElementById('pFinish'), a = d.getElementById('pcDk'), gb = d.getElementById('pcDkGames'); let busy = null;
+        if (fin && !fin.disabled) { fin.click(); const cs = w.PARLAY_CARD.checkState();
+          busy = { st: cs && cs.state, t: txt(a), dkall: a.classList.contains('pc-dkall'), href: a.hasAttribute('href'), hidden: a.hidden, gb: !!gb && gb.hidden && !gb.children.length };
+          a.focus(); busy.focus = d.activeElement === a;
+          await cardSettled(w); await wait(20); }
+        return { opened: !!fin && !d.getElementById('pcModal').hidden, busy, reads: w.__prReads.slice() }; };
+      /* what the card's link opens, in its words: "2 of the 3 legs", "the leg", "the 3 legs" */
+      const whichOwn = p => p.miss.length ? `${p.ok.length} of the ${p.B.length} legs` : p.B.length === 1 ? 'the leg' : `the ${p.B.length} legs`;
+      /* (app v122) the all-legs link's words on the mix: "Open all 3 legs in DraftKings", "Open 3 of 4 legs in DraftKings" */
+      const allTxtOwn = p => p.miss.length ? `Open ${p.ok.length} of ${p.B.length} legs in DraftKings` : `Open all ${p.ok.length} legs in DraftKings`;
+      /* the card's Tab order, read off the window as it stands: every control a visitor can reach in it (a button, a link
+         with an address, a field, or one given a tabindex), in the page's order, none hidden or inside a hidden part */
+      const tabOrder = () => [...d.getElementById('pcModal').querySelectorAll('button,a[href],input,select,[tabindex]')].filter(el => el.getAttribute('tabindex') !== '-1' && !el.disabled && !el.hidden && !el.closest('[hidden]'));
       /* every leg on the slip its own link, a row each, numbered as on the card, its own id alone; (app v121, the review's
          round) a leg going on at DraftKings' number says so in its row and its name, "(on DraftKings as -4.5)" */
       const legsHeld = p => { const ul = d.querySelector('#pcDkNote ul.pc-dklegs'), as = ul ? [...ul.querySelectorAll('li > a[data-pc-dkleg]')] : [], sw = x => x.swap ? ` (on DraftKings as ${x.swap})` : '';
@@ -3235,30 +3265,58 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       for (const [what, ls] of [['one game\'s legs, a pair DraftKings refuses among them', [QB, TD, TOT]], ['one leg a game', [QB, ML2]], ['two legs of one game with a leg of another', [QB, RB, ML2]],
         ['one leg a game on the slip, beside a second leg of one of those games with no DraftKings id', [QB, ML2, NOID2]], ['two legs of one game and one of another on the slip, beside a third game\'s leg with no DraftKings id', [QB, RB, ML2, NOID3]],
         ['two legs of one game, one going on at DraftKings\' number, with a leg of another', [QB, ATS1, ML2]]]) {
-        const opened = await cardOf(ls), p = planOwn(ls), { B, gs, multi } = p, a = d.getElementById('pcDk'), gb = d.getElementById('pcDkGames'), note = d.getElementById('pcDkNote'), bad = [];
+        const C = await cardOf(ls), opened = C.opened, p = planOwn(ls), { B, gs, multi } = p, a = d.getElementById('pcDk'), gb = d.getElementById('pcDkGames'), note = d.getElementById('pcDkNote'), bad = [];
         const okOf = gid => p.ok.filter(x => x.l.gid === gid), byHand = p.miss.length ? `; add ${nums(p.miss.map(x => x.n))} by hand` : '';
         const gbs = gb ? [...gb.querySelectorAll('a.pc-dkbtn[data-pc-dkgame]')] : [], cl = note && note.querySelector('[data-pc-dkclash]'), lt = w.PARLAY_CARD.linkText(w.PARLAY_CARD.current() || w.PARLAY_CARD.fromBuilder()), tx = lt ? lt.text : '';
         const name = gid => { const g = [C1, C2, C3].find(x => x.id === gid); return g.a + ' at ' + g.h; };
         if (!opened) bad.push('Finish did not open the card');
+        /* (app v122) while it checked: the waiting link alone, the focus taken; then each of the parlay's games read once,
+           the check done, the focus still on Open in DraftKings, and the status line saying what the slip opens */
+        const which = whichOwn(p), allUrl = dkUrlOwn(p.ok.map(x => x.id)), allTxt = allTxtOwn(p), cs = w.PARLAY_CARD.checkState();
+        if (!C.busy || C.busy.st !== 'busy' || C.busy.t !== 'Checking DraftKings’ lines…' || C.busy.dkall || C.busy.href || C.busy.hidden || !C.busy.gb || !C.busy.focus)
+          bad.push('while the card checks DraftKings\' lines, Open in DraftKings is not the waiting link alone (no address, no all-legs class, no game\'s button), or cannot take the focus: ' + JSON.stringify(C.busy));
+        { const gids = [...new Set(B.map(l => l.gid))].sort(); if (C.reads.slice().sort().join() !== gids.join() || !cs || cs.state !== 'done') bad.push(`the card's check did not read each of its games once and end done: read ${C.reads.join(', ') || 'nothing'} for ${gids.join(', ')}, ${cs ? cs.state : 'no check'}`);
+          const OUT = w.eval('ESPN_OUT'), at = Math.min(...gids.map(id => +((OUT[id] || {}).when))), ckl = note && note.querySelector('[data-pc-dkcheck="done"]');
+          if (!isFinite(at) || txt(ckl) !== `Checked against DraftKings’ lines at ${readTxtOwn(at)}.`) bad.push('the note does not end on when the card checked DraftKings\' lines: ' + (ckl ? txt(ckl) : 'no line')); }
+        if (d.activeElement !== a) bad.push(`the focus on Open in DraftKings as the card checked did not stay on it once the check was done: it is on ${d.activeElement ? (d.activeElement.id || d.activeElement.getAttribute('data-pc-dkgame') || d.activeElement.tagName) : 'nothing'}`);
+        { const msg = txt(d.getElementById('pcMsg')), want = multi ? `DraftKings’ lines checked: the all-legs link tries ${which} on one slip, and the ${p.games.length} games’ links open them a game at a time.` : `DraftKings’ lines checked: Open in DraftKings opens ${which}.`;
+          if (msg !== want) bad.push(`the card's status line once checked is not "${want}": "${msg}"`); }
+        /* the Tab order: Close, Open in DraftKings (on the mix, the all-legs link), each game's button on the mix, Share
+           link, Download (and the share sheet where the browser has one), Start over, then the note's links, every leg's
+           own among them in its order */
+        { const T = tabOrder(), $i = id => d.getElementById(id), head = [$i('pcClose'), a, ...(multi ? gbs : []), $i('pcLink'), $i('pcDownload'), ...[$i('pcShare'), $i('pcAgain')].filter(x => x && !x.hidden)];
+          const legLinks = [...(note ? note.querySelectorAll('ul.pc-dklegs a[data-pc-dkleg]') : [])], rest = T.slice(head.length);
+          if (head.some((x, i) => T[i] !== x) || !rest.every(x => note.contains(x)) || legLinks.map(x => rest.indexOf(x)).some((k, i, A) => k < 0 || (i && k < A[i - 1])))
+            bad.push('the card\'s Tab order is not Close, Open in DraftKings' + (multi ? ', each game\'s button' : '') + ', Share link, Download, Start over, then the note\'s links: ' + T.map(x => x.id || x.getAttribute('data-pc-dkgame') || (x.getAttribute('data-pc-dkleg') ? 'leg ' + x.getAttribute('data-pc-dkleg') : x.tagName)).join(', ')); }
         if (multi) {
-          if (!a || !a.hidden || !gb || gb.hidden || gb.previousElementSibling !== a || gb.nextElementSibling !== d.getElementById('pcLink')) bad.push('Open in DraftKings is shown, or the games\' buttons are not right after it and before Share link');
+          /* (app v122) Open in DraftKings kept on the mix, as the all-legs link: every leg on the slip, in the card's order,
+             in the ice class beside the games' gold buttons, its words and its title the rule's, opening in a new tab */
+          const allTitle = `Tries ${which} on one DraftKings betslip, in a new tab, as DraftKings’ lines were read ${readTxtOwn(p.read)}: DraftKings may not open a same-game parlay mixed with other games, so if the slip comes up short, open each game’s link instead`;
+          if (!a || a.hidden || !a.classList.contains('pc-dkall') || !a.classList.contains('btn') || a.getAttribute('href') !== allUrl || txt(a) !== allTxt || a.getAttribute('title') !== allTitle
+            || a.getAttribute('target') !== '_blank' || !/noopener/.test(a.getAttribute('rel') || '') || a.hasAttribute('aria-disabled') || a.hasAttribute('aria-busy') || a.hasAttribute('role'))
+            bad.push(`Open in DraftKings is not the all-legs link ("${allTxt}", ${allUrl}, pc-dkall, "${allTitle}"): ` + (a ? `"${txt(a)}" ${a.getAttribute('href')} hidden ${a.hidden} class "${a.className}" "${a.getAttribute('title')}"` : 'no link'));
+          if (!gb || gb.hidden || gb.previousElementSibling !== a || gb.nextElementSibling !== d.getElementById('pcLink') || gbs.some(x => x.classList.contains('pc-dkall'))) bad.push('the games\' buttons are not right after the all-legs link and before Share link, or one wears its class');
           /* (app v121, the review's round) each button's title dated by its own game's legs' read, the oldest of them */
           const gTitle = G => `Opens ${nums(G.ok.map(x => x.n))} (${name(G.gid)}) on DraftKings’ betslip, in a new tab, as DraftKings’ lines were read ${readTxtOwn(G.read)}: a line moved or pulled since will not be on it, so check each leg is there`;
           if (gbs.length !== p.games.length || p.games.some((G, i) => { const x = gbs[i];
             return !x || x.dataset.pcDkgame !== G.gid || x.getAttribute('href') !== dkUrlOwn(G.ok.map(y => y.id)) || txt(x) !== `Open ${name(G.gid)} in DraftKings` || x.getAttribute('target') !== '_blank'
               || x.getAttribute('title') !== gTitle(G); }))
             bad.push('the games\' buttons are not one a game with legs on the slip, in the order their first legs come, each opening its own legs\' ids and dated by their own read: ' + gbs.map(x => `${txt(x)} ${x.getAttribute('href')} "${x.getAttribute('title')}"`).join(' / ') + ' / want ' + p.games.map(gTitle).join(' / '));
-          if (!txt(note).includes(`DraftKings’ lines as read ${readTxtOwn(p.read)}: these legs mix a same-game parlay with other games, and a DraftKings link with that mix does not open, so each of the ${p.games.length} games has a link of its own: open them one after another. Each opens its game’s legs as DraftKings had them then; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.${byHand ? ' Add by hand:' : ''}`)
+          /* the note's first paragraph, word for word: the all-legs link tries it, each game's link the fallback, dated by
+             the oldest read of the legs on the slip */
+          const p0 = note && note.querySelector('p');
+          if (txt(p0) !== `DraftKings’ lines as read ${readTxtOwn(p.read)}: these legs mix a same-game parlay with other games, which DraftKings may not open on one slip; ${allTxt} tries it all the same, and each of the ${p.games.length} games has a link of its own for when that slip comes up short. Each opens its legs as DraftKings had them then; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.${byHand ? ' Add by hand:' : ''}`
             || (note.querySelector('[data-pc-dkread]') || { dataset: {} }).dataset.pcDkread !== new Date(p.read).toISOString())
-            bad.push(`the note does not say each game has a link of its own, dated by the oldest read of the legs on the slip (${readTxtOwn(p.read)}): ` + txt(note).slice(0, 300));
-          const lines = tx.split('\n'), i0 = lines.indexOf(`DraftKings betslip, a link for each game (a link mixing a same-game parlay with other games does not open)${byHand}:`), j0 = i0 + 1 + 2 * p.games.length;
-          if (i0 < 0 || p.games.some((G, i) => lines[i0 + 1 + 2 * i] !== `${name(G.gid)}, ${nums(G.ok.map(x => x.n))}:` || lines[i0 + 2 + 2 * i] !== dkUrlOwn(G.ok.map(y => y.id)))
+            bad.push(`the note does not say the all-legs link tries every leg on one slip and each game has a link of its own for when it comes up short, dated by the oldest read of the legs on the slip (${readTxtOwn(p.read)}): ` + txt(p0).slice(0, 400));
+          /* Share link's text: the all-legs link first, alone on its line, then each game's under "Each game on its own:" */
+          const lines = tx.split('\n'), i0 = lines.indexOf(`DraftKings betslip, every leg on one slip (DraftKings may not open a same-game parlay mixed with other games; if it does not, use each game’s link below)${byHand}:`), j0 = i0 + 3 + 2 * p.games.length;
+          if (i0 < 0 || lines[i0 + 1] !== allUrl || lines[i0 + 2] !== 'Each game on its own:' || p.games.some((G, i) => lines[i0 + 3 + 2 * i] !== `${name(G.gid)}, ${nums(G.ok.map(x => x.n))}:` || lines[i0 + 4 + 2 * i] !== dkUrlOwn(G.ok.map(y => y.id)))
             || lines[j0] !== `DraftKings lines as read ${readTxtOwn(p.read)}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`
-            || lt.url !== null || JSON.stringify(lt.urls) !== JSON.stringify(p.games.map(G => dkUrlOwn(G.ok.map(y => y.id)))) || tx.includes('DraftKings betslip (opens'))
-            bad.push('Share link\'s text is not a link for each game, each under its game and legs, then the oldest read: ' + tx.slice(0, 500));
+            || lt.url !== null || JSON.stringify(lt.urls) !== JSON.stringify([allUrl, ...p.games.map(G => dkUrlOwn(G.ok.map(y => y.id)))]) || tx.includes('DraftKings betslip (opens') || lines.filter(x => x === allUrl).length !== 1)
+            bad.push('Share link\'s text is not the all-legs link and then a link for each game, each under its game and legs, then the oldest read: ' + tx.slice(0, 600));
         } else {
-          const one = dkUrlOwn(p.ok.map(x => x.id)), which = p.miss.length ? `${p.ok.length} of the ${B.length} legs` : `the ${B.length} legs`;
-          if (!a || a.hidden || a.getAttribute('href') !== one || txt(a) !== (p.miss.length ? `Open ${p.ok.length} of ${B.length} legs in DraftKings` : 'Open in DraftKings') || !gb || !gb.hidden || gbs.length) bad.push(`it is not one link for every leg on the slip with no button for each game: ${a ? txt(a) + ' ' + a.getAttribute('href') + ' hidden ' + a.hidden : 'no link'} / ${gbs.length} game buttons`);
+          const one = allUrl;
+          if (!a || a.hidden || a.getAttribute('href') !== one || txt(a) !== (p.miss.length ? `Open ${p.ok.length} of ${B.length} legs in DraftKings` : 'Open in DraftKings') || a.classList.contains('pc-dkall') || !gb || !gb.hidden || gbs.length) bad.push(`it is not one link for every leg on the slip, without the all-legs class, with no button for each game: ${a ? txt(a) + ' ' + a.getAttribute('href') + ' hidden ' + a.hidden + ' class "' + a.className + '"' : 'no link'} / ${gbs.length} game buttons`);
           if (!tx.includes(`DraftKings betslip (opens ${which} as DraftKings had them${byHand}):\n${one}\n`) || !lt || lt.url !== one || JSON.stringify(lt.urls) !== JSON.stringify([lt.url])) bad.push('Share link\'s text is not the one link: ' + tx.slice(0, 300));
           if (/a link of its own|mix a same-game parlay/.test(txt(note))) bad.push('the note speaks of a link a game');
           if (/One leg at a time/.test(txt(note))) bad.push('the note still has the old inline links, "One leg at a time"'); }
@@ -3273,6 +3331,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     } finally {
       w.PARLAY_CARD = keep.card; for (const g of [C1, C2, C3]) { const i = Sx.sched.indexOf(g); if (i >= 0) Sx.sched.splice(i, 1); }
       w.__prKeep = keep; w.eval('pbGames=window.__prKeep.pb[0]; pricedLegs=window.__prKeep.pb[1]; if(window.__prKeep.on) spOn=window.__prKeep.on; if(window.__prKeep.slot) spSlotNext=window.__prKeep.slot;');
+      /* (app v122) the page's own reader back, and the made-up games' reads gone */
+      w.eval(`espnRefresh=window.__prKeep.ref; for(const id of ${JSON.stringify([C1.id, C2.id, C3.id])}) delete ESPN_OUT[id];`); delete w.__prReads;
       w.eval(`(function(){ const k=${keep.dk}; if(k===null) delete PAY.dk; else PAY.dk=k; const c=${JSON.stringify(keep.corr)}; if(c===null) delete PAY.corr[${JSON.stringify(CK)}]; else PAY.corr[${JSON.stringify(CK)}]=c; S.parlay=${keep.parlay}; save(); })()`);
       if (keep.key == null) w.localStorage.removeItem(KK); else w.localStorage.setItem(KK, keep.key);
       delete w.__prG; delete w.__prKeep; delete w.__prB;
@@ -4278,15 +4338,20 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(!bad, 'Finish on the builder\'s parlay on the payload\'s own ids: the card\'s check of DraftKings\' lines did not read exactly its own games (their week\'s scoreboard once a game), or read anything else: ' + bad); }
       const a = d.getElementById('pcDk'), ids = plan.map(p => p.id), sws = plan.map((p, i) => p.swap ? i + 1 : 0).filter(Boolean);
       /* (app v121) the money line and the Under are two legs of one game, so with the other game's spread they mix a
-         same-game parlay with another game, which one DraftKings link does not open: a button for each game, its own legs'
-         ids in the card's order (the games in the order their first legs come), and none for them all (multiOwn, worked
-         out here); one game's legs alone, or one leg a game, are one link as before */
-      const gOrd = q ? [...new Set(q.legs.map(l => l.gid))] : [], multi = gOrd.length > 1 && gOrd.some(gid => q.legs.filter(l => l.gid === gid).length > 1);
-      const gb = d.getElementById('pcDkGames'), gbs = gb ? [...gb.querySelectorAll('a.pc-dkbtn[data-pc-dkgame]')] : [];
-      chk(!!q && !!gb && (multi ? !gb.hidden && !!a && a.hidden && gbs.length === gOrd.length && gOrd.every((gid, i) => gbs[i].dataset.pcDkgame === gid
+         same-game parlay with another game, which one DraftKings link may not open: a button for each game, its own legs'
+         ids in the card's order (the games in the order their first legs come; the legs on the slip alone count, worked
+         out here); (app v122) and, first, Open in DraftKings kept as the all-legs link (pc-dkall), every leg's id in the
+         card's order, the games' buttons right after it; one game's legs alone, or one leg a game, are one link as
+         before, without that class */
+      const okL = q ? q.legs.map((l, j) => ({ l, n: j + 1, id: ids[j] })).filter(x => x.id) : [], gOrd = [...new Set(okL.map(x => x.l.gid))], multi = gOrd.length > 1 && gOrd.some(gid => okL.filter(x => x.l.gid === gid).length > 1);
+      const gb = d.getElementById('pcDkGames'), gbs = gb ? [...gb.querySelectorAll('a.pc-dkbtn[data-pc-dkgame]')] : [], allUrl = 'https://sportsbook.draftkings.com/?outcomes=' + okL.map(x => encodeURIComponent(x.id)).join('+');
+      if (q) console.log(`  (the payload's own ids for ${g.id}: ${q.legs.length} legs of ${new Set(q.legs.map(l => l.gid)).size} game${new Set(q.legs.map(l => l.gid)).size === 1 ? '' : 's'}, ${multi ? 'a same-game parlay mixed with another game: the all-legs link and a button a game' : 'one link'})`);
+      chk(!!q && !!gb && !!a && (multi ? !gb.hidden && !a.hidden && a.classList.contains('pc-dkall') && a.getAttribute('href') === allUrl && gb.previousElementSibling === a && gb.nextElementSibling === d.getElementById('pcLink')
+          && gbs.length === gOrd.length && gOrd.every((gid, i) => gbs[i].dataset.pcDkgame === gid && !gbs[i].classList.contains('pc-dkall')
           && gbs[i].getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + q.legs.map((l, j) => l.gid === gid ? ids[j] : null).filter(Boolean).map(encodeURIComponent).join('+'))
-        : gb.hidden && !gbs.length),
-        `Open in DraftKings on the payload's own ids for ${g.id}${multi ? ' (two legs of it and one of another game)' : ''} is not ${multi ? 'a button for each game, each its own legs\' ids, and none for them all' : 'one link, with no button for each game'}: ` + gbs.map(x => x.dataset.pcDkgame + ' ' + x.getAttribute('href')).join(' / '));
+        : gb.hidden && !gbs.length && !a.classList.contains('pc-dkall')),
+        `Open in DraftKings on the payload's own ids for ${g.id}${multi ? ' (two legs of it and one of another game)' : ''} is not ${multi ? `the all-legs link (pc-dkall, ${allUrl}) and right after it a button for each game, each its own legs' ids` : 'one link, without the all-legs class, with no button for each game'}: `
+          + (a ? `"${txt(a)}" ${a.getAttribute('href')} hidden ${a.hidden} class "${a.className}" / ` : 'no link / ') + gbs.map(x => x.dataset.pcDkgame + ' ' + x.getAttribute('href')).join(' / '));
       /* (app v121, the review's round) each game's button dated by the oldest read of its own legs (a team's line by the game
          lines' read, glat, a player's by the player prices', at; "last read" where one is undated), and, among every leg's
          own link, the spread going on at DraftKings' number saying so in its row, "(on DraftKings as +3)", and no other */
@@ -4295,6 +4360,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const nm = gid => { const x = S.sched.find(y => y.id === gid); return x ? x.a + ' at ' + x.h : gid; }, numsO = ns => (ns.length === 1 ? 'leg ' : 'legs ') + (ns.length > 1 ? ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1] : ns[0]);
         const want = gOrd.map(gid => { const ls = q.legs.map((l, j) => ({ l, n: j + 1 })).filter(x => x.l.gid === gid && ids[x.n - 1]), rs = ls.map(x => readOwn(x.l)), rd = rs.some(x => x == null) ? null : Math.min(...rs);
           return `Opens ${numsO(ls.map(x => x.n))} (${nm(gid)}) on DraftKings’ betslip, in a new tab, as DraftKings’ lines were ${rd == null ? 'last read' : 'read ' + say(rd)}: a line moved or pulled since will not be on it, so check each leg is there`; });
+        /* (app v122) the all-legs link's words and title: "Open all 3 legs in DraftKings" (or "Open 2 of 3 legs" where a leg
+           is added by hand), dated by the oldest read of the legs on the slip */
+        { const rs = okL.map(x => readOwn(x.l)), rd = rs.some(x => x == null) ? null : Math.min(...rs), n = q.legs.length, k = okL.length;
+          const allTxt = k < n ? `Open ${k} of ${n} legs in DraftKings` : `Open all ${k} legs in DraftKings`;
+          const allTitle = `Tries ${k < n ? `${k} of the ${n} legs` : `the ${n} legs`} on one DraftKings betslip, in a new tab, as DraftKings’ lines were ${rd == null ? 'last read' : 'read ' + say(rd)}: DraftKings may not open a same-game parlay mixed with other games, so if the slip comes up short, open each game’s link instead`;
+          chk(!!a && txt(a) === allTxt && a.getAttribute('title') === allTitle && a.getAttribute('target') === '_blank',
+            `the all-legs link on the payload's own ids for ${g.id} is not "${allTxt}", titled "${allTitle}": "${a ? txt(a) : ''}" "${a ? a.getAttribute('title') : ''}"`); }
         const rows = [...d.querySelectorAll('#pcDkNote ul.pc-dklegs a[data-pc-dkleg]')].map(x => ({ n: +x.dataset.pcDkleg, t: txt(x), a: x.getAttribute('aria-label') || '' }));
         chk(gbs.length === want.length && gbs.every((x, i) => x.getAttribute('title') === want[i])
           && rows.length === ids.filter(Boolean).length && rows.every(r => { const sw = plan[r.n - 1] && plan[r.n - 1].swap, tail = sw ? ` (on DraftKings as ${sw})` : null;
