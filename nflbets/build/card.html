@@ -368,6 +368,9 @@ window.PARLAY_CARD=(function(){
      does not open, so where the legs that go on the slip are such a mix there is no link for them all: games has a link
      for each game's (its legs in the card's order, the games in the order their first legs come), and multi says so.
      One leg a game is a plain parlay, which opens as one link as it always has (the owner's word was for the mix).
+     (app v123, the owner, 20 October 2026: "can we add a different color button for all legs parlays on top of the
+     individual ones? id like to still test those but have the inidividuals as a fallback plan") all is the link for
+     every leg on the slip all the same, drawn first, in ice, as the try; the games' links are the fallback.
      clash: the pairs DraftKings will not take on one slip (the props parts' dkClashPairs), by the legs' numbers */
   function dkPlan(legs){
     const each=legs.map((l,i)=>Object.assign({n:i+1,gid:l.gid,who:(l.card&&l.card.who)||l.name||'',what:(l.card&&l.card.what)||l.label||''},dkLeg(l)));
@@ -384,7 +387,7 @@ window.PARLAY_CARD=(function(){
     const undated=ok.some(x=>!x.at), read=ok.length&&!undated?new Date(Math.min(...ok.map(x=>+x.at))):null;
     /* where the visitor adds by hand what the slip cannot take: the game's page, else DraftKings' NFL page */
     /* swaps: the legs that go on at DraftKings' number rather than the card's (see dkLeg) */
-    return {url:ok.length&&!multi?dkUrl(ok.map(x=>x.id)):null,games,multi,clash,ok,miss,swaps:ok.filter(x=>x.swap),each,event,home:event||DKNFL,n:legs.length,read};
+    return {url:ok.length&&!multi?dkUrl(ok.map(x=>x.id)):null,all:ok.length?dkUrl(ok.map(x=>x.id)):null,games,multi,clash,ok,miss,swaps:ok.filter(x=>x.swap),each,event,home:event||DKNFL,n:legs.length,read};
   }
   function kickedOff(l){ try{ const g=game(l.gid); return !!g&&typeof gameStarted==='function'&&gameStarted(g); }catch(e){ return false; } }
   /* the card: everything it shows, worked out once, drawn twice (the window, and the image) */
@@ -474,7 +477,7 @@ window.PARLAY_CARD=(function(){
        read, and a line moved or pulled since is not on the slip */
     const when=`<span data-pc-dkread="${dk.read?h(dk.read.toISOString()):''}">${dk.read?'DraftKings\u2019 lines as read '+h(readOf(dk.read)):'When DraftKings\u2019 lines were read is not recorded'}</span>: `;
     const caution=`a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.`;
-    const opens=dk.multi?`these legs mix a same-game parlay with other games, and a DraftKings link with that mix does not open, so each of the ${dk.games.length} games has a link of its own: open them one after another. Each opens its game\u2019s legs as DraftKings had them ${dk.read?'then':'when last read'}; ${caution}`
+    const opens=dk.multi?`these legs mix a same-game parlay with other games, which DraftKings may not open on one slip; ${dkAllText(dk)} tries it all the same, and each of the ${dk.games.length} games has a link of its own for when that slip comes up short. Each opens its legs as DraftKings had them ${dk.read?'then':'when last read'}; ${caution}`
       :`Open in DraftKings opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'} ${dk.read?'then':'when last read'}; ${caution}`;
     return `<p>${when}${opens}${dk.miss.length?' Add by hand:':''}</p>${hand}${one}${dkSwapHtml(dk)}${dkClashHtml(dk)}`;
   }
@@ -489,6 +492,8 @@ window.PARLAY_CARD=(function(){
     return `<p>On DraftKings’ slip at its own line:</p><ul>${sw.map(x=>`<li data-pc-dkswap="${x.n}">${name(x)}: goes on as ${h(x.swap)}</li>`).join('')}</ul>`
       +`<p>DraftKings prices ${sw.length===1?'a changed leg at its own line':'changed legs at its own lines'}, so its slip’s payout can differ from this card’s.</p>`;
   }
+  /* (app v123) the all-legs link's words on a mixed parlay: "Open all 3 legs in DraftKings", "Open 3 of 4 legs in DraftKings" */
+  const dkAllText=dk=>dk.miss.length?`Open ${dk.ok.length} of ${dk.n} legs in DraftKings`:`Open all ${dk.ok.length} legs in DraftKings`;
   /* the legs the link opens: "2 of the 3 legs", "the leg", "the 3 legs" (never "all": see above) */
   const dkWhich=dk=>dk.miss.length?dk.ok.length+' of the '+dk.n+' legs':(dk.n===1?'the leg':'the '+dk.n+' legs');
   /* the legs to add by hand, by number: "leg 2", "legs 3 and 4", "legs 2, 3 and 5" */
@@ -605,7 +610,7 @@ window.PARLAY_CARD=(function(){
   /* what the card's status line says once the check settles: the slip it opens, or that it could not check */
   function checkSay(c){ const dk=c.m.dk||{}; if(!dk.n) return '';
     if(c.state!=='done') return COULD;
-    return 'DraftKings’ lines checked: '+(dk.url?`Open in DraftKings opens ${dkWhich(dk)}.`:dk.multi?`the ${dk.games.length} games’ links open ${dkWhich(dk)}.`:`${dk.n===1?'this leg cannot':'none of these legs can'} go on the betslip from here.`); }
+    return 'DraftKings’ lines checked: '+(dk.url?`Open in DraftKings opens ${dkWhich(dk)}.`:dk.multi?`the all-legs link tries ${dkWhich(dk)} on one slip, and the ${dk.games.length} games’ links open them a game at a time.`:`${dk.n===1?'this leg cannot':'none of these legs can'} go on the betslip from here.`); }
   async function runCheck(c){
     let bad=false, owed=false, real=null;
     try{
@@ -660,11 +665,13 @@ window.PARLAY_CARD=(function(){
     a.hidden=!dk.n;
     /* (app v121) a same-game parlay mixed with other games on the slip: a button for each game's legs, none for them
        all. While the card checks, the plan may change, so only the waiting Open in DraftKings is shown */
+    a.classList.remove('pc-dkall');
     if(gb){ const on=!busy&&!!dk.multi;
       gb.innerHTML=on?dk.games.map(G=>`<a class="btn pc-dkbtn" href="${h(G.url)}" target="_blank" rel="noopener" data-pc-dkgame="${h(G.gid)}" title="Opens ${h(legNums(G.ok))} (${h(G.name)}) on DraftKings\u2019 betslip, in a new tab, as DraftKings\u2019 lines were ${G.read?'read '+h(readOf(G.read)):'last read'}: a line moved or pulled since will not be on it, so check each leg is there">Open ${h(G.name)} in DraftKings</a>`).join(''):'';
-      gb.hidden=!on; if(on) a.hidden=true; }
+      gb.hidden=!on; }
     const refocus=()=>{ try{ let f=null;
-      if(gameAt!=null||onDk) f=(gb&&!gb.hidden&&([...gb.querySelectorAll('[data-pc-dkgame]')].find(x=>x.getAttribute('data-pc-dkgame')===gameAt)||gb.querySelector('[data-pc-dkgame]')))||(!a.hidden?a:null)||$('pcDownload');
+      if(onDk&&!a.hidden) f=a;
+      else if(gameAt!=null||onDk) f=(gb&&!gb.hidden&&([...gb.querySelectorAll('[data-pc-dkgame]')].find(x=>x.getAttribute('data-pc-dkgame')===gameAt)||gb.querySelector('[data-pc-dkgame]')))||(!a.hidden?a:null)||$('pcDownload');
       if(f&&f!==document.activeElement) f.focus({preventScroll:true}); }catch(e){} };
     if(busy){
       a.removeAttribute('href'); a.setAttribute('role','link'); a.tabIndex=0; a.setAttribute('aria-disabled','true'); a.setAttribute('aria-busy','true');
@@ -680,6 +687,9 @@ window.PARLAY_CARD=(function(){
     a.textContent=dk.url?(dk.miss&&dk.miss.length?`Open ${dk.ok.length} of ${dk.n} legs in DraftKings`:'Open in DraftKings'):dk.event?'Open game in DraftKings':'Open DraftKings';
     a.title=!dk.url?(dk.event?`Opens the game’s page in DraftKings, in a new tab, to add ${them} by hand`:`Opens DraftKings’ NFL page, in a new tab, to add ${them} by hand`)
       :`Opens ${dkWhich(dk)} on DraftKings’ betslip, in a new tab, as DraftKings’ lines were ${dk.read?'read '+readOf(dk.read):'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
+    /* (app v123) a mixed parlay: every leg on one slip all the same, in ice, as the try; the games' links are the fallback */
+    if(dk.multi&&dk.all){ a.href=dk.all; a.classList.add('pc-dkall'); a.textContent=dkAllText(dk);
+      a.title=`Tries ${dkWhich(dk)} on one DraftKings betslip, in a new tab, as DraftKings’ lines were ${dk.read?'read '+readOf(dk.read):'last read'}: DraftKings may not open a same-game parlay mixed with other games, so if the slip comes up short, open each game’s link instead`; }
     /* the check's line, last: when the lines were checked, or that they could not be */
     const line=!c||c.state==='none'?'':c.state==='done'?(c.at?`<p data-pc-dkcheck="done">Checked against DraftKings’ lines at ${h(readOf(new Date(c.at)))}.</p>`:'')
       :`<p data-pc-dkcheck="failed">${COULD}</p>`;
@@ -904,7 +914,9 @@ window.PARLAY_CARD=(function(){
       if(sw.length) lines.push(`On DraftKings’ slip at its own line: ${sw.map(x=>`leg ${x.n} as ${x.swap}`).join('; ')} (DraftKings prices ${sw.length===1?'it':'them'} at its own line, so its payout can differ)`); }
     else if(dk.multi){
       /* (app v121) a same-game parlay mixed with other games: a link for each game's, since one with them all does not open */
-      lines.push(`DraftKings betslip, a link for each game (a link mixing a same-game parlay with other games does not open)${miss.length?`; add ${legNums(miss)} by hand`:''}:`);
+      /* (app v123) every leg on one slip first, as the try, then a link for each game as the fallback */
+      lines.push(`DraftKings betslip, ${miss.length?dkWhich(dk):'every leg'} on one slip (DraftKings may not open a same-game parlay mixed with other games; if it does not, use each game’s link below)${miss.length?`; add ${legNums(miss)} by hand`:''}:`, dk.all);
+      lines.push('Each game on its own:');
       for(const G of dk.games) lines.push(`${G.name}, ${legNums(G.ok)}:`, G.url);
       lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`);
       const sw=dk.swaps||[];
@@ -916,7 +928,7 @@ window.PARLAY_CARD=(function(){
       for(const x of miss) lines.push(`${x.n}. ${x.who} ${x.what} (${x.brief||x.why})`); }
     lines.push(SITE);
     /* url is what the text links to, for the record: it is in the text, never shared on its own */
-    return {title:`${m.title} ${P(m.price)}${m.priceNote&&m.priceNote!=='book price'?' ('+m.priceNote+')':''}`,text:lines.join('\n'),url,urls:dk.multi?dk.games.map(G=>G.url):(url?[url]:[])};
+    return {title:`${m.title} ${P(m.price)}${m.priceNote&&m.priceNote!=='book price'?' ('+m.priceNote+')':''}`,text:lines.join('\n'),url,urls:dk.multi?[dk.all,...dk.games.map(G=>G.url)]:(url?[url]:[])};
   }
   async function copyText(t){
     try{ if(navigator.clipboard&&typeof navigator.clipboard.writeText==='function'){ await navigator.clipboard.writeText(t); return true; } }catch(e){}

@@ -84,6 +84,12 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 .btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}
 .btn.go{background:var(--pick);border-color:var(--pick);color:#1E2230}
 .btn.danger{background:var(--rose);border-color:var(--rose);color:#1E2230}
+/* (app v123) the parlay card's all-legs link on a mixed parlay, in ice beside the games' gold links: a try, with the
+   games' links as the fallback */
+.pc-actions .btn.pc-dkall{background:var(--ice);border-color:var(--ice);color:#1E2230;flex-basis:100%}
+/* the card's links that look like buttons take the hub's focus ring, as its buttons do */
+.pc-actions a.btn:focus-visible{outline:none;box-shadow:var(--ring)}
+.pc-actions .btn.pc-dkall:hover{background:var(--ice-2);border-color:var(--ice-2)}
 .bar .rec,.pill,.conf,.conf.low,.pays .box.tier.low,.side-res.push,.bres.push{background:var(--panel-3);color:var(--ink-2)}
 .bar .rec b{color:var(--ink)}
 .pill.warn,.log .warn,.inj,.plrbtn .who .inj,.when .cl,.tot .lv,.totpts .lv,.conf.med,.pays .box.tier.med b,.pays .box.tier.med span,.pe-q,.xb-status.bad{color:var(--gold)}
@@ -248,7 +254,7 @@ html[data-theme="light"] .sugg-side button.on,html[data-theme="light"] .stake-ch
 html[data-theme="light"] .pe-pos button[aria-selected="true"],html[data-theme="light"] .pe-mm-n,
 html[data-theme="light"] .seg button.on,html[data-theme="light"] .wk-chip{color:#FFFFFF}
 html[data-theme="light"] tbody tr:hover{background:rgba(30,34,48,.03)}
-html[data-theme="light"] .btn.go,html[data-theme="light"] .btn.danger{color:#FFFFFF}
+html[data-theme="light"] .btn.go,html[data-theme="light"] .btn.danger,html[data-theme="light"] .pc-actions .btn.pc-dkall{color:#FFFFFF}
 /* X Parlays' own buttons inherit their colour (#lpCard button{color:inherit}, which outranks the rule above): its Clear in
    "Clear this parlay?" is white on the light rose too (4.9:1) */
 html[data-theme="light"] #lpCard .btn.danger,html[data-theme="light"] #lpCard .btn.go{color:#FFFFFF}
