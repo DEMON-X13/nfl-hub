@@ -1417,17 +1417,28 @@ none, without a game total before with one, its floor met before the likeliest o
 better expected return where it met a floor, else the higher chance, then the earlier game), its empty level said of "any
 one game of the Sunday slot" (`spWhySlot`), its Elo picks chosen the same way per game (`eloUnit`'s `perGame`,
 `epSlotBetter`), and each of its cards naming its game (`span.pb-tgame[data-pb-tgame]` in `.pb-th`); a level built again
-for a player ruled out is built the same way, and the record takes the sets as before (its slot entries before app v121,
-and the backtest's weeks 3 to 6, stay as they were built, across games). The builder says what DraftKings will refuse: a
+for a player ruled out is built the same way, one level from each game's lines as they stand, never the cache
+(`spSlotLevel`), and the record takes the sets as before (its slot entries before app v121,
+and the backtest's weeks 3 to 6, stay as they were built, across games). The slot costs a priced afternoon game's set
+each, about a second and a half in jsdom (week 6's three priced afternoon games: 5 s, where the one search across the slot
+took 0.8 s), paid only while the tab is on the screen and once a publish or a press. A level's totals fill counts the legs
+with an edge as one parlay can take them (`pbMaxFit`: one leg a player, one side and one total a game, less the most
+refused pairs that can be had apart, a bipartite matching), so a level whose quarterback and teammate's touchdown cannot
+both go takes the game total in their stead; and a level a game's legs make in number but not on one slip says so ("No 4
+of this game’s legs go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown, or
+his passing TDs over with the game total.", the slot's "No 4 legs of any one game of the Sunday slot go together ...").
+The builder says what DraftKings will refuse: a
 line where two of its legs are such a pair (`data-pb-clash`), and on the hub, where its legs mix a same-game parlay (two or
 more legs of one game) with legs of other games, that DraftKings' betslip link does not open that mix and the parlay card
-gives each game a link of its own (`data-pb-multigame`). The parlay card (`card.html`'s `dkPlan`: `games`, `multi`,
+gives each game a link of its own (`data-pb-multigame`, read off the card's own plan, `dkSlipPlan`, so only the legs that
+go on the slip count). The parlay card (`card.html`'s `dkPlan`: `games`, `multi`,
 `clash`) then has no link for every leg but a button for each game's (`#pcDkGames`, `a.pc-dkbtn[data-pc-dkgame]`, its
-legs in the card's order, #pcDk hidden), says why, sends a link per game in Share link's text, and on every card with two
-or more legs on the slip lists every leg's own link, a 44px row each (`ul.pc-dklegs`, until app v121 a row of numbers,
+legs in the card's order, each titled with its own game's read, #pcDk hidden), says why, sends a link per game in Share
+link's text ("Links copied" where it copies them), and on every card with two or more legs on the slip lists every leg's
+own link, a 44px row each, a leg converted to DraftKings' number saying "(on DraftKings as Over 64.5 receiving yards)" (`ul.pc-dklegs`, until app v121 a row of numbers,
 "One leg at a time: 1 · 2 · 3"), and names any pair DraftKings may refuse (`data-pc-dkclash`). A parlay of one leg a game
 is a plain parlay and still opens as one link (the owner's word was for the mix; if those fail too, split them as well).
-The audit (its own `clashAud` and slot rule; M15 on made-up games), the nflbets smoke (`clashOwn`, the slot's one-game rule
+The audit (its own `clashAud`, fill and slot rule; M16 on made-up games), the nflbets smoke (`clashOwn`, the slot's one-game rule
 and the Elo picks' per game, the builder's notes, the card's buttons on made-up ids), `smoke_live.js` section J (the card's
 buttons, per-leg list, Share link text, clash line and Tab order) and `elo/check_tab.js` (the rule loaded into the search
 it drives, its own copy in the full enumeration, F7) hold it.

@@ -32,6 +32,20 @@ and, where the parlay card is on the page and the legs mix a same-game parlay (t
 other games, that DraftKings' betslip link does not open that mix and the card gives each game a link of its own
 (data-pb-multigame; the card is nflbets/build/card.html, which since this change does so, and lists every leg's own
 link). A parlay of one leg a game still opens as one link, as it always has: the owner's word was for the mix.
+
+The review's round, before the merge. A level's totals fill (pbTotalsFill) counted the legs with an edge with
+pbMaxLegs, which knows nothing of the pair: a game whose edge legs were a quarterback's passing TDs, his teammate's
+touchdown and a side counted three, the search (which refuses the pair) found no 3-leg parlay, the fill came to none,
+and Medium stayed empty though the side, the touchdown and the total make one. pbMaxFit counts them as one parlay can
+take them (one leg a player, one side and one total a game, less the most clashes that can be had apart, a bipartite
+matching), and the fill reads it. A level a game's legs make in number but not on one slip says so ("No 3 of this
+game's legs go together on DraftKings' slip: it takes no quarterback's passing TDs with a teammate's touchdown, or his
+passing TDs over with the game total.", the Elo picks' words; the slot's "No 3 legs of any one game of the Sunday slot
+go together ..."). A slot level built again for a player ruled out (spRebuild) is built from each game's lines as they
+stand (spSlotLevel), never the cache, since a player ruled out in the open page moves no signature. The builder's line
+about a mix reads the parlay card's own plan (dkSlipPlan), which counts only the legs that go on the slip, so it never
+promises a game a link the card does not give (a leg with no DraftKings id is added by hand). SP_SLOT_SEARCH, the
+slot's own search, is gone.
 """
 import io
 
@@ -175,6 +189,125 @@ sub1('p3', """  if(wks.length>1) html+=`<p class="delta down" style="margin:10px
     const nG=Object.keys(byG).length;
     if(nG>1&&Object.values(byG).some(c=>c>1)&&window.PARLAY_CARD) html+=`<p class="muted" style="margin:10px 0 0;font-size:12px" data-pb-multigame="${nG}">These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${nG} games a link of its own.</p>`; }""",
      'builder notes')
+
+# ---------------------------------------------------------------- the review's round
+# A level's totals fill counts the legs with an edge as one parlay can take them (pbMaxFit): with a quarterback's passing
+# TDs and his teammate's touchdown both in a game's lists, pbMaxLegs said they make two legs' room, the search (which
+# refuses the pair) found no parlay of the level's size, and the fill, n less that count, came to nothing, so the level
+# stayed empty where the game total made a parlay that goes on the slip.
+sub1('p3', """function pbMaxLegs(list){ const pl=new Set(), games=new Set(); for(const l of list){ if(isGameLeg(l)) games.add(l.gid+(l.stat==='total'?'|total':'|side')); else pl.add(l.pid); } return pl.size+games.size; }""",
+     """function pbMaxLegs(list){ const pl=new Set(), games=new Set(); for(const l of list){ if(isGameLeg(l)) games.add(l.gid+(l.stat==='total'?'|total':'|side')); else pl.add(l.pid); } return pl.size+games.size; }
+/* (app v121) the most legs one parlay can take of a list: one leg a player, one side and one total a game, and no pair
+   DraftKings refuses (dkClash). Only a player every one of whose legs is his passing touchdowns clashes whatever he is
+   given (a quarterback with another line takes that), against a teammate every one of whose legs is his anytime
+   touchdown and, where none of his is an under, the game's total; so a game takes its players, its side and its total
+   less the most of those clashes that can be had apart (a bipartite matching) */
+function pbMaxFit(list){
+  const byG=new Map(); let n=0;
+  for(const l of list||[]){ if(!byG.has(l.gid)) byG.set(l.gid,[]); byG.get(l.gid).push(l); }
+  for(const L of byG.values()){
+    const pl=new Map(); let side=0, tot=0;
+    for(const l of L){ if(isGameLeg(l)){ if(l.stat==='total') tot=1; else side=1; } else { if(!pl.has(l.pid)) pl.set(l.pid,[]); pl.get(l.pid).push(l); } }
+    const P=[...pl.values()], Q=P.filter(ls=>ls.every(dkPassTd)), O=P.filter(ls=>ls.every(l=>l.stat==='any_td'));
+    const adj=Q.map(ls=>[...O.filter(o=>o[0].team===ls[0].team&&o[0].pid!==ls[0].pid).map(o=>o[0].pid),...(tot&&!ls.some(l=>l.side==='under')?['#total']:[])]);
+    const mate=new Map(), aug=(i,seen)=>{ for(const r of adj[i]){ if(seen.has(r)) continue; seen.add(r); if(!mate.has(r)||aug(mate.get(r),seen)){ mate.set(r,i); return true; } } return false; };
+    let M=0; adj.forEach((_,i)=>{ if(aug(i,new Set())) M++; });
+    n+=P.length+side+tot-M;
+  }
+  return n;
+}""", 'pbMaxFit')
+sub1('p3', """   total never takes the place of a leg with an edge */
+const pbTotalsFill=(n,pool)=>Math.max(0,n-pbMaxLegs([...pool.pref,...pool.thin]));""",
+     """   total never takes the place of a leg with an edge. (app v121) Those legs are counted as one parlay can take them, with
+   no pair DraftKings refuses (pbMaxFit): a quarterback's passing TDs and his teammate's touchdown are one leg's room,
+   not two, so a total fills where they cannot both go */
+const pbTotalsFill=(n,pool)=>Math.max(0,n-pbMaxFit([...pool.pref,...pool.thin]));""", 'pbTotalsFill')
+
+# A level its game's legs make in number but not on one slip says so, in the Elo picks' words.
+sub1('p3', """const DK_CLASH={td:'a quarterback’s passing TDs with a teammate’s touchdown',total:'a quarterback’s passing TDs over with the game total'};""",
+     """const DK_CLASH={td:'a quarterback’s passing TDs with a teammate’s touchdown',total:'a quarterback’s passing TDs over with the game total'};
+/* why a level a game's legs make in number has no parlay that goes on one slip */
+const DK_CLASH_WHY='it takes no quarterback’s passing TDs with a teammate’s touchdown, or his passing TDs over with the game total.';""", 'DK_CLASH_WHY')
+sub1('p3', """  return `${what}: a parlay takes one leg a player, and one side and one total a game.`;
+}
+function spBuild(g){""",
+     """  /* (app v121) legs enough in number, but not on one slip */
+  if(m>=n&&pbMaxFit([...pool.pref,...pool.thin,...(pool.mkt||[])])<n) return `No ${n} of this game’s legs go together on DraftKings’ slip: ${DK_CLASH_WHY}`;
+  return `${what}: a parlay takes one leg a player, and one side and one total a game.`;
+}
+function spBuild(g){""", 'spWhy clash')
+sub1('p3', """    max:pbMaxLegs([...pool.pref,...pool.thin,...pool.mkt])};
+}""",
+     """    max:pbMaxLegs([...pool.pref,...pool.thin,...pool.mkt]),fit:pbMaxFit([...pool.pref,...pool.thin,...pool.mkt])};
+}""", 'spBuild fit')
+sub1('p3', """    max:Math.max(0,...per.map(s=>s.max||0)),games:per.map(s=>s.gid)};""",
+     """    max:Math.max(0,...per.map(s=>s.max||0)),fit:Math.max(0,...per.map(s=>s.fit==null?(s.max||0):s.fit)),games:per.map(s=>s.gid)};""", 'spSlotBuild fit')
+sub1('p3', """  if(!pl) return `${what}, and no player ${plNoId?'leg DraftKings’ betslip can take':'prices'} yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET).`;
+  return `${what}: a parlay takes one game’s legs, one leg a player, and one side and one total a game.`;""",
+     """  if(!pl) return `${what}, and no player ${plNoId?'leg DraftKings’ betslip can take':'prices'} yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET).`;
+  const f=Math.max(0,...per.map(s=>s.fit==null?(s.max||0):s.fit));
+  if(m>=n&&f<n) return `No ${n} legs of any one game of the Sunday slot go together on DraftKings’ slip: ${DK_CLASH_WHY}`;
+  return `${what}: a parlay takes one game’s legs, one leg a player, and one side and one total a game.`;""", 'spWhySlot clash')
+
+# A slot level built again for a player ruled out is built from each game's lines as they stand, not the cache (a
+# player ruled out in the open page moves no signature), one level at a time as a night game's is.
+sub1('p3', """  if(g.slot) return spSlotBuild(g).tiers.find(x=>x.id===t[0])||null;""",
+     """  if(g.slot) return spSlotLevel(g,t);""", 'spRebuild slot')
+sub1('p3', """/* why a level of the Sunday slot is empty: none of its games makes that many legs (one game's legs a parlay), and why */""",
+     """/* one level of the Sunday slot built again now (spRebuild): each game's level from its lines as they stand, never the
+   cache, the best of them by the slot's rule */
+function spSlotLevel(u,t){
+  const [id,label,n,floor]=t, per=[]; let best=null;
+  for(const x of u.games){ const gx=spUnit(x.id); if(!gx) continue;
+    const pool=pbPool([gx],SP_ALL,SP_SEARCH), r=pbTier(t,pool,new Map(),SP_SEARCH), all=[...pool.pref,...pool.thin,...pool.mkt];
+    per.push({noId:pool.noId||0,plGames:pool.plGames,plNoId:pool.plNoId||0,max:pbMaxLegs(all),fit:pbMaxFit(all)});
+    if(r&&r.legs&&r.legs.length&&(!best||spSlotBetter(r,best,floor))) best={id,label,n,floor,...r}; }
+  return best||{id,label,n,floor,why:spWhySlot(n,per)};
+}
+/* why a level of the Sunday slot is empty: none of its games makes that many legs (one game's legs a parlay), and why */""", 'spSlotLevel')
+
+# The slot has no search of its own any more, and its words say one game's legs.
+sub1('p3', """   that kicks off before 7:00 pm Eastern (the 1pm and 4pm windows, and a game abroad that morning), one set of the four
+   levels across them, built as a night game's is from the slot's lines (SP_SLOT_SEARCH), locked 2 hours before its""",
+     """   that kicks off before 7:00 pm Eastern (the 1pm and 4pm windows, and a game abroad that morning), one set of the four
+   levels over them (since app v121 each level one game's legs, the best of its games' own sets: spSlotBuild), locked 2 hours before its""", 'slot comment')
+sub1('p3', """/* the Sunday slot's lists run to some 200 legs across its eleven to thirteen games, cut to 60 each as a game's are,
+   and searched as a game's are */
+const SP_SLOT_SEARCH=SP_SEARCH;""",
+     """/* (app v121) the Sunday slot has no search of its own: each of its games' sets is built as a night game's is (spSet),
+   and each of its levels is the best of theirs (spSlotBuild) */""", 'SP_SLOT_SEARCH')
+sub1('p3', """mktWhy:g.slot?'the slot’s other legs do not make a parlay of this size':'this game’s other legs do not make a parlay of this size'""",
+     """mktWhy:'this game’s other legs do not make a parlay of this size'""", 'slot mktWhy')
+
+# The builder's line about a mix says what the parlay card does: it reads the card's own plan, which counts only the
+# legs that go on the slip (a leg with no DraftKings id is added by hand), so it never promises a link a game the card
+# does not give.
+sub1('p3', """function dkSlipRows(legs,prices){
+  const C=window.PARLAY_CARD; if(!C||typeof C.dkPlan!=='function') return null;
+  try{ const p=C.dkPlan(legs.map((l,i)=>Object.assign({},l,l.src==='dkline'&&prices[i].src!=='dkline'?{src:prices[i].src}:{},
+      {card:{tag:prices[i].src==='real'?'book':(prices[i].src==='fair'?'fair':'est.')}})));
+    return p&&Array.isArray(p.each)?p.each:null; }catch(e){ return null; }
+}""",
+     """function dkSlipPlan(legs,prices){
+  const C=window.PARLAY_CARD; if(!C||typeof C.dkPlan!=='function') return null;
+  try{ return C.dkPlan(legs.map((l,i)=>Object.assign({},l,l.src==='dkline'&&prices[i].src!=='dkline'?{src:prices[i].src}:{},
+      {card:{tag:prices[i].src==='real'?'book':(prices[i].src==='fair'?'fair':'est.')}})))||null; }catch(e){ return null; }
+}
+function dkSlipRows(legs,prices){ const p=dkSlipPlan(legs,prices); return p&&Array.isArray(p.each)?p.each:null; }""", 'dkSlipPlan')
+sub1('p3', """  const fm={}, slip=dkSlipRows(legs,prices);""",
+     """  const fm={}, plan=dkSlipPlan(legs,prices), slip=plan&&Array.isArray(plan.each)?plan.each:null;""", 'renderParlay plan')
+sub1('p3', """  /* (app v121) a pair DraftKings will not take on one slip (dkClash), and a same-game parlay mixed with legs of other
+     games, whose one betslip link DraftKings does not open: the parlay card gives each game its own (where it is on the
+     page). One leg a game is a plain parlay, which opens as one link */""",
+     """  /* (app v121) a pair DraftKings will not take on one slip (dkClash), and a same-game parlay mixed with legs of other
+     games, whose one betslip link DraftKings does not open: the parlay card gives each game its own (where it is on the
+     page), read off the card's own plan, which counts the legs that go on the slip alone. One leg a game is a plain
+     parlay, which opens as one link */""", 'builder notes comment')
+sub1('p3', """    const byG={}; for(const l of legs) byG[l.gid]=(byG[l.gid]||0)+1;
+    const nG=Object.keys(byG).length;
+    if(nG>1&&Object.values(byG).some(c=>c>1)&&window.PARLAY_CARD) html+=`<p class="muted" style="margin:10px 0 0;font-size:12px" data-pb-multigame="${nG}">These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${nG} games a link of its own.</p>`; }""",
+     """    if(plan&&plan.multi&&Array.isArray(plan.games)){ const nG=plan.games.length;
+      html+=`<p class="muted" style="margin:10px 0 0;font-size:12px" data-pb-multigame="${nG}">These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${nG} games a link of its own.</p>`; } }""", 'builder multigame note')
 
 for k, f in FILES.items():
     io.open(f, 'w', encoding='utf-8').write(T[k])
