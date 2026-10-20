@@ -952,10 +952,12 @@ ESPN's recorded answers in `props/build/fixtures/espn/` through a fetch stub (an
 shapes on the payload's own games, so it holds in any week; with no game to come those are skipped), against
 `props/build/espn_rule.js`, the checks' own copy of the formula's constants: the parse, the paging, the
 placement (a name never on a player an id names), the kickoff guards, every price, the precedence, what
-the page chooses and on what rules (where the payload carries ids, no leg from the read in a level or a
-hand, and since app v115 the read's legs on the Top lines, each with its line; with them taken away, as a payload baked before them, the read's legs taken as before), the levels
+the page chooses and on what rules (where the payload carries ids, a table planted to carry them by its content, no leg from the
+read in a level, a hand or, since app v119, the Top lines; with them taken away, as a payload baked before them and every
+payload since app v124, the read's legs taken as before), the levels
 and hands fresh right after a press, each id dated by its read, a read that gave way back on the published prices, nothing of it in `S` and no request to ESPN
-without a press, and the kept read (the key's content after a press, a reload putting back exactly what
+without a press, every case run with the payload's published read taken out (`unbake`) and put back after (`rebake`),
+the published read and its precedence being M17's (**The published read**, below), and the kept read (the key's content after a press, a reload putting back exactly what
 the press gave with no request, each rule that sets a half aside, a value from another season or junk
 emptied, an empty schedule leaving the key alone, bad ids, keys and lines dropped, the merge and the save
 that gives way for room); its status and card words are warnings. The nflbets smoke holds the buttons, a
@@ -2089,7 +2091,8 @@ touchdown, a team line or total missing its other price, a main line the payload
 implied chance over that week's typical overround on two-sided lines of its kind (`fairVig`: the median
 of the two implied chances summed, player main lines for a player's leg, the moneylines, spreads or
 totals for a game's, every kind's where the week has none of its own), worked from the payload on every
-call and marked est. wherever it is shown; a leg with no real price has none. A parlay's
+call and marked est. wherever it is shown; a leg with no real price has none (a `dkline` leg's is the formula's own,
+est.; since app v124 a leg Pull from DraftKings priced takes the pull's, and a locked set's leg its locked one, `kept`). A parlay's
 (`parlayFair`) is the builder's own `parlayProb` on its legs with each chance replaced by its fair
 chance, so same-game legs move together as the model's do; with a leg that has none it is null and the
 parlay shows the model's chance alone, saying the fair chance needs every leg's book price. Every
