@@ -1,12 +1,12 @@
 """Each player's ESPN athlete id in the payload (weekly.py's espn_ids), held to its cases.
 
-The page's Refresh odds button (app v107, part3.js espnRefresh) reads DraftKings' player lines from ESPN's
-free feed in the visitor's browser, on a press and never on a schedule (the owner, 15 October 2026: "would
-rather it be on demand rather than like a constant job"). ESPN names each line's player by its own athlete
-id, so the props job bakes PAY.espn_ids, {ESPN id: the payload's player id}, from nflverse's roster (its
-espn_id beside its gsis_id), the file the run already downloads: no request, and nothing else of ESPN's in
-the payload. This holds it on the real roster rows of fixtures/espn/roster.csv (SEA, DEN, NYJ and NE, week 6
-of 2026, as nflverse had them on 15 October):
+The page's reader of DraftKings' lines on ESPN (part3.js espnReadWeek) runs on a visitor's Refresh odds press
+(app v107) and, since 20 October 2026, in the props job on every run (espn_read.js, whose read weekly.py's
+apply_espn publishes as PAY.espn). ESPN names each line's player by its own athlete id, so the bake writes
+PAY.espn_ids, {ESPN id: the payload's player id}, from nflverse's roster (its espn_id beside its gsis_id), the
+file the run already downloads: no request. bake() itself carries no read: apply_espn adds it after the read,
+and payload.py never carries one forward. This holds it on the real roster rows of fixtures/espn/roster.csv
+(SEA, DEN, NYJ and NE, week 6 of 2026, as nflverse had them on 15 October):
 
   A. every row with an ESPN id places on its gsis id: Sam Darnold (3912547), Jaylen Waddle (4372016) and
      Geno Smith (15864); a rookie the roster has no ESPN id for (Malik McClain) is not there, and the page
@@ -17,8 +17,10 @@ of 2026, as nflverse had them on 15 October):
   D. weekly.bake end to end: the payload carries espn_ids for every player the page can project, the
      payload's players and also one with only a stat row this season (Jaylen Waddle, off the players
      list) and one on the depth chart alone (Geno Smith), and none for a skill player it cannot project
-     (Sam Darnold, on none of the three); and no ESPN line, game line or read of any kind (no espn,
-     espn_meta); a bake on a roster without a player drops his id, so the map is always this run's.
+     (Sam Darnold, on none of the three); and bake() itself carries no ESPN line, game line or read of any
+     kind (no espn, espn_meta: apply_espn adds the read after the read, test_apply_espn.py holds it), even
+     from a published payload holding one; a bake on a roster without a player drops his id, so the map is
+     always this run's.
 
     python3 props/build/test_espn_ids.py        must end "0 failures"
 """
@@ -86,7 +88,7 @@ def d():
             raw = {'srows': srows, 'stats': {}, 'skipped_live': set(), 'irows': [], 'rrows': rrows, 'snap_rows': []}
             weekly.DATA = data; weekly.problems.clear(); weekly.report.clear()
             with contextlib.redirect_stdout(io.StringIO()):
-                weekly.bake(pp, {'season': S}, [], 6, False, weekly.datetime.datetime(S, 10, 15, 3, tzinfo=weekly.datetime.timezone.utc), raw)
+                weekly.bake(pp, {'season': S, 'espn': {'v': 1, 'read_at': None, 'games': {f'{S}_06_SEA_DEN': {'w': '6'}}}}, [], 6, False,weekly.datetime.datetime(S, 10, 15, 3, tzinfo=weekly.datetime.timezone.utc), raw)
             return json.load(open(pp, encoding='utf-8'))
         pay = bake(ROSTER)
         can = (SKILL - {DARNOLD})
@@ -95,7 +97,7 @@ def d():
         chk(pay['espn_ids'].get('4372016') == WADDLE, 'D: a player with a stat row this season and off the payload\'s players list (Waddle) is in the map')
         chk(pay['espn_ids'].get('15864') == GENO, 'D: a player on the depth chart alone (Geno Smith) is in the map')
         chk('3912547' not in pay['espn_ids'], 'D: a skill player the page cannot project (Darnold, on no list) is not in the map')
-        chk(not ({'espn', 'espn_meta'} & set(pay)), f"D: the payload carries no ESPN read: {sorted({'espn', 'espn_meta'} & set(pay))}")
+        chk(not ({'espn', 'espn_meta'} & set(pay)), f"D: bake() itself carries no ESPN read (apply_espn adds it): {sorted({'espn', 'espn_meta'} & set(pay))}")
         pay2 = bake([r for r in ROSTER if r['gsis_id'] != WADDLE])
         chk('4372016' not in pay2['espn_ids'] and pay2['espn_ids'].get('15864') == GENO, 'D: a rebake on a roster without a player drops his id')
     finally:
