@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v121 \u00b7 2026-10-20';
+const APP_BUILD='app v120 \u00b7 2026-10-19';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -590,11 +590,7 @@ function probToAmerican(p){
 }
 function legKey(gid,pid,stat){ return gid+'|'+pid+'|'+stat; }
 function parlayLegs(){
-  return Object.entries(S.parlay||{}).map(([key,l])=>{ const x={key,...l}; delete x.pulled;
-    /* (app v121) the parlay card's Pull from DraftKings (window.dkPulledFor, on the admin's device alone): what it
-       pulled for this leg, put on this fresh copy only, never on S.parlay; inert without the card */
-    if(typeof window!=='undefined'&&typeof window.dkPulledFor==='function'){ try{ const P=window.dkPulledFor(x); if(P) x.pulled=P; }catch(e){} }
-    return x; })
+  return Object.entries(S.parlay||{}).map(([key,l])=>({key,...l}))
     .sort((a,b)=>(a.week-b.week)||a.name.localeCompare(b.name));
 }
 
@@ -1102,8 +1098,6 @@ function lineSource(g){
   /* (app v107) DraftKings' lines a Refresh odds press read on ESPN, dated as the press's status line dates them */
   if(g.ls==='dk'){ let gl=null; try{ gl=typeof ESPN_GL==='object'&&ESPN_GL?ESPN_GL[g.id]:null; }catch(e){}
     if(gl&&gl.at) return 'DraftKings’, read from ESPN by Refresh odds '+espnWhen(gl.at);
-    /* (app v121) the props job's own read of ESPN, published with the payload */
-    if(g.lsr==='espn') return 'DraftKings’, read from ESPN '+espnWhen(g.lat);
     const t=g.lat?new Date(g.lat):null;
     return 'DraftKings'+(t&&isFinite(t)?', pulled '+t.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}):''); }
   return "nflverse's posted line, as on the Matchups tab";

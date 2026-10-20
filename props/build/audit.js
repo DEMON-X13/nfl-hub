@@ -109,8 +109,13 @@ setTimeout(async()=>{
     if(s==='any_td') return (l.k==null?1:+l.k)===1?[l.pid+'|any_td']:[];
     if(l.main) return [[l.pid,s,l.side,dkPt(l.k)].join('|')];
     return [[l.pid,s,'over',dkPt(+l.k-0.5)].join('|'),[l.pid,s,'over',dkPt(+l.k-1)].join('|')]; };
+  /* (app v121) and by content: an entry carries the pull's ids only where it has the paid pull's time (at) or a
+     player's key. An entry a read made (the props job's published read, a press, the parlay card's check) holds
+     only event, glat and the game lines' team: and game| ids, so it never does, whatever object it is (the rule
+     holds on a JSON copy of the table, and is worked here on the live one, never by the page's dkEntryCarries) */
+  const dkEntryCarriesAud=E=>!!E&&typeof E==='object'&&((E.at!=null&&E.at!=='')||Object.keys(E).some(k=>!/^(team:|game\|)/.test(k)&&!['event','at','glat'].includes(k)));
   const dkEntryAud=(l,D=F('PAY').dk)=>{ const W0=D&&typeof D==='object'?D[String(l.week)]:null, E=W0&&typeof W0==='object'?W0[l.gid]:null;
-    return E&&typeof E==='object'?E:null; };
+    return E&&typeof E==='object'&&dkEntryCarriesAud(E)?E:null; };
   const dkIdAud=(l,D=F('PAY').dk)=>{ const E=dkEntryAud(l,D);
     if(!E) return null;
     const g=S.sched.find(x=>x.id===l.gid); if(g&&F('gameStarted')(g)) return null;
@@ -158,6 +163,35 @@ setTimeout(async()=>{
     const T={[String(wk)]:D}; AUD_DK.add(T); return T; };
   /* put a table in place of PAY.dk (undefined: none, as a payload baked before ids), and back */
   const dkSet=v=>{ const P0=F('PAY'); if(v===undefined) delete P0.dk; else P0.dk=v; w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}'); };
+  /* (app v121) the published read: the props job's own read of DraftKings' lines on ESPN, in the payload (PAY.espn and
+     the schedule's game lines), which the page installs at boot (espnPublished: the player blocks into ESPN_LIVE, the
+     game-line ids into PAY.dk). A check that plants prices or lines on a real game clears that game's published read
+     first (unbake: its PAY.espn entry out, the page's espnPublished run again, which takes its block back out), and
+     puts the payload's own back after (rebake), so nothing it plants is set over a live structure (rule (c)). BOOT_ESPN
+     is the read as the payload booted with it */
+  const BOOT_ESPN=JSON.stringify(PAY.espn===undefined?null:PAY.espn);
+  const pubGamesAud=()=>{ const E=F('PAY').espn; return E&&typeof E==='object'&&E.v===1&&E.games&&typeof E.games==='object'?E.games:null; };
+  const pubCaches=()=>w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}');
+  /* the schedule's game lines the read set keep their numbers (nflverse's are not in the payload) but lose the read's
+     marks (ls 'dk', lat, lsr 'espn'), so they read as lines no read made; rebake puts the marks back (UNB) */
+  const UNB={};
+  const unbake=ids=>{ const all=ids==null, set=new Set(all?[]:[].concat(ids)), G=pubGamesAud();
+    if(G) for(const id of Object.keys(G)) if(all||set.has(id)) delete G[id];
+    for(const g of S.sched) if((all||set.has(g.id))&&g.lsr==='espn'){ if(!UNB[g.id]) UNB[g.id]={ls:g.ls,lat:g.lat,lsr:g.lsr}; delete g.ls; delete g.lat; delete g.lsr; }
+    F('espnPublished')(); pubCaches(); };
+  /* (the read's ids go into the table the payload has now: a section that put back a copy of its own table stands it in) */
+  const rebake=()=>{ const v=JSON.parse(BOOT_ESPN), P0=F('PAY'); if(v==null) delete P0.espn; else P0.espn=v;
+    for(const id of Object.keys(UNB)){ const g=S.sched.find(x=>x.id===id); if(g) Object.assign(g,UNB[id]); delete UNB[id]; }
+    w.eval("ESPN_PUB_DK=PAY.dk&&typeof PAY.dk==='object'?PAY.dk:null"); F('espnPublished')(); pubCaches(); };
+  /* the audit's own reading of the published read of a game's player lines: its out 'ok' or 'none', of a game to come
+     in its week, dated before its kickoff (as the page installs it); the time, or null */
+  const pubOutAud=gid=>{ const G=pubGamesAud(), e=G&&Object.prototype.hasOwnProperty.call(G,gid)?G[gid]:null, g=S.sched.find(x=>x.id===gid);
+    if(!e||typeof e!=='object'||!g||String(e.w)!==String(g.w)||F('gameStarted')(g)||F('hasScore')(g)) return null;
+    const k=F('kickoff')(g), u=e.out, t=u&&typeof u.at==='string'?Date.parse(u.at):NaN;
+    return u&&(u.st==='ok'||u.st==='none')&&isFinite(t)&&t>0&&!!k&&t<k.getTime()?t:null; };
+  /* when DraftKings' lines for these games were last read from ESPN: a press's (or a kept read's) ok or none, or the
+     published read's; null where none was */
+  const lastReadAud=ids=>{ let t=0; const O=F('ESPN_OUT'); for(const id of ids){ const o=O[id]; if(o&&(o.st==='ok'||o.st==='none')&&isFinite(o.when)&&o.when>t) t=o.when; const p=pubOutAud(id); if(p&&p>t) t=p; } return t||null; };
   /* the checks open games that have not kicked off; between the week's last kickoff and its
      final reaching the data (a Monday night) there are none, so the page's clock goes back to
      an hour before that kickoff rather than the audit depending on the hour it runs */
@@ -849,6 +883,13 @@ setTimeout(async()=>{
       if(`${p.year}-${p.month}-${p.day}`===g.d&&`${p.hour}:${p.minute}`===`${t[1]}:${t[2]}`) return ms; }
     return null; };
   const etAud=ms=>new Date(ms).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',minute:'2-digit'})+' ET';
+  /* (app v121) the reason a tier gives with no player line on the ticked games (no paid pull, so no pull timing): when
+     DraftKings' lines for them were last read from ESPN (the published read or a press: lastReadAud, the audit's own),
+     or that they have not been, for the ticked games' ids */
+  const noPlAud=ids=>{ const t=lastReadAud(ids);
+    return t?`No player lines yet: DraftKings had posted none for these games when its lines were last read from ESPN (${etAud(t)}). Press Refresh odds to read them now.`
+      :'No player lines yet: DraftKings’ lines for these games have not been read from ESPN yet. Press Refresh odds to read them now.'; };
+  const low1=s=>s[0].toLowerCase()+s.slice(1);
   const primeAud=g=>{ const k=kickAud(g); if(k==null) return false;
     const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'2-digit',hourCycle:'h23'}).formatToParts(k).map(x=>[x.type,x.value]));
     return ['Thu','Sun','Mon'].includes(p.weekday)&&+p.hour>=19; };
@@ -1160,12 +1201,12 @@ setTimeout(async()=>{
     chk(!!bestRet,'the page has no search for a level\'s best return over its floor on its own (pbBestReturn)');
     const maxLegsOf=F('pbMaxLegs'), pbIdOf=l=>l.key+'|'+l.side+'|'+l.k;
     const ruleFor=t=>t.likeliest?`the likeliest ${t.n} legs`:t.floor?`best return that lands ${Math.round(t.floor*100)}%+ by the model`:'the likeliest pair';
-    /* the reason a tier gives with no player price on file: when they really come (PR #213: the
-       Sunday slate on Saturday morning, every other game on its day or the day before) */
-    const NO_PL='No player prices yet: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).', noPlLow=NO_PL[0].toLowerCase()+NO_PL.slice(1);
-    /* (app v109) the reason with player prices on file and none DraftKings' betslip can take: a line read
-       by Refresh odds carries no id, and DraftKings' own come with the prices the pull buys, and when */
-    const NO_ID='No player legs DraftKings’ betslip can take yet: a player’s line read by Refresh odds carries no DraftKings id (ESPN gives none for it), and DraftKings’ own ids come with its prices, which are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).';
+    /* the reason a tier gives with no player line on the ticked games (app v121: no paid pull, so no pull timing):
+       when DraftKings' lines for them were last read from ESPN (the published read or a press: lastReadAud, the
+       audit's own), or that they have not been, worked here for the ticked games' ids */
+    /* (app v109, dormant since app v121: only a payload whose bake wrote paid ids) the reason with player prices on file
+       and none DraftKings' betslip can take */
+    const NO_ID='No player legs DraftKings’ betslip can take: a player’s line read from ESPN carries no DraftKings id.';
     /* a card's own words, beyond its legs: the rule beside its name says what the parlay is, and
        nothing else on it speaks of the floor (the owner wants the chance and the price, no note):
        no paragraph but the thin-edge line, and no word of a floor outside the rule and the legs */
@@ -1215,11 +1256,11 @@ setTimeout(async()=>{
       for(const t of r.tiers){ const [,,n,floor]=SPEC.find(s=>s[0]===t.id);
         if(!t.legs){ said++;
           W.wording(typeof t.why==='string'&&t.why.length>10,`${lab}: the ${t.id} tier is empty and does not say why`);
-          if(maxLegs<n) W.wording(/^(Only \d+ legs?|No legs|No games|No bet types|No player prices|No player legs DraftKings’ betslip can take)/.test(t.why),`${lab}: ${maxLegs} legs on the picks and the ${n}-leg tier does not say there are too few: ${t.why}`);
+          if(maxLegs<n) W.wording(/^(Only \d+ legs?|No legs|No games|No bet types|No player lines|No player legs DraftKings’ betslip can take)/.test(t.why),`${lab}: ${maxLegs} legs on the picks and the ${n}-leg tier does not say there are too few: ${t.why}`);
           /* every level shows a parlay whenever the picks make that many legs: empty only when they do not */
           W.compose(maxLegs<n,`${lab}: the ${t.id} tier is empty though the picks make ${maxLegs} legs, enough for ${n}: ${t.why}`);
           W.wording(!/of the time or more|lands \d+%/.test(t.why),`${lab}: the empty ${t.id} tier speaks of its floor, which every level now falls back from: ${t.why}`);
-          if(pooled) W.wording(/no player prices yet/i.test(t.why)===(noPl&&!noId)&&/no player legs DraftKings’ betslip can take yet/i.test(t.why)===noId&&(!noPl||tmOn||(t.why===(noId?NO_ID:NO_PL)&&!/tick more/.test(t.why))),
+          if(pooled) W.wording(/no player lines yet/i.test(t.why)===(noPl&&!noId)&&/no player legs DraftKings’ betslip can take/i.test(t.why)===noId&&(!noPl||tmOn||(t.why===(noId?NO_ID:noPlAud(games.filter(g=>!u.off.includes(g.id)).map(g=>g.id)))&&!/tick more/.test(t.why))),
             `${lab}: the empty ${t.id} tier ${noPl?(noId?'does not say plainly that no player leg on file has a DraftKings id yet':'does not say plainly that no player prices are on file yet'):'says no player prices are on file, and some are'}: ${t.why}`);
           continue; }
         built++; legsSeen+=t.legs.length;
@@ -1319,21 +1360,26 @@ setTimeout(async()=>{
     const SPS=w.eval('SP_SEARCH'), r4=v=>Math.round(v*1e4)/1e4, r3=v=>Math.round(v*1e3)/1e3;
     const maxAud=list=>{ const pl=new Set(), gs=new Set(); for(const l of list){ if(isG(l)) gs.add(l.gid+(l.stat==='total'?'|t':'|s')); else pl.add(l.pid); } return pl.size+gs.size; };
     const dayAud=g=>{ const k=kickAud(g); return k==null?null:new Date(k).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short'}); };
-    const pulledAud=g=>({Thu:'on Thursday, the day of the game',Mon:'on Monday, the day of the game',Sun:'on Saturday morning'})[dayAud(g)];
     const nightAud=g=>({Thu:'Thursday night',Sun:'Sunday night',Mon:'Monday night'})[dayAud(g)];
+    /* (app v121) why a unit (a night game, or the Sunday slot: slot true) has no player line, as the rule words it: when
+       DraftKings' lines for its games were last read from ESPN (lastReadAud: the published read or a press), or that
+       they have not been; no paid-pull timing */
+    const spNoPlAud=(G,slot)=>{ const t=lastReadAud(G.map(g=>g.id));
+      if(slot) return t?`no player lines yet: DraftKings had posted none for its games when their lines were last read from ESPN (${etAud(t)}).`:'no player lines yet: DraftKings’ lines for its games have not been read from ESPN yet.';
+      return t?`no player lines yet: DraftKings had posted none for it when its lines were last read from ESPN (${etAud(t)}).`:'no player lines yet: its DraftKings lines have not been read from ESPN yet.'; };
+    const SP_NO_ID='no player leg DraftKings’ betslip can take: a player’s line read from ESPN carries no DraftKings id.';
     /* why a level of one game is empty, as the rule words it: too few legs, and why there are no player legs */
     const spWhyAud=(g,n,q)=>{ const pq={pref:capAud(q.pref,SPS.cap),thin:capAud(q.thin,SPS.cap),mkt:capAud(q.mkt,SPS.cap)}, m=maxAud([...pq.pref,...pq.thin,...pq.mkt]);
       const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in this game${q.noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in this game`;
-      const pl=F('pricedLegs')([g]).filter(l=>!isG(l)), when=pulledAud(g), O=F('ESPN_OUT')[g.id], read=!!O&&(O.st==='ok'||O.st==='none');
-      if(!pl.some(dkOk)) return `${what}, and `+(pl.length?`no player leg DraftKings’ betslip can take yet: a player’s line read by Refresh odds carries no DraftKings id, and DraftKings’ own come with its player prices, which for this game are pulled ${when}.`
-        :read?`no player lines yet: DraftKings had posted none for it when Refresh odds last read it, and its own player prices are pulled ${when}.`:`no player prices yet: they are pulled ${when}.`);
+      const pl=F('pricedLegs')([g]).filter(l=>!isG(l));
+      if(!pl.some(dkOk)) return `${what}, and `+(pl.length?SP_NO_ID:spNoPlAud([g],false));
       return `${what}: a parlay takes one leg a player, and one side and one total a game.`; };
     /* (app v118) why a level of the Sunday slot is empty, as the rule words it: the slot's own words for too few legs, and
-       its player prices' (the afternoon games' on Saturday morning, the early games' never) */
+       (app v121) when its games' lines were last read */
     const spWhySlotAud=(G,n,q,cap)=>{ const pq={pref:capAud(q.pref,cap),thin:capAud(q.thin,cap),mkt:capAud(q.mkt,cap)}, m=maxAud([...pq.pref,...pq.thin,...pq.mkt]);
       const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in the Sunday slot${q.noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in the Sunday slot`;
       const pl=F('pricedLegs')(G).filter(l=>!isG(l));
-      if(!pl.some(dkOk)) return `${what}, and no player ${pl.length?'leg DraftKings’ betslip can take':'prices'} yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET).`;
+      if(!pl.some(dkOk)) return `${what}, and `+(pl.length?SP_NO_ID:spNoPlAud(G,true));
       return `${what}: a parlay takes one leg a player, and one side and one total a game.`; };
     let slotsBuilt=0, slotLevels=0, slotsLocked=0, slotsNone=0, slotsUnderway=0; const slotSaid=[];
     const holdSets=(lab)=>{
@@ -1622,6 +1668,9 @@ setTimeout(async()=>{
     /* ---- the same on made-up lines: every player leg kind and the totals in play ---- */
     { const cw=F('currentWeek')(), keepM=JSON.stringify(PAY.mkt[String(cw)]||null), keepT=S.sched.map(g=>[g.tov,g.tou]);
       const M=(PAY.mkt[String(cw)]=PAY.mkt[String(cw)]||{}); let nL=0;
+      /* (app v121) the made-up lines stand alone: the week's published read cleared (put back below), so a planted main
+         line is not one the read has DraftKings at another number for (rule (c)) */
+      unbake(games.map(g=>g.id));
       games.forEach((g,gi)=>{ if(gi%2===0){ g.tov=-105; g.tou=-115; } else if(gi%4===1){ g.tov=100; g.tou=100; } else { g.tov=110; g.tou=105; }
         const ro=rosterFor(g,false);
         for(const tm in ro) ro[tm].players.forEach((x,i)=>{ if(!x.starter) return;
@@ -1741,7 +1790,7 @@ setTimeout(async()=>{
         chk(!!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`),'the game did not come back with the clock'); }
       if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
       S.sched.forEach((g,i)=>{ g.tov=keepT[i][0]; g.tou=keepT[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
-      dkSet(keepDk);
+      dkSet(keepDk); rebake();
       console.log(`M. Top ${TOP_N_AUD} lines: ${topLists} lists held on as many sets of ticks, ${topRows} rows in their two parts (${topRows-topOther} Value picks, ${topOther} other lines after them, the totals after every thin-edge line, ${topTotAfter} lists with both; ${topNoValue} lists with no Value pick; each bet once, ${topSame} main lines a ladder rung was left out for, ${topSameCut} of them past the ${TOP_N_AUD}th; M12 holds both on made-up games); Suggested Parlays: ${setsBuilt} sets of the week's prime-time games, ${setLevels} levels built and ${setsSaid} that said why, ${setsLocked} drawn locked, ${setThinSeen} cards with a thin leg and ${setMktSeen} with a total drawn quiet (no line on either); ${nightSaid.join('; ')}; the Sunday slot: ${slotsBuilt} sets held, ${slotLevels} levels built, ${slotsLocked} drawn locked or under way${slotsUnderway?` (${slotsUnderway} under way, its live build not held: the page builds none then)`:''}${slotsNone?`, ${slotsNone} under way with the site's set not published in time (its line alone)`:''}; ${slotSaid.join('; ')}`);
       console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, ${corrTiers} of one game's tiers on legs that move together, over this week's ${games.length} games and ${nL} made-up player lines`); }
     /* the thin-edge line says, for each kind of leg it is on, what it lacked: a team bet has no
@@ -1804,7 +1853,9 @@ setTimeout(async()=>{
        and so does a mix with team bets where a tier cannot be filled; the note does not repeat it */
     if(games.length){ const cw=F('currentWeek')(), keepO=JSON.stringify(S.odds||{}), keepM=JSON.stringify(PAY.mkt[String(cw)]||null);
       for(const g of games){ if(S.odds) delete S.odds[g.id]; }
-      delete PAY.mkt[String(cw)]; U().off=[];
+      /* (app v121) and no published read of their lines: the games' PAY.espn entries cleared (unbake), put back below */
+      delete PAY.mkt[String(cw)]; U().off=[]; unbake(games.map(g=>g.id));
+      const NO_PL=noPlAud(games.map(g=>g.id)), noPlLow=low1(NO_PL);
       setKinds(['over','under']); const rP=hold('no player prices, players only'); F('renderPb')();
       const tx=d.getElementById('pbPanel').textContent.replace(/\s+/g,' ');
       chk(!F('pricedLegs')(games,true).some(l=>!isG(l))&&rP.noPlayerPrices&&rP.tiers.every(t=>!t.legs&&t.why===NO_PL),
@@ -1818,7 +1869,7 @@ setTimeout(async()=>{
       /* a level built with no player price on file says nothing of the missing player legs, so the
          panel does, whenever one is built; and player bets with Game total build their levels from
          the totals, with that note */
-      const PL_NOTE='Player prices are not in yet for your picks, so the list below has no player lines: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).';
+      const PL_NOTE='No player lines are in yet for your picks, so the list below has none: '+NO_PL.replace(/^No player lines yet: /,'');
       F('renderPb')(); W.wording(d.getElementById('pbPanel').textContent.replace(/\s+/g,' ').includes(PL_NOTE)===(F('getPbTop')().rows.length>0),'with no player price on file and All ticked, the note that the list has no player lines is missing, or shows with no line listed');
       /* a level needs two legs, so only where two or more games have a priced total (a one-game
          Monday has one, and builds nothing) */
@@ -1831,11 +1882,11 @@ setTimeout(async()=>{
          can be built, and every bigger level says both why: too few legs, and no player prices yet */
       U().off=games.slice(1).map(g=>g.id); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()'); const r1=hold('no player prices, all, one game');
       /* (the id phrase exactly where the audit's own count has legs on the game left out for want of an id, as above) */
-      const idP3=qualAud([games[0]],U()).noId>0?' that DraftKings’ betslip can take':'', few3=new RegExp(`^(Only [12] legs?|No legs) on your picks${idP3}, and `);
-      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.every(isG):(!t.legs&&few3.test(t.why)&&t.why.endsWith(', and '+noPlLow))),
+      const idP3=qualAud([games[0]],U()).noId>0?' that DraftKings’ betslip can take':'', few3=new RegExp(`^(Only [12] legs?|No legs) on your picks${idP3}, and `), noPl1=low1(noPlAud([games[0].id]));
+      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.every(isG):(!t.legs&&few3.test(t.why)&&t.why.endsWith(', and '+noPl1))),
         'with no player price on file, All on one game does not give both reasons on every tier: '+r1.tiers.map(t=>t.why||'built').join(' / '));
       U().off=[];
-      S.odds=JSON.parse(keepO); if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
+      S.odds=JSON.parse(keepO); if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM); rebake();
       w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()'); F('renderPb')();
       console.log(`M3. no player prices yet: Players only says so on all 4 tiers; All ${rA.tiers.filter(t=>t.legs).length} built on team bets, ${rA.tiers.filter(t=>!t.legs).length} saying why; All on one game gives both reasons on all 4`); }
     /* M4. every level shows a parlay of its size whenever the picks make that many legs. Held on
@@ -2016,7 +2067,7 @@ setTimeout(async()=>{
           setKinds(KINDS); holdTop('made-up games with ids for some legs'); F('renderPb')();
           { const pn=d.getElementById('pbPanel').cloneNode(true), el=pn.querySelector('#pbElo'); if(el) el.remove();
             const tx=pn.textContent.replace(/\s+/g,' '), m=/(\d+) lines? (?:is|are) left out: the list takes only lines DraftKings’ betslip can take/.exec(tx), mv=/(\d+) lines? (?:is|are) left out: DraftKings had (?:it|them) only at another number when its lines were last read/.exec(tx);
-            W.wording(!!m&&!!mv&&/A player’s line read by Refresh odds carries no id/.test(tx)&&/still on the game pages, where you can add/.test(tx)&&/Refresh odds reads DraftKings’ current spreads and totals/.test(tx)&&/goes on DraftKings’ slip at DraftKings’ number/.test(tx)&&!/to add by hand/.test(tx),
+            W.wording(!!m&&!!mv&&/A player’s line read from ESPN carries no id/.test(tx)&&/still on the game pages, where you can add/.test(tx)&&/Refresh odds reads DraftKings’ current spreads and totals/.test(tx)&&/goes on DraftKings’ slip at DraftKings’ number/.test(tx)&&!/to add by hand/.test(tx),
               `with ids for some made-up legs, the list does not say lines are left out for want of a DraftKings id, at another number and with none, and why: ${(tx.match(/\d+ lines? (is|are) left out[^.]*\./g)||['nothing']).join(' ')}`);
             chk((m?+m[1]:0)===nNone&&(mv?+mv[1]:0)===nMoved,`the list says ${m?m[1]:0} lines are left out for want of a DraftKings id and ${mv?mv[1]:0} for DraftKings having them at another number, where ${nNone} and ${nMoved} are`); }
           /* no player id at all: the levels are built from team bets, and say why there is no player leg */
@@ -2849,6 +2900,9 @@ setTimeout(async()=>{
     const g0=S.sched.filter(g=>+g.w===cw).sort((a,b)=>String(a.id).localeCompare(String(b.id)))[0];
     const keepM=JSON.stringify(PAY.mkt[String(cw)]||null), keepO=JSON.stringify(S.odds||{}), KF=['sp','tot','mla','mlh','spa','sph','tov','tou'], keepG=S.sched.map(g=>KF.map(k=>g[k]));
     const keepDk7=F('PAY').dk;
+    /* (app v121) the made-up prices and lines stand alone on the week's games: their published read cleared, put back at
+       the end (rule (c)) */
+    unbake(S.sched.filter(g=>+g.w===cw).map(g=>g.id));
     const restore=()=>{ if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM); S.odds=JSON.parse(keepO); dkSet(keepDk7);
       S.sched.forEach((g,i)=>KF.forEach((k,j)=>{ if(keepG[i][j]===undefined) delete g[k]; else g[k]=keepG[i][j]; })); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}'); };
     let ruleCases=0;
@@ -3073,7 +3127,7 @@ setTimeout(async()=>{
           S.parlay=JSON.parse(keepP); S.bookPrice=keepB; F('save')(); F('renderParlay')(); }
         S.ui.pb=JSON.parse(keepU); S.ui.suggestSide=keepSide;
         console.log(`M7. fair chance: ${ruleCases} cases of the rule, and on made-up lines ${nFar} legs far off the market left out (${nNear} player legs kept), none on a level or on ${hands} game hands; ${flagged}; the builder flags it and leads with the fair chance${handsIds}`); }
-    } finally { restore(); F('renderParlay')(); } }
+    } finally { restore(); rebake(); F('renderParlay')(); } }
 
   /* ---- M8. Refresh odds: DraftKings' lines read from ESPN in the browser, on a press (app v107) ----
      The page reads ESPN only when a visitor presses Refresh odds (part3.js espnRefresh), never on load
@@ -3232,6 +3286,9 @@ setTimeout(async()=>{
       /* M8a. nothing asked of ESPN before a press: not on load (the audit's own fetch saw none), not on
          any draw of the slate, a game's page or the panel */
       chk(!calls.some(c=>esp(c.url)),'the page asked ESPN for something on its own before any press: '+calls.filter(c=>esp(c.url)).map(c=>c.url).slice(0,3).join(' '));
+      /* (app v121) M8 holds the press and the kept read on a payload with no published read: every game's PAY.espn
+         entry cleared (unbake) here and put back after M8 (rebake); the published read and its precedence are M16's */
+      unbake();
       w.fetch=stub;
       F('renderAll')(); for(const g of F('pbGames')().slice(0,3)){ S.ui.game=g.id; F('renderGame')(); } S.ui.game=null; F('closeGameModal')(); F('renderPb')();
       await sleep(300);
@@ -3592,7 +3649,11 @@ setTimeout(async()=>{
             const glSigOf=L=>fnv(KEYS.map(k=>L[k]==null?'':String(L[k])).join('|'));
             const plSigOf=gid=>{ const E=((P().dk||{})[wk]||{})[gid], M=(P().mkt||{})[wk], rows=[];
               if(M&&typeof M==='object') for(const pid of Object.keys(M).sort()){ const r=M[pid]; if(r&&typeof r==='object') for(const st of Object.keys(r).sort()){ const L=r[st]; if(L&&L.g===gid) rows.push([pid,st,L.line,L.over,L.under].join(',')); } }
-              return fnv(String(E&&E.at||'')+'|'+rows.join(';')); };
+              /* (app v121) and the published read of the game's player lines, where the payload carries one for it in its
+                 week: its pl.at, out.st and out.at (PAY.espn, as the audit reads it; none, the string as before) */
+              const PE=P().espn, PG=PE&&typeof PE==='object'&&PE.v===1&&PE.games&&typeof PE.games==='object'&&Object.prototype.hasOwnProperty.call(PE.games,gid)?PE.games[gid]:null;
+              const pub=PG&&typeof PG==='object'&&String(PG.w)===String(wk)?'|espn:'+String(PG.pl&&PG.pl.at||'')+':'+String(PG.out&&PG.out.st||'')+':'+String(PG.out&&PG.out.at||''):'';
+              return fnv(String(E&&E.at||'')+'|'+rows.join(';')+pub); };
             const simReads=(pub,reads,prev0)=>{ const g={...pub}, d={}; let prev=prev0, at=null;
               for(const r of reads){ const L=r.lines||{}; if(!Object.keys(L).length||!(r.at>prev)) continue;
                 const set=(k,v)=>{ d[k]=[v,r.at]; g[k]=v; }, dropK=k=>{ d[k]=[null,r.at]; delete g[k]; };
@@ -4235,7 +4296,7 @@ setTimeout(async()=>{
                 `${g0.id} kept as a read that found no player lines posted: a reload did not put back what it found (ESPN_OUT 'none') and write it back as kept: ESPN_OUT ${JSON.stringify(r.ESPN_OUT[g0.id]||null)}, written ${JSON.stringify(r.kg[g0.id]||null)}; ${why(r)}`);
               chk(!r.err&&!!r.pb&&r.pb.espn&&r.pb.none&&r.pb.empty,`${g0.id} kept as a read that found no player lines posted: after a reload the Parlay Builder (players only, ${g0.id} alone, no book price) does not stand on that read, or has a level: ${JSON.stringify(r.pb)}`);
               W.wording(/DraftKings has posted no player lines for it yet/.test(r.st0||''),`after a reload of ${g0.id}'s read that found no player lines, its status line reads "${r.st0}"`);
-              W.wording(!!r.pb&&r.pb.why.every(x=>/^No player lines yet: DraftKings had posted none for these games when Refresh odds last read them from ESPN/.test(x||'')),`after a reload of ${g0.id}'s read that found no player lines, the empty levels read: ${r.pb?r.pb.why.join(' / '):'(none)'}`);
+              W.wording(!!r.pb&&r.pb.why.every(x=>/^No player lines yet: DraftKings had posted none for these games when its lines were last read from ESPN \(/.test(x||'')),`after a reload of ${g0.id}'s read that found no player lines, the empty levels read: ${r.pb?r.pb.why.join(' / '):'(none)'}`);
               const rA=reload(t.kept,()=>{ atSet(e.out.when+1000); setBk(e.out.when-1000); return null; },o=>{ o.st0=F('espnStatus')(g0.id); },'a reload with a newer pull');
               chk(!rA.err&&rA.req===0&&!rA.ESPN_OUT[g0.id]&&!rA.ESPN_KEPT[g0.id]&&!(g0.id in rA.kg)&&!!rA.ESPN_ASIDE[g0.id]&&rA.ESPN_ASIDE[g0.id].pl===e.out.when&&goneIs(rA,g0.id,['pl'],{pl:e.out.when}),
                 `${g0.id} kept as a read that found no player lines, the paid pull's time later than that read: a reload put it back or wrote it back, or ESPN_ASIDE and ESPN_KEEP_GONE do not name its player half at its time: ${why(rA)}`);
@@ -4854,7 +4915,7 @@ setTimeout(async()=>{
                 chk(li.length===t.legs.length&&t.legs.every((l,i)=>!!li[i].querySelector('.pr i.est')===(l.src==='dkline'))&&!!c&&c.querySelector('.pb-nums').children[1].querySelector('span').textContent===(nd?'price, est.':'price'),
                   `${lab}: ${g.id}'s ${t.id} card does not mark est. exactly its ${nd} legs priced from DraftKings' line, or its price "${nd?'price, est.':'price'}"`);
                 W.wording(!!c&&!!c.querySelector('.pb-espnline')===nd>0,`${lab}: ${g.id}'s ${t.id} card's line on legs priced from DraftKings' line is ${nd?'missing':'there with none'}`); } }
-            W.wording(/A player line marked est\. is priced from DraftKings’ line read on ESPN by Refresh odds/.test(panel.textContent)===any,`${lab}: the list's note on lines priced from DraftKings' line is ${any?'missing':'there with none listed'}`);
+            W.wording(/A player line marked est\. is priced from DraftKings’ line read on ESPN: /.test(panel.textContent)===any,`${lab}: the list's note on lines priced from DraftKings' line is ${any?'missing':'there with none listed'}`);
             } finally { stab.hidden=keepH; spOnPut(keepOn); slotPut(keepSl); F('renderPb')(); }
             for(const g of F('pbGames')().slice(0,3)){ const T=F('gameTiers')(g), b=d.createElement('div'); b.innerHTML=F('gameSuggestCard')(g,false);
               for(const [i,id] of ['high','med','low'].entries()){ const t=T[id]; if(!t) continue; const blk2=b.querySelectorAll('.gsugg-tier')[i], li=blk2?[...blk2.querySelectorAll('.gsugg-legs li')]:[]; n++;
@@ -4877,10 +4938,12 @@ setTimeout(async()=>{
             try{ for(const [m,ks] of [['all',['ml','ats','total','over','under']],['players',['over','under']],['g0',['over','under']]]){ for(const k of ['ml','ats','total','over','under']) S.ui.pb.k[k]=ks.includes(k);
                 S.ui.pb.off=m==='g0'?games.filter(g=>g!==g0).map(g=>g.id):[]; w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()');
                 const {n,r}=holdPicks(`a press${nl}, ${m==='g0'?'players only on '+g0.id:m}`,m==='g0'?[g0]:games); nPick+=n; if(m!=='players') nPick+=holdMarks(`a press${nl}, ${m}`,r);
-                if(m==='g0'&&!dkCarried()) W.coverage(r.tiers.some(t=>t.legs&&t.legs.some(l=>l.src==='dkline')),`with the press's read on ${g0.id} alone, no level holds a leg priced from it: ${r.tiers.map(t=>t.why||t.legs.map(l=>l.src).join('+')).join(' / ')}`);
+                /* (app v121) ids carried for g0: its entry carries the pull's ids by content (a press's own never does) */
+                const g0Ids=dkCarried()&&!!dkEntryAud({week:g0.w,gid:g0.id});
+                if(m==='g0'&&!g0Ids) W.coverage(r.tiers.some(t=>t.legs&&t.legs.some(l=>l.src==='dkline')),`with the press's read on ${g0.id} alone, no level holds a leg priced from it: ${r.tiers.map(t=>t.why||t.legs.map(l=>l.src).join('+')).join(' / ')}`);
                 /* (app v115) with ids carried, a level and a set take no leg priced from the press's read (it has no DraftKings id),
                    and the Top lines are the audit's own (holdTop: since app v119 every row with its id) */
-                if(m==='g0'&&dkCarried()) chk(r.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline'))&&(r.sets||[]).every(({s:x})=>x.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline'))),`with ids carried, a level or a set takes a leg priced from the press's read, which has no DraftKings id`);
+                if(m==='g0'&&g0Ids) chk(r.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline'))&&(r.sets||[]).every(({s:x})=>x.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline'))),`with ids carried, a level or a set takes a leg priced from the press's read, which has no DraftKings id`);
                 if(holdTopF) holdTopF(`a press${nl}, ${m==='g0'?'players only on '+g0.id:m}`); } }
             finally{ if(pass==='none') dkSet(dkP); S.ui.pb=JSON.parse(keepU); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()'); F('renderPb')(); } }
           nTog+=holdToggle(g0,'a press');
@@ -4914,9 +4977,9 @@ setTimeout(async()=>{
           if(gN){ const keepO=JSON.stringify(S.odds||{}), keepM2=JSON.stringify((P().mkt||{})[wk]||null), keepU=JSON.stringify(S.ui.pb);
             try{ for(const x of games) if(S.odds) delete S.odds[x.id]; delete P().mkt[wk];
               for(const k of ['ml','ats','total','over','under']) S.ui.pb.k[k]=k==='over'||k==='under'; S.ui.pb.off=games.filter(g=>g!==gN).map(g=>g.id); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()');
-              const rN=F('getPbTiers')(), np=F('pbNoPl')();
+              const rN=F('getPbTiers')(), np=low1(noPlAud([gN.id]));
               chk(rN.noPlayerPrices&&rN.tiers.every(t=>!t.legs),'with a press that found no player lines for the games ticked and no price on file, a level has a player leg, or the panel does not say there are none');
-              W.wording(rN.tiers.every(t=>t.why===np[0].toUpperCase()+np.slice(1))&&/^no player lines yet: DraftKings had posted none for these games when Refresh odds last read them from ESPN/.test(np),'with a press that found no player lines, the empty levels do not say DraftKings had posted none: '+rN.tiers.map(t=>t.why).join(' / '));
+              W.wording(rN.tiers.every(t=>t.why===np[0].toUpperCase()+np.slice(1))&&/^no player lines yet: DraftKings had posted none for these games when its lines were last read from ESPN \(/.test(np),'with a press that found no player lines, the empty levels do not say DraftKings had posted none: '+rN.tiers.map(t=>t.why).join(' / '));
               /* the Top 50 lines on the same ticks: none, saying the same */
               { const tp=F('getPbTop')(); F('renderPb')(); const why=(d.querySelector('#pbPanel .pb-top-none')||{}).textContent||'';
                 chk(!tp.rows.length&&tp.noPlayerPrices,'with a press that found no player lines for the games ticked and no price on file, the Top 30 lines list one');
@@ -4973,7 +5036,7 @@ setTimeout(async()=>{
       for(const id of added) delete S.players[id];
       w.eval('ESPN_NAMES='+JSON.stringify(keepNames||{}));
       { const pz=protoClean(); chk(!pz.length,`after M8, the page's built-ins carry ${pz.join(', ')}, set by the page while M8 ran`); }
-      try{ unapply(); reset(); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}'); F('save')(); F('renderAll')(); }
+      try{ unapply(); reset(); rebake(); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}'); F('save')(); F('renderAll')(); }
       catch(e){ chk(false,'the page could not be drawn again after M8: '+String(e&&e.stack||e).split('\n').slice(0,2).join(' ')); } }
     console.log(`M8. Refresh odds: no request before a press; the reader on ESPN's recorded answers (${nParse} events read as the checks read them, two pages, the answers that leave a game alone, athletes by id, by name and by the clubs' rosters, a name never on a player an id names, a kickoff before and during a read); ${nReq?`a press on the week (${nReq} requests) and a game's page, the game lines and ids applied, each dated by its read, and never saved; the levels and hands fresh right after it, and a reload back on the published prices; the read kept in this browser (${nKeep} checks: written as the page shows it, put back on a reload with no request and the levels and hands as after the press, two presses put back as the page showed them after both, a spread and a total read back to the published number with no prices put back with none, the event the page used, what each read found put back with its half, a read the press left off putting nothing back, set aside for a published game line moved, a newer pull, a kickoff, a value of another season or not the page's, a game not on the schedule or in another week, left alone with no schedule, the parts the page never writes dropped ("__proto__" among them), a half dated after the page's clock dropped, two tabs' writes merged half by half and a half set aside never taken back, nothing set on the page's built-ins, given way to the visitor's state with no room, and (round 5) each game-line field by its own read's time over a newer publish, a block lent only over the same publish, a game the schedule no longer offers carried through a write and pruned by a restore, a line or rung off ESPN's steps dropped and at most 40 rungs, a 'none' for a day at most, and (round 6) a builder game leg kept by its own field, the later block of the same publish in the merge, what a reload does not put back pruned from the key, a money line, spread or total kept as null dropped and lat the latest field put); ${nPx} prices the rule's, ${nDom} drawn on the game page, ${nPick} chosen legs to the rule, ${nTog} ticks`:'no game to come, so no press on the week'}`);
     console.log(`M8. untested markets priced from the press (shown, never suggested): ${Object.keys(untested).length?Object.entries(untested).map(([k,v])=>k+' '+v).join(', '):'none'}`); }

@@ -1334,8 +1334,11 @@ function espnRosterNames(body){ try{ for(const grp of (body&&body.athletes)||[])
    no other athlete of the read claims: every exact name first (normName), then the looser one (nameKey),
    a player two athletes claim going to neither */
 async function espnPlace(per,g,ev){
-  const ids=PAY&&PAY.espn_ids&&typeof PAY.espn_ids==='object'?PAY.espn_ids:{}, placed={}, left=[];
-  for(const aid of Object.keys(per)){ const pid=ids[aid]; if(typeof pid==='string'&&pid) placed[aid]=pid; else left.push(aid); }
+  /* (app v121) how each was placed (how, not enumerable: 'id', 'name' an exact name, 'nameKey' the looser one), which
+     the props job's read records and its audit holds (V-ESPN) */
+  const ids=PAY&&PAY.espn_ids&&typeof PAY.espn_ids==='object'?PAY.espn_ids:{}, placed={}, left=[], how={};
+  Object.defineProperty(placed,'how',{value:how});
+  for(const aid of Object.keys(per)){ const pid=ids[aid]; if(typeof pid==='string'&&pid){ placed[aid]=pid; how[aid]='id'; } else left.push(aid); }
   if(!left.length) return placed;
   const need=left.filter(a=>ESPN_NAMES[a]==null);
   if(need.length>ESPN_NAME_EACH){ const cl=espnClubs(ev);
@@ -1352,7 +1355,7 @@ async function espnPlace(per,g,ev){
       if(hit.length===1) (claims[hit[0].id]||(claims[hit[0].id]=[])).push(aid);
       else if(hit.length>1) gone.add(aid); }
     /* a player two athletes claim goes to neither, and to no one after */
-    for(const pid in claims){ taken.add(pid); if(claims[pid].length===1) placed[claims[pid][0]]=pid; else for(const aid of claims[pid]) gone.add(aid); } }
+    for(const pid in claims){ taken.add(pid); if(claims[pid].length===1){ placed[claims[pid][0]]=pid; how[claims[pid][0]]=rule===normName?'name':'nameKey'; } else for(const aid of claims[pid]) gone.add(aid); } }
   return placed;
 }
 /* the read of one game as the page keeps it: {at, lines, rungs, td}, one ESPN athlete a player: the one
@@ -1374,13 +1377,27 @@ async function espnReadGame(r){
   if(Math.max(t(),Date.now())>=r.ko) return {st:'kicked',why:'kicked off while it was being read'};
   const {per,counts}=espnParseItems(pr.items), placed=await espnPlace(per,r.g,r.ev), at=t();
   if(Math.max(at,Date.now())>=r.ko) return {st:'kicked',why:'kicked off while it was being read'};
-  return {st:'ok',at,block:espnBlock(per,placed,at),counts:{...counts,athletes:Object.keys(per).length,placed:Object.keys(placed).length}};
+  const res={st:'ok',at,block:espnBlock(per,placed,at),counts:{...counts,athletes:Object.keys(per).length,placed:Object.keys(placed).length}};
+  /* (app v121) each player of the block: the ESPN athlete whose lines it carries (espnBlock's own choice), ESPN's name
+     for him and how he was placed; not enumerable, so nothing a press keeps carries it (espnReadWeek returns it) */
+  Object.defineProperty(res,'placed',{value:espnWho(per,placed)});
+  return res;
+}
+/* (app v121) who each player of a game's block is: {pid: {aid, name, how}}, in espnBlock's order (the athlete
+   PAY.espn_ids names him by, else the first by number) */
+function espnWho(per,placed){
+  const ids=PAY&&PAY.espn_ids&&typeof PAY.espn_ids==='object'?PAY.espn_ids:{}, how=placed&&placed.how||{}, who={};
+  const byId=aid=>ids[aid]===placed[aid]?0:1;
+  for(const aid of Object.keys(placed).sort((x,y)=>byId(x)-byId(y)||x-y)){ const pid=placed[aid]; if(who[pid]||!per[aid]) continue;
+    who[pid]={aid,name:typeof ESPN_NAMES[aid]==='string'?ESPN_NAMES[aid]:null,how:how[aid]||'id'}; }
+  return who;
 }
 /* (app v121) the reader alone, for the press and for the props job (which calls it in jsdom, window.espnReadWeek):
    week w's scoreboard and the player lines of each of games (schedule rows of week w, still to come), read and
    placed, and nothing applied. Returns {sbAt: the scoreboard's time or null, out: {gid: {st 'ok'|'none'|'failed'|
    'kicked', why?, sb?: the scoreboard failed it, at?: the read's time (ok and none), block?, counts?}}, gl: {gid: {at,
-   od: espnOdds's {lines, ids, event}}} in the scoreboard's order, pl: {gid: {at, block, counts}} for each 'ok'}.
+   od: espnOdds's {lines, ids, event}}} in the scoreboard's order, pl: {gid: {at, block, counts, placed: {pid: {aid,
+   name, how 'id'|'name'|'nameKey'}}}} for each 'ok'}.
    It touches nothing of the page's but ESPN_RUN's counters (requests, clock) and the ESPN_NAMES lookup cache: no
    ESPN_LIVE, ESPN_GL, ESPN_OUT, ESPN_IDAT, PAY, storage or redraw. onStep(done, total) where a game is done. Never
    throws: a failure is each game's 'failed' */
@@ -1407,7 +1424,7 @@ async function espnReadWeek(w,games,onStep){
       await espnPool(reads.map(r=>async()=>{
         let res; try{ res=/^\d+$/.test(r.eid)?await espnReadGame(r):{st:'failed',why:'no ESPN event id'}; }catch(e){ res={st:'failed',why:String(e&&e.message||e)}; }
         out[r.g.id]=res;
-        if(res.st==='ok') pl[r.g.id]={at:res.at,block:res.block,counts:res.counts};
+        if(res.st==='ok') pl[r.g.id]={at:res.at,block:res.block,counts:res.counts,placed:res.placed||{}};
         done++; step(); }),ESPN_POOL);
     }
   }catch(e){ console.error(e); for(const g of games) if(!out[g.id]) out[g.id]={st:'failed',sb:!gl[g.id],why:String(e&&e.message||e)}; }
@@ -1719,9 +1736,11 @@ function espnPublished(){
     const was=old[w]&&espnOwn(old[w],gid)?old[w][gid]:null;
     if(block&&was&&was.block&&JSON.stringify(was.block)===JSON.stringify(block)) block=was.block;
     (ESPN_PUB[w]||(ESPN_PUB[w]={}))[gid]={at,st,when:st?ut:null,block,gl};
-    const L=ESPN_LIVE[w]||(ESPN_LIVE[w]={}), cur=espnOwn(L,gid)?L[gid]:null;
-    if(block){ if(!cur||(was&&cur===was.block)){ if(cur!==block){ L[gid]=block; ch=true; } } }
-    else if(was&&was.block&&cur===was.block){ delete L[gid]; ch=true; }
+    /* the block ESPN_LIVE holds is the one published before where it is that object or a copy of it (a check that keeps
+       and puts back the page's state copies it); a press's or a kept read's carries its own read's time, so never is */
+    const L=ESPN_LIVE[w]||(ESPN_LIVE[w]={}), cur=espnOwn(L,gid)?L[gid]:null, wasPub=c=>!!c&&!!was&&!!was.block&&(c===was.block||JSON.stringify(c)===JSON.stringify(was.block));
+    if(block){ if(!cur||wasPub(cur)){ if(cur!==block){ L[gid]=block; ch=true; } } }
+    else if(wasPub(cur)){ delete L[gid]; ch=true; }
     if(gl&&ourDk&&(gl.event||Object.keys(gl.ids).length)){
       const D=PAY.dk, WW=D[w]&&typeof D[w]==='object'?D[w]:(D[w]={}), made=!espnOwn(WW,gid), Ent=made?(WW[gid]=dkPressMade({})):WW[gid];
       const A=ESPN_PUB_ADDED[gid]={w,keys:[],event:false,glat:false,made:made||!!(oldAdded[gid]&&oldAdded[gid].made)}, I=ESPN_PUB_IDS[gid]={};
@@ -1735,8 +1754,8 @@ function espnPublished(){
   /* blocks and ids published before and no longer: taken back out where nothing else has put its own in their place */
   for(const w of Object.keys(old)) for(const gid of Object.keys(old[w])){
     if(ESPN_PUB[w]&&espnOwn(ESPN_PUB[w],gid)) continue;
-    const was=old[w][gid], L=ESPN_LIVE[w];
-    if(was&&was.block&&L&&L[gid]===was.block){ delete L[gid]; ch=true; } }
+    const was=old[w][gid], L=ESPN_LIVE[w], c=L&&espnOwn(L,gid)?L[gid]:null;
+    if(was&&was.block&&c&&(c===was.block||JSON.stringify(c)===JSON.stringify(was.block))){ delete L[gid]; ch=true; } }
   if(ourDk) for(const gid of Object.keys(oldAdded)){
     if(ESPN_PUB_ADDED[gid]) continue;
     const A=oldAdded[gid], WW=PAY.dk[A.w], Ent=WW&&WW[gid], P=old[A.w]&&old[A.w][gid], G=P&&P.gl; if(!Ent||!G) continue;
