@@ -194,8 +194,15 @@ rc, said_u = units_run({'t2.py': False}, {'t2.py': False})
 case(rc == 0 and '::warning::' in said_u, f'a unit failing on the base too is not a warning: {said_u}')
 rc, said_u = units_run({'t2.py': False}, {}, have_base=False)
 case(rc == 1, f'a unit failing here that the base does not have does not fail job C: {said_u}')
+real_opt = G.UNITS_OPTIONAL
+try:
+    G.UNITS_OPTIONAL = {'nflbets/build/test_optional_made_up.js'}
+    rc, said_u = units_run({}, {}, listed=[('nflbets/build/test_optional_made_up.js', 'node')])
+    case(rc == 0 and 'skipped' in said_u, 'an optional unit not in the tree is not skipped')
+finally: G.UNITS_OPTIONAL = real_opt
+case(not G.UNITS_OPTIONAL, f'a unit test is still optional, though every one has landed: {sorted(G.UNITS_OPTIONAL)}')
 rc, said_u = units_run({}, {}, listed=[('nflbets/build/test_dkname.js', 'node')])
-case(rc == 0 and 'skipped' in said_u, 'an optional unit not in the tree is not skipped')
+case(rc == 1, f'a listed unit test not in the tree, and not optional, does not fail job C: {said_u}')
 rc, said_u = units_run({}, {}, listed=[('props/build/test_gone.py', 'py')])
 case(rc == 1, 'a required unit not in the tree does not fail job C')
 # job A: check_tab.js on the fresh payload, judged against the base

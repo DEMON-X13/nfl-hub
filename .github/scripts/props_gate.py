@@ -73,9 +73,9 @@ UNITS = [('props/build/test_apply_espn.py', 'py'), ('props/build/test_espn_read.
          ('props/build/test_who_played.py', 'py'), ('props/build/test_fetch.py', 'py'), ('props/build/test_audit_gate.py', 'py'),
          ('lib/test_netfetch.py', 'py'), ('lib/test_netfetch.js', 'node'), ('nflbets/build/test_dkname.js', 'node'),
          ('nflbets/build/smoke_admin.js', 'node')]
-# a unit run only where its file is in the tree (the parlay card's name rule's test, landing with its change); every
-# other one missing fails the gate
-UNITS_OPTIONAL = {'nflbets/build/test_dkname.js'}
+# a unit run only where its file is in the tree; every other one missing fails the gate (none is optional: the parlay
+# card's name rule's test landed with its change)
+UNITS_OPTIONAL = set()
 UNIT_LINE = re.compile(r'(?:(\d+) checks, )?(\d+) failures')
 DOWNLOAD = re.compile(r'^BLOCKED: (download |schedule \()', re.M)
 NOT_POSTED = re.compile(r'^\s*\S+: not posted yet \(', re.M)   # weekly.py's line for a 404 it goes on without
