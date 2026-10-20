@@ -393,6 +393,7 @@ body.modal-open{overflow:hidden}
 .pb-th{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .pb-tn{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
 .pb-rule{font-size:11px;color:var(--muted);flex-basis:100%}
+.pb-tgame{font-size:12px;font-weight:600;color:var(--muted);flex-basis:100%}
 .pb-nums{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .pb-nums div:last-child{grid-column:1/-1}
 .pb-nums div{flex:1 1 0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 8px}
@@ -954,6 +955,10 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 .pc-dk p{margin:0 0 4px}
 .pc-dk ul{margin:2px 0 4px;padding-left:18px}
 .pc-dk a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px}
+/* (app v121) every leg's own link, a row each with a 44px target, and a link for each game where the legs are in more than one */
+.pc-dk ul.pc-dklegs{list-style:none;padding-left:0;margin:2px 0 6px}
+.pc-dk ul.pc-dklegs a{display:inline-flex;align-items:center;min-height:44px}
+.pc-dkgames:not([hidden]){display:contents}
 .pc-msg{min-height:1.4em;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
 .pc-note{font-size:12px;color:var(--ink-2);margin:2px 0 0;line-height:1.5}
 @media(max-width:430px){
@@ -1920,6 +1925,7 @@ html[data-theme="light"] .pe-pl tr.pe-weak td{opacity:1;color:var(--muted)}
     <div id="pcView"></div>
     <div class="pc-actions">
       <a class="btn pc-dkbtn" id="pcDk" href="https://sportsbook.draftkings.com/" target="_blank" rel="noopener" hidden>Open in DraftKings</a>
+      <span class="pc-dkgames" id="pcDkGames" hidden></span>
       <button type="button" class="btn quiet" id="pcLink" title="Send this parlay and its DraftKings link to someone">Share link</button>
       <button type="button" class="btn go" id="pcDownload">Download image</button>
       <button type="button" class="btn quiet" id="pcShare" hidden>Share or save to Photos</button>
@@ -2231,7 +2237,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v120 \u00b7 2026-10-19';
+const APP_BUILD='app v121 \u00b7 2026-10-20';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -5478,12 +5484,32 @@ function pbLegs(games,u){
 /* the legs a level is searched from: each list cut to the likeliest and best-paying (opt.cap, 40 for the
    panel), so the search stays quick */
 function pbPool(games,u,opt){ const r=pbLegs(games,u), cap=pbOpt(opt).cap; return {...r,pref:pbCap(r.pref,cap),thin:pbCap(r.thin,cap),mkt:pbCap(r.mkt,cap)}; }
+/* (app v121) two legs of one game DraftKings will not take on one slip (the owner, 19 October 2026: "If your parlay
+   already has a receiver anytime TD, a team total, or the game total, adding the QB's passing TD over often gets blocked",
+   and "Some combos contradict each other, like QB under 1.5 passing TDs alongside two of his receivers to score"): a
+   quarterback's passing touchdowns, over or under, a main line or a rung, with a teammate's anytime touchdown ('td'), or
+   his passing touchdowns over with the game's total ('total'); null for any other pair. No suggestion takes such a pair
+   (pbFits, gameTiers, the Elo picks' search), and the builder says so under its legs where it holds one */
+const dkPassTd=l=>!!l&&!isGameLeg(l)&&l.stat==='passing_tds';
+function dkClashWhy(a,b){
+  if(!a||!b||a.gid!==b.gid) return null;
+  const one=(q,o)=>!dkPassTd(q)?null:(!isGameLeg(o)&&o.stat==='any_td'&&o.team===q.team&&o.pid!==q.pid)?'td':(q.side!=='under'&&o.stat==='total'&&isGameLeg(o))?'total':null;
+  return one(a,b)||one(b,a);
+}
+const dkClash=(a,b)=>!!dkClashWhy(a,b);
+/* what a pair is, in the builder's words */
+const DK_CLASH={td:'a quarterback’s passing TDs with a teammate’s touchdown',total:'a quarterback’s passing TDs over with the game total'};
+/* every such pair in a list of legs, by their places in it: [i, j, kind], i before j */
+function dkClashPairs(legs){ const out=[]; (legs||[]).forEach((a,i)=>legs.slice(i+1).forEach((b,k)=>{ const w=dkClashWhy(a,b); if(w) out.push([i,i+1+k,w]); })); return out; }
+window.dkClashWhy=dkClashWhy; window.dkClash=dkClash; window.dkClashPairs=dkClashPairs; window.DK_CLASH=DK_CLASH;
 /* a leg that can join: not a line already on it, not a second side (to win or to cover) on one
    game, and not a second leg on one player (two lines on one man, his catches and his yards, are
    nearly one bet). A game's total is a bet of its own beside its side, as a book takes them on one
-   ticket (the two are unrelated, legRho); its over and under are one key, so one total a game */
+   ticket (the two are unrelated, legRho); its over and under are one key, so one total a game.
+   (app v121) Never a pair DraftKings will not take on one slip (dkClash) */
 function pbFits(cur,c){
   if(cur.some(l=>l.key===c.key)) return false;
+  if(cur.some(l=>dkClash(l,c))) return false;
   if(isGameLeg(c)) return !cur.some(l=>isGameLeg(l)&&l.gid===c.gid&&(l.stat==='total')===(c.stat==='total'));
   return !cur.some(l=>!isGameLeg(l)&&l.pid===c.pid);
 }
@@ -5810,7 +5836,7 @@ function gameTiers(g){
   const sig=gameSuggestSig(g), hit=GAME_TIER_CACHE[g.id];
   if(hit&&hit.sig===sig) return hit.val;
   const pool=gameLegPool(g);
-  const fits=(cur,c)=>!cur.some(l=>l.key===c.key)&&!(c.grp==='TEAM'&&cur.some(l=>l.grp==='TEAM'))&&cur.filter(l=>l.pid===c.pid).length<2;
+  const fits=(cur,c)=>!cur.some(l=>l.key===c.key)&&!(c.grp==='TEAM'&&cur.some(l=>l.grp==='TEAM'))&&cur.filter(l=>l.pid===c.pid).length<2&&!cur.some(l=>dkClash(l,c));
   const pay=legs=>parlayDec(legs.map(l=>({leg:l,ml:l.price})),1500);
   const ev=legs=>{ const pr=parlayProb(legs,2500).corr, d=pay(legs); return {pr,d,ev:pr*d}; };
   /* the best hand of n legs grown from start, paying at least floorDec where it can */
@@ -5970,14 +5996,17 @@ function spUpdLine(u){
    id its Finish names (a Suggested Parlays level's game:level); o.what: the game, for the buttons' names;
    o.legAdd false: no Add on each leg; o.quiet: no line saying why a leg is not a Value pick or why a total is there
    (a Suggested Parlays set's, app v113); o.acts false: no Add to builder or Finish (app v118: the Sunday slot under
-   way, its first games begun); o.noun: what its buttons call it (an Elo pick's, app v118: 'Elo pick'; else 'parlay') */
+   way, its first games begun); o.noun: what its buttons call it (an Elo pick's, app v118: 'Elo pick'; else 'parlay');
+   o.game (app v121, the Sunday slot's cards): the game its legs are of, under its title */
+function pbTierGame(gid){ const g=(S.sched||[]).find(x=>x.id===gid); if(!g) return '';
+  const k=kickoff(g); return `<span class="pb-tgame" data-pb-tgame="${esc(gid)}">${esc(TEAM_NAMES[g.a]||g.a)} at ${esc(TEAM_NAMES[g.h]||g.h)}${k?' · '+esc(spEt(k.getTime(),true)):''}</span>`; }
 function pbTierCard(t,o){
   o=o||{}; const card=!!window.PARLAY_CARD, chance=o.chance!=null?o.chance:t.corr, legAdd=o.legAdd!==false;
   const upd=t.updated?`<p class="pb-thin sp-upd" data-sp-upd="${esc(t.updated.pid)}">${spUpdLine(t.updated)}</p>`:'';
   if(t.why) return `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.n} legs</span></div><p class="pb-why">${esc(t.why)}</p>${upd}</div>`;
   const form=formSig()!=='', fm={}, nE=t.legs.filter(l=>l.src==='dkline').length, nm=o.what?` the ${esc(t.label)} ${esc(o.noun||'parlay')} for ${esc(o.what)}`:'';
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
-    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.rule||(t.floor!=null?`<span class="pb-rule">${pbRuleOf(t)}</span>`:'')}</div>
+    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.game&&t.legs.length?pbTierGame(t.legs[0].gid):''}${o.rule||(t.floor!=null?`<span class="pb-rule">${pbRuleOf(t)}</span>`:'')}</div>
     <div class="pb-nums">${pbChanceHtml(t.fair,chance,o)}<div><b>${fmtML(decToML(t.dec))}</b><span>${nE?'price, est.':'price'}</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
     <ul class="pb-legs">${t.legs.map(l=>{ const ff=legFarOff(l,fm); return `<li><span class="nm">${o.badge?o.badge(l):''}${glanceName(l)}<small>${esc(l.label)}${pbValMark(l)}</small>${ff?`<small class="faroff" data-pb-far>${farText(l.p,ff)}</small>`:''}</span><span class="pr">${fmtML(l.price)}${l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:''}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span>${legAdd?pbLegAddBtn(l):''}</li>`; }).join('')}</ul>
     ${t.thin&&!o.quiet?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt&&!o.quiet?`<p class="pb-thin">${pbMktLine(t.legs,o.mktWhy)}</p>`:''}${nE?`<p class="pb-thin pb-espnline">${pbEspnLine(t.legs)}</p>`:''}${upd}
@@ -6182,9 +6211,39 @@ function spWhy(n,pool,g){
   return `${what}: a parlay takes one leg a player, and one side and one total a game.`;
 }
 function spBuild(g){
-  const pool=pbPool(spGamesOf(g),SP_ALL,g.slot?SP_SLOT_SEARCH:SP_SEARCH), memo=new Map();
-  const tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo,g.slot?SP_SLOT_SEARCH:SP_SEARCH); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:spWhy(n,pool,g)}; });
-  return {gid:g.id,tiers,pref:pool.pref.length,thin:pool.thin.length,mkt:pool.mkt.length,far:pool.far,farDk:pool.farDk||0,noId:pool.noId||0,moved:pool.moved||0,plGames:pool.plGames,plNoId:pool.plNoId||0};
+  if(g.slot) return spSlotBuild(g);
+  const pool=pbPool([g],SP_ALL,SP_SEARCH), memo=new Map();
+  const tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo,SP_SEARCH); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:spWhy(n,pool,g)}; });
+  return {gid:g.id,tiers,pref:pool.pref.length,thin:pool.thin.length,mkt:pool.mkt.length,far:pool.far,farDk:pool.farDk||0,noId:pool.noId||0,moved:pool.moved||0,plGames:pool.plGames,plNoId:pool.plNoId||0,
+    max:pbMaxLegs([...pool.pref,...pool.thin,...pool.mkt])};
+}
+/* (app v121) the Sunday slot, one game a level (the owner, 19 October 2026: "the legs need to be part of the same game
+   parlay only, and anytime there's a mix it bombs the hyperlink"): each of its games' own set, built exactly as a night
+   game's is (spSet on the game), and each level the best of theirs: a parlay before none; one without a game total
+   before one with one; one that meets its floor before the likeliest of its size; the fewer thin legs; then the better
+   expected return (chance times price) where it met a floor, else the higher chance (Safe's, and a likeliest one's); then
+   the earlier game of the slot. Within one game that is the order its own search keeps (pbTierOf, pbBestReturn,
+   pbLikeliest), so the slot's level is the best same-game parlay its games make by the set's own rule */
+const spSlotKey=(r,floor)=>[r.mkt?1:0,floor&&r.likeliest?1:0,r.thin||0];
+function spSlotBetter(a,b,floor){
+  const ka=spSlotKey(a,floor), kb=spSlotKey(b,floor);
+  for(let i=0;i<ka.length;i++) if(ka[i]!==kb[i]) return ka[i]<kb[i];
+  const v=r=>floor&&!r.likeliest?r.corr*r.dec:r.corr; return v(a)>v(b);
+}
+function spSlotBuild(u){
+  const per=u.games.map(x=>spSet(x.id)).filter(Boolean), sum=k=>per.reduce((a,s)=>a+(+s[k]||0),0);
+  const tiers=PB_TIERS.map((t,ti)=>{ const [id,label,n,floor]=t; let best=null;
+    for(const s of per){ const r=s.tiers[ti]; if(r&&r.legs&&r.legs.length&&(!best||spSlotBetter(r,best,floor))) best=r; }
+    return best?{...best}:{id,label,n,floor,why:spWhySlot(n,per)}; });
+  return {gid:u.id,tiers,pref:sum('pref'),thin:sum('thin'),mkt:sum('mkt'),far:sum('far'),farDk:sum('farDk'),noId:sum('noId'),moved:sum('moved'),plGames:sum('plGames'),plNoId:sum('plNoId'),
+    max:Math.max(0,...per.map(s=>s.max||0)),games:per.map(s=>s.gid)};
+}
+/* why a level of the Sunday slot is empty: none of its games makes that many legs (one game's legs a parlay), and why */
+function spWhySlot(n,per){
+  const m=Math.max(0,...per.map(s=>s.max||0)), noId=per.some(s=>s.noId), pl=per.some(s=>s.plGames), plNoId=per.some(s=>s.plNoId);
+  const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in any one game of the Sunday slot${noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in any one game of the Sunday slot`;
+  if(!pl) return `${what}, and no player ${plNoId?'leg DraftKings’ betslip can take':'prices'} yet: the afternoon games’ are pulled on Saturday morning, and never the early games’ (before 4pm ET).`;
+  return `${what}: a parlay takes one game’s legs, one leg a player, and one side and one total a game.`;
 }
 /* a unit's live set, the same for the same data (the searches are seeded), from the cache when nothing it
    stands on has moved: its games' kickoffs and pbDataSig (the publish, the Elo files, ESPN_SEQ) */
@@ -6193,7 +6252,7 @@ function spSet(gid){
   const g=spUnit(gid); if(!g) return null;
   const sig=spSig(g);
   let r=SP_CACHE.get(sig);
-  if(!r){ r={sig,...spBuild(g)}; SP_CACHE.set(sig,r); if(SP_CACHE.size>24) SP_CACHE.delete(SP_CACHE.keys().next().value); }
+  if(!r){ r={sig,...spBuild(g)}; SP_CACHE.set(sig,r); if(SP_CACHE.size>48) SP_CACHE.delete(SP_CACHE.keys().next().value); }
   return r;
 }
 /* (app v118) a unit's Elo picks as they stand: the ELO tab's four levels on its games alone (window.eloUnit, cached
@@ -6201,7 +6260,7 @@ function spSet(gid){
    yet; {wait:true} with o.kept where they are not built yet (a hidden tab builds nothing) */
 const spEloOn=()=>typeof window.eloUnit==='function';
 function spEloSet(gid,o){ const u=spUnit(gid); if(!u||!spEloOn()) return null;
-  let r=null; try{ r=window.eloUnit(spGamesOf(u).map(g=>g.id),{where:u.slot?'in the Sunday slot':'in this game',...(o||{})})||null; }catch(e){ console.error(e); return null; }
+  let r=null; try{ r=window.eloUnit(spGamesOf(u).map(g=>g.id),{where:u.slot?'in the Sunday slot':'in this game',perGame:!!u.slot,...(o||{})})||null; }catch(e){ console.error(e); return null; }
   /* an empty level where the unit has no player prices yet (a pick is a player's line) says when they come, as the
      model's levels do */
   if(r&&!r.error&&Array.isArray(r.tiers)&&r.tiers.some(t=>!t.legs)){ const s=spSet(gid);
@@ -6214,7 +6273,9 @@ function spRebuild(gid,id){
   const g=spUnit(gid); if(!g) return null;
   if(/^elo-/.test(String(id))){ const e=spEloSet(gid); return e&&Array.isArray(e.tiers)?e.tiers.find(t=>t.id===id)||null:null; }
   const t=PB_TIERS.find(s=>s[0]===id); if(!t) return null;
-  const pool=pbPool(spGamesOf(g),SP_ALL,g.slot?SP_SLOT_SEARCH:SP_SEARCH), r=pbTier(t,pool,new Map(),g.slot?SP_SLOT_SEARCH:SP_SEARCH);
+  /* (app v121) the Sunday slot's level is the best of its games' own, built the same way */
+  if(g.slot) return spSlotBuild(g).tiers.find(x=>x.id===t[0])||null;
+  const pool=pbPool(spGamesOf(g),SP_ALL,SP_SEARCH), r=pbTier(t,pool,new Map(),SP_SEARCH);
   return r?{id:t[0],label:t[1],n:t[2],floor:t[3],...r}:{id:t[0],label:t[1],n:t[2],floor:t[3],why:spWhy(t[2],pool,g)};
 }
 /* a player the page's own rules keep out of every suggestion (suggestable: Out or Doubtful on the latest
@@ -6434,10 +6495,10 @@ function spGameHtml(g,on){
     :`<p class="sp-lock" data-sp-phase="locked">${mark} since ${lockT}.</p>`;
   /* under way, the levels are shown as they locked, with nothing to add or finish */
   const ro=v.under?{acts:false,legAdd:false}:{};
-  const cards=v.tiers?`<h5 class="sp-sub" data-sp-kind="model">Model parlays</h5><div class="pb-tiers" data-sp-kind="model">${v.tiers.map(t=>pbTierCard(t,{kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,quiet:true,mktWhy:g.slot?'the slot’s other legs do not make a parlay of this size':'this game’s other legs do not make a parlay of this size',...ro})).join('')}</div>`:'';
+  const cards=v.tiers?`<h5 class="sp-sub" data-sp-kind="model">Model parlays</h5><div class="pb-tiers" data-sp-kind="model">${v.tiers.map(t=>pbTierCard(t,{kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,quiet:true,game:!!g.slot,mktWhy:g.slot?'the slot’s other legs do not make a parlay of this size':'this game’s other legs do not make a parlay of this size',...ro})).join('')}</div>`:'';
   /* the Elo picks, where the ELO tab is on the page: its cards' own options (eloCardOpt: the Elo chance, each
      player's shield), the set's buttons */
-  const eloCards=!eon||!v.tiers?'':`<h5 class="sp-sub" data-sp-kind="elo">Elo picks</h5>${v.eloErr?`<p class="pb-why" data-sp-elo-err>${esc(v.eloErr)}</p>`:v.eloNone?`<p class="pb-why" data-sp-elo-none>The site’s Elo picks were not published in time.</p>`:v.elo?`${v.eloOwn&&v.phase==='locked'&&!v.own?`<p class="sp-lock" data-sp-phase="eloown">This browser’s own Elo picks: the site’s were not published in time, so the record does not grade them.</p>`:''}<div class="pb-tiers" data-sp-kind="elo">${v.elo.map(t=>pbTierCard(t,{...(typeof window.eloCardOpt==='function'?window.eloCardOpt(t):{}),kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,noun:'Elo pick',quiet:true,...ro})).join('')}</div>`
+  const eloCards=!eon||!v.tiers?'':`<h5 class="sp-sub" data-sp-kind="elo">Elo picks</h5>${v.eloErr?`<p class="pb-why" data-sp-elo-err>${esc(v.eloErr)}</p>`:v.eloNone?`<p class="pb-why" data-sp-elo-none>The site’s Elo picks were not published in time.</p>`:v.elo?`${v.eloOwn&&v.phase==='locked'&&!v.own?`<p class="sp-lock" data-sp-phase="eloown">This browser’s own Elo picks: the site’s were not published in time, so the record does not grade them.</p>`:''}<div class="pb-tiers" data-sp-kind="elo">${v.elo.map(t=>pbTierCard(t,{...(typeof window.eloCardOpt==='function'?window.eloCardOpt(t):{}),kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,noun:'Elo pick',quiet:true,game:!!g.slot,...ro})).join('')}</div>`
     :`<p class="pb-why" data-sp-elo-wait>Loading the Elo ratings…</p>`}`;
   return `${open}${line}${cards}${eloCards}</div>`;
 }
@@ -6668,6 +6729,14 @@ function renderParlay(o){
     if(out.length) html+=`<p class="delta down" style="margin:10px 0 0">${out.map(l=>esc(l.name)).join(', ')} ${out.length===1?'is':'are'} not expected to play (${out.map(l=>inactiveWhy(S.inactive[l.pid])).join('; ')}). A book voids a leg on a player who does not play and pays the rest at their own prices; take ${out.length===1?'it':'them'} off to see what the rest pay.</p>`; }
   if(prices.some(p=>p.src==='dkline')) html+=`<p class="muted espn-read" style="margin:10px 0 0;font-size:12px" data-espn-read>${esc(espnReadLine(legs.filter((l,i)=>prices[i].src==='dkline').map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0]||null))} A leg marked est. is priced from DraftKings’ line read on ESPN: the line is DraftKings’, the price and its fair chance our estimate.</p>`;
   if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">These legs are in different weeks (${wks.join(', ')}). A parlay has to settle together, so a sportsbook won't take this as one ticket.</p>`;
+  /* (app v121) a pair DraftKings will not take on one slip (dkClash), and a same-game parlay mixed with legs of other
+     games, whose one betslip link DraftKings does not open: the parlay card gives each game its own (where it is on the
+     page). One leg a game is a plain parlay, which opens as one link */
+  { const cp=dkClashPairs(legs), nm=l=>`${esc(l.name)}, ${esc(l.label)}`;
+    if(cp.length) html+=`<p class="delta down" style="margin:10px 0 0" data-pb-clash="${cp.length}">DraftKings may refuse ${cp.length===1?'this pair':'these pairs'} on one slip: ${cp.map(([i,j,k])=>`${nm(legs[i])}, with ${nm(legs[j])} (${DK_CLASH[k]})`).join('; ')}.</p>`;
+    const byG={}; for(const l of legs) byG[l.gid]=(byG[l.gid]||0)+1;
+    const nG=Object.keys(byG).length;
+    if(nG>1&&Object.values(byG).some(c=>c>1)&&window.PARLAY_CARD) html+=`<p class="muted" style="margin:10px 0 0;font-size:12px" data-pb-multigame="${nG}">These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${nG} games a link of its own.</p>`; }
   /* what it pays, inside the same card, then the two actions as buttons only */
   html+=`<div class="pays"><h3>What it pays</h3>
     <div class="bar">
@@ -7048,7 +7117,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='75fcb2f';
+const PAGE_HASH='dfa2d54';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -7823,11 +7892,24 @@ window.PARLAY_CARD=(function(){
       const m=M&&c.find(x=>x.p===+M.line); if(m) return m; }
     return c.sort(byNear)[0];
   }
+  /* a game as the card names it: "SEA at DEN" */
+  const gameName=gid=>{ const g=game(gid); return g?g.a+' at '+g.h:String(gid||''); };
   /* the parlay: the betslip link for every leg DraftKings has, in the card's order, the legs it
-     cannot open, and the game's own page where every leg is in one game */
+     cannot open, and the game's own page where every leg is in one game.
+     (app v121, the owner, 19 October 2026: "the legs need to be part of the same game parlay only, and anytime there's
+     a mix it bombs the hyperlink. also thinking about maybe adding links for each individual one may reduce the
+     issues?") A DraftKings link that mixes a same-game parlay (two or more legs of one game) with legs of other games
+     does not open, so where the legs that go on the slip are such a mix there is no link for them all: games has a link
+     for each game's (its legs in the card's order, the games in the order their first legs come), and multi says so.
+     One leg a game is a plain parlay, which opens as one link as it always has (the owner's word was for the mix).
+     clash: the pairs DraftKings will not take on one slip (the props parts' dkClashPairs), by the legs' numbers */
   function dkPlan(legs){
-    const each=legs.map((l,i)=>Object.assign({n:i+1,who:(l.card&&l.card.who)||l.name||'',what:(l.card&&l.card.what)||l.label||''},dkLeg(l)));
+    const each=legs.map((l,i)=>Object.assign({n:i+1,gid:l.gid,who:(l.card&&l.card.who)||l.name||'',what:(l.card&&l.card.what)||l.label||''},dkLeg(l)));
     const ok=each.filter(x=>x.id), miss=each.filter(x=>!x.id);
+    const games=[]; for(const x of ok){ let G=games.find(y=>y.gid===x.gid); if(!G) games.push(G={gid:x.gid,name:gameName(x.gid),ok:[]}); G.ok.push(x); }
+    games.forEach(G=>{ G.url=dkUrl(G.ok.map(x=>x.id)); });
+    const multi=games.length>1&&games.some(G=>G.ok.length>1);
+    let clash=[]; try{ clash=typeof window.dkClashPairs==='function'?window.dkClashPairs(legs).map(([i,j,k])=>[i+1,j+1,k]):[]; }catch(e){ clash=[]; }
     let event=null;
     if(legs.length&&legs.every(l=>l.gid===legs[0].gid)&&!kickedOff(legs[0])){ const D=dkGame(legs[0]); if(D&&D.event) event=DKS+'event/'+encodeURIComponent(D.event); }
     /* the read the link stands on: the oldest of the legs it opens (null where one is undated). It
@@ -7835,7 +7917,7 @@ window.PARLAY_CARD=(function(){
     const undated=ok.some(x=>!x.at), read=ok.length&&!undated?new Date(Math.min(...ok.map(x=>+x.at))):null;
     /* where the visitor adds by hand what the slip cannot take: the game's page, else DraftKings' NFL page */
     /* swaps: the legs that go on at DraftKings' number rather than the card's (see dkLeg) */
-    return {url:ok.length?dkUrl(ok.map(x=>x.id)):null,ok,miss,swaps:ok.filter(x=>x.swap),each,event,home:event||DKNFL,n:legs.length,read};
+    return {url:ok.length&&!multi?dkUrl(ok.map(x=>x.id)):null,games,multi,clash,ok,miss,swaps:ok.filter(x=>x.swap),each,event,home:event||DKNFL,n:legs.length,read};
   }
   function kickedOff(l){ try{ const g=game(l.gid); return !!g&&typeof gameStarted==='function'&&gameStarted(g); }catch(e){ return false; } }
   /* the card: everything it shows, worked out once, drawn twice (the window, and the image) */
@@ -7913,16 +7995,23 @@ window.PARLAY_CARD=(function(){
   function dkHtml(dk){
     if(!dk||!dk.n) return '';
     const name=x=>`${x.n}. ${h(x.who)}${x.what?', '+h(x.what):''}`;
-    const one=dk.ok.length>1?` One leg at a time: ${dk.ok.map(x=>`<a href="${h(dkUrl([x.id]))}" target="_blank" rel="noopener" data-pc-dkleg="${x.n}" aria-label="Open leg ${x.n}, ${h(x.who)} ${h(x.what)}, in DraftKings">${x.n}</a>`).join(' · ')}.`:'';
+    /* (app v121) every leg's own link, one a row: a leg the parlay link drops can be put on the slip by itself */
+    const one=dk.ok.length>1?`<p class="pc-dkone">Each leg on its own:</p><ul class="pc-dklegs">${dk.ok.map(x=>`<li><a href="${h(dkUrl([x.id]))}" target="_blank" rel="noopener" data-pc-dkleg="${x.n}" aria-label="Open leg ${x.n}, ${h(x.who)} ${h(x.what)}, in DraftKings">${name(x)}</a></li>`).join('')}</ul>`:'';
     const hand=dk.miss.length?`<ul>${dk.miss.map(x=>`<li data-pc-dkmiss="${x.n}">${name(x)}: ${h(x.why)}</li>`).join('')}</ul>`:'';
     /* none on the slip: the button opens the game's page (or DraftKings' NFL page) to add them there */
-    if(!dk.ok.length) return `<p>${dk.n===1?'This leg cannot':'None of these legs can'} go on DraftKings\u2019 betslip from here, so ${dk.event?'Open game in DraftKings opens the game\u2019s page':'Open DraftKings opens its NFL page'}: add ${dk.n===1?'it':'them'} there by hand.</p>${hand}`;
+    if(!dk.ok.length) return `<p>${dk.n===1?'This leg cannot':'None of these legs can'} go on DraftKings\u2019 betslip from here, so ${dk.event?'Open game in DraftKings opens the game\u2019s page':'Open DraftKings opens its NFL page'}: add ${dk.n===1?'it':'them'} there by hand.</p>${hand}${dkClashHtml(dk)}`;
     /* dated always, and never a promise that every leg lands: the legs as DraftKings had them at that
        read, and a line moved or pulled since is not on the slip */
     const when=`<span data-pc-dkread="${dk.read?h(dk.read.toISOString()):''}">${dk.read?'DraftKings\u2019 lines as read '+h(readOf(dk.read)):'When DraftKings\u2019 lines were read is not recorded'}</span>: `;
-    const opens=`Open in DraftKings opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'} ${dk.read?'then':'when last read'}; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.`;
-    return `<p>${when}${opens}${one}${dk.miss.length?' Add by hand:':''}</p>${hand}${dkSwapHtml(dk)}`;
+    const caution=`a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.`;
+    const opens=dk.multi?`these legs mix a same-game parlay with other games, and a DraftKings link with that mix does not open, so each of the ${dk.games.length} games has a link of its own: open them one after another. Each opens its game\u2019s legs as DraftKings had them ${dk.read?'then':'when last read'}; ${caution}`
+      :`Open in DraftKings opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'} ${dk.read?'then':'when last read'}; ${caution}`;
+    return `<p>${when}${opens}${dk.miss.length?' Add by hand:':''}</p>${hand}${one}${dkSwapHtml(dk)}${dkClashHtml(dk)}`;
   }
+  /* (app v121) the pairs DraftKings will not take on one slip, by the legs' numbers, and what each is */
+  const DK_CLASH_SAY={td:'a quarterback\u2019s passing TDs with a teammate\u2019s touchdown',total:'a quarterback\u2019s passing TDs over with the game total'};
+  function dkClashHtml(dk){ const c=dk&&dk.clash||[]; if(!c.length) return '';
+    return `<p data-pc-dkclash="${c.length}">DraftKings may refuse ${c.length===1?'this pair':'these pairs'} on one slip: ${c.map(([a,b,k])=>`legs ${a} and ${b} (${DK_CLASH_SAY[k]||'they move together'})`).join('; ')}.</p>`; }
   /* the legs that go on the slip at DraftKings' own line, and that DraftKings prices them there */
   function dkSwapHtml(dk){
     const sw=dk&&dk.swaps||[]; if(!sw.length) return '';
@@ -7952,8 +8041,10 @@ window.PARLAY_CARD=(function(){
     $('pcAgain').hidden=m.source!=='builder';
     /* DraftKings: the betslip link where any leg has an id there, and what it opens; where none has,
        the game's page (or DraftKings' NFL page) to add the legs by hand */
-    { const dk=m.dk||{}, a=$('pcDk'), them=dk.n===1?'the leg':'the legs';
-      a.hidden=!dk.n; a.href=dk.url||dk.home||DKNFL;
+    { const dk=m.dk||{}, a=$('pcDk'), them=dk.n===1?'the leg':'the legs', gb=$('pcDkGames');
+      /* (app v121) a same-game parlay mixed with other games on the slip: a button for each game's, none for them all */
+      if(gb){ gb.innerHTML=dk.multi?dk.games.map(G=>`<a class="btn pc-dkbtn" href="${h(G.url)}" target="_blank" rel="noopener" data-pc-dkgame="${h(G.gid)}" title="Opens ${h(legNums(G.ok))} (${h(G.name)}) on DraftKings\u2019 betslip, in a new tab, as DraftKings\u2019 lines were ${dk.read?'read '+h(readOf(dk.read)):'last read'}: a line moved or pulled since will not be on it, so check each leg is there">Open ${h(G.name)} in DraftKings</a>`).join(''):''; gb.hidden=!dk.multi; }
+      a.hidden=!dk.n||!!dk.multi; a.href=dk.url||dk.home||DKNFL;
       a.textContent=dk.url?(dk.miss&&dk.miss.length?`Open ${dk.ok.length} of ${dk.n} legs in DraftKings`:'Open in DraftKings'):dk.event?'Open game in DraftKings':'Open DraftKings';
       a.title=!dk.url?(dk.event?`Opens the game\u2019s page in DraftKings, in a new tab, to add ${them} by hand`:`Opens DraftKings\u2019 NFL page, in a new tab, to add ${them} by hand`)
         :`Opens ${dkWhich(dk)} on DraftKings\u2019 betslip, in a new tab, as DraftKings\u2019 lines were ${dk.read?'read '+readOf(dk.read):'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
@@ -8144,12 +8235,19 @@ window.PARLAY_CARD=(function(){
     if(m.stake) lines.push(`Stake ${money(m.stake)} · Pays ${money(m.payout)}`);
     lines.push(chanceLines(m).map(lineText).join(' · '));
     /* always a DraftKings link, alone on its line: the betslip, else the game's page, else DraftKings' NFL page */
-    const miss=dk.miss||[], url=dk.url||(dk.n?dk.home||DKNFL:null), them=dk.n===1?'the leg':'the legs';
+    const miss=dk.miss||[], url=dk.url||(dk.multi?null:(dk.n?dk.home||DKNFL:null)), them=dk.n===1?'the leg':'the legs';
     if(dk.url){
       /* what the link holds, in the note's own words (dkWhich): never "all", since a line moved since drops off */
       lines.push(`DraftKings betslip (opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'}${miss.length?`; add ${legNums(miss)} by hand`:''}):`, dk.url);
       lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`);
       /* a leg that goes on at DraftKings' number, and that DraftKings prices it there */
+      const sw=dk.swaps||[];
+      if(sw.length) lines.push(`On DraftKings’ slip at its own line: ${sw.map(x=>`leg ${x.n} as ${x.swap}`).join('; ')} (DraftKings prices ${sw.length===1?'it':'them'} at its own line, so its payout can differ)`); }
+    else if(dk.multi){
+      /* (app v121) a same-game parlay mixed with other games: a link for each game's, since one with them all does not open */
+      lines.push(`DraftKings betslip, a link for each game (a link mixing a same-game parlay with other games does not open)${miss.length?`; add ${legNums(miss)} by hand`:''}:`);
+      for(const G of dk.games) lines.push(`${G.name}, ${legNums(G.ok)}:`, G.url);
+      lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`);
       const sw=dk.swaps||[];
       if(sw.length) lines.push(`On DraftKings’ slip at its own line: ${sw.map(x=>`leg ${x.n} as ${x.swap}`).join('; ')} (DraftKings prices ${sw.length===1?'it':'them'} at its own line, so its payout can differ)`); }
     else if(url) lines.push(dk.event?`DraftKings, the game’s page (add ${them} by hand):`:`DraftKings’ NFL page (add ${them} by hand):`, url);
@@ -8159,7 +8257,7 @@ window.PARLAY_CARD=(function(){
       for(const x of miss) lines.push(`${x.n}. ${x.who} ${x.what} (${x.brief||x.why})`); }
     lines.push(SITE);
     /* url is what the text links to, for the record: it is in the text, never shared on its own */
-    return {title:`${m.title} ${P(m.price)}${m.priceNote&&m.priceNote!=='book price'?' ('+m.priceNote+')':''}`,text:lines.join('\n'),url};
+    return {title:`${m.title} ${P(m.price)}${m.priceNote&&m.priceNote!=='book price'?' ('+m.priceNote+')':''}`,text:lines.join('\n'),url,urls:dk.multi?dk.games.map(G=>G.url):(url?[url]:[])};
   }
   async function copyText(t){
     try{ if(navigator.clipboard&&typeof navigator.clipboard.writeText==='function'){ await navigator.clipboard.writeText(t); return true; } }catch(e){}
@@ -9483,6 +9581,9 @@ function epPrep(C0){
     dir:C.map(l=>l.side==='under'?-1:1),bits:new Map(),dm:new Map(),G:games.length,li:[],gl:games.map(()=>[]),gv:games.map(()=>new Map())};
   C.forEach((l,i)=>{ const g=P.gi[i]; P.li[i]=P.gl[g].length; P.gl[g].push(i); });
   P.nqE=P.pe.map(p=>nq(p)); P.nqB=P.bk.map(p=>nq(p));
+  /* (app v121) the pairs DraftKings will not take on one slip (the props parts' dkClash: a quarterback's passing TDs
+     with a teammate's anytime touchdown), which no parlay of the search may hold */
+  P.cl=C.map(a=>C.map(b=>a!==b&&typeof dkClash==='function'&&dkClash(a,b))); P.anyCl=P.cl.some(r=>r.some(Boolean));
   return P;
 }
 /* one game's legs in a parlay (a mask of its candidates, a sum of powers of two): the quick reading of them all
@@ -9516,7 +9617,8 @@ function epAMin(floor){
   let lo=floor*0.2, hi=floor; for(let i=0;i<60;i++){ const m=(lo+hi)/2; if(epBounds(m,1,1,0,0)[0]>=floor) hi=m; else lo=m; }
   EP_AMIN.set(floor,lo); return lo;
 }
-/* every parlay of n candidates (one leg a player, so any n of them) by the quick reading: those whose most (its
+/* every parlay of n candidates (one leg a player, so any n of them, but for a pair DraftKings will not take on one slip:
+   app v121, P.cl) by the quick reading: those whose most (its
    chance with floor 0, else its expected return) reaches the best least found, best first; one whose chance cannot
    reach the floor is left out with every parlay it starts, since a leg added only takes draws away */
 function epScan(P,n,floor){
@@ -9528,6 +9630,8 @@ function epScan(P,n,floor){
   let list=[], lb=-Infinity, cap=4096;
   const go=(d,start)=>{
     for(let i=start;i<=N-(n-d);i++){
+      /* (app v121) never with a leg already in the parlay that DraftKings will not take beside it */
+      if(P.anyCl){ let cl=false; for(let q=0;q<d;q++) if(P.cl[idx[q]][i]){ cl=true; break; } if(cl) continue; }
       const g=P.gi[i], old=gm[g], nw=old+2**P.li[i], o=old?epGroup(P,g,old):null, x=epGroup(P,g,nw);
       const a=o?A[d]/o[0]*x[0]:A[d]*x[0], k=K[d]-(o?o[2]:0)+x[2];
       if(floor&&a<(k?amin:amin0)) continue;
@@ -9616,11 +9720,12 @@ function eloPicks(o){
     const build=()=>{ const P=epPrep(C), memo=new Map();
       return LV.map(t=>{ const [id,label,n,floor]=t, r=epLevel(P,t,memo), x=r&&epExact(r.legs);
         return r?{id:'elo-'+id,label,n,floor,legs:x.legs,p:x.p,dec:x.dec,...(floor&&x.p<floor?{likeliest:true}:{}),same:x.p===r.p&&x.dec===r.dec}
-          :{id:'elo-'+id,label,n,floor,legs:[],why:`Only ${all.length} player${all.length===1?'':'s'} ${where} qualif${all.length===1?'ies':'y'}: this level takes ${n}.`}; }); };
+          :{id:'elo-'+id,label,n,floor,legs:[],why:all.length>=n?`No ${n} of the ${all.length} players ${where} go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.`
+            :`Only ${all.length} player${all.length===1?'':'s'} ${where} qualif${all.length===1?'ies':'y'}: this level takes ${n}.`}; }); };
     base=build();
     if(EP_FAST&&base.some(t=>t.legs.length&&!t.same)){ EP_FAST=false; base=build(); }
     base=base.map(({same,...t})=>t);
-    EP_CACHE.set(sig,base); if(EP_CACHE.size>16) EP_CACHE.delete(EP_CACHE.keys().next().value); }
+    EP_CACHE.set(sig,base); if(EP_CACHE.size>40) EP_CACHE.delete(EP_CACHE.keys().next().value); }
   const tiers=base.map(t=>t.legs.length?{...t,fair:epFair(t.legs),sig:'elo|'+t.legs.map(epId).join(',')}:t);
   return {tiers,cands:C,candidates:all.length,games:new Set(C.map(l=>l.gid)).size};
 }
@@ -9652,10 +9757,29 @@ window.eloUnit=(gids,o)=>{
   if(D.err) return {error:'The Elo ratings did not load, so there are no Elo picks this time.'};
   if(!D.players||!D.muDone) return null;
   if(!D.mu) return {error:'The Elo matchups did not load, so there are no Elo picks this time.'};
+  if(o&&o.perGame&&Array.isArray(gids)&&gids.length>1) return eloUnitPerGame(gids,o);
   const r=eloPicks({games:gids,where:o&&o.where,kept:!!(o&&o.kept)}); if(!r) return null;
   if(r.wait) return {wait:true};
   return {tiers:r.tiers.map(t=>t.legs&&t.legs.length?t:{id:t.id,label:t.label,n:t.n,floor:t.floor,why:t.why}),candidates:r.candidates};
 };
+/* (app v121) the Sunday slot's Elo picks, one game a level (the owner, 19 October 2026: "the legs need to be part of the
+   same game parlay only, and anytime there's a mix it bombs the hyperlink"): the four levels on each of its games alone,
+   as a night game's are built, and each level the best of theirs: one that meets its floor before the likeliest of its
+   size, then the better expected return (the Elo chance all land times the price) where it met its floor, else the
+   higher Elo chance, then the earlier game. An empty level says so of any one game; {wait} while any game's is not built */
+const epSlotBetter=(a,b)=>{ const la=a.likeliest?1:0, lb=b.likeliest?1:0; if(la!==lb) return la<lb; const v=x=>x.floor&&!x.likeliest?x.p*x.dec:x.p; return v(a)>v(b); };
+function eloUnitPerGame(gids,o){
+  const LV=typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?epTiers(PB_TIERS):null; if(!LV) return null;
+  const per=[]; let wait=false;
+  for(const gid of gids){ const r=eloPicks({games:[gid],where:'in this game',kept:!!(o&&o.kept)}); if(!r) return null; if(r.wait){ wait=true; continue; } per.push(r); }
+  if(wait) return {wait:true};
+  const where='in any one game of '+String((o&&o.where)||'in the Sunday slot').replace(/^in /,''), most=Math.max(0,...per.map(r=>r.candidates||0));
+  const tiers=LV.map(([id,label,n,floor],ti)=>{ let best=null;
+    for(const r of per){ const t=r.tiers[ti]; if(t&&t.legs&&t.legs.length&&(!best||epSlotBetter(t,best))) best=t; }
+    return best?{...best}:{id:'elo-'+id,label,n,floor,why:most>=n?`No ${n} players ${where} go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.`
+      :`Only ${most} player${most===1?'':'s'} ${where} qualif${most===1?'ies':'y'}: this level takes ${n}.`}; });
+  return {tiers,candidates:per.reduce((a,r)=>a+(r.candidates||0),0)};
+}
 /* an Elo pick's card, as Suggested Parlays draws it (pbTierCard): the Elo chance, each leg's own Elo chance, each
    player's shield, how the level was chosen */
 window.eloCardOpt=t=>({chance:t.p,chanceBy:'Elo chance',by:'Elo',badge:l=>badge(l.pid),legP:l=>l.pe,...(t&&t.legs&&t.legs.length?{rule:`<span class="pb-rule">${epRuleOf(t)}</span>`}:{})});

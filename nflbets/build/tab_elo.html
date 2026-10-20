@@ -958,6 +958,9 @@ function epPrep(C0){
     dir:C.map(l=>l.side==='under'?-1:1),bits:new Map(),dm:new Map(),G:games.length,li:[],gl:games.map(()=>[]),gv:games.map(()=>new Map())};
   C.forEach((l,i)=>{ const g=P.gi[i]; P.li[i]=P.gl[g].length; P.gl[g].push(i); });
   P.nqE=P.pe.map(p=>nq(p)); P.nqB=P.bk.map(p=>nq(p));
+  /* (app v121) the pairs DraftKings will not take on one slip (the props parts' dkClash: a quarterback's passing TDs
+     with a teammate's anytime touchdown), which no parlay of the search may hold */
+  P.cl=C.map(a=>C.map(b=>a!==b&&typeof dkClash==='function'&&dkClash(a,b))); P.anyCl=P.cl.some(r=>r.some(Boolean));
   return P;
 }
 /* one game's legs in a parlay (a mask of its candidates, a sum of powers of two): the quick reading of them all
@@ -991,7 +994,8 @@ function epAMin(floor){
   let lo=floor*0.2, hi=floor; for(let i=0;i<60;i++){ const m=(lo+hi)/2; if(epBounds(m,1,1,0,0)[0]>=floor) hi=m; else lo=m; }
   EP_AMIN.set(floor,lo); return lo;
 }
-/* every parlay of n candidates (one leg a player, so any n of them) by the quick reading: those whose most (its
+/* every parlay of n candidates (one leg a player, so any n of them, but for a pair DraftKings will not take on one slip:
+   app v121, P.cl) by the quick reading: those whose most (its
    chance with floor 0, else its expected return) reaches the best least found, best first; one whose chance cannot
    reach the floor is left out with every parlay it starts, since a leg added only takes draws away */
 function epScan(P,n,floor){
@@ -1003,6 +1007,8 @@ function epScan(P,n,floor){
   let list=[], lb=-Infinity, cap=4096;
   const go=(d,start)=>{
     for(let i=start;i<=N-(n-d);i++){
+      /* (app v121) never with a leg already in the parlay that DraftKings will not take beside it */
+      if(P.anyCl){ let cl=false; for(let q=0;q<d;q++) if(P.cl[idx[q]][i]){ cl=true; break; } if(cl) continue; }
       const g=P.gi[i], old=gm[g], nw=old+2**P.li[i], o=old?epGroup(P,g,old):null, x=epGroup(P,g,nw);
       const a=o?A[d]/o[0]*x[0]:A[d]*x[0], k=K[d]-(o?o[2]:0)+x[2];
       if(floor&&a<(k?amin:amin0)) continue;
@@ -1091,11 +1097,12 @@ function eloPicks(o){
     const build=()=>{ const P=epPrep(C), memo=new Map();
       return LV.map(t=>{ const [id,label,n,floor]=t, r=epLevel(P,t,memo), x=r&&epExact(r.legs);
         return r?{id:'elo-'+id,label,n,floor,legs:x.legs,p:x.p,dec:x.dec,...(floor&&x.p<floor?{likeliest:true}:{}),same:x.p===r.p&&x.dec===r.dec}
-          :{id:'elo-'+id,label,n,floor,legs:[],why:`Only ${all.length} player${all.length===1?'':'s'} ${where} qualif${all.length===1?'ies':'y'}: this level takes ${n}.`}; }); };
+          :{id:'elo-'+id,label,n,floor,legs:[],why:all.length>=n?`No ${n} of the ${all.length} players ${where} go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.`
+            :`Only ${all.length} player${all.length===1?'':'s'} ${where} qualif${all.length===1?'ies':'y'}: this level takes ${n}.`}; }); };
     base=build();
     if(EP_FAST&&base.some(t=>t.legs.length&&!t.same)){ EP_FAST=false; base=build(); }
     base=base.map(({same,...t})=>t);
-    EP_CACHE.set(sig,base); if(EP_CACHE.size>16) EP_CACHE.delete(EP_CACHE.keys().next().value); }
+    EP_CACHE.set(sig,base); if(EP_CACHE.size>40) EP_CACHE.delete(EP_CACHE.keys().next().value); }
   const tiers=base.map(t=>t.legs.length?{...t,fair:epFair(t.legs),sig:'elo|'+t.legs.map(epId).join(',')}:t);
   return {tiers,cands:C,candidates:all.length,games:new Set(C.map(l=>l.gid)).size};
 }
@@ -1127,10 +1134,29 @@ window.eloUnit=(gids,o)=>{
   if(D.err) return {error:'The Elo ratings did not load, so there are no Elo picks this time.'};
   if(!D.players||!D.muDone) return null;
   if(!D.mu) return {error:'The Elo matchups did not load, so there are no Elo picks this time.'};
+  if(o&&o.perGame&&Array.isArray(gids)&&gids.length>1) return eloUnitPerGame(gids,o);
   const r=eloPicks({games:gids,where:o&&o.where,kept:!!(o&&o.kept)}); if(!r) return null;
   if(r.wait) return {wait:true};
   return {tiers:r.tiers.map(t=>t.legs&&t.legs.length?t:{id:t.id,label:t.label,n:t.n,floor:t.floor,why:t.why}),candidates:r.candidates};
 };
+/* (app v121) the Sunday slot's Elo picks, one game a level (the owner, 19 October 2026: "the legs need to be part of the
+   same game parlay only, and anytime there's a mix it bombs the hyperlink"): the four levels on each of its games alone,
+   as a night game's are built, and each level the best of theirs: one that meets its floor before the likeliest of its
+   size, then the better expected return (the Elo chance all land times the price) where it met its floor, else the
+   higher Elo chance, then the earlier game. An empty level says so of any one game; {wait} while any game's is not built */
+const epSlotBetter=(a,b)=>{ const la=a.likeliest?1:0, lb=b.likeliest?1:0; if(la!==lb) return la<lb; const v=x=>x.floor&&!x.likeliest?x.p*x.dec:x.p; return v(a)>v(b); };
+function eloUnitPerGame(gids,o){
+  const LV=typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?epTiers(PB_TIERS):null; if(!LV) return null;
+  const per=[]; let wait=false;
+  for(const gid of gids){ const r=eloPicks({games:[gid],where:'in this game',kept:!!(o&&o.kept)}); if(!r) return null; if(r.wait){ wait=true; continue; } per.push(r); }
+  if(wait) return {wait:true};
+  const where='in any one game of '+String((o&&o.where)||'in the Sunday slot').replace(/^in /,''), most=Math.max(0,...per.map(r=>r.candidates||0));
+  const tiers=LV.map(([id,label,n,floor],ti)=>{ let best=null;
+    for(const r of per){ const t=r.tiers[ti]; if(t&&t.legs&&t.legs.length&&(!best||epSlotBetter(t,best))) best=t; }
+    return best?{...best}:{id:'elo-'+id,label,n,floor,why:most>=n?`No ${n} players ${where} go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.`
+      :`Only ${most} player${most===1?'':'s'} ${where} qualif${most===1?'ies':'y'}: this level takes ${n}.`}; });
+  return {tiers,candidates:per.reduce((a,r)=>a+(r.candidates||0),0)};
+}
 /* an Elo pick's card, as Suggested Parlays draws it (pbTierCard): the Elo chance, each leg's own Elo chance, each
    player's shield, how the level was chosen */
 window.eloCardOpt=t=>({chance:t.p,chanceBy:'Elo chance',by:'Elo',badge:l=>badge(l.pid),legP:l=>l.pe,...(t&&t.legs&&t.legs.length?{rule:`<span class="pb-rule">${epRuleOf(t)}</span>`}:{})});
