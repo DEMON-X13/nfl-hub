@@ -33,7 +33,9 @@
  * one slip (a quarterback's passing TDs with a teammate's touchdown, or over with the game total) named under the card's
  * buttons and the builder's legs, worked out here on the check's own copy of the rule; (J2, 19 October 2026) the card's
  * check of DraftKings' current lines as it opens, on an ESPN of the section's own that can hold or fail an answer: the
- * buttons waiting, the 10-second cap, the moved rule and a moved total, the requests the parlay's games' alone; and a
+ * buttons waiting, the 10-second cap, the moved rule and a moved total, the requests the parlay's games' alone, on a
+ * same-game parlay mixed with another game (a button a game once the check settles, none while it reads, the focus on
+ * the waiting button moved to the first game's), and the check's line ending every note it settles, held on its own; and a
  * Suggested Parlays set finished from its own
  * tab (app v111), live and then locked from the record's entry, each of its legs with an Add of its
  * own; its Elo picks (app v118) finished as an Elo pick, live, locked from the record and as this browser's own;
@@ -1025,6 +1027,73 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     /* what the card's reads kept in this browser is a press's: the kept read's own shape, of the pinned games alone */
     const pressKept = x => { const r = x.w.localStorage.getItem(PRESS_KEY); if (r == null) return true;
       try { const k = JSON.parse(r); return k.v === 1 && k.season === SEA && Object.keys(k.games || {}).every(id => id === g1.id || id === g2.id); } catch (e) { return false; } };
+    /* DraftKings' betslip link for some ids, in that order, each '#' as %23 */
+    const DKU = ids => 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(x => x.replace(/#/g, '%23')).join('+');
+    /* (19 October 2026: main's #302, the card's check of DraftKings' current lines as it opens, merged into app v121) once
+       the card has checked, its note ends on one more paragraph, the check's own line (p[data-pc-dkcheck]): done,
+       "Checked against DraftKings’ lines at <time>." (the oldest read of its games), or failed (a read that failed, or the
+       cap passed), COULD; none where the card had nothing to read. This section's own copies of the two lines, word for
+       word */
+    const COULD = 'Could not check DraftKings’ current lines: a leg DraftKings has moved since its prices were read will not be on the slip.';
+    const checked = t => `Checked against DraftKings’ lines at ${readTxt(t)}.`;
+    /* the card's note as app v121 holds it: partsOf, its blocks in order, each by what it is, the check's line a block of
+       its own ("check"); bodyOf, the same less the check's line at the note's end, which every v121 rule of the note's
+       blocks is held to; and checkHeld, the check's line held on its own: none where want is null (the card had nothing
+       to read), else exactly one, the note's last block, a paragraph of its words alone, done or failed as want says, word
+       for word (done: dated by want.t, when its games were read). The problems, or none */
+    const partsOf = el => [...el.children].map((e, i) => e.matches('p[data-pc-dkcheck]') ? 'check' : e.matches('p.pc-dkone') ? 'one' : e.matches('ul.pc-dklegs') ? 'legs' : e.matches('p[data-pc-dkclash]') ? 'clash'
+      : e.matches('ul') && e.querySelector('[data-pc-dkmiss]') ? 'hand' : e.matches('ul') && e.querySelector('[data-pc-dkswap]') ? 'swap'
+      : e.matches('p') && txt(e) === 'On DraftKings’ slip at its own line:' ? 'swaphead' : e.matches('p') && /^DraftKings prices /.test(txt(e)) ? 'swapprice'
+      : i === 0 && e.matches('p') ? 'first' : e.tagName.toLowerCase() + '(?)').join(' ');
+    const bodyOf = el => partsOf(el).replace(/(?:^| )check$/, '');
+    const checkHeld = (el, want) => { const c = [...el.querySelectorAll('[data-pc-dkcheck]')], seen = c.map(x => x.outerHTML).join(' ') || 'none';
+      if (!want) return c.length ? `the card had nothing to read, yet its note has a check's line: ${seen}` : null;
+      if (want.st === 'done' && !(want.t > 0)) return `the card's games were read as its stand-in answers (the scoreboard, and no player lines posted), yet the page has no such read on record for one of them`;
+      const words = want.st === 'done' ? checked(want.t) : COULD;
+      if (c.length !== 1 || c[0] !== el.lastElementChild || c[0].tagName !== 'P' || c[0].children.length || c[0].getAttribute('data-pc-dkcheck') !== want.st || txt(c[0]) !== words)
+        return `the note does not end on the check's one line, ${want.st}, "${words}": ${seen}${c.length && c[c.length - 1] !== el.lastElementChild ? ' (not the note\'s last block)' : ''}`;
+      return null; };
+    /* (app v121) where the legs on the slip mix a same-game parlay (two or more legs of one game) with legs of other games,
+       DraftKings' betslip link does not open: a button for each game's legs, the games in the order their first legs come,
+       each its legs in the card's order. Worked out here on its own: numsOwn, legs by number ("leg 2", "legs 1 and 3",
+       "legs 1, 2 and 3"); readOwn, when the made-up ids a leg goes on at were read, by the case's own table as it planted it
+       (a team's line and the total with its game's lines, glat; a player's with his game's prices, at; null where the
+       table does not say), and oldestOwn, the oldest of some reads, null where one is undated; gamesIn, the games of the
+       legs on the slip ({gid, name, ns, ids}; legs and ids in the card's order, an id null for a leg off the slip), each
+       dated (at) by its own legs given the table; multiOf, whether they are such a mix */
+    const numsOwn = ns => (ns.length === 1 ? 'leg ' : 'legs ') + (ns.length > 1 ? ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1] : ns[0]);
+    const readOwn = (l, T) => { const D = ((T || {})[String(l.week || wk)] || {})[l.gid] || {}; return (['ml', 'ats', 'total'].includes(l.stat) ? D.glat : D.at) || null; };
+    const oldestOwn = ats => !ats.length || ats.some(a => !a) ? null : ats.slice().sort((a, b) => Date.parse(a) - Date.parse(b))[0];
+    const gamesIn = (sched, legs, ids, T) => { const out = [];
+      legs.forEach((l, i) => { if (!ids[i]) return; let G = out.find(x => x.gid === l.gid);
+        if (!G) { const g = sched.find(x => x.id === l.gid); out.push(G = { gid: l.gid, name: g ? `${g.a} at ${g.h}` : l.gid, ns: [], ids: [], reads: [] }); }
+        G.ns.push(i + 1); G.ids.push(ids[i]); G.reads.push(readOwn(l, T)); });
+      if (T) out.forEach(G => { G.at = oldestOwn(G.reads); });
+      return out; };
+    const multiOf = G => G.length > 1 && G.some(x => x.ids.length > 1);
+    /* the note's first paragraph on such a mix, dated by the older read as the one link's is, promising nothing */
+    const multiNote = (n, at, hand) => `${at ? 'DraftKings’ lines as read ' + readTxt(at) : 'When DraftKings’ lines were read is not recorded'}: these legs mix a same-game parlay with other games, and a DraftKings link with that mix does not open, so each of the ${n} games has a link of its own: open them one after another. Each opens its game’s legs as DraftKings had them ${at ? 'then' : 'when last read'}; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.${hand ? ' Add by hand:' : ''}`;
+    const gameTitle = (G, at) => `Opens ${numsOwn(G.ns)} (${G.name}) on DraftKings’ betslip, in a new tab, as DraftKings’ lines were ${at ? 'read ' + readTxt(at) : 'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
+    /* Share link's DraftKings lines on such a mix: the line saying a link a game and why (and any legs to add by hand),
+       each game's line, its link alone on the next, then the read */
+    const multiLines = (G, at, hand) => `\nDraftKings betslip, a link for each game (a link mixing a same-game parlay with other games does not open)${hand ? `; add ${hand} by hand` : ''}:\n`
+      + G.map(x => `${x.name}, ${numsOwn(x.ns)}:\n${DKU(x.ids)}`).join('\n') + `\nDraftKings lines as ${at ? 'read ' + readTxt(at) : 'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet\n`;
+    /* the game buttons as the card in d draws them, against the games worked out above (none: the row hidden and empty,
+       Open in DraftKings straight before it and Share link straight after); a game dated by its own legs (gamesIn with the
+       case's table) is titled with its own read, else with at. The problems, or none */
+    const gameBtnsIn = (d, G, at) => { const gb = d.getElementById('pcDkGames'), dkA = d.getElementById('pcDk'), bad = [];
+      if (!gb) return 'there is no place for the game buttons (#pcDkGames)';
+      if (dkA.nextElementSibling !== gb || gb.nextElementSibling !== d.getElementById('pcLink') || !gb.closest('.pc-actions')) bad.push('the game buttons are not in the action row, where Open in DraftKings stands, before Share link');
+      if (!G) { if (!gb.hidden || gb.children.length || gb.textContent.trim()) bad.push(`a plain parlay has game buttons: ${gb.outerHTML}`); return bad.length ? bad.join('; ') : null; }
+      if (gb.hidden || gb.closest('[hidden]')) bad.push('the row of game buttons is hidden');
+      if (!dkA.hidden) bad.push('Open in DraftKings, one link for every leg, is still shown');
+      const bs = [...gb.children];
+      if (bs.length !== G.length || !bs.every(b => b.matches('a.btn.pc-dkbtn[data-pc-dkgame]'))) bad.push(`it holds ${bs.map(b => b.outerHTML).join(' ') || 'nothing'}, not ${G.length} game buttons`);
+      G.forEach((x, i) => { const b = bs[i];
+        if (!b || b.getAttribute('data-pc-dkgame') !== x.gid || b.getAttribute('href') !== DKU(x.ids) || b.getAttribute('target') !== '_blank' || !/\bnoopener\b/.test(b.getAttribute('rel') || '')
+          || txt(b) !== `Open ${x.name} in DraftKings` || b.getAttribute('title') !== gameTitle(x, 'at' in x ? x.at : at))
+          bad.push(`button ${i + 1} is ${b ? b.outerHTML : 'missing'}, not ${x.name}'s ${numsOwn(x.ns)}, to ${DKU(x.ids)}, titled "${gameTitle(x, 'at' in x ? x.at : at)}"`); });
+      return bad.length ? bad.join('; ') : null; };
     for (const [how, extra, side] of [['a plain browser', () => {}, 'over'], ['a browser that was the owner\'s', wasOwner, 'under']]) {
       const v = await run({ url: URL_PB, pay: P => pin(P, side), file: { updated: null, games: [], parlays: [] }, esp: jEsp, seed: w => { w.localStorage.setItem(PROP_KEY, blob(side)); w.localStorage.setItem('my_parlays_v1', myOld); extra(w); } });
       const DK_RB = DK_RBS[side], rbLabel = Side(side) + ' 64.5 rushing yards';
@@ -1076,8 +1145,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       chk(d.activeElement === d.getElementById('pcDownload'), `${how}: the window did not take the focus`);
       /* Open in DraftKings: one link to DraftKings' betslip, the legs' own ids in the card's order
          joined by +, each '#' as %23, in a new tab; under the buttons, what it opens and each leg's
-         own link (DraftKings documents no link for several outcomes, so one at a time is offered too) */
-      const DKU = ids => 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(x => x.replace(/#/g, '%23')).join('+');
+         own link (DraftKings documents no link for several outcomes, so one at a time is offered too): DKU, above */
       const order = q.legs.map(l => l.stat === 'ml' ? DK_ML : DK_RB);
       /* every leg on a line of its own in the shared text: its number, who, the bet and its price */
       const legsIn = t => q.legs.every((l, i) => new RegExp(`(^|\\n)${i + 1}\\. ${l.name}: ${l.label} \\([+-]\\d+\\)(\\n|$)`).test(t));
@@ -1097,18 +1165,32 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
          the pairs DraftKings may refuse. The " One leg at a time: 1 · 2 · 3." the first paragraph ended on until then is
          gone. A leg that goes on at DraftKings' number (app v121's second round) says so in its row and its name, since
          its link opens that number: "n. who, what (on DraftKings as <what goes on>)"; a leg at its own line has no such
-         words. noteParts: the note's blocks in order, each by what it is */
-      const noteParts = () => [...note().children].map((e, i) => e.matches('p.pc-dkone') ? 'one' : e.matches('ul.pc-dklegs') ? 'legs' : e.matches('p[data-pc-dkclash]') ? 'clash'
-        : e.matches('ul') && e.querySelector('[data-pc-dkmiss]') ? 'hand' : e.matches('ul') && e.querySelector('[data-pc-dkswap]') ? 'swap'
-        : e.matches('p') && txt(e) === 'On DraftKings’ slip at its own line:' ? 'swaphead' : e.matches('p') && /^DraftKings prices /.test(txt(e)) ? 'swapprice'
-        : i === 0 && e.matches('p') ? 'first' : e.tagName.toLowerCase() + '(?)').join(' ');
+         words. noteParts: the note's blocks in order, each by what it is (partsOf, above: the check's line, which #302 ends
+         every note on once the card has checked, a block of its own, "check"); noteBody, the same less that line at the
+         note's end, which every block rule of app v121 below is held to */
+      const noteParts = () => partsOf(note()), noteBody = () => bodyOf(note());
+      /* the check's line this section's ESPN stand-in (jEsp) gives the open card, held on its own (checkBad): the stand-in's
+         scoreboard lists the two pinned games alone, and no player lines are posted for either (a 404, read as none). So a
+         card whose games to come (by the page's clock: kickoff ahead, no score) are all of the two is done, dated by the
+         oldest read of them (the page's own record of when each was read, ESPN_OUT, each held to that answer and to the
+         page's clock); one with any other game to come (the third game of (b) and (d) below, on no scoreboard of the
+         stand-in's) could not check; one with no game to come had nothing to read, and has no line */
+      const SB_OWN = [g1.id, g2.id];
+      const checkWant = () => { const m = w.PARLAY_CARD.current(), sch = w.eval('S').sched, now = w.eval('Date.now()');
+        const gids = [...new Set(((m && m.dkLegs) || []).map(l => l.gid))].filter(id => { const g = sch.find(x => x.id === id); return !!g && !scoredL(g) && now < etKickL(g); });
+        if (!gids.length) return null;
+        if (!gids.every(id => SB_OWN.includes(id))) return { st: 'failed' };
+        const O = w.eval('ESPN_OUT'), o = gids.map(id => O[id]);
+        return { st: 'done', t: o.every(x => x && x.st === 'none' && +x.when > 0 && +x.when <= now) ? Math.min(...o.map(x => +x.when)) : NaN }; };
+      const checkBad = () => checkHeld(note(), checkWant());
       /* the note held to its blocks and every leg's own link: want, the legs on the slip in the card's order as
          [n, who, what, id, swap] (swap: what goes on at DraftKings' number, worked out by the case, or none), and which
-         other blocks it has (the legs to add by hand, the converted legs, the pairs DraftKings may refuse); the
-         problems, or none */
+         other blocks it has (the legs to add by hand, the converted legs, the pairs DraftKings may refuse), on the note less
+         the check's line at its end (noteBody), which is held on its own (checkBad); the problems, or none */
       const legLinks = (want, { miss = 0, swaps = 0, clash = 0 } = {}) => {
-        const bad = [], parts = noteParts(), shape = ['first', miss ? 'hand' : '', want.length > 1 ? 'one legs' : '', swaps ? 'swaphead swap swapprice' : '', clash ? 'clash' : ''].filter(Boolean).join(' ');
-        if (parts !== shape) bad.push(`its blocks are "${parts}", not "${shape}"`);
+        const bad = [], parts = noteBody(), shape = ['first', miss ? 'hand' : '', want.length > 1 ? 'one legs' : '', swaps ? 'swaphead swap swapprice' : '', clash ? 'clash' : ''].filter(Boolean).join(' ');
+        if (parts !== shape) bad.push(`its blocks are "${noteParts()}", not "${shape}" and then the check's line`);
+        { const cb = checkBad(); if (cb) bad.push(cb); }
         const first = note().firstElementChild;
         if (/One leg at a time/.test(txt(note())) || (first && first.querySelector('a'))) bad.push('its first paragraph still ends on "One leg at a time", or carries a link');
         const one = note().querySelectorAll('p.pc-dkone'), ul = note().querySelector('ul.pc-dklegs'), lis = ul ? [...ul.children] : [], links = note().querySelectorAll('a[data-pc-dkleg]');
@@ -1154,46 +1236,13 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
          game) with legs of other games, DraftKings' betslip link does not open: there is no link for them all (Open in
          DraftKings is hidden) but, in its place before Share link, a button for each game's legs (#pcDkGames), the games
          in the order their first legs come, each its legs in the card's order. One leg a game is a plain parlay and keeps
-         its one link. Worked out here on its own: gamesOf, the games of the legs on the slip ({gid, name, ns, ids}); multiOf,
-         whether they are such a mix; numsOwn, legs by number ("leg 2", "legs 1 and 3", "legs 1, 2 and 3").
-         Each game's button is dated by its own legs (app v121's second round), the note and Share link by them all:
-         readOwn, when the made-up ids a leg goes on at were read, by the case's own table as it planted it (a team's line
-         and the total with its game's lines, glat; a player's with his game's prices, at; null where the table does not
-         say), and oldestOwn, the oldest of some reads, null where one is undated. Given the table, gamesOf dates each game
-         (at) by its own legs */
-      const numsOwn = ns => (ns.length === 1 ? 'leg ' : 'legs ') + (ns.length > 1 ? ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1] : ns[0]);
-      const readOwn = (l, T) => { const D = ((T || {})[String(l.week || wk)] || {})[l.gid] || {}; return (['ml', 'ats', 'total'].includes(l.stat) ? D.glat : D.at) || null; };
-      const oldestOwn = ats => !ats.length || ats.some(a => !a) ? null : ats.slice().sort((a, b) => Date.parse(a) - Date.parse(b))[0];
-      const gamesOf = (legs, ids, T) => { const out = [];
-        legs.forEach((l, i) => { if (!ids[i]) return; let G = out.find(x => x.gid === l.gid);
-          if (!G) { const g = w.eval('S').sched.find(x => x.id === l.gid); out.push(G = { gid: l.gid, name: g ? `${g.a} at ${g.h}` : l.gid, ns: [], ids: [], reads: [] }); }
-          G.ns.push(i + 1); G.ids.push(ids[i]); G.reads.push(readOwn(l, T)); });
-        if (T) out.forEach(G => { G.at = oldestOwn(G.reads); });
-        return out; };
-      const multiOf = G => G.length > 1 && G.some(x => x.ids.length > 1);
-      /* the note's first paragraph on such a mix, dated by the older read as the one link's is, promising nothing */
-      const multiNote = (n, at, hand) => `${at ? 'DraftKings’ lines as read ' + readTxt(at) : 'When DraftKings’ lines were read is not recorded'}: these legs mix a same-game parlay with other games, and a DraftKings link with that mix does not open, so each of the ${n} games has a link of its own: open them one after another. Each opens its game’s legs as DraftKings had them ${at ? 'then' : 'when last read'}; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.${hand ? ' Add by hand:' : ''}`;
-      const gameTitle = (G, at) => `Opens ${numsOwn(G.ns)} (${G.name}) on DraftKings’ betslip, in a new tab, as DraftKings’ lines were ${at ? 'read ' + readTxt(at) : 'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
-      /* Share link's DraftKings lines on such a mix: the line saying a link a game and why (and any legs to add by hand),
-         each game's line, its link alone on the next, then the read */
-      const multiLines = (G, at, hand) => `\nDraftKings betslip, a link for each game (a link mixing a same-game parlay with other games does not open)${hand ? `; add ${hand} by hand` : ''}:\n`
-        + G.map(x => `${x.name}, ${numsOwn(x.ns)}:\n${DKU(x.ids)}`).join('\n') + `\nDraftKings lines as ${at ? 'read ' + readTxt(at) : 'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet\n`;
-      /* the game buttons as drawn, against the games worked out above (none: the row hidden and empty, Open in DraftKings
-         straight before it and Share link straight after); the problems, or none */
-      const gameBtns = (G, at) => { const gb = d.getElementById('pcDkGames'), bad = [];
-        /* a game dated by its own legs (gamesOf with the case's table) is titled with its own read, else with at */
-        if (!gb) return 'there is no place for the game buttons (#pcDkGames)';
-        if (dkA.nextElementSibling !== gb || gb.nextElementSibling !== d.getElementById('pcLink') || !gb.closest('.pc-actions')) bad.push('the game buttons are not in the action row, where Open in DraftKings stands, before Share link');
-        if (!G) { if (!gb.hidden || gb.children.length || gb.textContent.trim()) bad.push(`a plain parlay has game buttons: ${gb.outerHTML}`); return bad.length ? bad.join('; ') : null; }
-        if (gb.hidden || gb.closest('[hidden]')) bad.push('the row of game buttons is hidden');
-        if (!dkA.hidden) bad.push('Open in DraftKings, one link for every leg, is still shown');
-        const bs = [...gb.children];
-        if (bs.length !== G.length || !bs.every(b => b.matches('a.btn.pc-dkbtn[data-pc-dkgame]'))) bad.push(`it holds ${bs.map(b => b.outerHTML).join(' ') || 'nothing'}, not ${G.length} game buttons`);
-        G.forEach((x, i) => { const b = bs[i];
-          if (!b || b.getAttribute('data-pc-dkgame') !== x.gid || b.getAttribute('href') !== DKU(x.ids) || b.getAttribute('target') !== '_blank' || !/\bnoopener\b/.test(b.getAttribute('rel') || '')
-            || txt(b) !== `Open ${x.name} in DraftKings` || b.getAttribute('title') !== gameTitle(x, 'at' in x ? x.at : at))
-            bad.push(`button ${i + 1} is ${b ? b.outerHTML : 'missing'}, not ${x.name}'s ${numsOwn(x.ns)}, to ${DKU(x.ids)}, titled "${gameTitle(x, 'at' in x ? x.at : at)}"`); });
-        return bad.length ? bad.join('; ') : null; };
+         its one link. Worked out here on its own, by the section's helpers above (numsOwn, readOwn, oldestOwn, gamesIn,
+         multiOf, multiNote, gameTitle, multiLines, gameBtnsIn): gamesOf, the games of the legs on the slip ({gid, name, ns,
+         ids}), each game's button dated by its own legs (app v121's second round), the note and Share link by them all;
+         given the case's table, gamesOf dates each game (at) by its own legs; gameBtns, the game buttons as drawn, against
+         them (none: the row hidden and empty) */
+      const gamesOf = (legs, ids, T) => gamesIn(w.eval('S').sched, legs, ids, T);
+      const gameBtns = (G, at) => gameBtnsIn(d, G, at);
       /* the builder says so too (app v121): where its legs mix a same-game parlay with other games, and the parlay card is
          on the page (the hub; the prop model's own page has none), one line, word for word, naming how many games */
       const multiB = n => `These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${n} games a link of its own.`;
@@ -1436,7 +1485,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             && dkA.getAttribute('title') === 'Opens DraftKings’ NFL page, in a new tab, to add the legs by hand' && !gameBtns(null)
             && txt(note()).startsWith('None of these legs can go on DraftKings’ betslip from here, so Open DraftKings opens its NFL page: add them there by hand.')
             && note().querySelectorAll('[data-pc-dkmiss]').length === 2 && missOf(nM).endsWith(': ' + GAME_NP) && missOf(nR).endsWith(': ' + GAME_NP + RUNG('receiving yards'))
-            && !note().querySelector('a') && !d.getElementById('pcLink').hidden && noteParts() === 'first hand', `${how}: a parlay DraftKings has none of, over two games, does not offer DraftKings' NFL page, or does not name every leg and why: ` + txt(note()) + ' / ' + dkA.outerHTML + ' / ' + gameBtns(null));
+            && !note().querySelector('a') && !d.getElementById('pcLink').hidden && noteBody() === 'first hand' && !checkBad(), `${how}: a parlay DraftKings has none of, over two games, does not offer DraftKings' NFL page, or does not name every leg and why (then the check's line): ` + txt(note()) + ' / ' + dkA.outerHTML + ' / ' + gameBtns(null) + ' / ' + noteParts() + ' / ' + checkBad());
           d.getElementById('pcLink').click(); await wait(30);
           const s2 = shared[0] || {};
           chk(shared.length === 1 && !('url' in s2) && (s2.text || '').includes(`\nDraftKings’ NFL page (add the legs by hand):\n${NFL}\nAdd by hand at DraftKings:\n`) && legsOf(qb, s2.text || '') && !/DraftKings lines/.test(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub$/.test(s2.text || '')
@@ -1468,8 +1517,8 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         { const qa = w.PARLAY_CARD.quote(), EV = 'https://sportsbook.draftkings.com/event/880002', nR = qa.legs.findIndex(l => l.stat === 'receiving_yards') + 1, nT = qa.legs.findIndex(l => l.stat === 'any_td') + 1;
           chk(qa.legs.length === 2 && !dkA.hidden && txt(dkA) === 'Open game in DraftKings' && dkA.getAttribute('href') === EV && dkA.getAttribute('title') === 'Opens the game’s page in DraftKings, in a new tab, to add the legs by hand'
             && txt(note()).startsWith('None of these legs can go on DraftKings’ betslip from here, so Open game in DraftKings opens the game’s page: add them there by hand.')
-            && missOf(nT).endsWith(': ' + PL_NP) && missOf(nR).endsWith(': ' + PL_NP + RUNG('receiving yards')) && !note().querySelector('a') && noteParts() === 'first hand' && !gameBtns(null),
-            `${how}: the owner's case (game lines read, no player prices yet) does not say the player prices are not pulled yet, or does not open the game's DraftKings page: ` + txt(note()) + ' / ' + dkA.outerHTML);
+            && missOf(nT).endsWith(': ' + PL_NP) && missOf(nR).endsWith(': ' + PL_NP + RUNG('receiving yards')) && !note().querySelector('a') && noteBody() === 'first hand' && !checkBad() && !gameBtns(null),
+            `${how}: the owner's case (game lines read, no player prices yet) does not say the player prices are not pulled yet, or does not open the game's DraftKings page (then the check's line): ` + txt(note()) + ' / ' + dkA.outerHTML + ' / ' + noteParts() + ' / ' + checkBad());
           d.getElementById('pcLink').click(); await wait(30);
           const sa = shared[0] || {};
           chk(shared.length === 1 && !('url' in sa) && (sa.text || '').includes(`\nDraftKings, the game’s page (add the legs by hand):\n${EV}\nAdd by hand on the game’s DraftKings page:\n`) && sa.title.startsWith('2-leg parlay ' + w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))')) && !/DraftKings lines/.test(sa.text || '') && legsOf(qa, sa.text || '')
@@ -1632,7 +1681,8 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
            (c) a quarterback's passing TDs with his teammate's anytime touchdown, his passing TDs over with the game's
                total, both, neither (his passing TDs under with the total, an opponent's touchdown and his own), and his
                under with the teammate's touchdown, off the slip: the pairs DraftKings may refuse on one slip, said word for
-               word last in the card's note by the legs' numbers and under the builder's legs by name, worked out here on
+               word last in the card's note (but for the check's line after it, #302's, held on its own) by the legs'
+               numbers and under the builder's legs by name, worked out here on
                the check's own copy of the rule (clashOwn); nothing said where there is no pair.
            The third game is week wk's third, else a game of another week whose clubs are not the first two's, moved into
            week wk for the cases; it is put back, and so are the builder, the ids and the share sheet, on every path */
@@ -1801,7 +1851,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
               await reopen();
               const ids = qc.legs.map(l => onSlip ? cId(l) : null), cl = [...d.querySelectorAll('#pcDkNote [data-pc-dkclash]')];
               const wantC = pairs.length ? `DraftKings may refuse ${pairs.length === 1 ? 'this pair' : 'these pairs'} on one slip: ${pairs.map(([i, j, k]) => `legs ${i + 1} and ${j + 1} (${CLASH_SAY[k]})`).join('; ')}.` : null;
-              const bad = (onSlip ? legLinks(slipOf(qc.legs, ids), { clash: pairs.length }) : noteParts() === 'first hand' + (pairs.length ? ' clash' : '') ? null : `its blocks are "${noteParts()}"`) || gameBtns(null);
+              const bad = (onSlip ? legLinks(slipOf(qc.legs, ids), { clash: pairs.length }) : noteBody() === 'first hand' + (pairs.length ? ' clash' : '') ? checkBad() : `its blocks are "${noteParts()}"`) || gameBtns(null);
               chk(cl.length === (wantC ? 1 : 0) && (!wantC || (txt(cl[0]) === wantC && cl[0].getAttribute('data-pc-dkclash') === String(pairs.length))) && !bad
                 && (onSlip ? !dkA.hidden && dkA.getAttribute('href') === DKU(ids) : txt(dkA) === 'Open DraftKings'),
                 `${how}: (c) ${what}: the card's note does not say, word for word and last, which pairs DraftKings may refuse on one slip (${wantC || 'none'}): ` + [bad, cl.map(txt).join(' | ') || 'no line', dkA.getAttribute('href')].filter(Boolean).join(' / '));
@@ -2345,10 +2395,18 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
        card reads (the waiting line alone, no leg's link), a rung moved off its own number naming its own bet, the page
        redrawn once a read, the page kept from scrolling under a card that waited for a press, the focus a redraw takes
        found again, the outcome in the status line, a stale read never painting a newer card, and a payload baked before
-       ids still read */
+       ids still read.
+       Merged with app v121 (the owner's calls of 19 October 2026: "the legs need to be part of the same game parlay only,
+       and anytime there's a mix it bombs the hyperlink"): the seven legs are the first game's total beside six legs of the
+       second, a same-game parlay mixed with another game, the owner's own case, so once the check settles the card has no
+       link for them all but a button for each game's legs (the games in the order their first legs come, each its legs in
+       the card's order, titled with its own game's oldest read), the note's first paragraph the mix's, and Share link a
+       link a game; while it reads, the game buttons stay hidden and only the waiting Open in DraftKings is shown (the read
+       can change the plan), and the focus on it then goes to the first game's button. Each held here at every stage on
+       this check's own made-up ids and its own copy of the plan (the section's gamesIn, gameBtnsIn, multiNote,
+       multiLines), the note's blocks (partsOf) and the check's line (checkHeld) */
     {
       const CAP_MS = 10000, FRESH_MS = 2 * 60e3;
-      const DKU = ids => 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(x => x.replace(/#/g, '%23')).join('+');
       const ID = { tot: 'J2#o435', totU: 'J2#u435', tot2: 'J2#o445', tot2U: 'J2#u445', rb: 'J2#rb645', rbU: 'J2#rb645u', wr: 'J2#wr555', wrRec: 'J2#wrrec55', wrTd: 'J2#wrtd', te: 'J2#te35', teTd: 'J2#tetd' };
       const AID = { 'card-rb': '9101', 'card-wr': '9102', 'card-te': '9103' }, EV3 = '7103';
       /* the third game: the week's own, else one made up between two clubs neither pinned game has */
@@ -2406,13 +2464,37 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       chk(L.length === NL && Object.values(n).every(x => x > 0) && !!d.getElementById('pFinish') && !d.getElementById('pFinish').disabled, `${how}: the builder does not hold the ${NL} made-up legs ready to finish: ` + L.map(l => l.pid + ' ' + l.stat).join(', '));
       chk(w.eval(`!!S.sched.find(x=>x.id===${JSON.stringify(g3.id)}&&!gameStarted(x)&&!hasScore(x))`), `${how}: the third game of the week (${g3.id}), which the card must never ask about, is not one to come on the page, so the check could not tell`);
       if (L.length === NL) {
-        /* the ids the link carries, in the card's order: the pull's, before the read; after it, the total on the read's
-           Over 44.5 and the runner and the tight end on no slip */
-        const order = m => [...Array(NL)].map((_, i) => m[Object.keys(n).find(k => n[k] === i + 1)]).filter(Boolean);
-        const PRE = order({ tot: ID.tot, rb: ID.rb, wr: ID.wr, wrRec: ID.wrRec, wrTd: ID.wrTd, te: ID.te, teTd: ID.teTd }), POST = order({ tot: ID.tot2, wr: ID.wr, wrRec: ID.wrRec, wrTd: ID.wrTd, teTd: ID.teTd });
-        const COULD = 'Could not check DraftKings’ current lines: a leg DraftKings has moved since its prices were read will not be on the slip.';
+        /* the ids the slip takes, in the card's order (null for a leg on no slip): the pull's, before the read; after it,
+           the total on the read's Over 44.5 and the runner and the tight end on no slip. PRE and POST: the ids alone */
+        const idsBy = m => [...Array(NL)].map((_, i) => m[Object.keys(n).find(k => n[k] === i + 1)] || null);
+        const PRE_IDS = idsBy({ tot: ID.tot, rb: ID.rb, wr: ID.wr, wrRec: ID.wrRec, wrTd: ID.wrTd, te: ID.te, teTd: ID.teTd }), POST_IDS = idsBy({ tot: ID.tot2, wr: ID.wr, wrRec: ID.wrRec, wrTd: ID.wrTd, teTd: ID.teTd });
+        const PRE = PRE_IDS.filter(Boolean), POST = POST_IDS.filter(Boolean);
+        /* (app v121) the card's own plan, worked out here: the games of the legs on the slip as their first legs come in the
+           card's order, each with its ids in that order and dated by its own legs from the case's table (gamesIn): before
+           the read, dk2's own (the first game's total on its game lines, AT_G; the second game's legs on its player prices,
+           AT_P); after it, the total on the read's id, dated by the read that gave it (postT: the page's record of that
+           read, ESPN_IDAT, held below to the read's own time). One leg of the first game and six of the second: a same-game
+           parlay mixed with another game, so a button a game, no link for them all, and the note and Share link dated by
+           the oldest read of all (AT_G before the read; AT_P after it, the read's own being newer). The status line once
+           the check is done (said): what the one link opens, or on a mix what the games' links open, by this check's own
+           count of the games with legs on the slip and of the legs */
+        const gOf = (G, gid) => G.find(x => x.gid === gid) || { ids: [], ns: [] };
+        const G_PRE = gamesIn(w.eval('S').sched, L, PRE_IDS, dk2());
+        const TOT2_KEY = 'game|total|over|44.5', postT = () => w.eval(`espnIdAt(${JSON.stringify(g1.id)}, ${JSON.stringify(TOT2_KEY)})`);
+        const gPost = () => { const T = dk2(), t = postT(); T[String(wk)][g1.id].glat = isFinite(t) && t > 0 ? new Date(t).toISOString() : null; return gamesIn(w.eval('S').sched, L, POST_IDS, T); };
         const WAIT = 'Checking DraftKings’ current lines for this parlay’s games…', FIRST = 'Checking DraftKings’ lines first…';
-        const checked = t => `Checked against DraftKings’ lines at ${readTxt(t)}.`, said = (ok, of) => `DraftKings’ lines checked: Open in DraftKings opens ${ok === of ? (of === 1 ? 'the leg' : `the ${of} legs`) : `${ok} of the ${of} legs`}.`;
+        const said = (ok, of, games = 1) => `DraftKings’ lines checked: ${games > 1 ? `the ${games} games’ links open` : 'Open in DraftKings opens'} ${ok === of ? (of === 1 ? 'the leg' : `the ${of} legs`) : `${ok} of the ${of} legs`}.`;
+        /* the note's blocks (partsOf), the check's line held on its own (checkHeld): before the read, the mix's paragraph,
+           every leg's own link and the 2+ touchdowns on his anytime touchdown; after it, the runner and the tight end to add
+           by hand besides, and the total at its new number too */
+        const PRE_PARTS = 'first one legs swaphead swap swapprice check', POST_PARTS = 'first hand one legs swaphead swap swapprice check';
+        /* the row of game buttons, its first (the game of the card's first leg), and the row hidden and empty, as it is while
+           the card reads (the read can change the plan) */
+        const gb = () => d.getElementById('pcDkGames'), firstGame = () => gb() && gb().querySelector('[data-pc-dkgame]');
+        const gbOff = () => !!gb() && gb().hidden && !gb().children.length && !gb().textContent.trim();
+        /* every leg's own link in the note, by its address, against some ids */
+        const legHrefs = () => [...note().querySelectorAll('a[data-pc-dkleg]')].map(a => a.getAttribute('href')).join(' '), eachOf = ids => ids.map(x => DKU([x])).join(' ');
+        const focusIs = () => d.activeElement === d.body ? 'the page\'s body' : d.activeElement ? (d.activeElement.id || d.activeElement.getAttribute('data-pc-dkgame') || d.activeElement.outerHTML.slice(0, 80)) : 'nothing';
         /* the moved rule's words: a main line, or a rung whose DraftKings line moved to its own number (k-0.5 or the whole
            k-1), added by hand there; a rung moved to any other, its own bet named and the main line said to be another */
         const movedWhy = (stat, at, k, main) => `DraftKings has moved his ${stat} line to ${at} since its prices were read (${readTxt(AT_P)}), and its slip drops a moved line: `
@@ -2423,41 +2505,57 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         const missOf = k => txt(note().querySelector(`[data-pc-dkmiss="${n[k]}"]`)), swapOf = k => txt(note().querySelector(`[data-pc-dkswap="${n[k]}"]`));
         const idle = () => !dkA.hasAttribute('aria-disabled') && !dkA.hasAttribute('aria-busy') && !dkA.hasAttribute('role') && !dkA.hasAttribute('tabindex') && !link.hasAttribute('aria-disabled') && !link.hasAttribute('aria-busy');
         /* while the card reads: the button waiting, Share link too, and the note its waiting line alone, with no leg's own
-           link (the plan before the read may stand on ids the read finds dead), no list and no check line */
+           link (the plan before the read may stand on ids the read finds dead), no list and no check line; and (app v121)
+           no game button, the row hidden and empty, though the plan before the read is a mix */
         const waitingNow = () => ckS().state === 'busy' && !dkA.hidden && txt(dkA) === 'Checking DraftKings’ lines…' && !dkA.hasAttribute('href') && dkA.getAttribute('aria-disabled') === 'true' && dkA.getAttribute('aria-busy') === 'true'
           && link.getAttribute('aria-disabled') === 'true' && txt(note()) === WAIT && note().querySelectorAll('p').length === 1 && !!note().querySelector('[data-pc-dkwait]')
-          && !note().querySelector('[data-pc-dkleg], a[href], [data-pc-dkmiss], [data-pc-dkswap], [data-pc-dkcheck], [data-pc-dkread]');
+          && !note().querySelector('[data-pc-dkleg], a[href], [data-pc-dkmiss], [data-pc-dkswap], [data-pc-dkcheck], [data-pc-dkread]') && gbOff();
         const isSb = u => /\/scoreboard\?dates=/.test(u), evOf = u => (/\/events\/(\d+)\/competitions\//.exec(u) || [])[1] || null;
         const wkQ = wk <= 18 ? `seasontype=2&week=${wk}` : `seasontype=3&week=${wk >= 22 ? 5 : wk - 18}`;
         const slipRows = () => Object.fromEntries([...d.querySelectorAll('#parlayBody tr.legrow')].map(r => [txt((r.querySelectorAll('td')[1] || r).querySelector('b')), (x => x ? txt(x) : null)(r.querySelector('small.dkslip'))]));
         const espnIdle = async () => { for (let i = 0; i < 400 && w.eval('ESPN_RUN.busy'); i++) await wait(25); await wait(40); };
         const S0 = w.eval('JSON.stringify([S.parlay, S.saved, S.stake])');
         const keys0 = Object.keys(all(w)).filter(k => k !== PROP_KEY && k !== PRESS_KEY).sort().join();
-        /* (a) the scoreboard fails: the buttons work on the plan as it was, every leg on the pull's own id, and the card
-           says it could not check, in the note and in its status line; the read asked for the scoreboard once a game and
+        /* the fixture: the first game's total on its game lines beside six legs of the second on its player prices, each game
+           read at its own time, the first game's the older */
+        chk(G_PRE.length === 2 && multiOf(G_PRE) && JSON.stringify(gOf(G_PRE, g1.id).ids) === JSON.stringify([ID.tot]) && gOf(G_PRE, g2.id).ids.length === 6
+          && gOf(G_PRE, g1.id).at === AT_G && gOf(G_PRE, g2.id).at === AT_P && oldestOwn([AT_G, AT_P]) === AT_G,
+          `${how}: the fixture is not the first game's total beside six legs of the second, a same-game parlay mixed with another game, each game read at its own time: ` + JSON.stringify(G_PRE));
+        /* (a) the scoreboard fails: the buttons work on the plan as it was, every leg on the pull's own id, a button a game
+           (one for the first game's total, one for the second game's six legs in the card's order, in the order their first
+           legs come) and no link for them all, the note the mix's paragraph and every leg's own link, and the card says it
+           could not check, the note's last line and its status line; the read asked for the scoreboard once a game and
            nothing else */
         net.fail = true; let n0 = net.log.length;
         d.getElementById('pFinish').click(); await wait(20); await cardSettled(w); await wait(10);
-        chk(!md.hidden && ckS().state === 'failed' && idle() && dkA.getAttribute('href') === DKU(PRE) && txt(dkA) === 'Open in DraftKings'
-          && txt(note()).endsWith(COULD) && note().querySelectorAll('[data-pc-dkcheck]').length === 1 && !!note().querySelector('[data-pc-dkcheck="failed"]') && !note().querySelector('[data-pc-dkmiss]') && msg() === COULD,
-          `${how}: with ESPN's scoreboard failing (500) the card does not open every leg on the pull's ids with the line (and its status line) saying it could not check: ` + txt(dkA) + ' ' + dkA.getAttribute('href') + ' / ' + txt(note()).slice(-220) + ' / ' + msg());
+        { const bad = gameBtnsIn(d, G_PRE, null), cb = checkHeld(note(), { st: 'failed' });
+          chk(!md.hidden && ckS().state === 'failed' && idle() && dkA.hidden && !bad && txt(note().firstElementChild) === multiNote(2, AT_G) && partsOf(note()) === PRE_PARTS && !cb
+            && legHrefs() === eachOf(PRE) && swapOf('teTd') === `${n.teTd}. Card End, 2+ touchdowns: goes on as anytime touchdown` && note().querySelectorAll('[data-pc-dkswap]').length === 1 && !note().querySelector('[data-pc-dkmiss]')
+            && ![...md.querySelectorAll('a[href]')].some(a => a.getAttribute('href') === DKU(PRE)) && msg() === COULD,
+            `${how}: with ESPN's scoreboard failing (500) the card does not give each game a button on the pull's ids (the first game's total; the second game's six legs, in the card's order), its note the mix's paragraph and every leg's own link, ending on the line (and its status line) saying it could not check: `
+              + [ckS().state, bad, cb, partsOf(note()), txt(note()).slice(-220), msg()].filter(Boolean).join(' / ')); }
         chk(net.log.slice(n0).length === 2 && net.log.slice(n0).every(u => isSb(u) && u.includes(`dates=${SEA}&${wkQ}&`)), `${how}: with the scoreboard failing, the read asked for more than the parlay's week's scoreboard once a game: ` + net.log.slice(n0).join(' | '));
         d.getElementById('pcClose').click(); await wait(10); net.fail = false;
         /* (b) the read held: the buttons wait (their words, no address, aria-disabled and aria-busy, a press of either doing
-           nothing but Share link's saying the card is checking first) while Download works, and the note says only that
-           it is checking; past the cap they work on the plan as it stands and the card says it could not check; let go
-           after the cap, the read still updates the same card, the page under it drawn once for its two games. The focus,
-           on Open in DraftKings while it waits and then on the receiver's own link in the note, stays on each */
+           nothing but Share link's saying the card is checking first) while Download works, the note says only that it is
+           checking, and no game button is shown; past the cap they work on the plan as it stands, a button a game, and the
+           card says it could not check; let go after the cap, the read still updates the same card, the page under it
+           drawn once for its two games. The focus, on the waiting Open in DraftKings, goes to the first game's button at
+           the cap; then, on the receiver's own link in the note, it stays there through the read's redraw */
         net.hold = gate(); n0 = net.log.length;
         const tOpen = Date.now(); d.getElementById('pFinish').click(); await wait(30);
         w.eval('window.__rd=0');
-        chk(waitingNow(), `${how}: while the card reads, Open in DraftKings does not wait ("Checking DraftKings’ lines…", no address, aria-disabled and aria-busy), Share link is not aria-disabled, or the note is not its waiting line alone with no leg's own link: ` + dkA.outerHTML + ' / ' + link.outerHTML + ' / ' + note().innerHTML);
+        chk(waitingNow(), `${how}: while the card reads, Open in DraftKings does not wait ("Checking DraftKings’ lines…", no address, aria-disabled and aria-busy), Share link is not aria-disabled, the note is not its waiting line alone with no leg's own link, or a game button shows: ` + dkA.outerHTML + ' / ' + link.outerHTML + ' / ' + note().innerHTML + ' / ' + (gb() ? gb().outerHTML : 'no #pcDkGames'));
+        /* (app v121) the game buttons stay hidden, and empty, until the check settles: the plan before the read is a mix, but
+           the read can change it, so only the waiting Open in DraftKings stands in the action row */
+        chk(gbOff() && !md.querySelector('#pcDkGames a, a[data-pc-dkgame]') && !dkA.hidden, `${how}: while the card reads, the game buttons of the plan before the read are shown (or Open in DraftKings, waiting, is not), before the check settles: ` + (gb() ? gb().outerHTML : 'no #pcDkGames') + ' / ' + dkA.outerHTML);
         { const ev = new w.MouseEvent('click', { bubbles: true, cancelable: true }), went = dkA.dispatchEvent(ev); link.click(); await wait(30);
           chk(!went && shared.length === 0 && !md.hidden && msg() === FIRST && ckS().state === 'busy', `${how}: while the card reads, a press of Open in DraftKings did something, or one of Share link did more than say "${FIRST}": ` + JSON.stringify({ went, shared: shared.length, msg: msg() })); }
         { const c0 = rec.clicks.length; d.getElementById('pcDownload').click(); await wait(80);
           chk(rec.clicks.length === c0 + 1 && ckS().state === 'busy' && !md.hidden, `${how}: Download does not work at once while the card reads`); }
-        { const f = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && !el.hidden && !el.closest('[hidden]')).map(el => el.id || 'leg' + el.getAttribute('data-pc-dkleg')).join(' ');
-          chk(f === 'pcClose pcDk pcLink pcDownload pcAgain', `${how}: while the card reads its controls are not Close, Open in DraftKings (waiting, in its place), Share link, Download and Start over alone: ` + f); }
+        { const f = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && !el.hidden && !el.closest('[hidden]'))
+            .map(el => el.id || (el.hasAttribute('data-pc-dkgame') ? 'game:' + el.getAttribute('data-pc-dkgame') : 'leg' + el.getAttribute('data-pc-dkleg'))).join(' ');
+          chk(f === 'pcClose pcDk pcLink pcDownload pcAgain', `${how}: while the card reads its controls are not Close, Open in DraftKings (waiting, in its place, no game button), Share link, Download and Start over alone: ` + f); }
         chk(net.log.slice(n0).length === 1 && isSb(net.log[n0]), `${how}: the held read asked for more than its first game's scoreboard: ` + net.log.slice(n0).join(' | '));
         dkA.focus();
         /* the cap, on the real clock: still waiting a second and a half before it, and past it within a few seconds of its
@@ -2468,24 +2566,41 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         for (let i = 0; i < 240 && ckS().state === 'busy'; i++) await wait(25);
         chk(early === 'busy' && earlyWait, `${how}: the card stopped waiting for its read before its 10-second cap, or did not wait as it should (${early} at ${tEarly} ms${earlyWait ? '' : ', not waiting as above: ' + txt(dkA) + ' / ' + txt(note()).slice(0, 120)})`);
         const wrLink = () => note().querySelector(`a[data-pc-dkleg="${n.wr}"]`);
-        chk(ckS().state === 'late' && idle() && dkA.getAttribute('href') === DKU(PRE) && txt(dkA) === 'Open in DraftKings' && txt(note()).endsWith(COULD) && msg() === COULD && !!wrLink() && d.activeElement === dkA,
-          `${how}: past its 10-second cap the card does not open every leg on the plan as it stood, say (in the note and its status line) it could not check, and keep the focus on Open in DraftKings: ` + ckS().state + ' ' + txt(dkA) + ' / ' + txt(note()).slice(-200) + ' / ' + msg() + ' / focus ' + (d.activeElement && (d.activeElement.id || d.activeElement.outerHTML.slice(0, 60))));
+        { const bad = gameBtnsIn(d, G_PRE, null), cb = checkHeld(note(), { st: 'failed' });
+          chk(ckS().state === 'late' && idle() && dkA.hidden && !bad && txt(note().firstElementChild) === multiNote(2, AT_G) && partsOf(note()) === PRE_PARTS && !cb && legHrefs() === eachOf(PRE) && msg() === COULD && !!wrLink(),
+            `${how}: past its 10-second cap the card does not give each game a button on the plan as it stood, with the note's mix paragraph and every leg's own link, or does not say (in the note's last line and its status line) it could not check: `
+              + [ckS().state, bad, cb, partsOf(note()), txt(note()).slice(-200), msg()].filter(Boolean).join(' / ')); }
+        /* the focus that was on the waiting Open in DraftKings, hidden now, is on the first game's button (the game of the
+           card's first leg), never left on a hidden control or the page's body */
+        chk(!!firstGame() && firstGame().getAttribute('data-pc-dkgame') === (G_PRE[0] || {}).gid && d.activeElement === firstGame() && md.contains(d.activeElement),
+          `${how}: past the cap, the focus that was on the waiting Open in DraftKings did not move to the first game's button (${(G_PRE[0] || {}).gid}): ` + focusIs());
         link.click(); await wait(30);
-        chk(shared.length === 1 && shared[0].text.split('\n').includes(DKU(PRE)), `${how}: past the cap Share link does not send the plan as it stands: ` + JSON.stringify(shared[0] || null));
+        { const t = (shared[0] || {}).text || '';
+          chk(shared.length === 1 && !('url' in shared[0]) && t.includes(multiLines(G_PRE, AT_G, null)) && G_PRE.every(x => t.split('\n').includes(DKU(x.ids))) && !t.includes(DKU(PRE)) && !/DraftKings betslip \(opens|Add by hand/.test(t),
+            `${how}: past the cap Share link does not send the plan as it stands, each game's link alone on its line under the mix's header, then the read: ` + JSON.stringify(shared[0] || null)); }
         if (wrLink()) wrLink().focus();
         const tGo = w.Date.now(); net.hold.go(); net.hold = null; await espnIdle(); for (let i = 0; i < 400 && ckS().state === 'late'; i++) await wait(25); const tDone = w.Date.now();
         const OUT = w.eval('ESPN_OUT'), whens = [g1.id, g2.id].map(id => OUT[id] && OUT[id].when), t1 = Math.min(...whens);
-        const ok = POST.length;
-        chk(ckS().state === 'done' && idle() && txt(dkA) === `Open ${ok} of ${NL} legs in DraftKings` && dkA.getAttribute('href') === DKU(POST),
-          `${how}: once the read let go after the cap answers, the card does not open the ${ok} legs DraftKings still has, the total at its new number: ` + ckS().state + ' ' + txt(dkA) + ' ' + dkA.getAttribute('href'));
-        chk(msg() === said(ok, NL), `${how}: once the read is done the card's status line does not say what Open in DraftKings opens now (${said(ok, NL)}): ` + msg());
+        /* the plan after the read, a button a game: the first game's total on the read's new id, dated by the read that gave
+           it (within the read's own time), the second game's four legs DraftKings still has, the moved runner and tight end
+           off the slip; still a mix of a same-game parlay with another game */
+        const ok = POST.length, G_POST = gPost(), tIdat = postT();
+        chk(G_POST.length === 2 && multiOf(G_POST) && JSON.stringify(gOf(G_POST, g1.id).ids) === JSON.stringify([ID.tot2]) && gOf(G_POST, g2.id).ids.length === 4 && tIdat >= tGo && tIdat <= tDone
+          && oldestOwn(G_POST.map(x => x.at)) === AT_P,
+          `${how}: after the read, this check's own plan is not the first game's total on the read's id (read between ${tGo} and ${tDone}: ${tIdat}) beside four legs of the second, its oldest read the second game's player prices: ` + JSON.stringify(G_POST));
+        { const bad = gameBtnsIn(d, G_POST, null);
+          chk(ckS().state === 'done' && idle() && dkA.hidden && !bad,
+            `${how}: once the read let go after the cap answers, the card does not give each game a button on the ${ok} legs DraftKings still has (the first game's total at its new number on the read's id, the second game's four), each titled with its own game's oldest read: ` + [ckS().state, bad].filter(Boolean).join(' / ')); }
+        chk(msg() === said(ok, NL, G_POST.length), `${how}: once the read is done the card's status line does not say what the games' links open now (${said(ok, NL, G_POST.length)}): ` + msg());
         chk(w.eval('window.__rd') === 1, `${how}: the page under the card was drawn ${w.eval('window.__rd')} times for the card's read of its two games, not once when the last was read`);
         chk(missOf('rb') === RB_MOVED && missOf('te') === TE_MOVED && note().querySelectorAll('[data-pc-dkmiss]').length === 2,
           `${how}: a player's main line and a rung DraftKings has moved since the pull read their ids are not left off, each with the moved rule's words (the rung, moved off its own number, naming its own bet): ` + JSON.stringify([missOf('rb'), missOf('te')]));
         chk(swapOf('tot') === `${n.tot}. ${g1.a} at ${g1.h}, Over 43.5 points: goes on as Over 44.5` && swapOf('teTd') === `${n.teTd}. Card End, 2+ touchdowns: goes on as anytime touchdown` && note().querySelectorAll('[data-pc-dkswap]').length === 2,
           `${how}: the total DraftKings has moved does not go on at its new number on the read's id, said so, or the 2+ touchdowns not as his anytime touchdown: ` + [...note().querySelectorAll('[data-pc-dkswap]')].map(txt).join(' | '));
-        chk(whens.every(t => t >= tGo && t <= tDone) && txt(note()).endsWith(checked(t1)) && note().querySelectorAll('[data-pc-dkcheck]').length === 1 && !!note().querySelector('[data-pc-dkcheck="done"]'),
-          `${how}: the note does not end on when the card checked DraftKings' lines (${checked(t1)}), or still says it could not: ` + txt(note()).slice(-200));
+        { const cb = checkHeld(note(), { st: 'done', t: t1 });
+          chk(whens.every(t => t >= tGo && t <= tDone) && !cb && partsOf(note()) === POST_PARTS && txt(note().firstElementChild) === multiNote(2, AT_P, true),
+            `${how}: the note is not the mix's paragraph (dated by the oldest read of all), the legs to add by hand, every leg's own link and the converted legs, ending on when the card checked DraftKings' lines (${checked(t1)}): `
+              + [cb, partsOf(note()), txt(note().firstElementChild), txt(note()).slice(-200)].filter(Boolean).join(' / ')); }
         chk(!!wrLink() && d.activeElement === wrLink() && wrLink().getAttribute('href') === DKU([ID.wr]) && md.contains(d.activeElement) && d.body.classList.contains('modal-open'),
           `${how}: the focus did not stay on the receiver's own link through the read's redraw, his unmoved line lost its id, or the page under the card was let scroll again`);
         { const got = net.log.slice(n0), sbs = got.filter(isSb), evs = got.filter(u => !isSb(u)).map(evOf);
@@ -2493,10 +2608,10 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             `${how}: the card's read did not ask for exactly the parlay's games (its week's scoreboard once a game and each game's own player lines), or asked about another game: ` + got.map(u => u.replace(/https:\/\/[^/]+/, '').slice(0, 90)).join(' | ')); }
         link.click(); await wait(30);
         { const t2 = (shared[1] || {}).text || '', hand = [n.rb, n.te].sort((a, b) => a - b);
-          chk(t2.includes(`DraftKings betslip (opens ${ok} of the ${NL} legs as DraftKings had them; add legs ${hand[0]} and ${hand[1]} by hand):\n${DKU(POST)}\n`)
+          chk(shared.length === 2 && t2.includes(multiLines(G_POST, AT_P, numsOwn(hand))) && G_POST.every(x => t2.split('\n').includes(DKU(x.ids))) && !t2.includes(DKU(POST)) && !/DraftKings betslip \(opens/.test(t2)
             && t2.includes(`\n${n.rb}. Card Runner Over 64.5 rushing yards (${movedBrief(66.5, 64.5, true)})`) && t2.includes(`\n${n.te}. Card End 4+ receptions (${movedBrief(4.5, 4, false)})`)
             && t2.includes(`On DraftKings’ slip at its own line: ${[['tot', 'Over 44.5'], ['teTd', 'anytime touchdown']].sort((a, b) => n[a[0]] - n[b[0]]).map(([k, x]) => `leg ${n[k]} as ${x}`).join('; ')} (DraftKings prices them at its own line, so its payout can differ)`),
-            `${how}: Share link's text does not open the ${ok} legs and name the two DraftKings has moved, each with the moved rule's few words: ` + JSON.stringify(t2)); }
+            `${how}: Share link's text does not give each game's link to the ${ok} legs DraftKings still has, alone on its line under the mix's header (saying which legs to add by hand), and name the two DraftKings has moved, each with the moved rule's few words: ` + JSON.stringify(t2)); }
         /* the builder's rows say it too, from the card's own plan, as the read's redraw drew them; the receiver's receptions,
            which the read has no line for, on his id with nothing under it */
         { const r = slipRows(), want = { 'Over 43.5 points': 'On DraftKings as Over 44.5', 'Over 64.5 rushing yards': `Not on DraftKings’ slip yet: ${movedBrief(66.5, 64.5, true)}`, 'Over 55.5 receiving yards': null,
@@ -2526,27 +2641,41 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         /* (c) opened again within two minutes: nothing read, and the same plan and line at once */
         d.getElementById('pcClose').click(); await wait(10);
         { const n3 = net.log.length; d.getElementById('pFinish').click(); const st = ckS().state; await wait(30);
-          chk(net.log.length === n3 && st === 'done' && idle() && dkA.getAttribute('href') === DKU(POST) && txt(note()).endsWith(checked(t1)) && missOf('rb') === RB_MOVED,
-            `${how}: opened again within two minutes, the card read again or did not stand at once on the read a moment ago: ` + JSON.stringify({ asked: net.log.slice(n3), st })); }
+          const bad = gameBtnsIn(d, G_POST, null), cb = checkHeld(note(), { st: 'done', t: t1 });
+          chk(net.log.length === n3 && st === 'done' && idle() && dkA.hidden && !bad && !cb && partsOf(note()) === POST_PARTS && missOf('rb') === RB_MOVED,
+            `${how}: opened again within two minutes, the card read again or did not stand at once on the read a moment ago (a button a game, the note ending on that read): ` + JSON.stringify({ asked: net.log.slice(n3), st, bad, cb, parts: partsOf(note()) })); }
         d.getElementById('pcClose').click(); await wait(10);
         /* the reads above made three minutes ago (the page's own record of them, moved back), so a card opened now reads again */
         const older = (ids = [g1.id, g2.id]) => w.eval(`for (const id of ${JSON.stringify(ids)}) if (ESPN_OUT[id]) ESPN_OUT[id].when -= ${FRESH_MS + 60e3}`);
         const setParlay = async o => { w.eval(`S.parlay=${JSON.stringify(o)}; save(); renderParlay()`); await wait(20); };
+        /* (b2) the check settling into the mix's plan before its cap: a card opened three minutes after the last read reads
+           again, waiting with no game button; the focus on its waiting Open in DraftKings when the read ends goes to the
+           first game's button (the game of the card's first leg), never left on the hidden Open in DraftKings or the page's
+           body, and the status line says what the games' links open */
+        older(); net.hold = gate();
+        d.getElementById('pFinish').click(); await wait(30);
+        { const busy = ckS().state === 'busy' && waitingNow(); dkA.focus(); const on = d.activeElement === dkA;
+          net.hold.go(); net.hold = null; await espnIdle(); await cardSettled(w); await wait(20);
+          const G = gPost(), f = firstGame(), bad = gameBtnsIn(d, G, null);
+          chk(busy && on && ckS().state === 'done' && dkA.hidden && !bad && !!f && f.getAttribute('data-pc-dkgame') === (G[0] || {}).gid && d.activeElement === f && msg() === said(POST.length, NL, G.length),
+            `${how}: a card that waited, the focus on its waiting Open in DraftKings, did not move the focus to the first game's button (${(G[0] || {}).gid}) when its read ended in the mix's plan, or did not say what the games' links open: `
+              + JSON.stringify({ busy, on, st: ckS().state, bad, focus: focusIs(), msg: msg() })); }
+        d.getElementById('pcClose').click(); await wait(10);
         /* (d) a card closed before its read ends is never drawn again from it, and the focus that went back to Finish
            stays there though the read's redraw replaces that button */
         older(); net.hold = gate();
         d.getElementById('pFinish').click(); await wait(30);
         chk(ckS().state === 'busy', `${how}: a card opened three minutes after the last read did not read again`);
         d.getElementById('pcClose').click(); await wait(10);
-        { const was = [dkA.outerHTML, note().innerHTML].join('|'), back = d.activeElement === d.getElementById('pFinish');
+        { const was = [dkA.outerHTML, gb().outerHTML, note().innerHTML].join('|'), back = d.activeElement === d.getElementById('pFinish');
           net.hold.go(); net.hold = null; await espnIdle();
-          chk(back && md.hidden && cardCheck(w) === null && [dkA.outerHTML, note().innerHTML].join('|') === was && d.activeElement === d.getElementById('pFinish') && !!d.activeElement,
+          chk(back && md.hidden && cardCheck(w) === null && [dkA.outerHTML, gb().outerHTML, note().innerHTML].join('|') === was && d.activeElement === d.getElementById('pFinish') && !!d.activeElement,
             `${how}: a card closed before its read ended was drawn again from it, opened again, or the focus left Finish when the read redrew the page`); }
         /* (e) a second card opened while the first one's read runs shows its own leg, waits for that read (a press already
            running), then stands on its own game's read: the receiver's line alone, on its id */
         const oneLeg = () => d.querySelectorAll('#pcView .pc-legs > li').length === 1;
         const oneNote = () => txt(note()).includes('opens the leg as DraftKings had it') && note().querySelectorAll('a[data-pc-dkleg]').length === 0;
-        const onePlan = () => oneLeg() && oneNote() && idle() && txt(dkA) === 'Open in DraftKings' && dkA.getAttribute('href') === DKU([ID.wr]);
+        const onePlan = () => oneLeg() && oneNote() && idle() && txt(dkA) === 'Open in DraftKings' && dkA.getAttribute('href') === DKU([ID.wr]) && !dkA.hidden && !gameBtnsIn(d, null);
         older(); net.hold = gate();
         d.getElementById('pFinish').click(); await wait(30);
         d.getElementById('pcClose').click(); await wait(10);
