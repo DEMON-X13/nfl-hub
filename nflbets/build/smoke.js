@@ -80,6 +80,26 @@ const BACKTEST_REAL = (() => { try { return fs.readFileSync(path.join(ROOT, 'pro
 const XBETS_REAL = fs.readFileSync(path.join(ROOT, 'liveparlays', 'xbets.json'), 'utf8');
 /* the prop model's storage key, part2's own (the build hands it to the page) */
 const PROP_KEY = fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 'utf8').match(/const SEASON=\d{4}, KEY='([^']+)';/)[1];
+/* the prop model's season, from the same line: the year the page's Refresh odds reader asks ESPN's scoreboard for */
+const PROP_SEASON = +fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 'utf8').match(/const SEASON=(\d{4}), KEY='[^']+';/)[1];
+/* the card's read settled (its DraftKings part final), at once on a card without one */
+const cardSettled = w => w.PARLAY_CARD && typeof w.PARLAY_CARD.checking === 'function' ? w.PARLAY_CARD.checking() : Promise.resolve();
+/* (19 October 2026) the parlay card reads DraftKings' current lines for its own games as it opens, through the page's
+   Refresh odds reader: for each game of its legs still to come, that week's scoreboard (scoreboard?dates=, ESPN's own
+   week numbering: the playoffs seasontype 3) and that game's player lines (an event's propBets on ESPN's core host).
+   cardReads holds the requests a card made (urls: every request since it opened) to exactly that: one scoreboard of the
+   parlay's week a game and, since this smoke's scoreboard stand-in names no ESPN event, nothing on ESPN's core host at
+   all (where a scoreboard names its events, the player lines of the parlay's own games alone: smoke_live.js's J2 holds
+   that). The requests of a card's read that keeps to it are kept in CARD_CALLS, the only ESPN requests the page may make
+   with no press (below) */
+const espnWeekOwn = w => +w <= 18 ? `seasontype=2&week=${+w}` : `seasontype=3&week=${+w >= 22 ? 5 : +w - 18}`;
+const CARD_CALLS = new Set();
+const cardReads = (urls, legs, started) => { const gids = [...new Set(legs.map(l => l.gid))].filter(id => !started(id)), wk = legs.length ? legs[0].week : null;
+  const got = urls.filter(u => /\/scoreboard\?dates=|sports\.core\.api\.espn\.com/.test(u)), sb = got.filter(u => /\/scoreboard\?dates=/.test(u));
+  const ok = sb.length === gids.length && sb.every(u => u.includes(`dates=${PROP_SEASON}&${espnWeekOwn(wk)}&`)) && got.every(u => /\/scoreboard\?dates=/.test(u));
+  if (ok) got.forEach(u => CARD_CALLS.add(u));
+  return ok ? null
+    : `${gids.length} game${gids.length === 1 ? '' : 's'} to come, week ${wk}: ` + (got.map(u => u.replace(/https:\/\/[^/]+/, '').slice(0, 90)).join(' | ') || 'no request'); };
 /* the betting app's own key and season: the X Bet Log is that season's */
 const { BET_KEY, SEASON: BET_SEASON } = require(path.join(ROOT, 'betting', 'tools', 'build.js'));
 const ELO_M = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
@@ -2151,8 +2171,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           w.eval(`PAY.dk=${JSON.stringify(dk)}`); }
         /* Finish: the parlay card for the level, named for its game, on the amount in the box, saving nothing */
         const n0 = w.eval('S.saved.length'), keys0 = JSON.stringify(Object.keys(w.localStorage).sort());
-        const fb = d.querySelector(finSel); fb.click(); await wait(40);
+        const c0 = calls.length, fb = d.querySelector(finSel); fb.click(); await wait(40); await cardSettled(w);
         const view = d.getElementById('pcView'), cash = [...view.querySelectorAll('.pc-money b')].map(txt).join(' | ');
+        { const bad = cardReads(calls.slice(c0).map(c => c.url), t.legs, id => { const x = w.eval('S').sched.find(y => y.id === id); return !x || w.eval('gameStarted')(x); });
+          chk(!bad, `Finish on ${spGame.id}'s ${t.label} level: the card's check of DraftKings' lines did not read exactly its own game (its week's scoreboard), or read anything else: ` + bad); }
         chk(!d.getElementById('pcModal').hidden && txt(view).includes(`${t.label} parlay · ${gameW}`) && t.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label))
           && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t.dec}))`).replace('-', '−')
           && txt(view.querySelector('.pc-chance')).startsWith(t.fair && t.fair.p != null ? `Fair chance all ${t.n} land ${pct1(t.fair.p)}${t.fair.est ? ' (est.)' : ''} model says ${pct1(t.corr)} · the price says ` : `Model’s chance all ${t.n} land ${pct1(t.corr)} · the price says `),
@@ -4250,7 +4272,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const slipLines = [...d.querySelectorAll('#parlayBody tr.legrow')].map(r => { const x = r.querySelector('small.dkslip'); return x ? txt(x) : null; });
       chk(!!q && slipLines.length === q.legs.length && plan.every((p, i) => slipLines[i] === (p.swap ? `On DraftKings as ${p.swap}` : null)),
         `the builder does not say exactly which of its legs go on DraftKings' slip at DraftKings' number, on the payload's own ids: ${JSON.stringify(slipLines)} for ${JSON.stringify(plan)}`);
-      if (fin && !fin.disabled) { fin.click(); await wait(30); }
+      const c0 = calls.length;
+      if (fin && !fin.disabled) { fin.click(); await wait(30); await cardSettled(w); }
+      if (q) { const bad = cardReads(calls.slice(c0).map(c => c.url), q.legs, id => { const x = S.sched.find(y => y.id === id); return !x || started(x); });
+        chk(!bad, 'Finish on the builder\'s parlay on the payload\'s own ids: the card\'s check of DraftKings\' lines did not read exactly its own games (their week\'s scoreboard once a game), or read anything else: ' + bad); }
       const a = d.getElementById('pcDk'), ids = plan.map(p => p.id), sws = plan.map((p, i) => p.swap ? i + 1 : 0).filter(Boolean);
       /* (app v121) the money line and the Under are two legs of one game, so with the other game's spread they mix a
          same-game parlay with another game, which one DraftKings link does not open: a button for each game, its own legs'
@@ -4306,7 +4331,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      expectations over live structures; and hold with no game to come, the off-season included ---- */
   { const S = w.eval('S'), ko0 = x => w.eval('kickoff')(x).getTime(), g = hasPb ? (w.eval('pbGames()').slice().sort((a, b) => ko0(b) - ko0(a))[0] || null) : null, ESR = ESPN_RULE.make(w), has = w.eval('typeof espnRefresh') === 'function' && w.eval('typeof espnWhen') === 'function';
     chk(has, 'the page has no Refresh odds reader (espnRefresh, espnWhen)');
-    chk(!calls.some(c => /sports\.core\.api\.espn\.com|propBets/.test(c.url)), 'the page asked ESPN\'s core host for something on load, with no press: ' + calls.filter(c => /sports\.core|propBets/.test(c.url)).map(c => c.url).slice(0, 3).join(' '));
+    /* (19 October 2026) a parlay card's read of its own games, as cardReads held it, is the one read with no press */
+    { const noPress = calls.filter(c => /sports\.core\.api\.espn\.com|propBets/.test(c.url) && !CARD_CALLS.has(c.url));
+      chk(!noPress.length, 'the page asked ESPN\'s core host for something on load, with no press and no parlay card\'s read of its own games: ' + noPress.map(c => c.url).slice(0, 3).join(' ')); }
     if (!g || !hasPb || !has) console.log('  (no game left to kick off: Refresh odds is not pressed, and no kept read is reloaded)');
     else { const P = w.eval('PAY'), wk = String(g.w), clone = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v)), fmt = w.eval('fmtML'), when = w.eval('espnWhen'), clk = w.eval('espnClock');
       const games = w.eval('pbGames()').filter(x => String(x.w) === wk), others = games.filter(x => x.id !== g.id), gN = others[0] || null, gF = others[1] || null;
@@ -4325,6 +4352,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const reset = () => { unapply(); w.eval('ESPN_LIVE={}; ESPN_OUT={}; ESPN_NAMES={}; ESPN_SEQ++; PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_TOP_CACHE=new Map(); SP_CACHE=new Map()'); };
       const pressIn = async (ww, b) => { if (b) { b.focus(); b.click(); } for (let i = 0; i < 400 && ww.eval('ESPN_RUN.busy'); i++) await wait(25); await wait(30); }, press = b => pressIn(w, b);
       try {
+        /* the parlay cards opened above read DraftKings' lines for their games as they opened (19 October 2026). This
+           smoke's scoreboard stand-in has no DraftKings odds and no event ids, so they put no line on the page and kept
+           nothing (held here), and left only what each found (ESPN_OUT), which a reload does not keep: set aside, so the
+           buttons are seen as on a load with no press */
+        chk(!Object.keys(w.eval('ESPN_LIVE')).length && !Object.keys(w.eval('ESPN_GL')).length && w.localStorage.getItem('props_press_v1') === null,
+          'the parlay cards\' reads of DraftKings\' lines put a line on the page or kept a read, from a scoreboard with no odds and no player lines');
+        w.eval('ESPN_OUT={}; espnPaint()');
         /* the buttons and their status lines before a press */
         { const pub = `Prices as published ${when(P.baked_at)}.`, b = d.querySelector('#pbPanel [data-espn-refresh="week"]'), st = d.querySelector('#pbPanel [data-espn-status="week"]');
           chk(!!b && txt(b) === 'Refresh odds' && w.getComputedStyle(b).minHeight === '44px' && !!st && st.getAttribute('aria-live') === 'polite' && b.getAttribute('aria-describedby') === st.id && txt(st) === pub,
