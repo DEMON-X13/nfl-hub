@@ -4153,6 +4153,14 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           { const sts = MU.stats.WR.filter(st => v.stats[st]), trusted = st => { const p = (MU.record['WR|' + st] || {}).past; return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
             chk(statRows.every((tr, i) => tr.classList.contains('pe-weak') === !trusted(sts[i])), 'a stat is faded where it should not be, or the other way round'); }
           chk(view.querySelectorAll('.pe-pl-def span').length === 3 && /of \d+/.test(txt(view.querySelector('.pe-pl-def'))), 'the window does not rank the three units he faces');
+          /* each of the three ranked as the matchup formula ranks them, the smoke's own reading (mmRankOwn's map of the
+             clubs' units): clubs level on a unit share its rank, one more than the clubs above them, as on the Mismatches
+             and the Game snapshot's Starters headers (20 October 2026: ATL and NO level on the secondary read 24th and 23rd) */
+          { const defs = {}; for (const x of Object.values(MU.players || {})) if (x.opp_def) defs[x.opp] = x.opp_def;
+            Object.assign(defs, (MU.league && MU.league.defs) || {});
+            const ks = Object.keys(defs), want = ['DL', 'LB', 'DB'].map(u => defs[v.opp] ? `${ordOwn(1 + ks.filter(t => defs[t][u] > defs[v.opp][u]).length)} of ${ks.length}` : '–');
+            const got = [...view.querySelectorAll('.pe-pl-def span b')].map(txt);
+            chk(got.join('|') === want.join('|'), `a player's window does not rank the units he faces as the matchup formula does, level clubs sharing a rank: ${got.join(', ')} against ${want.join(', ')}`); }
           d.getElementById('pePlClose').click(); await wait(20);
           chk(!plOpen(), 'Close did not close the player window');
           withMu.querySelector('button.pe-plbtn').click(); await wait(20);
@@ -5967,7 +5975,8 @@ async function snapshotChecks() {
        nothing else on the row does; each defensive group's header carries both teams' unit as the
        matchup formula ranks it (mu.league.defs, 1st the best), the better one marked */
     { const bad = [], defs = (eloMu.league && eloMu.league.defs) || {}, nD = Object.keys(defs).length;
-      const urk = (t, u) => defs[t] ? Object.keys(defs).sort((x, y) => defs[y][u] - defs[x][u]).indexOf(t) + 1 : null;
+      /* clubs level on a unit share its rank, one more than the clubs above them, as mmRankOwn ranks the Mismatches */
+      const urk = (t, u) => defs[t] ? 1 + Object.keys(defs).filter(x => defs[x][u] > defs[t][u]).length : null;
       let marks = 0, units = 0;
       for (const tr of md.querySelectorAll('#gsPos tbody tr')) {
         if (tr.classList.contains('gs-grp')) { const u = tr.dataset.gsGrp;

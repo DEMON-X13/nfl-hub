@@ -248,12 +248,12 @@ window.eloGameOn=gameOn;
    rating on the position's bell curve); null when he has no place this season */
 const seOf=pid=>{ const e=D.players&&D.players.players&&D.players.players[pid]; return e&&e.se!=null?e.se:null; };
 /* each defence's units ranked across the league (`league.defs`, all 32), 1st the best (the
-   highest rated); a file without it falls back to the teams playing this week */
+   highest rated), clubs level on a unit sharing its rank; a file without it falls back to the teams playing this week */
 function defRanks(){
   const byTeam={}; for(const v of Object.values((D.mu&&D.mu.players)||{})) if(v.opp_def) byTeam[v.opp]=v.opp_def;
   if(D.mu&&D.mu.league&&D.mu.league.defs) Object.assign(byTeam,D.mu.league.defs);
   const teams=Object.keys(byTeam), out={n:teams.length};
-  for(const u of ['DL','LB','DB']){ const order=teams.slice().sort((a,b)=>byTeam[b][u]-byTeam[a][u]); out[u]=Object.fromEntries(order.map((t,i)=>[t,i+1])); }
+  for(const u of ['DL','LB','DB']) out[u]=Object.fromEntries(teams.map(t=>[t,1+teams.filter(o=>byTeam[o][u]>byTeam[t][u]).length]));
   return out;
 }
 const UNIT_NAME={DL:'Pass rush and run front (DL)',LB:'Linebackers',DB:'Secondary'};
@@ -1212,9 +1212,12 @@ function mismatches(){
   const byTeam={}; for(const v of P) byTeam[v.opp]=v.opp_def;
   if(L.defs) Object.assign(byTeam,L.defs);
   for(const g of Object.keys(MM_UNIT)){ const vals=Object.values(byTeam).map(d=>MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length); dz[g]=zs(vals); }
-  /* each unit ranked among the league's defences (this week's without league.defs), 1 the best */
-  const rankOf={}; for(const g of Object.keys(MM_UNIT)){ const vals=Object.entries(byTeam).map(([t,d])=>[t,MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length]).sort((x,y)=>y[1]-x[1]);
-    rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t],i)=>[t,i+1]))}; }
+  /* each unit ranked among the league's defences (this week's without league.defs), 1 the best; clubs level on it
+     share a rank, one more than the clubs above them (20 October 2026: ATL and NO, level at 1512.6 on the secondary,
+     read 24th and 23rd here by the order the page first met them as opponents, and the other way round in the Game
+     snapshot's Starters headers, which sorted league.defs' own order) */
+  const rankOf={}; for(const g of Object.keys(MM_UNIT)){ const vals=Object.entries(byTeam).map(([t,d])=>[t,MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length]);
+    rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t,x])=>[t,1+vals.filter(([,y])=>y>x).length]))}; }
   return P.filter(v=>pz[v.group]).map(v=>{ const d=unitOf(v), a=pz[v.group](v.elo), b=dz[v.group](d);
       const lead=MM_LEAD[v.group], st=v.stats&&v.stats[lead];
       return {...v,unit:Math.round(d),against:mmAgainst(v.group),defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:st?st[1]:null,nudge:st?st[2]:null}; })
