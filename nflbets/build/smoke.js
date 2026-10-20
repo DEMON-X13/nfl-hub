@@ -4895,12 +4895,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(!!bal && txt(bal).includes('$' + (REAL.deposit + net).toFixed(2)), 'the X Bet Log frame\'s balance is not the real file\'s deposit plus its net: ' + (bal ? txt(bal) : 'no balance')); }
       FR.w.close(); }
     R.w.close(); }
-  /* markup in a note is drawn as text; a file that cannot be read is said, and nothing of the
-     browser's own is drawn in its place */
+  /* a note, markup or not, is drawn nowhere (the owner's call of 20 October 2026: no Note column); a file that
+     cannot be read is said, and nothing of the browser's own is drawn in its place */
   { const B = await run(state, undefined, null, false, { xbets: Object.assign({}, XBFIX, { weeks: { w2: { staked: 1, returned: 3, note: '<img src=x onerror=alert(1)>' } } }) });
     await B.w.XBETS.ready();
     const FB = await frame(B.w.XBETS, 'bets', B.w);
-    chk(!FB.d.querySelector('#betTable img') && /img src=x/.test(txt(FB.d.getElementById('betTable'))), 'a note in the X Bet Log was drawn as markup');
+    chk(!FB.d.querySelector('#betTable img') && !/img src=x/.test(FB.d.getElementById('betTable').innerHTML) && rowsOf(FB.d).join() === 'Week 2'
+      && ![...FB.d.querySelectorAll('#betTable th')].some(th => /note/i.test(txt(th))), 'a note in the X Bet Log is drawn, or the table still has a Note column');
     const N = await run(state, undefined, null, false, { xbets: 404, seed: w2 => w2.localStorage.setItem(BET_KEY, mineOf({ 3: { staked: 2, returned: 0, note: 'mine' } }, 9)) });
     await N.w.XBETS.ready();
     const FN = await frame(N.w.XBETS, 'bets', N.w);
@@ -5359,7 +5360,7 @@ async function snapshotChecks() {
        nothing else on the row does; each defensive group's header carries both teams' unit as the
        matchup formula ranks it (mu.league.defs, 1st the best), the better one marked */
     { const bad = [], defs = (eloMu.league && eloMu.league.defs) || {}, nD = Object.keys(defs).length;
-      const urk = (t, u) => defs[t] ? Object.keys(defs).sort((x, y) => defs[y][u] - defs[x][u]).indexOf(t) + 1 : null;
+      const urk = (t, u) => defs[t] ? 1 + Object.keys(defs).filter(x => defs[x][u] > defs[t][u]).length : null;  /* clubs level share a rank */
       let marks = 0, units = 0;
       for (const tr of md.querySelectorAll('#gsPos tbody tr')) {
         if (tr.classList.contains('gs-grp')) { const u = tr.dataset.gsGrp;
