@@ -1643,9 +1643,9 @@ function espnKeepIds(g,gl){
 /* the kept read put back on a load, before the page is drawn and with no request. Each half stands over
    the publish it was read over, or over a newer one where the read is later than that publish's own time
    for it: the DraftKings lines it carries (g.lat: the props job's read of ESPN since app v121, or a paid pull's),
-   else the bake; for the game's player prices the published read's (app v121: its pl.at or out.at), else the paid
-   pull's (PAY.dk's at), else the bake. So a newer publish always wins, and a read made after it, in a tab loaded
-   before it, stands. Neither half for a game kicked off, scored, in another week or not
+   else the bake; for the game's player prices the later of the published read's (app v121: its pl.at or out.at)
+   and the paid pull's (PAY.dk's at), else the bake. So a newer publish always wins, and a read made after it, in a
+   tab loaded before it, stands. Neither half for a game kicked off, scored, in another week or not
    on this publish (pruned from the copy here). What gave way is noted (ESPN_ASIDE) and what stands
    written back. Nothing is touched with no schedule to stand on. The number of games put back */
 function espnRestore(){
@@ -1664,9 +1664,10 @@ function espnRestore(){
     if(e.gl){ const sig=espnGlSig(g), same=e.gl.sig===sig, lat=g.ls==='dk'?Date.parse(g.lat||''):NaN, since=isFinite(lat)?lat:(same?0:bk);
       if(same||e.gl.at>since){ const on=espnKeepLines(g,e.gl,since,same); espnKeepIds(g,e.gl); k.gl={...e.gl,lines:on?{...ESPN_GL[g.id].d}:{},at:on?ESPN_GL[g.id].at:e.gl.at,sig}; }
       else aside('gl'); }
-    /* (app v121) the published read's time for the player half where it read the game's player lines */
+    /* (app v121) the publish's own time for the player half: the later of the published read's (where it read the
+       game's player lines) and the paid pull's, so a newer publish of either kind sets an older read aside */
     const W=PAY&&PAY.dk&&typeof PAY.dk==='object'?PAY.dk[e.w]:null, Pb=espnPubOf(gid,e.w), pbT=Pb?Math.max(Pb.at||0,Pb.st?Pb.when||0:0):0;
-    const pubP=pbT||Date.parse((W&&W[gid]&&W[gid].at)||'')||bk;
+    const pubP=Math.max(pbT,Date.parse((W&&W[gid]&&W[gid].at)||'')||0)||bk;
     const plSame=e.plsig===espnPlSig(g), plOk=t=>plSame||t>pubP;
     if(e.pl){ if(plOk(Date.parse(e.pl.at))){ (ESPN_LIVE[e.w]||(ESPN_LIVE[e.w]={}))[gid]=e.pl; k.pl=e.pl; } else aside('pl'); }
     /* what the read found goes back with the half it describes: 'ok' only with its player lines */

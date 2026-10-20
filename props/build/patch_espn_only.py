@@ -328,14 +328,15 @@ function espnKeptGame(e,opt){
 sub1('p3', """   for it: the DraftKings pull's for game lines it carries (g.lat), else the bake; the paid pull's for the
    game's player prices (PAY.dk's at), else the bake. So a newer publish always wins, and a read made after
    it, in a tab loaded before it, stands.""", """   for it: the DraftKings lines it carries (g.lat: the props job's read of ESPN since app v121, or a paid pull's),
-   else the bake; for the game's player prices the published read's (app v121: its pl.at or out.at), else the paid
-   pull's (PAY.dk's at), else the bake. So a newer publish always wins, and a read made after it, in a tab loaded
-   before it, stands.""", 'espnRestore: comment')
+   else the bake; for the game's player prices the later of the published read's (app v121: its pl.at or out.at)
+   and the paid pull's (PAY.dk's at), else the bake. So a newer publish always wins, and a read made after it, in a
+   tab loaded before it, stands.""", 'espnRestore: comment')
 
 sub1('p3', """    const W=PAY&&PAY.dk&&typeof PAY.dk==='object'?PAY.dk[e.w]:null, pubP=Date.parse((W&&W[gid]&&W[gid].at)||'')||bk;""",
-     """    /* (app v121) the published read's time for the player half where it read the game's player lines */
+     """    /* (app v121) the publish's own time for the player half: the later of the published read's (where it read the
+       game's player lines) and the paid pull's, so a newer publish of either kind sets an older read aside */
     const W=PAY&&PAY.dk&&typeof PAY.dk==='object'?PAY.dk[e.w]:null, Pb=espnPubOf(gid,e.w), pbT=Pb?Math.max(Pb.at||0,Pb.st?Pb.when||0:0):0;
-    const pubP=pbT||Date.parse((W&&W[gid]&&W[gid].at)||'')||bk;""", 'espnRestore: pubP')
+    const pubP=Math.max(pbT,Date.parse((W&&W[gid]&&W[gid].at)||'')||0)||bk;""", 'espnRestore: pubP')
 
 sub1('p3', """/* any read for a week's games (or this week's), and the latest read time (ms) */
 function espnOn(week){""", """/* ---------- (app v121) the published read: the props job's own read of ESPN, installed at boot ----------

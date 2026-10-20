@@ -5195,8 +5195,9 @@ setTimeout(async()=>{
          Top 30 lines and a set, with no DraftKings id needed; the bug fixed in app v121: after a press over the bake's
          dk:{}, the same (a press's entry never carries the pull's ids)
        - a kept read older than the published one set aside (named in ESPN_ASIDE, its status saying it gave way), a newer
-         one standing, one made over this very publish (the same plsig, the audit's own hash) standing, a kept 'none'
-         never hiding the published block
+         one standing, one made over this very publish (the same plsig, the audit's own hash) standing, one newer than the
+         published read and older than a paid pull published since set aside (the later of the two is the publish's
+         time), a kept 'none' never hiding the published block
        - a press: espnPressed and its status; its game lines applied over the published read's whatever their time says,
          the page's clock moved back two days; the reader alone (espnReadWeek) touching none of the page's state, its
          blocks and game lines the press's own, a 'none' dated
@@ -5310,9 +5311,9 @@ setTimeout(async()=>{
         chk(!live()&&!((PAY0.dk[wk]||{})[GA.id])&&F('espnIdAt')(GA.id,`team:${GA.a}|ml`)==null,`M16: a game taken out of the published read keeps its block or the ids it added: ${JSON.stringify((PAY0.dk[wk]||{})[GA.id]||null)}`);
         PAY0.espn=PUB(); F('espnPublished')(); }
       /* D. a kept read on a reload, against the published one: older set aside, newer stands, the same plsig stands, a 'none' never hides it */
-      { const SEA=F('SEASON'), reload=kept=>{ lsSet(JSON.stringify({v:1,season:SEA,saved:T0,games:{[GA.id]:kept}}));
+      { const SEA=F('SEASON'), reload=(kept,dk)=>{ lsSet(JSON.stringify({v:1,season:SEA,saved:T0,games:{[GA.id]:kept}}));
           for(const n of ['ESPN_LIVE','ESPN_GL','ESPN_OUT','ESPN_IDAT','ESPN_KEPT','ESPN_ASIDE','ESPN_KEEP_GONE','ESPN_PUB','ESPN_PUB_IDS','ESPN_PUB_ADDED']) setVar(n,{}); setVar('ESPN_KEEP_OFF',false);
-          PAY0.dk={}; setVar('ESPN_PUB_DK',null); PAY0.espn=PUB(); setLines(GA,GL,iso(tPl)); F('espnPublished')(); F('espnRestore')(); dropCaches(); };
+          PAY0.dk=dk||{}; setVar('ESPN_PUB_DK',null); PAY0.espn=PUB(); setLines(GA,GL,iso(tPl)); F('espnPublished')(); F('espnRestore')(); dropCaches(); };
         const blkK={at:null,lines:{'aud-w16':{receiving_yards:Lw+10}},rungs:{},td:[]}, okOut=t=>({st:'ok',why:'',sb:false,when:t});
         reload({w:wk,pl:{...blkK,at:iso(T0-5*3600e3)},plsig:'0',out:okOut(T0-5*3600e3)});
         const aside=F('ESPN_ASIDE')[GA.id];
@@ -5324,11 +5325,17 @@ setTimeout(async()=>{
         chk(F('espnPlSig')(GA)===sig,`M16: the page's espnPlSig over the published read is ${F('espnPlSig')(GA)}, the audit's own ${sig}`);
         reload({w:wk,pl:{...blkK,at:iso(T0-5*3600e3)},plsig:sig,out:okOut(T0-5*3600e3)});
         chk(!!live()&&live().lines['aud-w16'].receiving_yards===Lw+10&&!F('ESPN_ASIDE')[GA.id],'M16: a kept read made over this very published read (the same plsig) does not stand, older though it is');
+        /* a kept read newer than the published read, with a paid pull published after it (PAY.dk's at), the
+           published read older than both: the later of the two is the publish's own time for the
+           player half, so the kept read gives way */
+        reload({w:wk,pl:{...blkK,at:iso(T0-1800e3)},plsig:'0',out:okOut(T0-1800e3)},{[wk]:{[GA.id]:{at:iso(T0-600e3),[`aud-w16|receiving_yards|over|${dkPt(Lw)}`]:'0AUD16PAID'}}});
+        { const A=F('ESPN_ASIDE')[GA.id];
+          chk(live()===pubOf(GA.id).block&&!!A&&A.pl===T0-1800e3&&!F('espnPressed')(GA.id,cw),`M16: a kept read newer than the published read and older than a paid pull published since is not set aside: ${JSON.stringify(live()&&live().lines)} ${JSON.stringify(A)}`); }
         reload({w:wk,out:{st:'none',why:'',sb:false,when:T0-1800e3},plsig:'0'});
         chk(live()===pubOf(GA.id).block&&!!F('espnGame')(GA.id,cw)&&(F('ESPN_OUT')[GA.id]||{}).st==='none'&&F('pricedLegs')([GA]).some(l=>l.src==='dkline'),'M16: a kept read that found no player lines hides the published block');
         lsSet(null); for(const n of ['ESPN_LIVE','ESPN_GL','ESPN_OUT','ESPN_IDAT','ESPN_KEPT','ESPN_ASIDE','ESPN_KEEP_GONE','ESPN_PUB','ESPN_PUB_IDS','ESPN_PUB_ADDED']) setVar(n,{});
         PAY0.dk={}; setVar('ESPN_PUB_DK',null); PAY0.espn=PUB(); setLines(GA,GL,iso(tPl)); F('espnPublished')(); dropCaches();
-        said16.push('a kept read older than the published one set aside, a newer one and one made over it standing, a kept none never hiding it'); }
+        said16.push('a kept read older than the published one set aside, a newer one and one made over it standing, one older than a paid pull published since set aside, a kept none never hiding it'); }
       /* E. the reader alone, then a press */
       { const PR={at:null,lines:{'aud-q16':{passing_yards:Lq+5},'aud-w16':{receiving_yards:Lw},'aud-r16':{rushing_yards:Lr},'aud-v16':{receiving_yards:Lv+3}},rungs:PLA.rungs,td:['aud-q16','aud-v16']};
         items=itemsOf(PR); sbOdds={mla:140,mlh:-165,sp:3.5,spa:-105,sph:-115,tot:46.5,tov:-110,tou:-110}; propsCode=200;
