@@ -368,7 +368,7 @@ window.PARLAY_CARD=(function(){
      does not open, so where the legs that go on the slip are such a mix there is no link for them all: games has a link
      for each game's (its legs in the card's order, the games in the order their first legs come), and multi says so.
      One leg a game is a plain parlay, which opens as one link as it always has (the owner's word was for the mix).
-     (app v122, the owner, 20 October 2026: "can we add a different color button for all legs parlays on top of the
+     (app v123, the owner, 20 October 2026: "can we add a different color button for all legs parlays on top of the
      individual ones? id like to still test those but have the inidividuals as a fallback plan") all is the link for
      every leg on the slip all the same, drawn first, in ice, as the try; the games' links are the fallback.
      clash: the pairs DraftKings will not take on one slip (the props parts' dkClashPairs), by the legs' numbers */
@@ -492,7 +492,7 @@ window.PARLAY_CARD=(function(){
     return `<p>On DraftKings’ slip at its own line:</p><ul>${sw.map(x=>`<li data-pc-dkswap="${x.n}">${name(x)}: goes on as ${h(x.swap)}</li>`).join('')}</ul>`
       +`<p>DraftKings prices ${sw.length===1?'a changed leg at its own line':'changed legs at its own lines'}, so its slip’s payout can differ from this card’s.</p>`;
   }
-  /* (app v122) the all-legs link's words on a mixed parlay: "Open all 3 legs in DraftKings", "Open 3 of 4 legs in DraftKings" */
+  /* (app v123) the all-legs link's words on a mixed parlay: "Open all 3 legs in DraftKings", "Open 3 of 4 legs in DraftKings" */
   const dkAllText=dk=>dk.miss.length?`Open ${dk.ok.length} of ${dk.n} legs in DraftKings`:`Open all ${dk.ok.length} legs in DraftKings`;
   /* the legs the link opens: "2 of the 3 legs", "the leg", "the 3 legs" (never "all": see above) */
   const dkWhich=dk=>dk.miss.length?dk.ok.length+' of the '+dk.n+' legs':(dk.n===1?'the leg':'the '+dk.n+' legs');
@@ -687,7 +687,7 @@ window.PARLAY_CARD=(function(){
     a.textContent=dk.url?(dk.miss&&dk.miss.length?`Open ${dk.ok.length} of ${dk.n} legs in DraftKings`:'Open in DraftKings'):dk.event?'Open game in DraftKings':'Open DraftKings';
     a.title=!dk.url?(dk.event?`Opens the game’s page in DraftKings, in a new tab, to add ${them} by hand`:`Opens DraftKings’ NFL page, in a new tab, to add ${them} by hand`)
       :`Opens ${dkWhich(dk)} on DraftKings’ betslip, in a new tab, as DraftKings’ lines were ${dk.read?'read '+readOf(dk.read):'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
-    /* (app v122) a mixed parlay: every leg on one slip all the same, in ice, as the try; the games' links are the fallback */
+    /* (app v123) a mixed parlay: every leg on one slip all the same, in ice, as the try; the games' links are the fallback */
     if(dk.multi&&dk.all){ a.href=dk.all; a.classList.add('pc-dkall'); a.textContent=dkAllText(dk);
       a.title=`Tries ${dkWhich(dk)} on one DraftKings betslip, in a new tab, as DraftKings’ lines were ${dk.read?'read '+readOf(dk.read):'last read'}: DraftKings may not open a same-game parlay mixed with other games, so if the slip comes up short, open each game’s link instead`; }
     /* the check's line, last: when the lines were checked, or that they could not be */
@@ -914,7 +914,7 @@ window.PARLAY_CARD=(function(){
       if(sw.length) lines.push(`On DraftKings’ slip at its own line: ${sw.map(x=>`leg ${x.n} as ${x.swap}`).join('; ')} (DraftKings prices ${sw.length===1?'it':'them'} at its own line, so its payout can differ)`); }
     else if(dk.multi){
       /* (app v121) a same-game parlay mixed with other games: a link for each game's, since one with them all does not open */
-      /* (app v122) every leg on one slip first, as the try, then a link for each game as the fallback */
+      /* (app v123) every leg on one slip first, as the try, then a link for each game as the fallback */
       lines.push(`DraftKings betslip, ${miss.length?dkWhich(dk):'every leg'} on one slip (DraftKings may not open a same-game parlay mixed with other games; if it does not, use each game’s link below)${miss.length?`; add ${legNums(miss)} by hand`:''}:`, dk.all);
       lines.push('Each game on its own:');
       for(const G of dk.games) lines.push(`${G.name}, ${legNums(G.ok)}:`, G.url);

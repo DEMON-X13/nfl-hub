@@ -1432,17 +1432,17 @@ of this game’s legs go together on DraftKings’ slip: it takes no quarterback
 his passing TDs over with the game total.", the slot's "No 4 legs of any one game of the Sunday slot go together ...").
 The builder says what DraftKings will refuse: a
 line where two of its legs are such a pair (`data-pb-clash`), and on the hub, where its legs mix a same-game parlay (two or
-more legs of one game) with legs of other games, that DraftKings' betslip link does not open that mix (until app v122;
+more legs of one game) with legs of other games, that DraftKings' betslip link does not open that mix (until app v123;
 since, that it may not) and the parlay card gives each game a link of its own (`data-pb-multigame`, read off the card's own plan, `dkSlipPlan`, so only the legs that
 go on the slip count, and only where the legs are of one week, as Finish asks). The parlay card (`card.html`'s `dkPlan`: `games`, `multi`,
-`clash`) then had, until app v122, no link for every leg but a button for each game's (`#pcDkGames`, `a.pc-dkbtn[data-pc-dkgame]`, its
+`clash`) then had, until app v123, no link for every leg but a button for each game's (`#pcDkGames`, `a.pc-dkbtn[data-pc-dkgame]`, its
 legs in the card's order, each titled with its own game's read; while the card checks DraftKings' lines as it opens,
 the waiting Open in DraftKings alone, since the read can change the plan), says why, sends a link per game in Share
 link's text ("Links copied" where it copies them), and on every card with two or more legs on the slip lists every leg's
 own link, a 44px row each, a leg converted to DraftKings' number saying "(on DraftKings as Over 64.5 receiving yards)" (`ul.pc-dklegs`, until app v121 a row of numbers,
 "One leg at a time: 1 · 2 · 3"), and names any pair DraftKings may refuse (`data-pc-dkclash`). A parlay of one leg a game
 is a plain parlay and still opens as one link (the owner's word was for the mix; if those fail too, split them as well).
-Since app v122 (`patch_dk_all.py`, the owner's call of 20 October 2026: "can we add a different color button for all legs
+Since app v123 (`patch_dk_all.py`, the owner's call of 20 October 2026: "can we add a different color button for all legs
 parlays on top of the individual ones? id like to still test those but have the inidividuals as a fallback plan") a mixed
 parlay keeps its all-legs link too, first and in ice where the games' links are the hub's gold (`#pcDk` with
 `.pc-dkall`, "Open all 3 legs in DraftKings", or "Open 3 of 4 legs in DraftKings" with a leg to add by hand; dkPlan's

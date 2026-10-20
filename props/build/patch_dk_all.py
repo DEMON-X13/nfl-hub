@@ -1,4 +1,4 @@
-r"""app v122: a mixed parlay keeps its all-legs link, in its own colour, with the games' links as the fallback.
+r"""app v123: a mixed parlay keeps its all-legs link, in its own colour, with the games' links as the fallback.
 
 The owner, 20 October 2026, the day app v121 gave a same-game parlay mixed with legs of other games a link for each
 game in place of the one link: "do you think maybe we can add a different color button for all legs parlays on top of
@@ -24,7 +24,7 @@ def sub1(k, old, new, what):
     T[k] = T[k].replace(old, new)
 
 
-sub1('p2', "const APP_BUILD='app v121 \\u00b7 2026-10-20';", "const APP_BUILD='app v122 \\u00b7 2026-10-20';", 'APP_BUILD')
+sub1('p2', "const APP_BUILD='app v122 \\u00b7 2026-10-20';", "const APP_BUILD='app v123 \\u00b7 2026-10-20';", 'APP_BUILD')
 
 sub1('p3', """These legs mix a same-game parlay with other games. DraftKings’ betslip link does not open that mix, so the parlay card gives each of the ${nG} games a link of its own.</p>`; } }""",
      """These legs mix a same-game parlay with other games. DraftKings’ betslip may not open that mix as one, so the parlay card gives each of the ${nG} games a link of its own beside one that tries them on one slip.</p>`; } }""",
@@ -32,4 +32,4 @@ sub1('p3', """These legs mix a same-game parlay with other games. DraftKings’ 
 
 for k, f in FILES.items():
     io.open(f, 'w', encoding='utf-8').write(T[k])
-print('patched: app v122, the all-legs link kept on a mixed parlay, the games\' links its fallback')
+print('patched: app v123, the all-legs link kept on a mixed parlay, the games\' links its fallback')

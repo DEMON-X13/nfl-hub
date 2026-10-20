@@ -84,7 +84,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 .btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}
 .btn.go{background:var(--pick);border-color:var(--pick);color:#1E2230}
 .btn.danger{background:var(--rose);border-color:var(--rose);color:#1E2230}
-/* (app v122) the parlay card's all-legs link on a mixed parlay, in ice beside the games' gold links: a try, with the
+/* (app v123) the parlay card's all-legs link on a mixed parlay, in ice beside the games' gold links: a try, with the
    games' links as the fallback */
 .pc-actions .btn.pc-dkall{background:var(--ice);border-color:var(--ice);color:#1E2230;flex-basis:100%}
 /* the card's links that look like buttons take the hub's focus ring, as its buttons do */
