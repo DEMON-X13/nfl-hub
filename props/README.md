@@ -254,7 +254,7 @@ found, each half with its own read's time) and puts each game's lines on the sch
 run could not read keeps the last read the site published; a `none` (DraftKings has withdrawn the lines) drops
 the block; nothing at or after a kickoff is kept, and nothing of the read goes into `mkt`, `prices` or `dk` (a line
 read from ESPN is never a book price). `payload.py` never carries `espn` forward: `apply_espn` works it out again
-every run. The page installs the read at boot (`espnPublished`, app v123), for every visitor and for the
+every run. The page installs the read at boot (`espnPublished`, app v124), for every visitor and for the
 suggestions record, which so takes each set from the lines the job last read before its lock. ESPN not answering
 never refuses the run: a game kicking off within 48 hours whose lines no run has read for 24 is a problem (the run
 goes red after its commit), as is a reader that crashed or a page with no `espnReadWeek`; an error applying the
@@ -392,7 +392,7 @@ leg it re-priced can be. The parlay card looks a leg priced from the read up in 
 other, and puts a leg DraftKings has only at another number on the slip at DraftKings' number, saying so.
 Since 20 October 2026 no scheduled pull bakes ids (`PAY.dk` is `{}`), and a game entry a read makes (a press, the
 card's check, the job's published read) never counts as carrying them, the page judging an entry by what it holds
-(app v123), so the rule is dormant: player legs priced from the read are suggested again, and Open in DraftKings
+(app v124), so the rule is dormant: player legs priced from the read are suggested again, and Open in DraftKings
 opens team legs and totals, the player legs going on by hand.
 
 The formula was fitted on DraftKings' own prices only (2026 weeks 2-3, and its DET at BUF ladders of
