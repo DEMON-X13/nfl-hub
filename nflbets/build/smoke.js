@@ -1128,7 +1128,62 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   await wait(300);
   chk(/scores \d/.test(txt(d.getElementById('slateStamp'))), 'Refresh scores on the Props tab left no stamp: ' + txt(d.getElementById('slateStamp')));
   chk(/Week \d+ \d+–\d+/.test(txt(d.getElementById('weekRec'))), 'the prop model\'s week record is not drawn: ' + txt(d.getElementById('weekRec')));
-  chk(txt(d.querySelector('#tab-slate .gamehead')).includes('Biggest projections'), 'the Games column header is not the prop model\'s');
+  /* (app v122) the Props list's rows are the Matchups board's (the owner's call of 20 October 2026, "change the
+     matchup to look like" the board's row): its column heads, and each row's split bar in the two clubs' own colours
+     (the page's slateCols, the board's rule on the prop model's tag colours, each percentage at 4.5:1 on its side,
+     the two sides never one colour, on every pair of clubs), its win probability worked out here from the prop
+     model's own lines (the two moneylines with the margin out, else the spread about 13.5 points, else the model's
+     margin about the same; a pick'em spread with no moneylines no call), the board's band, the favourite's tag
+     raised, its prediction gameCtx's scores rounded once with the margin their difference ("even" where level), and
+     its final-score cell: the payload's score with whether the pick hit, else the scoreboard just read (the stub's
+     first game to play over, home 27-20, its second on, away 14-10 in Q3 5:44), else 0 : 0, LIVE or Final */
+  chk(/Date.*Matchup.*Win probability.*Confidence.*Score prediction.*Final score/.test(txt(d.querySelector('#tab-slate .gamehead')))
+    && !/Biggest projections/.test(txt(d.querySelector('#tab-slate .gamehead'))), 'the Props list\'s column heads are not the Matchups board\'s: ' + txt(d.querySelector('#tab-slate .gamehead')));
+  { const PS = w.eval('S').sched, hexL = h => { const v = String(h).replace('#', ''); return [0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16) / 255)
+        .map(x => x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)).reduce((t, x, i) => t + x * [0.2126, 0.7152, 0.0722][i], 0); },
+      cr = (x, y) => { const a = hexL(x), b = hexL(y); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); }, bad = [], cols = w.eval('typeof slateCols==="function"?slateCols:null');
+    const ncdf = z => { const t = 1 / (1 + 0.2316419 * Math.abs(z)), dd = 0.3989423 * Math.exp(-z * z / 2), q = dd * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - q : q; };
+    const callOwn = g => { const ml = x => x != null && isFinite(x) && +x !== 0, im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100); let pH = null;
+      if (ml(g.mla) && ml(g.mlh)) pH = im(+g.mlh) / (im(+g.mlh) + im(+g.mla));
+      else if (g.sp != null && isFinite(g.sp)) { if (+g.sp !== 0) pH = ncdf(+g.sp / 13.5); }
+      else pH = ncdf(w.eval('modelMargin')(g) / 13.5);
+      if (pH == null || !isFinite(pH)) return null; const conf = Math.max(pH, 1 - pH), r = Math.round(conf * 100) / 100;
+      return { pa: Math.round((1 - pH) * 100), pick: pH >= 0.5 ? g.h : g.a, band: `${r >= 0.75 ? 'HIGH' : r >= 0.60 ? 'MED' : r >= 0.55 ? 'LOW' : '50/50'} ${Math.round(conf * 100)}%` }; };
+    const sb = scoreboard(state, wk).events.map(e => ({ id: e.id.slice(1), st: e.status.type.state, hs: +e.competitions[0].competitors[0].score, as: +e.competitions[0].competitors[1].score, cl: e.status.type.shortDetail }));
+    let live = 0, over = 0;
+    if (!cols) bad.push('the page has no slateCols');
+    /* the rows as drawn now: Refresh scores above redrew the list, so the rows read before it are gone */
+    const nowRows = [...d.querySelectorAll('#gamesList .game[data-game]')];
+    if (!nowRows.length) bad.push('the list has no rows after Refresh scores');
+    for (const r of nowRows) { const g = PS.find(x => x.id === r.dataset.game); if (!g) { bad.push(r.dataset.game + ' is no game'); continue; }
+      const c = callOwn(g), sa = r.querySelector('.sl-prob .sl-a'), sh = r.querySelector('.sl-prob .sl-h'), pc = cols ? cols(g.a, g.h) : null;
+      if (!sa || !sh) { bad.push(g.id + ' has no split bar'); continue; }
+      if (pc && (!sa.getAttribute('style').includes(`background:${pc[0].bg};color:${pc[0].ink}`) || !sh.getAttribute('style').includes(`background:${pc[1].bg};color:${pc[1].ink}`))) bad.push(`${g.id}'s bar is not in ${g.a}'s ${pc[0].bg} and ${g.h}'s ${pc[1].bg}`);
+      const pa = c ? c.pa : 50, raised = [...r.querySelectorAll('.matchup .ttag.sl-win')].map(txt).join();
+      if (parseFloat(sa.style.width) !== pa || parseFloat(sh.style.width) !== 100 - pa) bad.push(`${g.id}'s bar is ${sa.style.width}/${sh.style.width}, not ${pa}/${100 - pa}`);
+      if (txt(sa) !== (pa >= 14 ? pa + '%' : '') || txt(sh) !== (100 - pa >= 14 ? (100 - pa) + '%' : '')) bad.push(`${g.id}'s bar reads ${txt(sa)}/${txt(sh)}`);
+      if (txt(r.querySelector('.sl-conf .sl-tier')) !== (c ? c.band : 'no call yet')) bad.push(`${g.id}'s band reads "${txt(r.querySelector('.sl-conf .sl-tier'))}", not "${c ? c.band : 'no call yet'}"`);
+      if (raised !== (c ? c.pick : '')) bad.push(`${g.id} raises ${raised || 'no tag'}, not ${c ? c.pick : 'none'}`);
+      { const st = state.schedule.find(x => x.game_id === g.id), neu = st ? (st.location === 'Neutral' || st.gametime === '09:30') : g.t === '09:30';
+        if ((txt(r.querySelector('.matchup .at')) === 'vs') !== neu) bad.push(`${g.id} reads "${txt(r.querySelector('.matchup .at'))}" ${neu ? 'at a neutral site' : 'at a home game'}`); }
+      const A = +w.eval('gameCtx')(g, g.a).implied.toFixed(0), H = +w.eval('gameCtx')(g, g.h).implied.toFixed(0), pby = r.querySelector('.sl-pred .sl-pby');
+      if (txt(r.querySelector('.sl-pred .sl-psc')) !== `${A}–${H}` || (A === H ? txt(pby) !== 'even' : !(pby && txt(pby.querySelector('.ttag')) === (A > H ? g.a : g.h) && txt(pby).endsWith(`by ${Math.abs(A - H)}`))))
+        bad.push(`${g.id}'s prediction reads "${txt(r.querySelector('.sl-pred'))}", not ${A}–${H} ${A === H ? 'even' : (A > H ? g.a : g.h) + ' by ' + Math.abs(A - H)}`);
+      const res = txt(r.querySelector('.sl-result')), e = sb.find(x => x.id === g.id), has = w.eval('hasScore')(g);
+      if (has) { const win = g.as > g.hs ? g.a : g.hs > g.as ? g.h : null;
+        const want = (win ? `${win} won ${g.as}–${g.hs}` : `Tie ${g.as}–${g.hs}`) + (c && win ? (c.pick === win ? 'Pick hit' : 'Pick missed') : '');
+        if (res !== want) bad.push(`${g.id}'s final score reads "${res}", not "${want}"`); }
+      else if (e && e.st === 'post') { over++; const win = e.hs > e.as ? g.h : e.as > e.hs ? g.a : null, want = `${win} won ${e.as}–${e.hs}` + (c ? (c.pick === win ? 'Pick hit' : 'Pick missed') : '');
+        if (res !== want || !r.querySelector(`.sl-tw.${win === g.h ? 'sl-home' : 'sl-away'} .sl-res.${c && c.pick === win ? 'sl-ok' : 'sl-bad'}`)) bad.push(`${g.id}, over on the scoreboard, reads "${res}", not "${want}" with its mark`); }
+      else if (e && e.st === 'in') { live++; const lead = e.hs > e.as ? g.h : e.as > e.hs ? g.a : null, mw = r.querySelector('.sl-result .sl-mwin');
+        if (!new RegExp(`^${lead} leading ${e.as}–${e.hs}${e.cl}$`).test(res) || !mw || !mw.classList.contains(c && c.pick === lead ? 'sl-ok' : 'sl-bad') || r.querySelector('.sl-res')) bad.push(`${g.id}, on now, reads "${res}"`); }
+      else if (!/^(0 : 0|LIVE|Final)/.test(res)) bad.push(`${g.id}, not under way on the scoreboard, reads "${res}"`); }
+    if (cols) { const clubs = [...new Set(PS.flatMap(x => [x.a, x.h]))];
+      for (const a of clubs) for (const h of clubs) if (a !== h) { const pc = cols(a, h);
+        for (const x of pc) if (!/^#[0-9A-Fa-f]{6}$/.test(x.bg) || !(cr(x.bg, x.ink) >= 4.5)) bad.push(`${a} at ${h}: a side in ${x.bg} under ${x.ink} reads ${cr(x.bg, x.ink).toFixed(2)}:1`);
+        if (pc[0].bg.toLowerCase() === pc[1].bg.toLowerCase()) bad.push(`${a} at ${h}: both sides ${pc[0].bg}`); } }
+    chk(bad.length === 0, `the Props list's rows are not the board's, worked from the prop model's own lines: ${bad.slice(0, 6).join('; ')}`);
+    if (toPlay.length && !SEASON_OVER) chk(over + live > 0 || !nowRows.length || !PS.some(g => +g.w === wk && !w.eval('hasScore')(g)), `the Props list showed none of the scoreboard's games under way or over after Refresh scores (${over} over, ${live} on)`); }
   /* open a game: the prop model's own modal, with players in it */
   slateRows[0].click();
   await wait(100);
@@ -1137,6 +1192,27 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   chk(txt(d.getElementById('gameView')).length > 200, 'the game modal is empty');
   /* a game's page carries its Game bets card (app v105), once */
   chk(d.querySelectorAll('#gameView .gbets').length === 1, 'the game view does not carry the Game bets card once');
+  /* (app v122) the game's head carries what the list's row showed until then, under the list's old headings:
+     the kickoff, the matchup, the three biggest projections (gameHeadline's), the expected score (gameCtx's,
+     rounded once), its total and the pick with its margin, or even */
+  { const head = d.querySelector('#gameView .ghead'), g = w.eval('S').sched.find(x => x.id === slateRows[0].dataset.game), bad = [];
+    if (!head || !g) bad.push('no head card');
+    else {
+      const labs = [...head.querySelectorAll('.gh-lab')].map(txt).join('|');
+      if (labs !== 'Kickoff|Matchup|Biggest projections|Expected score|Total pt|Vegas pick') bad.push('its headings are ' + labs);
+      const gb = d.querySelector('#gameView .gbets');
+      if (!gb || !(head.compareDocumentPosition(gb) & 4)) bad.push('it is not above the game\'s cards, where the matchup card was');
+      const ca = w.eval('gameCtx')(g, g.a), ch = w.eval('gameCtx')(g, g.h), A = +ca.implied.toFixed(0), H = +ch.implied.toFixed(0);
+      if (txt(head.querySelector('.tot b')) !== `${A} – ${H}`) bad.push(`its expected score reads "${txt(head.querySelector('.tot b'))}", not ${A} – ${H}`);
+      if (txt(head.querySelector('.totpts b')) !== (ca.implied + ch.implied).toFixed(0)) bad.push(`its total reads ${txt(head.querySelector('.totpts b'))}`);
+      const win = head.querySelector('.winner'), smalls = [...win.querySelectorAll('small')].map(txt);
+      if (A === H ? !(win.querySelector('.none') && smalls.includes('even')) : !(txt(win.querySelector('.ttag')) === (A > H ? g.a : g.h) && smalls.includes(`by ${Math.abs(A - H)}`))) bad.push(`its pick reads "${txt(win)}"`);
+      const lead = [...head.querySelectorAll('.lead > div')].map(x => `${txt(x.querySelector('.cat'))} ${txt(x.querySelector('.nm'))} ${(txt(x.querySelector('.v')).match(/^(\d+)yds/) || [])[1]}`).join(', ');
+      const want = w.eval('gameHeadline')(g).map(x => `${x.k} ${w.eval('shortName')(x.v.pl.n)} ${x.v.mu.toFixed(0)}`).join(', ');
+      if (lead !== want) bad.push(`its biggest projections read "${lead}", not "${want}"`);
+      if (![g.a, g.h].every(t => [...head.querySelectorAll('.gh-match .ttag')].map(txt).includes(t))) bad.push('its matchup does not name both clubs');
+    }
+    chk(bad.length === 0, `the game's head does not carry the list's old figures: ${bad.join('; ')}`); }
   chk(d.querySelectorAll('#gameView .plrbtn').length > 0, 'the game view shows no players');
   chk(typeof w.closeGame === 'function', 'the prop model\'s closeGame is not on the page');
   w.closeGame();
@@ -6005,8 +6081,11 @@ async function snapshotChecks() {
         for (const ch of String(cols)) { if (ch === '(') depth++; if (ch === ')') depth--; if (ch === ' ' && !depth) { if (cur) out.push(cur); cur = ''; } else cur += ch; }
         if (cur) out.push(cur);
         return out.map(t => { const mm = /^minmax\(\s*([^,]+),/.exec(t); return mm ? (px(mm[1]) || 0) : (px(t) || 0); }); };
-      const ruleFor = (media, prop) => { const r = rules.filter(x => /(^|,\s*)\.pk-game(\s*,|$)/.test(x.sel) && x.media === media && x.st.getPropertyValue(prop)); return r.length ? r[r.length - 1].st.getPropertyValue(prop) : null; };
-      const mids = [...new Set(rules.filter(x => /min-width:\s*901px/.test(x.media) && /\.pk-game/.test(x.sel)).map(x => x.media))];
+      /* (app v122) the Props list's rows are the board's row, so they are held the same way */
+      for (const [CARD, NAME] of [['.pk-game', "the Pick'ems board"], ['.game', "the Props list"]]) {
+      const cardRe = new RegExp(`(^|,\\s*)\\${CARD}(\\s*,|$)`);
+      const ruleFor = (media, prop) => { const r = rules.filter(x => cardRe.test(x.sel) && x.media === media && x.st.getPropertyValue(prop)); return r.length ? r[r.length - 1].st.getPropertyValue(prop) : null; };
+      const mids = [...new Set(rules.filter(x => /min-width:\s*901px/.test(x.media) && cardRe.test(x.sel)).map(x => x.media))];
       const maxOf = m => { const mm = /max-width:\s*(\d+)px/.exec(m || ''); return mm ? +mm[1] : null; }, SCROLLBAR = 17, LIVE_W = 136;
       const cases = [['', mids.length && maxOf(mids[0]) ? maxOf(mids[0]) + 1 : 901], ...mids.map(m => [m, 901])], bad = [];
       const wideLast = least(ruleFor('', 'grid-template-columns')).slice(-1)[0];
@@ -6014,7 +6093,7 @@ async function snapshotChecks() {
         const cols = least(ruleFor(media, 'grid-template-columns') || ruleFor('', 'grid-template-columns'));
         const gap = px(ruleFor(media, 'column-gap') || ruleFor(media, 'gap') || ruleFor('', 'column-gap') || ruleFor('', 'gap')) || 0;
         /* the card's own right padding, from its shorthand where that is how it is written */
-        const padOf = m => { const r = rules.filter(x => x.sel === '.pk-game' && x.media === m && (x.st.getPropertyValue('padding-right') || x.st.getPropertyValue('padding')));
+        const padOf = m => { const r = rules.filter(x => x.sel === CARD && x.media === m && (x.st.getPropertyValue('padding-right') || x.st.getPropertyValue('padding')));
           if (!r.length) return null; const st = r[r.length - 1].st, t = (st.getPropertyValue('padding-right') || st.getPropertyValue('padding')).trim().split(/\s+/);
           return px(st.getPropertyValue('padding-right') ? t[0] : (t[1] || t[0])); };
         const pad = padOf(media) ?? padOf('') ?? 0;
@@ -6022,7 +6101,7 @@ async function snapshotChecks() {
         if (cols.length !== 6 || need > room) bad.push(`${media || 'wide'}: ${cols.length} columns need ${need}px at ${w}px wide, the page has ${room} beside a ${SCROLLBAR}px scrollbar`);
         if (cols.length === 6 && !(cols[5] >= wideLast)) bad.push(`${media || 'wide'}: the result column is ${cols[5]}px, narrower than the wide layout's ${wideLast}px, which holds the same text`);
         if (cols.length === 6 && !(cols[5] >= LIVE_W)) bad.push(`${media || 'wide'}: the result column is ${cols[5]}px, too narrow for a live "WAS leading 31–33" (about 134px at its 15px)`); }
-      chk(mids.length === 1 && !bad.length, "the Pick'ems board's columns do not fit at every width they are laid out at, so the page scrolls sideways, or its result column is narrower than the wide layout's: " + (bad.join('; ') || 'no layout between the phone card and a wide screen')); }
+      chk(mids.length === 1 && !bad.length, `${NAME}'s columns do not fit at every width they are laid out at, so the page scrolls sideways, or its result column is narrower than the wide layout's: ` + (bad.join('; ') || 'no layout between the phone card and a wide screen')); } }
     /* the page's modal pads its top, and a sticky header sticks inside that padding: the window's
        content showed in a band above its header once scrolled, so its modal has none */
     chk(rules.some(r => r.sel === '#gsModal' && !r.media && /^0(px)?$/.test(r.st.getPropertyValue('padding-top'))),
