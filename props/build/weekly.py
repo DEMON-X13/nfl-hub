@@ -1,18 +1,18 @@
-"""Weekly refresh, run unattended by .github/workflows/props.yml: four price pulls a week
-(PULL_SLOTS below), and post-game, stats, Saturday and daily injury-report runs with --catch-up:
-they price only a game a dropped pull left unpriced, and spend nothing otherwise.
-test_pull_schedule.py drives the pulls and catch-ups over the season's schedule, offline.
+"""Weekly refresh, run unattended by .github/workflows/props.yml: post-game, stats, Saturday, Sunday-morning
+and daily injury-report runs, every one of them free. Since 20 October 2026 (the owner's call: no scheduled
+paid pull) the job buys no prices: it reads DraftKings' lines from ESPN's free feed on every run, with the
+page's own reader, and publishes that read with the payload. test_lock_runs.py holds the crons to the
+season's set locks, offline.
 
     python weekly.py                 (from props/build)
-    python weekly.py --no-odds       skip the price pull
-    python weekly.py --catch-up      price only games up to the next pull with no prices yet, not yet started
-    python weekly.py --hours 36      override the price-pull window
-    python weekly.py --local         allow the price pull off GitHub (it spends credits)
-    python weekly.py --offline       use the files already in raw/ instead of downloading (testing)
+    python weekly.py --offline       use the files already in raw/ instead of downloading (testing), and replay
+                                     the ESPN answers raw/espn/ recorded on the last online run
+    --no-odds, --catch-up, --hours H and --local are still accepted and do nothing (since 20 October 2026: the
+    job buys no prices); a run queued with the old run line, and the props gate on a base from before, pass them
 
-Credits are spent only by the props workflow: off GitHub Actions the price pull is skipped
-unless --local says otherwise. Nothing commits here: the workflow commits props/data itself,
-and only when this exits 0 (--no-commit is still accepted, and does nothing).
+No odds-API credit is spent here, and no key is read: oddsfetch.py and credits.py in data/ are by-hand tools
+now. Nothing commits here: the workflow commits props/data itself, and only when this exits 0 (--no-commit is
+still accepted, and does nothing).
 
 What it does, in order:
   1. downloads scores/lines, this season's player stats, rosters, injuries and depth charts
@@ -28,52 +28,61 @@ What it does, in order:
      its commit once that is overdue (the injury report after the first kickoff, the stats two
      days after the first game). A 404 on one the site has published from is a failure.
   2. works out the current week: the earliest week with an unplayed regular-season game, or,
-     once every one is final, the season is over: no prices are pulled and the page says so.
+     once every one is final, the season is over and the page says so.
      At a rollover last season's price files move to data/archive/<season>/, and the stats,
      injury report and roster are read and checked (shape, a whole league, stats that would
-     shrink) here, before any credit is spent
-     Then the payload's rosters, depth charts and schedule are rebuilt (payload.py), still
-     before the pull, which names its games from that schedule. Its baselines are last season's,
-     from raw/feat.pkl: on the first run of a new season the committed table lacks it, and the
-     run rebuilds it (features_ready) for the workflow to commit
-  3. on GitHub Actions (or with --local), if ODDS_API_KEY is set, pulls prices for the games kicking
-     off before the next scheduled pull is likely to land (pull_window, hours_to_next_pull) with
-     data/oddsfetch.py (choose() picks the games) and merges them into that week's files
-  4. bakes into the payload every week's player
+     shrink) here. Then the payload's rosters, depth charts and schedule are rebuilt (payload.py).
+     Its baselines are last season's, from raw/feat.pkl: on the first run of a new season the
+     committed table lacks it, and the run rebuilds it (features_ready) for the workflow to commit
+  3. bakes into the payload every week's player
      stats, the injury report (this week's in full, earlier weeks' Outs), every player's roster
      status, every week's main lines matched onto the players of their own game (mktbuild.py),
      and every price file with the player each row belongs to: this season's games only, and
-     nothing of a payload of another season carried forward; and DraftKings' own id for every
-     outcome the pulls read on a game still to come (dk_links_wk{W}.json -> dk, dk_ids below),
-     which the parlay card turns into an Open in DraftKings link; and who took part in each
+     nothing of a payload of another season carried forward. The price files are the paid pulls'
+     of weeks 1-6 (and any pull run by hand since): the Track Record grades on them, and a by-hand
+     pull's DraftKings ids (dk_links_wk{W}.json -> dk, dk_ids below) still reach the parlay card.
+     And who took part in each
      finished game, from the snap counts (who_played below): the payload's snaps, and a stat row
      of zeros for a player who played a snap in his role with no stat line, so a receiver never
      targeted is graded on zero, as DraftKings grades him, and his projection sees the game; and
      each player's ESPN athlete id (espn_ids below, from the roster already downloaded), by which
-     the page's Refresh odds button places DraftKings' lines it reads from ESPN in the browser
-  5. assembles the page and runs the audit, which checks the payload against the raw files. Its
+     the page's reader places DraftKings' lines it reads from ESPN on his player
+  4. assembles the page (assemble.py), then reads ESPN (espn_step): espn_read.js boots that page in
+     jsdom on the payload just baked and calls its own reader, espnReadWeek, on the week's games still
+     to come, each ESPN request through lib/netfetch.js; it writes raw/espn/read.json and records every
+     answer there (--offline replays them). The read never refuses the run: a game ESPN did not answer
+     for keeps the last read the site published, and a game kicking off within ESPN_SOON hours whose
+     lines no run has read for ESPN_STALE hours is a problem (the run goes red after its commit), as is
+     a reader that crashed or a page with no espnReadWeek
+  5. applies the read (apply_espn): the payload's espn (each game still to come: its game lines, its
+     player lines and what the last read of them found, carried from the published payload where this
+     run did not read them anew, and nothing at or after a kickoff), and each game's game lines put on
+     the schedule as a press puts them (ls 'dk', lat the read's time, lsr 'espn') while under a day old.
+     Nothing of ESPN's goes into mkt, prices or dk: a line read from ESPN is never a book price. An
+     error here refuses the run (the last good payload, with its read, stays live)
+  6. runs the audit, which checks the payload against the raw files and this run's read. Its
      failures and runtime errors refuse the run (audit_verdict); its warnings, the checks audit.js
      names as presentation only (who is shown starting, an ordering, which correctly priced parlay
      a suggestion level picks, a note's wording, a rule the week left untested), never do: the run
      publishes and the warnings are a problem, so the job goes red after its commit (audit_warnings)
-  6. once the audit is clean, the suggestions record (suggest_ledger.js -> data/suggest_ledger.json):
-     each Thursday, Sunday and Monday night game's set on Suggested Parlays, taken from the published
-     page on the payload just baked, rewritten until the set locks 2 hours before kickoff, a level
-     built again after the lock only for a player ruled out since, and graded after by the app's own
-     settleLeg, which reads who played from the payload's snaps (the retired all-games panel's
-     entries stay, frozen, and are still graded). It never refuses the run or turns it
-     red: a ledger it refuses is logged in the report and the last good one stays
-  7. prints a REPORT block
-A run that is refused (a required download, the stats shrinking, the bake, the audit's failures)
-exits 1 before the workflow's commit step; the workflow then keeps any prices it bought, unpublished.
+  7. once the audit is clean, the suggestions record (suggest_ledger.js -> data/suggest_ledger.json):
+     each Thursday, Sunday and Monday night game's set on Suggested Parlays, and each week's Sunday
+     slot, taken from the published page on the payload just baked (so on this run's read), rewritten
+     until the set locks 2 hours before kickoff, a level built again after the lock only for a player
+     ruled out since, and graded after by the app's own settleLeg, which reads who played from the
+     payload's snaps (the retired all-games panel's entries stay, frozen, and are still graded). It
+     never refuses the run or turns it red: a ledger it refuses is logged in the report and the last
+     good one stays
+  8. prints a REPORT block
+A run that is refused (a required download, the stats shrinking, the bake, applying the read, the audit's
+failures) exits 1 before the workflow's commit step, and the last good payload stays live.
 Anything else wrong is a problem that fails the run after the commit: the audit's warnings among them. For the price rows that
 means only what needs a person (price_problems): a name that could be two players (names.py
 says when), two names on one player's price, or misses too many to be a signing or two the
 roster has not caught up with; a few rows no player takes are logged and listed in the payload's
 unmatched, and a row placed by anything looser than a printed name is logged too.
-Nothing here ever prints the key.
 """
-import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetime, re, tempfile
+import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetime, re, tempfile, math, time
 HERE=os.path.dirname(os.path.abspath(__file__)); PKG=os.path.dirname(HERE)
 RAW=os.path.join(PKG,'raw'); DATA=os.path.join(PKG,'data'); RES=os.path.join(PKG,'research'); ROOT=os.path.dirname(PKG)
 sys.path.insert(0,DATA)
@@ -118,71 +127,18 @@ def audit_warnings(out):
     if at is None: return 0,[]
     m=AUDIT_LINE.fullmatch(lines[at].strip()); n=int(m.group(3) or 0)
     return n,[l.strip() for l in lines[at+1:] if l.strip().startswith(('WARN:','(a '))]
-def run(args,cwd,label,soft=False,env=None):
-    r=subprocess.run(args,cwd=cwd,env=env or ENV,capture_output=True,text=True,encoding='utf-8',errors='replace')
-    out=(r.stdout or '')+(r.stderr or '')
-    if r.returncode!=0 and not soft: problems.append(f"{label} failed (exit {r.returncode}): {out.strip()[-600:]}")
-    return r.returncode,out
-
-# Price pulls: (weekday, hour, minute) UTC, matching the "17 " crons in .github/workflows/props.yml
-# (test_pull_schedule.py holds the two together). Never on the hour: :00 is the most contended
-# minute on the platform and the likeliest to be dropped.
-# Mon for Monday night; Wed for a holiday game; Thu for Thursday night, Thanksgiving and Friday's
-# games; Saturday 05:17 for the weekend: Saturday's games and the whole Sunday slate, London to
-# Sunday night. The owner looks at the Sunday slate on Saturday (October 2026: "all day saturday to
-# look at potential bets instead of scrambling"), so its prices land by Saturday morning Pacific
-# even at the latest GitHub has started a run (05:17 + 9.4h is 7:41am PDT, 6:41am PST), about a
-# day before kickoff; it replaced a Saturday 08:17 pull for Saturday's games and a 23:17 one for
-# Sunday's, and every game is still priced once.
-PULL_SLOTS=[(0,8,17),(2,8,17),(3,8,17),(5,5,17)]
-# GitHub fires this repo's scheduled runs late: 3 to 9 hours, measured across every job in
-# October 2026 (props median 7.2h, one catch-up 9.2h). A pull prices every game that kicks off
-# before the next slot plus LATE, so a game is never left to a pull that lands after its kickoff.
-LATE=10
-CATCH_UP_WAIT=10   # hours after a slot before a catch-up treats that pull as dropped, not late
-
-def _slots(now,back,ahead):
-    out=[]
-    for d in range(-back,ahead+1):
-        day=(now+datetime.timedelta(days=d)).date()
-        for wd,h,m in PULL_SLOTS:
-            if day.weekday()==wd: out.append(datetime.datetime(day.year,day.month,day.day,h,m,tzinfo=datetime.timezone.utc))
-    return sorted(out)
-
-def hours_since_last_pull(now=None):
-    """How long ago the latest scheduled pull's slot was. A catch-up inside CATCH_UP_WAIT of a
-    slot leaves the game to the pull that is probably still coming, rather than price it and
-    have that pull price it again."""
-    now=now or datetime.datetime.now(datetime.timezone.utc)
-    past=[s for s in _slots(now,8,0) if s<=now]
-    return (now-past[-1]).total_seconds()/3600 if past else 999.0
-
-def hours_to_next_pull(now=None,soon=1800):
-    """How far ahead to price: up to the next scheduled pull, plus LATE for that pull landing
-    late. Every game is then priced by a pull that runs before it kicks off, with no special
-    case for a holiday, a Saturday game or a Wednesday night game.
-
-    Today counts: a manual run early on a Monday must see that morning's pull rather than skip
-    to Wednesday and buy Monday night itself. A pull less than soon seconds away (half an hour)
-    is treated as already happening; a catch-up passes 0 (pull_window)."""
-    now=now or datetime.datetime.now(datetime.timezone.utc)
-    for s in _slots(now,0,9):
-        if (s-now).total_seconds()>soon: return (s-now).total_seconds()/3600+LATE
-    return 120.0
-
-def pull_window(now=None,catch_up=False):
-    """The hours ahead this run prices (oddsfetch.py --hours), or None when a catch-up leaves it
-    to the scheduled pull: inside CATCH_UP_WAIT of a slot that pull is probably still on its way,
-    and outside it the catch-up prices only what has no prices (--missing).
-
-    A catch-up makes up the pull before it, so its window ends at the very next slot (plus LATE),
-    however close: it used to skip a slot under half an hour away as a pull does, so Sunday's
-    23:07 run landing nine hours late, at 08:07 on Monday, bought Monday night ten minutes before
-    the Monday pull's slot and left that pull nothing to do (no credit spent twice, the reprice
-    guard saw to that, but the game priced hours earlier than its pull would have)."""
-    now=now or datetime.datetime.now(datetime.timezone.utc)
-    if catch_up and hours_since_last_pull(now)<CATCH_UP_WAIT: return None
-    return hours_to_next_pull(now,0 if catch_up else 1800)
+TIMED_OUT=124      # run()'s exit code for a step that did not finish within its timeout
+def run(args,cwd,label,soft=False,env=None,timeout=None):
+    """(exit code, its output): a step that fails and is not soft is a problem. timeout, in seconds: a step
+    still running then is stopped and reads as TIMED_OUT, with what it had printed"""
+    try:
+        r=subprocess.run(args,cwd=cwd,env=env or ENV,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=timeout)
+        rc,out=r.returncode,(r.stdout or '')+(r.stderr or '')
+    except subprocess.TimeoutExpired as e:
+        dec=lambda b: b.decode('utf-8','replace') if isinstance(b,bytes) else (b or '')
+        rc,out=TIMED_OUT,dec(e.stdout)+dec(e.stderr)+f"\n(stopped after {timeout}s)"
+    if rc!=0 and not soft: problems.append(f"{label} failed (exit {rc}): {out.strip()[-600:]}")
+    return rc,out
 
 def current_week(gs):
     """(week, season over, games still to play): the earliest week with a regular-season game
@@ -403,12 +359,260 @@ def read_raw(prev,gs):
     if bad: say(f"  {bad}: not read, and the published payload's word on who played is carried forward"); snap_rows=None
     return {'srows':srows,'stats':stats,'skipped_live':skipped_live,'irows':irows,'rrows':rrows,'snap_rows':snap_rows}
 
+# ---------------------------------------------------------------- the ESPN read (since 20 October 2026)
+# The owner's call of 20 October 2026: no scheduled paid pull. The job reads DraftKings' lines from ESPN's free feed
+# on every run, with the page's own reader (espn_read.js boots the assembled page in jsdom and calls espnReadWeek,
+# the function a visitor's Refresh odds press runs), and publishes the read with the payload: PAY.espn (each game's
+# game lines with DraftKings' ids, its player lines, and what the last read of them found) and the schedule's game
+# lines, which the page installs at boot (espnPublished in part3.js) for every visitor and for the record. The read
+# never refuses the run: a game ESPN did not answer for keeps the last read the site published (each half with its
+# own time, never this run's), and only a read gone stale near a kickoff turns the run red after its commit.
+ESPN_DIR=os.path.join(RAW,'espn'); ESPN_READ=os.path.join(ESPN_DIR,'read.json')
+ESPN_TIMEOUT=300   # seconds: espn_read.js settles every request at its own deadline (150 s); this is the backstop
+ESPN_STALE=24      # hours: a game line read longer ago is not put on the schedule (the bake's rule for DraftKings'
+                   # lines), and a game whose lines no run has read for this long...
+ESPN_SOON=48       # ...kicking off within this many hours is overdue: a problem, so the run goes red after its commit
+PART3=os.path.join(HERE,'part3.js')
+
+def espn_rules(path=PART3):
+    """(the stats, the player-id rule) the page keeps of a published block of player lines (espnKeptGame in
+    part3.js: ESPN_KEEP_STATS, every stat of ESPN_MAIN and ESPN_MILE, and ESPN_KEEP_PID), read from the page's own
+    source as season.py reads part2.js, so the job publishes exactly what the page installs. A source this cannot
+    read in that shape raises, and the run is refused (the last good payload stays live): a change to the page's
+    rule comes with a change here"""
+    src=open(path,encoding='utf-8').read()
+    if 'const ESPN_KEEP_STATS=new Set([...Object.values(ESPN_MAIN),...Object.values(ESPN_MILE)]);' not in src:
+        raise ValueError("part3.js keeps a player block's stats by another rule than ESPN_MAIN and ESPN_MILE (espn_rules)")
+    stats=set()
+    for name in ('ESPN_MAIN','ESPN_MILE'):
+        m=re.search(r'const '+name+r'=\{([^}]*)\};',src)
+        got=re.findall(r"\d+:'([a-z_]+)'",m.group(1)) if m else []
+        if len(got)<10: raise ValueError(f"part3.js's {name} is not read in its shape (espn_rules): {got}")
+        stats|=set(got)
+    m=re.search(r"ESPN_KEEP_PID=/(\^[^/]+\$)/[,;]",src)
+    if not m: raise ValueError("part3.js's ESPN_KEEP_PID is not read in its shape (espn_rules)")
+    return frozenset(stats),re.compile(m.group(1))
+
+def espn_time(s):
+    """a time as the read writes it ('2026-10-20T15:55:11.000Z'), a UTC datetime, or None"""
+    if not isinstance(s,str) or not s.strip(): return None
+    try: t=datetime.datetime.fromisoformat(s.strip().replace('Z','+00:00'))
+    except ValueError: return None
+    return t if t.tzinfo else t.replace(tzinfo=datetime.timezone.utc)
+
+def espn_num(x): return isinstance(x,(int,float)) and not isinstance(x,bool) and math.isfinite(x)
+def espn_line(x):
+    """a player's line or rung as the page keeps one (espnKeepLine): on a half point, above 0, at most 1000"""
+    return espn_num(x) and 0<x<=1000 and float(x*2).is_integer()
+
+def espn_block(b,rules):
+    """a block of player lines {at, lines, rungs, td} cleaned by the page's rules (espnKeptGame's pl), or None
+    where it is not one: lines on a half point, 0 < line <= 1000, the stats the page keeps, at most 40 rungs a stat,
+    each listed once and in order, player ids of the page's shape, the touchdown list once each and sorted"""
+    stats,pid_ok=rules
+    if not isinstance(b,dict) or espn_time(b.get('at')) is None: return None
+    lines,rungs,td={},{},[]
+    for pid,m in (b['lines'].items() if isinstance(b.get('lines'),dict) else ()):
+        if not pid_ok.fullmatch(pid) or not isinstance(m,dict): continue
+        s={st:v for st,v in m.items() if st in stats and espn_line(v)}
+        if s: lines[pid]=s
+    for pid,m in (b['rungs'].items() if isinstance(b.get('rungs'),dict) else ()):
+        if not pid_ok.fullmatch(pid) or not isinstance(m,dict): continue
+        s={}
+        for st,v in m.items():
+            if st in stats and isinstance(v,list):
+                r=sorted({x for x in v if espn_line(x)})[:40]
+                if r: s[st]=r
+        if s: rungs[pid]=s
+    for pid in (b['td'] if isinstance(b.get('td'),list) else ()):
+        if isinstance(pid,str) and pid_ok.fullmatch(pid) and pid not in td: td.append(pid)
+    return {'at':b['at'],'lines':lines,'rungs':rungs,'td':sorted(td)}
+
+ESPN_GL_LINES=('mla','mlh','sp','spa','sph','tot','tov','tou')
+def espn_gl(x):
+    """a read of a game's lines {at, lines, ids, event} as the read writes it (each field as it stands), or None:
+    a time, and at least one line, every one of the eight a number"""
+    if not isinstance(x,dict) or espn_time(x.get('at')) is None or not isinstance(x.get('lines'),dict) or not x['lines']: return None
+    if any(k not in ESPN_GL_LINES or (v is not None and not espn_num(v)) for k,v in x['lines'].items()): return None
+    if 'ids' in x and not isinstance(x['ids'],dict): return None
+    return {k:x[k] for k in ('at','lines','ids','event') if k in x}
+
+def has_score(g): return g.get('hs') is not None and g.get('as') is not None
+
+def apply_espn(pay,prev,read,now,rules=None):
+    """The ESPN read into the payload (step 5), returning (notes for the report, problems). It runs on every run,
+    whatever the read did, so carrying and pruning always happen. pay is the payload just baked, prev the published
+    one, read raw/espn/read.json as load_read gave it (None: no read this run), now the run's clock.
+
+    pay['espn'] = {v:1, read_at: this read's (null when this run did not read), games:{gid:{w, gl, pl, out}}}, one
+    entry for each game of this season still to come (not kicked off at now, no score) with anything to publish:
+      gl   {at, lines, ids, event}: the last scoreboard read that carried DraftKings' lines for it, this run's
+           where it had any, else the published payload's
+      pl   {at, lines, rungs, td}: the last read whose player lines came back ok, cleaned by the page's rules
+           (espn_block); this run's 'ok' replaces it and this run's 'none' drops it (DraftKings has withdrawn them:
+           never publish lines it no longer offers), anything else carries it
+      out  {st 'ok'|'none', at}: what the last read of its player lines found, and when
+    Each half carries its own read's time, never this run's (a kept press is judged against it), and a half dated
+    at or after the game's kickoff is dropped. At a rollover (the published payload another season's) nothing is
+    carried. Then each game's lines go on the schedule as a press puts them (espnApplyGame's set and drop rule: a
+    spread or total read without its prices drops the old prices unless the number is unmoved), with ls 'dk', lat
+    the read's time and lsr 'espn', while under ESPN_STALE hours old and newer than any DraftKings line the bake
+    put there (a pull by hand). Nothing goes into mkt, prices or dk.
+
+    The overdue rule (as snaps_overdue's): a game kicking off within ESPN_SOON hours whose player lines (else its
+    game lines) were last read more than ESPN_STALE hours ago, or never, is a problem; the last read stays published.
+    test_apply_espn.py holds every rule here to its cases, and the page's install of the result"""
+    rules=rules or espn_rules()
+    notes,probs=[],[]
+    E0=prev.get('espn') if isinstance(prev,dict) else None
+    games0=E0['games'] if (payload_season(prev or {})==SEASON and isinstance(E0,dict) and E0.get('v')==1 and isinstance(E0.get('games'),dict)) else {}
+    rd=read if isinstance(read,dict) and isinstance(read.get('games'),dict) and not read.get('skipped') else None
+    to_come={g['id']:g for g in pay.get('sched') or [] if (kickoff(g) or now)>now and not has_score(g)}
+    out={}; n={'read':0,'none':0,'carried':0,'dropped':0}
+    for gid,g in to_come.items():
+        w=str(int(g['w'])); ko=kickoff(g)
+        o0=games0.get(gid); old=o0 if isinstance(o0,dict) and str(o0.get('w'))==w else None
+        r=rd['games'].get(gid) if rd and str(rd.get('week'))==w else None
+        r=r if isinstance(r,dict) else None
+        ro=r.get('out') if r and isinstance(r.get('out'),dict) else {}
+        st=ro.get('st')
+        gl=espn_gl(r.get('gl')) if r else None
+        fresh_gl=gl is not None
+        if gl is None and old: gl=espn_gl(old.get('gl'))
+        pl=espn_block(r.get('pl'),rules) if r and st=='ok' else None
+        if pl is not None:
+            o={'st':'ok','at':pl['at']}; n['read']+=1
+        elif r and st=='none':
+            o={'st':'none','at':ro.get('at') if espn_time(ro.get('at')) else rd.get('read_at')}; n['none']+=1
+        else:
+            pl=espn_block(old.get('pl'),rules) if old else None
+            u=old.get('out') if old else None
+            o={'st':u['st'],'at':u['at']} if isinstance(u,dict) and u.get('st') in ('ok','none') and espn_time(u.get('at')) else None
+            if o and o['st']=='none': pl=None
+            if pl or o or (gl and not fresh_gl): n['carried']+=1
+        e={'w':w}
+        for h,x in (('gl',gl),('pl',pl),('out',o)):
+            if x is None: continue
+            t=espn_time(x.get('at'))
+            if t is None or (ko and t>=ko): n['dropped']+=1; continue
+            e[h]=x
+        if len(e)>1: out[gid]=e
+    pay['espn']={'v':1,'read_at':rd.get('read_at') if rd else None,'games':out}
+    # the game lines onto the schedule, by the press's own rule, under the bake's 24-hour rule
+    lines=stale=kept=0
+    for gid,e in out.items():
+        gl=e.get('gl'); g=to_come[gid]
+        if not gl: continue
+        t=espn_time(gl['at'])
+        if (now-t).total_seconds()>=ESPN_STALE*3600: stale+=1; continue
+        t0=espn_time(g.get('lat')) if g.get('ls')=='dk' else None
+        if t0 is not None and t0>=t: kept+=1; continue
+        L=gl['lines']
+        for k in ('mla','mlh'):
+            if L.get(k) is not None: g[k]=L[k]
+        for num,a,b in (('sp','spa','sph'),('tot','tov','tou')):
+            if L.get(num) is None: continue
+            same=g.get(num)==L[num]; g[num]=L[num]
+            if L.get(a) is not None and L.get(b) is not None: g[a]=L[a]; g[b]=L[b]
+            elif not same: g.pop(a,None); g.pop(b,None)
+        g['ls']='dk'; g['lat']=gl['at']; g['lsr']='espn'; lines+=1
+    npl=sum(1 for e in out.values() if e.get('pl'))
+    notes.append(f"ESPN: {len(out)} game(s) still to come published"+(f" from the read of {rd.get('read_at')}" if rd else ' (this run made no read)')
+                 +f": {n['read']} with player lines read now, {n['none']} with none posted, {n['carried']} carried from the last read, "
+                 f"{npl} with player lines in all; game lines from ESPN on {lines} game(s) of the schedule"
+                 +(f", {stale} left at nflverse's as more than {ESPN_STALE}h old" if stale else '')
+                 +(f", {kept} at a newer DraftKings pull" if kept else '')
+                 +(f"; {n['dropped']} read(s) dated at or after a kickoff left out" if n['dropped'] else ''))
+    late=espn_overdue(out,to_come,now)
+    if late: probs.append(f"ESPN: DraftKings' lines not read in the last {ESPN_STALE}h for {len(late)} game(s) kicking off within {ESPN_SOON}h ({'; '.join(late[:6])}{'...' if len(late)>6 else ''}): the last read stays published")
+    return notes,probs
+
+def espn_overdue(games,to_come,now):
+    """'game last read Nh ago, kickoff in Mh' (or never read) for each game kicking off within ESPN_SOON hours
+    whose player lines (out.at; its game lines' gl.at where no read of them found anything) were last read more
+    than ESPN_STALE hours before now, or never"""
+    late=[]
+    for gid,g in sorted(to_come.items(),key=lambda x:(kickoff(x[1]),x[0])):
+        ko=kickoff(g); h=(ko-now).total_seconds()/3600
+        if h>ESPN_SOON: continue
+        e=games.get(gid) or {}
+        t=espn_time((e.get('out') or e.get('gl') or {}).get('at'))
+        age=(now-t).total_seconds()/3600 if t else None
+        if age is None: late.append(f"{gid} never read, kickoff in {h:.0f}h")
+        elif age>ESPN_STALE: late.append(f"{gid} last read {age:.0f}h ago, kickoff in {h:.0f}h")
+    return late
+
+def load_read(path,now,week):
+    """(the read espn_read.js wrote, or None, and why not): None where there is no file, it will not read, it was
+    written before this run began (a file an earlier run left: never this run's), or it is of another week. A read
+    that says skipped (the page had no reader) is returned as it is, for the caller to make a problem of"""
+    if not os.path.exists(path): return None,'espn_read.js wrote no read'
+    try: r=json.load(open(path,encoding='utf-8'))
+    except (OSError,ValueError) as e: return None,f'raw/espn/read.json would not read ({e})'
+    if not isinstance(r,dict) or r.get('v')!=1: return None,'raw/espn/read.json is not a read (v 1)'
+    t=espn_time(r.get('read_at'))
+    if t is None or t<now-datetime.timedelta(seconds=1): return None,f"raw/espn/read.json was read at {r.get('read_at')}, before this run began: not this run's"
+    if r.get('skipped'): return r,None
+    if str(r.get('week'))!=str(week) or not isinstance(r.get('games'),dict): return None,f"raw/espn/read.json is of week {r.get('week')}, not this run's week {week}"
+    return r,None
+
+def espn_apply_step(pp,prev,read,now):
+    """5. apply_espn on the payload file (written with the bake's own settings), its notes in the report and its
+    problems the run's. An error here refuses the run: finish() puts the published payload back, its read with it,
+    rather than publish a payload whose read is missing or half made"""
+    try:
+        pay=json.load(open(pp,encoding='utf-8'))
+        notes,probs=apply_espn(pay,prev,read,now)
+        json.dump(pay,open(pp,'w',encoding='utf-8'),separators=(',',':'),ensure_ascii=False)
+        for n in notes: say('  '+n)
+        problems.extend(probs)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        refuse(f"the ESPN read could not be applied to the payload: {type(e).__name__}: {e}")
+
+def espn_step(a,week,season_over,pp,now):
+    """4. the ESPN read: node espn_read.js (--offline replays the answers raw/espn/ recorded), on the payload just
+    baked and the page just assembled, for the week's games still to come; the read, or None. Never refuses the run:
+    a read that fails game by game is the read, carried by apply_espn; a reader that crashed or ran past ESPN_TIMEOUT,
+    or a page with no espnReadWeek, is a problem at once (the run publishes the last read and goes red after its
+    commit). raw/espn/read.json is deleted first, so a file an earlier run left is never taken for this run's"""
+    try: os.remove(ESPN_READ)
+    except FileNotFoundError: pass
+    if season_over: say("  ESPN read skipped: the regular season is over"); return None
+    try: pay=json.load(open(pp,encoding='utf-8'))
+    except (OSError,ValueError): pay={}
+    to=[g for g in pay.get('sched') or [] if int(g.get('w') or 0)==week and (kickoff(g) or now)>now and not has_score(g)]
+    if not to: say(f"  ESPN read skipped: no game of week {week} is still to come"); return None
+    t0=time.time()
+    rc,out=run(['node','espn_read.js']+(['--offline'] if a.offline else []),HERE,'ESPN read',soft=True,timeout=ESPN_TIMEOUT)
+    for line in out.splitlines():
+        if line.lstrip().startswith('ESPN'): say('  '+line.strip())
+    if rc!=0:
+        why=f"did not finish within {ESPN_TIMEOUT}s" if rc==TIMED_OUT else f"stopped (exit {rc})"
+        problems.append(f"ESPN read: espn_read.js {why}, so this run read nothing and the last read stays published: {out.strip()[-400:]}")
+        return None
+    r,why=load_read(ESPN_READ,now,week)
+    if r is not None and r.get('skipped'):
+        problems.append(f"ESPN read: {r['skipped']}, so this run read nothing and the last read stays published")
+        return None
+    if r is None: say(f"  ESPN read not used: {why}")
+    else: say(f"  ESPN read: week {r.get('week')}, {r.get('requests','?')} requests in {time.time()-t0:.0f}s")
+    return r
+
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--no-odds',action='store_true'); ap.add_argument('--hours',type=float); ap.add_argument('--no-commit',action='store_true',help='accepted for the workflow; nothing commits here'); ap.add_argument('--local',action='store_true',help='allow the price pull off GitHub Actions'); ap.add_argument('--catch-up',action='store_true',help='price only the games up to the next pull that have no prices yet and have not kicked off: a dropped scheduled pull made up, nothing else spent')
-    ap.add_argument('--offline',action='store_true',help='use the files already in raw/ (testing); a missing required file still refuses the run')
+    ap=argparse.ArgumentParser()
+    ap.add_argument('--no-commit',action='store_true',help='accepted for the workflow; nothing commits here')
+    ap.add_argument('--offline',action='store_true',help='use the files already in raw/ (testing), and replay the ESPN answers raw/espn/ recorded; a missing required file still refuses the run')
+    # no effect since 20 October 2026, when the job stopped buying prices: kept so a run queued with the old run
+    # line (--catch-up), a dispatch with no_odds ticked and the props gate on an older base (--no-odds) still start
+    NOOP='(no effect since 20 October 2026: the job buys no prices)'
+    ap.add_argument('--no-odds',action='store_true',help=NOOP); ap.add_argument('--catch-up',action='store_true',help=NOOP)
+    ap.add_argument('--hours',type=float,help=NOOP); ap.add_argument('--local',action='store_true',help=NOOP)
     a=ap.parse_args()
     now=datetime.datetime.now(datetime.timezone.utc)
     today=datetime.date.today(); say(f"weekly refresh {datetime.datetime.now():%Y-%m-%d %H:%M} ({today:%A}), season {SEASON}")
+    noop=[f for f,on in (('--no-odds',a.no_odds),('--catch-up',a.catch_up),('--hours',a.hours is not None),('--local',a.local)) if on]
+    if noop: say(f"  {', '.join(noop)}: {NOOP}")
     pp=os.path.join(DATA,'payload.json')
     try: PUBLISHED[0]=open(pp,'rb').read(); prev=json.loads(PUBLISHED[0])
     except Exception: prev={}
@@ -469,39 +673,22 @@ def main():
     for line in out.splitlines():
         if line.startswith(('players','depth','build')): say('  '+line.strip())
     if rc!=0: refuse('payload.py failed, so the rosters and schedule could not be rebuilt'); return finish(a)
-    # 3. prices
-    window=pull_window(catch_up=a.catch_up)     # None: a catch-up leaves it to the pull still on its way
-    if a.no_odds: say("  price pull skipped (--no-odds)")
-    elif season_over: say("  price pull skipped: the regular season is over")
-    elif not os.environ.get('GITHUB_ACTIONS') and not a.local: say("  price pull skipped: credits are spent only by the props workflow (pass --local to pull from this machine)")
-    elif not os.environ.get('ODDS_API_KEY'): say("  price pull skipped: ODDS_API_KEY is not set in this environment"); problems.append("no ODDS_API_KEY; prices not pulled")
-    elif window is None: say(f"  catch-up skipped: the last scheduled pull's slot was {hours_since_last_pull():.1f}h ago and may still be on its way")
-    else:
-        hours=a.hours or window
-        if a.catch_up: say(f"  catch-up: pricing only week {week} games within {hours:.0f}h that have no prices yet and have not kicked off")
-        else: say(f"  pricing week {week} games kicking off within {hours:.0f}h, which reaches the next scheduled pull however late it lands")
-        rc,out=run([PY,'oddsfetch.py','--week',str(week),'--hours',f'{hours:.1f}']+(['--missing'] if a.catch_up else []),DATA,'oddsfetch')
-        for line in out.splitlines():
-            if any(k in line for k in ('credits','main lines','threshold prices','matched','kicked off','priced ')): say('  '+line.strip())
-        left=re.findall(r'remaining (\d+)',out); used=re.findall(r'credits used (\d+)',out)
-        # every call prints the balance, so more than one reading means at least one game was
-        # actually priced. A run that matched nothing must not overwrite the last real pull.
-        if rc==0 and len(used)>1:
-            spent=int(used[-1])-int(used[0])
-            json.dump({'at':now.strftime('%Y-%m-%dT%H:%M'),'week':week,'credits_left':int(left[-1]) if left else None,'credits_spent':spent},
-                      open(os.path.join(DATA,'pricepull.json'),'w',encoding='utf-8'))
-        elif rc==0: say('  nothing kicks off before the next pull; no credits spent')
-    # 3b. the odds-API balance. /v4/sports does not count against the quota.
-    rc,out=run([PY,'credits.py'],DATA,'credits',soft=True)
-    say('  '+(out.strip().splitlines()[-1] if out.strip() else 'balance not checked'))
-    # 4. bake
+    # 3. bake
     try: bake(pp,prev,gs,week,season_over,now,raw,not_posted)
     except Exception as e:
         import traceback; traceback.print_exc()
         refuse(f"bake: {e}")
     if blocked(): return finish(a)
-    # 5. assemble + audit: the audit checks the payload against the raw files just downloaded
-    rc,out=run([PY,'assemble.py'],HERE,'assemble')
+    # 4. assemble the page (it validates the payload too), then read ESPN with it: the reader boots the page on
+    # the payload just baked
+    rc,out=run([PY,'assemble.py'],HERE,'assemble',soft=True)
+    if rc!=0: refuse(f"assemble.py failed (exit {rc}), so the page could not be assembled: {out.strip()[-400:]}"); return finish(a)
+    read=espn_step(a,week,season_over,pp,now)
+    # 5. the read into the payload: this run's where it read, the published payload's carried where it did not
+    espn_apply_step(pp,prev,read,now)
+    if blocked(): return finish(a)
+    # 6. the audit (and on a clean one the suggestions record): it checks the payload against the raw files just
+    # downloaded and this run's read
     audit_step(a)
     return finish(a)
 
