@@ -15,16 +15,18 @@
    The deposit is entered here (S.bank.deposit) and kept in the browser; the table keeps the
    running total and, with a deposit, the balance after each week.
 
-   Inside the Bets and Stats page the log is X's (the X Bet Log: the file liveparlays/xbets.json,
-   through window.XBETS, which the build's hook lays into S.bets and S.bank.deposit), the same on
-   every device and read only: no entry form, no Remove, no deposit box; the balance from X's
-   deposit, or X's profit against break even when the file has none; and a line saying when the
-   file last changed. */
+   Inside NFL Hub, on the site owner's devices (the admin link: nflbets/build/admin.js; since 20
+   October 2026 no one else's page has the X Bet Log tab or reads its file), the log is X's (the X
+   Bet Log: the file liveparlays/xbets.json, through window.XBETS, which the build's hook lays into
+   S.bets and S.bank.deposit), read only: no entry form, no Remove, no deposit box; the balance from
+   X's deposit, or X's profit against break even when the file has none; and a line saying when the
+   file last changed. Where window.XBETS.enabled() is false (a visitor's page) it is the browser's
+   own log, as on the app's own page, never shown on the hub. */
 function betsViz(){
   const chart=document.getElementById('betChart'), table=document.getElementById('betTable');
   if(!chart||!table) return;
   const XB=window.XBETS&&typeof window.XBETS.enabled==='function'&&window.XBETS.enabled()?window.XBETS:null;
-  /* X's log, handed in by the page: read only on every device */
+  /* X's log, handed in by the page: read only */
   const xb=XB?XB.get():null, ro=!!xb;
   xbHead(xb);
   const logged=Object.keys(S.bets||{}).map(Number).sort((a,b)=>a-b).map(w=>({w,...S.bets[w]}));
@@ -158,6 +160,6 @@ function xbHead(xb){
   else if(s.other){ line='The log on file is X\u2019s '+esc(s.other)+' season: no week of this one is logged yet.'; }
   else if(!s.applied) line='Reading X\u2019s bet log\u2026';
   else if(s.at&&when(s.at)) line='Updated '+esc(when(s.at));
-  n.innerHTML='Every week X bet: what went in and what came back. The same on every device, read only.'
+  n.innerHTML='Every week X bet: what went in and what came back, from X\u2019s file, read only.'
     +(line?'<span class="xb-status '+cls+'">'+line+'</span>':'');
 }
