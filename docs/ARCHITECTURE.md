@@ -282,6 +282,10 @@ props/
                                  paid-pull timing in any word; a locked leg's kept price and fair
                                  chance; the pull hooks for the parlay card) (its docstring is the
                                  design)
+  build/patch_tab_leave.py       app v126: leaving the Props tab closes the game's page (tabLeft,
+                                 from the tab switch), a focus left on what it hid going to the
+                                 chosen tab's button; Escape only on a game's page on the screen
+                                 (gameShown)
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
                                  answers (audit M8, the nflbets smoke)
   build/fixtures/espn/           ESPN's recorded answers for week 6 of 2026 (the scoreboard, two
@@ -674,6 +678,14 @@ the site owner's tabs alone since 20 October 2026 (the admin link, below): their
 written over as `#matchups`; signing out (`hub-admin`) does the same to an open page. On a phone the tab bar is
 wider than the screen and scrolls sideways, so on load, on a new address and on a tap the chosen
 button is brought into the bar by the bar's own `scrollLeft`, never by scrolling the page.
+Every tab change goes through the prop model's switch (the `#tabs` buttons' click in `part3.js`, which `routeTabs`
+clicks on a `hashchange`), and a window that lives in a tab's section is that tab's own (app v126): leaving the Props
+tab closes the game's page as its Back does (`tabLeft`, `closeGame`), and `tab_elo.html` closes the Mismatches list
+(`#peMmModal`, on the Props tab) and the ELO tab's player and team windows (`#pePlModal`, `#peTmModal`) on leaving
+theirs, so none hidden with its tab holds body's `modal-open` (the tab the address went to could not scroll) or answers
+Escape; a focus left on what the switch hid goes to the chosen tab's button, and Escape closes a game's page only where
+it is on the screen (`gameShown`). The whole Game snapshot (in `body`, no tab's) stays open across a move and, closed
+there, gives the focus to the chosen tab's button where its row is off the screen.
 The page is dark for every visitor by default, whatever the system says; the round 44px switch at the header's top
 right (`nflbets/build/theme.js`, set in the head before anything is drawn, the owner's call of 17 October 2026: "keep
 this whole layout as dark mode, and then make a light mode version that people can tab on and off on the top right")

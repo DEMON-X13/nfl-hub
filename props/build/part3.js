@@ -54,6 +54,23 @@ function renderWeekOptions(){
 function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; } }
 function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }
 function closeGame(){ S.ui.game=null; save(); closeGameModal(); renderSlate(); }
+/* (app v126) the game's page is the Props tab's own window, on the screen only while that tab is: leaving the tab
+   (another tab's button, or on the hub the address moved by Back or a link, which routeTabs turns into a click on
+   the tab's button) closes it as its Back button does, so no page hidden with its tab holds body's modal-open (the
+   tab the address went to could not scroll) or answers Escape. A page not open is left alone, so a switch before
+   the payload is in saves nothing. A focus the switch left on what it took off the screen (the game's page, a
+   window or a row of the old tab) goes to the chosen tab's button, never the page's body; a browser keeps
+   activeElement on a newly hidden element until its next rendering update, so the click sees it, whichever
+   hashchange listener ran first. A focus on anything still shown stays, and with nothing focused (a load) none is
+   made */
+function gameShown(){ const m=$('gameModal'); return !!m&&!m.hidden&&!m.closest('[hidden]'); }
+function tabLeft(b){
+  const a=document.activeElement, gone=x=>!x.isConnected||!!x.closest('[hidden]');
+  if(b.dataset.tab!=='slate'&&!$('gameModal').hidden) closeGame();
+  /* read before the close: its redraw replaces the slate's rows, and a focused row removed leaves the body */
+  const f=document.activeElement, at=f&&f!==document.body?f:a;
+  if(a&&a!==document.body&&gone(at)) try{ b.focus({preventScroll:true}); }catch(e){}
+}
 /* W-L on the model's side of every book main line, frozen pre-game numbers */
 function renderRecords(w){
   const wr=$('weekRec'), sr=$('seasonRec'); if(!wr||!sr) return;
@@ -931,11 +948,12 @@ function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderPar
 /* the Games tab's own scores: off until asked, then read on the button */
 $('slateNow')?.addEventListener('click',()=>{ LIVE.slate=true; LIVE.err=null; slateStamp(); liveRefresh(); });
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&gameShown()) closeGame(); });
 $('gameModal').addEventListener('click',e=>{ if(e.target===$('gameModal')) closeGame(); });
 document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
-  document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab); }));
+  document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab);
+  tabLeft(b); }));
 function parseCSV(file){ return new Promise(res=>Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>res(r.data)})); }
 
 /* The payload is fetched, not baked in. The page and the data are separate files so a

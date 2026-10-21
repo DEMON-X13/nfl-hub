@@ -2584,7 +2584,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v125 \u00b7 2026-10-21';
+const APP_BUILD='app v126 \u00b7 2026-10-21';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3741,6 +3741,23 @@ function renderWeekOptions(){
 function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; } }
 function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }
 function closeGame(){ S.ui.game=null; save(); closeGameModal(); renderSlate(); }
+/* (app v126) the game's page is the Props tab's own window, on the screen only while that tab is: leaving the tab
+   (another tab's button, or on the hub the address moved by Back or a link, which routeTabs turns into a click on
+   the tab's button) closes it as its Back button does, so no page hidden with its tab holds body's modal-open (the
+   tab the address went to could not scroll) or answers Escape. A page not open is left alone, so a switch before
+   the payload is in saves nothing. A focus the switch left on what it took off the screen (the game's page, a
+   window or a row of the old tab) goes to the chosen tab's button, never the page's body; a browser keeps
+   activeElement on a newly hidden element until its next rendering update, so the click sees it, whichever
+   hashchange listener ran first. A focus on anything still shown stays, and with nothing focused (a load) none is
+   made */
+function gameShown(){ const m=$('gameModal'); return !!m&&!m.hidden&&!m.closest('[hidden]'); }
+function tabLeft(b){
+  const a=document.activeElement, gone=x=>!x.isConnected||!!x.closest('[hidden]');
+  if(b.dataset.tab!=='slate'&&!$('gameModal').hidden) closeGame();
+  /* read before the close: its redraw replaces the slate's rows, and a focused row removed leaves the body */
+  const f=document.activeElement, at=f&&f!==document.body?f:a;
+  if(a&&a!==document.body&&gone(at)) try{ b.focus({preventScroll:true}); }catch(e){}
+}
 /* W-L on the model's side of every book main line, frozen pre-game numbers */
 function renderRecords(w){
   const wr=$('weekRec'), sr=$('seasonRec'); if(!wr||!sr) return;
@@ -4618,11 +4635,12 @@ function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderPar
 /* the Games tab's own scores: off until asked, then read on the button */
 $('slateNow')?.addEventListener('click',()=>{ LIVE.slate=true; LIVE.err=null; slateStamp(); liveRefresh(); });
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&gameShown()) closeGame(); });
 $('gameModal').addEventListener('click',e=>{ if(e.target===$('gameModal')) closeGame(); });
 document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
-  document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab); }));
+  document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab);
+  tabLeft(b); }));
 function parseCSV(file){ return new Promise(res=>Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>res(r.data)})); }
 
 /* The payload is fetched, not baked in. The page and the data are separate files so a
@@ -7773,7 +7791,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='dbd2988';
+const PAGE_HASH='e605aa8';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -11387,6 +11405,17 @@ function mismatchModal(rows){
   m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
 }
 function mmClose(){ const m=document.getElementById('peMmModal'); if(m){ m.hidden=true; if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open'); } }
+/* a window is its tab's own (21 October 2026, with app v126, where the prop model closes the game's page the same
+   way): the player's and the team's windows live on the ELO Ratings tab and the Mismatches' list on the Props tab,
+   so leaving the tab (another tab's button, or the address moved by Back or a link, which routeTabs turns into a
+   click on the tab's button) closes the ones on it. Left open, one hidden with its tab held body's modal-open, so the
+   tab the address went to could not scroll, and still answered Escape. Each is read against the tab it lives on, not
+   against which sections are hidden yet, so the order the click's listeners run in does not matter; the prop model's
+   switch gives a focus left in one to the chosen tab's button */
+document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
+  for(const [id,shut] of [['peMmModal',mmClose],['pePlModal',plClose],['peTmModal',tmClose]]){
+    const m=document.getElementById(id), sec=m&&m.closest('section');
+    if(m&&!m.hidden&&sec&&sec.id!=='tab-'+b.dataset.tab) shut(); } }));
 window.eloMismatches=mismatches;
 /* and the way a Mismatches bubble brings a player's row into view and highlights it, for the Game
    snapshot's Starters names (the board's openOnProps) */
@@ -12541,10 +12570,14 @@ function close(restore=true){
   if(one){ const op=opener; opener=null; oneFocus(op,one,gid,restore); return; }
   if(!restore){ opener=null; return; }
   /* the focus goes back to the game's row that opened it, or to the same game's row if the board
-     has been redrawn since */
-  const back=opener&&opener.isConnected?opener:[...document.querySelectorAll('.pk-game[data-game]')].find(b=>b.dataset.game===gid);
+     has been redrawn since; where neither is on the screen (21 October 2026: the address moved to another tab
+     under the window, which stays open over it, so the row is on a hidden tab), the chosen tab's button,
+     never a hidden row and so the page's body */
+  const vis=el=>!!el&&el.isConnected&&!el.closest('[hidden]');
+  const row=opener&&opener.isConnected?opener:[...document.querySelectorAll('.pk-game[data-game]')].find(b=>b.dataset.game===gid);
+  const back=vis(row)?row:document.querySelector('#tabs button[aria-selected="true"]');
   opener=null;
-  try{ if(back) back.focus(); }catch(e){}
+  try{ if(vis(back)) back.focus(); }catch(e){}
 }
 /* where the focus goes when one card's window closes: the button that opened it, else the same button on
    the game's page drawn since (a Refresh odds press, a score read), else the page's Back, else the game's
