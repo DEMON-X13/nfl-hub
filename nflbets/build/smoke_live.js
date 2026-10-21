@@ -320,12 +320,12 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
 }
 /* everything a browser holds, key by key */
 const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; i++) { const k = w.localStorage.key(i); o[k] = w.localStorage.getItem(k); } return o; };
-/* (app v126, the owner's call of 21 October 2026: no ladder bets) this smoke's own reading of a ladder bet: a player's leg
+/* (app v127, the owner's call of 21 October 2026: no ladder bets) this smoke's own reading of a ladder bet: a player's leg
    off his main line (a rung k+), or two or more touchdowns; never a team bet or a game total. And the one line the
    builder draws when a load took ladder bets out of what the browser kept (p[data-pb-noladder]), word for word */
 const ladderOwn = l => !!l && !['ml', 'ats', 'total'].includes(l.stat) && (l.stat === 'any_td' ? (+l.k || 1) >= 2 : !l.main);
 const NOLADDER_SAY = n => `${n} leg${n === 1 ? ' was' : 's were'} removed: the site no longer offers ladder bets (such as 250+ passing yards or 2+ touchdowns), only main lines, anytime touchdowns and team bets.`;
-/* a page booted on a builder the browser kept from before app v126 (seeded: the legs, keyed as the prop model keys them).
+/* a page booted on a builder the browser kept from before app v127 (seeded: the legs, keyed as the prop model keys them).
    The load takes out exactly the ladder bets but a locked Suggested Parlays set's (a leg carrying kept, which stays),
    keeps the rest, writes the builder without them and says so in one line with the count (none, and no line, where it
    took none out). Then the seeded legs are put back in the builder after the boot, the way a set locked before the
@@ -2702,10 +2702,10 @@ const ladderBoot = async (x, seeded, how) => {
         seed: x => x.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 25, saved: [], parlay: legs2 })) });
       const { w, d } = v, rec = stubDraw(w), md = d.getElementById('pcModal'), dkA = d.getElementById('pcDk'), link = d.getElementById('pcLink');
       const note = () => d.getElementById('pcDkNote'), msg = () => txt(d.getElementById('pcMsg')), ckS = () => cardCheck(w) || {}, how = 'the card\'s check of DraftKings\' lines';
-      /* (app v126) the builder was kept with the tight end's 4+ receptions and 2+ touchdowns, two ladder bets: the load
+      /* (app v127) the builder was kept with the tight end's 4+ receptions and 2+ touchdowns, two ladder bets: the load
          takes those two out and says so; the seven are put back after the boot (ladderBoot), as a set locked before the
          change puts its legs in, since the card still serves its ladders and every check below is of the seven */
-      await ladderBoot(v, legs2, `${how} (app v126)`);
+      await ladderBoot(v, legs2, `${how} (app v127)`);
       const shared = []; Object.defineProperty(w.navigator, 'share', { value: async x => { shared.push(x); }, configurable: true });
       /* how often the page under the card is drawn again for a read: the page's own espnRedraw, counted */
       w.eval('window.__rd=0; { const r0=window.espnRedraw; window.espnRedraw=function(){ window.__rd++; return r0.apply(this,arguments); }; }');
@@ -3067,8 +3067,8 @@ const ladderBoot = async (x, seeded, how) => {
           const six = Object.fromEntries(Object.entries(legs2).filter(([k]) => k !== totKey)), N6 = Object.keys(six).length;
           const v6 = await run({ url: URL_PB, admin: false, pay: pin2, file: { updated: null, games: [], parlays: [] }, esp: esp2,
             seed: x => x.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 25, saved: [], parlay: six })) });
-          /* (app v126) the same two ladder bets taken out at the load and said, the six put back after it */
-          await ladderBoot(v6, six, `${how}, one link (app v126)`);
+          /* (app v127) the same two ladder bets taken out at the load and said, the six put back after it */
+          await ladderBoot(v6, six, `${how}, one link (app v127)`);
           const w6 = v6.w, d6 = v6.d; stubDraw(w6);
           const a6 = d6.getElementById('pcDk'), note6 = () => d6.getElementById('pcDkNote'), msg6 = () => txt(d6.getElementById('pcMsg')), ck6 = () => cardCheck(w6) || {};
           const focus6 = () => d6.activeElement === d6.body ? 'the page\'s body' : d6.activeElement ? (d6.activeElement.id || d6.activeElement.outerHTML.slice(0, 80)) : 'nothing';
@@ -3263,12 +3263,12 @@ const ladderBoot = async (x, seeded, how) => {
       const cr = n => n + ' credit' + (n === 1 ? '' : 's');
       const KEY_SAY = 'The Odds API did not accept this device’s key: sign out and open your admin link again.';
       /* a page of this section: the admin's, its builder holding legs, the stand-ins above */
-      /* (app v126) a builder kept with a ladder bet (R1's two rungs and 2+ touchdowns, R5 to R6b's 225+ or 231+ passing
+      /* (app v127) a builder kept with a ladder bet (R1's two rungs and 2+ touchdowns, R5 to R6b's 225+ or 231+ passing
          yards) loses it at the load, said so; ladderBoot holds that and puts the legs back after the boot, as a set locked
          before the change puts its legs in, since Pull from DraftKings still serves its ladders (a locked set's legs on the
          admin's card) and the checks below are of them. A builder with none (R7) loses nothing and says nothing */
       const boot3 = async legs => { const x = await run({ url: URL_PB, pay: pin3, file: { updated: null, games: [], parlays: [] }, esp: espJ3, odds: oddsJ3, seed: x => x.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 20, saved: [], parlay: BJ(...legs) })) });
-        await ladderBoot(x, BJ(...legs), `Pull from DraftKings, a builder kept with ${legs.map(l => l.label).join(', ')} (app v126)`); return x; };
+        await ladderBoot(x, BJ(...legs), `Pull from DraftKings, a builder kept with ${legs.map(l => l.label).join(', ')} (app v127)`); return x; };
       const how = 'Pull from DraftKings';
       const mkCard = async (x, legs) => { if (legs) { x.w.eval(`S.parlay=${JSON.stringify(BJ(...legs))}; renderParlay()`); await wait(20); }
         const c = x.d.getElementById('pcModal'); if (c && !c.hidden) { x.d.getElementById('pcClose').click(); await wait(10); }
@@ -3676,7 +3676,7 @@ const ladderBoot = async (x, seeded, how) => {
             `${how}: on the card opened again, a press on Pull does not look up and ask again: ` + JSON.stringify(w7.PARLAY_CARD.pullState()));
           { const no = d7.getElementById('pcPullNo'); if (no) no.click(); } await wait(10); d7.getElementById('pcClose').click(); await wait(10);
         } finally { if (OA.holdEv) { OA.holdEv.go(); OA.holdEv = null; } } }
-      /* ---- R8 (app v126): a ladder bet of a Suggested Parlays set locked before the change, put in the builder by its Add
+      /* ---- R8 (app v127): a ladder bet of a Suggested Parlays set locked before the change, put in the builder by its Add
          to builder (so it carries kept, its locked fair chance, as spLegIn gives every locked leg), stays through the load
          beside a main line, and the builder says nothing was removed (ladderBoot, its expectation worked out on its own) ---- */
       { const zk = await boot3([Object.assign({}, LEG.lpRung, { kept: { fair: 0.62, est: true } }), LEG.qbMain]);

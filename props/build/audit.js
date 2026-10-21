@@ -143,7 +143,7 @@ setTimeout(async()=>{
      no paid price on file for that line), for M14, which holds that the list now leaves it out */
   const readTopAud=l=>!!l&&l.src==='dkline'&&!F('isGameLeg')(l)&&(()=>{ const x=ESR.price(l); return ESR.takeable(x)&&x.price===l.price&&!ESR.real(l); })();
   const dkTopOk=l=>dkOk(l);
-  /* (app v126) a ladder bet, worked here on its own, never by the page's isLadder (the owner's call of 21 October 2026:
+  /* (app v127) a ladder bet, worked here on its own, never by the page's isLadder (the owner's call of 21 October 2026:
      "is it possible to not do ladders and just include Same Game Parlay eligible stuff"): a player's over at a number
      that is not his main line (a rung k+, "250+ passing yards", main false) or two or more touchdowns (the anytime
      touchdown at k 2 or more, k missing read as 1), on a stat the page projects (the audit's own list: DraftKings' player
@@ -632,7 +632,7 @@ setTimeout(async()=>{
       S.parlay=JSON.parse(keepP); F('renderParlay')(); }
     console.log(`J2. game total: the market's chance on ${nTot} scheduled totals (${nPriced} with both prices, the rest 50%) and 9 made-up prices; the model's points (${mT(gx).toFixed(1)} on a sample game) moved 4 ways and never in it; another number at Normal(line, 13.2); settles over, under and push, live, priced, correlated, ticked one side at a time`); }
 
-  /* ---- K. two or more touchdowns: still priced and settled (the records hold them), offered nowhere (app v126) ----
+  /* ---- K. two or more touchdowns: still priced and settled (the records hold them), offered nowhere (app v127) ----
      The site offers no ladder bet since 21 October 2026 (the owner's call: "is it possible to not do ladders and just
      include Same Game Parlay eligible stuff"), 2+ touchdowns among them: a game page draws one touchdown box a player,
      toggleLeg puts on no 2+ touchdowns by any path, and the one box still puts on and takes off one touchdown */
@@ -763,7 +763,7 @@ setTimeout(async()=>{
           const blk=box(1)&&box(1).closest('.statblk'), h=blk&&blk.querySelector('h4');
           chk(!!h&&/^Rushing or receiving TD/.test(h.textContent.trim())&&/a TD pass does not count/.test((h.querySelector('em[data-qbtd]')||{}).textContent||''),`a quarterback's touchdown block is not headed as his own run or catch: "${h&&h.textContent.trim()}"`);
           chk(!!box(1)&&/rushing or receiving touchdown/.test(box(1).getAttribute('aria-label')||''),'a quarterback\'s touchdown box does not say what it adds');
-          /* (app v126) no 2+ box: the site offers no ladder bet; his one box puts on and takes off one touchdown, from no
+          /* (app v127) no 2+ box: the site offers no ladder bet; his one box puts on and takes off one touchdown, from no
              leg of his (rule (b)) */
           { const keepP=JSON.stringify(S.parlay||{}); if(S.parlay[key]){ delete S.parlay[key]; F('renderGame')(); }
             chk(!box(2)&&![...d.querySelectorAll(`.plrbody [data-leg="${key}"]`)].some(b=>+b.dataset.k>=2),'a 2+ box on a quarterback\'s touchdown: the site offers no ladder bet');
@@ -941,7 +941,7 @@ setTimeout(async()=>{
                  the preferred or thin legs the rung is left out of every part and its slot goes to the next
                  line; a whole-number main line (Over 225 pushes at 225, where 226+ loses) and an Under main
                  line never take a rung's place (the owner, 17 October 2026: Patrick Mahomes's Over 224.5 and
-                 225+ passing yards ranked 1 and 2). Dormant on the page's own lines since app v126, when pricedLegs
+                 225+ passing yards ranked 1 and 2). Dormant on the page's own lines since app v127, when pricedLegs
                  stopped making rungs (the site offers no ladder bet): M12 holds it on made-up lines that stand in
                  for pricedLegs, and NL1 that the week's list leaves no rung out because none reaches it */
   const FAIRAUD=(()=>{ const isG=F('isGameLeg'), FAR=w.eval('FAR_OFF');
@@ -1361,7 +1361,7 @@ setTimeout(async()=>{
         const lead=(P.querySelector('.pb-lead')||{}).textContent||'', foot=((P.querySelector('.pb-foot')||{}).textContent||'').replace(/\s+/g,' ');
         W.wording(lead.includes(`first the Value picks, marked Value, then the other lines${u.k.total?', the game totals last':''}, each part ranked by`)&&lead.includes(`best first, ${TOP_N_AUD} lines at most.`)&&foot.includes(`The Value picks come first, marked Value, then the other lines (the ones a suggested parlay takes only where the Value picks cannot fill it), each part ranked by what $1 on it is expected to make, any game totals last, ${TOP_N_AUD} lines at most in all.`),
           `${lab}: the list's lead or foot does not say the Value picks come before the other lines, and the totals last: "${lead.slice(0,200)}"`);
-        /* (app v126) the foot says the list holds no ladder bet; until then it said each bet was listed once (a rung that
+        /* (app v127) the foot says the list holds no ladder bet; until then it said each bet was listed once (a rung that
            is the same bet as the main line shown as the main line), and named yards ladders among the markets the
            estimate is checked on, which no rung can reach now */
         W.wording(foot.includes('Only main lines, anytime touchdowns and team bets are listed: no ladder bets, such as 250+ passing yards or 2+ touchdowns.')&&!/Each bet is listed once|ladder rung|yards ladders/.test(foot)
@@ -2344,7 +2344,7 @@ setTimeout(async()=>{
             line ranking past the 30th, off the list, the rung left out all the same): the list is exactly the first 30
             of the order without the rungs, so the lines ranked 23 to 30 there, which the rungs would have pushed off,
             are on it, the 31st is not, and the total, last of all, is not
-       Since app v126 the page's own pricedLegs makes no rung (the site offers no ladder bet), so no rung reaches the list
+       Since app v127 the page's own pricedLegs makes no rung (the site offers no ladder bet), so no rung reaches the list
        from the week's lines (NL1); the rule stays in the page, dormant, and these made-up lines, standing in for
        pricedLegs, are what hold it.
        Blocking: which lines, their order and every number (holdTop on each, and the cases' answers); W.wording the words */
@@ -2419,7 +2419,7 @@ setTimeout(async()=>{
                  ESPN_MILE and the anytime touchdown) are the copy's player markets, so a market added on either side
                  is said
        the week  every game of the week, played or to come: no line its page draws (statLines, and every stat block,
-                 tile and line box with every player opened; since app v126 no ladder is drawn), no leg pricedLegs gives (the
+                 tile and line box with every player opened; since app v127 no ladder is drawn), no leg pricedLegs gives (the
                  levels, the Top 50, the sets and the Elo picks are built from it), none a game page's hands may take
                  or hold (gameLegPool, gameTiers), none on the Top 50, a set or the all-games levels, and none in the
                  builder, on a bet outside the copy
@@ -2443,7 +2443,7 @@ setTimeout(async()=>{
       const rd=new Set([...Object.values(F('ESPN_MAIN')),...Object.values(F('ESPN_MILE')),'any_td']), cp=new Set(DK_PLAYER_AUD);
       chk([...rd].every(s=>cp.has(s))&&[...cp].every(s=>rd.has(s)),`the page's reader of DraftKings' lines reads ${[...rd].sort().join(', ')}, where the audit's copy of DraftKings' player markets is ${[...cp].sort().join(', ')}`);
       chk(NOT_DK_AUD.every(s=>!rd.has(s)&&proj.includes(s)),`a bet the audit's copy has DraftKings not posting is read from DraftKings' lines, or is no longer projected: ${NOT_DK_AUD.join(', ')}`); }
-    /* what a game's page draws with every player opened (since app v126 it draws no ladder: S's to hold): its line
+    /* what a game's page draws with every player opened (since app v127 it draws no ladder: S's to hold): its line
        boxes' stats, and the stat blocks' and tiles' names */
     const pageOf=g=>{ const keepUi=JSON.stringify({game:S.ui.game,open:S.ui.open,all:S.ui.showAll}), out={legs:[],names:[],adds:[]};
       try{ const r=rosterFor(g,true); S.ui.open={}; for(const t in r) for(const x of r[t].players) S.ui.open[x.pl.id]=true;
@@ -3563,7 +3563,7 @@ setTimeout(async()=>{
           S.ui.game=farL.gid; S.ui.open={[farL.pid]:true}; F('renderGame')();
           const view=d.getElementById('gameView'), notes=[...view.querySelectorAll('p.faroff[data-far]')].map(p=>p.textContent.replace(/\s+/g,' '));
           const f=fairOf(farL), want=`${farL.side==='under'?'Under':'Over'} ${farL.k} model ${Math.round(farL.p*100)}% · market ${Math.round(f.p*100)}%: far off the market`;
-          /* every far-off line of his shown (main lines both sides, the touchdown on a book price; since app v126 a game
+          /* every far-off line of his shown (main lines both sides, the touchdown on a book price; since app v127 a game
              page draws no ladder) and no other */
           const his=F('pricedLegs')([S.sched.find(g=>g.id===farL.gid)]).filter(l=>l.pid===farL.pid&&(l.main||l.stat==='any_td')&&isFar(l));
           chk(notes.includes(want)&&notes.length===his.length&&view.querySelectorAll('tr.far').length===his.length,`the game page does not flag ${farL.name}'s far-off line as "${want}", or flags ${notes.length} where ${his.length} are far off: ${notes.join(' / ')}`);
@@ -3571,7 +3571,7 @@ setTimeout(async()=>{
           const ku=JSON.parse(keepUi); S.ui.game=ku.game; S.ui.open=ku.open||{}; F('closeGameModal')(); }
         /* the other far-off flags: a touchdown on a book price (one-sided, so est.), planted 25 points under the model's
            chance on a starter of a game to come; and the Game bets card's to win and to cover, priced so the book's fair
-           chance on the model's side is 25 points under it, the other side's lines not flagged. (app v126) A ladder rung
+           chance on the model's side is 25 points under it, the other side's lines not flagged. (app v127) A ladder rung
            priced the same way beside it draws no row and no flag: the site offers no ladder bet, and the old box's
            choice to show the ladders (S.ui.showRungs) is planted on to hold that nothing reads it */
         const gF=games[0], roF=rosterFor(gF,false), pick=[];
@@ -3628,7 +3628,7 @@ setTimeout(async()=>{
             chk(ct(pm)[0]!==c1&&!!t1&&t1.classList.contains(c1)&&t1.querySelector('b').textContent===l1&&t1.querySelector('span').textContent==='confidence all 1 land, on the fair chance',
               `the builder's confidence tile does not rate the fair chance (${(f1*100).toFixed(1)}%: ${l1}) where the model's ${(pm*100).toFixed(0)}% is ${ct(pm)[1]}: `+(t1?t1.textContent:'no tile')); }
           /* a leg on no book price: the model's chance alone, saying why */
-          /* (app v126) a main line off the market's number, so no ladder: until then a rung, which the site offers no more */
+          /* (app v127) a main line off the market's number, so no ladder: until then a rung, which the site offers no more */
           const est={gid:farL.gid,pid:farL.pid,stat:farL.stat,k:Math.floor(+farL.k)+3.5,side:'over',main:true,p:0.3,price:250,src:'est',mu:farL.mu,name:farL.name,pos:farL.pos,grp:farL.grp,team:farL.team,opp:farL.opp,week:farL.week,label:'est leg'};
           S.parlay={}; put(nearL); S.parlay[farL.gid+'|'+farL.pid+'|zz_est']={...est}; F('renderParlay')();
           const h2=d.querySelector('#parlayBody .bigp .hero');
@@ -3957,7 +3957,7 @@ setTimeout(async()=>{
           items.push({type:{id:'13'},athlete:ath('5999999'),current:{target:{value:33.5}}});
           const per0=ESPN.parse(items), lineOf=(pid,st)=>{ const aid=Object.keys(ids).find(a=>ids[a]===pid)||(byName&&byName.x.pl.id===pid?byName.aid:null); return aid&&per0[aid]?per0[aid].lines[st]:null; };
           /* the precedence: one player's paid line at the read's number (stays real), another's at a
-             number the read has moved (goes est.), a rung the pull priced (until app v126 kept real; since, no leg:
+             number the read has moved (goes est.), a rung the pull priced (until app v127 kept real; since, no leg:
              the site offers no ladder bet), a paid id kept */
           const xs=[]; for(const tm in R0) for(const x of R0[tm].players) if(x.starter) xs.push(x);
           const yd=['passing_yards','rushing_yards','receiving_yards'];
@@ -5296,7 +5296,7 @@ setTimeout(async()=>{
             const h=[...d.querySelectorAll('#gameView .statblk h4')].find(e=>e.querySelector(`em.mline`)&&e.closest('.statblk').querySelector(`input[data-leg="${g0.id}|${B.x.pl.id}|${B.l.stat}"]`));
             chk(!!h&&txt(h.querySelector('em.mline'))===`DraftKings line ${E} (was ${E+3})`,`${B.x.pl.n}'s ${B.l.stat} on the game page does not name DraftKings' line ${E} and the paid pull's ${E+3}: ${h?txt(h):'no block'}`);
             S.ui.game=null; F('closeGameModal')(); }
-          /* (app v126) a rung the pull priced at +250 is no leg after the press: no ladder bet in pricedLegs or the hands'
+          /* (app v127) a rung the pull priced at +250 is no leg after the press: no ladder bet in pricedLegs or the hands'
              pool (with every leg, as the ids leave them), by the audit's own reading of a ladder (ladderAud) */
           if(C){ const lad=[...F('pricedLegs')([g0]),...F('gameLegPool')(g0,true)].filter(l=>l.pid===C.x.pl.id&&(ladderAud(l)||(l.stat===C.l.stat&&!l.main)));
             chk(!lad.length,`${C.x.pl.n}'s ${Ck}+ ${C.l.stat}, priced by the pull at +250, or another ladder bet of his is a leg after the press: ${lad.map(l=>l.label+' '+l.price+' '+l.src).join(', ')}`); }
@@ -5332,7 +5332,7 @@ setTimeout(async()=>{
               lad.sort((a,b)=>a.k-b.k);
               chk(lad.every((y,i)=>!i||y.q<=lad[i-1].q+1e-12),`${lab}: ${x.pl.n}'s ${l.stat} ladder does not fall as it climbs: ${lad.map(y=>y.k+'+ '+(y.q*100).toFixed(1)+'%').join(', ')}`); }
             return n; };
-          /* (app v126) the old box's choice to show the ladders (S.ui.showRungs) is planted on, to hold that nothing reads it:
+          /* (app v127) the old box's choice to show the ladders (S.ui.showRungs) is planted on, to hold that nothing reads it:
              no rung is drawn whatever the read lists */
           const domGame=(g,lab)=>{ const keepU=JSON.stringify({game:S.ui.game,open:S.ui.open,all:S.ui.showAll}); let n=0;
             try{ const R=F('rosterFor')(g,true), oe=ESR.entry(g.id,g.w);
@@ -5408,7 +5408,7 @@ setTimeout(async()=>{
               const x2=xs2.find(x=>F('statLines')(x).some(l=>!l.prob&&l.rungs.some(r=>{ const o=ESR.price(leg(g,x,l.stat,{k:r.k,side:'over',main:false})); return o&&!o.mainOver&&!F('oddsFor')(g.id,x.pl.id,l.stat,r.k); })));
               if(x2){ const l=F('statLines')(x2).find(l=>!l.prob&&l.rungs.some(r=>{ const o=ESR.price(leg(g,x2,l.stat,{k:r.k,side:'over',main:false})); return o&&!o.mainOver&&!F('oddsFor')(g.id,x2.pl.id,l.stat,r.k); }));
                 const r=l.rungs.find(r=>{ const o=ESR.price(leg(g,x2,l.stat,{k:r.k,side:'over',main:false})); return o&&!o.mainOver&&!F('oddsFor')(g.id,x2.pl.id,l.stat,r.k); }), own=ESR.price(leg(g,x2,l.stat,{k:r.k,side:'over',main:false})), key=`${g.id}|${x2.pl.id}|${l.stat}`;
-                /* (app v126) a rung DraftKings lists, priced from its line: toggleLeg puts no ladder bet on the
+                /* (app v127) a rung DraftKings lists, priced from its line: toggleLeg puts no ladder bet on the
                    builder, nor with DraftKings' own price on file for it */
                 S.parlay={}; tog(key,r.k,'over',false); n++;
                 chk(!S.parlay[key],`${lab}: ticking ${x2.pl.n}'s ${r.k}+ ${l.stat}, priced from DraftKings' line at ${own.price}, put a ladder bet on the builder`);
@@ -5720,7 +5720,7 @@ setTimeout(async()=>{
          'none' refused the run until the review of 21 October 2026
        - the status line's time the latest read of the player lines alone: a game-line read newer than them, or a game
          read for its game lines alone, dates nothing (W.wording; the review of 21 October 2026)
-       - a locked set's legs (two main lines from the read, of two players: since app v126 no rung is a leg) kept at
+       - a locked set's legs (two main lines from the read, of two players: since app v127 no rung is a leg) kept at
          their locked prices and fair chances through a republished read that moves their lines: the builder's price the
          locked level's own
        - the parlay card's pull hooks (parlayLegs, legPrice, legFair): inert without window.dkPulledFor; with a stub, the
@@ -5909,7 +5909,7 @@ setTimeout(async()=>{
       /* G. a locked set's legs keep their locked prices and fair chances through a republished read that moves their lines */
       { const pl=F('pricedLegs')([GA]).filter(l=>l.src==='dkline'&&!isG(l)), mainL=pl.find(l=>l.main&&l.pid==='aud-q16'&&l.stat==='passing_yards'&&l.side==='over'),
           wideL=pl.find(l=>l.main&&l.pid==='aud-w16'&&l.stat==='receiving_yards'&&l.side==='over');
-        /* made-up data, so blocking: both main lines are the published read's own (until app v126 the second was a rung) */
+        /* made-up data, so blocking: both main lines are the published read's own (until app v127 the second was a rung) */
         chk(!!mainL&&!!wideL,`M17: the read gives no Over on the made-up passer's passing yards and the flanker's receiving yards to lock: ${pl.map(l=>l.label).join(', ')}`);
         if(mainL&&wideL){ const memo={}, kept=[mainL,wideL].map(l=>F('spLegOut')(l,memo,false)), L0=F('pbOrder')([mainL,wideL]);
           const dec0=F('parlayDec')(L0.map(l=>({leg:l,ml:l.price}))), p0=pp(L0).corr;
@@ -5962,7 +5962,7 @@ setTimeout(async()=>{
     if(!ran) said16.push('did not run');
     console.log(`M17. the published read, on two made-up games: ${said16.join('; ')}`); }
 
-  /* ---- NL. no ladder bets (app v126) ----
+  /* ---- NL. no ladder bets (app v127) ----
      The owner, 21 October 2026: "general question, is it possible to not do ladders and just include Same Game Parlay
      eligible stuff show up since we are only doing parlay builder stuff", and, offered every place a ladder showed (the
      Top 30 lines, the Suggested Parlays sets, the Elo picks, the builder, the game page's Threshold ladders box), "yes".
@@ -6436,7 +6436,7 @@ setTimeout(async()=>{
     console.log(`L. record chips: week ${wkx} ${want(main.filter(r=>+r.w===+wkx))}, season ${want(main)}`); }
 
 
-  /* ---- S. no ladder bet on a game page (app v126) ----
+  /* ---- S. no ladder bet on a game page (app v127) ----
      The Threshold ladders box went with the ladders (the owner's call of 21 October 2026: "is it possible to not do
      ladders and just include Same Game Parlay eligible stuff"). On the first game to come, every player opened with the
      backups shown and the old box's saved choice planted on (S.ui.showRungs, which nothing reads now): no box to show
@@ -6588,7 +6588,7 @@ setTimeout(async()=>{
     /* each tier grows the one before */
     if(T.high&&T.med) W.compose(T.high.legs.every(l=>T.med.legs.some(x=>x.key===l.key&&x.k===l.k)),'Medium does not grow High');
     if(T.med&&T.low) W.compose(T.med.legs.every(l=>T.low.legs.some(x=>x.key===l.key&&x.k===l.k)),'Low does not grow Medium');
-    /* the pool: book prices where they exist, the model's estimate on the rest, and (app v126) no ladder bet: until then
+    /* the pool: book prices where they exist, the model's estimate on the rest, and (app v127) no ladder bet: until then
        its rungs were in it, and a warning said so where none was; since, the hands' engine takes none, with every leg
        as the ids leave them too (gameLegPool's all), by the audit's own reading of a ladder (ladderAud) */
     { const pool=F('gameLegPool')(g), all=F('gameLegPool')(g,true);
@@ -6718,8 +6718,8 @@ setTimeout(async()=>{
       chk(JSON.stringify(SP.ui.pb)===JSON.stringify(pb),'the suggested parlays\' choices did not survive a reload: '+JSON.stringify(SP.ui.pb));
       /* (app v124) the game page's side switch went with its suggested parlays: a choice saved before is not read */
       chk(!('suggestSide' in SP.ui),'a game page\'s side switch saved before app v124 is still read into the view: '+JSON.stringify(SP.ui.suggestSide));
-      /* (app v126) and the Threshold ladders box went with the ladders: a choice saved before is not read either */
-      chk(!('showRungs' in SP.ui),'the Threshold ladders box\'s choice saved before app v126 is still read into the view: '+JSON.stringify(SP.ui.showRungs));
+      /* (app v127) and the Threshold ladders box went with the ladders: a choice saved before is not read either */
+      chk(!('showRungs' in SP.ui),'the Threshold ladders box\'s choice saved before app v127 is still read into the view: '+JSON.stringify(SP.ui.showRungs));
       { const kb=d.querySelector('#pbPanel [data-pb-kind="ats"]');
         const P=d.getElementById('pbPanel');
         chk(!F('pbGames')().length||(!P.querySelector('[data-pb-mix].on')&&!P.querySelector('.pb-custom')&&!/\bCustom\b/.test(P.textContent)&&!!kb&&!kb.checked),'the panel did not draw the choices it was reloaded with (no mix lit, no Custom tag, Spread unticked)'); }
@@ -6740,7 +6740,7 @@ setTimeout(async()=>{
       mem=JSON.stringify({build:F('MODEL_BUILD'),dataBuild:F('DATA_BUILD'),dataStamp:F('DATA_STAMP'),ui:{}}); await F('boot')();
       chk(w.eval('S').stake===20,'with no amount saved the page does not start on $20');
       console.log(`I4. the amount bet: kept across a reload; ${cases.length-2} saved values that are not an amount read as $20 and one over the most as $100,000, on the same bake and across a rebuild`); }
-    /* NL4. (app v126) a ladder bet kept in the builder from before leaves it as the page loads it (pbDropLadders, at boot),
+    /* NL4. (app v127) a ladder bet kept in the builder from before leaves it as the page loads it (pbDropLadders, at boot),
        said once on the builder until the builder next changes. A saved parlay on a made-up game, not on the schedule
        (so no kickoff takes a leg out, in any week and the off-season), holding a rung (60+ receiving yards), 2+
        touchdowns, a main line, a one-touchdown leg, a money line and a rung of a Suggested Parlays set locked before
@@ -7636,7 +7636,7 @@ setTimeout(async()=>{
             const row=d.querySelector(`#gameView .plrbtn[data-open="${x.pl.id}"] .inj`);
             chk(!!row&&row.textContent==='Q','a Questionable player has no Q beside his name on the game page');
             delete INJ[x.pl.id];
-            /* his anytime touchdown (until app v126 a ladder rung of his, which the builder takes no more) */
+            /* his anytime touchdown (until app v127 a ladder rung of his, which the builder takes no more) */
             SV.parlay={}; const tk=F('legKey')(g.id,x.pl.id,'any_td');
             F('toggleLeg')(tk,1,g,'over',false); chk(!!SV.parlay[tk],`V14: ${x.pl.n}'s anytime touchdown did not go in the builder`);
             SV.inactive[x.pl.id]={week:cw,status:'Out',inj:'Ankle'}; F('renderParlay')();

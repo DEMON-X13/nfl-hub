@@ -24,7 +24,7 @@
    untouched; B takes gP's read away; B3 moves its lines (the set rewritten on the moved lines); C restamps a newer read
    after the lock (the set as locked); R's level built again takes the read's lines; D grades a level of dkline legs with
    a void at its stored estimated prices.
-   Since app v126 (no ladder bets, the owner's call of 21 October 2026) A holds that every leg of every set and its Elo
+   Since app v127 (no ladder bets, the owner's call of 21 October 2026) A holds that every leg of every set and its Elo
    picks is a game bet, a main line or the anytime touchdown at one, though the read carries yards milestones (offeredOwn,
    the test's own reading), and R that the level built again is too.
 
@@ -317,7 +317,7 @@ const mlP = ml => ml > 0 ? 100 / (ml + 100) : -ml / (-ml + 100);
   chk(lv.every(t => !t.legs.some(l => l.grp !== 'TEAM') || t.fair_est === true), 'A: a level holding a leg priced from the read does not say its fair chance is estimated');
   const elo = sets.flatMap(e => (e.elo || []).filter(t => t.legs).flatMap(t => t.legs));
   chk(elo.every(l => l.src === 'dkline'), 'A: an Elo pick holds a leg not priced from the read: ' + JSON.stringify(elo.filter(l => l.src !== 'dkline').slice(0, 2))); }
-/* (app v126, the owner's call of 21 October 2026: no ladder bets) every leg the run takes, the model's levels and the Elo
+/* (app v127, the owner's call of 21 October 2026: no ladder bets) every leg the run takes, the model's levels and the Elo
    picks, of every night game and the Sunday slot, is one the site still offers: a game bet (a moneyline, a spread, the
    game total), a player's main line, or his anytime touchdown at one; never a ladder (a rung k+ off his main line, or
    two or more touchdowns), though the read carries DraftKings' yards milestones (LADDER_Y) for every charted player on a
@@ -440,7 +440,7 @@ chk(!(sR.legs || []).some(l => l.pid === 'XX-RULED') && (!sR.legs || (sR.legs.le
 /* (app v125) built from the read at hand: a player leg on it priced from it, a main line at the read's own number */
 { const rl = (PR.espn.games[gP.id] || { pl: { lines: {} } }).pl.lines;
   chk((sR.legs || []).filter(l => l.grp !== 'TEAM').every(l => l.src === 'dkline' && (!l.main || (rl[l.pid] && rl[l.pid][l.stat] === l.k))), 'R: the level built again holds a player leg not priced from the read at hand: ' + JSON.stringify(sR.legs));
-  /* (app v126) and no ladder bet, though the read at hand carries its milestone rungs */
+  /* (app v127) and no ladder bet, though the read at hand carries its milestone rungs */
   chk((sR.legs || []).every(offeredOwn), 'R: the level built again takes a ladder bet: ' + (sR.legs || []).filter(l => !offeredOwn(l)).map(ladderSay).join(' | ')); }
 const eS = (eR.elo || []).find(t => t.id === 'elo-safe') || {};
 chk(Array.isArray(pR.elo), 'R: the locked set has no Elo picks to plant a ruled-out player in (the run that took it built none)');

@@ -1,4 +1,4 @@
-r"""app v126: no ladder bets anywhere: only main lines, anytime touchdowns and team bets.
+r"""app v127: no ladder bets anywhere: only main lines, anytime touchdowns and team bets.
 
 The owner, 21 October 2026: "general question, is it possible to not do ladders and just include Same Game Parlay
 eligible stuff show up since we are only doing parlay builder stuff", and, offered every place a ladder showed (the Top
@@ -58,12 +58,12 @@ def cut(k, start, end, new, what):
     T[k] = s[:i] + new + s[j + len(end):]
 
 
-sub1('p2', "const APP_BUILD='app v125 \\u00b7 2026-10-21';", "const APP_BUILD='app v126 \\u00b7 2026-10-21';", 'APP_BUILD')
+sub1('p2', "const APP_BUILD='app v126 \\u00b7 2026-10-21';", "const APP_BUILD='app v127 \\u00b7 2026-10-21';", 'APP_BUILD')
 
 # the one predicate
 sub1('p2', "function isGameLeg(l){ return l&&(l.stat==='ml'||l.stat==='ats'||l.stat==='total'); }\n",
      """function isGameLeg(l){ return l&&(l.stat==='ml'||l.stat==='ats'||l.stat==='total'); }
-/* (app v126) a ladder bet: a player's over at a number that is not his main line (a rung k+, "250+ passing yards"), or
+/* (app v127) a ladder bet: a player's over at a number that is not his main line (a rung k+, "250+ passing yards"), or
    two or more touchdowns. The site offers none since 21 October 2026 (the owner's call: "is it possible to not do
    ladders and just include Same Game Parlay eligible stuff"): no suggestion, game page or builder takes one, only main
    lines, the anytime touchdown and team bets. A leg on a stat the page does not price (none, or a game bet) is never
@@ -77,14 +77,14 @@ cut('p3', "        for(const r of l.rungs){ const od=oddsFor(g.id,x.pl.id,l.stat
 sub1('p3', """   or a press) where no paid price is on file for it or its line has moved since (src 'dkline': a main line on passing, rushing or receiving
    yards, receptions or passing touchdowns, the anytime touchdown, a yards rung DraftKings lists). Team""",
      """   or a press) where no paid price is on file for it or its line has moved since (src 'dkline': a main line on passing, rushing or receiving
-   yards, receptions or passing touchdowns, or the anytime touchdown). (app v126) No ladder bet: no rung k+, whatever
+   yards, receptions or passing touchdowns, or the anytime touchdown). (app v127) No ladder bet: no rung k+, whatever
    prices it, and never 2+ touchdowns (isLadder), so no suggestion built from these takes one. Team""", 'pricedLegs: its note')
 cut('p3', "      const key=legKey(g.id,x.pl.id,l.stat);\n      for(const r of l.rungs){ if(have.has(key+'@'+r.k+'over')) continue;\n",
     "label:`${r.k}+ ${l.m.lbl.toLowerCase()}`}); }\n", '', 'gameLegPool: the rung loop')
 sub1('p3', """   lines (see patch_game_tiers_value.py): real prices where the book has them, the model's
    estimate of a book's price on every other ladder rung and touchdown, no leg shorter than""",
      """   lines (see patch_game_tiers_value.py): real prices where the book has them, the model's
-   estimate of a book's price on every other touchdown (app v126: no ladder rung), no leg shorter than""", 'gameTiers: its note')
+   estimate of a book's price on every other touchdown (app v127: no ladder rung), no leg shorter than""", 'gameTiers: its note')
 
 # 2. a game's page: no ladder box, no rung row, no 2+ touchdowns row, no note about either
 sub1('p3', """/* the ladders are hidden unless turned on: without a real price they cannot be bet
@@ -92,7 +92,7 @@ sub1('p3', """/* the ladders are hidden unless turned on: without a real price t
    builds every rung and the Track Record still grades them. A rung already on the
    parlay stays visible whatever the setting, so a leg can never count while hidden. */
 function showRungs(){ return !!(S.ui&&S.ui.showRungs); }
-""", """/* (app v126) a game's page offers no ladder bet (isLadder): no box to show the ladders, no rung row and no 2+
+""", """/* (app v127) a game's page offers no ladder bet (isLadder): no box to show the ladders, no rung row and no 2+
    touchdowns row. The model still builds every stat's rungs (statLines), and the Track Record still grades them. */
 """, 'showRungs')
 sub1('p3', """    <label class="muted"><input type="checkbox" id="allCb" ${showAll?'checked':''}> Include backups</label>
@@ -127,7 +127,7 @@ sub1('p3', "  S.ui={game:null,open:{},showAll:false,showRungs:!!(saved&&saved.ui
 # 3. toggleLeg refuses a ladder
 sub1('p3', "  if(NO_BET.has(stat)) return;   /* (app v113) never a leg DraftKings does not offer */\n",
      """  if(NO_BET.has(stat)) return;   /* (app v113) never a leg DraftKings does not offer */
-  if(isLadder({stat,k,main:!!main})) return;   /* (app v126) never a ladder bet: a rung k+ or 2+ touchdowns */
+  if(isLadder({stat,k,main:!!main})) return;   /* (app v127) never a ladder bet: a rung k+ or 2+ touchdowns */
 """, 'toggleLeg: the refusal')
 sub1('p3', """  if(m.prob){ const kk=k>=2?k:1; p=kk>=2?tdPlus(pr.p,kk):pr.p; label=tdLabel(pl.grp,kk); price=bookPrice(p); k=kk;
     if(kk===1&&oddsFor(gid,pid,'any_td',1)==null){""",
@@ -144,14 +144,14 @@ sub1('p3', """  } else {
 # 4. a ladder kept from before leaves the builder on a load, said once until the builder changes
 sub1('p3', "  if(baked&&(baked.stats.length||baked.prices||baked.inj||baked.sched)) save();\n",
      """  if(baked&&(baked.stats.length||baked.prices||baked.inj||baked.sched)) save();
-  /* (app v126) a ladder bet kept in the builder from before leaves it, said on the builder (pbDropLadders) */
+  /* (app v127) a ladder bet kept in the builder from before leaves it, said on the builder (pbDropLadders) */
   if(pbDropLadders()) save();
 """, 'boot: the strip')
 sub1('p3', "S.headlines=S.headlines||{}; S.processedGames=S.processedGames||{};\n    save(); renderAll(); alert('Backup restored.');",
      "S.headlines=S.headlines||{}; S.processedGames=S.processedGames||{};\n    pbDropLadders(); save(); renderAll(); alert('Backup restored.');",
      'the import: the strip')
 sub1('p3', "function renderParlay(o){\n",
-     """/* (app v126) no ladder bets (isLadder): one kept in the builder from before, by the browser's saved state or a backup
+     """/* (app v127) no ladder bets (isLadder): one kept in the builder from before, by the browser's saved state or a backup
    imported, is taken out as the page loads it, and the builder says so in one line until it next changes (PB_NOLADDER:
    how many, and the builder's legs then). A leg of a Suggested Parlays set locked before the change (spLegIn's kept)
    stays: the record grades that set as it locked, and Add to builder pays what its card says */
@@ -189,7 +189,7 @@ sub1('p3', "const ESPN_ERR='typically within 0.5 points on yards, 2-3 on recepti
 sub1('p3', """   listed once (app v112): a ladder rung k+ is the same bet as the player's main Over (k-0.5) on a half-point
    line, priced from it, so where that main line is on the list the rung is not.""",
      """   listed once (app v112): a ladder rung k+ is the same bet as the player's main Over (k-0.5) on a half-point
-   line, priced from it, so where that main line is on the list the rung is not (dormant since app v126, when
+   line, priced from it, so where that main line is on the list the rung is not (dormant since app v127, when
    pricedLegs stopped making rungs: the checks hold it on made-up lines).""", 'the Top 30 note')
 
 for gone in ('showRungs', 'rungCb', 'Threshold ladders', 'Scores two or more', 'ton2', 'shown below even though the ladders'):
@@ -199,4 +199,4 @@ for need in ('function pbDropLadders(', 'data-pb-noladder', 'if(isLadder({stat,k
 
 for k, f in FILES.items():
     io.open(f, 'w', encoding='utf-8').write(T[k])
-print('patched: app v126, no ladder bets: pricedLegs and gameLegPool make no rung, a game page offers none, toggleLeg refuses one, and one kept from before leaves the builder')
+print('patched: app v127, no ladder bets: pricedLegs and gameLegPool make no rung, a game page offers none, toggleLeg refuses one, and one kept from before leaves the builder')

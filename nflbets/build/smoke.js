@@ -467,7 +467,7 @@ const PB_TOP_N_OWN = 30;
 /* the Top lines' check (holdTop), for the Refresh odds checks far below it */
 let holdTopF = null;
 const NO_BET_OWN = new Set(['targets', 'fg_att']);
-/* (app v126, the owner's call of 21 October 2026: "is it possible to not do ladders and just include Same Game Parlay
+/* (app v127, the owner's call of 21 October 2026: "is it possible to not do ladders and just include Same Game Parlay
    eligible stuff show up since we are only doing parlay builder stuff", then "yes" to every place a ladder showed): no
    ladder bet anywhere, only main lines, anytime touchdowns and team bets. The smoke's own copy of what a ladder bet is,
    never the page's isLadder: a leg on a player stat the page prices (PLAYER_STATS_OWN, the smoke's own copy of the
@@ -1569,7 +1569,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         && foot.includes('The Value picks come first, marked Value, then the other lines (the ones a suggested parlay takes only where the Value picks cannot fill it), each part ranked by what $1 on it is expected to make, any game totals last, ' + PB_TOP_N_OWN + ' lines at most in all. Only main lines, anytime touchdowns and team bets are listed: no ladder bets, such as 250+ passing yards or 2+ touchdowns.')
         && foot.includes('3 points above it or more is a Value pick') && foot.includes('a game total, priced at the book’s own chance, is never one'),
         `${lab}: the Top 30 lines' lead or foot does not say the Value picks come first, then the other lines: ${lead.slice(0, 260)} / ${foot.slice(0, 200)}`);
-      /* (app v126, the owner's call of 21 October 2026: no ladder bets anywhere) the foot names no ladder rung as listed:
+      /* (app v127, the owner's call of 21 October 2026: no ladder bets anywhere) the foot names no ladder rung as listed:
          the markets the estimate is checked on are main lines and touchdowns, and app v112's sentence on a rung shown as
          its main line (no rung reaches the list) is gone */
       chk(foot.includes('DraftKings’ line read from ESPN at our estimate of its price (on main lines and touchdowns, the markets the estimate has been checked on)')
@@ -2732,7 +2732,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (typeof w.eloPicks === 'function') { const r = w.eloPicks(); for (const t of ((r && r.tiers) || [])) for (const l of t.legs) if (noBet(l)) bad.push(`the ${t.id} Elo pick's ` + legTxt(l)); }
       for (const l of Object.values(w.eval('S').parlay || {})) if (noBet(l)) bad.push('the builder\'s ' + legTxt(l));
       return bad; };
-    /* each game's page with every player open: no box, heading or tile of a stat that is no bet (since app v126 a game's
+    /* each game's page with every player open: no box, heading or tile of a stat that is no bet (since app v127 a game's
        page has no ladders to show) */
     const pagesBad = async (G, also) => { const bad = [], keepG = w.eval('JSON.stringify({game:S.ui.game,open:S.ui.open||{}})');
       for (const g of G) { const ro = w.eval('rosterFor')(g, true), open = {}; for (const tm in ro) for (const x of ro[tm].players) open[x.pl.id] = true;
@@ -2759,7 +2759,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         try {
           /* FG attempts still projected for each kicker, and priced: DraftKings' main line a few points under the model's
              side, both ways (PAY.mkt, as the price pull writes it), and his 2+ and 3+ (S.odds, as a pull's ladder). (app
-             v126) His field goals made and kicking points get a main line each too, near even both ways: a game's page
+             v127) His field goals made and kicking points get a main line each too, near even both ways: a game's page
              offers no ladder since 21 October 2026, so these main lines are the kickers' boxes the builder is filled from */
           const plant = [], proj = K.map(x => w.eval('project')(x.pl, 'fg_att', x.opp, x.ctx));
           const mainK = (x, st) => { const pr = w.eval('project')(x.pl, st, x.opp, x.ctx); if (!pr || !(pr.mu > 0)) return null;
@@ -2814,7 +2814,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           delete w.__fgPlant; delete w.__fgKeep; } }
     } finally {
       Sx.ui.pb = JSON.parse(keepU7); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(20); } }
-  /* ---- no ladder bets (app v126, the owner's call of 21 October 2026: "is it possible to not do ladders and just include
+  /* ---- no ladder bets (app v127, the owner's call of 21 October 2026: "is it possible to not do ladders and just include
      Same Game Parlay eligible stuff show up since we are only doing parlay builder stuff", then "yes" to every place a
      ladder showed): only main lines, anytime touchdowns and team bets, by the smoke's own rule (ladderOwn). Held first on
      the week as it stands, every bet type and game ticked: no ladder among the lines priced (pricedLegs), any game page
@@ -5043,7 +5043,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
               if (holdTopF) holdTopF('the Top lines right after the press, DraftKings\' ids baked', S.ui.pb, w.eval('pbGames()').filter(x => !S.ui.pb.off.includes(x.id))); }
           } finally { if (pl) pl.remove(); }
           w.eval('renderParlay()'); await wait(20); }
-        /* (app v126) no ladder bet after the press either: its read of g carries DraftKings' milestones (every ladder the
+        /* (app v127) no ladder bet after the press either: its read of g carries DraftKings' milestones (every ladder the
            stand-in lists but its last rung), and no line, list, level, set or Elo pick takes one (ladderHoldF, set up with
            the Parlay Builder's checks, on the page's own pricedLegs, put back for this section) */
         { const nR = Object.values((blk && blk.rungs) || {}).reduce((a, m) => a + Object.values(m || {}).reduce((b, r) => b + (Array.isArray(r) ? r.length : 0), 0), 0);
@@ -5061,7 +5061,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           const on = readOn(g), src = on ? ESPN_RULE.oddsOf(evs[games.indexOf(g)], g).lines : before[g.id], tl = w.eval('pricedLegs')([g]).filter(l => l.grp === 'TEAM');
           chk((!on || tl.length > 0) && tl.every(l => l.src === 'real' && l.price === (l.stat === 'ml' ? (l.team === g.h ? src.mlh : src.mla) : (l.team === g.h ? src.sph : src.spa))),
             `${g.id}'s team bets are not at ${on ? 'DraftKings\' game lines as the press read them' : 'the published game lines, which are newer than the read'}, real: ${JSON.stringify(KEYS.map(k => g[k]))} / ${tl.map(l => l.label + ' ' + l.price + ' ' + l.src).join(', ')}`); }
-        /* the game's page: each est. price the rule's, marked est. with what it is priced from. (app v126, the owner's call
+        /* the game's page: each est. price the rule's, marked est. with what it is priced from. (app v127, the owner's call
            of 21 October 2026: no ladder bets anywhere) The read's block holds DraftKings' milestones (the stand-in lists
            every ladder but its last rung), and the page draws none of them: no rung row, no box off a player's main line
            but his touchdown's one, no two-or-more touchdowns row */
@@ -6136,7 +6136,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         FO.w.close(); }
       O.w.close(); } }
 
-  /* ---- (app v126, the owner's call of 21 October 2026: no ladder bets anywhere) a ladder kept in the builder from
+  /* ---- (app v127, the owner's call of 21 October 2026: no ladder bets anywhere) a ladder kept in the builder from
      before is taken out by the page's own boot: a real reboot of the page on a browser whose prop model state (PROP_KEY)
      holds, on a made-up Wednesday game of the smoke's own laid into a copy of the payload (in 2099, so no leg of it has
      kicked off, at any hour and in the off-season), a rung (250+ passing yards), two or more touchdowns, a main line and
