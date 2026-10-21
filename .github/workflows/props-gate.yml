@@ -165,6 +165,11 @@ jobs:
       - name: the unit tests (each against the base on a failure)
         env:
           PYTHONUTF8: "1"
+          # smoke_live.js boots the whole page 66 times and its live heap peaks at about 3.25 GB, over Node's default
+          # old space on a runner under about 16 GiB (about 2.2 GB): without this both it and the base's run die of
+          # out-of-memory, a failure on both sides reads as a warning, and the job goes green with Pull from DraftKings
+          # never held. props_gate.py's clean_env hands it to every unit, here and on the base (test_props_gate.py)
+          NODE_OPTIONS: "--max-old-space-size=6144"
         run: python3 .github/scripts/props_gate.py units --base "${{ needs.paths.outputs.base }}"
 
   verdict:

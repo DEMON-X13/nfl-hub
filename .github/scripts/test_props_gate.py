@@ -193,6 +193,39 @@ for rel, pat in (('nflbets/build/smoke_live.js', r'SMOKE_LIMIT_MS = (\d+) \* 60 
 tmo = re.search(r'\n    timeout-minutes: (\d+)\n', job.group(1)) if job else None
 case(None not in caps and bool(tmo) and int(tmo.group(1)) >= 2 * sum(caps) + 5,
      f"job C's timeout-minutes ({tmo and tmo.group(1)}) does not hold its two page smokes at their caps ({caps} minutes) run here and on the base")
+# job C's heap: smoke_live.js's live heap peaks at about 3.25 GB, over Node's default old space on a runner under about
+# 16 GiB (about 2.2 GB), where it and the base's run both die of out-of-memory and verdict() reads a failure on both
+# sides as a warning, the job green with Pull from DraftKings never held (the review of 21 October 2026). So the
+# unit-test step's env sets NODE_OPTIONS' --max-old-space-size, and clean_env hands it to every unit here and on the base
+HEAP_MIN_MB = 4096
+def unit_heap(y):
+    """the --max-old-space-size (MB) job C's unit-test step sets in its env's NODE_OPTIONS, else None"""
+    j = re.search(r'\n  units:\n(.*?)(?=\n  \w+:\n|\Z)', y, re.S)
+    st = j and re.search(r'\n      - name: the unit tests[^\n]*\n(.*?)\n        run: python3 \.github/scripts/props_gate\.py units ', j.group(1), re.S)
+    env = st and re.search(r'^        env:\n((?:(?:          [^\n]*|\s*)\n)*)', st.group(1) + '\n', re.M)
+    no = env and re.search(r'^          NODE_OPTIONS: "?([^"\n]*)"?\s*$', env.group(1), re.M)
+    mb = no and re.search(r'(?:^|\s)--max-old-space-size=(\d+)(?:\s|$)', no.group(1))
+    return int(mb.group(1)) if mb else None
+heap = unit_heap(yml)
+case(heap is not None and heap >= HEAP_MIN_MB, f"job C's unit-test step does not set NODE_OPTIONS --max-old-space-size to {HEAP_MIN_MB} MB or more ({heap}): smoke_live.js dies of out-of-memory on a runner's default heap, here and on the base, and the job passes it as a warning")
+no_line = re.sub(r'\n          NODE_OPTIONS: [^\n]*', '', yml)
+case(no_line != yml and unit_heap(no_line) is None, "the check on job C's NODE_OPTIONS does not fail a props-gate.yml without it")
+case(unit_heap(yml.replace('NODE_OPTIONS: "--max-old-space-size=', 'NODE_OPTIONS: "--max-semi-space-size=')) is None
+     and unit_heap(re.sub(r'(\n  units:\n)', r'\1    # NODE_OPTIONS: "--max-old-space-size=6144"\n', no_line)) is None,
+     "the check on job C's NODE_OPTIONS reads another flag, or a comment, as the heap's")
+# clean_env hands NODE_OPTIONS on, and unit() runs every unit, here and on the base, on clean_env
+real_env, real_stream = os.environ.get('NODE_OPTIONS'), G.stream
+try:
+    os.environ['NODE_OPTIONS'] = f'--max-old-space-size={heap or HEAP_MIN_MB}'
+    seen = []
+    G.stream = lambda cmd, cwd, env, label: (seen.append((cwd, env.get('NODE_OPTIONS'))), (0, '9 checks, 0 failures'))[1]
+    G.unit(ROOT, 'nflbets/build/smoke_live.js', 'node', 'this change'); G.unit('/base', 'nflbets/build/smoke_live.js', 'node', 'the base')
+    case(G.clean_env().get('NODE_OPTIONS') == os.environ['NODE_OPTIONS'], 'clean_env drops NODE_OPTIONS, so job C\'s heap never reaches its units')
+    case([c for c, _ in seen] == [ROOT, '/base'] and all(v == os.environ['NODE_OPTIONS'] for _, v in seen), f'a unit, here or on the base, does not run with job C\'s NODE_OPTIONS: {seen}')
+finally:
+    G.stream = real_stream
+    if real_env is None: os.environ.pop('NODE_OPTIONS', None)
+    else: os.environ['NODE_OPTIONS'] = real_env
 ver = re.search(r'\n  verdict:\n(.*)', yml, re.S)
 case(bool(ver) and 'needs: [paths, bake, phase, units]' in ver.group(1) and '"${{ needs.units.result }}"' in ver.group(1), 'the verdict does not wait on the unit tests')
 def units_run(here, base, have_base=True, listed=None):

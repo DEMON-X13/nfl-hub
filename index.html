@@ -7773,7 +7773,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='3fe06b2';
+const PAGE_HASH='dbd2988';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -8994,10 +8994,12 @@ window.PARLAY_CARD=(function(){
         2+ touchdowns). For a rung, his rows this load pulled in the base market, while no ESPN read has taken that pull
         for moved (5, below), say whether the base market has his Over k-0.5 (or k-1), else the ESPN read's main line or
         the payload's does (mainNow). So a rung asked of the base market on a main line DraftKings had moved is asked of
-        the ladder next time, whatever a trailing ESPN read still says (the review of 21 October 2026). Its cost is "up
-        to" one credit a game and
-        market, since one DraftKings has not posted costs nothing; a game and market pulled under PULL_FRESH_MS ago is
-        served from what was pulled, free; a game whose ESPN check found no player lines posted is left out unless the
+        the ladder next time, whatever a trailing ESPN read still says (the review of 21 October 2026). Where the moved
+        rule (5) has taken that base pull for moved, the rung asks the base market again (pullFor's dead verdict reads
+        that pull, and only a fresh one clears it), then its ladder where the fresh answer lacks it and no ladder row of
+        his already pulled has it (the second review of 21 October 2026: a ladder pull alone left the leg dead, a credit
+        spent on every press). Its cost is "up to" one credit a game and market, since one DraftKings has not posted
+        costs nothing; a game and market pulled under PULL_FRESH_MS ago is served from what was pulled, free; a game whose ESPN check found no player lines posted is left out unless the
         admin pulls anyway; team bets and totals ask nothing (their ids come from ESPN).
      2. A press: one free look-up of the NFL's events around the parlay's kickoffs, matched to each game by the
         unordered pair of its clubs (DK_TEAMS, oddsfetch.py's TEAMS) within PULL_EVENT_H of its kickoff, then an inline
@@ -9097,20 +9099,23 @@ window.PARLAY_CARD=(function(){
   function mainNow(l){ try{ const g=game(l.gid), wk=l.week!=null?l.week:(g&&g.w), e=typeof espnGame==='function'?espnGame(l.gid,wk):null;
     const q=e&&typeof espnLineOf==='function'?espnLineOf(e,l.pid,l.stat):null; if(q!=null) return +q;
     const M=typeof marketLine==='function'?marketLine(wk,l.pid,l.stat):null; return M&&isFinite(+M.line)?+M.line:null; }catch(e){ return null; } }
-  /* his rows in the base market as this load pulled them, while they stand by the moved rule (5 above: no ESPN read
-     more than PULL_MOVED_MS after the pull has his main line at another number), else null */
-  function pullStanding(l,base){ const B=PULL[l.gid]&&PULL[l.gid].mk[base], rows=B&&B.rows?B.rows.filter(r=>r.pid===l.pid):[];
-    return rows.length&&!pullMovedBy(l,B,pullMain(rows))?rows:null; }
   /* the market a player's leg asks for, or null (a stat Pull from DraftKings does not read). A rung k+ is DraftKings' Over
-     k-0.5 (or the whole k-1): where this load pulled his rows in the base market and they stand, they say whether the
-     base market has it, else his ladder is asked; with none, the base market where DraftKings' main line for him as a
-     read has it (mainNow) is k-0.5, else the ladder. So a rung the base market did not have (DraftKings had moved his
-     main line off k-0.5 since ESPN read it) is asked of his ladder next, whatever a trailing ESPN read still says (the
-     review of 21 October 2026) */
+     k-0.5 (or the whole k-1): where this load pulled his rows in the base market and they stand by the moved rule, they
+     say whether the base market has it, else his ladder is asked; with none, the base market where DraftKings' main line
+     for him as a read has it (mainNow) is k-0.5, else the ladder. So a rung the base market did not have (DraftKings had
+     moved his main line off k-0.5 since ESPN read it) is asked of his ladder next, whatever a trailing ESPN read still
+     says (the review of 21 October 2026). And where the moved rule has set his base rows aside (an ESPN read more than
+     PULL_MOVED_MS after that pull has his main line at another number), the base market is asked again, whatever the
+     rung: pullFor's dead verdict reads that pull, so only a fresh one clears it, a ladder pull leaving the leg dead and
+     every press after it spending a credit for nothing (the second review of 21 October 2026). Once the fresh base
+     answer stands, a rung it lacks is put on from his ladder row already pulled, else asked of his ladder. The base market
+     asked again is a real call, never one served from what was kept: a moved verdict needs the read PULL_MOVED_MS after
+     the pull, so (a read being dated no later than the page's clock) that pull is past PULL_FRESH_MS; and the fresh pull,
+     dated after the read, is not set aside by it again */
   function pullMarket(l){ const base=PULL_BASE[l.stat]; if(!base) return null;
     if(l.main||l.stat==='any_td') return base;
-    const alt=PULL_ALT.has(base)?base+'_alternate':base, S=pullStanding(l,base);
-    if(S) return S.some(r=>r.side==='Over'&&r.sid&&(r.point===+l.k-0.5||r.point===+l.k-1))?base:alt;
+    const alt=PULL_ALT.has(base)?base+'_alternate':base, B=PULL[l.gid]&&PULL[l.gid].mk[base], rows=B&&B.rows?B.rows.filter(r=>r.pid===l.pid):[];
+    if(rows.length) return pullMovedBy(l,B,pullMain(rows))||rows.some(r=>r.side==='Over'&&r.sid&&(r.point===+l.k-0.5||r.point===+l.k-1))?base:alt;
     const M=mainNow(l); return M!=null&&+M===+l.k-0.5?base:alt; }
   /* the plan for some legs (the open card's): {games: [{gid, markets, legs, none}], cost (the games ESPN has player
      lines for), noneCost (those it found none posted for), fresh (game and market pairs pulled under PULL_FRESH_MS

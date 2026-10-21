@@ -279,7 +279,12 @@ own (the smoke cases alone when only PAGE changed); job C (since 20 October 2026
 `nflbets/build/smoke_admin.js` and, since the review of 21 October 2026, `nflbets/build/smoke_live.js` (about four minutes,
 the one place the parlay card's Pull from DraftKings and its money rules are held; job C's `timeout-minutes` went from 20 to
 45 with it, room for both page smokes running to their own caps here and again on the base, which `test_props_gate.py`
-holds) (one missing from the tree fails it, but for those in `UNITS_OPTIONAL`). Each is differential: a failure is run again on
+holds; and its unit-test step's env sets `NODE_OPTIONS: "--max-old-space-size=6144"`, since smoke_live.js, which boots
+the whole page more than sixty times and closes few of them, holds a live heap of about 3.25 GB at its peak (measured after forced collections), over Node's default old space
+on a runner under about 16 GiB of memory (about 2.2 GB): there it and the base's run both died of out-of-memory, verdict()
+read a failure on both sides as a warning, and job C went green with Pull from DraftKings never held (the second review of
+21 October 2026); `clean_env` hands it to every unit, here and on the base, and `test_props_gate.py` fails a
+`props-gate.yml` without it) (one missing from the tree fails it, but for those in `UNITS_OPTIONAL`). Each is differential: a failure is run again on
 the base's code in a second checkout (`weekly.py --offline` over the same downloads and the same ESPN answers, copied
 with them since `props/raw/espn/` is ignored, unless this run refused at a download or read a file as not posted yet,
 when the base downloads its own and is handed this run's ESPN answers, `PROPS_ESPN_REPLAY`, so a line DraftKings moved
@@ -2330,11 +2335,17 @@ names the API's host or asks anything itself: `build.js` refuses it). The plan (
 off asks one market of its game by its stat (`PULL_BASE`, `oddsfetch.py`'s `MARKETS` turned round: passing, rushing and
 receiving yards, receptions, passing touchdowns, attempts, completions, interceptions, carries and the anytime touchdown;
 a rung k+ the `_alternate` ladder, `PULL_ALT`, unless DraftKings' main line for him, `mainNow`, the ESPN read's else the
-payload's, is k-0.5, and where this load pulled his rows in the base market and they stand by the moved rule (below,
-`pullStanding`), the base market only where those rows have his Over k-0.5 or k-1, else his ladder: so a rung the base
-market did not have is asked of the ladder next time, whatever a trailing ESPN read still says (the review of 21 October
-2026, after a pull asked 225+ passing yards of the base market on ESPN's 224.5 where DraftKings' main was 230.5, and slipped
-Over 230.5 in its place; every re-pull asked the same); 2+ touchdowns the anytime market); rush + rec yards, kicking points and field goals made are not
+payload's, is k-0.5, and where this load pulled his rows in the base market and they stand by the moved rule (below),
+the base market only where those rows have his Over k-0.5 or k-1, else his ladder: so a rung the base market did not have
+is asked of the ladder next time, whatever a trailing ESPN read still says (the review of 21 October 2026, after a pull
+asked 225+ passing yards of the base market on ESPN's 224.5 where DraftKings' main was 230.5, and slipped Over 230.5 in its
+place; every re-pull asked the same); where the moved rule has set those rows aside, the base market again, whatever the
+rung (`pullMarket`: the moved verdict reads that base pull, and only a fresh one clears it), then his ladder where the fresh
+answer lacks the rung and no ladder row of his already pulled has it, a ladder row already pulled putting it back on the
+slip with no other call (the second review of 21 October 2026: the rung asked its ladder alone, which left it dead, a
+credit spent on every press and "or pull again" false; with his main moved from 230.5 to 227.5, 231+ on DraftKings' main
+Over 230.5 now comes back in two credits, the base market then the ladder, and 225+ on his ladder's Over 224.5 in one);
+2+ touchdowns the anytime market); rush + rec yards, kicking points and field goals made are not
 read, and a leg on one says so; team bets and totals ask nothing (their ids come from ESPN). The cost is "up to" one credit
 a game and market (a market DraftKings has not posted costs nothing), a game and market pulled under 5 minutes ago
 (`PULL_FRESH_MS`) is served from what was pulled, free, and a game whose ESPN check found no player lines posted is left
@@ -2380,7 +2391,8 @@ spent, his DraftKings name not placed: add it by hand). The moved rule on a
 pulled line (`PULL_MOVED_MS`): ESPN's feed can trail DraftKings, so a pulled line stands against an ESPN read of his main
 line at another number unless that read came more than 15 minutes after the pull; then its id is taken for dropped, as
 DraftKings drops a moved line: "DraftKings has moved his receiving yards line to 49.5 since you pulled from DraftKings
-(...), and its slip drops a moved line: add it by hand at 49.5 (or pull again)". The fresh sids go on this card's slip
+(...), and its slip drops a moved line: add it by hand at 49.5 (or pull again)", and a pull again asks the base market
+afresh, a rung's too, which that read no longer sets aside. The fresh sids go on this card's slip
 alone (`dkLeg`'s pulled branch, `dkPulledLeg`), never into `PAY.dk`, so the admin's suggestions are exactly everyone's.
 A card closed, or another opened, while the free look-up is out is drawn waiting meanwhile, and once the look-up answers
 for the card it was pressed on, now gone, the open card is drawn again with Pull and Open in DraftKings working (until the
@@ -2772,7 +2784,12 @@ slip, "pull again for his ladder", never "lists no 225+"; the next plan the ladd
 at 224.5, and nothing more for 231+, which the base answer holds; the re-pull one credit, the ladder alone, 225+ on the slip by
 its own sid at its own price; R5b, the base answer with his Over 230.5 alone, the same and the next plan the ladder); the
 pulled rows deciding a rung's market only while they stand by the moved rule (R6, the page's clock held back 30 minutes for
-the pull); and a card closed and opened again while the free look-up was out drawn ready once it answers (R7). A request
+the pull; since the second review of 21 October 2026 the base market again for 225+ and 231+ alike once a read takes those
+rows for moved); a rung the moved rule took off the slip back on it (R6b: 231+ on the base pull's own sid, dead by a read
+at 227.5 20 minutes after it, then the base market pulled again, the leg waiting on his ladder, and the ladder, on the
+slip at its own sid and price, two credits; 225+ on his ladder's sid, dead by the same rule, back on that ladder row by one
+base pull; each press's "up to 1 credit" what it spent, its one call the plan's market); and a card closed and opened again
+while the free look-up was out drawn ready once it answers (R7). A request
 to The Odds API on a visitor's run, or on an admin's run with no stand-in, fails it. `smoke.js` holds a real tier's link to
 made-up ids under keys it works out on its own, with the other side of each line and the other team
 under decoys (the tier's lines are made up, so the payload's own ids could never match them), the button

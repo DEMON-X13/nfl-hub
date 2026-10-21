@@ -3524,8 +3524,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         /* ---- R6: the pulled main line decides a rung's market only while it stands by the moved rule. The base market pulled
            30 minutes ago (the page's clock held back for the pull), after an ESPN read at 224.5: 225+ the ladder, 231+
            the base market, with an ESPN read now at the pull's own 230.5; with one now at 224.5 (more than 15 minutes
-           after the pull, at another number: DraftKings has moved), DraftKings' main line as that read has it decides,
-           225+ the base market and 231+ the ladder ---- */
+           after the pull, at another number: DraftKings has moved), the base market again for both, 225+ and 231+, since
+           pullFor's moved verdict reads that base pull and only a fresh one clears it (the second review of 21 October
+           2026: until then 231+ asked the ladder, on that read's 224.5, and stayed off the slip; R6b) ---- */
         const z6 = await boot3([LEG.lpRung]), w6 = z6.w, real6 = w6.Date.now;
         const mk6 = l => w6.PARLAY_CARD.pullPlan([l]).games.flatMap(x => x.markets).join();
         const espn6 = (atMs, q) => w6.eval(`(()=>{ const W=ESPN_LIVE[${JSON.stringify(String(wk))}];
@@ -3539,10 +3540,81 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           const P6 = w6.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(LEG.lpRung) }, LEG.lpRung)) || {};
           espn6(real6.call(w6.Date), 230.5); const a225 = mk6(LEG.lpRung), a231 = mk6(LEG.lpRung2);
           espn6(real6.call(w6.Date), 224.5); const b225 = mk6(LEG.lpRung), b231 = mk6(LEG.lpRung2);
-          chk(P6.whyOf === 'ladder' && real6.call(w6.Date) - P6.at > 25 * 60e3 && a225 === 'player_pass_yds_alternate' && a231 === 'player_pass_yds' && b225 === 'player_pass_yds' && b231 === 'player_pass_yds_alternate',
-            `${how}: a rung's market does not follow the base answer while it stands, and DraftKings' main line as a read more than 15 minutes after the pull has it once that read takes the pull for moved: ` + JSON.stringify({ why: P6.whyOf, age: real6.call(w6.Date) - P6.at, a225, a231, b225, b231 }));
+          chk(P6.whyOf === 'ladder' && real6.call(w6.Date) - P6.at > 25 * 60e3 && a225 === 'player_pass_yds_alternate' && a231 === 'player_pass_yds' && b225 === 'player_pass_yds' && b231 === 'player_pass_yds',
+            `${how}: a rung's market does not follow the base answer while it stands, or is not the base market again once a read more than 15 minutes after the pull takes it for moved: ` + JSON.stringify({ why: P6.whyOf, age: real6.call(w6.Date) - P6.at, a225, a231, b225, b231 }));
           w6.document.getElementById('pcClose').click(); await wait(10);
         } finally { w6.Date.now = real6; }
+        /* ---- R6b: a rung the moved rule took off the slip comes back on it, for a bounded spend (the second review of 21
+           October 2026). The moved rule judges a pulled leg against the base market's pull, so a re-pull of his ladder
+           alone left the leg dead, a credit spent on every press for nothing: the rung asks the base market again, then
+           his ladder where the fresh answer lacks it and no ladder row of his already pulled has it. On the page's clock
+           held back, each press's "up to 1 credit" what it spent (the stand-in's headers), and its one call the market
+           the plan named:
+           (a) 231+ (DraftKings' Over 230.5, his main line): the base pull puts it on the slip at its own sid; an ESPN read
+               20 minutes after it has his main line at 227.5 (dead, "or pull again"), DraftKings' main line now 227.5 and
+               230.5 on his ladder; the plan asks the base market (Pull again), whose fresh answer stands and has no Over
+               230.5: off the slip, waiting on his ladder; the plan asks the ladder; on the slip at the ladder's own sid
+               and price. Two credits from dead to the slip.
+           (b) 225+ (DraftKings' Over 224.5, on his ladder after a base pull at 230.5), dead by a read at 227.5 30 minutes
+               after the base pull: the plan asks the base market, and its fresh answer puts the leg back on the slip at the
+               ladder row already pulled. One credit, and the ladder never asked again ---- */
+        { const keep6 = { b: DKM[g1.id].player_pass_yds, a: DKM[g1.id].player_pass_yds_alternate };
+          const moved6 = () => { DKM[g1.id].player_pass_yds = keep6.b.filter(o => o.description !== 'Ladder Passer').concat([O('Over', 'Ladder Passer', -110, 227.5, 'J3#lp_o2275'), O('Under', 'Ladder Passer', -110, 227.5, 'J3#lp_u2275')]);
+            DKM[g1.id].player_pass_yds_alternate = [O('Over', 'Ladder Passer', -120, 230.5, 'J3#lp_alt231')].concat(keep6.a); };
+          const sb = [];
+          try {
+            for (const [tag, leg] of [['a', LEG.lpRung2], ['b', LEG.lpRung]]) {
+              DKM[g1.id].player_pass_yds = keep6.b; DKM[g1.id].player_pass_yds_alternate = keep6.a;
+              const zz = await boot3([leg]), wz = zz.w, dz = zz.d, realz = wz.Date.now;
+              const clk = mins => { wz.Date.now = () => realz.call(wz.Date) - mins * 60e3; }, ago = mins => realz.call(wz.Date) - mins * 60e3;
+              const espz = (atMs, q) => wz.eval(`(()=>{ const W=ESPN_LIVE[${JSON.stringify(String(wk))}];
+                W[${JSON.stringify(g1.id)}]={at:new Date(${atMs}).toISOString(),lines:{'j3-qb':{passing_yards:230.5},'j3-lp':{passing_yards:${q}}},rungs:{},td:[]};
+                if(ESPN_OUT[${JSON.stringify(g1.id)}]) ESPN_OUT[${JSON.stringify(g1.id)}].when=Date.now(); })()`);
+              const pfz = () => wz.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(leg) }, leg)) || {}, mkz = () => wz.PARLAY_CARD.pullPlan([leg]).games.flatMap(x => x.markets).join();
+              const hrefz = () => dz.getElementById('pcDk').getAttribute('href') || '', pxz = () => txt(dz.querySelector('#pcView .pc-legs > li .pc-lp'));
+              /* a press at mins ago with the ESPN read (at, q) in place: the plan and label before it, the calls and spend of it */
+              const step = async (mins, at, q) => { clk(mins); espz(at, q); await mkCard(zz);
+                const plan = mkz(), label = txt(btnOf(zz)), n = OA.log.length, left = OA.left;
+                await press(zz, 'pcPullYes');
+                const calls = OA.log.slice(n).filter(e => e.kind === 'odds').map(e => e.q.markets), ps = wz.PARLAY_CARD.pullState();
+                return { plan, label, calls, spent: left - OA.left, said: ps.spent, state: ps.state }; };
+              const one = (s, mk) => s.plan === mk && s.calls.length === 1 && s.calls[0] === mk && s.spent === 1 && s.said === 1 && s.state === 'done' && /· up to 1 credit$/.test(s.label);
+              try {
+                await mkCard(zz);
+                if (tag === 'a') {
+                  const s1 = await step(60, ago(61), 230.5), P1 = pfz();
+                  const ok1 = one(s1, 'player_pass_yds') && P1.sid === 'J3#lp_o2305' && hrefz() === DKU(['J3#lp_o2305']);
+                  /* dead: a read 20 minutes after the pull at 227.5; DraftKings has moved his main line to 227.5 */
+                  clk(40); espz(ago(40), 227.5); moved6(); await mkCard(zz);
+                  const Pd = pfz(), deadTxt = missTxt(zz, 1), planD = mkz(), labelD = txt(btnOf(zz));
+                  const okD = !!Pd.dead && Pd.dead.q === 227.5 && wz.dkPulledFor(Object.assign({ key: keyJ(leg) }, leg)) === null && !hrefz().includes('J3#')
+                    && deadTxt === `1. Ladder Passer, 231+ passing yards: DraftKings has moved his passing yards line to 227.5 since you pulled from DraftKings (${readTxt(P1.at)}), and its slip drops a moved line: add 231+ passing yards by hand (DraftKings’ Over 227.5 is another bet) (or pull again)`
+                    && planD === 'player_pass_yds' && labelD === 'Pull again · up to 1 credit';
+                  const s2 = await step(30, ago(40), 227.5), P2 = pfz();
+                  const ok2 = one(s2, 'player_pass_yds') && P2.whyOf === 'ladder' && P2.main === 227.5 && !P2.dead && !P2.sid && !hrefz().includes('J3#') && mkz() === 'player_pass_yds_alternate'
+                    && missTxt(zz, 1) === `1. Ladder Passer, 231+ passing yards: DraftKings had his passing yards line at 227.5 when you pulled from DraftKings (${readTxt(P2.at)}), so 231+ is on its ladder, which that pull did not ask: pull again for his ladder`;
+                  const s3 = await step(20, ago(40), 227.5), P3 = pfz(), q3 = wz.PARLAY_CARD.quote();
+                  const ok3 = one(s3, 'player_pass_yds_alternate') && P3.sid === 'J3#lp_alt231' && P3.ml === -120 && P3.line === 230.5 && !P3.dead && hrefz() === DKU(['J3#lp_alt231'])
+                    && txt(dz.getElementById('pcDk')) === 'Open in DraftKings' && pxz() === '−120book' && near(q3.useDec, dec3(-120));
+                  sb.push(ok1 && okD && ok2 && ok3 && s2.spent + s3.spent === 2 ? null : `(a) 231+: ` + JSON.stringify({ s1, P1, okD, Pd, deadTxt, planD, labelD, s2, P2, s3, P3, href: hrefz(), px: pxz() }));
+                } else {
+                  const s1 = await step(60, ago(61), 224.5), P1 = pfz();
+                  const s2 = await step(50, ago(61), 224.5), P2 = pfz();
+                  const ok12 = one(s1, 'player_pass_yds') && P1.whyOf === 'ladder' && one(s2, 'player_pass_yds_alternate') && P2.sid === 'J3#lp_alt225' && hrefz() === DKU(['J3#lp_alt225']);
+                  /* dead: a read 30 minutes after the base pull at 227.5 */
+                  clk(30); espz(ago(30), 227.5); moved6(); await mkCard(zz);
+                  const Pd = pfz(), planD = mkz(), labelD = txt(btnOf(zz));
+                  const okD = !!Pd.dead && Pd.dead.q === 227.5 && !hrefz().includes('J3#') && /\(or pull again\)$/.test(missTxt(zz, 1)) && planD === 'player_pass_yds' && labelD === 'Pull again · up to 1 credit';
+                  const s3 = await step(20, ago(30), 227.5), P3 = pfz(), q3 = wz.PARLAY_CARD.quote();
+                  const ok3 = one(s3, 'player_pass_yds') && P3.sid === 'J3#lp_alt225' && P3.ml === -190 && P3.line === 224.5 && !P3.dead && hrefz() === DKU(['J3#lp_alt225'])
+                    && txt(dz.getElementById('pcDk')) === 'Open in DraftKings' && pxz() === '−190book' && near(q3.useDec, dec3(-190));
+                  sb.push(ok12 && okD && ok3 ? null : `(b) 225+: ` + JSON.stringify({ s1, P1, s2, P2, okD, Pd, planD, labelD, s3, P3, href: hrefz(), px: pxz() }));
+                }
+                dz.getElementById('pcClose').click(); await wait(10);
+              } finally { wz.Date.now = realz; wz.close(); } }
+          } finally { DKM[g1.id].player_pass_yds = keep6.b; DKM[g1.id].player_pass_yds_alternate = keep6.a; }
+          chk(sb.length === 2 && sb.every(x => x === null),
+            `${how}: a rung the moved rule took off the slip does not come back on it at a real sid by a re-pull of the base market (then its ladder where needed), each press one credit as its label said: ` + sb.filter(Boolean).join(' | ')); }
         /* ---- R7: the card closed and opened again while the free look-up is out (the review of 21 October 2026): the new
            card is drawn waiting while it runs, and once it answers (for the card it was pressed on, now gone) the new card
            is drawn again, Pull ready and Open in DraftKings with its address, so a press looks up and asks again ---- */
