@@ -4,7 +4,7 @@
  "teams": {
   "NE": {
    "kick": "2026-10-23T00:15Z",
-   "built_at": "2026-10-20T19:09:27.870Z",
+   "built_at": "2026-10-21T19:14:40.399Z",
    "units": {
     "qb": [
      {
@@ -20,8 +20,8 @@
       "pos": "T"
      },
      {
-      "id": "00-0034417",
-      "n": "Matt Pryor",
+      "id": "00-0039828",
+      "n": "Walter Rouse",
       "pos": "T"
      },
      {
@@ -30,8 +30,8 @@
       "pos": "C"
      },
      {
-      "id": "00-0039828",
-      "n": "Walter Rouse",
+      "id": "00-0034417",
+      "n": "Matt Pryor",
       "pos": "T"
      },
      {
@@ -55,20 +55,9 @@
     ],
     "rec": [
      {
-      "id": "00-0038621",
-      "n": "DeMario Douglas",
-      "pos": "WR"
-     },
-     {
       "id": "00-0033090",
       "n": "Hunter Henry",
       "pos": "TE"
-     },
-     {
-      "id": "00-0035676",
-      "n": "A.J. Brown",
-      "pos": "WR",
-      "q": "questionable: ankle"
      }
     ],
     "front": [
@@ -938,7 +927,7 @@
   },
   "CAR": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-21T19:14:40.399Z",
    "units": {
     "qb": [
      {
@@ -1007,7 +996,8 @@
      {
       "id": "00-0036934",
       "n": "Jaelan Phillips",
-      "pos": "OLB"
+      "pos": "OLB",
+      "q": "questionable: hamstring"
      },
      {
       "id": "00-0037244",
@@ -1250,7 +1240,7 @@
   },
   "IND": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T19:09:27.870Z",
+   "built_at": "2026-10-21T19:14:40.399Z",
    "units": {
     "qb": [
      {
@@ -1313,7 +1303,7 @@
       "id": "00-0040128",
       "n": "Tyler Warren",
       "pos": "TE",
-      "q": "questionable: groin"
+      "q": "questionable: groin, not practising"
      }
     ],
     "front": [
@@ -1354,7 +1344,7 @@
   },
   "MIN": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T15:50:49.054Z",
+   "built_at": "2026-10-21T19:14:40.399Z",
    "units": {
     "qb": [
      {
@@ -1418,7 +1408,7 @@
       "id": "00-0038994",
       "n": "Jordan Addison",
       "pos": "WR",
-      "q": "questionable: hamstring"
+      "q": "questionable: hamstring, not practising"
      }
     ],
     "front": [
@@ -1667,7 +1657,7 @@
   },
   "CLE": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T19:09:27.870Z",
+   "built_at": "2026-10-21T19:14:40.399Z",
    "units": {
     "qb": [
      {
@@ -1708,7 +1698,7 @@
       "id": "00-0040784",
       "n": "Quinshon Judkins",
       "pos": "RB",
-      "q": "questionable: ankle"
+      "q": "questionable: ankle, not practising"
      },
      {
       "id": "00-0038794",
@@ -1773,7 +1763,7 @@
   },
   "TEN": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-21T19:14:40.399Z",
    "units": {
     "qb": [
      {
@@ -1818,7 +1808,8 @@
      {
       "id": "00-0039032",
       "n": "Tyjae Spears",
-      "pos": "RB"
+      "pos": "RB",
+      "q": "questionable: undisclosed, not practising"
      }
     ],
     "rec": [
@@ -2289,7 +2280,7 @@
   },
   "LAR": {
    "kick": "2026-10-25T20:25Z",
-   "built_at": "2026-10-20T19:09:27.870Z",
+   "built_at": "2026-10-21T19:14:40.399Z",
    "units": {
     "qb": [
      {
@@ -2300,8 +2291,8 @@
     ],
     "ol": [
      {
-      "id": "00-0030097",
-      "n": "David Quessenberry",
+      "id": "00-0036603",
+      "n": "Alaric Jackson",
       "pos": "T"
      },
      {
@@ -2806,7 +2797,7 @@
   },
   "PHI": {
    "kick": "2026-10-27T00:15Z",
-   "built_at": "2026-10-21T00:54:53.769Z",
+   "built_at": "2026-10-21T19:14:40.399Z",
    "units": {
     "qb": [
      {
@@ -2846,11 +2837,6 @@
      {
       "id": "00-0037258",
       "n": "Dameon Pierce",
-      "pos": "RB"
-     },
-     {
-      "id": "00-0039325",
-      "n": "Carson Steele",
       "pos": "RB"
      }
     ],
