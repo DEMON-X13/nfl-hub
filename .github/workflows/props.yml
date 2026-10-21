@@ -2,30 +2,25 @@ name: Update prop model
 
 on:
   schedule:
-    # Four price pulls a week; times are UTC and must match PULL_SLOTS in props/build/weekly.py
-    # (props/build/test_pull_schedule.py reads these lines and holds the two together).
-    # GitHub fires this repo's scheduled runs 2 to 9.4 hours late (measured across every job in
-    # October 2026: props median 7.2h, a catch-up 9.2h), so each pull prices every game that
-    # kicks off before the next slot plus 10 hours (LATE in weekly.py): no game is left to a
-    # pull that lands after its kickoff. A game that has kicked off is never priced, and one
-    # priced in the last twelve hours is not bought again. About 7 credits a game, ~112 a week,
-    # each game priced once (Thanksgiving's early game twice, Wednesday and Thursday); a pull
-    # with no game to price spends nothing. Never on the hour: :00 is the minute most likely to
-    # be dropped under load.
-    - cron: "17 8 * * 1"    # Monday (lands ~noon-5pm UTC): Monday night
-    - cron: "17 8 * * 3"    # Wednesday: Thanksgiving's early game; nothing in an ordinary week
+    # Every run is free since 20 October 2026 (the owner's call: no scheduled paid pull). Each one downloads
+    # nflverse's files, bakes the payload, reads DraftKings' game lines and player lines from ESPN's free feed
+    # with the page's own reader (props/build/espn_read.js) and publishes that read with it, then runs the audit
+    # and the suggestions record, which takes each Suggested Parlays set from the last run before its lock (2 hours
+    # before kickoff). No odds-API key is mapped here, and nothing here can spend a credit.
+    # GitHub fires this repo's scheduled runs 2 to 9.4 hours late (measured across every job in October 2026), so
+    # the times are set by what they must land before: props/build/test_lock_runs.py reads these lines and holds
+    # them to every set's lock of the season (a run sure to land before it, reading no more than 12 hours before it,
+    # and 24 with that run dropped). Never on the hour: :00 is the minute most likely to be dropped under load.
+    - cron: "17 8 * * 1"    # Monday (lands ~10am-6pm UTC): Monday night's read, before its lock
+    - cron: "17 8 * * 3"    # Wednesday: Thanksgiving's early game
     - cron: "17 8 * * 4"    # Thursday: Thursday night, Thanksgiving, Black Friday and Christmas games
-    # Saturday 05:17 UTC (Friday 10:17pm PDT, 9:17pm PST): the weekend, Saturday's games (week 15,
-    # week 18) and the whole Sunday slate, London to Sunday night, priced about a day before
-    # kickoff so the owner has all of Saturday to look (his call, October 2026). Even 9.4 hours
-    # late it starts by 14:41 UTC, 7:41am PDT (6:41am PST from 1 November), and is on the site
-    # a few minutes later. It replaced a Saturday 08:17 pull for Saturday's games and a 23:17
-    # one for Sunday's.
-    - cron: "17 5 * * 6"
-    # post-game: finals, game bets settled, started games out of the suggestions.
-    # Every one of these sits on minute 7, and the run step passes --catch-up for any
-    # schedule starting "7 ": a credit is spent only on a game a dropped pull left unpriced,
-    # once its slot is 10 hours gone (CATCH_UP_WAIT), past the lateness seen so far.
+    - cron: "17 5 * * 6"    # Saturday 05:17 UTC: the weekend, Saturday's games and the Sunday slate, read by
+                            # Saturday morning Pacific so the owner has all of Saturday to look (October 2026)
+    # Sunday 04:47 UTC (lands 06:47-14:11 UTC): the Sunday slot's set (every Sunday game before 7 pm Eastern) locks
+    # 2 hours before its first kickoff, 15:00 UTC under daylight time and 16:00 after 1 November; until this the last
+    # run sure to land before it was Saturday's 23:07, its read up to 15 hours old at the lock
+    - cron: "47 4 * * 0"
+    # post-game: finals, game bets settled, started games out of the suggestions
     - cron: "7 6 * * 5"     # after Thursday night
     - cron: "7 23 * * 0"    # after Sunday early
     - cron: "7 2 * * 1"     # after Sunday late
@@ -36,21 +31,20 @@ on:
     - cron: "7 16 * * 5"    # Thursday night's stats
     - cron: "7 16 * * 1"    # Sunday's stats
     - cron: "7 16 * * 2"    # Monday night's stats
-    # Saturday catch-ups for a dropped weekend pull: 16:07 lands Saturday 9am-6:30pm PDT, at least
-    # ten hours after the 05:17 slot however late it starts; 23:07 is the old evening slot's time,
-    # a last chance before London's kickoff. Each spends nothing when the 05:17 pull ran.
-    - cron: "7 16 * * 6"    # Saturday afternoon: the Sunday slate if the 05:17 pull was dropped
-    - cron: "7 23 * * 6"    # Saturday evening: the same, last chance before Sunday morning
-    # every day (a catch-up like the runs above): the injury report, rosters and depth charts.
-    # nflverse posts all three once a day, at about 14:20 UTC (seen 9 October 2026); this fires
-    # at 12:07, so landing 3-9 hours late it reads that day's files rather than the day before's.
-    # The old 09:07 slot landed 13:00-16:20, often before the posting, which held Friday's final
-    # report off the page until Saturday evening's pull landed on Sunday morning.
+    # Saturday: 16:07 lands Saturday 9am-6:30pm PDT; 23:07 is the last run sure to land before a London kickoff's
+    # lock on Sunday morning
+    - cron: "7 16 * * 6"    # Saturday afternoon
+    - cron: "7 23 * * 6"    # Saturday evening
+    # every day: the injury report, rosters and depth charts. nflverse posts all three once a day, at about
+    # 14:20 UTC (seen 9 October 2026); this fires at 12:07, so landing 3-9 hours late it reads that day's files
+    # rather than the day before's, and it is the run that lands before Thursday, Sunday and Monday nights' locks.
     - cron: "7 12 * * *"    # daily: lands ~3-9pm UTC, after nflverse's afternoon posting
   workflow_dispatch:
     inputs:
       no_odds:
-        description: "Skip the price pull. Leave unticked to pull fresh prices, about 7 credits a game; tick it to rebuild off the prices already here and spend nothing."
+        # kept so a dispatch with -f no_odds=true (the old way to rebuild without buying) still starts; weekly.py
+        # accepts --no-odds and does nothing with it
+        description: "No effect since 20 October 2026: the job buys no prices (every run reads DraftKings' lines from ESPN for free)."
         type: boolean
         default: false
 
@@ -89,35 +83,29 @@ jobs:
           node-version: 22
       - run: npm ci
         working-directory: props/build
-      - name: Weekly refresh (downloads, prices, bake, assemble, audit)
+      - name: Weekly refresh (downloads, bake, assemble, ESPN read, audit)
         id: weekly
         working-directory: props/build
         env:
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           PYTHONUTF8: "1"
-        # a scheduled run cannot carry the no_odds input, so the post-game crons are
-        # recognised by their minute: they all start "7 ", the price pulls start "17 ". The
-        # "7 " runs catch up: GitHub delays scheduled runs by hours (Monday 5 October's 08:17
-        # pull landed at 17:11, after a manual pull had already priced the game) and can drop
-        # one, and a catch-up prices only a game up to the next pull that has none and has not
-        # kicked off, so it spends nothing in a week where every pull ran. A manual run with
-        # no_odds ticked spends nothing at all.
-        # weekly.py exits 1 when it refuses the run: a required nflverse download failed or came
-        # back wrong, the stats would cover fewer games than the published payload (both checked
-        # before any credit is spent), or the audit has a failure or a runtime error. Then the commit
-        # step below is skipped and the last good data stays live; the step after it keeps any prices
-        # the refused run bought, without publishing them. The audit's warnings (its presentation
-        # checks: audit.js names each and why) never refuse: the run publishes and the last step
-        # below goes red, listing them.
-        run: python weekly.py --no-commit ${{ inputs.no_odds && '--no-odds' || (startsWith(github.event.schedule, '7 ') && '--catch-up' || '') }}
+        # weekly.py exits 1 when it refuses the run: a required nflverse download failed or came back wrong, the
+        # stats would cover fewer games than the published payload, the ESPN read could not be applied, or the
+        # audit has a failure or a runtime error. Then the commit step below is skipped and the last good data
+        # stays live. ESPN not answering never refuses: the last read stays published, and a game's lines left
+        # unread for a day near its kickoff turns the last step below red. The audit's warnings (its presentation
+        # checks: audit.js names each and why) never refuse either: the run publishes and the last step goes red,
+        # listing them. The no_odds input is read by nothing; a run queued before 20 October 2026 may still start
+        # with the old run line's --catch-up or --no-odds, which weekly.py accepts and does nothing with.
+        run: python weekly.py --no-commit
       - name: Commit if anything changed
         # props/raw/feat.pkl changes only on the first run of a new season, when weekly.py adds the
         # season just finished to it (the baselines come from there); it is committed here so the
         # next run finds it ready. A refused run never commits it. props/data carries the
         # suggestions record too, props/data/suggest_ledger.json (props/build/suggest_ledger.js, run
-        # by weekly.py after a clean audit): each prime-time game's Suggested Parlays set, locked 2 hours
-        # before its kickoff and graded after (and the retired all-games panel's entries, frozen and
-        # still graded); a run whose record the script refused leaves the last good one in place.
+        # by weekly.py after a clean audit): each prime-time game's Suggested Parlays set and each week's Sunday
+        # slot, locked 2 hours before kickoff and graded after (and the retired all-games panel's entries,
+        # frozen and still graded); a run whose record the script refused leaves the last good one in place.
+        # The ESPN read's raw answers (props/raw/espn/) are never committed: the read is in the payload.
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
@@ -147,37 +135,12 @@ jobs:
           if [ -z "$open" ]; then echo "no props-refused issue is open"; exit 0; fi
           at=$(python -c "import json; print(json.load(open('props/data/payload.json'))['baked_at'])")
           for n in $open; do
-            gh issue close "$n" --comment "Published: the payload baked at $at is on the site, by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (the kept prices with it)."
+            gh issue close "$n" --comment "Published: the payload baked at $at is on the site, by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID."
           done
-      - name: Keep the prices a refused run bought (nothing is published)
-        # The page reads payload.json alone, and a refused run never commits it (weekly.py has put
-        # the published one back; the checkout below makes sure). The price files and
-        # priced_at.json are the job's inputs: kept, the next run bakes them and does not buy
-        # the same games again, where dropping them would throw the credits away.
-        if: failure() && steps.weekly.outcome == 'failure'
-        # the suggestions record is the published payload's (weekly.py writes it only after a clean
-        # audit, so a refused run has not touched it): held back with the payload all the same
-        run: |
-          git checkout -- props/data/payload.json
-          git checkout -- props/data/suggest_ledger.json 2>/dev/null || true
-          git add props/data
-          git reset -q -- props/data/payload.json props/data/suggest_ledger.json
-          if git diff --cached --quiet; then echo "the refused run bought nothing"; else
-            git config user.name "nfl-hub bot"
-            git config user.email "bot@users.noreply.github.com"
-            git commit -m "props: prices kept from a refused run $(date -u +'%Y-%m-%d %H:%M UTC') (nothing published)"
-            ok=0
-            for i in 1 2 3; do
-              if git pull --rebase && git push; then ok=1; break; fi
-              git rebase --abort 2>/dev/null || true   # a failed rebase left in place fails every retry
-              echo "push raced another job, retrying ($i)"; sleep 15
-            done
-            [ "$ok" = 1 ]
-          fi
-      - name: Open or update the props-refused issue (what was held, and what to do)
+      - name: Open or update the props-refused issue (why, and what to do)
         # a refusal reaches the owner (an issue in his own repo: email and GitHub Mobile) and a Claude
-        # session can be pointed at it: why it refused, the games whose prices were bought and are held,
-        # each kickoff in ET and the hours left (props/build/refused_note.py), the run, and what to do.
+        # session can be pointed at it: why it refused, the run, and what to do (props/build/refused_note.py).
+        # Nothing is held: a refused run commits nothing, and the next clean run publishes from scratch.
         # One issue at a time: a second refusal comments on the open one. Never fails the run, and
         # never stands in for the red run below
         if: failure() && steps.weekly.outcome == 'failure'
@@ -188,10 +151,10 @@ jobs:
         run: |
           body="$RUNNER_TEMP/props-refused.md"
           python props/build/refused_note.py --problems "$RUNNER_TEMP/props-build-problems.txt" --run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$body"
-          gh label create props-refused --force --color B60205 --description "The props job refused a run: prices held, nothing published"
+          gh label create props-refused --force --color B60205 --description "The props job refused a run: nothing published"
           n=$(gh issue list --label props-refused --state open --limit 1 --json number --jq '.[0].number // empty')
           if [ -n "$n" ]; then gh issue comment "$n" --body-file "$body"
-          else gh issue create --title "Props job refused: prices held, nothing published" --label props-refused --body-file "$body"; fi
+          else gh issue create --title "Props job refused: nothing published" --label props-refused --body-file "$body"; fi
       - name: Fail the run if the build reported problems
         if: always()
         run: |

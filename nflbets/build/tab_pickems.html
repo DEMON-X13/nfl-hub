@@ -412,9 +412,20 @@ window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET
    call of 16 October 2026 ("change the name Pickems to matchups"), and #matchups its address; its
    section and button keep the id pickems, which the prop model's tab switch reads (tab-pickems), so
    the old #pickems, in every bookmark and pickems/'s redirect, and #tracker land on it, the address
-   written over as #matchups */
+   written over as #matchups.
+
+   X Parlays and the X Bet Log are the site owner's tabs alone since 20 October 2026 (the owner's call,
+   "hide only": the admin link, nflbets/build/admin.js, which runs in the page's head and says whose browser
+   this is, window.HUB_ADMIN). Their buttons carry data-admin-only (theme.css hides them from the first
+   paint unless html[data-admin="on"]); on a visitor's page they are taken off the bar before anything
+   wires them, so nothing can open them, and #xparlays and #bets (the old Live Parlays links among them)
+   land on the board, written over as #matchups, as #tracker does. Signing out (hub-admin) takes them off
+   the bar the same way, and an X tab that was open lands on the board. */
 function routeTabs(){
-  const nav=document.getElementById('tabs'), btns=[...document.querySelectorAll('#tabs button')];
+  const admin=()=>{ try{ return !!(window.HUB_ADMIN&&window.HUB_ADMIN.on()); }catch(e){ return false; } };
+  const ADMIN_ADDR=new Set(['#xparlays','#bets']);
+  if(!admin()) document.querySelectorAll('#tabs [data-admin-only]').forEach(b=>b.remove());
+  const nav=document.getElementById('tabs'); let btns=[...document.querySelectorAll('#tabs button')];
   const reveal=b=>{ try{ if(!nav||!b) return; const n=nav.getBoundingClientRect(), r=b.getBoundingClientRect();
     if(r.left>=n.left&&r.right<=n.right) return;
     nav.scrollLeft+=(r.left+r.width/2)-(n.left+n.width/2); }catch(e){} };
@@ -422,10 +433,16 @@ function routeTabs(){
   /* a tab's address is its id but for the board's (both the go and the click must read it, or the
      click go() makes would write #pickems back over #matchups) */
   const ADDR={pickems:'matchups'}, addr=b=>'#'+(ADDR[b.dataset.tab]||b.dataset.tab);
-  const go=()=>{ if(location.hash==='#tracker'||location.hash==='#pickems') history.replaceState(null,'','#matchups');
+  const go=()=>{ if(location.hash==='#tracker'||location.hash==='#pickems'||(!admin()&&ADMIN_ADDR.has(location.hash))) history.replaceState(null,'','#matchups');
     const b=btns.find(x=>addr(x)===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); };
   btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!==addr(b)) history.replaceState(null,'',addr(b)); reveal(b); }));
   window.addEventListener('hashchange',go); go();
+  /* Sign out: the two tabs leave the bar, and one that was open lands on the board */
+  document.addEventListener('hub-admin',()=>{ if(admin()) return;
+    const open=document.querySelector('#tabs [data-admin-only][aria-selected="true"]');
+    document.querySelectorAll('#tabs [data-admin-only]').forEach(b=>b.remove());
+    btns=[...document.querySelectorAll('#tabs button')];
+    if(open||ADMIN_ADDR.has(location.hash)){ history.replaceState(null,'','#matchups'); const b=btns.find(x=>x.dataset.tab==='pickems'); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); } });
   /* the web fonts can widen the buttons after the first layout: once more when they are in */
   if(document.readyState!=='complete') window.addEventListener('load',()=>reveal(chosen()),{once:true});
   try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>reveal(chosen())); }catch(e){}

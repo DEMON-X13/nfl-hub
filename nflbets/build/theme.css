@@ -157,7 +157,21 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 #lpCard .fill.lose{background:linear-gradient(90deg,rgba(255,61,107,.35),var(--rose))}
 #lpCard .gm.tie,#lpCard .gm.tie em,#lpCard .stamp.bad{color:var(--gold)}
 #lpCard .src{border-left-color:#B49CFF}
-.xp-own,.xp-mark{background:var(--gold-soft);color:var(--gold)}
+/* the admin link (admin.js, 20 October 2026): X Parlays and the X Bet Log are on the site owner's tab bar alone,
+   hidden from the first paint unless the page is his (html[data-admin="on"], set in the head before the body).
+   His Admin mark and Sign out (a text button whose 44px tap target comes from padding taken back out by a negative
+   margin) are in the stamp's place after the switch: on a screen wider than a phone that place is laid on the
+   switch's own row, to its left and out of the flow, so the stamp keeps its height and nothing comes near the
+   switch; on a phone (620px and under) it is the stamp's first line, under the tagline. On a visitor's page the
+   place is empty and hidden, and the header is exactly as it was, but for the one line a refused link draws there */
+html:not([data-admin="on"]) #tabs [data-admin-only]{display:none!important}
+.hub-admin{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;font-size:12px;line-height:18px}
+.hub-admin[hidden]{display:none}
+.ha-mark{background:var(--gold-soft);color:var(--gold);border-radius:999px;padding:0 8px;font-weight:700;letter-spacing:.02em}
+.ha-out{font:inherit;font-weight:600;color:var(--ink-2);background:none;border:0;border-radius:6px;padding:13px 6px;margin:-13px -6px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.ha-out:hover{color:var(--ink)}
+.ha-msg{color:var(--miss);font-weight:600}
+@media(min-width:621px){ .hub-admin{position:absolute;top:26px;right:74px;min-height:44px;max-width:calc(100% - 440px);flex-wrap:wrap;text-align:right} }
 .card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}
 
 /* inside the framed betting tabs (html.embed): the page's glow shows through */
@@ -205,7 +219,7 @@ line[stroke="#E6EAEF"]{stroke:#4A5269}
 #gsModal .pe-g3{color:#7BD88F!important}
 
 @media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }
-@media(max-width:620px){ .hub-stamp{align-items:flex-start;text-align:left} }
+@media(max-width:620px){ .hub-stamp{align-items:flex-start;text-align:left} .hub-admin{justify-content:flex-start;margin-bottom:12px} }
 
 /* the light/dark switch at the top right of the header (theme.js): a round 44px button, its glyph the
    look a press gives (a sun while dark, a moon while light). It is laid over the header's corner, out
@@ -218,6 +232,7 @@ line[stroke="#E6EAEF"]{stroke:#4A5269}
 html[data-theme="light"] .hub-theme .ht-sun{display:none}
 html[data-theme="light"] .hub-theme .ht-moon{display:block}
 @media(max-width:900px){ .hub-theme{top:12px;right:16px} }
+@media(min-width:621px) and (max-width:900px){ .hub-admin{top:12px;right:68px} }
 /* under about 340px the wordmark's football reaches the switch's corner: the wordmark keeps clear of it */
 @media(max-width:340px){ .brand h1{padding-right:52px} }
 
@@ -267,7 +282,7 @@ html[data-theme="light"] .pays .box.tier.med b,html[data-theme="light"] .pays .b
 html[data-theme="light"] .inj.inj-dnp,html[data-theme="light"] .plrbtn .who .inj.inj-dnp,html[data-theme="light"] .finchip.live,
 html[data-theme="light"] .bigp .hero small,html[data-theme="light"] .faroff,html[data-theme="light"] .pk-tier.pk-med,html[data-theme="light"] .sl-tier.sl-med,html[data-theme="light"] .pk-note,
 html[data-theme="light"] #lpCard .note,html[data-theme="light"] #lpCard .gm.tie,html[data-theme="light"] #lpCard .gm.tie em,html[data-theme="light"] #lpCard .stamp.bad,
-html[data-theme="light"] #lpCard .res.tie,html[data-theme="light"] .xp-own,html[data-theme="light"] .xp-mark,html[data-theme="light"] .tier.med,
+html[data-theme="light"] #lpCard .res.tie,html[data-theme="light"] .ha-mark,html[data-theme="light"] .tier.med,
 html[data-theme="light"] .lead .va.near,html[data-theme="light"] .lv.warnc,html[data-theme="light"] .tile .tv.near,html[data-theme="light"] .tile .td.near,
 html[data-theme="light"] #gsModal .gs-lag{color:var(--gold-ink)}
 html[data-theme="light"] .finchip{border-color:rgba(8,95,134,.4)}

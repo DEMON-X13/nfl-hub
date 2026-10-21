@@ -5,7 +5,8 @@ pull request's code before it is merged, against today's data and the shapes the
 On 15 October 2026 two props runs were refused by audit checks a merged change had broken on the week's
 data (#270, #271): the price pull bought the prices, the audit refused them, and nothing was seen until
 someone looked hours later. Every PR was merged seconds after it opened, and nothing ran a PR's code
-before a scheduled run did. This runs it, and spends nothing: weekly.py with --no-odds, no secret mapped.
+before a scheduled run did. This runs it, and spends nothing: since 20 October 2026 weekly.py buys no prices at
+all (it still gets --no-odds, which a base from before needs and this one ignores), and no secret is mapped.
 
   classify   which parts a change touches: AUDIT (what the props job runs: props/build, the props/data
              scripts and the model files weekly.py reads (not the job's own outputs), the research files
@@ -15,11 +16,17 @@ before a scheduled run did. This runs it, and spends nothing: weekly.py with --n
              betting/neutral_sites.json and the build's parts of betting/tools, the props parts,
              liveparlays/build/). Neither: nothing the props job or the page runs changed, and the
              gate passes at once. On a push to main or a dispatch, everything runs.
-  bake       job A: `weekly.py --no-odds` on this code (today's nflverse files, main's price files, the
-             audit with PROPS_AUDIT_RAW as weekly.py sets it), judged on its exit code; then the page smoke
-             on the payload it baked (SMOKE_PAYLOAD), judged on its "0 failures" line.
+  bake       job A: `weekly.py --no-odds` on this code (today's nflverse files, today's read of DraftKings' lines
+             on ESPN, which espn_read.js records in props/raw/espn/, the audit with PROPS_AUDIT_RAW as weekly.py
+             sets it), judged on its exit code; then the page smoke on the payload it baked (SMOKE_PAYLOAD) and
+             elo/check_tab.js (the ELO tab and the Elo picks on that payload's schedule, which the Elo job runs
+             every morning and which blocks its publish), each judged on its "0 failures" line.
   phase      job B, one case of props/build/test_audit_phases.py: the audit or the page smoke replayed on
              a payload from git history at its own moment.
+  units      job C: the props job's own tests and the page's (UNITS: the ESPN read and its application, the
+             runs against the locks, the ids, the names, who played, the downloads, the audit's verdict, the
+             admin link, and the parlay card with Pull from DraftKings), on fixtures of their own: seconds each,
+             but for the page's two smokes (smoke_admin.js about a minute, smoke_live.js about four).
 
 Each is differential. A failure is run again on the base's code (a second checkout, `git worktree`):
 failing here and passing there fails the gate, since it is the change's; failing on both is reported
@@ -29,10 +36,14 @@ files this run downloaded (--offline over a copy of them), so the two runs see t
 run refused at a download or read a file as not posted yet (a 404, which leaves no copy: --offline would
 read it as missing and refuse at the download, where this run went on); then the base downloads its own.
 A base that refused at a download where this run did not has nothing to compare with, and the change fails.
+ESPN's answers are the same on both sides either way: the copy carries this run's recordings (props/raw/espn/ is
+ignored, so copied with the downloads) for the base's --offline to replay, and a base sent online is handed them
+(PROPS_ESPN_REPLAY), so a line DraftKings moved between the two runs never reads as the change's.
 
     python3 .github/scripts/props_gate.py classify --event pull_request     (in the workflow)
     python3 .github/scripts/props_gate.py dry-run 30   which of the last 30 PRs on main would run which job
     python3 .github/scripts/props_gate.py files a.js b.py ...                which parts these paths touch
+    python3 .github/scripts/props_gate.py units --base <sha>                 job C, here (each failure on the base too)
 """
 import argparse, ast, fnmatch, json, os, re, shutil, subprocess, sys, tempfile, time
 
@@ -55,6 +66,22 @@ PAGE = ['nflbets/**', 'betting/app/**', 'betting/tools/build.js', 'betting/tools
         # old addresses' redirects to it, which its smoke holds
         'index.html', 'pickems/index.html', 'live/index.html', 'liveparlays/index.html', 'news/index.html'] + GATE
 SMOKE_LINE = re.compile(r'(\d+) checks, (\d+) failures')
+# job C: the props job's own tests and the page's, each run from the repo's root ('py' or 'node'), seconds each on
+# fixtures of their own (test_dk_links reads git history, which the gate's checkout has whole; test_lock_runs the
+# season's schedule; smoke_admin.js and smoke_live.js the built page at the root). Before 20 October 2026 the gate
+# ran none of them. smoke_live.js (about four minutes, ten at most by its own cap) is the one place the parlay card's
+# Pull from DraftKings is held: one paid call a game, never tried again after a failure, the confirm's cost, a
+# visitor's page never asking The Odds API, a sign-out dropping a late answer (section J3, and N and V); it joined
+# the units on the review of 21 October 2026, since a change to card.html (PAGE) otherwise ran none of it
+UNITS = [('props/build/test_apply_espn.py', 'py'), ('props/build/test_espn_read.js', 'node'), ('props/build/test_lock_runs.py', 'py'),
+         ('props/build/test_espn_ids.py', 'py'), ('props/build/test_dk_links.py', 'py'), ('props/build/test_unmatched.py', 'py'),
+         ('props/build/test_who_played.py', 'py'), ('props/build/test_fetch.py', 'py'), ('props/build/test_audit_gate.py', 'py'),
+         ('lib/test_netfetch.py', 'py'), ('lib/test_netfetch.js', 'node'), ('nflbets/build/test_dkname.js', 'node'),
+         ('nflbets/build/smoke_admin.js', 'node'), ('nflbets/build/smoke_live.js', 'node')]
+# a unit run only where its file is in the tree; every other one missing fails the gate (none is optional: the parlay
+# card's name rule's test landed with its change)
+UNITS_OPTIONAL = set()
+UNIT_LINE = re.compile(r'(?:(\d+) checks, )?(\d+) failures')
 DOWNLOAD = re.compile(r'^BLOCKED: (download |schedule \()', re.M)
 NOT_POSTED = re.compile(r'^\s*\S+: not posted yet \(', re.M)   # weekly.py's line for a 404 it goes on without
 
@@ -184,8 +211,11 @@ def stream(cmd, cwd, env, label):
 
 
 def clean_env(**extra):
+    # the page smokes' own knobs among them (SMOKE_ADMIN_HTML and SMOKE_LIVE_HTML: another copy of the page, for a plant),
+    # so a unit always runs on the tree's own page
     env = {k: v for k, v in os.environ.items() if k not in
-           ('ODDS_API_KEY', 'PROPS_AUDIT_RAW', 'PROPS_AUDIT_PAYLOAD', 'PROPS_AUDIT_NOW', 'SMOKE_NOW', 'SMOKE_PAYLOAD')}
+           ('ODDS_API_KEY', 'PROPS_AUDIT_RAW', 'PROPS_AUDIT_PAYLOAD', 'PROPS_AUDIT_NOW', 'SMOKE_NOW', 'SMOKE_PAYLOAD', 'SMOKE_ADMIN_HTML', 'SMOKE_LIVE_HTML')
+           and not k.startswith('PROPS_ESPN_')}
     env['PYTHONUTF8'] = '1'
     env.update(extra)
     return env
@@ -212,13 +242,15 @@ def base_tree(sha):
     return d
 
 
-def weekly(root, label, offline=False):
-    """weekly.py --no-odds in this tree: (exit code, the problems file, the output)"""
+def weekly(root, label, offline=False, replay=None):
+    """weekly.py --no-odds in this tree: (exit code, the problems file, the output). replay: a folder of ESPN's
+    answers its read replays (PROPS_ESPN_REPLAY) where it would otherwise read ESPN live"""
     t = tmp('weekly-' + label)
     pf = os.path.join(t, 'props-build-problems.txt')
     if os.path.exists(pf): os.remove(pf)
+    env = clean_env(RUNNER_TEMP=t, **({'PROPS_ESPN_REPLAY': replay} if replay else {}))
     rc, o = stream([sys.executable, 'weekly.py', '--no-odds'] + (['--offline'] if offline else []),
-                   os.path.join(root, 'props', 'build'), clean_env(RUNNER_TEMP=t), f'weekly.py --no-odds{" --offline" if offline else ""} on {label}')
+                   os.path.join(root, 'props', 'build'), env, f'weekly.py --no-odds{" --offline" if offline else ""}{" (ESPN replayed)" if replay else ""} on {label}')
     probs = open(pf, encoding='utf-8').read() if os.path.exists(pf) else ''
     return rc, probs, o
 
@@ -238,6 +270,21 @@ def base_result(here_probs, brc, bprobs):
     return brc == 0, here_dl or base_dl
 
 
+def espn_answers(root=ROOT):
+    """this run's recordings of ESPN's answers (props/raw/espn/, espn_read.js's), for a base sent online to replay
+    (PROPS_ESPN_REPLAY), or None where this run read none (a base from before the read, or the season over)"""
+    d = os.path.join(root, 'props', 'raw', 'espn')
+    return d if os.path.isdir(d) and any(re.fullmatch(r'[0-9a-f]{40}\.json', f) for f in os.listdir(d)) else None
+
+
+def base_weekly(broot, here_out, here_probs, label):
+    """the base's weekly.py on the same data: this run's downloads and ESPN answers copied and replayed (--offline),
+    or, where base_online says so, its own downloads with this run's ESPN answers handed to it"""
+    online = base_online(here_out, here_probs)
+    if not online: copy_downloads(broot)
+    return weekly(broot, label, offline=not online, replay=espn_answers() if online else None)
+
+
 def copy_downloads(dst_root):
     """this run's nflverse downloads (props/raw's ignored files) into the base's tree"""
     raw = git('ls-files', '--others', '--ignored', '--exclude-standard', 'props/raw').splitlines()
@@ -252,6 +299,16 @@ def smoke(root, payload, label):
     m = [x for x in (SMOKE_LINE.search(l) for l in o.splitlines()) if x]
     good = rc == 0 and bool(m) and m[-1].group(2) == '0'
     return good, (m[-1].group(0) if m else f'no summary line (exit {rc})'), o
+
+
+def check_tab(root, label):
+    """elo/check_tab.js in this tree, on its props/data/payload.json (the one its weekly.py baked): the ELO tab and
+    the Elo picks, which read that payload's schedule and which the Elo job runs every morning (critique 13 of the
+    ESPN-only change: a payload the props job publishes must not turn the next Elo publish red)"""
+    rc, o = stream(['node', 'elo/check_tab.js'], root, clean_env(), f'elo/check_tab.js on {label}')
+    m = [x for x in (SMOKE_LINE.search(l) for l in o.splitlines()) if x]
+    good = rc == 0 and bool(m) and m[-1].group(2) == '0'
+    return good, (m[-1].group(0) if m else f'no summary line (exit {rc})')
 
 
 def verdict(what, here_ok, base_ok, here_line, base_line, infra=False):
@@ -282,11 +339,9 @@ def bake(args):
     if rc == 0:
         bad |= verdict('the props job (weekly.py --no-odds)', True, None, 'exit 0' + (', with problems that publish' if probs else ''), '')
     else:
-        online = base_online(here_out, probs)
         first = (probs.splitlines() or [f'exit {rc}, no problems file'])[0][:200]
         broot = base_tree(args.base)
-        if not online: copy_downloads(broot)
-        brc, bprobs, _ = weekly(broot, f'the base ({args.base[:7]})', offline=not online)
+        brc, bprobs, _ = base_weekly(broot, here_out, probs, f'the base ({args.base[:7]})')
         if bprobs: print('the base\'s problems file:\n' + bprobs)
         base_pay = os.path.join(broot, 'props', 'data', 'payload.json')
         bfirst = 'exit 0' if brc == 0 else (bprobs.splitlines() or [f'exit {brc}'])[0][:200]
@@ -295,17 +350,52 @@ def bake(args):
         print('(refused, so the payload is the published one again: the page smoke runs on that)')
     if args.page != 'true' and args.audit != 'true':
         return bad
+    def base_baked():
+        """the base's tree with its own payload baked from the same downloads and ESPN answers (once)"""
+        nonlocal base_pay
+        broot = base_tree(args.base)
+        if base_pay is None:
+            base_weekly(broot, here_out, probs, f'the base ({args.base[:7]})')
+            base_pay = os.path.join(broot, 'props', 'data', 'payload.json')
+        return broot
     good, line, _ = smoke(ROOT, pay, 'this change')
     bgood, bline = None, ''
     if not good:
-        broot = base_tree(args.base)
-        if base_pay is None:   # the base bakes its own payload from the same downloads (its own, as above)
-            online = base_online(here_out, probs)
-            if not online: copy_downloads(broot)
-            weekly(broot, f'the base ({args.base[:7]})', offline=not online)
-            base_pay = os.path.join(broot, 'props', 'data', 'payload.json')
+        broot = base_baked()
         bgood, bline, _ = smoke(broot, base_pay, f'the base ({args.base[:7]})')
     bad |= verdict('the page smoke on the fresh payload', good, bgood, line, bline)
+    good, line = check_tab(ROOT, 'this change')
+    bgood, bline = None, ''
+    if not good:
+        broot = base_baked()
+        bgood, bline = check_tab(broot, f'the base ({args.base[:7]})')
+    bad |= verdict('elo/check_tab.js on the fresh payload', good, bgood, line, bline)
+    return bad
+
+
+def unit(root, rel, kind, label):
+    """one of UNITS in this tree: (passed, its last summary line)"""
+    rc, o = stream([sys.executable if kind == 'py' else 'node', rel], root, clean_env(), f'{rel} on {label}')
+    m = [x for x in (UNIT_LINE.search(l) for l in o.splitlines()) if x]
+    return rc == 0 and bool(m) and m[-1].group(2) == '0', (m[-1].group(0) if m else f'no summary line (exit {rc})')
+
+
+def units(args):
+    """job C: every unit test here; a failure run again on the base's code, failing the gate when the base passes or
+    has no such test (it is the change's), a warning when the base fails it too"""
+    bad = 0
+    for rel, kind in UNITS:
+        what = f'unit test {rel}'
+        if not os.path.isfile(os.path.join(ROOT, rel)):
+            if rel in UNITS_OPTIONAL: print(f'{what}: not in this tree, skipped'); continue
+            bad |= verdict(what, False, None, 'the file is not in this tree', ''); continue
+        ok, line = unit(ROOT, rel, kind, 'this change')
+        if ok: bad |= verdict(what, True, None, line, ''); continue
+        broot = base_tree(args.base)
+        if not os.path.isfile(os.path.join(broot, rel)):
+            bad |= verdict(what, False, None, line, ''); continue
+        bok, bline = unit(broot, rel, kind, f'the base ({args.base[:7]})')
+        bad |= verdict(what, False, bok, line, bline)
     return bad
 
 
@@ -338,8 +428,9 @@ def main():
     f = sub.add_parser('files'); f.add_argument('paths', nargs='+')
     b = sub.add_parser('bake'); b.add_argument('--base', required=True); b.add_argument('--audit', default='true'); b.add_argument('--page', default='true')
     p = sub.add_parser('phase'); p.add_argument('--base', required=True); p.add_argument('--case', required=True)
+    u = sub.add_parser('units'); u.add_argument('--base', required=True)
     a = ap.parse_args()
-    return {'classify': classify, 'dry-run': dry_run, 'files': files_cmd, 'bake': bake, 'phase': phase}[a.cmd](a)
+    return {'classify': classify, 'dry-run': dry_run, 'files': files_cmd, 'bake': bake, 'phase': phase, 'units': units}[a.cmd](a)
 
 
 if __name__ == '__main__':

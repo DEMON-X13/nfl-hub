@@ -13,6 +13,17 @@
    not), and a second game is a prime-time one. Which games are prime time, a Thursday, Sunday or Monday
    at or after 7 pm US Eastern, is worked out here on its own from each kickoff (primeAt), never by the
    script or the page.
+   Since app v125 (no scheduled paid pull: every set stands on the props job's own read of DraftKings' lines on ESPN, in
+   the payload as PAY.espn) the made-up week W is the current week (the Elo matchups' where they are of this payload's
+   season, else the first with a game still to play), its paid prices, main lines and ids taken out, and the test plants
+   its own read of ESPN on every game of W (readOf: each club's charted starters on the tested stats, the yards ladders
+   DraftKings lists, the touchdown list), dated half an hour before each run's clock and before each game's kickoff as
+   moved (stamp), so every set's player legs are priced from DraftKings' lines (dkline, est.), as they now are. gP is the
+   game the read gives the most lines. A holds them so, and that a read dated at kickoff, and a read that is junk or
+   missing, give team legs only (no throw), and that a page dropping a well-formed read is refused with the file
+   untouched; B takes gP's read away; B3 moves its lines (the set rewritten on the moved lines); C restamps a newer read
+   after the lock (the set as locked); R's level built again takes the read's lines; D grades a level of dkline legs with
+   a void at its stored estimated prices.
 
      A  hours before the first prime-time lock: one set taken for every prime-time game of W, none for any
         other, keyed season|week|kickoff|game, locking 2 hours before kickoff, every leg on its own game;
@@ -124,16 +135,35 @@ function end() {
 
 /* ---- the made-up week ---- */
 const weeks = [...new Set(REAL.sched.map(g => +g.w))].sort((a, b) => a - b);
-const priced = weeks.filter(w => ((REAL.prices || {})[String(w)] || []).length);
-const W = priced.length ? priced[priced.length - 1] : weeks[0], WS = String(W), WW = pad(W);
 const season = (() => { const m = fs.readFileSync(path.join(HERE, 'part2.js'), 'utf8').match(/const SEASON=(\d{4})/); return +m[1]; })();
+/* (app v125) the current week: the Elo matchups' (so the Elo picks have their nudges) where they are of this season and
+   week of the schedule, else the first with a game still to play, else the last; never the latest with paid prices */
+const MU = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'elo', 'data', 'matchups.json'), 'utf8')); } catch (e) { return null; } })();
+const W = MU && +MU.season === season && weeks.includes(+MU.week) ? +MU.week
+  : (weeks.find(w => REAL.sched.some(g => +g.w === w && (g.hs == null || g.as == null))) || weeks[weeks.length - 1]), WS = String(W), WW = pad(W);
 const realW = REAL.sched.filter(g => +g.w === W);
 /* the week's Sunday (the date most of its Sunday games are on), its Saturday and its Monday */
 const sunD = (() => { const c = {}; for (const g of realW) if (g.d && dow(g.d) === 0) c[g.d] = (c[g.d] || 0) + 1;
   const best = Object.keys(c).sort((a, b) => c[b] - c[a])[0]; if (best) return best;
   const d0 = realW.map(g => g.d).sort()[0]; return addDays(d0, (7 - dow(d0)) % 7); })();
 const satD = addDays(sunD, -1), monD = addDays(sunD, 1);
-const rowsOf = id => ((REAL.prices || {})[WS] || []).filter(r => r.game_id === id).length;
+/* (app v125) the test's own read of DraftKings' lines on ESPN for a game: each club's charted QB1 (passing yards), RB1
+   (rushing yards), WR1-2 (receiving yards and receptions) and TE1 (receiving yards), each line at 0.8 of his recent mean
+   (two in three) or 1.15 of it (so the model leans to the over or the under), the yards ladders DraftKings lists (the
+   page's own rungs), and every one of them on the touchdown list; dated by stamp */
+const LADDER_Y = { passing_yards: [150, 200, 225, 250, 275, 300, 325, 350], rushing_yards: [25, 40, 50, 60, 75, 90, 100, 125], receiving_yards: [20, 25, 40, 50, 60, 75, 90, 100, 125] };
+const STATS_OF = { QB: r => r === 1 ? ['passing_yards'] : null, RB: r => r === 1 ? ['rushing_yards'] : null, WR: r => r <= 2 ? ['receiving_yards', 'receptions'] : null, TE: r => r === 1 ? ['receiving_yards'] : null };
+const playerById = new Map((Array.isArray(REAL.players) ? REAL.players : Object.values(REAL.players || {})).map(p => [p.id, p]));
+const readOf = g => { const lines = {}, rungs = {}, td = []; let i = 0;
+  for (const [pid, d] of Object.entries(REAL.depth || {}).sort(([a], [b]) => a.localeCompare(b))) {
+    const [team, pos, rank] = d || []; if (team !== g.a && team !== g.h) continue;
+    const want = STATS_OF[pos] && STATS_OF[pos](+rank), pl = playerById.get(pid); if (!want || !pl) continue;
+    const L = {}; for (const st of want) { const v = Array.isArray(pl[st]) ? pl[st][0] : null; if (!(v > 1)) continue; L[st] = Math.floor(v * (i++ % 3 === 2 ? 1.15 : 0.8)) + 0.5; }
+    if (!Object.keys(L).length) continue; lines[pid] = L; td.push(pid);
+    for (const st of Object.keys(L)) if (LADDER_Y[st]) (rungs[pid] = rungs[pid] || {})[st] = LADDER_Y[st].slice(); }
+  return Object.keys(lines).length ? { w: String(g.w), pl: { at: null, lines, rungs, td: td.sort() }, out: { st: 'ok', at: null } } : null; };
+const linesOf = g => { const e = readOf(g); return e ? Object.values(e.pl.lines).reduce((a, x) => a + Object.keys(x).length, 0) : 0; };
+const rowsOf = id => linesOf(REAL.sched.find(g => g.id === id));
 const byPrices = [...realW].sort((a, b) => rowsOf(b.id) - rowsOf(a.id) || etKick(a) - etKick(b));
 const gP = byPrices[0];
 /* the schedule's moves, each from the stage that makes it on */
@@ -182,6 +212,11 @@ const rowsFor = gs => { const t = teamsOf(gs), have = new Set(realStats.map(r =>
 const scoreOf = g => g.hs != null && g.as != null ? { hs: g.hs, as: g.as } : { hs: 24, as: 20 };
 function week(pay, { scored = [], stats = [] } = {}) {
   const ids = new Set(scored.map(g => g.id));
+  /* (app v125) no paid prices for W (no job buys them): the week's player prices, main lines and ids out, and the test's
+     own read of ESPN in their place, for every game of W (dated by stamp) */
+  if (pay.prices) delete pay.prices[WS]; if (pay.mkt) delete pay.mkt[WS]; if (pay.dk && typeof pay.dk === 'object') delete pay.dk[WS];
+  pay.espn = { v: 1, read_at: null, games: {} };
+  for (const g of pay.sched) if (+g.w === W) { const e = readOf(g); if (e) pay.espn.games[g.id] = e; }
   for (const g of pay.sched) if (+g.w === W) { if (ids.has(g.id)) Object.assign(g, scoreOf(REAL.sched.find(x => x.id === g.id))); else { delete g.hs; delete g.as; } }
   for (const g of pay.sched) if (+g.w > W) { delete g.hs; delete g.as; }
   pay.stats = Object.fromEntries(Object.entries(pay.stats || {}).filter(([k]) => +k < W));
@@ -191,7 +226,15 @@ function week(pay, { scored = [], stats = [] } = {}) {
   if (stats.length) pay.snaps[WS] = Object.fromEntries(Object.entries(((REAL.snaps || {})[WS]) || {}).filter(([gid]) => ids.has(gid)));
   return pay;
 }
-const stamp = (pay, t) => { pay.baked_at = iso(t).replace(/Z$/, '+00:00'); return pay; };
+/* the bake's time, and (app v125) the read's: half an hour before it, every game's entry dated so, one whose kickoff (as
+   moved) is not after the read dropped, as the job drops a game that has kicked off */
+const stamp = (pay, t) => { pay.baked_at = iso(t).replace(/Z$/, '+00:00');
+  const E = pay.espn, at = t - 30 * 60e3;
+  if (E && typeof E === 'object' && E.games && typeof E.games === 'object') { E.read_at = new Date(at).toISOString();
+    for (const gid of Object.keys(E.games)) { const g = pay.sched.find(x => x.id === gid), e = E.games[gid];
+      if (!g || !(etKick(g) > at + 60e3)) { delete E.games[gid]; continue; }
+      if (e.pl) e.pl.at = new Date(at).toISOString(); if (e.out) e.out.at = new Date(at).toISOString(); } }
+  return pay; };
 const kOf = (g, mv) => etKick(mv[g.id] ? { ...g, ...mv[g.id] } : g);
 const keyOf = (g, mv) => `${season}|${WW}|${iso(kOf(g, mv))}|${g.id}`;
 const primesUnder = mv => realW.filter(g => primeAt(kOf(g, mv)));
@@ -261,6 +304,32 @@ for (const g of primesA) {
 const eA = L.prime[KP];
 chk(!!eA && eA.tiers.some(t => t.legs), `A: the made-up week gives gP (${gP.id}, ${rowsOf(gP.id)} price rows) no parlay to hold the rewrite to`);
 chk(L.prime_summary && L.prime_summary.entries === keysA.length && L.prime_summary.graded_entries === 0, 'A: the prime-time summary does not count the sets, none graded');
+/* (app v125) every set's player legs priced from the test's read: dkline, the fair chance est., never under the price */
+const mlP = ml => ml > 0 ? 100 / (ml + 100) : -ml / (-ml + 100);
+{ const sets = [...Object.values(L.prime), ...Object.values(L.slot || {})], lv = sets.flatMap(e => e.tiers.filter(t => t.legs));
+  const pls = lv.flatMap(t => t.legs.filter(l => l.grp !== 'TEAM'));
+  chk(pls.length > 0, `A: no set holds a player leg priced from the read (${sets.length} sets)`);
+  chk(pls.every(l => l.src === 'dkline' && l.fair_est === true && isFinite(l.price) && l.price !== 0 && l.p >= mlP(l.price) - 1e-4),
+    'A: a player leg is not priced from the read (dkline, its fair chance est.), or is under its price: ' + JSON.stringify(pls.filter(l => !(l.src === 'dkline' && l.fair_est === true && l.p >= mlP(l.price) - 1e-4)).slice(0, 2)));
+  chk(lv.every(t => !t.legs.some(l => l.grp !== 'TEAM') || t.fair_est === true), 'A: a level holding a leg priced from the read does not say its fair chance is estimated');
+  const elo = sets.flatMap(e => (e.elo || []).filter(t => t.legs).flatMap(t => t.legs));
+  chk(elo.every(l => l.src === 'dkline'), 'A: an Elo pick holds a leg not priced from the read: ' + JSON.stringify(elo.filter(l => l.src !== 'dkline').slice(0, 2))); }
+/* a side run (its own copy of the ledger): gP's read dated at its kickoff gives it no player leg; a read that is junk, or
+   none, gives every set team legs alone and throws nothing; a page that drops a well-formed read is refused, the file
+   untouched */
+{ const SIDE = path.join(DIR, 'side.json'), side = (pay, extra = {}) => { fs.writeFileSync(SIDE, bytes()); const rr = run(pay, tA, { SUGGEST_LEDGER: SIDE, ...extra }); return { rr, L: JSON.parse(fs.readFileSync(SIDE, 'utf8')) }; };
+  const teamOnly = x => [...Object.values(x.prime), ...Object.values(x.slot || {})].every(e => e.tiers.every(t => !t.legs || t.legs.every(l => l.grp === 'TEAM')));
+  { const PK = clone(P0), e = PK.espn.games[gP.id]; chk(!!e, `A: the test's read has no lines for gP (${gP.id})`);
+    if (e) { e.pl.at = e.out.at = new Date(kP).toISOString(); const { rr, L: x } = side(PK);
+      chk(rr.code === 0 && !!x.prime[KP] && x.prime[KP].tiers.every(t => !t.legs || t.legs.every(l => l.grp === 'TEAM')), 'A: a read dated at gP\'s kickoff gave its set a player leg: ' + rr.last); } }
+  for (const [lab, junk] of [['junk', 'junk'], ['of another version', { v: 2, games: P0.espn.games }], ['missing', undefined]]) {
+    const PJ = clone(P0); if (junk === undefined) delete PJ.espn; else PJ.espn = junk; const { rr, L: x } = side(PJ);
+    chk(rr.code === 0 && Object.keys(x.prime).length === keysA.length && teamOnly(x), `A: a read ${lab} did not give every set team legs alone, or the run failed: ` + rr.last); }
+  { const page = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'), m = 'function espnPublished(){';
+    chk(page.includes(m), 'A: the site\'s page has no espnPublished to stand in for a page that drops the read (rebuild index.html)');
+    const PG = path.join(DIR, 'page_drops_read.html'); fs.writeFileSync(PG, page.replace(m, m + ' return 0;'));
+    fs.writeFileSync(SIDE, bytes()); const before = bytes(), rr = run(P0, tA, { SUGGEST_LEDGER: SIDE, SUGGEST_PAGE: PG });
+    chk(rr.code === 1 && /did not apply the payload's ESPN read/.test(rr.out) && fs.readFileSync(SIDE, 'utf8') === before, 'A: a page that drops the payload\'s well-formed ESPN read was not refused with the file untouched: ' + rr.out.slice(-300)); } }
 /* (app v118) every set's Elo picks, and the week's Sunday slot: one set while its lock is to come */
 for (const g of primesA) { const e = L.prime[keyOf(g, MOVE)]; if (e) eloHeld(e, [g.id], `A: ${g.id}`); }
 const slotA = slotUnder(MOVE), KS = slotA && slotA.key;
@@ -281,8 +350,10 @@ if (slotA && slotA.lock > tA) {
 
 /* B: hours later, gP's player prices gone and the schedule moved */
 const tB = tA + 2 * H;
-const noPrices = pay => { pay.prices[WS] = (pay.prices[WS] || []).filter(x => x.game_id !== gP.id);
+const noPrices = pay => { if (pay.prices) pay.prices[WS] = (pay.prices[WS] || []).filter(x => x.game_id !== gP.id);
   for (const p of Object.values((pay.mkt || {})[WS] || {})) for (const s of Object.keys(p)) if (p[s] && p[s].g === gP.id) delete p[s];
+  /* (app v125) and its read of DraftKings' lines */
+  if (pay.espn && pay.espn.games) delete pay.espn.games[gP.id];
   return pay; };
 const P0b = stamp(moved(noPrices(clone(P0)), MOVE_B), tB - H);
 r = run(P0b, tB);
@@ -303,10 +374,14 @@ const ledgerB = bytes();
 /* B2: nothing changed, nothing written */
 r = run(P0b, tB + H);
 chk(r.code === 0 && /^suggest ledger: unchanged/.test(r.last) && bytes() === ledgerB, 'B2: a run that changed nothing wrote the ledger: ' + r.last);
-/* B3: a second before gP's lock, the prices back: still live, rewritten */
+/* B3: a second before gP's lock, the read back with every line of gP moved a yard (or a catch) up: still live, rewritten,
+   its player legs on the moved lines (app v125: a moved line in the read rewrites a live set) */
 const P1 = stamp(moved(clone(P0), MOVE_B), lockP - H);
+{ const e = P1.espn.games[gP.id]; if (e) for (const o of Object.values(e.pl.lines)) for (const st of Object.keys(o)) o[st] += 1; }
 r = run(P1, lockP - 1000);
-chk(r.code === 0 && (read().prime[KP] || {}).taken_at === iso(lockP - 1000), 'B3: a run a second before the lock did not rewrite the set: ' + r.last);
+{ const e = read().prime[KP] || {}, mv = (P1.espn.games[gP.id] || { pl: { lines: {} } }).pl.lines, mains = (e.tiers || []).flatMap(t => t.legs || []).filter(l => l.grp !== 'TEAM' && l.main);
+  chk(r.code === 0 && e.taken_at === iso(lockP - 1000), 'B3: a run a second before the lock did not rewrite the set: ' + r.last);
+  chk(mains.every(l => mv[l.pid] && mv[l.pid][l.stat] === l.k), 'B3: a main line in the rewritten set is not on the read\'s moved line: ' + JSON.stringify(mains.filter(l => !(mv[l.pid] && mv[l.pid][l.stat] === l.k)).slice(0, 2))); }
 fs.writeFileSync(LEDGER, ledgerB);
 
 /* C: an hour after gP's lock, the prices back: locked as B left it */
@@ -340,6 +415,9 @@ chk(r.code === 0 && /replaced /.test(r.last), 'R: the run did not replace the le
 chk(sR.updated && sR.updated.pid === 'XX-RULED' && sR.updated.name === 'Ruled Out Jr.' && typeof sR.updated.reason === 'string' && sR.updated.reason && sR.updated.at === iso(tR),
   'R: the replaced level is not marked updated with the player, the reason and the run\'s time: ' + JSON.stringify(sR.updated));
 chk(!(sR.legs || []).some(l => l.pid === 'XX-RULED') && (!sR.legs || (sR.legs.length === 2 && sR.legs.every(l => l.gid === gP.id))), 'R: the replaced level still holds him, or is not a pair on its own game');
+/* (app v125) built from the read at hand: a player leg on it priced from it, a main line at the read's own number */
+{ const rl = (PR.espn.games[gP.id] || { pl: { lines: {} } }).pl.lines;
+  chk((sR.legs || []).filter(l => l.grp !== 'TEAM').every(l => l.src === 'dkline' && (!l.main || (rl[l.pid] && rl[l.pid][l.stat] === l.k))), 'R: the level built again holds a player leg not priced from the read at hand: ' + JSON.stringify(sR.legs)); }
 const eS = (eR.elo || []).find(t => t.id === 'elo-safe') || {};
 chk(Array.isArray(pR.elo), 'R: the locked set has no Elo picks to plant a ruled-out player in (the run that took it built none)');
 chk(eS.updated && eS.updated.pid === 'XX-RULED' && eS.updated.at === iso(tR) && !(eS.legs || []).some(l => l.pid === 'XX-RULED') && (!eS.legs || (eS.legs.length === 2 && eS.legs.every(l => l.gid === gP.id && l.pe > 0 && l.pe < 1))),
@@ -426,6 +504,10 @@ const Z = plant(kZ, [
    no run do not win it */
 const L_QBTD = { ...player(qb.id, gq, 'any_td', 1, 'over', false, 235), label: 'Scores a rushing or receiving TD (not a TD pass)' };
 const Q = plant(kQ, [tier('safe', 2, [L_QBTD, L_WIN])]);              /* lost: the touchdown passes are not his */
+/* E: (app v125) a level of legs priced from DraftKings' lines read on ESPN (dkline, est.) with a void: the rest paid at
+   their stored estimated prices, never priced again from a read */
+const kE = kicks[0] - 1.75 * H, dkl = l => ({ ...l, src: 'dkline', fair_est: true });
+const EX = plant(kE, [tier('med', 3, [dkl(L_VOID), dkl(L_RUNG), dkl(L_NAMED_U)], { fair_est: true })]);   /* won: the void out, the rung and the under paid at their own prices */
 /* PS: last season's week W, an all-player Safe graded lost; this season's rows for the same players
    and week would win it: never regraded */
 const kPS0 = kicks[0] - 365 * DAY, prevGid = `${season - 1}_${WW}_${gq.a}_${gq.h}`;
@@ -465,7 +547,7 @@ const kPPS = primeBack(kicks[0] - 364 * DAY, 1)[0];
 const PPS = { ...prime({ id: prevGid, a: gq.a, h: gq.h }, kPPS, four(tier('safe', 2, [{ ...L_OVER, gid: prevGid }, { ...L_EXACT, gid: prevGid }]))), season: season - 1 };
 PPS.grade = { safe: { result: 'lost', legs: ['loss', 'loss'], payout: 0 } };
 { const x = JSON.parse(ledgerR3);
-  for (const [k, e] of [[kX, X], [kY, Y], [kX2, X2], [kZ, Z], [kQ, Q]]) x.entries[oldKey(k)] = e;
+  for (const [k, e] of [[kX, X], [kY, Y], [kX2, X2], [kZ, Z], [kQ, Q], [kE, EX]]) x.entries[oldKey(k)] = e;
   x.entries[kPS] = PS;
   for (const e of [PX, PZ, PO, PWa, PWb, PPS].filter(Boolean)) x.prime[pkey(e)] = e;
   write(x); }
@@ -532,6 +614,9 @@ chk(gx.aggr && gx.aggr.result === 'lost' && gx.aggr.payout === 0, 'D: a parlay w
 chk(gx.xtrm && gx.xtrm.result === 'push' && gx.xtrm.payout === 1 && gx.xtrm.legs.every(x => x === 'push' || x === 'void'), 'D: every leg a push or a void is not a push, the stake back: ' + JSON.stringify(gx.xtrm));
 const gy = gOf('entries', oldKey(kY));
 chk(!gy.med && gy.aggr && gy.aggr.result === 'won' && JSON.stringify(gy.aggr.legs) === '["win","win","push","void"]' && gy.aggr.payout === r3(dec(L_WIN.price) * dec(L_OVER.price)), 'D: a level with no parlay was graded, or a planted level was not: ' + JSON.stringify(gy));
+{ const ge = gOf('entries', oldKey(kE));
+  chk(ge.med && ge.med.result === 'won' && JSON.stringify(ge.med.legs) === '["void","win","win"]' && ge.med.payout === r3(dec(L_RUNG.price) * dec(L_NAMED_U.price)),
+    'D: a level of legs priced from the read with a void is not paid the rest at their stored prices: ' + JSON.stringify(ge.med)); }
 const gqb = gOf('entries', oldKey(kQ));
 chk(gqb.safe && gqb.safe.result === 'lost' && JSON.stringify(gqb.safe.legs) === '["loss","win"]', 'D: a quarterback\'s touchdown was won on his touchdown passes: ' + JSON.stringify(gqb.safe));
 const gz = gOf('entries', oldKey(kZ));

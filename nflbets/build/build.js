@@ -9,7 +9,8 @@
  *                        .../nfl-hub/nflbets/ be .../nfl-hub/ and get rid of that page", the landing page
  *                        that listed this page, Weekly Picks and the other hubs): the prop model's page with
  *                        the Matchups board in front of it, its Suggested Parlays and Parlay Builder tabs, X
- *                        Parlays on a tab of its own, and the Game snapshot a tap on a game opens, which reads
+ *                        Parlays and the X Bet Log on tabs of their own on the site owner's devices alone (the
+ *                        admin link, admin.js), and the Game snapshot a tap on a game opens, which reads
  *                        the Season Tracker's games from the news job's files. nflbets/ stays the source
  *                        folder (build/); its index.html is a hand-written redirect to the root now, for old
  *                        bookmarks. Every file the page reads is named from the root (props/data/payload.json,
@@ -29,11 +30,14 @@
  * code, not a copy that can drift. It is scoped inside the closure because the prop model has
  * its own TEAM_COLORS and tag().
  *
- * Nothing is baked in. The page fetches props/data/payload.json, betting/state.json,
- * liveparlays/parlays.json, liveparlays/xbets.json and elo/data/*.json when it opens, and the news
- * job's news/data/units.json and the week's notes when a Game snapshot first opens (stats.json no
- * longer: the Stat breakdown went on 16 October 2026, the owner's call), so it is rebuilt when a source changes, never when the data does. Neither site is touched. This page
- * reads what they publish, and writes nothing anywhere but the visitor's own browser storage.
+ * Nothing is baked in. The page fetches props/data/payload.json, betting/state.json and
+ * elo/data/*.json when it opens (and liveparlays/parlays.json and liveparlays/xbets.json on the site
+ * owner's browser alone, the admin link's: see admin.js), and the news job's news/data/units.json and
+ * the week's notes when a Game snapshot first opens (stats.json not by the snapshot: the Stat breakdown
+ * went on 16 October 2026, the owner's call; a game page's Team Stats window reads it when it first
+ * opens, app v124), so it is rebuilt when a source changes, never when the data does. Neither site is touched. This page reads what they publish, and writes nothing anywhere but
+ * the visitor's own browser storage. The one thing that leaves a browser is the admin's Odds API key,
+ * on the admin's own browser, sent by admin.js to The Odds API and nowhere else (below).
  */
 'use strict';
 const fs = require('fs');
@@ -55,10 +59,12 @@ const part3 = rd('props', 'build', 'part3.js');
 const betting = rd('betting', 'app', 'x_nfl_betting_model.html');
 const tab = rd('nflbets', 'build', 'tab_pickems.html');
 /* the X Parlays section is the section page's own source, set into the X Parlays tab, a tab of
-   its own (#xparlays): X's parlays (liveparlays/parlays.json, read only on every device) and
-   nothing else. The Parlay Builder is its own tab (#parlay): its Top 100 lines over the builder; Suggest
-   Parlays (#suggest) is the prop model's own tab of each prime-time game's parlays. No device keeps a list of its own: visitors come to see X's parlays,
-   and the builder finishes a parlay as a card to download (card.html, below), saved nowhere.
+   its own (#xparlays): X's parlays (liveparlays/parlays.json, read only) and nothing else, on the
+   site owner's devices alone since 20 October 2026 (the admin link, admin.js: "hide only", the file
+   stays public); on anyone else's the tab is off the bar and the section reads nothing. The Parlay
+   Builder is its own tab (#parlay): the builder over its Top 30 lines; Suggested Parlays (#suggest) is
+   the prop model's own tab of each prime-time game's parlays. No device keeps a list of its own, and
+   the builder finishes a parlay as a card to download (card.html, below), saved nowhere.
    The section's styles are scoped to its card and its script runs in a closure, since the page
    around it defines most of the same names for itself. */
 const livePage = rd('liveparlays', 'build', 'page.html');
@@ -70,7 +76,8 @@ const cardSrc = rd('nflbets', 'build', 'card.html');
 /* the browser's own storage (storage.js): the window.storage the prop model saves through, over
    this browser's localStorage and nothing else, and the leftovers of the retired shared store
    taken out once. It runs before the prop model. The X Bet Log's adapter (xbets.js) runs right
-   after it and hands the betting app's frames X's log, read from liveparlays/xbets.json. */
+   after it and hands the betting app's frames X's log, read from liveparlays/xbets.json on the
+   admin's browser alone (on a visitor's it reads nothing and says it has no log). */
 /* the season and the prop model's storage key are part2's, one place: the storage layer is
    handed that key at build time, so a new season is a new key in part2.js and nowhere else */
 const SEASON_KEY = part2.match(/const SEASON=(\d{4}), KEY='([^']+)';/);
@@ -87,17 +94,41 @@ if (!/^x_nfl_viewer_picks_\d{4}$/.test(BETB.BET_KEY)) throw new Error('betting/t
 const STORAGE_JS = sub1(rd('nflbets', 'build', 'storage.js'), /\/\*PROP_KEY\*\/'[^']*'/, '/*PROP_KEY*/' + JSON.stringify(PROP_KEY), "the storage layer's PROP_KEY");
 for (const need of ['window.storage=', 'function clean(v,d)', "const BAD=/[<>\"`]/g;", "ls.del('live_parlays_v1')", "'nflowner_v1'", "'xparlays_v1'"])
   if (!STORAGE_JS.includes(need)) throw new Error('nflbets/build/storage.js no longer has ' + need);
+/* the admin link's key is admin.js's alone: the storage layer, which takes the retired keys out, never names it */
+if (/['"`]nflhub_admin_v1['"`]/.test(STORAGE_JS)) throw new Error("nflbets/build/storage.js names nflhub_admin_v1: the admin link's key is admin.js's alone");
 const XBETS_JS = sub1(rd('nflbets', 'build', 'xbets.js'), /\/\*SEASON\*\/\d{4}/, '/*SEASON*/' + BETB.SEASON, "the X Bet Log's season");
-for (const need of ['window.XBETS=', "URL='liveparlays/xbets.json'", "{cache:'no-store'}", 'function cleanWeek(', "replace(/[<>]/g,'')", 'function tidy('])
-  if (!XBETS_JS.includes(need)) throw new Error('nflbets/build/xbets.js no longer has ' + need);
+for (const need of ['window.XBETS=', "URL='liveparlays/xbets.json'", "{cache:'no-store'}", 'function cleanWeek(', "replace(/[<>]/g,'')", 'function tidy(',
+  'window.HUB_ADMIN', 'if(on()) read();', 'enabled:()=>on(),', 'if(!on()) return Promise.resolve();', 'ls.del(CACHE); ls.del(JOINED);\n  function tidy(){'])
+  if (!XBETS_JS.includes(need)) throw new Error('nflbets/build/xbets.js no longer has ' + need + ": the X Bet Log is read on the admin's browser alone, and the retired store's copies go on every load");
+if (/\n\s*read\(\);\n/.test(XBETS_JS)) throw new Error("nflbets/build/xbets.js reads the X Bet Log's file on every load again: a visitor's page asks for no file");
 /* friends' picks on the Pick'em Record (friends.js, the owner's call of 15 October 2026): read from
    picks/friends.json, which Claude keeps with picks/tools/add.js, and handed to the betting frames as
    parent.FRIENDS, read only. A missing file draws no friends; nothing is baked in. */
 const FRIENDS_JS = sub1(rd('nflbets', 'build', 'friends.js'), /\/\*SEASON\*\/\d{4}/, '/*SEASON*/' + BETB.SEASON, "the friends' picks' season");
 for (const need of ['window.FRIENDS=', "URL='picks/friends.json'", "{cache:'no-store'}", 'function clean('])
   if (!FRIENDS_JS.includes(need)) throw new Error('nflbets/build/friends.js no longer has ' + need);
-/* nothing on the page writes anywhere but this browser: the two scripts send no request but the
-   X Bet Log file's read */
+/* the admin link (admin.js, the owner's call of 20 October 2026): #owner=<his Odds API key> makes a browser the
+   site owner's, "hide only": X Parlays and the X Bet Log on its tab bar, the parlay card's Pull from DraftKings.
+   It runs in the page's head, before every style, the body and every other script, so the key is off the address
+   before anything reads it and the first paint is the admin's or the visitor's. It is the one code on the page
+   that holds the key or sends it, and only to The Odds API (API, the v4 base, and odds()'s two event paths); it
+   keeps one thing, the record under its own key in this browser's storage, and writes nothing anywhere else */
+const ADMIN_JS = rd('nflbets', 'build', 'admin.js');
+if (/<\/script|<!--/i.test(ADMIN_JS)) throw new Error('nflbets/build/admin.js has a closing script tag or a comment opener, which would end its script in the page');
+for (const need of ["KEY='nflhub_admin_v1'", 'window.HUB_ADMIN=', 'owner=', 'history.replaceState(', "location.replace('#'", "API='https://api.the-odds-api.com/v4/'",
+  "root.setAttribute('data-admin','on')", 'var FORMAT=/^[A-Za-z0-9]{16,64}$/;', 'var PATHS=/^sports\\/americanfootball_nfl\\/events(\\/[0-9a-f]{32}\\/odds)?$/;', 'PATHS.test(path)',
+  "cache:'no-store',referrerPolicy:'no-referrer'", "new CustomEvent('hub-admin'", 'location.reload()', "closest('[data-admin-out]')", "getElementById('hubAdmin')"])
+  if (!ADMIN_JS.includes(need)) throw new Error('nflbets/build/admin.js no longer has ' + need);
+{ const uses = [...ADMIN_JS.matchAll(/localStorage\s*\.\s*(\w+)\s*\(([^,)]*)/g)];
+  if (!uses.length || uses.some(m => !['getItem', 'setItem', 'removeItem'].includes(m[1]) || m[2].trim() !== 'KEY') || (ADMIN_JS.match(/localStorage/g) || []).length !== uses.length)
+    throw new Error("nflbets/build/admin.js uses this browser's storage for something other than the admin's own record (KEY)");
+  /* every request it makes is to The Odds API's v4 base, a GET */
+  const fetches = (ADMIN_JS.match(/fetch\(/g) || []).length;
+  if (!fetches || fetches !== (ADMIN_JS.match(/fetch\(API\+/g) || []).length) throw new Error('nflbets/build/admin.js asks something other than The Odds API (every fetch( must be fetch(API+...)');
+  for (const gone of ['XMLHttpRequest', 'sendBeacon', 'keepalive', 'window.storage', 'S.ui', 'sessionStorage', 'indexedDB', 'credentials', 'method:', 'nflowner_v1', 'nflhub_theme_v1', 'console.'])
+    if (ADMIN_JS.includes(gone)) throw new Error('nflbets/build/admin.js has ' + gone + ': it keeps one record in this browser and sends the key to The Odds API alone'); }
+/* nothing on the page writes anywhere but this browser: the three scripts send no request but the
+   X Bet Log's file's read (the admin's browser alone) and friends' picks' */
 for (const [name, src] of [['storage.js', STORAGE_JS], ['xbets.js', XBETS_JS], ['friends.js', FRIENDS_JS]])
   for (const gone of ["method:'PUT'", "method:'PATCH'", "method:'POST'", 'keepalive', 'write('])
     if (src.includes(gone)) throw new Error(`nflbets/build/${name} has ${gone}: nothing on the page writes anywhere but this browser's storage`);
@@ -195,16 +226,21 @@ lsub("const DATA='parlays.json';", "const DATA='liveparlays/parlays.json';", 'fi
 /* the section draws once the model is up (a leg's injury word and player ids are the model's) */
 /* lp-, not live-: the prop model has a liveRefresh of its own, and a global by that name
    would replace it */
-lsub("draw(); refresh();", "window.lpDraw=draw; window.lpRefresh=refresh; draw(); refresh();", 'boot');
+/* drawn and read on the admin's browser alone (lpAdmin, window.HUB_ADMIN): a visitor's page asks for no
+   file and no score for X Parlays, and draws nothing in it. window.lpAdmin is the section's own, handed to
+   the page's app-ready listener below, outside the section's closure */
+lsub("draw(); refresh();", "window.lpDraw=draw; window.lpRefresh=refresh; if(lpAdmin()){ draw(); refresh(); }", 'boot');
 for (const need of ['function readFile(', 'o.cleared===true', 'const updatedOf=', "{cache:'no-store'}", 'function espnWeek(', 'function drawList(', "getElementById('lpUpdated')",
-  "const HERE_KEY='lp_cleared_here_v1';", 'data-lp-clear=', 'aria-label="Clear this parlay"', 'function ask(', 'function askClose(', 'function showAgain(', 'id="lpShowAll"'])
+  "const HERE_KEY='lp_cleared_here_v1';", 'data-lp-clear=', 'aria-label="Clear this parlay"', 'function ask(', 'function askClose(', 'function showAgain(', 'id="lpShowAll"',
+  "const lpAdmin=()=>{ try{ return !!(window.HUB_ADMIN&&window.HUB_ADMIN.on()); }catch(e){ return false; } };", 'window.lpAdmin=lpAdmin;',
+  'async function refresh(){\n  /* a visitor', '  if(!lpAdmin()) return;\n  if(STATE.busy) return;', 'function draw(){\n  if(!lpAdmin()) return;', "document.addEventListener('hub-admin',"])
   if (!LIVE_JS.includes(need)) throw new Error('the live script no longer has ' + need + ', which the section relies on');
 for (const need of ['role="alertdialog"', 'aria-modal="true"', 'id="lpAskNo"', 'id="lpAskYes"', 'Clear this parlay?'])
   if (!LIVE_ASK.includes(need)) throw new Error('the Clear this parlay? window no longer has ' + need);
-/* one list, X's, from the file, read only on every device: nothing of the section reads, draws or
-   writes a browser's own parlays, and nothing on it changes X's */
+/* one list, X's, from the file, read only (on the admin's browser alone): nothing of the section reads,
+   draws or writes a browser's own parlays, and nothing on it changes X's */
 for (const gone of ['MY_KEY', 'myCard', 'myApp', 'LISTS.', 'LIVE_IO', 'NFLSYNC', 'lpOwner', 'lpKeep', 'data-rm', 'data-edit', 'data-stake-of', 'data-reset', "id=\"clear\"", 'propState', 'S.saved', 'sessionStorage', 'indexedDB'])
-  if (LIVE_JS.includes(gone) || LIVE_BAR.includes(gone) || LIVE_ASK.includes(gone)) throw new Error('the live section still has ' + gone + ': X Parlays is the file, read only, on every device');
+  if (LIVE_JS.includes(gone) || LIVE_BAR.includes(gone) || LIVE_ASK.includes(gone)) throw new Error('the live section still has ' + gone + ": X Parlays is the file, read only, on the admin's browser alone");
 /* the one thing the section keeps is the visitor's own: the parlays this device has cleared, under
    a key of its own (never a retired one, which storage.js takes out) and no other. Every use of the
    browser's storage is that key's, the section sends nothing (no write, no other address), and the
@@ -233,9 +269,28 @@ for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 
 for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-sp-add="${g.id}:${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${o.fid||t.id}\"", 'function spTier(', 'function pbStake(', 'id="pbStake"', 'data-pb-pay="${t.dec}"'])
   if (!part3.includes(need)) throw new Error("the builder's save or Suggested Parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
 CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
+/* Pull from DraftKings (the owner's call of 20 October 2026), on the admin's device alone: the card places a book's
+   name on a player by the job's own rule, props/build/names.py's, whose nicknames are props/build/nicknames.json, set
+   into the card's NICKNAMES slot here, so the two read one table; its club names (DK_TEAMS) are held equal to The Odds
+   API's as props/data/oddsfetch.py's TEAMS has them; and it reaches The Odds API through window.HUB_ADMIN (admin.js)
+   alone, which holds the key: the card never names the API's host, its key parameter or this browser's storage, and
+   asks nothing of anything itself (no fetch of its own) */
+{ const NICK = JSON.parse(rd('props', 'build', 'nicknames.json'));
+  if (!NICK || typeof NICK !== 'object' || !Object.keys(NICK).some(k => !k.startsWith('_') && Array.isArray(NICK[k]))) throw new Error('props/build/nicknames.json is not the table of nicknames the name rule reads');
+  CARD_JS = sub1(CARD_JS, '/*NICKNAMES*/{}', JSON.stringify(NICK).replace(/</g, '\\u003c'), "the card's NICKNAMES slot");
+  const pairs = s => [...s.matchAll(/'([^']+)'\s*:\s*'([^']+)'/g)].map(m => m[1] + '=' + m[2]).sort().join('|');
+  const py = rd('props', 'data', 'oddsfetch.py').match(/\nTEAMS=\{([^}]*)\}/), js = CARD_JS.match(/const DK_TEAMS=\{([^}]*)\};/);
+  if (!py || !js) throw new Error("the parlay card's DK_TEAMS or props/data/oddsfetch.py's TEAMS is not where nflbets/build expects it");
+  if (pairs(py[1]) !== pairs(js[1]) || pairs(js[1]).split('|').length !== 32)
+    throw new Error("the parlay card's DK_TEAMS is not props/data/oddsfetch.py's TEAMS, club for club: The Odds API's names would match the wrong games");
+  for (const need of ['window.HUB_ADMIN', 'window.HUB_ADMIN.odds(', 'window.dkPulledFor=', 'function dkNameRule(', '/* ---- the name rule (props/build/names.py', '/* ---- end of the name rule ---- */', 'function pullFor(', 'function pullPlan(', "data-pc-pull", 'PULL_MOVED_MS=15*60e3'])
+    if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need + ': Pull from DraftKings is read through window.HUB_ADMIN, placed by the job\'s name rule and handed to the props parts by window.dkPulledFor');
+  for (const gone of ['apiKey', 'api.the-odds-api.com', 'localStorage', 'sessionStorage', 'indexedDB', 'XMLHttpRequest', 'sendBeacon', 'fetch(', 'nflhub_admin_v1'])
+    if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html has ' + gone + ': the card reaches The Odds API through window.HUB_ADMIN alone, never with a key or a request of its own, and keeps nothing in this browser'); }
 for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "window.spTier(", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'", 'PAY.dk', 'function dkPlan(', 'function shareLink('])
   if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
-/* Finish on every device: nothing in the card asks whose device it is */
+/* Finish on every device: the card asks whose device it is only for Pull from DraftKings (window.HUB_ADMIN, above),
+   never for Finish, and none of the retired owner layers' names is in it */
 for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
   if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html still has ' + gone + ': the builder finishes a parlay on every device');
 for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function spTier(', 'function gameStarted', 'function marketLine'])
@@ -253,8 +308,8 @@ for (const need of ['function parlayLegs', 'function parlayProb', 'function legP
     throw new Error("Suggested Parlays' levels (PB_TIERS) or its drawing of a unit's Elo picks moved; the Elo picks are built on them");
   if (!CARD_JS.includes("const elo=!!t.elo;") || !CARD_JS.includes("t=kind==='sp'?(typeof window.spTier==='function'?window.spTier(id):null):null;"))
     throw new Error("the parlay card no longer finds an Elo pick's level by window.spTier"); }
-/* X Parlays: X's parlays from the file, the whole of its tab, read only; a quiet line under the
-   heading says when the file last changed them */
+/* X Parlays: X's parlays from the file, the whole of its tab, read only, on the admin's browser alone; a
+   quiet line under the heading says when the file last changed them */
 const LIVE_SECTION = `<div class="card" id="lpCard">
     <h2>X Parlays</h2>
     ${LIVE_BAR}
@@ -277,7 +332,7 @@ renderBetParlays=function(){ return ''; };
   renderParlay=function(){ const r=drawParlay.apply(this,arguments);
     try{ if(window.PARLAY_CARD) window.PARLAY_CARD.finishBuilder(); }catch(e){}
     return r; }; }
-document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
+document.addEventListener('app-ready',()=>{ if(window.lpDraw&&window.lpAdmin&&window.lpAdmin()) window.lpDraw(); });
 </script>`;
 
 /* the prop model's page, re-headed as NFL Hub, the way the NBA Hub and the NHL Hub are headed: the
@@ -287,14 +342,17 @@ html = sub1(html, '<title>X NFL Prop Model</title>', '<title>NFL Hub</title>', '
 /* the light/dark switch (theme.js, the owner's call of 17 October 2026) heads the stamp, laid over the
    header's top right corner by theme.css: a 44px button named Light mode, aria-pressed while the light
    look is on, its glyph the look a press gives (a sun while dark, a moon while light) */
+/* the admin's place in the stamp, right after the switch (admin.js): empty in the page, filled on the admin's
+   browser with the Admin mark and Sign out, and on any browser that opened a refused link with one line saying so */
+const ADMIN_SLOT = '<span class="hub-admin" id="hubAdmin" hidden></span>';
 const THEME_TOGGLE = '<button type="button" class="hub-theme" data-theme-toggle aria-label="Light mode" aria-pressed="false" title="Switch to light mode">'
   + '<svg class="ht-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5" fill="currentColor"/>'
   + '<path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>'
   + '<svg class="ht-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z"/></svg></button>';
 html = sub1(html, '<h1>X NFL Prop Model</h1>\n    <span class="sub" id="buildTag"></span>\n    <span class="sub grow" id="saveState" style="margin-left:auto"></span>',
-  '<div><h1>NFL <em>Hub</em></h1><p class="tagline">Every game called by three models against Vegas, player props priced against DraftKings, '
-  + 'a parlay builder and X\'s own bets, frozen at kickoff and graded in public.</p></div>\n'
-  + '    <div class="hub-stamp">' + THEME_TOGGLE + '<span class="sub grow" id="saveState"></span><span class="sub" id="buildTag"></span></div>', 'heading');
+  '<div><h1>NFL <em>Hub</em></h1><p class="tagline">Every game called by three models against Vegas, player props priced against DraftKings\u2019 lines '
+  + 'and a parlay builder, frozen at kickoff and graded in public.</p></div>\n'
+  + '    <div class="hub-stamp">' + THEME_TOGGLE + ADMIN_SLOT + '<span class="sub grow" id="saveState"></span><span class="sub" id="buildTag"></span></div>', 'heading');
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n<style>' + CARD_CSS + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here stays in the page, unshown. */
@@ -309,8 +367,10 @@ html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>
    Nothing is cached apart from this page: the frame's content is inside it. */
 const { buildApp } = BETB;
 /* the frame is handed the page's X Bet Log (window.XBETS, nflbets/build/xbets.js, which reads
-   liveparlays/xbets.json): a srcdoc frame is this page's origin, so its parent is reachable. It is
-   read only from its first paint (xbets-ro): no entry form, Remove, deposit box or backup card. */
+   liveparlays/xbets.json on the admin's browser alone): a srcdoc frame is this page's origin, so its
+   parent is reachable. It is read only from its first paint (xbets-ro): no entry form, Remove, deposit
+   box or backup card. On a visitor's page XBETS.enabled() is false, the frame's hook takes xbets-ro off
+   and the app keeps the browser's own log, which no tab of the hub shows. */
 const BET_APP = sub1(buildApp(), '<head>', "<head>\n<script>window.EMBED_TAB=null;window.STATE_URL='betting/state.json';window.ELO_URL='elo/data/model.json';"
   + "window.XBETS=window.XBETS||(function(){try{return window.parent!==window&&window.parent.XBETS||null;}catch(e){return null;}})();"
   + "if(window.XBETS)document.documentElement.classList.add('xbets-ro');"
@@ -323,34 +383,41 @@ for (const gone of ['index.html', 'admin.html']) if (fs.existsSync(path.join(ROO
    opener inside it are broken so the HTML parser does not act on them */
 const BET_INLINE = JSON.stringify(BET_APP).replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--');
 /* the prop model's Track Record (Prop Record) is off the bar: its section stays in the page,
-   unshown, since the prop model draws into it on every render */
+   unshown, since the prop model draws into it on every render. The fourth field marks a tab as the
+   site owner's alone (20 October 2026, the admin link: admin.js): its button and its section carry
+   data-admin-only, theme.css hides the button from the first paint unless html[data-admin="on"], and
+   on a visitor's page routeTabs (tab_pickems.html) takes it off the bar and lands its address on the
+   board. Both sections stay in the page for everyone: the X Parlays section's script wires its window
+   and its buttons as it loads, and with them gone it would throw and take the builder's Finish with it */
 const TABS = [
   ['pickems', 'Matchups'],
   ['slate', 'Props'],
   ['suggest', 'Suggested Parlays'],
   ['parlay', 'Parlay Builder'],
-  ['xparlays', 'X Parlays'],
+  ['xparlays', 'X Parlays', null, true],
   ['ratings', 'Team Rankings', 'ratings'],
   ['elo', 'ELO Ratings'],
   ['record', "Pick'em Record", 'record'],
-  ['bets', 'X Bet Log', 'bets'],
+  ['bets', 'X Bet Log', 'bets', true],
 ];
-const NAV = `<nav role="tablist" id="tabs">\n` + TABS.map(([t, label], i) =>
-  `    <button role="tab" data-tab="${t}"${i === 0 ? ' aria-selected="true"' : ''}>${label}</button>`).join('\n') + '\n  </nav>';
-const FRAMES = TABS.filter(t => t[2]).map(([t, label, embed]) =>
-  `<section id="tab-${t}" hidden><iframe class="pk-frame" data-embed="${embed}" title="${label}"></iframe></section>`).join('\n\n');
+const ADMIN_ONLY = ' data-admin-only';
+const NAV = `<nav role="tablist" id="tabs">\n` + TABS.map(([t, label, , admin], i) =>
+  `    <button role="tab" data-tab="${t}"${i === 0 ? ' aria-selected="true"' : ''}${admin ? ADMIN_ONLY : ''}>${label}</button>`).join('\n') + '\n  </nav>';
+const FRAMES = TABS.filter(t => t[2]).map(([t, label, embed, admin]) =>
+  `<section id="tab-${t}" hidden${admin ? ADMIN_ONLY : ''}><iframe class="pk-frame" data-embed="${embed}" title="${label}"></iframe></section>`).join('\n\n');
 const navFrom = html.indexOf('<nav role="tablist" id="tabs">'), navTo = html.indexOf('</nav>', navFrom);
 if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where nflbets/build expects it in part1.html');
 html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
 for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|suggest|parlay)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
 html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
-/* the Parlay Builder keeps the prop model's own section and its address, #parlay: the Top 100 lines and
-   the choices they are built from over the builder (app v111; Suggested Parlays, #suggest, is the prop model's
-   own section before it, each prime-time game's parlays and the Elo picks). X Parlays is a section of its own after it, #xparlays. The
-   parlay card's window sits at the end of the page, outside every tab, over everything. */
+/* the Parlay Builder keeps the prop model's own section and its address, #parlay: the builder over its Top 30
+   lines and the choices they are built from (app v116; Suggested Parlays, #suggest, is the prop model's own
+   section before it, each prime-time game's parlays and the Elo picks). X Parlays is a section of its own after
+   it, #xparlays, the site owner's alone (data-admin-only, above). The parlay card's window sits at the end of
+   the page, outside every tab, over everything. */
 html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>\n  <div id="pbPanel"></div>\n</section>',
-  '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>\n  <div id="pbPanel"></div>\n</section>\n\n<section id="tab-xparlays" hidden>\n  ' + LIVE_SECTION + '\n</section>', 'the Parlay Builder section');
+  '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>\n  <div id="pbPanel"></div>\n</section>\n\n<section id="tab-xparlays" hidden' + ADMIN_ONLY + '>\n  ' + LIVE_SECTION + '\n</section>', 'the Parlay Builder section');
 html = sub1(html, '\n</main>', '\n' + CARD_HTML + '\n</main>', "the parlay card's window");
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
 /* the storage layer runs first: the prop model reads its state through it at boot; the X Bet
@@ -369,8 +436,8 @@ const NOTE = `<script>
    the browser cached last week from the one the job published this morning. APP_BUILD moves
    only with the prop model's parts; PAGE_HASH is the first seven hex of the page's own
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
-   the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
-   as a new tag. */
+   the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
+   betting app -- shows as a new tag. */
 const PAGE_HASH='${HASH_SLOT}';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \\u00b7 '+PAGE_HASH; });
@@ -384,8 +451,10 @@ document.addEventListener('app-ready',()=>{ const bt=document.getElementById('bu
 })();
 </script>`;
 let out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>' + CARD_JS + '</script>\n<script>\n/* the betting app, for the framed tabs; see frames() */\nconst BET_APP=' + BET_INLINE + ';\n</script>\n<script>' + js + '</script>\n<script>' + ELO_JS + '</script>\n</body>\n</html>\n';
-/* no owner and no shared store: the retired Firebase layer (its database, sign-in and token
-   services, the owner link, the shared key, the sync stamp) is nowhere in the page */
+/* no shared store: the retired Firebase layer (its database, sign-in and token services, its owner
+   link and secret, the shared key, the sync stamp) is nowhere in the page. The admin link (admin.js, 20
+   October 2026) is not it: it keeps one key in the admin's own browser, shows him two tabs and writes
+   nothing anywhere, and none of these names is its */
 for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash', 'NFLSYNC', 'LIVE_IO', 'sync.json', 'sign out of owner', 'Not synced', 'ownerMark', 'syncStamp', 'xpSignIn'])
   if (out.includes(gone)) throw new Error('the built page still has ' + gone + ': the shared store and the owner are retired');
 
@@ -480,6 +549,12 @@ if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out))
   for (const gone of ['fetch(', 'XMLHttpRequest', 'sendBeacon', 'window.storage', 'S.ui'])
     if (THEME_JS.includes(gone)) throw new Error('nflbets/build/theme.js has ' + gone + ': the look is kept in this browser alone, under its own key');
   out = sub1(out, '<title>NFL Hub</title>\n', '<title>NFL Hub</title>\n<script>\n' + THEME_JS + '</script>\n', "the light/dark script in the page's head");
+  /* the admin link's script right after it, still before every style and the body */
+  out = sub1(out, '<title>NFL Hub</title>\n<script>\n' + THEME_JS + '</script>\n', '<title>NFL Hub</title>\n<script>\n' + THEME_JS + '</script>\n<script>\n' + ADMIN_JS + '</script>\n', "the admin link's script in the page's head");
+  /* the X tabs: the two buttons and their sections marked the admin's alone, hidden from the first paint unless
+     the page is the admin's, and the header's empty place for the Admin mark and Sign out after the switch */
+  for (const need of ['html:not([data-admin="on"]) #tabs [data-admin-only]{display:none!important}', '.hub-admin[hidden]{display:none}', '.ha-mark{', '.ha-out{', 'html[data-theme="light"] .ha-mark,'])
+    if (!THEME.includes(need)) throw new Error('nflbets/build/theme.css no longer has ' + need + ', which the X tabs and the admin mark rely on');
   if (!out.includes('data-theme-toggle aria-label="Light mode" aria-pressed="false"')) throw new Error('the header has no light/dark switch');
   const FONTS = '<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
   /* the hubs' fonts in place of the prop model's own, which nothing on the page draws in any more */
@@ -497,6 +572,32 @@ if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out))
   if (rest.length !== 2) throw new Error("the betting app does not read its Elo model from window.ELO_URL, once, with ../elo/data/model.json only as its own fallback");
   const all = rest.join(''), at = all.indexOf('../');
   if (at >= 0) throw new Error("the page names a parent folder, which from the site's root leaves the site: " + all.slice(Math.max(0, at - 60), at + 40)); }
+/* the X tabs are the admin's alone: exactly two buttons on the bar carry data-admin-only, X Parlays' and the X Bet
+   Log's, and so do their two sections; the header's place for the admin is empty and follows the switch in the
+   stamp; and the tab bar's script takes the buttons off a visitor's bar and lands their addresses on the board */
+{ const nav = out.slice(out.indexOf('<nav role="tablist" id="tabs">'), out.indexOf('</nav>', out.indexOf('<nav role="tablist" id="tabs">')));
+  const marked = [...nav.matchAll(/<button role="tab" data-tab="([^"]+)"[^>]*\sdata-admin-only[\s>]/g)].map(m => m[1]);
+  if (marked.join() !== 'xparlays,bets' || (nav.match(/data-admin-only/g) || []).length !== 2)
+    throw new Error('the tab bar does not mark exactly X Parlays and the X Bet Log as the admin\'s alone: ' + (marked.join() || 'none'));
+  const secs = [...out.matchAll(/<section id="(tab-[^"]+)"[^>]*\sdata-admin-only[\s>]/g)].map(m => m[1]);
+  if (secs.sort().join() !== 'tab-bets,tab-xparlays' || (out.match(/<section [^>]*data-admin-only/g) || []).length !== 2)
+    throw new Error('the X tabs\' sections are not marked the admin\'s alone: ' + (secs.join() || 'none'));
+  if (out.split(ADMIN_SLOT).length !== 2 || !out.includes('aria-pressed="false" title="Switch to light mode">') || out.indexOf(ADMIN_SLOT) < out.indexOf('data-theme-toggle aria-label="Light mode"')
+    || out.indexOf(ADMIN_SLOT) > out.indexOf('id="saveState"'))
+    throw new Error('the header has no empty place for the Admin mark and Sign out right after the light/dark switch');
+  for (const need of ["if(!admin()) document.querySelectorAll('#tabs [data-admin-only]').forEach(b=>b.remove());", 'window.HUB_ADMIN', "const ADMIN_ADDR=new Set(['#xparlays','#bets']);", "document.addEventListener('hub-admin',"])
+    if (!js.includes(need)) throw new Error("the tab bar's script no longer takes the X tabs off a visitor's bar, or lands their addresses on the board (" + need + ')'); }
+/* the key goes nowhere but The Odds API, by admin.js alone: outside that script the page names neither the API's
+   host nor its key parameter, nor the record's key in quotes, and no key is written into the page anywhere */
+{ const parts = out.split(ADMIN_JS);
+  if (parts.length !== 2) throw new Error('the admin link\'s script is not in the page exactly once');
+  const rest = parts.join('\n');
+  for (const [what, re] of [['the Odds API\'s host', /api\.the-odds-api\.com/i], ['an apiKey= parameter', /apiKey=/], ["the admin record's key, nflhub_admin_v1, in quotes", /['"`]nflhub_admin_v1['"`]/]]) {
+    const m = rest.match(re);
+    if (m) throw new Error(`the page names ${what} outside nflbets/build/admin.js: ...${rest.slice(Math.max(0, m.index - 60), m.index + 40)}...`); }
+  if (/apiKey=[A-Za-z0-9]{16,}/.test(out)) throw new Error('the page carries an Odds API key: the admin\'s key is kept in his browser, never in the page');
+  const at = out.indexOf('<script>\n' + ADMIN_JS);
+  if (at < 0 || at > out.indexOf('<style') || at > out.indexOf('<body')) throw new Error("the admin link's script is not in the page's head before its styles and its body"); }
 /* the hash of the page with the slot still in it, then set into the slot: the smoke takes it
    out again and checks the page is what was hashed */
 const HASH = crypto.createHash('sha256').update(out).digest('hex').slice(0, 7);

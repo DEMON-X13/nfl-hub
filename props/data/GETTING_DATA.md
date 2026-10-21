@@ -11,12 +11,28 @@ All nflverse, all free, all reachable from a sandbox (GitHub is allowlisted).
 Note the release tag is `stats_player`, not `player_stats`. The older tag exists and
 returns 404 for recent seasons — that cost an hour once.
 
-## Market lines
+## DraftKings' lines, read from ESPN (since 20 October 2026)
 
-`wk{W}_lines.csv` (game_id,stat,player,line,over,under) is written by `oddsfetch.py` from
+Free, no key. Every run of the props job reads DraftKings' game lines (with their prices and
+DraftKings' own ids) and player lines (the numbers, never a price: the page prices them by its
+fitted formula, marked est.) from ESPN's two public hosts, with the page's own reader run in
+jsdom (`build/espn_read.js`, under "Weekly build" in `props/README.md`):
+
+    scoreboard                   site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=<season>&seasontype=2&week=<w>
+    a game's player lines        sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/<id>/competitions/<id>/odds/100/propBets?limit=1000&page=<n>
+    an athlete's name            sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/<season>/athletes/<id>
+    a club's roster              site.api.espn.com/apis/site/v2/sports/football/nfl/teams/<id>/roster
+
+Provider 100 is DraftKings. A 404 on a game's player lines means none posted yet. Each answer is
+recorded under `raw/espn/` (ignored), with the read the job publishes, `raw/espn/read.json`.
+
+## Market lines (the paid pulls, weeks 1-6 of 2026)
+
+`wk{W}_lines.csv` (game_id,stat,player,line,over,under) was written by `oddsfetch.py` from
 the-odds-api.com (with hyphens: the unhyphenated domain is a confirmed impersonator
-reselling the same data at 3x) on each of `build/weekly.py`'s price pulls, with
-`prices_wk{W}.csv` and `gamelines_wk{W}.csv` beside it. On every run `weekly.py` matches
+reselling the same data at 3x) on each of `build/weekly.py`'s price pulls until 20 October
+2026, with `prices_wk{W}.csv` and `gamelines_wk{W}.csv` beside it; no job runs it now (a pull
+by hand is still baked the same way). On every run `weekly.py` matches
 every week's lines onto player ids with `mktbuild.py` (and every price row with the same
 matcher, `build/names.py`): only among the players of the line's own game, from this
 season's roster (rookies included) and the team each played for that week, by the full
@@ -32,5 +48,6 @@ season's files to `archive/<season>/`.
 
 Week 1 was the best price across the US books, which is fine for spotting
 disagreement and wrong for parlay pricing, since you cannot combine legs across
-several sportsbooks; from week 2 the pull takes DraftKings alone (`--book`). The key
-is the `ODDS_API_KEY` repository secret: about 7 credits a game, 500 a month free.
+several sportsbooks; from week 2 the pull takes DraftKings alone (`--book`). No workflow maps
+a key any more: a pull by hand takes `ODDS_API_KEY` from your own environment, about 7 credits a
+game, 500 a month free.

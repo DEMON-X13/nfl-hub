@@ -4,14 +4,17 @@
  *   node nflbets/build/smoke_live.js        (from the hub root)
  *
  * The section reads liveparlays/parlays.json, the scoreboard and the box scores, and draws one
- * list, X Parlays: the parlays in the file, the same on every device, read only everywhere. A
+ * list, X Parlays: the parlays in the file, read only. Since app v125 (the owner's call of 20 October
+ * 2026, "hide only") the tab is on the admin's devices alone (nflbets/build/admin.js, the #owner= link):
+ * run() boots the admin's browser unless a section asks for a visitor's, whose page has no X Parlays
+ * tab and reads nothing for it (sections N and V). A
  * parlay the file marks cleared is not drawn. Every card has an X at its top right, the same for
  * every visitor: it asks "Clear this parlay?" and Clear takes the parlay off X Parlays in that
  * browser alone, kept under the section's own key (lp_cleared_here_v1) and sent nowhere (section
  * O). No device keeps a list of its own: the Parlay
  * Builder finishes a parlay as a card to download (nflbets/build/card.html), saved nowhere. There
- * is no owner, no sign-in and no shared store: the page writes nothing anywhere but the browser's
- * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the builder
+ * is no sign-in and no shared store: the page writes nothing anywhere but the browser's own storage
+ * (the admin's key among it, on the admin's devices alone, sent only to The Odds API). X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the builder
  * over its choices and the Top 30 lines (app v116), and Suggested Parlays (#suggest, app v111) each prime-time
  * game's own set of four levels, whose Finish opens the same card; since app v118 in two sections, Night games and the
  * Sunday slot (every Sunday game before 7 pm Eastern, one set), each with its record, and each unit with its own Elo
@@ -48,7 +51,8 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const { JSDOM } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
 const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papaparse'));
-const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+/* SMOKE_LIVE_HTML=<file>: the same checks on another copy of the page (a planted broken one, to see a check fail) */
+const HTML = fs.readFileSync(process.env.SMOKE_LIVE_HTML ? path.resolve(process.env.SMOKE_LIVE_HTML) : path.join(ROOT, 'index.html'), 'utf8');
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 const STATE = fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8');
 const URL_ = 'https://demon-x13.github.io/nfl-hub/#xparlays';
@@ -63,7 +67,7 @@ const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
 /* how the smoke ends, whichever way: the count, every failure, an exit code. A mistake in the
    smoke's own code stops it here with the stack (the .catch at the bottom), and a run still
-   going after ten minutes (it takes about one) stops with what it has, so it never waits on
+   going after ten minutes (it takes about four) stops with what it has, so it never waits on
    the windows it left open */
 let ended = false;
 function finish(why) {
@@ -271,16 +275,30 @@ const betBlob = () => JSON.stringify({ myPicks: {}, bets: {}, bank: { build: [
    (xbets). esp, where given, answers ESPN first (a request it returns null for gets the rest of the stub):
    section J's own ESPN, which the parlay card reads DraftKings' current lines from as it opens. Every
    request is in calls, with its method; a request to the retired store, or one that is not a read, is
-   refused and kept in BAD_CALLS, which fails the smoke. */
-function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {}, pay = x => x, xbets = null, url = URL_, esp = null } = {}) {
+   refused and kept in BAD_CALLS, which fails the smoke.
+   (20 October 2026) admin: whether the browser is the site owner's, the admin link's (admin.js): true by default, since X
+   Parlays and the X Bet Log are his devices' alone and most sections hold them drawn. The admin's record is seeded under
+   its own key before the page parses, checked, so admin.js asks nothing on load (WS3's spec). odds: The Odds API's
+   answers on an admin's run (section J3's stand-in); a request to The Odds API on a visitor's run, or on an admin's with
+   no stand-in, is refused and kept in BAD_CALLS. */
+const ADMIN_KEY = 'nflhub_admin_v1', FAKE_KEY = 'FAKEKEY0123456789ab';
+const ADMIN_REC = (o = {}) => JSON.stringify(Object.assign({ k: FAKE_KEY, at: '2026-10-20T12:00:00.000Z', ok: true, checked: '2026-10-20T12:00:01.000Z', left: 400, leftAt: '2026-10-20T12:00:01.000Z' }, o));
+const ODDS_HOST = /^https:\/\/api\.the-odds-api\.com\//;
+/* every request to The Odds API, of every run: {admin, url} */
+const ODDS_CALLS = [];
+function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {}, pay = x => x, xbets = null, url = URL_, esp = null, admin = true, odds = null } = {}) {
   return new Promise(resolve => {
     const calls = [], methods = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
       beforeParse(w) {
         w.Papa = Papa; w.confirm = () => true; w.alert = () => {}; w.scrollTo = () => {};
+        if (admin) try { w.localStorage.setItem(ADMIN_KEY, ADMIN_REC()); } catch (e) {}
         try { seed(w); } catch (e) {}
         w.fetch = (u, o) => { const s = String(u), m = String((o && o.method) || 'GET').toUpperCase(); calls.push(s); methods.push(m); ALL_CALLS.push(m + ' ' + s);
           if (RETIRED.test(s) || m !== 'GET') { BAD_CALLS.push(m + ' ' + s); return Promise.reject(new TypeError('Failed to fetch')); }
+          if (ODDS_HOST.test(s)) { ODDS_CALLS.push({ admin, url: s });
+            if (!admin || !odds) { BAD_CALLS.push(`${admin ? 'an admin' : 'a visitor'}'s page asked The Odds API, with no stand-in: ${s.replace(/apiKey=[^&]*/, 'apiKey=…')}`); return Promise.reject(new TypeError('Failed to fetch')); }
+            return odds(s, o, w); }
           if (s.includes('parlays.json')) return data === 'ok'
             ? Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(file)) })
             : Promise.resolve({ ok: false, status: 404 });
@@ -477,7 +495,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     chk(/^X Parlays/.test(txt(lpc.querySelector('h2'))) && !/Live Parlays/i.test(body.textContent) && !/Live Parlays/i.test(d.title), 'the section is still called Live Parlays somewhere a reader sees it'); }
   chk(!d.getElementById('savedCard') && !d.getElementById('betParlays'), 'the old cards are still drawn');
 
-  // ---- D1. X's parlays are read only on every device: nothing to delete, clear or bring back ----
+  // ---- D1. X's parlays are read only (on the admin's device, the only one that shows them): nothing to delete, clear or bring back ----
   {
     const live = await run({ state: 'in' });
     chk(!live.d.getElementById('clear') && !live.d.getElementById('restoreAll'), 'Clear settled, or the way back, is still on the page');
@@ -593,22 +611,43 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     /* the X Bet Log's file as it is, for this season: week 1 is the week waiting in the browser */
     const XB = Object.assign(JSON.parse(fs.readFileSync(path.join(ROOT, 'liveparlays', 'xbets.json'), 'utf8')), { season: BET_SEASON });
     XB.weeks = Object.assign({}, XB.weeks, { w1: { staked: 10, returned: 8.71, note: '' } });
+    /* (20 October 2026) on two browsers, each with what the old layers left: the admin's (the admin link's record seeded,
+       as every run here is unless said), which draws exactly the file's parlays; and a visitor's, which draws none of
+       them and reads neither X file. On both the flags and copies go, and the browser's own data stays. The words that
+       would say the page is someone's (an owner mark, a sign-in, a sync stamp) are on neither, the admin's own mark and
+       Sign out in the header (#hubAdmin, admin.js's) set aside; the admin's record is kept as it was */
+    const RETIRED_KEYS = ['nflowner_v1', 'nflsync_owner_v1', 'nflsync_device_v1', 'xparlays_v1', 'nflsync_v1', 'nflsync_base_v1', 'xparlays_cache_v1', 'live_parlays_v1', 'xbets_joined_' + BET_SEASON, 'xbets_cache_' + BET_SEASON];
+    const ownerWords = (d, admin) => { const shown = d.body.cloneNode(true); shown.querySelectorAll('script, style').forEach(n => n.remove());
+      if (admin) { const ha = shown.querySelector('#hubAdmin'); if (ha) ha.remove(); }
+      return d.querySelector('#ownerMark, #xpOwner, #xpSignIn, #xpSignOut, #xpSignInBox, #syncStamp') ? 'an owner mark, a sign-in or a sync stamp is on the page'
+        : ((txt(shown).match(/.{0,60}(\bowner\b|sign out|sign in|Not synced|Synced).{0,60}/i) || [])[0] || null); };
+    const ownKept = (o, keys) => keys.my_parlays_v1 === myOld && keys[BET_KEY] === betOwn && keys['x_nfl_bets_preshare_' + BET_SEASON] === pre && JSON.stringify(JSON.parse(keys[PROP_KEY]).saved) === JSON.stringify(JSON.parse(own).saved)
+      && o.w.eval('S').saved.map(p => p.id).join() === 'own-1';
     const o = await run({ seed: w => { for (const [k, v] of Object.entries(OLD)) w.localStorage.setItem(k, v); }, xbets: XB });
     await wait(300);
     const lp = o.d.getElementById('lpCard'), keys = allKeys(o.w);
     chk(!o.timedOut && lp.querySelectorAll('.savedp').length === 2 && !/Old Shared Receiver|Own Receiver/.test(txt(o.d.getElementById('tab-xparlays')) + txt(o.d.getElementById('tab-parlay'))) && txt(lp.querySelector('.lineLbl')) === '43.5',
-      'a browser with the old owner\'s keys does not show exactly the file\'s parlays on the file\'s lines: ' + txt(lp).slice(0, 160));
-    { const shown = o.d.body.cloneNode(true); shown.querySelectorAll('script, style').forEach(n => n.remove());
-      chk(!o.d.querySelector('#ownerMark, #xpOwner, #xpSignIn, #xpSignOut, #xpSignInBox, #syncStamp') && !/\bowner\b|sign out|sign in|Not synced|Synced/i.test(txt(shown)),
-        'a browser that was the owner\'s shows an owner mark, a sign-in or a sync stamp: ' + ((txt(shown).match(/.{0,60}(\bowner\b|sign out|sign in|Not synced|Synced).{0,60}/i) || [''])[0])); }
-    chk(['nflowner_v1', 'nflsync_owner_v1', 'nflsync_device_v1', 'xparlays_v1', 'nflsync_v1', 'nflsync_base_v1', 'xparlays_cache_v1', 'live_parlays_v1', 'xbets_joined_' + BET_SEASON, 'xbets_cache_' + BET_SEASON, 'xbets_pending_' + BET_SEASON].every(k => !(k in keys)),
-      'a flag or a copy the retired layers left was not taken out: ' + Object.keys(keys).join(', '));
-    chk(keys.my_parlays_v1 === myOld && keys[BET_KEY] === betOwn && keys['x_nfl_bets_preshare_' + BET_SEASON] === pre && JSON.stringify(JSON.parse(keys[PROP_KEY]).saved) === JSON.stringify(JSON.parse(own).saved)
-      && o.w.eval('S').saved.map(p => p.id).join() === 'own-1',
-      'a browser\'s own data was touched: ' + JSON.stringify({ my: keys.my_parlays_v1 === myOld, bet: keys[BET_KEY] === betOwn, pre: keys['x_nfl_bets_preshare_' + BET_SEASON] === pre }));
+      'the admin\'s browser with the old owner\'s keys does not show exactly the file\'s parlays on the file\'s lines: ' + txt(lp).slice(0, 160));
+    { const bad = ownerWords(o.d, true); chk(!bad, 'the admin\'s browser that was the owner\'s shows an owner mark, a sign-in or a sync stamp (beside the header\'s own Admin mark and Sign out): ' + bad); }
+    chk([...RETIRED_KEYS, 'xbets_pending_' + BET_SEASON].every(k => !(k in keys)),
+      'on the admin\'s browser, a flag or a copy the retired layers left was not taken out: ' + Object.keys(keys).join(', '));
+    chk(ownKept(o, keys) && keys[ADMIN_KEY] === ADMIN_REC(),
+      'on the admin\'s browser, its own data or the admin link\'s record was touched: ' + JSON.stringify({ my: keys.my_parlays_v1 === myOld, bet: keys[BET_KEY] === betOwn, pre: keys['x_nfl_bets_preshare_' + BET_SEASON] === pre, admin: keys[ADMIN_KEY] === ADMIN_REC() }));
     chk(typeof o.w.NFLSYNC === 'undefined' && typeof o.w.LIVE_IO === 'undefined' && o.w.XBETS && typeof o.w.XBETS.write === 'undefined' && typeof o.w.XBETS.signOut === 'undefined', 'the sync layer, the shared key or the X Bet Log\'s writer is still on the page');
     /* the builder finishes, on this browser too */
     chk(!!o.d.querySelector('#parlayBody') && !o.d.getElementById('pSave'), 'a browser that was the owner\'s still has Save and lock in the builder');
+    /* a visitor's browser with the same marks: no parlay of the file drawn, neither X file read, no X tab on the bar; the
+       flags and copies that need no file go (the week waiting to be written stays: it goes only once the admin's load has
+       the file), and its own data stays */
+    { const v = await run({ admin: false, seed: w => { for (const [k, val] of Object.entries(OLD)) w.localStorage.setItem(k, val); }, xbets: XB });
+      await wait(300);
+      const vk = allKeys(v.w), tabs = [...v.d.querySelectorAll('#tabs [role="tab"]')].map(b => b.getAttribute('data-tab'));
+      chk(!v.timedOut && !v.d.querySelector('#lpCard .savedp') && !v.calls.some(u => /parlays\.json|xbets\.json/.test(u)) && !tabs.includes('xparlays') && !tabs.includes('bets'),
+        'a visitor\'s browser with the old owner\'s keys draws X\'s parlays, reads an X file or has an X tab: ' + JSON.stringify({ drawn: v.d.querySelectorAll('#lpCard .savedp').length, read: v.calls.filter(u => /parlays\.json|xbets\.json/.test(u)), tabs }));
+      { const bad = ownerWords(v.d, false); chk(!bad && !v.d.querySelector('#hubAdmin:not([hidden])'), 'a visitor\'s browser that was the owner\'s shows an owner mark, a sign-in, a sync stamp or the Admin mark: ' + (bad || txt(v.d.getElementById('hubAdmin')))); }
+      chk(RETIRED_KEYS.every(k => !(k in vk)) && ('xbets_pending_' + BET_SEASON) in vk, 'on a visitor\'s browser, a flag or a copy that needs no file was not taken out, or the week waiting for the admin\'s file was: ' + Object.keys(vk).join(', '));
+      chk(ownKept(v, vk) && !(ADMIN_KEY in vk), 'on a visitor\'s browser, its own data was touched, or an admin record was written: ' + Object.keys(vk).join(', '));
+      chk(!!v.d.querySelector('#parlayBody') && !v.d.getElementById('pSave'), 'a visitor\'s browser that was the owner\'s still has Save and lock in the builder'); }
     /* what the old layers left that is not in the file (a line corrected on a parlay of the browser's
        own, a kept builder, a slip it never deleted, or a week that never reached the store) stays
        where it is, unread */
@@ -629,6 +668,57 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     { const v = { lines: { 'file|w3-dk-sgp-5|4': 239.5 }, removed: { 'file|w3-dk-sgp-5': 1 } };
       const k4 = await run({ seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify(v)) });
       chk(k4.w.localStorage.getItem('live_parlays_v1') === null, 'the old shared key holding only the line the file carries and a deletion was kept'); }
+  }
+
+  // ---- V. a visitor's page: X Parlays, the X Bet Log and Pull from DraftKings are the admin's devices' alone ----
+  /* (20 October 2026, the owner's call: "hide only", and ESPN-only prices for everyone) a visitor's page, at #xparlays and
+     at #bets, the addresses of the two X tabs: it lands on the Matchups board (the address written over), has neither tab
+     on its bar, reads neither X file and asks ESPN nothing for X Parlays (its scoreboard by week and season, "&_=", and
+     its box scores); the header has no Admin mark. Its parlay card, finished from a builder holding a player's line on a
+     game to come, has no Pull from DraftKings and no question, says in one line, word for word, that player legs go on
+     DraftKings by hand, gives the leg a visitor's reason (nothing of Pull from DraftKings), and pressing nothing there, nor
+     the card's own pull(), asks The Odds API anything; window.dkPulledFor has nothing for the leg */
+  {
+    const P0 = JSON.parse(PAYLOAD), gV = P0.sched[P0.sched.length - 1];
+    const pinV = P => { for (const x of P.sched) if (x.id === gV.id) { x.d = '2099-12-31'; x.t = '13:00'; delete x.hs; delete x.as; } return P; };
+    const keyV = `${gV.id}|card-v|rushing_yards`;
+    const legV = { gid: gV.id, pid: 'card-v', stat: 'rushing_yards', k: 59.5, side: 'over', main: true, p: 0.52, price: -110, src: 'est', mu: 61, name: 'Visitor Runner', pos: 'RB', grp: 'RB', team: gV.h, opp: gV.a, week: +gV.w, label: 'Over 59.5 rushing yards' };
+    const BYHAND = 'Player legs go on DraftKings by hand: the site reads DraftKings’ lines from ESPN, which gives no DraftKings id for a player’s line, so only team bets and totals go on the slip from here.';
+    const noProps = s => /sports\.core\.api\.espn\.com/.test(s) ? Promise.resolve({ ok: false, status: 404, headers: { get: () => null }, json: async () => ({ error: { code: 404 } }) }) : null;
+    for (const at of ['xparlays', 'bets']) {
+      const v = await run({ admin: false, url: 'https://demon-x13.github.io/nfl-hub/#' + at, pay: pinV, esp: noProps, xbets: { season: BET_SEASON, deposit: 100, weeks: { w1: { staked: 10, returned: 0, note: '' } }, updated: '2026-10-10T00:00:00Z' },
+        seed: w => w.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 10, saved: [], parlay: { [keyV]: legV } })) });
+      const { w, d } = v, tabs = [...d.querySelectorAll('#tabs [role="tab"]')].map(b => b.getAttribute('data-tab')), xp = d.getElementById('tab-xparlays');
+      chk(!v.timedOut && w.location.hash === '#matchups' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Matchups' && !tabs.includes('xparlays') && !tabs.includes('bets') && !!xp && xp.hidden,
+        `a visitor's page at #${at} does not land on the Matchups board, or has an X tab on its bar: ` + JSON.stringify({ hash: w.location.hash, tabs }));
+      const xCalls = v.calls.filter(u => /parlays\.json|xbets\.json|\/summary\?event=/.test(u) || (/\/scoreboard\?seasontype=/.test(u) && /&_=/.test(u)));
+      chk(!xCalls.length && !d.querySelector('#lpCard .savedp') && !(w.XBETS && w.XBETS.enabled()),
+        `a visitor's page at #${at} read an X file, asked ESPN for X Parlays, drew one of X's parlays, or has the X Bet Log on: ` + xCalls.join(' | '));
+      const ha = d.getElementById('hubAdmin');
+      chk(!!ha && ha.hidden && !txt(ha) && !d.documentElement.hasAttribute('data-admin'), `a visitor's page at #${at} has the Admin mark or Sign out in its header: ` + (ha ? ha.outerHTML : 'no place for it'));
+      if (at !== 'xparlays') continue;
+      /* the card */
+      d.querySelector('#tabs [data-tab="parlay"]').click(); await wait(30);
+      const fin = d.getElementById('pFinish');
+      chk(!!fin && !fin.disabled, 'a visitor\'s builder holding a player\'s line on a game to come cannot be finished');
+      if (!fin || fin.disabled) continue;
+      fin.click(); await wait(30); await cardSettled(w);
+      const md = d.getElementById('pcModal'), note = d.getElementById('pcDkNote'), slot = d.getElementById('pcPullSlot'), ask = d.getElementById('pcPullAsk');
+      const miss = note && note.querySelector('[data-pc-dkmiss="1"]'), by = note ? [...note.querySelectorAll('p[data-pc-dkbyhand]')] : [];
+      const read = w.eval(`espnWasRead(${JSON.stringify(gV.id)},${+gV.w})`);
+      const want = read ? 'DraftKings had posted no line for him on this stat when its lines were last read from ESPN' : 'DraftKings’ lines for its game have not been read from ESPN';
+      chk(!!md && !md.hidden && !md.querySelector('[data-pc-pull], #pcPull') && !!slot && !slot.children.length && !!ask && ask.hidden && !ask.children.length,
+        'a visitor\'s parlay card offers Pull from DraftKings, or its question: ' + (slot ? slot.outerHTML : 'no slot') + ' / ' + (ask ? ask.outerHTML : 'no question'));
+      chk(by.length === 1 && txt(by[0]) === BYHAND && by[0].previousElementSibling && by[0].previousElementSibling.matches('ul') && !!by[0].previousElementSibling.querySelector('[data-pc-dkmiss]'),
+        `a visitor's card does not say, word for word and right after the legs to add by hand, that player legs go on DraftKings by hand: ` + (by.map(txt).join(' | ') || txt(note)));
+      chk(!!miss && txt(miss) === `1. Visitor Runner, Over 59.5 rushing yards: ${want}` && !/Pull from DraftKings/.test(txt(note)),
+        `a visitor's card gives its player leg a reason other than a visitor's (${want}), or speaks of Pull from DraftKings: ` + txt(note));
+      const n0 = v.calls.length;
+      await w.PARLAY_CARD.pull(); await wait(30);
+      chk(w.dkPulledFor(Object.assign({ key: keyV }, legV)) === null && !v.calls.slice(n0).some(u => ODDS_HOST.test(u)) && !v.calls.some(u => ODDS_HOST.test(u)) && w.PARLAY_CARD.pullState().state === 'idle',
+        'a visitor\'s card asked The Odds API something, or has something pulled for a leg: ' + v.calls.filter(u => ODDS_HOST.test(u)).join(' | '));
+      d.getElementById('pcClose').click(); await wait(10);
+    }
   }
 
   // ---- O. the X on every card: Clear this parlay?, and it is cleared on this device alone ----
@@ -691,9 +781,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         const D = dlg(d), panel = D && D.querySelector('[role="alertdialog"]');
         chk(!!D && !D.hidden && !!panel && panel.getAttribute('aria-modal') === 'true' && txt(d.getElementById(panel.getAttribute('aria-labelledby'))) === 'Clear this parlay?'
           && txt(d.getElementById('lpAskWhat')) === '4-leg parlay · week 2 · +580 · sunday'
-          && /on this device only/.test(txt(panel)) && /nothing is sent anywhere/.test(txt(panel)) && /clear themselves for everyone the day after their last game/.test(txt(panel))
+          && /on this device only/.test(txt(panel)) && /nothing is sent anywhere/.test(txt(panel)) && /clear themselves the day after their last game/.test(txt(panel))
           && d.activeElement === d.getElementById('lpAskNo') && txt(d.getElementById('lpAskNo')) === 'Cancel' && txt(d.getElementById('lpAskYes')) === 'Clear' && d.body.classList.contains('modal-open'),
-          `the X does not open "Clear this parlay?" naming the parlay (legs, week, price), saying it is this device only and that X's parlays clear themselves for everyone, with the focus on Cancel (${how}): ` + txt(panel));
+          `the X does not open "Clear this parlay?" naming the parlay (legs, week, price), saying it is this device only and that X's parlays clear themselves the day after their last game, with the focus on Cancel (${how}): ` + txt(panel));
         /* Tab stays inside: from Clear to Cancel, and back from Cancel to Clear */
         if (how === 'Cancel') {
           d.getElementById('lpAskYes').focus(); key0(w, { key: 'Tab' });
@@ -1011,9 +1101,13 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
        on its own, pressKept below) */
     const snap = x => { const a = all(x.w), pk = JSON.parse(a[PROP_KEY] || '{}'); delete a[PROP_KEY]; delete a[PRESS_KEY];
       return JSON.stringify({ a, saved: pk.saved, parlay: Object.keys(pk.parlay || {}).sort(), S: x.w.eval('JSON.stringify([S.saved, Object.keys(S.parlay).sort(), S.stake])') }); };
-    /* every device finishes a parlay the same way: a plain browser, and one that was the owner's
-       (the owner link's secret and a session still in it, which mean nothing now) */
+    /* every device finishes a parlay the same way: a visitor's browser, and the admin's (the admin link's record, since 20
+       October 2026, on a browser that was the owner's: the owner link's secret and a session still in it, which mean
+       nothing now). The admin's card also has Pull from DraftKings (held in J3), first in its row of buttons, and its
+       reasons for a player's leg say what Pull from DraftKings will do with it; a visitor's has neither, and says in one
+       line that player legs go on DraftKings by hand (BYHAND_J) */
     const wasOwner = w => { w.localStorage.setItem('nflowner_v1', 'the-old-owner-secret'); w.localStorage.setItem('nflsync_owner_v1', JSON.stringify({ uid: 'u', refreshToken: 'rt' })); };
+    const BYHAND_J = 'Player legs go on DraftKings by hand: the site reads DraftKings’ lines from ESPN, which gives no DraftKings id for a player’s line, so only team bets and totals go on the slip from here.';
     /* section J's ESPN. Since 19 October 2026 the card checks DraftKings' current lines as it opens, through the page's
        own Refresh odds reader, for the parlay's games alone (J2 below holds it). Here the press's scoreboard
        (scoreboard?dates=) has the pinned games under event ids of its own, dated far off so no clock a check moves
@@ -1021,7 +1115,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
        stand on, and each card says when it checked. Every other ESPN request is the run's stub's */
     const EVT = { [g1.id]: '7101', [g2.id]: '7102' }, FAR = '2100-06-01T00:00Z';
     const sbEv = (x, id, odds) => ({ id, date: FAR, competitions: [{ competitors: [{ homeAway: 'home', team: { abbreviation: x.h } }, { homeAway: 'away', team: { abbreviation: x.a } }], ...(odds ? { odds: [odds] } : {}) }] });
-    const jsonR = (code, body) => Promise.resolve({ ok: code === 200, status: code, headers: { get: () => null }, json: async () => JSON.parse(JSON.stringify(body)) });
+    /* an answer as fetch gives it; h, its headers, read as fetch reads them (any case) */
+    const jsonR = (code, body, h = {}) => { const H = Object.fromEntries(Object.entries(h).map(([k, v]) => [k.toLowerCase(), String(v)]));
+      return Promise.resolve({ ok: code >= 200 && code < 300, status: code, headers: { get: k => (String(k).toLowerCase() in H ? H[String(k).toLowerCase()] : null) }, json: async () => JSON.parse(JSON.stringify(body)) }); };
     const NO_PROPS = { error: { message: 'No propBets found', code: 404 } };
     const jEsp = s => /\/scoreboard\?dates=/.test(s) ? jsonR(200, { events: [sbEv(g1, EVT[g1.id]), sbEv(g2, EVT[g2.id])] }) : /\/propBets\?/.test(s) ? jsonR(404, NO_PROPS) : null;
     /* what the card's reads kept in this browser is a press's: the kept read's own shape, of the pinned games alone */
@@ -1034,14 +1130,14 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
        "Checked against DraftKings’ lines at <time>." (the oldest read of its games), or failed (a read that failed, or the
        cap passed), COULD; none where the card had nothing to read. This section's own copies of the two lines, word for
        word */
-    const COULD = 'Could not check DraftKings’ current lines: a leg DraftKings has moved since its prices were read will not be on the slip.';
+    const COULD = 'Could not check DraftKings’ current lines: a leg DraftKings has moved since its lines were read will not be on the slip.';
     const checked = t => `Checked against DraftKings’ lines at ${readTxt(t)}.`;
     /* the card's note as app v121 holds it: partsOf, its blocks in order, each by what it is, the check's line a block of
        its own ("check"); bodyOf, the same less the check's line at the note's end, which every v121 rule of the note's
        blocks is held to; and checkHeld, the check's line held on its own: none where want is null (the card had nothing
        to read), else exactly one, the note's last block, a paragraph of its words alone, done or failed as want says, word
        for word (done: dated by want.t, when its games were read). The problems, or none */
-    const partsOf = el => [...el.children].map((e, i) => e.matches('p[data-pc-dkcheck]') ? 'check' : e.matches('p.pc-dkone') ? 'one' : e.matches('ul.pc-dklegs') ? 'legs' : e.matches('p[data-pc-dkclash]') ? 'clash'
+    const partsOf = el => [...el.children].map((e, i) => e.matches('p[data-pc-dkcheck]') ? 'check' : e.matches('p.pc-dkone') ? 'one' : e.matches('ul.pc-dklegs') ? 'legs' : e.matches('p[data-pc-dkclash]') ? 'clash' : e.matches('p[data-pc-dkbyhand]') ? 'byhand'
       : e.matches('ul') && e.querySelector('[data-pc-dkmiss]') ? 'hand' : e.matches('ul') && e.querySelector('[data-pc-dkswap]') ? 'swap'
       : e.matches('p') && txt(e) === 'On DraftKings’ slip at its own line:' ? 'swaphead' : e.matches('p') && /^DraftKings prices /.test(txt(e)) ? 'swapprice'
       : i === 0 && e.matches('p') ? 'first' : e.tagName.toLowerCase() + '(?)').join(' ');
@@ -1125,8 +1221,11 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           || txt(b) !== `Open ${x.name} in DraftKings` || b.getAttribute('title') !== gameTitle(x, 'at' in x ? x.at : at))
           bad.push(`button ${i + 1} is ${b ? b.outerHTML : 'missing'}, not ${x.name}'s ${numsOwn(x.ns)}, to ${DKU(x.ids)}, titled "${gameTitle(x, 'at' in x ? x.at : at)}"`); });
       return bad.length ? bad.join('; ') : null; };
-    for (const [how, extra, side] of [['a plain browser', () => {}, 'over'], ['a browser that was the owner\'s', wasOwner, 'under']]) {
-      const v = await run({ url: URL_PB, pay: P => pin(P, side), file: { updated: null, games: [], parlays: [] }, esp: jEsp, seed: w => { w.localStorage.setItem(PROP_KEY, blob(side)); w.localStorage.setItem('my_parlays_v1', myOld); extra(w); } });
+    for (const [how, isAdmin, side] of [['a visitor\'s browser', false, 'over'], ['the admin\'s browser, which was the owner\'s', true, 'under']]) {
+      const v = await run({ url: URL_PB, admin: isAdmin, pay: P => pin(P, side), file: { updated: null, games: [], parlays: [] }, esp: jEsp, seed: w => { w.localStorage.setItem(PROP_KEY, blob(side)); w.localStorage.setItem('my_parlays_v1', myOld); if (isAdmin) wasOwner(w); } });
+      /* the admin's card has Pull from DraftKings first in its row (pcPull), a visitor's none; byhandOf: the visitor's line
+         that player legs go on by hand, where a player's leg is off the slip */
+      const PULLB = isAdmin ? ['pcPull'] : [], PULL_SEQ = PULLB.map(x => x + ' ').join('');
       const DK_RB = DK_RBS[side], rbLabel = Side(side) + ' 64.5 rushing yards';
       const { w, d } = v, tab = d.getElementById('tab-parlay');
       const reads = () => v.methods.every(m => m === 'GET');
@@ -1218,8 +1317,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
          [n, who, what, id, swap] (swap: what goes on at DraftKings' number, worked out by the case, or none), and which
          other blocks it has (the legs to add by hand, the converted legs, the pairs DraftKings may refuse), on the note less
          the check's line at its end (noteBody), which is held on its own (checkBad); the problems, or none */
-      const legLinks = (want, { miss = 0, swaps = 0, clash = 0 } = {}) => {
-        const bad = [], parts = noteBody(), shape = ['first', miss ? 'hand' : '', want.length > 1 ? 'one legs' : '', swaps ? 'swaphead swap swapprice' : '', clash ? 'clash' : ''].filter(Boolean).join(' ');
+      const legLinks = (want, { miss = 0, swaps = 0, clash = 0, player = false } = {}) => {
+        const bad = [], parts = noteBody(), shape = ['first', miss ? 'hand' : '', miss && player && !isAdmin ? 'byhand' : '', want.length > 1 ? 'one legs' : '', swaps ? 'swaphead swap swapprice' : '', clash ? 'clash' : ''].filter(Boolean).join(' ');
+        { const by = note().querySelector('p[data-pc-dkbyhand]'); if (by && txt(by) !== BYHAND_J) bad.push(`its line that player legs go on by hand reads "${txt(by)}", not "${BYHAND_J}"`); }
         if (parts !== shape) bad.push(`its blocks are "${noteParts()}", not "${shape}" and then the check's line`);
         { const cb = checkBad(); if (cb) bad.push(cb); }
         const first = note().firstElementChild;
@@ -1463,9 +1563,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
              to add by hand, then each leg on the slip on its own */
           { const bad = legLinks(slipOf(qe.legs, qe.legs.map(l => l.stat === 'ml' ? DK_ML : l.stat === 'rushing_yards' ? DK_RB : null)), { miss: 1 }) || gameBtns(null);
             chk(!bad, `${how}: four legs with two on the slip, one a game: the note is not the link, the legs to add by hand and then each leg on the slip on its own, or there are game buttons: ` + bad); }
-          { const want = [['100+ receiving yards', 'Not on DraftKings’ slip yet: no receiving yards line of his read'], ['2+ touchdowns', 'Not on DraftKings’ slip yet: no anytime TD of his read']];
+          { const want = [['100+ receiving yards', 'Not on DraftKings’ slip: no receiving yards line of his read'], ['2+ touchdowns', 'Not on DraftKings’ slip: no anytime TD of his read']];
             const got = slipRows().sort((x, y) => x[0] < y[0] ? -1 : 1);
-            chk(JSON.stringify(got) === JSON.stringify(want), `${how}: the builder does not say under the rung and the 2+ touchdowns that they are not on DraftKings' slip yet, and why, or says it of another leg: ` + JSON.stringify(got)); }
+            chk(JSON.stringify(got) === JSON.stringify(want), `${how}: the builder does not say under the rung and the 2+ touchdowns that they are not on DraftKings' slip, and why, or says it of another leg: ` + JSON.stringify(got)); }
           d.getElementById('pcLink').click(); await wait(30);
           const se = shared[0] || {};
           chk(new RegExp(`(^|\\n)${ne}\\. Card Runner: 100\\+ receiving yards \\(\\+210 est\\.\\)(\\n|$)`).test(se.text || '') && se.title === `4-leg parlay ${pe} (estimated price)`
@@ -1523,10 +1623,26 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
            PAY.mkt on the second game, a DraftKings player price on it, so for the cases of a game whose
            player prices have not been pulled it is taken out (and put back after), and the player legs
            are what the builder offers on such a game: est. rungs and an est. touchdown */
-        const NFL = 'https://sportsbook.draftkings.com/leagues/football/nfl', PULLED = 'they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET)';
-        const GAME_NP = 'its game’s DraftKings prices have not been pulled yet: ' + PULLED, PL_NP = 'DraftKings’ player prices for its game have not been pulled yet: ' + PULLED;
-        /* a rung on a game not pulled yet: once it is, the rung goes on as his Over at DraftKings' line (app v109) */
-        const RUNG = s => `; once they are, it goes on as his Over at DraftKings’ ${s} line, priced by DraftKings there`;
+        const NFL = 'https://sportsbook.draftkings.com/leagues/football/nfl';
+        /* (20 October 2026) why a leg with no id is off the slip, now that the site reads DraftKings' lines from ESPN and
+           buys none. A team's line or the total: ESPN carried no DraftKings lines for its game when the page's record says
+           it read the game (readJ: its player lines read, or found not posted, by a press or this card's check, ESPN_OUT,
+           or by the props job's published read, ESPN_PUB), else not read yet (teamNP, its brief teamNB). A player's leg on
+           the model's estimate: DraftKings had posted no line for him on its stat when last read, else his game's lines not
+           read (playerNP, playerNB); on the admin's card each player's reason goes on to say what Pull from DraftKings does
+           with it (PTAIL: a rung, his Over at DraftKings' line; 2+ touchdowns, his anytime touchdown; else onto the slip; a
+           market it never reads, rush + rec yards, kicking points and field goals made, that it does not read them).
+           A leg priced from DraftKings' line read on ESPN (dkline) says it has no id from ESPN (DKLINE_J), the same tail
+           after it on the admin's card */
+        const readJ = gid => { const o = w.eval('ESPN_OUT')[gid], P = w.eval('ESPN_PUB'), pub = Object.values(P || {}).map(W => W && W[gid]).find(Boolean);
+          return (!!o && (o.st === 'ok' || o.st === 'none')) || (!!pub && (pub.st === 'ok' || pub.st === 'none')); };
+        const teamNP = gid => readJ(gid) ? 'ESPN carried no DraftKings lines for its game when they were last read' : 'DraftKings’ lines for its game have not been read from ESPN';
+        const teamNB = gid => readJ(gid) ? 'no DraftKings lines read for its game' : 'its game’s lines not read';
+        const PULLS_J = ['passing_yards', 'passing_tds', 'attempts', 'completions', 'passing_interceptions', 'rushing_yards', 'carries', 'receptions', 'receiving_yards', 'any_td'];
+        const PTAIL = (kind, st, lbl) => !isAdmin ? '' : st && !PULLS_J.includes(st) ? ` (Pull from DraftKings does not read ${lbl} lines)` : kind === 'rung' ? ' (Pull from DraftKings puts it on as his Over at DraftKings’ line)' : kind === 'td2' ? ' (Pull from DraftKings puts it on as his anytime touchdown)' : ' (Pull from DraftKings puts it on the slip)';
+        const playerNP = (gid, kind, st, lbl) => (readJ(gid) ? 'DraftKings had posted no line for him on this stat when its lines were last read from ESPN' : 'DraftKings’ lines for its game have not been read from ESPN') + PTAIL(kind, st, lbl);
+        const playerNB = gid => readJ(gid) ? 'no DraftKings line read for it' : 'its game’s lines not read';
+        const DKLINE_J = 'price estimated from DraftKings’ line read on ESPN, which gives no DraftKings id for a player’s line: add it on DraftKings by hand';
         const missOf = n => txt(note().querySelector(`[data-pc-dkmiss="${n}"]`));
         const unprice = () => w.eval(`window.__rbMkt=PAY.mkt['${wk}']['card-rb']; delete PAY.mkt['${wk}']['card-rb']`), reprice = () => w.eval(`PAY.mkt['${wk}']['card-rb']=window.__rbMkt`);
         const rung = { gid: g2.id, pid: 'card-rb', stat: 'receiving_yards', k: 25, side: 'over', main: false, p: 0.45, price: 150, src: 'est', mu: 22, name: 'Card Runner', pos: 'RB', grp: 'RB', team: g2.h, opp: g2.a, week: wk, label: '25+ receiving yards' };
@@ -1545,12 +1661,12 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           chk(qb.legs.length === 2 && !dkA.hidden && txt(dkA) === 'Open DraftKings' && dkA.getAttribute('href') === NFL && dkA.getAttribute('target') === '_blank' && /\bnoopener\b/.test(dkA.getAttribute('rel') || '')
             && dkA.getAttribute('title') === 'Opens DraftKings’ NFL page, in a new tab, to add the legs by hand' && !gameBtns(null)
             && txt(note()).startsWith('None of these legs can go on DraftKings’ betslip from here, so Open DraftKings opens its NFL page: add them there by hand.')
-            && note().querySelectorAll('[data-pc-dkmiss]').length === 2 && missOf(nM).endsWith(': ' + GAME_NP) && missOf(nR).endsWith(': ' + GAME_NP + RUNG('receiving yards'))
-            && !note().querySelector('a') && !d.getElementById('pcLink').hidden && noteBody() === 'first hand' && !checkBad(), `${how}: a parlay DraftKings has none of, over two games, does not offer DraftKings' NFL page, or does not name every leg and why (then the check's line): ` + txt(note()) + ' / ' + dkA.outerHTML + ' / ' + gameBtns(null) + ' / ' + noteParts() + ' / ' + checkBad());
+            && note().querySelectorAll('[data-pc-dkmiss]').length === 2 && missOf(nM).endsWith(': ' + teamNP(g1.id)) && missOf(nR).endsWith(': ' + playerNP(g2.id, 'rung'))
+            && !note().querySelector('a') && !d.getElementById('pcLink').hidden && noteBody() === (isAdmin ? 'first hand' : 'first hand byhand') && !checkBad(), `${how}: a parlay DraftKings has none of, over two games, does not offer DraftKings' NFL page, or does not name every leg and why (then the check's line): ` + txt(note()) + ' / ' + dkA.outerHTML + ' / ' + gameBtns(null) + ' / ' + noteParts() + ' / ' + checkBad());
           d.getElementById('pcLink').click(); await wait(30);
           const s2 = shared[0] || {};
-          chk(shared.length === 1 && !('url' in s2) && (s2.text || '').includes(`\nDraftKings’ NFL page (add the legs by hand):\n${NFL}\nAdd by hand at DraftKings:\n`) && legsOf(qb, s2.text || '') && !/DraftKings lines/.test(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub$/.test(s2.text || '')
-            && handOf(qb, s2.text || '', () => 'its game’s prices are not pulled yet') && (s2.text || '').includes('\nAdd by hand at DraftKings:\n'),
+          chk(shared.length === 1 && !('url' in s2) && (s2.text || '').includes(`\nDraftKings’ NFL page (add the legs by hand):\n${NFL}\nAdd by hand at DraftKings:\n`) && legsOf(qb, s2.text || '') && !/\nDraftKings lines as /.test(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub$/.test(s2.text || '')
+            && handOf(qb, s2.text || '', l => l.stat === 'ml' ? teamNB(l.gid) : playerNB(l.gid)) && (s2.text || '').includes('\nAdd by hand at DraftKings:\n'),
             `${how}: Share link on a parlay DraftKings has none of, over two games, does not send DraftKings' NFL page and every leg to add by hand, with why: ` + JSON.stringify(s2));
           /* with no share sheet the same text is copied, and the card says "Link copied": its one link is DraftKings' NFL
              page (app v121's second round: "Links copied" only for a link a game, "Parlay copied" only for none) */
@@ -1561,7 +1677,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           shared.length = 0; }
         /* the Tab order is the same with the button standing for the NFL page */
         { const f = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && !el.hidden && !el.closest('[hidden]')).map(el => el.id).join(' ');
-          chk(f === 'pcClose pcDk pcLink pcDownload pcAgain', `${how}: with no leg on the slip the card's controls are not Close, Open DraftKings, Share link, Download, Start over: ` + f); }
+          chk(f === 'pcClose ' + PULL_SEQ + 'pcDk pcLink pcDownload pcAgain', `${how}: with no leg on the slip the card's controls are not Close, ${isAdmin ? 'Pull from DraftKings, ' : ''}Open DraftKings, Share link, Download, Start over: ` + f); }
         /* (main's #302) the card's status line once its check settles on a parlay no leg of which can go on the slip: the
            page's record of its two games' last reads moved three minutes back, so the card reads them again rather than
            stand on them, and this section's ESPN (jEsp) answers for both. Worked out here from that stand-in (checkWant):
@@ -1592,32 +1708,36 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         { const qa = w.PARLAY_CARD.quote(), EV = 'https://sportsbook.draftkings.com/event/880002', nR = qa.legs.findIndex(l => l.stat === 'receiving_yards') + 1, nT = qa.legs.findIndex(l => l.stat === 'any_td') + 1;
           chk(qa.legs.length === 2 && !dkA.hidden && txt(dkA) === 'Open game in DraftKings' && dkA.getAttribute('href') === EV && dkA.getAttribute('title') === 'Opens the game’s page in DraftKings, in a new tab, to add the legs by hand'
             && txt(note()).startsWith('None of these legs can go on DraftKings’ betslip from here, so Open game in DraftKings opens the game’s page: add them there by hand.')
-            && missOf(nT).endsWith(': ' + PL_NP) && missOf(nR).endsWith(': ' + PL_NP + RUNG('receiving yards')) && !note().querySelector('a') && noteBody() === 'first hand' && !checkBad() && !gameBtns(null),
-            `${how}: the owner's case (game lines read, no player prices yet) does not say the player prices are not pulled yet, or does not open the game's DraftKings page (then the check's line): ` + txt(note()) + ' / ' + dkA.outerHTML + ' / ' + noteParts() + ' / ' + checkBad());
+            && missOf(nT).endsWith(': ' + playerNP(g2.id, 'td')) && missOf(nR).endsWith(': ' + playerNP(g2.id, 'rung')) && !note().querySelector('a') && noteBody() === (isAdmin ? 'first hand' : 'first hand byhand') && !checkBad() && !gameBtns(null),
+            `${how}: the owner's case (game lines read, no player line read) does not say DraftKings had posted no line for him (or that the game's lines were not read), or does not open the game's DraftKings page (then the check's line): ` + txt(note()) + ' / ' + dkA.outerHTML + ' / ' + noteParts() + ' / ' + checkBad());
           d.getElementById('pcLink').click(); await wait(30);
           const sa = shared[0] || {};
-          chk(shared.length === 1 && !('url' in sa) && (sa.text || '').includes(`\nDraftKings, the game’s page (add the legs by hand):\n${EV}\nAdd by hand on the game’s DraftKings page:\n`) && sa.title.startsWith('2-leg parlay ' + w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))')) && !/DraftKings lines/.test(sa.text || '') && legsOf(qa, sa.text || '')
+          chk(shared.length === 1 && !('url' in sa) && (sa.text || '').includes(`\nDraftKings, the game’s page (add the legs by hand):\n${EV}\nAdd by hand on the game’s DraftKings page:\n`) && sa.title.startsWith('2-leg parlay ' + w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))')) && !/\nDraftKings lines as /.test(sa.text || '') && legsOf(qa, sa.text || '')
             && (sa.text || '').includes('\nAdd by hand on the game’s DraftKings page:\n')
-            && handOf(qa, sa.text || '', () => 'player prices for its game are not pulled yet'),
+            && handOf(qa, sa.text || '', () => playerNB(g2.id)),
             `${how}: Share link in the owner's case does not send the game's DraftKings page with both legs to add by hand, and why: ` + JSON.stringify(sa));
           shared.length = 0;
-          /* in the same game, a market the pull never reads says so, never that a pull will bring it */
-          const mk = w.PARLAY_CARD.dkPlan([Object.assign({}, rung, { stat: 'carries', k: 15, label: '15+ carries' }), Object.assign({}, rung, { stat: 'kick_pts', k: 8, label: '8+ kicking points' }), Object.assign({}, rung, { stat: 'passing_interceptions', k: 1, label: '1+ interceptions' })]);
-          chk(mk.miss.length === 3 && ['carries', 'kicking points', 'interceptions'].every((s, i) => (mk.miss[i].why || '').startsWith(`DraftKings’ ${s} lines are not read here (`) && mk.miss[i].brief === 'its market is not read here')
-            && !mk.miss.some(x => /pulled/.test(x.why.split('(')[0])) && mk.url === null && mk.all === null,
-            `${how}: a market the pull never reads (carries, kicking points, interceptions) is said to come with the pull, or is not said to be unread (or the plan, with no leg on the slip, has a link: url and, app v123, all null): ` + JSON.stringify({ miss: mk.miss, url: mk.url, all: mk.all })); }
+          /* in the same game, which no paid pull read, a market Pull from DraftKings never reads has a player's leg's reason
+             like any other (ESPN reads it), and on the admin's card that Pull from DraftKings does not read it, never that a
+             pull will bring it; carries and interceptions, which it reads, are like any player's leg */
+          const mk = w.PARLAY_CARD.dkPlan([Object.assign({}, rung, { stat: 'scrim_yards', k: 90, label: '90+ rush + rec yards' }), Object.assign({}, rung, { stat: 'kick_pts', k: 8, label: '8+ kicking points' }), Object.assign({}, rung, { stat: 'fg_made', k: 2, label: '2+ field goals made' })]);
+          chk(mk.miss.length === 3 && [['scrim_yards', 'rush + rec yards'], ['kick_pts', 'kicking points'], ['fg_made', 'field goals made']].every(([st, s], i) => (mk.miss[i].why || '') === playerNP(g2.id, 'rung', st, s) && mk.miss[i].brief === playerNB(g2.id)) && mk.url === null && mk.all === null,
+            `${how}: a market Pull from DraftKings never reads (rush + rec yards, kicking points, field goals made), on a game no paid pull read, does not have a player's leg's reason, with (on the admin's card) that Pull from DraftKings does not read it (or the plan, with no leg on the slip, has a link: url and, app v123, all null): ` + JSON.stringify({ miss: mk.miss, url: mk.url, all: mk.all }));
+          const mk2 = w.PARLAY_CARD.dkPlan([Object.assign({}, rung, { stat: 'carries', k: 15, label: '15+ carries' }), Object.assign({}, rung, { stat: 'passing_interceptions', k: 1, label: '1+ interceptions' })]);
+          chk(mk2.miss.length === 2 && mk2.miss.every(x => x.why === playerNP(g2.id, 'rung') && x.brief === playerNB(g2.id)),
+            `${how}: a carries or interceptions rung, markets Pull from DraftKings reads, is not given a player's leg's reason: ` + JSON.stringify(mk2.miss)); }
         /* (d) the same game with a player leg and its home money line: the slip opens the money line, the
            player leg is to add by hand, with why, and Share link sends the slip */
         w.eval(`S.parlay=${JSON.stringify({ [tdKey]: td, [`${g2.id}|team:${g2.h}|ml`]: Object.assign({}, builder(side)[mlKey], { gid: g2.id, pid: 'team:' + g2.h, team: g2.h, opp: g2.a }) })}; renderParlay()`); await wait(20); await reopen();
         { const qd = w.PARLAY_CARD.quote(), nP = qd.legs.findIndex(l => l.pid === 'card-rb') + 1;
           chk(qd.legs.length === 2 && !dkA.hidden && txt(dkA) === 'Open 1 of 2 legs in DraftKings' && dkA.getAttribute('href') === DKU(['G2#ml_h']) && /1 of the 2 legs/.test(txt(note()))
-            && missOf(nP).endsWith(': ' + PL_NP) && note().querySelectorAll('[data-pc-dkmiss]').length === 1 && !note().querySelector('[data-pc-dkswap]') && !legLinks(slipOf(qd.legs, qd.legs.map(l => l.stat === 'ml' ? 'G2#ml_h' : null)), { miss: 1 }) && !gameBtns(null),
+            && missOf(nP).endsWith(': ' + playerNP(g2.id, 'td')) && note().querySelectorAll('[data-pc-dkmiss]').length === 1 && !note().querySelector('[data-pc-dkswap]') && !legLinks(slipOf(qd.legs, qd.legs.map(l => l.stat === 'ml' ? 'G2#ml_h' : null)), { miss: 1, player: true }) && !gameBtns(null),
             `${how}: a money line beside a player leg whose prices are not pulled does not open the money line alone (Open 1 of 2 legs in DraftKings), or does not say why the other is left: ` + txt(note()) + ' / ' + dkA.getAttribute('href') + ' / ' + txt(dkA));
-          chk(JSON.stringify(slipRows()) === JSON.stringify([['Scores a touchdown', 'Not on DraftKings’ slip yet: player prices for its game are not pulled yet']]),
-            `${how}: the builder does not say under the unpulled touchdown that it is not on DraftKings' slip yet, and why, or says it of the money line: ` + JSON.stringify(slipRows()));
+          chk(JSON.stringify(slipRows()) === JSON.stringify([['Scores a touchdown', 'Not on DraftKings’ slip: ' + playerNB(g2.id)]]),
+            `${how}: the builder does not say under the touchdown with no line read that it is not on DraftKings' slip, and why, or says it of the money line: ` + JSON.stringify(slipRows()));
           d.getElementById('pcLink').click(); await wait(30);
           const sd = shared[0] || {};
-          chk(shared.length === 1 && !('url' in sd) && (sd.text || '').includes(slipLines(`1 of the 2 legs as DraftKings had it; add leg ${nP} by hand`, DKU(['G2#ml_h']), AT_G)) && (sd.text || '').includes(`\nAdd by hand at DraftKings:\n${nP}. Card Runner Scores a touchdown (player prices for its game are not pulled yet)\n`),
+          chk(shared.length === 1 && !('url' in sd) && (sd.text || '').includes(slipLines(`1 of the 2 legs as DraftKings had it; add leg ${nP} by hand`, DKU(['G2#ml_h']), AT_G)) && (sd.text || '').includes(`\nAdd by hand at DraftKings:\n${nP}. Card Runner Scores a touchdown (${playerNB(g2.id)})\n`),
             `${how}: Share link on a money line beside an unpulled player leg does not send the slip and the player leg to add by hand: ` + JSON.stringify(sd));
           shared.length = 0; }
         /* a leg the card prices from the book is never said to be unpulled or not offered: its price is
@@ -1649,9 +1769,16 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           /* a market the pull does not read is still opened where the payload has its id */
           const cc = w.PARLAY_CARD.dkPlan([Object.assign({}, rung, { stat: 'carries', k: 15, label: '15+ carries' })]);
           chk(cc.url === DKU(['C#1']) && !cc.miss.length, `${how}: a carries rung whose id the payload has does not open: ` + JSON.stringify(cc));
+          /* a market the paid pull never reads (oddsfetch.py's DEFAULT), with no id, on that game: said so, and on the admin's
+             card what Pull from DraftKings does with it (completions, which it reads; kicking points, which it does not) */
+          const cu = w.PARLAY_CARD.dkPlan([Object.assign({}, rung, { stat: 'completions', k: 20, label: '20+ completions' }), Object.assign({}, rung, { stat: 'kick_pts', k: 8, label: '8+ kicking points' })]);
+          const unreadJ = (s, st, kind) => isAdmin ? `DraftKings’ ${s} lines are not read by the price pull` + PTAIL(kind, st, s)
+            : `DraftKings’ ${s} lines are not read here (the price pull reads passing, rushing and receiving yards, receptions, passing touchdowns and anytime touchdowns)`;
+          chk(!cu.url && cu.miss.length === 2 && cu.miss[0].why === unreadJ('completions', 'completions', 'rung') && cu.miss[1].why === unreadJ('kicking points', 'kick_pts', 'rung') && cu.miss.every(x => x.brief === 'its market is not read here'),
+            `${how}: on a game a paid pull read, a market that pull never reads is not said to be unread by it (with, on the admin's card, what Pull from DraftKings does with it): ` + JSON.stringify(cu.miss));
           const e = w.PARLAY_CARD.dkPlan([Object.assign({}, builder(side)[mlKey])]);
-          chk(!e.url && !e.event && e.home === NFL && (e.miss[0] || {}).why === GAME_NP,
-            `${how}: a game to come with no ids does not say its prices have not been pulled yet, or offers a page other than DraftKings' NFL page: ` + JSON.stringify(e)); }
+          chk(!e.url && !e.event && e.home === NFL && (e.miss[0] || {}).why === teamNP(g1.id),
+            `${how}: a game to come with no ids does not say ESPN carried none of its DraftKings lines (or has not read them), or offers a page other than DraftKings' NFL page: ` + JSON.stringify(e)); }
         reprice();
         w.eval(`S.parlay=${JSON.stringify(builder(side))}; renderParlay()`); await wait(20); shared.length = 0;
         delete w.navigator.share;
@@ -1707,7 +1834,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             chk(JSON.stringify(k) === JSON.stringify(x), `${how}: a leg priced from DraftKings' line read on ESPN is not looked up like any other before it says its id is not read: ` + JSON.stringify({ got: k, want: x })); };
           one(K({ k: 4.5 }), DKU(['R#1']), '', '');
           one(K({ k: 5.5 }), DKU(['R#1']), '1 Over 4.5 receptions', '');
-          one(K({ pid: 'p2', stat: 'passing_yards', k: 220.5, grp: 'QB' }), null, '', '1 price estimated from DraftKings’ line read on ESPN; its DraftKings id is not read'); }
+          one(K({ pid: 'p2', stat: 'passing_yards', k: 220.5, grp: 'QB' }), null, '', '1 ' + DKLINE_J + PTAIL('main')); }
         /* the newest read: a press read DraftKings' home spread at -3.5 an hour ago, after the pull's -3
            (five hours ago), so the -3 leg goes on at -3.5, dated by the press; the away spread at +7 an hour
            ago, so the +3 leg, with no id at its own number, takes the press's +7 over the pull's nearer
@@ -1868,8 +1995,8 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
                  each leg's own link; and Tab stays inside, both ways */
               { const foc = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && !el.hidden && !el.closest('[hidden]'));
                 const seq = foc.map(el => el.id || (el.hasAttribute('data-pc-dkgame') ? 'game:' + el.getAttribute('data-pc-dkgame') : 'leg' + el.getAttribute('data-pc-dkleg'))).join(' ');
-                const want = ['pcClose', 'pcDk', ...G.map(x => 'game:' + x.gid), 'pcLink', 'pcDownload', 'pcAgain', ...slipOf(qa.legs, ids).map(x => 'leg' + x[0])].join(' ');
-                chk(seq === want, `${how}: (a) the card's controls are not Close, the all-legs link, a button for each game, Share link, Download, Start over, then each leg's own link: ${seq}, not ${want}`);
+                const want = ['pcClose', ...PULLB, 'pcDk', ...G.map(x => 'game:' + x.gid), 'pcLink', 'pcDownload', 'pcAgain', ...slipOf(qa.legs, ids).map(x => 'leg' + x[0])].join(' ');
+                chk(seq === want, `${how}: (a) the card's controls are not Close, (on the admin's card) Pull from DraftKings, the all-legs link, a button for each game, Share link, Download, Start over, then each leg's own link: ${seq}, not ${want}`);
                 const lastC = foc[foc.length - 1]; lastC.focus(); lastC.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
                 const wrapped = d.activeElement === d.getElementById('pcClose');
                 d.getElementById('pcClose').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
@@ -1912,10 +2039,10 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
                 chk(qd.legs.length === 4 && Gd.length === 2 && multiOf(Gd) && !Gd.some(x => x.gid === G3.id) && !bad && txt(note().firstElementChild) === multiNote(Gd, AT_G, 4)
                   && txt(dkA) === 'Open 3 of 4 legs in DraftKings' && dkA.getAttribute('href') === DKU(idd.filter(Boolean))
                   && dkA.getAttribute('title') === `Tries 3 of the 4 legs on one DraftKings betslip, in a new tab, as DraftKings’ lines were read ${readTxt(AT_G)}: DraftKings may not open a same-game parlay mixed with other games, so if the slip comes up short, open each game’s link instead`
-                  && note().querySelectorAll('[data-pc-dkmiss]').length === 1 && missOf(n3) === `${n3}. Third Side, To win: ${GAME_NP}`,
+                  && note().querySelectorAll('[data-pc-dkmiss]').length === 1 && missOf(n3) === `${n3}. Third Side, To win: ${teamNP(G3.id)}`,
                   `${how}: (d) a same-game parlay mixed with another game, beside a third game's leg with no id, does not get the all-legs link on the three on the slip ("Open 3 of 4 legs in DraftKings") and a button only for each game with legs on the slip, and that leg to add by hand: ` + [bad, txt(note()), dkA.outerHTML].filter(Boolean).join(' / '));
                 const got = await sheet(), t = (got[0] || {}).text || '';
-                chk(got.length === 1 && t.includes(multiLines(Gd, AT_G, 'leg ' + n3)) && linesOf(t, DKU(idd.filter(Boolean))) === 1 && t.includes(`\nAdd by hand at DraftKings:\n${n3}. Third Side To win (its game’s prices are not pulled yet)\n`) && legsOf(qd, t) && !promises(t) && !/DraftKings betslip \(opens/.test(t),
+                chk(got.length === 1 && t.includes(multiLines(Gd, AT_G, 'leg ' + n3)) && linesOf(t, DKU(idd.filter(Boolean))) === 1 && t.includes(`\nAdd by hand at DraftKings:\n${n3}. Third Side To win (${teamNB(G3.id)})\n`) && legsOf(qd, t) && !promises(t) && !/DraftKings betslip \(opens/.test(t),
                   `${how}: (d) Share link does not send the all-legs link on the three on the slip, then a link for each game with legs on the slip, saying which leg to add by hand, and that leg with why: ` + JSON.stringify(got[0])); }
             }
             /* (c) every leg on the second game; the passer and the runner are of its home club, the visitor of the other */
@@ -1940,7 +2067,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
               await reopen();
               const ids = qc.legs.map(l => onSlip ? cId(l) : null), cl = [...d.querySelectorAll('#pcDkNote [data-pc-dkclash]')];
               const wantC = pairs.length ? `DraftKings may refuse ${pairs.length === 1 ? 'this pair' : 'these pairs'} on one slip: ${pairs.map(([i, j, k]) => `legs ${i + 1} and ${j + 1} (${CLASH_SAY[k]})`).join('; ')}.` : null;
-              const bad = (onSlip ? legLinks(slipOf(qc.legs, ids), { clash: pairs.length }) : noteBody() === 'first hand' + (pairs.length ? ' clash' : '') ? checkBad() : `its blocks are "${noteParts()}"`) || gameBtns(null);
+              const bad = (onSlip ? legLinks(slipOf(qc.legs, ids), { clash: pairs.length }) : noteBody() === 'first hand' + (isAdmin ? '' : ' byhand') + (pairs.length ? ' clash' : '') ? checkBad() : `its blocks are "${noteParts()}"`) || gameBtns(null);
               chk(cl.length === (wantC ? 1 : 0) && (!wantC || (txt(cl[0]) === wantC && cl[0].getAttribute('data-pc-dkclash') === String(pairs.length))) && !bad
                 && (onSlip ? !dkA.hidden && dkA.getAttribute('href') === DKU(ids) : txt(dkA) === 'Open DraftKings'),
                 `${how}: (c) ${what}: the card's note does not say, word for word and last, which pairs DraftKings may refuse on one slip (${wantC || 'none'}): ` + [bad, cl.map(txt).join(' | ') || 'no line', dkA.getAttribute('href')].filter(Boolean).join(' / '));
@@ -1978,7 +2105,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       d.getElementById('pFinish').click(); await wait(20);
       const foc = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && !el.hidden && !el.closest('[hidden]'));
       const seq = foc.map(el => el.id || 'leg' + el.getAttribute('data-pc-dkleg')).join(' ');
-      chk(seq === 'pcClose pcDk pcLink pcDownload pcAgain leg1 leg2', `${how}: the card's controls are not in the order Close, Open in DraftKings, Share link, Download, Start over, each leg's link: ` + seq);
+      chk(seq === 'pcClose ' + PULL_SEQ + 'pcDk pcLink pcDownload pcAgain leg1 leg2', `${how}: the card's controls are not in the order Close, ${isAdmin ? 'Pull from DraftKings, ' : ''}Open in DraftKings, Share link, Download, Start over, each leg's link: ` + seq);
       const lastC = foc[foc.length - 1];
       lastC.focus(); lastC.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
       const wrapped = d.activeElement === d.getElementById('pcClose');
@@ -2544,7 +2671,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         if (!h) return jsonR(code, body);
         return new Promise((res, rej) => { h.p.then(() => res(jsonR(code, body)));
           const sg = o && o.signal; if (sg) sg.addEventListener('abort', () => rej(new Error('The operation was aborted'))); }); };
-      const v = await run({ url: URL_PB, pay: pin2, file: { updated: null, games: [], parlays: [] }, esp: esp2,
+      const v = await run({ url: URL_PB, admin: false, pay: pin2, file: { updated: null, games: [], parlays: [] }, esp: esp2,
         seed: x => x.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 25, saved: [], parlay: legs2 })) });
       const { w, d } = v, rec = stubDraw(w), md = d.getElementById('pcModal'), dkA = d.getElementById('pcDk'), link = d.getElementById('pcLink');
       const note = () => d.getElementById('pcDkNote'), msg = () => txt(d.getElementById('pcMsg')), ckS = () => cardCheck(w) || {}, how = 'the card\'s check of DraftKings\' lines';
@@ -2716,8 +2843,8 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             `${how}: Share link's text does not give the all-legs link to the ${ok} legs DraftKings still has alone on its line under its header (saying which legs to add by hand), then each game's link alone on its line under "Each game on its own:", and name the two DraftKings has moved, each with the moved rule's few words: ` + JSON.stringify(t2)); }
         /* the builder's rows say it too, from the card's own plan, as the read's redraw drew them; the receiver's receptions,
            which the read has no line for, on his id with nothing under it */
-        { const r = slipRows(), want = { 'Over 43.5 points': 'On DraftKings as Over 44.5', 'Over 64.5 rushing yards': `Not on DraftKings’ slip yet: ${movedBrief(66.5, 64.5, true)}`, 'Over 55.5 receiving yards': null,
-            'Over 5.5 receptions': null, 'Scores a touchdown': null, '4+ receptions': `Not on DraftKings’ slip yet: ${movedBrief(4.5, 4, false)}`, '2+ touchdowns': 'On DraftKings as anytime touchdown' };
+        { const r = slipRows(), want = { 'Over 43.5 points': 'On DraftKings as Over 44.5', 'Over 64.5 rushing yards': `Not on DraftKings’ slip: ${movedBrief(66.5, 64.5, true)}`, 'Over 55.5 receiving yards': null,
+            'Over 5.5 receptions': null, 'Scores a touchdown': null, '4+ receptions': `Not on DraftKings’ slip: ${movedBrief(4.5, 4, false)}`, '2+ touchdowns': 'On DraftKings as anytime touchdown' };
           chk(Object.keys(want).every(k => r[k] === want[k]), `${how}: the builder's rows do not say what DraftKings' slip does with each leg after the card's read: ` + JSON.stringify(r)); }
         /* the anytime touchdown and 2+ touchdowns have no number to move: on their ids whatever the read says (the tight
            end's touchdown is not among the read's at all); the receiver's receptions, with no line of his in the read, keep
@@ -2907,7 +3034,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
            order (n6) and this check's own ids */
         {
           const six = Object.fromEntries(Object.entries(legs2).filter(([k]) => k !== totKey)), N6 = Object.keys(six).length;
-          const v6 = await run({ url: URL_PB, pay: pin2, file: { updated: null, games: [], parlays: [] }, esp: esp2,
+          const v6 = await run({ url: URL_PB, admin: false, pay: pin2, file: { updated: null, games: [], parlays: [] }, esp: esp2,
             seed: x => x.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 25, saved: [], parlay: six })) });
           const w6 = v6.w, d6 = v6.d; stubDraw(w6);
           const a6 = d6.getElementById('pcDk'), note6 = () => d6.getElementById('pcDkNote'), msg6 = () => txt(d6.getElementById('pcMsg')), ck6 = () => cardCheck(w6) || {};
@@ -2955,6 +3082,566 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         }
       }
     }
+    /* ---- J3. Pull from DraftKings (the owner's call of 20 October 2026), on the admin's device alone ----
+       The site reads DraftKings' lines from ESPN for everyone and buys no price; on the admin's devices the parlay card
+       has Pull from DraftKings, which spends his Odds API credits on the parlay at hand alone, through window.HUB_ADMIN
+       (admin.js), the only code that holds the key. Held here on a stand-in Odds API of this section's own (oddsJ3: the
+       free events list, each game's event-odds answer, the free balance; each answer's x-requests-* headers, and a mode
+       for every error), on made-up players of the pinned games (the payload's roster given them, so the card can place
+       DraftKings' names on them) and an ESPN that has DraftKings' main line for two of them. Every expectation is worked
+       out here, on this check's own copies: which market each leg asks for (MKT_J3, a rung the alternate ladder unless
+       DraftKings' main line for him, as ESPN read it, is k-0.5), the cost, the prices, the fair chances (both sides with
+       the margin out, else the price over the median overround of the stand-in's two-sided main lines), the ids in the
+       card's order, the words.
+       (1) Before the pull: the label's "up to N credits", N the distinct game and market pairs of the player legs still
+           to come (a kicked-off game's none, a team-only game's none); a press makes exactly one free events call,
+           carrying the key, and asks inline what it may spend of the credits that call's header gives; Cancel spends
+           nothing, the focus back on the button; Escape answers it as Cancel.
+       (2) The pull: exactly one event-odds GET a game with player legs, its markets the plan's, bookmakers=draftkings,
+           includeSids=true, includeLinks=true, oddsFormat=american; none for a game with team legs alone.
+       (3) After it, on one game's eight legs: a main line DraftKings has moved converted at DraftKings' number with its
+           price (the leg's own price kept), a rung through the alternate ladder's Over k-0.5, a rung whose k-0.5 is his
+           main line through the base market (a nickname: DraftKings prints Drew for the roster's Andrew), the anytime
+           touchdown's Yes, 2+ touchdowns on it, a player DraftKings has no row for, a market not posted, a name two
+           players answer to, each with its words; the card's prices and tags the stand-in's, its price the builder's own
+           sums on them (parlayDec), the builder's rows saying real; Open in DraftKings the pulled sids in the card's
+           order; Share link's text the same link; the spend and the balance the headers'; nothing of S or this browser's
+           storage changed (but the admin record's credits left, admin.js's), and the key nowhere in the page, its
+           attributes, the shared text or the image.
+       (4) Three games one leg each (the pulled touchdown, a team's money line on its ESPN id, a quarterback's line): one
+           call, for the one game not pulled five minutes since; the price a plain product of the three; one link.
+       (5) Again within five minutes: nothing to pull, nothing asked. (6) The moved rule: an ESPN read of a pulled main
+           line at another number gives way to the pull within 15 minutes of it, and takes it off the slip after, in the
+           moved rule's words. (7) On a level of Suggested Parlays: pulled, its price worked again by parlayDec, its fair
+           chance kept until a leg is pulled; the button waits while the card checks DraftKings' lines; Open in
+           DraftKings and Share link wait while it pulls. (8) Signing out while a pull runs takes the button and what was
+           pulled away. (9) Every error, each leaving the prices as they were and saying why: 401 INVALID_KEY,
+           OUT_OF_USAGE_CREDITS, 429, a network failure before any paid call and after one (never tried again, and a
+           free balance check), DraftKings posting nothing, a game kicking off between the events list and its odds, and
+           422 INVALID_MARKET asked again a market at a time. */
+    {
+      const NM_J3 = { ARI: 'Arizona Cardinals', ATL: 'Atlanta Falcons', BAL: 'Baltimore Ravens', BUF: 'Buffalo Bills', CAR: 'Carolina Panthers', CHI: 'Chicago Bears', CIN: 'Cincinnati Bengals', CLE: 'Cleveland Browns',
+        DAL: 'Dallas Cowboys', DEN: 'Denver Broncos', DET: 'Detroit Lions', GB: 'Green Bay Packers', HOU: 'Houston Texans', IND: 'Indianapolis Colts', JAX: 'Jacksonville Jaguars', KC: 'Kansas City Chiefs',
+        LV: 'Las Vegas Raiders', LAC: 'Los Angeles Chargers', LA: 'Los Angeles Rams', MIA: 'Miami Dolphins', MIN: 'Minnesota Vikings', NE: 'New England Patriots', NO: 'New Orleans Saints', NYG: 'New York Giants',
+        NYJ: 'New York Jets', PHI: 'Philadelphia Eagles', PIT: 'Pittsburgh Steelers', SF: 'San Francisco 49ers', SEA: 'Seattle Seahawks', TB: 'Tampa Bay Buccaneers', TEN: 'Tennessee Titans', WAS: 'Washington Commanders' };
+      /* the third game: the week's own, else one made up between two clubs neither pinned game has */
+      const g3r = (byWeek[wk] || []).find(x => x !== g1 && x !== g2), used3 = new Set([g1.a, g1.h, g2.a, g2.h]);
+      const pair3 = g3r ? null : (P0.sched.find(x => !used3.has(x.a) && !used3.has(x.h) && x.a !== x.h) || {});
+      const g3 = g3r || { id: `${SEA}_${String(wk).padStart(2, '0')}_${pair3.a}_${pair3.h}`, w: wk, a: pair3.a, h: pair3.h };
+      const EV = { [g1.id]: 'a1'.repeat(16), [g2.id]: 'b2'.repeat(16), [g3.id]: 'c3'.repeat(16) };
+      /* the made-up players and the roster entries the payload gives them ([team, status, name, week]) */
+      const PL = { qb: ['j3-qb', 'Quinn Passer', g1.h, 'QB'], rb: ['j3-rb', 'Card Back', g2.h, 'RB'], wr: ['j3-wr', 'Andrew Wideout', g2.a, 'WR'], te: ['j3-te', 'Tee End', g2.h, 'TE'],
+        mi: ['j3-mi', 'Missing Man', g2.a, 'RB'], cs: ['j3-cs1', 'Chris Same', g2.h, 'WR'], cs2: ['j3-cs2', 'Chris Same', g2.a, 'WR'], t3: ['j3-t3', 'Third Back', g3.h, 'RB'],
+        lp: ['j3-lp', 'Ladder Passer', g1.a, 'QB'] };
+      const AID3 = { 'j3-rb': '9301', 'j3-wr': '9302', 'j3-qb': '9303', 'j3-lp': '9304' };
+      const pin3 = P => {
+        /* the three games far off and to come; nothing planted in PAY.mkt, so no game looks priced by a paid pull */
+        for (const x of P.sched) if (x.id === g1.id || x.id === g2.id || x.id === g3.id) { x.d = '2099-12-31'; x.t = '13:00'; delete x.hs; delete x.as; }
+        if (!g3r) P.sched.push({ id: g3.id, w: wk, d: '2099-12-31', t: '13:00', a: g3.a, h: g3.h });
+        P.roster = Object.assign({}, P.roster); for (const [pid, name, team] of Object.values(PL)) P.roster[pid] = [team, 'ACT', name, wk];
+        P.espn_ids = Object.assign({}, P.espn_ids, Object.fromEntries(Object.entries(AID3).map(([pid, aid]) => [aid, pid])));
+        /* the third game's money line: an id the published ESPN read made (a read's entry: game lines and their ids alone) */
+        P.dk = { [String(wk)]: { [g3.id]: { [`team:${g3.h}|ml`]: 'ESPN3#ml_h', [`team:${g3.a}|ml`]: 'ESPN3#ml_a', glat: AT_G } } };
+        return P; };
+      /* the legs: one game's eight (S1), then three games one leg each (S2); every player leg on the model's estimate */
+      const LJ = (pk, stat, k, o = {}) => { const [pid, name, team, pos] = PL[pk], g = [g1, g2, g3].find(x => x.h === team || x.a === team);
+        return Object.assign({ gid: g.id, pid, stat, k, side: 'over', main: false, p: 0.5, price: 110, src: 'est', mu: k, name, pos, grp: pos, team, opp: team === g.h ? g.a : g.h, week: wk, label: `${k}+ ${stat}` }, o); };
+      const LEG = {
+        rbMain: LJ('rb', 'rushing_yards', 64.5, { main: true, price: -112, label: 'Over 64.5 rushing yards' }),
+        rbRung: LJ('rb', 'receiving_yards', 30, { price: 125, label: '30+ receiving yards' }),
+        wrRung: LJ('wr', 'receiving_yards', 60, { price: 105, label: '60+ receiving yards' }),
+        rbTd: LJ('rb', 'any_td', 1, { price: 150, label: 'Scores a touchdown' }),
+        te2: LJ('te', 'any_td', 2, { price: 900, label: '2+ touchdowns' }),
+        miMain: LJ('mi', 'rushing_yards', 40.5, { main: true, price: -110, label: 'Over 40.5 rushing yards' }),
+        teRec: LJ('te', 'receptions', 3.5, { main: true, price: -120, label: 'Over 3.5 receptions' }),
+        csMain: LJ('cs', 'receiving_yards', 45.5, { main: true, price: -110, label: 'Over 45.5 receiving yards' }),
+        qbMain: LJ('qb', 'passing_yards', 230.5, { main: true, price: -108, label: 'Over 230.5 passing yards' }),
+        qbRush: LJ('qb', 'rushing_yards', 15.5, { main: true, price: -110, label: 'Over 15.5 rushing yards' }),
+        t3Main: LJ('t3', 'rushing_yards', 50.5, { main: true, price: -110, label: 'Over 50.5 rushing yards' }),
+        lpRung: LJ('lp', 'passing_yards', 225, { price: -180, label: '225+ passing yards' }),
+        lpRung2: LJ('lp', 'passing_yards', 231, { price: -105, label: '231+ passing yards' }),
+        ml3: { gid: g3.id, pid: 'team:' + g3.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.58, price: -135, src: 'real', mu: null, name: 'Home Three', pos: 'Game', grp: 'TEAM', team: g3.h, opp: g3.a, week: wk, label: 'To win' } };
+      const keyJ = l => `${l.gid}|${l.pid}|${l.stat}`, BJ = (...ls) => Object.fromEntries(ls.map(l => [keyJ(l), l]));
+      const S1 = ['rbMain', 'rbRung', 'wrRung', 'rbTd', 'te2', 'miMain', 'teRec', 'csMain'].map(k => LEG[k]);
+      /* ESPN: the three games on the scoreboard with no DraftKings odds; DraftKings' main line for the runner (64.5 rushing
+         yards), the receiver (59.5 receiving yards) and the passer (230.5 passing yards) on their games' player lines */
+      const ath3 = aid => ({ $ref: `http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/${SEA}/athletes/${aid}?lang=en&region=us` });
+      const EVT3 = { [g1.id]: '7301', [g2.id]: '7302', [g3.id]: '7303' };
+      const items3 = { [EVT3[g2.id]]: [{ type: { id: '12' }, athlete: ath3(AID3['j3-rb']), current: { target: { value: 64.5 } } }, { type: { id: '13' }, athlete: ath3(AID3['j3-wr']), current: { target: { value: 59.5 } } }],
+        [EVT3[g1.id]]: [{ type: { id: '8' }, athlete: ath3(AID3['j3-qb']), current: { target: { value: 230.5 } } }, { type: { id: '8' }, athlete: ath3(AID3['j3-lp']), current: { target: { value: 224.5 } } }] };
+      const espHold = { gate: null };
+      const espJ3 = s => { let r = null;
+        if (/\/scoreboard\?dates=/.test(s)) r = [200, { events: [sbEv(g1, EVT3[g1.id]), sbEv(g2, EVT3[g2.id]), sbEv(g3, EVT3[g3.id])] }];
+        else { const m = /\/events\/(\d+)\/competitions\/\d+\/odds\/100\/propBets\?/.exec(s); if (m) r = items3[m[1]] ? [200, { count: items3[m[1]].length, pageIndex: 1, pageSize: 1000, pageCount: 1, items: items3[m[1]] }] : [404, NO_PROPS]; }
+        if (!r) return null;
+        const g = espHold.gate; return g ? g.p.then(() => jsonR(r[0], r[1])) : jsonR(r[0], r[1]); };
+      /* The Odds API, this section's: DraftKings' rows by market for each game's event */
+      const O = (name, desc, price, point, sid) => Object.assign({ name, description: desc, price }, point != null ? { point } : {}, sid ? { sid, link: `https://sportsbook.draftkings.com/event/x?outcomes=${sid}` } : {});
+      const DKM = { [g2.id]: {
+          player_rush_yds: [O('Over', 'Card Back', -115, 66.5, 'J3#rb_o665'), O('Under', 'Card Back', -105, 66.5, 'J3#rb_u665'), O('Over', 'Other Guy', -110, 20.5, 'J3#og_o'), O('Under', 'Other Guy', -110, 20.5, 'J3#og_u')],
+          player_reception_yds_alternate: [O('Over', 'Card Back', 120, 29.5, 'J3#rb_alt30'), O('Over', 'Card Back', 200, 39.5, 'J3#rb_alt40')],
+          player_reception_yds: [O('Over', 'Drew Wideout', -110, 59.5, 'J3#wr_o595'), O('Under', 'Drew Wideout', -110, 59.5, 'J3#wr_u595'), O('Over', 'Chris Same', -115, 45.5, 'J3#cs_o'), O('Under', 'Chris Same', -105, 45.5, 'J3#cs_u')],
+          player_anytime_td: [O('Yes', 'Card Back', 140, null, 'J3#rb_td'), O('Yes', 'Tee End', 210, null, 'J3#te_td'), O('Yes', 'Chris Same', 300, null, 'J3#cs_td'), O('Yes', `${NM_J3[g2.h]} D/ST`, 900, null, 'J3#dst')] },
+        [g1.id]: { player_pass_yds: [O('Over', 'Quinn Passer', -110, 230.5, 'J3#qb_o'), O('Under', 'Quinn Passer', -110, 230.5, 'J3#qb_u'), O('Over', 'Ladder Passer', -110, 230.5, 'J3#lp_o2305'), O('Under', 'Ladder Passer', -110, 230.5, 'J3#lp_u2305')],
+          /* the second passer's ladder: 225+ (DraftKings' Over 224.5) is on it, his main line having moved to 230.5 from
+             the 224.5 ESPN read (R5) */
+          player_pass_yds_alternate: [O('Over', 'Ladder Passer', -190, 224.5, 'J3#lp_alt225'), O('Over', 'Ladder Passer', 150, 249.5, 'J3#lp_alt250')] },
+        [g3.id]: { player_rush_yds: [O('Over', 'Third Back', -110, 50.5, 'J3#t3_o'), O('Under', 'Third Back', -110, 50.5, 'J3#t3_u')] } };
+      /* the stand-in's state: credits left; the mode of the next answers (by kind: events, odds, sports); a hold on the
+         event-odds answers, and one on the free events look-up's (R7); what it was asked */
+      const OA = { left: 212, used: 288, mode: {}, hold: null, holdEv: null, log: [] };
+      const H = last => ({ 'X-Requests-Remaining': String(OA.left), 'X-Requests-Used': String(OA.used), 'X-Requests-Last': String(last) });
+      const oddsJ3 = (s, o) => { const u = new URL(s), p = u.pathname.replace(/^\/v4\//, ''), kind = /\/odds$/.test(p) ? 'odds' : /\/events$/.test(p) ? 'events' : /^sports\/?$/.test(p) ? 'sports' : 'other';
+        OA.log.push({ kind, url: s, path: p, q: Object.fromEntries(u.searchParams), method: String((o && o.method) || 'GET').toUpperCase() });
+        const mode = OA.mode[kind]; if (mode) OA.mode[kind] = Array.isArray(mode) && mode.length > 1 ? mode.slice(1) : null;
+        const m0 = Array.isArray(mode) ? mode[0] : mode;
+        if (u.searchParams.get('apiKey') !== FAKE_KEY) return jsonR(401, { message: 'Invalid key', error_code: 'INVALID_KEY' }, H(0));
+        if (m0 === 'net') return Promise.reject(new TypeError('Failed to fetch'));
+        if (m0 && m0.code) return jsonR(m0.status, { message: m0.code, error_code: m0.code }, H(0));
+        if (kind === 'sports') return jsonR(200, [{ key: 'americanfootball_nfl' }], H(0));
+        if (kind === 'events') { const ansE = () => jsonR(200, [g1, g2, g3].map(g => ({ id: EV[g.id], sport_key: 'americanfootball_nfl', commence_time: '2099-12-31T18:00:00Z', home_team: NM_J3[g.h], away_team: NM_J3[g.a] })), H(0));
+          const he = OA.holdEv; return he ? he.p.then(ansE) : ansE(); }
+        if (kind === 'odds') { const ev = (/events\/([0-9a-f]{32})\/odds/.exec(p) || [])[1], gid = Object.keys(EV).find(k => EV[k] === ev), mk = (u.searchParams.get('markets') || '').split(',').filter(Boolean);
+          const ans = () => { if (m0 === 'empty') return jsonR(200, { id: ev, bookmakers: [] }, H(0));
+            if (m0 === 'invalid' && mk.length > 1) return jsonR(422, { message: 'Invalid markets', error_code: 'INVALID_MARKET' }, H(0));
+            if (m0 === 'invalid' && mk[0] !== 'player_pass_yds') return jsonR(422, { message: 'Invalid markets', error_code: 'INVALID_MARKET' }, H(0));
+            const have = mk.filter(k => DKM[gid] && DKM[gid][k]);
+            OA.left -= have.length; OA.used += have.length;
+            return jsonR(200, { id: ev, bookmakers: have.length ? [{ key: 'draftkings', title: 'DraftKings', sid: '34' + ev.slice(0, 6), markets: have.map(k => ({ key: k, last_update: '2099-12-30T00:00:00Z', outcomes: DKM[gid][k] })) }] : [] }, H(have.length)); };
+          const hd = OA.hold; return hd ? hd.p.then(ans) : ans(); }
+        return jsonR(404, {}, H(0)); };
+      const gateJ3 = () => { let go; const p = new Promise(r => { go = r; }); return { p, go }; };
+      /* this check's own reading of the rule before any pull: the market a leg asks for (MKT_J3; a rung, the ladder unless
+         DraftKings' main line for him as ESPN read it is k-0.5: ESPN_MAIN_J3, the stand-in's own lines), and a game's plan.
+         Once the base market is pulled with his rows, those rows say whether it has the rung while they stand (R5, R6) */
+      const MKT_J3 = { passing_yards: 'player_pass_yds', passing_tds: 'player_pass_tds', attempts: 'player_pass_attempts', completions: 'player_pass_completions', passing_interceptions: 'player_pass_interceptions',
+        rushing_yards: 'player_rush_yds', carries: 'player_rush_attempts', receptions: 'player_receptions', receiving_yards: 'player_reception_yds', any_td: 'player_anytime_td' };
+      const ESPN_MAIN_J3 = { 'j3-rb|rushing_yards': 64.5, 'j3-wr|receiving_yards': 59.5, 'j3-qb|passing_yards': 230.5, 'j3-lp|passing_yards': 224.5 };
+      const mktOf = l => { const b = MKT_J3[l.stat]; if (!b) return null; if (l.main || l.stat === 'any_td') return b; return ESPN_MAIN_J3[l.pid + '|' + l.stat] === +l.k - 0.5 ? b : b + '_alternate'; };
+      const pairsOf = legs => [...new Set(legs.filter(l => !['ml', 'ats', 'total'].includes(l.stat)).map(l => l.gid + '|' + mktOf(l)))];
+      /* the stand-in's two-sided main lines' median overround, and a fair chance by it */
+      const imp3 = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100);
+      const ovOf = gids => { const xs = []; for (const gid of gids) for (const [k, rows] of Object.entries(DKM[gid] || {})) { if (/_alternate$|anytime/.test(k)) continue;
+          const by = {}; for (const r of rows) (by[r.description + '|' + r.point] = by[r.description + '|' + r.point] || {})[r.name] = r.price;
+          for (const v of Object.values(by)) if (v.Over != null && v.Under != null) xs.push(imp3(v.Over) + imp3(v.Under)); }
+        xs.sort((a, b) => a - b); const n = xs.length; return n % 2 ? xs[n >> 1] : (xs[n / 2 - 1] + xs[n / 2]) / 2; };
+      const dec3 = a => a > 0 ? 1 + a / 100 : 1 + 100 / -a;
+      const tJ = t => new Date(t).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }) + ' ET';
+      const cr = n => n + ' credit' + (n === 1 ? '' : 's');
+      const KEY_SAY = 'The Odds API did not accept this device’s key: sign out and open your admin link again.';
+      /* a page of this section: the admin's, its builder holding legs, the stand-ins above */
+      const boot3 = legs => run({ url: URL_PB, pay: pin3, file: { updated: null, games: [], parlays: [] }, esp: espJ3, odds: oddsJ3, seed: x => x.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 20, saved: [], parlay: BJ(...legs) })) });
+      const how = 'Pull from DraftKings';
+      const mkCard = async (x, legs) => { if (legs) { x.w.eval(`S.parlay=${JSON.stringify(BJ(...legs))}; renderParlay()`); await wait(20); }
+        const c = x.d.getElementById('pcModal'); if (c && !c.hidden) { x.d.getElementById('pcClose').click(); await wait(10); }
+        const f = x.d.getElementById('pFinish'); if (f) { f.click(); await wait(30); await cardSettled(x.w); await wait(20); } return !!f; };
+      const btnOf = x => x.d.getElementById('pcPull'), msgOf = x => txt(x.d.getElementById('pcMsg')), noteOf = x => x.d.getElementById('pcDkNote');
+      const missTxt = (x, n) => txt(noteOf(x).querySelector(`[data-pc-dkmiss="${n}"]`));
+      const press = async (x, yes) => { const b = btnOf(x); if (b) b.click(); await wait(30); for (let i = 0; i < 200 && x.w.PARLAY_CARD.pullState().state === 'looking'; i++) await wait(10);
+        if (yes) { const y = x.d.getElementById(yes); if (y) y.click(); await wait(30); for (let i = 0; i < 400 && x.w.PARLAY_CARD.pullState().state === 'busy'; i++) await wait(10); await wait(20); } };
+      const all3 = x => { const o = {}; for (let i = 0; i < x.w.localStorage.length; i++) { const k = x.w.localStorage.key(i); o[k] = x.w.localStorage.getItem(k); }
+        if (o[ADMIN_KEY]) { const r = JSON.parse(o[ADMIN_KEY]); delete r.left; delete r.leftAt; o[ADMIN_KEY] = JSON.stringify(r); } delete o[PRESS_KEY]; return JSON.stringify(o); };
+      const keyIn = x => { const html = x.d.documentElement.outerHTML; return html.includes(FAKE_KEY) || [...x.d.querySelectorAll('*')].some(e => [...e.attributes].some(a => a.value.includes(FAKE_KEY))); };
+
+      /* ---- R1: one game's eight legs, then three games one leg each, again within five minutes, and the moved rule ---- */
+      const x = await boot3(S1), { w, d } = x, rec3 = stubDraw(w);
+      chk(!x.timedOut && w.HUB_ADMIN && w.HUB_ADMIN.on() && Object.keys(w.eval('S').parlay).length === S1.length, `${how}: the admin's page did not boot with the eight legs in its builder`);
+      await mkCard(x);
+      const q1 = w.PARLAY_CARD.quote(), L1 = q1 ? q1.legs : [], n1 = l => L1.findIndex(y => y.pid === l.pid && y.stat === l.stat) + 1;
+      const pairs1 = pairsOf(L1);
+      { const b = btnOf(x), slotOk = !!b && b.parentElement && b.parentElement.id === 'pcPullSlot' && b.parentElement.nextElementSibling === d.getElementById('pcDk');
+        chk(slotOk && b.tagName === 'BUTTON' && b.matches('.pc-actions .btn:not([hidden])') && txt(b) === `Pull from DraftKings · up to ${cr(pairs1.length)}` && b.getAttribute('data-pc-pull') === 'ready' && !b.hasAttribute('aria-disabled') && pairs1.length === 5,
+          `${how}: the admin's card has no Pull from DraftKings first in its row, ready, reading "up to ${cr(pairs1.length)}" (the distinct game and market pairs of its player legs): ` + (b ? b.outerHTML : 'none') + ' / ' + pairs1.join(' ')); }
+      /* before the pull, a player's leg says what Pull from DraftKings will do with it (the runner's main line, whose line
+         ESPN read: no id from ESPN; the touchdown with no line read) */
+      chk(missTxt(x, n1(LEG.rbMain)).endsWith(': its line was read from ESPN, which gives no DraftKings id for a player’s line: add it on DraftKings by hand (Pull from DraftKings puts it on the slip)')
+        && missTxt(x, n1(LEG.rbRung)).endsWith(': DraftKings had posted no line for him on this stat when its lines were last read from ESPN (Pull from DraftKings puts it on as his Over at DraftKings’ line)')
+        && missTxt(x, n1(LEG.te2)).endsWith(': DraftKings had posted no line for him on this stat when its lines were last read from ESPN (Pull from DraftKings puts it on as his anytime touchdown)')
+        && !noteOf(x).querySelector('p[data-pc-dkbyhand]'),
+        `${how}: before the pull, the admin's card does not say what Pull from DraftKings does with each player's leg, or says player legs go on by hand: ` + txt(noteOf(x)));
+      const before1 = all3(x), S1json = JSON.stringify(w.eval('S'));
+      /* (1) a press: one free events call, the question; Cancel; Escape */
+      const log0 = OA.log.length;
+      await press(x);
+      { const ev = OA.log.slice(log0), ask = d.getElementById('pcPullAsk'), Q = `Pull now: up to ${pairs1.length} of your ${OA.left} credits.`;
+        chk(ev.length === 1 && ev[0].kind === 'events' && ev[0].q.apiKey === FAKE_KEY && ev[0].method === 'GET' && ev[0].q.dateFormat === 'iso' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(ev[0].q.commenceTimeFrom || '') && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(ev[0].q.commenceTimeTo || ''),
+          `${how}: a press does not make exactly one free events call, a GET carrying the key, with the kickoffs' window: ` + JSON.stringify(ev.map(e => [e.kind, e.q])));
+        chk(!!ask && !ask.hidden && txt(ask.querySelector('#pcPullAskText')) === Q && !!d.getElementById('pcPullYes') && !!d.getElementById('pcPullNo') && d.activeElement === d.getElementById('pcPullYes') && w.PARLAY_CARD.pullState().state === 'confirm' && btnOf(x).getAttribute('aria-disabled') === 'true',
+          `${how}: the press does not ask inline "${Q}" (the credits the events call's header gives), with Pull and Cancel and the focus on Pull: ` + (ask ? ask.outerHTML : 'no question')); }
+      d.getElementById('pcPullNo').click(); await wait(20);
+      chk(OA.log.filter(e => e.kind === 'odds').length === 0 && d.getElementById('pcPullAsk').hidden && d.activeElement === btnOf(x) && w.PARLAY_CARD.pullState().state === 'idle' && msgOf(x) === '',
+        `${how}: Cancel spent something, or did not put the question away with the focus back on the button`);
+      await press(x); d.getElementById('pcPullYes').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
+      chk(!d.getElementById('pcModal').hidden && d.getElementById('pcPullAsk').hidden && w.PARLAY_CARD.pullState().state === 'idle' && d.activeElement === btnOf(x) && !OA.log.some(e => e.kind === 'odds'),
+        `${how}: Escape on the question did not answer it as Cancel (the card stays open, the focus on the button, nothing spent)`);
+      /* (2) the pull */
+      const left0 = OA.left, n0 = OA.log.length;
+      await press(x, 'pcPullYes');
+      const calls1 = OA.log.slice(n0), odds1 = calls1.filter(e => e.kind === 'odds');
+      { const wantMk = pairs1.map(p => p.split('|')[1]).sort().join(',');
+        chk(calls1.filter(e => e.kind === 'events').length === 1 && odds1.length === 1 && odds1[0].path === `sports/americanfootball_nfl/events/${EV[g2.id]}/odds` && odds1[0].method === 'GET'
+          && odds1[0].q.bookmakers === 'draftkings' && odds1[0].q.includeSids === 'true' && odds1[0].q.includeLinks === 'true' && odds1[0].q.oddsFormat === 'american' && odds1[0].q.apiKey === FAKE_KEY
+          && (odds1[0].q.markets || '').split(',').sort().join(',') === wantMk,
+          `${how}: the pull is not one event-odds GET for the one game, with the plan's markets (${wantMk}), DraftKings, its sids and links, american odds: ` + JSON.stringify(calls1.map(e => [e.kind, e.path, e.q.markets]))); }
+      const ps = w.PARLAY_CARD.pullState(), spent1 = left0 - OA.left;
+      chk(ps.state === 'done' && ps.spent === spent1 && spent1 === 4 && ps.left === OA.left && msgOf(x) === `Pulled DraftKings’ prices at ${tJ(ps.at)}: ${cr(spent1)} spent, ${OA.left} left.` && d.activeElement === btnOf(x),
+        `${how}: the pull's spend and balance are not the headers' (${spent1} spent, ${OA.left} left), or the card does not say so with the focus on the button: ` + JSON.stringify(ps) + ' / ' + msgOf(x));
+      /* (3) each leg, on the stand-in's own rows */
+      const ov1 = ovOf([g2.id]), pf = l => w.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(l) }, l));
+      const near = (a, b) => Math.abs(a - b) < 1e-12;
+      { const bad = [], want = {
+          wrRung: { sid: 'J3#wr_o595', ml: -110, fair: imp3(-110) / (imp3(-110) + imp3(-110)), est: false },
+          rbRung: { sid: 'J3#rb_alt30', ml: 120, fair: imp3(120) / ov1, est: true },
+          rbTd: { sid: 'J3#rb_td', ml: 140, fair: imp3(140) / ov1, est: true } };
+        for (const [k, v] of Object.entries(want)) { const P = pf(LEG[k]);
+          if (!P || P.sid !== v.sid || P.ml !== v.ml || !P.fair || !near(P.fair.p, v.fair) || P.fair.est !== v.est) bad.push(`${k}: ${JSON.stringify(P)}, not ${JSON.stringify(v)}`); }
+        { const P = pf(LEG.rbMain); if (!P || P.ml != null || !P.moved || P.moved.line !== 66.5 || P.moved.sidOver !== 'J3#rb_o665' || P.moved.over !== -115) bad.push('rbMain: ' + JSON.stringify(P)); }
+        { const P = pf(LEG.te2); if (!P || P.sid !== 'J3#te_td' || P.ml != null || P.swap !== 'anytime touchdown') bad.push('te2: ' + JSON.stringify(P)); }
+        chk(!bad.length, `${how}: what the pull has for a leg is not the stand-in's (the same bet with its price, sid and fair chance; the moved main line; 2+ touchdowns on the anytime touchdown): ` + bad.join(' | ')); }
+      const view = () => d.getElementById('pcView'), lis = () => [...view().querySelectorAll('.pc-legs > li')];
+      const q1b = w.PARLAY_CARD.quote(), at1 = (pf(LEG.wrRung) || {}).at, when1 = `when you pulled from DraftKings (${readTxt(at1)})`;
+      { const want = L1.map(l => { const P = { wrRung: -110, rbRung: 120, rbTd: 140 }[Object.keys(LEG).find(k => LEG[k] === S1.find(y => y.pid === l.pid && y.stat === l.stat))];
+          return P != null ? { ml: P, tag: 'BOOK' } : { ml: l.price, tag: 'EST.' }; });
+        const got = lis().map(li => ({ price: txt(li.querySelector('.pc-lp')) }));
+        const fmt = a => (a > 0 ? '+' + a : '−' + Math.abs(a));
+        const ok = got.length === want.length && want.every((v, i) => got[i].price === `${fmt(v.ml)}${v.tag === 'BOOK' ? 'book' : 'est.'}`);
+        const decWant = w.eval('parlayDec')(L1.map((l, i) => ({ leg: l, ml: want[i].ml })));
+        chk(ok && near(q1b.useDec, decWant) && txt(view().querySelector('.pc-price')) === w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))').replace('-', '−'),
+          `${how}: after the pull the card's legs are not at the stand-in's prices (book) and the rest at their own (est.), or its price is not the builder's own sums on them: ` + JSON.stringify({ got, want, dec: q1b.useDec, decWant }));
+        const rows = [...d.querySelectorAll('#parlayBody tr.legrow')].map(r => txt(r.querySelector('td:nth-of-type(5)') || r));
+        chk(rows.length === L1.length && L1.every((l, i) => want[i].tag === 'BOOK' ? / real$/.test(rows[i]) : / est\.$/.test(rows[i])) && txt(d.querySelector('#parlayBody .bigp .payout')).replace(/[$,]/g, '') === (20 * q1b.useDec).toFixed(2),
+          `${how}: the builder's rows do not say real on the pulled legs and est. on the rest, or its payout is not the card's: ` + rows.join(' | ')); }
+      /* the slip: the five legs with an id, in the card's order; the moved main line and 2+ touchdowns converted, said so with
+         DraftKings' price; the three without one, each with its words */
+      { const onSlip = L1.map(l => ({ 'j3-wr|receiving_yards': 'J3#wr_o595', 'j3-rb|rushing_yards': 'J3#rb_o665', 'j3-rb|receiving_yards': 'J3#rb_alt30', 'j3-rb|any_td': 'J3#rb_td', 'j3-te|any_td': 'J3#te_td' }[l.pid + '|' + l.stat] || null));
+        const ids = onSlip.filter(Boolean), dkA = d.getElementById('pcDk'), sw = n => txt(noteOf(x).querySelector(`[data-pc-dkswap="${n}"]`));
+        const wantMiss = { [n1(LEG.miMain)]: `${n1(LEG.miMain)}. Missing Man, Over 40.5 rushing yards: DraftKings had no rushing yards line for him ${when1}`,
+          [n1(LEG.teRec)]: `${n1(LEG.teRec)}. Tee End, Over 3.5 receptions: DraftKings had not posted receptions for this game ${when1}, so it cost no credit`,
+          [n1(LEG.csMain)]: `${n1(LEG.csMain)}. Chris Same, Over 45.5 receiving yards: DraftKings’ name for him could not be placed ${when1}: add it by hand` };
+        const missBad = Object.entries(wantMiss).filter(([n, t]) => missTxt(x, n) !== t).map(([n]) => missTxt(x, n));
+        chk(ids.length === 5 && dkA.getAttribute('href') === DKU(ids) && txt(dkA) === 'Open 5 of 8 legs in DraftKings' && !missBad.length && noteOf(x).querySelectorAll('[data-pc-dkmiss]').length === 3
+          && sw(n1(LEG.rbMain)) === `${n1(LEG.rbMain)}. Card Back, Over 64.5 rushing yards: goes on as Over 66.5 rushing yards, which DraftKings prices at −115` && sw(n1(LEG.te2)) === `${n1(LEG.te2)}. Tee End, 2+ touchdowns: goes on as anytime touchdown`
+          && txt(noteOf(x)).startsWith(`DraftKings’ lines as read ${readTxt(at1)}: Open in DraftKings opens 5 of the 8 legs`),
+          `${how}: after the pull the slip is not the five pulled sids in the card's order, the converted legs said with DraftKings' price, and the three without one each with its words: ` + [dkA.getAttribute('href'), txt(dkA), ...missBad, txt(noteOf(x))].join(' / '));
+        /* Share link's text: the same link; and the builder's rows the card's own plan */
+        const sh = []; Object.defineProperty(w.navigator, 'share', { value: async y => { sh.push(y); }, configurable: true });
+        d.getElementById('pcLink').click(); await wait(30); delete w.navigator.share;
+        const t = (sh[0] || {}).text || '';
+        chk(t.split('\n').includes(DKU(ids)) && t.includes(`On DraftKings’ slip at its own line: leg ${n1(LEG.rbMain)} as Over 66.5 rushing yards (-115)`) && !t.includes(FAKE_KEY),
+          `${how}: Share link's text does not carry the pulled link and the converted leg with DraftKings' price, or carries the key: ` + JSON.stringify(t));
+        const slips = [...d.querySelectorAll('#parlayBody .dkslip')].map(sl => txt(sl));
+        chk(slips.includes('On DraftKings as Over 66.5 rushing yards') && slips.includes('Not on DraftKings’ slip: no rushing yards line of his on DraftKings when pulled'),
+          `${how}: the builder's rows do not say what the slip does with the pulled legs: ` + slips.join(' | ')); }
+      /* nothing kept but in memory, and the key nowhere */
+      { d.getElementById('pcDownload').click(); await wait(80);
+        chk(all3(x) === before1 && JSON.stringify(w.eval('S')) === S1json && !/pulled|J3#/.test(JSON.stringify(w.eval('S'))) && JSON.parse(w.localStorage.getItem(ADMIN_KEY)).left === OA.left,
+          `${how}: the pull changed what the browser keeps (or S), beside the admin record's credits left, or that record's credits are not the header's`);
+        chk(!keyIn(x) && !rec3.texts.some(s => s.includes(FAKE_KEY)) && rec3.texts.length > 0, `${how}: the key is in the page, an attribute or the image`); }
+      /* (4) three games one leg each: one call, for the passer's game alone (the touchdown pulled under five minutes ago,
+         the money line's id the read's); the price a plain product; one link in the card's order */
+      { await mkCard(x, [LEG.rbTd, LEG.ml3, LEG.qbMain]);
+        const q2 = w.PARLAY_CARD.quote(), L2 = q2.legs, n2 = OA.log.length;
+        chk(txt(btnOf(x)) === 'Pull from DraftKings · up to 1 credit' && L2.map(l => l.name).join() === 'Card Back,Home Three,Quinn Passer', `${how}: three games one leg each, the touchdown pulled a moment ago: the label is not "up to 1 credit": ` + txt(btnOf(x)));
+        await press(x, 'pcPullYes');
+        const c2 = OA.log.slice(n2).filter(e => e.kind === 'odds'), q2b = w.PARLAY_CARD.quote(), dkA = d.getElementById('pcDk');
+        const prod = dec3(140) * dec3(-135) * dec3(-110);
+        chk(c2.length === 1 && c2[0].path.includes(EV[g1.id]) && c2[0].q.markets === 'player_pass_yds' && !OA.log.slice(n2).some(e => e.kind === 'odds' && e.path.includes(EV[g3.id])),
+          `${how}: three games one leg each: not one call, for the passer's game alone (none for the money line's game, none again for the touchdown's): ` + JSON.stringify(c2.map(e => [e.path, e.q.markets])));
+        chk(near(q2b.useDec, prod) && q2b.allBook && dkA.getAttribute('href') === DKU(['J3#rb_td', 'ESPN3#ml_h', 'J3#qb_o']) && txt(dkA) === 'Open in DraftKings',
+          `${how}: three games one leg each: the price is not the plain product of the three (${prod}), or the link is not the pulled sids and the read's id in the card's order: ` + JSON.stringify({ dec: q2b.useDec, href: dkA.getAttribute('href') }));
+        const P = pf(LEG.qbMain);
+        chk(!!P && P.ml === -110 && near(P.fair.p, 0.5) && P.fair.est === false, `${how}: the passer's two-sided main line's fair chance is not its two prices with the margin out: ` + JSON.stringify(P)); }
+      /* (5) again within five minutes: nothing to pull, nothing asked */
+      { await mkCard(x, S1); const n5 = OA.log.length, b = btnOf(x);
+        chk(b.getAttribute('data-pc-pull') === 'fresh' && /^Pulled (just now|[1-4] min ago)$/.test(txt(b)) && b.getAttribute('aria-disabled') === 'true', `${how}: the card opened again within five minutes does not say it was pulled just now: ` + b.outerHTML);
+        b.click(); await wait(30);
+        chk(OA.log.length === n5 && w.PARLAY_CARD.pullState().state === 'done', `${how}: a press on a card pulled a moment ago asked The Odds API something`); }
+      /* (6) the moved rule: an ESPN read of the runner's line at 68.5 five minutes after the pull leaves the pull standing;
+         one twenty minutes after takes the pulled ids off the slip, in the moved rule's words, and the passer's pulled
+         price with them */
+      { const blk = (mins, rb) => w.eval(`(()=>{ const W=ESPN_LIVE[${JSON.stringify(String(wk))}]; window.__j3was=window.__j3was||JSON.stringify(W[${JSON.stringify(g2.id)}]||null);
+          W[${JSON.stringify(g2.id)}]={at:new Date(${at1}+${mins}*60e3).toISOString(),lines:{'j3-rb':{rushing_yards:${rb}},'j3-wr':{receiving_yards:59.5}},rungs:{},td:[]};
+          if(ESPN_OUT[${JSON.stringify(g2.id)}]) ESPN_OUT[${JSON.stringify(g2.id)}].when=Date.now(); })()`);
+        blk(5, 68.5); await mkCard(x, S1);
+        const stand = pf(LEG.rbMain), sw = txt(noteOf(x).querySelector(`[data-pc-dkswap="${n1(LEG.rbMain)}"]`));
+        blk(20, 68.5); await mkCard(x, S1);
+        const gone = w.dkPulledFor(Object.assign({ key: keyJ(LEG.rbMain) }, LEG.rbMain)), dead = pf(LEG.rbMain), mv = missTxt(x, n1(LEG.rbMain)), wr = pf(LEG.wrRung);
+        w.eval(`ESPN_LIVE[${JSON.stringify(String(wk))}][${JSON.stringify(g2.id)}]=JSON.parse(window.__j3was); delete window.__j3was`);
+        chk(!!stand && !!stand.moved && /goes on as Over 66\.5 rushing yards/.test(sw), `${how}: an ESPN read of the runner's line at another number 5 minutes after the pull took the pull's id away: ` + JSON.stringify(stand) + ' / ' + sw);
+        chk(gone === null && !!dead && !!dead.dead && dead.dead.q === 68.5 && mv === `${n1(LEG.rbMain)}. Card Back, Over 64.5 rushing yards: DraftKings has moved his rushing yards line to 68.5 since you pulled from DraftKings (${readTxt(at1)}), and its slip drops a moved line: add it by hand at 68.5 (or pull again)` && !!wr && wr.sid === 'J3#wr_o595',
+          `${how}: an ESPN read 20 minutes after the pull, with his line at 68.5, does not take the runner's pulled id off the slip in the moved rule's words (or takes the receiver's, unmoved, too): ` + JSON.stringify({ gone, mv, wr })); }
+      d.getElementById('pcClose').click(); await wait(10);
+
+      /* ---- R2: a level of Suggested Parlays; waiting for the check; Open and Share wait while it pulls; signing out ---- */
+      { const y = await boot3([LEG.qbMain]), { w: w2, d: d2 } = y;
+        /* the level, made up: the runner's touchdown and the receiver's 60+ (DraftKings' Over 59.5), at their own prices */
+        const TL = [LEG.rbTd, LEG.wrRung].map(l => Object.assign({ key: keyJ(l) }, l)), TFAIR = { p: 0.2, est: true, miss: 0 };
+        const tdec = w2.eval('parlayDec')(TL.map(l => ({ leg: l, ml: l.price })));
+        w2.eval(`window.__spTierJ3=window.spTier; window.spTier=function(fid){ return fid==='J3U:safe'?{id:'safe',label:'Safe',n:2,floor:0,legs:${JSON.stringify(TL)},corr:0.3,dec:${tdec},fair:${JSON.stringify(TFAIR)},game:'made up'}:window.__spTierJ3(fid); };
+          window.__pbStaleJ3=window.pbStale; window.pbStale=function(){ return false; };`);
+        const fb = d2.createElement('button'); fb.setAttribute('data-pc-finish', 'sp|J3U:safe'); fb.textContent = 'Finish'; d2.getElementById('tab-parlay').appendChild(fb);
+        try {
+          espHold.gate = gateJ3(); fb.click(); await wait(40);
+          const b = d2.getElementById('pcPull'), nA = OA.log.length;
+          chk(!!b && b.getAttribute('data-pc-pull') === 'wait' && b.getAttribute('aria-disabled') === 'true', `${how}: while the card checks DraftKings' lines, Pull from DraftKings does not wait: ` + (b ? b.outerHTML : 'none'));
+          b.click(); await wait(20);
+          chk(OA.log.length === nA && txt(d2.getElementById('pcMsg')) === 'Checking DraftKings’ lines first…', `${how}: a press while the card checks asked The Odds API, or did not say it waits for the check`);
+          espHold.gate.go(); espHold.gate = null; await cardSettled(w2); await wait(30);
+          const pre = w2.PARLAY_CARD.current();
+          chk(btnOf(y).getAttribute('data-pc-pull') === 'ready' && pre.dec === tdec.toFixed(2) && pre.fair === (TFAIR.p * 100).toFixed(1) + '%', `${how}: the level's card is not on the level's own price and fair chance before a pull: ` + JSON.stringify({ dec: pre.dec, fair: pre.fair }));
+          await press(y); OA.hold = gateJ3(); d2.getElementById('pcPullYes').click(); await wait(40);
+          const dkA = d2.getElementById('pcDk'), link = d2.getElementById('pcLink'), sh = [];
+          Object.defineProperty(w2.navigator, 'share', { value: async z => { sh.push(z); }, configurable: true });
+          link.click(); await wait(20);
+          chk(w2.PARLAY_CARD.pullState().state === 'busy' && dkA.getAttribute('aria-disabled') === 'true' && dkA.getAttribute('aria-busy') === 'true' && !dkA.hasAttribute('href') && txt(dkA) === 'Pulling DraftKings’ prices…'
+            && link.getAttribute('aria-disabled') === 'true' && !sh.length && txt(d2.getElementById('pcMsg')) === 'Pulling DraftKings’ prices first…' && btnOf(y).getAttribute('aria-busy') === 'true'
+            && txt(noteOf(y)) === 'Pulling DraftKings’ prices for this parlay’s player legs…',
+            `${how}: while it pulls, Open in DraftKings and Share link do not wait (their words, no address, busy), or the note does not say it is pulling: ` + dkA.outerHTML + ' / ' + txt(noteOf(y)));
+          OA.hold.go(); OA.hold = null; for (let i = 0; i < 300 && w2.PARLAY_CARD.pullState().state === 'busy'; i++) await wait(10); await wait(30);
+          delete w2.navigator.share;
+          const m2 = w2.PARLAY_CARD.current(), Lp = m2.dkLegs, decP = w2.eval('parlayDec')(Lp.map(l => ({ leg: l, ml: l.stat === 'any_td' ? 140 : -110 })));
+          const fairP = w2.eval('parlayFair')(Lp.map(l => Object.assign({}, l)));
+          chk(m2.from && m2.from.id === 'J3U:safe' && m2.dec === decP.toFixed(2) && m2.priceNote === 'book price' && !!fairP && m2.fair === (fairP.p * 100).toFixed(1) + '%' && m2.fair !== pre.fair
+            && txt(d2.querySelector('#pcView .pc-kick')) === 'Safe parlay · made up' && dkA.getAttribute('href') === DKU(Lp.map(l => l.stat === 'any_td' ? 'J3#rb_td' : 'J3#wr_o595')),
+            `${how}: a level of Suggested Parlays, pulled, is not priced again by parlayDec on DraftKings' prices (a book price), its fair chance worked again, on the pulled sids: ` + JSON.stringify({ dec: m2.dec, decP, fair: m2.fair, note: m2.priceNote, href: dkA.getAttribute('href') }));
+          d2.getElementById('pcClose').click(); await wait(10);
+          /* (8) signing out while a pull runs: the passer's game, held */
+          await mkCard(y); await press(y); OA.hold = gateJ3(); d2.getElementById('pcPullYes').click(); await wait(30);
+          w2.HUB_ADMIN.signOut(); await wait(20);
+          const gone = !d2.getElementById('pcPull') && d2.getElementById('pcPullAsk').hidden && !d2.getElementById('pcPullSlot').children.length;
+          OA.hold.go(); OA.hold = null; await wait(80);
+          /* and the held answer, landing after the sign-out, keeps nothing (pullState's games: what the pull holds) */
+          chk(gone && !w2.HUB_ADMIN.on() && w2.PARLAY_CARD.pullState().state === 'idle' && w2.PARLAY_CARD.pullState().games.length === 0 && w2.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(LEG.qbMain) }, LEG.qbMain)) === null && w2.dkPulledFor(Object.assign({ key: keyJ(LEG.rbTd) }, LEG.rbTd)) === null
+            && !d2.getElementById('pcPull') && w2.localStorage.getItem(ADMIN_KEY) === null,
+            `${how}: signing out while a pull runs does not take the button, the question and everything pulled away, or the answer landing after it is kept: ` + JSON.stringify(w2.PARLAY_CARD.pullState()));
+        } finally { w2.eval('if(window.__spTierJ3){ window.spTier=window.__spTierJ3; delete window.__spTierJ3; } if(window.__pbStaleJ3){ window.pbStale=window.__pbStaleJ3; delete window.__pbStaleJ3; }'); OA.hold = null; espHold.gate = null; } }
+
+      /* ---- R3, R4: every error, the prices as they were ---- */
+      { const z = await boot3([LEG.qbMain]), { w: w3, d: d3 } = z;
+        const priceOf = () => txt(d3.querySelector('#pcView .pc-price')), unpulled = () => w3.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(LEG.qbMain) }, LEG.qbMain)) === null;
+        await mkCard(z); const p0 = priceOf();
+        for (const [what, set, say, paid, after] of [
+          ['429 on the odds', () => { OA.mode.odds = { status: 429, code: 'EXCEEDED_FREQ_LIMIT' }; }, 'The Odds API is busy: try again in a few seconds.', 1, null],
+          ['out of credits', () => { OA.mode.odds = { status: 401, code: 'OUT_OF_USAGE_CREDITS' }; }, 'Out of credits until your plan resets (0 left).', 1, null],
+          ['a network failure before any paid call', () => { OA.mode.events = 'net'; }, 'Could not reach The Odds API (no credit spent).', 0, null],
+          ['a network failure after the paid call', () => { OA.mode.odds = 'net'; }, `Could not reach The Odds API: it may have spent credits (${OA.left} left).`, 1, 'sports'],
+          ['401 INVALID_KEY on the odds', () => { OA.mode.odds = { status: 401, code: 'INVALID_KEY' }; }, KEY_SAY, 1, null]]) {
+          const n = OA.log.length; set();
+          await press(z); const askd = !d3.getElementById('pcPullAsk').hidden; if (askd) { d3.getElementById('pcPullYes').click(); await wait(30); }
+          for (let i = 0; i < 300 && ['busy', 'looking'].includes(w3.PARLAY_CARD.pullState().state); i++) await wait(10); await wait(30);
+          const L = OA.log.slice(n);
+          chk(L.filter(e => e.kind === 'odds').length === paid && L.filter(e => e.kind === 'events').length === 1 && L.filter(e => e.kind === 'sports').length === (after === 'sports' ? 1 : 0) && txt(d3.getElementById('pcMsg')) === say && priceOf() === p0 && unpulled() && w3.PARLAY_CARD.pullState().state === 'failed',
+            `${how}: ${what}: not ${paid} paid call${paid === 1 ? '' : 's'} (never tried again)${after ? ' and a free balance check' : ''}, or the card does not say "${say}" with its prices as they were: ` + JSON.stringify({ calls: L.map(e => e.kind), msg: txt(d3.getElementById('pcMsg')), price: priceOf() }));
+          OA.mode = {}; }
+        chk(JSON.parse(w3.localStorage.getItem(ADMIN_KEY) || '{}').ok === false, `${how}: a 401 INVALID_KEY did not mark the admin record refused`);
+        { const n = OA.log.length; await press(z);
+          chk(OA.log.length === n && txt(d3.getElementById('pcMsg')) === KEY_SAY, `${how}: once the key is refused a press still asks The Odds API, or does not say the key was refused`); } }
+      { const z = await boot3([LEG.qbMain, LEG.qbRush]), { w: w4, d: d4 } = z;
+        const pf4 = l => w4.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(l) }, l));
+        /* 422 INVALID_MARKET: asked again a market at a time; the passer's yards priced, his carries' market not posted */
+        await mkCard(z); { const n = OA.log.length; OA.mode.odds = ['invalid', 'invalid', 'invalid'];
+          await press(z, 'pcPullYes'); OA.mode = {};
+          const L = OA.log.slice(n).filter(e => e.kind === 'odds');
+          chk(L.length === 3 && L[0].q.markets.split(',').length === 2 && L.slice(1).map(e => e.q.markets).sort().join() === 'player_pass_yds,player_rush_yds' && !!pf4(LEG.qbMain) && pf4(LEG.qbMain).ml === -110
+            && (pf4(LEG.qbRush) || {}).whyOf === 'posted' && w4.PARLAY_CARD.pullState().state === 'done',
+            `${how}: 422 INVALID_MARKET is not asked again a market at a time, or what each answered is not kept: ` + JSON.stringify({ calls: L.map(e => e.q.markets), qb: pf4(LEG.qbMain), rush: pf4(LEG.qbRush) })); }
+        /* DraftKings posting nothing: no credit spent, said so, every market not posted */
+        await mkCard(z, [LEG.rbTd, LEG.wrRung]); { const p0 = txt(d4.querySelector('#pcView .pc-price')), n = OA.log.length; OA.mode.odds = 'empty';
+          await press(z, 'pcPullYes'); OA.mode = {};
+          chk(OA.log.slice(n).filter(e => e.kind === 'odds').length === 1 && txt(d4.getElementById('pcMsg')) === 'DraftKings has not posted these yet (no credit spent).' && txt(d4.querySelector('#pcView .pc-price')) === p0
+            && (pf4(LEG.rbTd) || {}).whyOf === 'posted' && txt(noteOf(z)).includes('Card Back, Scores a touchdown: DraftKings had not posted anytime touchdowns for this game when you pulled from DraftKings'),
+            `${how}: DraftKings posting nothing is not said to have cost nothing, or the prices moved, or the legs do not say it was not posted: ` + txt(d4.getElementById('pcMsg')) + ' / ' + txt(noteOf(z))); }
+        /* a game kicking off between the events list and its odds: no paid call for it, said so, its prices as they were */
+        await mkCard(z, [LEG.t3Main]); { const n = OA.log.length, p0 = txt(d4.querySelector('#pcView .pc-price'));
+          await press(z); const askd = !d4.getElementById('pcPullAsk').hidden;
+          w4.eval(`(()=>{ const g=S.sched.find(x=>x.id===${JSON.stringify(g3.id)}); g.d='2020-01-05'; g.t='13:00'; })()`);
+          if (askd) { d4.getElementById('pcPullYes').click(); await wait(30); }
+          for (let i = 0; i < 300 && ['busy', 'looking'].includes(w4.PARLAY_CARD.pullState().state); i++) await wait(10); await wait(30);
+          const said = txt(d4.getElementById('pcMsg'));
+          chk(askd && OA.log.slice(n).filter(e => e.kind === 'events').length === 1 && !OA.log.slice(n).some(e => e.kind === 'odds') && said === `${g3.a} at ${g3.h} kicked off before it was pulled.` && txt(d4.querySelector('#pcView .pc-price')) === p0,
+            `${how}: a game kicking off between the events list and its odds was asked for, or the card does not say it kicked off before it was pulled: ` + said); } }
+      /* ---- R5: a rung asked of the base market on ESPN's main line, which DraftKings has moved since (the review of 21
+         October 2026). ESPN read the second passer's main line at 224.5, so 225+ (DraftKings' Over 224.5) is asked of the
+         base market; DraftKings' main line there is 230.5 now, and 225+ is on its ladder. The first pull: one credit, the
+         leg on no slip, saying his main line moved and to pull again for his ladder (never "DraftKings lists no 225+",
+         never Over 230.5 or another bet in its place); the plan then asks the ladder, even after a newer ESPN read still
+         at 224.5 (ESPN trailing), while 231+ (DraftKings' Over 230.5, on the base answer) asks nothing more; the re-pull:
+         one credit, the ladder alone, 225+ on the slip by its own sid at its own price. (R6: an ESPN read more than 15
+         minutes after the base pull, at another number, is DraftKings having moved again: the pulled main line no
+         longer decides) ---- */
+      { const z = await boot3([LEG.lpRung]), { w: w5, d: d5 } = z;
+        const pf5 = l => w5.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(l) }, l));
+        const mk5 = legs => { const p = w5.PARLAY_CARD.pullPlan(legs); return p.games.flatMap(x => x.markets).join(); };
+        const espn5 = (atMs, q) => w5.eval(`(()=>{ const W=ESPN_LIVE[${JSON.stringify(String(wk))}]; window.__j3r5=window.__j3r5||JSON.stringify(W[${JSON.stringify(g1.id)}]||null);
+          W[${JSON.stringify(g1.id)}]={at:new Date(${atMs}).toISOString(),lines:{'j3-qb':{passing_yards:230.5},'j3-lp':{passing_yards:${q}}},rungs:{},td:[]};
+          if(ESPN_OUT[${JSON.stringify(g1.id)}]) ESPN_OUT[${JSON.stringify(g1.id)}].when=Date.now(); })()`);
+        const href5 = () => d5.getElementById('pcDk').getAttribute('href') || '', px5 = () => txt(d5.querySelector('#pcView .pc-legs > li .pc-lp'));
+        await mkCard(z);
+        chk(mk5([LEG.lpRung]) === 'player_pass_yds' && txt(btnOf(z)) === 'Pull from DraftKings · up to 1 credit',
+          `${how}: before any pull, a rung whose k-0.5 is his main line as ESPN read it is not asked of the base market alone: ` + mk5([LEG.lpRung]) + ' / ' + txt(btnOf(z)));
+        const n1r = OA.log.length, left1 = OA.left;
+        await press(z, 'pcPullYes');
+        const c1 = OA.log.slice(n1r).filter(e => e.kind === 'odds'), P1 = pf5(LEG.lpRung) || {}, at5 = P1.at, px1 = px5();
+        const why1 = `1. Ladder Passer, 225+ passing yards: DraftKings had his passing yards line at 230.5 when you pulled from DraftKings (${readTxt(at5)}), so 225+ is on its ladder, which that pull did not ask: pull again for his ladder`;
+        const slip1 = [...d5.querySelectorAll('#parlayBody .dkslip')].map(sl => txt(sl));
+        chk(c1.length === 1 && c1[0].q.markets === 'player_pass_yds' && left1 - OA.left === 1 && P1.whyOf === 'ladder' && P1.main === 230.5 && !P1.sid && !P1.near && !P1.moved
+          && px5() === '−180est.' && !href5().includes('J3#') && !noteOf(z).querySelector('[data-pc-dkswap]') && !/lists no/.test(txt(noteOf(z)))
+          && missTxt(z, 1) === why1 && slip1.includes('Not on DraftKings’ slip: his main line at 230.5 when pulled; pull again for his ladder'),
+          `${how}: a rung asked of the base market, whose main line DraftKings has moved, is not one credit, on no slip, saying his main line moved and to pull again for his ladder: ` + JSON.stringify({ calls: c1.map(e => e.q.markets), spent: left1 - OA.left, P1, px1, href: href5(), miss: missTxt(z, 1), slip1 }));
+        /* the next plan: the ladder for 225+ (whatever a newer, trailing ESPN read says), nothing for 231+ (DraftKings' Over
+           230.5, on the base answer already pulled) */
+        const plan1 = mk5([LEG.lpRung]), plan1b = mk5([LEG.lpRung2]);
+        espn5(at5 + 60e3, 224.5); await mkCard(z);
+        const plan2 = mk5([LEG.lpRung]), plan2b = mk5([LEG.lpRung2]), lbl2 = txt(btnOf(z));
+        chk(plan1 === 'player_pass_yds_alternate' && plan2 === 'player_pass_yds_alternate' && plan1b === '' && plan2b === '' && lbl2 === 'Pull from DraftKings · up to 1 credit',
+          `${how}: after the base answer had no 225+, the plan does not ask his ladder for it (and nothing more for 231+, which the base answer holds), before and after a newer ESPN read still at 224.5: ` + JSON.stringify({ plan1, plan1b, plan2, plan2b, lbl2 }));
+        /* the re-pull: the ladder alone, one credit, 225+ on the slip by its own sid at its own price */
+        const n2r = OA.log.length, left2 = OA.left;
+        await press(z, 'pcPullYes');
+        const c2 = OA.log.slice(n2r).filter(e => e.kind === 'odds'), P2 = pf5(LEG.lpRung) || {}, q5 = w5.PARLAY_CARD.quote();
+        chk(c2.length === 1 && c2[0].q.markets === 'player_pass_yds_alternate' && left2 - OA.left === 1 && P2.sid === 'J3#lp_alt225' && P2.ml === -190 && P2.line === 224.5
+          && href5() === DKU(['J3#lp_alt225']) && txt(d5.getElementById('pcDk')) === 'Open in DraftKings' && px5() === '−190book' && near(q5.useDec, dec3(-190)) && !noteOf(z).querySelector('[data-pc-dkswap]'),
+          `${how}: the re-pull does not ask the ladder alone for one credit and put 225+ on the slip by its own sid at its own price: ` + JSON.stringify({ calls: c2.map(e => e.q.markets), spent: left2 - OA.left, P2, href: href5(), px: px5(), dk: txt(d5.getElementById('pcDk')), dec: q5.useDec }));
+        w5.eval(`ESPN_LIVE[${JSON.stringify(String(wk))}][${JSON.stringify(g1.id)}]=JSON.parse(window.__j3r5); delete window.__j3r5`);
+        d5.getElementById('pcClose').click(); await wait(10);
+        /* ---- R5b: the base answer holding his Over 230.5 alone (no main line of two sides to read): on no slip, saying
+           his Over 224.5 was not on the main line and to pull again for his ladder, and the next plan keeps that promise,
+           asking the ladder (never the base market again, on ESPN's 224.5) ---- */
+        { const keep = DKM[g1.id].player_pass_yds;
+          try {
+            DKM[g1.id].player_pass_yds = keep.filter(o => !(o.description === 'Ladder Passer' && o.name === 'Under'));
+            const zb = await boot3([LEG.lpRung]), db = zb.d;
+            await mkCard(zb);
+            const nb = OA.log.length; await press(zb, 'pcPullYes');
+            const cb = OA.log.slice(nb).filter(e => e.kind === 'odds'), Pb = zb.w.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(LEG.lpRung) }, LEG.lpRung)) || {};
+            const whyB = `1. Ladder Passer, 225+ passing yards: DraftKings had no Over 224.5 passing yards of his on its main line when you pulled from DraftKings (${readTxt(Pb.at)}), and that pull did not ask his ladder: pull again for it`;
+            const planB = zb.w.PARLAY_CARD.pullPlan([LEG.lpRung]).games.flatMap(x => x.markets).join(), hrefB = db.getElementById('pcDk').getAttribute('href') || '';
+            chk(cb.length === 1 && cb[0].q.markets === 'player_pass_yds' && Pb.whyOf === 'ladder' && Pb.main === null && !Pb.sid && !Pb.near && !hrefB.includes('J3#') && missTxt(zb, 1) === whyB
+              && [...db.querySelectorAll('#parlayBody .dkslip')].some(sl => txt(sl) === 'Not on DraftKings’ slip: not on his main line when pulled; pull again for his ladder') && planB === 'player_pass_yds_alternate',
+              `${how}: a rung the base market had only his Over 230.5 for is on a slip, or not said to be off his main line with his ladder to pull again, or the next plan does not ask that ladder: ` + JSON.stringify({ calls: cb.map(e => e.q.markets), Pb, miss: missTxt(zb, 1), href: hrefB, planB }));
+            db.getElementById('pcClose').click(); await wait(10);
+          } finally { DKM[g1.id].player_pass_yds = keep; } }
+        /* ---- R6: the pulled main line decides a rung's market only while it stands by the moved rule. The base market pulled
+           30 minutes ago (the page's clock held back for the pull), after an ESPN read at 224.5: 225+ the ladder, 231+
+           the base market, with an ESPN read now at the pull's own 230.5; with one now at 224.5 (more than 15 minutes
+           after the pull, at another number: DraftKings has moved), the base market again for both, 225+ and 231+, since
+           pullFor's moved verdict reads that base pull and only a fresh one clears it (the second review of 21 October
+           2026: until then 231+ asked the ladder, on that read's 224.5, and stayed off the slip; R6b) ---- */
+        const z6 = await boot3([LEG.lpRung]), w6 = z6.w, real6 = w6.Date.now;
+        const mk6 = l => w6.PARLAY_CARD.pullPlan([l]).games.flatMap(x => x.markets).join();
+        const espn6 = (atMs, q) => w6.eval(`(()=>{ const W=ESPN_LIVE[${JSON.stringify(String(wk))}];
+          W[${JSON.stringify(g1.id)}]={at:new Date(${atMs}).toISOString(),lines:{'j3-qb':{passing_yards:230.5},'j3-lp':{passing_yards:${q}}},rungs:{},td:[]};
+          if(ESPN_OUT[${JSON.stringify(g1.id)}]) ESPN_OUT[${JSON.stringify(g1.id)}].when=Date.now(); })()`);
+        try {
+          await mkCard(z6); const t6 = real6.call(w6.Date);
+          espn6(t6 - 31 * 60e3, 224.5); w6.Date.now = () => real6.call(w6.Date) - 30 * 60e3;
+          await press(z6, 'pcPullYes');
+          w6.Date.now = real6;
+          const P6 = w6.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(LEG.lpRung) }, LEG.lpRung)) || {};
+          espn6(real6.call(w6.Date), 230.5); const a225 = mk6(LEG.lpRung), a231 = mk6(LEG.lpRung2);
+          espn6(real6.call(w6.Date), 224.5); const b225 = mk6(LEG.lpRung), b231 = mk6(LEG.lpRung2);
+          chk(P6.whyOf === 'ladder' && real6.call(w6.Date) - P6.at > 25 * 60e3 && a225 === 'player_pass_yds_alternate' && a231 === 'player_pass_yds' && b225 === 'player_pass_yds' && b231 === 'player_pass_yds',
+            `${how}: a rung's market does not follow the base answer while it stands, or is not the base market again once a read more than 15 minutes after the pull takes it for moved: ` + JSON.stringify({ why: P6.whyOf, age: real6.call(w6.Date) - P6.at, a225, a231, b225, b231 }));
+          w6.document.getElementById('pcClose').click(); await wait(10);
+        } finally { w6.Date.now = real6; }
+        /* ---- R6b: a rung the moved rule took off the slip comes back on it, for a bounded spend (the second review of 21
+           October 2026). The moved rule judges a pulled leg against the base market's pull, so a re-pull of his ladder
+           alone left the leg dead, a credit spent on every press for nothing: the rung asks the base market again, then
+           his ladder where the fresh answer lacks it and no ladder row of his already pulled has it. On the page's clock
+           held back, each press's "up to 1 credit" what it spent (the stand-in's headers), and its one call the market
+           the plan named:
+           (a) 231+ (DraftKings' Over 230.5, his main line): the base pull puts it on the slip at its own sid; an ESPN read
+               20 minutes after it has his main line at 227.5 (dead, "or pull again"), DraftKings' main line now 227.5 and
+               230.5 on his ladder; the plan asks the base market (Pull again), whose fresh answer stands and has no Over
+               230.5: off the slip, waiting on his ladder; the plan asks the ladder; on the slip at the ladder's own sid
+               and price. Two credits from dead to the slip.
+           (b) 225+ (DraftKings' Over 224.5, on his ladder after a base pull at 230.5), dead by a read at 227.5 30 minutes
+               after the base pull: the plan asks the base market, and its fresh answer puts the leg back on the slip at the
+               ladder row already pulled. One credit, and the ladder never asked again ---- */
+        { const keep6 = { b: DKM[g1.id].player_pass_yds, a: DKM[g1.id].player_pass_yds_alternate };
+          const moved6 = () => { DKM[g1.id].player_pass_yds = keep6.b.filter(o => o.description !== 'Ladder Passer').concat([O('Over', 'Ladder Passer', -110, 227.5, 'J3#lp_o2275'), O('Under', 'Ladder Passer', -110, 227.5, 'J3#lp_u2275')]);
+            DKM[g1.id].player_pass_yds_alternate = [O('Over', 'Ladder Passer', -120, 230.5, 'J3#lp_alt231')].concat(keep6.a); };
+          const sb = [];
+          try {
+            for (const [tag, leg] of [['a', LEG.lpRung2], ['b', LEG.lpRung]]) {
+              DKM[g1.id].player_pass_yds = keep6.b; DKM[g1.id].player_pass_yds_alternate = keep6.a;
+              const zz = await boot3([leg]), wz = zz.w, dz = zz.d, realz = wz.Date.now;
+              const clk = mins => { wz.Date.now = () => realz.call(wz.Date) - mins * 60e3; }, ago = mins => realz.call(wz.Date) - mins * 60e3;
+              const espz = (atMs, q) => wz.eval(`(()=>{ const W=ESPN_LIVE[${JSON.stringify(String(wk))}];
+                W[${JSON.stringify(g1.id)}]={at:new Date(${atMs}).toISOString(),lines:{'j3-qb':{passing_yards:230.5},'j3-lp':{passing_yards:${q}}},rungs:{},td:[]};
+                if(ESPN_OUT[${JSON.stringify(g1.id)}]) ESPN_OUT[${JSON.stringify(g1.id)}].when=Date.now(); })()`);
+              const pfz = () => wz.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(leg) }, leg)) || {}, mkz = () => wz.PARLAY_CARD.pullPlan([leg]).games.flatMap(x => x.markets).join();
+              const hrefz = () => dz.getElementById('pcDk').getAttribute('href') || '', pxz = () => txt(dz.querySelector('#pcView .pc-legs > li .pc-lp'));
+              /* a press at mins ago with the ESPN read (at, q) in place: the plan and label before it, the calls and spend of it */
+              const step = async (mins, at, q) => { clk(mins); espz(at, q); await mkCard(zz);
+                const plan = mkz(), label = txt(btnOf(zz)), n = OA.log.length, left = OA.left;
+                await press(zz, 'pcPullYes');
+                const calls = OA.log.slice(n).filter(e => e.kind === 'odds').map(e => e.q.markets), ps = wz.PARLAY_CARD.pullState();
+                return { plan, label, calls, spent: left - OA.left, said: ps.spent, state: ps.state }; };
+              const one = (s, mk) => s.plan === mk && s.calls.length === 1 && s.calls[0] === mk && s.spent === 1 && s.said === 1 && s.state === 'done' && /· up to 1 credit$/.test(s.label);
+              try {
+                await mkCard(zz);
+                if (tag === 'a') {
+                  const s1 = await step(60, ago(61), 230.5), P1 = pfz();
+                  const ok1 = one(s1, 'player_pass_yds') && P1.sid === 'J3#lp_o2305' && hrefz() === DKU(['J3#lp_o2305']);
+                  /* dead: a read 20 minutes after the pull at 227.5; DraftKings has moved his main line to 227.5 */
+                  clk(40); espz(ago(40), 227.5); moved6(); await mkCard(zz);
+                  const Pd = pfz(), deadTxt = missTxt(zz, 1), planD = mkz(), labelD = txt(btnOf(zz));
+                  const okD = !!Pd.dead && Pd.dead.q === 227.5 && wz.dkPulledFor(Object.assign({ key: keyJ(leg) }, leg)) === null && !hrefz().includes('J3#')
+                    && deadTxt === `1. Ladder Passer, 231+ passing yards: DraftKings has moved his passing yards line to 227.5 since you pulled from DraftKings (${readTxt(P1.at)}), and its slip drops a moved line: add 231+ passing yards by hand (DraftKings’ Over 227.5 is another bet) (or pull again)`
+                    && planD === 'player_pass_yds' && labelD === 'Pull again · up to 1 credit';
+                  const s2 = await step(30, ago(40), 227.5), P2 = pfz();
+                  const ok2 = one(s2, 'player_pass_yds') && P2.whyOf === 'ladder' && P2.main === 227.5 && !P2.dead && !P2.sid && !hrefz().includes('J3#') && mkz() === 'player_pass_yds_alternate'
+                    && missTxt(zz, 1) === `1. Ladder Passer, 231+ passing yards: DraftKings had his passing yards line at 227.5 when you pulled from DraftKings (${readTxt(P2.at)}), so 231+ is on its ladder, which that pull did not ask: pull again for his ladder`;
+                  const s3 = await step(20, ago(40), 227.5), P3 = pfz(), q3 = wz.PARLAY_CARD.quote();
+                  const ok3 = one(s3, 'player_pass_yds_alternate') && P3.sid === 'J3#lp_alt231' && P3.ml === -120 && P3.line === 230.5 && !P3.dead && hrefz() === DKU(['J3#lp_alt231'])
+                    && txt(dz.getElementById('pcDk')) === 'Open in DraftKings' && pxz() === '−120book' && near(q3.useDec, dec3(-120));
+                  sb.push(ok1 && okD && ok2 && ok3 && s2.spent + s3.spent === 2 ? null : `(a) 231+: ` + JSON.stringify({ s1, P1, okD, Pd, deadTxt, planD, labelD, s2, P2, s3, P3, href: hrefz(), px: pxz() }));
+                } else {
+                  const s1 = await step(60, ago(61), 224.5), P1 = pfz();
+                  const s2 = await step(50, ago(61), 224.5), P2 = pfz();
+                  const ok12 = one(s1, 'player_pass_yds') && P1.whyOf === 'ladder' && one(s2, 'player_pass_yds_alternate') && P2.sid === 'J3#lp_alt225' && hrefz() === DKU(['J3#lp_alt225']);
+                  /* dead: a read 30 minutes after the base pull at 227.5 */
+                  clk(30); espz(ago(30), 227.5); moved6(); await mkCard(zz);
+                  const Pd = pfz(), planD = mkz(), labelD = txt(btnOf(zz));
+                  const okD = !!Pd.dead && Pd.dead.q === 227.5 && !hrefz().includes('J3#') && /\(or pull again\)$/.test(missTxt(zz, 1)) && planD === 'player_pass_yds' && labelD === 'Pull again · up to 1 credit';
+                  const s3 = await step(20, ago(30), 227.5), P3 = pfz(), q3 = wz.PARLAY_CARD.quote();
+                  const ok3 = one(s3, 'player_pass_yds') && P3.sid === 'J3#lp_alt225' && P3.ml === -190 && P3.line === 224.5 && !P3.dead && hrefz() === DKU(['J3#lp_alt225'])
+                    && txt(dz.getElementById('pcDk')) === 'Open in DraftKings' && pxz() === '−190book' && near(q3.useDec, dec3(-190));
+                  sb.push(ok12 && okD && ok3 ? null : `(b) 225+: ` + JSON.stringify({ s1, P1, s2, P2, okD, Pd, planD, labelD, s3, P3, href: hrefz(), px: pxz() }));
+                }
+                dz.getElementById('pcClose').click(); await wait(10);
+              } finally { wz.Date.now = realz; wz.close(); } }
+          } finally { DKM[g1.id].player_pass_yds = keep6.b; DKM[g1.id].player_pass_yds_alternate = keep6.a; }
+          chk(sb.length === 2 && sb.every(x => x === null),
+            `${how}: a rung the moved rule took off the slip does not come back on it at a real sid by a re-pull of the base market (then its ladder where needed), each press one credit as its label said: ` + sb.filter(Boolean).join(' | ')); }
+        /* ---- R7: the card closed and opened again while the free look-up is out (the review of 21 October 2026): the new
+           card is drawn waiting while it runs, and once it answers (for the card it was pressed on, now gone) the new card
+           is drawn again, Pull ready and Open in DraftKings with its address, so a press looks up and asks again ---- */
+        const z7 = await boot3([LEG.qbMain]), { w: w7, d: d7 } = z7;
+        try {
+          await mkCard(z7);
+          OA.holdEv = gateJ3(); btnOf(z7).click(); await wait(30);
+          const st0 = w7.PARLAY_CARD.pullState().state;
+          await mkCard(z7);
+          const dk7 = () => d7.getElementById('pcDk');
+          const busy0 = btnOf(z7).getAttribute('data-pc-pull') === 'busy' && !dk7().hasAttribute('href') && dk7().getAttribute('aria-busy') === 'true';
+          const nE = OA.log.length; OA.holdEv.go(); OA.holdEv = null;
+          for (let i = 0; i < 200 && w7.PARLAY_CARD.pullState().state === 'looking'; i++) await wait(10); await wait(30);
+          const b7 = btnOf(z7);
+          chk(st0 === 'looking' && busy0 && w7.PARLAY_CARD.pullState().state === 'idle' && b7.getAttribute('data-pc-pull') === 'ready' && !b7.hasAttribute('aria-busy') && txt(b7) === 'Pull from DraftKings · up to 1 credit'
+            && !!dk7().getAttribute('href') && !dk7().hasAttribute('aria-busy') && !dk7().hasAttribute('aria-disabled') && !d7.getElementById('pcLink').hasAttribute('aria-busy') && !d7.querySelector('#pcDkNote [data-pc-dkwait]')
+            && OA.log.length === nE,
+            `${how}: a card closed and opened again while the free look-up was out is left waiting once it answers (Pull busy, Open in DraftKings with no address): ` + JSON.stringify({ st0, busy0, state: w7.PARLAY_CARD.pullState().state, pull: b7.outerHTML, dk: dk7().outerHTML }));
+          const nP = OA.log.length; await press(z7);
+          chk(OA.log.slice(nP).filter(e => e.kind === 'events').length === 1 && w7.PARLAY_CARD.pullState().state === 'confirm' && !d7.getElementById('pcPullAsk').hidden,
+            `${how}: on the card opened again, a press on Pull does not look up and ask again: ` + JSON.stringify(w7.PARLAY_CARD.pullState()));
+          { const no = d7.getElementById('pcPullNo'); if (no) no.click(); } await wait(10); d7.getElementById('pcClose').click(); await wait(10);
+        } finally { if (OA.holdEv) { OA.holdEv.go(); OA.holdEv = null; } } }
+
+      /* every Odds API request of the section: a GET, from the admin's pages, to the two event paths or the free balance */
+      chk(OA.log.length > 10 && OA.log.every(e => e.method === 'GET' && /^(sports\/?|sports\/americanfootball_nfl\/events(\/[0-9a-f]{32}\/odds)?)$/.test(e.path)), `${how}: The Odds API was asked something other than a GET of the events, an event's odds or the balance: ` + JSON.stringify(OA.log.map(e => [e.method, e.path])));
+    }
 
   }
 
@@ -2975,6 +3662,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
   // ---- M. no run asked the retired store anything, and nothing any run sent was a write ----
   chk(ALL_CALLS.length > 100 && BAD_CALLS.length === 0, 'a page asked the retired store or its sign-in services, or sent a write: ' + BAD_CALLS.slice(0, 5).join(' | '));
   chk(!/firebaseio|identitytoolkit|securetoken/.test(HTML), 'the built page still names the retired store or its sign-in services');
+  /* (20 October 2026) The Odds API was asked only from the admin's pages, and only through the stand-ins of the sections
+     that hold Pull from DraftKings: never from a visitor's page, never on a page's load */
+  chk(ODDS_CALLS.length > 0 && ODDS_CALLS.every(c => c.admin), 'a visitor\'s page asked The Odds API: ' + ODDS_CALLS.filter(c => !c.admin).map(c => c.url.replace(/apiKey=[^&]*/, 'apiKey=…')).slice(0, 3).join(' | '));
 
   finish();
 })().catch(e => finish('the smoke threw: ' + (e && e.stack || e)));
