@@ -2921,15 +2921,18 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const r = await pageLadders(p.g);
         chk(!r.bad.length, `${p.g.id}'s page, with DraftKings' book prices on every rung of its starters' ladders and their two or more touchdowns, the retired ladders setting planted and a ladder held in the builder, offers a ladder bet: ` + r.bad.slice(0, 4).join('; '));
         /* (the made-up game) a stat with no main line says so in one line and draws no table; the one given a main line draws its two sides */
-        if (p.g === F8) { const M = w.eval('PAY').mkt, has = (pid, st) => !!(M && M[cwS8] && M[cwS8][pid] && M[cwS8][pid][st]), bad = []; let nNo = 0, nLine = 0;
+        if (p.g === F8) { const M = w.eval('PAY').mkt, has = (pid, st) => !!(M && M[cwS8] && M[cwS8][pid] && M[cwS8][pid][st]), bad = []; let nNo = 0, nLine = 0, mkSeen = false;
           for (const tm in r.ro) for (const x of r.ro[tm].players) { const btn = r.view.querySelector(`.plrbtn[data-open="${x.pl.id}"]`), body = btn && btn.nextElementSibling && btn.nextElementSibling.matches('.plrbody') ? btn.nextElementSibling : null;
             for (const l of w.eval('statLines')(x)) { if (l.prob) continue;
               const blk = body ? [...body.querySelectorAll(':scope > .statblk')].find(b => { const h = b.querySelector('h4'); return h && h.firstChild && h.firstChild.textContent.trim() === l.m.lbl; }) : null;
               if (!blk) { bad.push(`${x.pl.n}'s ${l.stat}: no block`); continue; }
               const no = blk.querySelectorAll('[data-noline]'), tb = blk.querySelectorAll('table'), ins = [...blk.querySelectorAll('input[data-leg]')];
-              if (has(x.pl.id, l.stat)) { nLine++; if (no.length || tb.length !== 1 || ins.length !== 2 || !ins.every(i => i.dataset.main === '1')) bad.push(`${x.pl.n}'s ${l.stat}, on a main line, draws ${tb.length} tables, ${ins.length} boxes and ${no.length} no-line lines`); }
+              if (has(x.pl.id, l.stat)) { nLine++; if (mk && x.pl.id === mk.pid && l.stat === mk.stat) mkSeen = true;
+                if (no.length || tb.length !== 1 || ins.length !== 2 || !ins.every(i => i.dataset.main === '1')) bad.push(`${x.pl.n}'s ${l.stat}, on a main line, draws ${tb.length} tables, ${ins.length} boxes and ${no.length} no-line lines`); }
               else { nNo++; if (no.length !== 1 || !no[0].matches('p.muted.noline') || txt(no[0]) !== 'No DraftKings line yet.' || tb.length || ins.length) bad.push(`${x.pl.n}'s ${l.stat}, with no main line, draws "${no.length ? txt(no[0]) : 'no line'}", ${tb.length} tables and ${ins.length} boxes`); } } }
-          chk(!bad.length && nNo > 0 && nLine === (mk ? 1 : 0) && !!mk, `on ${F8.id}'s page (no line on file but ${mk ? mk.name + "'s " + mk.stat : 'none'}), a stat with no main line does not say "No DraftKings line yet." alone with no table, or the one with a main line does not draw its two sides (${nNo} with none, ${nLine} with one): ` + bad.slice(0, 3).join('; ')); } }
+          /* (a payload with a pull's lines for the week may give these clubs' players lines of their own, which the page
+             reads on any game of the week: each stat is held to the lines on file, whatever they are) */
+          chk(!bad.length && nNo > 0 && !!mk && mkSeen, `on ${F8.id}'s page (the line planted on ${mk ? mk.name + "'s " + mk.stat : 'nobody'}), a stat with no main line does not say "No DraftKings line yet." alone with no table, or the one with a main line does not draw its two sides (${nNo} with none, ${nLine} with one): ` + bad.slice(0, 3).join('; ')); } }
       w.eval('delete S.ui.showRungs; S.ui.showAll=false; S.ui.game=null; closeGameModal()'); await wait(20);
       /* toggleLeg, on the made-up game: a rung and two or more touchdowns refused, whatever the builder holds; a main line
          and the one touchdown added; a held ladder still taken off */
@@ -6114,6 +6117,66 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           'a browser that was the owner\'s, now the admin\'s, does not show the file\'s X Bet Log, read only: ' + rowsOf(FO.d).join());
         FO.w.close(); }
       O.w.close(); } }
+
+  /* ---- (app v126, the owner's call of 21 October 2026: no ladder bets anywhere) a ladder kept in the builder from
+     before is taken out by the page's own boot: a real reboot of the page on a browser whose prop model state (PROP_KEY)
+     holds, on a made-up Wednesday game of the smoke's own laid into a copy of the payload (in 2099, so no leg of it has
+     kicked off, at any hour and in the off-season), a rung (250+ passing yards), two or more touchdowns, a main line and
+     the one touchdown, beside the retired saved list (S.saved, a rung in it) and the retired ladders setting
+     (ui.showRungs). The first draw keeps the main line and the touchdown alone and says in one line, word for word,
+     that 2 legs were removed and why; it keeps saying so through a redraw of the same builder and stops once the builder
+     changes; the saved list is as it was, byte for byte, in the page and in storage; the ladders setting is not read; and
+     the boot writes nothing a boot with no ladder to remove does not, but the prop model's own key. Its twin, with a leg
+     of a locked Suggested Parlays set that is a rung (spLegIn's kept) beside the main line and the touchdown, keeps all
+     three and says nothing: the record grades that set as it locked ---- */
+  if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), clubs = [...new Set(Sx.sched.flatMap(g => [g.a, g.h]))].sort();
+    const F = { id: `2099_${String(cw).padStart(2, '0')}_${clubs[0]}_${clubs[1]}`, w: cw, a: clubs[0], h: clubs[1], d: '2099-01-07', t: '13:00' };
+    const ro = w.eval('rosterFor')(F, false), st = Object.values(ro).flatMap(t => t.players.filter(x => x.starter)), used = new Set();
+    const pick = test => { const x = st.find(y => !used.has(y.pl.id) && test(y)); if (x) used.add(x.pl.id); return x || null; };
+    const qb = pick(x => x.pl.grp === 'QB'), wr = pick(x => x.pl.grp === 'WR'), rb = pick(x => x.pl.grp === 'RB'), te = pick(x => x.pl.grp === 'TE' || x.pl.grp === 'WR');
+    if (!(qb && wr && rb && te)) chk(false, `the made-up game ${F.id} has no quarterback, receiver, back and second receiver or tight end among its starters, so no ladder can be kept in the builder on it`);
+    else {
+      const legOf = (x, stat, k, main, label, price) => ({ gid: F.id, pid: x.pl.id, stat, k, side: 'over', main, p: 0.55, price, src: 'est', mu: stat === 'any_td' ? null : 60, name: x.pl.n, pos: x.pl.pos, grp: x.pl.grp,
+        team: x.team, opp: x.opp, week: cw, label });
+      const kR = `${F.id}|${qb.pl.id}|passing_yards`, kT2 = `${F.id}|${te.pl.id}|any_td`, kM = `${F.id}|${wr.pl.id}|receiving_yards`, kT1 = `${F.id}|${rb.pl.id}|any_td`;
+      const legs = { [kR]: legOf(qb, 'passing_yards', 250, false, '250+ passing yards', 120), [kT2]: legOf(te, 'any_td', 2, false, '2+ touchdowns', 650),
+        [kM]: legOf(wr, 'receiving_yards', 49.5, true, 'Over 49.5 receiving yards', -115), [kT1]: legOf(rb, 'any_td', 1, false, 'Scores a touchdown', 140) };
+      const SAVED = [{ id: 'own-ladder', week: cw, stake: 5, price: 300, payout: 20, legs: [{ gid: F.id, pid: wr.pl.id, stat: 'receptions', k: 5, side: 'over', main: false, name: wr.pl.n, team: wr.team, week: cw, label: '5+ receptions' }] }];
+      const PC = JSON.parse(PAYLOAD); PC.sched = [...(PC.sched || []), { ...F }];
+      const payTxt = JSON.stringify(PC), WORDS = '2 legs were removed: the site no longer offers ladder bets (such as 250+ passing yards or 2+ touchdowns), only main lines, anytime touchdowns and team bets.';
+      /* a boot on that state, every write to the browser's storage (a key set or removed) recorded from the first script on */
+      const bootOn = parlay => run(state, undefined, null, false, { pay: payTxt, seed: w2 => {
+        w2.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 20, parlay, saved: SAVED, ui: { showRungs: true } }));
+        const SP = w2.Storage.prototype, si = SP.setItem, ri = SP.removeItem; w2.__wrote = [];
+        SP.setItem = function (k, v) { if (this === w2.localStorage) w2.__wrote.push(String(k)); return si.call(this, k, v); };
+        SP.removeItem = function (k) { if (this === w2.localStorage) w2.__wrote.push('-' + String(k)); return ri.call(this, k); }; } });
+      const rowsOf = D => [...D.querySelectorAll('#parlayBody [data-drop]')].map(b => b.dataset.drop).sort().join();
+      const A = await bootOn(legs); await wait(700);
+      const B = await bootOn({ [kM]: legs[kM], [kT1]: legs[kT1], [kR]: { ...legs[kR], kept: { fair: 0.4, est: false } } }); await wait(700);
+      try {
+        const want = [kM, kT1].sort().join(), notes = [...A.d.querySelectorAll('#parlayBody [data-pb-noladder]')], stored = JSON.parse(A.w.localStorage.getItem(PROP_KEY) || '{}');
+        chk(!A.timedOut && !A.errs.length && Object.keys(A.w.eval('S').parlay).sort().join() === want && rowsOf(A.d) === want
+          && notes.length === 1 && notes[0].dataset.pbNoladder === '2' && txt(notes[0]) === WORDS && !A.d.querySelector('#parlayBody [data-pb-notdk]') && !/already kicked off/.test(txt(A.d.getElementById('parlayBody'))),
+          `a reboot with a rung, two or more touchdowns, a main line and the one touchdown kept in the builder does not draw the main line and the touchdown alone under one line saying 2 legs were removed, word for word: `
+          + JSON.stringify({ errs: A.errs.slice(0, 2), kept: Object.keys(A.w.eval('S').parlay).map(k => k.split('|').slice(1).join('|')), rows: rowsOf(A.d).split(',').length, notes: notes.map(n => [n.dataset.pbNoladder, txt(n)]) }));
+        chk(Object.keys(stored.parlay || {}).sort().join() === want && JSON.stringify(stored.saved) === JSON.stringify(SAVED) && JSON.stringify(A.w.eval('S').saved) === JSON.stringify(SAVED)
+          && !('showRungs' in A.w.eval('S').ui) && !('showRungs' in (stored.ui || {})),
+          `the reboot that took the ladders out of the builder did not save the builder without them, touched the retired saved list (in the page or in storage), or read the retired ladders setting: `
+          + JSON.stringify({ stored: Object.keys(stored.parlay || {}).length, saved: JSON.stringify(stored.saved) === JSON.stringify(SAVED), ui: A.w.eval('S').ui.showRungs }));
+        { const wa = new Set(A.w.__wrote), wb = new Set(B.w.__wrote), extra = [...wa].filter(k => k !== PROP_KEY && !wb.has(k));
+          chk(wa.has(PROP_KEY) && !extra.length, `the boot that took the ladders out wrote something a boot with none to take out does not, beside the prop model's own key: ${extra.join(', ') || '(nothing to the prop key)'}`); }
+        /* the line stays while the builder is as it was, and goes once it changes (and does not come back) */
+        A.w.eval('renderParlay()'); await wait(20);
+        const still = A.d.querySelectorAll('#parlayBody [data-pb-noladder]').length;
+        A.w.__tg = kT1; A.w.eval('toggleLeg(window.__tg,1,null,"over",false)'); await wait(20); const off = A.d.querySelectorAll('#parlayBody [data-pb-noladder]').length, offK = Object.keys(A.w.eval('S').parlay).sort().join();
+        A.w.eval('toggleLeg(window.__tg,1,null,"over",false)'); await wait(20); const back = A.d.querySelectorAll('#parlayBody [data-pb-noladder]').length, backK = Object.keys(A.w.eval('S').parlay).sort().join(); delete A.w.__tg;
+        chk(still === 1 && off === 0 && offK === kM && back === 0 && backK === want, `the line on the ladders taken out of the builder does not stay through a redraw of the same builder and go once it changes, for good (${still}, then ${off} with the touchdown off, then ${back} with it back: ${backK.split(',').length} legs)`);
+        /* the twin: a locked set's rung kept, nothing said */
+        const wantB = [kM, kT1, kR].sort().join();
+        chk(!B.timedOut && !B.errs.length && Object.keys(B.w.eval('S').parlay).sort().join() === wantB && rowsOf(B.d) === wantB && !B.d.querySelector('#parlayBody [data-pb-noladder]'),
+          `a reboot whose builder holds a locked Suggested Parlays set's rung (kept) beside a main line and the one touchdown does not keep all three and say nothing: ` + JSON.stringify({ errs: B.errs.slice(0, 2), kept: Object.keys(B.w.eval('S').parlay).length, rows: rowsOf(B.d), note: B.d.querySelectorAll('#parlayBody [data-pb-noladder]').length }));
+        console.log(`  (no ladder bets: a real reboot with 2 ladders kept in the builder drew the main line and the touchdown alone under its one line; its twin kept a locked set's rung)`);
+      } finally { A.w.close(); B.w.close(); } } }
 
   /* ---- the Game snapshot: its own section, at the end of this file, then the Season Tracker's games
      in it, on stand-in news files ---- */
