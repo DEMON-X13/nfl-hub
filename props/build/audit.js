@@ -3409,8 +3409,8 @@ setTimeout(async()=>{
         /* (app v109) DraftKings' ids for the made-up lines, as the pull reads one with each price, in place
            of the payload's table: the far-off rule is held on legs a suggestion could otherwise take */
         dkSet(dkFixture(cw,'M7'));
-        const U=S.ui.pb, keepU=JSON.stringify(U), keepSide=S.ui.suggestSide;
-        for(const k of ['ml','ats','total','over','under']) U.k[k]=true; U.off=[]; S.ui.suggestSide='any'; w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}');
+        const U=S.ui.pb, keepU=JSON.stringify(U);
+        for(const k of ['ml','ats','total','over','under']) U.k[k]=true; U.off=[]; w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}');
         /* the pool: no leg far off, and the count the panel gives is the legs left out for it alone */
         const pool=F('pbPool')(games), mlP=F('mlProb'), formOut=typeof w.eloLoaded==='function'&&!w.eloLoaded();
         const left=F('pricedLegs')(games).filter(c=>F('pbAllows')(c)&&takenPrice(c)&&isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&c.p-mlP(c.price)>=0&&!(c.grp!=='TEAM'&&formOut)&&isFar(c));
@@ -3510,34 +3510,9 @@ setTimeout(async()=>{
           const want=[`To win model ${Math.round(mlS.b.p*100)}% · market ${Math.round(fm*100)}%: far off the market`,`To cover ${ln>0?'+':''}${ln} model ${Math.round(atS.b.p*100)}% · market ${Math.round(fa*100)}%: far off the market`];
           chk(want.every(x=>notes.includes(x))&&notes.length===2&&box.querySelectorAll('tr.far').length===2,
             `the Game bets card does not flag a far-off to win and to cover (and only those): ${notes.join(' / ')||'no flag'}`); }
-        /* the game hands as each card draws them: one with a fair chance leads with it ("NN% fair chance",
-           (est.) where a leg is priced on one side), "model says MM% to land" after it; one without says
-           it has none. The week's own hands may all lack one (an estimated rung), so made-up hands are
-           drawn too: two book-priced main lines in two games, the same with the planted rung, and with a
-           leg on no book price */
-        { const gt0=w.gameTiers, nb=x=>x.replace(/\s+/g,' ').trim();
-          const card=(g,T)=>{ if(T) w.gameTiers=()=>T; try{ const b=d.createElement('div'); b.innerHTML=F('gameSuggestCard')(g,false); return b; } finally { w.gameTiers=gt0; } };
-          const handOk=(box,id,t)=>{ const blk=[...box.querySelectorAll('.gsugg-tier')].find(b=>b.querySelector('.gsugg-tier-hd .conf.'+id)), nums=blk&&blk.querySelector('.gsugg-nums');
-            if(!nums) return false; const tx=nb(nums.textContent), M=(t.corr*100).toFixed(0), b0=nums.querySelector('b');
-            if(t.fair&&t.fair.p!=null){ const Fp=(t.fair.p*100).toFixed(0);
-              return b0.textContent===Fp+'%'&&+b0.dataset.gsuggFair===t.fair.p&&tx.startsWith(`${Fp}% fair chance${t.fair.est?' (est.)':''} · model says ${M}% to land · `); }
-            return tx.startsWith(`${M}% to land (the model’s chance: no fair chance without every leg’s book price) · `); };
-          let shown=0;
-          for(const g of games.slice(0,3)){ const T=F('gameTiers')(g), box=card(g,null);
-            for(const id of ['high','med','low']) if(T[id]){ shown++; chk(handOk(box,id,T[id]),`the ${id} hand of ${g.id} does not lead with its fair chance, or say it has none: `+nb((([...box.querySelectorAll('.gsugg-tier')].find(b=>b.querySelector('.conf.'+id))||{}).textContent)||'')); } }
-          /* the card states no floor (app v106: its explanation is gone); one stated again comes back with its check */
-          chk(!/lands at least|pays at least/.test(nb(card(games[0],null).textContent)),'a game page\'s suggested parlays state a floor no check holds');
-          const mains=[...pool.pref,...pool.thin].filter(l=>l.main&&!isG(l)&&l.src==='real'&&fairOf(l)&&!fairOf(l).est).sort((a,b)=>String(a.key+a.side).localeCompare(String(b.key+b.side)));
-          const two=mains.length?[mains[0],mains.find(l=>l.gid!==mains[0].gid)||mains.find(l=>l.pid!==mains[0].pid)].filter(Boolean):[];
-          if(two.length===2){ const hand=legs=>({legs,corr:pp(legs).corr,dec:3,fair:PF(legs)});
-            const rung=pick.length?{gid:gF.id,pid:pick[0].x.pl.id,stat:pick[0].ld.stat,k:pick[0].r.k,side:'over',main:false,p:pick[0].r.p,price:F('oddsFor')(gF.id,pick[0].x.pl.id,pick[0].ld.stat,pick[0].r.k),src:'real',week:gF.w,name:pick[0].x.pl.n,label:'rung',key:gF.id+'|'+pick[0].x.pl.id+'|'+pick[0].ld.stat}:null;
-            const est={...two[1],key:two[1].key+'|est',k:+two[1].k+20,main:false,src:'est',price:400};
-            const T={high:hand(two),med:rung&&rung.price!=null?hand([...two,rung]):null,low:hand([...two,est])};
-            chk(T.high.fair&&T.high.fair.p!=null&&!T.high.fair.est&&(!T.med||(T.med.fair.p!=null&&T.med.fair.est))&&T.low.fair.p===null,'the made-up hands are not one with a fair chance, one estimated and one with none');
-            const box=card(games[0],T);
-            for(const id of ['high','med','low']) if(T[id]) chk(handOk(box,id,T[id]),`a made-up ${id} hand (${id==='high'?'book-priced main lines':id==='med'?'with a rung priced on one side':'with a leg on no book price'}) does not lead with its fair chance, or say it has none: `+nb(box.textContent).slice(0,300)); }
-          else W.coverage(false,'the made-up lines gave no two book-priced main lines to build a hand of');
-          flagged+=`; ${shown} game hands and made-up ones drawn with their fair chance; a far-off touchdown, ladder rung, to win and to cover flagged`; }
+        /* (app v124) the game page draws its hands no more: their fair chance is held on the engine above
+           (gameTiers' fair, against parlayFair on their legs), and no card is drawn to read it from */
+        flagged+='; a far-off touchdown, ladder rung, to win and to cover flagged';
         /* the builder: the far-off leg flagged in its row, the near one not; the summary leads with the fair chance */
         if(farL&&nearL){ const keepP=JSON.stringify(S.parlay||{}), keepB=S.bookPrice, put=l=>{ const {key,thin,...x}=l; S.parlay[key]=x; };
           S.parlay={}; S.bookPrice=null; put(farL); if(nearL.key!==farL.key) put(nearL); F('renderParlay')();
@@ -3565,7 +3540,7 @@ setTimeout(async()=>{
             chk(!!t2&&t2.classList.contains(c2)&&t2.querySelector('b').textContent===l2&&t2.querySelector('span').textContent==='confidence all 2 land, on the model’s chance',
               'with no fair chance the builder\'s confidence tile does not rate the model\'s chance and say so: '+(t2?t2.textContent:'no tile')); }
           S.parlay=JSON.parse(keepP); S.bookPrice=keepB; F('save')(); F('renderParlay')(); }
-        S.ui.pb=JSON.parse(keepU); S.ui.suggestSide=keepSide;
+        S.ui.pb=JSON.parse(keepU);
         console.log(`M7. fair chance: ${ruleCases} cases of the rule, and on made-up lines ${nFar} legs far off the market left out (${nNear} player legs kept), none on a level or on ${hands} game hands; ${flagged}; the builder flags it and leads with the fair chance${handsIds}`); }
     } finally { restore(); F('renderParlay')(); } }
 
@@ -5350,10 +5325,7 @@ setTimeout(async()=>{
                 W.wording(!!c&&!!c.querySelector('.pb-espnline')===nd>0,`${lab}: ${g.id}'s ${t.id} card's line on legs priced from DraftKings' line is ${nd?'missing':'there with none'}`); } }
             W.wording(/A player line marked est\. is priced from DraftKings’ line read on ESPN by Refresh odds/.test(panel.textContent)===any,`${lab}: the list's note on lines priced from DraftKings' line is ${any?'missing':'there with none listed'}`);
             } finally { stab.hidden=keepH; spOnPut(keepOn); slotPut(keepSl); F('renderPb')(); }
-            for(const g of F('pbGames')().slice(0,3)){ const T=F('gameTiers')(g), b=d.createElement('div'); b.innerHTML=F('gameSuggestCard')(g,false);
-              for(const [i,id] of ['high','med','low'].entries()){ const t=T[id]; if(!t) continue; const blk2=b.querySelectorAll('.gsugg-tier')[i], li=blk2?[...blk2.querySelectorAll('.gsugg-legs li')]:[]; n++;
-                chk(li.length===t.legs.length&&t.legs.every((l,j)=>!!li[j].querySelector('.pr i.est')===(l.src!=='real'))&&!!blk2.querySelector('[data-gsugg-est]')===t.legs.some(l=>l.src==='dkline'),
-                  `${lab}: ${g.id}'s ${id} hand does not mark est. its legs on no book price, or say its price is estimated where a leg is priced from DraftKings' line`); } }
+            /* (app v124) a game page draws no hands, so there are no hand cards to mark */
             const dl=F('getPbTop')().rows.find(l=>l.src==='dkline');
             if(dl){ const keepP=JSON.stringify(S.parlay||{}); try{ const {key,thin,...one}=dl; S.parlay={[key]:one}; F('renderParlay')();
                 const row=d.querySelector('#parlayBody tr.legrow'), lab2=row&&row.querySelectorAll('td')[4], lf=row&&row.querySelector('.legfair'), f=F('legFair')(dl); n++;
@@ -6023,19 +5995,30 @@ setTimeout(async()=>{
     chk(F('sameGame')([{gid:'a'},{gid:'a'}])===true&&F('sameGame')([{gid:'a'},{gid:'b'}])===false,'sameGame does not spot a shared game');
     console.log(`Q. same-game pricing: 2 legs multiply to ${mult.toFixed(2)}, priced together ${sgp.toFixed(2)} (${(100*(1-sgp/mult)).toFixed(0)}% shorter)`); }
 
-  /* ---- O. the game page's suggested parlays: High, Medium, Low ---- */
-  { const g=openUpcoming(); let card=d.querySelector('.gsugg');
-    chk(!!card,'the game page has no suggested parlay section');
-    { const sw=[...card.querySelectorAll('[data-gsugg-side]')];
-      chk(sw.length===3&&sw.filter(b=>b.classList.contains('on')).length===1,'the game card has no side switch, or not one side on');
-      const was=S.ui.suggestSide;
-      sw.find(b=>b.dataset.gsuggSide==='over').click();
-      chk(S.ui.suggestSide==='over'&&d.querySelector('.gsugg [data-gsugg-side="over"]')?.classList.contains('on'),'the game card switch did not take or did not redraw');
-      const To=F('gameTiers')(g);
-      chk(['high','med','low'].every(id=>!To[id]||To[id].legs.every(l=>l.grp!=='TEAM'&&l.side==='over')),'with overs on, a game tier has a leg that is not a player over');
-      d.querySelector('.gsugg [data-gsugg-side="any"]').click();
-      chk(S.ui.suggestSide==='any','Any did not come back on the game card');
-      S.ui.suggestSide=was; d.querySelector('[data-game="'+g.id+'"]').click(); }
+  /* ---- O. the game page (app v124): no suggested parlays, and its Matchup, Mismatches and Team Stats buttons
+     drawn only where the hub's window is; then the hands' engine, drawn nowhere since, as it stands ---- */
+  { const g=openUpcoming();
+    /* blocking: the card, its side switch and its Add all are gone (the owner's call of 20 October 2026), and on this
+       page, which has no hub window (window.gameWindow, the Game snapshot's), so do the three buttons */
+    chk(!d.querySelector('#gameView .gsugg, #gameView [data-gsugg-side], #gameView [data-gtier-add], #gameView .gsugg-tier'),'the game page still draws its suggested parlays, their side switch or an Add all');
+    chk(typeof w.gameWindow!=='function'&&!d.querySelector('#gameView [data-gp-pop], #gameView .gwin'),'the prop model\'s own page draws a game\'s Matchup, Mismatches or Team Stats buttons, with no window for them');
+    /* with a window planted (a stand-in recording its calls), the page draws the three buttons under the head and over
+       the Game bets card, in order, each 44px by its own rule, and each press hands the window its card, the game and
+       the button; taken away, the buttons go with it */
+    { const calls=[]; w.gameWindow=(k,gid,b)=>{ calls.push([k,gid,b]); return true; };
+      try{
+        d.querySelector('[data-game="'+g.id+'"]').click();
+        const bs=[...d.querySelectorAll('#gameView .gwin [data-gp-pop]')], head=d.querySelector('#gameView .ghead'), gb=d.querySelector('#gameView .gbets'), row=d.querySelector('#gameView .gwin');
+        chk(bs.map(b=>b.dataset.gpPop+':'+b.textContent.trim()).join()==='units:Matchup,mism:Mismatches,stats:Team Stats'&&bs.every(b=>b.dataset.gpGame===g.id&&b.getAttribute('aria-haspopup')==='dialog'&&b.type==='button'),
+          'with the hub window there, the game page does not draw Matchup, Mismatches and Team Stats, in that order, as dialog buttons for its game: '+bs.map(b=>b.outerHTML.slice(0,90)).join(' | '));
+        chk(!!head&&!!row&&!!gb&&d.querySelectorAll('#gameView .gwin').length===1&&!!(head.compareDocumentPosition(row)&4)&&!!(row.compareDocumentPosition(gb)&4)&&d.querySelectorAll('#gameView .gbets').length===1,
+          'the game page does not carry its buttons once, under its head and over its Game bets card, and the Game bets card once');
+        const tall=[...d.styleSheets].flatMap(sh=>{ try{ return [...sh.cssRules]; }catch(e){ return []; } }).some(r=>r.selectorText==='.gwin .gwin-btn'&&r.style.getPropertyValue('min-height')==='44px');
+        chk(tall,'the game page\'s window buttons have no rule making them 44px tall');
+        for(const b of bs) b.click();
+        chk(calls.length===3&&calls.every(([k,gid,b],i)=>k===bs[i].dataset.gpPop&&gid===g.id&&b===bs[i]),'a press on a game page\'s button does not hand the window its card, its game and itself: '+JSON.stringify(calls.map(c=>c.slice(0,2))));
+      }finally{ try{ delete w.gameWindow; }catch(e){ w.gameWindow=undefined; } d.querySelector('[data-game="'+g.id+'"]').click(); }
+      chk(!d.querySelector('#gameView [data-gp-pop]'),'the game page\'s buttons stay once the window is taken away'); }
     w.eval('GAME_TIER_CACHE={}');
     const T=F('gameTiers')(g), MIN=w.eval('GAME_LEG_MIN'), spec=w.eval('GAME_TIERS');
     /* always there while the game has lines, the right size, and to the rules. A hand takes one team leg
@@ -6085,22 +6068,9 @@ setTimeout(async()=>{
         /* only a pair High could take: the tier's own payout and chance floors, with room for simulation noise */
         W.compose(pd<1+hf/100||pr<hp+0.03||T.high.corr*T.high.dec>=pr*pd-0.06,'the High pair returns less than the two best single legs together'); } }
     chk(F('gameTiers')(g)===T,'the tiers are not cached between renders');
-    /* the card: three blocks, each with its chance, its legs and an Add all that works */
-    d.querySelector('[data-game="'+g.id+'"]').click(); card=d.querySelector('.gsugg');
-    const blocks=[...card.querySelectorAll('.gsugg-tier')];
-    chk(blocks.length===3,'the card does not show High, Medium and Low');
-    spec.forEach(([id,,n],i)=>{ const t=T[id]; if(!t) return;
-      chk(blocks[i].querySelectorAll('.gsugg-legs li').length===n&&new RegExp(`${Math.round(t.corr*100)}% to land`).test(blocks[i].textContent.replace(/\s+/g,' ')),`the ${id} block does not show its ${n} legs and its chance`); });
-    chk(!card.querySelector('[data-suggest-shuffle]'),'Shuffle is still on the card');
-    if(T.med){ const keepP=JSON.parse(JSON.stringify(S.parlay||{})); S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
-      d.querySelector('[data-gtier-add="med"]').click();
-      chk(T.med.legs.every(l=>S.parlay[l.key]&&S.parlay[l.key].k===l.k&&S.parlay[l.key].side===l.side),'Add all on Medium did not put its legs on the parlay');
-      d.querySelector('[data-game="'+g.id+'"]').click();
-      chk([...d.querySelectorAll('.gsugg-tier')][1].querySelectorAll('input[data-leg]:checked').length===3,'the Medium legs on the parlay are not ticked');
-      S.parlay=keepP; F('save')(); d.querySelector('[data-game="'+g.id+'"]').click(); }
-    /* the game bets are on the game's page (app v105), after its suggested parlays */
-    { const gs=d.querySelector('#gameView .gsugg'), gb=d.querySelector('#gameView .gbets');
-      chk(!!gs&&!!gb&&d.querySelectorAll('#gameView .gbets').length===1&&!!(gs.compareDocumentPosition(gb)&4),'the game page does not carry the Game bets card once, after its suggested parlays'); }
+    /* the game bets are on the game's page (app v105), after its head */
+    { const gh=d.querySelector('#gameView .ghead'), gb=d.querySelector('#gameView .gbets');
+      chk(!!gh&&!!gb&&d.querySelectorAll('#gameView .gbets').length===1&&!!(gh.compareDocumentPosition(gb)&4),'the game page does not carry the Game bets card once, after its head'); }
     /* the parlay card prints a leg's fields as text: markup planted in the shared store never becomes an element */
     if(T.med&&T.med.legs.length){ const keepP=JSON.parse(JSON.stringify(S.parlay||{})), keepB=S.bookPrice, bad='<img src=x data-planted=1>';
       const l0=T.med.legs[0]; S.parlay={}; S.parlay[l0.key]=Object.assign({},l0,{pos:bad,team:bad,opp:bad,week:bad});
@@ -6108,7 +6078,7 @@ setTimeout(async()=>{
       try{ F('renderParlay')(); const body=d.getElementById('parlayBody');
         chk(!!body&&!body.querySelector('[data-planted]')&&/<img src=x data-planted=1>/.test(body.textContent),'markup in a parlay leg or the book price became an element on the parlay card'); }
       finally{ S.parlay=keepP; S.bookPrice=keepB; F('renderParlay')(); } }
-    console.log(`O. game tiers: ${spec.map(([id,,n])=>T[id]?`${id} ${n} legs ${(T[id].corr*100).toFixed(0)}% at ${(T[id].dec).toFixed(2)}${T[id].relaxed?' (under floor)':''}`:`${id} none`).join(', ')} from ${T.pool} lines`); }
+    console.log(`O. the game page: no suggested parlays, its three window buttons only with a window; the hands' engine, drawn nowhere: ${spec.map(([id,,n])=>T[id]?`${id} ${n} legs ${(T[id].corr*100).toFixed(0)}% at ${(T[id].dec).toFixed(2)}${T[id].relaxed?' (under floor)':''}`:`${id} none`).join(', ')} from ${T.pool} lines`); }
   /* ---- N. the credit-pull panel, in place of the old price sheet ---- */
   { const box=d.getElementById('pricePull');
     chk(!!box,'the Weekly Update tab has no credit-pull panel');
@@ -6207,9 +6177,11 @@ setTimeout(async()=>{
     /* I3. the suggested parlays' choices are the reader's, kept in S.ui.pb across a reload; a
        damaged one reads as everything ticked */
     { const pb={k:{ml:true,ats:false,total:true,over:false,under:true},off:['2099_01_XX_YY'],gx:true};
-      mem=JSON.stringify({build:F('MODEL_BUILD'),dataBuild:F('DATA_BUILD'),dataStamp:F('DATA_STAMP'),stake:20,ui:{pb,suggestSide:'any'}});
+      mem=JSON.stringify({build:F('MODEL_BUILD'),dataBuild:F('DATA_BUILD'),dataStamp:F('DATA_STAMP'),stake:20,ui:{pb,suggestSide:'over'}});
       await F('boot')(); let SP=w.eval('S');
       chk(JSON.stringify(SP.ui.pb)===JSON.stringify(pb),'the suggested parlays\' choices did not survive a reload: '+JSON.stringify(SP.ui.pb));
+      /* (app v124) the game page's side switch went with its suggested parlays: a choice saved before is not read */
+      chk(!('suggestSide' in SP.ui),'a game page\'s side switch saved before app v124 is still read into the view: '+JSON.stringify(SP.ui.suggestSide));
       { const kb=d.querySelector('#pbPanel [data-pb-kind="ats"]');
         const P=d.getElementById('pbPanel');
         chk(!F('pbGames')().length||(!P.querySelector('[data-pb-mix].on')&&!P.querySelector('.pb-custom')&&!/\bCustom\b/.test(P.textContent)&&!!kb&&!kb.checked),'the panel did not draw the choices it was reloaded with (no mix lit, no Custom tag, Spread unticked)'); }

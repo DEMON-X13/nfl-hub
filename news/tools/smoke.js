@@ -1,9 +1,10 @@
 /* Smoke test for the news job's data. There is no page here any more: the Season Tracker's page was retired
    on 14 October 2026 and its games went into NFL Hub's Game snapshot, which fetches data/units.json and
-   data/notes/ at runtime and draws the Deep Dive with nflbets/build/deepdive.js (data/stats.json, which
-   its Stat breakdown read, is still written and held here, though no page reads it since that card went
-   on 16 October 2026, the owner's call). This holds the files the job writes to the sources they come from, and to what
-   that module draws from them:
+   data/notes/ at runtime and draws the Deep Dive with nflbets/build/deepdive.js; data/stats.json, which
+   the snapshot's Stat breakdown read until that card went on 16 October 2026 (the owner's call), is read
+   since 20 October 2026 (app v124, the owner's call) by the Team Stats window of a game's page on the Props
+   tab, the same bars side by side, once a page load and only when that window first opens. This holds the
+   files the job writes to the sources they come from, and to what that module draws from them:
      - the twins: units.json and stats.json are exactly the consts of units2026.js and stats2026.js;
      - each team's stat line against its own game count in results.js;
      - the Deep Dive's tag constants against their values, and every club's Overall Offense and Defense
@@ -93,7 +94,7 @@ async function run() {
     check("units.json is units2026.js's consts exactly (the Game snapshot reads it)", !diff.length, diff.length ? `${diff.join(', ')} (rebuild with node tools/context.js)` : `week ${UJ.week}, built ${UJ.built_at}`); }
   { const diff = !SJ ? ['stats.json missing or not JSON'] : [['season', SEASON], ['through', CS.STATS26_THROUGH], ['asof', CS.STATS26_ASOF], ['stats', S26]]
       .filter(([k, v]) => !same(SJ[k], v)).map(([k]) => k).concat(Object.keys(SJ).filter(k => !['season', 'through', 'asof', 'stats'].includes(k)).map(k => `extra ${k}`));
-    check("stats.json is stats2026.js's consts exactly (the Game snapshot reads it)", !diff.length, diff.length ? `${diff.join(', ')} (run node tools/pull-week.js)` : `through ${SJ.through}, as of ${SJ.asof}`); }
+    check("stats.json is stats2026.js's consts exactly (a game page's Team Stats window reads it)", !diff.length, diff.length ? `${diff.join(', ')} (run node tools/pull-week.js)` : `through ${SJ.through}, as of ${SJ.asof}`); }
   /* the Deep Dive is drawn from what the page fetches */
   const D = UJ || { season: META.season, week: META.week, built_at: META.built_at, meta: META, basis: CU.UNITS26_BASIS, lineups: CU.UNITS26_LINEUPS, units: U };
 

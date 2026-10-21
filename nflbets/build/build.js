@@ -408,10 +408,19 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
   for (const need of ['window.gameSnapshot=', 'window.pkBoard', 'window.eloFiles', 'window.eloMismatches', "'Escape'", 'window.gsDeepDive',
     "'news/data/units.json'", '`news/data/notes/${season}-w${week}.json`', "fetch(url,{cache:'no-store'})", 'data-gs-props=', 'P.openOnProps(id)', 'P.canProps(g.game_id)'])
     if (!SNAP_JS.includes(need)) throw new Error('nflbets/build/snapshot.html no longer has ' + need);
-  /* the Stat breakdown went on 16 October 2026 (the owner's call: "get rid of stat breakdown section"), and
-     with it the window's read of the news job's stats.json */
-  for (const gone of ["news/data/stats.json'", 'statsFile', 'gsStats', 'statSplit'])
-    if (SNAP_JS.includes(gone)) throw new Error('nflbets/build/snapshot.html draws the Stat breakdown again, or reads its file (' + gone + ')');
+  /* the Stat breakdown went from the snapshot on 16 October 2026 (the owner's call: "get rid of stat breakdown
+     section"); its bars came back on 20 October 2026 as the Team Stats window of a game's page on the Props tab
+     (the owner's call: three buttons, Matchup, Mismatches and Team Stats, each its own little window), the one
+     card that window draws, never a card of the snapshot's, its file read only when that window first opens */
+  for (const gone of ['gsStats', 'Stat breakdown'])
+    if (SNAP_JS.replace(/\/\*[\s\S]*?\*\//g, '').includes(gone)) throw new Error('nflbets/build/snapshot.html draws the Stat breakdown in the Game snapshot again (' + gone + ')');
+  for (const need of ['window.gameWindow=', "'news/data/stats.json'", "if(only==='stats') statFile();", 'function drawOne(', 'if(ONLY) return drawOne(gid);', 'closeGameModal=function()'])
+    if (!SNAP_JS.includes(need)) throw new Error("nflbets/build/snapshot.html no longer opens a game page's Matchup, Mismatches and Team Stats windows as it should (" + need + ')');
+  if (SNAP_JS.split('statFile()').length !== 2) throw new Error("nflbets/build/snapshot.html reads the team stats somewhere but the Team Stats window's first opening");
+  for (const need of ["typeof window.gameWindow!=='function'", 'data-gp-pop=', 'window.gameWindow(b.dataset.gpPop,g.id,b)'])
+    if (!part3.includes(need)) throw new Error("the props parts no longer draw a game page's Matchup, Mismatches and Team Stats buttons, or draw them where the hub's window is not (" + need + ')');
+  for (const gone of ['gameSuggestCard(', 'data-gsugg-side', 'data-gtier-add'])
+    if (part3.includes(gone)) throw new Error("the props parts still draw a game page's Suggested parlays, which went on 20 October 2026 (" + gone + ')');
   for (const need of ['window.gameSnapshot(card.dataset.game,card)', 'tabindex="0" aria-haspopup="dialog"', 'window.pkBoard={', 'canProps,openOnProps};', 'ST.state=st;', "history.replaceState(null,'','#matchups')"])
     if (!js.includes(need)) throw new Error("the Matchups tab no longer opens the Game snapshot from a game's row, hands it the way to the Props tab, or lands #tracker and #pickems on the board as #matchups (" + need + ')');
   for (const gone of ['data-snap=', 'pk-gbody', 'aria-expanded'])

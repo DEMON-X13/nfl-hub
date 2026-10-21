@@ -442,6 +442,30 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 .gs-scale{display:flex;flex-wrap:wrap;gap:6px 16px;margin:14px 0 0;font-size:var(--gs-t2);color:var(--ink-2)}
 .gs-scale>span{display:inline-flex;align-items:center;gap:6px}
 
+/* ---- one card in a little window of its own, over a game's page on the Props tab (Matchup, Mismatches
+   and Team Stats, the owner's call of 20 October 2026): the same window, narrower, its one card unfolded ---- */
+#gsModal.gs-one .modal-panel{max-width:720px}
+#gsModal .gs-one-card .gs-secbody{padding:18px 20px 20px}
+#gsModal .gs-onepast{margin:0 0 14px;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
+/* Team Stats: a row a stat, each team's number at its side, the bar split between them (the Season
+   Tracker's bars, then the Game snapshot's Stat breakdown from 14 to 16 October 2026) */
+#gsModal .gs-tsum{margin:0 0 12px;font-size:var(--gs-t3);color:var(--ink-2)}
+#gsModal .gs-tsum b{font-family:var(--display);color:var(--ink)}
+#gsModal .gs-steams{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 10px}
+#gsModal .gs-steams .gs-thn{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-size:var(--gs-t3);font-weight:600;color:var(--ink);min-width:0}
+#gsModal .gs-sbar{display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+#gsModal .gs-sbar:last-child{border-bottom:0}
+#gsModal .gs-sva{justify-self:start} #gsModal .gs-svh{justify-self:end}
+#gsModal .gs-sbar .gs-v b{font-family:var(--display);font-size:var(--gs-t3);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+#gsModal .gs-sbar .gs-better b{color:var(--pick)}
+#gsModal .gs-smid{min-width:0;text-align:center}
+#gsModal .gs-slb{display:block;margin:0 0 6px;font-size:var(--gs-t2);font-weight:600;color:var(--ink-2);line-height:1.3}
+#gsModal .gs-slb small{margin-left:6px;font-size:var(--gs-t1);font-weight:600;color:var(--ink-2)}
+#gsModal .gs-strack{display:flex;gap:8px}
+#gsModal .gs-shalf{display:flex;flex:1 1 0;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+#gsModal .gs-shl{justify-content:flex-end}
+#gsModal .gs-shalf i{display:block;height:100%;border-radius:4px;background:var(--gs-tc,var(--ink-2))}
+
 @media(max-width:899px){
   .gs-pair{display:block}
   /* the head stacked: the two teams side by side on the top row, the middle (score, kickoff, preview)
@@ -494,6 +518,13 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   .gs-units{gap:28px}
   .gs-uhd h4{font-size:var(--gs-t3)}
   #gsModal .ddrow{gap:10px}
+  /* a little window on a phone too: 10px of the page around it, not the full screen the snapshot takes */
+  #gsModal.gs-one{padding:0 10px 10px}
+  #gsModal.gs-one .modal-panel{margin-top:10px;min-height:0;border:1px solid var(--line-2);border-radius:var(--r-lg)}
+  #gsModal.gs-one .gs-top{border-radius:var(--r-lg) var(--r-lg) 0 0}
+  #gsModal .gs-one-card .gs-secbody{padding:14px 14px 16px}
+  #gsModal .gs-sbar{grid-template-columns:58px minmax(0,1fr) 58px;gap:8px}
+  #gsModal .gs-steams .gs-tnm{display:none}
   #gsModal .gs-prev{padding:10px 12px}
   .gs-duel{gap:8px}
   .gs-ubox{padding:12px 8px}
@@ -597,8 +628,9 @@ function eloFiles(){
 }
 /* the news job's files (news/data/): the Deep Dive's units, read once a page load as it loads, and a
    week's notes once for that week (the board's as the board draws, another's the first time a window
-   wants them); stats.json, the Stat breakdown's, is not read since that card went (16 October 2026, the
-   owner's call). Never baked into the page, always no-store, so a
+   wants them); stats.json, the team stats, once a page load and only when a game's Team Stats window
+   first opens (the snapshot's Stat breakdown went on 16 October 2026, the owner's call, and came back as
+   that window on 20 October). Never baked into the page, always no-store, so a
    news job publish is on the next load. Each that does not load -- a 404, a body that is not JSON,
    the wrong shape -- is "did not load" for its own part alone, never a throw; the window draws again
    when each answers, as it does for the Elo files */
@@ -635,6 +667,10 @@ const playoff=g=>g.game_type?g.game_type!=='REG':+g.week>18;
 const ddFor=(P,g)=>{ const dd=DD(), D=NEWS.units&&NEWS.units.data; return dd&&D&&!playoff(g)&&dd.applies(D,seasonOf(P,g),+g.week)?D:null; };
 
 let cur=null, opener=null;
+/* one card alone in the window (a game's page on the Props tab: its Matchup, Mismatches and Team Stats
+   buttons, the owner's call of 20 October 2026), else null for the whole snapshot */
+let ONLY=null, ONE_AT=0;
+const ONE={units:'Matchup',mism:'Mismatches',stats:'Team Stats'};
 /* which cards and folds are open, and which Starters tab is chosen, as the visitor leaves them
    while the window is open; nothing of it is saved. On a wide screen Every call and Team strength
    open, the rest folded; on a phone every card folded (the verdict is always shown) */
@@ -642,6 +678,17 @@ const CARDS=['gsCalls','gsTeams','gsUnits','gsMism','gsPos'], WIDE_OPEN=['gsCall
 let OPEN={}, PTAB='off';
 const phone=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-width:760px)').matches); }catch(e){ return false; } };
 const gameOf=gid=>{ const P=B(); return P&&P.ST&&Array.isArray(P.ST.sched)?P.ST.sched.find(x=>x.game_id===gid)||null:null; };
+/* a game's page on the Props tab names the prop model's game: the board's row where it has one, else the
+   prop model's own row in the board's shape (as the matchup bubble reads one), so a window opens before
+   state.json has come in */
+function propsGame(gid){
+  let r=null; try{ r=typeof S==='object'&&S&&Array.isArray(S.sched)?S.sched.find(x=>x.id===gid)||null:null; }catch(e){}
+  if(!r) return null;
+  const g={game_id:r.id,week:+r.w,gameday:r.d,gametime:r.t,away_team:r.a,home_team:r.h,game_type:'REG'};
+  if(r.hs!=null&&r.as!=null){ g.home_score=r.hs; g.away_score=r.as; g.result=r.hs-r.as; }
+  return g;
+}
+const gameFor=gid=>gameOf(gid)||propsGame(gid);
 const kickMs=(P,g)=>{ const k=g.gameday&&g.gametime?P.kickAt(g.gameday,g.gametime):null; return k?k.getTime():null; };
 /* where the game stands now: played (a published result, or a final on the scoreboard), on, or to come */
 function standing(P,g){
@@ -999,8 +1046,9 @@ function deepDive(P,g,o,d,F){
   const built=stamp(D.built_at||(D.meta&&D.meta.built_at));
   return `<div class="gs-dd"><span class="gs-lab" data-gs-basis title="${dd.basis(D,g.away_team,g.home_team,anyElo)}${built?` Built ${esc(built)} by the news job.`:''}">Position matchups</span>${x.html}</div>`;
 }
-function unitsSec(P,g,F){
-  const T0='Offense vs defense', a=g.away_team, h=g.home_team;
+/* the card's body (the snapshot's fold and the Matchup window draw the same) */
+function unitsBody(P,g,F){
+  const a=g.away_team, h=g.home_team;
   const X=F?unitsOf(F):null, U=X&&X.on?X.U:null, C=X&&X.C, dd=DD(), D=NEWS.units&&NEWS.units.data;
   /* why the Overall ratings are not drawn, said once over the two possessions; the Deep Dive draws either way */
   const eloWhy=!F?'Loading the ratings…':!X?`The unit ratings did not load${F.err?': '+esc(F.err):''}.`:!X.on?'Overall Offense and Overall Defense start once a team has a rated game this season.':'';
@@ -1026,8 +1074,9 @@ function unitsSec(P,g,F){
     return `<div class="gs-unit" data-gs-poss="${esc(o)}-${esc(d)}"><div class="gs-uhd"><h4>${possTitle(o)}</h4>${head}</div>${duel}${deepDive(P,g,o,d,F)}</div>`; };
   /* no summary in the title, no note under the card and no stats fold (the owner's call, 14 October 2026):
      what the ratings and the rows rest on is the boxes' title and the matchups' label's */
-  return fold('gsUnits',T0,'',`${eloWhy?`<p class="gs-msg" style="margin:0 0 12px">${eloWhy}</p>`:''}<div class="gs-units">${pair(a,h)}${pair(h,a)}</div>`);
+  return `${eloWhy?`<p class="gs-msg" style="margin:0 0 12px">${eloWhy}</p>`:''}<div class="gs-units">${pair(a,h)}${pair(h,a)}</div>`;
 }
+function unitsSec(P,g,F){ return fold('gsUnits','Offense vs defense','',unitsBody(P,g,F)); }
 
 /* ---- position by position: each team's expected starters, as the ELO Ratings tab rates them ---- */
 const PTABS=[['off','Offense'],['def','Defense'],['k','Kicker']];
@@ -1113,10 +1162,11 @@ function positions(P,g,F){
 }
 
 /* ---- the Props tab's Mismatches, in this game ---- */
-function mismatchSec(P,g,F){
-  const T0='Mismatches', R=mmOf(P,g,F);
-  if(!R.mine) return fold('gsMism',T0,esc(R.short),`<p class="gs-msg">${R.why}</p>`);
-  if(!R.mine.length) return fold('gsMism',T0,'none in this game',`<p class="gs-msg" id="gsMmNone">No mismatches in this game: no expected starter here both stands above his position's average and faces a unit below the league's.</p>`);
+/* the card's summary, body and badge (the snapshot's fold and the Mismatches window draw the same body) */
+function mmParts(P,g,F){
+  const R=mmOf(P,g,F);
+  if(!R.mine) return {sum:esc(R.short),body:`<p class="gs-msg">${R.why}</p>`};
+  if(!R.mine.length) return {sum:'none in this game',body:`<p class="gs-msg" id="gsMmNone">No mismatches in this game: no expected starter here both stands above his position's average and faces a unit below the league's.</p>`};
   const li=R.mine.map(v=>{ const [gw,gc,lv]=mmGrade(v.score), se=plSe(F,v.pid);
     return `<li data-pid="${esc(v.pid)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
       <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small><span class="gs-mmvs">${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span></span>
@@ -1125,12 +1175,91 @@ function mismatchSec(P,g,F){
   const v0=R.mine[0];
   const sum=`best ${esc(plName(F,v0.pid))} ${N('mm1score',v0.score.toFixed(1))}`;
   const scale=`<div class="gs-scale" aria-hidden="true">${[['Slight','under 1',1,'pe-g1'],['Solid','1 to 2',2,'pe-g2'],['Big','2 to 3',3,'pe-g3'],['Huge','3 and up',4,'pe-g4']].map(([w,r,l,c])=>`<span>${meter(l,c)}<b>${w}</b> <span class="gs-flat">${r}</span></span>`).join('')}</div>`;
-  return fold('gsMism',T0,sum,`<ul class="gs-mm">${li}</ul>${scale}
+  return {sum,body:`<ul class="gs-mm">${li}</ul>${scale}
     <p class="gs-note">The Props tab's Mismatches in this game, ranked among the week's (${R.all.length} in all). The edge is how far above his position's average the player stands plus how far below the league's average the defense he faces stands, in standard deviations.</p>`,
-    `<span class="gs-badge" data-gs-badge="mism">${R.mine.length} in this game</span>`);
+    badge:`<span class="gs-badge" data-gs-badge="mism">${R.mine.length} in this game</span>`};
+}
+function mismatchSec(P,g,F){ const x=mmParts(P,g,F); return fold('gsMism','Mismatches',x.sum,x.body,x.badge); }
+
+/* ---- Team Stats: the season's eleven team stats side by side (news/data/stats.json), each pair split on
+   a bar in the two teams' colours. The Season Tracker's "Full stat breakdown", then the Game snapshot's
+   Stat breakdown from 14 to 16 October 2026 (gone at the owner's call), back as the Team Stats window of a
+   game's page on the Props tab (the owner's call of 20 October 2026: "the old bar system stats we had that
+   showed team stats side by side"); the file is read the first time that window opens ---- */
+const statFile=()=>newsFile('stats','news/data/stats.json',j=>isObj(j)&&isObj(j.stats)?null:'not the stat file');
+/* [key, label, note, value, lower is better, signed, a percentage]; per game, as the file has them */
+const SROWS=[
+  ['pd','Point differential','per game',s=>s.ppg==null||s.pa==null?null:Math.round((s.ppg-s.pa)*10)/10,false,true,false],
+  ['ppg','Points per game','',s=>s.ppg,false,false,false],
+  ['pa','Points allowed','',s=>s.pa,true,false,false],
+  ['ypp','Yards per play','',s=>s.ypp,false,false,false],
+  ['yppa','Yards per play allowed','',s=>s.yppa,true,false,false],
+  ['to','Turnover margin','per game',s=>s.to,false,true,false],
+  ['sk','Sacks','',s=>s.sk,false,false,false],
+  ['ska','Sacks allowed','',s=>s.ska,true,false,false],
+  ['third','Third down rate','',s=>s.third,false,false,true],
+  ['rz','Red zone TD rate','',s=>s.rz,false,false,true],
+  ['expl','Explosive plays','20+ yards',s=>s.expl,false,false,false]];
+/* the bar's split, as the Season Tracker drew it: where lower is better each side by the inverse of
+   its number, else both shifted up by the lower of the two (and 0) so a negative still splits;
+   nothing drawn where either is missing or both are 0. Tenths of a percent */
+function statSplit(x,y,lo){
+  if(x==null||y==null||(x===0&&y===0)) return [0,0];
+  let pa;
+  if(lo){ const ix=1/Math.max(x,.01), iy=1/Math.max(y,.01); pa=ix/(ix+iy)*100; }
+  else{ const m=Math.min(x,y,0), sx=x-m, sy=y-m; pa=(sx+sy)===0?50:sx/(sx+sy)*100; }
+  pa=Math.round(pa*10)/10; return [pa,Math.round((100-pa)*10)/10];
+}
+const statNum=v=>v==null||v===''||!isFinite(+v)?null:+v;
+function teamStatsBody(P,g){
+  const rec=NEWS.stats, a=g.away_team, h=g.home_team, dd=DD(), club=t=>dd?dd.club(t):t;
+  if(!rec||!rec.done) return '<p class="gs-msg">Loading the team stats…</p>';
+  const J=rec.data;
+  if(!J) return `<p class="gs-msg">The team stats did not load${rec.err?' ('+esc(rec.err)+')':''}.</p>`;
+  const season=seasonOf(P,g);
+  if(J.season!=null&&+J.season!==season) return `<p class="gs-msg">The team stats are ${esc(J.season)}'s season; this game is ${esc(season)}'s.</p>`;
+  const sOf=t=>isObj(J.stats[club(t)])?J.stats[club(t)]:null, SA=sOf(a), SH=sOf(h), none={};
+  const fmt=(v,sign,pc)=>v==null?'–':(v<0?'−'+Math.abs(v):(sign&&v>0?'+':'')+v)+(pc?'%':'');
+  let na=0, nh=0;
+  const rows=SROWS.map(([k,lab,note,f,lo,sign,pc])=>{
+    const x=statNum(f(SA||none)), y=statNum(f(SH||none)), [pa,ph]=statSplit(x,y,lo);
+    const ba=x!=null&&y!=null&&x!==y&&(lo?x<y:x>y), bh=x!=null&&y!=null&&x!==y&&!ba;
+    if(ba) na++; if(bh) nh++;
+    return `<div class="gs-sbar" data-gs-srow="${k}"><span class="gs-sva">${V(`<b data-gs-sval="${esc(a)}">${fmt(x,sign,pc)}</b>`,ba)}</span>
+      <div class="gs-smid"><span class="gs-slb">${lab}${note?`<small>${note}</small>`:''}</span><span class="gs-strack" aria-hidden="true"><span class="gs-shalf gs-shl"><i style="width:${pa}%;--gs-tc:${tcol(a)}"></i></span><span class="gs-shalf gs-shr"><i style="width:${ph}%;--gs-tc:${tcol(h)}"></i></span></span></div>
+      <span class="gs-svh">${V(`<b data-gs-sval="${esc(h)}">${fmt(y,sign,pc)}</b>`,bh)}</span></div>`; }).join('');
+  const g1=n=>`${n} game${n===1?'':'s'}`;
+  const counts=[[a,SA],[h,SH]].filter(([,x])=>x&&statNum(x.g)!=null).map(([t,x])=>`${esc(t)} ${g1(+x.g)}`).join(', ');
+  const missing=[[a,SA],[h,SH]].filter(([,x])=>!x).map(([t])=>esc(t));
+  const basis=`${esc(J.season||season)} season${J.through?' through '+esc(J.through):''}${counts?': '+counts:''}`;
+  const sum=missing.length===2?'Neither team is in the file yet.'
+    :`<span class="gs-nw">${esc(a)} better on <b data-gs-sb="${esc(a)}">${na}</b></span>, <span class="gs-nw">${esc(h)} on <b data-gs-sb="${esc(h)}">${nh}</b></span>`;
+  return `<p class="gs-tsum" data-gs-tsum>${sum}</p><div class="gs-steams" aria-hidden="true"><span class="gs-thn">${tg(a,true)}<span class="gs-tnm">${esc(teamName(a))}</span></span><span class="gs-thn"><span class="gs-tnm">${esc(teamName(h))}</span>${tg(h,true)}</span></div>
+    <div class="gs-sbars">${rows}</div>
+    ${missing.length?`<p class="gs-note">Not in the file yet: ${missing.join(' and ')}; ${missing.length===1?'its':'their'} numbers show as dashes.</p>`:''}
+    <p class="gs-note" data-gs-sbasis>${basis}. Each bar splits the pair between the two teams, in their colours, and the better number of each pair is marked; per game, from TeamRankings' season tables as the news job pulls them${J.asof?`, as of ${esc(dayOnly(J.asof))}`:''}, so a game played shows the numbers as they stand now.</p>`;
+}
+
+/* the one card a game's page on the Props tab asked for, unfolded under the window's title ("Matchup ·
+   Week 7"): the snapshot's own body for Offense vs defense and for Mismatches, or Team Stats */
+function drawOne(gid){
+  const P=B(), g=gameFor(gid), F=LOADED, view=$('gsView'); if(!P||!g||!view) return;
+  $('gsTitle').innerHTML=`<span class="gs-tm">${tg(g.away_team,true)}<span>${P.neutral(g)?'vs':'at'}</span>${tg(g.home_team,true)}</span><span class="gs-tsub">${esc(ONE[ONLY])} · ${esc(P.weekName(+g.week))}</span>`;
+  $('gsMini').innerHTML='';
+  let body;
+  try{
+    if(ONLY==='units'){ const st=standing(P,g);
+      body=(st.fin?'<p class="gs-onepast" data-gs-past><b>Played.</b> The ratings and the Deep Dive are the files as they stand now, after the game.</p>':'')+unitsBody(P,g,F); }
+    else if(ONLY==='mism') body=mmParts(P,g,F).body;
+    else body=teamStatsBody(P,g);
+  }catch(e){ body=`<p class="gs-msg">This part could not be drawn: ${esc(e&&e.message||e)}.</p>`; }
+  view.innerHTML=`<section class="card gs-sec gs-one-card" data-gs-only="${esc(ONLY)}"><div class="gs-secbody">${body}</div></section>`;
+  if(!$('peDefs')&&window.pkTierDefs){ const box=document.createElement('div'); box.id='peDefs'; box.innerHTML=window.pkTierDefs; document.body.appendChild(box); }
+  stuck();
 }
 
 function draw(gid){
+  if(ONLY) return drawOne(gid);
   const P=B(), g=gameOf(gid), F=LOADED, view=$('gsView'); if(!P||!g||!view) return;
   $('gsTitle').innerHTML=`<span class="gs-tm">${tg(g.away_team,true)}<span>${P.neutral(g)?'vs':'at'}</span>${tg(g.home_team,true)}</span><span class="gs-tsub">Game snapshot · ${esc(P.weekName(+g.week))}</span>`;
   try{ $('gsMini').innerHTML=mini(P,g,F); }catch(e){ $('gsMini').innerHTML=''; }
@@ -1219,7 +1348,8 @@ function wire(){
   $('gsClose').addEventListener('click',()=>close());
   md.addEventListener('scroll',stuck,{passive:true});
   md.addEventListener('click',e=>{
-    if(e.target===md){ close(); return; }
+    /* a double click on a game page's button opens the window and must not close it with its second click */
+    if(e.target===md){ if(ONLY&&e.detail>0&&Date.now()-ONE_AT<400) return; close(); return; }
     const t=e.target.closest?e.target:null; if(!t) return;
     const f=t.closest('[data-gs-fold]'); if(f){ setCard(f.dataset.gsFold,OPEN[f.dataset.gsFold]!==true); syncAll(); return; }
     const al=t.closest('[data-gs-all]'); if(al){ const open=al.dataset.gsAll==='open'; for(const id of CARDS) setCard(id,open); syncAll(); return; }
@@ -1235,6 +1365,9 @@ function wire(){
      the arrow keys, Home and End move along the Starters tabs */
   window.addEventListener('keydown',e=>{
     if(md.hidden) return;
+    /* one card over a game's page that is no longer on the screen (another tab, the page closed): it goes
+       quietly and the key is the page's */
+    if(ONLY&&!hostShown()){ close(false); return; }
     if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); return; }
     const tb=e.target&&e.target.closest&&e.target.closest('[data-gs-tab]');
     if(tb&&/^(ArrowLeft|ArrowRight|Home|End)$/.test(e.key)){
@@ -1250,13 +1383,21 @@ function wire(){
   },true);
   return md;
 }
-function open(gid,from){
-  const P=B(), g=gameOf(gid); if(!P||!g) return false;
+/* the game's page on the Props tab, on the screen: the one card's window sits over it */
+const hostShown=()=>{ const gm=$('gameModal'); return !!gm&&!gm.hidden&&!gm.closest('[hidden]'); };
+/* the whole snapshot (the board's row, the matchup bubble), or with {only:'units'|'mism'|'stats'} the one
+   card a game's page on the Props tab asked for (window.gameWindow) */
+function open(gid,from,o){
+  const only=o&&ONE[o.only]?o.only:null;
+  const P=B(), g=only?gameFor(gid):gameOf(gid); if(!P||!g) return false;
   const md=wire();
-  cur=gid; opener=from||document.activeElement||null;
-  /* on a wide screen Every call and Team strength open; on a phone the verdict alone, every card folded */
-  const wide=!phone(); OPEN={}; for(const id of CARDS) OPEN[id]=wide&&WIDE_OPEN.includes(id);
-  eloFiles(); unitsFile(); notesFile(seasonOf(P,g),+g.week);
+  cur=gid; opener=from||document.activeElement||null; ONLY=only; ONE_AT=Date.now();
+  md.classList.toggle('gs-one',!!only);
+  if(only){ md.dataset.gsOnly=only; eloFiles(); unitsFile(); if(only==='stats') statFile(); }
+  else{ delete md.dataset.gsOnly;
+    /* on a wide screen Every call and Team strength open; on a phone the verdict alone, every card folded */
+    const wide=!phone(); OPEN={}; for(const id of CARDS) OPEN[id]=wide&&WIDE_OPEN.includes(id);
+    eloFiles(); unitsFile(); notesFile(seasonOf(P,g),+g.week); }
   md.hidden=false; document.body.classList.add('modal-open');
   draw(gid);
   md.scrollTop=0;
@@ -1266,8 +1407,10 @@ function open(gid,from){
 }
 function close(restore=true){
   const md=$('gsModal'); if(!md||md.hidden) return;
-  md.hidden=true; const gid=cur; cur=null;
+  md.hidden=true; const gid=cur, one=ONLY; cur=null; ONLY=null;
+  md.classList.remove('gs-one'); delete md.dataset.gsOnly;
   if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open');
+  if(one){ const op=opener; opener=null; oneFocus(op,one,gid,restore); return; }
   if(!restore){ opener=null; return; }
   /* the focus goes back to the game's row that opened it, or to the same game's row if the board
      has been redrawn since */
@@ -1275,8 +1418,32 @@ function close(restore=true){
   opener=null;
   try{ if(back) back.focus(); }catch(e){}
 }
+/* where the focus goes when one card's window closes: the button that opened it, else the same button on
+   the game's page drawn since (a Refresh odds press, a score read), else the page's Back, else the game's
+   row on the Props tab, else the chosen tab's button; never the page's body. A quiet close (another tab,
+   the game's page closed under it) moves the focus only where it has been lost, a moment later, once the
+   page has done what closed it */
+function oneFocus(op,kind,gid,restore){
+  const vis=el=>!!el&&el.isConnected&&!el.closest('[hidden]');
+  const back=()=>{ if(vis(op)) return op;
+    const v=$('gameView'), same=v&&[...v.querySelectorAll('[data-gp-pop]')].find(b=>b.dataset.gpPop===kind&&vis(b)); if(same) return same;
+    const bb=$('backBtn'); if(hostShown()&&vis(bb)) return bb;
+    const row=[...document.querySelectorAll('#gamesList [data-game]')].find(b=>b.dataset.game===gid&&vis(b)); if(row) return row;
+    const t=document.querySelector('#tabs button[aria-selected="true"]'); return vis(t)?t:null; };
+  const go=()=>{ const b=back(); try{ if(b) b.focus({preventScroll:true}); }catch(e){} };
+  if(restore){ go(); return; }
+  setTimeout(()=>{ const a=document.activeElement; if(a&&a!==document.body&&vis(a)) return; go(); },0);
+}
 window.gameSnapshot=open;
 window.gameSnapshotClose=close;
+/* a game's page on the Props tab: its Matchup, Mismatches and Team Stats buttons each open their card
+   alone, in this window over the page (the props parts draw the buttons only where this is on the page) */
+window.gameWindow=(kind,gid,from)=>ONE[kind]?open(gid,from,{only:kind}):false;
+/* a card over a game's page goes with it: when the page closes (Back, the game's week closing), and when
+   the address moves to another tab */
+if(typeof closeGameModal==='function'){ const was=closeGameModal;
+  closeGameModal=function(){ if(ONLY&&cur) close(false); return was.apply(this,arguments); }; }
+window.addEventListener('hashchange',()=>{ if(ONLY&&cur) close(false); });
 /* the hub's matchup bubble (glance.js, 17 October 2026) reads a game as this window does: the records Team Rankings
    counts, the line as the board reads it, every model's call and its chance, the Power Ratings, Overall Offense and
    Overall Defense */
