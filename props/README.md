@@ -256,7 +256,7 @@ the block; nothing at or after a kickoff is kept, and nothing of the read goes i
 read from ESPN is never a book price). `payload.py` never carries `espn` forward: `apply_espn` works it out again
 every run. The page installs the read at boot (`espnPublished`, app v124), for every visitor and for the
 suggestions record, which so takes each set from the lines the job last read before its lock. ESPN not answering
-never refuses the run: a game kicking off within 48 hours whose lines no run has read for 24 is a problem (the run
+never refuses the run: a game kicking off within 48 hours whose player lines no run has read for 24 is a problem (the run
 goes red after its commit), as is a reader that crashed or a page with no `espnReadWeek`; an error applying the
 read refuses it. `build/test_espn_read.js` (the reader, on a local server answering from `build/fixtures/espn/`)
 and `build/test_apply_espn.py` (every rule above, and the real page installing exactly what it publishes) hold it.

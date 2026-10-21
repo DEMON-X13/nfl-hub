@@ -52,7 +52,7 @@ What it does, in order:
      to come, each ESPN request through lib/netfetch.js; it writes raw/espn/read.json and records every
      answer there (--offline replays them). The read never refuses the run: a game ESPN did not answer
      for keeps the last read the site published, and a game kicking off within ESPN_SOON hours whose
-     lines no run has read for ESPN_STALE hours is a problem (the run goes red after its commit), as is
+     player lines no run has read for ESPN_STALE hours is a problem (the run goes red after its commit), as is
      a reader that crashed or a page with no espnReadWeek
   5. applies the read (apply_espn): the payload's espn (each game still to come: its game lines, its
      player lines and what the last read of them found, carried from the published payload where this
@@ -370,7 +370,7 @@ def read_raw(prev,gs):
 ESPN_DIR=os.path.join(RAW,'espn'); ESPN_READ=os.path.join(ESPN_DIR,'read.json')
 ESPN_TIMEOUT=300   # seconds: espn_read.js settles every request at its own deadline (150 s); this is the backstop
 ESPN_STALE=24      # hours: a game line read longer ago is not put on the schedule (the bake's rule for DraftKings'
-                   # lines), and a game whose lines no run has read for this long...
+                   # lines), and a game whose player lines no run has read for this long...
 ESPN_SOON=48       # ...kicking off within this many hours is overdue: a problem, so the run goes red after its commit
 PART3=os.path.join(HERE,'part3.js')
 
@@ -459,8 +459,10 @@ def apply_espn(pay,prev,read,now,rules=None):
     the read's time and lsr 'espn', while under ESPN_STALE hours old and newer than any DraftKings line the bake
     put there (a pull by hand). Nothing goes into mkt, prices or dk.
 
-    The overdue rule (as snaps_overdue's): a game kicking off within ESPN_SOON hours whose player lines (else its
-    game lines) were last read more than ESPN_STALE hours ago, or never, is a problem; the last read stays published.
+    The overdue rule (as snaps_overdue's): a game kicking off within ESPN_SOON hours whose player lines were last read
+    (out: a read that found them, or found none posted) more than ESPN_STALE hours ago, or never, is a problem; the last
+    read stays published. Its game lines never stand in for them: a scoreboard that answers while every player read
+    fails (ESPN's core host refusing the runners, its paging rule changed) leaves every set without a player leg.
     test_apply_espn.py holds every rule here to its cases, and the page's install of the result"""
     rules=rules or espn_rules()
     notes,probs=[],[]
@@ -524,19 +526,20 @@ def apply_espn(pay,prev,read,now,rules=None):
                  +(f", {kept} at a newer DraftKings pull" if kept else '')
                  +(f"; {n['dropped']} read(s) dated at or after a kickoff left out" if n['dropped'] else ''))
     late=espn_overdue(out,to_come,now)
-    if late: probs.append(f"ESPN: DraftKings' lines not read in the last {ESPN_STALE}h for {len(late)} game(s) kicking off within {ESPN_SOON}h ({'; '.join(late[:6])}{'...' if len(late)>6 else ''}): the last read stays published")
+    if late: probs.append(f"ESPN: DraftKings' player lines not read in the last {ESPN_STALE}h for {len(late)} game(s) kicking off within {ESPN_SOON}h ({'; '.join(late[:6])}{'...' if len(late)>6 else ''}): the last read stays published")
     return notes,probs
 
 def espn_overdue(games,to_come,now):
     """'game last read Nh ago, kickoff in Mh' (or never read) for each game kicking off within ESPN_SOON hours
-    whose player lines (out.at; its game lines' gl.at where no read of them found anything) were last read more
-    than ESPN_STALE hours before now, or never"""
+    whose player lines were last read (out.at: an 'ok' or a 'none') more than ESPN_STALE hours before now, or never.
+    The player half alone: a fresh read of its game lines (gl.at) is no read of its player lines, so a week whose
+    every player read failed goes red within a day however well the scoreboard answers"""
     late=[]
     for gid,g in sorted(to_come.items(),key=lambda x:(kickoff(x[1]),x[0])):
         ko=kickoff(g); h=(ko-now).total_seconds()/3600
         if h>ESPN_SOON: continue
         e=games.get(gid) or {}
-        t=espn_time((e.get('out') or e.get('gl') or {}).get('at'))
+        t=espn_time((e.get('out') or {}).get('at'))
         age=(now-t).total_seconds()/3600 if t else None
         if age is None: late.append(f"{gid} never read, kickoff in {h:.0f}h")
         elif age>ESPN_STALE: late.append(f"{gid} last read {age:.0f}h ago, kickoff in {h:.0f}h")

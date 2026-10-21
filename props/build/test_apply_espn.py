@@ -17,9 +17,13 @@ a credit; the last one boots the real page in jsdom.
      where the read is a day old (nflverse's stand) or a DraftKings pull by hand is newer
   F. cleaning by the page's rules: a line off the half point, at 0 or past 1000, a stat the page does not keep, a
      player id not of the page's shape dropped; rungs each once, in order, at most 40; touchdowns once, sorted
-  G. the overdue rule: a game kicking off within 48 hours whose lines were last read over 24 hours ago (or never) is
-     one problem naming it, worded so it never reads as a refusal or as an nflverse file not posted yet
-  H. nothing of the read in mkt, prices or dk; read_at the read's, null with no read
+  G. the overdue rule: a game kicking off within 48 hours whose player lines were last read over 24 hours ago (or never)
+     is one problem naming it, worded so it never reads as a refusal or as an nflverse file not posted yet; its game
+     lines never stand in for them (a scoreboard that answers while every player read fails still goes red), and a
+     'none' is a read (a game with no player lines posted does not go red)
+  H. nothing of the read in mkt, prices or dk; read_at the read's, null with no read; a paid pull's game-line ids for a
+     game the read also covers (the same DraftKings ids: a paid sid is ESPN's bet-link outcome id) left in dk as baked,
+     and the read published beside them
   I. load_read: no file, a file from before this run began, of another week, not JSON, not a read; a skipped read
   J. espn_step: an earlier run's read.json deleted before the read; a crash, a timeout and a page with no reader
      each a problem at once (never a refusal); the season over or no game to come, no read and no problem
@@ -27,7 +31,9 @@ a credit; the last one boots the real page in jsdom.
   L. payload.py never carries espn forward (its carry run on a published payload holding one)
   M. the page installs exactly what apply_espn publishes: the real page booted in jsdom on a payload this made, every
      game's block in ESPN_LIVE equal to the published one, every game in ESPN_PUB with its outcome, its lines on the
-     schedule marked read from ESPN, and the page's ESPN_KEEP_STATS the stats espn_rules reads from part3.js
+     schedule marked read from ESPN, and the page's ESPN_KEEP_STATS the stats espn_rules reads from part3.js. Its three
+     games are the published payload's last week's first three with their scores taken off, so it holds once every game
+     has been played (the off-season) as well as mid-season
 
     python3 props/build/test_apply_espn.py        must end "0 failures"
 """
@@ -205,7 +211,20 @@ def g():
     p = pay(); _, probs = apply(p, prev(), read({TNF: rg('none', at=READ_AT)}))
     chk(not probs, f"G: a fresh 'none' is a read: no problem ({probs})")
     p = pay(); _, probs = apply(p, prev({TNF: {'w': '7', 'gl': gl(ago(2))}}), read({TNF: rg('failed')}))
-    chk(not probs, 'G: game lines read 2h ago, no player read ever: read (the game lines date it)')
+    chk(probs and f'{TNF} never read, kickoff in 36h' in probs[0], f'G: game lines read 2h ago and no player read ever: never read, the game lines do not date it ({probs})')
+    # the review's case (20 October 2026): ESPN's core host refusing the runners while its scoreboard answers, every
+    # player read failed run after run, each run's game lines fresh
+    p = pay(); _, probs = apply(p, prev(), read({TNF: rg('failed', g=gl(READ_AT), why='HTTP 403'), SUN: rg('failed', g=gl(READ_AT), why='HTTP 403')}))
+    chk(len(probs) == 1 and f'{TNF} never read, kickoff in 36h' in probs[0] and SUN not in probs[0] and "player lines not read" in probs[0],
+        f"G: every player read failed with the scoreboard's game lines fresh: the game within 48h never read, the one 77h out not ({probs})")
+    p2 = pay(); later = NOW + datetime.timedelta(hours=30); at2 = iso(later + datetime.timedelta(seconds=5))
+    _, probs = apply(p2, p, read({TNF: rg('failed', g=gl(at2), why='HTTP 403'), SUN: rg('failed', g=gl(at2), why='HTTP 403')}, at=at2), now=later)
+    chk(len(probs) == 1 and f'{TNF} never read, kickoff in 6h' in probs[0] and SUN not in probs[0],
+        f'G: and 30 hours on, with its game lines read again, the same ({probs})')
+    p = pay(); _, probs = apply(p, prev({TNF: {'w': '7', 'gl': gl(ago(2)), 'out': {'st': 'none', 'at': ago(30)}}}), read({TNF: rg('failed', g=gl(READ_AT))}))
+    chk(probs and f'{TNF} last read 30h ago' in probs[0], f"G: a 'none' 30h old is overdue, its game lines read now notwithstanding: {probs}")
+    p = pay(); _, probs = apply(p, prev({TNF: {'w': '7', 'gl': gl(ago(2)), 'out': {'st': 'none', 'at': ago(3)}}}), read({TNF: rg('failed', g=gl(READ_AT))}))
+    chk(not probs, f"G: a 'none' 3h old is a read: DraftKings has posted no player lines, no problem ({probs})")
     p = pay(); _, probs = apply(p, prev({TNF: {'w': '7', 'gl': gl(ago(2)), 'out': {'st': 'ok', 'at': ago(30)}, 'pl': block(ago(30))}}), read({TNF: rg('failed')}))
     chk(probs and 'last read 30h ago' in probs[0], f'G: the player lines date it where there was a player read: {probs}')
 case('G', g)
@@ -216,6 +235,13 @@ def h():
     apply(p, prev(), read({TNF: rg('ok', block(READ_AT), gl(READ_AT), at=READ_AT), SUN: rg('none', at=READ_AT)}))
     chk({k: p[k] for k in ('mkt', 'prices', 'dk')} == before, 'H: nothing of the read in mkt, prices or dk')
     chk('espn' not in json.dumps(p['mkt']) + json.dumps(p['prices']) and p['dk'] == {}, "H: PAY.dk stays the bake's ({}): a read's ids are the page's to merge")
+    # a paid pull by hand (or Thursday 22 October's, the last scheduled one) baked TNF's game-line ids, which are the very
+    # ids ESPN's bet links carry: dk keeps them as baked, and the read is published as read, ids and all
+    p = pay(); paid = {**gl(READ_AT)['ids'], 'event': '34118033', 'glat': '2026-10-21T10:17Z'}; p['dk'] = {'7': {TNF: dict(paid)}}
+    apply(p, prev(), read({TNF: rg('ok', block(READ_AT), gl(READ_AT), at=READ_AT)}))
+    e = p['espn']['games'].get(TNF, {})
+    chk(p['dk'] == {'7': {TNF: paid}} and e.get('gl', {}).get('ids') == gl(READ_AT)['ids'] and e.get('pl', {}).get('at') == READ_AT and G(p, TNF).get('lsr') == 'espn',
+        f"H: paid game-line ids equal to the read's: dk left as baked, the read published (gl, pl, the schedule's lines): {p['dk']} {sorted(e)}")
 case('H', h)
 
 # ---------------------------------------------------------------------------------------------------------- I
@@ -339,9 +365,13 @@ def m():
         p.pop('espn', None)
         for g in p['sched']:
             g.pop('lsr', None)
-        # the payload's last week, three games of it, on a clock 30 hours before the first of them
+        # the payload's last week, three games of it with their scores taken off (on this copy alone: every game of it
+        # may have been played, as from the Sunday of week 18 until the season rolls over), on a clock 30 hours before
+        # the first of them
         wk = max(int(g['w']) for g in p['sched'])
-        gs = sorted((g for g in p['sched'] if int(g['w']) == wk and not W.has_score(g)), key=lambda g: (W.kickoff(g), g['id']))[:3]
+        gs = sorted((g for g in p['sched'] if int(g['w']) == wk), key=lambda g: (W.kickoff(g), g['id']))[:3]
+        chk(len(gs) == 3, f"M: the payload's last week has three games to stand on ({len(gs)})")
+        for g in gs: g.pop('hs', None); g.pop('as', None)
         now = W.kickoff(gs[0]) - datetime.timedelta(hours=30)
         at = lambda h: iso(now - datetime.timedelta(hours=h))
         team = {}

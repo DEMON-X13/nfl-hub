@@ -1957,7 +1957,7 @@ commit); `apply_espn` (an error in it refuses) writes `PAY.espn` (above) from th
 `ok` replacing a block, a `none` dropping it, an unread game carried with its own times, every half before kickoff,
 nothing across a rollover, the block cleaned by the page's own rules, `espn_rules`) and puts each game's lines on the
 schedule (`ls` 'dk', `lat`, `lsr` 'espn', under a day old, never over a newer pull by hand's), nothing of it in `mkt`,
-`prices` or `dk`; a game kicking off within 48 hours whose lines no run has read for 24 is a problem. At boot, outside
+`prices` or `dk`; a game kicking off within 48 hours whose player lines no run has read for 24 is a problem. At boot, outside
 `NO_BAKED` and before `espnRestore`, `espnPublished()` installs each block into `ESPN_LIVE` (recorded in `ESPN_PUB`;
 `espnKeptGame(e, {published:true})`, no `late` guard), merges each game's ids and event into `PAY.dk` as an entry a read
 made (`ESPN_PUB_IDS`, `espnIdAt`), and writes no `ESPN_GL`, `ESPN_OUT`, `ESPN_IDAT`, kept read or `S`. A fresh press applies

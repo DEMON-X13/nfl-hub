@@ -428,9 +428,10 @@ earliest, with that run dropped the one before it landing in time and reading no
 on the hour; it prints the worst gap of each kind of lock, fails 24 Sunday-slot locks with `--drop "47 4 * * 0"`, and a
 change to the crons comes with a run of it. DraftKings' moneylines, spreads and totals from a read are put on the schedule
 only while under a day old (`ESPN_STALE`, as the bake's rule for a pull's), and a game kicking off within 48 hours
-(`ESPN_SOON`) whose lines no run has read for 24 is a problem: the run publishes the last read and goes red after its
-commit. A visitor's Refresh odds press (below) puts DraftKings' current lines, read from ESPN in that browser, over the
-published read in that browser alone. It commits straight to `main` (`props/data`; `props/raw/espn/` is never committed).
+(`ESPN_SOON`) whose player lines no run has read for 24 (its game lines never stand in for them) is a problem: the run
+publishes the last read and goes red after its commit. A visitor's Refresh odds press (below) puts DraftKings' current
+lines, read from ESPN in that browser, over the published read in that browser alone. It commits straight to `main`
+(`props/data`; `props/raw/espn/` is never committed).
 A refused run (`weekly.py` exit 1) opens an issue labelled `props-refused`, or comments on the open one, with
 `props/build/refused_note.py`'s text: the problems file, the published payload's bake time and its ESPN read's, the next
 game still to come with its kickoff in ET and the hours left, the run's link, and what to do (merge a fix, then `gh
@@ -1000,9 +1001,12 @@ rollover, and the block is cleaned by the page's own rules (`espn_rules` reads `
 rule) with `ls` 'dk', `lat` the read's time to the second and `lsr` 'espn', while under 24 hours old (`ESPN_STALE`) and
 newer than any DraftKings line the bake put there (a pull by hand). Nothing of ESPN's goes into `PAY.mkt`, `PAY.prices`,
 `PAY.dk` or `S.odds` (a line read from ESPN is never a book price: `mainOf`, `legFair`, `fairVig` and the Track Record would
-read it as one), and `payload.py` never carries `espn` forward. A game kicking off within 48 hours (`ESPN_SOON`) whose lines
-no run has read for 24 is a problem ("ESPN: DraftKings' lines not read in the last 24h for 1 game(s) kicking off within 48h
-(2026_07_NE_CHI last read 31h ago, kickoff in 20h): the last read stays published"), as `snaps_overdue` is. On week 7 the
+read it as one), and `payload.py` never carries `espn` forward. A game kicking off within 48 hours (`ESPN_SOON`) whose player
+lines no run has read for 24 (`out`: a read that found them, or found none posted, so a game with no player lines posted
+does not go red) is a problem ("ESPN: DraftKings' player lines not read in the last 24h for 1 game(s) kicking off within 48h
+(2026_07_NE_CHI last read 31h ago, kickoff in 20h): the last read stays published"), as `snaps_overdue` is; a fresh read of
+its game lines never stands in for them (until the review of 21 October 2026 it did, so a week whose every player read
+failed while ESPN's scoreboard answered, the core host refusing the runners, say, never went red). On week 7 the
 read was 14 games, 156 players (every one placed by ESPN id), 1,737 rungs, about 23 KB of a 2.9 MB payload, in about a
 second and 16 requests.
 On the page, `espnPublished()` (at boot, outside `NO_BAKED`, so the audit sees what a visitor sees, and before
