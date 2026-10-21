@@ -4,7 +4,7 @@
  *   node nflbets/build/smoke_live.js        (from the hub root)
  *
  * The section reads liveparlays/parlays.json, the scoreboard and the box scores, and draws one
- * list, X Parlays: the parlays in the file, read only. Since app v124 (the owner's call of 20 October
+ * list, X Parlays: the parlays in the file, read only. Since app v125 (the owner's call of 20 October
  * 2026, "hide only") the tab is on the admin's devices alone (nflbets/build/admin.js, the #owner= link):
  * run() boots the admin's browser unless a section asks for a visitor's, whose page has no X Parlays
  * tab and reads nothing for it (sections N and V). A

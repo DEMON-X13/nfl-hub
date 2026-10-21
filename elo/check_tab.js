@@ -170,7 +170,7 @@ const SUMS_SRC = [[PART2, 'const clip='], [PART2, 'const TOTAL_RHO='], [PART2, '
   [PART3, 'const SGP_HOLD='], [PART3, 'function parlayDec('], [PART3, 'const PB_TIERS='], [PART3, 'const pbOrder='],
   [PART3, 'const dkPassTd='], [PART3, 'function dkClashWhy('], [PART3, 'const dkClash=']].map(([s, h]) => srcOf(s, h)).join('\n');
 const sumsOwn = corr => new Function('PAY', SUMS_SRC + '\nreturn {parlayProb,parlayDec,pbOrder,PB_TIERS,mlProb,mlToDec,legRho};')({ corr: corr || {} });
-/* (app v124) the page's id rule (part3.js: dkCarries, which reads a PAY.dk entry's content, and dkIdOf), set into a tab's
+/* (app v125) the page's id rule (part3.js: dkCarries, which reads a PAY.dk entry's content, and dkIdOf), set into a tab's
    page as the hub page has it beside the tab, for F1's read-made entry */
 const DK_SRC = [[PART3, 'const DK_PRESS_MADE='], [PART3, 'function dkPressMade('], [PART3, 'function dkEntryCarries('], [PART3, 'function dkCarries('], [PART3, 'function dkIdOf(']]
   .map(([s, h]) => srcOf(s, h)).join('\n').replace(/^const /gm, 'var ');
@@ -1163,7 +1163,7 @@ function page(MU, opts) {
         chk(sg.length > 0 && sg.every(t => Math.abs(t.dec - t.legs.reduce((a, l) => a * sums.mlToDec(l.price), 1)) > 1e-3 && Math.abs(t.p - t.legs.reduce((a, l) => a * l.pe, 1)) > 1e-3),
           `F1: no Elo pick takes two legs of one game that move together, or one is priced as its legs multiplied: ${r.tiers.map(t => t.id + ' ' + t.legs.map(l => l.gid.slice(-3)).join('/') + ' ' + t.p + ' ' + t.dec).join('; ')}`);
         chk(r.tiers.every(t => t.legs.length === t.n), 'F1: an Elo pick level is empty with eight candidates');
-        /* (app v124) the id rule by content, as the hub page carries it beside the tab: a game whose PAY.dk entry a read of
+        /* (app v125) the id rule by content, as the hub page carries it beside the tab: a game whose PAY.dk entry a read of
            ESPN made (its event, glat and game lines' ids: the props job's published read, a press, the parlay card's check)
            carries no ids of the pull's, so its candidate priced from DraftKings' line stays, as on a JSON copy of that
            table; one whose entry carries the pull's (its at) drops it, having no id (so the case can tell) */

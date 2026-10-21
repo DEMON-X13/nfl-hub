@@ -119,7 +119,7 @@
    The page runs on the run's clock held still (SUGGEST_NOW or the machine's at the start), so a boot
    that takes seconds cannot carry it past a lock or kickoff the script itself still counts as to come.
 
-   Since app v124 (the owner's call of 20 October 2026: no scheduled paid pull) the sets stand on the props job's own
+   Since app v125 (the owner's call of 20 October 2026: no scheduled paid pull) the sets stand on the props job's own
    read of DraftKings' lines on ESPN, which the payload carries (PAY.espn) and the page installs at boot: so the record
    is refused where the payload carries a read of player lines for a game still to come and the page applied none
    (the job and the page shipped out of order would record sets of team legs only), and where the page asked ESPN for
@@ -277,7 +277,7 @@ async function ready(w, errs, payload, asked) {
     .filter(f => w.eval(`typeof ${f}`) !== 'function');
   if (missing.length) why.push("the page has no Suggested Parlays sets to take (no " + missing.join(', ') + ')');
   else if (w.eval('SP_LOCK_MS') !== LOCK_MS) why.push('the page locks a set at another time than 2 hours before kickoff');
-  /* (app v124) the props job's own read of DraftKings' lines on ESPN, in the payload (PAY.espn): where it carries a
+  /* (app v125) the props job's own read of DraftKings' lines on ESPN, in the payload (PAY.espn): where it carries a
      well-formed block of player lines for a game still to come, read before its kickoff, the page must have applied it
      (espnGame), or every set would hold team legs only (the job and the page shipped out of order) */
   const E = payload && payload.espn;

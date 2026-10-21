@@ -2563,7 +2563,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v124 \u00b7 2026-10-20';
+const APP_BUILD='app v125 \u00b7 2026-10-21';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3146,7 +3146,7 @@ function probToAmerican(p){
 function legKey(gid,pid,stat){ return gid+'|'+pid+'|'+stat; }
 function parlayLegs(){
   return Object.entries(S.parlay||{}).map(([key,l])=>{ const x={key,...l}; delete x.pulled;
-    /* (app v124) the parlay card's Pull from DraftKings (window.dkPulledFor, on the admin's device alone): what it
+    /* (app v125) the parlay card's Pull from DraftKings (window.dkPulledFor, on the admin's device alone): what it
        pulled for this leg, put on this fresh copy only, never on S.parlay; inert without the card */
     if(typeof window!=='undefined'&&typeof window.dkPulledFor==='function'){ try{ const P=window.dkPulledFor(x); if(P) x.pulled=P; }catch(e){} }
     return x; })
@@ -3657,7 +3657,7 @@ function lineSource(g){
   /* (app v107) DraftKings' lines a Refresh odds press read on ESPN, dated as the press's status line dates them */
   if(g.ls==='dk'){ let gl=null; try{ gl=typeof ESPN_GL==='object'&&ESPN_GL?ESPN_GL[g.id]:null; }catch(e){}
     if(gl&&gl.at) return 'DraftKings’, read from ESPN by Refresh odds '+espnWhen(gl.at);
-    /* (app v124) the props job's own read of ESPN, published with the payload */
+    /* (app v125) the props job's own read of ESPN, published with the payload */
     if(g.lsr==='espn') return 'DraftKings’, read from ESPN '+espnWhen(g.lat);
     const t=g.lat?new Date(g.lat):null;
     return 'DraftKings'+(t&&isFinite(t)?', pulled '+t.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}):''); }
@@ -4656,7 +4656,7 @@ async function boot(){
   let baked=null;
   if(!window.NO_BAKED){ try{ baked=applyBaked(); }catch(e){ console.error('built-in data failed to apply',e); setTimeout(()=>log('Built-in data could not be applied: '+(e&&e.message||e)+'. The upload buttons still work.','err'),0); } }
   if(baked&&(baked.stats.length||baked.prices||baked.inj||baked.sched)) save();
-  /* (app v124) the props job's read of DraftKings' lines on ESPN, published with the payload: outside NO_BAKED, so
+  /* (app v125) the props job's read of DraftKings' lines on ESPN, published with the payload: outside NO_BAKED, so
      the audit sees what a visitor sees, and before the kept read, which it may outrank */
   try{ espnPublished(); }catch(e){ console.error(e); }
   /* (app v108) a Refresh odds read this browser kept, where it still stands: before the first draw, no request */
@@ -4683,7 +4683,7 @@ async function boot(){
       ?`Already loaded in this browser: ${bits.join(' and ')}, from the build of ${PAY.baked_at?String(PAY.baked_at).slice(0,16).replace('T',' '):'the weekly job'}. Nothing to upload.`
       :`No ${SEASON} data yet. Projections are running off how everyone finished ${SEASON-1}.`,'ok'),0); }
 }
-/* the balance the last build published (the hidden Weekly Update tab's credit panel; since app v124 no build buys
+/* the balance the last build published (the hidden Weekly Update tab's credit panel; since app v125 no build buys
    prices, so it stands as the last paid pull left it). The public page never asks the odds API itself: only the
    admin's browser does, through the hub's HUB_ADMIN, which alone holds the key */
 const CREDITS_URL='https://demon-x13.github.io/nfl-hub/props/data/credits.json';
@@ -4831,9 +4831,9 @@ function toggleLeg(key,k,g,side,main){
   save(); renderGame(); renderParlay();
 }
 function legPrice(l){
-  /* (app v124) a leg the parlay card's Pull from DraftKings priced (parlayLegs' copy, never S.parlay): DraftKings' own */
+  /* (app v125) a leg the parlay card's Pull from DraftKings priced (parlayLegs' copy, never S.parlay): DraftKings' own */
   if(l&&l.pulled&&isFinite(+l.pulled.ml)&&+l.pulled.ml!==0) return {ml:+l.pulled.ml,src:'real',pulled:true};
-  /* (app v124) a leg of a locked set (spLegIn's kept) is at its locked price through any later publish or press, so the
+  /* (app v125) a leg of a locked set (spLegIn's kept) is at its locked price through any later publish or press, so the
      builder pays what the locked card says */
   if(l&&l.kept&&l.price!=null&&isFinite(l.price)&&l.price!==0) return {ml:l.price,src:l.src||'est'};
   /* (app v107) a leg a Refresh odds press priced goes back to the page's own price once that press no
@@ -4881,7 +4881,7 @@ const sameGame=legs=>{ const g={}; for(const l of legs) g[l.gid]=(g[l.gid]||0)+1
    odds button (espnCtl: the Parlay Builder's controls and the Props tab's game list read every game of the
    week still to come; a game's page reads that game alone) reads DraftKings' lines from ESPN's free feed in
    the visitor's own browser when it is pressed, and never otherwise: nothing is fetched for it on load or
-   on a timer. Since app v124 the props job reads ESPN too, on every run, with this very reader (espnReadWeek,
+   on a timer. Since app v125 the props job reads ESPN too, on every run, with this very reader (espnReadWeek,
    in jsdom), and publishes what it read in the payload (PAY.espn and the schedule's game lines; espnPublished,
    below, installs it at boot), so every visitor starts from DraftKings' lines and a press reads them again,
    newer. Both ESPN hosts answer a plain GET with access-control-allow-origin: *, and the page sends no
@@ -4951,7 +4951,7 @@ const ESPN_GL_KEYS=['mla','mlh','sp','spa','sph','tot','tov','tou','ls','lat'];
 const ESPN_TESTED={main:new Set(['passing_yards','rushing_yards','receiving_yards','receptions','passing_tds']),rung:new Set(['passing_yards','rushing_yards','receiving_yards'])};
 /* the press's state: never in S; kept under its own key until it gives way (app v108, below) */
 let ESPN_LIVE={}, ESPN_GL={}, ESPN_OUT={}, ESPN_NAMES={}, ESPN_IDAT={}, ESPN_SEQ=0;
-/* (app v124) the published read (espnPublished): ESPN_PUB[w][gid] = {at, st, when, block, gl:{at, ids, event}}
+/* (app v125) the published read (espnPublished): ESPN_PUB[w][gid] = {at, st, when, block, gl:{at, ids, event}}
    (block the very object it put in ESPN_LIVE, so a pressed block is told from it by identity); ESPN_PUB_IDS[gid][key]
    = {id, at}, the game-line ids it merged into PAY.dk, dated by its read; ESPN_PUB_ADDED what it added to PAY.dk
    (so a game no longer published takes them back out); ESPN_PUB_DK the table it merged into */
@@ -5017,7 +5017,7 @@ function espnOdds(ev,g){
 /* a game's lines from a read at time at, where it is newer than what the page has, and its DraftKings
    ids beside the paid pull's; true where anything moved. since (app v108, a kept read put back) stands
    in for the published lines' time: the DraftKings pull's own, never baked_at, which moves on every bake.
-   fresh (app v124, a press reading now: espnRefresh, the parlay card's check) applies over lines the props job
+   fresh (app v125, a press reading now: espnRefresh, the parlay card's check) applies over lines the props job
    read from ESPN and published (lsr 'espn') whatever their lat says: that is ESPN's clock, the press's the
    browser's, and the smoke and PROPS_AUDIT_NOW move the page's clock back, so a time comparison could swallow a
    press. A paid line (ls 'dk' with no lsr) and a kept read's replay are still judged by time. The ids go into an
@@ -5049,7 +5049,7 @@ function espnApplyGame(g,odds,at,since,fresh){
   }
   return ch;
 }
-/* when a press last read a game's DraftKings id (a team's line or the total), or null; (app v124) else when the
+/* when a press last read a game's DraftKings id (a team's line or the total), or null; (app v125) else when the
    props job's published read did, while PAY.dk still holds that very id for the key */
 function espnIdAt(gid,key){ const t=ESPN_IDAT[gid]&&ESPN_IDAT[gid][key]; if(isFinite(t)&&t>0) return t;
   const P=ESPN_PUB_IDS[gid]&&ESPN_PUB_IDS[gid][key]; if(!P) return null;
@@ -5081,7 +5081,7 @@ async function espnProps(eid){
   let items=[], pages=1, at=null;
   for(let p=1;p<=pages;p++){
     const r=await espnFetch(`${ESPN_CORE}/events/${eid}/competitions/${eid}/odds/${ESPN_DK}/propBets?lang=en&region=us&limit=${ESPN_LIMIT}&page=${p}&_=${Date.now()}`);
-    /* (app v124) dated by its answer (the Date header where it can be read, else the page's clock), for the job */
+    /* (app v125) dated by its answer (the Date header where it can be read, else the page's clock), for the job */
     if(r.status===404&&p===1) return {st:'none',why:'DraftKings has posted no player lines for it yet',at:r.at!=null?r.at:Date.now()};
     if(r.status!==200) return {st:'failed',why:r.why||('HTTP '+r.status)};
     const d=r.body;
@@ -5102,7 +5102,7 @@ function espnRosterNames(body){ try{ for(const grp of (body&&body.athletes)||[])
    no other athlete of the read claims: every exact name first (normName), then the looser one (nameKey),
    a player two athletes claim going to neither */
 async function espnPlace(per,g,ev){
-  /* (app v124) how each was placed (how, not enumerable: 'id', 'name' an exact name, 'nameKey' the looser one), which
+  /* (app v125) how each was placed (how, not enumerable: 'id', 'name' an exact name, 'nameKey' the looser one), which
      the props job's read records and its audit holds (V-ESPN) */
   const ids=PAY&&PAY.espn_ids&&typeof PAY.espn_ids==='object'?PAY.espn_ids:{}, placed={}, left=[], how={};
   Object.defineProperty(placed,'how',{value:how});
@@ -5146,12 +5146,12 @@ async function espnReadGame(r){
   const {per,counts}=espnParseItems(pr.items), placed=await espnPlace(per,r.g,r.ev), at=t();
   if(Math.max(at,Date.now())>=r.ko) return {st:'kicked',why:'kicked off while it was being read'};
   const res={st:'ok',at,block:espnBlock(per,placed,at),counts:{...counts,athletes:Object.keys(per).length,placed:Object.keys(placed).length}};
-  /* (app v124) each player of the block: the ESPN athlete whose lines it carries (espnBlock's own choice), ESPN's name
+  /* (app v125) each player of the block: the ESPN athlete whose lines it carries (espnBlock's own choice), ESPN's name
      for him and how he was placed; not enumerable, so nothing a press keeps carries it (espnReadWeek returns it) */
   Object.defineProperty(res,'placed',{value:espnWho(per,placed)});
   return res;
 }
-/* (app v124) who each player of a game's block is: {pid: {aid, name, how}}, in espnBlock's order (the athlete
+/* (app v125) who each player of a game's block is: {pid: {aid, name, how}}, in espnBlock's order (the athlete
    PAY.espn_ids names him by, else the first by number) */
 function espnWho(per,placed){
   const ids=PAY&&PAY.espn_ids&&typeof PAY.espn_ids==='object'?PAY.espn_ids:{}, how=placed&&placed.how||{}, who={};
@@ -5160,7 +5160,7 @@ function espnWho(per,placed){
     who[pid]={aid,name:typeof ESPN_NAMES[aid]==='string'?ESPN_NAMES[aid]:null,how:how[aid]||'id'}; }
   return who;
 }
-/* (app v124) the reader alone, for the press and for the props job (which calls it in jsdom, window.espnReadWeek):
+/* (app v125) the reader alone, for the press and for the props job (which calls it in jsdom, window.espnReadWeek):
    week w's scoreboard and the player lines of each of games (schedule rows of week w, still to come), read and
    placed, and nothing applied. Returns {sbAt: the scoreboard's time or null, out: {gid: {st 'ok'|'none'|'failed'|
    'kicked', why?, sb?: the scoreboard failed it, at?: the read's time (ok and none), block?, counts?}}, gl: {gid: {at,
@@ -5199,7 +5199,7 @@ async function espnReadWeek(w,games,onStep){
   return {sbAt,out,gl,pl};
 }
 /* the press: gid, that game alone; none, every game of the week still to come. false where it does
-   nothing (a read already running, or no game to read). (app v124) The read is espnReadWeek's; the press applies
+   nothing (a read already running, or no game to read). (app v125) The read is espnReadWeek's; the press applies
    it: each game's lines (a fresh read, so over the published read's whatever its time says), in the scoreboard's
    order, then each block into ESPN_LIVE */
 async function espnRefresh(gid){
@@ -5261,7 +5261,7 @@ function espnHash(s){ let h=0x811c9dc5; for(let i=0;i<s.length;i++){ h^=s.charCo
 /* the game lines the page publishes for g (a press's own are kept aside in ESPN_GL) */
 function espnGlSig(g){ const o=ESPN_GL[g.id]?ESPN_GL[g.id].orig:g; return espnHash(ESPN_GL_KEYS.map(k=>o[k]==null?'':String(o[k])).join('|')); }
 /* g's published player prices: the paid pull's time for it and every main line the payload carries for it, and
-   (app v124) the published read of its player lines, where the payload carries one for the game in its week (its
+   (app v125) the published read of its player lines, where the payload carries one for the game in its week (its
    pl.at, out.st and out.at: every new read of the job moves them). With none, the string is exactly app v120's */
 function espnPlSig(g){
   const W=PAY&&PAY.dk&&typeof PAY.dk==='object'?PAY.dk[String(g.w)]:null, D=W&&W[g.id], M=PAY&&PAY.mkt&&typeof PAY.mkt==='object'?PAY.mkt[String(g.w)]:null, rows=[];
@@ -5275,7 +5275,7 @@ const espnKeepNum=x=>typeof x==='number'&&isFinite(x);
 /* a player's line or rung as ESPN lists them: on a half point, under 1000 (a number past that would never be
    DraftKings' and would hold a game page's ladder up) */
 const espnKeepLine=x=>espnKeepNum(x)&&x>0&&x<=1000&&Number.isInteger(x*2);
-/* one game's kept entry as the page writes it, or null: everything else in it dropped. (app v124) opt.published:
+/* one game's kept entry as the page writes it, or null: everything else in it dropped. (app v125) opt.published:
    the props job's read (espnPublished), on the same rules but for the 'late' guard: its times are ESPN's clock,
    and a browser running slow would otherwise drop the whole published read */
 function espnKeptGame(e,opt){
@@ -5410,8 +5410,8 @@ function espnKeepIds(g,gl){
 }
 /* the kept read put back on a load, before the page is drawn and with no request. Each half stands over
    the publish it was read over, or over a newer one where the read is later than that publish's own time
-   for it: the DraftKings lines it carries (g.lat: the props job's read of ESPN since app v124, or a paid pull's),
-   else the bake; for the game's player prices the later of the published read's (app v124: its pl.at or out.at)
+   for it: the DraftKings lines it carries (g.lat: the props job's read of ESPN since app v125, or a paid pull's),
+   else the bake; for the game's player prices the later of the published read's (app v125: its pl.at or out.at)
    and the paid pull's (PAY.dk's at), else the bake. So a newer publish always wins, and a read made after it, in a
    tab loaded before it, stands. Neither half for a game kicked off, scored, in another week or not
    on this publish (pruned from the copy here). What gave way is noted (ESPN_ASIDE) and what stands
@@ -5432,7 +5432,7 @@ function espnRestore(){
     if(e.gl){ const sig=espnGlSig(g), same=e.gl.sig===sig, lat=g.ls==='dk'?Date.parse(g.lat||''):NaN, since=isFinite(lat)?lat:(same?0:bk);
       if(same||e.gl.at>since){ const on=espnKeepLines(g,e.gl,since,same); espnKeepIds(g,e.gl); k.gl={...e.gl,lines:on?{...ESPN_GL[g.id].d}:{},at:on?ESPN_GL[g.id].at:e.gl.at,sig}; }
       else aside('gl'); }
-    /* (app v124) the publish's own time for the player half: the later of the published read's (where it read the
+    /* (app v125) the publish's own time for the player half: the later of the published read's (where it read the
        game's player lines) and the paid pull's, so a newer publish of either kind sets an older read aside */
     const W=PAY&&PAY.dk&&typeof PAY.dk==='object'?PAY.dk[e.w]:null, Pb=espnPubOf(gid,e.w), pbT=Pb?Math.max(Pb.at||0,Pb.st?Pb.when||0:0):0;
     const pubP=Math.max(pbT,Date.parse((W&&W[gid]&&W[gid].at)||'')||0)||bk;
@@ -5452,7 +5452,7 @@ function espnRestore(){
   if(n) ESPN_SEQ++;
   return n;
 }
-/* ---------- (app v124) the published read: the props job's own read of ESPN, installed at boot ----------
+/* ---------- (app v125) the published read: the props job's own read of ESPN, installed at boot ----------
    PAY.espn = {v:1, read_at, games:{gid:{w, gl:{at, lines, ids, event}, pl:{at, lines, rungs, td}, out:{st, at}}}},
    written by the props job (weekly.py's apply_espn, from props/build/espn_read.js, which runs espnReadWeek in jsdom),
    with each game's lines already in PAY.sched (ls 'dk', lat, lsr 'espn'). For each game still to come of its week,
@@ -5563,7 +5563,7 @@ function espnStatus(gid){
   const R=ESPN_RUN;
   if(R.busy) return `Reading DraftKings’ lines from ESPN… ${R.done} of ${R.total} game${R.total===1?'':'s'}`;
   const g1=gid&&S&&S.sched?S.sched.find(x=>x.id===gid):null, w=String(g1?g1.w:currentWeek()), ids=gid?[gid]:pbGames().map(g=>g.id);
-  /* (app v124) read and asked count a press's blocks (and a kept read's), never the published read's */
+  /* (app v125) read and asked count a press's blocks (and a kept read's), never the published read's */
   const live=ESPN_LIVE[w]||{}, read=ids.filter(id=>espnPressed(id,w)), lined=ids.filter(id=>ESPN_GL[id]);
   /* the published prices: the props job's read of DraftKings' lines on ESPN where the payload carries one for these
      games, its latest time, and the games it found no player lines posted for (and none shown); else the publish */
@@ -5733,7 +5733,7 @@ const ESPN_ERR='typically within 0.5 points on yards, 2-3 on receptions, passing
 function estTitle(o){
   if(!o) return '';
   if(o.src==='dkline'){
-    /* (app v124) a locked leg keeps no read time */
+    /* (app v125) a locked leg keeps no read time */
     const rd=o.at?`, read ${espnWhen(o.at)}`:'';
     if(!o.listed) return `Not on DraftKings: it lists no such rung. Priced from DraftKings’ line from ESPN${rd}; the price is our estimate`;
     return `DraftKings’ line from ESPN${rd}; the price is our estimate (${o.tested?ESPN_ERR:'untested on this market: no DraftKings price on file to check it against'})`; }
@@ -5752,7 +5752,7 @@ function espnReadLine(at){
 
 /* ---------- DraftKings' id for a leg (app v109) ----------
    DraftKings' betslip takes a leg only by DraftKings' own outcome id, and an id names one outcome at one
-   number. PAY.dk holds the ids a paid price pull read (weekly.py's dk_ids; since app v124 no job buys prices, so
+   number. PAY.dk holds the ids a paid price pull read (weekly.py's dk_ids; since app v125 no job buys prices, so
    none), and a read of ESPN (the props job's published read, a press, the parlay card's check) adds DraftKings'
    current game-line ids (espnIdAt dates them); a player's line read on ESPN carries none. dkIdOf is the
    id for a leg at its own line, by the keys and rung rule the parlay card reads (card.html, dkLeg): null
@@ -5762,14 +5762,14 @@ function espnReadLine(at){
    that payload still carries no ids of the pull's, so it suggests as before */
 const DK_PRESS_MADE=new WeakSet();
 function dkPressMade(o){ DK_PRESS_MADE.add(o); return o; }
-/* (app v124) a game's entry carries the pull's ids only where it has the paid pull's time (at) or a player's key
+/* (app v125) a game's entry carries the pull's ids only where it has the paid pull's time (at) or a player's key
    (the parlay card's dkHasPlayer rule): an entry a read made (the published read, a press, the card's check) holds
    only event, glat and the game lines' ids, so it never does, and a JSON copy of the table keeps the rule */
 function dkEntryCarries(D){ return !!D&&typeof D==='object'&&((D.at!=null&&D.at!=='')||Object.keys(D).some(k=>!/^(team:|game\|)/.test(k)&&!['event','at','glat'].includes(k))); }
 /* the payload carries ids (no l), and for the game of leg l ({week, gid} will do): its week has an entry
    for that game that carries the pull's ids (dkEntryCarries). A game with none is taken as a payload baked
-   before ids is: weekly.py bakes PAY.dk {} on every run since app v124 (no job buys prices), and a press over
-   it (until app v124, which wrote an entry that counted) emptied every level, hand and Elo pick of its game */
+   before ids is: weekly.py bakes PAY.dk {} on every run since app v125 (no job buys prices), and a press over
+   it (until app v125, which wrote an entry that counted) emptied every level, hand and Elo pick of its game */
 function dkCarries(l){
   if(!(typeof PAY==='object'&&!!PAY&&!!PAY.dk&&typeof PAY.dk==='object'&&!DK_PRESS_MADE.has(PAY.dk))) return false;
   if(!l) return true;
@@ -5805,7 +5805,7 @@ function dkAtAnother(l){
   return Object.keys(D).some(k=>k.startsWith(near)&&k.length>near.length&&isFinite(+k.slice(near.length))&&typeof D[k]==='string'&&!!D[k]);
 }
 /* a Sunday kickoff before 4pm Eastern (g.d and g.t are Eastern): oddsfetch.py's early_sunday(), whose
-   games were never bought player prices. Dormant since app v124 (no job buys prices; nothing calls it) */
+   games were never bought player prices. Dormant since app v125 (no job buys prices; nothing calls it) */
 function dkEarlySunday(g){ return !!g&&!!g.d&&new Date(g.d+'T12:00:00Z').getUTCDay()===0&&(g.t||'13:00')<'16:00'; }
 /* ---------- the lines the suggestions are built from ---------- */
 /* every line this week with a real sportsbook price, team bets and players, unjudged, and (app v107)
@@ -5917,7 +5917,7 @@ function fairVig(week){
    for one pass, so each week's overround is worked once */
 function legFair(l,memo){
   if(!l) return null;
-  /* (app v124) a pulled leg's fair chance is the pull's; a locked leg's the one kept at the lock */
+  /* (app v125) a pulled leg's fair chance is the pull's; a locked leg's the one kept at the lock */
   if(l.pulled&&l.pulled.fair&&isFinite(l.pulled.fair.p)&&l.pulled.fair.p>0&&l.pulled.fair.p<1) return {p:+l.pulled.fair.p,est:!!l.pulled.fair.est};
   if(l.kept&&typeof l.kept==='object') return l.kept.fair!=null&&isFinite(l.kept.fair)&&l.kept.fair>0&&l.kept.fair<1?{p:+l.kept.fair,est:!!l.kept.est}:null;
   const pr=legPrice(l);
@@ -6281,14 +6281,14 @@ const pbWithFair=r=>r&&r.legs?{...r,fair:parlayFair(r.legs)}:r;
 function pbTier(t,pool,memo,opt){ return pbWithFair(pbTierOf(t,pool,memo,opt)); }
 /* why a tier is empty, in the reader's terms: the picks do not make that many legs (one a player,
    one side and one total a game), since every level shows a parlay whenever they do. A player leg needs
-   DraftKings' line, read from ESPN (since app v124 by the props job on every run, and by a press), priced by
+   DraftKings' line, read from ESPN (since app v125 by the props job on every run, and by a press), priced by
    our estimate. With player bets ticked and no player line on the ticked games, that is the reason, and the
    tier says so rather than ask for more ticks (under Players only no tick would help). c: which of the two kinds
    are ticked, and the ticked games' ids */
-/* (app v109, dormant since app v124: a payload whose bake wrote paid ids) player legs priced on the ticked games,
+/* (app v109, dormant since app v125: a payload whose bake wrote paid ids) player legs priced on the ticked games,
    and none with a DraftKings id */
 const PB_NO_ID='no player legs DraftKings’ betslip can take: a player’s line read from ESPN carries no DraftKings id.';
-/* (app v124) no player line on these games (ids; none: the week's games still to come): DraftKings had posted none
+/* (app v125) no player line on these games (ids; none: the week's games still to come): DraftKings had posted none
    when its lines were last read from ESPN (the published read or a press, espnLastRead), or they have not been read */
 function pbNoPl(ids){ const at=espnLastRead(ids||pbGames().map(g=>g.id));
   return at?`no player lines yet: DraftKings had posted none for these games when its lines were last read from ESPN (${espnWhen(at)}). Press Refresh odds to read them now.`
@@ -6512,7 +6512,7 @@ function gameTiers(g){
   GAME_TIER_CACHE[g.id]={sig,val};
   return val;
 }
-/* (app v109, dormant since app v124: only a payload whose bake wrote paid ids) why a hand is empty where
+/* (app v109, dormant since app v125: only a payload whose bake wrote paid ids) why a hand is empty where
    DraftKings' ids left legs out: a hand takes only legs DraftKings' betslip can take, and a player's line read from
    ESPN carries no id */
 function gameNoIdWhy(g,n){
@@ -6824,7 +6824,7 @@ function spLockAt(g){ const k=kickoff(g); return k?k.getTime()-SP_LOCK_MS:null; 
 const spIso=ms=>new Date(ms).toISOString().replace(/\.\d{3}Z$/,'Z');
 /* a time in US Eastern, as the schedule is ("Sun 6:20 PM ET") */
 function spEt(ms,day){ try{ return new Date(ms).toLocaleString('en-US',{timeZone:'America/New_York',...(day?{weekday:'short'}:{}),hour:'numeric',minute:'2-digit'})+' ET'; }catch(e){ return spIso(ms).slice(11,16)+' UTC'; } }
-/* (app v124) why a unit has no player line: DraftKings had posted none when its lines were last read from ESPN (the
+/* (app v125) why a unit has no player line: DraftKings had posted none when its lines were last read from ESPN (the
    published read or a press), or they have not been read; on a payload whose bake wrote paid ids (dormant), none
    with an id */
 function spNoPl(g){ const t=espnLastRead(spGamesOf(g).map(x=>x.id));
@@ -6952,7 +6952,7 @@ function spLegIn(l,g){
   const p=+l.p, price=+l.price; if(!(p>0&&p<1)||!isFinite(price)||price===0) return null;
   const elo=l.pe!=null, pe=+l.pe; if(elo&&!(pe>0&&pe<1)) return null;
   const tot=l.stat==='total', team=String(l.team||''), pl=S.players&&S.players[l.pid];
-  /* (app v124) kept: the leg is at its locked price and fair chance through any later publish or press (legPrice,
+  /* (app v125) kept: the leg is at its locked price and fair chance through any later publish or press (legPrice,
      legFair), so Add to builder pays what the locked card says; the record's own shape is untouched */
   const kf=l.fair!=null&&isFinite(+l.fair)&&+l.fair>0&&+l.fair<1?+l.fair:null;
   return {key:legKey(l.gid,l.pid,l.stat),gid:l.gid,pid:l.pid,stat:l.stat,k:+l.k,side:l.side==='under'?'under':'over',main:!!l.main,p,price,src:typeof l.src==='string'?l.src:'real',
@@ -7767,7 +7767,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='cd83be0';
+const PAGE_HASH='7046603';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
