@@ -2820,7 +2820,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      the week as it stands, every bet type and game ticked: no ladder among the lines priced (pricedLegs), any game page
      hands' pool (gameLegPool, the engine drawn nowhere), the Top 30 lines as built and as drawn (and getPbTop's count of
      the rungs it left out none, since none can reach it), the all-games levels, each prime-time game's set and its Elo
-     picks, the Sunday slot's, every live unit Suggested Parlays shows and the Elo picks over every game. Then with
+     picks, every live unit Suggested Parlays shows (the Sunday slot's once it is up) and the Elo picks over every game. Then with
      DraftKings' book prices planted on every rung of each starter's ladders the model rates 50% to 90% (each 6 points
      under the model's chance, a Value pick by every other rule) and on his two or more touchdowns (S.odds, as a pull's
      ladder writes it, a fixture of its own in place of the game's), on the first game still to come where there is one
@@ -2841,9 +2841,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     /* the stats the page prices are the smoke's own copy's, so its rule can miss none; and the page's ladders setting is gone */
     { const mk = Object.keys(w.eval('MKT')).sort().join(); chk(mk === [...PLAYER_STATS_OWN].sort().join(), `the stats the page prices are not the smoke's own copy's (${mk}), so its ladder rule could miss one`); }
     chk(w.eval('typeof showRungs') === 'undefined' && w.eval('typeof isLadder') === 'function' && !d.getElementById('rungCb'), 'the page still has its ladders setting (showRungs, #rungCb), or no ladder rule of its own (isLadder)');
-    /* everything that offers or suggests a leg on these games: each ladder it holds (slot: the Sunday slot's set and Elo
-       picks too, a few seconds a build) */
-    const ladders = (G, slot) => { const bad = [], ids = new Set(G.map(g => g.id)), take = (where, legs) => { for (const l of (legs || [])) if (ladderOwn(l)) bad.push(`${where}: ${lgTxt(l)}`); };
+    /* everything that offers or suggests a leg on these games: each ladder it holds (the Sunday slot's set among the live
+       units Suggested Parlays shows, once it is up: a build of it is a set a priced game, seconds, so it is not built here
+       for nothing) */
+    const ladders = G => { const bad = [], ids = new Set(G.map(g => g.id)), take = (where, legs) => { for (const l of (legs || [])) if (ladderOwn(l)) bad.push(`${where}: ${lgTxt(l)}`); };
       take('a priced line', w.eval('pricedLegs')(G));
       for (const g of G) take(`${g.id}'s hands' pool`, w.eval('gameLegPool')(g, true));
       const top = w.eval('getPbTop()'); take('a Top 30 line', (top.rows || []).filter(l => ids.has(l.gid)));
@@ -2852,7 +2853,6 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const unitOf = (id, nm) => { const s = w.eval('spSet')(id); for (const t of ((s && s.tiers) || [])) take(`${nm}'s ${t.id} set`, t.legs);
         const e = w.eval('spEloSet')(id); for (const t of ((e && e.tiers) || [])) take(`${nm}'s ${t.id} Elo pick`, t.legs); };
       for (const g of G.filter(primeOwn)) unitOf(g.id, g.id);
-      if (slot) { const u = w.eval('spSlotNext()'); if (u) unitOf(u.id, u.id); }
       for (const u of w.eval('spOnAll()')) { const v = w.eval('spShown')(u); if (!v || v.phase !== 'live') continue;
         for (const t of (v.tiers || [])) take(`${u.id}'s ${t.id} set as shown`, t.legs); for (const t of (v.elo || [])) take(`${u.id}'s ${t.id} Elo pick as shown`, t.legs); }
       if (typeof w.eloPicks === 'function') { const r = w.eloPicks(); for (const t of ((r && r.tiers) || [])) take(`the ${t.id} Elo pick over every game`, t.legs); }
@@ -2862,7 +2862,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       return PLAYER_STATS_OWN.has(st) && (st === 'any_td' ? (+b.dataset.k || 1) >= 2 : b.dataset.main !== '1'); }).map(b => `a drawn Top 30 row ${b.dataset.pbLeg} ${b.dataset.k}+`);
     ladderHoldF = async lab => { const keep = JSON.stringify(Sx.ui.pb);
       try { allOn8(); w.eval('renderParlay()'); await wait(30);
-        const G = w.eval('pbGames()'), bad = [...ladders(G, false), ...drawnTop()];
+        const G = w.eval('pbGames()'), bad = [...ladders(G), ...drawnTop()];
         chk(!bad.length, `${lab}: a line, a list, a level, a set or an Elo pick holds a ladder bet (a rung off a player's main line, or two or more touchdowns): ` + bad.slice(0, 4).join('; '));
         return G.length;
       } finally { Sx.ui.pb = JSON.parse(keep); w.eval('renderParlay()'); await wait(20); } };
@@ -2890,8 +2890,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     let mkPid = null, mkPrev = null;
     try {
       /* the week as it stands */
-      allOn8(); fresh8(); w.eval('renderParlay()'); await wait(40);
-      { const G = w.eval('pbGames()'), bad = [...ladders(G, true), ...drawnTop()];
+      allOn8(); w.eval('renderParlay()'); await wait(40);
+      { const G = w.eval('pbGames()'), bad = [...ladders(G), ...drawnTop()];
         chk(!bad.length, `on the week as it stands a line, a list, a level, a set or an Elo pick holds a ladder bet (a rung off a player's main line, or two or more touchdowns): ` + bad.slice(0, 4).join('; '));
         console.log(`  (no ladder bets: ${G.length} game${G.length === 1 ? '' : 's'} of the week as it stands held, the Top 30 lines, the levels, every set and Elo pick)`); }
       /* the plants: the first game still to come, and the made-up Sunday night game with one starter's main line on it */
@@ -2912,7 +2912,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       fresh8(); w.eval('renderParlay()'); await wait(40);
       const oddsFor = w.eval('oddsFor'), unseen = plants.flatMap(p => p.list.filter(q => oddsFor(p.g.id, q.pid, q.stat, q.k) !== q.price).map(q => `${p.g.id} ${q.pid} ${q.stat} ${q.k}`));
       chk(plants.every(p => p.list.length > 0) && !unseen.length, `DraftKings' book prices planted on the starters' ladders and two or more touchdowns are not all seen by the page (oddsFor), or none could be planted: ${plants.map(p => p.g.id + ' ' + p.list.length).join(', ')} ${unseen.slice(0, 3).join(', ')}`);
-      { const bad = [...ladders(plants.map(p => p.g), false), ...drawnTop()];
+      { const bad = [...ladders(plants.map(p => p.g)), ...drawnTop()];
         chk(!bad.length, `with DraftKings' book prices planted on every rung of the starters' ladders and on two or more touchdowns (${plants.map(p => `${p.g.id}: ${p.list.length}`).join(', ')}), a line, a list, a level, a set or an Elo pick holds a ladder bet: ` + bad.slice(0, 4).join('; ')); }
       /* each planted game's page, a ladder held in the builder on it */
       for (const p of plants) { const q = p.list.find(z => z.stat !== 'any_td');
@@ -6142,7 +6142,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const legs = { [kR]: legOf(qb, 'passing_yards', 250, false, '250+ passing yards', 120), [kT2]: legOf(te, 'any_td', 2, false, '2+ touchdowns', 650),
         [kM]: legOf(wr, 'receiving_yards', 49.5, true, 'Over 49.5 receiving yards', -115), [kT1]: legOf(rb, 'any_td', 1, false, 'Scores a touchdown', 140) };
       const SAVED = [{ id: 'own-ladder', week: cw, stake: 5, price: 300, payout: 20, legs: [{ gid: F.id, pid: wr.pl.id, stat: 'receptions', k: 5, side: 'over', main: false, name: wr.pl.n, team: wr.team, week: cw, label: '5+ receptions' }] }];
-      const PC = JSON.parse(PAYLOAD); PC.sched = [...(PC.sched || []), { ...F }];
+      const PC = JSON.parse(PAYLOAD_TXT); PC.sched = [...(PC.sched || []), { ...F }];
       const payTxt = JSON.stringify(PC), WORDS = '2 legs were removed: the site no longer offers ladder bets (such as 250+ passing yards or 2+ touchdowns), only main lines, anytime touchdowns and team bets.';
       /* a boot on that state, every write to the browser's storage (a key set or removed) recorded from the first script on */
       const bootOn = parlay => run(state, undefined, null, false, { pay: payTxt, seed: w2 => {

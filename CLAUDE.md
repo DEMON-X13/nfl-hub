@@ -563,7 +563,8 @@ adds one by any path. The audit's M13 holds it on its own copy of what DraftKing
 (`DK_PLAYER_AUD`, the reader's twelve player markets and the anytime touchdown; `DK_GAME_AUD`, the moneyline, spread
 and total; `NOT_DK_AUD`, targets and FG attempts, projected and never offered): every stat the page projects is in one
 or the other, and the reader's markets are the copy's, so a market added on either side is said; on the week as it
-stands, every game played or to come, no line its page draws (every player opened, the ladders shown), no leg
+stands, every game played or to come, no line its page draws (every player opened; the ladders shown too until app v126,
+when a game's page stopped drawing them: **No ladder bets**), no leg
 `pricedLegs` gives, none a game page's hands may take or hold, none on the Top 30, a set or the all-games levels and
 none in the builder is on a bet outside the copy; and on a made-up Monday night game of two made-up kickers (on the
 schedule for the run, every stand-in put back on every path, so it holds in any week and the off-season), each with FG
@@ -574,7 +575,9 @@ week as it stands, every game's page with every player open and every list, hand
 box, heading, tile or leg of targets or FG attempts; on a made-up Sunday night game between two clubs of the schedule
 whose kicker the page projects, FG attempts still projected, DraftKings' main line and two ladder prices planted on it
 with made-up ids, still no line, leg or suggestion of it anywhere, and every line the page draws for the kickers put in
-the builder by its own box, none of them FG attempts; and an FG attempts leg kept in the builder from before removed
+the builder by its own box, none of them FG attempts (since app v126, when a game's page stopped drawing ladders, those
+are main lines: each kicker's field goals made and kicking points are given one too, both sides with made-up ids); and an
+FG attempts leg kept in the builder from before removed
 with that one line, `toggleLeg` adding none.
 
 **The Top lines keep a line DraftKings moved** (app v115, `patch_top50_moved.py`, the owner's call of 18 October 2026:
@@ -647,7 +650,8 @@ apply it to the live table. That fixed a live bug: from app v109 a press over th
 game, which then counted as carrying ids, and every player leg of that game left every level, hand and Elo pick (the
 record reader's probe saw a full set go to four empty levels and four empty Elo picks). With the bake's `PAY.dk` `{}` no
 entry carries, so a `dkline` leg of a tested kind (`ESPN_TESTED`: a main line over or under on passing, rushing or
-receiving yards, receptions or passing touchdowns, the anytime touchdown, a yards rung DraftKings lists) is suggested
+receiving yards, receptions or passing touchdowns, the anytime touchdown, and a yards rung DraftKings lists until app v126
+offered no rung: **No ladder bets**, under "The published read") is suggested
 again everywhere, as on a payload baked before `dk`: each night game's and the Sunday slot's set and their Elo picks, the
 all-games levels, the game hands' engine (drawn nowhere since app v124) and the Top 30 lines, by every other rule as before (the band, the 3-point edge,
 market + form, the far-off guard on the formula's own fair chance, V6). The accepted consequence, said here and to the
@@ -774,7 +778,12 @@ the fair chance est., never under the price, a level holding one saying its fair
 legs from it too, a read dated at a game's kickoff giving it no player leg, a junk or missing read team legs only with
 no throw, a moved line rewriting a live set before its lock (a main line on the read's moved number) and leaving a locked
 one as it was, a level built again on the read at hand, a level of `dkline` legs with a void paid at its stored estimated
-prices, and a page that drops a well-formed read (its `espnPublished` stood in) refused with the file untouched. A change
+prices, and a page that drops a well-formed read (its `espnPublished` stood in) refused with the file untouched; and since
+app v126 (**No ladder bets**, below) every leg of every set and its Elo picks, night and slot, a game bet, a main line or
+the one touchdown (`offeredOwn`, the test's own reading), though the read carries yards milestones, and the level built
+again the same. Where the week's own data puts the moved prime-time game on the last prime night (week 7's, moved to the
+Monday), C holds the slot past its first kickoff as B left it but for a grade of every level pending, and F's uncommitted
+rewrite of a set still to lock is tried on B's ledger an hour after B. A change
 to the script comes with a run of it.
 
 **Who played** (app v101, after the review of Sunday 11 October 2026: Tory Horton, SEA, ran 11 offensive
@@ -910,7 +919,8 @@ makes counts either, by its content: **Reversed in app v125**). Each player leg'
 paid pull's real price while its line is still DraftKings' line (the read has the same number, or none
 for him), on a payload a pull by hand priced; the read's line where DraftKings has moved it since, or where the pull has no
 price (every game since 20 October 2026), priced by the formula (`DK_EST` and `estPrice` in `part2.js`) and marked est.
-(src `dkline`), as the published read's lines are before any press; the model's estimate where there is no line. A rung or touchdown the pull priced keeps its real price. On a count (receptions,
+(src `dkline`), as the published read's lines are before any press; the model's estimate where there is no line. A rung or touchdown the pull priced keeps its real price. (Since app v126 no rung is offered anywhere, so the rung pricing that
+follows, `plEst` and `espnPrice`'s 'rung', stands dormant: **No ladder bets**, under "The published read".) On a count (receptions,
 passing touchdowns and the formula's other counts) every rung from a read is a Poisson anchored on one fair chance,
 the paid pull's two prices with the margin out where it has them on the read's line, else the formula's main fair
 chance, and since app v117 (`patch_ladder_anchor.py`) the rung that is the main Over itself (2+ on a line of 1.5) is
@@ -931,7 +941,8 @@ implied-chance points, between the price shown and DraftKings' real one,
 | Yards ladder rungs (k+) | 248 rungs | 3.4 | 1.5 |
 
 A `dkline` leg of those tested kinds (a main line over or under on passing, rushing or receiving yards,
-receptions or passing touchdowns; the anytime touchdown; a yards rung DraftKings lists) counts as a book
+receptions or passing touchdowns; the anytime touchdown; a yards rung DraftKings lists, which since app v126 nothing
+offers or suggests: **No ladder bets**) counts as a book
 price under the same rules: the 45-97% band, the 3-point edge, market + form (`eloAltP` reads a `dkline`
 price as a book price), the far-off guard on its estimated fair chance (the formula's own, `legFair`) and
 V6. From app v109 to v124 it entered a suggestion (a Suggested Parlays level, a game page's hands until app v124 took them off, the Elo picks, and
@@ -943,7 +954,7 @@ line DraftKings moved" under Props, reversed in app v119). Since app v125 no pay
 entry a read makes never does, so it enters every suggestion again (**Reversed in app v125**). Every other kind
 (completions, attempts, carries, rush + rec yards, interceptions, field goals, kicking points, the
 receptions and passing-TD ladders, a rung DraftKings does not list) has no DraftKings price on file to
-test against: priced, shown est. on the game pages, never suggested. Every `dkline` price is marked est.
+test against: priced, shown est. on the game pages (since app v126 its main lines alone: a game's page draws no rung), never suggested. Every `dkline` price is marked est.
 with a title saying what it is priced from and when; a level or the builder with one (and a game page's hand, until
 app v124 took the hands off the page) says its price is estimated; the parlay card looks a `dkline` player leg up in the pull's ids like any other leg,
 at its line or converted to DraftKings' number, and lists it to add by hand only where they have nothing
@@ -1064,8 +1075,8 @@ than the published one set aside and said to give way, a newer one and one over 
 the published read and a later paid pull set aside, a kept `none` never hiding the published block; a press over the
 published lines with the clock moved back two days, `espnReadWeek` touching none of the page's state and a `none` answered
 at the kickoff `kicked`, one a second before it still a `none`; the status line's time the player lines' alone (a game-line
-read newer than them dating nothing, `W.wording`); a locked main line
-and rung at their locked prices through a republished read that moved them; the pull hooks inert without a stub and the
+read newer than them dating nothing, `W.wording`); two locked main lines
+(a main line and a rung until app v126) at their locked prices through a republished read that moved them; the pull hooks inert without a stub and the
 stub's price and fair chance with one, nothing in `S.parlay`; the status words `W.wording`); V-ESPN in section V, blocking
 (every entry a game of this season to come of its own week, every half before kickoff, a `none` with no block, each game
 marked `lsr` 'espn' at its read's lines and time under a day old and said "read from ESPN", `PAY.dk` held to its own
@@ -1083,6 +1094,92 @@ the audit's own `nameRule` passes or whose surname is ESPN's); a placement by th
 `W.espnName`, argued in `WARN` (the page's placement takes one match only, never a player an ESPN id names or another
 athlete claims, and the owner reads the list to add a nickname). `suggest_ledger.js` refuses a page that drops the read
 (above), and the nflbets smoke holds the page on payloads with a read and without (**Bets and Stats: the loop**).
+
+**No ladder bets** (app v126, `patch_no_ladders.py`, whose docstring is the design, the owner's call of 21 October 2026:
+"general question, is it possible to not do ladders and just include Same Game Parlay eligible stuff show up since we are
+only doing parlay builder stuff", then, offered every place a ladder showed (the Top 30 lines, the Suggested Parlays
+sets, the Elo picks, the builder, a game page's Threshold ladders box), "yes"). The site offers main lines, the anytime
+touchdown and team bets (moneyline, spread, game total) and nothing else. A ladder bet is a player's over at a number
+that is not his main line (a rung k+, "250+ passing yards", "5+ receptions") or two or more touchdowns: `isLadder(l)` in
+`part2.js`, beside `isGameLeg`, a leg on a stat the page prices (`MKT`) that is no game bet and is either the anytime
+touchdown at k 2 or more (k missing read as 1, so 1.5 is the one touchdown) or any other stat off its main line
+(`!l.main`); a leg on no stat the page knows (a visitor's builder may hold one, as the audit's `'g|p|s'`) never is.
+`pricedLegs` makes no rung any more, whether a pull priced it (`S.odds`) or DraftKings' milestones read from ESPN did (the
+published read's `pl.rungs`, or a press's), and it never made 2+ touchdowns; it is the one source of every suggestion's
+player legs (the Top 30 lines, each night game's set and each Sunday slot game's, the all-games levels, `getPbTiers`, and
+the Elo picks, `eloCands`), so none takes a ladder, and `gameLegPool`, the hands' engine drawn nowhere since app v124,
+lost its own rung loop. A game's page on the Props tab offers none: no Threshold ladders box (`showRungs` and `#rungCb`
+are gone, and a saved `ui.showRungs` is not read into `S.ui`), no rung row (`tr.rung`), the touchdown block its "Scores
+one" row alone (its box `data-k="1"`, no "Scores two or more"), and no line saying a threshold leg on the parlay is shown
+though the ladders are hidden; a stat other than the touchdown that DraftKings has posted no main line for (no paid line,
+and no over and under from its line read on ESPN) shows its projection and "No DraftKings line yet." (`p.noline[data-noline]`) where its table was.
+`toggleLeg` refuses a ladder by any path (a box, an Add, the console) after its take-off branch, so a held one still comes
+off, and a touchdown's toggle is always one touchdown. A ladder kept in the builder from before (the browser's saved
+state, or a backup imported) is taken out as the page loads it (`pbDropLadders()`, at boot once the saved state and the
+bake are in, before `espnPublished` and the first draw, saving where it took one, and on an import), never on a draw
+(`renderParlay` still drops only a started game's leg and FG attempts, so a check that plants a ladder in the builder after
+boot still draws it), and the builder says so first among its dropped notes, "2 legs were removed: the site no longer
+offers ladder bets (such as 250+ passing yards or 2+ touchdowns), only main lines, anytime touchdowns and team bets."
+("1 leg was removed: ..."; `data-pb-noladder="2"`), while its legs are the ones the strip left (`PB_NOLADDER`, the count
+and `pbLegSig()`, the builder's keys sorted) and never once they change; the retired saved list, `S.saved`, is never
+touched. A leg carrying `kept` stays: it is a leg of a Suggested Parlays set locked before the change (`spLegIn`), which
+the record grades as it locked and whose Add to builder must pay what its card says, so a locked set, the record's or this
+browser's own (`props_sp_lock_v1`), is drawn as it locked, its Add to builder (`pbPut`) and a locked leg's own Add write
+`S.parlay` with `kept` as before, and its Finish (`fromTier`) is unchanged. The words: the Top 30 lines' foot says "Only
+main lines, anytime touchdowns and team bets are listed: no ladder bets, such as 250+ passing yards or 2+ touchdowns."
+where it said each bet is listed once, and names the markets the estimate is checked on as "main lines and touchdowns"
+(no "yards ladders"); `ESPN_ERR`, in every est. title and the Top 30's est. note, reads "typically within 0.5 points on
+yards, 2-3 on receptions, passing TDs and touchdowns" (no "and rungs"). Kept and dormant, since no rung reaches them but
+a set locked before that day or a pull's ids: the Top 30's each bet once (`once()`, `getPbTop().same` 0 on every real
+list), held on made-up lines standing in for `pricedLegs` (**Each bet once**, under "Bets and Stats: the loop"); `plEst`
+and `espnPrice`'s 'rung' pricing (the Poisson ladder and `patch_ladder_anchor.py`'s anchor, under "Refresh odds");
+`dkIdOf`'s rung keys; the parlay card's rung and 2+ touchdowns conversions, its moved rule naming a rung's own bet, and
+Pull from DraftKings' ladder markets (`PULL_ALT`, a rung's `pullMarket`, `whyOf` 'ladder'), which `card.html` says stand
+for a Suggested Parlays set locked before that day, finished from the record as it locked, and for a pull's ids; and
+`dkClashWhy`'s rung of a quarterback's passing touchdowns. Live as before: `statLines` builds every stat's rungs (they say
+which stats a player has, and the Track Record grades the model's frozen rung chances), the ESPN reader reads DraftKings'
+milestones (`ESPN_MILE`, the published read's `pl.rungs`, the shape `apply_espn` and its tests hold), and `settleLeg`
+settles the ladders the records and the backtest hold; nothing is graded again. Week 7's suggestions-record entries not
+yet locked when it landed held ladders (Thursday's NE at CHI 6 legs of 28, Sunday night's KC at SEA 3, the Sunday slot
+5): the first props run on the new page before each lock rewrites them, as it rewrites any set that has changed, so no
+week-7 set locks with one, and the weeks before stand as graded, ladders and all. `build.js` stops if the parts draw
+`showRungs`, `id="rungCb"`, "Threshold ladders", "Scores two or more" or `tr class="rung"` outside a comment, or lose
+`toggleLeg`'s refusal, `pbDropLadders` or its boot call. Held, each check by its own reading of a ladder, never the page's
+`isLadder`, and all blocking but where a word is said to warn: the audit (`ladderAud`, on its own `PLAYER_STATS_AUD`,
+which NL1 holds to the page's `MKT`) in NL1 (the week as it stands: no ladder in `pricedLegs`, any game's hands' pool,
+`getPbTiers` on every bet type or the Top 30 rows, `getPbTop().same` 0, nor in every night game's and the Sunday slot's
+`spSet`, `spShown` while live, or `spEloSet`; a locked set is the record's, not held to it), NL2 (a made-up Monday night
+game of its own whose published read lists rungs and whose pull priced a rung and 2+ touchdowns: no ladder from
+`pricedLegs` or the hands' pool while its main lines and touchdowns are there, and its page, each player opened with the
+old box's choice saved on, drawing no ladder, each stat the read gave a line its table and every other the no-line note,
+its words `W.wording`), NL3 (`toggleLeg` on it refusing the paid rung, a rung the read lists and 2+ touchdowns, leaving a
+held touchdown, adding the main line and the one touchdown) and NL4 (in section I, by reboots: a saved builder's rung and
+2+ touchdowns taken out and its kept locked rung, main line, one touchdown and money line kept, `S.saved` untouched, the
+store rewritten, one `data-pb-noladder="2"` line, its words `W.wording`, through a redraw and gone once a leg comes off, a
+leg the page cannot read kept beside two ladders that go, a builder with no ladder kept whole with no line); K and K2 (no
+2+ touchdown box, `toggleLeg` refusing 2+ and leaving a held touchdown as it was, the one box on and off), S (no ladder on
+a game page with the old box's choice planted: no `#rungCb`, rung row, box off a main line but the touchdown's one, 2+
+touchdowns or old note, each stat block its main line's table or the no-line note alone, the words `W.wording`, and
+`statLines` still building rungs), O (no ladder in the hands' pool, a warning until then that it held none), M7 (a far-off
+rung price beside the touchdown's drawing no row, box or flag), M8 (a rung the pull priced no leg after a press, none
+drawn on the read's game page, `toggleLeg` refusing a listed rung, with DraftKings' own price on file too, and 2+
+touchdowns), M17's G (two locked main lines), V14 (a touchdown in the builder where a rung was), I3 (a saved
+`ui.showRungs` not read) and the Top 30 foot's words (`holdTop`, `W.wording`). The nflbets smoke (`ladderOwn`, on its own
+`PLAYER_STATS_OWN`, held to `MKT`; `isLadder` there and `showRungs` gone): no ladder on the week as it stands, every bet
+type and game ticked (`pricedLegs`, each game's hands' pool, the Top 30 as built and as drawn with `same` 0,
+`getPbTiers`, each prime-time game's `spSet` and `spEloSet`, every live unit's `spShown`, `eloPicks()`); then with
+DraftKings' book prices planted on every rung of the starters' ladders and on their 2+ touchdowns, on the first game to
+come and on a made-up Sunday night game of its own, every plant seen by `oddsFor` and none reaching any of those or the
+game's page (opened with every player, the old setting planted and a ladder held in the builder); the no-line line on the
+made-up game and the one main line given it drawn as its table; `toggleLeg`'s refusals, adds and a held ladder still taken
+off; the same after its Refresh odds press (`ladderHoldF`, the read holding milestone rungs) and on the read's game page;
+and a real reboot on a builder kept with a rung, 2+ touchdowns, a main line and a touchdown beside a saved list and the old
+setting (the line word for word, through a redraw and gone on a change, `S.saved` byte for byte, nothing written a control
+boot does not but the prop model's key), its twin keeping a locked set's kept rung and saying nothing. `smoke_live.js`
+(`ladderOwn`, `NOLADDER_SAY`, `ladderBoot`): J2's and J3's boots taking their seeded ladders out with the line and every
+leg put back after, R8 a kept rung staying with no line. And `test_suggest_ledger.js` (`offeredOwn`, above). Run on the
+parts from before the change, the audit (`test_audit_phases.py`'s sun_3pm case) gave 524 failures, and 46 of the 135 legs
+the record's test took were ladders.
 
 ## Betting: the loop
 
@@ -1372,7 +1469,8 @@ before it is drawn, the fast sums set aside (`EP_FAST`) should they ever differ.
 Parlays is on the screen ("Built when this tab is open.", the ELO tab wrapping `renderSp`) and cached on the data
 (`EP_CACHE`): a fresh build about 140-300 ms in Chromium on week 6. A leg on a player with a Solid-or-better mismatch
 in that game wears its grade just after his name's button, "Huge mismatch" (`pe-mmtag`, `epMmTag`, titled in the
-Mismatches' own words), only on the side the mismatch favours, his over, a ladder rung or his touchdown, never an Under
+Mismatches' own words), only on the side the mismatch favours, his over (a ladder rung too, which since app v126 only a
+set locked before then holds) or his touchdown, never an Under
 or interceptions (`epMmFor`). Each level has Add to builder, an Add on each leg (app v111, as a set's) and Finish
 (`elo|elo-<level>`, the card's kicker "Medium Elo pick"). A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
 moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.html` and a
@@ -1643,8 +1741,8 @@ where the dormant id rule left legs out), never a smaller parlay. Its chance and
 `parlayDec`, same-game legs priced together), worked on the legs in the builder's order. Each level is a card
 (`pbTierCard`, drawn quiet, `o.quiet`, since app v113: under its legs only the est. line where a leg's price is an
 estimate and a ruled-out level's Updated line): the book's fair chance first and the model's beside it, the price and what the Bet amount pays, then
-its legs, each with its own **Add** (`data-pb-leg`, 44px, `aria-pressed`, named for the leg: "Add Bo Nix, 250+
-passing yards, to the builder"), which puts that one leg in the builder by `toggleLeg`'s own path, so the builder
+its legs, each with its own **Add** (`data-pb-leg`, 44px, `aria-pressed`, named for the leg: "Add Bo Nix, Over
+224.5 passing yards, to the builder"), which puts that one leg in the builder by `toggleLeg`'s own path, so the builder
 prices it as it always has, and reads Added while it is in, a second press taking it off as on a game's page, the
 focus kept on it; then **Add to builder** (`data-sp-add="<game id>:<level>"`, exactly the level's legs into
 `S.parlay` on the Bet amount, so it shows the same numbers and pays what the level said) and **Finish**
@@ -1951,8 +2049,8 @@ commas allowed); one that is not a positive number (blank, a word, 0, a minus) l
 saved one that is not an amount reads as $20 (`pbStake`), so nothing drawn from it is NaN. Then Refresh odds (Odds,
 its status line beside it), and the choices, each kept in the browser's own prop model state (`S.ui.pb`: the boxes,
 the games unticked, whether the games list is open; nothing else holds it): a mix, All (the default), Teams only or
-Players only, which sets five boxes, Moneyline, Spread, Game total, Player overs and Player unders (a touchdown and
-a ladder rung are overs; a box changed by hand lights the mix it makes, or no mix at all: there is no Custom tag);
+Players only, which sets five boxes, Moneyline, Spread, Game total, Player overs and Player unders (a touchdown is an
+over, as a ladder rung was until app v126 offered none; a box changed by hand lights the mix it makes, or no mix at all: there is no Custom tag);
 and the week's games still to kick off, all ticked to start, with All and None. From those alone, the **Top 30
 lines** (`getPbTop`, `pbTopBuild`): every leg on the ticks that qualifies as a suggested leg does (`pbLegs`, the
 lists a level is searched from, uncapped: the preferred and the thin legs and, with Game total ticked, both sides of
@@ -1973,7 +2071,8 @@ before them (until app v112 the totals ended the first group, ahead of every thi
 **Each bet once** (app v112's second round; the owner, 17 October 2026: "why there are several instances of this
 where it's only a half yard difference? i find it hard to believe that draft kings would let me bet both on the same
 parlay": Patrick Mahomes's Over 224.5 and 225+ passing yards ranked 1 and 2 at -113, and week 6's list held seven such
-pairs). A ladder rung k+ (a player's over that is not his main line) lands exactly when his main Over at k-0.5 on a
+pairs). Dormant since app v126, when `pricedLegs` stopped making rungs (**No ladder bets**, under Props): no rung reaches
+the list, `same` is 0 on every real list, and the checks hold the rule on made-up lines alone (below). A ladder rung k+ (a player's over that is not his main line) lands exactly when his main Over at k-0.5 on a
 half-point line does and is priced from it, so before the ranking, where that main Over of the same game, player and
 stat is among the Value picks or the thin-edge legs, the rung is left out of every part (`once()`) and its slot goes
 to the next line. The main line is kept wherever it ranks, in either part (where the rung was the Value pick and the
@@ -1991,9 +2090,10 @@ the page, the totals with Game total ticked), and `ol.pb-top[data-pb-sec="other"
 the last Value pick, so the ranks run on across both (`data-pb-row`, the rank shown); with no Value pick on the
 reader's choices, the Value picks heading has no count and a line under it says so ("No line on your picks is a
 Value pick right now.", `data-pb-novalue`) over the other lines. The lead and the foot say the order (the foot: "...
-each part ranked by what $1 on it is expected to make, any game totals last, 30 lines at most in all. Each bet is
-listed once: a ladder rung that is the same bet as the player's main line (225+ passing yards and Over 224.5) is
-shown as the main line."), and each row carries its part (`data-pb-grp`, value or other; edge or thin until app
+each part ranked by what $1 on it is expected to make, any game totals last, 30 lines at most in all. Only main lines,
+anytime touchdowns and team bets are listed: no ladder bets, such as 250+ passing yards or 2+ touchdowns.", where until
+app v126 it said "Each bet is listed once: a ladder rung that is the same bet as the player's main line (225+ passing
+yards and Over 224.5) is shown as the main line."), and each row carries its part (`data-pb-grp`, value or other; edge or thin until app
 v112, the first thin row under a gold rule, which went with the headings).
 Each row (`pbTopRow`) gives its rank, the player or team, the line and its game, the Value mark on a Value pick and
 no mark on any other row, its price (est. where it is, titled with what it is priced from and when), the model's
@@ -2013,10 +2113,11 @@ the second list's start) and the marks out on their own, on the week as it stand
 main Over qualifies, `same` the count they work out, and no line of a later part (the Value picks, the thin-edge
 lines, the totals) before one of an earlier; the audit also holds each main line a rung was left out for exactly
 where its rank in the order without those rungs earns it, and the list the first 30 of that order, at most 30 rows
-drawn under the heading "Top 30 lines" (blocking: a number the page states). On the week as
-it stands only the smoke meets a priced ladder rung (week 6's list left out 7): the audit boots with no baked odds
-(`NO_BAKED`, `S.odds` empty), so its real lists carry no rung and its own made-up games (M12) are what hold the rule
-for it. Both hold it
+drawn under the heading "Top 30 lines" (blocking: a number the page states). Until app v126
+only the smoke met a priced ladder rung on the week as it stands (week 6's list left out 7; the audit boots with no baked
+odds, `NO_BAKED`, `S.odds` empty, so its real lists carried none); since, no rung reaches either's (the audit's NL1 and
+the smoke's no-ladder checks hold `same` 0), and their own made-up games (M12 for the audit) are what hold the rule.
+Both hold it
 again on made-up games of their own (`pbGames` and `pricedLegs` stood in, each in a slot of its own and put back on
 every path, so it holds on any day, the off-season included): a main Over 224.5 passing yards with its 225+ rung left
 out, a whole-number Over 225 with its 226+ kept, an Under main line with a rung on the same stat kept, a rung in
@@ -2037,7 +2138,8 @@ Which lines, their part, order and numbers are blocking; the words are warnings 
 the smoke, which has no warnings. The list's notes say what the
 all-games panel's said: a line marked est. is priced from DraftKings' line read on ESPN, and when it was read
 (`espnReadLine`, wherever the list has one: since app v125 every player line, whose foot now always says every line has
-DraftKings' own price or, marked est., DraftKings' line read from ESPN at our estimate of its price); with player bets ticked and no
+DraftKings' own price or, marked est., DraftKings' line read from ESPN at our estimate of its price, "on main lines and
+touchdowns, the markets the estimate has been checked on", and yards ladders until app v126); with player bets ticked and no
 player line in yet, that the list has none and when DraftKings' lines were last read from ESPN (`pbNoPl`, below); with
 lines in and none with a DraftKings id, that, and why (the dormant id rule's: a player's line read from ESPN carries no
 DraftKings id); how many lines it left out far off the
@@ -2147,14 +2249,15 @@ side (`legFarOff`; only where a fair chance exists) is left out of the preferred
 suggestion is built from, the sets' and the Top 30 lines' (`pbPool` and `pbLegs` count it in `far`, and the
 Parlay Builder's note says how many lines and why) and of a game page's hands
 (`gameLegPool`), and flagged "model 77% · market 55%: far off the market" (`farText`) on the game pages
-(the player lines, the touchdown and rungs on a book price, the Game bets card's team lines), in the
+(the player lines, the touchdown on a book price, and its rungs until app v126 drew none, the Game bets card's team
+lines), in the
 builder's rows and on an Elo pick, whose own selection (the Elo matchup chance) is left alone. The
 audit's M holds every level's fair chance to `parlayProb` on its legs at theirs and its card to leading
 with it; M7 works the rule on its own from the payload and holds `legFair` to it case by case, then
 made-up lines one in three 25 points above the book's fair chance and one in three 6 points above: the
 pool's count and note, no far leg on a level or a game hand, the flag on the game page (a main line; a
-touchdown and a ladder rung planted on one-sided book prices, the ladders shown; the Game bets card's to
-win and to cover) and in the builder, the builder's summary and confidence tile, and the label free to wrap (until
+touchdown planted on a one-sided book price, and since app v126 a ladder rung priced so beside it drawing no row, box or
+flag, where until then it was flagged with the ladders shown; the Game bets card's to win and to cover) and in the builder, the builder's summary and confidence tile, and the label free to wrap (until
 app v124 also each game hand as its card drew it and made-up hands sure to take each branch, book-priced main lines,
 one with a rung priced on one side, one with a leg on no book price, which went with the card). The nflbets smoke holds the same on the page and the Elo picks, and
 `smoke_live.js` section J the card, its image and Share link's text (fair, est. and none).
@@ -2177,7 +2280,11 @@ total ids, never a player's, which ESPN does not carry) and, on the admin's card
 so a visitor's Open in DraftKings carries only team legs and totals, and the card says once, under its buttons, "Player
 legs go on DraftKings by hand: the site reads DraftKings’ lines from ESPN, which gives no DraftKings id for a player’s
 line, so only team bets and totals go on the slip from here." (`BYHAND`, where a leg's game carries no paid player ids).
-The paths that read a player's id from `PAY.dk` below stand for a payload a pull by hand baked ids into. Where DraftKings has no id at the leg's
+The paths that read a player's id from `PAY.dk` below stand for a payload a pull by hand baked ids into. Since app
+v126 (**No ladder bets**, under Props) no rung k+ or 2+ touchdowns reaches the builder or a live set, so the card's paths
+for them, here and below (a rung as DraftKings' Over k-0.5 or k-1, the conversions, the moved rule naming a rung's own
+bet, Pull from DraftKings' ladder markets), stand dormant for a Suggested Parlays set locked before that day, finished
+from the record as it locked, and for a pull's ids, as `card.html` says. Where DraftKings has no id at the leg's
 own line but has the same bet at another number, the card converts rather than leaves the leg off (app
 v109, the owner's call of 16 October 2026: under Props, "Every suggested leg on DraftKings' slip"): the
 leg goes on the slip at DraftKings' number (`dkLeg`'s `swap`, chosen by `dkNear`), a spread as the same
@@ -2345,7 +2452,9 @@ answer lacks the rung and no ladder row of his already pulled has it, a ladder r
 slip with no other call (the second review of 21 October 2026: the rung asked its ladder alone, which left it dead, a
 credit spent on every press and "or pull again" false; with his main moved from 230.5 to 227.5, 231+ on DraftKings' main
 Over 230.5 now comes back in two credits, the base market then the ladder, and 225+ on his ladder's Over 224.5 in one);
-2+ touchdowns the anytime market); rush + rec yards, kicking points and field goals made are not
+2+ touchdowns the anytime market; since app v126 no ladder bet reaches the builder or a live set, so a plan asks only
+base markets, and the ladder paths, `PULL_ALT`, a rung's `pullMarket` and `whyOf` 'ladder' below, stand dormant for a
+Suggested Parlays set locked before that day: **No ladder bets**, under Props); rush + rec yards, kicking points and field goals made are not
 read, and a leg on one says so; team bets and totals ask nothing (their ids come from ESPN). The cost is "up to" one credit
 a game and market (a market DraftKings has not posted costs nothing), a game and market pulled under 5 minutes ago
 (`PULL_FRESH_MS`) is served from what was pulled, free, and a game whose ESPN check found no player lines posted is left
@@ -2435,9 +2544,9 @@ rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the ne
 
 ```
 node nflbets/build/build.js      # writes the page, the root's index.html
-node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 30 lines, their two parts, the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows, a visitor's seven tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
+node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 30 lines, their two parts, the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows, a visitor's seven tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
-node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on the admin's browser and a visitor's, and the parlay card (the builder's and a Suggested Parlays level's, its check of DraftKings' current lines as it opens, and the admin's Pull from DraftKings on a stubbed Odds API); must end "0 failures"
+node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on the admin's browser and a visitor's, and the parlay card (the builder's and a Suggested Parlays level's, its check of DraftKings' current lines as it opens, and the admin's Pull from DraftKings on a stubbed Odds API), each boot's seeded ladder legs taken out with the builder's line; must end "0 failures"
 node nflbets/build/smoke_admin.js # the admin link and the hidden X tabs (admin.js, HUB_ADMIN, the header, Sign out, a visitor's page, the key nowhere but The Odds API's requests); must end "0 failures"
 node nflbets/build/test_dkname.js # the parlay card's name rule (Pull from DraftKings) against props/build/names.py, case by case (python3 beside it); must end "0 failures"
 (cd news && npm ci && node tools/smoke.js)   # after a change to deepdive.js: the Deep Dive drawn on the real news files (the nflbets smoke only uses stand-ins); must end "all checks passed"
@@ -2789,7 +2898,13 @@ rows for moved); a rung the moved rule took off the slip back on it (R6b: 231+ o
 at 227.5 20 minutes after it, then the base market pulled again, the leg waiting on his ladder, and the ladder, on the
 slip at its own sid and price, two credits; 225+ on his ladder's sid, dead by the same rule, back on that ladder row by one
 base pull; each press's "up to 1 credit" what it spent, its one call the plan's market); and a card closed and opened again
-while the free look-up was out drawn ready once it answers (R7). A request
+while the free look-up was out drawn ready once it answers (R7). Since app v126 (**No ladder bets**, under Props) the
+rungs and 2+ touchdowns J2 and J3 seed stand for a set locked before that day, the paths for them dormant on a live page:
+each such boot first holds that the page took its seeded ladders out with the builder's one line, word for word, and the
+rest kept (`ladderBoot`, its own `ladderOwn` and `NOLADDER_SAY`; J2's tight end's 4+ receptions and 2+ touchdowns, R1's
+30+ and 60+ receiving yards and 2+ touchdowns, R5 to R6b's rung, R7 nothing and no line), then puts every leg back and
+the line gone with the change, so the cases above run as before; and R8 a 225+ rung carrying `kept` beside a main line,
+kept with no line. A request
 to The Odds API on a visitor's run, or on an admin's run with no stand-in, fails it. `smoke.js` holds a real tier's link to
 made-up ids under keys it works out on its own, with the other side of each line and the other team
 under decoys (the tier's lines are made up, so the payload's own ids could never match them), the button

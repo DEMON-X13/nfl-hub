@@ -6068,7 +6068,8 @@ setTimeout(async()=>{
           const off=boxes.filter(b=>b.dataset.main!=='1'&&!(stOf(b)==='any_td'&&b.dataset.k==='1'));
           if(off.length) badP.push(`${pid}: a box off a main line (${off.map(b=>stOf(b)+' '+b.dataset.k).join(', ')})`);
           if(boxes.some(b=>stOf(b)==='any_td'&&+b.dataset.k>=2)||/Scores two or more/.test(txt)) badP.push(`${pid}: a 2+ touchdown box`);
-          if(!boxes.some(b=>stOf(b)==='any_td'&&b.dataset.k==='1')) badP.push(`${pid}: no touchdown box`);
+          /* his one touchdown box where the model projects his touchdown (a quarterback's only on a payload with its model, app v102) */
+          if(boxes.some(b=>stOf(b)==='any_td'&&b.dataset.k==='1')!==statLines(x).some(l=>l.prob)) badP.push(`${pid}: ${statLines(x).some(l=>l.prob)?'no touchdown box':'a touchdown box with no touchdown projected'}`);
           if(d.getElementById('rungCb')||/Threshold ladders|nothing counts out of sight|even though the ladders are hidden/.test(V.textContent)) badP.push(`${pid}: the ladder box or its note`);
           const blocks=[...body.querySelectorAll('.statblk')].filter(b=>!b.querySelector('input[data-leg$="|any_td"]'));
           const byName=new Map(blocks.map(b=>{ const h=b.querySelector('h4'); return [h&&h.firstChild?h.firstChild.textContent.trim():'',b]; }));
