@@ -24,8 +24,8 @@ its main line. A leg on no known stat is never one, so nothing the visitor holds
 3. toggleLeg refuses a ladder by any path (a box, an Add, the console); taking a leg off still works first.
 
 4. A ladder kept in the builder from before (the browser's saved state, or a backup imported) is taken out when the page
-   loads it (pbDropLadders, at boot and on an import), and the builder says so in one line until it next changes
-   (PB_NOLADDER, data-pb-noladder). A leg of a Suggested Parlays set locked before the change (spLegIn's kept) stays:
+   loads it (pbDropLadders, at boot and on an import), and the builder says so in one line until the visitor next changes
+   it (PB_NOLADDER, data-pb-noladder; the builder's own drops of a game kicked off or FG attempts do not end it). A leg of a Suggested Parlays set locked before the change (spLegIn's kept) stays:
    the record grades that set as it locked, and Add to builder pays what its card says.
 
 5. Words: the Top 30 foot says it lists only main lines, anytime touchdowns and team bets (its "Each bet is listed once"
@@ -164,10 +164,13 @@ function pbDropLadders(){
   return n;
 }
 function renderParlay(o){
+  /* the line lives until the visitor changes the builder: this draw's own drops below (a game kicked off, FG attempts)
+     do not end it, so a builder saved with a ladder beside a leg of a game played since says both */
+  const noteOn=!!PB_NOLADDER&&PB_NOLADDER.sig===pbLegSig();
 """, 'pbDropLadders')
 sub1('p3', "  if(dropped||notDk) save();\n",
      """  if(dropped||notDk) save();
-  if(PB_NOLADDER&&PB_NOLADDER.sig!==pbLegSig()) PB_NOLADDER=null;
+  if(noteOn) PB_NOLADDER.sig=pbLegSig(); else PB_NOLADDER=null;
   const noLadder=PB_NOLADDER?PB_NOLADDER.n:0;
 """, 'renderParlay: the note\'s life')
 sub1('p3', "  const droppedNote=(notDk?",

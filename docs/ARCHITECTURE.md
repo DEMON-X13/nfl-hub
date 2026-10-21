@@ -2027,8 +2027,8 @@ Threshold ladders box (`showRungs`, `#rungCb` and `S.ui.showRungs` gone; a saved
 place of its table. `toggleLeg` refuses a ladder after its take-off branch. `pbDropLadders()` takes a ladder out of
 `S.parlay` at boot (after the saved state and the bake, before `espnPublished` and the first draw) and on a backup
 import, never on a draw, but a leg carrying `kept` (a locked set's, `spLegIn`), and `renderParlay` draws one line first
-among its dropped notes, `data-pb-noladder="N"`, while `PB_NOLADDER.sig` is the builder's keys (`pbLegSig()`); `S.saved`
-is never touched. Locked sets are drawn, added (`pbPut`, a locked leg's own Add) and finished (`fromTier`) as before.
+among its dropped notes, `data-pb-noladder="N"`, while `PB_NOLADDER.sig` is the builder's keys (`pbLegSig()`), which its
+own drops of a game kicked off or FG attempts re-stamp, so only the visitor's change ends it; `S.saved` is never touched. Locked sets are drawn, added (`pbPut`, a locked leg's own Add) and finished (`fromTier`) as before.
 Dormant, standing for a set locked before that day and a pull's ids: `once()` and `getPbTop().same`, `plEst` and
 `espnPrice`'s 'rung', `dkIdOf`'s rung keys, the card's rung and 2+ touchdowns conversions and Pull from DraftKings'
 ladder markets (`PULL_ALT`, `pullMarket`, `whyOf` 'ladder'), `dkClashWhy`'s rung. Live as before: `statLines`' rungs (the

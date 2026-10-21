@@ -2848,7 +2848,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       take('a priced line', w.eval('pricedLegs')(G));
       for (const g of G) take(`${g.id}'s hands' pool`, w.eval('gameLegPool')(g, true));
       const top = w.eval('getPbTop()'); take('a Top 30 line', (top.rows || []).filter(l => ids.has(l.gid)));
-      if (top.same !== 0) bad.push(`getPbTop() counts ${top.same} rung${top.same === 1 ? '' : 's'} left out, where none can reach it`);
+      /* (with no game to come the list's early return carries no count) */
+      if ((top.same || 0) !== 0) bad.push(`getPbTop() counts ${top.same} rung${top.same === 1 ? '' : 's'} left out, where none can reach it`);
       for (const t of (w.eval('getPbTiers()').tiers || [])) take(`the all-games ${t.id} level`, t.legs);
       const unitOf = (id, nm) => { const s = w.eval('spSet')(id); for (const t of ((s && s.tiers) || [])) take(`${nm}'s ${t.id} set`, t.legs);
         const e = w.eval('spEloSet')(id); for (const t of ((e && e.tiers) || [])) take(`${nm}'s ${t.id} Elo pick`, t.legs); };
@@ -2947,6 +2948,23 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         Sx.parlay[key] = { ...P()[key], k: mk.rung, main: false, label: `${mk.rung}+ held` };
         tg(key, mk.rung, false); if (P()[key]) bad.push(`a held ladder ${mk.rung}+ not taken off by its own toggle`);
         chk(!bad.length, `toggleLeg on ${F8.id} does not refuse a rung and two or more touchdowns, add a main line and the one touchdown, and take a held ladder off: ` + bad.join('; ')); }
+      /* a ladder saved beside a leg of a game played since: the builder's own drop of that leg, on the draw after the
+         page's strip (pbDropLadders, then renderParlay, in the order the boot and an import call them), does not end the
+         line on the removed ladder bet, so both are said, the ladder's first, and it stays through the next draw (the
+         review of 21 October 2026: the line went before anyone saw it). A made-up game kicked off in 2000 is on the
+         schedule for the case alone, the ladder on a made-up game on none */
+      { const GS = { id: '2000_01_SMZ_SMV', w: w.eval('currentWeek()'), d: '2000-01-03', t: '13:00', a: 'SMZ', h: 'SMV' }; Sx.sched.push(GS);
+        try {
+          const lad = { gid: '2099_99_SMA_SMB', pid: 'smk-l', stat: 'receiving_yards', k: 60, side: 'over', main: false, p: 0.4, price: 150, src: 'est', mu: 52, name: 'Smoke Rung', pos: 'WR', grp: 'WR', team: 'SMA', opp: 'SMB', week: GS.w, label: '60+ receiving yards' };
+          const played = { ...lad, gid: GS.id, pid: 'smk-p', stat: 'receptions', k: 4.5, main: true, p: 0.5, price: -110, mu: 4.4, name: 'Smoke Played', team: 'SMZ', opp: 'SMV', label: 'Over 4.5 receptions' };
+          Sx.parlay = { [`${lad.gid}|smk-l|receiving_yards`]: lad, [`${GS.id}|smk-p|receptions`]: played };
+          const n = w.eval('pbDropLadders()'); w.eval('renderParlay()'); await wait(20);
+          const ps = [...d.querySelectorAll('#parlayBody > p')], la = ps.filter(p => p.dataset.pbNoladder), ko = ps.filter(p => /already kicked off/.test(txt(p))), left = Object.keys(w.eval('S').parlay);
+          const said = '1 leg was removed: the site no longer offers ladder bets (such as 250+ passing yards or 2+ touchdowns), only main lines, anytime touchdowns and team bets.';
+          w.eval('renderParlay()'); await wait(20); const still = d.querySelectorAll('#parlayBody [data-pb-noladder]').length;
+          chk(n === 1 && !left.length && la.length === 1 && la[0].dataset.pbNoladder === '1' && txt(la[0]) === said && ko.length === 1 && ps.indexOf(la[0]) < ps.indexOf(ko[0]) && still === 1,
+            `a ladder saved beside a leg of a game played since is not said with it: the strip took ${n}, the builder holds ${left.join(', ') || 'nothing'}, and draws ${la.length} line(s) on the removed ladder bet ("${la[0] ? txt(la[0]) : ''}"), ${ko.length} on the game kicked off (the ladder's must come first), and ${still} after the next draw`);
+        } finally { const i = Sx.sched.indexOf(GS); if (i >= 0) Sx.sched.splice(i, 1); w.eval('PB_NOLADDER=null'); } }
     } finally {
       if (F8) { const i8 = Sx.sched.indexOf(F8); if (i8 >= 0) Sx.sched.splice(i8, 1); delete Sx.odds[F8.id]; }
       if (G0) { const o = JSON.parse(keepO8); if (o === null) delete Sx.odds[G0.id]; else Sx.odds[G0.id] = o; }

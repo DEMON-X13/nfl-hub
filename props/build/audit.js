@@ -6777,6 +6777,22 @@ setTimeout(async()=>{
       F('toggleLeg')(`${G0}|team:AUX|ml`,0,null,'over',false);
       chk(!w.eval('S').parlay[`${G0}|team:AUX|ml`]&&!note().length,'NL4: the line on the removed ladder bets outstayed a change to the builder (the money line taken off)');
       F('renderParlay')(); chk(!note().length,'NL4: the line on the removed ladder bets came back on a later draw');
+      /* a ladder beside a leg of a game played since: the builder's own drop of that leg, on the draw after the strip
+         (pbDropLadders, then renderParlay, in the order the boot and an import call them), does not end the line, so both
+         are said, the ladder's first, and it stays through the next draw (the review of 21 October 2026: the line went
+         before anyone saw it). A made-up game kicked off in 2000 is on the schedule for the case alone, put back after */
+      { const GS='2000_01_AUZ_AUV', sch=w.eval('S').sched, row={id:GS,w:wk0,d:'2000-01-03',t:'13:00',a:'AUZ',h:'AUV'};
+        sch.push(row);
+        try{ const P=w.eval('S').parlay; for(const k of Object.keys(P)) delete P[k];
+          P[`${G0}|aud-n1|receiving_yards`]=clone(LEGS[`${G0}|aud-n1|receiving_yards`]);
+          P[`${GS}|aud-n6|receptions`]=base('aud-n6',{gid:GS,stat:'receptions',k:4.5,main:true,p:0.5,price:-110,mu:4.4,name:'Made-up Played',team:'AUZ',opp:'AUV',label:'Over 4.5 receptions'});
+          const n=F('pbDropLadders')(); F('renderParlay')();
+          const ps=[...d.querySelectorAll('#parlayBody > p')], la=note(), ko=ps.filter(p=>/already kicked off/.test(p.textContent)), left=Object.keys(w.eval('S').parlay);
+          chk(n===1&&!left.length&&la.length===1&&la[0].dataset.pbNoladder==='1'&&ko.length===1&&ps.indexOf(la[0])>=0&&ps.indexOf(la[0])<ps.indexOf(ko[0]),
+            `NL4: a ladder saved beside a leg of a game played since: the strip took ${n}, the builder holds ${left.join(', ')||'nothing'}, and draws ${la.length} line(s) on the removed ladder bet and ${ko.length} on the game kicked off (the ladder's first): the builder's own drop ended the line before anyone saw it`);
+          W.wording(la.length===1&&la[0].textContent==='1 leg was removed: the site no longer offers ladder bets (such as 250+ passing yards or 2+ touchdowns), only main lines, anytime touchdowns and team bets.',`NL4: the builder's line on one removed ladder bet reads "${la[0]?la[0].textContent:''}"`);
+          F('renderParlay')(); chk(note().length===1,'NL4: the line on the removed ladder bet went with the draw after the builder dropped a leg of a game kicked off itself');
+        } finally { const i=sch.indexOf(row); if(i>=0) sch.splice(i,1); const P=w.eval('S').parlay; for(const k of Object.keys(P)) delete P[k]; w.eval('PB_NOLADDER=null'); F('renderParlay')(); } }
       /* a leg the page cannot read stays where the ladders beside it go */
       mem=JSON.stringify({build:F('MODEL_BUILD'),dataBuild:F('DATA_BUILD'),dataStamp:F('DATA_STAMP'),stake:20,ui:{},
         parlay:{'g|p|s':{p:0.5},[`${G0}|aud-n1|receiving_yards`]:clone(LEGS[`${G0}|aud-n1|receiving_yards`]),[`${G0}|aud-n2|any_td`]:clone(LEGS[`${G0}|aud-n2|any_td`])}});
@@ -6789,7 +6805,7 @@ setTimeout(async()=>{
       await F('boot')(); SL=w.eval('S'); await sleep(450);
       chk(JSON.stringify(Object.keys(SL.parlay).sort())===JSON.stringify(want)&&!note().length,`NL4: a saved builder with no ladder bet came back as ${Object.keys(SL.parlay).sort().join(', ')} with ${note().length} lines about removed ladder bets`);
       mem=JSON.stringify({build:F('MODEL_BUILD'),dataBuild:F('DATA_BUILD'),dataStamp:F('DATA_STAMP'),ui:{}}); await F('boot')(); await sleep(450);
-      console.log(`NL4. no ladder bets kept: a saved builder's rung and 2+ touchdowns taken out as the page loads it (a locked set's kept rung, a main line, one touchdown and a money line kept), the store rewritten, one line saying 2 were removed until the builder changed; a leg the page cannot read kept; a builder with no ladder untouched`); }
+      console.log(`NL4. no ladder bets kept: a saved builder's rung and 2+ touchdowns taken out as the page loads it (a locked set's kept rung, a main line, one touchdown and a money line kept), the store rewritten, one line saying 2 were removed until the builder changed, said beside a leg of a game played since; a leg the page cannot read kept; a builder with no ladder untouched`); }
     /* I2. a new bake of the same model rebuilds the season and says nothing about it: the job
        publishes several times a week, and every one of those has to reach every device */
     { const stamp=F('DATA_STAMP');

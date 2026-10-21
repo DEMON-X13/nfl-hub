@@ -1120,9 +1120,11 @@ bake are in, before `espnPublished` and the first draw, saving where it took one
 (`renderParlay` still drops only a started game's leg and FG attempts, so a check that plants a ladder in the builder after
 boot still draws it), and the builder says so first among its dropped notes, "2 legs were removed: the site no longer
 offers ladder bets (such as 250+ passing yards or 2+ touchdowns), only main lines, anytime touchdowns and team bets."
-("1 leg was removed: ..."; `data-pb-noladder="2"`), while its legs are the ones the strip left (`PB_NOLADDER`, the count
-and `pbLegSig()`, the builder's keys sorted) and never once they change; the retired saved list, `S.saved`, is never
-touched. A leg carrying `kept` stays: it is a leg of a Suggested Parlays set locked before the change (`spLegIn`), which
+("1 leg was removed: ..."; `data-pb-noladder="2"`), until the visitor changes the builder (`PB_NOLADDER`, the count and
+`pbLegSig()`, the builder's keys sorted; `renderParlay`'s own drops of a game kicked off or FG attempts re-stamp it, so a
+ladder saved beside a leg of a game played since is said beside that leg's line: the review of 21 October 2026 found the
+line ended there before anyone saw it, and the audit's NL4 and the smoke hold the case); the retired saved list,
+`S.saved`, is never touched. A leg carrying `kept` stays: it is a leg of a Suggested Parlays set locked before the change (`spLegIn`), which
 the record grades as it locked and whose Add to builder must pay what its card says, so a locked set, the record's or this
 browser's own (`props_sp_lock_v1`), is drawn as it locked, its Add to builder (`pbPut`) and a locked leg's own Add write
 `S.parlay` with `kept` as before, and its Finish (`fromTier`) is unchanged. The words: the Top 30 lines' foot says "Only

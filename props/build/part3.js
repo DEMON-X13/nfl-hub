@@ -3608,6 +3608,9 @@ function pbDropLadders(){
   return n;
 }
 function renderParlay(o){
+  /* the line lives until the visitor changes the builder: this draw's own drops below (a game kicked off, FG attempts)
+     do not end it, so a builder saved with a ladder beside a leg of a game played since says both */
+  const noteOn=!!PB_NOLADDER&&PB_NOLADDER.sig===pbLegSig();
   /* a leg from a game that has kicked off can't be bet, so it leaves the working parlay */
   let dropped=0, notDk=0;
   for(const [k,l] of Object.entries(S.parlay||{})){ const g=S.sched.find(x=>x.id===l.gid); if(g&&gameStarted(g)){ delete S.parlay[k]; dropped++; } }
@@ -3615,7 +3618,7 @@ function renderParlay(o){
      does not (targets, the other stat in NO_BET, was never a leg) */
   for(const [k,l] of Object.entries(S.parlay||{})) if(l&&l.stat==='fg_att'){ delete S.parlay[k]; notDk++; }
   if(dropped||notDk) save();
-  if(PB_NOLADDER&&PB_NOLADDER.sig!==pbLegSig()) PB_NOLADDER=null;
+  if(noteOn) PB_NOLADDER.sig=pbLegSig(); else PB_NOLADDER=null;
   const noLadder=PB_NOLADDER?PB_NOLADDER.n:0;
   /* the Top lines under the builder (app v116: the builder first on the tab), and Suggested Parlays, drawn with it, unless only the amount moved
      (o.keepPb: the payouts are redrawn in place, and the buttons stay put) */
