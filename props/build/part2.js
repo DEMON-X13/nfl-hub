@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v126 \u00b7 2026-10-21';
+const APP_BUILD='app v127 \u00b7 2026-10-21';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -235,7 +235,7 @@ function tdLabel(grp,k){
   return kk>=2?`Scores ${kk}+ touchdowns`:'Scores a touchdown';
 }
 function isGameLeg(l){ return l&&(l.stat==='ml'||l.stat==='ats'||l.stat==='total'); }
-/* (app v126) a ladder bet: a player's over at a number that is not his main line (a rung k+, "250+ passing yards"), or
+/* (app v127) a ladder bet: a player's over at a number that is not his main line (a rung k+, "250+ passing yards"), or
    two or more touchdowns. The site offers none since 21 October 2026 (the owner's call: "is it possible to not do
    ladders and just include Same Game Parlay eligible stuff"): no suggestion, game page or builder takes one, only main
    lines, the anytime touchdown and team bets. A leg on a stat the page does not price (none, or a game bet) is never

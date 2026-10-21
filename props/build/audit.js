@@ -806,6 +806,23 @@ setTimeout(async()=>{
   chk(/\.modal\[hidden\]\s*\{\s*display\s*:\s*none/.test(raw),'stylesheet lacks the rule that lets the overlay actually hide');
   d.querySelector('[data-game="'+g0.id+'"]').click(); d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape'}));
   chk(d.getElementById('gameModal').hidden,'Escape did not close the overlay');
+  /* (app v126) the game's page is the Games tab's own window: leaving the tab closes it as its Back does (on the hub,
+     Back or the address moved to the Matchups tab left it open on the hidden tab with body's modal-open, so that tab
+     could not scroll), a focus left in it going to the chosen tab's button; and Escape acts on a game's page only
+     where it is on the screen, so a key on another tab never touches the Games tab's state */
+  { const tabB=t=>d.querySelector(`#tabs button[data-tab="${t}"]`), gm=d.getElementById('gameModal');
+    const was=(d.querySelector('#tabs button[aria-selected="true"]')||tabB('slate')).dataset.tab;
+    tabB('slate').click(); d.querySelector('[data-game="'+g0.id+'"]').click(); d.getElementById('backBtn').focus();
+    chk(!gm.hidden&&S.ui.game===g0.id&&d.body.classList.contains('modal-open'),'a game did not open on the Games tab');
+    tabB('track').click();
+    chk(gm.hidden&&S.ui.game==null&&!d.body.classList.contains('modal-open')&&d.activeElement===tabB('track'),
+      `leaving the Games tab left the game's page open (${!gm.hidden}, S.ui.game ${S.ui.game}), the page locked (${d.body.classList.contains('modal-open')}) or the focus off the tab's button`);
+    S.ui.game=g0.id; S.ui.open={}; F('renderGame')(); const ui=JSON.stringify(S.ui);
+    d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape'}));
+    chk(JSON.stringify(S.ui)===ui&&S.ui.game===g0.id,'Escape on another tab closed a game\'s page planted on the hidden Games tab');
+    F('closeGame')(); tabB(was).click();
+    chk(gm.hidden&&S.ui.game==null&&!d.body.classList.contains('modal-open'),'the planted game\'s page did not close');
+    console.log(`G7. leaving the Games tab closes the game's page, the focus on the tab's button; Escape elsewhere touches nothing`); }
   const snap=JSON.stringify(S); const S2=JSON.parse(snap);
   chk(JSON.stringify(S2.parlay)===JSON.stringify(S.parlay)&&JSON.stringify(S2.processed)===JSON.stringify(S.processed),'backup round-trip changed state');
   /* ---- G5. Show stats: a player's season week by week, under his row, without opening his props ---- */

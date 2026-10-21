@@ -1413,10 +1413,14 @@ function close(restore=true){
   if(one){ const op=opener; opener=null; oneFocus(op,one,gid,restore); return; }
   if(!restore){ opener=null; return; }
   /* the focus goes back to the game's row that opened it, or to the same game's row if the board
-     has been redrawn since */
-  const back=opener&&opener.isConnected?opener:[...document.querySelectorAll('.pk-game[data-game]')].find(b=>b.dataset.game===gid);
+     has been redrawn since; where neither is on the screen (21 October 2026: the address moved to another tab
+     under the window, which stays open over it, so the row is on a hidden tab), the chosen tab's button,
+     never a hidden row and so the page's body */
+  const vis=el=>!!el&&el.isConnected&&!el.closest('[hidden]');
+  const row=opener&&opener.isConnected?opener:[...document.querySelectorAll('.pk-game[data-game]')].find(b=>b.dataset.game===gid);
+  const back=vis(row)?row:document.querySelector('#tabs button[aria-selected="true"]');
   opener=null;
-  try{ if(back) back.focus(); }catch(e){}
+  try{ if(vis(back)) back.focus(); }catch(e){}
 }
 /* where the focus goes when one card's window closes: the button that opened it, else the same button on
    the game's page drawn since (a Refresh odds press, a score read), else the page's Back, else the game's

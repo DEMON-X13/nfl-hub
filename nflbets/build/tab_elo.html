@@ -1290,6 +1290,17 @@ function mismatchModal(rows){
   m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
 }
 function mmClose(){ const m=document.getElementById('peMmModal'); if(m){ m.hidden=true; if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open'); } }
+/* a window is its tab's own (21 October 2026, with app v126, where the prop model closes the game's page the same
+   way): the player's and the team's windows live on the ELO Ratings tab and the Mismatches' list on the Props tab,
+   so leaving the tab (another tab's button, or the address moved by Back or a link, which routeTabs turns into a
+   click on the tab's button) closes the ones on it. Left open, one hidden with its tab held body's modal-open, so the
+   tab the address went to could not scroll, and still answered Escape. Each is read against the tab it lives on, not
+   against which sections are hidden yet, so the order the click's listeners run in does not matter; the prop model's
+   switch gives a focus left in one to the chosen tab's button */
+document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
+  for(const [id,shut] of [['peMmModal',mmClose],['pePlModal',plClose],['peTmModal',tmClose]]){
+    const m=document.getElementById(id), sec=m&&m.closest('section');
+    if(m&&!m.hidden&&sec&&sec.id!=='tab-'+b.dataset.tab) shut(); } }));
 window.eloMismatches=mismatches;
 /* and the way a Mismatches bubble brings a player's row into view and highlights it, for the Game
    snapshot's Starters names (the board's openOnProps) */

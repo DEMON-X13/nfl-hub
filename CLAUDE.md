@@ -1544,6 +1544,24 @@ Pick'ems or Suggest Parlays), and the build stops if `nflbets/build/tab_tracker.
 `#xparlays`) is as it was, but that on a visitor's page `#xparlays` and `#bets` land on the board, written over as
 `#matchups` as `#tracker` is (`routeTabs`, `ADMIN_ADDR`). On a phone the bar scrolls sideways,
 and the chosen tab's button is brought into it on load, on a new address and on a tap (the bar scrolls, never the page).
+**A window is its tab's own** (app v126, `patch_tab_leave.py`, found 21 October 2026 in Chromium: the Props tab, a game
+opened, then Back or the address set to `#matchups` brought the Matchups tab up with the game's page still open inside
+the hidden Props tab and body's `modal-open` kept, so the tab the address went to could not scroll, the focus on the
+body). Every tab change passes through the prop model's switch (the `#tabs` buttons' click; `routeTabs` clicks the
+button on a `hashchange`), and leaving the Props tab there closes the game's page as its Back does (`tabLeft`:
+`closeGame`, so `S.ui.game` is cleared and saved; a page not open is left alone, so a switch before the payload is in
+saves nothing; a load resets the view anyway). A focus the switch left on what it took off the screen (the game's page,
+a window or a row of the old tab, read before the close, whose redraw replaces the rows) goes to the chosen tab's button,
+never the page's body; a focus still on the screen stays, and with nothing focused none is made. Escape closes a game's
+page only where it is on the screen (`gameShown`), so a key on another tab never touches the Props tab's state. The
+other windows that live in a tab's section close the same way (`tab_elo.html`, each read against the section it lives
+in): the Props tab's Mismatches list (Show more, `#peMmModal`) and the ELO Ratings tab's player and team windows
+(`#pePlModal`, `#peTmModal`); X Parlays' `#lpAsk` and a game page's one-card window already closed on a `hashchange`.
+The board's whole Game snapshot is no tab's window (the matchup bubble opens it from other tabs) and stays open over
+the tab the address goes to; closing it there gives the focus to that tab's button where its row is off the screen.
+The audit's G7 (on the prop model's own page) and the nflbets smoke's A WINDOW IS ITS TAB'S OWN (each window left by
+the address with the focus in it, Escape afterwards and on a game's page planted on the hidden tab, the Game snapshot
+across a move; the one-card window's check also holds the game's page closed) hold it, blocking.
 The Matchups board (`tab_pickems.html`) is six columns on a wide screen (date, matchup, win probability, confidence,
 score prediction, final score) and one card a game at 900px and under; from 901 to 1,160px (the owner's window is
 914) the columns are narrower and the win-probability bar takes what is left, its team labels dropped (the matchup

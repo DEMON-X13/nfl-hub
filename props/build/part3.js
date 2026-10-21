@@ -54,6 +54,23 @@ function renderWeekOptions(){
 function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; } }
 function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }
 function closeGame(){ S.ui.game=null; save(); closeGameModal(); renderSlate(); }
+/* (app v126) the game's page is the Props tab's own window, on the screen only while that tab is: leaving the tab
+   (another tab's button, or on the hub the address moved by Back or a link, which routeTabs turns into a click on
+   the tab's button) closes it as its Back button does, so no page hidden with its tab holds body's modal-open (the
+   tab the address went to could not scroll) or answers Escape. A page not open is left alone, so a switch before
+   the payload is in saves nothing. A focus the switch left on what it took off the screen (the game's page, a
+   window or a row of the old tab) goes to the chosen tab's button, never the page's body; a browser keeps
+   activeElement on a newly hidden element until its next rendering update, so the click sees it, whichever
+   hashchange listener ran first. A focus on anything still shown stays, and with nothing focused (a load) none is
+   made */
+function gameShown(){ const m=$('gameModal'); return !!m&&!m.hidden&&!m.closest('[hidden]'); }
+function tabLeft(b){
+  const a=document.activeElement, gone=x=>!x.isConnected||!!x.closest('[hidden]');
+  if(b.dataset.tab!=='slate'&&!$('gameModal').hidden) closeGame();
+  /* read before the close: its redraw replaces the slate's rows, and a focused row removed leaves the body */
+  const f=document.activeElement, at=f&&f!==document.body?f:a;
+  if(a&&a!==document.body&&gone(at)) try{ b.focus({preventScroll:true}); }catch(e){}
+}
 /* W-L on the model's side of every book main line, frozen pre-game numbers */
 function renderRecords(w){
   const wr=$('weekRec'), sr=$('seasonRec'); if(!wr||!sr) return;
@@ -344,7 +361,7 @@ function gameBetsCard(g,locked){
     <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line, the spread and the total.':'A team to win, or to cover the spread, or the game total over or under. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that. The total's chance is the book's own, its over and under prices with the margin taken out (an even 50% with no price on file): tested on 2024 to 2026, no points model of ours beat the posted total, so the model's points are shown beside it and not used. A Suggested Parlays set takes a game total only where the game's other legs cannot fill a parlay, and never marks it Value; tick it here to add one yourself. A win or cover leg is priced as unrelated to player legs, which has not been measured here; a total moves with its game's passing and scoring lines, measured on 2019 to 2024.</p>
     ${lineSource(g)?`<p class="muted" style="margin:0 0 8px;font-size:12px">Lines: ${esc(lineSource(g))}.</p>`:''}${rows}${tot}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}${tb&&(totalBook(g,'over')==null||totalBook(g,'under')==null)?'<p class="muted" style="margin:6px 0 0;font-size:12px">No over and under price on file for this total yet: the chance is an even 50%, and where a price is missing the -110 is an estimate.</p>':''}</div>`;
 }
-/* (app v126) a game's page offers no ladder bet (isLadder): no box to show the ladders, no rung row and no 2+
+/* (app v127) a game's page offers no ladder bet (isLadder): no box to show the ladders, no rung row and no 2+
    touchdowns row. The model still builds every stat's rungs (statLines), and the Track Record still grades them. */
 function renderGame(){
   const g=S.sched.find(x=>x.id===S.ui.game);
@@ -898,11 +915,12 @@ function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderPar
 /* the Games tab's own scores: off until asked, then read on the button */
 $('slateNow')?.addEventListener('click',()=>{ LIVE.slate=true; LIVE.err=null; slateStamp(); liveRefresh(); });
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&gameShown()) closeGame(); });
 $('gameModal').addEventListener('click',e=>{ if(e.target===$('gameModal')) closeGame(); });
 document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
-  document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab); }));
+  document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab);
+  tabLeft(b); }));
 function parseCSV(file){ return new Promise(res=>Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>res(r.data)})); }
 
 /* The payload is fetched, not baked in. The page and the data are separate files so a
@@ -949,7 +967,7 @@ async function boot(){
   let baked=null;
   if(!window.NO_BAKED){ try{ baked=applyBaked(); }catch(e){ console.error('built-in data failed to apply',e); setTimeout(()=>log('Built-in data could not be applied: '+(e&&e.message||e)+'. The upload buttons still work.','err'),0); } }
   if(baked&&(baked.stats.length||baked.prices||baked.inj||baked.sched)) save();
-  /* (app v126) a ladder bet kept in the builder from before leaves it, said on the builder (pbDropLadders) */
+  /* (app v127) a ladder bet kept in the builder from before leaves it, said on the builder (pbDropLadders) */
   if(pbDropLadders()) save();
   /* (app v125) the props job's read of DraftKings' lines on ESPN, published with the payload: outside NO_BAKED, so
      the audit sees what a visitor sees, and before the kept read, which it may outrank */
@@ -1078,7 +1096,7 @@ function toggleLeg(key,k,g,side,main){
   if(cur&&cur.k===k&&cur.side===side&&!!cur.main===!!main){ delete S.parlay[key]; save(); renderGame(); renderParlay(); return; }
   const [gid,pid,stat]=key.split('|');
   if(NO_BET.has(stat)) return;   /* (app v113) never a leg DraftKings does not offer */
-  if(isLadder({stat,k,main:!!main})) return;   /* (app v126) never a ladder bet: a rung k+ or 2+ touchdowns */
+  if(isLadder({stat,k,main:!!main})) return;   /* (app v127) never a ladder bet: a rung k+ or 2+ touchdowns */
   const game=g||S.sched.find(x=>x.id===gid);
   if(stat==='total'){
     if(!game) return; const l=totalLeg(game,side==='under'?'under':'over'); if(!l) return;
@@ -2109,7 +2127,7 @@ function dkEarlySunday(g){ return !!g&&!!g.d&&new Date(g.d+'T12:00:00Z').getUTCD
 /* every line this week with a real sportsbook price, team bets and players, unjudged, and (app v107)
    every player leg of a tested kind priced from DraftKings' line read on ESPN (the props job's published read,
    or a press) where no paid price is on file for it or its line has moved since (src 'dkline': a main line on passing, rushing or receiving
-   yards, receptions or passing touchdowns, or the anytime touchdown). (app v126) No ladder bet: no rung k+, whatever
+   yards, receptions or passing touchdowns, or the anytime touchdown). (app v127) No ladder bet: no rung k+, whatever
    prices it, and never 2+ touchdowns (isLadder), so no suggestion built from these takes one. Team
    bets are at the game's lines, a read's where one is newer. A game total is not among them: priced at the book's own chance (totalBet), it has no edge for a suggestion
    to find. The suggested parlays panel adds the totals itself, as its last fill (pbPool's market
@@ -2715,7 +2733,7 @@ function getPbTiers(){
 /* ---------- the game page's suggested parlays: High, Medium, Low ----------
    Always three hands, 2, 3 and 4 legs, each the best payout for its chance from this game's
    lines (see patch_game_tiers_value.py): real prices where the book has them, the model's
-   estimate of a book's price on every other touchdown (app v126: no ladder rung), no leg shorter than
+   estimate of a book's price on every other touchdown (app v127: no ladder rung), no leg shorter than
    -250, each hand above its payout floor where the game allows. (app v124) Drawn nowhere since
    20 October 2026, when the game page's card went (gameWinBtns, below): kept, as the all-games
    levels are, since the audit and the smoke still hold it. */
@@ -2934,7 +2952,7 @@ window.pbTierCard=pbTierCard;
    until then the totals ended the first part; a total priced on one side only is put at 50%, so at plus money
    its expected return is not below a thin leg's, and the order is set, not left to the sort). Each bet is
    listed once (app v112): a ladder rung k+ is the same bet as the player's main Over (k-0.5) on a half-point
-   line, priced from it, so where that main line is on the list the rung is not (dormant since app v126, when
+   line, priced from it, so where that main line is on the list the rung is not (dormant since app v127, when
    pricedLegs stopped making rungs: the checks hold it on made-up lines). Each row keeps what $1 wins if it lands (the decimal price less 1) and the book's fair chance
    (legFair) where there is one. Cached on the levels' own signature (pbSig), so ticking back is instant,
    and a press (ESPN_SEQ is in pbDataSig, and espnRedraw drops the cache) or a kickoff rebuilds it. */
@@ -3595,7 +3613,7 @@ function dkSlipLine(x,i){
   if(x.id) return '';
   return `<small class="dkslip" data-dkslip="${i+1}">Not on DraftKings’ slip: ${esc(x.brief||x.why||'')}</small>`;
 }
-/* (app v126) no ladder bets (isLadder): one kept in the builder from before, by the browser's saved state or a backup
+/* (app v127) no ladder bets (isLadder): one kept in the builder from before, by the browser's saved state or a backup
    imported, is taken out as the page loads it, and the builder says so in one line until it next changes (PB_NOLADDER:
    how many, and the builder's legs then). A leg of a Suggested Parlays set locked before the change (spLegIn's kept)
    stays: the record grades that set as it locked, and Add to builder pays what its card says */
