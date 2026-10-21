@@ -22,7 +22,9 @@
  * checked again quietly on each load until it is answered (a 200 marks it checked; a refusal signs this browser
  * out). Once kept, the page reloads (at the tab the link named: #xparlays&owner=K opens on X Parlays), so the X
  * tabs, their files and the frames only ever see the state a load began with. A link whose key is the one already
- * kept, and checked or waiting for its check, costs nothing: no request, no reload.
+ * kept, and checked or waiting for its check, asks nothing: on a page that loaded as the admin's it costs nothing, no
+ * request and no reload; on one that loaded as a visitor's (another tab of the site kept the key after this one
+ * loaded) it reloads, once, at the tab the link named, so the link is never silently ignored.
  *
  * What is kept: this browser's own storage, under nflhub_admin_v1 alone (a name no retired layer used: storage.js
  * takes those out on every load), as JSON {k, at, ok, checked, left, leftAt}: the key, when it was kept, true
@@ -46,7 +48,7 @@
  * Admin mark (its title says when the key was checked and the credits left) and a Sign out button, and for anyone
  * with the one line saying a link was refused. Sign out asks, then forgets the key: the two tabs leave the bar, an
  * open one lands on the Matchups board, and the card's Pull goes. Another tab of the site signing out is
- * followed here; one signing in waits for this tab's next load. */
+ * followed here; one signing in waits for this tab's next load (or the link opened in this one). */
 (function(){
   var KEY='nflhub_admin_v1', root=document.documentElement;
   var API='https://api.the-odds-api.com/v4/';
@@ -126,6 +128,17 @@
   var signOut=function(){ try{ localStorage.removeItem(KEY); }catch(e){} out(false); };
 
   /* ---- a link: taken off the address at once, then checked and kept ---- */
+  /* the reload into the admin's page, at the tab the link named (#xparlays&owner=K: X Parlays), which this load, a
+     visitor's, lands on the board meanwhile: so once the page is parsed, and on a task of its own, after the
+     hashchange this may run in has reached the tab bar's own listener (which writes a visitor's #xparlays over as
+     #matchups, and runs after this file's), the link's tab is put back on the address and the page reloads there */
+  var reloadAt=function(rest){
+    setTimeout(function(){ parsed(function(){
+      if(rest&&location.hash!=='#'+rest){ var to=location.pathname+location.search+'#'+rest;
+        try{ history.replaceState(history.state,'',to); }catch(e){ try{ location.replace('#'+rest); }catch(e2){} } }
+      try{ location.reload(); }catch(e){}
+    }); },0);
+  };
   var LINK=/^#(?:(.*?)&)?owner=([^&]*)(?:&(.*))?$/;
   var take=function(){
     var m=LINK.exec(location.hash||''); if(!m) return false;
@@ -135,22 +148,17 @@
     catch(e){ try{ location.replace('#'+rest); }catch(e2){} }
     if(!FORMAT.test(k)){ MSG='That admin link was refused.'; drawn(); return true; }
     var r=read();
-    /* the key already kept here, checked or waiting for its quiet check: nothing to ask */
-    if(r&&r.k===k&&r.ok!==false) return true;
+    /* the key already kept here, checked or waiting for its quiet check: nothing to ask. A page that loaded as the
+       admin's is done; one that loaded as a visitor's (another tab of the site kept the key since) reloads into the
+       admin's, with no request */
+    if(r&&r.k===k&&r.ok!==false){ if(!ON) reloadAt(rest); return true; }
     check(k).then(function(c){
       if(c.v==='refused'){ MSG='The Odds API refused that admin link.'; drawn(); return; }
       var at=nowIso(), ok=c.v==='ok';
       if(!write({k:k, at:at, ok:ok?true:null, checked:ok?at:null, left:c.left!=null?c.left:null, leftAt:c.left!=null?at:null})){
         MSG='This browser would not keep the admin key.'; drawn(); return; }
-      /* the admin from the next load on: the page as it loads is the only state the X tabs and their files see.
-         It reloads at the tab the link named (#xparlays&owner=K: X Parlays), which this load, a visitor's, lands on
-         the board meanwhile: so once the page is parsed (the tab bar has read the address by then, however soon
-         the check answered), the link's tab is put back on the address and the page reloads there */
-      parsed(function(){
-        if(rest&&location.hash!=='#'+rest){ var to=location.pathname+location.search+'#'+rest;
-          try{ history.replaceState(history.state,'',to); }catch(e){ try{ location.replace('#'+rest); }catch(e2){} } }
-        try{ location.reload(); }catch(e){}
-      });
+      /* the admin from the next load on: the page as it loads is the only state the X tabs and their files see */
+      reloadAt(rest);
     });
     return true;
   };

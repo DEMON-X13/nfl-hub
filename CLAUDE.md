@@ -1501,7 +1501,10 @@ abort): a 200 keeps it, checked, with the credits left from `x-requests-remainin
 checked again quietly on each load until answered (a 200 marks it checked, a refusal signs the browser out). Once kept,
 the page reloads at the tab the link named (put back on the address once the page is parsed), so the X tabs, their files
 and the frames only ever see the state a load began with; a link whose key is the one already kept, checked or waiting,
-costs nothing. The record is this browser's own storage under `nflhub_admin_v1` alone (a name no retired layer used:
+asks nothing: on a page that loaded as the admin's it costs nothing, no request and no reload, and on one that loaded as
+a visitor's (another tab of the site kept the key after it loaded) it reloads once, with no request, at the tab the link
+named, put back on a task of its own after the tab bar's `hashchange` has written a visitor's `#xparlays` over as
+`#matchups` (until the review of 21 October 2026 it did nothing there, and the owner's link looked broken). The record is this browser's own storage under `nflhub_admin_v1` alone (a name no retired layer used:
 `storage.js` never reads, writes or removes it, and the build refuses it if it names it), JSON `{k, at, ok, checked,
 left, leftAt}`: a record with `ok:false` (The Odds API refused the key since) loads as a visitor, and anything else under
 the key, or storage that throws, reads as a visitor and throws nothing; never `S`, never another key. Admin at load,
@@ -1519,7 +1522,8 @@ page an Admin mark (`.ha-mark`, gold, its title when the key was checked and the
 opened a refused link, its one line (`.ha-msg`, `role="status"`); on a visitor's, nothing, pixel for pixel the header it
 was. Sign out asks ("Sign out of admin on this device?"), removes the record and nothing else, takes the two tabs off the
 bar (an open one landing on the board), empties X Parlays and drops the card's Pull, with no reload; another tab of the
-site signing out is followed, writing nothing, and one signing in waits for this tab's next load. The two tabs' buttons
+site signing out is followed, writing nothing, and one signing in waits for this tab's next load (or the link opened in
+it). The two tabs' buttons
 and sections carry `data-admin-only`, hidden from the first paint unless `html[data-admin="on"]` (`theme.css`); on a
 visitor's page `routeTabs` takes the buttons off the bar before anything wires them, and both sections stay in the page
 (the X Parlays section's script wires its window as it loads, and with it gone would throw and take the builder's Finish

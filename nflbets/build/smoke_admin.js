@@ -245,6 +245,21 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
         'a link pasted into an open page is not kept, checked, with its credits left, and the page reloaded: ' + JSON.stringify(rec && Object.assign({}, rec, { k: rec.k && 'K' })) + ' / reloads ' + V.navs.length);
       keyNowhere(V, FAKE, 'a link pasted into an open page'); }
     w.close(); }
+  /* a link pasted into a tab that loaded as a visitor's after another tab of the site had kept the key (checked, or
+     waiting for its quiet check): nothing to ask, but this tab is still a visitor's, so it reloads, once and with no
+     request, at the tab the link named (put back after the tab bar wrote a visitor's #xparlays over as #matchups) */
+  for (const [link, want, rec, what] of [['#xparlays&owner=' + FAKE, '#xparlays', REC(), 'kept and checked'], ['#owner=' + FAKE, '', REC(FAKE, null), 'kept, not checked yet']]) {
+    const V = await boot({ url: SITE });
+    const { w, d } = V, n0 = V.calls.length;
+    chk(!V.timedOut && w.HUB_ADMIN.on() === false && tabsOf(d) === SEVEN, `a visitor's tab (for the link pasted after another tab ${what} the key) did not come up as a visitor's`);
+    w.localStorage.setItem(KEY, rec);
+    w.location.hash = link;
+    await until(() => V.navs.length > 0, 1500); await wait(120);
+    chk(V.navs.length === 1 && oddsCalls(V).length === 0 && w.location.hash === want && !w.location.href.includes(FAKE) && w.localStorage.getItem(KEY) === rec,
+      `a link pasted into a visitor's tab after another tab ${what} its key does not reload that tab exactly once, with no request to The Odds API, at ${want || 'no tab'}: reloads ${V.navs.length}, Odds API requests ${oddsCalls(V).length}, address ${w.location.hash.replace(FAKE, 'K') || '(none)'}, record ${w.localStorage.getItem(KEY) === rec ? 'as kept' : 'changed'}`);
+    chk(V.calls.slice(n0).every(c => c.host !== ODDS_HOST) && V.errs.length === 0, `a link pasted into a visitor's tab after another tab ${what} its key asked The Odds API, or the page threw: ` + V.errs.join('; '));
+    keyNowhere(V, FAKE, `a link pasted into a visitor's tab after another tab ${what} its key`);
+    w.close(); }
   { const V = await boot({ url: SITE + '#bets' });
     chk(V.w.location.hash === '#matchups' && !V.d.getElementById('tab-pickems').hidden && V.d.getElementById('tab-bets').hidden && tabsOf(V.d) === SEVEN && xCalls(V).length === 0,
       "a visitor's #bets does not land on the Matchups board with seven tabs and no X file read: " + V.w.location.hash);
