@@ -273,10 +273,13 @@ too; with neither it passes at once, and a push or a dispatch runs everything. J
 picks, which the Elo job runs every morning and which blocks its publish) on the payload it baked (the
 published one when weekly.py refused), within 40 minutes; job B runs each case of `test_audit_phases.py` on a runner of its
 own (the smoke cases alone when only PAGE changed); job C (since 20 October 2026) runs the unit tests, `UNITS` in
-`props_gate.py`, seconds each on fixtures of their own: `test_apply_espn.py`, `test_espn_read.js`, `test_lock_runs.py`,
-`test_espn_ids.py`, `test_dk_links.py`, `test_unmatched.py`, `test_who_played.py`, `test_fetch.py`, `test_audit_gate.py`,
-`lib/test_netfetch.py` and `.js`, `nflbets/build/test_dkname.js` and `nflbets/build/smoke_admin.js` (one missing from the
-tree fails it, but for those in `UNITS_OPTIONAL`). Each is differential: a failure is run again on
+`props_gate.py`, on fixtures of their own, seconds each but for the page's two smokes: `test_apply_espn.py`,
+`test_espn_read.js`, `test_lock_runs.py`, `test_espn_ids.py`, `test_dk_links.py`, `test_unmatched.py`, `test_who_played.py`,
+`test_fetch.py`, `test_audit_gate.py`, `lib/test_netfetch.py` and `.js`, `nflbets/build/test_dkname.js`,
+`nflbets/build/smoke_admin.js` and, since the review of 21 October 2026, `nflbets/build/smoke_live.js` (about four minutes,
+the one place the parlay card's Pull from DraftKings and its money rules are held; job C's `timeout-minutes` went from 20 to
+45 with it, room for both page smokes running to their own caps here and again on the base, which `test_props_gate.py`
+holds) (one missing from the tree fails it, but for those in `UNITS_OPTIONAL`). Each is differential: a failure is run again on
 the base's code in a second checkout (`weekly.py --offline` over the same downloads and the same ESPN answers, copied
 with them since `props/raw/espn/` is ignored, unless this run refused at a download or read a file as not posted yet,
 when the base downloads its own and is handed this run's ESPN answers, `PROPS_ESPN_REPLAY`, so a line DraftKings moved
@@ -1505,7 +1508,10 @@ abort): a 200 keeps it, checked, with the credits left from `x-requests-remainin
 checked again quietly on each load until answered (a 200 marks it checked, a refusal signs the browser out). Once kept,
 the page reloads at the tab the link named (put back on the address once the page is parsed), so the X tabs, their files
 and the frames only ever see the state a load began with; a link whose key is the one already kept, checked or waiting,
-costs nothing. The record is this browser's own storage under `nflhub_admin_v1` alone (a name no retired layer used:
+asks nothing: on a page that loaded as the admin's it costs nothing, no request and no reload, and on one that loaded as
+a visitor's (another tab of the site kept the key after it loaded) it reloads once, with no request, at the tab the link
+named, put back on a task of its own after the tab bar's `hashchange` has written a visitor's `#xparlays` over as
+`#matchups` (until the review of 21 October 2026 it did nothing there, and the owner's link looked broken). The record is this browser's own storage under `nflhub_admin_v1` alone (a name no retired layer used:
 `storage.js` never reads, writes or removes it, and the build refuses it if it names it), JSON `{k, at, ok, checked,
 left, leftAt}`: a record with `ok:false` (The Odds API refused the key since) loads as a visitor, and anything else under
 the key, or storage that throws, reads as a visitor and throws nothing; never `S`, never another key. Admin at load,
@@ -1523,7 +1529,8 @@ page an Admin mark (`.ha-mark`, gold, its title when the key was checked and the
 opened a refused link, its one line (`.ha-msg`, `role="status"`); on a visitor's, nothing, pixel for pixel the header it
 was. Sign out asks ("Sign out of admin on this device?"), removes the record and nothing else, takes the two tabs off the
 bar (an open one landing on the board), empties X Parlays and drops the card's Pull, with no reload; another tab of the
-site signing out is followed, writing nothing, and one signing in waits for this tab's next load. The two tabs' buttons
+site signing out is followed, writing nothing, and one signing in waits for this tab's next load (or the link opened in
+it). The two tabs' buttons
 and sections carry `data-admin-only`, hidden from the first paint unless `html[data-admin="on"]` (`theme.css`); on a
 visitor's page `routeTabs` takes the buttons off the bar before anything wires them, and both sections stay in the page
 (the X Parlays section's script wires its window as it loads, and with it gone would throw and take the builder's Finish
@@ -1540,7 +1547,8 @@ holds the two `data-admin-only` buttons and sections, the header's slot and the 
 request recorded and The Odds API stubbed (a key it takes, a refused key, a network failure, a 429, no credits): the
 build; a good link (the address cleaned before the body is parsed and before the tab bar reads it, `#xparlays&owner=K`
 keeping its tab, exactly one free GET no-store with no referrer, the key kept, the reload, a link pasted into an open
-page, the `file:` fallback); a refused link; an unchecked key checked again; the admin's page (data-admin before the
+page, a link pasted into a visitor's tab after another tab kept its key, checked or not yet, reloading it once with no
+request at the link's tab, the `file:` fallback); a refused link; an unchecked key checked again; the admin's page (data-admin before the
 body, nine tabs, the switch then the mark and a 44px Sign out, X Parlays drawn and the X Bet Log read, both no-store, no
 Odds API request on load, `odds()`'s two paths only, a refused key marked); Sign out and another tab's; a visitor's page
 (seven tabs, `#xparlays` and `#bets` landing on `#matchups` on load and in an open page, no request for either file, for
@@ -2304,8 +2312,12 @@ player legs for DraftKings' real prices and fresh slip ids, through `HUB_ADMIN.o
 names the API's host or asks anything itself: `build.js` refuses it). The plan (`pullPlan`): each player leg still to kick
 off asks one market of its game by its stat (`PULL_BASE`, `oddsfetch.py`'s `MARKETS` turned round: passing, rushing and
 receiving yards, receptions, passing touchdowns, attempts, completions, interceptions, carries and the anytime touchdown;
-a rung k+ the `_alternate` ladder, `PULL_ALT`, unless DraftKings' main line for him now, `mainNow`, the ESPN read's else
-the payload's, is k-0.5; 2+ touchdowns the anytime market); rush + rec yards, kicking points and field goals made are not
+a rung k+ the `_alternate` ladder, `PULL_ALT`, unless DraftKings' main line for him, `mainNow`, the ESPN read's else the
+payload's, is k-0.5, and where this load pulled his rows in the base market and they stand by the moved rule (below,
+`pullStanding`), the base market only where those rows have his Over k-0.5 or k-1, else his ladder: so a rung the base
+market did not have is asked of the ladder next time, whatever a trailing ESPN read still says (the review of 21 October
+2026, after a pull asked 225+ passing yards of the base market on ESPN's 224.5 where DraftKings' main was 230.5, and slipped
+Over 230.5 in its place; every re-pull asked the same); 2+ touchdowns the anytime market); rush + rec yards, kicking points and field goals made are not
 read, and a leg on one says so; team bets and totals ask nothing (their ids come from ESPN). The cost is "up to" one credit
 a game and market (a market DraftKings has not posted costs nothing), a game and market pulled under 5 minutes ago
 (`PULL_FRESH_MS`) is served from what was pulled, free, and a game whose ESPN check found no player lines posted is left
@@ -2341,19 +2353,28 @@ price, sid and fair chance (both sides' prices with the margin out, else the pri
 Suggested Parlays level finished on the card is priced again the same way; his main line DraftKings has moved, put on the
 slip at DraftKings' number with its price ("goes on as Over 66.5 rushing yards, which DraftKings prices at −115"), the leg
 keeping its own; a rung DraftKings lists no such Over for, his Over at DraftKings' closest number ("DraftKings lists no 70+
-rushing yards for him; goes on as Over 64.5 ..."); 2+ touchdowns on his anytime touchdown; or why there is none (no line of
-his, the market not posted and so no credit spent, his DraftKings name not placed: add it by hand). The moved rule on a
+rushing yards for him; goes on as Over 64.5 ..."), said only where his ladder was in the answer; a rung asked of the base
+market that it did not have, his ladder not asked, on no slip and no other bet in its place ("DraftKings had his passing
+yards line at 230.5 when you pulled from DraftKings (...), so 225+ is on its ladder, which that pull did not ask: pull again
+for his ladder", `whyOf` `'ladder'`; the builder's row "his main line at 230.5 when pulled; pull again for his ladder"; with
+no main line of two sides there, "DraftKings had no Over 224.5 passing yards of his on its main line ..."), the next plan
+asking the ladder; 2+ touchdowns on his anytime touchdown; or why there is none (no line of his, the market not posted and so no credit
+spent, his DraftKings name not placed: add it by hand). The moved rule on a
 pulled line (`PULL_MOVED_MS`): ESPN's feed can trail DraftKings, so a pulled line stands against an ESPN read of his main
 line at another number unless that read came more than 15 minutes after the pull; then its id is taken for dropped, as
 DraftKings drops a moved line: "DraftKings has moved his receiving yards line to 49.5 since you pulled from DraftKings
 (...), and its slip drops a moved line: add it by hand at 49.5 (or pull again)". The fresh sids go on this card's slip
 alone (`dkLeg`'s pulled branch, `dkPulledLeg`), never into `PAY.dk`, so the admin's suggestions are exactly everyone's.
+A card closed, or another opened, while the free look-up is out is drawn waiting meanwhile, and once the look-up answers
+for the card it was pressed on, now gone, the open card is drawn again with Pull and Open in DraftKings working (until the
+review of 21 October 2026 they stayed "busy" where the new card's own check had nothing to read).
 `PARLAY_CARD.pullPlan()`, `pull()`, `pullState()`, `pulledFor(l)` and `nameRule(desc, players)` say where it stands.
 `node nflbets/build/test_dkname.js` (blocking, seconds, `python3 -I` beside it; in the props gate's job C) holds the
 card's name rule to `names.py`: every pair of `test_unmatched.py`, the audit's own two `nameRule` cases, `Pool.match` over
 whole games built from `test_unmatched.py`'s fixtures and a few of its own (accents, suffixes, punctuation, a nickname two
 share), `names.norm` on awkward strings, and the nicknames both ways. `smoke_live.js`'s J3 holds the pull on a stubbed Odds
-API and V a visitor's page (under the smokes, below).
+API and V a visitor's page (under the smokes, below); since the review of 21 October 2026 `smoke_live.js` is one of the props
+gate's job C units too (`UNITS` in `props_gate.py`, about four minutes), so a change to the card cannot merge without it.
 
 The build lifts renderParlay's pricing
 out of `part3.js` into the card, so its price is the builder's own. Where X's parlays and the X Bet
@@ -2728,7 +2749,13 @@ call; each error (a refused key, no credits, a 429, a network failure before and
 empty bookmakers, a game kicked off between the look-up and its odds, a 422 asked again a market at a time) keeping the
 prices as they were and saying why; Pull disabled while the ESPN check is busy, Open and Share waiting during the pull, a
 Suggested Parlays level pulled and priced again, the focus kept, a sign-out midway hiding the button and keeping no late
-answer; and an ESPN read more than 15 minutes after the pull moving the pulled main line, the moved rule's words. A request
+answer; an ESPN read more than 15 minutes after the pull moving the pulled main line, the moved rule's words; a rung asked
+of the base market on ESPN's main line (224.5) where DraftKings' main is 230.5 and 225+ is on its ladder (R5: one credit, no
+slip, "pull again for his ladder", never "lists no 225+"; the next plan the ladder, before and after a newer ESPN read still
+at 224.5, and nothing more for 231+, which the base answer holds; the re-pull one credit, the ladder alone, 225+ on the slip by
+its own sid at its own price; R5b, the base answer with his Over 230.5 alone, the same and the next plan the ladder); the
+pulled rows deciding a rung's market only while they stand by the moved rule (R6, the page's clock held back 30 minutes for
+the pull); and a card closed and opened again while the free look-up was out drawn ready once it answers (R7). A request
 to The Odds API on a visitor's run, or on an admin's run with no stand-in, fails it. `smoke.js` holds a real tier's link to
 made-up ids under keys it works out on its own, with the other side of each line and the other team
 under decoys (the tier's lines are made up, so the payload's own ids could never match them), the button

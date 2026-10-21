@@ -51,7 +51,8 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const { JSDOM } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
 const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papaparse'));
-const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+/* SMOKE_LIVE_HTML=<file>: the same checks on another copy of the page (a planted broken one, to see a check fail) */
+const HTML = fs.readFileSync(process.env.SMOKE_LIVE_HTML ? path.resolve(process.env.SMOKE_LIVE_HTML) : path.join(ROOT, 'index.html'), 'utf8');
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 const STATE = fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8');
 const URL_ = 'https://demon-x13.github.io/nfl-hub/#xparlays';
@@ -66,7 +67,7 @@ const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
 /* how the smoke ends, whichever way: the count, every failure, an exit code. A mistake in the
    smoke's own code stops it here with the stack (the .catch at the bottom), and a run still
-   going after ten minutes (it takes about one) stops with what it has, so it never waits on
+   going after ten minutes (it takes about four) stops with what it has, so it never waits on
    the windows it left open */
 let ended = false;
 function finish(why) {
@@ -3130,8 +3131,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       const EV = { [g1.id]: 'a1'.repeat(16), [g2.id]: 'b2'.repeat(16), [g3.id]: 'c3'.repeat(16) };
       /* the made-up players and the roster entries the payload gives them ([team, status, name, week]) */
       const PL = { qb: ['j3-qb', 'Quinn Passer', g1.h, 'QB'], rb: ['j3-rb', 'Card Back', g2.h, 'RB'], wr: ['j3-wr', 'Andrew Wideout', g2.a, 'WR'], te: ['j3-te', 'Tee End', g2.h, 'TE'],
-        mi: ['j3-mi', 'Missing Man', g2.a, 'RB'], cs: ['j3-cs1', 'Chris Same', g2.h, 'WR'], cs2: ['j3-cs2', 'Chris Same', g2.a, 'WR'], t3: ['j3-t3', 'Third Back', g3.h, 'RB'] };
-      const AID3 = { 'j3-rb': '9301', 'j3-wr': '9302', 'j3-qb': '9303' };
+        mi: ['j3-mi', 'Missing Man', g2.a, 'RB'], cs: ['j3-cs1', 'Chris Same', g2.h, 'WR'], cs2: ['j3-cs2', 'Chris Same', g2.a, 'WR'], t3: ['j3-t3', 'Third Back', g3.h, 'RB'],
+        lp: ['j3-lp', 'Ladder Passer', g1.a, 'QB'] };
+      const AID3 = { 'j3-rb': '9301', 'j3-wr': '9302', 'j3-qb': '9303', 'j3-lp': '9304' };
       const pin3 = P => {
         /* the three games far off and to come; nothing planted in PAY.mkt, so no game looks priced by a paid pull */
         for (const x of P.sched) if (x.id === g1.id || x.id === g2.id || x.id === g3.id) { x.d = '2099-12-31'; x.t = '13:00'; delete x.hs; delete x.as; }
@@ -3156,6 +3158,8 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         qbMain: LJ('qb', 'passing_yards', 230.5, { main: true, price: -108, label: 'Over 230.5 passing yards' }),
         qbRush: LJ('qb', 'rushing_yards', 15.5, { main: true, price: -110, label: 'Over 15.5 rushing yards' }),
         t3Main: LJ('t3', 'rushing_yards', 50.5, { main: true, price: -110, label: 'Over 50.5 rushing yards' }),
+        lpRung: LJ('lp', 'passing_yards', 225, { price: -180, label: '225+ passing yards' }),
+        lpRung2: LJ('lp', 'passing_yards', 231, { price: -105, label: '231+ passing yards' }),
         ml3: { gid: g3.id, pid: 'team:' + g3.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.58, price: -135, src: 'real', mu: null, name: 'Home Three', pos: 'Game', grp: 'TEAM', team: g3.h, opp: g3.a, week: wk, label: 'To win' } };
       const keyJ = l => `${l.gid}|${l.pid}|${l.stat}`, BJ = (...ls) => Object.fromEntries(ls.map(l => [keyJ(l), l]));
       const S1 = ['rbMain', 'rbRung', 'wrRung', 'rbTd', 'te2', 'miMain', 'teRec', 'csMain'].map(k => LEG[k]);
@@ -3164,7 +3168,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       const ath3 = aid => ({ $ref: `http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/${SEA}/athletes/${aid}?lang=en&region=us` });
       const EVT3 = { [g1.id]: '7301', [g2.id]: '7302', [g3.id]: '7303' };
       const items3 = { [EVT3[g2.id]]: [{ type: { id: '12' }, athlete: ath3(AID3['j3-rb']), current: { target: { value: 64.5 } } }, { type: { id: '13' }, athlete: ath3(AID3['j3-wr']), current: { target: { value: 59.5 } } }],
-        [EVT3[g1.id]]: [{ type: { id: '8' }, athlete: ath3(AID3['j3-qb']), current: { target: { value: 230.5 } } }] };
+        [EVT3[g1.id]]: [{ type: { id: '8' }, athlete: ath3(AID3['j3-qb']), current: { target: { value: 230.5 } } }, { type: { id: '8' }, athlete: ath3(AID3['j3-lp']), current: { target: { value: 224.5 } } }] };
       const espHold = { gate: null };
       const espJ3 = s => { let r = null;
         if (/\/scoreboard\?dates=/.test(s)) r = [200, { events: [sbEv(g1, EVT3[g1.id]), sbEv(g2, EVT3[g2.id]), sbEv(g3, EVT3[g3.id])] }];
@@ -3178,11 +3182,14 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           player_reception_yds_alternate: [O('Over', 'Card Back', 120, 29.5, 'J3#rb_alt30'), O('Over', 'Card Back', 200, 39.5, 'J3#rb_alt40')],
           player_reception_yds: [O('Over', 'Drew Wideout', -110, 59.5, 'J3#wr_o595'), O('Under', 'Drew Wideout', -110, 59.5, 'J3#wr_u595'), O('Over', 'Chris Same', -115, 45.5, 'J3#cs_o'), O('Under', 'Chris Same', -105, 45.5, 'J3#cs_u')],
           player_anytime_td: [O('Yes', 'Card Back', 140, null, 'J3#rb_td'), O('Yes', 'Tee End', 210, null, 'J3#te_td'), O('Yes', 'Chris Same', 300, null, 'J3#cs_td'), O('Yes', `${NM_J3[g2.h]} D/ST`, 900, null, 'J3#dst')] },
-        [g1.id]: { player_pass_yds: [O('Over', 'Quinn Passer', -110, 230.5, 'J3#qb_o'), O('Under', 'Quinn Passer', -110, 230.5, 'J3#qb_u')] },
+        [g1.id]: { player_pass_yds: [O('Over', 'Quinn Passer', -110, 230.5, 'J3#qb_o'), O('Under', 'Quinn Passer', -110, 230.5, 'J3#qb_u'), O('Over', 'Ladder Passer', -110, 230.5, 'J3#lp_o2305'), O('Under', 'Ladder Passer', -110, 230.5, 'J3#lp_u2305')],
+          /* the second passer's ladder: 225+ (DraftKings' Over 224.5) is on it, his main line having moved to 230.5 from
+             the 224.5 ESPN read (R5) */
+          player_pass_yds_alternate: [O('Over', 'Ladder Passer', -190, 224.5, 'J3#lp_alt225'), O('Over', 'Ladder Passer', 150, 249.5, 'J3#lp_alt250')] },
         [g3.id]: { player_rush_yds: [O('Over', 'Third Back', -110, 50.5, 'J3#t3_o'), O('Under', 'Third Back', -110, 50.5, 'J3#t3_u')] } };
       /* the stand-in's state: credits left; the mode of the next answers (by kind: events, odds, sports); a hold on the
-         event-odds answers; what it was asked */
-      const OA = { left: 212, used: 288, mode: {}, hold: null, log: [] };
+         event-odds answers, and one on the free events look-up's (R7); what it was asked */
+      const OA = { left: 212, used: 288, mode: {}, hold: null, holdEv: null, log: [] };
       const H = last => ({ 'X-Requests-Remaining': String(OA.left), 'X-Requests-Used': String(OA.used), 'X-Requests-Last': String(last) });
       const oddsJ3 = (s, o) => { const u = new URL(s), p = u.pathname.replace(/^\/v4\//, ''), kind = /\/odds$/.test(p) ? 'odds' : /\/events$/.test(p) ? 'events' : /^sports\/?$/.test(p) ? 'sports' : 'other';
         OA.log.push({ kind, url: s, path: p, q: Object.fromEntries(u.searchParams), method: String((o && o.method) || 'GET').toUpperCase() });
@@ -3192,8 +3199,8 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         if (m0 === 'net') return Promise.reject(new TypeError('Failed to fetch'));
         if (m0 && m0.code) return jsonR(m0.status, { message: m0.code, error_code: m0.code }, H(0));
         if (kind === 'sports') return jsonR(200, [{ key: 'americanfootball_nfl' }], H(0));
-        if (kind === 'events') {
-          return jsonR(200, [g1, g2, g3].map(g => ({ id: EV[g.id], sport_key: 'americanfootball_nfl', commence_time: '2099-12-31T18:00:00Z', home_team: NM_J3[g.h], away_team: NM_J3[g.a] })), H(0)); }
+        if (kind === 'events') { const ansE = () => jsonR(200, [g1, g2, g3].map(g => ({ id: EV[g.id], sport_key: 'americanfootball_nfl', commence_time: '2099-12-31T18:00:00Z', home_team: NM_J3[g.h], away_team: NM_J3[g.a] })), H(0));
+          const he = OA.holdEv; return he ? he.p.then(ansE) : ansE(); }
         if (kind === 'odds') { const ev = (/events\/([0-9a-f]{32})\/odds/.exec(p) || [])[1], gid = Object.keys(EV).find(k => EV[k] === ev), mk = (u.searchParams.get('markets') || '').split(',').filter(Boolean);
           const ans = () => { if (m0 === 'empty') return jsonR(200, { id: ev, bookmakers: [] }, H(0));
             if (m0 === 'invalid' && mk.length > 1) return jsonR(422, { message: 'Invalid markets', error_code: 'INVALID_MARKET' }, H(0));
@@ -3204,11 +3211,12 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           const hd = OA.hold; return hd ? hd.p.then(ans) : ans(); }
         return jsonR(404, {}, H(0)); };
       const gateJ3 = () => { let go; const p = new Promise(r => { go = r; }); return { p, go }; };
-      /* this check's own reading of the rule: the market a leg asks for (MKT_J3; a rung, the ladder unless DraftKings' main
-         line for him as ESPN read it is k-0.5: ESPN_MAIN_J3, the stand-in's own lines), and a game's plan */
+      /* this check's own reading of the rule before any pull: the market a leg asks for (MKT_J3; a rung, the ladder unless
+         DraftKings' main line for him as ESPN read it is k-0.5: ESPN_MAIN_J3, the stand-in's own lines), and a game's plan.
+         Once the base market is pulled with his rows, those rows say whether it has the rung while they stand (R5, R6) */
       const MKT_J3 = { passing_yards: 'player_pass_yds', passing_tds: 'player_pass_tds', attempts: 'player_pass_attempts', completions: 'player_pass_completions', passing_interceptions: 'player_pass_interceptions',
         rushing_yards: 'player_rush_yds', carries: 'player_rush_attempts', receptions: 'player_receptions', receiving_yards: 'player_reception_yds', any_td: 'player_anytime_td' };
-      const ESPN_MAIN_J3 = { 'j3-rb|rushing_yards': 64.5, 'j3-wr|receiving_yards': 59.5, 'j3-qb|passing_yards': 230.5 };
+      const ESPN_MAIN_J3 = { 'j3-rb|rushing_yards': 64.5, 'j3-wr|receiving_yards': 59.5, 'j3-qb|passing_yards': 230.5, 'j3-lp|passing_yards': 224.5 };
       const mktOf = l => { const b = MKT_J3[l.stat]; if (!b) return null; if (l.main || l.stat === 'any_td') return b; return ESPN_MAIN_J3[l.pid + '|' + l.stat] === +l.k - 0.5 ? b : b + '_alternate'; };
       const pairsOf = legs => [...new Set(legs.filter(l => !['ml', 'ats', 'total'].includes(l.stat)).map(l => l.gid + '|' + mktOf(l)))];
       /* the stand-in's two-sided main lines' median overround, and a fair chance by it */
@@ -3452,6 +3460,113 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           const said = txt(d4.getElementById('pcMsg'));
           chk(askd && OA.log.slice(n).filter(e => e.kind === 'events').length === 1 && !OA.log.slice(n).some(e => e.kind === 'odds') && said === `${g3.a} at ${g3.h} kicked off before it was pulled.` && txt(d4.querySelector('#pcView .pc-price')) === p0,
             `${how}: a game kicking off between the events list and its odds was asked for, or the card does not say it kicked off before it was pulled: ` + said); } }
+      /* ---- R5: a rung asked of the base market on ESPN's main line, which DraftKings has moved since (the review of 21
+         October 2026). ESPN read the second passer's main line at 224.5, so 225+ (DraftKings' Over 224.5) is asked of the
+         base market; DraftKings' main line there is 230.5 now, and 225+ is on its ladder. The first pull: one credit, the
+         leg on no slip, saying his main line moved and to pull again for his ladder (never "DraftKings lists no 225+",
+         never Over 230.5 or another bet in its place); the plan then asks the ladder, even after a newer ESPN read still
+         at 224.5 (ESPN trailing), while 231+ (DraftKings' Over 230.5, on the base answer) asks nothing more; the re-pull:
+         one credit, the ladder alone, 225+ on the slip by its own sid at its own price. (R6: an ESPN read more than 15
+         minutes after the base pull, at another number, is DraftKings having moved again: the pulled main line no
+         longer decides) ---- */
+      { const z = await boot3([LEG.lpRung]), { w: w5, d: d5 } = z;
+        const pf5 = l => w5.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(l) }, l));
+        const mk5 = legs => { const p = w5.PARLAY_CARD.pullPlan(legs); return p.games.flatMap(x => x.markets).join(); };
+        const espn5 = (atMs, q) => w5.eval(`(()=>{ const W=ESPN_LIVE[${JSON.stringify(String(wk))}]; window.__j3r5=window.__j3r5||JSON.stringify(W[${JSON.stringify(g1.id)}]||null);
+          W[${JSON.stringify(g1.id)}]={at:new Date(${atMs}).toISOString(),lines:{'j3-qb':{passing_yards:230.5},'j3-lp':{passing_yards:${q}}},rungs:{},td:[]};
+          if(ESPN_OUT[${JSON.stringify(g1.id)}]) ESPN_OUT[${JSON.stringify(g1.id)}].when=Date.now(); })()`);
+        const href5 = () => d5.getElementById('pcDk').getAttribute('href') || '', px5 = () => txt(d5.querySelector('#pcView .pc-legs > li .pc-lp'));
+        await mkCard(z);
+        chk(mk5([LEG.lpRung]) === 'player_pass_yds' && txt(btnOf(z)) === 'Pull from DraftKings · up to 1 credit',
+          `${how}: before any pull, a rung whose k-0.5 is his main line as ESPN read it is not asked of the base market alone: ` + mk5([LEG.lpRung]) + ' / ' + txt(btnOf(z)));
+        const n1r = OA.log.length, left1 = OA.left;
+        await press(z, 'pcPullYes');
+        const c1 = OA.log.slice(n1r).filter(e => e.kind === 'odds'), P1 = pf5(LEG.lpRung) || {}, at5 = P1.at, px1 = px5();
+        const why1 = `1. Ladder Passer, 225+ passing yards: DraftKings had his passing yards line at 230.5 when you pulled from DraftKings (${readTxt(at5)}), so 225+ is on its ladder, which that pull did not ask: pull again for his ladder`;
+        const slip1 = [...d5.querySelectorAll('#parlayBody .dkslip')].map(sl => txt(sl));
+        chk(c1.length === 1 && c1[0].q.markets === 'player_pass_yds' && left1 - OA.left === 1 && P1.whyOf === 'ladder' && P1.main === 230.5 && !P1.sid && !P1.near && !P1.moved
+          && px5() === '−180est.' && !href5().includes('J3#') && !noteOf(z).querySelector('[data-pc-dkswap]') && !/lists no/.test(txt(noteOf(z)))
+          && missTxt(z, 1) === why1 && slip1.includes('Not on DraftKings’ slip: his main line at 230.5 when pulled; pull again for his ladder'),
+          `${how}: a rung asked of the base market, whose main line DraftKings has moved, is not one credit, on no slip, saying his main line moved and to pull again for his ladder: ` + JSON.stringify({ calls: c1.map(e => e.q.markets), spent: left1 - OA.left, P1, px1, href: href5(), miss: missTxt(z, 1), slip1 }));
+        /* the next plan: the ladder for 225+ (whatever a newer, trailing ESPN read says), nothing for 231+ (DraftKings' Over
+           230.5, on the base answer already pulled) */
+        const plan1 = mk5([LEG.lpRung]), plan1b = mk5([LEG.lpRung2]);
+        espn5(at5 + 60e3, 224.5); await mkCard(z);
+        const plan2 = mk5([LEG.lpRung]), plan2b = mk5([LEG.lpRung2]), lbl2 = txt(btnOf(z));
+        chk(plan1 === 'player_pass_yds_alternate' && plan2 === 'player_pass_yds_alternate' && plan1b === '' && plan2b === '' && lbl2 === 'Pull from DraftKings · up to 1 credit',
+          `${how}: after the base answer had no 225+, the plan does not ask his ladder for it (and nothing more for 231+, which the base answer holds), before and after a newer ESPN read still at 224.5: ` + JSON.stringify({ plan1, plan1b, plan2, plan2b, lbl2 }));
+        /* the re-pull: the ladder alone, one credit, 225+ on the slip by its own sid at its own price */
+        const n2r = OA.log.length, left2 = OA.left;
+        await press(z, 'pcPullYes');
+        const c2 = OA.log.slice(n2r).filter(e => e.kind === 'odds'), P2 = pf5(LEG.lpRung) || {}, q5 = w5.PARLAY_CARD.quote();
+        chk(c2.length === 1 && c2[0].q.markets === 'player_pass_yds_alternate' && left2 - OA.left === 1 && P2.sid === 'J3#lp_alt225' && P2.ml === -190 && P2.line === 224.5
+          && href5() === DKU(['J3#lp_alt225']) && txt(d5.getElementById('pcDk')) === 'Open in DraftKings' && px5() === '−190book' && near(q5.useDec, dec3(-190)) && !noteOf(z).querySelector('[data-pc-dkswap]'),
+          `${how}: the re-pull does not ask the ladder alone for one credit and put 225+ on the slip by its own sid at its own price: ` + JSON.stringify({ calls: c2.map(e => e.q.markets), spent: left2 - OA.left, P2, href: href5(), px: px5(), dk: txt(d5.getElementById('pcDk')), dec: q5.useDec }));
+        w5.eval(`ESPN_LIVE[${JSON.stringify(String(wk))}][${JSON.stringify(g1.id)}]=JSON.parse(window.__j3r5); delete window.__j3r5`);
+        d5.getElementById('pcClose').click(); await wait(10);
+        /* ---- R5b: the base answer holding his Over 230.5 alone (no main line of two sides to read): on no slip, saying
+           his Over 224.5 was not on the main line and to pull again for his ladder, and the next plan keeps that promise,
+           asking the ladder (never the base market again, on ESPN's 224.5) ---- */
+        { const keep = DKM[g1.id].player_pass_yds;
+          try {
+            DKM[g1.id].player_pass_yds = keep.filter(o => !(o.description === 'Ladder Passer' && o.name === 'Under'));
+            const zb = await boot3([LEG.lpRung]), db = zb.d;
+            await mkCard(zb);
+            const nb = OA.log.length; await press(zb, 'pcPullYes');
+            const cb = OA.log.slice(nb).filter(e => e.kind === 'odds'), Pb = zb.w.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(LEG.lpRung) }, LEG.lpRung)) || {};
+            const whyB = `1. Ladder Passer, 225+ passing yards: DraftKings had no Over 224.5 passing yards of his on its main line when you pulled from DraftKings (${readTxt(Pb.at)}), and that pull did not ask his ladder: pull again for it`;
+            const planB = zb.w.PARLAY_CARD.pullPlan([LEG.lpRung]).games.flatMap(x => x.markets).join(), hrefB = db.getElementById('pcDk').getAttribute('href') || '';
+            chk(cb.length === 1 && cb[0].q.markets === 'player_pass_yds' && Pb.whyOf === 'ladder' && Pb.main === null && !Pb.sid && !Pb.near && !hrefB.includes('J3#') && missTxt(zb, 1) === whyB
+              && [...db.querySelectorAll('#parlayBody .dkslip')].some(sl => txt(sl) === 'Not on DraftKings’ slip: not on his main line when pulled; pull again for his ladder') && planB === 'player_pass_yds_alternate',
+              `${how}: a rung the base market had only his Over 230.5 for is on a slip, or not said to be off his main line with his ladder to pull again, or the next plan does not ask that ladder: ` + JSON.stringify({ calls: cb.map(e => e.q.markets), Pb, miss: missTxt(zb, 1), href: hrefB, planB }));
+            db.getElementById('pcClose').click(); await wait(10);
+          } finally { DKM[g1.id].player_pass_yds = keep; } }
+        /* ---- R6: the pulled main line decides a rung's market only while it stands by the moved rule. The base market pulled
+           30 minutes ago (the page's clock held back for the pull), after an ESPN read at 224.5: 225+ the ladder, 231+
+           the base market, with an ESPN read now at the pull's own 230.5; with one now at 224.5 (more than 15 minutes
+           after the pull, at another number: DraftKings has moved), DraftKings' main line as that read has it decides,
+           225+ the base market and 231+ the ladder ---- */
+        const z6 = await boot3([LEG.lpRung]), w6 = z6.w, real6 = w6.Date.now;
+        const mk6 = l => w6.PARLAY_CARD.pullPlan([l]).games.flatMap(x => x.markets).join();
+        const espn6 = (atMs, q) => w6.eval(`(()=>{ const W=ESPN_LIVE[${JSON.stringify(String(wk))}];
+          W[${JSON.stringify(g1.id)}]={at:new Date(${atMs}).toISOString(),lines:{'j3-qb':{passing_yards:230.5},'j3-lp':{passing_yards:${q}}},rungs:{},td:[]};
+          if(ESPN_OUT[${JSON.stringify(g1.id)}]) ESPN_OUT[${JSON.stringify(g1.id)}].when=Date.now(); })()`);
+        try {
+          await mkCard(z6); const t6 = real6.call(w6.Date);
+          espn6(t6 - 31 * 60e3, 224.5); w6.Date.now = () => real6.call(w6.Date) - 30 * 60e3;
+          await press(z6, 'pcPullYes');
+          w6.Date.now = real6;
+          const P6 = w6.PARLAY_CARD.pulledFor(Object.assign({ key: keyJ(LEG.lpRung) }, LEG.lpRung)) || {};
+          espn6(real6.call(w6.Date), 230.5); const a225 = mk6(LEG.lpRung), a231 = mk6(LEG.lpRung2);
+          espn6(real6.call(w6.Date), 224.5); const b225 = mk6(LEG.lpRung), b231 = mk6(LEG.lpRung2);
+          chk(P6.whyOf === 'ladder' && real6.call(w6.Date) - P6.at > 25 * 60e3 && a225 === 'player_pass_yds_alternate' && a231 === 'player_pass_yds' && b225 === 'player_pass_yds' && b231 === 'player_pass_yds_alternate',
+            `${how}: a rung's market does not follow the base answer while it stands, and DraftKings' main line as a read more than 15 minutes after the pull has it once that read takes the pull for moved: ` + JSON.stringify({ why: P6.whyOf, age: real6.call(w6.Date) - P6.at, a225, a231, b225, b231 }));
+          w6.document.getElementById('pcClose').click(); await wait(10);
+        } finally { w6.Date.now = real6; }
+        /* ---- R7: the card closed and opened again while the free look-up is out (the review of 21 October 2026): the new
+           card is drawn waiting while it runs, and once it answers (for the card it was pressed on, now gone) the new card
+           is drawn again, Pull ready and Open in DraftKings with its address, so a press looks up and asks again ---- */
+        const z7 = await boot3([LEG.qbMain]), { w: w7, d: d7 } = z7;
+        try {
+          await mkCard(z7);
+          OA.holdEv = gateJ3(); btnOf(z7).click(); await wait(30);
+          const st0 = w7.PARLAY_CARD.pullState().state;
+          await mkCard(z7);
+          const dk7 = () => d7.getElementById('pcDk');
+          const busy0 = btnOf(z7).getAttribute('data-pc-pull') === 'busy' && !dk7().hasAttribute('href') && dk7().getAttribute('aria-busy') === 'true';
+          const nE = OA.log.length; OA.holdEv.go(); OA.holdEv = null;
+          for (let i = 0; i < 200 && w7.PARLAY_CARD.pullState().state === 'looking'; i++) await wait(10); await wait(30);
+          const b7 = btnOf(z7);
+          chk(st0 === 'looking' && busy0 && w7.PARLAY_CARD.pullState().state === 'idle' && b7.getAttribute('data-pc-pull') === 'ready' && !b7.hasAttribute('aria-busy') && txt(b7) === 'Pull from DraftKings · up to 1 credit'
+            && !!dk7().getAttribute('href') && !dk7().hasAttribute('aria-busy') && !dk7().hasAttribute('aria-disabled') && !d7.getElementById('pcLink').hasAttribute('aria-busy') && !d7.querySelector('#pcDkNote [data-pc-dkwait]')
+            && OA.log.length === nE,
+            `${how}: a card closed and opened again while the free look-up was out is left waiting once it answers (Pull busy, Open in DraftKings with no address): ` + JSON.stringify({ st0, busy0, state: w7.PARLAY_CARD.pullState().state, pull: b7.outerHTML, dk: dk7().outerHTML }));
+          const nP = OA.log.length; await press(z7);
+          chk(OA.log.slice(nP).filter(e => e.kind === 'events').length === 1 && w7.PARLAY_CARD.pullState().state === 'confirm' && !d7.getElementById('pcPullAsk').hidden,
+            `${how}: on the card opened again, a press on Pull does not look up and ask again: ` + JSON.stringify(w7.PARLAY_CARD.pullState()));
+          { const no = d7.getElementById('pcPullNo'); if (no) no.click(); } await wait(10); d7.getElementById('pcClose').click(); await wait(10);
+        } finally { if (OA.holdEv) { OA.holdEv.go(); OA.holdEv = null; } } }
+
       /* every Odds API request of the section: a GET, from the admin's pages, to the two event paths or the free balance */
       chk(OA.log.length > 10 && OA.log.every(e => e.method === 'GET' && /^(sports\/?|sports\/americanfootball_nfl\/events(\/[0-9a-f]{32}\/odds)?)$/.test(e.path)), `${how}: The Odds API was asked something other than a GET of the events, an event's odds or the balance: ` + JSON.stringify(OA.log.map(e => [e.method, e.path])));
     }

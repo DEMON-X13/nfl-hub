@@ -25,7 +25,8 @@ all (it still gets --no-odds, which a base from before needs and this one ignore
              a payload from git history at its own moment.
   units      job C: the props job's own tests and the page's (UNITS: the ESPN read and its application, the
              runs against the locks, the ids, the names, who played, the downloads, the audit's verdict, the
-             admin link), seconds each, on fixtures of their own.
+             admin link, and the parlay card with Pull from DraftKings), on fixtures of their own: seconds each,
+             but for the page's two smokes (smoke_admin.js about a minute, smoke_live.js about four).
 
 Each is differential. A failure is run again on the base's code (a second checkout, `git worktree`):
 failing here and passing there fails the gate, since it is the change's; failing on both is reported
@@ -67,12 +68,16 @@ PAGE = ['nflbets/**', 'betting/app/**', 'betting/tools/build.js', 'betting/tools
 SMOKE_LINE = re.compile(r'(\d+) checks, (\d+) failures')
 # job C: the props job's own tests and the page's, each run from the repo's root ('py' or 'node'), seconds each on
 # fixtures of their own (test_dk_links reads git history, which the gate's checkout has whole; test_lock_runs the
-# season's schedule; smoke_admin.js the built page at the root). Before 20 October 2026 the gate ran none of them
+# season's schedule; smoke_admin.js and smoke_live.js the built page at the root). Before 20 October 2026 the gate
+# ran none of them. smoke_live.js (about four minutes, ten at most by its own cap) is the one place the parlay card's
+# Pull from DraftKings is held: one paid call a game, never tried again after a failure, the confirm's cost, a
+# visitor's page never asking The Odds API, a sign-out dropping a late answer (section J3, and N and V); it joined
+# the units on the review of 21 October 2026, since a change to card.html (PAGE) otherwise ran none of it
 UNITS = [('props/build/test_apply_espn.py', 'py'), ('props/build/test_espn_read.js', 'node'), ('props/build/test_lock_runs.py', 'py'),
          ('props/build/test_espn_ids.py', 'py'), ('props/build/test_dk_links.py', 'py'), ('props/build/test_unmatched.py', 'py'),
          ('props/build/test_who_played.py', 'py'), ('props/build/test_fetch.py', 'py'), ('props/build/test_audit_gate.py', 'py'),
          ('lib/test_netfetch.py', 'py'), ('lib/test_netfetch.js', 'node'), ('nflbets/build/test_dkname.js', 'node'),
-         ('nflbets/build/smoke_admin.js', 'node')]
+         ('nflbets/build/smoke_admin.js', 'node'), ('nflbets/build/smoke_live.js', 'node')]
 # a unit run only where its file is in the tree; every other one missing fails the gate (none is optional: the parlay
 # card's name rule's test landed with its change)
 UNITS_OPTIONAL = set()
@@ -206,8 +211,10 @@ def stream(cmd, cwd, env, label):
 
 
 def clean_env(**extra):
+    # the page smokes' own knobs among them (SMOKE_ADMIN_HTML and SMOKE_LIVE_HTML: another copy of the page, for a plant),
+    # so a unit always runs on the tree's own page
     env = {k: v for k, v in os.environ.items() if k not in
-           ('ODDS_API_KEY', 'PROPS_AUDIT_RAW', 'PROPS_AUDIT_PAYLOAD', 'PROPS_AUDIT_NOW', 'SMOKE_NOW', 'SMOKE_PAYLOAD')
+           ('ODDS_API_KEY', 'PROPS_AUDIT_RAW', 'PROPS_AUDIT_PAYLOAD', 'PROPS_AUDIT_NOW', 'SMOKE_NOW', 'SMOKE_PAYLOAD', 'SMOKE_ADMIN_HTML', 'SMOKE_LIVE_HTML')
            and not k.startswith('PROPS_ESPN_')}
     env['PYTHONUTF8'] = '1'
     env.update(extra)

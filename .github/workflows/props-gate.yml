@@ -139,13 +139,16 @@ jobs:
 
   units:
     # job C: the props job's own tests and the page's (UNITS in props_gate.py: the ESPN read and its application, the
-    # runs against the locks, the ids, the names, who played, the downloads, the audit's verdict, the admin link),
-    # seconds each on fixtures of their own, beside jobs A and B; a failure is run again on the base's code
+    # runs against the locks, the ids, the names, who played, the downloads, the audit's verdict, the admin link, the
+    # parlay card and its Pull from DraftKings), on fixtures of their own beside jobs A and B, seconds each but for the
+    # page's two smokes (smoke_admin.js about a minute, smoke_live.js about four); a failure is run again on the base's
+    # code. 45 minutes: about 7 when all pass, and room for the worst case, both smokes running to their own caps
+    # (smoke_live.js ten minutes, smoke_admin.js eight) here and again on the base, with the base's npm ci
     name: unit tests
     needs: paths
     if: needs.paths.outputs.audit == 'true' || needs.paths.outputs.page == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
         with:

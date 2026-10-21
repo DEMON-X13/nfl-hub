@@ -132,6 +132,11 @@ os.environ['PROPS_ESPN_REPLAY'] = '/x'; os.environ['PROPS_ESPN_BASE'] = 'http://
 env = G.clean_env()
 case(not [k for k in env if k.startswith('PROPS_ESPN_')], f'clean_env lets an ESPN knob through: {[k for k in env if k.startswith("PROPS_ESPN_")]}')
 os.environ.pop('PROPS_ESPN_REPLAY'); os.environ.pop('PROPS_ESPN_BASE')
+# nor a page smoke's plant knob: job C's smoke_admin.js and smoke_live.js run on the tree's own page
+os.environ['SMOKE_ADMIN_HTML'] = '/x.html'; os.environ['SMOKE_LIVE_HTML'] = '/x.html'
+env = G.clean_env()
+case('SMOKE_ADMIN_HTML' not in env and 'SMOKE_LIVE_HTML' not in env, 'clean_env lets a page smoke\'s other page through (SMOKE_ADMIN_HTML, SMOKE_LIVE_HTML)')
+os.environ.pop('SMOKE_ADMIN_HTML'); os.environ.pop('SMOKE_LIVE_HTML')
 seen = []
 real = (G.stream, G.copy_downloads, G.espn_answers)
 try:
@@ -166,12 +171,28 @@ for rel, kind in G.UNITS:
     case(kind in ('py', 'node') and (rel in G.UNITS_OPTIONAL or os.path.isfile(os.path.join(ROOT, rel))), f'a unit test listed is not in the tree: {rel}')
 need = {'props/build/test_apply_espn.py', 'props/build/test_espn_read.js', 'props/build/test_lock_runs.py', 'props/build/test_espn_ids.py',
         'props/build/test_dk_links.py', 'props/build/test_unmatched.py', 'props/build/test_who_played.py', 'props/build/test_fetch.py',
-        'props/build/test_audit_gate.py', 'lib/test_netfetch.py', 'lib/test_netfetch.js', 'nflbets/build/test_dkname.js', 'nflbets/build/smoke_admin.js'}
+        'props/build/test_audit_gate.py', 'lib/test_netfetch.py', 'lib/test_netfetch.js', 'nflbets/build/test_dkname.js', 'nflbets/build/smoke_admin.js',
+        'nflbets/build/smoke_live.js'}
 case(need <= {r for r, _ in G.UNITS}, f'unit tests left out of job C: {sorted(need - {r for r, _ in G.UNITS})}')
+# smoke_live.js (the parlay card's Pull from DraftKings, and X Parlays) runs in job C as node, and a change to the card
+# alone (nflbets/build/card.html, PAGE) is one job C runs on, so a regression in the paid-call path cannot merge unchecked
+case(('nflbets/build/smoke_live.js', 'node') in G.UNITS, 'nflbets/build/smoke_live.js is not a node unit of job C')
+case(G.parts(['nflbets/build/card.html']) == ([], ['nflbets/build/card.html']), 'a change to the parlay card alone is not sorted as PAGE, which job C runs on')
+# its summary line is one the units read ("N checks, 0 failures"), passing on 0 and failing on any other count
+case(G.UNIT_LINE.search('728 checks, 0 failures').group(2) == '0' and G.UNIT_LINE.search('728 checks, 3 failures').group(2) == '3',
+     "job C does not read smoke_live.js's summary line")
 case(not os.path.exists(os.path.join(ROOT, 'props', 'build', 'test_pull_schedule.py')), 'test_pull_schedule.py, retired with the paid pull, is back')
 job = re.search(r'\n  units:\n(.*?)(?=\n  \w+:\n|\Z)', yml, re.S)
 case(bool(job) and 'props_gate.py units --base' in job.group(1) and "needs.paths.outputs.audit == 'true' || needs.paths.outputs.page == 'true'" in job.group(1)
      and 'fetch-depth: 0' in job.group(1) and 'npm ci' in job.group(1), 'props-gate.yml has no unit-test job running props_gate.py units on AUDIT or PAGE changes')
+# job C's time holds its two page smokes run to their own caps here and again on the base (smoke_live.js's SMOKE_LIMIT_MS,
+# smoke_admin.js's stop), with a few minutes for the rest: never cut off before the base has had its say
+caps = []
+for rel, pat in (('nflbets/build/smoke_live.js', r'SMOKE_LIMIT_MS = (\d+) \* 60 \* 1000'), ('nflbets/build/smoke_admin.js', r'did not finish in \d+ minutes[^\n]*?(\d+) \* 60 \* 1000')):
+    m = re.search(pat, open(os.path.join(ROOT, rel), encoding='utf-8').read()); caps.append(int(m.group(1)) if m else None)
+tmo = re.search(r'\n    timeout-minutes: (\d+)\n', job.group(1)) if job else None
+case(None not in caps and bool(tmo) and int(tmo.group(1)) >= 2 * sum(caps) + 5,
+     f"job C's timeout-minutes ({tmo and tmo.group(1)}) does not hold its two page smokes at their caps ({caps} minutes) run here and on the base")
 ver = re.search(r'\n  verdict:\n(.*)', yml, re.S)
 case(bool(ver) and 'needs: [paths, bake, phase, units]' in ver.group(1) and '"${{ needs.units.result }}"' in ver.group(1), 'the verdict does not wait on the unit tests')
 def units_run(here, base, have_base=True, listed=None):
