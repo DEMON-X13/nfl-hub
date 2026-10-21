@@ -5666,7 +5666,11 @@ setTimeout(async()=>{
          time), a kept 'none' never hiding the published block
        - a press: espnPressed and its status; its game lines applied over the published read's whatever their time says,
          the page's clock moved back two days; the reader alone (espnReadWeek) touching none of the page's state, its
-         blocks and game lines the press's own, a 'none' dated
+         blocks and game lines the press's own, a 'none' dated, and one answered at or after the kickoff 'kicked' (a
+         second before it still a 'none'), as an 'ok' that late is: the job publishes nothing dated there, and a late
+         'none' refused the run until the review of 21 October 2026
+       - the status line's time the latest read of the player lines alone: a game-line read newer than them, or a game
+         read for its game lines alone, dates nothing (W.wording; the review of 21 October 2026)
        - a locked set's legs (a main line and a ladder rung from the read) kept at their locked prices and fair chances
          through a republished read that moves their lines: the builder's price the locked level's own
        - the parlay card's pull hooks (parlayLegs, legPrice, legFair): inert without window.dkPulledFor; with a stub, the
@@ -5694,15 +5698,15 @@ setTimeout(async()=>{
     const plSigAud=g=>{ const E=((PAY0.dk||{})[wk]||{})[g.id], P=(PAY0.espn&&PAY0.espn.v===1&&PAY0.espn.games||{})[g.id];
       return fnv(String(E&&E.at||'')+'|'+(P&&String(P.w)===wk?'|espn:'+String(P.pl&&P.pl.at||'')+':'+String(P.out&&P.out.st||'')+':'+String(P.out&&P.out.at||''):'')); };
     /* the read the stub serves: a scoreboard of GA's event with DraftKings' odds (sb), and its player lines (items) */
-    let items=[], sbOdds=null, propsCode=200, nReq=0; const esp=u=>/^https:\/\/(site|sports\.core)\.api\.espn\.com\//.test(u);
-    const ans=(code,body)=>Promise.resolve({ok:code===200,status:code,headers:{get:()=>null},json:async()=>clone(body)});
+    let items=[], sbOdds=null, propsCode=200, propsDate=null, nReq=0; const esp=u=>/^https:\/\/(site|sports\.core)\.api\.espn\.com\//.test(u);
+    const ans=(code,body,date)=>Promise.resolve({ok:code===200,status:code,headers:{get:h=>date!=null&&/^date$/i.test(String(h))?date:null},json:async()=>clone(body)});
     const oddsBody=L=>{ if(!L) return []; const s=x=>(x>0?'+':'')+x;
       return [{provider:{id:'100'},moneyline:{home:{close:{odds:s(L.mlh),link:{href:'https://sportsbook.draftkings.com/event/99169999?outcomes=0AUD16MH'}}},away:{close:{odds:s(L.mla),link:{href:'https://sportsbook.draftkings.com/event/99169999?outcomes=0AUD16MA'}}}},
         pointSpread:{home:{close:{line:s(-L.sp),odds:s(L.sph)}},away:{close:{line:s(L.sp),odds:s(L.spa)}}},total:{over:{close:{line:'o'+L.tot,odds:s(L.tov)}},under:{close:{line:'u'+L.tot,odds:s(L.tou)}}}}]; };
     const stub=(u,o)=>{ u=String(u); if(!esp(u)) return keepFetch(u,o); nReq++;
       if(/\/scoreboard\?/.test(u)) return ans(200,{events:[{id:EID,date:F('kickoff')(GA).toISOString(),competitions:[{competitors:[{homeAway:'home',team:{abbreviation:GA.h,id:'99162'}},{homeAway:'away',team:{abbreviation:GA.a,id:'99163'}}],odds:oddsBody(sbOdds)}]}]});
       const m=/\/events\/(\d+)\/competitions\/\d+\/odds\/100\/propBets\?(.*)$/.exec(u);
-      if(m&&m[1]===EID){ if(propsCode!==200) return ans(propsCode,{error:{code:propsCode}}); const pg=+new URLSearchParams(m[2]).get('page')||1;
+      if(m&&m[1]===EID){ if(propsCode!==200) return ans(propsCode,{error:{code:propsCode}},propsDate); const pg=+new URLSearchParams(m[2]).get('page')||1;
         return ans(200,{count:items.length,pageIndex:pg,pageSize:1000,pageCount:Math.max(1,Math.ceil(items.length/1000)),items:items.slice((pg-1)*1000,pg*1000)}); }
       return ans(404,{error:{code:404}}); };
     const mainT=Object.fromEntries(Object.entries(ESPN.TYPES.main).map(([k,v])=>[v,k])), mileT=Object.fromEntries(Object.entries(ESPN.TYPES.mile).map(([k,v])=>[v,k]));
@@ -5756,7 +5760,16 @@ setTimeout(async()=>{
       { const tPub=Math.max(tPl,tNone), wantW=`DraftKings’ lines as the site read them from ESPN ${etAud(tPub)}: player prices estimated from the line; 1 game had no player lines posted when the site read ESPN.`;
         const wantG=`DraftKings’ lines as the site read them from ESPN ${etAud(tPl)}: player prices estimated from the line.`;
         W.wording(F('espnStatus')(null)===wantW&&F('espnStatus')(GA.id)===wantG,`M17: before a press the status lines read "${F('espnStatus')(null)}" and "${F('espnStatus')(GA.id)}", not "${wantW}" and "${wantG}"`);
-        W.wording(F('lineSource')(GA)===`DraftKings’, read from ESPN ${etAud(tPl)}`,`M17: GA's lines are said to be "${F('lineSource')(GA)}"`); }
+        W.wording(F('lineSource')(GA)===`DraftKings’, read from ESPN ${etAud(tPl)}`,`M17: GA's lines are said to be "${F('lineSource')(GA)}"`);
+        /* the review of 21 October 2026: the time is the latest read of the player lines; GA's game lines read half an hour
+           after them, and GB read for its game lines alone an hour after (no player read: every one failed while the
+           scoreboard answered), date nothing, and GB alone reads as the publish */
+        { const P=PUB(); P.games[GA.id].gl.at=iso(tPl+1800e3); P.games[GB.id]={w:wk,gl:{at:iso(tPl+3600e3),lines:{...GL},ids:{},event:null}}; PAY0.espn=P; F('espnPublished')();
+          const want2=`DraftKings’ lines as the site read them from ESPN ${etAud(tPl)}: player prices estimated from the line.`, bk=Date.parse(PAY0.baked_at||'');
+          const wantB=`Prices as published${isFinite(bk)?' '+etAud(bk):''}.`;
+          W.wording(F('espnStatus')(null)===want2&&F('espnStatus')(GA.id)===want2&&F('espnStatus')(GB.id)===wantB,
+            `M17: with game lines read after the player lines, the status lines read "${F('espnStatus')(null)}", "${F('espnStatus')(GA.id)}" and "${F('espnStatus')(GB.id)}", not "${want2}" (twice) and "${wantB}": a read of the game lines alone dates no player price`);
+          PAY0.espn=PUB(); F('espnPublished')(); } }
       /* B. what is never installed: a block or an out at or after kickoff, another week, another version or shape */
       { const ko=F('kickoff')(GA).getTime();
         const P=PUB(); P.games[GA.id].pl.at=iso(ko); P.games[GA.id].out.at=iso(ko); PAY0.espn=P; F('espnPublished')();
@@ -5813,6 +5826,14 @@ setTimeout(async()=>{
           `M17: espnReadWeek did not return the read as the stub served it: ${JSON.stringify({o,g1:g1&&g1.od.lines,placed:p1&&p1.placed})}`);
         /* a 'none' carries its time; a game not on the scoreboard fails */
         propsCode=404; const rN=await F('espnReadWeek')(cw,[GA,GB]); propsCode=200;
+        /* the review of 21 October 2026: a 'none' answered at or after the kickoff (its 404 dated there; the scoreboard
+           read before it) is 'kicked', as an 'ok' that late is, and one a second before it is still a 'none' at its time */
+        { const koA=F('kickoff')(GA).getTime(); propsCode=404;
+          propsDate=new Date(koA).toUTCString(); const rK=await F('espnReadWeek')(cw,[GA]);
+          propsDate=new Date(koA-1000).toUTCString(); const rB=await F('espnReadWeek')(cw,[GA]);
+          propsDate=null; propsCode=200;
+          chk(rK.out[GA.id].st==='kicked'&&rB.out[GA.id].st==='none'&&rB.out[GA.id].at===koA-1000,
+            `M17: espnReadWeek's 'none' answered at the kickoff is not 'kicked', or one a second before it not a 'none' at its time: ${JSON.stringify({at:rK.out[GA.id],before:rB.out[GA.id]})}`); }
         chk(rN.out[GA.id].st==='none'&&isFinite(rN.out[GA.id].at)&&rN.out[GA.id].at>0&&rN.out[GB.id].st==='failed'&&rN.out[GB.id].sb===true,`M17: espnReadWeek's 'none' carries no time, or a game not on the scoreboard is not failed: ${JSON.stringify(rN.out)}`);
         /* the press: the same read applied, over the published read's game lines whatever their time says */
         await F('espnRefresh')(GA.id); dropCaches();
@@ -7192,11 +7213,13 @@ setTimeout(async()=>{
       /* V-ESPN (app v125). The published read (PAY.espn and the schedule's game lines it set), held on the payload file
          itself: every entry a game of this season still to come at the bake, of its own week, every half dated before its
          kickoff; a game's lines marked lsr 'espn' its read's by the press's own set and drop rule (ls 'dk', lat its read's
-         time, under a day old at the bake); and none of the read in the paid pull's places (PAY.dk's ids, PAY.mkt,
-         PAY.prices). With PROPS_AUDIT_RAW, against this run's read (raw/espn/read.json, written by espn_read.js) where the
-         payload carries it (the same read_at): each game the read found ok its player block exactly, cleaned by the page's
-         rules (the audit's own copy), a 'none' dropping it, the game lines as read, anything else carried from an earlier
-         read; and who each line is on: an athlete placed by id on the player the payload's ESPN ids (and the roster's)
+         time, under a day old at the bake); and none of the read in the paid pull's places: PAY.dk held to its own source
+         (every id one a paid pull's file gives that game, so a read's id the bake took has none: dkSrcAud, dkBadAud,
+         held to cases of their own), PAY.mkt and PAY.prices free of it. With PROPS_AUDIT_RAW, against this run's read
+         (raw/espn/read.json, written by espn_read.js) where the payload carries it (the same read_at): each game the read
+         found ok its player block exactly, cleaned by the page's rules (the audit's own copy), a 'none' dropping it (one
+         dated at or after the kickoff dropped itself, as apply_espn drops it), the game lines as read, anything else
+         carried from an earlier read; and who each line is on: an athlete placed by id on the player the payload's ESPN ids (and the roster's)
          name, one placed by name on a player of one of the game's two clubs whose roster name the audit's own name rule
          passes or whose surname is ESPN's (blocking), a surname alone a warning (W.espnName). */
       { const PD=JSON.parse(fs.readFileSync(PAYLOAD_FILE,'utf8')), E=PD.espn, bk=Date.parse(PD.baked_at||''), bad=[], said=[];
@@ -7227,11 +7250,67 @@ setTimeout(async()=>{
           for(const kk of ['mla','mlh','sp','tot']) if(L[kk]!=null&&g[kk]!==L[kk]) bad.push(`${g.id}'s ${kk} is ${g[kk]}, its read's ${L[kk]}`);
           for(const [n,a,b] of [['sp','spa','sph'],['tot','tov','tou']]) if(L[n]!=null&&L[a]!=null&&L[b]!=null&&(g[a]!==L[a]||g[b]!==L[b])) bad.push(`${g.id}'s ${a}/${b} are ${g[a]}/${g[b]}, its read's ${L[a]}/${L[b]}`);
           if(!/read from ESPN/.test(F('lineSource')(g)||'')) bad.push(`${g.id}'s lines from ESPN are said to be "${F('lineSource')(g)}"`); }
-        /* none of the read in the paid pull's places */
-        { const ids=new Set(); for(const e of Object.values(E&&E.games||{})) for(const v of Object.values(e&&e.gl&&e.gl.ids||{})) ids.add(v);
-          const dkVals=[]; for(const W0 of Object.values(PD.dk||{})) for(const D0 of Object.values(W0||{})) for(const [k,v] of Object.entries(D0||{})) if(k!=='at'&&k!=='glat'&&k!=='event') dkVals.push(v);
-          const hit=dkVals.filter(v=>ids.has(v));
-          if(hit.length) bad.push(`the payload's PAY.dk carries ${hit.length} of the ESPN read's ids (${hit.slice(0,3).join(', ')}): a read's ids are the page's to merge, never the bake's`);
+        /* none of the read in the paid pull's places. PAY.dk is held to its own source, not to the read: the bake
+           (weekly.py's dk_ids) takes every id from a paid pull's file, props/data/dk_links_wk<W>.json, and a paid sid is
+           the very DraftKings id ESPN's bet links carry (a pull by hand, or Thursday 22 October's, the last scheduled one,
+           gives a game's moneyline, spread and total the ids the read finds), so an id equal to one of the read's is no
+           fault (until the review of 21 October 2026 this refused every run while such a pull's game was still to come).
+           Each value but at and glat must be one that game's entries in those files carry: under a game line or the event,
+           the id its own key gives (`<gid>|game|ml|home|` is team:<home>|ml, `|spread|away|7.5` team:<away>|ats|7.5,
+           `|total|Over|43.5` game|total|over|43.5, `<gid>|event` event, each number as the page writes one); under a
+           player's key, one of the game's player entries (which player a book name is placed on is the bake's name rule,
+           held by test_dk_links.py). A read's id the bake took has no such source, and neither has anything else; each
+           entry is filed under its game's week, a game on the schedule */
+        { const dkPtA=x=>{ const v=Number(x); return isFinite(v)?String(v):null; };
+          const dkSrcAud=dir=>{ const by={}, files=[]; let list=[]; try{ list=fs.readdirSync(dir).filter(f=>/^dk_links_wk\d+\.json$/.test(f)).sort(); }catch(e){}
+            for(const f of list){ let L; try{ L=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8')); }catch(e){ continue; } if(!L||typeof L!=='object'||Array.isArray(L)) continue; files.push(f);
+              for(const [key,v] of Object.entries(L)){ const p=String(key).split('|').map(x=>x.trim()), gid=p[0], sid=v&&typeof v==='object'&&v.sid!=null?String(v.sid).trim():''; if(!gid||!sid) continue;
+                const G=by[gid]||(by[gid]={game:{},player:new Set()});
+                if(p.length===2&&p[1]==='event') (G.game.event||(G.game.event=new Set())).add(sid);
+                else if(p.length===5&&p[1]==='game'){ const [,,st,side,pt]=p, k=st==='ml'&&(side==='away'||side==='home')?`ml|${side}`:st==='spread'&&(side==='away'||side==='home')&&dkPtA(pt)!=null&&pt?`ats|${side}|${dkPtA(pt)}`:st==='total'&&(side==='Over'||side==='Under')&&dkPtA(pt)!=null&&pt?`game|total|${side.toLowerCase()}|${dkPtA(pt)}`:null;
+                  if(k) (G.game[k]||(G.game[k]=new Set())).add(sid); }
+                else if(p.length===5) G.player.add(sid); } }
+            return {by,files}; };
+          /* the bad entries of a table dk against the sources by (dkSrcAud's) and the schedule sched */
+          const dkBadAud=(dk,sched,by)=>{ const out=[]; if(dk==null) return out; if(typeof dk!=='object'||Array.isArray(dk)) return ['PAY.dk is not an object'];
+            for(const [w0,W0] of Object.entries(dk)){ if(!W0||typeof W0!=='object'||Array.isArray(W0)){ out.push(`PAY.dk[${w0}] is not an object`); continue; }
+              for(const [gid,D0] of Object.entries(W0)){ const g=(sched||[]).find(x=>x&&x.id===gid);
+                if(!g){ out.push(`PAY.dk[${w0}] has ${gid}, a game not on the schedule`); continue; }
+                if(String(g.w)!==String(w0)) out.push(`PAY.dk files ${gid} under week ${w0}, the game of week ${g.w}`);
+                const G=by[gid];
+                for(const [k,v] of Object.entries(D0&&typeof D0==='object'?D0:{})){ if(k==='at'||k==='glat') continue;
+                  const m=/^team:([A-Z]{2,4})\|(ml|ats)(?:\|(.+))?$/.exec(k), side=m?(m[1]===g.a?'away':m[1]===g.h?'home':null):null;
+                  const want=k==='event'?'event':m?(side&&(m[2]==='ml'?(m[3]==null?`ml|${side}`:null):`ats|${side}|${m[3]}`)):/^game\|total\|(over|under)\|/.test(k)?k:null;
+                  const src=want?(G&&G.game[want]):(/^(team:|game\|)/.test(k)?null:(G&&G.player));
+                  if(!(src&&src.has(String(v)))) out.push(`PAY.dk's ${gid} ${k} = ${v} has no source in props/data/dk_links_wk*.json${want===null&&/^(team:|game\|)/.test(k)?' (a key the bake never writes)':''}`); } } }
+            return out; };
+          /* the rule on cases of its own (made-up data: blocking), then on the payload's PAY.dk against the files beside it */
+          { const sch=[{id:'2099_07_AUA_AUB',w:7,a:'AUA',h:'AUB'},{id:'2099_07_AUC_AUD',w:7,a:'AUC',h:'AUD'}], G1='2099_07_AUA_AUB', G2='2099_07_AUC_AUD';
+            const tmp=fs.mkdtempSync(path.join(require('os').tmpdir(),'vespn-dk-'));
+            try{ fs.writeFileSync(path.join(tmp,'dk_links_wk7.json'),JSON.stringify({[`${G1}|event`]:{sid:'34118033'},[`${G1}|game|ml|home|`]:{sid:'0ML1_1'},[`${G1}|game|ml|away|`]:{sid:'0ML1_3'},
+                [`${G1}|game|spread|away|3.0`]:{sid:'0HC1P300_3'},[`${G1}|game|total|Over|50.5`]:{sid:'0OU1O5050_1'},[`${G1}|Made-up Passer|passing_yards|Over|248.5`]:{sid:'0QA1#1_13L1'},[`${G2}|game|ml|home|`]:{sid:'0ML2_1'}}));
+              fs.writeFileSync(path.join(tmp,'dk_links_wk8.json'),'{not json'); fs.writeFileSync(path.join(tmp,'other.json'),JSON.stringify({[`${G2}|event`]:{sid:'999'}}));
+              const {by,files}=dkSrcAud(tmp), read=new Set(['0ML1_1','0ML1_3','0HC1P300_3','0OU1O5050_1','34118033','0ML9_1']);
+              const paid={'7':{[G1]:{'team:AUB|ml':'0ML1_1','team:AUA|ml':'0ML1_3','team:AUA|ats|3':'0HC1P300_3','game|total|over|50.5':'0OU1O5050_1',event:'34118033','aud|passing_yards|over|248.5':'0QA1#1_13L1',at:'2099-01-01T10:17Z',glat:'2099-01-01T10:17Z'}}};
+              const ok0=dkBadAud(paid,sch,by), ok1=dkBadAud({},sch,by), ok2=dkBadAud(undefined,sch,by);
+              chk(files.length===1&&!ok0.length&&!ok1.length&&!ok2.length&&Object.values(paid['7'][G1]).some(v=>read.has(v)),
+                `V-ESPN: a paid pull's ids equal to the read's (a pull and ESPN's bet links give the same DraftKings ids) are held as faults, or the files are not read as the bake reads them: ${JSON.stringify({files,ok0,ok1,ok2})}`);
+              const cases=[['a read id with no source in the files',{'7':{[G2]:{'team:AUD|ml':'0ML9_1',glat:'x'}}}],
+                ['a read id the files give another of its game\'s keys',{'7':{[G1]:{'team:AUA|ml':'0ML1_1'}}}],
+                ['an id the files give another game',{'7':{[G2]:{'team:AUC|ml':'0ML1_3'}}}],
+                ['a spread at another number',{'7':{[G1]:{'team:AUA|ats|3.5':'0HC1P300_3'}}}],
+                ['a game line\'s id under a player\'s key',{'7':{[G1]:{'aud|receptions|over|4.5':'0ML1_1'}}}],
+                ['a player\'s id under a game line\'s key',{'7':{[G1]:{'game|total|under|50.5':'0QA1#1_13L1'}}}],
+                ['an event no file gives (only a file not named dk_links_wk<W>.json)',{'7':{[G2]:{event:'999'}}}],
+                ['an entry under another week',{'8':{[G1]:{event:'34118033'}}}],
+                ['a game not on the schedule',{'7':{'2099_07_AUE_AUF':{event:'34118033'}}}]];
+              const missed=cases.filter(([,dk])=>!dkBadAud(dk,sch,by).length).map(([n])=>n);
+              chk(!missed.length,`V-ESPN: PAY.dk held to its source passes ${missed.join('; ')}`); }
+            finally{ try{ fs.rmSync(tmp,{recursive:true,force:true}); }catch(e){} } }
+          const {by,files}=dkSrcAud(path.join(__dirname,'..','data')), srcBad=dkBadAud(PD.dk,PD.sched,by);
+          for(const x of srcBad) bad.push(x+': the bake takes every id from a paid pull\'s file; a read\'s ids are the page\'s to merge');
+          const nDk=Object.values(PD.dk&&typeof PD.dk==='object'?PD.dk:{}).reduce((n,W0)=>n+Object.values(W0||{}).reduce((m,D0)=>m+Object.keys(D0||{}).filter(k=>k!=='at'&&k!=='glat').length,0),0);
+          said.push(`PAY.dk's ${nDk} ids held to ${files.length} paid pull file(s)${srcBad.length?`, ${srcBad.length} with no source`:''}`);
           if(/dkline|"espn"/.test(JSON.stringify(PD.mkt||{})+JSON.stringify(PD.prices||[]))) bad.push('PAY.mkt or PAY.prices carries something of the ESPN read'); }
         /* this run's read, with PROPS_AUDIT_RAW */
         const RD=(()=>{ if(!NEED){ skipped.push('espn/read.json'); return null; } const p=path.join(__dirname,'..','raw','espn','read.json'); if(!fs.existsSync(p)) return null; try{ return JSON.parse(fs.readFileSync(p,'utf8')); }catch(e){ bad.push('raw/espn/read.json is not JSON'); return null; } })();
@@ -7243,7 +7322,11 @@ setTimeout(async()=>{
             if(!live){ if(e) bad.push(`${gid} had kicked off and is published`); continue; }
             if(st==='ok'&&r.pl){ nOk++; const want=cleanA(r.pl), got=e&&e.pl;
               if(!got||canonA({...cleanA(got),at:got.at})!==canonA(want)) bad.push(`${gid}'s published player block is not this run's read cleaned by the page's rules`); }
-            else if(st==='none'){ nNone++; if(!e||(e.pl)||!e.out||e.out.st!=='none') bad.push(`${gid}'s read found no player lines, and the payload publishes ${e&&e.pl?'a block':'no none'}`); }
+            else if(st==='none'){ const nAt=t(r.out.at);
+              /* a 'none' answered at or after the kickoff is dropped, as apply_espn drops every half dated there (the
+                 page's reader calls it 'kicked' since the review of 21 October 2026, so a read has none) */
+              if(isFinite(nAt)&&nAt>=ko(g)){ if(e&&e.out&&e.out.st==='none'&&e.out.at===r.out.at) bad.push(`${gid}'s read found no player lines at or after its kickoff, and the payload publishes it`); }
+              else { nNone++; if(!e||(e.pl)||!e.out||e.out.st!=='none') bad.push(`${gid}'s read found no player lines, and the payload publishes ${e&&e.pl?'a block':'no none'}`); } }
             if(r.gl&&r.gl.lines&&Object.keys(r.gl.lines).length){ if(!e||!e.gl||canonA(e.gl)!==canonA({at:r.gl.at,lines:r.gl.lines,ids:r.gl.ids,event:r.gl.event})) bad.push(`${gid}'s published game lines are not this run's read`); }
             /* who each line is on */
             const pl=r.pl||{}, have=new Set([...Object.keys(pl.lines||{}),...Object.keys(pl.rungs||{}),...(pl.td||[])]), P=r.placed||{};
