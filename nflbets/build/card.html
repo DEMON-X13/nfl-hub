@@ -208,7 +208,10 @@ window.PARLAY_CARD=(function(){
      then, never that every leg will land. With no leg to open, the button and Share link take the visitor to the
      game's DraftKings page, or to DraftKings' NFL page, to add the legs by hand, and each leg says why. The
      builder shows under each of its own legs what this card will do with it (dkPlan's each, read by
-     renderParlay). */
+     renderParlay). Since app v126 (21 October 2026, the owner's call: no ladder bets) no suggestion, game page or
+     builder offers a rung k+ or 2+ touchdowns, so the paths below for those (a rung as DraftKings' Over k-0.5 or the
+     whole k-1, 2+ touchdowns as the anytime touchdown, a moved main line naming a rung's own bet) stand for a
+     Suggested Parlays set locked before that day, finished from the record as it locked, and for a pull's ids. */
   const DKS='https://sportsbook.draftkings.com/', DKNFL=DKS+'leagues/football/nfl';
   const dkUrl=ids=>DKS+'?outcomes='+ids.map(encodeURIComponent).join('+');
   /* a player's leg priced from DraftKings' line read on ESPN (src 'dkline'): ESPN gives no id for a player's line, so
@@ -805,7 +808,9 @@ window.PARLAY_CARD=(function(){
         builder's own sums; dkLeg puts it on the slip at the pull's id.
      5. The moved rule (critique 18): ESPN's feed can trail DraftKings, so a pulled line stands against an ESPN read of
         his main line at another number unless that read came more than PULL_MOVED_MS after the pull; then the pull's
-        id is taken for dropped, as DraftKings drops a moved line, and the leg says to add it by hand or pull again. */
+        id is taken for dropped, as DraftKings drops a moved line, and the leg says to add it by hand or pull again.
+     Since app v126 no ladder bet reaches the builder or a live set, so a plan asks only base markets; the ladder
+     paths (PULL_ALT, a rung's market, whyOf 'ladder') stand for a Suggested Parlays set locked before that day. */
   const PULL_FRESH_MS=5*60e3, PULL_TIMEOUT_MS=15000, PULL_MOVED_MS=15*60e3, PULL_EVENT_H=36;
   /* The Odds API's club names, as props/data/oddsfetch.py's TEAMS has them (nflbets/build/build.js holds the two equal) */
   const DK_TEAMS={'Arizona Cardinals':'ARI','Atlanta Falcons':'ATL','Baltimore Ravens':'BAL','Buffalo Bills':'BUF',
