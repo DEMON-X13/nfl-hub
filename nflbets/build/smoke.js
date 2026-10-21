@@ -3722,6 +3722,83 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     if (g0) { w.eval('closeGame()'); await wait(30); }
     w.location.hash = '#matchups'; await wait(40); }
 
+  /* ---- A WINDOW IS ITS TAB'S OWN (app v126, 21 October 2026) ----
+     Found in Chromium: the Props tab, a game opened, then Back (or the address set to #matchups) brought the Matchups
+     tab up with the game's page still open inside the hidden Props tab and body's modal-open kept, so the tab the
+     address went to could not scroll, and the focus on the body. Leaving a tab closes the windows that live on it: the
+     game's page (the prop model's switch, tabLeft, as its Back does), the Props tab's Mismatches list and the ELO
+     Ratings tab's player and team windows (tab_elo.html); a focus left on what the switch took off the screen goes to
+     the chosen tab's button; Escape touches a game's page only where it is on the screen; and the board's Game
+     snapshot, no tab's window, which stays open over the tab the address goes to, gives the focus to that tab's
+     button where its row is off the screen. On the page as it stands, by the address as Back moves it; blocking */
+  { const bad = [], seen = [], gm = d.getElementById('gameModal'), Sx = () => w.eval('S');
+    const chosen = () => d.querySelector('#tabs button[aria-selected="true"]');
+    const where = a => !a || a === d.body ? 'the body' : a.closest('[hidden]') ? `a hidden ${a.tagName.toLowerCase()}${a.id ? '#' + a.id : ''}`
+      : a.closest('#tabs') ? `the ${txt(a)} tab's button` : `${a.tagName.toLowerCase()}${a.id ? '#' + a.id : ''}`;
+    const onTab = (label, what) => { const a = d.activeElement, t = chosen(); seen.push(what);
+      if (!t || txt(t) !== label) bad.push(`${what}: the address did not land on ${label}`);
+      if (d.body.classList.contains('modal-open')) bad.push(`${what}: body keeps modal-open, so ${label} cannot scroll`);
+      const left = [...d.querySelectorAll('.modal')].filter(m => !m.hidden).map(m => m.id || m.className);
+      if (left.length) bad.push(`${what}: a window is still open (${left.join(', ')})`);
+      if (a !== t) bad.push(`${what}: the focus is on ${where(a)}, not the ${label} tab's button`); };
+    const go = async h => { w.location.hash = h; await wait(60); };
+    const escKey = async () => { (d.activeElement || d.body).dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); await wait(30); };
+    /* the game's page, the focus on its Back, then on its row in the list under it (which the close's redraw replaces) */
+    for (const on of ['its Back', 'its row']) {
+      await go('#slate'); const row = d.querySelector('#gamesList button[data-game]');
+      if (!row) { bad.push('no game on the Props tab to open'); break; }
+      row.click(); await wait(40); const gid = row.dataset.game;
+      if (gm.hidden || !d.body.classList.contains('modal-open') || Sx().ui.game !== gid) { bad.push(`the game ${gid} did not open on the Props tab`); continue; }
+      (on === 'its Back' ? d.getElementById('backBtn') : row).focus();
+      await go('#matchups');
+      onTab('Matchups', `a game's page left by the address, the focus on ${on}`);
+      if (!gm.hidden || Sx().ui.game !== null) bad.push(`leaving the Props tab did not close the game's page (open ${!gm.hidden}, S.ui.game ${Sx().ui.game})`); }
+    /* Escape on the Matchups tab after that does nothing to the Props tab's state, the tab or the focus */
+    { const ui = JSON.stringify(Sx().ui), a = d.activeElement; await escKey();
+      if (JSON.stringify(Sx().ui) !== ui || !gm.hidden || d.body.classList.contains('modal-open') || d.getElementById('tab-pickems').hidden || w.location.hash !== '#matchups' || d.activeElement !== a)
+        bad.push('Escape on the Matchups tab changed the Props tab\'s state, the tab or the focus'); }
+    /* and with a game's page planted open on the hidden Props tab (as a check opens one), Escape leaves it as it was */
+    { const g0 = w.eval('(S.sched||[]).find(g=>weekOpen(+g.w))');
+      if (g0) { w.eval(`S.ui.game=${JSON.stringify(g0.id)};S.ui.open={};renderGame()`); await wait(30);
+        const ui = JSON.stringify(Sx().ui); d.body.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); await wait(20);
+        if (JSON.stringify(Sx().ui) !== ui || Sx().ui.game !== g0.id || gm.hidden) bad.push('Escape on the Matchups tab closed a game\'s page planted on the hidden Props tab');
+        w.eval('closeGame()'); await wait(30); }
+      else bad.push('no game of an open week to plant on the Props tab'); }
+    /* the Props tab's Mismatches list (Show more, drawn where the week has more than five), the focus on its Close */
+    { await go('#slate'); const more = d.getElementById('peMmMore');
+      if (more) { more.click(); await wait(40); const m = d.getElementById('peMmModal');
+        if (!m || m.hidden) bad.push('Show more did not open the Mismatches list');
+        else { const c = d.getElementById('peMmClose'); if (c) c.focus(); await go('#matchups'); onTab('Matchups', 'the Mismatches list left by the address'); } }
+      else console.log('  windows: no Show more on the Props tab this week, so the Mismatches list is not held'); }
+    /* the ELO Ratings tab's player window and team window, the focus on each one's Close; the tab's view put back */
+    { await go('#elo'); const body = d.getElementById('peBody'), pb = body && body.querySelector('tr.pe-plrow button.pe-plbtn');
+      if (!pb) bad.push('no player on the ELO Ratings tab to open');
+      else { pb.click(); await wait(40); const m = d.getElementById('pePlModal');
+        if (!m || m.hidden) bad.push('a player\'s name did not open his window');
+        else { const c = d.getElementById('pePlClose'); if (c) c.focus(); await go('#matchups'); onTab('Matchups', 'the ELO tab\'s player window left by the address'); } }
+      await go('#elo'); const was = ((body && body.querySelector('.pe-pos [aria-selected="true"]')) || {}).dataset || {};
+      const pill = body && body.querySelector('.pe-pos button[data-unit="off"]');
+      if (pill) { pill.click(); await wait(30); const tr = body.querySelector('tr.pe-tmrow');
+        if (!tr) bad.push('Overall Offense draws no team row');
+        else { tr.click(); await wait(40); const m = d.getElementById('peTmModal');
+          if (!m || m.hidden) bad.push('a team\'s row did not open its window');
+          else { const c = d.getElementById('peTmClose'); if (c) c.focus(); await go('#matchups'); onTab('Matchups', 'the ELO tab\'s team window left by the address'); } }
+        await go('#elo'); const back = was.pos ? body.querySelector(`.pe-pos button[data-pos="${was.pos}"]`) : was.unit ? body.querySelector(`.pe-pos button[data-unit="${was.unit}"]`) : null;
+        if (back) { back.click(); await wait(30); } }
+      else console.log('  windows: no Overall Offense pill on the ELO Ratings tab, so its team window is not held'); }
+    /* the board's Game snapshot stays open over the tab the address goes to, and closing it there gives the focus to
+       that tab's button, its row being on the hidden board */
+    { await go('#matchups'); const r = d.querySelector('#tab-pickems .pk-game[data-game]');
+      if (!r) bad.push('no game on the Matchups board to open');
+      else { r.click(); await wait(40); const md = d.getElementById('gsModal');
+        if (!md || md.hidden) bad.push('a row did not open its Game snapshot');
+        else { await go('#slate');
+          if (md.hidden || !d.body.classList.contains('modal-open')) bad.push('the Game snapshot closed, or let the page scroll under it, when the address moved');
+          await escKey(); onTab('Props', 'the Game snapshot closed by Escape after the address moved to the Props tab'); } } }
+    await go('#matchups');
+    chk(bad.length === 0, 'a window outlives its tab, or leaves the focus off the screen: ' + bad.slice(0, 8).join('; '));
+    console.log(`  windows: ${seen.length} left by the address, each closed with the page free to scroll and the focus on the chosen tab's button`); }
+
   /* the page reads the two sites and bakes nothing */
   chk(fetched.includes('betting/state.json') && fetched.includes('props/data/payload.json'), 'the page did not fetch both sites, named from the site\'s root where it is: ' + fetched.join(', '));
   /* every file the page reads as it loads, named from the root (never ../, which from there leaves the site) */
@@ -7199,7 +7276,11 @@ async function newsChecks() {
         /* another tab's address takes the window with it, the focus not left on the body */
         const m3 = await openPop(R, G, 'stats');
         if (m3) { R.w.location.hash = '#matchups'; await wait(60);
-          if (!m3.hidden || !R.d.activeElement || R.d.activeElement === R.d.body) bad.push('a move to the Matchups tab left the window open, or the focus on the body'); }
+          /* and the game's page under it with it (app v126: leaving the Props tab closes it), the page free to scroll and
+             the focus on the Matchups tab's button */
+          const gm3 = R.d.getElementById('gameModal'), tb3 = R.d.querySelector('#tabs button[aria-selected="true"]'), a3 = R.d.activeElement;
+          if (!m3.hidden || !gm3.hidden || R.w.eval('S').ui.game !== null || R.d.body.classList.contains('modal-open') || !tb3 || txt(tb3) !== 'Matchups' || a3 !== tb3)
+            bad.push(`a move to the Matchups tab left the window (${!m3.hidden}) or the game's page (${!gm3.hidden}) open, the page locked (${R.d.body.classList.contains('modal-open')}) or the focus off the Matchups tab's button (on ${a3 === R.d.body ? 'the body' : a3 ? a3.tagName + '#' + a3.id : 'nothing'})`); }
         /* the game's page closing takes it with it */
         const m4 = await openPop(R, G, 'stats');
         if (m4) { R.w.closeGame(); await wait(30);
