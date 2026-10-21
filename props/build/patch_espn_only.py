@@ -577,21 +577,9 @@ sub1('p3', """  const pool=pbPool(games), memo=new Map(), c={players:!!(u.k.over
      """  const pool=pbPool(games), memo=new Map(), c={players:!!(u.k.over||u.k.under),teams:!!(u.k.ml||u.k.ats),
     espn:games.some(g=>espnWasRead(g.id,g.w)),ids:games.map(g=>g.id)};""", 'pbBuild: was it read')
 
-sub1('p3', """/* (app v109) why a hand is empty where DraftKings' ids left legs out: a hand takes only legs DraftKings'
-   betslip can take, and a game's player ids come with its player prices, which are not pulled yet, or
-   never for Sunday's early games; with them in, its other lines DraftKings had no id for */
-function gameNoIdWhy(g,n){
-  const D=((PAY.dk||{})[String(g.w)]||{})[g.id]||{}, pl=!!D.at||Object.keys(D).some(k=>!/^(team:|game\\|)/.test(k)&&!['event','at','glat'].includes(k));
-  const head=`Only legs DraftKings’ betslip can take are suggested here, and this game does not have enough of them for ${n} legs`;
-  if(pl) return `${head}: DraftKings had no id for its other lines when its prices were read.`;
-  if(dkEarlySunday(g)) return `${head}: DraftKings’ player ids come with its player prices, which are never pulled for Sunday’s early games (before 4pm ET).`;
-  return `${head} yet: DraftKings’ player ids come with its player prices, which are ${PB_PULLED}.`;
-}""", """/* (app v109, dormant since app v125: only a payload whose bake wrote paid ids) why a hand is empty where
-   DraftKings' ids left legs out: a hand takes only legs DraftKings' betslip can take, and a player's line read from
-   ESPN carries no id */
-function gameNoIdWhy(g,n){
-  return `Only legs DraftKings’ betslip can take are suggested here, and this game does not have enough of them for ${n} legs: a player’s line read from ESPN carries no DraftKings id.`;
-}""", 'gameNoIdWhy')
+# (gameNoIdWhy, the game page's hands' reason for a hand the id rule left empty, is gone with the hands' card since
+# main's app v124, #310, patch_game_windows.py: the engine, gameTiers and gameLegPool, is kept and drawn nowhere, and
+# nothing of this change's touches it.)
 
 sub1('p3', """  out.espnRead=games.some(g=>ESPN_OUT[g.id]&&(ESPN_OUT[g.id].st==='ok'||ESPN_OUT[g.id].st==='none'));""",
      """  out.espnRead=games.some(g=>espnWasRead(g.id,g.w));""", 'pbTopBuild: was it read')

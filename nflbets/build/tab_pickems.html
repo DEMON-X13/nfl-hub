@@ -226,7 +226,8 @@ function openOnProps(id,pid){
   if(pr){ try{ if(typeof window.eloFocusPlayer==='function') window.eloFocusPlayer(pid); else if(pr.scrollIntoView) pr.scrollIntoView({block:'start'}); }catch(e){}
     try{ pr.focus({preventScroll:true}); }catch(e){} return; }
   /* the page opens at its head; this button was for the game bets, so they are brought into view
-     (they follow the game's suggested parlays, which a phone shows a screen of first) */
+     (they follow the game's head and its Matchup, Mismatches and Team Stats buttons, which a phone shows a
+     screen of first) */
   const gb=document.querySelector('#gameView .gbets'); try{ if(gb&&gb.scrollIntoView) gb.scrollIntoView({block:'start'}); }catch(e){}
 }
 /* the players the game's page on the Props tab draws as a row to open (renderGame: on its roster, as

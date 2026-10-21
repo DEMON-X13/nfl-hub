@@ -109,7 +109,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 .pays .box.tier.med{border-color:rgba(255,209,102,.5)}
 .bigp .hero{background:linear-gradient(135deg,var(--panel-3),var(--bg-2));border-color:var(--line-2)}
 .bigp .hero span{color:var(--ink-2)} .bigp .hero small{color:var(--gold)}
-.sugg-side button.on,.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}
+.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}
 .pb-amt:hover{border-color:var(--ink-2)}
 .pb-tier.xtrm,.pb-tier.elo-xtrm{border-top-color:#B49CFF}
 .faroff{color:var(--gold)}
@@ -200,6 +200,8 @@ line[stroke="#E6EAEF"]{stroke:#4A5269}
 #gsModal{--gs-miss-ink:#FFA2B8}
 /* a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */
 #gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}
+/* Team Stats' bars (a game's page on the Props tab) the same way, on the same track */
+#gsModal .gs-shalf{background:var(--panel-3)} #gsModal .gs-shalf i{background:color-mix(in srgb,var(--gs-tc) 62%,#fff)}
 /* the Deep Dive's tags: the light look's tints are glare here, so each step has a dark tint of its own
    with its text at 6:1 or more. Even, the neutral step, is a slate a step lighter than the card with a
    light ring (an inset shadow, so its shape is the others'), the ring 3.8:1 or more on either card
@@ -265,7 +267,7 @@ html[data-theme="light"]:not(.embed) body::before{opacity:.07;
     repeating-linear-gradient(90deg,rgba(30,34,48,.5) 0 1px,transparent 1px 12.8px) 0 310px/100% 9px no-repeat}
 html[data-theme="light"] .brand h1 em{color:#9C6A00}
 html[data-theme="light"] nav button[aria-selected=true],
-html[data-theme="light"] .sugg-side button.on,html[data-theme="light"] .stake-chips button.on,html[data-theme="light"] .tbtn.on,
+html[data-theme="light"] .stake-chips button.on,html[data-theme="light"] .tbtn.on,
 html[data-theme="light"] .pe-pos button[aria-selected="true"],html[data-theme="light"] .pe-mm-n,
 html[data-theme="light"] .seg button.on,html[data-theme="light"] .wk-chip{color:#FFFFFF}
 html[data-theme="light"] tbody tr:hover{background:rgba(30,34,48,.03)}
@@ -302,6 +304,7 @@ html[data-theme="light"] [fill="#B23A32"]{fill:#B23A32}
    (Even a pale slate with a ring at 4:1 on the card) and its grade green a step darker */
 html[data-theme="light"] #gsModal{--gs-miss-ink:#A93226}
 html[data-theme="light"] #gsModal .gs-track em{background:var(--gs-tc,var(--ink-2));box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+html[data-theme="light"] #gsModal .gs-shalf i{background:var(--gs-tc,var(--ink-2))}
 html[data-theme="light"] #gsModal .dtag.easy{background:#DDF3E6;color:#17603D}
 html[data-theme="light"] #gsModal .dtag.fav{background:#EEF8F2;color:#1B6E47}
 html[data-theme="light"] #gsModal .dtag.even{background:#E9EEF4;color:#3F4D63;box-shadow:inset 0 0 0 1.5px #6F7E96}
