@@ -971,7 +971,9 @@ owner's call of 20 October 2026, **Reversed in app v124** above). The props job 
 page's own reader: `espnReadWeek(w, games, onStep)` (`window.espnReadWeek`), split out of `espnRefresh`, which keeps its
 behaviour on top of it, reads the week's scoreboard and each game's player lines as a press does and returns what it read,
 `{sbAt, out, gl, pl}` (each game's outcome, `ok`, `none`, `failed` or `kicked`, with `ok` and `none` dated, a `none` by
-the 404's Date header; its scoreboard odds, ids and event; its placed player block), applying none of it and touching
+the 404's Date header, and one answered at or after the kickoff `kicked`, as an `ok` that late is, since the job publishes
+nothing of a game dated there: until the review of 21 October 2026 a `none` racing a kickoff refused the run; its
+scoreboard odds, ids and event; its placed player block), applying none of it and touching
 nothing of the page's but `ESPN_RUN`'s counters and the `ESPN_NAMES` cache; a press then applies it as before (its game
 lines now after the player reads, which stand on nothing of them). `espn_read.js` (step 4 of `weekly.py`, after the bake
 and `assemble.py`, whose failure now refuses the run; skipped once the regular season is over or with no game of the week
@@ -1030,11 +1032,14 @@ read (`pbNoPl`, `spNoPl`, `spEloSet`); `espnPressed(gid, w)` tells a pressed blo
 (`espnStatus` counts a press's and a kept read's blocks as read, never the published one). Before a press the status line
 is "DraftKings’ lines as the site read them from ESPN Tue 8:07 AM ET: player prices estimated from the line", with "; 3
 games had no player lines posted when the site read ESPN" (a game's page: "; DraftKings had posted no player lines for it
-when the site read ESPN"), and "Prices as published <time>" on a payload with no read. Held: `python3 test_apply_espn.py`
-(the carry on a failed read,
+when the site read ESPN"), its time the latest read of their player lines alone (a read of the game lines alone dates
+nothing: with no player read it is the publish's), and "Prices as published <time>" on a payload with no read. Held:
+`python3 test_apply_espn.py` (the carry on a failed read,
 `ok` and `none`, a half at kickoff and a played game dropped, the rollover, another week's read ignored, the 24-hour rule,
 a by-hand line newer than the read winning, the set and drop rule, `lsr` and `lat` to the second, the cleaning, the overdue
-problem and its words, nothing in `mkt`, `prices` or `dk`, and the real page installing exactly what is published),
+problem on the player lines alone and its words, nothing in `mkt`, `prices` or `dk`, a paid pull's game-line ids for a game
+the read covers left in `dk` as baked, and the real page installing exactly what is published, on the payload's last
+week's games with their scores taken off, so it holds once every game is played),
 `node test_espn_read.js` (a replay of `props/build/fixtures/espn/`, a 404 as `none`, a 403 tried again with no headers on
 a local server, the deadline, recording keys free of `_=`, the read's shape, a page with no reader `skipped`, no request to
 any host but ESPN), `test_espn_ids.py` (`bake()` itself carries no read); the audit's M17, blocking, on two made-up games
@@ -1045,13 +1050,21 @@ value of another version or shape installed nowhere and throwing nothing; the re
 the levels, a hand's pool, the Top 30 and a set with no id needed, the same after a press over `dk:{}`; a kept read older
 than the published one set aside and said to give way, a newer one and one over this very publish standing, one between
 the published read and a later paid pull set aside, a kept `none` never hiding the published block; a press over the
-published lines with the clock moved back two days, `espnReadWeek` touching none of the page's state; a locked main line
+published lines with the clock moved back two days, `espnReadWeek` touching none of the page's state and a `none` answered
+at the kickoff `kicked`, one a second before it still a `none`; the status line's time the player lines' alone (a game-line
+read newer than them dating nothing, `W.wording`); a locked main line
 and rung at their locked prices through a republished read that moved them; the pull hooks inert without a stub and the
 stub's price and fair chance with one, nothing in `S.parlay`; the status words `W.wording`); V-ESPN in section V, blocking
 (every entry a game of this season to come of its own week, every half before kickoff, a `none` with no block, each game
-marked `lsr` 'espn' at its read's lines and time under a day old and said "read from ESPN", none of the read's ids in
-`PAY.dk`, nothing of it in `PAY.mkt` or `PAY.prices`; with `PROPS_AUDIT_RAW`, against `raw/espn/read.json` where the
-payload carries that read: each `ok` block the read's cleaned by the audit's own copy of the rules, each `none` dropping it,
+marked `lsr` 'espn' at its read's lines and time under a day old and said "read from ESPN", `PAY.dk` held to its own
+source (every id one a paid pull's `props/data/dk_links_wk<W>.json` gives that game, at its own key for a game line or the
+event, each entry under its game's week: `dkSrcAud` and `dkBadAud`, held to made-up cases of their own; a paid sid is the
+very DraftKings id ESPN's bet links carry, so an id equal to one of the read's is no fault, and a read's id the bake took
+has no source: until the review of 21 October 2026 any id equal to the read's failed it, which a paid pull of a game still
+to come, by hand or Thursday 22 October's, would have done on every run until its kickoff), nothing of it in `PAY.mkt` or
+`PAY.prices`; with `PROPS_AUDIT_RAW`, against `raw/espn/read.json` where the payload carries that read: each `ok` block
+the read's cleaned by the audit's own copy of the rules, each `none` dropping it (one dated at or after the kickoff
+dropped itself, as `apply_espn` drops every half there),
 the game lines as read, a game not read carried with times before the read began, and every athlete placed by id on the
 player the payload's and the roster's ESPN ids name, by name on a player of one of the game's two clubs whose roster name
 the audit's own `nameRule` passes or whose surname is ESPN's); a placement by the surname alone is the one warning,

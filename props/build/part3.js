@@ -1474,6 +1474,10 @@ function espnBlock(per,placed,at){
 /* one game: its player lines, placed, unless its kickoff came first */
 async function espnReadGame(r){
   const pr=await espnProps(r.eid);
+  /* (app v124) a 'none' answered at or after the kickoff (its 404 dated there, or the page's clock past it) is no read
+     before it: the game kicked off while it was being read, as an 'ok' that late is. The props job publishes nothing
+     of a game's read dated at or after its kickoff, and its audit (V-ESPN) holds every 'none' it read published */
+  if(pr.st==='none'&&Math.max(pr.at!=null?pr.at:Date.now(),Date.now())>=r.ko) return {st:'kicked',why:'kicked off while it was being read'};
   if(pr.st!=='ok') return pr;
   const t=()=>{ const at=pr.at!=null?pr.at:Date.now(); if(pr.at==null) ESPN_RUN.clock=true; return at; };
   if(Math.max(t(),Date.now())>=r.ko) return {st:'kicked',why:'kicked off while it was being read'};
@@ -1900,8 +1904,11 @@ function espnStatus(gid){
   /* (app v124) read and asked count a press's blocks (and a kept read's), never the published read's */
   const live=ESPN_LIVE[w]||{}, read=ids.filter(id=>espnPressed(id,w)), lined=ids.filter(id=>ESPN_GL[id]);
   /* the published prices: the props job's read of DraftKings' lines on ESPN where the payload carries one for these
-     games, its latest time, and the games it found no player lines posted for (and none shown); else the publish */
-  const pubs=ids.map(id=>espnPubOf(id,w)).filter(Boolean), tPub=Math.max(0,...pubs.map(P=>Math.max(P.at||0,P.when||0,P.gl&&P.gl.at||0)));
+     games, the latest read of their player lines (a block's time, or what the read found: 'ok' or 'none'), and the games
+     it found no player lines posted for (and none shown); else the publish. A read of a game's lines alone dates
+     nothing here: no player price is estimated from it, and a week whose every player read failed while the scoreboard
+     answered reads as the publish */
+  const pubs=ids.map(id=>espnPubOf(id,w)).filter(Boolean), tPub=Math.max(0,...pubs.map(P=>Math.max(P.at||0,P.when||0)));
   const pubNone=ids.filter(id=>{ const P=espnPubOf(id,w); return !!P&&P.st==='none'&&!live[id]; }).length;
   const when=PAY&&PAY.baked_at?' '+espnWhen(PAY.baked_at):'';
   const pub=pubs.length&&tPub?`DraftKings’ lines as the site read them from ESPN ${espnWhen(tPub)}: player prices estimated from the line`

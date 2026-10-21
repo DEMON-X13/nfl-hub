@@ -500,14 +500,15 @@ const pbNoPlOwn = (w, ids) => { const t = lastReadOwn(w, ids);
     : 'no player lines yet: DraftKings’ lines for these games have not been read from ESPN yet. Press Refresh odds to read them now.'; };
 /* the status line beside a Refresh odds button before any press, in the page's words, worked out here from the payload:
    where it carries the published read for any of these games (ids: the week's still to come, or one game's, gid), when
-   the site read DraftKings' lines from ESPN (the latest of their reads) and, where it found no player lines posted for
-   some (and none is shown), how many; else the publish's own time. Without its full stop */
+   the site read DraftKings' player lines from ESPN (the latest of their reads: a block's time, or an 'ok' or 'none'; a
+   read of a game's lines alone dates nothing, the review of 21 October 2026) and, where it found no player lines posted
+   for some (and none is shown), how many; else the publish's own time. Without its full stop */
 const pubLineOwn = (w, ids, gid) => { const LV = w.eval('ESPN_LIVE') || {}, P = w.eval('PAY'); let t = 0, n = 0, none = 0;
   for (const id of ids) { const X = pubEntryOwn(w, id); if (!X) continue; const { e, g, T } = X;
     const at = e.pl && typeof e.pl === 'object' && !Array.isArray(e.pl) ? T(e.pl.at) : null, u = e.out && typeof e.out === 'object' ? e.out : null;
     const ut = u && (u.st === 'ok' || u.st === 'none') ? T(u.at) : null, gt = e.gl && typeof e.gl === 'object' ? T(e.gl.at) : null;
     if (at == null && ut == null && gt == null) continue;
-    n++; t = Math.max(t, at || 0, ut || 0, gt || 0);
+    n++; t = Math.max(t, at || 0, ut || 0);
     if (u && u.st === 'none' && ut != null && !(LV[String(g.w)] || {})[id]) none++; }
   if (!n || !t) return `Prices as published${P && P.baked_at ? ' ' + etSay(Date.parse(P.baked_at)) : ''}`;
   return `DraftKings’ lines as the site read them from ESPN ${etSay(t)}: player prices estimated from the line`

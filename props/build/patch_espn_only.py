@@ -10,7 +10,9 @@ The published read (the job's, PAY.espn and the schedule's game lines)
 -------------------------------------------------------------------------
 The job reads with the page's own reader: espnReadWeek(w, games, onStep), split out of espnRefresh, which
 reads ESPN and returns what it read without applying any of it ({sbAt, out, gl, pl}: each game's outcome, its
-scoreboard odds and its placed player lines; a 'none' carries the time it was answered). It touches nothing of
+scoreboard odds and its placed player lines; a 'none' carries the time it was answered, and one answered at or
+after the game's kickoff is 'kicked', as an 'ok' that late is, since the job publishes nothing of a game's read
+dated at or after its kickoff: the review of 21 October 2026). It touches nothing of
 the page's but ESPN_RUN's counters and the ESPN_NAMES lookup cache. espnRefresh, the press, keeps its behaviour
 on top of it: the game lines applied (now after the player reads rather than before: nothing in a player read
 stands on them), the blocks into ESPN_LIVE, ESPN_OUT, the kept read, the redraw.
@@ -42,7 +44,9 @@ Was it read: espnWasRead(gid, w) is true where a press found ok or none, or the 
 published gl alone is no player read); espnLastRead(ids) the latest such read. espnPressed(gid, w) tells a
 pressed block from the published one. The status line, before a press: "DraftKings' lines as the site read them
 from ESPN <time>: player prices estimated from the line" (with "; N games had no player lines posted when the
-site read ESPN"), "Prices as published <time>" where the payload carries no read.
+site read ESPN"), <time> the latest read of their player lines alone (a block's, or an 'ok' or 'none'; a read of
+the game lines alone is no player read, and with nothing else the line is the publish's: the review of 21 October
+2026), "Prices as published <time>" where the payload carries no read.
 
 The id rule, by content
 -----------------------
@@ -157,6 +161,15 @@ function espnIdAt(gid,key){ const t=ESPN_IDAT[gid]&&ESPN_IDAT[gid][key]; if(isFi
   const P=ESPN_PUB_IDS[gid]&&ESPN_PUB_IDS[gid][key]; if(!P) return null;
   try{ const g=((S&&S.sched)||[]).find(x=>x.id===gid), W=g&&PAY&&PAY.dk&&typeof PAY.dk==='object'?PAY.dk[String(g.w)]:null, E=W&&W[gid];
     return E&&E[key]===P.id&&isFinite(P.at)&&P.at>0?P.at:null; }catch(e){ return null; } }""", 'espnIdAt: published ids')
+
+# ---------------------------------------------------------------- a 'none' that came at or after the kickoff
+sub1('p3', """  const pr=await espnProps(r.eid);
+  if(pr.st!=='ok') return pr;""", """  const pr=await espnProps(r.eid);
+  /* (app v124) a 'none' answered at or after the kickoff (its 404 dated there, or the page's clock past it) is no read
+     before it: the game kicked off while it was being read, as an 'ok' that late is. The props job publishes nothing
+     of a game's read dated at or after its kickoff, and its audit (V-ESPN) holds every 'none' it read published */
+  if(pr.st==='none'&&Math.max(pr.at!=null?pr.at:Date.now(),Date.now())>=r.ko) return {st:'kicked',why:'kicked off while it was being read'};
+  if(pr.st!=='ok') return pr;""", 'espnReadGame: a none at or after kickoff')
 
 # ---------------------------------------------------------------- who an athlete was placed on, and how (for the job)
 sub1('p3', """async function espnPlace(per,g,ev){
@@ -436,8 +449,11 @@ sub1('p3', """  const live=ESPN_LIVE[w]||{}, read=ids.filter(id=>live[id]), line
      """  /* (app v124) read and asked count a press's blocks (and a kept read's), never the published read's */
   const live=ESPN_LIVE[w]||{}, read=ids.filter(id=>espnPressed(id,w)), lined=ids.filter(id=>ESPN_GL[id]);
   /* the published prices: the props job's read of DraftKings' lines on ESPN where the payload carries one for these
-     games, its latest time, and the games it found no player lines posted for (and none shown); else the publish */
-  const pubs=ids.map(id=>espnPubOf(id,w)).filter(Boolean), tPub=Math.max(0,...pubs.map(P=>Math.max(P.at||0,P.when||0,P.gl&&P.gl.at||0)));
+     games, the latest read of their player lines (a block's time, or what the read found: 'ok' or 'none'), and the games
+     it found no player lines posted for (and none shown); else the publish. A read of a game's lines alone dates
+     nothing here: no player price is estimated from it, and a week whose every player read failed while the scoreboard
+     answered reads as the publish */
+  const pubs=ids.map(id=>espnPubOf(id,w)).filter(Boolean), tPub=Math.max(0,...pubs.map(P=>Math.max(P.at||0,P.when||0)));
   const pubNone=ids.filter(id=>{ const P=espnPubOf(id,w); return !!P&&P.st==='none'&&!live[id]; }).length;
   const when=PAY&&PAY.baked_at?' '+espnWhen(PAY.baked_at):'';
   const pub=pubs.length&&tPub?`DraftKings’ lines as the site read them from ESPN ${espnWhen(tPub)}: player prices estimated from the line`
