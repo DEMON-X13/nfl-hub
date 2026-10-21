@@ -467,6 +467,19 @@ const PB_TOP_N_OWN = 30;
 /* the Top lines' check (holdTop), for the Refresh odds checks far below it */
 let holdTopF = null;
 const NO_BET_OWN = new Set(['targets', 'fg_att']);
+/* (app v127, the owner's call of 21 October 2026: "is it possible to not do ladders and just include Same Game Parlay
+   eligible stuff show up since we are only doing parlay builder stuff", then "yes" to every place a ladder showed): no
+   ladder bet anywhere, only main lines, anytime touchdowns and team bets. The smoke's own copy of what a ladder bet is,
+   never the page's isLadder: a leg on a player stat the page prices (PLAYER_STATS_OWN, the smoke's own copy of the
+   page's markets, held to them below) that is the anytime touchdown at two or more, or any other stat off its main line
+   (a rung k+, "250+ passing yards"). A game bet, or a leg on a stat the page does not price, is never one, and a
+   touchdown at 1.5 is the one touchdown (dkKey's rule) */
+const PLAYER_STATS_OWN = new Set(['passing_yards', 'passing_tds', 'attempts', 'completions', 'passing_interceptions', 'rushing_yards', 'carries', 'receptions',
+  'receiving_yards', 'targets', 'scrim_yards', 'any_td', 'fg_made', 'fg_att', 'kick_pts']);
+const ladderOwn = l => !!l && PLAYER_STATS_OWN.has(l.stat) && (l.stat === 'any_td' ? (+l.k || 1) >= 2 : !l.main);
+/* the no-ladder checks on everything that offers or suggests a leg (set up with the Parlay Builder's checks), for the
+   Refresh odds checks far below them: after a press, whose read carries DraftKings' milestones */
+let ladderHoldF = null;
 const primeOwn = g => !!g && /^\d{4}-\d\d-\d\d$/.test(g.d || '') && PRIME_NIGHT[new Date(g.d + 'T12:00:00Z').getUTCDay()] != null && /^\d\d:\d\d$/.test(g.t || '') && g.t >= '19:00';
 const etSay = ms => new Date(ms).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET';
 /* (app v125, the owner's call of 20 October 2026: the props job buys no prices and reads DraftKings' lines from ESPN on
@@ -1553,9 +1566,15 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       chk(!twice.length && got === want.same, `${lab}: the Top 30 lines list a bet twice, a ladder rung beside the same bet's half-point main Over (${twice.slice(0, 3).map(b => b.dataset.pbLeg + ' ' + b.dataset.k + '+').join(', ') || 'none'}), or the page counts ${got} rungs left out where ${want.same} are`); }
     { const lead = txt(panel.querySelector('.pb-lead')), foot = txt(panel.querySelector('.pb-foot'));
       chk(lead.includes(`first the Value picks, marked Value, then the other lines${u.k.total ? ', the game totals last' : ''}, each part ranked by what $1 on it is expected to make at the model’s chance, best first, ${PB_TOP_N_OWN} lines at most.`)
-        && foot.includes('The Value picks come first, marked Value, then the other lines (the ones a suggested parlay takes only where the Value picks cannot fill it), each part ranked by what $1 on it is expected to make, any game totals last, ' + PB_TOP_N_OWN + ' lines at most in all. Each bet is listed once: a ladder rung that is the same bet as the player’s main line (225+ passing yards and Over 224.5) is shown as the main line.')
+        && foot.includes('The Value picks come first, marked Value, then the other lines (the ones a suggested parlay takes only where the Value picks cannot fill it), each part ranked by what $1 on it is expected to make, any game totals last, ' + PB_TOP_N_OWN + ' lines at most in all. Only main lines, anytime touchdowns and team bets are listed: no ladder bets, such as 250+ passing yards or 2+ touchdowns.')
         && foot.includes('3 points above it or more is a Value pick') && foot.includes('a game total, priced at the book’s own chance, is never one'),
-        `${lab}: the Top 30 lines' lead or foot does not say the Value picks come first, then the other lines: ${lead.slice(0, 260)} / ${foot.slice(0, 200)}`); }
+        `${lab}: the Top 30 lines' lead or foot does not say the Value picks come first, then the other lines: ${lead.slice(0, 260)} / ${foot.slice(0, 200)}`);
+      /* (app v127, the owner's call of 21 October 2026: no ladder bets anywhere) the foot names no ladder rung as listed:
+         the markets the estimate is checked on are main lines and touchdowns, and app v112's sentence on a rung shown as
+         its main line (no rung reaches the list) is gone */
+      chk(foot.includes('DraftKings’ line read from ESPN at our estimate of its price (on main lines and touchdowns, the markets the estimate has been checked on)')
+        && !/Each bet is listed once|yards ladders|ladder rung that is the same bet/.test(foot),
+        `${lab}: the Top 30 lines' foot still names a ladder rung as listed, or does not say the estimate is checked on main lines and touchdowns: ${(foot.match(/.{0,80}(Each bet is listed once|yards ladders|ladder rung|on main lines).{0,80}/) || [foot.slice(0, 160)])[0]}`); }
     return want.length; };
   holdTopF = holdTop;
   /* the panel holds on whatever the week offers: the mix sets the boxes, every tier is its legs or says
@@ -2713,13 +2732,14 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (typeof w.eloPicks === 'function') { const r = w.eloPicks(); for (const t of ((r && r.tiers) || [])) for (const l of t.legs) if (noBet(l)) bad.push(`the ${t.id} Elo pick's ` + legTxt(l)); }
       for (const l of Object.values(w.eval('S').parlay || {})) if (noBet(l)) bad.push('the builder\'s ' + legTxt(l));
       return bad; };
-    /* each game's page with every player open, its ladders shown: no box, heading or tile of a stat that is no bet */
-    const pagesBad = async (G, also) => { const bad = [], keepG = w.eval('JSON.stringify({game:S.ui.game,open:S.ui.open||{},rungs:S.ui.showRungs})');
+    /* each game's page with every player open: no box, heading or tile of a stat that is no bet (since app v127 a game's
+       page has no ladders to show) */
+    const pagesBad = async (G, also) => { const bad = [], keepG = w.eval('JSON.stringify({game:S.ui.game,open:S.ui.open||{}})');
       for (const g of G) { const ro = w.eval('rosterFor')(g, true), open = {}; for (const tm in ro) for (const x of ro[tm].players) open[x.pl.id] = true;
-        w.__fgOpen = open; w.eval(`S.ui.showRungs=true; S.ui.game=${JSON.stringify(g.id)}; S.ui.open=window.__fgOpen; renderGame()`); await wait(20);
+        w.__fgOpen = open; w.eval(`S.ui.game=${JSON.stringify(g.id)}; S.ui.open=window.__fgOpen; renderGame()`); await wait(20);
         bad.push(...pageBad().map(k => `${g.id}: a box ${k}`), ...headsBad().map(t => `${g.id}: "${t}"`));
         if (also) await also(g); }
-      delete w.__fgOpen; w.eval(`(function(){ const k=${keepG}; S.ui.game=k.game; S.ui.open=k.open; S.ui.showRungs=k.rungs; closeGameModal(); })()`); await wait(20);
+      delete w.__fgOpen; w.eval(`(function(){ const k=${keepG}; S.ui.game=k.game; S.ui.open=k.open; closeGameModal(); })()`); await wait(20);
       return bad; };
     try {
       /* the week as it stands, every bet type and game ticked */
@@ -2738,21 +2758,30 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const keepM = w.eval(`JSON.stringify({had:!!PAY.mkt, hadW:!!(PAY.mkt&&PAY.mkt[${cwS}])})`), keepP = w.eval('JSON.stringify(S.parlay)');
         try {
           /* FG attempts still projected for each kicker, and priced: DraftKings' main line a few points under the model's
-             side, both ways (PAY.mkt, as the price pull writes it), and his 2+ and 3+ (S.odds, as a pull's ladder) */
+             side, both ways (PAY.mkt, as the price pull writes it), and his 2+ and 3+ (S.odds, as a pull's ladder). (app
+             v127) His field goals made and kicking points get a main line each too, near even both ways: a game's page
+             offers no ladder since 21 October 2026, so these main lines are the kickers' boxes the builder is filled from */
           const plant = [], proj = K.map(x => w.eval('project')(x.pl, 'fg_att', x.opp, x.ctx));
+          const mainK = (x, st) => { const pr = w.eval('project')(x.pl, st, x.opp, x.ctx); if (!pr || !(pr.mu > 0)) return null;
+            const ln = Math.floor(pr.mu) + 0.5, pO = w.eval('pOver')('K', st, pr.mu, ln), fo = Math.max(0.3, Math.min(0.7, pO));
+            return { line: ln, over: w.eval('probToAmerican')(fo * 1.045), under: w.eval('probToAmerican')((1 - fo) * 1.045) }; };
           chk(proj.every(pr => !!pr && pr.mu > 0), `FG attempts is not projected for the made-up game's kicker${K.length === 1 ? '' : 's'}, which field goals made and kicking points stand on: ` + JSON.stringify(proj));
           K.forEach((x, i) => { const pr = proj[i]; if (!pr || !(pr.mu > 0)) return;
             const ln = Math.floor(pr.mu) + 0.5, pO = w.eval('pOver')('K', 'fg_att', pr.mu, ln), ov = pO >= 0.5, fs = Math.max(0.05, Math.min(0.9, (ov ? pO : 1 - pO) - 0.06)), fo = ov ? fs : 1 - fs;
             const over = w.eval('probToAmerican')(fo * 1.03), under = w.eval('probToAmerican')((1 - fo) * 1.03);
             const rung = k => w.eval('probToAmerican')(Math.max(0.05, Math.min(0.9, w.eval('pOver')('K', 'fg_att', pr.mu, k - 0.5) - 0.06)) * 1.03);
-            plant.push({ pid: x.pl.id, name: x.pl.n, ln, over, under, r2: rung(2), r3: rung(3), team: x.team }); });
+            plant.push({ pid: x.pl.id, name: x.pl.n, ln, over, under, r2: rung(2), r3: rung(3), team: x.team, made: mainK(x, 'fg_made'), pts: mainK(x, 'kick_pts') }); });
           w.__fgPlant = { F, plant };
           w.eval(`(function(){ const P=window.__fgPlant, cw=${cwS}; PAY.mkt=PAY.mkt||{}; const M=(PAY.mkt[cw]=PAY.mkt[cw]||{});
-            for(const q of P.plant){ ((M[q.pid]??={}).fg_att)={line:q.ln,over:q.over,under:q.under,n:10,g:P.F.id}; (((S.odds[P.F.id]??={})[q.pid]??={}).fg_att)={'2':q.r2,'3':q.r3}; } })()`);
+            P.prev={}; for(const q of P.plant) P.prev[q.pid]=M[q.pid]===undefined?null:JSON.stringify(M[q.pid]);
+            for(const q of P.plant){ ((M[q.pid]??={}).fg_att)={line:q.ln,over:q.over,under:q.under,n:10,g:P.F.id}; (((S.odds[P.F.id]??={})[q.pid]??={}).fg_att)={'2':q.r2,'3':q.r3};
+              if(q.made) M[q.pid].fg_made={line:q.made.line,over:q.made.over,under:q.made.under,n:10,g:P.F.id};
+              if(q.pts) M[q.pid].kick_pts={line:q.pts.line,over:q.pts.over,under:q.pts.under,n:10,g:P.F.id}; } })()`);
           /* a made-up DraftKings id on each planted line (and on the kickers' other lines), merged into a copy of the
              payload's table where it has one */
           const fx = dkFixture(plant.flatMap(q => [{ gid: F.id, week: cw, pid: q.pid, stat: 'fg_att', k: q.ln, side: 'over', main: true }, { gid: F.id, week: cw, pid: q.pid, stat: 'fg_att', k: q.ln, side: 'under', main: true },
-            { gid: F.id, week: cw, pid: q.pid, stat: 'fg_att', k: 2, side: 'over', main: false }, { gid: F.id, week: cw, pid: q.pid, stat: 'fg_att', k: 3, side: 'over', main: false }]), new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'FGA');
+            { gid: F.id, week: cw, pid: q.pid, stat: 'fg_att', k: 2, side: 'over', main: false }, { gid: F.id, week: cw, pid: q.pid, stat: 'fg_att', k: 3, side: 'over', main: false },
+            ...[['fg_made', q.made], ['kick_pts', q.pts]].filter(([, m]) => m).flatMap(([st, m]) => ['over', 'under'].map(side => ({ gid: F.id, week: cw, pid: q.pid, stat: st, k: m.line, side, main: true })))]), new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'FGA');
           { const D = JSON.parse(keepDk7); if (D && typeof D === 'object') { (D[String(cw)] ??= {})[F.id] = (fx[String(cw)] || {})[F.id] || {}; w.eval(`PAY.dk=${JSON.stringify(D)}`); } }
           allOn(); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(40);
           const inPb = w.eval('pbGames()').some(g => g.id === F.id), b1 = offered([F]);
@@ -2779,12 +2808,171 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         } finally {
           const i7 = Sx.sched.indexOf(F); if (i7 >= 0) Sx.sched.splice(i7, 1);
           w.__fgKeep = { m: JSON.parse(keepM) };
-          w.eval(`(function(){ const P=window.__fgPlant, cw=${cwS}; if(P){ const M=PAY.mkt&&PAY.mkt[cw]; if(M) for(const q of P.plant){ if(M[q.pid]){ delete M[q.pid].fg_att; if(!Object.keys(M[q.pid]).length) delete M[q.pid]; } }
+          w.eval(`(function(){ const P=window.__fgPlant, cw=${cwS}; if(P){ const M=PAY.mkt&&PAY.mkt[cw]; if(M&&P.prev) for(const q of P.plant){ const v=P.prev[q.pid]; if(v==null) delete M[q.pid]; else M[q.pid]=JSON.parse(v); }
             delete S.odds[P.F.id]; } const k=window.__fgKeep.m; if(!k.hadW&&PAY.mkt) delete PAY.mkt[cw]; if(!k.had) delete PAY.mkt;
             const kd=${keepDk7}; if(kd===null) delete PAY.dk; else PAY.dk=kd; S.parlay=${keepP}; save(); })()`);
           delete w.__fgPlant; delete w.__fgKeep; } }
     } finally {
       Sx.ui.pb = JSON.parse(keepU7); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(20); } }
+  /* ---- no ladder bets (app v127, the owner's call of 21 October 2026: "is it possible to not do ladders and just include
+     Same Game Parlay eligible stuff show up since we are only doing parlay builder stuff", then "yes" to every place a
+     ladder showed): only main lines, anytime touchdowns and team bets, by the smoke's own rule (ladderOwn). Held first on
+     the week as it stands, every bet type and game ticked: no ladder among the lines priced (pricedLegs), any game page
+     hands' pool (gameLegPool, the engine drawn nowhere), the Top 30 lines as built and as drawn (and getPbTop's count of
+     the rungs it left out none, since none can reach it), the all-games levels, each prime-time game's set and its Elo
+     picks, every live unit Suggested Parlays shows (the Sunday slot's once it is up) and the Elo picks over every game. Then with
+     DraftKings' book prices planted on every rung of each starter's ladders the model rates 50% to 90% (each 6 points
+     under the model's chance, a Value pick by every other rule) and on his two or more touchdowns (S.odds, as a pull's
+     ladder writes it, a fixture of its own in place of the game's), on the first game still to come where there is one
+     and on a made-up Sunday night game of the smoke's own (two clubs of the schedule, laid into it and taken out after,
+     so it holds at any hour and in the off-season): every plant seen by the page (oddsFor), and none of it reaching any of
+     those, nor the game's page, opened with every player open, the retired ladders setting planted in the view and a
+     ladder held in the builder (no rung row, no box off a player's main line but his touchdown's one, no two-or-more
+     touchdowns row, no ladders box, no word on a threshold leg). On the made-up game's page a stat with no main line says
+     "No DraftKings line yet." and draws no table, and the one given a main line (PAY.mkt, as the pull writes it) draws its
+     two sides. And toggleLeg refuses a rung and two or more touchdowns (leaving what the builder holds), adds a main line
+     and the one touchdown, and still takes a held ladder off. A ladder kept in the builder from before is taken out by
+     the page's own boot, held on a real reboot further down ---- */
+  if (hasPb) { const Sx = w.eval('S'), cw8 = w.eval('currentWeek()'), cwS8 = String(cw8), keepU8 = JSON.stringify(Sx.ui.pb);
+    const keepV8 = JSON.stringify({ game: Sx.ui.game, open: Sx.ui.open || {}, parlay: Sx.parlay || {} });
+    const lgTxt = l => `${l.name || l.pid} ${l.label || ''} (${l.stat} ${l.k}${l.main ? ', main' : ''})`;
+    const fresh8 = () => w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}');
+    const allOn8 = () => { Sx.ui.pb = { k: { ml: true, ats: true, total: true, over: true, under: true }, off: [], gx: false }; };
+    /* the stats the page prices are the smoke's own copy's, so its rule can miss none; and the page's ladders setting is gone */
+    { const mk = Object.keys(w.eval('MKT')).sort().join(); chk(mk === [...PLAYER_STATS_OWN].sort().join(), `the stats the page prices are not the smoke's own copy's (${mk}), so its ladder rule could miss one`); }
+    chk(w.eval('typeof showRungs') === 'undefined' && w.eval('typeof isLadder') === 'function' && !d.getElementById('rungCb'), 'the page still has its ladders setting (showRungs, #rungCb), or no ladder rule of its own (isLadder)');
+    /* everything that offers or suggests a leg on these games: each ladder it holds (the Sunday slot's set among the live
+       units Suggested Parlays shows, once it is up: a build of it is a set a priced game, seconds, so it is not built here
+       for nothing) */
+    const ladders = G => { const bad = [], ids = new Set(G.map(g => g.id)), take = (where, legs) => { for (const l of (legs || [])) if (ladderOwn(l)) bad.push(`${where}: ${lgTxt(l)}`); };
+      take('a priced line', w.eval('pricedLegs')(G));
+      for (const g of G) take(`${g.id}'s hands' pool`, w.eval('gameLegPool')(g, true));
+      const top = w.eval('getPbTop()'); take('a Top 30 line', (top.rows || []).filter(l => ids.has(l.gid)));
+      /* (with no game to come the list's early return carries no count) */
+      if ((top.same || 0) !== 0) bad.push(`getPbTop() counts ${top.same} rung${top.same === 1 ? '' : 's'} left out, where none can reach it`);
+      for (const t of (w.eval('getPbTiers()').tiers || [])) take(`the all-games ${t.id} level`, t.legs);
+      const unitOf = (id, nm) => { const s = w.eval('spSet')(id); for (const t of ((s && s.tiers) || [])) take(`${nm}'s ${t.id} set`, t.legs);
+        const e = w.eval('spEloSet')(id); for (const t of ((e && e.tiers) || [])) take(`${nm}'s ${t.id} Elo pick`, t.legs); };
+      for (const g of G.filter(primeOwn)) unitOf(g.id, g.id);
+      for (const u of w.eval('spOnAll()')) { const v = w.eval('spShown')(u); if (!v || v.phase !== 'live') continue;
+        for (const t of (v.tiers || [])) take(`${u.id}'s ${t.id} set as shown`, t.legs); for (const t of (v.elo || [])) take(`${u.id}'s ${t.id} Elo pick as shown`, t.legs); }
+      if (typeof w.eloPicks === 'function') { const r = w.eloPicks(); for (const t of ((r && r.tiers) || [])) take(`the ${t.id} Elo pick over every game`, t.legs); }
+      return bad; };
+    /* the Top 30 lines as drawn: each row's Add a main line, a touchdown at one, or a game bet */
+    const drawnTop = () => [...d.querySelectorAll('#pbPanel ol.pb-top button[data-pb-leg]')].filter(b => { const st = b.dataset.pbLeg.split('|')[2];
+      return PLAYER_STATS_OWN.has(st) && (st === 'any_td' ? (+b.dataset.k || 1) >= 2 : b.dataset.main !== '1'); }).map(b => `a drawn Top 30 row ${b.dataset.pbLeg} ${b.dataset.k}+`);
+    ladderHoldF = async lab => { const keep = JSON.stringify(Sx.ui.pb);
+      try { allOn8(); w.eval('renderParlay()'); await wait(30);
+        const G = w.eval('pbGames()'), bad = [...ladders(G), ...drawnTop()];
+        chk(!bad.length, `${lab}: a line, a list, a level, a set or an Elo pick holds a ladder bet (a rung off a player's main line, or two or more touchdowns): ` + bad.slice(0, 4).join('; '));
+        return G.length;
+      } finally { Sx.ui.pb = JSON.parse(keep); w.eval('renderParlay()'); await wait(20); } };
+    /* a game's page with every player open (backups too), the retired ladders setting planted in the view: each way it
+       offers a ladder */
+    const pageLadders = async g => { const ro = w.eval('rosterFor')(g, true), open = {}; for (const tm in ro) for (const x of ro[tm].players) open[x.pl.id] = true;
+      w.__ldOpen = open; w.eval(`S.ui.showRungs=true; S.ui.showAll=true; S.ui.game=${JSON.stringify(g.id)}; S.ui.open=window.__ldOpen; renderGame()`); delete w.__ldOpen; await wait(20);
+      const view = d.getElementById('gameView'), bad = [];
+      for (const i of view.querySelectorAll(`input[data-leg^="${g.id}|"]`)) { const st = i.dataset.leg.split('|')[2]; if (!PLAYER_STATS_OWN.has(st)) continue;
+        if (st === 'any_td' ? i.dataset.k !== '1' || i.hasAttribute('data-main') : i.dataset.main !== '1') bad.push(`a box ${i.dataset.leg} ${i.dataset.k}${i.dataset.main === '1' ? '' : '+'}`); }
+      if (view.querySelector('tr.rung')) bad.push('a rung row (tr.rung)'); if (view.querySelector('#rungCb')) bad.push('the ladders box');
+      const t = txt(view); for (const s of ['Scores two or more', 'Threshold ladders', 'A threshold leg on your parlay']) if (t.includes(s)) bad.push(`"${s}"`);
+      return { bad, view, ro }; };
+    /* DraftKings' book prices on each starter's ladders and his two or more touchdowns, on a game (a fixture of its own) */
+    const plantFor = g => { const ro = w.eval('rosterFor')(g, false), out = {}, list = [], toA = w.eval('probToAmerican'), tdPlus = w.eval('tdPlus');
+      for (const tm in ro) for (const x of ro[tm].players) { if (!x.starter) continue;
+        for (const l of w.eval('statLines')(x)) {
+          if (l.prob) { const p2 = tdPlus(l.p, 2); if (p2 > 0.02) { ((out[x.pl.id] ??= {}).any_td = { '2': toA(Math.max(0.01, p2 - 0.03)) }); list.push({ pid: x.pl.id, stat: 'any_td', k: 2, price: out[x.pl.id].any_td['2'] }); } continue; }
+          for (const r of (l.rungs || [])) if (r.p >= 0.5 && r.p <= 0.9) { const pr = toA(r.p - 0.06); (((out[x.pl.id] ??= {})[l.stat] ??= {})[String(r.k)] = pr); list.push({ pid: x.pl.id, stat: l.stat, k: r.k, price: pr }); } } }
+      return { odds: out, list }; };
+    const clubs8 = [...new Set(Sx.sched.flatMap(g => [g.a, g.h]))].sort();
+    const F8 = clubs8.length > 1 ? { id: `2099_${cwS8.padStart(2, '0')}_${clubs8[0]}_${clubs8[1]}`, w: cw8, a: clubs8[0], h: clubs8[1], d: '2099-01-04', t: '20:20' } : null;
+    const G0 = w.eval('pbGames()')[0] || null, keepO8 = G0 ? JSON.stringify(Sx.odds[G0.id] === undefined ? null : Sx.odds[G0.id]) : 'null';
+    const keepM8 = w.eval(`JSON.stringify({had:!!PAY.mkt, hadW:!!(PAY.mkt&&PAY.mkt[${JSON.stringify(cwS8)}])})`);
+    let mkPid = null, mkPrev = null;
+    try {
+      /* the week as it stands */
+      allOn8(); w.eval('renderParlay()'); await wait(40);
+      { const G = w.eval('pbGames()'), bad = [...ladders(G), ...drawnTop()];
+        chk(!bad.length, `on the week as it stands a line, a list, a level, a set or an Elo pick holds a ladder bet (a rung off a player's main line, or two or more touchdowns): ` + bad.slice(0, 4).join('; '));
+        console.log(`  (no ladder bets: ${G.length} game${G.length === 1 ? '' : 's'} of the week as it stands held, the Top 30 lines, the levels, every set and Elo pick)`); }
+      /* the plants: the first game still to come, and the made-up Sunday night game with one starter's main line on it */
+      if (F8) Sx.sched.push(F8);
+      const plants = [G0, F8].filter(Boolean).map(g => ({ g, ...plantFor(g) }));
+      for (const p of plants) Sx.odds[p.g.id] = JSON.parse(JSON.stringify(p.odds));
+      const F8p = plants.find(p => p.g === F8) || null;
+      /* the made-up game's main line: the first starter with a yards ladder, DraftKings' line at his projection's half
+         point, near even both ways */
+      let mk = null;
+      if (F8) { const ro = w.eval('rosterFor')(F8, false);
+        for (const tm in ro) for (const x of ro[tm].players) { if (mk || !x.starter) continue; const l = w.eval('statLines')(x).find(z => !z.prob && /_yards$/.test(z.stat) && (z.rungs || []).length > 1);
+          if (l) { const ln = Math.floor(l.mu) + 0.5, rk = l.rungs.find(r => r.k !== ln + 0.5) || l.rungs[0], td = w.eval('statLines')(x).some(z => z.prob);
+            mk = { pid: x.pl.id, name: x.pl.n, stat: l.stat, line: ln, rung: rk.k, td, over: -112, under: -108 }; } }
+        if (mk) { mkPid = mk.pid; w.__mk8 = mk;
+          mkPrev = w.eval(`(function(){ const m=window.__mk8, cw=${JSON.stringify(cwS8)}; PAY.mkt=PAY.mkt||{}; const M=(PAY.mkt[cw]=PAY.mkt[cw]||{}); const prev=M[m.pid]===undefined?null:JSON.stringify(M[m.pid]);
+            (M[m.pid]??={})[m.stat]={line:m.line,over:m.over,under:m.under,n:10,g:${JSON.stringify(F8.id)}}; return prev; })()`); delete w.__mk8; } }
+      fresh8(); w.eval('renderParlay()'); await wait(40);
+      const oddsFor = w.eval('oddsFor'), unseen = plants.flatMap(p => p.list.filter(q => oddsFor(p.g.id, q.pid, q.stat, q.k) !== q.price).map(q => `${p.g.id} ${q.pid} ${q.stat} ${q.k}`));
+      chk(plants.every(p => p.list.length > 0) && !unseen.length, `DraftKings' book prices planted on the starters' ladders and two or more touchdowns are not all seen by the page (oddsFor), or none could be planted: ${plants.map(p => p.g.id + ' ' + p.list.length).join(', ')} ${unseen.slice(0, 3).join(', ')}`);
+      { const bad = [...ladders(plants.map(p => p.g)), ...drawnTop()];
+        chk(!bad.length, `with DraftKings' book prices planted on every rung of the starters' ladders and on two or more touchdowns (${plants.map(p => `${p.g.id}: ${p.list.length}`).join(', ')}), a line, a list, a level, a set or an Elo pick holds a ladder bet: ` + bad.slice(0, 4).join('; ')); }
+      /* each planted game's page, a ladder held in the builder on it */
+      for (const p of plants) { const q = p.list.find(z => z.stat !== 'any_td');
+        if (q) { const x = Object.values(w.eval('rosterFor')(p.g, false)).flatMap(t => t.players).find(y => y.pl.id === q.pid);
+          Sx.parlay[`${p.g.id}|${q.pid}|${q.stat}`] = { gid: p.g.id, pid: q.pid, stat: q.stat, k: q.k, side: 'over', main: false, p: 0.6, price: q.price, src: 'real', name: x ? x.pl.n : q.pid, pos: x ? x.pl.pos : '', grp: x ? x.pl.grp : '', team: x ? x.team : '', opp: x ? x.opp : '', week: p.g.w, label: `${q.k}+ ${q.stat}` }; }
+        const r = await pageLadders(p.g);
+        chk(!r.bad.length, `${p.g.id}'s page, with DraftKings' book prices on every rung of its starters' ladders and their two or more touchdowns, the retired ladders setting planted and a ladder held in the builder, offers a ladder bet: ` + r.bad.slice(0, 4).join('; '));
+        /* (the made-up game) a stat with no main line says so in one line and draws no table; the one given a main line draws its two sides */
+        if (p.g === F8) { const M = w.eval('PAY').mkt, has = (pid, st) => !!(M && M[cwS8] && M[cwS8][pid] && M[cwS8][pid][st]), bad = []; let nNo = 0, nLine = 0, mkSeen = false;
+          for (const tm in r.ro) for (const x of r.ro[tm].players) { const btn = r.view.querySelector(`.plrbtn[data-open="${x.pl.id}"]`), body = btn && btn.nextElementSibling && btn.nextElementSibling.matches('.plrbody') ? btn.nextElementSibling : null;
+            for (const l of w.eval('statLines')(x)) { if (l.prob) continue;
+              const blk = body ? [...body.querySelectorAll(':scope > .statblk')].find(b => { const h = b.querySelector('h4'); return h && h.firstChild && h.firstChild.textContent.trim() === l.m.lbl; }) : null;
+              if (!blk) { bad.push(`${x.pl.n}'s ${l.stat}: no block`); continue; }
+              const no = blk.querySelectorAll('[data-noline]'), tb = blk.querySelectorAll('table'), ins = [...blk.querySelectorAll('input[data-leg]')];
+              if (has(x.pl.id, l.stat)) { nLine++; if (mk && x.pl.id === mk.pid && l.stat === mk.stat) mkSeen = true;
+                if (no.length || tb.length !== 1 || ins.length !== 2 || !ins.every(i => i.dataset.main === '1')) bad.push(`${x.pl.n}'s ${l.stat}, on a main line, draws ${tb.length} tables, ${ins.length} boxes and ${no.length} no-line lines`); }
+              else { nNo++; if (no.length !== 1 || !no[0].matches('p.muted.noline') || txt(no[0]) !== 'No DraftKings line yet.' || tb.length || ins.length) bad.push(`${x.pl.n}'s ${l.stat}, with no main line, draws "${no.length ? txt(no[0]) : 'no line'}", ${tb.length} tables and ${ins.length} boxes`); } } }
+          /* (a payload with a pull's lines for the week may give these clubs' players lines of their own, which the page
+             reads on any game of the week: each stat is held to the lines on file, whatever they are) */
+          chk(!bad.length && nNo > 0 && !!mk && mkSeen, `on ${F8.id}'s page (the line planted on ${mk ? mk.name + "'s " + mk.stat : 'nobody'}), a stat with no main line does not say "No DraftKings line yet." alone with no table, or the one with a main line does not draw its two sides (${nNo} with none, ${nLine} with one): ` + bad.slice(0, 3).join('; ')); } }
+      w.eval('delete S.ui.showRungs; S.ui.showAll=false; S.ui.game=null; closeGameModal()'); await wait(20);
+      /* toggleLeg, on the made-up game: a rung and two or more touchdowns refused, whatever the builder holds; a main line
+         and the one touchdown added; a held ladder still taken off */
+      if (F8 && mk) { const key = `${F8.id}|${mk.pid}|${mk.stat}`, tdk = `${F8.id}|${mk.pid}|any_td`, P = () => w.eval('S').parlay, bad = [], tg = (k, kk, main) => { w.__tg8 = [k, kk, main]; w.eval('toggleLeg(window.__tg8[0],window.__tg8[1],null,"over",window.__tg8[2])'); delete w.__tg8; };
+        Sx.parlay = {};
+        tg(key, mk.rung, false); if (P()[key]) bad.push(`a rung ${mk.rung}+ added`);
+        tg(key, mk.line, true); { const l = P()[key]; if (!l || !l.main || +l.k !== mk.line || l.side !== 'over') bad.push(`the main line Over ${mk.line} not added (${l ? JSON.stringify({ k: l.k, main: l.main }) : 'nothing'})`); }
+        tg(key, mk.rung, false); { const l = P()[key]; if (!l || !l.main || +l.k !== mk.line) bad.push(`a rung ${mk.rung}+ pressed over the main line moved it (${l ? JSON.stringify({ k: l.k, main: l.main }) : 'nothing'})`); }
+        if (mk.td) { tg(tdk, 2, false); if (P()[tdk]) bad.push('two or more touchdowns added');
+          tg(tdk, 1, false); { const l = P()[tdk]; if (!l || +l.k !== 1) bad.push(`the one touchdown not added at 1 (${l ? l.k : 'nothing'})`); }
+          tg(tdk, 2, false); { const l = P()[tdk]; if (!l || +l.k !== 1) bad.push(`two or more touchdowns pressed over the one touchdown moved it (${l ? l.k : 'nothing'})`); } }
+        Sx.parlay[key] = { ...P()[key], k: mk.rung, main: false, label: `${mk.rung}+ held` };
+        tg(key, mk.rung, false); if (P()[key]) bad.push(`a held ladder ${mk.rung}+ not taken off by its own toggle`);
+        chk(!bad.length, `toggleLeg on ${F8.id} does not refuse a rung and two or more touchdowns, add a main line and the one touchdown, and take a held ladder off: ` + bad.join('; ')); }
+      /* a ladder saved beside a leg of a game played since: the builder's own drop of that leg, on the draw after the
+         page's strip (pbDropLadders, then renderParlay, in the order the boot and an import call them), does not end the
+         line on the removed ladder bet, so both are said, the ladder's first, and it stays through the next draw (the
+         review of 21 October 2026: the line went before anyone saw it). A made-up game kicked off in 2000 is on the
+         schedule for the case alone, the ladder on a made-up game on none */
+      { const GS = { id: '2000_01_SMZ_SMV', w: w.eval('currentWeek()'), d: '2000-01-03', t: '13:00', a: 'SMZ', h: 'SMV' }; Sx.sched.push(GS);
+        try {
+          const lad = { gid: '2099_99_SMA_SMB', pid: 'smk-l', stat: 'receiving_yards', k: 60, side: 'over', main: false, p: 0.4, price: 150, src: 'est', mu: 52, name: 'Smoke Rung', pos: 'WR', grp: 'WR', team: 'SMA', opp: 'SMB', week: GS.w, label: '60+ receiving yards' };
+          const played = { ...lad, gid: GS.id, pid: 'smk-p', stat: 'receptions', k: 4.5, main: true, p: 0.5, price: -110, mu: 4.4, name: 'Smoke Played', team: 'SMZ', opp: 'SMV', label: 'Over 4.5 receptions' };
+          Sx.parlay = { [`${lad.gid}|smk-l|receiving_yards`]: lad, [`${GS.id}|smk-p|receptions`]: played };
+          const n = w.eval('pbDropLadders()'); w.eval('renderParlay()'); await wait(20);
+          const ps = [...d.querySelectorAll('#parlayBody > p')], la = ps.filter(p => p.dataset.pbNoladder), ko = ps.filter(p => /already kicked off/.test(txt(p))), left = Object.keys(w.eval('S').parlay);
+          const said = '1 leg was removed: the site no longer offers ladder bets (such as 250+ passing yards or 2+ touchdowns), only main lines, anytime touchdowns and team bets.';
+          w.eval('renderParlay()'); await wait(20); const still = d.querySelectorAll('#parlayBody [data-pb-noladder]').length;
+          chk(n === 1 && !left.length && la.length === 1 && la[0].dataset.pbNoladder === '1' && txt(la[0]) === said && ko.length === 1 && ps.indexOf(la[0]) < ps.indexOf(ko[0]) && still === 1,
+            `a ladder saved beside a leg of a game played since is not said with it: the strip took ${n}, the builder holds ${left.join(', ') || 'nothing'}, and draws ${la.length} line(s) on the removed ladder bet ("${la[0] ? txt(la[0]) : ''}"), ${ko.length} on the game kicked off (the ladder's must come first), and ${still} after the next draw`);
+        } finally { const i = Sx.sched.indexOf(GS); if (i >= 0) Sx.sched.splice(i, 1); w.eval('PB_NOLADDER=null'); } }
+    } finally {
+      if (F8) { const i8 = Sx.sched.indexOf(F8); if (i8 >= 0) Sx.sched.splice(i8, 1); delete Sx.odds[F8.id]; }
+      if (G0) { const o = JSON.parse(keepO8); if (o === null) delete Sx.odds[G0.id]; else Sx.odds[G0.id] = o; }
+      w.__k8 = { m: JSON.parse(keepM8), pid: mkPid, prev: mkPrev };
+      w.eval(`(function(){ const k=window.__k8, cw=${JSON.stringify(cwS8)}; if(k.pid&&PAY.mkt&&PAY.mkt[cw]){ if(k.prev==null) delete PAY.mkt[cw][k.pid]; else PAY.mkt[cw][k.pid]=JSON.parse(k.prev); }
+        if(!k.m.hadW&&PAY.mkt) delete PAY.mkt[cw]; if(!k.m.had) delete PAY.mkt; })()`); delete w.__k8;
+      { const v = JSON.parse(keepV8); Sx.ui.pb = JSON.parse(keepU8); Sx.ui.game = v.game; Sx.ui.open = v.open; Sx.parlay = v.parlay; }
+      w.eval('delete S.ui.showRungs; S.ui.showAll=false; closeGameModal(); PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; save(); renderParlay()'); await wait(20); } }
   /* ---- Suggested Parlays on made-up games of its own (pbGames and pricedLegs stood in for, the games laid into
      the schedule and taken out after, so this holds on any day, the off-season included): a Thursday night
      game with one line, a Saturday night and a Sunday afternoon game (not prime time, never set out), a Sunday
@@ -4783,7 +4971,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const games = w.eval('pbGames()').filter(x => String(x.w) === wk), others = games.filter(x => x.id !== g.id), gN = others[0] || null, gF = others[1] || null;
       const KEYS = w.eval('ESPN_GL_KEYS'), before = Object.fromEntries(games.map(x => [x.id, Object.fromEntries(KEYS.map(k => [k, x[k]]))]));
       const keep = { ids: clone(P.espn_ids), mk: clone(P.mkt[wk]), o: clone(S.odds[g.id]), pb: clone(S.ui.pb), parlay: clone(S.parlay), dk: clone(P.dk),
-        ui: clone({ game: S.ui.game, open: S.ui.open, rungs: S.ui.showRungs, all: S.ui.showAll }) };
+        ui: clone({ game: S.ui.game, open: S.ui.open, all: S.ui.showAll }) };
       const f0 = w.fetch, net = { log: [], route: () => ({ code: 500 }) };
       const esp = u => /^https:\/\/(site|sports\.core)\.api\.espn\.com\//.test(u) && (/\/scoreboard\?dates=/.test(u) || /sports\.core/.test(u) || /\/roster$/.test(u));
       const ans = r => r.reject ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve({ ok: r.code === 200, status: r.code, headers: { get: () => null },
@@ -4932,6 +5120,12 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
               if (holdTopF) holdTopF('the Top lines right after the press, DraftKings\' ids baked', S.ui.pb, w.eval('pbGames()').filter(x => !S.ui.pb.off.includes(x.id))); }
           } finally { if (pl) pl.remove(); }
           w.eval('renderParlay()'); await wait(20); }
+        /* (app v127) no ladder bet after the press either: its read of g carries DraftKings' milestones (every ladder the
+           stand-in lists but its last rung), and no line, list, level, set or Elo pick takes one (ladderHoldF, set up with
+           the Parlay Builder's checks, on the page's own pricedLegs, put back for this section) */
+        { const nR = Object.values((blk && blk.rungs) || {}).reduce((a, m) => a + Object.values(m || {}).reduce((b, r) => b + (Array.isArray(r) ? r.length : 0), 0), 0);
+          chk(nR > 0, `the press's read of ${g.id} holds none of DraftKings' milestone rungs, so it cannot show that none is offered`);
+          if (ladderHoldF) { const nG = await ladderHoldF(`after the press (its read of ${g.id} holding ${nR} milestone rungs)`); console.log(`  (no ladder bets after the press: ${nG} game${nG === 1 ? '' : 's'} held, ${nR} of DraftKings' milestone rungs in the read of ${g.id})`); } }
         /* DraftKings' game lines, real, from the press, on each game whose published lines are older than the
            read (dated by it, ESPN_GL set); the published ones, untouched, on each whose lines are newer; and the
            team bets on g at whichever stand */
@@ -4944,13 +5138,16 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           const on = readOn(g), src = on ? ESPN_RULE.oddsOf(evs[games.indexOf(g)], g).lines : before[g.id], tl = w.eval('pricedLegs')([g]).filter(l => l.grp === 'TEAM');
           chk((!on || tl.length > 0) && tl.every(l => l.src === 'real' && l.price === (l.stat === 'ml' ? (l.team === g.h ? src.mlh : src.mla) : (l.team === g.h ? src.sph : src.spa))),
             `${g.id}'s team bets are not at ${on ? 'DraftKings\' game lines as the press read them' : 'the published game lines, which are newer than the read'}, real: ${JSON.stringify(KEYS.map(k => g[k]))} / ${tl.map(l => l.label + ' ' + l.price + ' ' + l.src).join(', ')}`); }
-        /* the game's page: each est. price the rule's, marked est. with what it is priced from */
-        S.ui.showRungs = true; S.ui.showAll = false; S.ui.open = {}; for (const tm in ro) for (const x of ro[tm].players) S.ui.open[x.pl.id] = true; S.ui.game = g.id;
+        /* the game's page: each est. price the rule's, marked est. with what it is priced from. (app v127, the owner's call
+           of 21 October 2026: no ladder bets anywhere) The read's block holds DraftKings' milestones (the stand-in lists
+           every ladder but its last rung), and the page draws none of them: no rung row, no box off a player's main line
+           but his touchdown's one, no two-or-more touchdowns row */
+        S.ui.showAll = false; S.ui.open = {}; for (const tm in ro) for (const x of ro[tm].players) S.ui.open[x.pl.id] = true; S.ui.game = g.id;
         w.eval('renderGame()'); await wait(30);
         const view = d.getElementById('gameView'), at = blk.at, gst = view.querySelector(`[data-espn-status="${g.id}"]`);
         chk(!!gst && txt(gst).startsWith('DraftKings’ lines from ESPN, read '), 'the game page\'s status line does not say when DraftKings\' lines were read: ' + txt(gst));
         const row = sel => [...view.querySelectorAll(sel)].map(i => i.closest('tr')).find(tr => tr && !tr.closest('.gsugg')) || null;
-        let mainSeen = false, untSeen = false, unlSeen = false, tdSeen = false;
+        let mainSeen = false, untSeen = false, tdSeen = false;
         for (const tm in ro) for (const x of ro[tm].players) { if (!x.starter) continue;
           const base = { gid: g.id, week: g.w, pid: x.pl.id, team: tm, opp: x.opp };
           for (const l of w.eval('statLines')(x)) {
@@ -4967,12 +5164,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
               if (tested) mainSeen = true; else untSeen = true; }
             const blkEl = row(`input[data-leg="${g.id}|${x.pl.id}|${l.stat}"][data-main="1"]`), h4 = blkEl && blkEl.closest('.statblk') && blkEl.closest('.statblk').querySelector('h4 em.mline');
             chk(txt(h4) === `DraftKings line ${L}`, `${x.pl.n}'s ${l.stat} block does not name DraftKings' line ${L}: ${txt(h4)}`);
-            for (const r of l.rungs) { const own = ESR.price({ ...base, stat: l.stat, k: r.k, side: 'over', main: false }), tr = row(`input[data-leg="${g.id}|${x.pl.id}|${l.stat}"][data-k="${r.k}"]:not([data-main])`), c = tr && tr.querySelector('td.num.est');
-              if (!own || !tr) continue; nEst++;
-              chk(txt(c) === fmt(own.price) + 'est.' && c.dataset.est === 'dkline' && (own.listed ? !c.title.startsWith('Not on DraftKings') : c.title.startsWith('Not on DraftKings')),
-                `${x.pl.n}'s ${r.k}+ ${l.stat} from DraftKings' line is not ${fmt(own.price)} est.${own.listed ? '' : ', marked not on DraftKings'}: "${txt(c)}" "${c ? c.title : ''}"`);
-              if (!own.listed) unlSeen = true; } } }
-        chk(mainSeen && untSeen && unlSeen && tdSeen, `the stand-in read drew no ${[!mainSeen && 'tested main line', !untSeen && 'untested main line', !unlSeen && 'rung DraftKings does not list', !tdSeen && 'touchdown'].filter(Boolean).join(', ')} from DraftKings' line`);
+          } }
+        chk(mainSeen && untSeen && tdSeen, `the stand-in read drew no ${[!mainSeen && 'tested main line', !untSeen && 'untested main line', !tdSeen && 'touchdown'].filter(Boolean).join(', ')} from DraftKings' line`);
+        { const rungsRead = Object.values((blk && blk.rungs) || {}).reduce((a, m) => a + Object.values(m || {}).reduce((b, r) => b + (Array.isArray(r) ? r.length : 0), 0), 0);
+          const off = [...view.querySelectorAll(`input[data-leg^="${g.id}|"][data-k]:not([data-main])`)].filter(i => { const st = i.dataset.leg.split('|')[2];
+            return !['ml', 'ats', 'total'].includes(st) && !(st === 'any_td' && i.dataset.k === '1'); }).map(i => `${i.dataset.leg} ${i.dataset.k}+`);
+          chk(rungsRead > 0 && !off.length && !view.querySelector('tr.rung, #rungCb') && !/Scores two or more|Threshold ladders/.test(txt(view)),
+            `with the read's block of ${g.id} holding ${rungsRead} of DraftKings' milestone rungs, its page offers a ladder bet (a rung row, a box off a player's main line, a two-or-more touchdowns row or the old ladders box), or the read held none to hold it on: ` + off.slice(0, 4).join(', ')); }
         /* ---- the read kept across a reload (app v108). The week's press above wrote what it read to this
            browser's own key (props_press_v1), and a real reload of the page (a new window on this one's
            storage, served this window's payload: a copy of the published one with g's player prices out as
@@ -5010,7 +5208,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           const pressCalls = r => r.calls.filter(c => esp(c.url) || /propBets/.test(c.url)).map(c => c.url.replace(/https:\/\/[^/]+/, '').slice(0, 80));
           const estCells = dd => { const o = {}; for (const c of dd.querySelectorAll('#gameView td.num.est[data-est="dkline"]')) { const tr = c.closest('tr'), i = tr && !tr.closest('.gsugg') ? tr.querySelector('input[data-leg]') : null;
               if (i) o[[i.dataset.leg, i.dataset.k, i.dataset.side || '', i.dataset.main || ''].join('|')] = txt(c) + ' | ' + c.title; } return o; };
-          const openG = async ww => { const S2 = ww.eval('S'); S2.ui.showRungs = true; S2.ui.showAll = false; S2.ui.open = {}; for (const tm in ro) for (const x of ro[tm].players) S2.ui.open[x.pl.id] = true;
+          const openG = async ww => { const S2 = ww.eval('S'); S2.ui.showAll = false; S2.ui.open = {}; for (const tm in ro) for (const x of ro[tm].players) S2.ui.open[x.pl.id] = true;
             S2.ui.game = g.id; ww.eval('renderGame()'); await wait(30); return txt(ww.document.querySelector(`#gameView [data-espn-status="${g.id}"]`)); };
           const nm = id => { const x = S.sched.find(y => y.id === id); return x ? `${x.a} at ${x.h}` : id; };
           /* the status lines as a reload should word them, worked out here from what a window read (c: this
@@ -5502,7 +5700,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const pnl = d.getElementById('pbPanel'), tops = [...pnl.querySelectorAll('ol.pb-top > li.pb-trow')], topR = w.eval('getPbTop()').rows;
         chk(tops.length === topR.length && topR.some(l => l.src === 'dkline') && topR.every((l, i) => { const m = tops[i].querySelector('.pb-tc i.est'); return l.src === 'dkline' ? !!m && m.title.startsWith('DraftKings’ line from ESPN, read ') : !m; }),
           'the Top 30 lines do not mark est. exactly their lines priced from DraftKings\' line read on ESPN, with what each is priced from: ' + topR.filter(l => l.src === 'dkline').length + ' of ' + tops.length);
-        chk(txt(pnl).includes('A player line marked est. is priced from DraftKings’ line read on ESPN: DraftKings’ lines as read ' + when(at) + '; prices estimated. The line is DraftKings’, the price our estimate of DraftKings’ (typically within 0.5 points on yards, 2-3 on receptions, passing TDs, touchdowns and rungs on weeks it was not fitted on), and it counts here as a book price does.'),
+        chk(txt(pnl).includes('A player line marked est. is priced from DraftKings’ line read on ESPN: DraftKings’ lines as read ' + when(at) + '; prices estimated. The line is DraftKings’, the price our estimate of DraftKings’ (typically within 0.5 points on yards, 2-3 on receptions, passing TDs and touchdowns on weeks it was not fitted on), and it counts here as a book price does.'),
           'the panel does not say what a line marked est. is and when DraftKings\' lines were read: ' + ((txt(pnl).match(/A player line marked est\.[^]{0,320}/) || ['none'])[0]));
         if (spLive) { await (async () => { [...d.querySelectorAll('#tabs button')].find(b2 => b2.dataset.tab === 'suggest').click(); await wait(80); })();
           const ss = w.eval('spSet')(g.id), sl = ss.tiers.filter(t => t.legs), el = d.querySelector(`#spPanel .sp-game[data-sp-game="${g.id}"]`);
@@ -5593,7 +5791,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         w.fetch = f0; reset(); w.__plStub = plStub; w.eval('pricedLegs=window.__plStub'); delete w.__plStub;
         const put = (o, k, v) => { if (v === undefined) delete o[k]; else o[k] = v; };
         put(P, 'espn_ids', keep.ids); put(P.mkt, wk, keep.mk); put(S.odds, g.id, keep.o); put(P, 'dk', keep.dk);
-        S.ui.pb = keep.pb; S.parlay = keep.parlay; Object.assign(S.ui, { game: keep.ui.game, open: keep.ui.open, showRungs: keep.ui.rungs, showAll: keep.ui.all });
+        S.ui.pb = keep.pb; S.parlay = keep.parlay; Object.assign(S.ui, { game: keep.ui.game, open: keep.ui.open, showAll: keep.ui.all });
         /* the published read put back (app v125), its ids into the table PAY.dk is now */
         rebakeR();
         w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); save(); renderSlate(); renderParlay(); closeGameModal()'); await wait(30); }
@@ -6014,6 +6212,66 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           'a browser that was the owner\'s, now the admin\'s, does not show the file\'s X Bet Log, read only: ' + rowsOf(FO.d).join());
         FO.w.close(); }
       O.w.close(); } }
+
+  /* ---- (app v127, the owner's call of 21 October 2026: no ladder bets anywhere) a ladder kept in the builder from
+     before is taken out by the page's own boot: a real reboot of the page on a browser whose prop model state (PROP_KEY)
+     holds, on a made-up Wednesday game of the smoke's own laid into a copy of the payload (in 2099, so no leg of it has
+     kicked off, at any hour and in the off-season), a rung (250+ passing yards), two or more touchdowns, a main line and
+     the one touchdown, beside the retired saved list (S.saved, a rung in it) and the retired ladders setting
+     (ui.showRungs). The first draw keeps the main line and the touchdown alone and says in one line, word for word,
+     that 2 legs were removed and why; it keeps saying so through a redraw of the same builder and stops once the builder
+     changes; the saved list is as it was, byte for byte, in the page and in storage; the ladders setting is not read; and
+     the boot writes nothing a boot with no ladder to remove does not, but the prop model's own key. Its twin, with a leg
+     of a locked Suggested Parlays set that is a rung (spLegIn's kept) beside the main line and the touchdown, keeps all
+     three and says nothing: the record grades that set as it locked ---- */
+  if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), clubs = [...new Set(Sx.sched.flatMap(g => [g.a, g.h]))].sort();
+    const F = { id: `2099_${String(cw).padStart(2, '0')}_${clubs[0]}_${clubs[1]}`, w: cw, a: clubs[0], h: clubs[1], d: '2099-01-07', t: '13:00' };
+    const ro = w.eval('rosterFor')(F, false), st = Object.values(ro).flatMap(t => t.players.filter(x => x.starter)), used = new Set();
+    const pick = test => { const x = st.find(y => !used.has(y.pl.id) && test(y)); if (x) used.add(x.pl.id); return x || null; };
+    const qb = pick(x => x.pl.grp === 'QB'), wr = pick(x => x.pl.grp === 'WR'), rb = pick(x => x.pl.grp === 'RB'), te = pick(x => x.pl.grp === 'TE' || x.pl.grp === 'WR');
+    if (!(qb && wr && rb && te)) chk(false, `the made-up game ${F.id} has no quarterback, receiver, back and second receiver or tight end among its starters, so no ladder can be kept in the builder on it`);
+    else {
+      const legOf = (x, stat, k, main, label, price) => ({ gid: F.id, pid: x.pl.id, stat, k, side: 'over', main, p: 0.55, price, src: 'est', mu: stat === 'any_td' ? null : 60, name: x.pl.n, pos: x.pl.pos, grp: x.pl.grp,
+        team: x.team, opp: x.opp, week: cw, label });
+      const kR = `${F.id}|${qb.pl.id}|passing_yards`, kT2 = `${F.id}|${te.pl.id}|any_td`, kM = `${F.id}|${wr.pl.id}|receiving_yards`, kT1 = `${F.id}|${rb.pl.id}|any_td`;
+      const legs = { [kR]: legOf(qb, 'passing_yards', 250, false, '250+ passing yards', 120), [kT2]: legOf(te, 'any_td', 2, false, '2+ touchdowns', 650),
+        [kM]: legOf(wr, 'receiving_yards', 49.5, true, 'Over 49.5 receiving yards', -115), [kT1]: legOf(rb, 'any_td', 1, false, 'Scores a touchdown', 140) };
+      const SAVED = [{ id: 'own-ladder', week: cw, stake: 5, price: 300, payout: 20, legs: [{ gid: F.id, pid: wr.pl.id, stat: 'receptions', k: 5, side: 'over', main: false, name: wr.pl.n, team: wr.team, week: cw, label: '5+ receptions' }] }];
+      const PC = JSON.parse(PAYLOAD_TXT); PC.sched = [...(PC.sched || []), { ...F }];
+      const payTxt = JSON.stringify(PC), WORDS = '2 legs were removed: the site no longer offers ladder bets (such as 250+ passing yards or 2+ touchdowns), only main lines, anytime touchdowns and team bets.';
+      /* a boot on that state, every write to the browser's storage (a key set or removed) recorded from the first script on */
+      const bootOn = parlay => run(state, undefined, null, false, { pay: payTxt, seed: w2 => {
+        w2.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 20, parlay, saved: SAVED, ui: { showRungs: true } }));
+        const SP = w2.Storage.prototype, si = SP.setItem, ri = SP.removeItem; w2.__wrote = [];
+        SP.setItem = function (k, v) { if (this === w2.localStorage) w2.__wrote.push(String(k)); return si.call(this, k, v); };
+        SP.removeItem = function (k) { if (this === w2.localStorage) w2.__wrote.push('-' + String(k)); return ri.call(this, k); }; } });
+      const rowsOf = D => [...D.querySelectorAll('#parlayBody [data-drop]')].map(b => b.dataset.drop).sort().join();
+      const A = await bootOn(legs); await wait(700);
+      const B = await bootOn({ [kM]: legs[kM], [kT1]: legs[kT1], [kR]: { ...legs[kR], kept: { fair: 0.4, est: false } } }); await wait(700);
+      try {
+        const want = [kM, kT1].sort().join(), notes = [...A.d.querySelectorAll('#parlayBody [data-pb-noladder]')], stored = JSON.parse(A.w.localStorage.getItem(PROP_KEY) || '{}');
+        chk(!A.timedOut && !A.errs.length && Object.keys(A.w.eval('S').parlay).sort().join() === want && rowsOf(A.d) === want
+          && notes.length === 1 && notes[0].dataset.pbNoladder === '2' && txt(notes[0]) === WORDS && !A.d.querySelector('#parlayBody [data-pb-notdk]') && !/already kicked off/.test(txt(A.d.getElementById('parlayBody'))),
+          `a reboot with a rung, two or more touchdowns, a main line and the one touchdown kept in the builder does not draw the main line and the touchdown alone under one line saying 2 legs were removed, word for word: `
+          + JSON.stringify({ errs: A.errs.slice(0, 2), kept: Object.keys(A.w.eval('S').parlay).map(k => k.split('|').slice(1).join('|')), rows: rowsOf(A.d).split(',').length, notes: notes.map(n => [n.dataset.pbNoladder, txt(n)]) }));
+        chk(Object.keys(stored.parlay || {}).sort().join() === want && JSON.stringify(stored.saved) === JSON.stringify(SAVED) && JSON.stringify(A.w.eval('S').saved) === JSON.stringify(SAVED)
+          && !('showRungs' in A.w.eval('S').ui) && !('showRungs' in (stored.ui || {})),
+          `the reboot that took the ladders out of the builder did not save the builder without them, touched the retired saved list (in the page or in storage), or read the retired ladders setting: `
+          + JSON.stringify({ stored: Object.keys(stored.parlay || {}).length, saved: JSON.stringify(stored.saved) === JSON.stringify(SAVED), ui: A.w.eval('S').ui.showRungs }));
+        { const wa = new Set(A.w.__wrote), wb = new Set(B.w.__wrote), extra = [...wa].filter(k => k !== PROP_KEY && !wb.has(k));
+          chk(wa.has(PROP_KEY) && !extra.length, `the boot that took the ladders out wrote something a boot with none to take out does not, beside the prop model's own key: ${extra.join(', ') || '(nothing to the prop key)'}`); }
+        /* the line stays while the builder is as it was, and goes once it changes (and does not come back) */
+        A.w.eval('renderParlay()'); await wait(20);
+        const still = A.d.querySelectorAll('#parlayBody [data-pb-noladder]').length;
+        A.w.__tg = kT1; A.w.eval('toggleLeg(window.__tg,1,null,"over",false)'); await wait(20); const off = A.d.querySelectorAll('#parlayBody [data-pb-noladder]').length, offK = Object.keys(A.w.eval('S').parlay).sort().join();
+        A.w.eval('toggleLeg(window.__tg,1,null,"over",false)'); await wait(20); const back = A.d.querySelectorAll('#parlayBody [data-pb-noladder]').length, backK = Object.keys(A.w.eval('S').parlay).sort().join(); delete A.w.__tg;
+        chk(still === 1 && off === 0 && offK === kM && back === 0 && backK === want, `the line on the ladders taken out of the builder does not stay through a redraw of the same builder and go once it changes, for good (${still}, then ${off} with the touchdown off, then ${back} with it back: ${backK.split(',').length} legs)`);
+        /* the twin: a locked set's rung kept, nothing said */
+        const wantB = [kM, kT1, kR].sort().join();
+        chk(!B.timedOut && !B.errs.length && Object.keys(B.w.eval('S').parlay).sort().join() === wantB && rowsOf(B.d) === wantB && !B.d.querySelector('#parlayBody [data-pb-noladder]'),
+          `a reboot whose builder holds a locked Suggested Parlays set's rung (kept) beside a main line and the one touchdown does not keep all three and say nothing: ` + JSON.stringify({ errs: B.errs.slice(0, 2), kept: Object.keys(B.w.eval('S').parlay).length, rows: rowsOf(B.d), note: B.d.querySelectorAll('#parlayBody [data-pb-noladder]').length }));
+        console.log(`  (no ladder bets: a real reboot with 2 ladders kept in the builder drew the main line and the touchdown alone under its one line; its twin kept a locked set's rung)`);
+      } finally { A.w.close(); B.w.close(); } } }
 
   /* ---- the Game snapshot: its own section, at the end of this file, then the Season Tracker's games
      in it, on stand-in news files ---- */

@@ -24,6 +24,9 @@
    untouched; B takes gP's read away; B3 moves its lines (the set rewritten on the moved lines); C restamps a newer read
    after the lock (the set as locked); R's level built again takes the read's lines; D grades a level of dkline legs with
    a void at its stored estimated prices.
+   Since app v127 (no ladder bets, the owner's call of 21 October 2026) A holds that every leg of every set and its Elo
+   picks is a game bet, a main line or the anytime touchdown at one, though the read carries yards milestones (offeredOwn,
+   the test's own reading), and R that the level built again is too.
 
      A  hours before the first prime-time lock: one set taken for every prime-time game of W, none for any
         other, keyed season|week|kickoff|game, locking 2 hours before kickoff, every leg on its own game;
@@ -314,6 +317,19 @@ const mlP = ml => ml > 0 ? 100 / (ml + 100) : -ml / (-ml + 100);
   chk(lv.every(t => !t.legs.some(l => l.grp !== 'TEAM') || t.fair_est === true), 'A: a level holding a leg priced from the read does not say its fair chance is estimated');
   const elo = sets.flatMap(e => (e.elo || []).filter(t => t.legs).flatMap(t => t.legs));
   chk(elo.every(l => l.src === 'dkline'), 'A: an Elo pick holds a leg not priced from the read: ' + JSON.stringify(elo.filter(l => l.src !== 'dkline').slice(0, 2))); }
+/* (app v127, the owner's call of 21 October 2026: no ladder bets) every leg the run takes, the model's levels and the Elo
+   picks, of every night game and the Sunday slot, is one the site still offers: a game bet (a moneyline, a spread, the
+   game total), a player's main line, or his anytime touchdown at one; never a ladder (a rung k+ off his main line, or
+   two or more touchdowns), though the read carries DraftKings' yards milestones (LADDER_Y) for every charted player on a
+   yards stat. offeredOwn is this test's own reading, never the page's isLadder */
+const offeredOwn = l => !!l && (['ml', 'ats', 'total'].includes(l.stat) || (l.stat === 'any_td' ? l.k == null || +l.k === 1 : l.main === true));
+const ladderSay = l => `${l.lvl || ''} ${l.gid} ${l.pid} ${l.stat} ${l.k}${l.main ? ' main' : ''} ${l.label || ''}`.trim();
+{ const rungsIn = Object.values((P0.espn || {}).games || {}).reduce((a, e) => a + Object.values((e.pl && e.pl.rungs) || {}).reduce((b, o) => b + Object.values(o).reduce((c, ks) => c + ks.length, 0), 0), 0);
+  const sets = [...Object.values(L.prime), ...Object.values(L.slot || {})];
+  const legs = sets.flatMap(e => [...e.tiers, ...(e.elo || [])].filter(t => t.legs).flatMap(t => t.legs.map(l => ({ ...l, lvl: `${e.gid} ${t.id}` }))));
+  const pls = legs.filter(l => l.grp !== 'TEAM'), bad = legs.filter(l => !offeredOwn(l));
+  chk(rungsIn > 0 && pls.length > 0, `A: the run could not tell whether a ladder bet is taken: the read carries ${rungsIn} milestone rungs and the sets ${pls.length} player legs`);
+  chk(!bad.length, `A: ${bad.length} of the ${legs.length} legs the sets and their Elo picks take are ladder bets (a rung off a main line, or 2+ touchdowns), which the site no longer offers: ` + bad.slice(0, 4).map(ladderSay).join(' | ')); }
 /* a side run (its own copy of the ledger): gP's read dated at its kickoff gives it no player leg; a read that is junk, or
    none, gives every set team legs alone and throws nothing; a page that drops a well-formed read is refused, the file
    untouched */
@@ -393,7 +409,13 @@ chk(r.code === 0, 'C: the run failed: ' + r.out.slice(-400));
 chk(!!eC && JSON.stringify(eC) === JSON.stringify(eB), 'C: gP\'s set moved after its lock (the page would build another now; the record keeps the last run\'s before it)');
 chk(!Object.values(L.prime).some(e => e.gid === gN.id), `C: ${gN.id}, moved to a prime-time kickoff whose lock had passed, got a set no run took before its lock`);
 chk(LXtext() === LX0, 'C: the old panel\'s frozen entry is not the same to the byte');
-if (slotB && slotB.lock > tB && slotB.lock < tC) chk(JSON.stringify(L.slot[KSB]) === JSON.stringify(JSON.parse(ledgerB).slot[KSB]), 'C: the Sunday slot moved after its lock');
+/* the slot as B left it; and from its first kickoff, as C's run can be (week 7's gP, moved to the Monday night, puts C's
+   run past every Sunday kickoff), nothing changes but the grade, every level of it pending with no game scored */
+if (slotB && slotB.lock > tB && slotB.lock < tC) { const eS = L.slot[KSB] || {}, { grade: gS, ...restS } = eS, kicked = slotB.kick <= tC;
+  const withLegs = [...(eS.tiers || []), ...(eS.elo || [])].filter(t => t && t.legs).map(t => t.id).sort().join();
+  chk(JSON.stringify(kicked ? restS : eS) === JSON.stringify(JSON.parse(ledgerB).slot[KSB])
+    && (!kicked || (!!gS && Object.keys(gS).sort().join() === withLegs && Object.values(gS).every(g => g.result === 'pending'))),
+    `C: the Sunday slot moved after its lock${kicked ? ', or its grade since its first kickoff is not every level pending' : ''}: ` + JSON.stringify(gS || null).slice(0, 300)); }
 const ledgerC = bytes();
 
 /* R: half an hour later, a player of a locked level ruled Out */
@@ -417,7 +439,9 @@ chk(sR.updated && sR.updated.pid === 'XX-RULED' && sR.updated.name === 'Ruled Ou
 chk(!(sR.legs || []).some(l => l.pid === 'XX-RULED') && (!sR.legs || (sR.legs.length === 2 && sR.legs.every(l => l.gid === gP.id))), 'R: the replaced level still holds him, or is not a pair on its own game');
 /* (app v125) built from the read at hand: a player leg on it priced from it, a main line at the read's own number */
 { const rl = (PR.espn.games[gP.id] || { pl: { lines: {} } }).pl.lines;
-  chk((sR.legs || []).filter(l => l.grp !== 'TEAM').every(l => l.src === 'dkline' && (!l.main || (rl[l.pid] && rl[l.pid][l.stat] === l.k))), 'R: the level built again holds a player leg not priced from the read at hand: ' + JSON.stringify(sR.legs)); }
+  chk((sR.legs || []).filter(l => l.grp !== 'TEAM').every(l => l.src === 'dkline' && (!l.main || (rl[l.pid] && rl[l.pid][l.stat] === l.k))), 'R: the level built again holds a player leg not priced from the read at hand: ' + JSON.stringify(sR.legs));
+  /* (app v127) and no ladder bet, though the read at hand carries its milestone rungs */
+  chk((sR.legs || []).every(offeredOwn), 'R: the level built again takes a ladder bet: ' + (sR.legs || []).filter(l => !offeredOwn(l)).map(ladderSay).join(' | ')); }
 const eS = (eR.elo || []).find(t => t.id === 'elo-safe') || {};
 chk(Array.isArray(pR.elo), 'R: the locked set has no Elo picks to plant a ruled-out player in (the run that took it built none)');
 chk(eS.updated && eS.updated.pid === 'XX-RULED' && eS.updated.at === iso(tR) && !(eS.legs || []).some(l => l.pid === 'XX-RULED') && (!eS.legs || (eS.legs.length === 2 && eS.legs.every(l => l.gid === gP.id && l.pe > 0 && l.pe < 1))),
@@ -713,7 +737,15 @@ refused('an old frozen entry edited', x => { x.entries[oldKey(LXk)].tiers[0].leg
   if (kU) { const x = JSON.parse(ledgerC); x.prime[kU].pool.pref += 1; x.prime[kU].taken_at = iso(tA); fs.writeFileSync(LEDGER, ledgerC); fs.writeFileSync(published, SL.dumps(x) + '\n');
     r = run(PC, tF, { SUGGEST_PREV: published });
     chk(r.code === 0 && /^suggest ledger: unchanged/.test(r.last) && bytes() === ledgerC, 'F: an uncommitted rewrite of a set still to lock was refused against the last commit: ' + r.out.slice(-300)); }
-  else chk(false, 'F: the made-up week left no set still to lock at ' + iso(tF)); }
+  else {
+    /* a week whose last prime-time set locks with gP's has none still to lock at tF (week 7: gP, the Sunday afternoon game
+       with the most lines, moved to the Monday at 8:15 pm beside the Monday night game): the same case on B's ledger, an
+       hour after B (B2's run, which writes nothing), where every prime-time set but those moved is still to lock */
+    const xB = JSON.parse(ledgerB), kB = Object.keys(xB.prime).find(k => Date.parse(xB.prime[k].lock) > tB + H);
+    if (kB) { xB.prime[kB].pool.pref += 1; xB.prime[kB].taken_at = iso(tA); fs.writeFileSync(LEDGER, ledgerB); fs.writeFileSync(published, SL.dumps(xB) + '\n');
+      r = run(P0b, tB + H, { SUGGEST_PREV: published });
+      chk(r.code === 0 && /^suggest ledger: unchanged/.test(r.last) && bytes() === ledgerB, 'F: an uncommitted rewrite of a set still to lock (B\'s ledger) was refused against the last commit: ' + r.out.slice(-300)); }
+    else chk(false, `F: the made-up week left no set still to lock at ${iso(tF)}, nor an hour after B`); } }
 /* a locked level an earlier run replaced, not yet committed: not a refusal against the last commit */
 fs.writeFileSync(LEDGER, ledgerR); fs.writeFileSync(published, ledgerR0);
 r = run(PR, tR + 5 * 60e3, { SUGGEST_PREV: published });

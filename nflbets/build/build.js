@@ -490,6 +490,13 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
     if (!part3.includes(need)) throw new Error("the props parts no longer draw a game page's Matchup, Mismatches and Team Stats buttons, or draw them where the hub's window is not (" + need + ')');
   for (const gone of ['gameSuggestCard(', 'data-gsugg-side', 'data-gtier-add'])
     if (part3.includes(gone)) throw new Error("the props parts still draw a game page's Suggested parlays, which went on 20 October 2026 (" + gone + ')');
+  /* no ladder bets since 21 October 2026 (the owner's call: "is it possible to not do ladders and just include Same Game
+     Parlay eligible stuff"): no box to show them on a game's page, no rung row, no 2+ touchdowns row, and the builder
+     refuses one (isLadder in part2.js, toggleLeg and pbDropLadders in part3.js) */
+  for (const gone of ['showRungs', 'id="rungCb"', 'Threshold ladders', 'Scores two or more', 'tr class="rung'])
+    if (part3.replace(/\/\*[\s\S]*?\*\//g, '').includes(gone)) throw new Error("the props parts still offer a ladder bet on a game's page, which went on 21 October 2026 (" + gone + ')');
+  for (const need of ['if(isLadder({stat,k,main:!!main})) return;', 'function pbDropLadders(', 'if(pbDropLadders()) save();'])
+    if (!part3.includes(need)) throw new Error('the props parts no longer refuse a ladder bet in the builder or take one kept from before out of it (' + need + ')');
   for (const need of ['window.gameSnapshot(card.dataset.game,card)', 'tabindex="0" aria-haspopup="dialog"', 'window.pkBoard={', 'canProps,openOnProps};', 'ST.state=st;', "history.replaceState(null,'','#matchups')"])
     if (!js.includes(need)) throw new Error("the Matchups tab no longer opens the Game snapshot from a game's row, hands it the way to the Props tab, or lands #tracker and #pickems on the board as #matchups (" + need + ')');
   for (const gone of ['data-snap=', 'pk-gbody', 'aria-expanded'])
