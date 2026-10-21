@@ -1540,7 +1540,8 @@ holds the two `data-admin-only` buttons and sections, the header's slot and the 
 request recorded and The Odds API stubbed (a key it takes, a refused key, a network failure, a 429, no credits): the
 build; a good link (the address cleaned before the body is parsed and before the tab bar reads it, `#xparlays&owner=K`
 keeping its tab, exactly one free GET no-store with no referrer, the key kept, the reload, a link pasted into an open
-page, the `file:` fallback); a refused link; an unchecked key checked again; the admin's page (data-admin before the
+page, a link pasted into a visitor's tab after another tab kept its key, checked or not yet, reloading it once with no
+request at the link's tab, the `file:` fallback); a refused link; an unchecked key checked again; the admin's page (data-admin before the
 body, nine tabs, the switch then the mark and a 44px Sign out, X Parlays drawn and the X Bet Log read, both no-store, no
 Odds API request on load, `odds()`'s two paths only, a refused key marked); Sign out and another tab's; a visitor's page
 (seven tabs, `#xparlays` and `#bets` landing on `#matchups` on load and in an open page, no request for either file, for
