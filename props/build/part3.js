@@ -392,7 +392,7 @@ function renderGame(){
       :(liveOn?'Each player below shows what he has done so far, live from the scoreboard, against what was projected. These are not the settled numbers: the season\u2019s stats arrive with the next update, and those are what settle a leg.'
         :'Player stats come out some hours after the final whistle and appear with the next update. Press Refresh stats to read them live from the scoreboard in the meantime.')}${hasScore(g)||lg?'':' The final score appears after the next refresh.'}</span></div>`;
   html+=gameHeadCard(g);
-  html+=gameSuggestCard(g,locked);
+  html+=gameWinBtns(g);
   html+=gameBetsCard(g,locked);
   if(!showRungs()&&Object.values(S.parlay||{}).some(l=>l.gid===g.id&&!l.main&&l.stat!=='ml'&&l.stat!=='ats'&&l.stat!=='any_td'))
     html+=`<p class="muted" style="margin:-4px 0 12px;font-size:12px">A threshold leg on your parlay is shown below even though the ladders are hidden, so nothing counts out of sight.</p>`;
@@ -575,18 +575,10 @@ function renderGame(){
   $('gameView').querySelectorAll('[data-leg]').forEach(cb=>cb.addEventListener('change',e=>{
     e.stopPropagation();
     toggleLeg(cb.dataset.leg, +cb.dataset.k, g, cb.dataset.side||'over', cb.dataset.main==='1'); }));
-  /* the game page's own side switch (the Parlay Builder's suggestions have their own boxes) */
-  $('gameView').querySelectorAll('[data-gsugg-side]').forEach(b=>b.addEventListener('click',()=>{
-    S.ui.suggestSide=b.dataset.gsuggSide; save(); renderGame(); renderParlay(); }));
-  /* a tier's Add all: every leg of that hand on the parlay, skipping any already there */
-  $('gameView').querySelectorAll('[data-gtier-add]').forEach(b=>b.addEventListener('click',()=>{
-    const t=gameTiers(g)[b.dataset.gtierAdd]; if(!t) return;
-    for(const l of t.legs){
-      const cur=S.parlay[l.key];
-      if(cur&&cur.k===l.k&&cur.side===l.side&&!!cur.main===!!l.main) continue;
-      toggleLeg(l.key,l.k,g,l.side,l.main);
-    }
-  }));
+  /* (app v124) the game's Matchup, Mismatches and Team Stats: each its own little window over the page, the
+     hub's (window.gameWindow), handed the button so the focus comes back to it */
+  $('gameView').querySelectorAll('[data-gp-pop]').forEach(b=>b.addEventListener('click',()=>{
+    if(typeof window.gameWindow==='function') window.gameWindow(b.dataset.gpPop,g.id,b); }));
 }
 
 /* ---------- weekly stats ingest ---------- */
@@ -983,7 +975,7 @@ async function boot(){
     for(const k of ['parlay','saved','odds','stake','bookPrice','margin','gamesFetched','lastBackup']) if(saved[k]!=null) S[k]=saved[k];
   }
   /* the view resets, but a toggle the reader set is theirs */
-  S.ui={game:null,open:{},showAll:false,showRungs:!!(saved&&saved.ui&&saved.ui.showRungs),suggestSide:['over','under'].includes(saved&&saved.ui&&saved.ui.suggestSide)?saved.ui.suggestSide:'any',
+  S.ui={game:null,open:{},showAll:false,showRungs:!!(saved&&saved.ui&&saved.ui.showRungs),
     pb:pbClean(saved&&saved.ui&&saved.ui.pb)};
   S.inactive=S.inactive||{}; S.depth=S.depth||{};
   S.odds=S.odds||{}; S.parlay=S.parlay||{}; S.stake=pbStake(); S.saved=S.saved||[]; S.actuals=S.actuals||{}; S.projections=S.projections||{}; S.headlines=S.headlines||{};
@@ -2111,11 +2103,6 @@ function parlayFair(legs,memo,sims){
   const pr=parlayProb(legs.map((l,i)=>({...l,side:l.side||'over',p:f[i].p})),sims);
   return {p:pr.corr,est:f.some(x=>x.est),miss:0,dk:legs.some(l=>l&&l.src==='dkline'&&legPrice(l).src==='dkline')};
 }
-/* the side switch on a game page's suggested parlays: Any, or player overs only, or player
-   unders only. A touchdown leg is an over; a game bet has no side and drops out. */
-const SUGGEST_SIDES=[['any','Any'],['over','Player overs'],['under','Player unders']];
-function suggestSide(){ const s=S.ui&&S.ui.suggestSide; return s==='over'||s==='under'?s:'any'; }
-function sideAllows(c){ const s=suggestSide(); return s==='any'||(c.grp!=='TEAM'&&c.side===s); }
 /* (app v111) The four levels below were the Parlay Builder's panel over every game until 16 October 2026.
    The owner's calls of that day moved them: the same engine now builds each Thursday, Sunday and Monday
    night game's own set on Suggested Parlays (spSet, below), and the Parlay Builder shows the Top 100 lines on
@@ -2583,13 +2570,15 @@ function getPbTiers(){
    Always three hands, 2, 3 and 4 legs, each the best payout for its chance from this game's
    lines (see patch_game_tiers_value.py): real prices where the book has them, the model's
    estimate of a book's price on every other ladder rung and touchdown, no leg shorter than
-   -250, each hand above its payout floor where the game allows. */
+   -250, each hand above its payout floor where the game allows. (app v124) Drawn nowhere since
+   20 October 2026, when the game page's card went (gameWinBtns, below): kept, as the all-games
+   levels are, since the audit and the smoke still hold it. */
 const GAME_LEG_MIN=-250;
 const GAME_NOT_OFFERED=new Set(['fg_att']);   /* a stat the model rates that books do not post as a prop */
 const GAME_TIERS=[['high','High',2,100,0.35],['med','Medium',3,250,0.20],['low','Low',4,500,0.10]];  /* id, label, legs, least it pays, least chance */
 let GAME_TIER_CACHE={};
 function gameSuggestSig(g){
-  return [g.id,gameStarted(g),JSON.stringify(S.odds[g.id]||{}),g.sp,g.tot,g.mlh,g.mla,PAY.baked_at||'',S.margin||'',suggestSide(),'e'+ESPN_SEQ].join('|');
+  return [g.id,gameStarted(g),JSON.stringify(S.odds[g.id]||{}),g.sp,g.tot,g.mlh,g.mla,PAY.baked_at||'',S.margin||'','e'+ESPN_SEQ].join('|');
 }
 /* every line in the game worth a place: priced by the book, or by the model's estimate */
 function gameLegPool(g,all){
@@ -2621,7 +2610,7 @@ function gameLegPool(g,all){
   /* (app v109) where the payload carries DraftKings' ids for the game, only a leg DraftKings' betslip can
      take (all: every leg as before, to count those the ids left out) */
   const fm={}, dkOn=!all&&dkCarries({week:g.w,gid:g.id});
-  return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.price>=GAME_LEG_MIN&&c.p>=0.40&&c.p<0.97&&sideAllows(c)&&!legFarOff(c,fm)&&(!dkOn||!!dkIdOf(c)));
+  return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.price>=GAME_LEG_MIN&&c.p>=0.40&&c.p<0.97&&!legFarOff(c,fm)&&(!dkOn||!!dkIdOf(c)));
 }
 function gameTiers(g){
   const sig=gameSuggestSig(g), hit=GAME_TIER_CACHE[g.id];
@@ -2668,33 +2657,18 @@ function gameTiers(g){
   GAME_TIER_CACHE[g.id]={sig,val};
   return val;
 }
-/* (app v109) why a hand is empty where DraftKings' ids left legs out: a hand takes only legs DraftKings'
-   betslip can take, and a game's player ids come with its player prices, which are not pulled yet, or
-   never for Sunday's early games; with them in, its other lines DraftKings had no id for */
-function gameNoIdWhy(g,n){
-  const D=((PAY.dk||{})[String(g.w)]||{})[g.id]||{}, pl=!!D.at||Object.keys(D).some(k=>!/^(team:|game\|)/.test(k)&&!['event','at','glat'].includes(k));
-  const head=`Only legs DraftKings’ betslip can take are suggested here, and this game does not have enough of them for ${n} legs`;
-  if(pl) return `${head}: DraftKings had no id for its other lines when its prices were read.`;
-  if(dkEarlySunday(g)) return `${head}: DraftKings’ player ids come with its player prices, which are never pulled for Sunday’s early games (before 4pm ET).`;
-  return `${head} yet: DraftKings’ player ids come with its player prices, which are ${PB_PULLED}.`;
-}
 /* on the parlay means this exact line, threshold and side are ticked */
 const suggestLegOn=l=>{ const c=S.parlay[l.key]; return !!c&&c.k===l.k&&c.side===l.side&&!!c.main===!!l.main; };
-function gameSuggestCard(g,locked){
-  if(locked) return '';
-  const side=`<div class="gsugg-side"><span class="sugg-side" role="group" aria-label="Which legs to build from">${SUGGEST_SIDES.map(([k,l])=>`<button type="button" class="${suggestSide()===k?'on':''}" data-gsugg-side="${k}" aria-pressed="${suggestSide()===k}">${l}</button>`).join('')}</span></div>`;
-  const T=gameTiers(g), stake=pbStake();
-  const block=([id,label,n,floor])=>{ const t=T[id];
-    if(!t) return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span></div><p class="muted" style="margin:6px 0 0;font-size:12px"${T.noId?' data-gsugg-noid':''}>${T.noId?esc(gameNoIdWhy(g,n)):`This game does not have ${n} lines to build from yet.`}</p></div>`;
-    return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span><span class="grow"></span><button class="btn quiet gsugg-all" data-gtier-add="${id}">Add all</button></div>
-      <div class="gsugg-nums">${t.fair&&t.fair.p!=null?`<b data-gsugg-fair="${t.fair.p}">${(t.fair.p*100).toFixed(0)}%</b> fair chance${t.fair.est?' (est.)':''} <span class="muted">·</span> model says <b>${(t.corr*100).toFixed(0)}%</b> to land`
-        :`<b>${(t.corr*100).toFixed(0)}%</b> to land <span class="muted">(the model’s chance: no fair chance without every leg’s book price)</span>`} <span class="muted">·</span> <b>${fmtML(decToML(t.dec))}</b>${t.legs.some(l=>l.src==='dkline')?' <span class="muted" data-gsugg-est>estimated price</span>':''}${stake?` <span class="muted">pays $${(stake*t.dec).toFixed(2)}</span>`:''}</div>
-      ${t.relaxed?`<p class="muted" style="margin:4px 0 0;font-size:11.5px">This game's lines cannot reach +${floor} at this chance yet; this is the best they allow.</p>`:''}
-      <ul class="gsugg-legs">${t.legs.map(l=>{ const on=suggestLegOn(l);
-        return `<li><label class="gsugg-pick${on?' on':''}"><input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="${on?'Take':'Put'} ${esc(l.name)}, ${esc(l.label)}, ${on?'off':'on'} the parlay">
-          <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}${l.src==='real'?'':`<i class="est"${l.src==='dkline'?estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true}):''}> est.</i>`}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`; }).join('')}</ul></div>`; };
-  return `<div class="card gsugg"><div class="gsugg-hd"><h2>Suggested parlays</h2></div>${side}
-    <div class="gsugg-tiers g3">${GAME_TIERS.map(block).join('')}</div></div>`;
+/* (app v124) A game's page has no suggested parlays since 20 October 2026 (the owner's call: "get rid of the
+   suggested parlays section from there. instead I want you to add three different buttons: Matchup, Mismatches,
+   and Team Stats ... I want each button to pop up in its own little window"). Where the hub's window is on the
+   page (window.gameWindow, the Game snapshot's), three buttons under the game's head each open one card in it,
+   over the page: Matchup, the snapshot's Offense vs defense; Mismatches, the game's Mismatches; Team Stats, the
+   season's team stats side by side on bars. The prop model's own page has no such window and draws none. */
+function gameWinBtns(g){
+  if(typeof window.gameWindow!=='function') return '';
+  const b=(k,l)=>`<button type="button" class="btn quiet gwin-btn" data-gp-pop="${k}" data-gp-game="${esc(g.id)}" aria-haspopup="dialog">${l}</button>`;
+  return `<div class="gwin" role="group" aria-label="More on this game">${b('units','Matchup')}${b('mism','Mismatches')}${b('stats','Team Stats')}</div>`;
 }
 /* ---------- the panel, over the builder ---------- */
 const pbMoney=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
