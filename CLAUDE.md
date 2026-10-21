@@ -271,10 +271,13 @@ too; with neither it passes at once, and a push or a dispatch runs everything. J
 picks, which the Elo job runs every morning and which blocks its publish) on the payload it baked (the
 published one when weekly.py refused), within 40 minutes; job B runs each case of `test_audit_phases.py` on a runner of its
 own (the smoke cases alone when only PAGE changed); job C (since 20 October 2026) runs the unit tests, `UNITS` in
-`props_gate.py`, seconds each on fixtures of their own: `test_apply_espn.py`, `test_espn_read.js`, `test_lock_runs.py`,
-`test_espn_ids.py`, `test_dk_links.py`, `test_unmatched.py`, `test_who_played.py`, `test_fetch.py`, `test_audit_gate.py`,
-`lib/test_netfetch.py` and `.js`, `nflbets/build/test_dkname.js` and `nflbets/build/smoke_admin.js` (one missing from the
-tree fails it, but for those in `UNITS_OPTIONAL`). Each is differential: a failure is run again on
+`props_gate.py`, on fixtures of their own, seconds each but for the page's two smokes: `test_apply_espn.py`,
+`test_espn_read.js`, `test_lock_runs.py`, `test_espn_ids.py`, `test_dk_links.py`, `test_unmatched.py`, `test_who_played.py`,
+`test_fetch.py`, `test_audit_gate.py`, `lib/test_netfetch.py` and `.js`, `nflbets/build/test_dkname.js`,
+`nflbets/build/smoke_admin.js` and, since the review of 21 October 2026, `nflbets/build/smoke_live.js` (about four minutes,
+the one place the parlay card's Pull from DraftKings and its money rules are held; job C's `timeout-minutes` went from 20 to
+45 with it, room for both page smokes running to their own caps here and again on the base, which `test_props_gate.py`
+holds) (one missing from the tree fails it, but for those in `UNITS_OPTIONAL`). Each is differential: a failure is run again on
 the base's code in a second checkout (`weekly.py --offline` over the same downloads and the same ESPN answers, copied
 with them since `props/raw/espn/` is ignored, unless this run refused at a download or read a file as not posted yet,
 when the base downloads its own and is handed this run's ESPN answers, `PROPS_ESPN_REPLAY`, so a line DraftKings moved
@@ -2363,7 +2366,8 @@ review of 21 October 2026 they stayed "busy" where the new card's own check had 
 card's name rule to `names.py`: every pair of `test_unmatched.py`, the audit's own two `nameRule` cases, `Pool.match` over
 whole games built from `test_unmatched.py`'s fixtures and a few of its own (accents, suffixes, punctuation, a nickname two
 share), `names.norm` on awkward strings, and the nicknames both ways. `smoke_live.js`'s J3 holds the pull on a stubbed Odds
-API and V a visitor's page (under the smokes, below).
+API and V a visitor's page (under the smokes, below); since the review of 21 October 2026 `smoke_live.js` is one of the props
+gate's job C units too (`UNITS` in `props_gate.py`, about four minutes), so a change to the card cannot merge without it.
 
 The build lifts renderParlay's pricing
 out of `part3.js` into the card, so its price is the builder's own. Where X's parlays and the X Bet
