@@ -7775,7 +7775,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='9e7bc96';
+const PAGE_HASH='b551e26';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -8638,6 +8638,11 @@ window.PARLAY_CARD=(function(){
     if(P.whyOf==='name') return {why:`DraftKings’ name for him could not be placed ${when}: add it by hand`,brief:'his DraftKings name not placed'};
     if(P.whyOf==='posted') return {why:`DraftKings had not posted ${s} for this game ${when}, so it cost no credit`,brief:`${s} not posted on DraftKings when pulled`};
     if(P.whyOf==='none') return {why:`DraftKings had no ${s} line for him ${when}`,brief:`no ${s} line of his on DraftKings when pulled`};
+    /* a rung the base market did not have (DraftKings' main line for him off k-0.5), his ladder not asked: the next
+       pull asks it (pullMarket) */
+    if(P.whyOf==='ladder') return P.main!=null
+      ?{why:`DraftKings had his ${s} line at ${pt(P.main)} ${when}, so ${pt(l.k)}+ is on its ladder, which that pull did not ask: pull again for his ladder`,brief:`his main line at ${pt(P.main)} when pulled; pull again for his ladder`}
+      :{why:`DraftKings had no Over ${pt(+l.k-0.5)} ${s} of his on its main line ${when}, and that pull did not ask his ladder: pull again for it`,brief:'not on his main line when pulled; pull again for his ladder'};
     return null;
   }
   /* which of DraftKings' numbers for one bet (the ids under near, keyed near+number) the leg goes on at:
@@ -8987,8 +8992,12 @@ window.PARLAY_CARD=(function(){
      which spends his credits on this parlay's player legs alone:
 
      1. The plan (pullPlan): each player leg still to kick off asks for one market of its game, by its stat (PULL_BASE;
-        a rung k+ the alternate ladder unless DraftKings' main line for him is k-0.5, as the ESPN read or the payload
-        knows it now; the anytime touchdown for 1+ and 2+ touchdowns). Its cost is "up to" one credit a game and
+        a rung k+ the alternate ladder unless DraftKings' main line for him is k-0.5; the anytime touchdown for 1+ and
+        2+ touchdowns). For a rung, his rows this load pulled in the base market, while no ESPN read has taken that pull
+        for moved (5, below), say whether the base market has his Over k-0.5 (or k-1), else the ESPN read's main line or
+        the payload's does (mainNow). So a rung asked of the base market on a main line DraftKings had moved is asked of
+        the ladder next time, whatever a trailing ESPN read still says (the review of 21 October 2026). Its cost is "up
+        to" one credit a game and
         market, since one DraftKings has not posted costs nothing; a game and market pulled under PULL_FRESH_MS ago is
         served from what was pulled, free; a game whose ESPN check found no player lines posted is left out unless the
         admin pulls anyway; team bets and totals ask nothing (their ids come from ESPN).
@@ -9008,7 +9017,9 @@ window.PARLAY_CARD=(function(){
         'Yes') with DraftKings' price, sid and fair chance (both sides' prices with the margin out, else the price over
         the pull's typical overround, est.); his main line DraftKings has moved (converted on the slip at DraftKings'
         number, with its price; the leg keeps its own); a rung DraftKings lists no such Over for (his Over at
-        DraftKings' closest number); or why there is none. window.dkPulledFor hands it to the props parts'
+        DraftKings' closest number, said only where his ladder was in the answer: a rung asked of the base market that
+        it did not have, his main line there off k-0.5, says where DraftKings had his main line and to pull again for his
+        ladder, whyOf 'ladder', putting no other bet on the slip in its place); or why there is none. window.dkPulledFor hands it to the props parts'
         parlayLegs, legPrice and legFair, so the builder and this card price a pulled leg as DraftKings' own, by the
         builder's own sums; dkLeg puts it on the slip at the pull's id.
      5. The moved rule (critique 18): ESPN's feed can trail DraftKings, so a pulled line stands against an ESPN read of
@@ -9081,15 +9092,28 @@ window.PARLAY_CARD=(function(){
   const agoOf=t=>{ const n=Math.floor((Date.now()-t)/60e3); return n<1?'just now':n+' min ago'; };
   const listOf=xs=>xs.length<2?(xs[0]||''):xs.slice(0,-1).join(', ')+' and '+xs[xs.length-1];
   const KEY_REFUSED='The Odds API did not accept this device’s key: sign out and open your admin link again.';
-  /* DraftKings' main line for him on the stat as the page knows it now: the ESPN read's, else the payload's */
+  /* the moved rule (5 above): the ESPN read of his main line on the stat ({at, q}) where it was made more than
+     PULL_MOVED_MS after the pull B and has it at another number than the pull's main, else null */
+  function pullMovedBy(l,B,main){ const R=main?dkReadLine(l):null; return R&&R.at>B.at+PULL_MOVED_MS&&+R.q!==+main.point?R:null; }
+  /* DraftKings' main line for him on the stat as a read has it: the ESPN read's, else the payload's */
   function mainNow(l){ try{ const g=game(l.gid), wk=l.week!=null?l.week:(g&&g.w), e=typeof espnGame==='function'?espnGame(l.gid,wk):null;
     const q=e&&typeof espnLineOf==='function'?espnLineOf(e,l.pid,l.stat):null; if(q!=null) return +q;
     const M=typeof marketLine==='function'?marketLine(wk,l.pid,l.stat):null; return M&&isFinite(+M.line)?+M.line:null; }catch(e){ return null; } }
-  /* the market a player's leg asks for, or null (a stat Pull from DraftKings does not read) */
+  /* his rows in the base market as this load pulled them, while they stand by the moved rule (5 above: no ESPN read
+     more than PULL_MOVED_MS after the pull has his main line at another number), else null */
+  function pullStanding(l,base){ const B=PULL[l.gid]&&PULL[l.gid].mk[base], rows=B&&B.rows?B.rows.filter(r=>r.pid===l.pid):[];
+    return rows.length&&!pullMovedBy(l,B,pullMain(rows))?rows:null; }
+  /* the market a player's leg asks for, or null (a stat Pull from DraftKings does not read). A rung k+ is DraftKings' Over
+     k-0.5 (or the whole k-1): where this load pulled his rows in the base market and they stand, they say whether the
+     base market has it, else his ladder is asked; with none, the base market where DraftKings' main line for him as a
+     read has it (mainNow) is k-0.5, else the ladder. So a rung the base market did not have (DraftKings had moved his
+     main line off k-0.5 since ESPN read it) is asked of his ladder next, whatever a trailing ESPN read still says (the
+     review of 21 October 2026) */
   function pullMarket(l){ const base=PULL_BASE[l.stat]; if(!base) return null;
     if(l.main||l.stat==='any_td') return base;
-    const M=mainNow(l); if(M!=null&&+M===+l.k-0.5) return base;
-    return PULL_ALT.has(base)?base+'_alternate':base; }
+    const alt=PULL_ALT.has(base)?base+'_alternate':base, S=pullStanding(l,base);
+    if(S) return S.some(r=>r.side==='Over'&&r.sid&&(r.point===+l.k-0.5||r.point===+l.k-1))?base:alt;
+    const M=mainNow(l); return M!=null&&+M===+l.k-0.5?base:alt; }
   /* the plan for some legs (the open card's): {games: [{gid, markets, legs, none}], cost (the games ESPN has player
      lines for), noneCost (those it found none posted for), fresh (game and market pairs pulled under PULL_FRESH_MS
      ago), freshAt, skip ([{i, why}]), again (a pair pulled before, longer ago), any (a leg it could pull) } */
@@ -9182,7 +9206,7 @@ window.PARLAY_CARD=(function(){
       return {at:B.at,sid:y.sid,ml:y.price,fair:{p:clampP(mlProb(y.price)/pullVig(l)),est:true}}; }
     const main=pullMain(mine(B));
     /* the moved rule: an ESPN read of his main line at another number, more than PULL_MOVED_MS after the pull */
-    if(main){ const R=dkReadLine(l); if(R&&R.at>B.at+PULL_MOVED_MS&&+R.q!==+main.point) return {at:B.at,dead:{q:R.q,at:R.at}}; }
+    { const R=pullMovedBy(l,B,main); if(R) return {at:B.at,dead:{q:R.q,at:R.at}}; }
     if(l.main){
       if(!B) return null;
       const rows=mine(B), own=rows.find(r=>r.side===(l.side==='under'?'Under':'Over')&&r.point===+l.k&&r.sid), oth=rows.find(r=>r.side===(l.side==='under'?'Over':'Under')&&r.point===+l.k);
@@ -9195,6 +9219,10 @@ window.PARLAY_CARD=(function(){
     for(const p of [+l.k-0.5,+l.k-1]){ const r=overs.find(x=>x.point===p&&x.base)||overs.find(x=>x.point===p); if(!r) continue;
       const un=r.base?mine(B).find(x=>x.side==='Under'&&x.point===p):null;
       return {at:r.base?B.at:A.at,sid:r.sid,ml:r.price,line:p,fair:un?{p:noVig(r.price,un.price),est:false}:{p:clampP(mlProb(r.price)/pullVig(l)),est:true}}; }
+    /* his ladder never asked (the rung was asked of the base market, on a main line DraftKings had moved off k-0.5):
+       not another bet in its place, and not "DraftKings lists no k+", which only its ladder can say; pull again, which
+       asks the ladder (pullMarket) */
+    if(overs.length&&!A&&PULL_ALT.has(base)) return {at:B.at,whyOf:'ladder',main:main?main.point:null};
     if(overs.length){ const want=+l.k-0.5, c=overs.slice().sort((a,b)=>(Math.abs(a.point-want)-Math.abs(b.point-want))||(a.point-b.point))[0];
       return {at:c.base?B.at:A.at,near:{line:c.point,sid:c.sid,price:c.price}}; }
     return noRow(); }
@@ -9284,7 +9312,10 @@ window.PARLAY_CARD=(function(){
     try{ r=await lookEvents(plan.games.map(x=>x.gid)); }catch(e){ failed=true; }
     if(PULL_RUN.seq!==seq) return;
     const live=isOpen()&&cur===m&&admin();
-    if(!live){ PULL_RUN={state:'idle'}; return; }
+    /* the card it was pressed on is gone (closed, or another opened meanwhile, drawn waiting while the look-up ran): the
+       open card, if any, drawn again on Pull no longer running (the review of 21 October 2026: nothing else repaints it
+       where its own check had nothing to read) */
+    if(!live){ PULL_RUN={state:'idle'}; if(isOpen()&&cur) paintDk(cur); return; }
     if(failed){ PULL_RUN={state:'failed',m,msg:'Could not reach The Odds API (no credit spent).'}; paintDk(m); say(PULL_RUN.msg); return; }
     if(!r.ok){ const e=pullErr(r)||`The Odds API answered ${r.status}${r.code?' ('+r.code+')':''}: nothing was pulled (no credit spent).`; PULL_RUN={state:'failed',m,msg:e}; paintDk(m); say(e); return; }
     const noEv=plan.games.filter(x=>!PULL_EV[x.gid]).map(x=>x.gid), games=plan.games.filter(x=>PULL_EV[x.gid]);
