@@ -2161,6 +2161,23 @@ record's "Updated: ..."); the real and a made-up record drawn as pills alone; an
 `smoke_live.js` holds its Thursday night fixture's live line and, an hour before kickoff, its locked line word for word,
 and no long paragraph on the tab.
 
+**No descriptions** (app v130, `patch_quiet_props.py`, `patch_quiet_builder.py`, `patch_quiet_suggest.py` and
+`patch_quiet_tidy.py`, applied in that order, with direct edits to `card.html`, `tab_elo.html`, `snapshot.html`,
+`glance.js`, `liveparlays/build/page.html`, the betting hooks and `picks/index.html`; the owner's call of 22 October 2026:
+"in all sections get rid of all text wall descriptions. i dont want any descriptions anywhere. i want the site to speak
+for itself without a bunch of reading."). Every lead, foot, note and tagline that explained something is gone from every
+tab and window (the header's tagline, the Top 30's lead and foot, the Game bets card's sentence, the ELO tab's table notes,
+the snapshot's notes, the X Bet Log's lead, Weekly Picks' note among them), and every status, empty, error and warning
+line says its state in a few words ("DraftKings via ESPN, Tue 8:07 AM ET · player prices est.", "Locks Sun 6:20 PM ET.",
+"Price est. from DraftKings’ line, read Tue 8:07 AM ET.", "Regular season over.", "Player legs: add them on DraftKings by
+hand."). Kept: headings, labels, numbers, buttons, `title=` tooltips, loading lines, short state lines and money warnings
+(an estimate marked, a leg to add by hand, a pair DraftKings may refuse, a player not expected to play, a line far off the
+market); the hidden prop-model tabs (Track Record, Weekly Update, Backup) and `<noscript>` text are untouched. **Where this
+file quotes a page's words from before app v130, those words may now be shorter or gone: the sources and their checks are
+the current words.** `build.js` stops (`GONE_V130`, 171 phrases, comments stripped, the betting app's string read too) if
+a removed paragraph comes back. The audit, `smoke.js`, `smoke_live.js`, `check_tab.js` and the betting smoke hold each new
+wording where they held the old one, as strictly, and the removed ones absent.
+
 The Parlay Builder tab (`#parlay`, `tab-parlay`; app v111, the owner's call of 16 October 2026: "move top section
 with odds, build from, bet types, game checkboxes into new section tab called 'Parlay Builder'. add leg parlay
 section for live builder, in that section add refresh odds button and show top 100 line + profit ratio and allow

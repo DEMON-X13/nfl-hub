@@ -308,6 +308,11 @@ props/
                                  both of the record's maps (SP_SEC's maps), the backtest still
                                  counted and no chip naming its weeks (its docstring is the
                                  design)
+  build/patch_quiet_props.py     app v130 (22 October 2026, the owner's call: no descriptions):
+  build/patch_quiet_builder.py   the Props tab and a game's page, the Parlay Builder, Suggested
+  build/patch_quiet_suggest.py   Parlays and the Refresh odds status line, then one wording a
+  build/patch_quiet_tidy.py      state across them, applied in that order (CLAUDE.md, "No
+                                 descriptions"); build.js's GONE_V130 refuses a removed one back
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
                                  answers (audit M8, the nflbets smoke)
   build/fixtures/espn/           ESPN's recorded answers for week 6 of 2026 (the scoreboard, two
