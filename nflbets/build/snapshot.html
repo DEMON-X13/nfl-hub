@@ -2,19 +2,18 @@
      styles in beside the tabs' and runs its script last, after the Player Elo tab's; every class
      and id is prefixed gs- and the script is one closure.
 
-     A game's page on the Props tab opens this window over the page by its Game snapshot button (app
-     v128, the owner's call of 22 October 2026, when the Matchups board, whose rows opened it until then,
-     went: "Button on Props"), and the matchup bubble by its Open game snapshot -- the page's own modal,
-     closed by Escape, Close or a click outside it, Tab kept inside, the focus back on the button after.
-     Opened from a game's page it goes with the page (Back, a change of address), as that page's
-     Matchup, Mismatches and Team Stats windows do. It reads at a glance first, the details after:
+     The matchup bubble opens this window over the page by its Open game snapshot (a tap on a game on the
+     Matchups board did until the board went on 22 October 2026; a game page's own Game snapshot button, app
+     v128, was taken off again the same day, the owner's call: "i dont want that game snapshot buttons") --
+     the page's own modal, closed by Escape, Close or a click outside it, Tab kept inside, the focus back on
+     the name that opened it after. It reads at a glance first, the details after:
 
        the header      (pinned) the two teams and the week; once the verdict's line has scrolled
                        away, the game in one line instead (each team's record and the spread, or
                        the score), so the matchup stays in view over the folded cards
        the verdict     (always shown) first the button to the game's own page on the Props tab
                        (Game bets and player props, where the Props tab can open it:
-                       pkBoard.canProps, and not over that very page); then the head: the away team and its record (3-2: the
+                       pkBoard.canProps); then the head: the away team and its record (3-2: the
                        season's regular-season results from betting/state.json, as Team Rankings
                        counts them), the middle, the home team and its record. The middle holds the
                        score once there is one, the kickoff in the viewer's time and the site, and
@@ -669,9 +668,6 @@ const playoff=g=>g.game_type?g.game_type!=='REG':+g.week>18;
 const ddFor=(P,g)=>{ const dd=DD(), D=NEWS.units&&NEWS.units.data; return dd&&D&&!playoff(g)&&dd.applies(D,seasonOf(P,g),+g.week)?D:null; };
 
 let cur=null, opener=null;
-/* the whole snapshot opened from a game's page on the Props tab (its Game snapshot button, app v128): it goes with
-   that page, as the page's one-card windows do; opened from the matchup bubble it is no tab's window */
-let FROMPAGE=false;
 /* one card alone in the window (a game's page on the Props tab: its Matchup, Mismatches and Team Stats
    buttons, the owner's call of 20 October 2026), else null for the whole snapshot */
 let ONLY=null, ONE_AT=0;
@@ -694,9 +690,6 @@ function propsGame(gid){
   return g;
 }
 const gameFor=gid=>gameOf(gid)||propsGame(gid);
-/* the window over the game's own page on the Props tab (its Game snapshot button), where a button to that page
-   would only scroll it */
-const overOwnPage=g=>{ try{ return hostShown()&&typeof S==='object'&&!!S&&!!S.ui&&S.ui.game===g.game_id; }catch(e){ return false; } };
 const kickMs=(P,g)=>{ const k=g.gameday&&g.gametime?P.kickAt(g.gameday,g.gametime):null; return k?k.getTime():null; };
 /* where the game stands now: played (a published result, or a final on the scoreboard), on, or to come */
 function standing(P,g){
@@ -817,7 +810,8 @@ const plSe=(F,pid)=>{ const e=F.players&&F.players.players&&F.players.players[pi
 const UNIT_NAME={DL:'Pass rush and run front',LB:'Linebackers',DB:'Secondary'};
 /* a club's unit among the league's (mu.league.defs), 1st the best; clubs level on it share a rank, as the ELO tab's
    Mismatches and a player's window rank them */
-const defRank=(mu,t,u)=>{ const defs=mu&&mu.league&&mu.league.defs||{}; if(!defs[t]) return null; return 1+Object.keys(defs).filter(x=>defs[x][u]>defs[t][u]).length; };
+/* clubs level on a unit share its rank, level read to the hundredth as the ELO tab's Mismatches read it (mmKey) */
+const defRank=(mu,t,u)=>{ const defs=mu&&mu.league&&mu.league.defs||{}; if(!defs[t]) return null; const k=x=>Math.round(x*100); return 1+Object.keys(defs).filter(x=>k(defs[x][u])>k(defs[t][u])).length; };
 
 /* ---- the preview: the week's note on the game, or an automatic line until it is written ---- */
 /* a note's text as the page shows it: escaped first, then each player it marks, **Pat Surtain II** (one
@@ -867,9 +861,8 @@ function matchup(P,g,F){
   const where=neu?`${g.stadium?esc(g.stadium)+', ':''}a neutral site`:(g.stadium?esc(g.stadium):'');
   const past=st.fin?`<p class="gs-past" id="gsPast"><b>Played.</b> The calls were made before kickoff and are graded on the result; the ratings, lineups and units are the files as they stand now, after the game.</p>`:'';
   /* first in the window, the game's own page on the Props tab, where its game bets and every player
-     line are, where the Props tab can open it and the window is not over that very page (opened by its Game
-     snapshot button, app v128) */
-  const props=typeof P.canProps==='function'&&P.canProps(g.game_id)&&!overOwnPage(g)
+     line are, where the Props tab can open it */
+  const props=typeof P.canProps==='function'&&P.canProps(g.game_id)
     ?`<div class="gs-propsrow"><button type="button" class="btn quiet gs-props" data-gs-props="${esc(g.game_id)}" aria-label="Game bets and player props, on the Props tab" title="Opens this game on the Props tab: to win, to cover, the total and every player line">Game bets and player props<span aria-hidden="true"> \u203a</span></button></div>`:'';
   const L=lineOf(P,g), c=L.c;
   /* the headline: who is favoured and by how much, its chance and its confidence band; once
@@ -1375,7 +1368,7 @@ function wire(){
   md.addEventListener('scroll',stuck,{passive:true});
   md.addEventListener('click',e=>{
     /* a double click on a game page's button opens the window and must not close it with its second click */
-    if(e.target===md){ if((ONLY||FROMPAGE)&&e.detail>0&&Date.now()-ONE_AT<400) return; close(); return; }
+    if(e.target===md){ if(ONLY&&e.detail>0&&Date.now()-ONE_AT<400) return; close(); return; }
     const t=e.target.closest?e.target:null; if(!t) return;
     const f=t.closest('[data-gs-fold]'); if(f){ setCard(f.dataset.gsFold,OPEN[f.dataset.gsFold]!==true); syncAll(); return; }
     const al=t.closest('[data-gs-all]'); if(al){ const open=al.dataset.gsAll==='open'; for(const id of CARDS) setCard(id,open); syncAll(); return; }
@@ -1393,7 +1386,7 @@ function wire(){
     if(md.hidden) return;
     /* one card over a game's page that is no longer on the screen (another tab, the page closed): it goes
        quietly and the key is the page's */
-    if((ONLY||FROMPAGE)&&!hostShown()){ close(false); return; }
+    if(ONLY&&!hostShown()){ close(false); return; }
     if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); return; }
     const tb=e.target&&e.target.closest&&e.target.closest('[data-gs-tab]');
     if(tb&&/^(ArrowLeft|ArrowRight|Home|End)$/.test(e.key)){
@@ -1411,13 +1404,14 @@ function wire(){
 }
 /* the game's page on the Props tab, on the screen: the one card's window sits over it */
 const hostShown=()=>{ const gm=$('gameModal'); return !!gm&&!gm.hidden&&!gm.closest('[hidden]'); };
-/* the whole snapshot (a game's page's Game snapshot button, with {page:true}; the matchup bubble), or with
-   {only:'units'|'mism'|'stats'} the one card a game's page on the Props tab asked for (window.gameWindow) */
+/* the whole snapshot (the matchup bubble's Open game snapshot; until 22 October 2026 a board row, and for a few hours of
+   that day a game page's own Game snapshot button, app v128), or with {only:'units'|'mism'|'stats'} the one card a
+   game's page on the Props tab asked for (window.gameWindow) */
 function open(gid,from,o){
   const only=o&&ONE[o.only]?o.only:null;
   const P=B(), g=gameFor(gid); if(!P||!g) return false;
   const md=wire();
-  cur=gid; opener=from||document.activeElement||null; ONLY=only; FROMPAGE=!only&&!!(o&&o.page); ONE_AT=Date.now();
+  cur=gid; opener=from||document.activeElement||null; ONLY=only; ONE_AT=Date.now();
   md.classList.toggle('gs-one',!!only);
   if(only){ md.dataset.gsOnly=only; eloFiles(); unitsFile(); if(only==='stats') statFile(); }
   else{ delete md.dataset.gsOnly;
@@ -1433,12 +1427,12 @@ function open(gid,from,o){
 }
 function close(restore=true){
   const md=$('gsModal'); if(!md||md.hidden) return;
-  md.hidden=true; const gid=cur, one=ONLY, page=FROMPAGE; cur=null; ONLY=null; FROMPAGE=false;
+  md.hidden=true; const gid=cur, one=ONLY; cur=null; ONLY=null;
   md.classList.remove('gs-one'); delete md.dataset.gsOnly;
   if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open');
-  /* opened from a game's page: its button, or the one drawn since, the page's Back, the game's row, the chosen
-     tab's button (oneFocus) */
-  if(one||page){ const op=opener; opener=null; oneFocus(op,one||'snap',gid,restore); return; }
+  /* one card opened from a game's page: its button, or the one drawn since, the page's Back, the game's row, the
+     chosen tab's button (oneFocus) */
+  if(one){ const op=opener; opener=null; oneFocus(op,one,gid,restore); return; }
   if(!restore){ opener=null; return; }
   /* opened from the matchup bubble: the focus goes back to the name that opened it; where it is not on the screen
      (21 October 2026: the address moved to another tab under the window, which stays open over it, so the name is
@@ -1467,14 +1461,13 @@ function oneFocus(op,kind,gid,restore){
 window.gameSnapshot=open;
 window.gameSnapshotClose=close;
 /* a game's page on the Props tab: its Matchup, Mismatches and Team Stats buttons each open their card
-   alone, in this window over the page, and its Game snapshot button (app v128) the whole window (the props
-   parts draw the buttons only where this is on the page) */
-window.gameWindow=(kind,gid,from)=>kind==='snap'?open(gid,from,{page:true}):ONE[kind]?open(gid,from,{only:kind}):false;
+   alone, in this window over the page (the props parts draw the buttons only where this is on the page) */
+window.gameWindow=(kind,gid,from)=>ONE[kind]?open(gid,from,{only:kind}):false;
 /* a window over a game's page goes with it: when the page closes (Back, the game's week closing), and when
    the address moves to another tab */
 if(typeof closeGameModal==='function'){ const was=closeGameModal;
-  closeGameModal=function(){ if((ONLY||FROMPAGE)&&cur) close(false); return was.apply(this,arguments); }; }
-window.addEventListener('hashchange',()=>{ if((ONLY||FROMPAGE)&&cur) close(false); });
+  closeGameModal=function(){ if(ONLY&&cur) close(false); return was.apply(this,arguments); }; }
+window.addEventListener('hashchange',()=>{ if(ONLY&&cur) close(false); });
 /* the hub's matchup bubble (glance.js, 17 October 2026) reads a game as this window does: the records Team Rankings
    counts, the line as the Vegas call reads it, every model's call and its chance, the Power Ratings, Overall Offense and
    Overall Defense */

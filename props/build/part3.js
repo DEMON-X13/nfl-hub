@@ -563,8 +563,7 @@ function renderGame(){
     e.stopPropagation();
     toggleLeg(cb.dataset.leg, +cb.dataset.k, g, cb.dataset.side||'over', cb.dataset.main==='1'); }));
   /* (app v124) the game's Matchup, Mismatches and Team Stats: each its own little window over the page, the
-     hub's (window.gameWindow), handed the button so the focus comes back to it; (app v128) its Game snapshot the
-     whole window, the same way */
+     hub's (window.gameWindow), handed the button so the focus comes back to it */
   $('gameView').querySelectorAll('[data-gp-pop]').forEach(b=>b.addEventListener('click',()=>{
     if(typeof window.gameWindow==='function') window.gameWindow(b.dataset.gpPop,g.id,b); }));
 }
@@ -2671,10 +2670,13 @@ async function pbRecLoad(again){
   try{ renderSp(); }catch(e){ console.error(e); }
 }
 window.pbRecLoad=pbRecLoad;
-/* the two sections of Suggested Parlays (app v118, the owner's call of 19 October 2026: "do a separate section for
-   night games and then the sunday slot of games"), each with its own map in the record, and the two kinds of level
-   each unit has: the model's parlays (tiers) and the Elo picks (elo) */
-const SP_SEC={night:{map:'prime',name:'Night games'},slot:{map:'slot',name:'Sunday slot'}};
+/* the sections of Suggested Parlays and the maps of the record each counts, and the two kinds of level each unit
+   has: the model's parlays (tiers) and the Elo picks (elo). From app v118 to v128 two sections, Night games (the record's
+   prime map) and the Sunday slot (its slot map), each with its own record (the owner's call of 19 October 2026); since
+   app v129 one, Night games, its sets the night games' and then the Sunday slot's, its record both maps (the owner's
+   call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a part of 'Night Games'").
+   slot is kept for a caller that asks for the slot's map by name, and drawn nowhere */
+const SP_SEC={night:{maps:['prime','slot'],name:'Night games'},slot:{maps:['slot'],name:'Sunday slot'}};
 const SP_KIND={model:{field:'tiers',pre:'',name:'Model parlays'},elo:{field:'elo',pre:'elo-',name:'Elo picks'}};
 /* the record of one section's one kind, a level at a time: each season's unit and level once, the job's entry where
    it holds one (the last key that does: a kickoff the league moved makes a new key), else the backtest's, from the
@@ -2687,14 +2689,14 @@ const SP_KIND={model:{field:'tiers',pre:'',name:'Model parlays'},elo:{field:'elo
    picks, which the record took before app v118 gave it any */
 function spRecSum(L,sec,kind,B){
   sec=SP_SEC[sec]?sec:'night'; kind=SP_KIND[kind]?kind:'model';
-  const map=SP_SEC[sec].map, {field,pre}=SP_KIND[kind];
+  const maps=SP_SEC[sec].maps, {field,pre}=SP_KIND[kind];
   const out=PB_TIERS.map(([id,label])=>({id:pre+id,label,graded:0,won:0,lost:0,push:0,fair:0,fairN:0,model:0,units:0,bt:0}));
   let pending=0; const last=new Map(), units=new Set(), wk=new Set(), mine=new Set();
-  for(const e of Object.values(L&&pbIsMap(L[map])?L[map]:{})) if(pbIsMap(e)&&Array.isArray(e[field])) mine.add(e.season+'|'+e.gid);
-  const take=(src,bt)=>{ const E=src&&pbIsMap(src[map])?src[map]:{};
+  for(const map of maps) for(const e of Object.values(L&&pbIsMap(L[map])?L[map]:{})) if(pbIsMap(e)&&Array.isArray(e[field])) mine.add(e.season+'|'+e.gid);
+  const take=(src,bt)=>{ for(const map of maps){ const E=src&&pbIsMap(src[map])?src[map]:{};
     for(const k of Object.keys(E).sort()){ const e=E[k]; if(!pbIsMap(e)||!Array.isArray(e[field])||(bt&&mine.has(e.season+'|'+e.gid))) continue;
       for(const t of e[field]){ const g=e.grade&&e.grade[t&&t.id]; if(!g||!out.some(x=>t&&x.id===t.id)||!Array.isArray(t.legs)) continue;
-        last.set([e.season,e.gid,t.id].join('|'),{t,g,bt,w:+e.week}); } } };
+        last.set([e.season,e.gid,t.id].join('|'),{t,g,bt,w:+e.week}); } } } };
   /* the backtest first (a unit the record holds left out) and the job's record over it */
   take(B,true); take(L,false);
   for(const [id,{t,g,bt,w}] of last){ const s=out.find(x=>x.id===t.id); units.add(id.split('|').slice(0,2).join('|'));
@@ -2708,21 +2710,18 @@ function spRecSum(L,sec,kind,B){
   return {tiers:out,pending,games:units.size,btWeeks:[...wk].sort((a,b)=>a-b)};
 }
 /* a section's record at its head: a row for the model's parlays and one for the Elo picks, a pill a level (won-lost,
-   units on $1) and what is pending, as the ELO Ratings tab's record bar; where some of it is the backtest, one chip
-   saying which weeks (each pill's title saying how many of its own). No record and no backtest, nothing (hidden) */
+   units on $1) and what is pending, as the ELO Ratings tab's record bar, the backtest's weeks counted in it (each pill's
+   title saying how many of its own; app v129 took off the chip that named the weeks). No record and no backtest,
+   nothing (hidden) */
 function spRecHtml(sec){
   if(!PB_REC&&!PB_BT) return `<div class="sp-rec" data-sp-recsec="${sec}" hidden></div>`;
   const un=v=>(v>0.0005?'+':v<-0.0005?'−':'')+Math.abs(v).toFixed(2), f1=v=>v.toFixed(1);
-  const wk=new Set();
   const rows=Object.entries(SP_KIND).map(([kind,K])=>{ const R=spRecSum(PB_REC,sec,kind,PB_BT), any=R.tiers.some(s=>s.graded||s.push);
-    R.btWeeks.forEach(w=>wk.add(w));
     const by=kind==='elo'?'the Elo chance':'the model';
     const pills=any?R.tiers.map(s=>`<span class="rec" data-sp-rec="${sec}:${s.id}" title="${esc(K.name)}, ${esc(s.label)}: ${s.graded} graded, ${s.won} won${s.graded?`; wins expected ${s.fairN?f1(s.fair)+' by the book’s fair chance'+(s.fairN<s.graded?' (on the '+s.fairN+' with one)':'')+', ':''}${f1(s.model)} by ${by}`:''}${s.push?`; ${s.push} push${s.push===1?'':'es'}, the stake back`:''}${s.bt?`; ${s.bt} of them from the backtest`:''}">${esc(s.label)} <b>${s.won}–${s.lost}</b> ${s.graded||s.push?un(s.units)+' units':''}</span>`).join('')
       :`<span class="rec" data-sp-rec="${sec}:${kind}:none">None graded yet</span>`;
     return `<div class="bar" data-sp-reckind="${kind}"><span class="sp-reck">${esc(K.name)}</span>${pills}${R.pending?`<span class="rec" data-sp-rec="${sec}:${kind}:pending">Pending <b>${R.pending}</b></span>`:''}</div>`; }).join('');
-  const W=[...wk].sort((a,b)=>a-b);
-  const bt=W.length?`<span class="rec sp-recbt" data-sp-rec="${sec}:bt" title="${W.length>1?'Weeks':'Week'} ${W.join(', ')} ${W.length>1?'were':'was'} played before the record took this section: rebuilt by today’s rules on exactly what the site had published at each lock, and graded on the results.">Incl. backtest, week${W.length>1?'s':''} ${W.length>1&&W[W.length-1]-W[0]===W.length-1?W[0]+'–'+W[W.length-1]:W.join(', ')}</span>`:'';
-  return `<div class="sp-rec" data-sp-recsec="${sec}">${rows}${bt?`<div class="bar sp-recbtbar">${bt}</div>`:''}</div>`;
+  return `<div class="sp-rec" data-sp-recsec="${sec}">${rows}</div>`;
 }
 /* the tiers for the picks as they stand, from the cache when nothing they stand on has moved */
 /* everything the panel's choices stand on: the week, the games to come, those unticked, the boxes, the data */
@@ -2828,13 +2827,12 @@ const suggestLegOn=l=>{ const c=S.parlay[l.key]; return !!c&&c.k===l.k&&c.side==
    page (window.gameWindow, the Game snapshot's), three buttons under the game's head each open one card in it,
    over the page: Matchup, the snapshot's Offense vs defense; Mismatches, the game's Mismatches; Team Stats, the
    season's team stats side by side on bars. The prop model's own page has no such window and draws none.
-   (app v128) A fourth, Game snapshot, opens the whole snapshot over the page (the owner's call of 22 October 2026,
-   when the Matchups tab went: "Button on Props"), through the same binding: the hub's window opens the whole of it
-   for "snap" and one card alone for the other three. */
+   (app v128 added a fourth, Game snapshot, and app v129 took it off again, the owner's call of 22 October 2026: the
+   whole snapshot opens from the matchup bubble alone.) */
 function gameWinBtns(g){
   if(typeof window.gameWindow!=='function') return '';
   const b=(k,l)=>`<button type="button" class="btn quiet gwin-btn" data-gp-pop="${k}" data-gp-game="${esc(g.id)}" aria-haspopup="dialog">${l}</button>`;
-  return `<div class="gwin" role="group" aria-label="More on this game">${b('units','Matchup')}${b('mism','Mismatches')}${b('stats','Team Stats')}${b('snap','Game snapshot')}</div>`;
+  return `<div class="gwin" role="group" aria-label="More on this game">${b('units','Matchup')}${b('mism','Mismatches')}${b('stats','Team Stats')}</div>`;
 }
 /* ---------- the panel, over the builder ---------- */
 const pbMoney=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -3480,7 +3478,8 @@ function spSlotHtml(on){
     return `<p class="pb-none sp-wait" data-sp-wait="${u.open!=null?spIso(u.open):''}" data-sp-next="${esc(u.id)}">Next up: week ${u.w}’s Sunday slot, ${u.games.length} game${u.games.length===1?'':'s'}. Its sets go up ${spEt(u.open,true)}, the morning after ${pn||'the night game before it'}’s ${pg>1?'games':'game'}.</p>`; }
   return spGameHtml(u,on);
 }
-function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on))+spSecHtml('slot',spSlotHtml(on)); }
+/* (app v129) one section, Night games: the night games' sets, then the Sunday slot's */
+function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on)+spSlotHtml(on)); }
 function renderSp(){
   const el=$('spPanel'); if(!el||!S||!S.sched) return;
   /* the frame once (app v118: the Elo picks are in each unit now, no longer a section of their own at the foot) */

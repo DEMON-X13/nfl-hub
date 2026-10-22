@@ -329,10 +329,8 @@ body.modal-open{overflow:hidden}
 .stake-chips button{font-variant-numeric:tabular-nums;padding:7px 10px}
 .sugg-stake{display:inline-flex;align-items:center;gap:4px;font-size:13px;white-space:nowrap}
 .sugg-stake input{width:76px;padding:6px 8px;font-family:var(--display);font-variant-numeric:tabular-nums}
-/* (app v124) a game's Matchup, Mismatches and Team Stats buttons, under its head, each 44px; (app v128) and its
-   Game snapshot: four in a row, two by two at 680px and under */
-.gwin{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}
-@media(max-width:680px){.gwin{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* (app v124) a game's Matchup, Mismatches and Team Stats buttons, under its head, each 44px */
+.gwin{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}
 .gwin .gwin-btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;font-weight:600;text-align:center}
 .sugg-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sugg-nums div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px}
@@ -456,7 +454,6 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .sp-sec{margin:20px 0 0;padding:16px 0 0;border-top:2px solid var(--line-2)}
 .sp-sech{margin:0;font-family:var(--display);font-size:19px;font-weight:800;letter-spacing:-.3px}
 .sp-sub{margin:14px 0 8px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
-.sp-rec .bar.sp-recbtbar{margin-top:0}
 .sp-reck{flex:0 0 auto;min-width:112px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
 @media(max-width:640px){ .sp-reck{flex-basis:100%;min-width:0} }
 .sp-hd small{font-size:12px;color:var(--muted)}

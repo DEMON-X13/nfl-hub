@@ -11,8 +11,8 @@
  *                        Props tab first (the Matchups board in front of it went on 22 October 2026, the
  *                        owner's call: its row is the Props list's since app v122), its Suggested Parlays and
  *                        Parlay Builder tabs, X Parlays and the X Bet Log on tabs of their own on the site
- *                        owner's devices alone (the admin link, admin.js), and the Game snapshot a game's page
- *                        on the Props tab opens (app v128) and the matchup bubble too, which reads the Season
+ *                        owner's devices alone (the admin link, admin.js), and the Game snapshot the matchup
+ *                        bubble opens, which reads the Season
  *                        Tracker's games from the news job's files. nflbets/ stays the source
  *                        folder (build/); its index.html is a hand-written redirect to the root now, for old
  *                        bookmarks. Every file the page reads is named from the root (props/data/payload.json,
@@ -469,9 +469,9 @@ let out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>
 for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash', 'NFLSYNC', 'LIVE_IO', 'sync.json', 'sign out of owner', 'Not synced', 'ownerMark', 'syncStamp', 'xpSignIn'])
   if (out.includes(gone)) throw new Error('the built page still has ' + gone + ': the shared store and the owner are retired');
 
-/* the Game snapshot (snapshot.html, every name gs-): the window a game's page on the Props tab opens by
-   its Game snapshot button (app v128; a tap on a Matchups game until the board went on 22 October 2026)
-   and the matchup bubble by its Open game snapshot, with everything the site has on that game. Its
+/* the Game snapshot (snapshot.html, every name gs-): the window the matchup bubble opens by its Open game
+   snapshot (a tap on a Matchups game until the board went on 22 October 2026), with everything the site has on
+   that game, and a game page's Matchup, Mismatches and Team Stats windows, one card of it each. Its
    styles go in after the others and its script runs last, after the Player Elo tab's, whose files
    (window.eloFiles) and Mismatches it reads; the page's glue hands it the season, the Vegas calls and the
    way to the game on the Props tab (window.pkBoard). The Deep Dive's rows and tags are deepdive.js's, a module of its own the news
@@ -515,11 +515,11 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
   for (const gone of ['id="tab-pickems"', 'id="pkBoard"', 'pk-game', 'wireRows', 'PK_LIVE', "'#matchups')"])
     if (js.replace(/\/\*[\s\S]*?\*\//g, '').includes(gone) || out.includes('id="tab-pickems"')) throw new Error('the page carries the Matchups board again (' + gone + '), which went on 22 October 2026');
   if (/data-tab="(pickems|matchups)"|>Matchups<\/button>/.test(out)) throw new Error('the tab bar carries a Matchups tab again, which went on 22 October 2026');
-  /* the Game snapshot opens from a game's page on the Props tab by a fourth button (app v128), the whole window,
-     which closes with the page it was opened over */
-  for (const need of ["kind==='snap'?open(gid,from,{page:true})", 'FROMPAGE', "addEventListener('pk-state'"])
-    if (!SNAP_JS.includes(need)) throw new Error("nflbets/build/snapshot.html no longer opens the whole Game snapshot from a game's page on the Props tab as it should (" + need + ')');
-  if (!part3.includes("b('snap','Game snapshot')")) throw new Error("the props parts no longer draw a game page's Game snapshot button (b('snap','Game snapshot'))");
+  /* the whole Game snapshot draws once the season is in (pk-state); a game's page opens three of its cards alone and
+     never the whole of it (app v128 gave it a fourth button, Game snapshot, and app v129 took it off again, the owner's
+     call of 22 October 2026): the matchup bubble opens the whole window */
+  if (!SNAP_JS.includes("addEventListener('pk-state'")) throw new Error('nflbets/build/snapshot.html no longer draws the whole Game snapshot once the season is in (pk-state)');
+  if (/b\('snap'|FROMPAGE|kind==='snap'/.test(part3 + SNAP_JS)) throw new Error("a game's page opens the whole Game snapshot again, by a Game snapshot button taken off on 22 October 2026");
   if (!ELO_JS.includes('window.eloFiles=()=>FILES;') || !ELO_JS.includes('window.eloMismatches=mismatches;')) throw new Error('the Player Elo tab no longer hands its files or its Mismatches to the Game snapshot');
   const DD_JS = rd('nflbets', 'build', 'deepdive.js');
   for (const need of ['root.gsDeepDive = API', 'function possession(', 'function headTag(', 'function applies(', 'function basis(', 'module.exports = API'])
