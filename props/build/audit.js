@@ -231,10 +231,11 @@ setTimeout(async()=>{
   }
   console.log(`A. game context: ${nGames} games, ${nMkt/2} priced by market, ${nModel/2} by our model`);
 
-  /* ---- A2. the games list's rows and each game's head. Since app v122 a row is the Matchups board's: its win
+  /* ---- A2. the games list's rows and each game's head. Since app v122 a row is in the Matchups board's columns (the
+     board itself went in app v128): its win
      probability the audit's own reading of the game's lines (the two moneylines with the book's margin out,
      else the spread about a 13.5-point margin, else, with no line posted, the model's margin about the same;
-     a pick'em spread with no moneylines, no call), each side's share of the bar, the board's band (HIGH from
+     a pick'em spread with no moneylines, no call), each side's share of the bar, the board's old band (HIGH from
      75%, MED from 60%, LOW from 55%, else 50/50) with the favourite's chance, the favourite's tag raised and
      no other; its prediction the scores gameCtx gives, each rounded once, the margin beside it the difference
      of the two shown and its tag the side with the bigger number, "even" with no tag where they are level;
@@ -807,7 +808,7 @@ setTimeout(async()=>{
   d.querySelector('[data-game="'+g0.id+'"]').click(); d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape'}));
   chk(d.getElementById('gameModal').hidden,'Escape did not close the overlay');
   /* (app v126) the game's page is the Games tab's own window: leaving the tab closes it as its Back does (on the hub,
-     Back or the address moved to the Matchups tab left it open on the hidden tab with body's modal-open, so that tab
+     Back or the address moved to another tab left it open on the hidden tab with body's modal-open, so that tab
      could not scroll), a focus left in it going to the chosen tab's button; and Escape acts on a game's page only
      where it is on the screen, so a key on another tab never touches the Games tab's state */
   { const tabB=t=>d.querySelector(`#tabs button[data-tab="${t}"]`), gm=d.getElementById('gameModal');
@@ -6548,28 +6549,35 @@ setTimeout(async()=>{
     chk(F('sameGame')([{gid:'a'},{gid:'a'}])===true&&F('sameGame')([{gid:'a'},{gid:'b'}])===false,'sameGame does not spot a shared game');
     console.log(`Q. same-game pricing: 2 legs multiply to ${mult.toFixed(2)}, priced together ${sgp.toFixed(2)} (${(100*(1-sgp/mult)).toFixed(0)}% shorter)`); }
 
-  /* ---- O. the game page (app v124): no suggested parlays, and its Matchup, Mismatches and Team Stats buttons
-     drawn only where the hub's window is; then the hands' engine, drawn nowhere since, as it stands ---- */
+  /* ---- O. the game page (app v124): no suggested parlays, and its Matchup, Mismatches, Team Stats and (app v128)
+     Game snapshot buttons drawn only where the hub's window is; then the hands' engine, drawn nowhere since, as it
+     stands ---- */
   { const g=openUpcoming();
     /* blocking: the card, its side switch and its Add all are gone (the owner's call of 20 October 2026), and on this
-       page, which has no hub window (window.gameWindow, the Game snapshot's), so do the three buttons */
+       page, which has no hub window (window.gameWindow, the Game snapshot's), so do the four buttons */
     chk(!d.querySelector('#gameView .gsugg, #gameView [data-gsugg-side], #gameView [data-gtier-add], #gameView .gsugg-tier'),'the game page still draws its suggested parlays, their side switch or an Add all');
-    chk(typeof w.gameWindow!=='function'&&!d.querySelector('#gameView [data-gp-pop], #gameView .gwin'),'the prop model\'s own page draws a game\'s Matchup, Mismatches or Team Stats buttons, with no window for them');
-    /* with a window planted (a stand-in recording its calls), the page draws the three buttons under the head and over
-       the Game bets card, in order, each 44px by its own rule, and each press hands the window its card, the game and
-       the button; taken away, the buttons go with it */
+    chk(typeof w.gameWindow!=='function'&&!d.querySelector('#gameView [data-gp-pop], #gameView .gwin'),'the prop model\'s own page draws a game\'s Matchup, Mismatches, Team Stats or Game snapshot buttons, with no window for them');
+    /* with a window planted (a stand-in recording its calls), the page draws the four buttons under the head and over
+       the Game bets card, in order (the fourth, Game snapshot, the whole snapshot since app v128 took the Matchups tab
+       off: the owner's call of 22 October 2026, "Button on Props"), each 44px by its own rule, four to a row and two
+       at 680px and under, and each press hands the window its card, the game and the button; taken away, the buttons
+       go with it */
     { const calls=[]; w.gameWindow=(k,gid,b)=>{ calls.push([k,gid,b]); return true; };
       try{
         d.querySelector('[data-game="'+g.id+'"]').click();
         const bs=[...d.querySelectorAll('#gameView .gwin [data-gp-pop]')], head=d.querySelector('#gameView .ghead'), gb=d.querySelector('#gameView .gbets'), row=d.querySelector('#gameView .gwin');
-        chk(bs.map(b=>b.dataset.gpPop+':'+b.textContent.trim()).join()==='units:Matchup,mism:Mismatches,stats:Team Stats'&&bs.every(b=>b.dataset.gpGame===g.id&&b.getAttribute('aria-haspopup')==='dialog'&&b.type==='button'),
-          'with the hub window there, the game page does not draw Matchup, Mismatches and Team Stats, in that order, as dialog buttons for its game: '+bs.map(b=>b.outerHTML.slice(0,90)).join(' | '));
+        chk(bs.map(b=>b.dataset.gpPop+':'+b.textContent.trim()).join()==='units:Matchup,mism:Mismatches,stats:Team Stats,snap:Game snapshot'&&bs.every(b=>b.dataset.gpGame===g.id&&b.getAttribute('aria-haspopup')==='dialog'&&b.type==='button'),
+          'with the hub window there, the game page does not draw Matchup, Mismatches, Team Stats and Game snapshot, in that order, as dialog buttons for its game: '+bs.map(b=>b.outerHTML.slice(0,90)).join(' | '));
         chk(!!head&&!!row&&!!gb&&d.querySelectorAll('#gameView .gwin').length===1&&!!(head.compareDocumentPosition(row)&4)&&!!(row.compareDocumentPosition(gb)&4)&&d.querySelectorAll('#gameView .gbets').length===1,
           'the game page does not carry its buttons once, under its head and over its Game bets card, and the Game bets card once');
         const tall=[...d.styleSheets].flatMap(sh=>{ try{ return [...sh.cssRules]; }catch(e){ return []; } }).some(r=>r.selectorText==='.gwin .gwin-btn'&&r.style.getPropertyValue('min-height')==='44px');
         chk(tall,'the game page\'s window buttons have no rule making them 44px tall');
+        { const rules=[...d.styleSheets].flatMap(sh=>{ try{ return [...sh.cssRules]; }catch(e){ return []; } }), cols=r=>r.style.getPropertyValue('grid-template-columns').replace(/\s+/g,'');
+          const wide=rules.some(r=>r.selectorText==='.gwin'&&cols(r)==='repeat(4,minmax(0,1fr))');
+          const narrow=rules.some(r=>r.media&&/max-width:\s*680px/.test(r.media.mediaText)&&[...r.cssRules].some(c=>c.selectorText==='.gwin'&&cols(c)==='repeat(2,minmax(0,1fr))'));
+          chk(wide&&narrow,'the game page\'s four window buttons are not laid out four to a row, and two to a row at 680px and under: '+rules.filter(r=>/\.gwin\b/.test(r.cssText||'')&&!/gwin-btn/.test(r.cssText||'')).map(r=>r.cssText).join(' | ')); }
         for(const b of bs) b.click();
-        chk(calls.length===3&&calls.every(([k,gid,b],i)=>k===bs[i].dataset.gpPop&&gid===g.id&&b===bs[i]),'a press on a game page\'s button does not hand the window its card, its game and itself: '+JSON.stringify(calls.map(c=>c.slice(0,2))));
+        chk(calls.length===4&&calls.every(([k,gid,b],i)=>k===bs[i].dataset.gpPop&&gid===g.id&&b===bs[i]),'a press on a game page\'s button does not hand the window its card, its game and itself: '+JSON.stringify(calls.map(c=>c.slice(0,2))));
       }finally{ try{ delete w.gameWindow; }catch(e){ w.gameWindow=undefined; } d.querySelector('[data-game="'+g.id+'"]').click(); }
       chk(!d.querySelector('#gameView [data-gp-pop]'),'the game page\'s buttons stay once the window is taken away'); }
     w.eval('GAME_TIER_CACHE={}');
@@ -6631,7 +6639,7 @@ setTimeout(async()=>{
       try{ F('renderParlay')(); const body=d.getElementById('parlayBody');
         chk(!!body&&!body.querySelector('[data-planted]')&&/<img src=x data-planted=1>/.test(body.textContent),'markup in a parlay leg or the book price became an element on the parlay card'); }
       finally{ S.parlay=keepP; S.bookPrice=keepB; F('renderParlay')(); } }
-    console.log(`O. the game page: no suggested parlays, its three window buttons only with a window; the hands' engine, drawn nowhere: ${spec.map(([id,,n])=>T[id]?`${id} ${n} legs ${(T[id].corr*100).toFixed(0)}% at ${(T[id].dec).toFixed(2)}${T[id].relaxed?' (under floor)':''}`:`${id} none`).join(', ')} from ${T.pool} lines`); }
+    console.log(`O. the game page: no suggested parlays, its four window buttons only with a window; the hands' engine, drawn nowhere: ${spec.map(([id,,n])=>T[id]?`${id} ${n} legs ${(T[id].corr*100).toFixed(0)}% at ${(T[id].dec).toFixed(2)}${T[id].relaxed?' (under floor)':''}`:`${id} none`).join(', ')} from ${T.pool} lines`); }
   /* ---- N. the credit-pull panel, in place of the old price sheet ---- */
   { const box=d.getElementById('pricePull');
     chk(!!box,'the Weekly Update tab has no credit-pull panel');
@@ -6961,7 +6969,7 @@ setTimeout(async()=>{
         const ws=d.getElementById('weekSel');
         if(ws.value!==String(wk)){ ws.value=String(wk); ws.dispatchEvent(new w.Event('change')); }
         const shownWk=wk;
-        /* (app v122) the row's final-score cell, the Matchups board's, carries the live score and clock */
+        /* (app v122) the row's final-score cell, in the Matchups board's column, carries the live score and clock */
         const before=d.querySelector('[data-game="'+started[0].id+'"] .sl-result').textContent;
         chk(/LIVE/.test(before),'a started game should read LIVE until the scoreboard is read: '+before);
         d.getElementById('slateNow').click();

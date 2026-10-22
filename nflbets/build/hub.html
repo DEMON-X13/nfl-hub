@@ -1,0 +1,331 @@
+<!-- The page's glue: its few styles and one script, which build.js sets into the prop model's page. It
+     was the Matchups tab (the Pick'ems tab before 16 October 2026, tab_pickems.html), whose board went on
+     22 October 2026 (the owner's call: its row is the Props list's since app v122, and its Game snapshot opens
+     from each game's page there since app v128). What stays is what the rest of the page reads: the season from
+     betting/state.json and the Vegas call on it (window.pkBoard), the betting app's tag, colour, confidence and
+     Elo-tier code lifted at build time (its BETTING slot), the tabs as addresses (routeTabs), the framed betting tabs
+     (frames), the Props tab's stamp in the page's words and its scoreboard read once on load. Every class and id
+     is prefixed pk- to stay clear of the prop model's own, and the script is one closure for the same reason. -->
+<style>
+/* the team tag tag() draws, which the Game snapshot, the ELO Ratings tab and the matchup bubble wear */
+.pk-ttag{display:inline-block;text-align:center;font-family:var(--display);font-size:13px;font-weight:700;line-height:1;padding:5px 8px;border-radius:7px;border:1.5px solid;letter-spacing:.03em;flex:none;box-shadow:0 1px 2px rgba(15,27,45,.18),inset 0 1px 0 rgba(255,255,255,.18);text-shadow:0 1px 0 rgba(0,0,0,.12)}
+.pk-ttag.pk-win{font-weight:800;box-shadow:0 2px 6px -1px rgba(15,27,45,.35),inset 0 1px 0 rgba(255,255,255,.18)}
+.pk-ttag.pk-mini{padding:4px 5px;min-width:40px;vertical-align:-1px}
+/* the Game snapshot's split bar and its confidence pill */
+.pk-prob{position:relative;height:28px;border-radius:999px;overflow:hidden;background:#E6EBF1;display:flex;box-shadow:inset 0 1px 3px rgba(15,27,45,.12)}
+.pk-prob .pk-a,.pk-prob .pk-h{display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden}
+.pk-prob .pk-a{justify-content:flex-start;border-right:1px solid rgba(15,27,45,.18)} .pk-prob .pk-h{justify-content:flex-end;margin-left:auto}
+.pk-prob .pk-a span.pk-w,.pk-prob .pk-h span.pk-w{font-weight:800}
+.pk-tier{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 10px 4px 8px;border-radius:999px;background:#E9EEF4;color:var(--ink-2);white-space:nowrap}
+.pk-tier::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
+.pk-tier.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-tier.pk-med{background:var(--gold-soft);color:#8A5E05} .pk-tier.pk-coin{background:#FCECEA;color:#A8453A}
+/* the Props tab's stamp when the scoreboard is not loading (slateStamp, below) */
+.livestamp.bad{color:var(--miss)}
+/* a framed betting tab: full width, no border, as tall as the tab it shows */
+.pk-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
+</style>
+<script>
+/* ---------- the page's glue ----------
+   Vegas is the baseline. The call on each game is the Vegas favourite: the chance each side
+   wins from the closing moneylines nflverse publishes (state.json's odds, the book's margin
+   taken out), the spread when a game has no moneyline. The Game snapshot draws it beside the
+   models (Alpha Model, the Joker and the ELO Model), which are measured against it on the
+   Pick'em Record. Nothing is stored here. */
+(function(){
+/*BETTING*/
+const STATE_URL='betting/state.json';
+/* season: the betting job's own, from state.json, never written in here; done once the read has answered,
+   err where it failed */
+const ST={sched:[],odds:{},season:null,state:null,done:false,err:null};
+/* the betting app's tag, in the page's own pk- class names */
+const tag=(...a)=>BET.tag(...a).replace(/class="([^"]*)"/,(m,c)=>'class="'+c.split(' ').map(x=>'pk-'+x).join(' ')+'"');
+/* the win-probability bar in the two clubs' own colours, as the NBA Hub and the NHL Hub draw theirs (the
+   owner, 16 October 2026: the lime favourite read as neon). Each side wears its chip's colour (tagBg of
+   tagColor), its percentage in textOn's ink, so it clears 4.5:1 as the chip does; where the two would read
+   as one colour (two reds), the home side takes the first of its own colours that does not, else the
+   track's grey. The pick's percentage is the bold one. Used by the Game snapshot's split bar (the Props
+   tab's rows carry a copy of the rule, slateCols) */
+function probCols(a,h){
+  const hsl=c=>{ const [r,g,b]=BET.hex2rgb(c).map(v=>v/255), mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+    const hh=!d?0:mx===r?((g-b)/d+6)%6:mx===g?(b-r)/d+2:(r-g)/d+4; return [hh*60,d,(mx+mn)/2]; };
+  const near=(x,y)=>{ const [h1,c1,l1]=hsl(x), [h2,c2,l2]=hsl(y), dh=Math.min(Math.abs(h1-h2),360-Math.abs(h1-h2));
+    return c1<.15||c2<.15 ? c1<.15&&c2<.15&&Math.abs(l1-l2)<.15 : dh<28&&Math.abs(l1-l2)<.18; };
+  const ca=BET.tagBg(BET.tagColor(a));
+  let ch=BET.tagBg(BET.tagColor(h));
+  if(near(ca,ch)) ch=BET.teamCols(h).map(BET.tagBg).find(c=>!near(ca,c))||'#475068';
+  return [{bg:ca,ink:BET.textOn(ca)},{bg:ch,ink:BET.textOn(ch)}];
+}
+
+/* the prop model's schedule row for a game, which is where its spread and the book's prices
+   live. Keyed by the same nflverse id both sites use; null until the prop model has booted. */
+const mkt=gid=>(typeof S==='object'&&S&&S.sched||[]).find(x=>x.id===gid)||null;
+
+/* the schedule's kickoff (US Eastern) as an instant: Eastern's offset on that day is read
+   from the browser's own zone tables, so the clock change needs no date written in here */
+function kickAt(d,t){
+  const guess=new Date(`${d}T${t}:00Z`);
+  const inZone=z=>new Date(guess.toLocaleString('en-US',{timeZone:z}));
+  const k=new Date(guess.getTime()+(inZone('UTC')-inZone('America/New_York')));
+  return isNaN(k)?null:k;
+}
+/* the date and kickoff in the viewer's own time zone, with the zone's short name */
+function fmtDate(g){
+  if(!g.gameday) return ['',''];
+  const k=g.gametime?kickAt(g.gameday,g.gametime):null, d=k||new Date(g.gameday+'T12:00:00');
+  const day=d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  const t=k?k.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'';
+  return [day,t];
+}
+const winnerOf=g=>g.result==null?null:(g.result>0?g.home_team:(g.result<0?g.away_team:null));
+/* a game at a neutral site. nflverse marks most of them Neutral, but not every one (2026's
+   PHI at JAX in London is down as a Jaguars home game), and every 9:30am Eastern kickoff is
+   one played abroad, so either says it */
+const neutral=g=>g.location==='Neutral'||g.gametime==='09:30';
+/* nflverse runs the playoffs on as weeks 19-22 */
+const PLAYOFF={19:'Wild Card',20:'Divisional',21:'Conference',22:'Super Bowl'};
+const weekName=w=>w>18?(PLAYOFF[w]||'Playoffs '+(w-18)):'Week '+w;
+/* where a game stands: the published result when the betting job has graded it, else the final score the props job
+   has published (the prop model's own row: the two jobs run hours apart, and the read on load below asks nothing for a
+   game the payload has scored, so a final the betting job has not graded yet showed as to come, the review of 22
+   October 2026), otherwise what the scoreboard said when the Props tab last read it (LIVE: its Refresh scores, or the
+   page's own read once on load where a game is under way, scoresOnLoad, below). final says the game is over; live
+   says it is on. */
+function outcome(g){
+  if(g.result!=null) return {final:true,live:false,as:g.away_score,hs:g.home_score,winner:winnerOf(g),clock:''};
+  const r=mkt(g.game_id);
+  if(r&&r.hs!=null&&r.as!=null&&isFinite(r.hs)&&isFinite(r.as)){ const hs=+r.hs, as=+r.as;
+    return {final:true,live:false,as,hs,winner:hs>as?g.home_team:(as>hs?g.away_team:null),clock:''}; }
+  let s=null; try{ s=typeof LIVE==='object'&&LIVE&&LIVE.slate&&LIVE.games?LIVE.games[g.game_id]:null; }catch(e){}
+  if(!s||s.as==null||s.hs==null||s.state==='pre') return null;
+  const winner=s.hs>s.as?g.home_team:(s.as>s.hs?g.away_team:null);
+  return {final:s.state==='post',live:s.state==='live',as:s.as,hs:s.hs,winner,clock:s.clock||''};
+}
+
+/* what Vegas says: the home side's chance from the two moneylines with the book's margin
+   taken out, or from the spread (a margin spread 13.5 points about it) where a game has no
+   moneyline. The spread is the margin it expects, home side positive. Graded once the game
+   has a published result. */
+const ncdf=z=>{ const t=1/(1+0.2316419*Math.abs(z)), d=0.3989423*Math.exp(-z*z/2), q=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-q:q; };
+const mlImp=x=>x<0?-x/(-x+100):100/(x+100);
+function call(g){
+  const o=ST.odds[g.game_id], sp=g.spread_line!=null&&isFinite(g.spread_line)?+g.spread_line:null;
+  let pHome=null;
+  if(o&&isFinite(o.home)&&isFinite(o.away)&&o.home&&o.away){ const h=mlImp(+o.home), a=mlImp(+o.away); pHome=h/(h+a); }
+  else if(sp!=null&&sp!==0) pHome=ncdf(sp/13.5);
+  if(pHome==null) return null;
+  const pick=pHome>=0.5?g.home_team:g.away_team, conf=Math.max(pHome,1-pHome);
+  const margin=sp!=null?sp:13.5*Math.log(pHome/(1-pHome))/1.7;
+  const graded=g.result!=null&&isFinite(g.result);
+  return {pick,conf,pHome,margin,graded,correct:graded&&+g.result!==0?pick===winnerOf(g):null};
+}
+
+/* the game's own page on the Props tab, where its game bets (to win and to cover for both sides,
+   and the total) and every player line are. The Game snapshot opened from the matchup bubble offers it
+   where the prop model can open that page: it has the game, and the game's week is open there (weekOpen,
+   as its slate keeps a game) */
+function canProps(id){
+  if(typeof S!=='object'||!S||!Array.isArray(S.sched)) return false;
+  const row=mkt(id); return !!row&&(typeof weekOpen!=='function'||weekOpen(+row.w));
+}
+/* the page opened: its week chosen on the slate, the tab opened, then the page, as a click on the
+   game there opens it (the prop model's own S.ui.game and renderSlate). With a player (pid, a gsis id
+   as the lineups and the prop model's depth chart write it: a starter's name in the snapshot's Starters
+   card, the owner's call of 16 October 2026, "in starters, make player names clickable to their props
+   page"), the page opens with his row open, as a Mismatches bubble opens him (S.ui.open), brought into
+   view, highlighted and focused; without one, or where the page draws no row for him, the Game bets
+   card is brought into view as before */
+function openOnProps(id,pid){
+  const row=mkt(id); if(!row||typeof renderSlate!=='function') return;
+  const ws=document.getElementById('weekSel');
+  if(ws&&[...ws.options].some(o=>+o.value===+row.w)) ws.value=String(row.w);
+  const tab=document.querySelector('#tabs button[data-tab="slate"]'); if(tab) tab.click();
+  S.ui.game=row.id; S.ui.open=pid?{[pid]:true}:{}; save(); renderSlate();
+  const pr=pid?[...document.querySelectorAll('#gameView [data-open]')].find(b=>b.dataset.open===pid):null;
+  if(pr){ try{ if(typeof window.eloFocusPlayer==='function') window.eloFocusPlayer(pid); else if(pr.scrollIntoView) pr.scrollIntoView({block:'start'}); }catch(e){}
+    try{ pr.focus({preventScroll:true}); }catch(e){} return; }
+  /* the page opens at its head; this button was for the game bets, so they are brought into view
+     (they follow the game's head and its Matchup, Mismatches and Team Stats buttons, which a phone shows a
+     screen of first) */
+  const gb=document.querySelector('#gameView .gbets'); try{ if(gb&&gb.scrollIntoView) gb.scrollIntoView({block:'start'}); }catch(e){}
+}
+/* the players the game's page on the Props tab draws as a row to open (renderGame: on its roster, as
+   the page shows it, with a line to bet), so the snapshot links a starter there only where his row is;
+   an empty set where the page cannot open the game or the prop model cannot say */
+function propsPlayers(id){
+  const out=new Set();
+  try{ if(!canProps(id)||typeof rosterFor!=='function'||typeof statLines!=='function') return out;
+    const g=mkt(id), R=rosterFor(g,!!(S.ui&&S.ui.showAll));
+    for(const t of [g.a,g.h]) for(const x of (R[t]&&R[t].players)||[]) if(statLines(x).length) out.add(x.pl.id);
+  }catch(e){ out.clear(); }
+  return out;
+}
+/* the Props tab's stamp, in this page's words: nothing until the scoreboard has been read,
+   then when, or that it is not loading. The prop model's own version opens on "scores off",
+   which named a picker this page does not have. */
+window.slateStamp=function(){
+  const s=document.getElementById('slateStamp'); if(!s) return;
+  s.classList.toggle('bad',!!LIVE.err);
+  s.textContent=LIVE.err?'scores not loading':(LIVE.at?'scores '+new Date(LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):(LIVE.busy?'reading…':''));
+};
+
+/* the Game snapshot (nflbets/build/snapshot.html), the matchup bubble (glance.js) and the Props tab's rows
+   (slateNeutral) read the season through this: the season as loaded (ST.state is state.json whole; ST.done once
+   the read has answered, ST.err where it failed, and a pk-state event on the document then), the Vegas call,
+   where a game stands, its kickoff and site, and whether the Props tab can open the game's page, which players
+   it draws there, and the opening of it, at a player's row or its game bets */
+window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET,probCols,propsPlayers,canProps,openOnProps};
+
+/* the scoreboard on load: the Matchups board read ESPN's scoreboard on every load until it went (22 October
+   2026), so a game that had finished since the betting job last ran, or was on, showed its score without being
+   asked. The Props tab's list is that board now (app v122), so once the prop model is up the page reads it once
+   for that list: one free scoreboard read of the week on its list (the read its Refresh scores makes, no odds-API
+   credit, never on a timer), and only where a game of that week has kicked off with no final score in the payload,
+   the only case it can add anything. The read is put where a press of Refresh scores puts it (LIVE.games, LIVE.slate),
+   so the list, its stamp and the Game snapshot (outcome, above) show it, but it is not the press: it reads no box
+   score and redraws nothing the visitor is using. The list is drawn again with it only while nothing is open over the
+   page (no game's page, no window: renderSlate closes a game's page and rebuilds the list's rows, which took the scroll
+   lock from a window opened in the meantime and the focus off a row, the review of 22 October 2026), the focus put back
+   on the control it was on; otherwise the stamp says the read at once and the list shows it the next time it is drawn
+   (closing a game's page draws it). Nothing read is stored: the week is still settled by the jobs, from nflverse. */
+const pageBusy=()=>document.body.classList.contains('modal-open')||!!document.querySelector('.modal:not([hidden]),.lp-dlg:not([hidden])')
+  ||!!(typeof S==='object'&&S&&S.ui&&S.ui.game);
+function listRedraw(){
+  if(typeof renderSlate!=='function'||pageBusy()) return;
+  /* the control the focus is on in the Props tab, found again after the rows are rebuilt: by its id, else by its first
+     data- attribute (a game's row, data-game) */
+  const a=document.activeElement; let find=null;
+  if(a&&a!==document.body&&a.closest&&a.closest('#tab-slate')){
+    if(a.id){ const id=a.id; find=()=>document.getElementById(id); }
+    else{ const at=[...a.attributes].find(x=>/^data-/.test(x.name));
+      if(at){ const n=at.name, v=at.value; find=()=>[...document.querySelectorAll('#tab-slate ['+n+']')].find(x=>x.getAttribute(n)===v)||null; } }
+  }
+  try{ renderSlate(); }catch(e){ return; }
+  const now=document.activeElement;
+  if(find&&(!now||now===document.body||!now.isConnected)){ const b=find(); try{ if(b) b.focus({preventScroll:true}); }catch(e){} }
+}
+async function scoresOnLoad(){
+  try{
+    if(typeof LIVE!=='object'||!LIVE||LIVE.slate||LIVE.busy) return;
+    if(typeof gamesIn!=='function'||typeof slateWeek!=='function'||typeof gameStarted!=='function'||typeof hasScore!=='function'
+      ||typeof espnGames!=='function'||typeof ESPN_SB!=='string') return;
+    const wk=slateWeek();
+    if(!gamesIn(wk).some(g=>gameStarted(g)&&!hasScore(g))) return;
+    LIVE.busy=true; slateStamp();
+    try{
+      const r=await fetch(`${ESPN_SB}?seasontype=2&week=${wk}&dates=${SEASON}`,{cache:'no-store'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      LIVE.games=espnGames(await r.json(),S.sched); LIVE.err=null; LIVE.at=Date.now();
+    }catch(e){ LIVE.err=String(e&&e.message||e); }
+    finally{ LIVE.busy=false; }
+    LIVE.slate=true; slateStamp(); listRedraw();
+  }catch(e){}
+}
+
+/* tabs as addresses: a tab's address is its button's data-tab (#slate the Props tab, #suggest Suggested
+   Parlays since app v111, #parlay the Parlay Builder), and a reload stays where it was. On a phone the
+   bar is wider than the screen and scrolls sideways, so the chosen tab is brought into it, on load,
+   on a new address and on a tap: landing on #xparlays (where the old Live Parlays links go) left
+   its button off the bar's right edge. Only the bar scrolls, never the page.
+
+   The Props tab is the page's first tab since the Matchups board went (22 October 2026, the owner's call: "i
+   think we are good to remove matchups tabs since most the important info was moved to props tab"; its row has
+   been the Props list's since app v122, and its Game snapshot opens from each game's page there, app v128). The
+   bare address opens on it as the first tab, written over as nothing; every old address of the board lands on it,
+   written over as #slate: #matchups (16 to 22 October 2026), #pickems (every bookmark from before and pickems/'s
+   redirect) and #tracker (the Season Tracker's, gone on 14 October 2026, where news/ once sent every visitor).
+
+   X Parlays and the X Bet Log are the site owner's tabs alone since 20 October 2026 (the owner's call,
+   "hide only": the admin link, nflbets/build/admin.js, which runs in the page's head and says whose browser
+   this is, window.HUB_ADMIN). Their buttons carry data-admin-only (theme.css hides them from the first
+   paint unless html[data-admin="on"]); on a visitor's page they are taken off the bar before anything
+   wires them, so nothing can open them, and #xparlays and #bets (the old Live Parlays links among them)
+   land on the Props tab, written over as #slate, as #matchups does. Signing out (hub-admin) takes them off
+   the bar the same way, and an X tab that was open lands on the Props tab. */
+function routeTabs(){
+  const admin=()=>{ try{ return !!(window.HUB_ADMIN&&window.HUB_ADMIN.on()); }catch(e){ return false; } };
+  const ADMIN_ADDR=new Set(['#xparlays','#bets']);
+  if(!admin()) document.querySelectorAll('#tabs [data-admin-only]').forEach(b=>b.remove());
+  const nav=document.getElementById('tabs'); let btns=[...document.querySelectorAll('#tabs button')];
+  const reveal=b=>{ try{ if(!nav||!b) return; const n=nav.getBoundingClientRect(), r=b.getBoundingClientRect();
+    if(r.left>=n.left&&r.right<=n.right) return;
+    nav.scrollLeft+=(r.left+r.width/2)-(n.left+n.width/2); }catch(e){} };
+  const chosen=()=>btns.find(x=>x.getAttribute('aria-selected')==='true');
+  const addr=b=>'#'+b.dataset.tab;
+  /* the board's old addresses, which land on the Props tab */
+  const OLD_ADDR=new Set(['#matchups','#pickems','#tracker']);
+  const land=()=>{ try{ history.replaceState(null,'','#slate'); }catch(e){} };
+  const go=()=>{ if(OLD_ADDR.has(location.hash)||(!admin()&&ADMIN_ADDR.has(location.hash))) land();
+    const b=btns.find(x=>addr(x)===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); };
+  btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!==addr(b)) history.replaceState(null,'',addr(b)); reveal(b); }));
+  window.addEventListener('hashchange',go); go();
+  /* Sign out: the two tabs leave the bar, and one that was open lands on the Props tab */
+  document.addEventListener('hub-admin',()=>{ if(admin()) return;
+    const open=document.querySelector('#tabs [data-admin-only][aria-selected="true"]');
+    document.querySelectorAll('#tabs [data-admin-only]').forEach(b=>b.remove());
+    btns=[...document.querySelectorAll('#tabs button')];
+    if(open||ADMIN_ADDR.has(location.hash)){ land(); const b=btns.find(x=>x.dataset.tab==='slate'); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); } });
+  /* the web fonts can widen the buttons after the first layout: once more when they are in */
+  if(document.readyState!=='complete') window.addEventListener('load',()=>reveal(chosen()),{once:true});
+  try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>reveal(chosen())); }catch(e){}
+}
+
+/* the betting tabs are the betting site's own page, framed. A frame loads the first time its
+   tab is opened and then follows the height of what it shows, so the page scrolls as one.
+   The frame never scrolls itself up and down: its height is set from its content, so a vertical
+   overflow is met by the frame growing, never by a scrollbar of its own. With one allowed, a
+   classic scrollbar (Windows Chrome's, with its arrows) stuck there with nothing to scroll: the
+   charts are drawn at the frame's width, so the content was measured with the scrollbar's 15-17px
+   taken off, came out a few px taller without it, overflowed again, and Chrome kept the bar.
+   Sideways it still scrolls when something is really wider than the frame.
+
+   The frame's document is this page's own: the betting app is carried here as a string
+   (BET_APP, set by the build) and becomes the frame's srcdoc when its tab is first opened,
+   with the tab's name written in front of it. Nothing is fetched for it and nothing can be
+   cached apart from this page, so a refresh of this page refreshes the frames with it. */
+function frames(){
+  /* the page's light or dark look (theme.js): a frame's document is given it when it is made and again
+     when it loads, and a press of the switch reaches every frame already open */
+  const look=()=>{ try{ if(window.hubTheme) return window.hubTheme.now(); }catch(e){} return document.documentElement.getAttribute('data-theme')==='light'?'light':'dark'; };
+  const load=f=>{
+    if(f.dataset.loaded||!f.dataset.embed||typeof BET_APP!=='string') return;
+    f.dataset.loaded='1';
+    f.addEventListener('load',()=>{
+      let doc=null; try{ doc=f.contentDocument; }catch(e){ return; }
+      if(!doc||!doc.documentElement) return;
+      doc.documentElement.setAttribute('data-theme',look());
+      doc.documentElement.style.overflowY='hidden';
+      const fit=()=>{ const h=doc.documentElement.scrollHeight; if(h>0&&Math.abs(h-(parseFloat(f.style.height)||0))>2) f.style.height=h+'px'; };
+      fit();
+      if(window.ResizeObserver&&doc.body) new ResizeObserver(fit).observe(doc.body); else setInterval(fit,800);
+    });
+    let doc=BET_APP.replace('window.EMBED_TAB=null','window.EMBED_TAB='+JSON.stringify(f.dataset.embed));
+    /* the hub look, laid over the app's own styles as it is over the page's (theme.css, by the build) */
+    if(typeof window.THEME_FRAME_HEAD==='string'){ const i=doc.indexOf('</head>'); if(i>0) doc=doc.slice(0,i)+window.THEME_FRAME_HEAD+doc.slice(i); }
+    /* in the frame's own <html> tag, so its first paint is in the page's look */
+    doc=doc.replace(/<html\b/i,'<html data-theme="'+look()+'"');
+    f.setAttribute('srcdoc',doc);
+  };
+  const show=()=>document.querySelectorAll('main section:not([hidden]) iframe.pk-frame').forEach(load);
+  document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>setTimeout(show,0)));
+  show();
+}
+
+async function boot(){
+  routeTabs();
+  try{
+    const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const st=await r.json();
+    ST.sched=st.schedule||[]; ST.odds=st.odds||{}; ST.state=st;
+    ST.season=+st.season||(ST.sched[0]?+String(ST.sched[0].game_id).slice(0,4):null);
+  }catch(e){ ST.err=String(e&&e.message||e)||'no answer'; }
+  ST.done=true;
+  try{ document.dispatchEvent(new Event('pk-state')); }catch(e){}
+  /* the frames are wired either way: the betting tabs do not depend on the season's read */
+  frames();
+  const ready=new Promise(res=>{ if(typeof S==='object'&&S&&S.sched) res(); else document.addEventListener('app-ready',res,{once:true}); });
+  ready.then(()=>setTimeout(scoresOnLoad,300));
+}
+boot();
+})();
+</script>

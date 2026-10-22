@@ -32,8 +32,8 @@
    with his recent form and the matchup's projection, and the leg it was opened from: its line, the price its row
    shows, the model's chance, the book's fair chance (legFair), market + form (eloAltP) and the Elo matchup's chance
    (eloMatchupP), both on that price. For a team's or a game's leg, both clubs' records as Team Rankings counts
-   them, the line the leg stands on (the prop model's own row, DraftKings' named so; the board's only for a game it
-   has no row for), each club's Power Rating and rank, Overall Offense against Overall Defense
+   them, the line the leg stands on (the prop model's own row, DraftKings' named so; state.json's closing line only for
+   a game it has no row for), each club's Power Rating and rank, Overall Offense against Overall Defense
    each way, each model's pick (the Game snapshot's own readings, window.gsReadings), the leg's team marked "this
    leg" and, on a moneyline alone, each model picking that team to win ticked, the leg, and Open game snapshot.
    What a file has not given says so in its own line, and the rest draws. */
@@ -67,8 +67,8 @@ function kickEt(d,t){
   const m=/^(\d{1,2}):(\d{2})/.exec(t||''); if(!m) return ds;
   const h=+m[1]; return `${ds} · ${(h%12)||12}:${m[2]} ${h<12?'AM':'PM'} ET`;
 }
-/* the game the bubble is about: the board's row (state.json's schedule) where it has one, else the prop
-   model's own row in the board's shape, so a game the board does not carry still draws what it has */
+/* the game the bubble is about: the season's row (state.json's schedule, through window.pkBoard) where it has one, else
+   the prop model's own row in that shape, so a game the season does not carry still draws what it has */
 function gameView(gid){
   const b=boardRow(gid); if(b) return {g:b,board:true,a:b.away_team,h:b.home_team,week:+b.week,d:b.gameday,t:b.gametime};
   const r=propsRow(gid); if(!r) return null;
@@ -211,7 +211,7 @@ function teamHtml(){
   const tbl=`<table class="glance-vs"><thead><tr><td></td>${col(a)}${col(h)}</tr></thead><tbody>${rows.join('')}</tbody></table>${!F?'<p class="glance-q">Loading the ratings…</p>':!T?'<p class="glance-q" data-glance-n="nopr">No Power Rating for these clubs.</p>':''}`;
   /* the line the leg stands on: the prop model's own row for the game (its spread, total and moneylines, the numbers
      the leg, the Top lines and the Game bets card are priced on: DraftKings' while its pull is under a day old or
-     after a Refresh odds press, so named, else nflverse's posted line); the board's (state.json's closing lines) only
+     after a Refresh odds press, so named, else nflverse's posted line); state.json's closing lines only
      for a game the prop model has no row for. Until 18 October 2026 it was the board's wherever the board had the
      game, so a leg "To cover -4.5" at -118 sat under "BUF −5.5 · BUF −258 / LV +210" while the payload had BUF −4.5
      and BUF −230 / LV +190 */

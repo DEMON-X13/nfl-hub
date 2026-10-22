@@ -24,12 +24,16 @@
  *    the file: fallback; a refused link (nothing kept, one status line, still a visitor's page); a check that fails on
  *    the network or answers 429 (kept, not checked yet, checked again quietly on the next load, which a 200 marks
  *    checked and a refusal signs out); a key with no credits left (kept, 0 left).
- *  - the admin's page (a key kept): data-admin before the body, nine tabs, the stamp's switch then the Admin mark and
+ *  - the admin's page (a key kept): data-admin before the body, eight tabs (Props first), the stamp's switch then the
+ *    Admin mark and
  *    a 44px Sign out button, X Parlays drawn from its file and the X Bet Log's file read, both no-store, no request to
  *    The Odds API on load; HUB_ADMIN's odds() (its two paths only, the key added by it, the headers read back), and a
  *    refused key marked so; Sign out (asked first; only the record removed; the two tabs gone, an open one landing on
- *    the board; X Parlays emptied); another tab's sign-out followed, writing nothing.
- *  - a visitor's page: seven tabs; #xparlays and #bets landing on #matchups, on load and in an open page; no request
+ *    the Props tab, #slate, its button chosen and focused; X Parlays emptied); another tab's sign-out followed,
+ *    writing nothing. (The Matchups tab went in app v128, the owner's call of 22 October 2026: Props is the first tab,
+ *    the one the site opens on.)
+ *  - a visitor's page: six tabs, Props first; #xparlays and #bets landing on the Props tab, written over as #slate,
+ *    its button chosen, on load and in an open page; a bare address left bare; no request
  *    for parlays.json, xbets.json or ESPN for X Parlays, none to The Odds API; XBETS.enabled() false and ready() at
  *    once; nothing of the admin's place drawn.
  *  - what never makes an admin: the retired owner link's nflowner_v1, junk under the record's key, a record The Odds
@@ -67,8 +71,12 @@ const XBFIX = { season: BET_SEASON, updated: '2026-10-10T17:28:44Z', deposit: 10
 /* a kept record, as admin.js writes it: checked, or not checked yet */
 const REC = (k = FAKE, ok = true, more = {}) => JSON.stringify(Object.assign({ k, at: '2026-10-20T12:00:00.000Z', ok, checked: ok === true ? '2026-10-20T12:00:01.000Z' : null,
   left: ok === true ? 400 : null, leftAt: ok === true ? '2026-10-20T12:00:01.000Z' : null }, more));
-const SEVEN = "Matchups|Props|Suggested Parlays|Parlay Builder|Team Rankings|ELO Ratings|Pick'em Record";
-const NINE = "Matchups|Props|Suggested Parlays|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log";
+/* the tab bars: a visitor's six and the admin's eight, Props first (the Matchups tab went in app v128) */
+const SIX = "Props|Suggested Parlays|Parlay Builder|Team Rankings|ELO Ratings|Pick'em Record";
+const EIGHT = "Props|Suggested Parlays|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log";
+/* the Props tab open and its button chosen, as a visitor's X address and Sign out land: #slate */
+const onProps = d => d.defaultView.location.hash === '#slate' && !d.getElementById('tab-slate').hidden
+  && (d.querySelector('#tabs [data-tab="slate"]') || { getAttribute: () => null }).getAttribute('aria-selected') === 'true';
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
@@ -159,7 +167,7 @@ function boot({ url = SITE, seed = null, odds = 'good', oddsOk = false, file = F
   });
 }
 /* the requests a boot made to The Odds API, to the site's X files, and to ESPN for X Parlays (its own reads carry a
-   cache-buster, &_=, which the board's and Refresh odds' do not end on) */
+   cache-buster, &_=, which the Props tab's Refresh scores and Refresh odds do not end on) */
 const oddsCalls = R => R.calls.filter(c => c.host === ODDS_HOST);
 const xCalls = R => R.calls.filter(c => /liveparlays\/(parlays|xbets)\.json/.test(c.url) || /scoreboard\?seasontype=\d&week=\d+&dates=\d{4}&_=\d+$/.test(c.url) || /\/summary\?event=[^&]*&_=\d+$/.test(c.url));
 const isCheck = (c, k) => c.url === `https://${ODDS_HOST}/v4/sports/?apiKey=${encodeURIComponent(k)}` && c.method === 'GET' && c.cache === 'no-store' && c.referrerPolicy === 'no-referrer' && !c.credentials && !c.headers;
@@ -182,7 +190,7 @@ const ADMIN_JS = (() => { const head = HTML.slice(0, HTML.indexOf('</head>')); c
 function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
   const errs = [], calls = [], navs = [];
   const vc = new VirtualConsole(); vc.on('jsdomError', e => { const m = String(e && e.message); if (/navigation/i.test(m)) navs.push(m); else errs.push('jsdom: ' + m); });
-  const dom = new JSDOM(`<!DOCTYPE html><html lang="en"><head><script>${ADMIN_JS}</script></head><body><header><div class="hub-stamp"><button type="button" data-theme-toggle></button><span class="hub-admin" id="hubAdmin" hidden></span></div></header><nav id="tabs"><button data-tab="pickems" aria-selected="true">Matchups</button><button data-tab="xparlays" data-admin-only>X Parlays</button></nav></body></html>`,
+  const dom = new JSDOM(`<!DOCTYPE html><html lang="en"><head><script>${ADMIN_JS}</script></head><body><header><div class="hub-stamp"><button type="button" data-theme-toggle></button><span class="hub-admin" id="hubAdmin" hidden></span></div></header><nav id="tabs"><button data-tab="slate" aria-selected="true">Props</button><button data-tab="xparlays" data-admin-only>X Parlays</button></nav></body></html>`,
     { runScripts: 'dangerously', url, virtualConsole: vc, beforeParse(w) { w.addEventListener('error', e => errs.push(e.message)); w.confirm = () => true;
       w.fetch = (u, o) => { const s = String(u); let host = ''; try { host = new URL(s).host; } catch (e) {} calls.push({ url: s, host, method: String((o && o.method) || 'GET').toUpperCase(), cache: o && o.cache || null, referrerPolicy: o && o.referrerPolicy || null, credentials: o && o.credentials || null, headers: o && o.headers || null });
         if (host === ODDS_HOST && oddsOk) return oddsAnswer(odds, s); BAD_CALLS.push('mini page: ' + s); return Promise.reject(new TypeError('Failed to fetch')); };
@@ -214,9 +222,9 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
   { const V = await boot({ url: SITE + '#xparlays' });
     const { w, d } = V;
     chk(!V.timedOut && V.errs.length === 0, "a visitor's page did not come up, or threw: " + V.errs.join('; '));
-    chk(tabsOf(d) === SEVEN && !d.querySelector('[data-tab="xparlays"], [data-tab="bets"]'), "a visitor's tab bar is not the seven tabs, with the X tabs taken off it: " + tabsOf(d));
-    chk(w.location.hash === '#matchups' && !d.getElementById('tab-pickems').hidden && d.getElementById('tab-xparlays').hidden && d.getElementById('tab-bets').hidden,
-      "a visitor's #xparlays does not land on the Matchups board, written over as #matchups: " + w.location.hash);
+    chk(tabsOf(d) === SIX && !d.querySelector('[data-tab="xparlays"], [data-tab="bets"]'), "a visitor's tab bar is not the six tabs, Props first, with the X tabs taken off it: " + tabsOf(d));
+    chk(onProps(d) && d.getElementById('tab-xparlays').hidden && d.getElementById('tab-bets').hidden,
+      "a visitor's #xparlays does not land on the Props tab, written over as #slate, its button chosen: " + w.location.hash);
     chk(d.documentElement.getAttribute('data-admin') == null && w.HUB_ADMIN && w.HUB_ADMIN.on() === false && w.HUB_ADMIN.info() === null,
       "a visitor's page with nothing kept is taken for the admin's");
     chk(xCalls(V).length === 0, "a visitor's page asked for X Parlays' or the X Bet Log's file, or ESPN for X Parlays: " + xCalls(V).map(c => c.url).join(', '));
@@ -228,10 +236,10 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
     { const ha = d.getElementById('hubAdmin'), shown = d.body.cloneNode(true); shown.querySelectorAll('script, style').forEach(n => n.remove());
       chk(!!ha && ha.hidden && ha.innerHTML === '' && !/\bSign out\b|\bAdmin key\b|admin link/i.test(txt(shown)) && !d.querySelector('.ha-mark, .ha-out, [data-admin-out]'),
         "a visitor's page draws something of the admin's place: " + (ha ? ha.outerHTML.slice(0, 120) : 'no #hubAdmin')); }
-    /* an address in an open page: the X tabs' land on the board too */
-    for (const h of ['#bets', '#xparlays']) { w.location.hash = h; await until(() => w.location.hash === '#matchups', 1500);
-      chk(w.location.hash === '#matchups' && !d.getElementById('tab-pickems').hidden && d.getElementById('tab-xparlays').hidden && d.getElementById('tab-bets').hidden,
-        `in a visitor's open page, ${h} does not land on the Matchups board: ${w.location.hash}`); }
+    /* an address in an open page: the X tabs' land on the Props tab too */
+    for (const h of ['#bets', '#xparlays']) { w.location.hash = h; await until(() => w.location.hash === '#slate', 1500); await wait(20);
+      chk(onProps(d) && d.getElementById('tab-xparlays').hidden && d.getElementById('tab-bets').hidden,
+        `in a visitor's open page, ${h} does not land on the Props tab, written over as #slate, its button chosen: ${w.location.hash}`); }
     chk(xCalls(V).length === 0 && oddsCalls(V).length === 0, "a visitor's page asked for an X file, ESPN for X Parlays or The Odds API after the addresses changed");
 
     /* ---- a link pasted into this open page: taken off the address in the hashchange, before the tab bar reads it ---- */
@@ -247,11 +255,13 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
     w.close(); }
   /* a link pasted into a tab that loaded as a visitor's after another tab of the site had kept the key (checked, or
      waiting for its quiet check): nothing to ask, but this tab is still a visitor's, so it reloads, once and with no
-     request, at the tab the link named (put back after the tab bar wrote a visitor's #xparlays over as #matchups) */
+     request, at the tab the link named (put back after the tab bar wrote a visitor's #xparlays over as #slate) */
   for (const [link, want, rec, what] of [['#xparlays&owner=' + FAKE, '#xparlays', REC(), 'kept and checked'], ['#owner=' + FAKE, '', REC(FAKE, null), 'kept, not checked yet']]) {
     const V = await boot({ url: SITE });
     const { w, d } = V, n0 = V.calls.length;
-    chk(!V.timedOut && w.HUB_ADMIN.on() === false && tabsOf(d) === SEVEN, `a visitor's tab (for the link pasted after another tab ${what} the key) did not come up as a visitor's`);
+    chk(!V.timedOut && w.HUB_ADMIN.on() === false && tabsOf(d) === SIX, `a visitor's tab (for the link pasted after another tab ${what} the key) did not come up as a visitor's`);
+    chk(w.location.hash === '' && !d.getElementById('tab-slate').hidden && d.querySelector('#tabs [data-tab="slate"]').getAttribute('aria-selected') === 'true',
+      `a visitor's bare address is not left bare on the Props tab, the first: ${w.location.hash || '(none)'}`);
     w.localStorage.setItem(KEY, rec);
     w.location.hash = link;
     await until(() => V.navs.length > 0, 1500); await wait(120);
@@ -261,8 +271,8 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
     keyNowhere(V, FAKE, `a link pasted into a visitor's tab after another tab ${what} its key`);
     w.close(); }
   { const V = await boot({ url: SITE + '#bets' });
-    chk(V.w.location.hash === '#matchups' && !V.d.getElementById('tab-pickems').hidden && V.d.getElementById('tab-bets').hidden && tabsOf(V.d) === SEVEN && xCalls(V).length === 0,
-      "a visitor's #bets does not land on the Matchups board with seven tabs and no X file read: " + V.w.location.hash);
+    chk(onProps(V.d) && V.d.getElementById('tab-bets').hidden && tabsOf(V.d) === SIX && xCalls(V).length === 0,
+      "a visitor's #bets does not land on the Props tab (#slate, its button chosen) with six tabs and no X file read: " + V.w.location.hash);
     V.w.close(); }
 
   /* ======================= a good link ======================= */
@@ -278,7 +288,7 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
     keyNowhere(R, FAKE, 'a good link');
     R.w.close(); }
   /* the tab the link named: kept on the address before the body, and put back for the reload after this load (a
-     visitor's) landed it on the board */
+     visitor's) landed it on the Props tab */
   { const R = await boot({ url: SITE + '#xparlays&owner=' + FAKE, oddsOk: true });
     await until(() => R.navs.length > 0, 3000);
     const rs = R.seen.filter(x => x.ev === 'replaceState');
@@ -288,7 +298,7 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
     R.w.close(); }
   /* the same key again, already kept and checked: no request and no reload; a key kept but not checked: no second check */
   { const R = await boot({ url: SITE + '#owner=' + FAKE, oddsOk: true, seed: w => w.localStorage.setItem(KEY, REC()) });
-    chk(oddsCalls(R).length === 0 && R.navs.length === 0 && !R.w.location.href.includes(FAKE) && R.w.localStorage.getItem(KEY) === REC() && tabsOf(R.d) === NINE,
+    chk(oddsCalls(R).length === 0 && R.navs.length === 0 && !R.w.location.href.includes(FAKE) && R.w.localStorage.getItem(KEY) === REC() && tabsOf(R.d) === EIGHT,
       'a link whose key is already kept and checked costs a request or a reload, or changes the record: ' + oddsCalls(R).length + ' / ' + R.navs.length);
     R.w.close(); }
   /* the address handling on a page of its own: the parts around the key kept in order; only the fragment counts */
@@ -308,7 +318,7 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
       'a link The Odds API refuses is not checked once and then left: nothing kept, no reload');
     chk(!!msg && !ha.hidden && msg.getAttribute('role') === 'status' && txt(msg) === 'The Odds API refused that admin link.' && txt(ha) === txt(msg) && !ha.querySelector('.ha-mark, .ha-out'),
       'a refused link does not say so in one status line, and nothing else, in the header: ' + (ha ? ha.innerHTML.slice(0, 160) : 'no #hubAdmin'));
-    chk(tabsOf(R.d) === SEVEN && R.d.documentElement.getAttribute('data-admin') == null && !R.w.location.href.includes(BAD) && R.errs.length === 0,
+    chk(tabsOf(R.d) === SIX && R.d.documentElement.getAttribute('data-admin') == null && !R.w.location.href.includes(BAD) && R.errs.length === 0,
       'a refused link leaves the page the admin\'s, the key on the address, or threw: ' + tabsOf(R.d));
     R.w.close(); }
   for (const [mode, what] of [['net', 'a check that fails on the network'], ['429', 'a check answered 429'], ['500', 'a check answered 500']]) {
@@ -327,7 +337,7 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
   { const R = await boot({ oddsOk: true, seed: w => w.localStorage.setItem(KEY, REC(FAKE, null)) });
     await until(() => recOf(R.w) && recOf(R.w).ok === true, 3000); await wait(30);
     const rec = recOf(R.w), mark = R.d.querySelector('#hubAdmin .ha-mark');
-    chk(tabsOf(R.d) === NINE && R.d.documentElement.getAttribute('data-admin') === 'on' && oddsCalls(R).length === 1 && isCheck(oddsCalls(R)[0], FAKE) && R.navs.length === 0,
+    chk(tabsOf(R.d) === EIGHT && R.d.documentElement.getAttribute('data-admin') === 'on' && oddsCalls(R).length === 1 && isCheck(oddsCalls(R)[0], FAKE) && R.navs.length === 0,
       'a key kept but not checked yet does not load the admin\'s page and check it once, quietly (no reload): ' + tabsOf(R.d) + ' / ' + oddsCalls(R).length);
     chk(rec && rec.ok === true && rec.left === LEFT && !!rec.checked && !!mark && /^Admin key checked .+; 412 credits left as of .+$/.test(mark.getAttribute('title') || ''),
       'a key checked quietly on load is not marked checked, with its credits, on the record and the Admin mark\'s title: ' + (mark ? mark.getAttribute('title') : 'no mark'));
@@ -335,14 +345,14 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
   { const R = await boot({ oddsOk: true, odds: 'net', seed: w => w.localStorage.setItem(KEY, REC(FAKE, null)) });
     await until(() => oddsCalls(R).length > 0, 3000); await wait(50);
     const mark = R.d.querySelector('#hubAdmin .ha-mark');
-    chk(tabsOf(R.d) === NINE && !!mark && mark.getAttribute('title') === 'Admin key not checked yet' && recOf(R.w).ok === null,
+    chk(tabsOf(R.d) === EIGHT && !!mark && mark.getAttribute('title') === 'Admin key not checked yet' && recOf(R.w).ok === null,
       'a key not checked yet whose check fails again is not still the admin\'s, marked not checked yet: ' + (mark ? mark.getAttribute('title') : 'no mark'));
     R.w.close(); }
   { const R = await boot({ url: SITE + '#xparlays', oddsOk: true, odds: 'refuse', seed: w => w.localStorage.setItem(KEY, REC(FAKE, null)) });
     await until(() => R.w.localStorage.getItem(KEY) == null, 3000); await until(() => !R.d.querySelector('[data-tab="xparlays"]'), 1500);
-    chk(R.w.localStorage.getItem(KEY) == null && R.w.HUB_ADMIN.on() === false && R.d.documentElement.getAttribute('data-admin') == null && tabsOf(R.d) === SEVEN
-      && R.w.location.hash === '#matchups' && !R.d.getElementById('tab-pickems').hidden && R.d.getElementById('tab-xparlays').hidden && R.d.getElementById('hubAdmin').hidden,
-      'a key not checked yet that The Odds API then refuses does not sign this browser out, its X tabs gone and the board open: ' + tabsOf(R.d) + ' / ' + R.w.location.hash);
+    chk(R.w.localStorage.getItem(KEY) == null && R.w.HUB_ADMIN.on() === false && R.d.documentElement.getAttribute('data-admin') == null && tabsOf(R.d) === SIX
+      && onProps(R.d) && R.d.getElementById('tab-xparlays').hidden && R.d.getElementById('hubAdmin').hidden,
+      'a key not checked yet that The Odds API then refuses does not sign this browser out, its X tabs gone and the Props tab open (#slate): ' + tabsOf(R.d) + ' / ' + R.w.location.hash);
     R.w.close(); }
 
   /* ======================= the file: fallback (jsdom refuses replaceState on a file: address) =======================
@@ -371,7 +381,7 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
     chk(!A.timedOut && A.errs.length === 0, "the admin's page did not come up, or threw: " + A.errs.join('; '));
     { const on = A.seen.findIndex(x => x.ev === 'data-admin on');
       chk(on >= 0 && !A.seen[on].body && d.documentElement.getAttribute('data-admin') === 'on', "the admin's page is not marked data-admin=\"on\" before its body is parsed: " + A.seen.map(x => x.ev + (x.body ? ' (body)' : ' (head)')).join(' > ')); }
-    chk(tabsOf(d) === NINE && d.querySelectorAll('#tabs [data-admin-only]').length === 2, "the admin's tab bar is not the nine tabs: " + tabsOf(d));
+    chk(tabsOf(d) === EIGHT && d.querySelectorAll('#tabs [data-admin-only]').length === 2, "the admin's tab bar is not the eight tabs, Props first: " + tabsOf(d));
     chk(w.location.hash === '#xparlays' && !d.getElementById('tab-xparlays').hidden && d.querySelector('#tabs [data-tab="xparlays"]').getAttribute('aria-selected') === 'true',
       "the admin's #xparlays does not open X Parlays: " + w.location.hash);
     { const st = d.querySelector('header .hub-stamp'), kids = st ? [...st.children] : [], ha = d.getElementById('hubAdmin');
@@ -422,7 +432,7 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
     /* ---- Sign out: asked first; Cancel changes nothing ---- */
     { const b = d.querySelector('[data-admin-out]');
       w.confirm = () => false; b.click(); await wait(30);
-      chk(!!w.localStorage.getItem(KEY) && tabsOf(d) === NINE && w.HUB_ADMIN.on() === true && !d.getElementById('tab-xparlays').hidden,
+      chk(!!w.localStorage.getItem(KEY) && tabsOf(d) === EIGHT && w.HUB_ADMIN.on() === true && !d.getElementById('tab-xparlays').hidden,
         'Sign out answered Cancel signed out anyway');
       const nOdds = oddsCalls(A).length;
       let asked = null; w.confirm = m => { asked = m; return true; };
@@ -430,13 +440,13 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
       const wr = w[W]; w[W] = null;
       chk(asked === 'Sign out of admin on this device?', 'Sign out does not ask first: ' + asked);
       chk(wr.join() === 'remove ' + KEY && w.localStorage.getItem(KEY) == null, 'Sign out wrote something besides removing the admin record: ' + wr.join(', '));
-      chk(w.HUB_ADMIN.on() === false && d.documentElement.getAttribute('data-admin') == null && tabsOf(d) === SEVEN && !d.querySelector('#tabs [data-admin-only]'),
+      chk(w.HUB_ADMIN.on() === false && d.documentElement.getAttribute('data-admin') == null && tabsOf(d) === SIX && !d.querySelector('#tabs [data-admin-only]'),
         'Sign out does not take the page back to a visitor\'s, the X tabs off its bar: ' + tabsOf(d));
-      chk(w.location.hash === '#matchups' && !d.getElementById('tab-pickems').hidden && d.getElementById('tab-xparlays').hidden && d.querySelector('#tabs [data-tab="pickems"]').getAttribute('aria-selected') === 'true',
-        'Sign out on X Parlays does not land on the Matchups board: ' + w.location.hash);
+      chk(onProps(d) && d.getElementById('tab-xparlays').hidden,
+        'Sign out on X Parlays does not land on the Props tab (#slate, its button chosen): ' + w.location.hash);
       chk(d.getElementById('hubAdmin').hidden && d.getElementById('hubAdmin').innerHTML === '' && txt(d.getElementById('app')) === '' && w.XBETS.enabled() === false,
         "Sign out leaves the admin's place drawn, X Parlays drawn, or an X Bet Log");
-      chk(d.activeElement === d.querySelector('#tabs [data-tab="pickems"]'), 'Sign out leaves the focus nowhere (not on the chosen tab): ' + (d.activeElement && d.activeElement.outerHTML.slice(0, 60)));
+      chk(d.activeElement === d.querySelector('#tabs [data-tab="slate"]'), 'Sign out leaves the focus nowhere (not on the chosen tab, Props): ' + (d.activeElement && d.activeElement.outerHTML.slice(0, 60)));
       chk(A.navs.length === 0 && oddsCalls(A).length === nOdds, 'Sign out reloaded the page or asked The Odds API');
       /* nothing reads for X Parlays after it: Refresh now pressed by a script, another tab's clear */
       const n0 = xCalls(A).length; try { w.lpRefresh(); } catch (e) {} w.dispatchEvent(new w.StorageEvent('storage', { key: 'lp_cleared_here_v1' })); await wait(80);
@@ -448,13 +458,13 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
   { const B = await boot({ url: SITE + '#bets', oddsOk: true, seed: w => { w.localStorage.setItem(KEY, REC()); const P = w.Storage.prototype, s = P.setItem, r = P.removeItem;
       P.setItem = function (k, v) { if (w.__wr) w.__wr.push('set ' + k); return s.call(this, k, v); }; P.removeItem = function (k) { if (w.__wr) w.__wr.push('remove ' + k); return r.call(this, k); }; } });
     const { w, d } = B;
-    chk(tabsOf(d) === NINE && w.location.hash === '#bets' && !d.getElementById('tab-bets').hidden, "the admin's #bets does not open the X Bet Log: " + w.location.hash);
+    chk(tabsOf(d) === EIGHT && w.location.hash === '#bets' && !d.getElementById('tab-bets').hidden, "the admin's #bets does not open the X Bet Log: " + w.location.hash);
     w.__wr = []; w.dispatchEvent(new w.StorageEvent('storage', { key: 'props_press_v1' })); w.dispatchEvent(new w.StorageEvent('storage', { key: KEY })); await wait(30);
-    chk(tabsOf(d) === NINE && w.HUB_ADMIN.on() === true && !w.__wr.length, 'another key moving, or the record still there, signed this tab out, or following wrote something');
+    chk(tabsOf(d) === EIGHT && w.HUB_ADMIN.on() === true && !w.__wr.length, 'another key moving, or the record still there, signed this tab out, or following wrote something');
     w.localStorage.removeItem(KEY); w.__wr = [];
-    w.dispatchEvent(new w.StorageEvent('storage', { key: KEY })); await until(() => tabsOf(d) === SEVEN, 1500); await wait(30);
-    chk(w.HUB_ADMIN.on() === false && tabsOf(d) === SEVEN && d.documentElement.getAttribute('data-admin') == null && w.location.hash === '#matchups' && !d.getElementById('tab-pickems').hidden && d.getElementById('tab-bets').hidden && !w.__wr.length,
-      "another tab's sign-out is not followed here (the X tabs gone, the X Bet Log landing on the board), or following wrote something: " + tabsOf(d) + ' / ' + w.location.hash + ' / ' + w.__wr.join());
+    w.dispatchEvent(new w.StorageEvent('storage', { key: KEY })); await until(() => tabsOf(d) === SIX, 1500); await wait(30);
+    chk(w.HUB_ADMIN.on() === false && tabsOf(d) === SIX && d.documentElement.getAttribute('data-admin') == null && onProps(d) && d.getElementById('tab-bets').hidden && !w.__wr.length,
+      "another tab's sign-out is not followed here (the X tabs gone, the X Bet Log landing on the Props tab, #slate), or following wrote something: " + tabsOf(d) + ' / ' + w.location.hash + ' / ' + w.__wr.join());
     chk(B.errs.length === 0 && oddsCalls(B).length === 0, 'the page threw, or asked The Odds API, following another tab: ' + B.errs.join('; '));
     w.close(); }
 
@@ -468,7 +478,7 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
         P.setItem = function (k, v) { if (k === KEY) throw new w.DOMException('full', 'QuotaExceededError'); return s.call(this, k, v); };
         P.removeItem = function (k) { if (k === KEY) throw new w.DOMException('denied', 'SecurityError'); return r.call(this, k); }; }]]) {
       const R = await boot({ url: SITE + '#xparlays', seed });
-      chk(!R.timedOut && R.errs.length === 0 && tabsOf(R.d) === SEVEN && R.d.documentElement.getAttribute('data-admin') == null && R.w.HUB_ADMIN.on() === false && R.w.location.hash === '#matchups'
+      chk(!R.timedOut && R.errs.length === 0 && tabsOf(R.d) === SIX && R.d.documentElement.getAttribute('data-admin') == null && R.w.HUB_ADMIN.on() === false && onProps(R.d)
         && xCalls(R).length === 0 && oddsCalls(R).length === 0 && R.d.getElementById('hubAdmin').hidden,
         `${what} makes the page the admin's, asks for something, or throws: ${tabsOf(R.d)} / ${R.errs.join('; ')}`);
       R.w.close(); }
@@ -521,7 +531,7 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
       const keys = keysOf(O.w), ha = O.d.getElementById('hubAdmin');
       chk(!O.timedOut && O.errs.length === 0 && oddsCalls(O).length === 0 && !(KEY in keys) && !O.w.location.href.includes('owner=') && !O.w.location.href.includes('the-old-owner-secret'),
         'the old owner link is not refused by the format check, with no request and nothing kept, the address cleaned: ' + O.w.location.href + ' / ' + O.errs.join('; '));
-      chk(txt(ha) === 'That admin link was refused.' && !ha.hidden && tabsOf(O.d) === SEVEN && O.d.querySelectorAll('#lpCard .savedp').length === 0 && xCalls(O).length === 0,
+      chk(txt(ha) === 'That admin link was refused.' && !ha.hidden && tabsOf(O.d) === SIX && O.d.querySelectorAll('#lpCard .savedp').length === 0 && xCalls(O).length === 0,
         "the old owner link does not leave a visitor's page saying the link was refused, with no X Parlays drawn or read: " + txt(ha) + ' / ' + tabsOf(O.d));
       chk(GONE.every(k => !(k in keys)), 'with the old owner link, a flag or a copy the retired layers left is still in the browser: ' + GONE.filter(k => k in keys).join(', '));
       chk(kept(keys), 'with the old owner link, the browser lost some of its own data');

@@ -7,11 +7,13 @@
  *
  *   index.html           at the site's root (the owner's call of 17 October 2026: "can you make
  *                        .../nfl-hub/nflbets/ be .../nfl-hub/ and get rid of that page", the landing page
- *                        that listed this page, Weekly Picks and the other hubs): the prop model's page with
- *                        the Matchups board in front of it, its Suggested Parlays and Parlay Builder tabs, X
- *                        Parlays and the X Bet Log on tabs of their own on the site owner's devices alone (the
- *                        admin link, admin.js), and the Game snapshot a tap on a game opens, which reads
- *                        the Season Tracker's games from the news job's files. nflbets/ stays the source
+ *                        that listed this page, Weekly Picks and the other hubs): the prop model's page, its
+ *                        Props tab first (the Matchups board in front of it went on 22 October 2026, the
+ *                        owner's call: its row is the Props list's since app v122), its Suggested Parlays and
+ *                        Parlay Builder tabs, X Parlays and the X Bet Log on tabs of their own on the site
+ *                        owner's devices alone (the admin link, admin.js), and the Game snapshot a game's page
+ *                        on the Props tab opens (app v128) and the matchup bubble too, which reads the Season
+ *                        Tracker's games from the news job's files. nflbets/ stays the source
  *                        folder (build/); its index.html is a hand-written redirect to the root now, for old
  *                        bookmarks. Every file the page reads is named from the root (props/data/payload.json,
  *                        never ../props/...), and nothing in it names a parent folder, which from the root
@@ -21,14 +23,16 @@
  * the payload fetch, part2, part3 -- because the tabs it is growing are the prop model's own
  * tabs, and a copy of a tab that size would be a second prop model to keep in step. Its
  * sections all stay in the page, listeners and all; only the tab buttons say which are shown.
- * The Matchups tab (Pick'ems until the owner's call of 16 October 2026; its section, file and
- * prefix keep that name) is set in front of them: its own section, styles and one closure, every
- * name prefixed pk- so nothing of it collides with the app around it.
+ * The page's glue (hub.html, the Matchups tab's file until its board went on 22 October 2026) is
+ * set in after them: a few styles and one closure, every name prefixed pk- so nothing of it collides
+ * with the app around it: the season from betting/state.json and the Vegas call on it
+ * (window.pkBoard, which the Game snapshot and the matchup bubble read), the tabs as addresses and
+ * the framed betting tabs.
  *
- * The board draws the betting app's row, so the betting app's tag and confidence-band code is
- * lifted from it at build time, the way betting/tools/build.js lifts from part2: the same
- * code, not a copy that can drift. It is scoped inside the closure because the prop model has
- * its own TEAM_COLORS and tag().
+ * The Game snapshot draws the betting app's team tags, its confidence pill and its Elo shields, so
+ * the betting app's tag, colour, confidence-band and tier code is lifted from it at build time, the
+ * way betting/tools/build.js lifts from part2: the same code, not a copy that can drift. It is
+ * scoped inside the closure because the prop model has its own TEAM_COLORS and tag().
  *
  * Nothing is baked in. The page fetches props/data/payload.json, betting/state.json and
  * elo/data/*.json when it opens (and liveparlays/parlays.json and liveparlays/xbets.json on the site
@@ -57,7 +61,7 @@ const part1 = rd('props', 'build', 'part1.html');
 const part2 = rd('props', 'build', 'part2.js');
 const part3 = rd('props', 'build', 'part3.js');
 const betting = rd('betting', 'app', 'x_nfl_betting_model.html');
-const tab = rd('nflbets', 'build', 'tab_pickems.html');
+const tab = rd('nflbets', 'build', 'hub.html');
 /* the X Parlays section is the section page's own source, set into the X Parlays tab, a tab of
    its own (#xparlays): X's parlays (liveparlays/parlays.json, read only) and nothing else, on the
    site owner's devices alone since 20 October 2026 (the admin link, admin.js: "hide only", the file
@@ -142,10 +146,14 @@ const lift = (src, from, to, what) => {
   if (a < 0 || b < 0) throw new Error(`the ${what} is not where nflbets/build expects it`);
   return src.slice(a, b).trimEnd();
 };
-const piece = (re, what) => { const m = tab.match(re); if (!m) throw new Error(`tab_pickems.html has no ${what}`); return m[1]; };
+const piece = (re, what) => { const m = tab.match(re); if (!m) throw new Error(`nflbets/build/hub.html has no ${what}`); return m[1]; };
 const TAB_CSS = piece(/<style>([\s\S]*?)<\/style>/, '<style> block');
-const TAB_HTML = piece(/(<section id="tab-pickems">[\s\S]*?<\/section>)/, 'section');
 const TAB_JS = piece(/<script>([\s\S]*?)<\/script>/, '<script> block');
+/* the Matchups board went on 22 October 2026 (the owner's call: "i think we are good to remove matchups tabs since most
+   the important info was moved to props tab"): its file is the page's glue now, hub.html, and carries no section */
+if (fs.existsSync(path.join(ROOT, 'nflbets', 'build', 'tab_pickems.html')))
+  throw new Error('nflbets/build/tab_pickems.html is back: the Matchups board is retired, the page\'s glue is hub.html');
+if (/<section\b/.test(tab)) throw new Error('nflbets/build/hub.html carries a section: the Matchups board is retired, its row is the Props list\'s');
 /* the Player Elo tab: the same shape, prefixed pe-, reading elo/data/ on load */
 const eloTab = rd('nflbets', 'build', 'tab_elo.html');
 const epiece = (re, what) => { const m = eloTab.match(re); if (!m) throw new Error(`tab_elo.html has no ${what}`); return m[1]; };
@@ -161,12 +169,13 @@ for (const f of ['players.json', 'model.json']) if (!fs.existsSync(path.join(ROO
 if (/(^|\n)(body|header|main|:root|\.card|\.bar|table)\{/.test(ELO_CSS)) throw new Error('a page-level rule in the Elo tab styles');
 /* the Season Tracker tab is gone (14 October 2026, the owner's call): its games are in each Game
    snapshot (snapshot.html, below), read from the news job's files, and its old address, #tracker,
-   lands on the Matchups board, as #matchups (tab_pickems.html's routeTabs) */
+   lands on the Props tab, as #slate (hub.html's routeTabs) */
 if (fs.existsSync(path.join(ROOT, 'nflbets', 'build', 'tab_tracker.html')))
   throw new Error('nflbets/build/tab_tracker.html is back: the Season Tracker tab is retired, its games are in the Game snapshot');
 
-/* the betting app's colour table, tag() and the contrast maths behind it, and its confidence
-   bands: cut where its walk-forward record changes, so a second copy here would drift off them */
+/* the betting app's colour table, tag() and the contrast maths behind it, its confidence bands (cut
+   where its walk-forward record changes, so a second copy here would drift off them) and its Elo tiers:
+   the Game snapshot's tags, split bar and confidence pill, and every Elo shield on the page */
 const BET = [
   lift(betting, 'const TEAM_COLORS=', '\n', 'team colours'),
   lift(betting, 'function hex2rgb(', 'function predict(', 'tag colours and tag()'),
@@ -181,8 +190,10 @@ const js = sub1(sub1(TAB_JS, '/*BETTING*/', BET_NS, 'the /*BETTING*/ slot'),
   "const tag=(...a)=>BET.tag(...a).replace(/class=\"([^\"]*)\"/,(m,c)=>'class=\"'+c.split(' ').map(x=>'pk-'+x).join(' ')+'\"');",
   "const tag=(...a)=>BET.tag(...a).replace(/class=\"([^\"]*)\"/,(m,c)=>'class=\"'+c.split(' ').map(x=>'pk-'+x).join(' ')+'\"');\n/* the Player Elo tab draws team tags and tier shields with these */\nwindow.pkTag=tag; window.pkTagColor=BET.tagColor; window.pkTierBadge=BET.tierBadge; window.pkEloTier=BET.eloTier; window.pkTierDefs=BET.TIER_DEFS;",
   'the tag helper, which the Elo tab shares');
-for (const need of ['function gameBet', 'function confTier', 'function bookPrice', 'function fmtML', 'const TEAM_NAMES', 'function toggleLeg', 'function legKey', 'function gameStarted', 'function gameBetsCard', 'function settleGameLeg', 'function slateStamp', 'const ESPN_SB', 'function espnGames', 'const SEASON'])
-  if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the board prices with');
+/* what the page's glue reads of the prop model: the Props tab's stamp (which it words for the page), its scoreboard
+   reader and LIVE (read once on load where a game is under way), the game's page it opens and the players it draws there */
+for (const need of ['function slateStamp', 'const ESPN_SB', 'function espnGames', 'const SEASON', 'let LIVE=', 'const slateWeek=', 'function gamesIn', 'function gameStarted', 'function hasScore', 'function weekOpen', 'function renderSlate', 'function rosterFor', 'function statLines', 'const TEAM_NAMES'])
+  if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the page\'s glue reads');
 
 /* ---- the X Parlays section, out of liveparlays/build/page.html ---- */
 const lpiece = (re, what) => { const m = livePage.match(re); if (!m) throw new Error(`liveparlays/build/page.html has no ${what}`); return m[1]; };
@@ -386,11 +397,11 @@ const BET_INLINE = JSON.stringify(BET_APP).replace(/<\/script/gi, '<\\/script').
    unshown, since the prop model draws into it on every render. The fourth field marks a tab as the
    site owner's alone (20 October 2026, the admin link: admin.js): its button and its section carry
    data-admin-only, theme.css hides the button from the first paint unless html[data-admin="on"], and
-   on a visitor's page routeTabs (tab_pickems.html) takes it off the bar and lands its address on the
-   board. Both sections stay in the page for everyone: the X Parlays section's script wires its window
+   on a visitor's page routeTabs (hub.html) takes it off the bar and lands its address on the Props
+   tab. Both sections stay in the page for everyone: the X Parlays section's script wires its window
    and its buttons as it loads, and with them gone it would throw and take the builder's Finish with it */
+/* the Props tab first, the page's default (the Matchups board in front of it went on 22 October 2026) */
 const TABS = [
-  ['pickems', 'Matchups'],
   ['slate', 'Props'],
   ['suggest', 'Suggested Parlays'],
   ['parlay', 'Parlay Builder'],
@@ -408,9 +419,9 @@ const FRAMES = TABS.filter(t => t[2]).map(([t, label, embed, admin]) =>
 const navFrom = html.indexOf('<nav role="tablist" id="tabs">'), navTo = html.indexOf('</nav>', navFrom);
 if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where nflbets/build expects it in part1.html');
 html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
-for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|suggest|parlay)$/) && html.includes(`id="tab-${t}"`))
+for (const [t] of TABS) if (t !== 'elo' && !t.match(/^(slate|suggest|parlay)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
-html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
+html = sub1(html, '<section id="tab-slate">', FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate">', 'the Games section');
 /* the Parlay Builder keeps the prop model's own section and its address, #parlay: the builder over its Top 30
    lines and the choices they are built from (app v116; Suggested Parlays, #suggest, is the prop model's own
    section before it, each prime-time game's parlays and the Elo picks). X Parlays is a section of its own after
@@ -435,7 +446,7 @@ const NOTE = `<script>
 /* which build of this page you are looking at. Without it there is no way to tell a page
    the browser cached last week from the one the job published this morning. APP_BUILD moves
    only with the prop model's parts; PAGE_HASH is the first seven hex of the page's own
-   SHA-256 (taken with this placeholder in it), so a change to any source -- the Matchups tab,
+   SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
 const PAGE_HASH='${HASH_SLOT}';
@@ -458,11 +469,12 @@ let out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>
 for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash', 'NFLSYNC', 'LIVE_IO', 'sync.json', 'sign out of owner', 'Not synced', 'ownerMark', 'syncStamp', 'xpSignIn'])
   if (out.includes(gone)) throw new Error('the built page still has ' + gone + ': the shared store and the owner are retired');
 
-/* the Game snapshot (snapshot.html, every name gs-): the window a tap on a Matchups game opens, with
-   everything the site has on that game. Its styles go in after the others and its script runs
-   last, after the Player Elo tab's, whose files (window.eloFiles) and Mismatches it reads; the
-   board hands it the season, its own calls and the way to the game on the Props tab
-   (window.pkBoard). The Deep Dive's rows and tags are deepdive.js's, a module of its own the news
+/* the Game snapshot (snapshot.html, every name gs-): the window a game's page on the Props tab opens by
+   its Game snapshot button (app v128; a tap on a Matchups game until the board went on 22 October 2026)
+   and the matchup bubble by its Open game snapshot, with everything the site has on that game. Its
+   styles go in after the others and its script runs last, after the Player Elo tab's, whose files
+   (window.eloFiles) and Mismatches it reads; the page's glue hands it the season, the Vegas calls and the
+   way to the game on the Props tab (window.pkBoard). The Deep Dive's rows and tags are deepdive.js's, a module of its own the news
    job requires too (news/tools/smoke.js holds them to the data there), set in as its own script just
    before the snapshot's: window.gsDeepDive. The news files it draws them from are fetched by the
    window, never read here */
@@ -497,12 +509,17 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
     if (part3.replace(/\/\*[\s\S]*?\*\//g, '').includes(gone)) throw new Error("the props parts still offer a ladder bet on a game's page, which went on 21 October 2026 (" + gone + ')');
   for (const need of ['if(isLadder({stat,k,main:!!main})) return;', 'function pbDropLadders(', 'if(pbDropLadders()) save();'])
     if (!part3.includes(need)) throw new Error('the props parts no longer refuse a ladder bet in the builder or take one kept from before out of it (' + need + ')');
-  for (const need of ['window.gameSnapshot(card.dataset.game,card)', 'tabindex="0" aria-haspopup="dialog"', 'window.pkBoard={', 'canProps,openOnProps};', 'ST.state=st;', "history.replaceState(null,'','#matchups')"])
-    if (!js.includes(need)) throw new Error("the Matchups tab no longer opens the Game snapshot from a game's row, hands it the way to the Props tab, or lands #tracker and #pickems on the board as #matchups (" + need + ')');
-  for (const gone of ['data-snap=', 'pk-gbody', 'aria-expanded'])
-    if (js.includes(gone)) throw new Error("the Matchups tab still opens a game's row on buttons (" + gone + '): a tap on a game opens its Game snapshot');
-  /* the board's foot says what a game's snapshot holds, so it must not name the card that went (16 October 2026) */
-  if (/stat breakdown/i.test(js)) throw new Error("the Matchups tab still says a game's Game snapshot has a stat breakdown, which went on 16 October 2026");
+  for (const need of ['window.pkBoard={', 'canProps,openOnProps};', 'ST.state=st;', "document.dispatchEvent(new Event('pk-state'))", "history.replaceState(null,'','#slate')", "const OLD_ADDR=new Set(['#matchups','#pickems','#tracker']);", 'function scoresOnLoad('])
+    if (!js.includes(need)) throw new Error("the page's glue no longer hands the Game snapshot the season and the way to the Props tab, lands the board's old addresses on the Props tab as #slate, or reads the scoreboard on load (" + need + ')');
+  /* the Matchups board went on 22 October 2026: none of it comes back, in the glue or on the tab bar */
+  for (const gone of ['id="tab-pickems"', 'id="pkBoard"', 'pk-game', 'wireRows', 'PK_LIVE', "'#matchups')"])
+    if (js.replace(/\/\*[\s\S]*?\*\//g, '').includes(gone) || out.includes('id="tab-pickems"')) throw new Error('the page carries the Matchups board again (' + gone + '), which went on 22 October 2026');
+  if (/data-tab="(pickems|matchups)"|>Matchups<\/button>/.test(out)) throw new Error('the tab bar carries a Matchups tab again, which went on 22 October 2026');
+  /* the Game snapshot opens from a game's page on the Props tab by a fourth button (app v128), the whole window,
+     which closes with the page it was opened over */
+  for (const need of ["kind==='snap'?open(gid,from,{page:true})", 'FROMPAGE', "addEventListener('pk-state'"])
+    if (!SNAP_JS.includes(need)) throw new Error("nflbets/build/snapshot.html no longer opens the whole Game snapshot from a game's page on the Props tab as it should (" + need + ')');
+  if (!part3.includes("b('snap','Game snapshot')")) throw new Error("the props parts no longer draw a game page's Game snapshot button (b('snap','Game snapshot'))");
   if (!ELO_JS.includes('window.eloFiles=()=>FILES;') || !ELO_JS.includes('window.eloMismatches=mismatches;')) throw new Error('the Player Elo tab no longer hands its files or its Mismatches to the Game snapshot');
   const DD_JS = rd('nflbets', 'build', 'deepdive.js');
   for (const need of ['root.gsDeepDive = API', 'function possession(', 'function headTag(', 'function applies(', 'function basis(', 'module.exports = API'])
@@ -535,7 +552,7 @@ if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out))
 /* the hub look (theme.css, the NBA Hub's and the NHL Hub's colours and type with the NFL's gold): laid
    over every other style, last, so it wins by order, with the hubs' two fonts, and handed to the
    framed betting tabs (window.THEME_FRAME_HEAD, set in front of each frame's own </head> by frames()
-   in tab_pickems.html) */
+   in hub.html) */
 { const THEME = rd('nflbets', 'build', 'theme.css');
   if (/<\/style|<\/script|<!--/i.test(THEME)) throw new Error('nflbets/build/theme.css has a closing tag or a comment opener, which would end its block in the page');
   /* the light look (the owner's call of 17 October 2026): dark stays the look and the default, and
@@ -581,7 +598,7 @@ if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out))
   if (at >= 0) throw new Error("the page names a parent folder, which from the site's root leaves the site: " + all.slice(Math.max(0, at - 60), at + 40)); }
 /* the X tabs are the admin's alone: exactly two buttons on the bar carry data-admin-only, X Parlays' and the X Bet
    Log's, and so do their two sections; the header's place for the admin is empty and follows the switch in the
-   stamp; and the tab bar's script takes the buttons off a visitor's bar and lands their addresses on the board */
+   stamp; and the tab bar's script takes the buttons off a visitor's bar and lands their addresses on the Props tab */
 { const nav = out.slice(out.indexOf('<nav role="tablist" id="tabs">'), out.indexOf('</nav>', out.indexOf('<nav role="tablist" id="tabs">')));
   const marked = [...nav.matchAll(/<button role="tab" data-tab="([^"]+)"[^>]*\sdata-admin-only[\s>]/g)].map(m => m[1]);
   if (marked.join() !== 'xparlays,bets' || (nav.match(/data-admin-only/g) || []).length !== 2)
@@ -593,7 +610,7 @@ if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out))
     || out.indexOf(ADMIN_SLOT) > out.indexOf('id="saveState"'))
     throw new Error('the header has no empty place for the Admin mark and Sign out right after the light/dark switch');
   for (const need of ["if(!admin()) document.querySelectorAll('#tabs [data-admin-only]').forEach(b=>b.remove());", 'window.HUB_ADMIN', "const ADMIN_ADDR=new Set(['#xparlays','#bets']);", "document.addEventListener('hub-admin',"])
-    if (!js.includes(need)) throw new Error("the tab bar's script no longer takes the X tabs off a visitor's bar, or lands their addresses on the board (" + need + ')'); }
+    if (!js.includes(need)) throw new Error("the tab bar's script no longer takes the X tabs off a visitor's bar, or lands their addresses on the Props tab (" + need + ')'); }
 /* the key goes nowhere but The Odds API, by admin.js alone: outside that script the page names neither the API's
    host nor its key parameter, nor the record's key in quotes, and no key is written into the page anywhere */
 { const parts = out.split(ADMIN_JS);
@@ -614,5 +631,5 @@ module.exports = { out, hash: HASH, HASH_SLOT, PROP_KEY, SEASON: +SEASON_KEY[1] 
 if (require.main === module) {
   fs.writeFileSync(path.join(ROOT, 'index.html'), out);
   console.log(`index.html (the site's root) written: ${(out.length / 1024).toFixed(1)} KB, build ${HASH} `
-    + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);
+    + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the tags, bars and shields)`);
 }

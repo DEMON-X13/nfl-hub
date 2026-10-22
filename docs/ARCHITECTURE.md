@@ -40,14 +40,14 @@ with its hash, `live/` to `#xparlays`), and
 `liveparlays/` holds one too (to `#xparlays`), beside the X Parlays section's source and `parlays.json`.
 
 ```
-index.html NFL Hub                   the site's root, the one NFL site: both models, the Matchups board, Player Elo
+index.html NFL Hub                   the site's root, the one NFL site: both models, the Props tab first, Player Elo
 nflbets/   NFL Hub's source          build/ (build.js writes the root's index.html); index.html a redirect to the root
 props/     Prop Model                no page: the parts, build, job and payload.json
 betting/   X NFL Betting Model       no page: the app source, tools, job and state.json; framed into the page
 elo/       Player Elo                no page: build.py, job and data/
 news/      the news job              no page: the Deep Dive and the game notes the Game snapshot reads, and the stat bars
 cfb/       a redirect to DEMON-X13/cfb-hub, where CFB Hub lives now
-picks/     Weekly Picks              a standalone page: pick each game of the board's week, save the picks as a file;
+picks/     Weekly Picks              a standalone page: pick each game of the current week, save the picks as a file;
                                      friends.json, the friends' picks the Pick'em Record draws (kept by tools/add.js)
 nhl/       a redirect to DEMON-X13/nhl-hub, where X NHL Bets lives now
 ```
@@ -501,7 +501,7 @@ news/
   HANDOFF.md                     how to write a week's notes -- read before touching news/
 
 nflbets/
-  build/build.js                 THE BUILD: the prop model's parts, tab_pickems.html,
+  build/build.js                 THE BUILD: the prop model's parts, hub.html,
                                  tab_elo.html, snapshot.html, deepdive.js, the X Parlays section,
                                  card.html, storage.js, xbets.js, friends.js, glance.js,
                                  theme.js, admin.js and the betting app, theme.css over it -> the root's index.html
@@ -512,16 +512,25 @@ nflbets/
                                  Odds API's host, apiKey= or nflhub_admin_v1 outside
                                  admin.js; fills the card's NICKNAMES slot from
                                  props/build/nicknames.json and holds its DK_TEAMS to
-                                 oddsfetch.py's TEAMS
-  build/tab_pickems.html         the Matchups tab (pk- prefixed); a game's row is the button to its
-                                 Game snapshot
+                                 oddsfetch.py's TEAMS; stops if tab_pickems.html or the
+                                 Matchups board comes back (22 October 2026)
+  build/hub.html                 the page's glue (pk- prefixed, one closure; tab_pickems.html, the
+                                 Matchups tab, until its board went on 22 October 2026, app v128):
+                                 the season's read of state.json and the Vegas call on it
+                                 (window.pkBoard, ST, a pk-state event once it has answered),
+                                 the betting app's tag, colour, confidence and Elo-tier code
+                                 (BETTING slot; window.pkTag, pkTierBadge...), probCols, the
+                                 Props tab's stamp (window.slateStamp), the scoreboard on load
+                                 (scoresOnLoad), the tabs as addresses (routeTabs) and the
+                                 framed betting tabs (frames)
   build/tab_elo.html             the Player Elo tab and the Elo pieces on the prop tabs (pe-)
-  build/snapshot.html            the Game snapshot (gs-): the window a tap on a Matchups game opens,
-                                 everything the site has on that game, the news job's preview,
-                                 news and Deep Dive among it (fetched at runtime); since app v124
-                                 also one card alone (window.gameWindow) for a game page's
-                                 Matchup, Mismatches and Team Stats buttons;
-                                 inlined after tab_elo.html
+  build/snapshot.html            the Game snapshot (gs-): the window a game page's Game snapshot
+                                 button opens (app v128; a tap on a Matchups game until 22
+                                 October 2026) and the matchup bubble too, everything the site
+                                 has on that game, the news job's preview, news and Deep Dive
+                                 among it (fetched at runtime); since app v124 also one card
+                                 alone (window.gameWindow) for a game page's Matchup,
+                                 Mismatches and Team Stats buttons; inlined after tab_elo.html
   build/deepdive.js              the Deep Dive's renderer, pure (no DOM, no fetch): inlined just
                                  before the snapshot as window.gsDeepDive, and required by
                                  news/tools/smoke.js and cases.js, which hold it to the real data
@@ -565,9 +574,11 @@ nflbets/
                                  no ladder bet anywhere (app v127, and one kept in the
                                  builder taken out at boot),
                                  held to their rules, the old addresses' redirects to the
-                                 root, the light look and its switch (LIGHT MODE), the Game
-                                 snapshot and a game page's Matchup, Mismatches and Team
-                                 Stats windows on stand-in news files, never the
+                                 root, the light look and its switch (LIGHT MODE), the Props
+                                 tab first and the board's old addresses landing on it, the
+                                 scoreboard on load, the Game snapshot and a game page's
+                                 Matchup, Mismatches, Team Stats and Game snapshot
+                                 windows on stand-in news files, never the
                                  real ones, the page is a fresh build, its tag's hash is
                                  its own, the served betting app carries the reference numbers;
                                  --season-over runs it with every game played; both stop
@@ -612,7 +623,8 @@ liveparlays/
                                  site owner's devices alone (public by address): kept by Claude
                                  from what the owner sends; its `how` says how
   index.html                     redirect to the root's #xparlays (nflbets/#xparlays until
-                                 17 October 2026): X Parlays for the admin, the board for a visitor
+                                 17 October 2026): X Parlays for the admin, the Props tab for a
+                                 visitor (the Matchups board until 22 October 2026)
 
 live/  pickems/                  redirects to the root for old bookmarks (live/ to #xparlays,
                                  pickems/ with its hash; to nflbets/ until 17 October 2026)
@@ -655,9 +667,10 @@ NFL Hub (once X NFL Bets and Stats) is the one site, the root's `index.html` sin
 then, whose `index.html` now sends an old bookmark to the root with its tab): the props and betting sites have no pages
 of their own any more, only their source, tools, jobs and data. `nflbets/build/build.js` assembles the prop model
 from its parts (title, heading and tab bar swapped; every prop model section kept in the
-page, listeners and all, whether or not it has a button yet), sets the Matchups board in
-front of it from `nflbets/build/tab_pickems.html` (its own section, styles and closure,
-every class and id prefixed `pk-`), and sets the betting app's Records, Power Ratings
+page, listeners and all, whether or not it has a button yet), sets the page's glue into it from
+`nflbets/build/hub.html` (a few styles and one closure, every class and id prefixed `pk-`; until 22 October 2026 that
+file was the Matchups tab, `tab_pickems.html`, whose board, its own section, was set in front of the prop model's), and
+sets the betting app's Records, Power Ratings
 and Bet Log (the X Bet Log) tabs into frames: the app as `betting/tools/build.js` builds it is carried in
 the page as a string and becomes a frame's srcdoc when its tab is first opened, with
 `window.EMBED_TAB` (the tab, which also hides the app's header and tab bar) and
@@ -669,9 +682,10 @@ page's own origin, so the app keeps its browser store, and nothing is fetched or
 for it apart from the page. The frame follows its content's height (a ResizeObserver on its body)
 and its document never scrolls up and down by itself (`overflow-y: hidden` on its root, set as it
 loads), so no classic scrollbar can stick in it when the content measured with a bar comes out
-taller without one; sideways it still scrolls where something is really wider. The board's tag
-and confidence bands are lifted from the betting app at build time and scoped inside the
-closure, since the prop model has its own `tag()`.
+taller without one; sideways it still scrolls where something is really wider. The betting app's tag, colours,
+confidence bands and Elo tiers are lifted from it at build time into the glue's closure (the Game snapshot's tags, split
+bar and confidence pill, and every Elo shield on the page: `window.pkTag`, `pkTierBadge`, `pkEloTier`, `pkTierDefs`),
+scoped there since the prop model has its own `tag()`.
 The prop model's tabs run on the prop model's own state under its own storage key, and
 the framed tabs on the betting app's, so a pick, parlay or bet made in either is what
 this page shows. The Season Tracker tab, which framed `news/index.html` by its address, is gone
@@ -680,13 +694,16 @@ filled by address any more. Tabs are addresses, each its button's `data-tab`: `#
 Parlays, a tab since app v111, which needed no routing of its own; Suggest Parlays until the owner's call of 17
 October 2026, "tab name suggest parlay should be Suggested Parlays", app v112, its section, address and `sp` names
 keeping the old one), `#parlay` (the Parlay Builder), `#xparlays`
-(X Parlays), `#record` and so on (`routeTabs()` in `tab_pickems.html`); the board is the Matchups tab
-(Pick'ems until the owner's call of 16 October 2026; its ids keep the old name) at `#matchups`, and an old `#tracker` or
-`#pickems` lands on it, written over as `#matchups` (`history.replaceState`). X Parlays and the X Bet Log (`#bets`) are
+(X Parlays), `#record` and so on (`routeTabs()` in `nflbets/build/hub.html`). The Props tab is the first tab since the
+Matchups tab went (app v128, the owner's call of 22 October 2026: "i think we are good to remove matchups tabs since most
+the important info was moved to props tab"): the bare address opens on it and stays bare, and the board's old addresses,
+`#matchups` (16 to 22 October 2026), `#pickems` (before it, Pick'ems until the owner's call of 16 October 2026) and
+`#tracker`, land on it, written over as `#slate` (`OLD_ADDR`, `history.replaceState`; on the board, written over as
+`#matchups`, until 22 October 2026). X Parlays and the X Bet Log (`#bets`) are
 the site owner's tabs alone since 20 October 2026 (the admin link, below): their buttons and sections carry
 `data-admin-only` (`TABS`' fourth field), hidden from the first paint unless `html[data-admin="on"]`; on a visitor's page
-`routeTabs` takes the two buttons off the bar before it wires the rest, and `#xparlays` and `#bets` land on the board,
-written over as `#matchups`; signing out (`hub-admin`) does the same to an open page. On a phone the tab bar is
+`routeTabs` takes the two buttons off the bar before it wires the rest, and `#xparlays` and `#bets` land on the Props
+tab, written over as `#slate`; signing out (`hub-admin`) does the same to an open page. On a phone the tab bar is
 wider than the screen and scrolls sideways, so on load, on a new address and on a tap the chosen
 button is brought into the bar by the bar's own `scrollLeft`, never by scrolling the page.
 Every tab change goes through the prop model's switch (the `#tabs` buttons' click in `part3.js`, which `routeTabs`
@@ -695,8 +712,10 @@ tab closes the game's page as its Back does (`tabLeft`, `closeGame`), and `tab_e
 (`#peMmModal`, on the Props tab) and the ELO tab's player and team windows (`#pePlModal`, `#peTmModal`) on leaving
 theirs, so none hidden with its tab holds body's `modal-open` (the tab the address went to could not scroll) or answers
 Escape; a focus left on what the switch hid goes to the chosen tab's button, and Escape closes a game's page only where
-it is on the screen (`gameShown`). The whole Game snapshot (in `body`, no tab's) stays open across a move and, closed
-there, gives the focus to the chosen tab's button where its row is off the screen.
+it is on the screen (`gameShown`). The whole Game snapshot (in `body`) is no tab's window when the matchup bubble opens
+it: it stays open across a move and, closed there, gives the focus to the name that opened it where that is on the
+screen, else the chosen tab's button; opened by a game's page's Game snapshot button (app v128, `FROMPAGE`) it goes with
+the page, on its Back and on a move, as the page's one-card windows do.
 The page is dark for every visitor by default, whatever the system says; the round 44px switch at the header's top
 right (`nflbets/build/theme.js`, set in the head before anything is drawn, the owner's call of 17 October 2026: "keep
 this whole layout as dark mode, and then make a light mode version that people can tab on and off on the top right")
@@ -710,36 +729,57 @@ hidden but on the admin's page, the Admin mark and Sign out, or for one load the
 seven hex of the page's SHA-256 taken with a placeholder in its slot), so every source change
 shows. `smoke.js` builds the page in memory and fails unless the published files match it, checks
 the hash, and runs `betting/tools/reference_models.json`'s gate on the `BET_APP` string.
-The Matchups board is Vegas's call on nflverse's lines from `state.json`; it takes its season
-from `state.json`, reads each week's scoreboard in ESPN's numbering (weeks 19-22, named Wild Card
-to Super Bowl, are seasontype 3), says the regular season is over once every game is graded and
-the schedule has no playoff game, reads "vs" for a neutral site (nflverse's Neutral or a 9:30am
-Eastern kickoff). It is six columns on a wide screen (date, matchup, win probability, confidence,
-score prediction, final score) and one card a game at 900px and under; between them, 901 to
-1,160px (the owner's window is 914), a layout of its own narrows the columns and lets the
-win-probability bar take what is left, its team labels dropped since the matchup column names the
-teams, and the final-score column keeps 136px in every layout for a live "WAS leading 31–33", so the
-board never scrolls sideways (it did from 901 to about 1,100px, its last column ran into the card's
-padding up to 1,140, and with a classic scrollbar up to 1,156, until 14 October 2026). jsdom lays
-nothing out, so `smoke.js` sums each layout's least column widths, its gaps and the card's padding
-against the page's content, less a 17px classic scrollbar, at that layout's narrowest width (one past
-the middle layout's max-width, 1,161px, wide; 901 between), and wants exactly one layout between the
-phone card and a wide screen and no final-score column under 136px or narrower than the wide one's. A game's row is a button (`role="button"`, `tabindex="0"`,
-`aria-haspopup="dialog"`): a click, Enter or Space opens its **Game snapshot** straight away (the
-owner's call, 14 October 2026; until then a tap opened the row on two buttons, the snapshot and the
-game's props), wired once on the board (`wireRows()`), so a redraw of the board never opens a window.
+The page's glue (`nflbets/build/hub.html`) reads the season once, `betting/state.json` (no-store), into
+`window.pkBoard.ST` (`{sched, odds, season, state, done, err}`), and once that read has answered, ok or not, sets
+`ST.done` (`ST.err` the reason where it failed), dispatches `pk-state` on the document and wires the frames, which do not
+depend on it. `pkBoard` hands the Game snapshot, the matchup bubble and the Props list's `slateNeutral` the season,
+Vegas's call on nflverse's lines (`call`: the two moneylines with the margin out, else the spread about 13.5 points), where
+a game stands (`outcome`: the published result, else the props job's final in the payload, else the Props tab's scoreboard read, `LIVE.games` once `LIVE.slate`), its
+kickoff, its site ("vs" for nflverse's Neutral or a 9:30am Eastern kickoff) and week name (weeks 19-22 Wild Card to Super
+Bowl), `probCols` and the way to the game's page on the Props tab (`canProps`, `propsPlayers`, `openOnProps`). The
+scoreboard on load (`scoresOnLoad`, app v128): once the prop model is up (app-ready, and 300 ms) the glue reads ESPN's
+scoreboard once for the Props list (the read its Refresh scores makes, seasontype 2, on the prop model's own `SEASON`, no
+box score), and only where a game of that week has kicked off with no score in the payload, the one case it can add
+anything; with none, no scoreboard request on load at all, and never on a timer. The read goes into `LIVE.games` and
+`LIVE.slate` as a press's does, and the list is drawn again with it only while nothing is open over the page (`pageBusy`,
+`listRedraw`: no window, no game's page), the focus put back where it was; otherwise the stamp says it and the list shows
+it on its next draw (closing a game's page draws it). `closeGameModal` (part3) takes body's `modal-open` off only where no
+other window is still open. Nothing read is stored. Until 22 October 2026 **the Matchups board** stood in front of the Props tab (`tab_pickems.html`,
+its own section, Pick'ems until the owner's call of 16 October 2026): Vegas's call on every game of a week in six columns
+(date, matchup, win probability, confidence, score prediction, final score; one card a game at 900px and under, a middle
+layout from 901 to 1,160px), a week picker, Vegas's records and a foot, ESPN's scoreboard read on every load (`PK_LIVE`,
+`readScores`; weeks 19-22 seasontype 3), and a note once the regular season was over; a game's row was a button
+(`role="button"`, `tabindex="0"`, `aria-haspopup="dialog"`: a click, Enter or Space opened its Game snapshot, the owner's
+call of 14 October 2026; before that a tap opened the row on two buttons, the snapshot and the game's props), wired once
+on the board (`wireRows()`). It went in app v128 (`props/build/patch_snapshot_button.py`, the owner's call of 22 October
+2026, "i think we are good to remove matchups tabs since most the important info was moved to props tab", and, asked
+where the whole snapshot should open from, "Button on Props"): its row had been the Props list's since app v122, which
+keeps its columns and their layout sum (below), and three of the snapshot's cards opened from a game's page since app
+v124. `build.js` refuses `tab_pickems.html`, a section in `hub.html`, the board's ids and names (`id="tab-pickems"`,
+`id="pkBoard"`, `pk-game`, `wireRows`, `PK_LIVE`) and a Matchups button or a `data-tab` of `pickems` or `matchups` back.
 The game bets (to win, to cover, the total) opened under the board's games until 14 October 2026 and are
 on the game's page on the Props tab since (app v105, after its suggested parlays, and since app v124, which took
-those off the page, after its head and its Matchup, Mismatches and Team Stats buttons), with the note on two
-spreads gone. The snapshot is `nflbets/build/snapshot.html`'s window (`#gsModal`, every name `gs-`, its
-script one closure that the build sets in last, after the Player Elo tab's and `deepdive.js`; the page's
-modal style, Escape, Close or a click outside closes it, Tab stays inside, the focus goes back to the
-game's row, full screen and scrolling on a phone) with everything the site has on that one game, at a
-glance first. Its header
+those off the page, after its head and its Matchup, Mismatches and Team Stats buttons, and Game snapshot since app
+v128), with the note on two spreads gone. The **Game snapshot** is `nflbets/build/snapshot.html`'s window (`#gsModal`,
+every name `gs-`, its script one closure that the build sets in last, after the Player Elo tab's and `deepdive.js`; the
+page's modal style, Escape, Close or a click outside closes it, Tab stays inside, the focus goes back to the
+button that opened it, full screen and scrolling on a phone), opened whole by a game's page's fourth button, Game
+snapshot (`data-gp-pop="snap"`, `window.gameWindow('snap', gid, button)`, `open(gid, from, {page:true})`; app v128), and
+by the matchup bubble's Open game snapshot (`window.gameSnapshot(gid, from)`), with everything the site has on that one
+game, at a glance first. Opened from a game's page (`FROMPAGE`) it is that page's window: it goes with the page (its
+Back, `closeGameModal` wrapped, and a `hashchange`), closes quietly on a key once the page is off the screen, Escape
+closes it alone with the page kept, and its focus goes back to its button (or the one drawn since, the page's Back, the
+game's row, the chosen tab's button: `oneFocus`). It is drawn from `gameFor(gid)` (the season's row, else the prop
+model's own), so for a game the season has no row for it shows "Loading the season…" (`p.gs-msg[data-gs-season="loading"]`)
+until `pk-state` redraws it whole, or, where the read failed, "The season did not load (<why>), so the snapshot cannot
+be drawn: it reads `betting/state.json`. Reload the page to try again." (`"failed"`), and with the season in but the game
+missing draws from the prop model's row. Its header
 is pinned and, once the verdict's line has scrolled under it, shows the game in one line instead
 (`#gsMini`: each team's record and the spread, or the score; hidden from a screen reader, the dialog
 keeps its title). The verdict (`#gsMatch`, always shown) leads, where the Props tab can open the game
-(`pkBoard.canProps`: the prop model has its row and its week is open), with a 44px "Game bets and player
+(`pkBoard.canProps`: the prop model has its row and its week is open) and the window is not over that very game's page
+(`overOwnPage`, app v128: so the snapshot the bubble opens has it, and the one a game's own Game snapshot button opens,
+where it would only redraw the page under it, does not), with a 44px "Game bets and player
 props" button (`data-gs-props`), which closes the window and opens the game's own page on the Props tab
 (its week chosen on the slate, the tab opened, then the page, as a click on the game there opens it) with
 its Game bets card brought into view (`pkBoard.openOnProps`); then the head (`.gs-hero`), away team |
@@ -752,9 +792,9 @@ between the teams (the owner's call, 14 October 2026: the labels say it); under 
 among them) the teams share a row and the middle goes full width under them, the phone's smaller
 sizes from 760px. A played game's note, ruled in gold,
 follows the head; then the headline -- the Vegas favourite's nickname and the spread it is favoured
-by, its chance and the board's own confidence pill (`BET.tier`), or once played the winner with an
-Upset or Favourite won chip and the line it was favoured by under it -- over the board's own split
-bar, the spread, total and moneylines (one row on every phone, the moneylines one over the other;
+by, its chance and its confidence pill (Vegas's band, `BET.tier`, "Confidence in Vegas's pick"; the board's own until it
+went), or once played the winner with an Upset or Favourite won chip and the line it was favoured by under it -- over the
+split bar in the two clubs' colours (`.pk-prob`, `probCols`), the spread, total and moneylines (one row on every phone, the moneylines one over the other;
 the line naming their sources went on 14 October 2026, the owner's call), and five answer lines
 (`.gs-glance`), each a button
 (`data-gs-goto`) that opens its card and brings it under the header: the model picks with Vegas kept
@@ -813,8 +853,8 @@ window, every card open, is at least 4.5:1 on what it sits on in the hub look, d
 window's red, its lean bars and the Deep Dive's tags light tints of their own, the Even ring among them). It computes nothing of its
 own beyond the vote's counts and the Elo gap, each
 marked `data-gs-n` and held by the smoke: the
-board hands it the season as loaded, its Vegas call, where a game stands and the way to the Props tab
-(`window.pkBoard`: `canProps`, `propsPlayers`, `openOnProps`), and the Player Elo tab its one read of `elo/data/`
+page's glue (the board until it went) hands it the season as loaded, the Vegas call, where a game stands and the way to
+the Props tab (`window.pkBoard`: `canProps`, `propsPlayers`, `openOnProps`), and the Player Elo tab its one read of `elo/data/`
 (`window.eloFiles`), so no file is fetched twice. A played game says the ratings, lineups and
 units are the files as they stand now; a game outside the matchups' week, a game under way, a lineup for a
 team's next game rather than this one, and a file that did not load are each said in their card,
@@ -822,7 +862,7 @@ and the rest still draws. `smoke.js`'s last section (THE GAME SNAPSHOT) holds ev
 file, on a game to come, a final on the scoreboard, a graded game and a playoff game, with
 matchups.json or the ratings missing, read with the cards and the Starters tabs as
 the window opens (so a folded card or a tab not shown is held like the rest); the headline to the
-files and its confidence pill to the board's own; the dissenters, the badges, the edge marks in every
+files and its confidence pill to Vegas's band on them; the dissenters, the badges, the edge marks in every
 card, among the starters and on the verdict's Team Elo and Offense vs defense answers (the higher
 rating, the better rank of each offense and defense that meet, the side named with the edge), and the
 unit ranks in their headers; the bars, to the same numbers (each call's bar leaning toward its pick,
@@ -832,9 +872,12 @@ the middle's score, kickoff and preview in that order, no "at" circle, the Away 
 each record the record alone, no line naming the line's sources, each meeting in Offense vs defense
 two boxes of one class with no note or edge chip, and no Sources card, publish time or link away;
 the answers' buttons, the folding,
-the tabs' keys and kept choice, the props button (exactly where `canProps` says, and doing its job),
-the Tab order and the 44px tap heights; and the board: a row's click, Enter and Space open the window,
-no row has a body, no redraw or score read opens one, the focus goes back to the row. The position table is `table-layout: fixed` (each team half
+the tabs' keys and kept choice, the props button (exactly where `canProps` says and the window is not over that game's
+own page, and doing its job), the Tab order and the 44px tap heights; and the way in: a game's page's Game snapshot
+button opening the whole window of its game, the focus on Close and back on the button, Escape closing it alone and a
+second the page, a click outside closing it and a click inside or a double click's second not, a redraw under it, no
+Refresh scores press opening a window, Back taking it with the page, its loading line before the season and its failed
+line with none (until 22 October 2026 a board row's click, Enter and Space). The position table is `table-layout: fixed` (each team half
 the card) and its names wrap: laid out automatically, a long name set a column's width and pushed
 the home side past the card on 34 of week 4-6's 45 games at 390px. A player's Q sits inside his
 name's own box (`.gs-pnm`), inline after the name: as a flex item of its own beside a wrapping
@@ -879,8 +922,9 @@ fetches the two files itself at runtime (`news/data/units.json` and the opened g
 site's root, `../news/...` until 17 October 2026,
 never `stats.json` as the page loads or for the whole snapshot since the Stat breakdown went, which `build.js`
 refuses back, only for a game page's Team Stats window the first time it opens (app v124, below);
-`cache: 'no-store'`, each once a page load, fetched as the page loads, the notes of the board's week once
-the board has its schedule and another week's when one of its games opens), never baked into the page; a
+`cache: 'no-store'`, each once a page load, fetched as the page loads, the notes of the current week once
+the season is in (`weekNotes` on `pk-state`; until 22 October 2026 once the board had its schedule) and another week's
+when one of its games opens), never baked into the page; a
 file still being read says so in its own part ("Loading the Deep Dive…"), one that did not load or has the wrong shape is
 said in its own part alone, and a late file or the prop model coming up redraws the window with the focus
 and the reader's place kept. `smoke.js` holds all of
@@ -943,7 +987,7 @@ are on the Pick'em Record and the build's team ratings of results on Power Ratin
 `betting/tools/build.js` (Power Ratings' Record column is the season's own results from
 `betting/state.json`, current within hours of a final, and a team whose latest final the Elo file
 has not taken in yet is starred until the Elo job, which the betting job starts on a new grade,
-rebuilds it). It borrows the Matchups tab's team tag and the tier shields
+rebuilds it). It borrows the page glue's team tag (the Matchups tab's until it went on 22 October 2026) and the tier shields
 (`betting/tools/tiers.js`: Wood under 1350 up to Elite from 1700, HOF from 1750) through
 `window.pkTag`, `pkTagColor`, `pkTierBadge`, `pkEloTier` and `pkTierDefs`.
 X Parlays is a tab of its own (`#xparlays`, the section `tab-xparlays`):
@@ -1710,12 +1754,15 @@ of the box score is void (marked V, not lost or won) when there is official word
 playing that week -- Out or Doubtful on the injury report the page reads, or the page's record of
 a game-day inactive or a reserve list -- and otherwise graded on nothing with the row saying he
 is not on the box score.
-`liveparlays/index.html` is a redirect (to the root's `#xparlays`: X Parlays for the admin, the board for a visitor).
+`liveparlays/index.html` is a redirect (to the root's `#xparlays`: X Parlays for the admin, the Props tab for a visitor,
+written over as `#slate`; the board until 22 October 2026).
 `nflbets/build/smoke.js` boots the built page, as a visitor (an admin-seeded boot for the X tabs), in
 jsdom at the site's root, `https://demon-x13.github.io/nfl-hub/`, against both sites' published data and walks every
-tab, holds every old address's redirect to the root (run in `vm` on the web and from disk), every file the page reads
-as it loads read at the root and no request of the page or a frame leaving the site or naming a parent folder, the
-light look and its switch (LIGHT MODE), and holds Suggested Parlays and the Parlay Builder to their rules on the
+tab, holds every old address's redirect to the root (run in `vm` on the web and from disk, none naming the Matchups tab,
+its board or Pick'ems in the words a visitor reads), the Props tab first and the board's old addresses (and on a
+visitor's page the X tabs') landing on it as `#slate` (app v128), the scoreboard on load (THE SCOREBOARD ON LOAD, on
+fixtures of its own at any hour), every file the page reads as it loads read at the root and no request of the page or
+a frame leaving the site or naming a parent folder, the light look and its switch (LIGHT MODE), and holds Suggested Parlays and the Parlay Builder to their rules on the
 week as it stands (the tab's name and no word a visitor reads naming it Suggest Parlays, the mixes and their boxes, a
 box by hand, a game unticked and the games list, the builder first on the tab, the Top 30 lines worked out on its own
 and ranked, cut at 30 (on sixty made-up games of its own too), in their two
@@ -1774,9 +1821,11 @@ took them out with the builder's one line (`ladderBoot`), then puts every leg ba
 own games (`cardReads`). Both record every request a page
 makes, and a request to the retired store or its sign-in services, or anything but a read, fails
 them; so does one to `api.the-odds-api.com` on any `smoke.js` boot and on a `smoke_live.js` run but an admin's with its
-stand-in, and `smoke.js` fails an ESPN request on load. `nflbets/build/smoke_admin.js` holds the admin link (below). The elo job runs `smoke.js`, after its commit (a page check, never a gate on the Elo data),
-every morning, playoffs and off-season included, so it holds in any week: the board's week is
-taken as the board takes it (the first with a game to play, else the last), the checks that need
+stand-in, and `smoke.js` fails a request to ESPN's core host on load (the scoreboard is read on load only where
+`scoresOnLoad` says, which the smoke works out on its own: THE SCOREBOARD ON LOAD). `nflbets/build/smoke_admin.js` holds the admin link (below). The elo job runs `smoke.js`, after its commit (a page check, never a gate on the Elo data),
+every morning, playoffs and off-season included, so it holds in any week: `state.json`'s current week is
+taken as the Game snapshot takes it for the week's notes (the first with a game to play, else the last; the week the
+Matchups board opened on until it went on 22 October 2026), the checks that need
 a game still to come run only when there is one, and once the payload's last game is about to kick
 off the page is booted two days before it (the builder drops a leg whose game has started, so the
 builder checks need a game to come). `smoke.js --season-over` runs it on the season with
@@ -1802,8 +1851,9 @@ event's `/<32 hex>/odds` alone, `credits()`, `signOut()`, and a `hub-admin` even
 the key or sends it, and only to The Odds API. The header's stamp has `#hubAdmin` after the light/dark switch: the Admin
 mark (its title the check and the credits left) and Sign out (a button: asks, removes the record alone, takes the X tabs
 off the bar with no reload; another tab's sign-out followed). On the admin's devices X Parlays and the X Bet Log are on the
-bar (nine tabs) and the parlay card has Pull from DraftKings; on anyone else's the two buttons are taken off the bar
-(seven tabs), `#xparlays` and `#bets` land on `#matchups`, X Parlays reads nothing (`lpAdmin`) and `xbets.js` reads no
+bar (eight tabs, Props first; nine, Matchups first, until 22 October 2026) and the parlay card has Pull from DraftKings;
+on anyone else's the two buttons are taken off the bar (six tabs), `#xparlays` and `#bets` land on the Props tab,
+written over as `#slate` (`#matchups` until 22 October 2026), X Parlays reads nothing (`lpAdmin`) and `xbets.js` reads no
 file (`enabled()` false, `ready()` at once). It is **hide only**: the two files stay public by address, and anyone could
 hand-write the stored record and see the two tabs; what it protects is the key. The link stays in the browser's history
 and address-bar suggestions where it was opened, and the storage on `demon-x13.github.io` is shared by every one of the
@@ -2094,7 +2144,18 @@ Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 The games list and a game's head (app v122). `renderSlate` draws each game as the Matchups board's row in the
 prop model's own names (`button.game[data-game]` with `sl-` cells: date, matchup, win probability, confidence,
 score prediction, final score), worked from the prop model's own lines (`slateCall`, `slateTier`, `slateCols`,
-`slateNeutral`, `slateOutcome`, `slateResult`, `slatePred` in part3). What the row showed before (kickoff,
+`slateNeutral`, `slateOutcome`, `slateResult`, `slatePred` in part3), and since the board went (22 October 2026, app
+v128) it is the page's one list of the week's games, on the page's first tab: six columns on a wide screen, one card a
+game at 900px and under, and from 901 to 1,160px (the owner's window is 914) a layout of its own that narrows the
+columns and lets the win-probability bar take what is left, the final-score column keeping 136px in every layout for a
+live "WAS leading 31–33", so it never scrolls sideways (the board did from 901 to about 1,100px, its last column ran into
+the card's padding up to 1,140, and with a classic scrollbar up to 1,156, until 14 October 2026). jsdom lays nothing
+out, so `smoke.js` sums each layout's least column widths, its gaps and the card's padding against the page's content,
+less a 17px classic scrollbar, at that layout's narrowest width (one past the middle layout's max-width, 1,161px, wide;
+901 between), and wants exactly one layout between the phone card and a wide screen and no final-score column under
+136px or narrower than the wide one's (the board's were held so until it went). Its final-score cells take the
+scoreboard the page reads on load where a game of the week is under way (`scoresOnLoad`, the glue's) or a Refresh
+scores press. What the row showed before (kickoff,
 matchup, biggest projections, expected score, total points, Vegas pick) is the head card of the game's page,
 `gameHeadCard` (`.ghead`), the first card `renderGame` draws after its controls.
 
@@ -2106,10 +2167,13 @@ parlays section from there. instead I want you to add three different buttons: M
 with it, so a saved side filters nothing), and its engine (`gameTiers`, `gameLegPool`, `GAME_TIERS`,
 `GAME_TIER_CACHE`, `gameSuggestSig`) is kept, drawn nowhere, as `getPbTiers()` is. In its place, between `.ghead` and
 the Game bets card (`.gbets`), `gameWinBtns(g)` draws three 44px buttons (`.gwin` > `button.gwin-btn[data-gp-pop]`,
-`units`, `mism` and `stats`, `aria-haspopup="dialog"`), Matchup, Mismatches and Team Stats, only where
+`units`, `mism` and `stats`, `aria-haspopup="dialog"`), Matchup, Mismatches and Team Stats, and since app v128 a fourth,
+Game snapshot (`snap`, the owner's call of 22 October 2026, "Button on Props", when the Matchups tab went; four to a
+row, two by two at 680px and under), only where
 `window.gameWindow` is on the page (the hub; the audit's standalone page draws none), and `renderGame` binds each to
-`window.gameWindow(kind, g.id, button)`. That is the Game snapshot's window (`snapshot.html`, `#gsModal`) in a one-card
-mode, `open(gid, from, {only})` and `drawOne`: the class `gs-one`, 720px at most and a little window with a 10px margin
+`window.gameWindow(kind, g.id, button)`. For `snap` that is the whole Game snapshot, `open(gid, from, {page:true})`,
+which goes with the page as the others do (`FROMPAGE`, above); for the other three it is the Game snapshot's window
+(`snapshot.html`, `#gsModal`) in a one-card mode, `open(gid, from, {only})` and `drawOne`: the class `gs-one`, 720px at most and a little window with a 10px margin
 on a phone, a title naming the game and the card, and one card unfolded, Matchup the snapshot's own Offense vs defense
 body (`unitsBody`, which `unitsSec` wraps) with a "Played." line first on a played game, Mismatches its own body
 (`mmParts`, which `mismatchSec` wraps), and Team Stats the old Stat breakdown's bars (`teamStatsBody`, `SROWS`,
@@ -2121,8 +2185,9 @@ Stats window opens (`statFile`). A game `state.json` lacks is read from the prop
 a click outside closes it, but not a double click's second within 400ms; the focus goes back to its button, or the
 same button drawn since, else Back, else the game's row, else the chosen tab's button, never the body (`oneFocus`); it
 closes with the game's page (`closeGameModal` wrapped), on a `hashchange`, and on a key once the game's page is off the
-screen. `build.js` guards each of those pieces and refuses the old card back; the audit's O holds the buttons (none on
-its own page, the three with a stand-in window), M7 and M8 the engine alone, and I3 that a saved side is not read; the
+screen. `build.js` guards each of those pieces (and the fourth button, `b('snap','Game snapshot')`) and refuses the old
+card back; the audit's O holds the buttons (none on its own page, the four in order with a stand-in window, four to a
+row and two at 680px and under), M7 and M8 the engine alone, and I3 that a saved side is not read; the
 nflbets smoke holds the buttons and, on its stand-in news files, every window (CLAUDE.md, **A game's page: Matchup,
 Mismatches and Team Stats**, has the whole of it).
 
@@ -2281,7 +2346,8 @@ games whose stats are not out yet wait for the next run.
 `state.json` holds `teams` (Alpha Model's team ratings and EPA: Power Ratings shows Alpha
 Model's EPA, but its order and Elo are the
 team ratings of results in `elo/data/model.json`), `schedule`, `processed` (graded games), `odds` (nflverse's
-moneylines, spread and total: the Matchups board's Vegas baseline), `qb`, `injuries`
+moneylines, spread and total: the Game snapshot's Vegas baseline, the Matchups board's until it went on 22 October
+2026), `qb`, `injuries`
 (the report's columns the app reads), `depth`, `roster`, `events`, `joker`,
 `atKickoff` (each coming game's Alpha call, recorded by every run before its
 kickoff and kept from then on; the game is graded on it, `processed[gid].atKickoff`),
@@ -2385,7 +2451,8 @@ X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13 (page at the root, `
 ## News: the job and the game notes
 
 The Season Tracker's page and its tab are gone (the owner's call, 14 October 2026): each game's
-preview and Deep Dive are in its Game snapshot, and `news/index.html` only sends
+preview and Deep Dive are in its Game snapshot (opened from each game's page on the Props tab since app v128, from the
+Matchups board until then), and `news/index.html` only sends
 a visitor to the site's root, `../` (`../nflbets/` until 17 October 2026, when the page moved there). The week files, the team paragraphs, the rank chip and the player positions
 are in git history before that day. The job is automated: `pull-week.js` refreshes scores, records
 and the stat bars (`stats2026.js` and its twin `stats.json`, which no page read from 16 October 2026 until app v124 gave a game's page on the Props tab its Team Stats window, which reads it when it first opens) from ESPN and TeamRankings and writes the

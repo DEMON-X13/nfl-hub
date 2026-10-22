@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Weekly Picks: a standalone page where a visitor picks the winner of every game of the week
      and saves the picks as a file to send to X. Hand-written, one file, nothing built. The games
-     are the Pick'ems board's: betting/state.json's schedule, read on every load, the board's week
+     are the hub's (the Pick'ems board's, then the Matchups board's until it went on 22 October 2026): betting/state.json's schedule, read on every load, the board's week
      (the first with a game still to play, else the last). The picks are the visitor's own: kept in
      this browser only (so a reload keeps them) and in the file they save, sent nowhere. A game that
      has kicked off by the visitor's clock can no longer be picked or changed. -->
@@ -118,7 +118,7 @@ function inkOn(hex){
   return (1.05)/(L+.05)>=(L+.05)/.05?'#fff':'#0B1424';
 }
 
-/* the schedule's kickoff (US Eastern) as an instant, as the Pick'ems board reads it */
+/* the schedule's kickoff (US Eastern) as an instant, as the hub reads it (kickAt in nflbets/build/hub.html) */
 function kickAt(d,t){
   if(!d||!t) return null;
   const guess=new Date(`${d}T${t}:00Z`);

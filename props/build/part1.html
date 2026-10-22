@@ -329,8 +329,10 @@ body.modal-open{overflow:hidden}
 .stake-chips button{font-variant-numeric:tabular-nums;padding:7px 10px}
 .sugg-stake{display:inline-flex;align-items:center;gap:4px;font-size:13px;white-space:nowrap}
 .sugg-stake input{width:76px;padding:6px 8px;font-family:var(--display);font-variant-numeric:tabular-nums}
-/* (app v124) a game's Matchup, Mismatches and Team Stats buttons, under its head, each 44px */
-.gwin{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}
+/* (app v124) a game's Matchup, Mismatches and Team Stats buttons, under its head, each 44px; (app v128) and its
+   Game snapshot: four in a row, two by two at 680px and under */
+.gwin{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}
+@media(max-width:680px){.gwin{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .gwin .gwin-btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;font-weight:600;text-align:center}
 .sugg-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sugg-nums div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px}

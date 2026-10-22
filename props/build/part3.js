@@ -52,7 +52,10 @@ function renderWeekOptions(){
 /* scroll to the top only when the overlay is first opened; a re-render (expanding a player,
    changing a setting) keeps the reader where they were */
 function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; } }
-function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }
+/* (app v128) the scroll lock goes only where no other window is still open: renderSlate closes the game's page on every
+   redraw with none chosen, and took it from a window open over another part of the page */
+function closeGameModal(){ const m=$('gameModal'); m.hidden=true;
+  if(!document.querySelector('.modal:not([hidden]),.lp-dlg:not([hidden])')) document.body.classList.remove('modal-open'); }
 function closeGame(){ S.ui.game=null; save(); closeGameModal(); renderSlate(); }
 /* (app v126) the game's page is the Props tab's own window, on the screen only while that tab is: leaving the tab
    (another tab's button, or on the hub the address moved by Back or a link, which routeTabs turns into a click on
@@ -100,7 +103,7 @@ function slateCall(g){
 }
 /* the Matchups board's confidence band on the favourite's chance */
 function slateTier(c){ const r=Math.round(c*100)/100; return r>=0.75?['high','HIGH']:r>=0.60?['med','MED']:r>=0.55?['low','LOW']:['coin','50/50']; }
-/* the win-probability bar's two colours, the board's rule (probCols in tab_pickems.html) on this page's own
+/* the win-probability bar's two colours, the board's rule (probCols in nflbets/build/hub.html) on this page's own
    tag colours: each side its tag's colour with its percentage in textOn's ink; where the two would read as one
    colour (two reds), the home side the first of its own colours that does not, else a slate */
 function slateCols(a,h){
@@ -113,8 +116,8 @@ function slateCols(a,h){
   if(near(ca,ch)) ch=teamCols(h).map(tagBg).find(c=>!near(ca,c))||'#475068';
   return [{bg:ca,ink:textOn(ca)},{bg:ch,ink:textOn(ch)}];
 }
-/* a game at a neutral site: the hub's Matchups board says so where it has the game (the betting job's
-   schedule marks most of them Neutral); without it, a 9:30am Eastern kickoff, which is one played abroad */
+/* a game at a neutral site: the betting job's schedule says so where the hub's page has it (window.pkBoard, the
+   page's glue: it marks most of them Neutral); without it, a 9:30am Eastern kickoff, which is one played abroad */
 function slateNeutral(g){
   try{ const B=window.pkBoard; if(B&&B.ST&&Array.isArray(B.ST.sched)&&typeof B.neutral==='function'){
     const r=B.ST.sched.find(x=>x.game_id===g.id); if(r) return !!B.neutral(r); } }catch(e){}
@@ -560,7 +563,8 @@ function renderGame(){
     e.stopPropagation();
     toggleLeg(cb.dataset.leg, +cb.dataset.k, g, cb.dataset.side||'over', cb.dataset.main==='1'); }));
   /* (app v124) the game's Matchup, Mismatches and Team Stats: each its own little window over the page, the
-     hub's (window.gameWindow), handed the button so the focus comes back to it */
+     hub's (window.gameWindow), handed the button so the focus comes back to it; (app v128) its Game snapshot the
+     whole window, the same way */
   $('gameView').querySelectorAll('[data-gp-pop]').forEach(b=>b.addEventListener('click',()=>{
     if(typeof window.gameWindow==='function') window.gameWindow(b.dataset.gpPop,g.id,b); }));
 }
@@ -2823,11 +2827,14 @@ const suggestLegOn=l=>{ const c=S.parlay[l.key]; return !!c&&c.k===l.k&&c.side==
    and Team Stats ... I want each button to pop up in its own little window"). Where the hub's window is on the
    page (window.gameWindow, the Game snapshot's), three buttons under the game's head each open one card in it,
    over the page: Matchup, the snapshot's Offense vs defense; Mismatches, the game's Mismatches; Team Stats, the
-   season's team stats side by side on bars. The prop model's own page has no such window and draws none. */
+   season's team stats side by side on bars. The prop model's own page has no such window and draws none.
+   (app v128) A fourth, Game snapshot, opens the whole snapshot over the page (the owner's call of 22 October 2026,
+   when the Matchups tab went: "Button on Props"), through the same binding: the hub's window opens the whole of it
+   for "snap" and one card alone for the other three. */
 function gameWinBtns(g){
   if(typeof window.gameWindow!=='function') return '';
   const b=(k,l)=>`<button type="button" class="btn quiet gwin-btn" data-gp-pop="${k}" data-gp-game="${esc(g.id)}" aria-haspopup="dialog">${l}</button>`;
-  return `<div class="gwin" role="group" aria-label="More on this game">${b('units','Matchup')}${b('mism','Mismatches')}${b('stats','Team Stats')}</div>`;
+  return `<div class="gwin" role="group" aria-label="More on this game">${b('units','Matchup')}${b('mism','Mismatches')}${b('stats','Team Stats')}${b('snap','Game snapshot')}</div>`;
 }
 /* ---------- the panel, over the builder ---------- */
 const pbMoney=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});

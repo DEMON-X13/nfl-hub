@@ -13,7 +13,7 @@
  * whole unless its kind and version are that, its season is betting/state.json's, its week a
  * whole number 1-22, its name plain text, its saved_at a time, and every game id it names one of
  * that week's games on state.json's schedule, picked once at most, for one of the two teams. A pick
- * saved at or after its game's kickoff (the schedule's kickoff, US Eastern, as the Pick'ems board
+ * saved at or after its game's kickoff (the schedule's kickoff, US Eastern, as the hub's page
  * and picks/ read it, never the file's own) is not counted: it is left out and said so. A game the
  * file leaves unpicked is left out.
  *

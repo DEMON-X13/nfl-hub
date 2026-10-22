@@ -6,7 +6,8 @@ All paths here are relative to `news/`.
 
 Until 14 October 2026 this folder was the Season Tracker, a page of its own (and then a framed tab of X
 NFL Bets and Stats) with a hand-written narrative for every team each week. The owner folded it into the
-**Game snapshot**: tapping a game on NFL Hub's (once X NFL Bets and Stats') Matchups board
+**Game snapshot**: the Game snapshot button on a game's page on the Props tab of NFL Hub (once X NFL Bets and
+Stats; a tap on a game on its Matchups board until that board went on 22 October 2026)
 (**https://demon-x13.github.io/nfl-hub/**, the site's root since 17 October 2026; `nflbets/` until then, which
 now sends a visitor there) opens a window with everything the site has on it, and
 the tracker's per-game content now lives there:

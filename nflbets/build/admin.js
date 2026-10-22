@@ -47,7 +47,7 @@
  * The header: an empty #hubAdmin in its stamp, after the light/dark switch, filled here for the admin with an
  * Admin mark (its title says when the key was checked and the credits left) and a Sign out button, and for anyone
  * with the one line saying a link was refused. Sign out asks, then forgets the key: the two tabs leave the bar, an
- * open one lands on the Matchups board, and the card's Pull goes. Another tab of the site signing out is
+ * open one lands on the Props tab, and the card's Pull goes. Another tab of the site signing out is
  * followed here; one signing in waits for this tab's next load (or the link opened in this one). */
 (function(){
   var KEY='nflhub_admin_v1', root=document.documentElement;
@@ -129,9 +129,9 @@
 
   /* ---- a link: taken off the address at once, then checked and kept ---- */
   /* the reload into the admin's page, at the tab the link named (#xparlays&owner=K: X Parlays), which this load, a
-     visitor's, lands on the board meanwhile: so once the page is parsed, and on a task of its own, after the
+     visitor's, lands on the Props tab meanwhile: so once the page is parsed, and on a task of its own, after the
      hashchange this may run in has reached the tab bar's own listener (which writes a visitor's #xparlays over as
-     #matchups, and runs after this file's), the link's tab is put back on the address and the page reloads there */
+     #slate, and runs after this file's), the link's tab is put back on the address and the page reloads there */
   var reloadAt=function(rest){
     setTimeout(function(){ parsed(function(){
       if(rest&&location.hash!=='#'+rest){ var to=location.pathname+location.search+'#'+rest;
