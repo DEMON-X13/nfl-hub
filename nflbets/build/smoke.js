@@ -766,25 +766,16 @@ function sbOnLoadHeld(R, label, now) {
     `the scoreboard on load (${label}, week ${PW}, ${under.length ? under.map(g => g.id).join(', ') + ' under way' : 'no game under way'}): ${under.length ? 'not read once, of the Props list\'s week, with the stamp saying when' : 'read though no game is under way, or the stamp says something'}: ${sb.map(c => c.url.replace(/https:\/\/[^/]+/, '')).join(' | ') || 'no read'}; stamp '${stamp}'`);
   return under.length;
 }
-/* (app v128) the whole Game snapshot opened as a visitor opens it since the Matchups board, whose rows opened it, went
-   (22 October 2026): from the game's own page on the Props tab by its Game snapshot button (btn: the button, which the
-   focus goes back to; page: true, the window over that page, which stays open under it and goes with it), where the
-   Props tab can open the game; else, or with how 'bubble', as the matchup bubble opens it, window.gameSnapshot handed an
-   opener (btn: a button of the smoke's own in the tab on the screen, standing in for the bubble's name, which the focus
-   goes back to; page false, the game's page closed first). A game no visitor can reach any more (a week past the Props
-   tab's, a made-up playoff game the prop model has not got) takes the second way. md: the window, null if it did not
-   open whole */
+/* the whole Game snapshot opened as a visitor opens it since the Matchups board, whose rows opened it, went (22 October
+   2026): as the matchup bubble opens it, window.gameSnapshot handed an opener (btn: a button of the smoke's own in the
+   tab on the screen, standing in for the bubble's name, which the focus goes back to), the game's page closed first. A
+   game page's own Game snapshot button (app v128) was taken off again the same day (app v129, the owner's call: "i dont
+   want that game snapshot buttons"), so this is the one way in; how is kept for the callers and read by nothing. md:
+   the window, null if it did not open whole; page: always false (no window over the game's page) */
 async function snapOpen(R, g, how) {
-  const P = R.w.pkBoard, gid = g.game_id || g.id, gm = R.d.getElementById('gameModal'), md0 = R.d.getElementById('gsModal');
+  const gid = g.game_id || g.id, gm = R.d.getElementById('gameModal'), md0 = R.d.getElementById('gsModal');
   if (md0 && !md0.hidden) { R.w.gameSnapshotClose(false); await wait(10); }
   const whole = () => { const md = R.d.getElementById('gsModal'); return md && !md.hidden && !md.dataset.gsOnly ? md : null; };
-  if (how !== 'bubble' && P && typeof P.canProps === 'function' && P.canProps(gid)) {
-    if (R.w.eval('S').ui.game !== gid || gm.hidden || gm.closest('[hidden]')) { P.openOnProps(gid); await wait(80); }
-    const b = R.d.querySelector('#gameView [data-gp-pop="snap"]');
-    if (!b) return { btn: null, md: null, page: true };
-    b.focus(); b.click(); await wait(150);
-    return { btn: b, md: whole(), page: true };
-  }
   if (gm && !gm.hidden && typeof R.w.closeGame === 'function') { R.w.closeGame(); await wait(30); }
   let ob = R.d.getElementById('smokeSnapOpener');
   if (!ob) { ob = R.d.createElement('button'); ob.type = 'button'; ob.id = 'smokeSnapOpener'; ob.textContent = 'Open game snapshot';
@@ -1070,7 +1061,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         && /^Game bets and player props\b.*\bProps tab\b/.test(pbtn.getAttribute('aria-label') || '') && /\bon the Props tab\b/.test(pbtn.getAttribute('title') || '')),
       'the props button has a caption beside it, or its name and title do not say it opens the game on the Props tab: ' + (pbtn ? txt(pbtn.parentElement) + ' | ' + pbtn.getAttribute('aria-label') : ''));
     /* the button closes the snapshot and opens the game's page on the Props tab, on its week, with the
-       Game bets card brought into view (it follows the game's head and its four buttons) */
+       Game bets card brought into view (it follows the game's head and its three buttons) */
     if (pbtn) {
       const into = [], siv = w.Element.prototype.scrollIntoView;
       w.Element.prototype.scrollIntoView = function (o) { into.push(this); if (siv) try { siv.call(this, o); } catch (e) { /* jsdom */ } };
@@ -1189,56 +1180,30 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   }
   w.closeGame(); await wait(40);
 
-  /* ---- (app v128, the owner's call of 22 October 2026: the Matchups board went, and its Game snapshot opens from
-     "Button on Props") a game's page on the Props tab: its fourth button, Game snapshot, opens the whole window over the
-     page, for that game, the focus on Close, with no button to the page it is over; Escape closes it alone (the game's
-     page and its scroll lock kept, no listener beneath it hearing the key), the focus back on its button, and a second
-     Escape closes the page; a double click's second click within 0.4 s of its opening, or a click inside, does not close
-     it, a click outside does; a redraw of the page under it keeps it open and its close gives the focus to the button
-     drawn since; a Refresh scores press opens no window; and the page's Back takes it with the page, the focus never
-     left on the body (the address moving to another tab: A WINDOW IS ITS TAB'S OWN, below) ---- */
-  if (first && pkCanOpen(first)) { const bad = [], gm = d.getElementById('gameModal'), key = k => (d.activeElement || d.body).dispatchEvent(new w.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
-    const snapBtn = () => d.querySelector('#gameView [data-gp-pop="snap"]'), fg = state.schedule.find(x => x.game_id === first) || { away_team: pkRow(first).a, home_team: pkRow(first).h };
+  /* ---- (app v129, the owner's call of 22 October 2026: "i dont want that game snapshot buttons") a game's page on the
+     Props tab has no Game snapshot button (app v128 had a fourth, data-gp-pop="snap", opening the whole window over the
+     page), and the hub's window opens no whole snapshot for one: window.gameWindow('snap') opens nothing. The whole
+     snapshot opens from the matchup bubble alone (window.gameSnapshot), and its first button, to the game's own page on
+     the Props tab, is drawn wherever the Props tab can open the game (pkBoard.canProps), the game's page open under it
+     or not (app v128 left it off over that very page) ---- */
+  if (first) { const bad = [], gm = d.getElementById('gameModal');
     const row = d.querySelector(`#gamesList .game[data-game="${first}"]`); if (row) row.click(); await wait(80);
-    if (gm.hidden || w.eval('S').ui.game !== first || !snapBtn()) bad.push(`the game's page of ${first} did not open with its Game snapshot button`);
+    if (gm.hidden || w.eval('S').ui.game !== first) bad.push(`the game's page of ${first} did not open`);
     else {
-      const b0 = snapBtn(); b0.focus(); b0.click(); await wait(120);
-      const md = gsm(), ttl = txt(d.getElementById('gsTitle'));
-      if (!md || md.hidden || md.classList.contains('gs-one') || md.dataset.gsOnly || md.querySelector('[data-gs-only]') || !['gsMatch', 'gsCalls', 'gsTeams', 'gsUnits', 'gsMism', 'gsPos'].every(id => md.querySelector('#' + id)))
-        bad.push(`it did not open the whole snapshot (not one card alone): ${md ? `${md.hidden ? 'hidden' : 'open'}, ${md.className}, only ${md.dataset.gsOnly || 'none'}, ${[...md.querySelectorAll('section[id]')].map(x => x.id).join(' ')}` : 'no window'}`);
-      else {
-        if (!new RegExp(`^${fg.away_team}(at|vs)${fg.home_team}Game snapshot · ${w.pkBoard.weekName(+pkRow(first).w)}$`).test(ttl)) bad.push(`its title reads '${ttl}'`);
-        if (d.activeElement !== d.getElementById('gsClose')) bad.push('the focus is not on Close');
-        if (md.querySelector('[data-gs-props]')) bad.push('it offers a button to the very page it is over');
-        if (gm.hidden || !d.body.classList.contains('modal-open')) bad.push('the game\'s page is not open under it');
-        let seen = 0; const cnt = e => { if (e.key === 'Escape') seen++; }; d.addEventListener('keydown', cnt);
-        key('Escape'); d.removeEventListener('keydown', cnt); await wait(20);
-        if (!md.hidden || gm.hidden || seen !== 0 || d.activeElement !== b0 || !d.body.classList.contains('modal-open') || w.eval('S').ui.game !== first)
-          bad.push(`Escape did not close it alone with the focus back on its button (open ${!md.hidden}, page ${!gm.hidden}, ${seen} beneath, focus on ${d.activeElement && (d.activeElement.dataset.gpPop || d.activeElement.id || d.activeElement.tagName)})`);
-        /* a double click's second click on the backdrop, then a click inside, keep it open; a click outside closes it */
-        b0.click(); await wait(10);
-        md.dispatchEvent(new w.MouseEvent('click', { bubbles: true, detail: 2 })); d.getElementById('gsView').click(); await wait(10);
-        if (md.hidden) bad.push('a double click\'s second click, or a click inside, closed it');
-        md.dispatchEvent(new w.MouseEvent('click', { bubbles: true, detail: 0 })); await wait(20);
-        if (!md.hidden || gm.hidden || d.activeElement !== snapBtn()) bad.push('a click outside did not close it alone, the focus on its button');
-        /* the page drawn again under it (renderGame): it stays open, and its close gives the focus to the button drawn since */
-        snapBtn().click(); await wait(80); const old = snapBtn(); w.renderGame(); await wait(20); const nu = snapBtn();
-        if (md.hidden || old.isConnected || !nu) bad.push('a redraw of the game\'s page closed it, or kept the page\'s buttons');
-        d.getElementById('gsClose').click(); await wait(20);
-        if (!md.hidden || d.activeElement !== snapBtn()) bad.push('closed after a redraw, it did not give the focus to the Game snapshot button drawn since');
-        /* a second Escape (the first closing the window) closes the game's page */
-        if (gm.hidden) { const r2 = d.querySelector(`#gamesList .game[data-game="${first}"]`); if (r2) r2.click(); await wait(60); }
-        snapBtn().click(); await wait(80); key('Escape'); await wait(20); key('Escape'); await wait(30);
-        if (!md.hidden || !gm.hidden || d.body.classList.contains('modal-open')) bad.push(`two Escapes did not close the window and then the game's page (window ${!md.hidden}, page ${!gm.hidden})`);
-        /* the page's Back takes it with the page; the focus is not left on the body */
-        { const r3 = d.querySelector(`#gamesList .game[data-game="${first}"]`); if (r3) r3.click(); await wait(60); }
-        snapBtn().click(); await wait(80);
-        const back = d.getElementById('backBtn');
-        if (!back) bad.push('the game\'s page has no Back');
-        else { back.click(); await wait(40);
-          if (!md.hidden || !gm.hidden || d.body.classList.contains('modal-open') || !d.activeElement || d.activeElement === d.body) bad.push(`Back did not close the window with the page, the page free to scroll and the focus somewhere (window ${!md.hidden}, page ${!gm.hidden}, focus on ${d.activeElement === d.body ? 'the body' : d.activeElement && d.activeElement.tagName})`); } } }
+      if (d.querySelector('[data-gp-pop="snap"]') || [...d.querySelectorAll('#gameView button')].some(x => /^Game snapshot$/.test(txt(x)))) bad.push('the game\'s page draws a Game snapshot button');
+      w.gameWindow('snap', first, null); await wait(80);
+      if (gsm() && !gsm().hidden) { bad.push('window.gameWindow(\'snap\') opened a window'); w.gameSnapshotClose(false); await wait(20); }
+      /* the bubble's way in with the game's page open under it: the props button is drawn wherever canProps */
+      const ob = d.createElement('button'); ob.type = 'button'; ob.textContent = 'stand-in name'; d.getElementById('gameView').appendChild(ob); ob.focus();
+      w.gameSnapshot(first, ob); await wait(120);
+      const md = gsm(), pb = md && !md.hidden ? md.querySelector('#gsMatch [data-gs-props]') : null;
+      if (!md || md.hidden || md.dataset.gsOnly) bad.push('window.gameSnapshot did not open the whole snapshot over the game\'s page');
+      else if (!!pb !== w.pkBoard.canProps(first) || (pb && pb.dataset.gsProps !== first)) bad.push(`the props button is ${pb ? 'drawn' : 'not drawn'} over the game's own page though the Props tab ${w.pkBoard.canProps(first) ? 'can' : 'cannot'} open it`);
+      if (md && !md.hidden) { w.gameSnapshotClose(false); await wait(20); }
+      ob.remove(); }
     if (!gm.hidden) { w.closeGame(); await wait(30); }
-    chk(bad.length === 0, `a game's page's Game snapshot button does not open the whole window over the page as it should: ${bad.join('; ')}`); }
+    if (gsm() && !gsm().hidden) { w.gameSnapshotClose(false); await wait(20); }
+    chk(bad.length === 0, `a game's page draws a Game snapshot button, or the whole snapshot over it drops its props button: ${bad.join('; ')}`); }
 
   /* ---- Props: the prop model's Games tab, as it is on its own site ---- */
   const propsBtn = [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'slate');
@@ -1351,16 +1316,16 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     chk(bad.length === 0, `the game's head does not carry the list's old figures: ${bad.join('; ')}`); }
   /* (app v124, the owner's call of 20 October 2026) the game's page draws no suggested parlays: in their place, under
      its head and over its Game bets card, three buttons, Matchup, Mismatches and Team Stats, each opening one card of
-     the Game snapshot alone in its own little window (held on the stand-in news files under THE GAME SNAPSHOT), and
-     since app v128 (22 October 2026, the Matchups board gone: "Button on Props") a fourth, Game snapshot, opening the
-     whole window (held above), each a 44px dialog button naming the game */
+     the Game snapshot alone in its own little window (held on the stand-in news files under THE GAME SNAPSHOT), each a
+     44px dialog button naming the game; and no fourth (app v128's Game snapshot, taken off by app v129) */
   { const bad = [], gv = d.getElementById('gameView'), bs = [...gv.querySelectorAll('.gwin [data-gp-pop]')], head = gv.querySelector('.ghead'), row = gv.querySelector('.gwin'), gb = gv.querySelector('.gbets');
     if (gv.querySelector('.gsugg, [data-gsugg-side], [data-gtier-add], .gsugg-tier, .gsugg-pick') || /Suggested parlays|Add all/.test(txt(gv))) bad.push('it still draws its suggested parlays, their side switch or an Add all');
-    if (bs.map(b => `${b.dataset.gpPop}:${txt(b)}`).join() !== 'units:Matchup,mism:Mismatches,stats:Team Stats,snap:Game snapshot') bad.push('its buttons are ' + (bs.map(b => `${b.dataset.gpPop}:${txt(b)}`).join() || 'none'));
+    if (bs.map(b => `${b.dataset.gpPop}:${txt(b)}`).join() !== 'units:Matchup,mism:Mismatches,stats:Team Stats') bad.push('its buttons are ' + (bs.map(b => `${b.dataset.gpPop}:${txt(b)}`).join() || 'none'));
+    if (gv.querySelector('[data-gp-pop="snap"]')) bad.push('it draws a Game snapshot button');
     if (!bs.every(b => b.tagName === 'BUTTON' && b.type === 'button' && b.getAttribute('aria-haspopup') === 'dialog' && b.dataset.gpGame === slateRows[0].dataset.game)) bad.push('a button is not a dialog button naming the game');
     if (!(head && row && gb && gv.querySelectorAll('.gwin').length === 1 && (head.compareDocumentPosition(row) & 4) && (row.compareDocumentPosition(gb) & 4))) bad.push('the buttons are not there once, under the head and over the Game bets card');
     if (typeof w.gameWindow !== 'function' || typeof w.gameSnapshot !== 'function') bad.push('the hub window (window.gameWindow, window.gameSnapshot) is not on the page');
-    chk(bad.length === 0, `the game's page does not carry its Matchup, Mismatches, Team Stats and Game snapshot buttons in place of its suggested parlays: ${bad.join('; ')}`); }
+    chk(bad.length === 0, `the game's page does not carry its Matchup, Mismatches and Team Stats buttons (and no other) in place of its suggested parlays: ${bad.join('; ')}`); }
   chk(d.querySelectorAll('#gameView .plrbtn').length > 0, 'the game view shows no players');
   chk(typeof w.closeGame === 'function', 'the prop model\'s closeGame is not on the page');
   w.closeGame();
@@ -3999,15 +3964,15 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         await go('#elo'); const back = was.pos ? body.querySelector(`.pe-pos button[data-pos="${was.pos}"]`) : was.unit ? body.querySelector(`.pe-pos button[data-unit="${was.unit}"]`) : null;
         if (back) { back.click(); await wait(30); } }
       else console.log('  windows: no Overall Offense pill on the ELO Ratings tab, so its team window is not held'); }
-    /* (app v128) a game's page's own windows go with it: its Team Stats window (one card alone) and its whole Game
-       snapshot, each opened by its button with the focus in it, then the address moved */
-    for (const [kind, what] of [['stats', 'its Team Stats window'], ['snap', 'its Game snapshot']]) {
+    /* a game's page's own windows go with it: its Team Stats window (one card alone), opened by its button with the
+       focus in it, then the address moved (app v128's whole Game snapshot from the page went with its button, app v129) */
+    for (const [kind, what] of [['stats', 'its Team Stats window']]) {
       await go('#slate'); const row = d.querySelector('#gamesList button[data-game]');
       if (!row) { bad.push('no game on the Props tab to open'); break; }
       row.click(); await wait(40); const b = d.querySelector(`#gameView [data-gp-pop="${kind}"]`), md = d.getElementById('gsModal');
       if (!b) { bad.push(`the game's page has no ${kind} button`); continue; }
       b.click(); await wait(80);
-      if (!md || md.hidden || (kind === 'snap' ? !!md.dataset.gsOnly : md.dataset.gsOnly !== kind)) { bad.push(`${what} did not open`); continue; }
+      if (!md || md.hidden || md.dataset.gsOnly !== kind) { bad.push(`${what} did not open`); continue; }
       d.getElementById('gsClose').focus();
       await go('#record');
       onTab("Pick'em Record", `a game's page with ${what} open over it left by the address, the focus in the window`);
@@ -4065,7 +4030,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     b.w.close(); }
 
   /* the betting tabs do not depend on the season's read (state.json, the page glue's): with it gone they still frame;
-     and a game's page's Game snapshot says the season did not load, and why, drawing nothing else and throwing nothing */
+     and the Game snapshot (the matchup bubble's way in) says the season did not load, and why, drawing nothing else and
+     throwing nothing */
   { const noState = await run(state, SITE + '#tracker', null, true); landed(noState, '#tracker');
     [...noState.d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'ratings').click();
     await wait(60);
@@ -4075,12 +4041,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const gid = (noState.w.eval('S').sched || []).map(g => g.id).find(id => noState.w.pkBoard.canProps(id));
     if (!gid) console.log('  (the season unreachable: no game the Props tab can open, so the snapshot\'s failed line is not held)');
     else { const o = await snapOpen(noState, { game_id: gid }), md = noState.d.getElementById('gsModal'), msg = md && md.querySelector('#gsMatch [data-gs-season]');
-      chk(o.page && !!msg && msg.dataset.gsSeason === 'failed' && /^The season did not load \(HTTP 404\), so the snapshot cannot be drawn: it reads betting\/state\.json\. Reload the page to try again\.$/.test(txt(msg))
+      chk(!!msg && msg.dataset.gsSeason === 'failed' && /^The season did not load \(HTTP 404\), so the snapshot cannot be drawn: it reads betting\/state\.json\. Reload the page to try again\.$/.test(txt(msg))
         && !md.querySelector('#gsCalls, #gsUnits, .gs-hero') && noState.errs.length === 0,
-        `with the season unreachable, a game's page's Game snapshot does not say the season did not load, and why, alone: '${msg ? txt(msg) : (md ? txt(md).slice(0, 160) : 'no window')}' ${noState.errs.join('; ')}`); }
+        `with the season unreachable, the Game snapshot the matchup bubble opens does not say the season did not load, and why, alone: '${msg ? txt(msg) : (md ? txt(md).slice(0, 160) : 'no window')}' ${noState.errs.join('; ')}`); }
     noState.w.close(); }
 
-  /* a game's page's Game snapshot opened before the season is in (state.json held back): its title and the one line
+  /* the Game snapshot opened before the season is in (state.json held back), as the matchup bubble opens it (a game the
+     prop model has, read from its own row): its title and the one line
      "Loading the season…" (data-gs-season="loading"), then the whole window once the season comes in (pk-state, from
      the page's glue), still open, with nothing thrown */
   { let go; const gS = new Promise(r => { go = r; });
@@ -4089,7 +4056,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     if (!gid) bad.push('no game the Props tab can open before the season is in');
     else {
       const o = await snapOpen(SL, { game_id: gid }), md = SL.d.getElementById('gsModal'), msg = md && md.querySelector('#gsMatch [data-gs-season]'), row = SL.w.eval('S').sched.find(g => g.id === gid);
-      if (!o.page || !md || md.hidden || !msg || msg.dataset.gsSeason !== 'loading' || txt(msg) !== 'Loading the season…') bad.push(`it does not say the season is loading: '${msg ? txt(msg) : (md ? txt(md).slice(0, 120) : 'no window')}'`);
+      if (!o.md || !md || md.hidden || !msg || msg.dataset.gsSeason !== 'loading' || txt(msg) !== 'Loading the season…') bad.push(`it does not say the season is loading: '${msg ? txt(msg) : (md ? txt(md).slice(0, 120) : 'no window')}'`);
       else {
         if (!new RegExp(`^${row.a}(at|vs)${row.h}Game snapshot · ${SL.w.pkBoard.weekName(+row.w)}$`).test(txt(SL.d.getElementById('gsTitle')))) bad.push(`its title reads '${txt(SL.d.getElementById('gsTitle'))}'`);
         if (md.querySelector('#gsCalls, #gsUnits, .gs-hero')) bad.push('it draws cards before the season is in'); }
@@ -4097,7 +4064,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (!md || md.hidden || md.querySelector('[data-gs-season]') || !md.querySelector('#gsMatch .gs-hero') || !['gsCalls', 'gsTeams', 'gsUnits', 'gsMism', 'gsPos'].every(id => md.querySelector('#' + id)) || md.dataset.gsOnly)
         bad.push('once the season came in, the window was not drawn whole, still open'); }
     if (!gid) go();
-    chk(bad.length === 0 && SL.errs.length === 0, `a game's page's Game snapshot opened before the season is in: ${bad.join('; ')} ${SL.errs.join('; ')}`);
+    chk(bad.length === 0 && SL.errs.length === 0, `the Game snapshot opened before the season is in: ${bad.join('; ')} ${SL.errs.join('; ')}`);
     SL.w.close(); }
 
   /* ---- THE SCOREBOARD ON LOAD (22 October 2026), on fixtures of the smoke's own so it holds at any hour of the week
@@ -4136,8 +4103,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
          row onto the page's body). C1, on the list: the focus on the planted game's row, the read let through: the row
          drawn again with the read's score and the focus on it, not the body; then the Game snapshot opened from elsewhere
          (as the matchup bubble opens it) and the list drawn again under it: the scroll lock kept. C2, the planted game's
-         page open with the focus on its Game snapshot button when the read lands: nothing drawn under it, the page, the
-         lock and that very button kept; Back draws the list with the read's score */
+         page open with the focus on its Matchup button when the read lands: nothing drawn under it, the page, the lock and
+         that very button kept; Back draws the list with the read's score */
       { let go1; const g1 = new Promise(res => { go1 = res; });
         const C = await run(stA, SITE, wk => scoreboardOn(stA, wk, X.id), false, { pay: JSON.stringify(PA), gate: { scoreboard: g1 } });
         await wait(700); const bad = [];
@@ -4160,11 +4127,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         await wait(700); const bad = [];
         const row = () => D.d.querySelector(`#gamesList .game[data-game="${X.id}"]`), gm = D.d.getElementById('gameModal');
         const r0 = row(); if (r0) { r0.click(); await wait(80); }
-        const b0 = D.d.querySelector('#gameView [data-gp-pop="snap"]');
-        if (!b0 || gm.hidden) bad.push('the planted game\'s page did not open, or has no Game snapshot button');
+        const b0 = D.d.querySelector('#gameView [data-gp-pop="units"]');
+        if (!b0 || gm.hidden) bad.push('the planted game\'s page did not open, or has no Matchup button');
         else { b0.focus(); go2(); await wait(400);
           if (gm.hidden || !D.d.body.classList.contains('modal-open')) bad.push('the read closed the game\'s page or took its scroll lock');
-          if (!b0.isConnected || D.d.activeElement !== b0) bad.push('the read drew the game\'s page again under the visitor (its Game snapshot button replaced, the focus on ' + (D.d.activeElement === D.d.body ? 'the body' : D.d.activeElement ? D.d.activeElement.tagName : 'nothing') + ')');
+          if (!b0.isConnected || D.d.activeElement !== b0) bad.push('the read drew the game\'s page again under the visitor (its Matchup button replaced, the focus on ' + (D.d.activeElement === D.d.body ? 'the body' : D.d.activeElement ? D.d.activeElement.tagName : 'nothing') + ')');
           if (!/^scores \d/.test(txt(D.d.getElementById('slateStamp')))) bad.push('the stamp does not say the read: ' + txt(D.d.getElementById('slateStamp')));
           const back = D.d.getElementById('backBtn'); if (back) { back.click(); await wait(80); }
           const r2 = row();
