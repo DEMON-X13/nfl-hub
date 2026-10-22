@@ -736,14 +736,13 @@
   },
   "BAL": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-22T08:30:53.454Z",
+   "built_at": "2026-10-22T18:52:48.710Z",
    "units": {
     "qb": [
      {
-      "id": "00-0034796",
-      "n": "Lamar Jackson",
-      "pos": "QB",
-      "q": "questionable: ankle"
+      "id": "00-0035993",
+      "n": "Tyler Huntley",
+      "pos": "QB"
      }
     ],
     "ol": [
@@ -845,7 +844,7 @@
   },
   "TB": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-22T08:30:53.454Z",
+   "built_at": "2026-10-22T18:52:48.710Z",
    "units": {
     "qb": [
      {
@@ -888,7 +887,7 @@
       "id": "00-0039361",
       "n": "Bucky Irving",
       "pos": "RB",
-      "q": "questionable: illness, not practising"
+      "q": "questionable: illness"
      },
      {
       "id": "00-0036919",
@@ -953,7 +952,7 @@
   },
   "CAR": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-21T23:58:38.893Z",
+   "built_at": "2026-10-22T18:52:48.710Z",
    "units": {
     "qb": [
      {
@@ -1020,10 +1019,9 @@
     ],
     "front": [
      {
-      "id": "00-0036934",
-      "n": "Jaelan Phillips",
-      "pos": "OLB",
-      "q": "questionable: hamstring, not practising"
+      "id": "00-0040136",
+      "n": "Princely Umanmielen",
+      "pos": "OLB"
      },
      {
       "id": "00-0037244",
