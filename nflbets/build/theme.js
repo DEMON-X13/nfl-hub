@@ -12,7 +12,7 @@
  * first paint, never a dark flash. The click is answered by one listener on the document, so the switch
  * works the moment it is drawn, before the page's own scripts have run. The framed betting tabs (Team
  * Rankings, Pick'em Record, X Bet Log) carry theme.css too (THEME_FRAME_HEAD): frames() in
- * tab_pickems.html writes the current look into a frame's document when it is made, and a press here
+ * hub.html writes the current look into a frame's document when it is made, and a press here
  * switches every frame already open. */
 (function(){
   var KEY='nflhub_theme_v1', root=document.documentElement;

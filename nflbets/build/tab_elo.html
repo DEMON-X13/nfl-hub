@@ -1303,7 +1303,7 @@ document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',
     if(m&&!m.hidden&&sec&&sec.id!=='tab-'+b.dataset.tab) shut(); } }));
 window.eloMismatches=mismatches;
 /* and the way a Mismatches bubble brings a player's row into view and highlights it, for the Game
-   snapshot's Starters names (the board's openOnProps) */
+   snapshot's Starters names (pkBoard's openOnProps) */
 window.eloFocusPlayer=mmFocus;
 /* the hub's matchup bubble (glance.js, 17 October 2026) reads a player's matchup as this tab does: the stats where
    the Elo part has held up (muTrusted) and their labels, the defense he faces, a mismatch's grade and what the
@@ -1334,7 +1334,7 @@ if(typeof renderSlate==='function'){ const drawSlate=renderSlate;
   renderSlate=function(){ const r=drawSlate.apply(this,arguments); try{ mismatchCard(); }catch(e){} return r; }; }
 if(typeof renderGame==='function'){ const drawGame=renderGame;
   renderGame=function(){ const r=drawGame.apply(this,arguments); decorate(); return r; }; }
-/* the Pick'ems board draws a game's players itself when a game is opened */
+/* a game's page draws its players itself when a game is opened (renderGame, or a tab's click) */
 document.addEventListener('click',()=>setTimeout(decorate,0),true);
 document.addEventListener('app-ready',decorate);
 function draw(){
