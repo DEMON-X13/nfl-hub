@@ -498,4 +498,4 @@ const LINES = {
  "wk8:PHI-WAS": "WAS -3.5, O/U 41.5",
  "wk8:CHI-SEA": "SEA -3, O/U 46.5"
 };
-const LINES_ASOF = "2026-10-21";
+const LINES_ASOF = "2026-10-22";
