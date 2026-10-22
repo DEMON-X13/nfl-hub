@@ -699,7 +699,8 @@ const ladderBoot = async (x, seeded, how) => {
 
   // ---- V. a visitor's page: X Parlays, the X Bet Log and Pull from DraftKings are the admin's devices' alone ----
   /* (20 October 2026, the owner's call: "hide only", and ESPN-only prices for everyone) a visitor's page, at #xparlays and
-     at #bets, the addresses of the two X tabs: it lands on the Matchups board (the address written over), has neither tab
+     at #bets, the addresses of the two X tabs: it lands on the Props tab (the address written over as #slate, its button
+     chosen: the first tab since app v128 took the Matchups tab off), has neither tab
      on its bar, reads neither X file and asks ESPN nothing for X Parlays (its scoreboard by week and season, "&_=", and
      its box scores); the header has no Admin mark. Its parlay card, finished from a builder holding a player's line on a
      game to come, has no Pull from DraftKings and no question, says in one line, word for word, that player legs go on
@@ -716,8 +717,9 @@ const ladderBoot = async (x, seeded, how) => {
       const v = await run({ admin: false, url: 'https://demon-x13.github.io/nfl-hub/#' + at, pay: pinV, esp: noProps, xbets: { season: BET_SEASON, deposit: 100, weeks: { w1: { staked: 10, returned: 0, note: '' } }, updated: '2026-10-10T00:00:00Z' },
         seed: w => w.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 10, saved: [], parlay: { [keyV]: legV } })) });
       const { w, d } = v, tabs = [...d.querySelectorAll('#tabs [role="tab"]')].map(b => b.getAttribute('data-tab')), xp = d.getElementById('tab-xparlays');
-      chk(!v.timedOut && w.location.hash === '#matchups' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Matchups' && !tabs.includes('xparlays') && !tabs.includes('bets') && !!xp && xp.hidden,
-        `a visitor's page at #${at} does not land on the Matchups board, or has an X tab on its bar: ` + JSON.stringify({ hash: w.location.hash, tabs }));
+      chk(!v.timedOut && w.location.hash === '#slate' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Props' && !!d.getElementById('tab-slate') && !d.getElementById('tab-slate').hidden
+        && !tabs.includes('xparlays') && !tabs.includes('bets') && !tabs.includes('pickems') && !!xp && xp.hidden,
+        `a visitor's page at #${at} does not land on the Props tab (#slate, its button chosen), or has an X tab or the Matchups tab on its bar: ` + JSON.stringify({ hash: w.location.hash, tabs }));
       const xCalls = v.calls.filter(u => /parlays\.json|xbets\.json|\/summary\?event=/.test(u) || (/\/scoreboard\?seasontype=/.test(u) && /&_=/.test(u)));
       chk(!xCalls.length && !d.querySelector('#lpCard .savedp') && !(w.XBETS && w.XBETS.enabled()),
         `a visitor's page at #${at} read an X file, asked ESPN for X Parlays, drew one of X's parlays, or has the X Bet Log on: ` + xCalls.join(' | '));
