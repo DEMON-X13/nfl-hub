@@ -16,8 +16,9 @@
  * is no sign-in and no shared store: the page writes nothing anywhere but the browser's own storage
  * (the admin's key among it, on the admin's devices alone, sent only to The Odds API). X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the builder
  * over its choices and the Top 30 lines (app v116), and Suggested Parlays (#suggest, app v111) each prime-time
- * game's own set of four levels, whose Finish opens the same card; since app v118 in two sections, Night games and the
- * Sunday slot (every Sunday game before 7 pm Eastern, one set), each with its record, and each unit with its own Elo
+ * game's own set of four levels, whose Finish opens the same card; with the Sunday slot (every Sunday game before 7 pm
+ * Eastern, one set; its own section with its own record from app v118, and since app v129 the last part of the one
+ * Night games section, whose one record counts both), and each unit with its own Elo
  * picks beside its model parlays, whose Finish (sp|<unit>:elo-<level>) opens the card as an Elo pick. The test boots the whole page against a stubbed file
  * and a stubbed ESPN, with the real payload and state, opens the X Parlays tab and checks what the section renders, on a
  * browser with nothing of its own and on one that carries what the retired owner and reader layers
@@ -42,7 +43,7 @@
  * Suggested Parlays set finished from its own
  * tab (app v111), live and then locked from the record's entry, each of its legs with an Add of its
  * own; its Elo picks (app v118) finished as an Elo pick, live, locked from the record and as this browser's own;
- * and the Sunday slot's section held to its rule at the fixture's clock and through a slot of the fixture's own (not
+ * and the Sunday slot's part of Night games held to its rule at the fixture's clock and through a slot of the fixture's own (not
  * up, live, locked, under way with nothing to add or finish, past). jsdom and PapaParse are borrowed from props/build; run npm ci there first.
  */
 'use strict';
@@ -136,20 +137,28 @@ const slotNextL = (weeks, sched, now, season) => { const w0 = liveWeekL(weeks, s
 /* a kickoff's day and time as a set's head says them ("Sun, Jan 3", "9:30 AM ET"), through Intl */
 const etDayL = ms => new Date(ms).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });
 const etTimeL = ms => new Date(ms).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }) + ' ET';
-/* the Sunday slot's section of Suggested Parlays as drawn, held to the rule at the page's clock (now): after the night
-   games' section, headed "Sunday slot", its record next; no slot to come, one line saying so (the regular season over,
+/* the Sunday slot's part of Suggested Parlays as drawn, held to the rule at the page's clock (now): since app v129 (the
+   owner's call of 22 October 2026, "get rid of the Sunday slot record section -> all should be a part of 'Night Games'")
+   the last part of the one section, Night games (its heading and its one record first), after every night game's set or
+   line, with no section or record of its own (until then its own section after the night games', headed "Sunday slot",
+   its record next); no slot to come, one line saying so (the regular season over,
    or no Sunday game of the page's week still to kick off) and no set; not up, one line naming it, its games and when its
    sets go up, word for word, and no set; up, its one unit (.sp-game.sp-slot, a group named by its h4: "Week N, K games",
    its first kickoff's day and the window of its kickoffs), with one line, word for word: live until its lock, then
    locked (the record's set, or this browser's own where the record has none: own), and from its first kickoff under
    way, when nothing in it can be added or finished. Every number and the games are the rule's; the problems, or none */
 const slotHeldL = (d, U, now, wk, over, season, own) => {
-  const bad = [], secs = [...d.querySelectorAll('#spSets > section.sp-sec')].map(s => s.dataset.spSec), sec = d.querySelector('#spSets section.sp-sec[data-sp-sec="slot"]');
-  if (secs.join() !== 'night,slot') bad.push(`the sections are ${secs.join(', ') || 'none'}, not Night games then the Sunday slot`);
-  if (!sec) return bad.concat('there is no Sunday slot section').join('; ');
+  const bad = [], secs = [...d.querySelectorAll('#spSets > section.sp-sec')].map(s => s.dataset.spSec), sec = d.querySelector('#spSets section.sp-sec[data-sp-sec="night"]');
+  if (secs.join() !== 'night') bad.push(`the sections are ${secs.join(', ') || 'none'}, not Night games alone`);
+  if (d.querySelector('#spSets [data-sp-sec="slot"], #spSets [data-sp-recsec="slot"], #spSets [data-sp-rec^="slot:"], #spsec-slot')) bad.push('a section or a record of the Sunday slot\'s own is drawn');
+  if (!sec) return bad.concat('there is no Night games section').join('; ');
   const h = sec.querySelector(':scope > h3.sp-sech'), rec = h && h.nextElementSibling;
-  if (txt(h) !== 'Sunday slot' || !rec || !rec.matches('div.sp-rec[data-sp-recsec="slot"]')) bad.push(`the section is not headed "Sunday slot" with its own record under it: ${txt(h)}`);
-  const el = sec.querySelector('[data-sp-wait]'), units = [...sec.querySelectorAll('.sp-game')], none = sec.querySelector('[data-sp-none="slot"]');
+  if (txt(h) !== 'Night games' || !rec || !rec.matches('div.sp-rec[data-sp-recsec="night"]') || sec.querySelectorAll('.sp-rec').length !== 1) bad.push(`the section is not headed "Night games" with its one record under it: ${txt(h)}`);
+  /* the slot's part: its line before it is up (data-sp-next its <season>_<WW>_SUN id), its set, or the line that none is
+     left; after every night game's set and line */
+  const el = sec.querySelector('[data-sp-wait][data-sp-next$="_SUN"]'), units = [...sec.querySelectorAll('.sp-game.sp-slot, .sp-game[data-sp-game$="_SUN"]')], none = sec.querySelector('[data-sp-none="slot"]');
+  { const mine = [el, ...units, none].filter(Boolean), night = [...sec.querySelectorAll('.sp-game:not(.sp-slot), [data-sp-wait]:not([data-sp-next$="_SUN"])')];
+    if (!night.every(a => mine.every(b => !!(a.compareDocumentPosition(b) & 4)))) bad.push('the Sunday slot\'s part is not after every night game\'s set and line in the Night games section'); }
   if (!U) {
     const want = over ? `The ${season} regular season is over: no Sunday slot is left.` : `No Sunday game of week ${wk} is still to kick off.`;
     if (el || units.length || !none) bad.push(`no Sunday slot is to come, and the section draws ${el ? 'a wait line' : units.length ? 'a set' : 'no line saying so'}`);
@@ -2263,22 +2272,23 @@ const ladderBoot = async (x, seeded, how) => {
           const r = ids === g2.id ? eloSet(NIGHT_E, where) : SLOT_E.ids && ids === SLOT_E.ids ? eloSet(SLOT_E.safe, where)
             : { tiers: [['safe', 'Safe', 2, 0.35], ...ELO_EMPTY].map(([id, label, n, floor]) => ({ id: 'elo-' + id, label, n, floor, why: eloWhy(where, n, 0) })), candidates: 0 };
           return w.JSON.parse(JSON.stringify(r)); };
-        /* the Sunday slot's section at the fixture's own clock, before anything stands in for the tab's rules: the rule
+        /* the Sunday slot's part of Night games at the fixture's own clock, before anything stands in for the tab's rules: the rule
            worked out here (slotNextL) on the schedule as the fixture has it, every number and word the rule's. The
            fixture's own slot, with its live, locked and under-way sets, is made up further down */
         const slotNow = () => { const now = w.eval('Date.now()'), S0 = w.eval('S'), weeks = w.eval('PAY.sched').map(g => g.w);
           return { now, U: slotNextL(weeks, S0.sched, now, SEA), wk: liveWeekL(weeks, S0.sched, now), over: S0.sched.length > 0 && S0.sched.every(g => finalL(g, now)) }; };
         { const s = slotNow(), bad = slotHeldL(d, s.U, s.now, s.wk, s.over, SEA, true);
-          chk(!bad, `${how}: at the fixture's clock, the Sunday slot's section is not as its rule has it (${s.U ? s.U.id + (s.U.up ? ' up' : ' not up') : 'none to come, week ' + s.wk}): ` + bad); }
+          chk(!bad, `${how}: at the fixture's clock, the Sunday slot's part of Night games is not as its rule has it (${s.U ? s.U.id + (s.U.up ? ' up' : ' not up') : 'none to come, week ' + s.wk}): ` + bad); }
         /* the night rule on this set as the page has it, before anything stands in for it: the Thursday night game is
            the next night, and goes up on the morning after the last prime-time night before it on the schedule (the
            season's own last one), so until then the tab names it and says when, and draws no set; once that morning
            has come, its set. Then the tab's one question of which games it sets out (spOn) is stood in by every
            prime-time game, so the card checks below hold on any day; put back at the end */
         { const S0 = w.eval('S'), G0 = S0.sched.find(x => x.id === g2.id), no = nightOpenL(G0, S0.sched), up = no.open == null || w.eval('Date.now()') >= no.open;
-          /* (app v118) in the Night games section: the Sunday slot's has a wait line and a set of its own */
+          /* (app v118) in the Night games section; the Sunday slot's wait line and set, in the same section since app v129
+             (after the night's, data-sp-next its _SUN id, its set .sp-slot), left out */
           const NS = '#spSets section.sp-sec[data-sp-sec="night"]';
-          const el = d.querySelector(`${NS} [data-sp-wait]`), on = [...d.querySelectorAll(`${NS} .sp-game[data-sp-game]`)].map(x => x.dataset.spGame).join();
+          const el = d.querySelector(`${NS} [data-sp-wait]:not([data-sp-next$="_SUN"])`), on = [...d.querySelectorAll(`${NS} .sp-game[data-sp-game]:not(.sp-slot)`)].map(x => x.dataset.spGame).join();
           const TNl = w.eval('TEAM_NAMES'), say = `Next up: Thursday night, ${TNl[g2.a] || g2.a} at ${TNl[g2.h] || g2.h}.` + (no.open != null ? ` Its set goes up ${etSayL(no.open)}, the morning after ${PRIME_NIGHT_L[new Date(no.prev + 'T12:00:00Z').getUTCDay()]}’s ${no.pg > 1 ? 'games' : 'game'}.` : '');
           chk(primeL(G0) && (up ? on === g2.id && !el : on === '' && !!el && el.dataset.spWait === new Date(no.open).toISOString().replace(/\.\d{3}Z$/, 'Z') && el.dataset.spNext === g2.id && txt(el) === say && w.eval('spTier')(fid) === null),
             `${how}: by the night rule the Thursday night game's set is ${up ? 'up' : 'not up until ' + new Date(no.open).toISOString()}, and the tab ${on ? 'sets out ' + on : el ? 'says "' + txt(el) + '"' : 'draws neither a set nor a line'}${up ? '' : ', not "' + say + '"'}`); }
@@ -2312,7 +2322,8 @@ const ladderBoot = async (x, seeded, how) => {
            section at the tab's foot over the Parlay Builder's ticks); the Elo Safe's two legs each with an Add, its Add to
            builder and Finish named for the unit and the level (sp|<unit>:elo-safe); the empty three saying why, "in this
            game", with neither. Nothing is left of the old section (#pbElo, its Add, its "elo|" Finish, its wait line), and
-           with no record and no backtest read (this smoke's fetch stub serves neither) each section's record is hidden */
+           with no record and no backtest read (this smoke's fetch stub serves neither) the one section's record (Night
+           games', since app v129 its only section) is hidden */
         { const tierId = c => c.dataset.pbTier || [...c.classList].find(k => k !== 'pb-tier' && k !== 'none');
           const parts = set() ? [...set().children].filter(x => x.matches('h5.sp-sub, div.pb-tiers')).map(x => `${x.tagName.toLowerCase()}:${x.dataset.spKind}:${x.tagName === 'H5' ? txt(x) : [...x.children].filter(c => c.matches('.pb-tier')).map(tierId).join('+')}`).join(' / ') : '';
           const wantParts = 'h5:model:Model parlays / div:model:safe+med+aggr+xtrm / h5:elo:Elo picks / div:elo:elo-safe+elo-med+elo-aggr+elo-xtrm';
@@ -2325,8 +2336,8 @@ const ladderBoot = async (x, seeded, how) => {
           chk(!d.getElementById('pbElo') && !d.querySelector('[data-pb-elo-add], [data-pc-finish^="elo|"], [data-pb-elo-wait], #spSets [data-sp-elo-wait]'),
             `${how}: something of the Elo picks' old section is still on the page (#pbElo, its Add, its "elo|" Finish or its wait line), or the unit waits on the Elo ratings it was handed`);
           const recs = [...d.querySelectorAll('#spSets .sp-rec')].map(r => `${r.dataset.spRecsec}:${r.hidden ? 'hidden' : 'shown'}:${r.previousElementSibling && r.previousElementSibling.matches('h3.sp-sech') ? txt(r.previousElementSibling) : '-'}`).join(' / ');
-          chk(recs === 'night:hidden:Night games / slot:hidden:Sunday slot' && !d.querySelector('#spHead .sp-rec, #spHead [data-sp-rec], #spRec'),
-            `${how}: with no record and no backtest, the two sections' records are not each hidden under their own heading, or a record is at the tab's head: ${recs}`); }
+          chk(recs === 'night:hidden:Night games' && !d.querySelector('#spHead .sp-rec, #spHead [data-sp-rec], #spRec, #spSets [data-sp-sec="slot"]'),
+            `${how}: with no record and no backtest, the Night games section's one record is not hidden under its heading, a record is at the tab's head, or the Sunday slot has a section of its own: ${recs}`); }
         /* each leg of a set has its own Add, 44px, named for the leg, pressed while the leg is in the
            builder: the runner's main line is (the builder holds it from above), the home money line is not */
         const legBtn = key => set() && set().querySelector(`[data-pb-tier="safe"] [data-pb-leg="${key}"]`);
@@ -2464,14 +2475,15 @@ const ladderBoot = async (x, seeded, how) => {
           w.eval(`PB_REC=${JSON.stringify({ prime: { [recKey]: entry } })}; PB_REC_DONE=true; PB_REC_STATE=spState();`);
           w.Date.now = () => KICK - 3600e3;
           w.eval('renderParlay()'); await wait(30);
-          /* (app v118) with a record read, each section's record is drawn under its own heading, a row for the model's
-             parlays and one for the Elo picks, each "None graded yet" where nothing of it is graded (this entry has no
-             grade yet, and the Sunday slot no entry), and no record at the tab's head */
+          /* (app v118) with a record read, the section's record is drawn under its heading, a row for the model's parlays
+             and one for the Elo picks, each "None graded yet" where nothing of it is graded (this entry has no grade yet);
+             since app v129 one record, Night games', the Sunday slot's counted in it, no record of the slot's own, and no
+             record at the tab's head */
           { const rows = sec => { const r = d.querySelector(`#spSets section.sp-sec[data-sp-sec="${sec}"] > h3.sp-sech + div.sp-rec[data-sp-recsec="${sec}"]`);
               return !r ? 'no record under its heading' : r.hidden ? 'hidden' : [...r.querySelectorAll(':scope > .bar[data-sp-reckind]')].map(b => `${b.dataset.spReckind}:${txt(b.querySelector('.sp-reck'))}:${[...b.querySelectorAll('[data-sp-rec]')].map(x => x.dataset.spRec + '=' + txt(x)).join('+')}`).join(' / '); };
             const want = sec => `model:Model parlays:${sec}:model:none=None graded yet / elo:Elo picks:${sec}:elo:none=None graded yet`;
-            chk(rows('night') === want('night') && rows('slot') === want('slot') && !d.querySelector('#spHead .sp-rec, #spHead [data-sp-rec]'),
-              `${how}: with a record read and nothing graded, a section's record is not its two rows saying none is graded yet, under its heading: ${rows('night')} | ${rows('slot')}`); }
+            chk(rows('night') === want('night') && !d.querySelector('#spHead .sp-rec, #spHead [data-sp-rec], #spSets [data-sp-recsec="slot"], #spSets [data-sp-rec^="slot:"]') && d.querySelectorAll('#spSets .sp-rec').length === 1,
+              `${how}: with a record read and nothing graded, the Night games record is not its two rows saying none is graded yet, under its heading, or a record of the Sunday slot's own is drawn: ${rows('night')}`); }
           const ph = set() && set().querySelector('[data-sp-phase]');
           /* (app v113) one short line: the record's set is the one shown (its legs, below), "Locked since Thu 6:15 PM ET." */
           chk(!!ph && ph.getAttribute('data-sp-phase') === 'locked' && txt(ph) === 'Locked since Thu 6:15 PM ET.' && !!ph.querySelector('.sp-lockmark') && txt(ph.querySelector('.sp-lockmark')) === 'Locked',
@@ -2581,7 +2593,7 @@ const ladderBoot = async (x, seeded, how) => {
                 const s = slotNow(), bad = slotHeldL(d, s.U, s.now, s.wk, s.over, SEA, true);
                 const ph = !s.U ? 'none' : !s.U.up ? 'wait' : t < s.U.lock ? 'live' : t < s.U.first ? 'locked' : 'under';
                 phases.push(ph);
-                chk(!bad, `${how}: ${when}, the Sunday slot's section is not as its rule has it (${s.U ? s.U.id + ' ' + ph : 'none to come, week ' + s.wk}): ` + bad);
+                chk(!bad, `${how}: ${when}, the Sunday slot's part of Night games is not as its rule has it (${s.U ? s.U.id + ' ' + ph : 'none to come, week ' + s.wk}): ` + bad);
                 const u = d.querySelector(`#spSets [data-sp-game="${sid}"]`), fin = ['safe', 'med', 'aggr', 'xtrm'].flatMap(id => [id, 'elo-' + id]).filter(id => w.eval('spTier')(`${sid}:${id}`) != null);
                 if (ph === 'wait' || ph === 'none' || ph === 'under')
                   chk(!fin.length && !(u && u.querySelector('[data-sp-add], [data-pc-finish], [data-pb-leg]')), `${how}: ${when}, the Sunday slot (${ph}) still lets ${fin.join(', ') || 'a card of it'} be added or finished`);
