@@ -737,11 +737,14 @@ Vegas's call on nflverse's lines (`call`: the two moneylines with the margin out
 a game stands (`outcome`: the published result, else the Props tab's scoreboard read, `LIVE.games` once `LIVE.slate`), its
 kickoff, its site ("vs" for nflverse's Neutral or a 9:30am Eastern kickoff) and week name (weeks 19-22 Wild Card to Super
 Bowl), `probCols` and the way to the game's page on the Props tab (`canProps`, `propsPlayers`, `openOnProps`). The
-scoreboard on load (`scoresOnLoad`, app v128): once the prop model is up (app-ready, and 300 ms) the glue presses the
-Props tab's own Refresh scores once (`LIVE.slate`, `liveRefresh`: one free read of ESPN's scoreboard for the Props list's
-week, seasontype 2, on the prop model's own `SEASON`), and only where a game of that week has kicked off with no score in
-the payload, the one case it can add anything; with none, no scoreboard request on load at all, and never on a timer.
-Nothing read is stored. Until 22 October 2026 **the Matchups board** stood in front of the Props tab (`tab_pickems.html`,
+scoreboard on load (`scoresOnLoad`, app v128): once the prop model is up (app-ready, and 300 ms) the glue reads ESPN's
+scoreboard once for the Props list (the read its Refresh scores makes, seasontype 2, on the prop model's own `SEASON`, no
+box score), and only where a game of that week has kicked off with no score in the payload, the one case it can add
+anything; with none, no scoreboard request on load at all, and never on a timer. The read goes into `LIVE.games` and
+`LIVE.slate` as a press's does, and the list is drawn again with it only while nothing is open over the page (`pageBusy`,
+`listRedraw`: no window, no game's page), the focus put back where it was; otherwise the stamp says it and the list shows
+it on its next draw (closing a game's page draws it). `closeGameModal` (part3) takes body's `modal-open` off only where no
+other window is still open. Nothing read is stored. Until 22 October 2026 **the Matchups board** stood in front of the Props tab (`tab_pickems.html`,
 its own section, Pick'ems until the owner's call of 16 October 2026): Vegas's call on every game of a week in six columns
 (date, matchup, win probability, confidence, score prediction, final score; one card a game at 900px and under, a middle
 layout from 901 to 1,160px), a week picker, Vegas's records and a foot, ESPN's scoreboard read on every load (`PK_LIVE`,

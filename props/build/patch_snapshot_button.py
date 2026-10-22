@@ -20,7 +20,12 @@ tabs); the Props tab is the page's first tab and the board's old addresses land 
    onto a second line (at 600px each button is 136px wide).
 3. lineSource, which the Game bets card prints as its "Lines:" and the matchup bubble as a title, no longer says the
    posted line is "as on the Matchups tab": "nflverse's posted line".
-4. Comments that named the board as the hub's are reworded (slateNeutral reads the betting job's schedule through
+4. closeGameModal takes body's modal-open off only where no other window is still open (a .modal, or X Parlays'
+   "Clear this parlay?"), as every other window's close on the page does. renderSlate closes the game's page whenever
+   none is chosen, so any redraw of the list (a Refresh scores read, the hub's read of the scoreboard on load) took the
+   scroll lock from a window open over another part of the page (the Props tab's Mismatches list, the Game snapshot the
+   matchup bubble opens, the ELO Ratings tab's windows), and the page scrolled under it (the review of 22 October 2026).
+5. Comments that named the board as the hub's are reworded (slateNeutral reads the betting job's schedule through
    window.pkBoard, the page's glue; probCols is in hub.html).
 
 APP_BUILD moves to app v128.
@@ -70,7 +75,15 @@ sub1('p2', """   posted line (the Matchups tab's, the board Pick'ems was until 1
      """   posted line (the one the Matchups tab showed until it went on 22 October 2026) after that. null""",
      'lineSource: its note')
 
-# 4. comments
+# 4. the scroll lock kept for a window still open
+sub1('p3', "function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }",
+     """/* (app v128) the scroll lock goes only where no other window is still open: renderSlate closes the game's page on every
+   redraw with none chosen, and took it from a window open over another part of the page */
+function closeGameModal(){ const m=$('gameModal'); m.hidden=true;
+  if(!document.querySelector('.modal:not([hidden]),.lp-dlg:not([hidden])')) document.body.classList.remove('modal-open'); }""",
+     'closeGameModal: keep the lock for a window still open')
+
+# 5. comments
 sub1('p3', """/* a game at a neutral site: the hub's Matchups board says so where it has the game (the betting job's
    schedule marks most of them Neutral); without it, a 9:30am Eastern kickoff, which is one played abroad */""",
      """/* a game at a neutral site: the betting job's schedule says so where the hub's page has it (window.pkBoard, the

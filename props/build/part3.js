@@ -52,7 +52,10 @@ function renderWeekOptions(){
 /* scroll to the top only when the overlay is first opened; a re-render (expanding a player,
    changing a setting) keeps the reader where they were */
 function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; } }
-function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }
+/* (app v128) the scroll lock goes only where no other window is still open: renderSlate closes the game's page on every
+   redraw with none chosen, and took it from a window open over another part of the page */
+function closeGameModal(){ const m=$('gameModal'); m.hidden=true;
+  if(!document.querySelector('.modal:not([hidden]),.lp-dlg:not([hidden])')) document.body.classList.remove('modal-open'); }
 function closeGame(){ S.ui.game=null; save(); closeGameModal(); renderSlate(); }
 /* (app v126) the game's page is the Props tab's own window, on the screen only while that tab is: leaving the tab
    (another tab's button, or on the hub the address moved by Back or a link, which routeTabs turns into a click on

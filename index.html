@@ -3653,7 +3653,10 @@ function renderWeekOptions(){
 /* scroll to the top only when the overlay is first opened; a re-render (expanding a player,
    changing a setting) keeps the reader where they were */
 function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; } }
-function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }
+/* (app v128) the scroll lock goes only where no other window is still open: renderSlate closes the game's page on every
+   redraw with none chosen, and took it from a window open over another part of the page */
+function closeGameModal(){ const m=$('gameModal'); m.hidden=true;
+  if(!document.querySelector('.modal:not([hidden]),.lp-dlg:not([hidden])')) document.body.classList.remove('modal-open'); }
 function closeGame(){ S.ui.game=null; save(); closeGameModal(); renderSlate(); }
 /* (app v126) the game's page is the Props tab's own window, on the screen only while that tab is: leaving the tab
    (another tab's button, or on the hub the address moved by Back or a link, which routeTabs turns into a click on
@@ -7683,7 +7686,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='0754aed';
+const PAGE_HASH='505ccef';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -9828,8 +9831,8 @@ const neutral=g=>g.location==='Neutral'||g.gametime==='09:30';
 const PLAYOFF={19:'Wild Card',20:'Divisional',21:'Conference',22:'Super Bowl'};
 const weekName=w=>w>18?(PLAYOFF[w]||'Playoffs '+(w-18)):'Week '+w;
 /* where a game stands: the published result when the betting job has graded it, otherwise what the
-   scoreboard said when the Props tab last read it (its Refresh scores, LIVE, which the page presses once on
-   load where a game is under way: scoresOnLoad, below). final says the game is over; live says it is on. */
+   scoreboard said when the Props tab last read it (LIVE: its Refresh scores, or the page's own read once on load
+   where a game is under way, scoresOnLoad, below). final says the game is over; live says it is on. */
 function outcome(g){
   if(g.result!=null) return {final:true,live:false,as:g.away_score,hs:g.home_score,winner:winnerOf(g),clock:''};
   let s=null; try{ s=typeof LIVE==='object'&&LIVE&&LIVE.slate&&LIVE.games?LIVE.games[g.game_id]:null; }catch(e){}
@@ -9914,17 +9917,47 @@ window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET
 
 /* the scoreboard on load: the Matchups board read ESPN's scoreboard on every load until it went (22 October
    2026), so a game that had finished since the betting job last ran, or was on, showed its score without being
-   asked. The Props tab's list is that board now (app v122), so once the prop model is up the page presses its
-   Refresh scores once (LIVE.slate, liveRefresh: one free scoreboard read of the week on its list, no odds-API
-   credit, never on a timer), and only where a game of that week has kicked off with no final score in the
-   payload, the only case it can add anything. The Game snapshot reads the same read (outcome, above). Nothing
-   read is stored: the week is still settled by the jobs, from nflverse. */
-function scoresOnLoad(){
+   asked. The Props tab's list is that board now (app v122), so once the prop model is up the page reads it once
+   for that list: one free scoreboard read of the week on its list (the read its Refresh scores makes, no odds-API
+   credit, never on a timer), and only where a game of that week has kicked off with no final score in the payload,
+   the only case it can add anything. The read is put where a press of Refresh scores puts it (LIVE.games, LIVE.slate),
+   so the list, its stamp and the Game snapshot (outcome, above) show it, but it is not the press: it reads no box
+   score and redraws nothing the visitor is using. The list is drawn again with it only while nothing is open over the
+   page (no game's page, no window: renderSlate closes a game's page and rebuilds the list's rows, which took the scroll
+   lock from a window opened in the meantime and the focus off a row, the review of 22 October 2026), the focus put back
+   on the control it was on; otherwise the stamp says the read at once and the list shows it the next time it is drawn
+   (closing a game's page draws it). Nothing read is stored: the week is still settled by the jobs, from nflverse. */
+const pageBusy=()=>document.body.classList.contains('modal-open')||!!document.querySelector('.modal:not([hidden]),.lp-dlg:not([hidden])')
+  ||!!(typeof S==='object'&&S&&S.ui&&S.ui.game);
+function listRedraw(){
+  if(typeof renderSlate!=='function'||pageBusy()) return;
+  /* the control the focus is on in the Props tab, found again after the rows are rebuilt: by its id, else by its first
+     data- attribute (a game's row, data-game) */
+  const a=document.activeElement; let find=null;
+  if(a&&a!==document.body&&a.closest&&a.closest('#tab-slate')){
+    if(a.id){ const id=a.id; find=()=>document.getElementById(id); }
+    else{ const at=[...a.attributes].find(x=>/^data-/.test(x.name));
+      if(at){ const n=at.name, v=at.value; find=()=>[...document.querySelectorAll('#tab-slate ['+n+']')].find(x=>x.getAttribute(n)===v)||null; } }
+  }
+  try{ renderSlate(); }catch(e){ return; }
+  const now=document.activeElement;
+  if(find&&(!now||now===document.body||!now.isConnected)){ const b=find(); try{ if(b) b.focus({preventScroll:true}); }catch(e){} }
+}
+async function scoresOnLoad(){
   try{
-    if(typeof LIVE!=='object'||!LIVE||LIVE.slate||LIVE.busy||typeof liveRefresh!=='function') return;
-    if(typeof gamesIn!=='function'||typeof slateWeek!=='function'||typeof gameStarted!=='function'||typeof hasScore!=='function') return;
-    if(!gamesIn(slateWeek()).some(g=>gameStarted(g)&&!hasScore(g))) return;
-    LIVE.slate=true; LIVE.err=null; slateStamp(); liveRefresh();
+    if(typeof LIVE!=='object'||!LIVE||LIVE.slate||LIVE.busy) return;
+    if(typeof gamesIn!=='function'||typeof slateWeek!=='function'||typeof gameStarted!=='function'||typeof hasScore!=='function'
+      ||typeof espnGames!=='function'||typeof ESPN_SB!=='string') return;
+    const wk=slateWeek();
+    if(!gamesIn(wk).some(g=>gameStarted(g)&&!hasScore(g))) return;
+    LIVE.busy=true; slateStamp();
+    try{
+      const r=await fetch(`${ESPN_SB}?seasontype=2&week=${wk}&dates=${SEASON}`,{cache:'no-store'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      LIVE.games=espnGames(await r.json(),S.sched); LIVE.err=null; LIVE.at=Date.now();
+    }catch(e){ LIVE.err=String(e&&e.message||e); }
+    finally{ LIVE.busy=false; }
+    LIVE.slate=true; slateStamp(); listRedraw();
   }catch(e){}
 }
 

@@ -749,18 +749,20 @@ function scoreboardOn(state, week, gid) {
   return { events: state.schedule.filter(g => +g.week === week).map(g => sbEvent(g, g.game_id === gid ? 'in' : g.result != null ? 'final' : 'pre')) };
 }
 /* the scoreboard on load (22 October 2026, when the Matchups board, which read ESPN's scoreboard on every load, went):
-   the page presses the Props tab's own Refresh scores once on load (scoresOnLoad, hub.html), and only where a game of the
+   the page reads the scoreboard once on load for the Props list (scoresOnLoad, hub.html), and only where a game of the
    Props list's week (its week picker's) has kicked off by the page's clock with no score in the payload, worked out here
    on the smoke's own reading (etKick on the payload's rows, the clock the page loaded on: now). None under way: no
    scoreboard asked as the page loaded, and the Props stamp empty; one or more: exactly one read, of that week in the
-   prop model's numbering (seasontype=2, its own SEASON), and the stamp saying when. Gives how many were under way */
+   prop model's numbering (seasontype=2, its own SEASON), and the stamp saying when. Either way no box score (the read
+   on load is not a press of Refresh scores, which reads one for a kept parlay's game under way). Gives how many were
+   under way */
 function sbOnLoadHeld(R, label, now) {
   const PW = +R.d.getElementById('weekSel').value, S = R.w.eval('S');
   const under = (S && S.sched || []).filter(g => +g.w === PW && isFinite(etKick(g)) && now >= etKick(g) && !scoredOwn(g));
   const sb = R.calls.filter(c => /\/scoreboard\?/.test(c.url)), stamp = txt(R.d.getElementById('slateStamp'));
   chk(PW > 0 && (under.length
     ? sb.length === 1 && sb[0].url.includes(`seasontype=2&week=${PW}&dates=${PROP_SEASON}`) && sb[0].cache === 'no-store' && /^scores \d/.test(stamp)
-    : sb.length === 0 && stamp === ''),
+    : sb.length === 0 && stamp === '') && !R.calls.some(c => /\/summary\?/.test(c.url)),
     `the scoreboard on load (${label}, week ${PW}, ${under.length ? under.map(g => g.id).join(', ') + ' under way' : 'no game under way'}): ${under.length ? 'not read once, of the Props list\'s week, with the stamp saying when' : 'read though no game is under way, or the stamp says something'}: ${sb.map(c => c.url.replace(/https:\/\/[^/]+/, '')).join(' | ') || 'no read'}; stamp '${stamp}'`);
   return under.length;
 }
@@ -886,7 +888,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           if (s.includes('elo/data/players.json')) return eloF('players', ELO_P);
           if (s.includes('elo/data/model.json')) return eloF('model', ELO_M);
           if (s.includes('elo/data/matchups.json')) return held('mu', eloF('mu', ELO_MU));
-          if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) }); }
+          if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return held('scoreboard', Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) })); }
           return Promise.resolve({ ok: false, status: 404 }); };
         w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched, urls, calls }), 300));
         if (early) { const iv = setInterval(() => { if ((w.pkBoard && w.pkBoard.ST && w.pkBoard.ST.done) || w.document.querySelector('#gamesList .game[data-game]')) { clearInterval(iv); setTimeout(() => resolve({ w, d: w.document, errs, fetched, urls, calls }), 300); } }, 50); }
@@ -1022,7 +1024,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       'the build tag\'s hash is not the hash of this page: it was edited after it was built'); }
 
   /* ---- the scoreboard on load (22 October 2026): the board read ESPN's scoreboard on every load until it went; the
-     page now presses the Props tab's own Refresh scores once on load (scoresOnLoad, hub.html), only where a game of the
+     page now reads it once on load for the Props list (scoresOnLoad, hub.html), only where a game of the
      Props list's week has kicked off with no score in the payload. On this boot, whatever the hour: worked out here
      (sbOnLoadHeld). The case with a game under way is held at any hour on fixtures of the smoke's own further down ---- */
   const sbUnder = sbOnLoadHeld({ w, d, calls }, 'the published week', bootNow);
@@ -4128,7 +4130,48 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           `the scoreboard on load: the planted game's Game snapshot does not show the read's score and clock: '${md ? txt(md.querySelector('#gsMatch .gs-sc')) : 'no window'}'`);
         if (md && !md.hidden) A.w.gameSnapshotClose(false); }
       chk(A.errs.length === 0, 'the scoreboard on load: the page threw: ' + A.errs.join('; '));
-      A.w.close(); }
+      A.w.close();
+      /* the read held back while the visitor is already using the page (the review of 22 October 2026: the read redrew the
+         list under whatever was open, which took the scroll lock from a window opened meanwhile and threw the focus off a
+         row onto the page's body). C1, on the list: the focus on the planted game's row, the read let through: the row
+         drawn again with the read's score and the focus on it, not the body; then the Game snapshot opened from elsewhere
+         (as the matchup bubble opens it) and the list drawn again under it: the scroll lock kept. C2, the planted game's
+         page open with the focus on its Game snapshot button when the read lands: nothing drawn under it, the page, the
+         lock and that very button kept; Back draws the list with the read's score */
+      { let go1; const g1 = new Promise(res => { go1 = res; });
+        const C = await run(stA, SITE, wk => scoreboardOn(stA, wk, X.id), false, { pay: JSON.stringify(PA), gate: { scoreboard: g1 } });
+        await wait(700); const bad = [];
+        const row = () => C.d.querySelector(`#gamesList .game[data-game="${X.id}"]`);
+        const r0 = row(); if (r0) r0.focus(); else bad.push('the planted game has no row on the Props list');
+        go1(); await wait(400);
+        const r1 = row(), a1 = C.d.activeElement;
+        if (!r1 || r1 === r0) bad.push('the list was not drawn again with the read');
+        else if (txt(r1.querySelector('.sl-result')) !== `${X.a} leading 14–10Q3 5:44`) bad.push(`the row after the read: '${txt(r1.querySelector('.sl-result'))}'`);
+        if (a1 !== r1) bad.push('the focus after the read is on ' + (a1 === C.d.body ? 'the body' : a1 ? a1.tagName + (a1.id ? '#' + a1.id : '') : 'nothing') + ', not the game\'s row drawn again');
+        if (sX) { const o = await snapOpen(C, sX, 'bubble');
+          if (!o.md) bad.push('the Game snapshot did not open from elsewhere');
+          else { C.w.eval('renderSlate()'); await wait(50);
+            if (o.md.hidden || !C.d.body.classList.contains('modal-open')) bad.push('a redraw of the list under the Game snapshot took its scroll lock (closeGameModal) or closed it');
+            C.w.gameSnapshotClose(false); } }
+        chk(bad.length === 0 && C.errs.length === 0, `the scoreboard on load, held back, on the list: ${bad.join('; ')} ${C.errs.join('; ')}`);
+        C.w.close(); }
+      { let go2; const g2 = new Promise(res => { go2 = res; });
+        const D = await run(stA, SITE, wk => scoreboardOn(stA, wk, X.id), false, { pay: JSON.stringify(PA), gate: { scoreboard: g2 } });
+        await wait(700); const bad = [];
+        const row = () => D.d.querySelector(`#gamesList .game[data-game="${X.id}"]`), gm = D.d.getElementById('gameModal');
+        const r0 = row(); if (r0) { r0.click(); await wait(80); }
+        const b0 = D.d.querySelector('#gameView [data-gp-pop="snap"]');
+        if (!b0 || gm.hidden) bad.push('the planted game\'s page did not open, or has no Game snapshot button');
+        else { b0.focus(); go2(); await wait(400);
+          if (gm.hidden || !D.d.body.classList.contains('modal-open')) bad.push('the read closed the game\'s page or took its scroll lock');
+          if (!b0.isConnected || D.d.activeElement !== b0) bad.push('the read drew the game\'s page again under the visitor (its Game snapshot button replaced, the focus on ' + (D.d.activeElement === D.d.body ? 'the body' : D.d.activeElement ? D.d.activeElement.tagName : 'nothing') + ')');
+          if (!/^scores \d/.test(txt(D.d.getElementById('slateStamp')))) bad.push('the stamp does not say the read: ' + txt(D.d.getElementById('slateStamp')));
+          const back = D.d.getElementById('backBtn'); if (back) { back.click(); await wait(80); }
+          const r2 = row();
+          if (!r2 || txt(r2.querySelector('.sl-result')) !== `${X.a} leading 14–10Q3 5:44`) bad.push(`after Back, the row does not show the read: '${r2 ? txt(r2.querySelector('.sl-result')) : 'no row'}'`); }
+        chk(D.calls.filter(c => /\/scoreboard\?/.test(c.url)).length === 1 && !D.calls.some(c => /\/summary\?/.test(c.url)), 'the scoreboard on load, held back, on a game\'s page: not one read of the scoreboard alone');
+        chk(bad.length === 0 && D.errs.length === 0, `the scoreboard on load, held back, on a game's page: ${bad.join('; ')} ${D.errs.join('; ')}`);
+        D.w.close(); } }
     const PB = JSON.parse(PAYLOAD_TXT);
     for (const g of PB.sched || []) if (+g.w === PW && isFinite(etKick(g)) && etKick(g) <= pageNow + 600e3 && !scoredOwn(g)) { g.hs = 20; g.as = 17; }
     const B = await run(state, SITE + '#matchups', wk => scoreboard(state, wk), false, { pay: JSON.stringify(PB) }); landed(B, '#matchups');

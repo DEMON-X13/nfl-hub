@@ -191,8 +191,8 @@ const js = sub1(sub1(TAB_JS, '/*BETTING*/', BET_NS, 'the /*BETTING*/ slot'),
   "const tag=(...a)=>BET.tag(...a).replace(/class=\"([^\"]*)\"/,(m,c)=>'class=\"'+c.split(' ').map(x=>'pk-'+x).join(' ')+'\"');\n/* the Player Elo tab draws team tags and tier shields with these */\nwindow.pkTag=tag; window.pkTagColor=BET.tagColor; window.pkTierBadge=BET.tierBadge; window.pkEloTier=BET.eloTier; window.pkTierDefs=BET.TIER_DEFS;",
   'the tag helper, which the Elo tab shares');
 /* what the page's glue reads of the prop model: the Props tab's stamp (which it words for the page), its scoreboard
-   read (pressed once on load where a game is under way), the game's page it opens and the players it draws there */
-for (const need of ['function slateStamp', 'function liveRefresh', 'let LIVE=', 'const slateWeek=', 'function gamesIn', 'function gameStarted', 'function hasScore', 'function weekOpen', 'function renderSlate', 'function rosterFor', 'function statLines', 'const TEAM_NAMES'])
+   reader and LIVE (read once on load where a game is under way), the game's page it opens and the players it draws there */
+for (const need of ['function slateStamp', 'const ESPN_SB', 'function espnGames', 'const SEASON', 'let LIVE=', 'const slateWeek=', 'function gamesIn', 'function gameStarted', 'function hasScore', 'function weekOpen', 'function renderSlate', 'function rosterFor', 'function statLines', 'const TEAM_NAMES'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the page\'s glue reads');
 
 /* ---- the X Parlays section, out of liveparlays/build/page.html ---- */

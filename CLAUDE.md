@@ -1553,17 +1553,29 @@ the scoreboard on load (`scoresOnLoad`), the snapshot opens whole from a game's 
 `FROMPAGE`, its `pk-state` listener) and the props parts draw the button (`b('snap','Game snapshot')`).
 **The scoreboard on load** (app v128). The board read ESPN's scoreboard on every load (`PK_LIVE`, `readScores`), so a game
 finished since the betting job last ran, or on, showed its score unasked, and the snapshot's standing read it. Now, once
-the prop model is up (app-ready, and 300 ms), `scoresOnLoad` in `hub.html` presses the Props tab's own Refresh scores once
-(`LIVE.slate`, `liveRefresh`: one free read of `${ESPN_SB}?seasontype=2&week=<the Props list's week>&dates=<SEASON>`, no
-credit, and, as the button always has, the box score of each game under way that a parlay this browser keeps has a leg
-in, `liveWanted`: its old saved list or the betting app's Bet Build), and only where a game of that week (`gamesIn(slateWeek())`) has kicked off by the page's clock with no score in
-the payload (`gameStarted`, `hasScore`), the one case it can add anything, and none is running (`LIVE.busy`); with no game
-under way no scoreboard is asked on load at all, and never on a timer. Its read fills the Props list's final-score cells
-and the stamp, and the Game snapshot's standing reads the same read (`outcome`: the published result, else `LIVE.games`
-once `LIVE.slate`); nothing read is stored, and the week is still settled by the jobs, from nflverse. The nflbets smoke's
-THE SCOREBOARD ON LOAD holds it on fixtures of its own at any hour and in the off-season: a game of the list's week an hour
-past its kickoff with no score read once, of that week, its score in the list, the stamp and the snapshot, and no second
-read; every game kicked off with a score, no read. Every old address sends a visitor to the page at the site's root (the owner's call of
+the prop model is up (app-ready, and 300 ms), `scoresOnLoad` in `hub.html` reads it once for the Props list: one free read
+of `${ESPN_SB}?seasontype=2&week=<the Props list's week>&dates=<SEASON>` (the read its Refresh scores makes, no credit, and
+no box score, which a press reads for a kept parlay's game under way), and only where a game of that week
+(`gamesIn(slateWeek())`) has kicked off by the page's clock with no score in the payload (`gameStarted`, `hasScore`), the
+one case it can add anything, and none is running (`LIVE.busy`); with no game under way no scoreboard is asked on load at
+all, and never on a timer. The read goes where a press puts it (`LIVE.games`, `LIVE.slate`), so the Props list's
+final-score cells, the stamp and the Game snapshot's standing (`outcome`: the published result, else `LIVE.games` once
+`LIVE.slate`) show it; but it redraws nothing the visitor is using (the review of 22 October 2026: its first form pressed
+the button itself, whose `renderSlate` rebuilt the list's rows, and the game's page where one was open, under the visitor,
+taking the scroll lock from a window opened meanwhile and the focus off a row onto the page's body). The list is drawn
+again with it only while nothing is open over the page (`pageBusy`: no `modal-open`, no `.modal` or X Parlays' dialog
+shown, no game's page chosen; `listRedraw`), the focus put back on the control it was on in the Props tab (by its id,
+else its first `data-` attribute, a row's `data-game`); otherwise the stamp says the read at once and the list shows it
+the next time it is drawn (closing a game's page draws it). And `closeGameModal` (part3, app v128) takes body's
+`modal-open` off only where no other window is still open, so no redraw of the list (a press, a Refresh odds read, a
+kickoff) takes the lock from a window open over another part of the page. Nothing read is stored, and the week is still
+settled by the jobs, from nflverse. The nflbets smoke's THE SCOREBOARD ON LOAD holds it on fixtures of its own at any hour
+and in the off-season: a game of the list's week an hour past its kickoff with no score read once, of that week and no box
+score, its score in the list, the stamp and the snapshot, and no second read; every game kicked off with a score, no read;
+and the read held back while the visitor uses the page: with the focus on that game's row, the row drawn again with the
+score and the focus on it; with that game's page open and the focus on its Game snapshot button, nothing drawn under it,
+the page, the lock and that very button kept, and Back drawing the list with the score; and the list drawn again under a
+Game snapshot opened from elsewhere keeping its lock. Every old address sends a visitor to the page at the site's root (the owner's call of
 17 October 2026, above, when it moved there from `nflbets/`), by `location.replace`, so Back does not loop, with a link
 for a browser without scripts: `nflbets/` with its own query and tab (`location.replace('../'+search+hash)`, so
 `nflbets/#suggest` lands on the root's `#suggest`, and `#tracker`, `#pickems` or `#matchups` on the Props tab by the
@@ -1623,8 +1635,8 @@ edge. Its cells: the date, the matchup (the favourite's tag raised, a tick or cr
 at a neutral site, `slateNeutral`: the betting job's schedule where the page's glue has the game, `window.pkBoard`'s
 `neutral`, else a 9:30am kickoff), the win probability in the two clubs' own colours (`slateCols`, `probCols`'s rule in
 `hub.html` on the prop model's tag colours), the board's old band (`slateTier`), the score prediction and the final score
-(`slateResult`: the payload's score and whether the pick hit, else the scoreboard Refresh scores read, pressed once on
-load where a game of the week is under way, `scoresOnLoad`, else 0 : 0, LIVE or Final). Its numbers are
+(`slateResult`: the payload's score and whether the pick hit, else the scoreboard Refresh scores read, or the page's
+own read once on load where a game of the week is under way, `scoresOnLoad`, else 0 : 0, LIVE or Final). Its numbers are
 the prop model's own lines, the ones the game's page prices from, a Refresh odds press included (`slateCall`: the two
 moneylines with the margin out, else the spread about `MARGIN_SD`, else with no line the model's own chance, marked;
 a pick'em spread with no moneylines, no call), so a game can read a point or more off the Game snapshot's Vegas line,
@@ -2609,7 +2621,7 @@ read of DraftKings' lines on ESPN inside it), `betting/state.json`,
 2026 once the board had drawn) and another week's when a window first wants them, and
 `news/data/stats.json` only when a game page's Team Stats window first opens (app v124), so it is
 rebuilt when a source changes, never when the data does; ESPN's scoreboard on load only where a game of the Props
-list's week is under way with no score (`scoresOnLoad`, the Props tab's own Refresh scores pressed once: under "Bets and
+list's week is under way with no score (`scoresOnLoad`, the read the Props tab's Refresh scores makes, once: under "Bets and
 Stats: the loop"; the Matchups board read it on every load until it went on 22 October 2026), and ESPN's feed otherwise
 only when a visitor presses Refresh scores or Refresh odds (under Props, "Refresh odds") or opens a parlay card (its
 games alone), what Refresh odds and the card read held in memory and kept in the visitor's browser until it gives way (never in
