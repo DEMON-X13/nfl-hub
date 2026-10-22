@@ -14,7 +14,9 @@ The owner's calls of 22 October 2026, the day the Matchups tab went:
    counts every unit of both of the suggestions record's maps, the prime-time games' and the Sunday slots', each unit
    and level once as before (SP_SEC's night reads both maps; the slot's own entry stays for any caller that asks for it
    by name, drawn nowhere). The record's weeks before it took the sets still count, from the backtest, as they always
-   did: what goes is the chip that said so, "Incl. backtest, weeks 3–6", and its row.
+   did: what goes is the chip that said so, "Incl. backtest, weeks 3–6", and its row. The slot's set, under the Night
+   games heading now, wears a "Sunday slot" pill in its head as a night game wears its night's, so the set still says
+   what it is; and once the season is over the section says so once, the night games' line, the slot drawing nothing.
 
 APP_BUILD moves to app v129.
 """
@@ -93,6 +95,12 @@ sub1('p3', """function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on))
 function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on)+spSlotHtml(on)); }""", 'spSetsHtml: one section')
 
 sub1('p1', ".sp-rec .bar.sp-recbtbar{margin-top:0}\n", '', 'the backtest chip row\'s rule')
+sub1('p3', """<h4 id="spg-${esc(g.id)}">Week ${g.w}, ${g.games.length} game${g.games.length===1?'':'s'}</h4><small>""",
+     """<h4 id="spg-${esc(g.id)}">Week ${g.w}, ${g.games.length} game${g.games.length===1?'':'s'}</h4><span class="pill">Sunday slot</span><small>""",
+     'spHdHtml: the slot named in its head')
+sub1('p3', """  if(!u) return `<p class="pb-none" data-sp-none="slot">${seasonOver()?`The ${SEASON} regular season is over: no Sunday slot is left.`:`No Sunday game of week ${currentWeek()} is still to kick off.`}</p>`;""",
+     """  if(!u) return seasonOver()?'':`<p class="pb-none" data-sp-none="slot">No Sunday game of week ${currentWeek()} is still to kick off.</p>`;""",
+     'spSlotHtml: the season over said once, by the night games')
 
 for gone in ("b('snap'", 'sp-recbt', 'Incl. backtest', "spSecHtml('slot'", '.gwin{display:grid;grid-template-columns:repeat(4'):
     assert gone not in T['p3'] + T['p1'], gone

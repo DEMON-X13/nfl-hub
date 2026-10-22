@@ -3427,7 +3427,7 @@ function spHdHtml(g){
   const d=spKickEt(g);
   if(!g.slot) return `<div class="sp-hd"><h4 id="spg-${esc(g.id)}">${esc(TEAM_NAMES[g.a]||g.a)} at ${esc(TEAM_NAMES[g.h]||g.h)}</h4><span class="pill">${SP_NIGHT[spDow(g)]}</span><small>${esc(d.day)}${d.t?' · '+esc(d.t):''}</small></div>`;
   const e=spKickEt({d:g.games[g.games.length-1].d,t:g.games[g.games.length-1].t});
-  return `<div class="sp-hd"><h4 id="spg-${esc(g.id)}">Week ${g.w}, ${g.games.length} game${g.games.length===1?'':'s'}</h4><small>${esc(d.day)}${d.t?' · '+esc(d.t)+(e.t&&e.t!==d.t?' to '+esc(e.t):''):''}</small></div>`;
+  return `<div class="sp-hd"><h4 id="spg-${esc(g.id)}">Week ${g.w}, ${g.games.length} game${g.games.length===1?'':'s'}</h4><span class="pill">Sunday slot</span><small>${esc(d.day)}${d.t?' · '+esc(d.t)+(e.t&&e.t!==d.t?' to '+esc(e.t):''):''}</small></div>`;
 }
 function spGameHtml(g,on){
   const lk=spLockAt(g), live=lk!=null&&Date.now()<lk, eon=spEloOn();
@@ -3473,7 +3473,7 @@ function spNightHtml(on){
 /* (app v118) the Sunday slot: its set from its morning to its last kickoff; until then, when it goes up */
 function spSlotHtml(on){
   const u=spSlotNext();
-  if(!u) return `<p class="pb-none" data-sp-none="slot">${seasonOver()?`The ${SEASON} regular season is over: no Sunday slot is left.`:`No Sunday game of week ${currentWeek()} is still to kick off.`}</p>`;
+  if(!u) return seasonOver()?'':`<p class="pb-none" data-sp-none="slot">No Sunday game of week ${currentWeek()} is still to kick off.</p>`;
   if(!u.up){ const pn=u.prev?SP_NIGHT[new Date(u.prev+'T12:00:00Z').getUTCDay()]:null, pg=u.prev?(S.sched||[]).filter(x=>spPrime(x)&&x.d===u.prev).length:0;
     return `<p class="pb-none sp-wait" data-sp-wait="${u.open!=null?spIso(u.open):''}" data-sp-next="${esc(u.id)}">Next up: week ${u.w}’s Sunday slot, ${u.games.length} game${u.games.length===1?'':'s'}. Its sets go up ${spEt(u.open,true)}, the morning after ${pn||'the night game before it'}’s ${pg>1?'games':'game'}.</p>`; }
   return spGameHtml(u,on);

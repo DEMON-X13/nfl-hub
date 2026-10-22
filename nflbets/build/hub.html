@@ -1,7 +1,7 @@
 <!-- The page's glue: its few styles and one script, which build.js sets into the prop model's page. It
      was the Matchups tab (the Pick'ems tab before 16 October 2026, tab_pickems.html), whose board went on
      22 October 2026 (the owner's call: its row is the Props list's since app v122, and its Game snapshot opens
-     from each game's page there since app v128). What stays is what the rest of the page reads: the season from
+     from the matchup bubble). What stays is what the rest of the page reads: the season from
      betting/state.json and the Vegas call on it (window.pkBoard), the betting app's tag, colour, confidence and
      Elo-tier code lifted at build time (its BETTING slot), the tabs as addresses (routeTabs), the framed betting tabs
      (frames), the Props tab's stamp in the page's words and its scoreboard read once on load. Every class and id
@@ -229,7 +229,7 @@ async function scoresOnLoad(){
 
    The Props tab is the page's first tab since the Matchups board went (22 October 2026, the owner's call: "i
    think we are good to remove matchups tabs since most the important info was moved to props tab"; its row has
-   been the Props list's since app v122, and its Game snapshot opens from each game's page there, app v128). The
+   been the Props list's since app v122, and its Game snapshot opens from the matchup bubble). The
    bare address opens on it as the first tab, written over as nothing; every old address of the board lands on it,
    written over as #slate: #matchups (16 to 22 October 2026), #pickems (every bookmark from before and pickems/'s
    redirect) and #tracker (the Season Tracker's, gone on 14 October 2026, where news/ once sent every visitor).

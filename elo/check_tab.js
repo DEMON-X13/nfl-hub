@@ -859,12 +859,16 @@ function page(MU, opts) {
         for (const t of rated) T8[t].rank = 1 + rated.filter(u => T8[u].elo > T8[t].elo).length;
         tied[side] = [byR[1], byR[2]]; }
       const { d: d8 } = page(MU0, { M: M8 }); await wait(60);
+      /* the rows ranked r are one unbroken run holding both: a third club already level with them (two level at the top
+         before the plant) shares the #, and the page orders a shared rank by the file's key, so the pair need not touch */
+      const runOf = (R8, T8, r, ia, ib) => { const at = R8.map((tr, i) => T8[tr.dataset.team].rank === r ? i : -1).filter(i => i >= 0);
+        return at.length >= 2 && at[at.length - 1] - at[0] === at.length - 1 && at.includes(ia) && at.includes(ib); };
       for (const side of Object.keys(tied)) {
         const T8 = M8.units[side], [a, b] = tied[side], r = T8[a].rank, card = await open(d8, side), R8 = card ? [...card.querySelectorAll('tbody tr.pe-tmrow')] : [];
         const ia = R8.findIndex(tr => tr.dataset.team === a), ib = R8.findIndex(tr => tr.dataset.team === b), after = R8.find(tr => T8[tr.dataset.team].rank > r);
-        chk(T8[b].rank === r && R8.length === 32 && rankRowsOk(R8, T8) && Math.abs(ia - ib) === 1 && [ia, ib].every(i => i >= 0 && txt(R8[i].querySelector('.pe-rank')) === String(r))
+        chk(T8[b].rank === r && R8.length === 32 && rankRowsOk(R8, T8) && runOf(R8, T8, r, ia, ib) && [ia, ib].every(i => i >= 0 && txt(R8[i].querySelector('.pe-rank')) === String(r))
           && !!after && txt(after.querySelector('.pe-rank')) === String(1 + Object.keys(T8).filter(t => (T8[t].games || T8[t].carried) && T8[t].elo > T8[after.dataset.team].elo).length),
-          `${label(side)}, with ${a} and ${b} level at ${T8[a].elo}, does not draw them side by side, both #${r}, and the next club one place on per club above it: ` + R8.slice(0, 6).map(tr => tr.dataset.team + ' #' + txt(tr.querySelector('.pe-rank'))).join(', '));
+          `${label(side)}, with ${a} and ${b} level at ${T8[a].elo}, does not draw them in one run of the rows ranked #${r}, and the next club one place on per club above it: ` + R8.slice(0, 6).map(tr => tr.dataset.team + ' #' + txt(tr.querySelector('.pe-rank'))).join(', '));
         for (const t of [a, b]) { const tr = R8.find(x => x.dataset.team === t); if (!tr) continue; tr.click(); await wait(20);
           const tiles = [...d8.querySelectorAll('#peTmView .pe-pl-tiles div')].map(txt);
           chk(tiles.some(x => x.startsWith('Rank') && x.includes(`#${r}`)), `${t}'s window in ${label(side)}, level with ${t === a ? b : a}, does not give the shared #${r}: ${tiles.join(' | ')}`);

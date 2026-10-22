@@ -7023,7 +7023,7 @@ function spHdHtml(g){
   const d=spKickEt(g);
   if(!g.slot) return `<div class="sp-hd"><h4 id="spg-${esc(g.id)}">${esc(TEAM_NAMES[g.a]||g.a)} at ${esc(TEAM_NAMES[g.h]||g.h)}</h4><span class="pill">${SP_NIGHT[spDow(g)]}</span><small>${esc(d.day)}${d.t?' · '+esc(d.t):''}</small></div>`;
   const e=spKickEt({d:g.games[g.games.length-1].d,t:g.games[g.games.length-1].t});
-  return `<div class="sp-hd"><h4 id="spg-${esc(g.id)}">Week ${g.w}, ${g.games.length} game${g.games.length===1?'':'s'}</h4><small>${esc(d.day)}${d.t?' · '+esc(d.t)+(e.t&&e.t!==d.t?' to '+esc(e.t):''):''}</small></div>`;
+  return `<div class="sp-hd"><h4 id="spg-${esc(g.id)}">Week ${g.w}, ${g.games.length} game${g.games.length===1?'':'s'}</h4><span class="pill">Sunday slot</span><small>${esc(d.day)}${d.t?' · '+esc(d.t)+(e.t&&e.t!==d.t?' to '+esc(e.t):''):''}</small></div>`;
 }
 function spGameHtml(g,on){
   const lk=spLockAt(g), live=lk!=null&&Date.now()<lk, eon=spEloOn();
@@ -7069,7 +7069,7 @@ function spNightHtml(on){
 /* (app v118) the Sunday slot: its set from its morning to its last kickoff; until then, when it goes up */
 function spSlotHtml(on){
   const u=spSlotNext();
-  if(!u) return `<p class="pb-none" data-sp-none="slot">${seasonOver()?`The ${SEASON} regular season is over: no Sunday slot is left.`:`No Sunday game of week ${currentWeek()} is still to kick off.`}</p>`;
+  if(!u) return seasonOver()?'':`<p class="pb-none" data-sp-none="slot">No Sunday game of week ${currentWeek()} is still to kick off.</p>`;
   if(!u.up){ const pn=u.prev?SP_NIGHT[new Date(u.prev+'T12:00:00Z').getUTCDay()]:null, pg=u.prev?(S.sched||[]).filter(x=>spPrime(x)&&x.d===u.prev).length:0;
     return `<p class="pb-none sp-wait" data-sp-wait="${u.open!=null?spIso(u.open):''}" data-sp-next="${esc(u.id)}">Next up: week ${u.w}’s Sunday slot, ${u.games.length} game${u.games.length===1?'':'s'}. Its sets go up ${spEt(u.open,true)}, the morning after ${pn||'the night game before it'}’s ${pg>1?'games':'game'}.</p>`; }
   return spGameHtml(u,on);
@@ -7680,7 +7680,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='3ec85bc';
+const PAGE_HASH='9219077';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -9969,7 +9969,7 @@ async function scoresOnLoad(){
 
    The Props tab is the page's first tab since the Matchups board went (22 October 2026, the owner's call: "i
    think we are good to remove matchups tabs since most the important info was moved to props tab"; its row has
-   been the Props list's since app v122, and its Game snapshot opens from each game's page there, app v128). The
+   been the Props list's since app v122, and its Game snapshot opens from the matchup bubble). The
    bare address opens on it as the first tab, written over as nothing; every old address of the board lands on it,
    written over as #slate: #matchups (16 to 22 October 2026), #pickems (every bookmark from before and pickems/'s
    redirect) and #tracker (the Season Tracker's, gone on 14 October 2026, where news/ once sent every visitor).
@@ -12179,7 +12179,7 @@ function draw(gid){
   const P=B(), F=LOADED, view=$('gsView'); if(!P||!view) return;
   let g=gameOf(gid);
   /* the season (betting/state.json, the page glue's one read) is what every card but the Deep Dive stands on: a
-     window opened from a game's page before it is in says so, and draws whole once it is (pk-state); one the read
+     window opened before it is in says so, and draws whole once it is (pk-state); one the read
      failed for says why. A game the season has no row for is drawn from the prop model's own row */
   if(!g){
     const pg=propsGame(gid); if(!pg) return;

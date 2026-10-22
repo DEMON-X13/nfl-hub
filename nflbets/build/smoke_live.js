@@ -160,8 +160,10 @@ const slotHeldL = (d, U, now, wk, over, season, own) => {
   { const mine = [el, ...units, none].filter(Boolean), night = [...sec.querySelectorAll('.sp-game:not(.sp-slot), [data-sp-wait]:not([data-sp-next$="_SUN"])')];
     if (!night.every(a => mine.every(b => !!(a.compareDocumentPosition(b) & 4)))) bad.push('the Sunday slot\'s part is not after every night game\'s set and line in the Night games section'); }
   if (!U) {
-    const want = over ? `The ${season} regular season is over: no Sunday slot is left.` : `No Sunday game of week ${wk} is still to kick off.`;
-    if (el || units.length || !none) bad.push(`no Sunday slot is to come, and the section draws ${el ? 'a wait line' : units.length ? 'a set' : 'no line saying so'}`);
+    /* (app v129) the season over is said once, by the night games' line: the slot draws nothing then */
+    const want = `No Sunday game of week ${wk} is still to kick off.`;
+    if (over) { if (el || units.length || none) bad.push(`the season is over and the slot still draws ${el ? 'a wait line' : units.length ? 'a set' : 'a line: ' + txt(none)}`); }
+    else if (el || units.length || !none) bad.push(`no Sunday slot is to come, and the section draws ${el ? 'a wait line' : units.length ? 'a set' : 'no line saying so'}`);
     else if (txt(none) !== want) bad.push(`its line reads "${txt(none)}", not "${want}"`);
     return bad.length ? bad.join('; ') : null; }
   if (!U.up) {
@@ -177,8 +179,8 @@ const slotHeldL = (d, U, now, wk, over, season, own) => {
   if (units.length !== 1 || u.dataset.spGame !== U.id || !u.classList.contains('sp-slot')) return bad.concat(`the section draws ${units.map(x => x.dataset.spGame).join(', ') || 'no unit'}, not the slot ${U.id}`).join('; ');
   const h4 = u.querySelector('.sp-hd h4'), sm = u.querySelector('.sp-hd small'), lastG = U.games[U.games.length - 1];
   const small = `${etDayL(U.first)} · ${etTimeL(U.first)}${etTimeL(etKickL(lastG)) !== etTimeL(U.first) ? ' to ' + etTimeL(etKickL(lastG)) : ''}`;
-  if (!h4 || h4.id !== 'spg-' + U.id || u.getAttribute('aria-labelledby') !== 'spg-' + U.id || u.getAttribute('role') !== 'group' || txt(h4) !== `Week ${U.w}, ${U.games.length} game${U.games.length === 1 ? '' : 's'}` || txt(sm) !== small || u.querySelector('.sp-hd .pill'))
-    bad.push(`the slot is not a group named by its h4, "Week ${U.w}, ${U.games.length} games", over "${small}": ${txt(u.querySelector('.sp-hd'))}`);
+  if (!h4 || h4.id !== 'spg-' + U.id || u.getAttribute('aria-labelledby') !== 'spg-' + U.id || u.getAttribute('role') !== 'group' || txt(h4) !== `Week ${U.w}, ${U.games.length} game${U.games.length === 1 ? '' : 's'}` || txt(sm) !== small || u.querySelectorAll('.sp-hd .pill').length !== 1 || txt(u.querySelector('.sp-hd .pill')) !== 'Sunday slot')
+    bad.push(`the slot is not a group named by its h4, "Week ${U.w}, ${U.games.length} games", with its "Sunday slot" pill, over "${small}": ${txt(u.querySelector('.sp-hd'))}`);
   const phase = now < U.lock ? 'live' : now < U.first ? (own ? 'own' : 'locked') : 'under', mark = 'Locked since ' + etSayL(U.lock) + '.';
   /* under way, the record's set as it locked, or (own: the record has none) this browser's own kept from before the
      first kickoff, said so, or none at all, since nothing is built of the page's own once the slot is under way */

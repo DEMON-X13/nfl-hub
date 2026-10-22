@@ -1265,7 +1265,7 @@ function draw(gid){
   const P=B(), F=LOADED, view=$('gsView'); if(!P||!view) return;
   let g=gameOf(gid);
   /* the season (betting/state.json, the page glue's one read) is what every card but the Deep Dive stands on: a
-     window opened from a game's page before it is in says so, and draws whole once it is (pk-state); one the read
+     window opened before it is in says so, and draws whole once it is (pk-state); one the read
      failed for says why. A game the season has no row for is drawn from the prop model's own row */
   if(!g){
     const pg=propsGame(gid); if(!pg) return;

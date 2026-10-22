@@ -1060,7 +1060,8 @@ setTimeout(async()=>{
   const SPN='#spPanel [data-sp-sec="night"]', SP_NG=`${SPN} [data-sp-game]:not(.sp-slot)`, SP_NW=`${SPN} [data-sp-wait]:not([data-sp-next$="_SUN"])`;
   const SP_SG=`${SPN} [data-sp-game].sp-slot`, SP_SW=`${SPN} [data-sp-wait][data-sp-next$="_SUN"]`, SP_SN=`${SPN} [data-sp-none="slot"]`;
   const spPartsAud=()=>{ const dd=w.document, A=[...dd.querySelectorAll(`${SP_NG},${SP_NW}`)], B=[...dd.querySelectorAll(`${SP_SG},${SP_SW},${SP_SN}`)], slotId=/^\d{4}_\d{2}_SUN$/;
-    return B.length===1&&A.every(a=>B.every(b=>!!(a.compareDocumentPosition(b)&4)))
+    /* (app v129) at most one slot part: none once the season is over, the night games' line then saying it once */
+    return B.length<=1&&A.every(a=>B.every(b=>!!(a.compareDocumentPosition(b)&4)))
       &&[...dd.querySelectorAll('#spPanel [data-sp-game]')].every(x=>x.classList.contains('sp-slot')===slotId.test(x.dataset.spGame||'')); };
   /* the slot's own words, worked here: its wait line, its head (its week and games, its first kickoff to its last, in
      Eastern time), and the line that says why a level of it is empty */
@@ -1798,9 +1799,11 @@ setTimeout(async()=>{
       { const SS=SPN, boxes=[...d.querySelectorAll(SP_SG)], wt=[...d.querySelectorAll(SP_SW)], nn=d.querySelector(SP_SN);
         const tok=(F('spState')().split(',').find(x=>x.startsWith('s='))||'(none)');
         chk(tok===slotTokAud(SL),`${lab}: the page's state carries ${tok} for the Sunday slot, where the rule gives ${slotTokAud(SL)}`);
-        if(!SL){ chk(!boxes.length&&!wt.length&&!!nn,`${lab}: with no Sunday slot to come, the slot's section draws ${boxes.length?'a set':wt.length?'a wait line':'no line saying so'}`);
-          const cw=liveWeekAud(S.sched,now), want=F('seasonOver')()?`The ${F('SEASON')} regular season is over: no Sunday slot is left.`:`No Sunday game of week ${cw} is still to kick off.`;
-          W.wording(!!nn&&nn.textContent===want,`${lab}: with no Sunday slot to come, its section reads "${nn?nn.textContent:''}", not "${want}"`);
+        /* (app v129) with the season over the night games' line says so once and the slot draws nothing */
+        if(!SL){ const over=F('seasonOver')();
+          chk(!boxes.length&&!wt.length&&(over?!nn:!!nn),`${lab}: with no Sunday slot to come${over?' and the season over':''}, the slot's part draws ${boxes.length?'a set':wt.length?'a wait line':over?'a line':'no line saying so'}`);
+          const cw=liveWeekAud(S.sched,now), want=`No Sunday game of week ${cw} is still to kick off.`;
+          if(!over) W.wording(!!nn&&nn.textContent===want,`${lab}: with no Sunday slot to come, its section reads "${nn?nn.textContent:''}", not "${want}"`);
           slotSaid.push(`${lab}: none to come`); }
         else if(!SL.up){ chk(!boxes.length&&!nn&&wt.length===1&&wt[0].dataset.spWait===isoAud(SL.open)&&wt[0].dataset.spNext===SL.id,
             `${lab}: with ${SL.id} not set out until ${isoAud(SL.open)}, the slot's section does not draw its one line saying which slot is next and when its sets go up: ${wt[0]?wt[0].outerHTML.slice(0,300):boxes.length?'a set drawn':'no line'}`);
@@ -1822,8 +1825,8 @@ setTimeout(async()=>{
           { const wantL=ph0==='live'?`Locks ${etAud(R.lock)}, 2 hours before the first kickoff.`:ph0==='under'?`Locked since ${etAud(R.lock)}. Under way since ${etAud(R.first)}.${v.none?' The site’s set was not published in time.':v.own?' This browser’s own set: the site’s was not published in time, so the record does not grade it.':''}`
               :v.own?`Locked since ${etAud(R.lock)}. This browser’s own set: the site’s was not published in time, so the record does not grade it.`:`Locked since ${etAud(R.lock)}.`;
             W.wording(!!ph&&ph.textContent===wantL,`${gl}: the ${ph0} set's line reads "${ph?ph.textContent:''}", not "${wantL}"`); }
-          { const H=slotHeadAud(R), h=box.querySelector('.sp-hd h4'), sm=box.querySelector('.sp-hd small');
-            W.wording(!!h&&h.id===`spg-${g.id}`&&box.getAttribute('aria-labelledby')===h.id&&h.textContent===H.h&&!!sm&&sm.textContent===H.small,`${gl}: the slot is headed "${h?h.textContent:''}" "${sm?sm.textContent:''}", not "${H.h}" "${H.small}"`); }
+          { const H=slotHeadAud(R), h=box.querySelector('.sp-hd h4'), sm=box.querySelector('.sp-hd small'), pl=[...box.querySelectorAll('.sp-hd .pill')];
+            W.wording(!!h&&h.id===`spg-${g.id}`&&box.getAttribute('aria-labelledby')===h.id&&h.textContent===H.h&&!!sm&&sm.textContent===H.small&&pl.length===1&&pl[0].textContent==='Sunday slot',`${gl}: the slot is headed "${h?h.textContent:''}" "${pl.map(x=>x.textContent).join('|')}" "${sm?sm.textContent:''}", not "${H.h}" "Sunday slot" "${H.small}"`); }
           /* under way with nothing to show: its line alone, no card, nothing to add or finish, and no level found */
           if(v.none){ slotsNone++;
             chk(ph0==='under'&&!box.querySelector('.pb-tier,.pb-tiers,h5.sp-sub,[data-sp-add],[data-pb-leg],[data-pc-finish]'),`${gl}: with the site's set not published in time, the slot ${ph0==='under'?'still draws a card, a heading or a button':'is said to have nothing to show before its first kickoff'}`);
@@ -2345,8 +2348,8 @@ setTimeout(async()=>{
       w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; spSlotNext=function(){ return null; }; renderParlay();');
       const sp=d.getElementById('spPanel'), slotTx=()=>((d.querySelector(SP_SN)||{}).textContent||'');
       chk(/regular season is over: no game is left/.test(panel.textContent)&&!panel.querySelector('[data-pb-mix],.pb-tier,[data-pb-add],[data-pb-leg]')&&!sp.querySelector('[data-sp-game],.pb-tier,[data-sp-add],[data-pb-leg],[data-sp-wait]'),'with the season over the panel does not say so, or the list or Suggested Parlays still offers something');
-      W.wording(/regular season is over: no Thursday, Sunday or Monday night game is left/.test(sp.textContent)&&slotTx()===`The ${F('SEASON')} regular season is over: no Sunday slot is left.`,'with the season over Suggested Parlays does not say so, for its night games and for its Sunday slot');
-      chk(spPartsAud()&&!sp.querySelector('[data-sp-sec="slot"]'),'with the season over, the Sunday slot\'s line is not the last part of the Night games section, or it has a section of its own');
+      W.wording(/regular season is over: no Thursday, Sunday or Monday night game is left/.test(sp.textContent),'with the season over Suggested Parlays does not say so');
+      chk(!d.querySelector(SP_SN)&&spPartsAud()&&!sp.querySelector('[data-sp-sec="slot"]'),'with the season over, the Sunday slot still draws a line of its own (the night games\' line says it once), or it has a section of its own');
       w.eval('seasonOver=function(){ return false; }; renderParlay();');
       chk(/has kicked off, so there is nothing left to build from/.test(panel.textContent)&&!sp.querySelector('[data-sp-game],[data-sp-wait]'),'with every game of the week under way the panel does not say so, or Suggested Parlays still offers a set');
       W.wording(/No Thursday, Sunday or Monday night game of week \d+ is still to kick off/.test(sp.textContent)&&/^No Sunday game of week \d+ is still to kick off\.$/.test(slotTx()),'with every game of the week under way Suggested Parlays does not say so, for its night games and for its Sunday slot');
@@ -3064,7 +3067,8 @@ setTimeout(async()=>{
         { const wantL=phase==='live'?`Locks ${etAud(R.lock)}, 2 hours before the first kickoff.`:phase==='under'?`Locked since ${etAud(R.lock)}. Under way since ${etAud(R.first)}.${v.none?' The site’s set was not published in time.':v.own?' This browser’s own set: the site’s was not published in time, so the record does not grade it.':''}`:`Locked since ${etAud(R.lock)}. This browser’s own set: the site’s was not published in time, so the record does not grade it.`;
           W.wording(!!ph&&ph.textContent===wantL,`${gl}: the slot's line reads "${ph?ph.textContent:''}", not "${wantL}"`);
           const H=slotHeadAud(R), h=box&&box.querySelector('.sp-hd h4'), sm=box&&box.querySelector('.sp-hd small');
-          W.wording(!!h&&h.textContent===H.h&&!!sm&&sm.textContent===H.small,`${gl}: the slot is headed "${h?h.textContent:''}" "${sm?sm.textContent:''}", not "${H.h}" "${H.small}"`); }
+          const pl=box?[...box.querySelectorAll('.sp-hd .pill')]:[];
+          W.wording(!!h&&h.textContent===H.h&&!!sm&&sm.textContent===H.small&&pl.length===1&&pl[0].textContent==='Sunday slot',`${gl}: the slot is headed "${h?h.textContent:''}" "${pl.map(x=>x.textContent).join('|')}" "${sm?sm.textContent:''}", not "${H.h}" "Sunday slot" "${H.small}"`); }
         if(!box) continue;
         const shown=phase==='live'?SETS[R.id].tiers:(v.tiers||[]);
         chk(JSON.stringify(legsOf(shown))===JSON.stringify(legsOf(SETS[R.id].tiers)),`${gl}: the slot's ${phase} set is not the one built for it${phase==='live'?'':' and kept at its lock'}`);

@@ -665,8 +665,10 @@ const slotWaitHeld = (d, U, sched, wk, seasonOver) => { const sec = d.querySelec
   if (mine.length > 1) bad.push(`the slot draws ${mine.length} things (${mine.map(x => x.className).join(', ')}), not one`);
   else if (mine.length === 1 && sec.lastElementChild !== mine[0]) bad.push('the slot\'s part is not last in the Night games section, after the night games\'');
   if (!U) {
-    if (el || units.length || !none) bad.push(`no Sunday slot is to come and the section draws ${el ? 'a wait line' : units.length ? 'a set' : 'no line saying so'}`);
-    else if (!(seasonOver ? /^The \d{4} regular season is over: no Sunday slot is left\.$/.test(txt(none)) : txt(none) === `No Sunday game of week ${wk} is still to kick off.`)) bad.push(`its line reads "${txt(none)}"`);
+    /* (app v129) the season over is said once, by the night games' line: the slot draws nothing then */
+    if (seasonOver) { if (el || units.length || none) bad.push(`the season is over and the slot still draws ${el ? 'a wait line' : units.length ? 'a set' : 'a line: ' + txt(none)}`); }
+    else if (el || units.length || !none) bad.push(`no Sunday slot is to come and the section draws ${el ? 'a wait line' : units.length ? 'a set' : 'no line saying so'}`);
+    else if (txt(none) !== `No Sunday game of week ${wk} is still to kick off.`) bad.push(`its line reads "${txt(none)}"`);
     return bad.length ? bad.join('; ') : null; }
   if (!U.up) { const want = slotWaitOwn(U, sched);
     if (!el) bad.push(`no wait line where the slot (${U.id}) is not up until ${isoOwn(U.open)}`);
@@ -1675,7 +1677,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const unitHead = u => { if (!u.slot) return { h: `${TN[u.a] || u.a} at ${TN[u.h] || u.h}`, pill: nightOf(u), small: null };
       const et = (ms, o) => new Date(ms).toLocaleString('en-US', { timeZone: 'America/New_York', ...o });
       const day = et(u.first, { weekday: 'short', month: 'short', day: 'numeric' }), t0 = et(u.first, { hour: 'numeric', minute: '2-digit' }) + ' ET', t1 = et(u.last, { hour: 'numeric', minute: '2-digit' }) + ' ET';
-      return { h: `Week ${u.w}, ${u.games.length} game${u.games.length === 1 ? '' : 's'}`, pill: null, small: `${day} · ${t0}${t1 !== t0 ? ' to ' + t1 : ''}` }; };
+      return { h: `Week ${u.w}, ${u.games.length} game${u.games.length === 1 ? '' : 's'}`, pill: 'Sunday slot', small: `${day} · ${t0}${t1 !== t0 ? ' to ' + t1 : ''}` }; };
     const headHeld = (el, u) => { const H = unitHead(u), h4 = el && el.querySelector(':scope > .sp-hd > h4'), pill = el && el.querySelector(':scope > .sp-hd > .pill'), sm = el && el.querySelector(':scope > .sp-hd > small');
       return !!el && !!h4 && h4.id === 'spg-' + u.id && txt(h4) === H.h && (H.pill ? !!pill && txt(pill) === H.pill : !pill) && (!H.small || (!!sm && txt(sm) === H.small))
         && el.getAttribute('role') === 'group' && el.getAttribute('aria-labelledby') === 'spg-' + u.id && el.classList.contains('sp-slot') === !!u.slot && !el.querySelector('h3'); };
@@ -2550,8 +2552,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; spSlotNext=function(){ return null; }; renderParlay(); renderSp();'); await wait(20);
       const yr = w.eval('SEASON');
       chk(/regular season is over: no game is left/.test(txt(panel)) && !panel.querySelector('[data-pb-mix], .pb-tier, ol.pb-top, [data-pb-leg], [data-pc-finish]')
-        && secLine('night') === `The ${yr} regular season is over: no Thursday, Sunday or Monday night game is left.` && secLine('slot') === `The ${yr} regular season is over: no Sunday slot is left.` && !offers()
-        && d.querySelectorAll('#spSets > section').length === 1 && d.querySelector(SEC_NIGHT).lastElementChild === d.querySelector(SLOT_NONE),
+        && secLine('night') === `The ${yr} regular season is over: no Thursday, Sunday or Monday night game is left.` && !d.querySelector(SLOT_NONE) && !offers()
+        && d.querySelectorAll('#spSets > section').length === 1 && d.querySelector(SEC_NIGHT).lastElementChild === d.querySelector(NIGHT_NONE),
         'with the season over the Parlay Builder or a section of Suggested Parlays does not say so, or still offers something: ' + txt(panel).slice(0, 120) + ' / ' + secLine('night') + ' / ' + secLine('slot'));
       w.eval('seasonOver=function(){ return false; }; renderParlay(); renderSp();'); await wait(20);
       const wk0 = w.eval('currentWeek()');
@@ -6490,7 +6492,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
    (window.eloMismatches, and the bubbles on the Props tab). It opens on a game to come, on a
    game final on the scoreboard (the Props tab's own read, Refresh scores) and on a graded one; closes
    on Escape, Close and a click outside; keeps Tab inside, in its order (its button to the game's page
-   only where the Props tab can open the game and the window is not over that very page), and hands the
+   only where the Props tab can open the game), and hands the
    focus back to the button that opened it (over the game's page, which stays open under it); reads
    no Elo file a second time; says so in each section when matchups.json, or the ratings, did not
    load while the rest draws; draws a playoff game; lays the position table out fixed, names
