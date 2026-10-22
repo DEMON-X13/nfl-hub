@@ -13,8 +13,9 @@
  *   - a player the build counts out (out last week and not practising, say) is ruled out on
  *     the page, with the build's reason in his window;
  *   - the rankings say how far the season has got as the build words it, a questionable
- *     player carries a Q, and the bar splits the ELO Model's record into calls made before
- *     kickoff and backtest;
+ *     player carries a Q, and the bar draws no ELO Model record or walk-forward pill (it split the
+ *     record into calls made before kickoff and backtest until 22 October 2026, the owner's call),
+ *     only its stamp;
  *   - every ranked player has a trend line, one game in too (week 1's column was blank);
  *   - a player kept out of the players map is priced by nothing, but the Prop Record still
  *     reads the rating he took into each week he played (it graded those weeks at 1500);
@@ -105,7 +106,9 @@
  *     TDs, his receivers' touchdowns, the levels the page took before app v121 shown to hold such pairs);
  *   - the Mismatches bubbles' words (18 October 2026): what an edge ranks is the matchup formula's units
  *     by their players' Elo ("vs the LAC secondary and defensive line, 32nd by player Elo"), never "a
- *     pass defense ranked", which on the page is the ELO Ratings tab's Pass Defense table. Since October 2026 the whole page's smoke
+ *     pass defense ranked", which on the page is the ELO Ratings tab's Pass Defense table; clubs level on a unit (to
+ *     the hundredth) share its rank, held on a copy with one club's secondary a floating-point hair above another's, and
+ *     clubs level on the Elo a team table shows share its # (22 October 2026), held on a copy so ranked. Since October 2026 the whole page's smoke
  *     (nflbets/build/smoke.js) runs after the Elo job's commit, so this is the gate on the files
  *     reaching the code that touches a chance or a price.
  */
@@ -125,6 +128,15 @@ const fails = []; let checks = 0; const notes = [];
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const wait = ms => new Promise(r => setTimeout(r, ms));
+/* a team table's rows (tr.pe-tmrow, in the order drawn) in the file's rank order, each # the file's rank: the first 1,
+   each next one more than the rows above it (its place) or, sharing the rank above it, level with that club on the Elo
+   shown (since 22 October 2026 elo/build.py ranks a table on the Elo it shows, clubs level on it sharing a rank, one more
+   than the clubs above them; a file from before ranks every club once, which this holds too) */
+const rankRowsOk = (R, T) => R.every((tr, i) => {
+  const v = T[tr.dataset.team], p = i ? T[R[i - 1].dataset.team] : null;
+  return !!v && txt(tr.querySelector('.pe-rank')) === String(v.rank)
+    && (v.rank === i + 1 || (!!p && v.rank === p.rank && v.elo === p.elo && !!(v.games || v.carried) && !!(p.games || p.carried)));
+});
 /* the tab's own word on whether a game has kicked off (a tab without it says no game ever has) */
 const on = (w, gid) => typeof w.eloGameOn === 'function' ? w.eloGameOn(gid) : false;
 /* the page's stylesheet, round the tab as on the site: a page-wide rule counts (every table is
@@ -472,45 +484,36 @@ function page(MU, opts) {
     const want = `${P.season} ${P.through ? P.through : 'through week ' + P.through_week}`;
     chk(pill === want, `the rankings pill says "${pill}", the build says "${want}"`);
     if (P.through_week) chk(!/through week/.test(pill) || new RegExp('through week ' + P.through_week + '\\b').test(pill), 'the pill claims a week the build has not finished');
-    const rec = M.record || {};
-    /* the record on calls made before kickoff, the ones on the Joker's baseline apart from the Elo-alone
-       ones before them (elo/build.py, THE JOKER BASELINE), each worked out here from the record */
-    const barWant = r => {
-      const pub = r.published || [0, 0], jb = r.joker_base, jf = r.joker_base_from_week, rp = r.repicked, rw = r.repicked_was;
-      const out = [], onJ = !!(jb && jf != null), re = !!(rp && rw && rp[0] + rp[1] > 0);
-      if (re) out.push(`${rp[0]}–${rp[1]} re-picked on the Joker after the games (${rw[0]}–${rw[1]} as first picked)`);
-      if (onJ) out.push(jb[0] + jb[1] ? `${jb[0]}–${jb[1]} picked on the Joker before kickoff (from week ${jf})` : `on the Joker before kickoff from week ${jf}, none graded yet`);
-      const eloPub = onJ ? [pub[0] - jb[0], pub[1] - jb[1]] : pub;
-      if (eloPub[0] + eloPub[1] > 0) out.push(`${eloPub[0]}–${eloPub[1]} ${onJ ? 'on Elo alone' : 'called before kickoff'}`);
-      return out;
+    /* the bar (22 October 2026, the owner's call: "in elo ratings get rid of the visual buttons"): the ELO Model's record
+       pill (#peCallRec, "ELO Model 2026: 62–29 re-picked on the Joker ...") and the walk-forward pill on the Joker's
+       baseline (#peWalkRec, "On the Joker: 2022–2025 65% walk-forward") are gone, whatever the file's record and
+       joker_base hold; the bar keeps its stamp, when the build rated, alone */
+    const barGone = (d, lab) => {
+      const bar = d.querySelector('#tab-elo > .bar'), stamp = d.getElementById('peStamp'), when = new Date(M.built_at);
+      const wantStamp = isNaN(when) ? '' : 'rated ' + when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      chk(!d.getElementById('peWalkRec') && !d.getElementById('peCallRec') && !!bar && !bar.querySelector('.rec')
+        && !/walk-forward|re-picked|picked on the Joker|on Elo alone|backtest|ELO Model \d{4}:/.test(txt(d.getElementById('tab-elo').querySelector('.bar'))),
+        `${lab}: the ELO tab's bar still draws the ELO Model's record or its walk-forward on the Joker: ` + (bar ? txt(bar) : 'no bar'));
+      chk(!!stamp && stamp.closest('.bar') === bar && txt(stamp) === wantStamp && !!wantStamp,
+        `${lab}: the ELO tab's bar does not keep its stamp, "${wantStamp}": "${txt(stamp)}"`);
     };
-    const bar = txt(d.getElementById('peCallRec'));
-    for (const want of barWant(rec))
-      chk(bar.includes(want), `the bar does not give the ELO Model's record on calls made before kickoff ("${want}"): ` + bar);
-    /* the walk-forward on the Joker's baseline, summed here from the file's own seasons */
-    const JB = M.joker_base;
-    if (JB && JB.walk_forward) {
-      const ss = Object.keys(JB.walk_forward).sort(), sum = k => ss.reduce((a, s) => a + JB.walk_forward[s][k], 0);
-      const wr = d.getElementById('peWalkRec'), want = `On the Joker: ${ss[0]}–${ss[ss.length - 1]} ${Math.round(sum('right') / sum('games') * 100)}% walk-forward`;
-      chk(txt(wr) === want && wr.title.includes(`${sum('joker')} (`) && wr.title.includes(`${sum('elo')} (`),
-        `the bar's walk-forward is not the Joker baseline's ("${want}"): ` + txt(wr) + ' / ' + wr.title);
-    }
+    barGone(d, 'the real files');
     void w; }
-  /* the same bar on a copy of the record with calls on the Joker graded: the two parts and the backtest */
-  { const had = JSON.stringify(M.record || {});
+  /* the same bar on copies of the record with calls on the Joker graded, re-picked games and the Joker baseline's
+     walk-forward: still nothing of them drawn */
+  { const had = JSON.stringify(M.record || {}), hadJB = JSON.stringify(M.joker_base || null);
+    const barGone = (d, lab) => {
+      const bar = d.querySelector('#tab-elo > .bar');
+      chk(!d.getElementById('peWalkRec') && !d.getElementById('peCallRec') && !!bar && !bar.querySelector('.rec') && !!d.getElementById('peStamp')
+        && !/walk-forward|re-picked|picked on the Joker|on Elo alone|backtest|ELO Model \d{4}:/.test(txt(bar)),
+        `${lab}: the ELO tab's bar draws the ELO Model's record or its walk-forward, or lost its stamp: ` + (bar ? txt(bar) : 'no bar'));
+    };
     M.record = Object.assign({}, M.record, { published: [40, 30], joker_base: [5, 2], joker_base_from_week: 7, backtest: [20, 13], repicked: [0, 0], repicked_was: [0, 0] });
-    { const { d } = page(MU0); await wait(60);
-      const bar = txt(d.getElementById('peCallRec'));
-      chk(bar === `ELO Model ${M.record.season}: 5–2 picked on the Joker before kickoff (from week 7), 35–28 on Elo alone, 20–13 backtest`,
-        'the bar does not split a record with calls on the Joker graded: ' + bar); }
-    /* every game before the baseline re-picked on it: 60-31 re-picked (50-41 as first), 3 backtests that were not re-picks */
+    M.joker_base = Object.assign({}, M.joker_base || {}, { walk_forward: { 2022: { games: 270, right: 176, joker: 171, elo: 174 }, 2023: { games: 271, right: 177, joker: 172, elo: 175 } } });
+    { const { d } = page(MU0); await wait(60); barGone(d, 'a record with calls on the Joker graded'); }
     M.record = Object.assign({}, M.record, { published: [4, 1], joker_base: [4, 1], joker_base_from_week: 7, backtest: [62, 32], repicked: [60, 31], repicked_was: [50, 41] });
-    { const { d } = page(MU0); await wait(60);
-      const cr = d.getElementById('peCallRec'), bar = txt(cr);
-      chk(bar === `ELO Model ${M.record.season}: 60–31 re-picked on the Joker after the games (50–41 as first picked), 4–1 picked on the Joker before kickoff (from week 7), 2–1 backtest`
-        && /re-picked the same way after they were played/.test(cr.title) && /they went 50–41/.test(cr.title),
-        'the bar does not give the re-picked games apart, with their first picks: ' + bar + ' / ' + cr.title); }
-    M.record = JSON.parse(had); }
+    { const { d } = page(MU0); await wait(60); barGone(d, 'a record with games re-picked on the Joker'); }
+    M.record = JSON.parse(had); M.joker_base = JSON.parse(hadJB); if (M.joker_base === null) delete M.joker_base; }
   /* a questionable player stays ranked, with a Q (checked with the top quarterback made
      questionable in this copy of the file only) */
   { const had = P.groups.QB.top[0].q; P.groups.QB.top[0].q = 'questionable (ankle), week 9';
@@ -588,10 +591,27 @@ function page(MU, opts) {
         const defs = {}; for (const v of Object.values(MU0.players)) if (v.opp_def) defs[v.opp] = v.opp_def; Object.assign(defs, (MU0.league && MU0.league.defs) || {});
         const bad = bubbles.map(b => { const v = MU0.players[b.dataset.mmPid], u = v && UN[v.group], avg = x => u.reduce((a, k) => a + x[k], 0) / u.length;
           if (!u || !defs[v.opp]) return `${b.dataset.mmPid}: no unit to rank`;
-          const want = `vs the ${v.opp} ${AG[v.group]}, ${ord(1 + Object.keys(defs).filter(t => avg(defs[t]) > avg(defs[v.opp])).length)} by player Elo.`, sub = txt(b.querySelector('.pe-mm-sub'));
+          const key = x => Math.round(avg(x) * 100);
+          const want = `vs the ${v.opp} ${AG[v.group]}, ${ord(1 + Object.keys(defs).filter(t => key(defs[t]) > key(defs[v.opp])).length)} by player Elo.`, sub = txt(b.querySelector('.pe-mm-sub'));
           return sub.startsWith(want) ? '' : `${b.dataset.mmPid}: "${sub.slice(0, 90)}", not "${want}"`; }).filter(Boolean);
         const old = /\b(?:pass|run) defense ranked\b|\bvs an? (?:pass|run) defense\b/.exec(txt(d.getElementById('peMism')));
         chk(!bad.length && !old, 'a Mismatches bubble does not word its rank as the matchup formula\'s units, or says a pass or run defense ranked: ' + (bad.slice(0, 2).join(' | ') || (old && old[0]))); }
+      /* clubs level on a unit share its rank (22 October 2026, the owner's call: "make clubs tied on a defense unit share
+         the same rank in the mismatches, player window, and game snapshot"), level read to the hundredth (the file writes
+         a unit to the tenth, and a mix of two averages them): on a copy of the file with another club's secondary set a
+         floating-point hair above the first receiver's or tight end's opponent's, the page gives that opponent this
+         check's own rank to the hundredth, where an exact reading would put the other club above it; and a receiver or
+         tight end facing the other club, where there is one, the same rank */
+      { const v0 = before.filter(x => x.group === 'WR' || x.group === 'TE').sort((x, y) => x.zd - y.zd)[0], defs0 = MU0.league && MU0.league.defs;
+        if (!v0 || !defs0 || !defs0[v0.opp]) notes.push('no receiver or tight end on the Mismatches against a club of the league table: the tied-unit case is skipped');
+        else {
+          const MU7 = JSON.parse(JSON.stringify(MU0)), D7 = MU7.league.defs, X = v0.opp, Y = Object.keys(D7).find(t => t !== X && Math.abs(D7[t].DB - D7[X].DB) > 0.05);
+          D7[Y].DB = D7[X].DB + 1e-9; for (const p of Object.values(MU7.players)) if (p.opp === Y && p.opp_def) p.opp_def.DB = D7[Y].DB;
+          const { w: w7 } = page(MU7); await wait(60);
+          const L7 = w7.eloMismatches(), v7 = L7.find(x => x.pid === v0.pid), y7 = L7.find(x => x.opp === Y && (x.group === 'WR' || x.group === 'TE'));
+          const key = t => Math.round(D7[t].DB * 100), want = 1 + Object.keys(D7).filter(t => key(t) > key(X)).length, exact = 1 + Object.keys(D7).filter(t => D7[t].DB > D7[X].DB).length;
+          chk(exact === want + 1 && !!v7 && v7.defRank === want && (!y7 || y7.defRank === want),
+            `with ${Y}'s secondary a hair above ${X}'s (level to the hundredth), the Mismatches rank ${X}'s ${v7 ? v7.defRank : 'not at all'}${y7 ? ` and ${Y}'s ${y7.defRank}` : ''}, not both ${want} (an exact reading: ${exact})`); } }
       /* the earliest game with a mismatch kicks off */
       const g0 = before[0].game_id, k0 = (w.eval('S.sched').find(x => x.id === g0) || {}).k;
       w.__clock.now = k0;
@@ -676,8 +696,7 @@ function page(MU, opts) {
       const rows = () => [...card.ownerDocument.querySelectorAll('#peUnits tbody tr.pe-tmrow')];
       let R = rows();
       chk(R.length === teams.length && R.length === 32, `${name} has ${R.length} rows for ${teams.length} teams`);
-      chk(R.every((tr, i) => T[tr.dataset.team] && T[tr.dataset.team].rank === i + 1 && txt(tr.querySelector('.pe-rank')) === String(i + 1)),
-        `${name} is not in the file's rank order`);
+      chk(rankRowsOk(R, T), `${name} is not in the file's rank order, each # the file's rank (a rank shared only by clubs level on the Elo shown): ` + R.slice(0, 8).map(tr => tr.dataset.team + ' ' + txt(tr.querySelector('.pe-rank'))).join(', '));
       const elos = R.filter(tr => T[tr.dataset.team].games || T[tr.dataset.team].carried).map(tr => +txt(tr.querySelector('.pe-elo')));
       chk(elos.every((e, i) => !i || e <= elos[i - 1]), `${name}'s ratings rise down the table`);
       chk(R.every(tr => +txt(tr.querySelector('.pe-elo')) === T[tr.dataset.team].elo && tr.querySelector('.pe-shield svg.tierbadge')),
@@ -744,7 +763,7 @@ function page(MU, opts) {
       chk(R.every((tr, i) => !i || rk(tr) <= rk(R[i - 1])), `a second click on ${k} does not turn the order round`);
       card.ownerDocument.querySelector('#peUnits thead th[data-sort="rank"]').click(); await wait(20);
       R = rows();
-      chk(R.every((tr, i) => T[tr.dataset.team].rank === i + 1), `# does not put ${name} back in rank order`);
+      chk(rankRowsOk(R, T), `# does not put ${name} back in rank order`);
       /* a team's window: every stat, both ranks, and the coming opponent when the file calls its game */
       const t = R[0].dataset.team; R[0].click(); await wait(20);
       const m = d.getElementById('peTmModal'), view = d.getElementById('peTmView');
@@ -827,6 +846,34 @@ function page(MU, opts) {
           `with every club carried, the ${side} table does not draw all 32 on their carried ratings, marked carried from ${from}: ${R6.length} rows`);
         chk(!!card && txt(card.querySelector('.pe-curve')).includes('32 ranked'), `with every club carried, the ${side} curve does not count all 32`);
       } }
+    /* clubs level on the Elo a table shows share its rank (22 October 2026, the owner's call: elo/build.py ranks a table on
+       the Elo it shows, where DEN and NE, both 1616 on Overall Defense, had read 5th and 4th by a raw rating no page
+       shows): on a copy with each table's 3rd club made level with its 2nd on the shown Elo and every rated club ranked
+       again by this check's own reading of the rule (1 and the rated clubs above it), each table draws the two side by
+       side under one #, the next club one place on per club above it, and each one's window the shared #; a file
+       ranked so the page draws as it is (the real file, ranked either way, is held above) */
+    { const M8 = JSON.parse(JSON.stringify(M)), tied = {};
+      for (const side of TABS) { const T8 = M8.units[side], rated = Object.keys(T8).filter(t => T8[t].games || T8[t].carried);
+        const byR = rated.slice().sort((a, b) => T8[a].rank - T8[b].rank); if (byR.length < 4) continue;
+        T8[byR[2]].elo = T8[byR[1]].elo;
+        for (const t of rated) T8[t].rank = 1 + rated.filter(u => T8[u].elo > T8[t].elo).length;
+        tied[side] = [byR[1], byR[2]]; }
+      const { d: d8 } = page(MU0, { M: M8 }); await wait(60);
+      /* the rows ranked r are one unbroken run holding both: a third club already level with them (two level at the top
+         before the plant) shares the #, and the page orders a shared rank by the file's key, so the pair need not touch */
+      const runOf = (R8, T8, r, ia, ib) => { const at = R8.map((tr, i) => T8[tr.dataset.team].rank === r ? i : -1).filter(i => i >= 0);
+        return at.length >= 2 && at[at.length - 1] - at[0] === at.length - 1 && at.includes(ia) && at.includes(ib); };
+      for (const side of Object.keys(tied)) {
+        const T8 = M8.units[side], [a, b] = tied[side], r = T8[a].rank, card = await open(d8, side), R8 = card ? [...card.querySelectorAll('tbody tr.pe-tmrow')] : [];
+        const ia = R8.findIndex(tr => tr.dataset.team === a), ib = R8.findIndex(tr => tr.dataset.team === b), after = R8.find(tr => T8[tr.dataset.team].rank > r);
+        chk(T8[b].rank === r && R8.length === 32 && rankRowsOk(R8, T8) && runOf(R8, T8, r, ia, ib) && [ia, ib].every(i => i >= 0 && txt(R8[i].querySelector('.pe-rank')) === String(r))
+          && !!after && txt(after.querySelector('.pe-rank')) === String(1 + Object.keys(T8).filter(t => (T8[t].games || T8[t].carried) && T8[t].elo > T8[after.dataset.team].elo).length),
+          `${label(side)}, with ${a} and ${b} level at ${T8[a].elo}, does not draw them in one run of the rows ranked #${r}, and the next club one place on per club above it: ` + R8.slice(0, 6).map(tr => tr.dataset.team + ' #' + txt(tr.querySelector('.pe-rank'))).join(', '));
+        for (const t of [a, b]) { const tr = R8.find(x => x.dataset.team === t); if (!tr) continue; tr.click(); await wait(20);
+          const tiles = [...d8.querySelectorAll('#peTmView .pe-pl-tiles div')].map(txt);
+          chk(tiles.some(x => x.startsWith('Rank') && x.includes(`#${r}`)), `${t}'s window in ${label(side)}, level with ${t === a ? b : a}, does not give the shared #${r}: ${tiles.join(' | ')}`);
+          d8.getElementById('peTmClose').click(); await wait(10); } }
+      chk(Object.keys(tied).length === TABS.length, `the tie copy found no four rated clubs in ${TABS.filter(k => !tied[k]).join(', ')}`); }
     /* a file from before the carry: one start a side, no carry: still draws, its lines from that start */
     { const M4 = JSON.parse(JSON.stringify(M));
       delete M4.units.params.carry; delete M4.units.params.carry_from; M4.units.start = { off: 1487, def: 1509 };

@@ -1134,7 +1134,12 @@ def unit_ratings(season_games, tg, score, start=None):
         v = np.array([raw[t] for t in rated]) if rated else np.zeros(1)
         mu, sd = float(v.mean()), float(v.std())
         show = lambda x: round(1500 + 100 * (x - mu) / sd) if sd > 1e-9 else 1500
-        order = sorted(rated, key=lambda t: (-raw[t], t)) + sorted(t for t in teams if t not in rated)
+        # each club's rank on the Elo the table shows, clubs level on it sharing a rank, one more than the clubs
+        # above them (the owner's call of 22 October 2026: DEN and NE, both shown 1616 on Overall Defense, read 4th
+        # and 5th by a raw rating no page shows); a club with no rating yet after every one that has one
+        shown_of = {t: show(raw[t]) for t in rated}
+        rank_of = {t: 1 + sum(1 for u in rated if shown_of[u] > shown_of[t]) for t in rated}
+        rank_of.update({t: len(rated) + 1 + i for i, t in enumerate(sorted(t for t in teams if t not in rated))})
         means = {k: (float(np.mean([R[side][k][t] for t in rated])) if rated else 0.0) for k in keys}
         out = {}
         for t in teams:
@@ -1144,7 +1149,7 @@ def unit_ratings(season_games, tg, score, start=None):
             then = show(h[-2][1] if len(h) > 1 else s0) if h else None
             a = acc[side][t]
             out[t] = {'elo': now, 'before': then, 'change': None if then is None else now - then,
-                      'raw': round(raw[t], 6), 'rank': order.index(t) + 1, 'games': int(a['g']), 'record': record[t],
+                      'raw': round(raw[t], 6), 'rank': rank_of[t], 'games': int(a['g']), 'record': record[t],
                       'start': show(s0), 'carried': bool(t in start and not a['g']),
                       'line': [[wk, show(x)] for wk, x in h], 'stats': {}}
             for k in keys:

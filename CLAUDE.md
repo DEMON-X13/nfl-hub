@@ -37,7 +37,8 @@ hubs, which went that day, its links with it). `nflbets/` is the page's source f
 a hand-written redirect to the root for old bookmarks. The one other page is the standalone `picks/` (Weekly Picks),
 whose NFL Hub link, `../`, now lands on the page; X NHL Bets and CFB Hub are in their own repos. `news/` is no
 longer a page (the owner's call, 14 October 2026: the Season Tracker went into each game's Game snapshot, then opened
-from the Matchups board and since app v128 from each game's page on the Props tab): it holds the news job (`news.yml`), which writes the data the snapshot reads at runtime, and the
+from the Matchups board, for a few hours of 22 October 2026 from a button on each game's page on the Props tab (app v128,
+taken off again by app v129), and since from the matchup bubble alone): it holds the news job (`news.yml`), which writes the data the snapshot reads at runtime, and the
 week's game notes, written by hand; `news/index.html` only sends a visitor to the root, `../`. `pickems/` and `live/` hold only
 redirects for old bookmarks, to the root; `liveparlays/` holds a redirect (to the root's `#xparlays`, which since 20 October 2026
 opens X Parlays on the site owner's devices alone and lands anyone else on the Props tab, written over as `#slate`; on the
@@ -52,7 +53,7 @@ by hand when a source changes, and reads the models' data on every load, every f
 | `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what the page reads, with the job's own read of DraftKings' lines on ESPN in it since 20 October 2026: no job buys a price) | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what the page reads); the app itself lives inside the page, the root's `index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to the root): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`, which since app v124 a game page's Team Stats window reads when it first opens, the Game snapshot's Stat breakdown having gone on 16 October 2026), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches with `units.json` | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
-| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (two sections since app v118, each with its own record: Night games, each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, and the Sunday slot, one set across the week's Sunday games before 7 pm Eastern; each set with its own four Elo picks, locked 2 hours before its kickoff, the slot's first, and graded by the props job's suggestions record, weeks 3 to 6 replayed as a backtest, and from week 7 on graded at the page's estimated prices on DraftKings' lines read from ESPN), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 30 lines, Value picks first, each bet once, on the bet types and games a visitor ticks), every price DraftKings' line read from ESPN (the props job's read, published with the payload, or a visitor's Refresh odds press), a player's at the page's estimate of DraftKings' price, X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs on the site owner's devices alone (the admin link, `#owner=<his Odds API key>`, the owner's call of 20 October 2026, "hide only": the files stay public by address), with Pull from DraftKings on the admin's parlay card, the Props tab first (the Matchups tab, the board in front of it, went on 22 October 2026, app v128: its row had been the Props list's since app v122), on each game's page there Matchup, Mismatches and Team Stats buttons, each opening that card alone in a little window (app v124), and a fourth, Game snapshot, opening the whole Game snapshot of the game (app v128, with the news job's preview and Deep Dive), which the matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw opens too | `nflbets/build/hub.html` (the page's glue: the season's read, the tabs as addresses, the framed tabs; `tab_pickems.html`, the Matchups tab, until 22 October 2026) + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css`, `theme.js` and `admin.js` |
+| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (one section since app v129, Night games, under one record: each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, then the Sunday slot's, one set across the week's Sunday games before 7 pm Eastern, a section with its own record from app v118 to v128; each set with its own four Elo picks, locked 2 hours before its kickoff, the slot's first, and graded by the props job's suggestions record, weeks 3 to 6 replayed as a backtest, and from week 7 on graded at the page's estimated prices on DraftKings' lines read from ESPN), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 30 lines, Value picks first, each bet once, on the bet types and games a visitor ticks), every price DraftKings' line read from ESPN (the props job's read, published with the payload, or a visitor's Refresh odds press), a player's at the page's estimate of DraftKings' price, X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs on the site owner's devices alone (the admin link, `#owner=<his Odds API key>`, the owner's call of 20 October 2026, "hide only": the files stay public by address), with Pull from DraftKings on the admin's parlay card, the Props tab first (the Matchups tab, the board in front of it, went on 22 October 2026, app v128: its row had been the Props list's since app v122), on each game's page there Matchup, Mismatches and Team Stats buttons, each opening that card alone in a little window (app v124), and the whole Game snapshot of a game (with the news job's preview and Deep Dive) opened by the matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw (and for a few hours of 22 October 2026 by a fourth button on the game's page, app v128, which app v129 took off) | `nflbets/build/hub.html` (the page's glue: the season's read, the tabs as addresses, the framed tabs; `tab_pickems.html`, the Matchups tab, until 22 October 2026) + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css`, `theme.js` and `admin.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the current week (`betting/state.json`'s schedule, the first week with a game still to play, the week the Matchups board opened on until it went on 22 October 2026) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `cfb/` | retired: CFB Hub (then X College Football Bets) moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
@@ -337,7 +338,7 @@ A game total is a leg like a team's win or cover (`total` beside `ml` and `ats`:
 `totalLeg`, `settleGameLeg`, `isGameLeg` in `part2.js`), offered over and under on the Game bets card
 on each game's page on the Props tab (app v105, `patch_gamebets_props.py`, the owner's call of 14 October
 2026: after the game's suggested parlays, and since app v124, which took those off the page, after the game's head and
-its Matchup, Mismatches and Team Stats buttons, and Game snapshot since app v128; until then it opened under each
+its Matchup, Mismatches and Team Stats buttons (and in app v128 its Game snapshot button); until then it opened under each
 Matchups game, whose Game snapshot then led with a button that opens the game's page on the Props tab with the card
 brought into view, as the snapshot the matchup bubble opens still does), and added by hand only: it never makes a suggested parlay. Its line is the
 schedule's `g.tot`, its price the over and under odds beside it, `g.tov`/`g.tou`, which `payload.py`
@@ -721,7 +722,8 @@ actuals are this season's, keyed by week, so last season's week 5 would read thi
 replaced after the lock is graded as replaced. A player with no stat line is graded as the page grades him (**who
 played**, below). `prime_summary` gives per level the parlays graded won or lost, won, the wins expected by the fair
 chance and by the model's, and the units on $1, each season's game and level once, from the last key that holds it
-(a kickoff the league moved makes a new key), as the tab's record counts it (`spRecSum`); `summary` gives the old
+(a kickoff the league moved makes a new key), as the tab's record counts it (`spRecSum`, whose one record since app v129
+adds the `slot` map's and the backtest's to it); `summary` gives the old
 entries' the same way, each parlay once: an entry was the whole week's panel, so a parlay unchanged across waves is
 frozen into each, and the same legs (in any order) of the same level in a season's week are counted from the last
 entry that holds them (`repeats` says how many that set aside). Its guard holds the new ledger to the file the run
@@ -1349,7 +1351,8 @@ played last game where a chart is silent, with home field 0 at a neutral site; `
 number and `walk_forward_who_played` the hindsight one, kept for comparison only. The ELO Model's record grades the call
 published before each kickoff, frozen in the ledger `elo/data/calls.json` (the calls before the ledger began are in
 `elo/history/`, recovered by `elo/tools/seed_calls.py`), never one recomputed after the game; weeks 1-2 of 2026 were never
-called ahead of time and are kept as a backtest (`src` on each graded call, the split on the tab's bar). **The ELO
+called ahead of time and are kept as a backtest (`src` on each graded call; the split was on the ELO Ratings tab's bar
+until 22 October 2026, below). **The ELO
 Model's calls stand on the Joker** (the owner's test of 19 October 2026: "the elo model has been underperforming pretty
 significantly so I want to do a test. I want it to apply the ELO matchups to still predict outcomes but I want it to use
 the model the Joker as a baseline to make its picks"; THE JOKER BASELINE in `elo/build.py`): a call is the Joker's chance
@@ -1362,19 +1365,29 @@ research study 4 has both models' walk-forward calls, the Joker's chance held as
 weighted too (a mix of the two, 711-373, 0.6283), which is not the Joker as the baseline. A game the Joker has not
 called is the game model's own, with no `base`. Each call keeps `p_elo` (the game model's own chance), `p_joker` and `m`
 beside it, in `next` and in the ledger, so the test can be read both ways; `record.joker_base` counts the published calls
-on the Joker from `joker_base_from_week`, and the tab's bar draws them apart from the Elo-alone calls before them and
-gives the baseline's walk-forward (its title the Joker's and the game model's alone). `elo/check.py` (JOKER) works the
-rule out on its own on every coming call and ledger entry against `betting/state.json`, and `check_tab.js` holds the bar.
+on the Joker from `joker_base_from_week`, which the tab's bar drew apart from the Elo-alone calls before them, beside the
+baseline's walk-forward (its title the Joker's and the game model's alone), until 22 October 2026 (below). `elo/check.py`
+(JOKER) works the rule out on its own on every coming call and ledger entry against `betting/state.json`.
 The season's games played before the first build on the Joker (`JOKER_FROM`, 19 October 2026 15:20 UTC) were
 re-picked on it the same day, the owner's call ("i just dont see any changes in the ELO model pickem record and i wanted
 you to change it based on what it would have picked"): each called again once, after the game, on what was known before
 its kickoff (the Joker's call as frozen at kickoff, the game model fitted before the season on the pre-game ratings and
 lineups), marked a backtest, the call first made kept in `was` (ledger and graded call), so the Pick'em Record grades the
-re-pick: 62-29 where the first picks went 52-39 (`record.repicked`, `repicked_was`; the tab's bar names both). The gate
+re-pick: 62-29 where the first picks went 52-39 (`record.repicked`, `repicked_was`; the tab's bar named both until 22
+October 2026). The gate
 allows exactly that change to a frozen call (JOKER and RECORD: a game kicked off before `JOKER_FROM`, on the Joker's
 frozen call, a backtest, its `was` the call the last publish had, every such game re-picked, and the re-pick held as it
 stands on every run after). The game model is unchanged (fitted, its walk-forward graded, read by the power ratings):
-never refit BETA on the season in play. Tiers are the betting app's Elo shields, lifted with
+never refit BETA on the season in play. **The tab's bar is its stamp alone** (the owner's call of 22 October 2026: "in elot
+ratings get rid of the visual buttons", naming both, "On the Joker: 2022–2025 65% walk-forward" and "ELO Model 2026: 62–29
+re-picked on the Joker after the games (52–39 as first picked), 1–0 picked on the Joker before kickoff (from week 6)"): its
+two pills, the baseline's walk-forward (`#peWalkRec`) and the ELO Model's season record split into re-picks, calls on the
+Joker before kickoff, calls on Elo alone and backtests (`#peCallRec`, each titled with how it was counted), are gone from
+the markup with the code that filled them, and the bar keeps `#peStamp`, when the build rated, alone; `model.json` still
+carries `record` and `joker_base`, and the Pick'em Record grades the calls. `check_tab.js` holds the bar on the real files
+and on copies with calls on the Joker graded, games re-picked and the baseline's walk-forward (no `#peWalkRec` or
+`#peCallRec`, no `.rec` in the bar and none of their words, the stamp the build's time), and the nflbets smoke the same on
+the page. Tiers are the betting app's Elo shields, lifted with
 its tag into the page and reshaped at build time by `betting/tools/tiers.js` (both builds apply it): Wood League under 1350,
 Iron, Bronze, Silver, Gold, Platinum, Diamond, Master, Elite (the app's Challenger tier, renamed while a Challenger
 model stood on the Pick'em Record, and kept) from 1700, and HOF from 1750, worn as a gem. The tab is the rankings card: a bell-curve
@@ -1426,7 +1439,20 @@ table Value), and its Next line gives the opponent's rank in the table's pair (R
 file without the pair it gives the opponent's Overall rank and says there is no table to set against it. Overall's two, and
 the defense tables' ratings, are byte for byte as before (a stat's Elo is its own). They feed no call; `elo/check.py` replays
 them with its own reading of the play-by-play (`TABLE` and `PAIR`, its copies of which stats each shows and which tables pair)
-and on fixtures. The table scrolls sideways inside its card at
+and on fixtures. **Each table ranks on the Elo it shows** (`rank_of` in `unit_ratings`, the owner's call of 22 October 2026,
+with the Mismatches' below): a club's `rank` is one more than the rated clubs whose shown Elo (`elo`, the rounded number on
+the curve) is higher, so clubs level on it share a rank, and a club with no rating yet comes after every rated one, once
+each; until then a tie at the shown Elo was broken by the raw rating no page shows (DEN and NE, both 1616 on Overall
+Defense, read 5th and 4th). That rank is the table's # column, a team's window, the Game snapshot's Offense vs defense boxes
+and its position rows' Elo sides (`eloSides`) and the matchup bubble's Faces line. `elo/check.py` holds it
+(`unit_ranks_bad(T, rated)`, on its fixtures and on the real file's tables, where the checks that the ranks were 1 to 32
+once each stood, and the shown Elo never rising down the raw order); `check_tab.js` holds each table's rows in the file's
+rank order, each # the file's rank and a rank shared only by clubs level on the shown Elo, on the real file ranked either
+way and on a copy with each table's third club made level with its second (the two side by side under one #, the next
+club one place on per club above it, each one's window giving the shared #); and the nflbets smoke the same on the real
+file by what both rankings share (a rated club's rank at least one more than the rated clubs shown above its Elo and at
+most its row's place). A file built before the change keeps its tie-broken ranks until the elo job's next run (dispatched
+once the change merged, `gh workflow run elo.yml`). The table scrolls sideways inside its card at
 every width, the team column held, the columns sort, and a click on a team opens
 its window (its rating game by game, every stat ranked raw and with opponents counted, its coming opponent). The page
 reads the weights and the stats from the file and still draws an older file's three columns. A final the
@@ -1437,7 +1463,7 @@ player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`)
 beside the model's chance and graded against it, week by week, at the top of the prop
 model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`; a player out, who is kept out of the map so nothing prices him, keeps his in `past` beside it), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
 starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
-shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield; what they rank is the matchup formula's units, the player ratings of the defenders he faces, and since 18 October 2026 their words say so, "vs the LAC secondary and defensive line, 32nd by player Elo" (`mmLine`, `mmTitle`, `mmAgainst`), as do a game page's MISMATCH title, the Game snapshot's Mismatches and an Elo pick's tag, since "pass defense ranked" on the page is the ELO Ratings tab's Pass Defense table alone, which can rank the same club far apart: LAC 32nd of the one for Patrick Mahomes in week 6, 4th of the other; clubs level on a unit share its rank, one more than the clubs above them, there, in a player's window and in the Game snapshot's Starters headers, since 20 October 2026, when ATL and NO, level at 1512.6 on the secondary, read 24th and 23rd on the Mismatches by the order the page first met them as opponents, and the other way round in the Starters headers, and the nflbets smoke failed every morning); on a game's page each player with a Solid, Big or Huge one wears MISMATCH beside his name in the Diamond shield's blue, `pe-mmtag`, each leg in the builder carries its Elo matchup chance, and the Elo picks
+shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield; what they rank is the matchup formula's units, the player ratings of the defenders he faces, and since 18 October 2026 their words say so, "vs the LAC secondary and defensive line, 32nd by player Elo" (`mmLine`, `mmTitle`, `mmAgainst`), as do a game page's MISMATCH title, the Game snapshot's Mismatches and an Elo pick's tag, since "pass defense ranked" on the page is the ELO Ratings tab's Pass Defense table alone, which can rank the same club far apart: LAC 32nd of the one for Patrick Mahomes in week 6, 4th of the other; clubs level on a unit share its rank, one more than the clubs above them, there, in a player's window and in the Game snapshot's Starters headers, since 20 October 2026, when ATL and NO, level at 1512.6 on the secondary, read 24th and 23rd on the Mismatches by the order the page first met them as opponents, and the other way round in the Starters headers, and the nflbets smoke failed every morning; and since 22 October 2026, the owner's call, "in mismatches, make clubs tied on a defense unit share the same rank in the mismatches, plaer window, and game snapshot", level is read to the hundredth, `mmKey` (`Math.round(x*100)`, in `defRanks` and the Mismatches' `rankOf`, and `snapshot.html`'s `defRank` the same), since `matchups.json` writes a unit to the tenth and a group of two units averages them, so two clubs level on paper can differ by a floating-point hair an exact comparison would part: `check_tab.js` holds it on a copy with one club's secondary a hair above another's, and the nflbets smoke's CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS RANK on fixtures of its own at any hour (a made-up game two days out between two clubs whose secondaries, and a back's unit of two averaged, are level on paper and a floating-point hair apart, each planted starter's Mismatches bubble, his window on the ELO Ratings tab and the game's Game snapshot, its Starters headers and Mismatches, ranking them by the smoke's own reading, `mmRankOwn`); on a game's page each player with a Solid, Big or Huge one wears MISMATCH beside his name in the Diamond shield's blue, `pe-mmtag`, each leg in the builder carries its Elo matchup chance, and the Elo picks
 (since app v118 each Suggested Parlays set's own, on that night game's or Sunday slot's games alone, whatever the Parlay Builder's ticks say, `window.eloUnit`, locked and recorded with the set: under "Bets and Stats: the loop", **Two sections, the Sunday slot and each set's own Elo picks**; from app v111 to v117 their own section at the foot of Suggested Parlays, `#pbElo`, on the Parlay Builder's ticked games and player sides, until then of the Parlay Builder's suggested parlays; their legs wear no Value mark, since they are chosen on the Elo matchup, not the edge: app v112) are built on it.
 Since 18 October 2026 (the owner's call of 17 October: "for the ELO picks suggestions, can we also add an aggressive
 and extreme versions. is it touchdowns only or did it just so happen to show that? would want to see the best
@@ -1483,7 +1509,7 @@ rebuild of the page. The Elo model also stands on the Pick'em Record chart, tabl
 grid as a third model, beside Alpha Model and the Joker: `betting/tools/build.js` reads `elo/data/model.json` beside the season
 in its published-mode hook (graded calls onto `processed[gid].elo`, the coming week's onto
 `S.elo`, each graded there as soon as the season has its score, so a Sunday counts before Tuesday's re-rating; a game under way or awaiting its stats stays in `next` with its frozen call); `record_viz.js` (below) draws it on the chart and the table, and the build widens the app's own Joker lines in the pick grid to draw it there, each edit asserted
-to land once. Vegas is the site's baseline: the Game snapshot's Vegas call, its chance, confidence band and line are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total; `call` in `nflbets/build/hub.html`, `window.pkBoard`, which drew the Matchups board's calls, win chances, confidence, score predictions and records too until the board went on 22 October 2026), the Pick'em Record's headline tiles are Vegas's record, Power Ratings (the Team Rankings tab) rate each team on this season's results alone, every game re-scored at each build (every team 1500 at the start; a weighted ridge of all the season's finals solved together, each worth its margin capped at 17, home field out, plus the opponent's rating now, so a game counts for what the opponent has turned out to be, not what it was rated when they met; recent weeks weigh a little more, a 16-week half-life, and every team is pulled toward average as if it had also played 16 average games; blended 0.8 to 0.2 with each team's expected lineup on this season's player Elo, which walk-forward helped a little; every constant chosen on 2012-2017 and tested once on 2018-2025, where it predicts the next game as well as the margin Elo it replaced in October 2026 (0.6447 against 0.6454 blended), which judged each game once, on the opponent's rating that week (the owner's Falcons-over-Packers and Chargers cases); THE POWER RATINGS in `elo/build.py`, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with each team's record (the season's results from `betting/state.json`, so it is current before the Elo file is; a rating that predates a final is starred, and the note says the whole table predates it, since a final moves every team), the tier shields, the change since its last game (`before` is the same solve on the finals before that game, so the change includes the league's results since and a team moves in a week it does not play) and the chance against an average team; the margin Elo had replaced the lineup-on-player-Elo table, which walk-forward on 2018-2025 predicted the next game worse, in weeks 2-6 no better than picking the home team), and the Props list's rows are in the board's columns on the prop model's own lines (app v122; the board itself went in app v128), a game's page head carrying its Vegas pick (the market's spread and total wherever a line is posted; app v122). The models are named on the page as Alpha Model (the main model), the Joker and the ELO Model (the Elo game model), Vegas the baseline (the Challenger and the Broly Model are off the site: the Betting loop); `betting/tools/build.js` renames the main model in the built app (`RENAME`), and `record_viz.js` and the pick-grid patch write the other names wherever the build draws them, never in the app's source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record, every model's every week drawn alike), which the build puts in front of the app's script and `renderRecord()` calls last. Friends stand beside the models there (see "Friends' picks" below).  The X Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total; the weeks and the deposit are X's, from `liveparlays/xbets.json` (see "X's parlays and the X Bet Log" below), read only, on the site owner's devices alone since 20 October 2026 (the admin link; on a visitor's page `XBETS.enabled()` is false, the frame is not read only and keeps the browser's own log, which no tab of the hub shows) (with no deposit in the file it is X's profit against break even, no balance), and the chosen view is each viewer's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates daily, queued at 12:40 UTC, plus Saturday 20:40 and Sunday 03:40 UTC
+to land once. Vegas is the site's baseline: the Game snapshot's Vegas call, its chance, confidence band and line are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total; `call` in `nflbets/build/hub.html`, `window.pkBoard`, which drew the Matchups board's calls, win chances, confidence, score predictions and records too until the board went on 22 October 2026), the Pick'em Record's headline tiles are Vegas's record, Power Ratings (the Team Rankings tab) rate each team on this season's results alone, every game re-scored at each build (every team 1500 at the start; a weighted ridge of all the season's finals solved together, each worth its margin capped at 17, home field out, plus the opponent's rating now, so a game counts for what the opponent has turned out to be, not what it was rated when they met; recent weeks weigh a little more, a 16-week half-life, and every team is pulled toward average as if it had also played 16 average games; blended 0.8 to 0.2 with each team's expected lineup on this season's player Elo, which walk-forward helped a little; every constant chosen on 2012-2017 and tested once on 2018-2025, where it predicts the next game as well as the margin Elo it replaced in October 2026 (0.6447 against 0.6454 blended), which judged each game once, on the opponent's rating that week (the owner's Falcons-over-Packers and Chargers cases); THE POWER RATINGS in `elo/build.py`, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with each team's record (the season's results from `betting/state.json`, so it is current before the Elo file is; a rating that predates a final is starred, and the note says the whole table predates it, since a final moves every team), the tier shields, the change since its last game (`before` is the same solve on the finals before that game, so the change includes the league's results since and a team moves in a week it does not play) and the chance against an average team; the margin Elo had replaced the lineup-on-player-Elo table, which walk-forward on 2018-2025 predicted the next game worse, in weeks 2-6 no better than picking the home team), and the Props list's rows are in the board's columns on the prop model's own lines (app v122; the board itself went in app v128), a game's page head carrying its Vegas pick (the market's spread and total wherever a line is posted; app v122). The models are named on the page as Alpha Model (the main model), the Joker and the ELO Model (the Elo game model), Vegas the baseline (the Challenger and the Broly Model are off the site: the Betting loop); `betting/tools/build.js` renames the main model in the built app (`RENAME`), and `record_viz.js` and the pick-grid patch write the other names wherever the build draws them, never in the app's source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record, every model's every week drawn alike), which the build puts in front of the app's script and `renderRecord()` calls last. Friends stand beside the models there (see "Friends' picks" below).  The X Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total, with no Note column since 22 October 2026 (the owner's call: "in x bet log please remove the note column section"; a week's `note` stays in the file, unshown, and the nflbets smoke holds the column gone and a note's markup drawn nowhere); the weeks and the deposit are X's, from `liveparlays/xbets.json` (see "X's parlays and the X Bet Log" below), read only, on the site owner's devices alone since 20 October 2026 (the admin link; on a visitor's page `XBETS.enabled()` is false, the frame is not read only and keeps the browser's own log, which no tab of the hub shows) (with no deposit in the file it is X's profit against break even, no balance), and the chosen view is each viewer's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates daily, queued at 12:40 UTC, plus Saturday 20:40 and Sunday 03:40 UTC
 for Sunday's calls on Friday's final report (GitHub starts this repo's scheduled runs 4-9 hours late, so a slot is queued
 early enough to land before the London and 1pm kickoffs; Tuesday's run takes in Monday night; the rest move only who is
 expected to play), runs `elo/check.py` and `elo/check_tab.js`, the gate on the Elo data, commits `elo/data`, and then
@@ -1534,8 +1560,9 @@ Matchups, the board (Pick'ems until the owner's call of 16 October 2026, "change
 `tab-pickems`, its button id, its file and the `pk-` prefix kept the old name): Vegas's call on every game of a week on
 nflverse's lines in six columns, Vegas's records, a week picker and a foot, each row the button to the game's Game snapshot.
 Its row had been the Props list's since app v122 and three of the snapshot's cards opened from a game's page there since
-app v124, so the board, its section, its script and its styles are gone, and the snapshot opens from a fourth button on
-each game's page (**The Game snapshot**, below). Its file is **the page's glue** now, `nflbets/build/hub.html` (a few
+app v124, so the board, its section, its script and its styles are gone, and the snapshot opened from a fourth button on
+each game's page until app v129 took it off again the same day (the owner's call: "on second thought, i dont want that
+game snapshot buttons. please remove it."), leaving the matchup bubble the one way in (**The Game snapshot**, below). Its file is **the page's glue** now, `nflbets/build/hub.html` (a few
 styles and one closure, every name still `pk-`, set in by the build after the prop model's script): the season's one read
 of `betting/state.json` and the Vegas call on it (`call`, `outcome`, `canProps`, `openOnProps`, `propsPlayers` and the rest,
 handed to the Game snapshot, the matchup bubble and the Props list's `slateNeutral` as `window.pkBoard`; `ST.done` once the
@@ -1548,9 +1575,10 @@ page draws a failed read of the season but the snapshot (below), and the framed 
 if `nflbets/build/tab_pickems.html` comes back or `hub.html` carries a section, if the page carries the board again
 (`id="tab-pickems"`, `id="pkBoard"`, `pk-game`, `wireRows`, `PK_LIVE` or a landing on `'#matchups'` outside a comment) or the
 bar a Matchups button or a `data-tab` of `pickems` or `matchups`, and unless the glue hands on the season (`window.pkBoard`,
-`ST.state=st;`, the `pk-state` event), lands the board's old addresses on the Props tab as `#slate` (`OLD_ADDR`) and reads
-the scoreboard on load (`scoresOnLoad`), the snapshot opens whole from a game's page (`kind==='snap'?open(gid,from,{page:true})`,
-`FROMPAGE`, its `pk-state` listener) and the props parts draw the button (`b('snap','Game snapshot')`).
+`ST.state=st;`, the `pk-state` event), lands the board's old addresses on the Props tab as `#slate` (`OLD_ADDR`), reads
+the scoreboard on load (`scoresOnLoad`) and the snapshot draws whole once the season is in (its `pk-state` listener); and
+since app v129 it stops if a game's page opens the whole snapshot again (`b('snap'`, `FROMPAGE` or `kind==='snap'` in the
+props parts or `snapshot.html`, all three of which app v128 required).
 **The scoreboard on load** (app v128). The board read ESPN's scoreboard on every load (`PK_LIVE`, `readScores`), so a game
 finished since the betting job last ran, or on, showed its score unasked, and the snapshot's standing read it. Now, once
 the prop model is up (app-ready, and 300 ms), `scoresOnLoad` in `hub.html` reads it once for the Props list: one free read
@@ -1574,7 +1602,8 @@ settled by the jobs, from nflverse. The nflbets smoke's THE SCOREBOARD ON LOAD h
 and in the off-season: a game of the list's week an hour past its kickoff with no score read once, of that week and no box
 score, its score in the list, the stamp and the snapshot, and no second read; every game kicked off with a score, no read;
 and the read held back while the visitor uses the page: with the focus on that game's row, the row drawn again with the
-score and the focus on it; with that game's page open and the focus on its Game snapshot button, nothing drawn under it,
+score and the focus on it; with that game's page open and the focus on its Matchup button (its Game snapshot button in
+app v128), nothing drawn under it,
 the page, the lock and that very button kept, and Back drawing the list with the score; and the list drawn again under a
 Game snapshot opened from elsewhere keeping its lock. Its no-read fixture always plants a game of the week four hours past
 its kickoff with a final in the payload and none in the season, so it bites on a weekday too, and holds that game's Game
@@ -1617,14 +1646,15 @@ page only where it is on the screen (`gameShown`), so a key on another tab never
 other windows that live in a tab's section close the same way (`tab_elo.html`, each read against the section it lives
 in): the Props tab's Mismatches list (Show more, `#peMmModal`) and the ELO Ratings tab's player and team windows
 (`#pePlModal`, `#peTmModal`); X Parlays' `#lpAsk` and a game page's one-card window already closed on a `hashchange`,
-and since app v128 so does the whole Game snapshot a game's page opens (`FROMPAGE`). The whole Game snapshot the matchup
+and in app v128 so did the whole Game snapshot a game's page opened (`FROMPAGE`, gone with its button in app v129). The
+whole Game snapshot the matchup
 bubble opens is no tab's window (the bubble opens it from the Parlay Builder and Suggested Parlays, as the board's rows
 did until 22 October 2026) and stays open over the tab the address goes to; closing it there gives the focus to the name
 that opened it where that is on the screen, else to that tab's button.
 The audit's G7 (on the prop model's own page) and the nflbets smoke's A WINDOW IS ITS TAB'S OWN (each window left by
 the address with the focus in it, for the Pick'em Record (the Matchups tab until 22 October 2026), Escape
-afterwards and on a game's page planted on the hidden tab, the bubble's Game snapshot across a move; the one-card window's and, since app
-v128, the page's whole Game snapshot's checks also hold the game's page closed and the window gone with it) hold it,
+afterwards and on a game's page planted on the hidden tab, the bubble's Game snapshot across a move; the one-card window's
+checks, and in app v128 the page's whole Game snapshot's, also hold the game's page closed and the window gone with it) hold it,
 blocking.
 **The Props list in the board's columns, and its old row at each game's head** (app v122, `patch_props_rows.py`, the
 owner's call of 20 October 2026, "step 1 in a long process": "inside a matchup for the section I marked as a square, I
@@ -1888,9 +1918,10 @@ have suggested and count it to the record?", and then "if you can also backfill 
 well. but maybe for that one do a separate section for night games and then the sunday slot of games"). The Elo picks had
 been one set at the tab's foot over the games and player sides ticked on the Parlay Builder tab (`pbAllows`), so with the
 priced Sunday games unticked there they were empty all of Sunday 18 October, and they never had a record (the sentence
-app v113 took off their lead was the matchup nudge's record). The tab is now two sections, `section.sp-sec`, Night games
+app v113 took off their lead was the matchup nudge's record). The tab was then two sections, `section.sp-sec`, Night games
 (`data-sp-sec="night"`, the night rule's games as before) and the Sunday slot (`"slot"`), each headed `h3.sp-sech` with its
-own record (`.sp-rec[data-sp-recsec]`, below). The Sunday slot (`spSlotUnit`, `spSlotNext`) is every Sunday game of a
+own record (`.sp-rec[data-sp-recsec]`, below), until app v129 made it one (**One section, Night games, and one record**,
+below). The Sunday slot (`spSlotUnit`, `spSlotNext`) is every Sunday game of a
 week kicking off before 7:00 pm Eastern (the 1pm and 4pm windows and a game abroad that morning), in kickoff order, one
 set of the four levels across them, built as a night game's is (`pbPool` on the slot's games, `SP_SLOT_SEARCH`, every
 rule a set's leg keeps), id `<season>_<WW>_SUN`; it goes up by the night rule's own opening (`spOpenAt`: 6:00 AM Eastern
@@ -1925,7 +1956,7 @@ is two rows, Model parlays and Elo picks (`data-sp-reckind`), a pill a level (`d
 four as it took them, so a level with no parlay or still pending is the record's) and else from the backtest
 (**The backtest**, next), each pill's title saying how many came from the backtest and the wins expected by the book's
 fair chance and by the level's own chance (the model's, or the Elo's), with one chip, `data-sp-rec="<sec>:bt"`, "Incl.
-backtest, weeks 3–6", wherever some of it is.
+backtest, weeks 3–6", wherever some of it was, until app v129.
 
 **One game a parlay, and the pairs DraftKings refuses** (app v121, `patch_dk_sgp.py`, whose docstring is the design, the
 owner's calls of 19 October 2026: "The book won't let you combine legs that depend on each other. If your parlay already
@@ -2001,6 +2032,31 @@ runs it on the real file. On 19 October 2026 it built all 15 units of weeks 3 to
 every one with its Elo picks; weeks 1 and 2 have no payload published before their locks), and its replay of week 6's
 Sunday night game, Cowboys at Packers, was the set the props job had locked, leg for leg and to the chance and price.
 
+**One section, Night games, and one record** (app v129, `patch_night_record.py`, whose docstring is the design, the
+owner's calls of 22 October 2026: "get rid of the Sunday slot record section -> all should be a part of 'Night Games'" and
+"get rid of button (incl backteest wk 3-6), just include the record if not already"). Suggested Parlays is one section,
+`section.sp-sec[data-sp-sec="night"]`, headed Night games, under one record. `spSetsHtml` is `spSecHtml('night',
+spNightHtml(on) + spSlotHtml(on))`: the night games' sets (or the wait line before the next night is up, or the line that
+none is left), then the Sunday slot's (its set, `.sp-game.sp-slot`, its wait line before it is up, whose `data-sp-next` is
+its `<season>_<WW>_SUN` id, or the line that none is left, `data-sp-none="slot"`); no `data-sp-sec="slot"` section is
+drawn. The slot's set wears a "Sunday slot" pill in its head (`.sp-hd .pill`), as a night game's wears its night's, so it
+still says what it is under the Night games heading; and once the season is over the section says so once, by the night
+games' line, the slot drawing nothing (the review of 22 October 2026: two "regular season is over" lines under one
+heading). The record at its head counts both of the suggestions record's maps: `SP_SEC.night` reads `maps: ['prime', 'slot']`
+(`SP_SEC.slot`, the slot's map alone, is kept for a caller that names it, and drawn nowhere), and `spRecSum(L, sec, kind,
+B)` takes each map in turn, each season's unit and level once, the record over the backtest as before; its pills are
+`data-sp-rec="night:<level>"` (`night:elo-<level>`, `night:<kind>:none`, `night:<kind>:pending`). The backtest's weeks
+still count, as they always did, each pill's title saying how many of its own came from it: what went is the chip that
+named them, `span.sp-recbt[data-sp-rec="<sec>:bt"]`, "Incl. backtest, weeks 3–6", and its row, `.sp-recbtbar`. Nothing
+else moved: the slot's opening, lock and under-way phase, its levels each one game's, its Elo picks, and what the props job
+takes, locks and grades. The audit holds the order (`spPartsAud`: every night part before every slot part in the one
+section, the slot's set the one unit marked `.sp-slot`, wherever `holdSets`, M15 and the season-over case read the tab, no
+section of the slot's own) and in P2 the one record worked on its own over both maps, a map at a time, no record of the
+slot's own and no chip, blocking; the nflbets smoke (`recOwn` over both maps, `recGone`: no `[data-sp-recsec="slot"]`,
+`.sp-recbt`, `.sp-recbtbar`, `[data-sp-rec$=":bt"]`, `[data-sp-rec^="slot:"]`, section of the slot's or "Incl. backtest"
+anywhere, on the real files and made-up pairs) and `smoke_live.js` (its Thursday fixture's slot the one section's last
+part, `slotHeldL`, and the one record, two rows saying none is graded yet) the same.
+
 **Value picks** (app v112, `patch_suggested_night.py`, the owner's call of 17 October 2026, after app v111's tags:
 first "i don't really understand what the no edge and thin edge tags are", then "can we do reverse tags? like get rid
 of thin edge and no edge and come up with a name for that first section?"). The marks are reversed. A leg `pbPool`
@@ -2060,8 +2116,9 @@ hours late and replace a level only before kickoff): the record's own replacemen
 way to the record's when that names the same player. The record grades the ledger's entry, with the job's
 replacement where it made one.
 
-At the top of the tab is the **record** (`#spRec`, `spRecHtml`): a pill a level, as the ELO Ratings tab's record
-bar, its won-lost and units on $1 from the `prime` entries' own grades (`spRecSum`, as the job's `prime_summary`
+At the top of the tab is the **record** (`#spRec`, `spRecHtml`; since app v118 at the head of each section, and since app
+v129 of the one section, Night games, counting both of the record's maps: **One section, Night games, and one record**,
+above): a pill a level, as the ELO Ratings tab's record bar had them (until 22 October 2026), its won-lost and units on $1 from the `prime` entries' own grades (`spRecSum`, as the job's `prime_summary`
 counts them: each season's game and level once, from the last key that holds it; a push and a pending level counted
 apart; each pill's title giving the wins expected by the book's fair chance and by the model's, and its pushes), "No prime-time set
 graded yet" until one is, and nothing else: the line under the pills that said it starts with this change, 16 October
@@ -2636,7 +2693,7 @@ rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the ne
 
 ```
 node nflbets/build/build.js      # writes the page, the root's index.html
-node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 30 lines, their two parts, the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and its Game snapshot button's whole snapshot, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
+node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 30 lines, their two parts, the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, clubs level on a unit sharing its rank, the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on the admin's browser and a visitor's, and the parlay card (the builder's and a Suggested Parlays level's, its check of DraftKings' current lines as it opens, and the admin's Pull from DraftKings on a stubbed Odds API), each boot's seeded ladder legs taken out with the builder's line; must end "0 failures"
 node nflbets/build/smoke_admin.js # the admin link and the hidden X tabs (admin.js, HUB_ADMIN, the header, Sign out, a visitor's page, the key nowhere but The Odds API's requests); must end "0 failures"
@@ -2666,7 +2723,7 @@ matchups.json's own games and threw once they had kicked off). `SMOKE_PAYLOAD=<f
 payload, to try a week the job has not baked, and `SMOKE_NOW=<ISO time>` runs it as if it were then
 (Node's clock and every page's, the shift above laid over it; `props/build/test_audit_phases.py` uses both). `--season-over` gives every game a result first; run it after a change to the smoke, to the Props tab's rows or to
 the Game snapshot (to the Matchups board until it went on 22 October 2026). Both smokes end on their own: a mistake in the smoke's code exits 1 at once
-with its stack, a run still going after fifteen minutes stops and fails (smoke_live.js after ten), and one left waiting on
+with its stack, a run still going after twenty minutes stops and fails (smoke_live.js after ten), and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
 Since app v125 (**Reversed in app v125** and **The published read**, under Props; **The admin link**, above) the smoke,
 which has no warnings, holds: its own copies of the id rule by an entry's content on the live table (`dkOwnId`, `dkTakes`),
@@ -2684,16 +2741,19 @@ owner mark; and the old owner link refused. Its request recorder fails any reque
 seeded as checked asks nothing; the link itself is `smoke_admin.js`'s) and any request to ESPN's core host on load (ESPN's
 scoreboard is asked on load only where `scoresOnLoad` says, which the smoke works out on its own and holds).
 
-**The Game snapshot.** A game's page on the Props tab opens its whole Game snapshot by its fourth button, **Game
-snapshot** (app v128, `props/build/patch_snapshot_button.py`, the owner's call of 22 October 2026, "Button on Props", when
-the Matchups tab went: `button.btn.quiet.gwin-btn`, `data-gp-pop="snap"`, after Matchup, Mismatches and Team Stats, 44px,
-`aria-haspopup="dialog"`, through the binding the other three use, `window.gameWindow('snap', g.id, button)`, which opens
-the whole window, `open(gid, from, {page:true})`, where the other three open one card alone: **A game's page: Matchup,
-Mismatches and Team Stats**, below), and the matchup bubble by its Open game snapshot (`window.gameSnapshot(gid, from)`).
-Until 22 October 2026 a tap on a game on the Matchups board opened it (the owner's call, 14 October 2026: the row was the
-button, `role="button"`, `tabindex="0"`, `aria-haspopup="dialog"`, opened by a click, Enter or Space and wired once on the
-board in `wireRows()`, so a redraw never opened a window; before that a tap opened the row on two buttons, the snapshot and
-the game's props). It is a window over the page
+**The Game snapshot.** The matchup bubble opens a game's whole Game snapshot by its Open game snapshot
+(`window.gameSnapshot(gid, from)`), the one way in since app v129. Until 22 October 2026 a tap on a game on the Matchups
+board opened it (the owner's call, 14 October 2026: the row was the button, `role="button"`, `tabindex="0"`,
+`aria-haspopup="dialog"`, opened by a click, Enter or Space and wired once on the board in `wireRows()`, so a redraw never
+opened a window; before that a tap opened the row on two buttons, the snapshot and the game's props). That day, when the
+board went, app v128 gave each game's page on the Props tab a fourth button, **Game snapshot**
+(`props/build/patch_snapshot_button.py`, the owner's call "Button on Props": `button.btn.quiet.gwin-btn`,
+`data-gp-pop="snap"`, after Matchup, Mismatches and Team Stats, through the binding the other three use,
+`window.gameWindow('snap', g.id, button)`, which opened the whole window, `open(gid, from, {page:true})`), and app v129
+took it off again the same day (`props/build/patch_night_record.py`, the owner's call: "on second thought, i dont want that
+game snapshot buttons. please remove it."): `window.gameWindow` opens one card alone for Matchup, Mismatches and Team Stats
+and nothing else (**A game's page: Matchup, Mismatches and Team Stats**, below), and `FROMPAGE` and `overOwnPage` are gone.
+It is a window over the page
 (`nflbets/build/snapshot.html`, `gs-` prefixed, its own closure, inlined by the build after the ELO tab's script,
 with `nflbets/build/deepdive.js` set in as its own script just before it, so a change to either is a rebuild too;
 the page's modal, Escape, Close and a click outside close it, Tab stays inside, the focus goes back to the
@@ -2711,15 +2771,15 @@ page": `pkBoard.propsPlayers`, the players `renderGame` draws as rows, and `open
 window and opens the page with his row open, highlighted by the ELO tab's `eloFocusPlayer` and focused; anyone else
 plain text) and its ranked players out, and the Props tab's Mismatches in the game (the
 Sources card, with each file's publish time and links to the full tabs, went on 14 October 2026, the owner's
-call). Opened from a game's page (`FROMPAGE`) it is that page's window, as the page's one-card windows are: it goes with
-the page (`closeGameModal` is wrapped: Back, the game's week closing) and with a change of address (a `hashchange`), and
-quietly on a key pressed once the game's page is off the screen, the key then the page's; Escape, caught before anything
-beneath it, closes it alone, the game's page and its scroll lock kept, and a second Escape closes the page; a double
-click's second click within 0.4 seconds of its opening does not close it (`ONE_AT`); and its close gives the focus back to
-its button, else the same `[data-gp-pop="snap"]` drawn since, else the page's Back, else the game's row on the Props tab,
-else the chosen tab's button, never the page's body (`oneFocus`). Opened from the matchup bubble it is no tab's window, as
-the board's was (under **A window is its tab's own**): it stays open across a change of address, and its close gives the
-focus to the name that opened it where that is on the screen, else the chosen tab's button. Either way it is drawn from
+call). Opened from a game's page in app v128 (`FROMPAGE`) it was that page's window, as the page's one-card windows are:
+it went with the page (`closeGameModal` wrapped: Back, the game's week closing) and with a change of address (a
+`hashchange`), and quietly on a key pressed once the game's page was off the screen; Escape closed it alone, the game's
+page and its scroll lock kept; a double click's second click within 0.4 seconds of its opening did not close it
+(`ONE_AT`); and its close gave the focus back to its button, else the same `[data-gp-pop="snap"]` drawn since, else the
+page's Back, else the game's row on the Props tab, else the chosen tab's button (`oneFocus`). Opened from the matchup
+bubble it is no tab's window, as the board's was (under **A window is its tab's own**): it stays open across a change of
+address, and its close gives the focus to the name that opened it where that is on the screen, else the chosen tab's
+button. It is drawn from
 `gameFor(gid)`, the season's row where `state.json` has one, else the prop model's own row in the season's shape, so it
 opens before the season is in: for a game the season has no row for, while its read is out it shows its title and one
 line, "Loading the season…" (`p.gs-msg[data-gs-season="loading"]`), and draws whole once the read answers (`pk-state`, from
@@ -2730,11 +2790,10 @@ without the game, the prop model's row. It reads at a glance first (the owner's
 ask, October 2026: easy to read, nothing smooshed): a pinned header that turns into the game in one
 line (records and spread, or the score) once the verdict scrolls away, then a verdict card always
 shown -- first, where the Props tab can open the game (`pkBoard.canProps`: the prop model has its row and
-its week is open) and the window is not over that very game's page (`overOwnPage`: the game's page on the screen with
-`S.ui.game` that game, as when its own Game snapshot button opened it, where the button would only redraw the page under
-it; app v128), a 44px **Game bets and player props** button, which closes the window and opens the
-game's own page on the Props tab with its Game bets card brought into view (`pkBoard.openOnProps`): where the Props tab
-can open the game, the snapshot the matchup bubble opens has it and the one the game's page opens does not; then
+its week is open), a 44px **Game bets and player props** button, which closes the window and opens the
+game's own page on the Props tab with its Game bets card brought into view (`pkBoard.openOnProps`), drawn wherever
+`canProps` says, the game's page open under the window or not (in app v128 not over that very game's page, `overOwnPage`,
+where its own Game snapshot button had opened it and the button would only redraw the page under it); then
 the head (`.gs-hero`): the away team, the middle (`.gs-mid`) and the home team, each team labelled Away or Home
 ("Home (listed)" at a neutral site) over its name and its record alone (3-2, bold, with no words for which games it
 counts; the playoffs beside it once there are any; where the Elo file has counted a final the results have not,
@@ -2803,13 +2862,13 @@ to come, a final on the scoreboard, a graded game and a playoff game, with a fil
 number is read with the cards and the Starters tabs as they open (folded or not
 shown), and the folding, the answers' buttons, the Starters' names (linked exactly where the game's page draws the
 player's row, read off `renderGame` itself, plain text before the prop model is up, and a click opening his row), the
-props button (there exactly where `canProps` says and the window is not over that game's own page: on the snapshot the
-bubble opens and never on the one a game's Game snapshot button opens, and doing its job), the tabs' arrow keys, the Tab
-order and the 44px tap heights are held too, on a wide screen and a phone; a game's page's Game snapshot button opens
-the whole window of its game (each of the Props list's first four), the focus on Close, Escape closing it alone with the
-game's page kept and the focus back on its button, a second Escape closing the page, a click inside or a double click's
-second not closing it and one outside closing it, a redraw under it handing the focus to the button drawn since, no
-Refresh scores press opening a window, and Back taking it with the page; before the season is in its loading line, then
+props button (there exactly where `canProps` says, the game's page open under the window or not, and doing its job), the
+tabs' arrow keys, the Tab order and the 44px tap heights are held too, on a wide screen and a phone; each of the Props
+list's first four games opened as the matchup bubble opens it (`window.gameSnapshot`) opens its own game's whole window,
+and no game's page draws a Game snapshot button (`[data-gp-pop="snap"]`, or a button so worded) or opens a window for
+`window.gameWindow('snap')` (since app v129; in app v128 its button opened the whole window, held for the focus on Close,
+Escape closing it alone with the game's page kept, a second Escape closing the page, the clicks, a redraw under it and
+Back taking it with the page); no Refresh scores press opens a window; before the season is in its loading line, then
 the whole window once it is, and with the season unreachable its failed line alone (until 22 October 2026: a board row's
 click, Enter and Space opening the window, no row with a body, no redraw or score read opening one, the focus back on the
 row on close). The position
@@ -2888,15 +2947,18 @@ on overs is not filtered unseen (`SUGGEST_SIDES`, `suggestSide` and `sideAllows`
 kept, drawn nowhere, as the Parlay Builder's all-games levels (`getPbTiers`) are, since the audit and the smoke still
 hold it, and `suggestLegOn` stays for the builder's and the sets' Adds: nothing on a game's page suggests a parlay. In
 the card's place, under the game's head (`.ghead`) and over its Game bets card (`.gbets`), `gameWinBtns(g)` draws three
-buttons in a row, and since app v128 four (`.gwin`, a group named "More on this game", four to a row and two by two at
-680px and under, where four would wrap "Game snapshot"), Matchup, Mismatches, Team Stats and Game snapshot
-(`button.btn.quiet.gwin-btn`, `data-gp-pop` `units`, `mism`, `stats` or `snap`, `data-gp-game`, `aria-haspopup="dialog"`,
-44px by `.gwin .gwin-btn`'s own rule; the fourth the owner's call of 22 October 2026, "Button on Props", when the
-Matchups tab went: **The Game snapshot**, above), only where the hub's window is on the page (`window.gameWindow`): the prop model's own
-page, the audit's, has no such window and draws neither the buttons nor the card. `renderGame` binds each to
+buttons in a row (`.gwin`, a group named "More on this game", three to a row at every width), Matchup, Mismatches and Team
+Stats (`button.btn.quiet.gwin-btn`, `data-gp-pop` `units`, `mism` or `stats`, `data-gp-game`, `aria-haspopup="dialog"`,
+44px by `.gwin .gwin-btn`'s own rule), only where the hub's window is on the page (`window.gameWindow`): the prop model's own
+page, the audit's, has no such window and draws neither the buttons nor the card. For a few hours of 22 October 2026 there
+were four: app v128 added Game snapshot (`snap`, the owner's call "Button on Props", when the Matchups tab went), four to
+a row and two by two at 680px and under, where four would wrap "Game snapshot", and app v129 took it off again, the 680px
+rule with it, three short words fitting a phone (the owner's call: "on second thought, i dont want that game snapshot
+buttons. please remove it."; **The Game snapshot**, above). `renderGame` binds each to
 `window.gameWindow(kind, g.id, button)`. The window is the Game snapshot's own, `#gsModal` in `snapshot.html`, in a
-one-card mode for the first three: `window.gameWindow(kind, gid, from)` is `open(gid, from, {only})` (and for `snap`
-the whole snapshot, `open(gid, from, {page:true})`, which goes with the page the same way), and `draw` hands the window to
+one-card mode: `window.gameWindow(kind, gid, from)` is `open(gid, from, {only})` for those three and nothing for any other
+kind (in app v128 `snap` opened the whole snapshot, `open(gid, from, {page:true})`, which went with the page the same
+way), and `draw` hands the window to
 `drawOne` (`ONLY`), which draws that one card unfolded (`section.gs-one-card[data-gs-only]`) under a title naming the
 game and the card ("SEA at DEN" over "Matchup · Week 7", "vs" at a neutral site), with no verdict, fold or game bar.
 Matchup is the snapshot's own Offense vs defense body (`unitsBody`, which the snapshot's fold, `unitsSec`, wraps byte
@@ -2925,19 +2987,22 @@ closes it. Tab stays inside; a click outside closes it and one inside does not, 
 page redrew under it, else the page's Back, else the game's row on the Props tab, else the chosen tab's button, never
 the page's body (`oneFocus`). It goes with the game's page (`closeGameModal` is wrapped), with a change of address (a
 `hashchange`), and quietly on a key pressed once the game's page is off the screen, the key then the page's; a quiet
-close moves the focus only where it was lost. The whole snapshot opened after it (by the page's Game snapshot button or
-the matchup bubble; by a board row until 22 October 2026) is the whole snapshot as before. `build.js` stops if the snapshot draws the Stat breakdown again (`gsStats` or "Stat breakdown" outside a
+close moves the focus only where it was lost. The whole snapshot opened after it (by the matchup bubble; by a board row
+until 22 October 2026, and in app v128 by the page's Game snapshot button too) is the whole snapshot as before. `build.js` stops if the snapshot draws the Stat breakdown again (`gsStats` or "Stat breakdown" outside a
 comment), if `window.gameWindow=`, the file's address, the lazy read, `drawOne` or the `closeGameModal` wrap goes
 missing, if `statFile()` is called anywhere but the Team Stats window's first opening, if the props parts draw the
-buttons without asking for the hub's window or lose the fourth (`b('snap','Game snapshot')`, app v128), and if `gameSuggestCard(`, `data-gsugg-side` or `data-gtier-add` comes
-back. The audit's O holds the page, blocking: no card, side switch or Add all; on the prop model's own page no buttons;
-with a stand-in `window.gameWindow` planted, the four in order (the three until app v128), once, under the head and over
-the Game bets card, 44px by their rule, four to a row and two at 680px and under, each press handing the window its card, the game and itself, and the buttons gone once it is taken
-away; then the hands' engine as it stands. M7 and M8 hold the engine's hands (the fair chance, no far-off leg, the ids),
+buttons without asking for the hub's window, if a game's page opens the whole snapshot again (`b('snap'`, `FROMPAGE` or
+`kind==='snap'` in the props parts or `snapshot.html`, since app v129; app v128 stopped if the fourth button went), and if
+`gameSuggestCard(`, `data-gsugg-side` or `data-gtier-add` comes back. The audit's O holds the page, blocking: no card, side switch or Add all; on the prop model's own page no buttons;
+with a stand-in `window.gameWindow` planted, the three in order (four in app v128), once, under the head and over the
+Game bets card, 44px by their rule, three to a row with no narrower layout (app v128's two by two at 680px and under went
+with its fourth button), no Game snapshot button (`data-gp-pop="snap"`, or a button so worded) anywhere on the page, each
+press handing the window its card, the game and itself, and the buttons gone once it is taken away; then the hands' engine as it stands. M7 and M8 hold the engine's hands (the fair chance, no far-off leg, the ids),
 their checks of the card's fair chance and est. marks gone with it, and I3 holds that a `ui.suggestSide` saved before
-is not read into the view. The nflbets smoke holds the buttons in its main run (the card gone, the four in order as
-dialog buttons naming the game, once under the head and over the Game bets card, the window on the page) and their
-44px, and, on its stand-in news files under THE GAME SNAPSHOT, each window: Matchup's and Mismatches' bodies the
+is not read into the view. The nflbets smoke holds the buttons in its main run (the card gone, the three in order as
+dialog buttons naming the game and no fourth, once under the head and over the Game bets card, the window on the page;
+no Game snapshot button on a game's page, `window.gameWindow('snap')` opening nothing, and the whole snapshot
+`window.gameSnapshot` opens over the page keeping its props button wherever `canProps` says) and their 44px, and, on its stand-in news files under THE GAME SNAPSHOT, each window: Matchup's and Mismatches' bodies the
 snapshot's own `#gsUnitsB` and `#gsMismB` to the byte, their titles, one card alone, the focus on Close and Tab kept
 inside, Escape closing the window alone with the focus back on its button and no listener beneath, a second Escape
 closing the game's page, a redraw under it handing the focus to the button drawn since, a click inside, a double
@@ -3297,7 +3362,8 @@ may quietly outrank what the job published:
     test. The file is written with `json.dumps(indent=1, ensure_ascii=False)`, its own style, so a
     clear is a small diff; write it the same way by hand.
   - `liveparlays/xbets.json` is the X Bet Log: `season`, `deposit` and `weeks` (`w1` to `w22`, each
-    `staked`, `returned` and an optional plain-text `note`), plus `updated`. Claude adds or changes
+    `staked`, `returned` and an optional plain-text `note`, kept in the file and shown nowhere since 22 October 2026,
+    when the table's Note column went), plus `updated`. Claude adds or changes
     a week from what the owner sends (the week, what was staked, what came back).
   The admin's browser reads both on every load (`cache: 'no-store'`), and a visitor's neither. `liveparlays/build/page.html`
   draws X Parlays from the first; `nflbets/build/xbets.js` reads the second and hands it to the

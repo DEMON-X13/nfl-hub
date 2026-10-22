@@ -133,14 +133,16 @@ function betsViz(){
   if(!window.__bvResize){ window.__bvResize=true; let t=null, lastW=W;
     window.addEventListener('resize',()=>{ clearTimeout(t); t=setTimeout(()=>{ const c=document.getElementById('betChart');
       if(c&&c.querySelector('svg.bv-chart')&&Math.abs((c.clientWidth-36)-lastW)>40){ lastW=c.clientWidth-36; betsViz(); } },200); }); }
-  /* the table: the app's columns, with the balance after each week once there is a deposit */
+  /* the table: the app's columns, with the balance after each week once there is a deposit, and no note column (the
+     owner's call of 22 October 2026: "in x bet log please remove the note column section"; a week's note stays in the
+     file, unshown) */
   let r2=0;
-  table.innerHTML='<div class="card"><h2>'+(xb?'Week by week':'Bet log')+'</h2><table><thead><tr><th>Week</th><th class="num">Staked</th><th class="num">Returned</th><th class="num">Net</th><th class="num">Running</th>'+(dep==null?'':'<th class="num">Balance</th>')+'<th>Note</th>'+(ro?'':'<th></th>')+'</tr></thead><tbody>'
+  table.innerHTML='<div class="card"><h2>'+(xb?'Week by week':'Bet log')+'</h2><table><thead><tr><th>Week</th><th class="num">Staked</th><th class="num">Returned</th><th class="num">Net</th><th class="num">Running</th>'+(dep==null?'':'<th class="num">Balance</th>')+(ro?'':'<th></th>')+'</tr></thead><tbody>'
     +logged.map(r=>{ const n=r.returned-r.staked; r2+=n;
       return `<tr><td>Week ${r.w}</td><td class="num">${money(r.staked)}</td><td class="num">${money(r.returned)}</td>`
         +`<td class="num ${n>=0?'delta up':'delta down'}">${signed(n)}</td><td class="num">${signed(r2)}</td>`
         +(dep==null?'':`<td class="num">${money(dep+r2)}</td>`)
-        +`<td class="muted">${esc(r.note)}</td>`+(ro?'':`<td><button class="btn quiet" data-betdel="${r.w}">Remove</button></td>`)+'</tr>'; }).join('')
+        +(ro?'':`<td><button class="btn quiet" data-betdel="${r.w}">Remove</button></td>`)+'</tr>'; }).join('')
     +'</tbody></table></div>';
   table.querySelectorAll('button[data-betdel]').forEach(b=>b.addEventListener('click',()=>{
     if(!confirm(`Remove the week ${b.dataset.betdel} bet entry?`)) return;

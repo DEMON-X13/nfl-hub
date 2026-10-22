@@ -16,11 +16,12 @@
  * tab since the Matchups board went (22 October 2026, the owner's call: "i think we are good to remove
  * matchups tabs since most the important info was moved to props tab"), which is the prop model's
  * Games tab running in this page, its rows in the board's columns, its scoreboard read on load where a
- * game is under way, and each game's page with its Matchup, Mismatches, Team Stats and Game snapshot
- * buttons; the Game snapshot those open (the whole window from a game's page since app v128, and from
- * the matchup bubble, with its button to the game's page on the Props tab there); the Parlay Builder (the builder, its
- * choices and the Top lines), Suggested Parlays (its two sections, Night games and the Sunday slot,
- * each headed by its record and backtest, each unit's model parlays and Elo picks, Add to builder,
+ * game is under way, and each game's page with its Matchup, Mismatches and Team Stats buttons, each
+ * opening one card of the Game snapshot alone (no Game snapshot button since app v129: the whole window
+ * opens from the matchup bubble, with its button to the game's page on the Props tab); the Parlay Builder (the builder, its
+ * choices and the Top lines), Suggested Parlays (one section since app v129, Night games, the night
+ * games' sets and then the Sunday slot's, headed by one record of both, the backtest's weeks counted in
+ * it with no chip, each unit's model parlays and Elo picks, Add to builder,
  * Finish, the lock; since app v121 every level one game's legs, the Sunday slot's the best of its
  * games' own, and no pair DraftKings refuses on one slip, worked out here on the smoke's own copies),
  * the builder's notes on such a pair and on a same-game parlay mixed with other games, the parlay
@@ -179,11 +180,13 @@ function finish(why) {
    stack, so a mistake in the smoke is a fast exit 1, never a run that waits on open windows. */
 process.on('unhandledRejection', e => { checks++; fails.push('the page threw in an async handler: ' + (e && e.stack || e)); });
 /* and it never hangs: the elo job runs it every morning with no time limit of its own, so a run
-   still going after fifteen minutes stops with what it has, and fails (it took six to eight minutes, the
+   still going after twenty minutes stops with what it has, and fails (it took six to eight minutes, the
    upper end on a payload whose Sunday slot is live, since app v118 checks the slot's set; ten until then. Since app
    v125, with the admin's boots and the published read's checks, about ten and a half on a 4-core box beside another
-   heavy check, eleven on a payload carrying the read) */
-const SMOKE_LIMIT_MS = 15 * 60 * 1000;
+   heavy check, eleven on a payload carrying the read; on 22 October 2026, app v129, 14 min 59 s on a 4-core box with
+   under 15 GB and nothing else running, its 2,795 checks passing, where the limit, fifteen minutes until then, stopped
+   a run two sections short; twenty since, still well inside the elo job's forty) */
+const SMOKE_LIMIT_MS = 20 * 60 * 1000;
 setTimeout(() => finish(`the smoke did not finish in ${Math.round(SMOKE_LIMIT_MS / 1000)} s: stopped with what it had`), SMOKE_LIMIT_MS).unref();
 /* nor does it pass by running out of things to wait on: a body stuck on a promise nothing will
    settle, with no window open to keep the process up, would otherwise end Node with exit 0 and
@@ -601,11 +604,18 @@ const isoOwn = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 const waitOwn = (N, sched, TN) => { const nm = x => `${(TN && TN[x.a]) || x.a} at ${(TN && TN[x.h]) || x.h}`, nightOf = d => PRIME_NIGHT[new Date(d + 'T12:00:00Z').getUTCDay()];
   const pg = N.prev ? (sched || []).filter(x => primeOwn(x) && x.d === N.prev).length : 0;
   return `Next up: ${nightOf(N.games[0].d)}, ${N.games.map(nm).join(' and ')}.` + (N.open != null ? ` ${N.games.length > 1 ? 'Their sets go' : 'Its set goes'} up ${etSay(N.open)}, the morning after ${nightOf(N.prev)}’s ${pg > 1 ? 'games' : 'game'}.` : ''); };
-/* the tab's wait line for the night games, as drawn in their section (app v118: the Sunday slot's section has a wait
-   line of its own, slotWaitHeld below), held to the rule: where the night is not up, one line naming its games and
-   when their sets go up, and no night game's set; where it is up (or no prime-time game is left), none */
-const SEC_NIGHT = '#spSets section.sp-sec[data-sp-sec="night"]', SEC_SLOT = '#spSets section.sp-sec[data-sp-sec="slot"]';
-const waitHeld = (d, N, sched, TN) => { const el = d.querySelector(`${SEC_NIGHT} [data-sp-wait]`);
+/* the tab's wait line for the night games, as drawn in their section (the Sunday slot has a wait line of its own,
+   slotWaitHeld below), held to the rule: where the night is not up, one line naming its games and when their sets go
+   up, and no night game's set; where it is up (or no prime-time game is left), none. (app v129, the owner's call of 22
+   October 2026: "get rid of the Sunday slot record section -> all should be a part of 'Night Games'") Suggested Parlays
+   is one section, Night games: the night games' sets (or their wait line, or the line saying none is left), then the
+   Sunday slot's (its unit .sp-game.sp-slot, its wait line, whose data-sp-next is the slot's own id <season>_<WW>_SUN,
+   or its line data-sp-none="slot"); no data-sp-sec="slot" section */
+const SEC_NIGHT = '#spSets section.sp-sec[data-sp-sec="night"]', SEC_SLOT_GONE = '#spSets section.sp-sec[data-sp-sec="slot"]';
+const NIGHT_UNIT = `${SEC_NIGHT} > .sp-game:not(.sp-slot)`, SLOT_UNIT = `${SEC_NIGHT} > .sp-game.sp-slot`;
+const NIGHT_WAIT = `${SEC_NIGHT} > [data-sp-wait]:not([data-sp-next$="_SUN"])`, SLOT_WAIT = `${SEC_NIGHT} > [data-sp-wait][data-sp-next$="_SUN"]`;
+const NIGHT_NONE = `${SEC_NIGHT} > p.pb-none:not([data-sp-wait]):not([data-sp-none])`, SLOT_NONE = `${SEC_NIGHT} > [data-sp-none="slot"]`;
+const waitHeld = (d, N, sched, TN) => { const el = d.querySelector(NIGHT_WAIT);
   if (!d.querySelector(SEC_NIGHT)) return 'Suggested Parlays has no Night games section';
   if (!N.games.length || N.up) return el ? `a wait line is drawn where the night's sets are up: ${txt(el)}` : null;
   if (!el) return `no wait line where the next night (${N.games.map(g => g.id).join(', ')}) is not up until ${isoOwn(N.open)}`;
@@ -613,7 +623,7 @@ const waitHeld = (d, N, sched, TN) => { const el = d.querySelector(`${SEC_NIGHT}
   if (el.dataset.spWait !== isoOwn(N.open)) bad.push(`data-sp-wait ${el.dataset.spWait}, not ${isoOwn(N.open)}`);
   if (el.dataset.spNext !== N.games.map(g => g.id).join(' ')) bad.push(`data-sp-next ${el.dataset.spNext}, not ${N.games.map(g => g.id).join(' ')}`);
   if (txt(el) !== want) bad.push(`it reads "${txt(el)}", not "${want}"`);
-  if (d.querySelector(`${SEC_NIGHT} .sp-game`)) bad.push('a set is drawn beside it');
+  if (d.querySelector(NIGHT_UNIT)) bad.push('a set is drawn beside it');
   return bad.length ? bad.join('; ') : null; };
 /* (app v118) the Sunday slot, by the owner's rule of 19 October 2026 ("I would like it to have ELO picks for the slot of
    Sunday games", then "do a separate section for night games and then the sunday slot of games"), worked out here on
@@ -644,13 +654,21 @@ const slotNextOwn = (weeks, sched, now, season) => { const w0 = liveWeekOwn(week
 const slotPhaseOwn = (u, now) => !u ? 'none' : !u.up ? 'wait' : now < u.lock ? 'live' : now < u.first ? 'locked' : 'under';
 const slotWaitOwn = (u, sched) => { const pg = u.prev ? (sched || []).filter(x => primeOwn(x) && x.d === u.prev).length : 0;
   return `Next up: week ${u.w}’s Sunday slot, ${u.games.length} game${u.games.length === 1 ? '' : 's'}. Its sets go up ${etSay(u.open)}, the morning after ${PRIME_NIGHT[dowOwn(u.prev)]}’s ${pg > 1 ? 'games' : 'game'}.`; };
-/* the slot's section as drawn, held to the rule: not up, one wait line naming it and when its sets go up and no set;
-   up, its unit (.sp-game.sp-slot) and no wait line; none to come, one line saying so and no set */
-const slotWaitHeld = (d, U, sched, wk, seasonOver) => { const sec = d.querySelector(SEC_SLOT); if (!sec) return 'Suggested Parlays has no Sunday slot section';
-  const el = sec.querySelector('[data-sp-wait]'), units = [...sec.querySelectorAll('.sp-game')], none = sec.querySelector('[data-sp-none="slot"]'), bad = [];
+/* the slot's part of the Night games section as drawn (app v129: its section went), held to the rule: not up, one wait
+   line naming it and when its sets go up and no set; up, its unit (.sp-game.sp-slot) and no wait line; none to come,
+   one line saying so and no set; whichever it is, after everything of the night games' (the section's last child), and
+   no Sunday slot section of its own */
+const slotWaitHeld = (d, U, sched, wk, seasonOver) => { const sec = d.querySelector(SEC_NIGHT); if (!sec) return 'Suggested Parlays has no Night games section';
+  if (d.querySelector(SEC_SLOT_GONE)) return 'Suggested Parlays still draws a Sunday slot section of its own';
+  const els = [...d.querySelectorAll(SLOT_WAIT)], el = els[0], units = [...d.querySelectorAll(SLOT_UNIT)], nones = [...d.querySelectorAll(SLOT_NONE)], none = nones[0], bad = [];
+  const mine = [...els, ...units, ...nones];
+  if (mine.length > 1) bad.push(`the slot draws ${mine.length} things (${mine.map(x => x.className).join(', ')}), not one`);
+  else if (mine.length === 1 && sec.lastElementChild !== mine[0]) bad.push('the slot\'s part is not last in the Night games section, after the night games\'');
   if (!U) {
-    if (el || units.length || !none) bad.push(`no Sunday slot is to come and the section draws ${el ? 'a wait line' : units.length ? 'a set' : 'no line saying so'}`);
-    else if (!(seasonOver ? /^The \d{4} regular season is over: no Sunday slot is left\.$/.test(txt(none)) : txt(none) === `No Sunday game of week ${wk} is still to kick off.`)) bad.push(`its line reads "${txt(none)}"`);
+    /* (app v129) the season over is said once, by the night games' line: the slot draws nothing then */
+    if (seasonOver) { if (el || units.length || none) bad.push(`the season is over and the slot still draws ${el ? 'a wait line' : units.length ? 'a set' : 'a line: ' + txt(none)}`); }
+    else if (el || units.length || !none) bad.push(`no Sunday slot is to come and the section draws ${el ? 'a wait line' : units.length ? 'a set' : 'no line saying so'}`);
+    else if (txt(none) !== `No Sunday game of week ${wk} is still to kick off.`) bad.push(`its line reads "${txt(none)}"`);
     return bad.length ? bad.join('; ') : null; }
   if (!U.up) { const want = slotWaitOwn(U, sched);
     if (!el) bad.push(`no wait line where the slot (${U.id}) is not up until ${isoOwn(U.open)}`);
@@ -693,10 +711,16 @@ const ordOwn = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14)
 const mmGradeOwn = s => { const x = Math.round(s * 10) / 10; return x >= 3 ? 'Huge' : x >= 2 ? 'Big' : x >= 1 ? 'Solid' : 'Slight'; };
 const mmTitleOwn = (v, rank, n) => `${mmGradeOwn(v.score)} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs the ${v.opp} ${MM_AGAINST_OWN[v.group]}, ranked ${ordOwn(rank)} of ${n} on the matchup formula's player ratings`;
 /* a club's rank on the matchup formula's units for a position, the smoke's own: matchups.json's league table (each
-   club's opp_def where it has none), 1st the highest */
+   club's opp_def where it has none), 1st the highest, clubs level on it sharing a rank, one more than the clubs above
+   them. Level is read to the hundredth (the owner's call of 22 October 2026: "make clubs tied on a defense unit share the
+   same rank in the mismatches, plaer window, and game snapshot"): the file writes a unit to the tenth and a group's unit
+   averages two (a back faces the line and the linebackers), so two clubs level on paper can differ by a floating-point
+   hair, which an exact comparison would part */
+const lvlOwn = x => Math.round(x * 100);
+const urkOwn = (defs, t, val) => defs[t] ? 1 + Object.keys(defs).filter(x => lvlOwn(val(defs[x])) > lvlOwn(val(defs[t]))).length : null;
 const mmRankOwn = (M, group, opp) => { const defs = {}; for (const v of Object.values(M.players || {})) if (v.opp_def) defs[v.opp] = v.opp_def;
   Object.assign(defs, (M.league && M.league.defs) || {}); const u = MM_UNITS_OWN[group], avg = d => u.reduce((a, k) => a + d[k], 0) / u.length;
-  return defs[opp] ? { rank: 1 + Object.keys(defs).filter(t => avg(defs[t]) > avg(defs[opp])).length, n: Object.keys(defs).length } : null; };
+  return defs[opp] ? { rank: urkOwn(defs, opp, avg), n: Object.keys(defs).length } : null; };
 /* the old words, anywhere under root (its text and every title): a defense "ranked" by the formula's units under the
    ELO Ratings tab's table's name, lower case as the Mismatches wrote it (the tab's and the bubble's own "Pass Defense
    ranked" are the table's) */
@@ -766,25 +790,16 @@ function sbOnLoadHeld(R, label, now) {
     `the scoreboard on load (${label}, week ${PW}, ${under.length ? under.map(g => g.id).join(', ') + ' under way' : 'no game under way'}): ${under.length ? 'not read once, of the Props list\'s week, with the stamp saying when' : 'read though no game is under way, or the stamp says something'}: ${sb.map(c => c.url.replace(/https:\/\/[^/]+/, '')).join(' | ') || 'no read'}; stamp '${stamp}'`);
   return under.length;
 }
-/* (app v128) the whole Game snapshot opened as a visitor opens it since the Matchups board, whose rows opened it, went
-   (22 October 2026): from the game's own page on the Props tab by its Game snapshot button (btn: the button, which the
-   focus goes back to; page: true, the window over that page, which stays open under it and goes with it), where the
-   Props tab can open the game; else, or with how 'bubble', as the matchup bubble opens it, window.gameSnapshot handed an
-   opener (btn: a button of the smoke's own in the tab on the screen, standing in for the bubble's name, which the focus
-   goes back to; page false, the game's page closed first). A game no visitor can reach any more (a week past the Props
-   tab's, a made-up playoff game the prop model has not got) takes the second way. md: the window, null if it did not
-   open whole */
+/* the whole Game snapshot opened as a visitor opens it since the Matchups board, whose rows opened it, went (22 October
+   2026): as the matchup bubble opens it, window.gameSnapshot handed an opener (btn: a button of the smoke's own in the
+   tab on the screen, standing in for the bubble's name, which the focus goes back to), the game's page closed first. A
+   game page's own Game snapshot button (app v128) was taken off again the same day (app v129, the owner's call: "i dont
+   want that game snapshot buttons"), so this is the one way in; how is kept for the callers and read by nothing. md:
+   the window, null if it did not open whole; page: always false (no window over the game's page) */
 async function snapOpen(R, g, how) {
-  const P = R.w.pkBoard, gid = g.game_id || g.id, gm = R.d.getElementById('gameModal'), md0 = R.d.getElementById('gsModal');
+  const gid = g.game_id || g.id, gm = R.d.getElementById('gameModal'), md0 = R.d.getElementById('gsModal');
   if (md0 && !md0.hidden) { R.w.gameSnapshotClose(false); await wait(10); }
   const whole = () => { const md = R.d.getElementById('gsModal'); return md && !md.hidden && !md.dataset.gsOnly ? md : null; };
-  if (how !== 'bubble' && P && typeof P.canProps === 'function' && P.canProps(gid)) {
-    if (R.w.eval('S').ui.game !== gid || gm.hidden || gm.closest('[hidden]')) { P.openOnProps(gid); await wait(80); }
-    const b = R.d.querySelector('#gameView [data-gp-pop="snap"]');
-    if (!b) return { btn: null, md: null, page: true };
-    b.focus(); b.click(); await wait(150);
-    return { btn: b, md: whole(), page: true };
-  }
   if (gm && !gm.hidden && typeof R.w.closeGame === 'function') { R.w.closeGame(); await wait(30); }
   let ob = R.d.getElementById('smokeSnapOpener');
   if (!ob) { ob = R.d.createElement('button'); ob.type = 'button'; ob.id = 'smokeSnapOpener'; ob.textContent = 'Open game snapshot';
@@ -988,8 +1003,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
 
   /* the tab bar: Props first and open, the page's first tab since the Matchups board went (22 October 2026, the
      owner's call: "i think we are good to remove matchups tabs since most the important info was moved to props tab";
-     the board's row has been the Props list's since app v122, and its Game snapshot opens from each game's page there
-     since app v128), Suggested Parlays after it and before the Parlay Builder (app v111, the owner's call of 16 October
+     the board's row has been the Props list's since app v122), Suggested Parlays after it and before the Parlay Builder (app v111, the owner's call of 16 October
      2026; Suggest Parlays until app v112, the owner's call of 17 October 2026, "tab name suggest parlay should be
      Suggested Parlays"), the prop model's other sections in the page but not on the bar. This boot is a visitor's
      (nothing under the admin's key): six tabs, X Parlays and the X Bet Log on the admin's devices alone (the owner's
@@ -1070,7 +1084,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         && /^Game bets and player props\b.*\bProps tab\b/.test(pbtn.getAttribute('aria-label') || '') && /\bon the Props tab\b/.test(pbtn.getAttribute('title') || '')),
       'the props button has a caption beside it, or its name and title do not say it opens the game on the Props tab: ' + (pbtn ? txt(pbtn.parentElement) + ' | ' + pbtn.getAttribute('aria-label') : ''));
     /* the button closes the snapshot and opens the game's page on the Props tab, on its week, with the
-       Game bets card brought into view (it follows the game's head and its four buttons) */
+       Game bets card brought into view (it follows the game's head and its three buttons) */
     if (pbtn) {
       const into = [], siv = w.Element.prototype.scrollIntoView;
       w.Element.prototype.scrollIntoView = function (o) { into.push(this); if (siv) try { siv.call(this, o); } catch (e) { /* jsdom */ } };
@@ -1189,56 +1203,30 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   }
   w.closeGame(); await wait(40);
 
-  /* ---- (app v128, the owner's call of 22 October 2026: the Matchups board went, and its Game snapshot opens from
-     "Button on Props") a game's page on the Props tab: its fourth button, Game snapshot, opens the whole window over the
-     page, for that game, the focus on Close, with no button to the page it is over; Escape closes it alone (the game's
-     page and its scroll lock kept, no listener beneath it hearing the key), the focus back on its button, and a second
-     Escape closes the page; a double click's second click within 0.4 s of its opening, or a click inside, does not close
-     it, a click outside does; a redraw of the page under it keeps it open and its close gives the focus to the button
-     drawn since; a Refresh scores press opens no window; and the page's Back takes it with the page, the focus never
-     left on the body (the address moving to another tab: A WINDOW IS ITS TAB'S OWN, below) ---- */
-  if (first && pkCanOpen(first)) { const bad = [], gm = d.getElementById('gameModal'), key = k => (d.activeElement || d.body).dispatchEvent(new w.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
-    const snapBtn = () => d.querySelector('#gameView [data-gp-pop="snap"]'), fg = state.schedule.find(x => x.game_id === first) || { away_team: pkRow(first).a, home_team: pkRow(first).h };
+  /* ---- (app v129, the owner's call of 22 October 2026: "i dont want that game snapshot buttons") a game's page on the
+     Props tab has no Game snapshot button (app v128 had a fourth, data-gp-pop="snap", opening the whole window over the
+     page), and the hub's window opens no whole snapshot for one: window.gameWindow('snap') opens nothing. The whole
+     snapshot opens from the matchup bubble alone (window.gameSnapshot), and its first button, to the game's own page on
+     the Props tab, is drawn wherever the Props tab can open the game (pkBoard.canProps), the game's page open under it
+     or not (app v128 left it off over that very page) ---- */
+  if (first) { const bad = [], gm = d.getElementById('gameModal');
     const row = d.querySelector(`#gamesList .game[data-game="${first}"]`); if (row) row.click(); await wait(80);
-    if (gm.hidden || w.eval('S').ui.game !== first || !snapBtn()) bad.push(`the game's page of ${first} did not open with its Game snapshot button`);
+    if (gm.hidden || w.eval('S').ui.game !== first) bad.push(`the game's page of ${first} did not open`);
     else {
-      const b0 = snapBtn(); b0.focus(); b0.click(); await wait(120);
-      const md = gsm(), ttl = txt(d.getElementById('gsTitle'));
-      if (!md || md.hidden || md.classList.contains('gs-one') || md.dataset.gsOnly || md.querySelector('[data-gs-only]') || !['gsMatch', 'gsCalls', 'gsTeams', 'gsUnits', 'gsMism', 'gsPos'].every(id => md.querySelector('#' + id)))
-        bad.push(`it did not open the whole snapshot (not one card alone): ${md ? `${md.hidden ? 'hidden' : 'open'}, ${md.className}, only ${md.dataset.gsOnly || 'none'}, ${[...md.querySelectorAll('section[id]')].map(x => x.id).join(' ')}` : 'no window'}`);
-      else {
-        if (!new RegExp(`^${fg.away_team}(at|vs)${fg.home_team}Game snapshot · ${w.pkBoard.weekName(+pkRow(first).w)}$`).test(ttl)) bad.push(`its title reads '${ttl}'`);
-        if (d.activeElement !== d.getElementById('gsClose')) bad.push('the focus is not on Close');
-        if (md.querySelector('[data-gs-props]')) bad.push('it offers a button to the very page it is over');
-        if (gm.hidden || !d.body.classList.contains('modal-open')) bad.push('the game\'s page is not open under it');
-        let seen = 0; const cnt = e => { if (e.key === 'Escape') seen++; }; d.addEventListener('keydown', cnt);
-        key('Escape'); d.removeEventListener('keydown', cnt); await wait(20);
-        if (!md.hidden || gm.hidden || seen !== 0 || d.activeElement !== b0 || !d.body.classList.contains('modal-open') || w.eval('S').ui.game !== first)
-          bad.push(`Escape did not close it alone with the focus back on its button (open ${!md.hidden}, page ${!gm.hidden}, ${seen} beneath, focus on ${d.activeElement && (d.activeElement.dataset.gpPop || d.activeElement.id || d.activeElement.tagName)})`);
-        /* a double click's second click on the backdrop, then a click inside, keep it open; a click outside closes it */
-        b0.click(); await wait(10);
-        md.dispatchEvent(new w.MouseEvent('click', { bubbles: true, detail: 2 })); d.getElementById('gsView').click(); await wait(10);
-        if (md.hidden) bad.push('a double click\'s second click, or a click inside, closed it');
-        md.dispatchEvent(new w.MouseEvent('click', { bubbles: true, detail: 0 })); await wait(20);
-        if (!md.hidden || gm.hidden || d.activeElement !== snapBtn()) bad.push('a click outside did not close it alone, the focus on its button');
-        /* the page drawn again under it (renderGame): it stays open, and its close gives the focus to the button drawn since */
-        snapBtn().click(); await wait(80); const old = snapBtn(); w.renderGame(); await wait(20); const nu = snapBtn();
-        if (md.hidden || old.isConnected || !nu) bad.push('a redraw of the game\'s page closed it, or kept the page\'s buttons');
-        d.getElementById('gsClose').click(); await wait(20);
-        if (!md.hidden || d.activeElement !== snapBtn()) bad.push('closed after a redraw, it did not give the focus to the Game snapshot button drawn since');
-        /* a second Escape (the first closing the window) closes the game's page */
-        if (gm.hidden) { const r2 = d.querySelector(`#gamesList .game[data-game="${first}"]`); if (r2) r2.click(); await wait(60); }
-        snapBtn().click(); await wait(80); key('Escape'); await wait(20); key('Escape'); await wait(30);
-        if (!md.hidden || !gm.hidden || d.body.classList.contains('modal-open')) bad.push(`two Escapes did not close the window and then the game's page (window ${!md.hidden}, page ${!gm.hidden})`);
-        /* the page's Back takes it with the page; the focus is not left on the body */
-        { const r3 = d.querySelector(`#gamesList .game[data-game="${first}"]`); if (r3) r3.click(); await wait(60); }
-        snapBtn().click(); await wait(80);
-        const back = d.getElementById('backBtn');
-        if (!back) bad.push('the game\'s page has no Back');
-        else { back.click(); await wait(40);
-          if (!md.hidden || !gm.hidden || d.body.classList.contains('modal-open') || !d.activeElement || d.activeElement === d.body) bad.push(`Back did not close the window with the page, the page free to scroll and the focus somewhere (window ${!md.hidden}, page ${!gm.hidden}, focus on ${d.activeElement === d.body ? 'the body' : d.activeElement && d.activeElement.tagName})`); } } }
+      if (d.querySelector('[data-gp-pop="snap"]') || [...d.querySelectorAll('#gameView button')].some(x => /^Game snapshot$/.test(txt(x)))) bad.push('the game\'s page draws a Game snapshot button');
+      w.gameWindow('snap', first, null); await wait(80);
+      if (gsm() && !gsm().hidden) { bad.push('window.gameWindow(\'snap\') opened a window'); w.gameSnapshotClose(false); await wait(20); }
+      /* the bubble's way in with the game's page open under it: the props button is drawn wherever canProps */
+      const ob = d.createElement('button'); ob.type = 'button'; ob.textContent = 'stand-in name'; d.getElementById('gameView').appendChild(ob); ob.focus();
+      w.gameSnapshot(first, ob); await wait(120);
+      const md = gsm(), pb = md && !md.hidden ? md.querySelector('#gsMatch [data-gs-props]') : null;
+      if (!md || md.hidden || md.dataset.gsOnly) bad.push('window.gameSnapshot did not open the whole snapshot over the game\'s page');
+      else if (!!pb !== w.pkBoard.canProps(first) || (pb && pb.dataset.gsProps !== first)) bad.push(`the props button is ${pb ? 'drawn' : 'not drawn'} over the game's own page though the Props tab ${w.pkBoard.canProps(first) ? 'can' : 'cannot'} open it`);
+      if (md && !md.hidden) { w.gameSnapshotClose(false); await wait(20); }
+      ob.remove(); }
     if (!gm.hidden) { w.closeGame(); await wait(30); }
-    chk(bad.length === 0, `a game's page's Game snapshot button does not open the whole window over the page as it should: ${bad.join('; ')}`); }
+    if (gsm() && !gsm().hidden) { w.gameSnapshotClose(false); await wait(20); }
+    chk(bad.length === 0, `a game's page draws a Game snapshot button, or the whole snapshot over it drops its props button: ${bad.join('; ')}`); }
 
   /* ---- Props: the prop model's Games tab, as it is on its own site ---- */
   const propsBtn = [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'slate');
@@ -1351,16 +1339,16 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     chk(bad.length === 0, `the game's head does not carry the list's old figures: ${bad.join('; ')}`); }
   /* (app v124, the owner's call of 20 October 2026) the game's page draws no suggested parlays: in their place, under
      its head and over its Game bets card, three buttons, Matchup, Mismatches and Team Stats, each opening one card of
-     the Game snapshot alone in its own little window (held on the stand-in news files under THE GAME SNAPSHOT), and
-     since app v128 (22 October 2026, the Matchups board gone: "Button on Props") a fourth, Game snapshot, opening the
-     whole window (held above), each a 44px dialog button naming the game */
+     the Game snapshot alone in its own little window (held on the stand-in news files under THE GAME SNAPSHOT), each a
+     44px dialog button naming the game; and no fourth (app v128's Game snapshot, taken off by app v129) */
   { const bad = [], gv = d.getElementById('gameView'), bs = [...gv.querySelectorAll('.gwin [data-gp-pop]')], head = gv.querySelector('.ghead'), row = gv.querySelector('.gwin'), gb = gv.querySelector('.gbets');
     if (gv.querySelector('.gsugg, [data-gsugg-side], [data-gtier-add], .gsugg-tier, .gsugg-pick') || /Suggested parlays|Add all/.test(txt(gv))) bad.push('it still draws its suggested parlays, their side switch or an Add all');
-    if (bs.map(b => `${b.dataset.gpPop}:${txt(b)}`).join() !== 'units:Matchup,mism:Mismatches,stats:Team Stats,snap:Game snapshot') bad.push('its buttons are ' + (bs.map(b => `${b.dataset.gpPop}:${txt(b)}`).join() || 'none'));
+    if (bs.map(b => `${b.dataset.gpPop}:${txt(b)}`).join() !== 'units:Matchup,mism:Mismatches,stats:Team Stats') bad.push('its buttons are ' + (bs.map(b => `${b.dataset.gpPop}:${txt(b)}`).join() || 'none'));
+    if (gv.querySelector('[data-gp-pop="snap"]')) bad.push('it draws a Game snapshot button');
     if (!bs.every(b => b.tagName === 'BUTTON' && b.type === 'button' && b.getAttribute('aria-haspopup') === 'dialog' && b.dataset.gpGame === slateRows[0].dataset.game)) bad.push('a button is not a dialog button naming the game');
     if (!(head && row && gb && gv.querySelectorAll('.gwin').length === 1 && (head.compareDocumentPosition(row) & 4) && (row.compareDocumentPosition(gb) & 4))) bad.push('the buttons are not there once, under the head and over the Game bets card');
     if (typeof w.gameWindow !== 'function' || typeof w.gameSnapshot !== 'function') bad.push('the hub window (window.gameWindow, window.gameSnapshot) is not on the page');
-    chk(bad.length === 0, `the game's page does not carry its Matchup, Mismatches, Team Stats and Game snapshot buttons in place of its suggested parlays: ${bad.join('; ')}`); }
+    chk(bad.length === 0, `the game's page does not carry its Matchup, Mismatches and Team Stats buttons (and no other) in place of its suggested parlays: ${bad.join('; ')}`); }
   chk(d.querySelectorAll('#gameView .plrbtn').length > 0, 'the game view shows no players');
   chk(typeof w.closeGame === 'function', 'the prop model\'s closeGame is not on the page');
   w.closeGame();
@@ -1384,7 +1372,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      cache may hold that game's set alone. (app v112) Only the next night's games are on the tab, once its morning has
      come (nightOwn, the rule worked out here): a game the rule hides is not drawn at all, and none of its set built */
   /* (app v118) and the Sunday slot by its own rule (slotNextOwn): up and live, it too says it is built when the tab
-     opens, its set (and its Elo picks) not built; not up, its section's wait line is the rule's */
+     opens, its set (and its Elo picks) not built; not up, its wait line (after the night games', in the one Night games
+     section since app v129) is the rule's */
   { const now = w.eval('Date.now()'), G = w.eval('typeof pbGames') === 'function' ? w.eval('pbGames()').filter(primeOwn) : [], live = G.filter(g => now < etKick(g) - 2 * 3600e3);
     const N = nightOwn(G, w.eval('S').sched, now), onIds = N.on.map(g => g.id), Sx0 = w.eval('S');
     const U = slotNextOwn(w.eval('PAY.sched').map(g => g.w), Sx0.sched, now, +w.eval('SEASON')), uLive = !!U && slotPhaseOwn(U, now) === 'live';
@@ -1396,7 +1385,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const wh = G.length ? waitHeld(d, N, Sx0.sched, w.eval('TEAM_NAMES')) : null;
     chk(!wh, 'before its tab was opened, Suggested Parlays does not say which night is next and when its set goes up where the night rule hides it: ' + wh);
     const sh = slotWaitHeld(d, U, Sx0.sched, liveWeekOwn(w.eval('PAY.sched').map(g => g.w), Sx0.sched, now), w.eval('seasonOver()'));
-    chk(!sh, `before its tab was opened, the Sunday slot's section is not as its rule has it (${U ? U.id + ' ' + slotPhaseOwn(U, now) : 'none to come'}): ` + sh); }
+    chk(!sh, `before its tab was opened, the Sunday slot's part of the Night games section is not as its rule has it (${U ? U.id + ' ' + slotPhaseOwn(U, now) : 'none to come'}): ` + sh); }
   tabBtn('parlay').click();
   await wait(60);
   chk(!d.getElementById('tab-parlay').hidden && d.getElementById('tab-slate').hidden && (d.getElementById('tab-xparlays') || { hidden: true }).hidden && (d.getElementById('tab-suggest') || { hidden: true }).hidden, 'the Parlay Builder tab did not open');
@@ -1688,7 +1677,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const unitHead = u => { if (!u.slot) return { h: `${TN[u.a] || u.a} at ${TN[u.h] || u.h}`, pill: nightOf(u), small: null };
       const et = (ms, o) => new Date(ms).toLocaleString('en-US', { timeZone: 'America/New_York', ...o });
       const day = et(u.first, { weekday: 'short', month: 'short', day: 'numeric' }), t0 = et(u.first, { hour: 'numeric', minute: '2-digit' }) + ' ET', t1 = et(u.last, { hour: 'numeric', minute: '2-digit' }) + ' ET';
-      return { h: `Week ${u.w}, ${u.games.length} game${u.games.length === 1 ? '' : 's'}`, pill: null, small: `${day} · ${t0}${t1 !== t0 ? ' to ' + t1 : ''}` }; };
+      return { h: `Week ${u.w}, ${u.games.length} game${u.games.length === 1 ? '' : 's'}`, pill: 'Sunday slot', small: `${day} · ${t0}${t1 !== t0 ? ' to ' + t1 : ''}` }; };
     const headHeld = (el, u) => { const H = unitHead(u), h4 = el && el.querySelector(':scope > .sp-hd > h4'), pill = el && el.querySelector(':scope > .sp-hd > .pill'), sm = el && el.querySelector(':scope > .sp-hd > small');
       return !!el && !!h4 && h4.id === 'spg-' + u.id && txt(h4) === H.h && (H.pill ? !!pill && txt(pill) === H.pill : !pill) && (!H.small || (!!sm && txt(sm) === H.small))
         && el.getAttribute('role') === 'group' && el.getAttribute('aria-labelledby') === 'spg-' + u.id && el.classList.contains('sp-slot') === !!u.slot && !el.querySelector('h3'); };
@@ -2025,10 +2014,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const slotHere = () => slotNextOwn(w.eval('PAY.sched').map(g => g.w), w.eval('S').sched, w.eval('Date.now()'), +w.eval('SEASON'));
     /* every prime-time game of the week still to come is the page's spGames (the record takes them all); the tab
        sets out the next night's alone once its morning has come, and says when where it has not; each game's set
-       held to the rules, and as drawn where it is shown. (app v118) In the Night games section; and in the Sunday slot's
-       section the slot by its own rule, its set and its Elo picks held where it is up, its wait line where it is not */
+       held to the rules, and as drawn where it is shown. (app v118) In the Night games section; and after them, in the
+       same section since app v129, the Sunday slot by its own rule, its set and its Elo picks held where it is up, its
+       wait line where it is not */
     const holdSets = async lab => { await openSp(); const G = primeHere(), N = shownHere(), on = N.on.map(g => g.id), U = slotHere(); let n = 0;
-      const drawnIds = [...d.querySelectorAll(`${SEC_NIGHT} .sp-game[data-sp-game]`)].map(x => x.dataset.spGame);
+      const drawnIds = [...d.querySelectorAll(`${NIGHT_UNIT}[data-sp-game]`)].map(x => x.dataset.spGame);
       chk(w.eval('spGames()').map(g => g.id).join() === G.map(g => g.id).join(), `${lab}: the page's prime-time games (spGames) are not the week's Thursday, Sunday and Monday night games still to come (${G.map(g => g.id).join(', ') || 'none'}): ` + w.eval('spGames()').map(g => g.id).join(', '));
       chk(drawnIds.join() === on.join() && w.eval('spOn()').map(g => g.id).join() === on.join(),
         `${lab}: Suggested Parlays does not set out exactly the next prime-time night's games once its morning has come (${on.join(', ') || (N.games.length ? 'none until ' + isoOwn(N.open) + ', then ' + N.games.map(g => g.id).join(', ') : 'none')}): ` + (drawnIds.join(', ') || 'none drawn'));
@@ -2041,7 +2031,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const hid = G.filter(g => !on.includes(g.id));
       for (const g of hid) hiddenHeld(lab, g);
       if (U && !U.up) hiddenHeld(lab, U);
-      if (!G.length) chk(/^No Thursday, Sunday or Monday night game of week \d+ is still to kick off\./.test(txt(d.querySelector(`${SEC_NIGHT} > p.pb-none`))), `${lab}: with no prime-time game to come the Night games section does not say so: ` + txt(d.querySelector(SEC_NIGHT)).slice(0, 160));
+      if (!G.length) chk(/^No Thursday, Sunday or Monday night game of week \d+ is still to kick off\./.test(txt(d.querySelector(NIGHT_NONE))), `${lab}: with no prime-time game to come the Night games section does not say so: ` + txt(d.querySelector(SEC_NIGHT)).slice(0, 160));
       /* no word of the retired tags on the tab */
       const noOld = how => { const sx = txt(d.getElementById('spSets')), hx = txt(d.getElementById('spHead'));
         chk(!OLD_TAG.test(sx) && !OLD_TAG.test(hx) && !spPanel.querySelector('.pb-thinmark'), `${lab}${how}: Suggested Parlays still says thin edge or no edge: ` + (txt(spPanel).match(/.{0,60}(thin[ -]edge|no edge).{0,40}/i) || [''])[0]);
@@ -2053,7 +2043,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           `${lab}${how}: Suggested Parlays still draws one of its long paragraphs (the lead, the foot, the record's sentence, a level's why-line, a long lock line or the Elo picks' lead): ` + ((sx + ' ' + hx).match(new RegExp('.{0,60}(' + WHY_GONE.source + ').{0,40}')) || [spPanel.querySelector(PAR) ? 'a paragraph drawn' : txt(spPanel).match(/.{0,40}Players whose Elo matchup.{0,40}/) ? 'the Elo picks\' lead' : ''])[0]); };
       noOld('');
       /* (app v121) a game named in a card's title on the Sunday slot's cards alone */
-      { const stray = [...d.querySelectorAll('.pb-tgame')].filter(e => !e.closest(`${SEC_SLOT} .sp-game.sp-slot .pb-tier > .pb-th`));
+      { const stray = [...d.querySelectorAll('.pb-tgame')].filter(e => !e.closest(`${SLOT_UNIT} .pb-tier > .pb-th`));
         chk(!stray.length, `${lab}: a card outside the Sunday slot names a game in its title: ` + stray.map(e => txt(e.closest('.pb-tier') || e)).slice(0, 2).join(' / ')); }
       /* then every prime-time game's set held to the rules and as drawn, its cards, legs, Adds, Finish, Value marks,
          the lines under a level, the fair chance first and its rule, at every hour as before the night rule: where
@@ -2065,7 +2055,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (!hid.length || w.eval('typeof spOn') !== 'function') { for (const g of G) n += holdSet(lab, g, on.includes(g.id)); return n + slotN(); }
       w.__spOnHold = w.eval('spOn');
       try { w.eval('spOn=function(){ return spGames(); }; SP_SHOWN=null; renderSp()'); await wait(40);
-        chk([...d.querySelectorAll(`${SEC_NIGHT} .sp-game[data-sp-game]`)].map(x => x.dataset.spGame).join() === G.map(g => g.id).join(), `${lab}: with spOn stood in by every prime-time game the tab does not draw them all (${G.map(g => g.id).join(', ')})`);
+        chk([...d.querySelectorAll(`${NIGHT_UNIT}[data-sp-game]`)].map(x => x.dataset.spGame).join() === G.map(g => g.id).join(), `${lab}: with spOn stood in by every prime-time game the tab does not draw them all (${G.map(g => g.id).join(', ')})`);
         for (const g of G) n += holdSet(lab, g, true);
         noOld(', every prime-time game drawn');
         console.log(`  (${lab}: ${hid.map(g => g.id).join(', ')} not on the tab by the night rule now: spOn stood in for ${hid.length === 1 ? 'its' : 'their'} cards' checks)`); }
@@ -2119,9 +2109,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       /* ---- Suggested Parlays (#suggest, app v111, the owner's calls of 16 October 2026), on the week as it is
          published: its own tab after Props, headed with its Refresh odds, a set of four parlays for each game of the
          week still to come that kicks off on a Thursday, Sunday or Monday at or after 7:00 pm Eastern (worked out here
-         on its own, primeOwn), each its own game's legs alone; (app v118, the owner's calls of 19 October 2026) in two
-         sections, Night games and the Sunday slot, each headed by its own record, each unit's Elo picks under its
-         model parlays (no section of their own at the tab's foot any more) ---- */
+         on its own, primeOwn), each its own game's legs alone; (app v118, the owner's calls of 19 October 2026) each
+         unit's Elo picks under its model parlays (no section of their own at the tab's foot any more), and the Sunday
+         slot's set after the night games', in one section, Night games, under one record since app v129 ---- */
       { await openSp();
         chk(!d.getElementById('tab-suggest').hidden && d.getElementById('tab-parlay').hidden && w.location.hash === '#suggest' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Suggested Parlays',
           'the Suggested Parlays tab did not open, or did not become the address #suggest');
@@ -2133,23 +2123,29 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         /* (app v113, the owner's call of 17 October 2026: "in suggest parlays, get rid of all the long paragraph
            description stuff. we dont need to clutter the page.") Its head is its heading and Refresh odds with its
            status line, and nothing else: no lead (until then it said one night is shown at a time and what a leg marked
-           Value is); (app v118) the record is no longer there but at the head of each section */
+           Value is); (app v118) the record is no longer there but at the head of its section (one since app v129) */
         { const kids = [...head.children], hd = kids[0];
           chk(kids.length === 2 && hd.matches('.pb-hd') && txt(hd.querySelector('h2')) === 'Suggested Parlays' && txt(hd.querySelector('.pill')) === `week ${liveWeekOwn(w.eval('PAY.sched').map(g => g.w), w.eval('S').sched, w.eval('Date.now()'))}` && kids[1].matches('.pb-row.pb-odds-row.sp-odds')
             && txt(kids[1].querySelector('.pb-lbl')) === 'Odds' && !head.querySelector('.pb-lead, p, .sp-rec') && !WHY_GONE.test(txt(head)),
             'the head of Suggested Parlays is not its heading, its week and Refresh odds alone: ' + kids.map(x => x.tagName.toLowerCase() + (x.id ? '#' + x.id : '') + '.' + x.className).join(' ') + ' / ' + txt(head).slice(0, 200)); }
-        /* (app v118) the two sections, in order, each its heading, then its record (hidden only with no record and no
-           backtest: both files are read here, so drawn), then its units or its one line */
+        /* (app v129, the owner's call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a
+           part of 'Night Games'") one section, Night games: its heading, then its record (hidden only with no record and
+           no backtest: both files are read here, so drawn), then the night games' units (or their one line: the wait line
+           or none left), then the Sunday slot's unit (or its one line), last; no Sunday slot section and no second record */
         { const secs = [...sets.children], bad = [];
-          if (secs.map(x => x.tagName.toLowerCase() + '.' + x.className + '[' + x.dataset.spSec + ']').join(' ') !== 'section.sp-sec[night] section.sp-sec[slot]') bad.push('its sections are ' + secs.map(x => x.tagName + ' ' + x.className + ' ' + x.dataset.spSec).join(', '));
-          for (const [sec, name] of [['night', 'Night games'], ['slot', 'Sunday slot']]) { const el = secs.find(x => x.dataset.spSec === sec); if (!el) continue;
-            const k = [...el.children], h3 = k[0], rec = k[1], rest = k.slice(2);
-            if (!h3 || !h3.matches('h3.sp-sech') || txt(h3) !== name || h3.id !== 'spsec-' + sec || el.getAttribute('aria-labelledby') !== 'spsec-' + sec) bad.push(`the ${sec} section is not headed "${name}" (an h3 that names it): ${h3 ? txt(h3) : 'nothing'}`);
-            if (!rec || !rec.matches(`div.sp-rec[data-sp-recsec="${sec}"]`) || rec.hidden) bad.push(`the ${sec} section's record is not right under its heading, drawn`);
-            if (!rest.length || !rest.every(x => x.matches('.sp-game[data-sp-game]')) && !(rest.length === 1 && rest[0].matches('p.pb-none'))) bad.push(`the ${sec} section's body is ${rest.map(x => x.tagName + '.' + x.className).join(', ') || 'nothing'}, not its units or one line`);
-            if (sec === 'night' && rest.some(x => x.classList.contains('sp-slot'))) bad.push('the Night games section draws the Sunday slot');
-            if (sec === 'slot' && rest.some(x => x.matches('.sp-game:not(.sp-slot)'))) bad.push('the Sunday slot section draws a night game'); }
-          chk(!bad.length, 'Suggested Parlays is not its two sections, Night games and the Sunday slot, each its heading, its record and its units or one line: ' + bad.join('; ')); }
+          if (secs.map(x => x.tagName.toLowerCase() + '.' + x.className + '[' + x.dataset.spSec + ']').join(' ') !== 'section.sp-sec[night]') bad.push('its sections are ' + secs.map(x => x.tagName + ' ' + x.className + ' ' + x.dataset.spSec).join(', '));
+          if (d.querySelector(SEC_SLOT_GONE) || d.querySelector('#spSets [data-sp-recsec="slot"], #spSets #spsec-slot') || /Sunday slot/.test(txt(d.querySelector('#spSets h3.sp-sech:not(#spsec-night)') || { textContent: '' }))) bad.push('a Sunday slot section, heading or record is still drawn');
+          const el = secs.find(x => x.dataset.spSec === 'night');
+          if (el) { const k = [...el.children], h3 = k[0], rec = k[1], rest = k.slice(2);
+            if (!h3 || !h3.matches('h3.sp-sech') || txt(h3) !== 'Night games' || h3.id !== 'spsec-night' || el.getAttribute('aria-labelledby') !== 'spsec-night') bad.push(`the section is not headed "Night games" (an h3 that names it): ${h3 ? txt(h3) : 'nothing'}`);
+            if (!rec || !rec.matches('div.sp-rec[data-sp-recsec="night"]') || rec.hidden || el.querySelectorAll('.sp-rec').length !== 1) bad.push('the section\'s one record is not right under its heading, drawn');
+            const isNight = x => x.matches('.sp-game[data-sp-game]:not(.sp-slot)') || x.matches('p.pb-none:not([data-sp-none])') && !(x.dataset.spNext || '').endsWith('_SUN');
+            const isSlot = x => x.matches('.sp-game.sp-slot[data-sp-game]') || x.matches('p.pb-none[data-sp-none="slot"]') || x.matches('p.pb-none[data-sp-wait]') && (x.dataset.spNext || '').endsWith('_SUN');
+            const nN = rest.filter(isNight), nS = rest.filter(isSlot);
+            if (rest.some(x => !isNight(x) && !isSlot(x))) bad.push(`the section's body holds ${rest.filter(x => !isNight(x) && !isSlot(x)).map(x => x.tagName + '.' + x.className).join(', ')}`);
+            if (!nN.length || (nN.some(x => x.matches('p')) && nN.length !== 1)) bad.push(`the night games' part is ${nN.map(x => x.tagName + '.' + x.className).join(', ') || 'nothing'}, not their units or one line`);
+            if (nS.length !== 1 || rest[rest.length - 1] !== nS[0]) bad.push(`the Sunday slot's part is ${nS.map(x => x.tagName + '.' + x.className).join(', ') || 'nothing'}${nS.length === 1 ? ', not last' : ''}, not its unit or its one line after the night games`); }
+          chk(!bad.length, 'Suggested Parlays is not one section, Night games, its heading, its one record, the night games\' units or one line, then the Sunday slot\'s: ' + bad.join('; ')); }
         /* the card's switch, on cards of the smoke's own (pbTierCard, as the page's callers call it): a level holding
            a leg that is not a Value pick and the game's total, and a leg priced from DraftKings' line read on ESPN, with
            a player ruled out after the lock. Drawn without quiet (as the retired Elo picks' section drew theirs until app
@@ -2545,17 +2541,19 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       await wait(40); }
   }
   /* with no game to come (the off-season, or every game of the week under way) the Parlay Builder and Suggest
-     Parlays say so, offer nothing, and nothing breaks; (app v118) each section of Suggested Parlays in its own line,
-     the Sunday slot's with the page's one question of which slot is to come (spSlotNext) stood in by none, as pbGames
-     is for the nights, each put back after */
+     Parlays say so, offer nothing, and nothing breaks; (app v118) the night games and the Sunday slot each in its own
+     line (in the one Night games section since app v129, the night games' first), the Sunday slot's with the page's one
+     question of which slot is to come (spSlotNext) stood in by none, as pbGames is for the nights, each put back after */
   if (hasPb) { w.__pbKeep = w.eval('[pbGames, seasonOver, spSlotNext]');
-    const secLine = sec => txt(d.querySelector(`#spSets section.sp-sec[data-sp-sec="${sec}"] > p.pb-none`));
+    /* (app v129) both lines in the one section, Night games: the night games' then the Sunday slot's */
+    const secLine = sec => txt(d.querySelector(sec === 'slot' ? SLOT_NONE : NIGHT_NONE));
     const offers = () => d.querySelector('#spSets .sp-game, #spSets [data-pc-finish], #spSets [data-sp-add], #spSets [data-pb-leg]');
     try {
       w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; spSlotNext=function(){ return null; }; renderParlay(); renderSp();'); await wait(20);
       const yr = w.eval('SEASON');
       chk(/regular season is over: no game is left/.test(txt(panel)) && !panel.querySelector('[data-pb-mix], .pb-tier, ol.pb-top, [data-pb-leg], [data-pc-finish]')
-        && secLine('night') === `The ${yr} regular season is over: no Thursday, Sunday or Monday night game is left.` && secLine('slot') === `The ${yr} regular season is over: no Sunday slot is left.` && !offers(),
+        && secLine('night') === `The ${yr} regular season is over: no Thursday, Sunday or Monday night game is left.` && !d.querySelector(SLOT_NONE) && !offers()
+        && d.querySelectorAll('#spSets > section').length === 1 && d.querySelector(SEC_NIGHT).lastElementChild === d.querySelector(NIGHT_NONE),
         'with the season over the Parlay Builder or a section of Suggested Parlays does not say so, or still offers something: ' + txt(panel).slice(0, 120) + ' / ' + secLine('night') + ' / ' + secLine('slot'));
       w.eval('seasonOver=function(){ return false; }; renderParlay(); renderSp();'); await wait(20);
       const wk0 = w.eval('currentWeek()');
@@ -3053,8 +3051,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (keep.slot) w.eval('spSlotNext=function(){ return null; }');
       w.eval('renderParlay()'); tabBtn('suggest').click(); await wait(80);
       /* live: the prime-time games alone, in kickoff order, each held to the rules; Safe worked out in full */
-      const ids = [...d.querySelectorAll(`${SEC_NIGHT} .sp-game[data-sp-game]`)].map(x => x.dataset.spGame);
-      chk(ids.join() === [Q, P, Z].map(g => g.id).join() && !d.querySelector(`${SEC_SLOT} .sp-game`), 'made-up games: Suggested Parlays (every prime-time game set out) does not set out the Thursday night, Sunday night and Monday 7:00 pm games alone among its night games, in kickoff order (not the Saturday night or the Sunday afternoon game): ' + ids.join(', '));
+      const ids = [...d.querySelectorAll(`${NIGHT_UNIT}[data-sp-game]`)].map(x => x.dataset.spGame);
+      chk(ids.join() === [Q, P, Z].map(g => g.id).join() && !d.querySelector(SLOT_UNIT), 'made-up games: Suggested Parlays (every prime-time game set out) does not set out the Thursday night, Sunday night and Monday 7:00 pm games alone among its night games, in kickoff order (not the Saturday night or the Sunday afternoon game): ' + ids.join(', '));
       const nP = holdSetF('a made-up Sunday night game', P); holdSetF('a made-up Thursday night game with one line', Q); holdSetF('a made-up Monday night game with two lines', Z);
       chk(nP === 4, `a made-up Sunday night game with ten lines does not build all four levels: ${nP}`);
       const live = drawn(P);
@@ -3218,7 +3216,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         w.__spOnBack = keep.on; w.eval('spOn=window.__spOnBack; SP_KEEP=null; SP_SHOWN=null'); w.localStorage.removeItem(KK); setRec({ entries: {} });
         const Z2 = mk(25, '2099-01-05', '20:30'), TNm = w.eval('TEAM_NAMES'), ids = a => a.map(g => g.id).join();
         const N_at = ms => nightOwn(G2.filter(g => etKick(g) > ms), Sx.sched, ms);
-        const onTab = () => [...d.querySelectorAll(`${SEC_NIGHT} .sp-game[data-sp-game]`)].map(x => x.dataset.spGame).join();
+        const onTab = () => [...d.querySelectorAll(`${NIGHT_UNIT}[data-sp-game]`)].map(x => x.dataset.spGame).join();
         const view = async ms => { at(ms); w.eval('SP_CACHE=new Map(); renderParlay()'); await wait(30); };
         /* the tab at that moment against the rule: the games set out (drawn, spOn and spState's on= token), the wait
            line where the night is not up, and no level of a game off the tab finished (spTier) */
@@ -3311,7 +3309,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const keep = { sched: Sx.sched, pb: w.eval('[pbGames, pricedLegs]'), dk: w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), rec: w.eval('PB_REC'), done: w.eval('PB_REC_DONE'), key: w.localStorage.getItem(KK), parlay: w.eval('JSON.stringify(S.parlay)') };
     const at = ms => { const sh = ms - D0.now(); w.Date = class extends D0 { constructor(...a) { if (a.length) super(...a); else super(D0.now() + sh); } static now() { return D0.now() + sh; } }; };
     const isoS = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z'), pc = v => (v * 100).toFixed(0) + '%', mlOwn = dec => dec >= 2 ? '+' + Math.round((dec - 1) * 100) : '-' + Math.round(100 / (dec - 1));
-    const unitOf = ms => slotNextOwn(ws, SCHED, ms, SEAS), elS = id => d.querySelector(`${SEC_SLOT} .sp-game[data-sp-game="${id}"]`);
+    const unitOf = ms => slotNextOwn(ws, SCHED, ms, SEAS), elS = id => d.querySelector(`${SLOT_UNIT}[data-sp-game="${id}"]`);
     const phaseLine = id => { const x = elS(id) && elS(id).querySelector(':scope > [data-sp-phase]'); return x ? `${x.dataset.spPhase} ${txt(x)}` : null; };
     const view = async ms => { at(ms); w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderParlay()'); await wait(40); };
     const sToken = () => (String(w.eval('spState()')).split(',').find(x => x.startsWith('s=')) || '');
@@ -3937,7 +3935,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      tab up with the game's page still open inside the hidden Props tab and body's modal-open kept, so the tab the
      address went to could not scroll, and the focus on the body. Leaving a tab closes the windows that live on it: the
      game's page (the prop model's switch, tabLeft, as its Back does) and every window over it (its Matchup, Mismatches
-     and Team Stats windows and, since app v128, its whole Game snapshot), the Props tab's Mismatches list and the ELO
+     and Team Stats windows), the Props tab's Mismatches list and the ELO
      Ratings tab's player and team windows (tab_elo.html); a focus left on what the switch took off the screen goes to
      the chosen tab's button; Escape touches a game's page only where it is on the screen; and the Game snapshot opened
      from the matchup bubble, no tab's window, which stays open over the tab the address goes to, gives the focus to that
@@ -3999,15 +3997,15 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         await go('#elo'); const back = was.pos ? body.querySelector(`.pe-pos button[data-pos="${was.pos}"]`) : was.unit ? body.querySelector(`.pe-pos button[data-unit="${was.unit}"]`) : null;
         if (back) { back.click(); await wait(30); } }
       else console.log('  windows: no Overall Offense pill on the ELO Ratings tab, so its team window is not held'); }
-    /* (app v128) a game's page's own windows go with it: its Team Stats window (one card alone) and its whole Game
-       snapshot, each opened by its button with the focus in it, then the address moved */
-    for (const [kind, what] of [['stats', 'its Team Stats window'], ['snap', 'its Game snapshot']]) {
+    /* a game's page's own windows go with it: its Team Stats window (one card alone), opened by its button with the
+       focus in it, then the address moved (app v128's whole Game snapshot from the page went with its button, app v129) */
+    for (const [kind, what] of [['stats', 'its Team Stats window']]) {
       await go('#slate'); const row = d.querySelector('#gamesList button[data-game]');
       if (!row) { bad.push('no game on the Props tab to open'); break; }
       row.click(); await wait(40); const b = d.querySelector(`#gameView [data-gp-pop="${kind}"]`), md = d.getElementById('gsModal');
       if (!b) { bad.push(`the game's page has no ${kind} button`); continue; }
       b.click(); await wait(80);
-      if (!md || md.hidden || (kind === 'snap' ? !!md.dataset.gsOnly : md.dataset.gsOnly !== kind)) { bad.push(`${what} did not open`); continue; }
+      if (!md || md.hidden || md.dataset.gsOnly !== kind) { bad.push(`${what} did not open`); continue; }
       d.getElementById('gsClose').focus();
       await go('#record');
       onTab("Pick'em Record", `a game's page with ${what} open over it left by the address, the focus in the window`);
@@ -4048,7 +4046,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      October 2026; #pickems before it, and pickems/'s redirect; #tracker, where news/ once sent every visitor) or, on a
      visitor's page, on an admin's address (#xparlays, where the old Live Parlays links go, and #bets), the page lands on
      the Props tab, the address written over as #slate, its games drawn. Each fresh load is one of the boots below, held
-     as it comes up, before anything is pressed (a boot costs some seconds, and the run has fifteen minutes) */
+     as it comes up, before anything is pressed (a boot costs some seconds, and the run has twenty minutes) */
   const landed = (R, at) => { const open = [...R.d.querySelectorAll('main section[id^="tab-"]')].filter(x => !x.hidden).map(x => x.id).join();
     chk(!R.timedOut && R.errs.length === 0 && open === 'tab-slate' && R.w.location.hash === '#slate' && txt(R.d.querySelector('#tabs button[aria-selected="true"]')) === 'Props'
       && R.d.querySelectorAll('#gamesList .game').length > 0,
@@ -4065,7 +4063,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     b.w.close(); }
 
   /* the betting tabs do not depend on the season's read (state.json, the page glue's): with it gone they still frame;
-     and a game's page's Game snapshot says the season did not load, and why, drawing nothing else and throwing nothing */
+     and the Game snapshot (the matchup bubble's way in) says the season did not load, and why, drawing nothing else and
+     throwing nothing */
   { const noState = await run(state, SITE + '#tracker', null, true); landed(noState, '#tracker');
     [...noState.d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'ratings').click();
     await wait(60);
@@ -4075,12 +4074,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const gid = (noState.w.eval('S').sched || []).map(g => g.id).find(id => noState.w.pkBoard.canProps(id));
     if (!gid) console.log('  (the season unreachable: no game the Props tab can open, so the snapshot\'s failed line is not held)');
     else { const o = await snapOpen(noState, { game_id: gid }), md = noState.d.getElementById('gsModal'), msg = md && md.querySelector('#gsMatch [data-gs-season]');
-      chk(o.page && !!msg && msg.dataset.gsSeason === 'failed' && /^The season did not load \(HTTP 404\), so the snapshot cannot be drawn: it reads betting\/state\.json\. Reload the page to try again\.$/.test(txt(msg))
+      chk(!!msg && msg.dataset.gsSeason === 'failed' && /^The season did not load \(HTTP 404\), so the snapshot cannot be drawn: it reads betting\/state\.json\. Reload the page to try again\.$/.test(txt(msg))
         && !md.querySelector('#gsCalls, #gsUnits, .gs-hero') && noState.errs.length === 0,
-        `with the season unreachable, a game's page's Game snapshot does not say the season did not load, and why, alone: '${msg ? txt(msg) : (md ? txt(md).slice(0, 160) : 'no window')}' ${noState.errs.join('; ')}`); }
+        `with the season unreachable, the Game snapshot the matchup bubble opens does not say the season did not load, and why, alone: '${msg ? txt(msg) : (md ? txt(md).slice(0, 160) : 'no window')}' ${noState.errs.join('; ')}`); }
     noState.w.close(); }
 
-  /* a game's page's Game snapshot opened before the season is in (state.json held back): its title and the one line
+  /* the Game snapshot opened before the season is in (state.json held back), as the matchup bubble opens it (a game the
+     prop model has, read from its own row): its title and the one line
      "Loading the season…" (data-gs-season="loading"), then the whole window once the season comes in (pk-state, from
      the page's glue), still open, with nothing thrown */
   { let go; const gS = new Promise(r => { go = r; });
@@ -4089,7 +4089,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     if (!gid) bad.push('no game the Props tab can open before the season is in');
     else {
       const o = await snapOpen(SL, { game_id: gid }), md = SL.d.getElementById('gsModal'), msg = md && md.querySelector('#gsMatch [data-gs-season]'), row = SL.w.eval('S').sched.find(g => g.id === gid);
-      if (!o.page || !md || md.hidden || !msg || msg.dataset.gsSeason !== 'loading' || txt(msg) !== 'Loading the season…') bad.push(`it does not say the season is loading: '${msg ? txt(msg) : (md ? txt(md).slice(0, 120) : 'no window')}'`);
+      if (!o.md || !md || md.hidden || !msg || msg.dataset.gsSeason !== 'loading' || txt(msg) !== 'Loading the season…') bad.push(`it does not say the season is loading: '${msg ? txt(msg) : (md ? txt(md).slice(0, 120) : 'no window')}'`);
       else {
         if (!new RegExp(`^${row.a}(at|vs)${row.h}Game snapshot · ${SL.w.pkBoard.weekName(+row.w)}$`).test(txt(SL.d.getElementById('gsTitle')))) bad.push(`its title reads '${txt(SL.d.getElementById('gsTitle'))}'`);
         if (md.querySelector('#gsCalls, #gsUnits, .gs-hero')) bad.push('it draws cards before the season is in'); }
@@ -4097,7 +4097,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (!md || md.hidden || md.querySelector('[data-gs-season]') || !md.querySelector('#gsMatch .gs-hero') || !['gsCalls', 'gsTeams', 'gsUnits', 'gsMism', 'gsPos'].every(id => md.querySelector('#' + id)) || md.dataset.gsOnly)
         bad.push('once the season came in, the window was not drawn whole, still open'); }
     if (!gid) go();
-    chk(bad.length === 0 && SL.errs.length === 0, `a game's page's Game snapshot opened before the season is in: ${bad.join('; ')} ${SL.errs.join('; ')}`);
+    chk(bad.length === 0 && SL.errs.length === 0, `the Game snapshot opened before the season is in: ${bad.join('; ')} ${SL.errs.join('; ')}`);
     SL.w.close(); }
 
   /* ---- THE SCOREBOARD ON LOAD (22 October 2026), on fixtures of the smoke's own so it holds at any hour of the week
@@ -4136,8 +4136,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
          row onto the page's body). C1, on the list: the focus on the planted game's row, the read let through: the row
          drawn again with the read's score and the focus on it, not the body; then the Game snapshot opened from elsewhere
          (as the matchup bubble opens it) and the list drawn again under it: the scroll lock kept. C2, the planted game's
-         page open with the focus on its Game snapshot button when the read lands: nothing drawn under it, the page, the
-         lock and that very button kept; Back draws the list with the read's score */
+         page open with the focus on its Matchup button when the read lands: nothing drawn under it, the page, the lock and
+         that very button kept; Back draws the list with the read's score */
       { let go1; const g1 = new Promise(res => { go1 = res; });
         const C = await run(stA, SITE, wk => scoreboardOn(stA, wk, X.id), false, { pay: JSON.stringify(PA), gate: { scoreboard: g1 } });
         await wait(700); const bad = [];
@@ -4160,11 +4160,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         await wait(700); const bad = [];
         const row = () => D.d.querySelector(`#gamesList .game[data-game="${X.id}"]`), gm = D.d.getElementById('gameModal');
         const r0 = row(); if (r0) { r0.click(); await wait(80); }
-        const b0 = D.d.querySelector('#gameView [data-gp-pop="snap"]');
-        if (!b0 || gm.hidden) bad.push('the planted game\'s page did not open, or has no Game snapshot button');
+        const b0 = D.d.querySelector('#gameView [data-gp-pop="units"]');
+        if (!b0 || gm.hidden) bad.push('the planted game\'s page did not open, or has no Matchup button');
         else { b0.focus(); go2(); await wait(400);
           if (gm.hidden || !D.d.body.classList.contains('modal-open')) bad.push('the read closed the game\'s page or took its scroll lock');
-          if (!b0.isConnected || D.d.activeElement !== b0) bad.push('the read drew the game\'s page again under the visitor (its Game snapshot button replaced, the focus on ' + (D.d.activeElement === D.d.body ? 'the body' : D.d.activeElement ? D.d.activeElement.tagName : 'nothing') + ')');
+          if (!b0.isConnected || D.d.activeElement !== b0) bad.push('the read drew the game\'s page again under the visitor (its Matchup button replaced, the focus on ' + (D.d.activeElement === D.d.body ? 'the body' : D.d.activeElement ? D.d.activeElement.tagName : 'nothing') + ')');
           if (!/^scores \d/.test(txt(D.d.getElementById('slateStamp')))) bad.push('the stamp does not say the read: ' + txt(D.d.getElementById('slateStamp')));
           const back = D.d.getElementById('backBtn'); if (back) { back.click(); await wait(80); }
           const r2 = row();
@@ -4536,7 +4536,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         /* (app v118) the unit the Elo picks are drawn in now: the made-up games made the tab's Sunday slot above, its Elo
            picks under its model parlays (no section of their own at the tab's foot, #pbElo, any more); each card is
            found again after every draw, which replaces the tab's units */
-        const unitE = () => d.querySelector(`${SEC_SLOT} .sp-game[data-sp-game="${SLOT_E}"]`), cardEl = () => { const u = unitE(); return u && u.querySelector(':scope > .pb-tiers[data-sp-kind="elo"]'); };
+        const unitE = () => d.querySelector(`${SLOT_UNIT}[data-sp-game="${SLOT_E}"]`), cardEl = () => { const u = unitE(); return u && u.querySelector(':scope > .pb-tiers[data-sp-kind="elo"]'); };
         const cardOf = t => { const c = cardEl(); return c && c.querySelector(`:scope > .pb-tier[data-pb-tier="${t.id}"]`); };
         /* off Suggested Parlays, nothing new is built: the unit says it is built when the tab is open, and the tab's
            opening draws its levels */
@@ -4793,7 +4793,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
              and the Game snapshot's Starters headers (20 October 2026: ATL and NO level on the secondary read 24th and 23rd) */
           { const defs = {}; for (const x of Object.values(MU.players || {})) if (x.opp_def) defs[x.opp] = x.opp_def;
             Object.assign(defs, (MU.league && MU.league.defs) || {});
-            const ks = Object.keys(defs), want = ['DL', 'LB', 'DB'].map(u => defs[v.opp] ? `${ordOwn(1 + ks.filter(t => defs[t][u] > defs[v.opp][u]).length)} of ${ks.length}` : '–');
+            const ks = Object.keys(defs), want = ['DL', 'LB', 'DB'].map(u => defs[v.opp] ? `${ordOwn(urkOwn(defs, v.opp, d => d[u]))} of ${ks.length}` : '–');
             const got = [...view.querySelectorAll('.pe-pl-def span b')].map(txt);
             chk(got.join('|') === want.join('|'), `a player's window does not rank the units he faces as the matchup formula does, level clubs sharing a rank: ${got.join(', ')} against ${want.join(', ')}`); }
           d.getElementById('pePlClose').click(); await wait(20);
@@ -4903,8 +4903,18 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           pill(side).click(); await wait(30);
           const rows = card() ? [...card().querySelectorAll('tbody tr.pe-tmrow')] : [], T = U[side];
           const vals = rows.filter(r => T[r.dataset.team] && (T[r.dataset.team].games || T[r.dataset.team].carried)).map(r => +txt(r.querySelector('.pe-elo')));
-          chk(rows.length === Object.keys(T).length && rows.every((r, i) => T[r.dataset.team].rank === i + 1) && vals.every((v, i) => !i || v <= vals[i - 1]) && rows.every(r => r.querySelector('.pe-shield svg')),
-            `${name} is not every team in rank order, best first, with shields`);
+          /* (the owner's call of 22 October 2026) each club's # is the file's rank, the rows in its order, best first. The
+             build ranks a table on the Elo it shows, clubs level on it sharing a rank, one more than the clubs above them
+             (elo/build.py's table_out; elo/check.py holds the rule on the build); a file built before that day broke a tie
+             at the shown Elo by a raw rating no page shows. Both are held here by what they share: a rated club's rank is
+             at least one more than the rated clubs shown above its Elo and at most its row's place, so the rows hold the
+             file whichever build wrote it */
+          const ratedT = Object.keys(T).filter(t => T[t].games || T[t].carried), above = t => ratedT.filter(u => T[u].elo > T[t].elo).length;
+          const rk = rows.map(r => T[r.dataset.team] ? T[r.dataset.team].rank : null);
+          chk(rows.length === Object.keys(T).length && rows.every(r => txt(r.querySelector('.pe-rank')) === String(T[r.dataset.team].rank)) && rk.every((x, i) => !i || x >= rk[i - 1])
+            && rows.every((r, i) => { const t = r.dataset.team; return !ratedT.includes(t) || (T[t].rank >= 1 + above(t) && T[t].rank <= i + 1); })
+            && vals.every((v, i) => !i || v <= vals[i - 1]) && rows.every(r => r.querySelector('.pe-shield svg')),
+            `${name} is not every team in rank order, best first, each its file's rank, with shields: ` + rows.slice(0, 8).map(r => `${r.dataset.team} #${txt(r.querySelector('.pe-rank'))} ${T[r.dataset.team] ? T[r.dataset.team].elo : '?'}`).join(', '));
           { const from = (U.params || {}).carry_from, bad = rows.filter(r => { const v = T[r.dataset.team], m = r.querySelector('.pe-carry');
               return v.carried ? !m || txt(m) !== `carried from ${from}` : !!m; }).map(r => r.dataset.team);
             chk(!bad.length, `${name}: a club yet to play is not marked carried from ${from}, or one that has played is: ${bad.join(', ')}`); }
@@ -4923,7 +4933,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     { const on = d.querySelector('.pe-pos [aria-selected="true"]'), pos = on && on.dataset.pos;
       chk(!!pos && !!eloP.groups[pos], 'no position is selected on the rankings');
       if (pos && eloP.groups[pos]) chk(rankRows().length === Math.min(25, eloP.groups[pos].top.length), `Show the top 25 did not for ${pos}: ${rankRows().length} of ${eloP.groups[pos].top.length}`); }
-    chk(/walk-forward/.test(txt(d.getElementById('peWalkRec'))), 'the tab bar does not carry the walk-forward record: ' + txt(d.getElementById('peWalkRec')));
+    /* (the owner's call of 22 October 2026: "in elo ratings get rid of the visual buttons") the tab's bar carries no pill of
+       the ELO Model's walk-forward on the Joker (#peWalkRec) or its season record (#peCallRec): the stamp alone, when the
+       ratings were built, as model.json says */
+    { const bar = d.querySelector('#tab-elo > .bar'), st = d.getElementById('peStamp'), bt = new Date(eloM.built_at);
+      chk(!d.getElementById('peWalkRec') && !d.getElementById('peCallRec') && !!bar && !bar.querySelector('.rec') && !/walk-forward|re-picked|picked on the Joker|On the Joker|ELO Model \d{4}:/.test(txt(bar))
+        && !!st && bar.contains(st) && txt(bar) === txt(st) && (isNaN(bt) ? txt(st) === '' : /^rated \S/.test(txt(st))),
+        'the ELO Ratings tab\'s bar still carries a record pill (the walk-forward on the Joker, the season\'s record), or not its stamp alone: ' + (bar ? txt(bar) : 'no bar')); }
     /* the data has the shape the tab relies on */
     chk(eloM.groups.every(g => eloP.groups[g] && eloP.groups[g].top.length >= 10 && eloP.groups[g].top.every(r => r.elo > 1100 && r.elo < 1900)), 'a group has fewer than ten rated players or a rating out of range');
     /* the rankings are this season's: everyone ranked has played enough of it, and a badge's place is that rank */
@@ -6005,11 +6021,14 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   /* ---- the suggestions record on Suggested Parlays (app v111): props/data/suggest_ledger.json, asked for beside the
      payload once a load with no-store, and (app v118, the owner's calls of 19 October 2026: "can we retroactively look
      back and find what we would have suggested and count it to the record?", then "do a separate section for night
-     games and then the sunday slot of games") its backtest beside it, props/data/suggest_backtest.json, the same way. At
-     the head of each section, Night games (the record's `prime` map) and the Sunday slot (`slot`), a row for the model's
-     parlays (each entry's `tiers`) and one for the Elo picks (`elo`, levels elo-safe to elo-xtrm), a pill a level, as the
-     ELO Ratings tab's record bar: won-lost and units on $1, then what is pending; where some of what is counted is the
-     backtest's, one chip saying which weeks. The numbers are worked out here from the entries' own grades: each
+     games and then the sunday slot of games") its backtest beside it, props/data/suggest_backtest.json, the same way.
+     (app v129, the owner's calls of 22 October 2026: "get rid of the Sunday slot record section -> all should be a part
+     of 'Night Games'", "get rid of button (incl backteest wk 3-6), just include the record") At the head of the one
+     section, Night games, one record of both of the record's maps, the prime-time games' (`prime`) and the Sunday slots'
+     (`slot`): a row for the model's parlays (each entry's `tiers`) and one for the Elo picks (`elo`, levels elo-safe to
+     elo-xtrm), a pill a level, as the ELO Ratings tab's record bar: won-lost and units on $1, then what is pending; the
+     backtest's weeks counted in it, with no chip naming them (each pill's title still says how many of its own came from
+     the backtest), and no record of the Sunday slot's own. The numbers are worked out here from the entries' own grades: each
      season's unit and level once, from the backtest first and the record over it (each in key order: a kickoff the
      league moved makes a new key), so the record's grade for a level wins over the backtest's; a push apart and a win a
      push shortened at what it paid; only levels with a grade. Each pill's title states its graded and won, the wins
@@ -6019,15 +6038,15 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      neither, nothing is drawn (the record's place hidden). Held on the real files as they stand and on made-up pairs,
      word for word: every number the page states, and so blocking ---- */
   { const LAB = { safe: 'Safe', med: 'Medium', aggr: 'Aggressive', xtrm: 'Extreme' }, isMap = v => !!v && typeof v === 'object' && !Array.isArray(v);
-    const REC_SEC = { night: 'prime', slot: 'slot' }, REC_KIND = { model: { field: 'tiers', pre: '', name: 'Model parlays', by: 'the model' }, elo: { field: 'elo', pre: 'elo-', name: 'Elo picks', by: 'the Elo chance' } };
+    const REC_SEC = { night: ['prime', 'slot'], slot: ['slot'] }, REC_KIND = { model: { field: 'tiers', pre: '', name: 'Model parlays', by: 'the model' }, elo: { field: 'elo', pre: 'elo-', name: 'Elo picks', by: 'the Elo chance' } };
     const isRec = L => isMap(L) && (isMap(L.entries) || isMap(L.prime) || isMap(L.slot)), isBt = B => isMap(B) && (isMap(B.prime) || isMap(B.slot));
     const recOwn = (L, B, sec, kind) => { const K = REC_KIND[kind], o = {}; for (const id of Object.keys(LAB)) o[K.pre + id] = { label: LAB[id], won: 0, lost: 0, push: 0, u: 0, fair: 0, fairN: 0, model: 0, bt: 0 };
       const last = new Map(), wk = new Set(); let pending = 0;
       /* a unit the record holds levels of this kind for is the record's whole: the backtest's of it left out */
-      const LR = isRec(L) && isMap(L[REC_SEC[sec]]) ? L[REC_SEC[sec]] : {}, held = new Set(Object.values(LR).filter(e => isMap(e) && Array.isArray(e[K.field])).map(e => e.season + '|' + e.gid));
-      const take = (src, bt) => { const E = src && isMap(src[REC_SEC[sec]]) ? src[REC_SEC[sec]] : {};
+      const held = new Set(REC_SEC[sec].flatMap(m => Object.values(isRec(L) && isMap(L[m]) ? L[m] : {})).filter(e => isMap(e) && Array.isArray(e[K.field])).map(e => e.season + '|' + e.gid));
+      const take = (src, bt) => { for (const m of REC_SEC[sec]) { const E = src && isMap(src[m]) ? src[m] : {};
         for (const k of Object.keys(E).sort()) { const e = E[k]; if (!isMap(e) || !Array.isArray(e[K.field]) || (bt && held.has(e.season + '|' + e.gid))) continue;
-          for (const t of e[K.field]) { const g = e.grade && t && e.grade[t.id]; if (g && o[t.id] && Array.isArray(t.legs)) last.set([e.season, e.gid, t.id].join('|'), { t, g, bt, w: +e.week }); } } };
+          for (const t of e[K.field]) { const g = e.grade && t && e.grade[t.id]; if (g && o[t.id] && Array.isArray(t.legs)) last.set([e.season, e.gid, t.id].join('|'), { t, g, bt, w: +e.week }); } } } };
       take(isBt(B) ? B : null, true); take(isRec(L) ? L : null, false);
       for (const { t, g, bt, w: wkx } of last.values()) { const r = o[t.id];
         if (g.result === 'pending') { pending++; continue; } if (!['won', 'lost', 'push'].includes(g.result)) continue;
@@ -6036,36 +6055,36 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         r[g.result]++; r.u += (g.result === 'won' && isFinite(+g.payout) ? +g.payout : 0) - 1; r.model += isFinite(+t.p) ? +t.p : 0; if (t.fair != null && isFinite(+t.fair)) { r.fair += +t.fair; r.fairN++; } }
       return { o, pending, weeks: [...wk] }; };
     const un = v => (v > 0.0005 ? '+' : v < -0.0005 ? '−' : '') + Math.abs(v).toFixed(2), f1 = v => v.toFixed(1);
-    /* what a section's record draws, worked out here: hidden with no record and no backtest; else its two rows, each its
+    /* what the section's record draws, worked out here: hidden with no record and no backtest; else its two rows, each its
        kind's name and a pill a level (or "None graded yet" where nothing of that kind is graded or pushed), then what is
-       pending; and the backtest's chip over the weeks either row took from it, its title saying what they are */
+       pending; and (app v129) no chip naming the backtest's weeks */
     const recWant = (L, B, sec) => { if (!isRec(L) && !isBt(B)) return { hidden: true };
-      const weeks = new Set(), rows = Object.entries(REC_KIND).map(([kind, K]) => { const R = recOwn(L, B, sec, kind), any = Object.values(R.o).some(r => r.won + r.lost + r.push); R.weeks.forEach(x => weeks.add(x));
+      const rows = Object.entries(REC_KIND).map(([kind, K]) => { const R = recOwn(L, B, sec, kind), any = Object.values(R.o).some(r => r.won + r.lost + r.push);
         const pills = any ? Object.entries(R.o).map(([id, r]) => { const graded = r.won + r.lost;
           const title = `${K.name}, ${r.label}: ${graded} graded, ${r.won} won` + (graded ? `; wins expected ${r.fairN ? f1(r.fair) + ' by the book’s fair chance' + (r.fairN < graded ? ` (on the ${r.fairN} with one)` : '') + ', ' : ''}${f1(r.model)} by ${K.by}` : '')
             + (r.push ? `; ${r.push} push${r.push === 1 ? '' : 'es'}, the stake back` : '') + (r.bt ? `; ${r.bt} of them from the backtest` : '');
           return { id: `${sec}:${id}`, text: `${r.label} ${r.won}–${r.lost}` + (graded || r.push ? ` ${un(r.u)} units` : ''), title }; }) : [{ id: `${sec}:${kind}:none`, text: 'None graded yet', title: null }];
         if (R.pending) pills.push({ id: `${sec}:${kind}:pending`, text: `Pending ${R.pending}`, title: null });
         return { kind, name: K.name, pills }; });
-      const W = [...weeks].sort((a, b) => a - b), run = W.length > 1 && W[W.length - 1] - W[0] === W.length - 1;
-      const chip = W.length ? { id: `${sec}:bt`, text: `Incl. backtest, week${W.length > 1 ? 's' : ''} ${run ? W[0] + '–' + W[W.length - 1] : W.join(', ')}`,
-        title: `${W.length > 1 ? 'Weeks' : 'Week'} ${W.join(', ')} ${W.length > 1 ? 'were' : 'was'} played before the record took this section: rebuilt by today’s rules on exactly what the site had published at each lock, and graded on the results.` } : null;
-      return { hidden: false, rows, chip }; };
+      return { hidden: false, rows }; };
     /* what it draws, read off the page: in its section, right under the section's heading */
     const recShown = (D, sec) => { const s = D.querySelector(`#spSets section.sp-sec[data-sp-sec="${sec}"]`), el = s && s.querySelector(`:scope > .sp-rec[data-sp-recsec="${sec}"]`);
       if (!el) return { missing: true }; if (el.hidden) return { hidden: true, empty: !el.children.length && !txt(el) };
       const pill = x => ({ id: x.dataset.spRec, text: txt(x), title: x.getAttribute('title') });
       const rows = [...el.querySelectorAll(':scope > .bar[data-sp-reckind]')].map(b => ({ kind: b.dataset.spReckind, name: txt(b.querySelector(':scope > .sp-reck')), pills: [...b.querySelectorAll(':scope > .rec')].map(pill) }));
-      const cb = el.querySelector(':scope > .bar.sp-recbtbar'), chipEl = cb && cb.querySelector(':scope > .rec.sp-recbt');
-      const other = [...el.children].filter(x => !x.matches('.bar[data-sp-reckind], .bar.sp-recbtbar')).map(x => x.tagName.toLowerCase() + '.' + x.className);
-      return { hidden: false, rows, chip: chipEl ? pill(chipEl) : null, other, first: s.firstElementChild && s.firstElementChild.nextElementSibling === el, order: [...el.children].map(x => x.dataset.spReckind || (x.classList.contains('sp-recbtbar') ? 'bt' : '?')).join() }; };
-    const recHeld = (D, L, B, lab) => { for (const sec of ['night', 'slot']) { const want = recWant(L, B, sec), got = recShown(D, sec), chipNoTitle = c => c && { id: c.id, text: c.text };
-        const ok = want.hidden ? got.hidden === true && got.empty === true
-          : !got.hidden && !got.missing && got.first && JSON.stringify(got.rows) === JSON.stringify(want.rows) && JSON.stringify(chipNoTitle(got.chip)) === JSON.stringify(chipNoTitle(want.chip)) && !got.other.length && got.order === (want.chip ? 'model,elo,bt' : 'model,elo');
-        chk(ok, `${lab}: the ${sec === 'night' ? 'Night games' : 'Sunday slot'} section's record is not its rows (the model's parlays, then the Elo picks: a pill a level, won-lost and units, each titled with its numbers, then what is pending) and the backtest's chip, right under its heading, as worked out from the files' grades: `
-          + JSON.stringify(got).slice(0, 700) + ' / want ' + JSON.stringify(want).slice(0, 700));
-        /* the chip's title, apart: which weeks the backtest gave, in words */
-        if (ok && want.chip) chk(!!got.chip && got.chip.title === want.chip.title, `${lab}: the ${sec === 'night' ? 'Night games' : 'Sunday slot'} section's backtest chip is titled "${got.chip && got.chip.title}", not "${want.chip.title}"`); } };
+      const other = [...el.children].filter(x => !x.matches('.bar[data-sp-reckind]')).map(x => x.tagName.toLowerCase() + '.' + x.className);
+      return { hidden: false, rows, other, first: s.firstElementChild && s.firstElementChild.nextElementSibling === el, order: [...el.children].map(x => x.dataset.spReckind || '?').join() }; };
+    /* (app v129) nothing of what went: no Sunday slot record (nor its section), no backtest chip or its row, by its class,
+       its id or its words, anywhere on the page */
+    const recGone = D => { const hit = D.querySelector('[data-sp-recsec="slot"], .sp-recbt, .sp-recbtbar, [data-sp-rec$=":bt"], [data-sp-rec^="slot:"], ' + SEC_SLOT_GONE.replace('#spSets ', ''));
+      const t = txt(D.getElementById('spSets') || D.body);
+      return hit ? 'drawn: ' + hit.tagName.toLowerCase() + '.' + hit.className + (hit.dataset.spRec ? '[' + hit.dataset.spRec + ']' : '') : /Incl\. backtest/.test(t) ? 'it still says "Incl. backtest"' : null; };
+    const recHeld = (D, L, B, lab) => { const sec = 'night', want = recWant(L, B, sec), got = recShown(D, sec), gone = recGone(D);
+      const ok = want.hidden ? got.hidden === true && got.empty === true
+        : !got.hidden && !got.missing && got.first && JSON.stringify(got.rows) === JSON.stringify(want.rows) && !got.other.length && got.order === 'model,elo';
+      chk(ok, `${lab}: the Night games section's record is not its rows (the model's parlays, then the Elo picks: a pill a level, won-lost and units of the prime-time games and the Sunday slots together, each titled with its numbers, then what is pending), right under its heading, as worked out from the files' grades: `
+        + JSON.stringify(got).slice(0, 700) + ' / want ' + JSON.stringify(want).slice(0, 700));
+      chk(!gone, `${lab}: Suggested Parlays still draws the Sunday slot's own record or the backtest's chip: ${gone}`); };
     /* both files asked for once as the page loaded, beside the payload, with no-store; the record again (never the
        backtest, which does not change) only when a set reaches its lock with the page open */
     for (const [f, re] of [['suggest_ledger', /^props\/data\/suggest_ledger\.json\?t=\d+$/], ['suggest_backtest', /^props\/data\/suggest_backtest\.json\?t=\d+$/]]) {
@@ -6079,7 +6098,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const R = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest'); await wait(300);
     { const real = LEDGER_REAL ? JSON.parse(LEDGER_REAL) : null, bt = BACKTEST_REAL ? JSON.parse(BACKTEST_REAL) : null;
       recHeld(R.d, real, bt, 'the real record and backtest');
-      { const want = recWant(real, bt, 'night'); console.log(`  (the real record: ${want.hidden ? 'hidden' : want.rows.map(r => r.name + ' ' + r.pills.map(p => p.text).join(', ')).join(' | ') + (want.chip ? ' | ' + want.chip.text : '')})`); }
+      { const want = recWant(real, bt, 'night'); console.log(`  (the real record, Night games with the Sunday slots: ${want.hidden ? 'hidden' : want.rows.map(r => r.name + ' ' + r.pills.map(p => p.text).join(', ')).join(' | ')})`); }
       chk(!R.timedOut && R.errs.length === 0 && !/NaN|undefined/.test(txt(R.d.getElementById('spSets'))) && !R.d.getElementById('pbRec') && !R.d.getElementById('spRec'),
         'the page threw, the record reads NaN, or the old record (#pbRec, or #spRec in the tab\'s head) is still drawn: ' + R.errs.join('; ')); }
     const f0 = R.w.fetch;
@@ -6111,32 +6130,42 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         slot_since: '2026-10-19', slot: { '2026|06|2026-10-18T17:00:00Z|2026_06_SUN': E(6, '2026-10-18T17:00:00Z', '2026_06_SUN', [T('safe', 2, 0.5, 0.4, 2.5, 't')], null, { safe: G('pending', 2) }) } };
       await reread(FL, FB);
       recHeld(R.d, FL, FB, 'a made-up record and backtest');
-      { const n = recWant(FL, FB, 'night'), sl = recWant(FL, FB, 'slot'), row = r => r ? r.pills.map(p => p.text).join(' | ') : '';
-        const hand = { model: 'Safe 2–2 +1.30 units | Medium 0–1 −1.00 units | Aggressive 0–1 −1.00 units | Extreme 0–1 −1.00 units | Pending 1',
-          elo: 'Safe 2–2 +1.30 units | Medium 1–1 +3.00 units | Aggressive 0–0 | Extreme 0–0', nightChip: 'Incl. backtest, weeks 3–5', slotModel: 'Safe 1–0 +1.60 units | Medium 0–1 −1.00 units | Aggressive 0–0 | Extreme 0–0 | Pending 1', slotChip: 'Incl. backtest, week 4',
-          safeTitle: 'Model parlays, Safe: 4 graded, 2 won; wins expected 1.2 by the book’s fair chance (on the 3 with one), 2.0 by the model; 2 of them from the backtest',
-          slotChipTitle: 'Week 4 was played before the record took this section: rebuilt by today’s rules on exactly what the site had published at each lock, and graded on the results.' };
-        const got = { model: row(n.rows[0]), elo: row(n.rows[1]), nightChip: n.chip && n.chip.text, slotModel: row(sl.rows[0]), slotChip: sl.chip && sl.chip.text, safeTitle: n.rows[0].pills[0].title, slotChipTitle: sl.chip && sl.chip.title };
+      /* by hand, the prime-time games and the Sunday slots together (app v129): the model's Safe the backtest's A_B won
+         (2.9), C_D lost and week 4's slot won (2.6), the record's E_F lost (its backtest copy set aside) and G_H won (2.4):
+         3-2, +2.90; its Medium A_B lost, C_D a push and week 4's slot lost: 0-2, -2.00; pending G_H's Medium and week 6's
+         slot's Safe; the Elo picks' Safe A_B won (3.1), C_D lost, E_F won (2.2: the record holds no Elo picks of it),
+         week 4's slot lost and G_H lost: 2-3, +0.30 */
+      { const n = recWant(FL, FB, 'night'), row = r => r ? r.pills.map(p => p.text).join(' | ') : '';
+        const hand = { model: 'Safe 3–2 +2.90 units | Medium 0–2 −2.00 units | Aggressive 0–1 −1.00 units | Extreme 0–1 −1.00 units | Pending 2',
+          elo: 'Safe 2–3 +0.30 units | Medium 1–1 +3.00 units | Aggressive 0–0 | Extreme 0–0',
+          safeTitle: 'Model parlays, Safe: 5 graded, 3 won; wins expected 1.6 by the book’s fair chance (on the 4 with one), 2.5 by the model; 3 of them from the backtest',
+          medTitle: 'Model parlays, Medium: 2 graded, 0 won; wins expected 0.4 by the book’s fair chance, 0.6 by the model; 1 push, the stake back; 3 of them from the backtest' };
+        const got = { model: row(n.rows[0]), elo: row(n.rows[1]), safeTitle: n.rows[0].pills[0].title, medTitle: n.rows[0].pills[1].title };
         chk(JSON.stringify(got) === JSON.stringify(hand), 'the smoke\'s own reading of the made-up record is not the one worked out by hand: ' + JSON.stringify(got)); }
       /* the record alone (a backtest that is not one), and the backtest alone (no record): each counted on its own */
       for (const [lab, L, B] of [['the made-up record with a backtest that is not one', FL, { prime: [] }], ['the made-up backtest with no record', 404, FB]]) {
         await reread(L, B); recHeld(R.d, L === 404 ? null : L, isBt(B) ? B : null, lab); }
-      /* a record with entries and no set graded yet, no backtest: each row of each section says none is graded */
+      /* a record with entries and no set graded yet, no backtest: each row says none is graded */
       await reread({ entries: FL.entries, prime: { [Object.keys(FL.prime)[1]]: { ...FL.prime[Object.keys(FL.prime)[1]], grade: undefined } } }, 404);
-      { const sh = recShown(R.d, 'night'), sl = recShown(R.d, 'slot');
-        chk(!sh.hidden && !!sh.rows && sh.rows.map(r => r.pills.map(p => p.id + ' ' + p.text).join()).join(' | ') === 'night:model:none None graded yet | night:elo:none None graded yet' && !sh.chip
-          && !sl.hidden && !!sl.rows && sl.rows.map(r => r.pills.map(p => p.text).join()).join(' | ') === 'None graded yet | None graded yet',
-          'a record with no set graded does not say so in each row of each section: ' + JSON.stringify([sh, sl]).slice(0, 400)); }
+      { const sh = recShown(R.d, 'night'), gone = recGone(R.d);
+        chk(!sh.hidden && !!sh.rows && sh.rows.map(r => r.pills.map(p => p.id + ' ' + p.text).join()).join(' | ') === 'night:model:none None graded yet | night:elo:none None graded yet' && !gone,
+          'a record with no set graded does not say so in each row: ' + JSON.stringify([sh, gone]).slice(0, 400)); }
+      /* a record of Sunday slots alone (no prime-time entry), no backtest: counted in the Night games record */
+      await reread({ slot_since: FL.slot_since, slot: { '2026|05|2026-10-11T17:00:00Z|2026_05_SUN': { season: 2026, week: 5, gid: '2026_05_SUN', kickoff: '2026-10-11T17:00:00Z', lock: '2026-10-11T15:00:00Z', taken_at: '2026-10-11T15:00:00Z',
+        tiers: [T('safe', 2, 0.5, 0.4, 2.5, 'u')], grade: { safe: G('won', 2, 2.5) } } } }, 404);
+      { const sh = recShown(R.d, 'night'), gone = recGone(R.d);
+        chk(!sh.hidden && !!sh.rows && sh.rows[0] && sh.rows[0].pills.map(p => p.text).join(' | ') === 'Safe 1–0 +1.50 units | Medium 0–0 | Aggressive 0–0 | Extreme 0–0' && !gone,
+          'a record of a Sunday slot alone is not counted in the Night games record: ' + JSON.stringify([sh, gone]).slice(0, 400)); }
       /* a record file that is not one with no backtest, and a backtest file that is not one with no record: nothing drawn */
       for (const [L, B] of [[[], 404], [5, 404], ['junk', 404], [{ how: 'x' }, 404], [{ entries: [] }, 404], [404, 'junk'], [404, { how: 'x', prime: [] }]]) {
-        await reread(L, B); const a2 = recShown(R.d, 'night'), b2 = recShown(R.d, 'slot');
-        chk(a2.hidden === true && a2.empty === true && b2.hidden === true && b2.empty === true, `a record file ${JSON.stringify(L)} and a backtest file ${JSON.stringify(B)}, neither one, drew something on Suggested Parlays`); }
+        await reread(L, B); const a2 = recShown(R.d, 'night'), gone = recGone(R.d);
+        chk(a2.hidden === true && a2.empty === true && !gone, `a record file ${JSON.stringify(L)} and a backtest file ${JSON.stringify(B)}, neither one, drew something on Suggested Parlays`); }
       chk(R.errs.length === 0, 'the page threw reading the made-up records: ' + R.errs.join('; ')); }
     delete R.w.__recOv; R.w.fetch = f0; R.w.close();
     /* and a load with neither file there (404): nothing drawn, nothing thrown */
     { const N = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest', null, false, { ledger: 404, backtest: 404 }); await wait(300);
-      const a2 = recShown(N.d, 'night'), b2 = recShown(N.d, 'slot');
-      chk(a2.hidden === true && a2.empty === true && b2.hidden === true && b2.empty === true && N.errs.length === 0, 'a load with no record and no backtest drew something on Suggested Parlays, or threw');
+      const a2 = recShown(N.d, 'night'), gone = recGone(N.d);
+      chk(a2.hidden === true && a2.empty === true && !gone && N.errs.length === 0, 'a load with no record and no backtest drew something on Suggested Parlays, or threw');
       N.w.close(); } }
   /* ---- the set the page builds at a game's lock where the record has none, kept in this browser across a real
      reload (props_sp_lock_v1, outside S), on the week's own last prime-time game still to come, the page's clock
@@ -6284,12 +6313,17 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(!!bal && txt(bal).includes('$' + (REAL.deposit + net).toFixed(2)), 'the X Bet Log frame\'s balance is not the real file\'s deposit plus its net: ' + (bal ? txt(bal) : 'no balance')); }
       FR.w.close(); }
     R.w.close(); }
-  /* markup in a note is drawn as text; a file that cannot be read is said, and nothing of the
-     browser's own is drawn in its place */
+  /* a week's note is not drawn at all (the owner's call of 22 October 2026: "in x bet log please remove the note column
+     section"; it stays in the file), so markup in one is neither drawn nor shown as text, the table has no Note column,
+     and the week's row is drawn all the same; a file that cannot be read is said, and nothing of the browser's own is
+     drawn in its place */
   { const B = await run(state, undefined, null, false, { seed: ADMIN_SEED, xbets: Object.assign({}, XBFIX, { weeks: { w2: { staked: 1, returned: 3, note: '<img src=x onerror=alert(1)>' } } }) });
     await B.w.XBETS.ready();
     const FB = await frame(B.w.XBETS, 'bets', B.w);
-    chk(!FB.d.querySelector('#betTable img') && /img src=x/.test(txt(FB.d.getElementById('betTable'))), 'a note in the X Bet Log was drawn as markup');
+    { const tb = FB.d.getElementById('betTable'), ths = tb ? [...tb.querySelectorAll('thead th')].map(txt) : [];
+      chk(!!tb && !FB.d.querySelector('#betTable img, #betChart img') && !/img src=x|onerror/.test(txt(tb)) && !ths.includes('Note') && ths.length > 0 && rowsOf(FB.d).join() === 'Week 2'
+        && [...tb.querySelectorAll('tbody tr')].every(tr => tr.children.length === ths.length),
+        'the X Bet Log still draws a week\'s note (its Note column, or the note as markup or text), or not the week\'s row: ' + ths.join('|') + ' / ' + (tb ? txt(tb).slice(0, 200) : 'no table')); }
     const N = await run(state, undefined, null, false, { xbets: 404, seed: w2 => { ADMIN_SEED(w2); w2.localStorage.setItem(BET_KEY, mineOf({ 3: { staked: 2, returned: 0, note: 'mine' } }, 9)); } });
     await N.w.XBETS.ready();
     const FN = await frame(N.w.XBETS, 'bets', N.w);
@@ -6420,6 +6454,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   await friendsChecks();
   /* ---- the matchup bubble a leg's name opens: its own section, at the end of this file ---- */
   await glanceChecks();
+  /* ---- clubs level on a matchup unit share its rank: its own section, at the end of this file ---- */
+  await tieChecks();
   /* ---- the light look and its switch: its own section, at the end of this file ---- */
   await lightChecks();
 
@@ -6436,11 +6472,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
 })().catch(e => finish('the smoke threw: ' + (e && e.stack || e)));
 
 /* =====================================================================================
-   THE GAME SNAPSHOT (nflbets/build/snapshot.html): the window a game's page on the Props tab opens by
-   its Game snapshot button (app v128, the owner's call of 22 October 2026, "Button on Props", when the
-   Matchups board, whose rows opened it until then, went), and the matchup bubble by its Open game
-   snapshot (window.gameSnapshot, from a name; a game no visitor can reach any more, a week past the
-   Props tab's or a made-up playoff game, is opened that way here). The body above runs this last but
+   THE GAME SNAPSHOT (nflbets/build/snapshot.html): the window the matchup bubble opens by its Open game
+   snapshot (window.gameSnapshot, from a name: here an opener of the smoke's own), since the Matchups
+   board, whose rows opened it, went on 22 October 2026 (a game page's own Game snapshot button, app
+   v128, was taken off again the same day, app v129, the owner's call: "i dont want that game snapshot
+   buttons"; a game page's Matchup, Mismatches and Team Stats buttons open one card of it alone). The body above runs this last but
    one, so the request rule after it covers these runs too. The news job's files it reads are 404s here, as on every run but those of
    THE SEASON TRACKER'S GAMES below, which hand it stand-ins.
 
@@ -6456,7 +6492,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
    (window.eloMismatches, and the bubbles on the Props tab). It opens on a game to come, on a
    game final on the scoreboard (the Props tab's own read, Refresh scores) and on a graded one; closes
    on Escape, Close and a click outside; keeps Tab inside, in its order (its button to the game's page
-   only where the Props tab can open the game and the window is not over that very page), and hands the
+   only where the Props tab can open the game), and hands the
    focus back to the button that opened it (over the game's page, which stays open under it); reads
    no Elo file a second time; says so in each section when matchups.json, or the ratings, did not
    load while the rest draws; draws a playoff game; lays the position table out fixed, names
@@ -6541,9 +6577,8 @@ async function snapshotChecks() {
     const en = !eg && eloM.next && +eloM.next.season === +st.season ? (eloM.next.games || []).find(x => x.game_id === g.game_id) : null, e = eg || en;
     return { vegas, alpha: pr ? one(pr) : one(ak), joker: one(pr && pr.joker) || one((st.joker || {})[g.game_id]),
       elo: e ? { pick: e.pick, p: e.pick === g.home_team ? e.p_home : 1 - e.p_home, correct: eg ? eg.correct : undefined } : null }; };
-  /* open a game's whole snapshot as a visitor does (snapOpen): from the game's page on the Props tab by its Game
-     snapshot button where the Props tab can open it (page: the window over that page, which stays open under it), else
-     as the matchup bubble opens it, from an opener of the smoke's own (btn: the button, which the focus goes back to) */
+  /* open a game's whole snapshot as a visitor does (snapOpen): as the matchup bubble opens it, from an opener of the
+     smoke's own (btn: the button, which the focus goes back to), the game's page closed */
   const open = (R, g, how) => snapOpen(R, g, how);
   /* each Q in its own player's name box, after the name, in his team's column. Set beside the
      name box as a flex item of its own, a Q was pushed, when the name wrapped on a phone, to the
@@ -6838,8 +6873,9 @@ async function snapshotChecks() {
        nothing else on the row does; each defensive group's header carries both teams' unit as the
        matchup formula ranks it (mu.league.defs, 1st the best), the better one marked */
     { const bad = [], defs = (eloMu.league && eloMu.league.defs) || {}, nD = Object.keys(defs).length;
-      /* clubs level on a unit share its rank, one more than the clubs above them, as mmRankOwn ranks the Mismatches */
-      const urk = (t, u) => defs[t] ? 1 + Object.keys(defs).filter(x => defs[x][u] > defs[t][u]).length : null;
+      /* clubs level on a unit (to the hundredth) share its rank, one more than the clubs above them, as mmRankOwn ranks
+         the Mismatches */
+      const urk = (t, u) => urkOwn(defs, t, d => d[u]);
       let marks = 0, units = 0;
       for (const tr of md.querySelectorAll('#gsPos tbody tr')) {
         if (tr.classList.contains('gs-grp')) { const u = tr.dataset.gsGrp;
@@ -7020,22 +7056,22 @@ async function snapshotChecks() {
           if (r.st.getPropertyValue(prop)) bad.push(`${r.sel} sets ${prop}, so the better rank's box is not its twin's size`);
       if (rules.some(x => /\.gs-at\b|\.gs-src\b|\.gs-files\b|\.gs-links\b|\.gs-uedge\b/.test(x.sel))) bad.push('a rule for the "at" circle, the sources line, the Sources card or the edge chip is still in the styles');
       chk(bad.length === 0, 'snapshot: the head, the meetings or the matchups are not laid out as the clean-up has them: ' + bad.join('; ')); } }
-  /* every game's page on the Props tab (the list's first four) opens its own game's whole window by its Game snapshot
-     button, with no button to the very page it is over; and opened as the matchup bubble opens it (window.gameSnapshot,
-     the game's page closed), the window carries its button to the game's page exactly where the Props tab can open the
-     game, on that game */
+  /* every game of the Props list (its first four) opened as the matchup bubble opens it (window.gameSnapshot, the game's
+     page closed) opens its own game's whole window, carrying its button to the game's page exactly where the Props tab
+     can open the game, on that game; and no game's page draws a Game snapshot button of its own (app v129) */
   { const ids = [...R.d.querySelectorAll('#gamesList .game[data-game]')].slice(0, 4).map(r => r.dataset.game), bad = [];
     for (const gid of ids) { const g = st.schedule.find(x => x.game_id === gid), r = R.w.eval('S').sched.find(x => x.id === gid);
       const can = !!r && R.w.eval('weekOpen')(+r.w), aw = g ? g.away_team : r && r.a, hm = g ? g.home_team : r && r.h;
-      for (const how of [undefined, 'bubble']) {
-        const o = await open(R, { game_id: gid }, how), md = o.md, pb = md && md.querySelector('#gsMatch [data-gs-props]');
-        if (!md || !new RegExp(`${aw}.*${hm}`).test(txt(R.d.getElementById('gsTitle'))) || md.classList.contains('gs-one')) bad.push(`${gid} opens no whole window of its own ${how ? 'from elsewhere' : 'from its page'}`);
-        else if (how ? (!!pb !== can || (pb && pb.dataset.gsProps !== gid)) : (o.page !== can || !!pb)) bad.push(`${gid} ${how ? (can ? 'has no props button opened from elsewhere' : 'offers a page the Props tab cannot open') : (o.page ? 'offers a button to the page it is over' : 'opens from no page though the Props tab can open it')}`);
-        R.w.gameSnapshotClose(false); await wait(10); }
+      const o = await open(R, { game_id: gid }, 'bubble'), md = o.md, pb = md && md.querySelector('#gsMatch [data-gs-props]');
+      if (!md || !new RegExp(`${aw}.*${hm}`).test(txt(R.d.getElementById('gsTitle'))) || md.classList.contains('gs-one')) bad.push(`${gid} opens no whole window of its own`);
+      else if (!!pb !== can || (pb && pb.dataset.gsProps !== gid)) bad.push(`${gid} ${can ? 'has no props button' : 'offers a page the Props tab cannot open'}`);
+      R.w.gameSnapshotClose(false); await wait(10);
+      if (can) { R.w.pkBoard.openOnProps(gid); await wait(60);
+        if (R.d.querySelector('[data-gp-pop="snap"]')) bad.push(`${gid}'s page draws a Game snapshot button`); }
       if (!R.d.getElementById('gameModal').hidden) { R.w.closeGame(); await wait(20); } }
     chk(ids.length > 0 && bad.length === 0, 'snapshot: a game does not open its own game\'s window, with its button to the game\'s page where it should be: ' + bad.join('; ')); }
   /* a game to come: of the games with no published result, the open week's then the later weeks', one the stub's read
-     does not mark over or on, the first the Props tab can open (its page's Game snapshot button), else the first */
+     does not mark over or on, the first the Props tab can open (its window's props button), else the first */
   const ung = st.schedule.filter(g => +g.week === week && g.result == null);
   const cand = ung.concat(st.schedule.filter(g => +g.week > week && g.result == null)).filter(g => !sbMarked.includes(g.game_id));
   const toCome = cand.find(g => R.w.pkBoard.canProps(g.game_id)) || cand[0] || null;
@@ -7054,26 +7090,17 @@ async function snapshotChecks() {
         f[0].dispatchEvent(new R.w.KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
         chk(f.length > 3 && wrapped && R.d.activeElement === f[f.length - 1], 'snapshot: Tab does not stay inside the window');
         const key = x => x.id === 'gsClose' ? 'close' : x.dataset.gsProps ? 'props' : x.dataset.gsGl ? 'gl:' + x.dataset.gsGl : x.dataset.gsAll ? 'all' : x.dataset.gsFold ? 'card:' + x.dataset.gsFold : null;
-        const props = R.w.pkBoard.canProps(toCome.game_id) && !o.page ? ['props'] : [];
+        const props = R.w.pkBoard.canProps(toCome.game_id) ? ['props'] : [];
         const order = f.map(key).filter(Boolean).join(), want = ['close', ...props, 'gl:vote', 'gl:elo', 'gl:units', 'gl:out', 'gl:mism', 'all', ...SNAP_CARDS.map(id => 'card:' + id)].join();
         chk(order === want && !f.some(x => x.getAttribute('role') === 'tab' && x.getAttribute('aria-selected') !== 'true'), `snapshot: the Tab order is not Close, the props button, the verdict, Open all and the cards: ${order}`); }
-      /* opened as the matchup bubble opens it, where the Props tab can open the game: its button to the game's page is
-         second in the Tab order, after Close; then the window opened over the game's page again for the checks below */
-      if (o.page) { const ob = await open(R, toCome, 'bubble'), md = ob.md;
-        const f = md ? [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && !x.closest('[hidden]') && x.tabIndex !== -1) : [];
-        const key = x => x.id === 'gsClose' ? 'close' : x.dataset.gsProps ? 'props' : x.dataset.gsGl ? 'gl:' + x.dataset.gsGl : x.dataset.gsAll ? 'all' : x.dataset.gsFold ? 'card:' + x.dataset.gsFold : null;
-        const order = f.map(key).filter(Boolean).join(), want = ['close', 'props', 'gl:vote', 'gl:elo', 'gl:units', 'gl:out', 'gl:mism', 'all', ...SNAP_CARDS.map(id => 'card:' + id)].join();
-        chk(!!md && order === want, `snapshot: opened as the matchup bubble opens it, the Tab order is not Close, the props button, the verdict, Open all and the cards: ${order}`);
-        R.w.gameSnapshotClose(false); await wait(10);
-        o = await open(R, toCome); }
-      /* Escape closes it alone, and the focus goes back to the button: over the game's page, the page open under it with
-         its scroll lock and no listener beneath hearing the key; opened from elsewhere, the page free to scroll */
+      /* Escape closes it alone, and the focus goes back to the button, the page free to scroll and no listener beneath
+         hearing the key */
       { R.d.getElementById('gsClose').focus();
         let seen = 0; const cnt = e => { if (e.key === 'Escape') seen++; }; R.d.addEventListener('keydown', cnt);
         R.d.activeElement.dispatchEvent(new R.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); R.d.removeEventListener('keydown', cnt); await wait(20);
         const gm = R.d.getElementById('gameModal'), lock = R.d.body.classList.contains('modal-open');
-        chk(o.md.hidden && R.d.activeElement === o.btn && seen === 0 && (o.page ? lock && !gm.hidden && R.w.eval('S').ui.game === toCome.game_id : !lock),
-          `snapshot: Escape does not close the window alone and hand the focus back to its button (${o.page ? 'its game\'s page kept open under it' : 'the page free to scroll'}): open ${!o.md.hidden}, ${seen} beneath, the page ${gm.hidden ? 'closed' : 'open'}, ${lock ? 'locked' : 'free'}`); }
+        chk(o.md.hidden && R.d.activeElement === o.btn && seen === 0 && !lock,
+          `snapshot: Escape does not close the window alone and hand the focus back to its button (the page free to scroll): open ${!o.md.hidden}, ${seen} beneath, the page ${gm.hidden ? 'closed' : 'open'}, ${lock ? 'locked' : 'free'}`); }
       /* a click outside the window closes it; a click inside does not (a click, not a double click's second) */
       o.btn.click(); await wait(60);
       R.d.getElementById('gsView').click(); await wait(20);
@@ -7463,9 +7490,8 @@ async function newsChecks() {
     for (const g of st.schedule) if (g.result != null && reg(g) && (g.home_team === t || g.away_team === t)) { n++; const m = g.home_team === t ? g.result : -g.result; r[m > 0 ? 0 : m < 0 ? 1 : 2]++; }
     const f = (eloM.teams && eloM.teams[t] && eloM.teams[t].record) || [0, 0, 0], x = n >= f[0] + f[1] + f[2] ? r : f;
     return x[0] + '-' + x[1] + (x[2] ? '-' + x[2] : ''); };
-  /* the whole snapshot opened as a visitor opens it (snapOpen): by the game's page's Game snapshot button where the Props
-     tab can open the game, else (or with how 'bubble') as the matchup bubble opens it; R.snapPage says which */
-  const openG = async (R, g, how) => { const o = await snapOpen(R, g, how); R.snapPage = o.page; await wait(50); return o.md; };
+  /* the whole snapshot opened as a visitor opens it (snapOpen): as the matchup bubble opens it */
+  const openG = async (R, g, how) => { const o = await snapOpen(R, g, how); await wait(50); return o.md; };
   const closeG = async R => { R.w.gameSnapshotClose(false); await wait(10); };
   const htmlTxt = (R, html) => { const t = R.d.createElement('template'); t.innerHTML = html; return txt(t.content); };
   /* ---- the files as the job writes them ---- */
@@ -7489,9 +7515,8 @@ async function newsChecks() {
         /* in the head's middle, under the kickoff line; the Vegas headline after the head */
         if (box.parentElement !== q('#gsMatch .gs-hero > .gs-mid') || box.previousElementSibling !== q('#gsMatch .gs-mid > .gs-when') || box.nextElementSibling || q('#gsMatch .gs-hero').nextElementSibling !== q('#gsMatch .gs-fav')) bad.push('it is not in the head\'s middle under the kickoff line, with the Vegas headline after the head'); }
       chk(bad.length === 0, `news: the automatic preview of a game to come with no note is not the files': ${bad.join('; ')}`); }
-    /* the props button: none over the game's own page (opened by its Game snapshot button); opened as the matchup bubble
-       opens it, first in the verdict, ahead of the preview, exactly where the Props tab can open the game */
-    chk(!!q('#gsMatch [data-gs-props]') === (N1.w.pkBoard.canProps(G.game_id) && !N1.snapPage), 'news: the props button is not in the window exactly where the Props tab can open the game and the window is not over its page');
+    /* the props button: first in the verdict, ahead of the preview, exactly where the Props tab can open the game */
+    chk(!!q('#gsMatch [data-gs-props]') === N1.w.pkBoard.canProps(G.game_id), 'news: the props button is not in the window exactly where the Props tab can open the game');
     /* the Deep Dive: each possession deepdive.js's own rows for the stand-in, set in whole, its four tags the rule's */
     { const bad = [];
       for (const [o, dd, O, D] of [[a, h, UNITS.units[A], UNITS.units[H]], [h, a, UNITS.units[H], UNITS.units[A]]]) {
@@ -7543,10 +7568,10 @@ async function newsChecks() {
     chk(!q('#gsFiles') && !q('#gsStats') && !q('[data-gs-srow], [data-gs-sval], [data-gs-sbasis], .gs-sbar') && !!q('#gsUnits') && !/Stat breakdown|stat breakdown/.test(txt(md)),
       'news: the Stat breakdown, or the Sources card, is still drawn');
     await closeG(N1);
-    /* the same game opened as the matchup bubble opens it: its button to the game's page first in the verdict, ahead of
-       the preview, exactly where the Props tab can open the game */
+    /* the same game opened again: its button to the game's page first in the verdict, ahead of the preview, exactly where
+       the Props tab can open the game */
     { const mb = await openG(N1, G, 'bubble'), pb = mb && mb.querySelector('#gsMatch [data-gs-props]');
-      chk(!!mb && !N1.snapPage && !!pb === N1.w.pkBoard.canProps(G.game_id) && (!pb || mb.querySelector('#gsMatch').firstElementChild.contains(pb)),
+      chk(!!mb && !!pb === N1.w.pkBoard.canProps(G.game_id) && (!pb || mb.querySelector('#gsMatch').firstElementChild.contains(pb)),
         'news: opened as the matchup bubble opens it, the window does not carry its button to the game\'s page, first, exactly where the Props tab can open the game');
       await closeG(N1); }
   }
@@ -7604,8 +7629,8 @@ async function newsChecks() {
      own. The window's keys, focus and closing are held too: Escape closes it alone, the focus back on its button (on
      the one drawn since where the page redrew under it), the game's page and its scroll lock kept, and reaches no
      listener beneath; a click outside closes it, one inside does not, nor a double click's second; another tab's
-     address and the game's page closing take it with them, the focus never left on the page's body; and the page's own
-     Game snapshot button (app v128) opened after them is the whole snapshot, with no bars ---- */
+     address and the game's page closing take it with them, the focus never left on the page's body; and the whole
+     snapshot the matchup bubble opens after them is the whole snapshot, with no bars ---- */
   const SR_OWN = [['pd', s => s.ppg == null || s.pa == null ? null : Math.round((s.ppg - s.pa) * 10) / 10, false, true, false], ['ppg', s => s.ppg, false], ['pa', s => s.pa, true],
     ['ypp', s => s.ypp, false], ['yppa', s => s.yppa, true], ['to', s => s.to, false, true], ['sk', s => s.sk, false], ['ska', s => s.ska, true],
     ['third', s => s.third, false, false, true], ['rz', s => s.rz, false, false, true], ['expl', s => s.expl, false]];
@@ -7636,14 +7661,14 @@ async function newsChecks() {
       if (!txt(box).includes(`Not in the file yet: ${gone.join(' and ')}; ${gone.length === 1 ? 'its' : 'their'} numbers show as dashes.`)) bad.push(`it does not say ${gone.join(' and ')} is not in the file yet`); }
     return bad; };
   const statReads = R => R.calls.filter(c => c.url.replace(/\?.*$/, '').endsWith('news/data/stats.json'));
-  /* the game's page on the Props tab, opened as the snapshot's button opens it, then one of its buttons pressed (snap:
-     the whole snapshot, no card alone) */
+  /* the game's page on the Props tab, opened as the snapshot's props button opens it, then one of its three buttons
+     pressed */
   const openPop = async (R, g, kind, settle = 150) => { const P = R.w.pkBoard, gm = R.d.getElementById('gameModal');
     if (!P.canProps(g.game_id)) return null;
     if (R.w.eval('S').ui.game !== g.game_id || gm.hidden || gm.closest('[hidden]')) { P.openOnProps(g.game_id); await wait(80); }
     const b = R.d.querySelector(`#gameView [data-gp-pop="${kind}"]`); if (!b) return null;
     b.click(); if (settle) await wait(settle); const md = R.d.getElementById('gsModal');
-    return md && !md.hidden && (kind === 'snap' ? !md.dataset.gsOnly : md.dataset.gsOnly === kind) ? md : null; };
+    return md && !md.hidden && md.dataset.gsOnly === kind ? md : null; };
   const shutPop = async R => { R.w.gameSnapshotClose(false); await wait(10); };
   const leaveGame = async R => { R.w.gameSnapshotClose(false); if (!R.d.getElementById('gameModal').hidden) R.w.closeGame(); await wait(30); };
   const key = (R, k, shift) => { const t = R.d.activeElement || R.d.body; t.dispatchEvent(new R.w.KeyboardEvent('keydown', { key: k, shiftKey: !!shift, bubbles: true, cancelable: true })); };
@@ -7731,10 +7756,11 @@ async function newsChecks() {
           if (!m4.hidden || !R.d.getElementById('gameModal').hidden || R.d.body.classList.contains('modal-open') || !R.d.activeElement || R.d.activeElement === R.d.body) bad.push('the game\'s page closing left the window open, the page locked, or the focus on the body'); }
         else bad.push('it did not open again');
         chk(bad.length === 0, `news: the game page's Team Stats window (${G.game_id}) is not the stand-in's stats side by side, read once when it opens: ${bad.slice(0, 8).join('; ')}`); }
-      /* the page's Game snapshot button after them opens the whole snapshot, its title its own and no bars */
-      { const md = await openPop(R, G, 'snap');
+      /* the whole snapshot opened after them (the matchup bubble's way, the one way in since app v129 took the page's own
+         Game snapshot button off) is the whole snapshot, its title its own and no bars */
+      { const md = await openG(R, G, 'bubble');
         chk(!!md && !md.classList.contains('gs-one') && !md.dataset.gsOnly && /Game snapshot/.test(txt(R.d.getElementById('gsTitle'))) && !md.querySelector('[data-gs-srow], [data-gs-only]') && !!md.querySelector('#gsUnits') && !!md.querySelector('#gsMatch'),
-          'news: the game page\'s Game snapshot button, pressed after its one-card windows, does not open the whole snapshot, or it carries Team Stats');
+          'news: the whole Game snapshot opened after a game page\'s windows is not the whole snapshot, or carries Team Stats');
         await closeG(R); }
       /* a played game (P1, its home side missing from the stat file): Matchup says so over the same body, Team
          Stats draws that side's dashes and says it is not in the file */
@@ -8835,4 +8861,110 @@ async function glanceChecks() {
   w.close();
   const kinds = Object.keys(byPlace).map(k => k.replace('|', ' ')).join(', '), gradesSeen = GRADES_SEEN;
   console.log(`the matchup bubble: ${checks - c0} checks (${L0.length} names on the week as it stands${kinds ? ', opened from ' + kinds : ''}; fixtures on ${r ? r.id + (pid ? ', ' + pid + (mrow ? ' with his matchup' : ' with no matchup row') : '') + (gradesSeen.length ? ', a mismatch graded ' + gradesSeen.join(', ') : '') : 'no game'} and a made-up game), ${fails.length - f0} failures`);
+}
+
+/* =====================================================================================
+   CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS RANK (the owner's call of 22 October 2026: "in mismatches, make clubs tied
+   on a defense unit share the same rank in the mismatches, plaer window, and game snapshot"), on fixtures of the
+   smoke's own at any hour and in the off-season. A copy of matchups.json for the Props list's own week, its league
+   table (league.defs, every club) given two clubs A and B, who do not meet that week, the league's weakest units:
+   their secondaries level (B's a floating-point hair over A's, 1e-9, as a value the file writes to the tenth can come
+   out of arithmetic), and their front and linebackers set so a back's unit, the two averaged, is level on paper and
+   apart in floating point (worked out below, so an exact comparison would part them: held). On a made-up game of that
+   week two days out, A at B (in the season's schedule, a copy), the two best-ranked receivers and backs are planted as
+   expected starters, alternately facing A and B, rated four standard deviations above their position's average. Then,
+   on the page: each planted player's Mismatches bubble on the Props list words his rank as the smoke's own reading
+   (mmRankOwn, level to the hundredth), the receivers facing A and B the same rank; each one's window on the ELO
+   Ratings tab ranks the three units he faces the same way, the secondaries level; and the made-up game's Game snapshot
+   (the matchup bubble's way in) carries in its Starters headers each club's three units ranked so, the secondaries
+   level and unmarked, and in its Mismatches each planted player's line the same rank. Blocking: a rank the page
+   states ==================================================================================== */
+async function tieChecks() {
+  const c0 = checks, f0 = fails.length, MU = JSON.parse(ELO_MU), Pl = JSON.parse(ELO_P);
+  const defs = {}; for (const v of Object.values(MU.players || {})) if (v.opp_def) defs[v.opp] = { ...v.opp_def };
+  for (const [t, x] of Object.entries((MU.league && MU.league.defs) || {})) defs[t] = { ...x };
+  const PW = PAGE_WEEK, WW = String(PW).padStart(2, '0'), sch = STATE.schedule;
+  const meet = (x, y) => sch.some(g => +g.week === PW && [g.away_team, g.home_team].sort().join() === [x, y].sort().join());
+  const clubs = Object.keys(defs).sort();
+  let A = null, B = null;
+  for (const x of clubs) { for (const y of clubs) if (x !== y && !meet(x, y)) { A = x; B = y; break; } if (A) break; }
+  const wrs = ((Pl.groups.WR || {}).top || []).slice(0, 2), rbs = ((Pl.groups.RB || {}).top || []).slice(0, 2);
+  if (!A || clubs.length < 4 || wrs.length < 2 || rbs.length < 2 || !MU.stats || !MU.stats.WR || !MU.stats.RB) {
+    chk(false, `tied ranks: the fixture has nothing to stand on (${clubs.length} clubs in matchups.json's league, ${wrs.length} receivers and ${rbs.length} backs ranked)`); return; }
+  /* the league's weakest units, A's and B's: the secondaries level to the hundredth (B a hair over), the backs' unit (the
+     front and the linebackers averaged) level on paper, apart in floating point */
+  const lo = u => Math.floor(Math.min(...clubs.map(t => defs[t][u])) - 60);
+  const dbA = lo('DB'), base = Math.min(lo('DL'), lo('LB'));
+  let hair = null;
+  for (let i = 0; i < 10 && !hair; i++) for (let j = 0; j < 10 && !hair; j++) for (let k = 0; k < 10 && !hair; k++) for (let m = 0; m < 10 && !hair; m++) {
+    const a1 = Math.round((base + i / 10) * 10) / 10, a2 = Math.round((base + j / 10) * 10) / 10, b1 = Math.round((base + k / 10) * 10) / 10, b2 = Math.round((base + m / 10) * 10) / 10;
+    if (a1 === b1) continue; const x = (a1 + a2) / 2, y = (b1 + b2) / 2; if (x !== y && lvlOwn(x) === lvlOwn(y)) hair = [a1, a2, b1, b2]; }
+  if (!hair) hair = [base, base + 0.4, base + 0.1, base + 0.3];
+  defs[A] = { DL: hair[0], LB: hair[1], DB: dbA }; defs[B] = { DL: hair[2], LB: hair[3], DB: dbA + 1e-9 };
+  const avgRB = d => (d.DL + d.LB) / 2, exactRk = (t, f) => 1 + clubs.filter(x => f(defs[x]) > f(defs[t])).length;
+  chk(urkOwn(defs, A, d => d.DB) === urkOwn(defs, B, d => d.DB) && urkOwn(defs, A, avgRB) === urkOwn(defs, B, avgRB) && exactRk(A, avgRB) !== exactRk(B, avgRB) && exactRk(A, d => d.DB) !== exactRk(B, d => d.DB),
+    `tied ranks: the fixture does not tie ${A} and ${B} to the hundredth while parting them exactly (the secondaries ${dbA} and ${dbA}+1e-9; the backs' unit ${hair.join(', ')})`);
+  /* the made-up game, A at B, two days out by the page's clock, in a copy of the season */
+  const pageNow = Date.now() - PAGE_SHIFT_MS, et = ms => { const q = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(ms)).map(x => [x.type, x.value])); return `${q.year}-${q.month}-${q.day}`; };
+  const st = JSON.parse(JSON.stringify(STATE)), proto = st.schedule.find(g => +g.week === PW) || st.schedule[0];
+  const GID = `${PROP_SEASON}_${WW}_${A}_${B}`, G = { ...JSON.parse(JSON.stringify(proto)), game_id: GID, season: PROP_SEASON, week: PW, game_type: 'REG', gameday: et(pageNow + 2 * 864e5), gametime: '13:00',
+    away_team: A, home_team: B, location: 'Home', stadium: 'Smoke Field' };
+  for (const k of ['result', 'home_score', 'away_score']) delete G[k];
+  st.schedule.push(G);
+  /* the planted starters: receivers and backs alternately facing A (on B's side, at home) and B (on A's side) */
+  const MT = JSON.parse(JSON.stringify(MU)); MT.season = PROP_SEASON; MT.week = PW; MT.league = { ...(MT.league || {}), defs: JSON.parse(JSON.stringify(defs)) }; MT.out = {};
+  const norm = g => (MT.league.norms && MT.league.norms[g]) || [1500, 50];
+  const plant = [...wrs.map((r, i) => [r, 'WR', i]), ...rbs.map((r, i) => [r, 'RB', i])].map(([r, g, i]) => { const opp = i % 2 ? B : A, team = opp === A ? B : A;
+    MT.players[r.id] = { group: g, game_id: GID, team, opp, home: team === B ? 1 : 0, elo: Math.round(norm(g)[0] + 4 * norm(g)[1]) - i, opp_def: { ...defs[opp] },
+      stats: Object.fromEntries(MT.stats[g].map((x, k) => [x, [40 + k, 45 + k, 3]])) };
+    return { pid: r.id, group: g, opp, name: (Pl.players[r.id] || {}).name || r.name }; });
+  const R = await run(st, SITE + '#slate', null, false, { elo: { mu: MT } });
+  const { w, d } = R; try { await w.eloFiles(); } catch (e) {}
+  await wait(300);
+  const S = w.eval('S'); if (S && S.inactive) for (const x of plant) delete S.inactive[x.pid];
+  const ws = d.getElementById('weekSel');
+  if (ws && +ws.value !== PW && [...ws.options].some(o => +o.value === PW)) { ws.value = String(PW); ws.dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60); }
+  w.eval('renderSlate()'); await wait(60);
+  const want = x => { const k = mmRankOwn(MT, x.group, x.opp); return k ? { rank: k.rank, n: k.n } : null; };
+  /* the Mismatches: each planted player's row the rank worked out here; his bubble (the five biggest) words it so */
+  { const rows = typeof w.eloMismatches === 'function' ? w.eloMismatches() : [], bad = [];
+    for (const x of plant) { const r = rows.find(v => v.pid === x.pid), k = want(x), i = rows.indexOf(r);
+      if (!r || !k) { bad.push(`${x.pid} (${x.group} facing ${x.opp}) is not on the Mismatches`); continue; }
+      if (r.defRank !== k.rank || r.defN !== k.n) bad.push(`${x.pid} facing ${x.opp}: ranked ${r.defRank} of ${r.defN}, the smoke's reading ${k.rank} of ${k.n}`);
+      if (i < 5) { const b = d.querySelector(`#peMism .pe-mm-b[data-mm-pid="${x.pid}"]`), sub = b && b.querySelector('.pe-mm-sub'), line = `vs the ${x.opp} ${MM_AGAINST_OWN[x.group]}, ${ordOwn(k.rank)} by player Elo.`;
+        if (!sub || !txt(sub).startsWith(line)) bad.push(`${x.pid}'s bubble reads '${sub ? txt(sub) : 'nothing'}', not '${line}…'`); } }
+    const [wa, wb] = plant.filter(x => x.group === 'WR'), [ra, rb] = plant.filter(x => x.group === 'RB'), rk = x => (rows.find(v => v.pid === x.pid) || {}).defRank;
+    if (!(rk(wa) != null && rk(wa) === rk(wb))) bad.push(`the receivers facing ${A} and ${B}, level on the secondary, read ${rk(wa)} and ${rk(wb)}`);
+    if (!(rk(ra) != null && rk(ra) === rk(rb))) bad.push(`the backs facing ${A} and ${B}, level on the front and linebackers to the hundredth, read ${rk(ra)} and ${rk(rb)}`);
+    if (!plant.slice(0, 2).every(x => rows.indexOf(rows.find(v => v.pid === x.pid)) < 5 && rows.indexOf(rows.find(v => v.pid === x.pid)) >= 0)) bad.push('the planted receivers are not among the five bubbles');
+    chk(bad.length === 0, `tied ranks: the Mismatches do not rank ${A} and ${B} level on a unit alike: ${bad.slice(0, 6).join('; ')}`); }
+  /* the player window on the ELO Ratings tab: the three units each planted player faces, ranked as the smoke reads them */
+  { const bad = [], tabB = [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo'); if (tabB) { tabB.click(); await wait(80); }
+    const got = {};
+    for (const x of plant) { const pos = d.querySelector(`#peBody .pe-pos button[data-pos="${x.group}"]`); if (pos) { pos.click(); await wait(40); }
+      const tr = d.querySelector(`#peBody tr.pe-plrow[data-pe-pl="${x.pid}"]`); if (!tr) { bad.push(`${x.pid} has no row in the ${x.group} rankings`); continue; }
+      tr.click(); await wait(40);
+      const spans = [...d.querySelectorAll('#pePlView .pe-pl-def span b')].map(txt), wantS = ['DL', 'LB', 'DB'].map(u => `${ordOwn(urkOwn(defs, x.opp, dd => dd[u]))} of ${clubs.length}`);
+      got[x.pid] = spans;
+      if (spans.join('|') !== wantS.join('|')) bad.push(`${x.pid}'s window (facing ${x.opp}) ranks ${spans.join(', ') || 'nothing'}, the smoke's reading ${wantS.join(', ')}`);
+      const c = d.getElementById('pePlClose'); if (c) { c.click(); await wait(20); } }
+    const [wa, wb] = plant.filter(x => x.group === 'WR');
+    if (got[wa.pid] && got[wb.pid] && got[wa.pid][2] !== got[wb.pid][2]) bad.push(`the secondaries of ${A} and ${B} read ${got[wa.pid][2]} and ${got[wb.pid][2]} in the two windows`);
+    chk(bad.length === 0, `tied ranks: a player's window does not rank ${A} and ${B} level on a unit alike: ${bad.slice(0, 6).join('; ')}`); }
+  /* the made-up game's Game snapshot: its Starters headers (each club's three units, the secondaries level and unmarked)
+     and its Mismatches (each planted player's line) */
+  { const bad = [], slate = [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate'); if (slate) { slate.click(); await wait(40); }
+    const o = await snapOpen(R, G), md = o.md;
+    if (!md) bad.push(`the made-up game ${GID} opens no Game snapshot`);
+    else {
+      for (const t of [A, B]) for (const u of ['DL', 'LB', 'DB']) { const el = md.querySelector(`[data-gs-def="${t}:${u}"]`), r = urkOwn(defs, t, dd => dd[u]);
+        if (!el || txt(el) !== `${ordOwn(r)} of ${clubs.length}`) bad.push(`${t}'s ${u} reads '${el ? txt(el) : 'nothing'}' in the Starters headers, the smoke's reading ${ordOwn(r)} of ${clubs.length}`); }
+      const da = md.querySelector(`[data-gs-def="${A}:DB"]`), db = md.querySelector(`[data-gs-def="${B}:DB"]`);
+      if (!da || !db || txt(da) !== txt(db) || da.classList.contains('gs-better') || db.classList.contains('gs-better')) bad.push(`the secondaries of ${A} and ${B} are not drawn level and unmarked: '${da ? txt(da) : ''}' and '${db ? txt(db) : ''}'`);
+      for (const x of plant) { const li = md.querySelector(`#gsMism li[data-pid="${x.pid}"] .gs-mmsub`), k = want(x), line = k ? `Against the ${x.opp} ${MM_AGAINST_OWN[x.group]}, ${ordOwn(k.rank)} of ${k.n} by player Elo.` : null;
+        if (!li || !line || !txt(li).startsWith(line)) bad.push(`${x.pid}'s line in the snapshot's Mismatches reads '${li ? txt(li) : 'nothing'}', not '${line}…'`); }
+      w.gameSnapshotClose(false); await wait(20); }
+    chk(bad.length === 0 && R.errs.length === 0, `tied ranks: the Game snapshot does not rank ${A} and ${B} level on a unit alike: ${bad.slice(0, 6).join('; ')} ${R.errs.join('; ')}`); }
+  w.close();
+  console.log(`tied ranks: ${checks - c0} checks on a made-up game, ${GID}, its clubs level on the secondary and, to the hundredth, on the front and linebackers, ${fails.length - f0} failures`);
 }

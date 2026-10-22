@@ -167,8 +167,6 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 </style>
 <section id="tab-elo" hidden>
   <div class="bar">
-    <span class="rec" id="peWalkRec"></span>
-    <span class="rec" id="peCallRec"></span>
     <span class="grow"></span>
     <span class="livestamp" id="peStamp"></span>
   </div>
@@ -248,12 +246,15 @@ window.eloGameOn=gameOn;
    rating on the position's bell curve); null when he has no place this season */
 const seOf=pid=>{ const e=D.players&&D.players.players&&D.players.players[pid]; return e&&e.se!=null?e.se:null; };
 /* each defence's units ranked across the league (`league.defs`, all 32), 1st the best (the
-   highest rated), clubs level on a unit sharing its rank; a file without it falls back to the teams playing this week */
+   highest rated), clubs level on a unit sharing its rank; a file without it falls back to the teams playing this week.
+   Level is read to the hundredth (mmKey): the file writes a unit to the tenth and a mix of two averages them, so two
+   clubs level on paper can differ by a floating-point hair, which would part them (22 October 2026) */
+const mmKey=x=>Math.round(x*100);
 function defRanks(){
   const byTeam={}; for(const v of Object.values((D.mu&&D.mu.players)||{})) if(v.opp_def) byTeam[v.opp]=v.opp_def;
   if(D.mu&&D.mu.league&&D.mu.league.defs) Object.assign(byTeam,D.mu.league.defs);
   const teams=Object.keys(byTeam), out={n:teams.length};
-  for(const u of ['DL','LB','DB']) out[u]=Object.fromEntries(teams.map(t=>[t,1+teams.filter(o=>byTeam[o][u]>byTeam[t][u]).length]));
+  for(const u of ['DL','LB','DB']) out[u]=Object.fromEntries(teams.map(t=>[t,1+teams.filter(o=>mmKey(byTeam[o][u])>mmKey(byTeam[t][u])).length]));
   return out;
 }
 const UNIT_NAME={DL:'Pass rush and run front (DL)',LB:'Linebackers',DB:'Secondary'};
@@ -1217,7 +1218,7 @@ function mismatches(){
      read 24th and 23rd here by the order the page first met them as opponents, and the other way round in the Game
      snapshot's Starters headers, which sorted league.defs' own order) */
   const rankOf={}; for(const g of Object.keys(MM_UNIT)){ const vals=Object.entries(byTeam).map(([t,d])=>[t,MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length]);
-    rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t,x])=>[t,1+vals.filter(([,y])=>y>x).length]))}; }
+    rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t,x])=>[t,1+vals.filter(([,y])=>mmKey(y)>mmKey(x)).length]))}; }
   return P.filter(v=>pz[v.group]).map(v=>{ const d=unitOf(v), a=pz[v.group](v.elo), b=dz[v.group](d);
       const lead=MM_LEAD[v.group], st=v.stats&&v.stats[lead];
       return {...v,unit:Math.round(d),against:mmAgainst(v.group),defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:st?st[1]:null,nudge:st?st[2]:null}; })
@@ -1351,33 +1352,8 @@ function draw(){
   body.querySelectorAll('.pe-pos button[data-pos]').forEach(b=>b.addEventListener('click',()=>{ D.pos=b.dataset.pos; D.unit=null; draw(); }));
   const more=el('peMore'); if(more) more.addEventListener('click',()=>{ D.more=!D.more; draw(); });
   body.querySelectorAll('.pe-curve').forEach(c=>curveHover(c.parentElement));
-  const r=D.model.record, wf=D.model.walk_forward||{}, ws=Object.keys(wf).sort();
-  const prior=ws.filter(s=>+s<r.season);
-  const alone=prior.length?(()=>{ const tot=prior.reduce((a,s)=>a+wf[s].games,0), ok=prior.reduce((a,s)=>a+Math.round(wf[s].accuracy*wf[s].games),0);
-    return `${prior[0]}–${prior[prior.length-1]} ${pct(ok/tot)} walk-forward`; })():'';
-  /* the calls on the Joker's baseline (elo/build.py, THE JOKER BASELINE: the owner's test of 19 October
-     2026): the Joker's chance moved by the Elo matchup, its walk-forward test beside the Joker's and
-     the game model's own on the same games (`joker_base` in model.json) */
-  const JB=D.model.joker_base, jw=JB&&JB.walk_forward?Object.keys(JB.walk_forward).sort():[];
-  if(jw.length){ const sum=k=>jw.reduce((a,s)=>a+(+JB.walk_forward[s][k]||0),0), n=sum('games');
-    const wr=el('peWalkRec'); wr.textContent=`On the Joker: ${jw[0]}–${jw[jw.length-1]} ${pct(sum('right')/n)} walk-forward`;
-    wr.title=`The ELO Model's calls start from the Joker's chance, and the Elo matchup (each team's expected lineup by position) moves it. Called walk-forward on ${jw[0]}–${jw[jw.length-1]} (${n} games): ${sum('right')} right (${pct(sum('right')/n)}), against the Joker alone ${sum('joker')} (${pct(sum('joker')/n)}) and the Elo game model alone ${sum('elo')} (${pct(sum('elo')/n)}).${alone?` The Elo game model alone: ${alone}.`:''}`; }
-  else if(alone) el('peWalkRec').textContent=alone;
-  /* the ELO Model's season record as the Pick'em Record counts it, split the honest way: calls
-     published before kickoff (frozen there, never regraded), and the backtest of the games it
-     was never called on beforehand (weeks 1-2 of 2026, made after the games on pre-game ratings);
-     the calls on the Joker's baseline apart from the Elo-alone calls before them */
-  const pub=r&&r.published, bt=r&&r.backtest, jb=r&&r.joker_base, jfrom=r&&r.joker_base_from_week, rp=r&&r.repicked, rw=r&&r.repicked_was;
-  if(pub){ const ln=(x,lab)=>x&&(x[0]+x[1])?`${x[0]}–${x[1]} ${lab}`:'';
-    /* the games played before the Joker's baseline, re-picked on it after they were played (`was` on each
-       graded call; repicked and repicked_was here), apart from the backtests and the Elo-alone calls left */
-    const onJ=jb&&jfrom!=null, re=!!(rp&&rw&&rp[0]+rp[1]>0);
-    const eloPub=onJ?[pub[0]-jb[0],pub[1]-jb[1]]:pub, btLeft=re&&bt?[bt[0]-rp[0],bt[1]-rp[1]]:bt;
-    const parts=[re?`${rp[0]}–${rp[1]} re-picked on the Joker after the games (${rw[0]}–${rw[1]} as first picked)`:'',
-      onJ?(jb[0]+jb[1]?`${jb[0]}–${jb[1]} picked on the Joker before kickoff (from week ${jfrom})`:`on the Joker before kickoff from week ${jfrom}, none graded yet`):'',
-      ln(eloPub,onJ?'on Elo alone':'called before kickoff'),ln(btLeft,'backtest')].filter(Boolean);
-    const cr=el('peCallRec'); cr.textContent=parts.length?`ELO Model ${r.season}: ${parts.join(', ')}`:'';
-    cr.title=`The Pick'em Record grades each game on the ELO Model's call.${onJ?` From week ${jfrom} the calls start from the Joker's chance and the Elo matchup moves it, made before kickoff.`:` It grades the call published before kickoff${r.published_from_week?` (from week ${r.published_from_week})`:''}.`}${re?` The games played before that were re-picked the same way after they were played, on what was known before each kickoff (the Joker's call as frozen at kickoff, the pre-game ratings and lineups); as first picked, on the Elo game model alone, they went ${rw[0]}–${rw[1]}.`:''} A backtest is a game the model was not published for until after it was played: called on the ratings it had before the game, but not ahead of time.`; }
+  /* the ELO Model's record and its walk-forward on the Joker's baseline were two pills on this bar until 22 October
+     2026 (the owner's call: "in elo ratings get rid of the visual buttons"); the Pick'em Record grades the calls */
   const d=new Date(D.model.built_at);
   el('peStamp').textContent=isNaN(d)?'':'rated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }

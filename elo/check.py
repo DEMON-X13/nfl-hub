@@ -162,6 +162,19 @@ fails, notes = [], []
 checks = 0
 
 
+def unit_ranks_bad(T, rated):
+    """the clubs of a unit table whose rank is not its rank on the Elo shown (clubs level on it share a rank, one more
+    than the clubs above them, since 22 October 2026), or, for a club with no rating, not after every rated club and
+    once each: [] where every rank is right"""
+    rated = [t for t in rated if t in T]
+    bad = [f'{t} {T[t]["rank"]} for {1 + sum(1 for u in rated if T[u]["elo"] > T[t]["elo"])}' for t in rated
+           if T[t]['rank'] != 1 + sum(1 for u in rated if T[u]['elo'] > T[t]['elo'])]
+    rest = sorted(T[t]['rank'] for t in T if t not in rated)
+    if rest != list(range(len(rated) + 1, len(rated) + 1 + len(rest))):
+        bad.append(f'the clubs with no rating ranked {rest}')
+    return bad
+
+
 def chk(ok, msg):
     global checks
     checks += 1
@@ -441,9 +454,10 @@ def unit_team_checks():
         'TEAMS: a team\'s line is not one point a game ending on its rating')
     chk([w for w, _ in U['off']['A']['line']] == [1, 3] and U['off']['A']['before'] == U['off']['A']['line'][0][1],
         f'TEAMS: the line or `before` is not the team\'s own games: {U["off"]["A"]["line"]}, before {U["off"]["A"]["before"]}')
-    # ranks: every team ranked once, the ones that have played first, in the order of their raw
+    # ranks: on the Elo shown, clubs level on it sharing a rank, the ones with a rating first
     for s in TABLE:
-        chk(sorted(v['rank'] for v in U[s].values()) == list(range(1, len(U[s]) + 1)), f'TEAMS: the {s} ranks are not a permutation')
+        bad = unit_ranks_bad(U[s], [t for t, v in U[s].items() if v['games'] or v['carried']])
+        chk(not bad, f'TEAMS: the {s} ranks are not the clubs\' ranks on the Elo shown: {bad[:4]}')
 
     # the carry, over two invented seasons. 2029: A better than B, C and D on every stat, each a home
     # game and an away game. 2030: C and D play in week 1, A and B not yet (A at E, a club new in 2030,
@@ -662,7 +676,6 @@ def team_files_checks(M, games, cache):
         T = U.get(side) or {}
         whole &= set(T) == clubs
         chk(set(T) == clubs and len(T) == 32, f'TEAMS: {side} has {len(T)} teams, the season has {len(clubs)}: {sorted(set(T) ^ clubs)[:4]}')
-        chk(sorted(v['rank'] for v in T.values()) == list(range(1, len(T) + 1)), f'TEAMS: the {side} ranks are not 1 to {len(T)} once each')
         w = (U['weights'] or {}).get(side) or {}
         mine = [s['key'] for s in stats if s['side'] == side]
         chk(sum(w.values()) == 100 and all(v >= 0 for v in w.values()) and set(w) <= set(mine) and sorted(mine) == sorted(keys),
@@ -776,11 +789,12 @@ def team_files_checks(M, games, cache):
                 if T[t]['stats'].get(k, {}).get('rank') != want:
                     bad_rank.append(f'{t} {k} {T[t]["stats"].get(k, {}).get("rank")} for {want}')
         chk(not bad_rank, f'TEAMS: {side} league ranks that are not the order of the values shown: {bad_rank[:4]}')
-        # the overall rank follows the raw rating, the teams with a rating (played, or carried) first
-        order = sorted(with_rating, key=lambda t: -T[t]['raw']) + sorted(t for t in teams if t not in with_rating)
-        ranks = [T[t]['rank'] for t in order]
-        chk(all(ranks[i] < ranks[i + 1] or T[order[i]]['raw'] == T[order[i + 1]]['raw'] for i in range(len(with_rating) - 1))
-            and all(T[t]['rank'] > len(with_rating) for t in teams if t not in with_rating), f'TEAMS: the {side} ranks are not the order of the ratings')
+        # the overall rank is the club's rank on the Elo shown (clubs level on it sharing a rank, since 22 October 2026),
+        # the teams with a rating (played, or carried) first; and the Elo shown follows the raw rating
+        bad = unit_ranks_bad(T, with_rating)
+        chk(not bad, f'TEAMS: the {side} ranks are not the clubs\' ranks on the Elo shown: {bad[:4]}')
+        order = sorted(with_rating, key=lambda t: -T[t]['raw'])
+        chk(all(T[order[i]]['elo'] >= T[order[i + 1]]['elo'] for i in range(len(order) - 1)), f'TEAMS: the {side} Elo shown is not the order of the raw ratings')
         shown = [T[t]['elo'] for t in with_rating]
         if len(with_rating) >= build.RANK_TEAMS:
             mu, sd = float(np.mean(shown)), float(np.std(shown))
