@@ -16,7 +16,8 @@ tabs); the Props tab is the page's first tab and the board's old addresses land 
    other three use: renderGame hands window.gameWindow the button's kind, the game and the button, and the hub's
    snapshot.html opens the whole window for "snap" (the one card alone for the other three). As before, only where
    the hub's window is on the page: the prop model's own page, the audit's, draws none of the four.
-2. .gwin lays the four out in one row, and two by two at 560px and under, where four in a row would wrap their words.
+2. .gwin lays the four out in one row, and two by two at 680px and under, where four in a row wraps "Game snapshot"
+   onto a second line (at 600px each button is 136px wide).
 3. lineSource, which the Game bets card prints as its "Lines:" and the matchup bubble as a title, no longer says the
    posted line is "as on the Matchups tab": "nflverse's posted line".
 4. Comments that named the board as the hub's are reworded (slateNeutral reads the betting job's schedule through
@@ -59,9 +60,9 @@ sub1('p3', """  /* (app v124) the game's Matchup, Mismatches and Team Stats: eac
 sub1('p1', """/* (app v124) a game's Matchup, Mismatches and Team Stats buttons, under its head, each 44px */
 .gwin{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}""",
      """/* (app v124) a game's Matchup, Mismatches and Team Stats buttons, under its head, each 44px; (app v128) and its
-   Game snapshot: four in a row, two by two at 560px and under */
+   Game snapshot: four in a row, two by two at 680px and under */
 .gwin{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}
-@media(max-width:560px){.gwin{grid-template-columns:repeat(2,minmax(0,1fr))}}""", '.gwin: four buttons')
+@media(max-width:680px){.gwin{grid-template-columns:repeat(2,minmax(0,1fr))}}""", '.gwin: four buttons')
 
 # 3. the Game bets card's line source
 sub1('p2', '  return "nflverse\'s posted line, as on the Matchups tab";', '  return "nflverse\'s posted line";', 'lineSource: no Matchups tab')

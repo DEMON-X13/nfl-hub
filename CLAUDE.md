@@ -2872,7 +2872,7 @@ kept, drawn nowhere, as the Parlay Builder's all-games levels (`getPbTiers`) are
 hold it, and `suggestLegOn` stays for the builder's and the sets' Adds: nothing on a game's page suggests a parlay. In
 the card's place, under the game's head (`.ghead`) and over its Game bets card (`.gbets`), `gameWinBtns(g)` draws three
 buttons in a row, and since app v128 four (`.gwin`, a group named "More on this game", four to a row and two by two at
-560px and under, where four would wrap their words), Matchup, Mismatches, Team Stats and Game snapshot
+680px and under, where four would wrap "Game snapshot"), Matchup, Mismatches, Team Stats and Game snapshot
 (`button.btn.quiet.gwin-btn`, `data-gp-pop` `units`, `mism`, `stats` or `snap`, `data-gp-game`, `aria-haspopup="dialog"`,
 44px by `.gwin .gwin-btn`'s own rule; the fourth the owner's call of 22 October 2026, "Button on Props", when the
 Matchups tab went: **The Game snapshot**, above), only where the hub's window is on the page (`window.gameWindow`): the prop model's own
@@ -2915,7 +2915,7 @@ missing, if `statFile()` is called anywhere but the Team Stats window's first op
 buttons without asking for the hub's window or lose the fourth (`b('snap','Game snapshot')`, app v128), and if `gameSuggestCard(`, `data-gsugg-side` or `data-gtier-add` comes
 back. The audit's O holds the page, blocking: no card, side switch or Add all; on the prop model's own page no buttons;
 with a stand-in `window.gameWindow` planted, the four in order (the three until app v128), once, under the head and over
-the Game bets card, 44px by their rule, four to a row and two at 560px and under, each press handing the window its card, the game and itself, and the buttons gone once it is taken
+the Game bets card, 44px by their rule, four to a row and two at 680px and under, each press handing the window its card, the game and itself, and the buttons gone once it is taken
 away; then the hands' engine as it stands. M7 and M8 hold the engine's hands (the fair chance, no far-off leg, the ids),
 their checks of the card's fair chance and est. marks gone with it, and I3 holds that a `ui.suggestSide` saved before
 is not read into the view. The nflbets smoke holds the buttons in its main run (the card gone, the four in order as

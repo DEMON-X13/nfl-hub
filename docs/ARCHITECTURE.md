@@ -2166,7 +2166,7 @@ with it, so a saved side filters nothing), and its engine (`gameTiers`, `gameLeg
 the Game bets card (`.gbets`), `gameWinBtns(g)` draws three 44px buttons (`.gwin` > `button.gwin-btn[data-gp-pop]`,
 `units`, `mism` and `stats`, `aria-haspopup="dialog"`), Matchup, Mismatches and Team Stats, and since app v128 a fourth,
 Game snapshot (`snap`, the owner's call of 22 October 2026, "Button on Props", when the Matchups tab went; four to a
-row, two by two at 560px and under), only where
+row, two by two at 680px and under), only where
 `window.gameWindow` is on the page (the hub; the audit's standalone page draws none), and `renderGame` binds each to
 `window.gameWindow(kind, g.id, button)`. For `snap` that is the whole Game snapshot, `open(gid, from, {page:true})`,
 which goes with the page as the others do (`FROMPAGE`, above); for the other three it is the Game snapshot's window
@@ -2184,7 +2184,7 @@ same button drawn since, else Back, else the game's row, else the chosen tab's b
 closes with the game's page (`closeGameModal` wrapped), on a `hashchange`, and on a key once the game's page is off the
 screen. `build.js` guards each of those pieces (and the fourth button, `b('snap','Game snapshot')`) and refuses the old
 card back; the audit's O holds the buttons (none on its own page, the four in order with a stand-in window, four to a
-row and two at 560px and under), M7 and M8 the engine alone, and I3 that a saved side is not read; the
+row and two at 680px and under), M7 and M8 the engine alone, and I3 that a saved side is not read; the
 nflbets smoke holds the buttons and, on its stand-in news files, every window (CLAUDE.md, **A game's page: Matchup,
 Mismatches and Team Stats**, has the whole of it).
 

@@ -6560,7 +6560,7 @@ setTimeout(async()=>{
     /* with a window planted (a stand-in recording its calls), the page draws the four buttons under the head and over
        the Game bets card, in order (the fourth, Game snapshot, the whole snapshot since app v128 took the Matchups tab
        off: the owner's call of 22 October 2026, "Button on Props"), each 44px by its own rule, four to a row and two
-       at 560px and under, and each press hands the window its card, the game and the button; taken away, the buttons
+       at 680px and under, and each press hands the window its card, the game and the button; taken away, the buttons
        go with it */
     { const calls=[]; w.gameWindow=(k,gid,b)=>{ calls.push([k,gid,b]); return true; };
       try{
@@ -6574,8 +6574,8 @@ setTimeout(async()=>{
         chk(tall,'the game page\'s window buttons have no rule making them 44px tall');
         { const rules=[...d.styleSheets].flatMap(sh=>{ try{ return [...sh.cssRules]; }catch(e){ return []; } }), cols=r=>r.style.getPropertyValue('grid-template-columns').replace(/\s+/g,'');
           const wide=rules.some(r=>r.selectorText==='.gwin'&&cols(r)==='repeat(4,minmax(0,1fr))');
-          const narrow=rules.some(r=>r.media&&/max-width:\s*560px/.test(r.media.mediaText)&&[...r.cssRules].some(c=>c.selectorText==='.gwin'&&cols(c)==='repeat(2,minmax(0,1fr))'));
-          chk(wide&&narrow,'the game page\'s four window buttons are not laid out four to a row, and two to a row at 560px and under: '+rules.filter(r=>/\.gwin\b/.test(r.cssText||'')&&!/gwin-btn/.test(r.cssText||'')).map(r=>r.cssText).join(' | ')); }
+          const narrow=rules.some(r=>r.media&&/max-width:\s*680px/.test(r.media.mediaText)&&[...r.cssRules].some(c=>c.selectorText==='.gwin'&&cols(c)==='repeat(2,minmax(0,1fr))'));
+          chk(wide&&narrow,'the game page\'s four window buttons are not laid out four to a row, and two to a row at 680px and under: '+rules.filter(r=>/\.gwin\b/.test(r.cssText||'')&&!/gwin-btn/.test(r.cssText||'')).map(r=>r.cssText).join(' | ')); }
         for(const b of bs) b.click();
         chk(calls.length===4&&calls.every(([k,gid,b],i)=>k===bs[i].dataset.gpPop&&gid===g.id&&b===bs[i]),'a press on a game page\'s button does not hand the window its card, its game and itself: '+JSON.stringify(calls.map(c=>c.slice(0,2))));
       }finally{ try{ delete w.gameWindow; }catch(e){ w.gameWindow=undefined; } d.querySelector('[data-game="'+g.id+'"]').click(); }
