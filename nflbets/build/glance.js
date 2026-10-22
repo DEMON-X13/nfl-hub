@@ -174,7 +174,7 @@ function playerHtml(){
   if(!F) {}
   else if(!mu) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">the matchups did not load</dd></div>`);
   else if(!v||v.game_id!==gid) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">${v?`the matchups file has him in another game (week ${esc(mu.week)})`:`none in the matchups file for week ${esc(mu.week)}`}</dd></div>`);
-  else if(ruled) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">not expected to play, so none to show</dd></div>`);
+  else if(ruled) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">not expected to play</dd></div>`);
   else {
     /* the Props tab's Mismatches: its grade and edge, on the matchup formula's player ratings of the units he faces
        (its title says which); no rank of its own, so the bubble never ranks one defense twice */
@@ -184,7 +184,7 @@ function playerHtml(){
     const st=(mu.stats&&mu.stats[v.group]||Object.keys(v.stats||{})).filter(s=>v.stats&&v.stats[s]&&GL&&GL.trusted(v.group,s));
     table=st.length?`<table class="glance-t" aria-label="His trusted stats: recent form and the Elo matchup's projection"><thead><tr><th scope="col">Stat</th><th scope="col" class="glance-n">Form</th><th scope="col" class="glance-n">Projected</th></tr></thead><tbody>${st.map(s=>{ const a=v.stats[s];
         return `<tr data-glance-stat="${esc(s)}"${L&&L.stat===s?' class="glance-on"':''}><th scope="row">${esc((GL.labels&&GL.labels[s])||s)}</th><td class="glance-n" data-glance-n="form">${esc(dec(a[0]))}</td><td class="glance-n"><span aria-hidden="true">→ </span><b data-glance-n="proj">${esc(dec(a[1]))}</b></td></tr>`; }).join('')}</tbody></table>`
-      :`<p class="glance-q glance-none" data-glance-n="notrust">No stat of his where the Elo matchup has held up.</p>`;
+      :`<p class="glance-q glance-none" data-glance-n="notrust">No trusted stats.</p>`;
   }
   return {title:esc(name),body:`${sub}<dl class="glance-kv">${lines.join('')}</dl>${table}${legHtml(K)}${snapBtn(gid)}`};
 }

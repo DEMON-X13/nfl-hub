@@ -16,7 +16,10 @@
 
    One thing the record says about itself, under the legend: a model the job could not rescore
    on its last run (S.modelStatus, written by betting/jobkit.py: its picks are the last good
-   ones, and why). Every week of every model is drawn the same way, the owner's call. The Joker's
+   ones), since when and why, in one short line. Neither picture has a lead or a key that explains
+   it (the owner's call of 22 October 2026: "i dont want any descriptions anywhere"): the app's
+   intro under the chart's heading is taken out, and the zero line's own label, "= Vegas", says
+   what it is. Every week of every model is drawn the same way, the owner's call. The Joker's
    2026 weeks 1-2 are its real calls (betting/joker/history/2026_w1_w2.json, the owner's call of 12
    October 2026, never the refit's in-sample ones): week 2 the calls published before kickoff, week 1
    a backtest by the model as it stood before the refit, which never saw 2026 (src on each call).
@@ -128,7 +131,7 @@ function recordViz(rows){
      model's step left in the state, is about no model on this record and is not drawn */
   { const names={joker:'The Joker'}, ms=S.modelStatus||{};
     for(const [k,v] of Object.entries(ms)){ if(!v||!names[k]) continue; const d=v.since?new Date(v.since):null;
-      notes.push(`<b>${esc(names[k])}</b> could not be rescored${d&&!isNaN(d)?' since '+esc(d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}: ${esc(v.why||'an input was missing')}. Its picks are the last good ones and its record stands where it was.`); } }
+      notes.push(`<b>${esc(names[k])}</b> could not be rescored${d&&!isNaN(d)?' since '+esc(d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}: ${esc(v.why||'an input was missing')}.`); } }
 
   /* ---- 1. the chart ---- */
   /* drawn at the card's own width, so its text stays 11px on a phone instead of shrinking */
@@ -167,14 +170,15 @@ function recordViz(rows){
   svg+=weeks.map((w,i)=>`<rect class="rv-hit" data-i="${i}" x="${(X(i+1)-(W-padL-padR)/Math.max(1,n)/2).toFixed(1)}" y="${padT}" width="${((W-padL-padR)/Math.max(1,n)).toFixed(1)}" height="${H-padT-padB}" fill="transparent"/>`).join('');
   const chart=`<div class="rv-wrap"><svg viewBox="0 0 ${W} ${H}" class="rv-chart" role="img" aria-label="Wins against Vegas by week">${svg}</svg><div class="rv-tip" hidden></div></div>`;
   const legend=shown.map(m=>`<span><i class="lgd" style="background:${m.dash?'repeating-linear-gradient(90deg,'+m.color+' 0 5px,transparent 5px 8px)':m.color}"></i>${esc(m.name)} <b>${rec(m.season)}</b> <span class="muted">${sign(m.net)} vs Vegas</span></span>`).join('')
-    +`<span><i class="lgd" style="background:var(--ink);height:2px"></i>Vegas <b>${rec(vegas.season)}</b> <span class="muted">the zero line</span></span>`
+    +`<span><i class="lgd" style="background:var(--ink);height:2px"></i>Vegas <b>${rec(vegas.season)}</b></span>`
   const fLegend=friends.length?`<span class="rv-flab">Friends</span>`+friends.map(f=>{ const s=f.season, d=s.w+s.l;
       return `<span class="rv-fr"><i class="lgd" style="background:repeating-linear-gradient(90deg,${f.color} 0 5px,transparent 5px 8px)"></i>${esc(f.name)} `
         +(d?`<b>${rec(s)}</b> <span class="muted">${sign(f.net)} vs Vegas${s.p?', '+s.p+' pending':''}</span>`:`<span class="muted rv-fp">${s.p} pending</span>`)+`</span>`; }).join(''):'';
   const h2=card.querySelector('h2'); if(h2) h2.textContent='Wins against Vegas';
+  /* the app's intro under the heading goes, with no lead in its place (the owner's call of 22 October 2026: "i dont
+     want any descriptions anywhere"); the app draws it again on every renderRecord(), which calls this last */
   const intro=h2&&h2.nextElementSibling&&h2.nextElementSibling.tagName==='P'?h2.nextElementSibling:null;
-  if(intro) intro.textContent='Each model’s wins minus the Vegas favourite’s on the same games, added up week by week. Above the line is beating Vegas, below is trailing it; one step is one game.'
-    +(friends.length?' Friends are dashed, counted on the games they picked, from the week they joined.':'');
+  if(intro) intro.remove();
   const lg=card.querySelector('.lgdrow'), toggle=lg&&lg.querySelector('.toggle');
   if(lg){ lg.innerHTML=legend; if(toggle) lg.appendChild(toggle); }
   card.querySelector('.rv-notes')?.remove();
@@ -215,7 +219,7 @@ function recordViz(rows){
     const friendRows=friends.length?`<tr class="rv-sep"><th class="rv-m">Friends</th><td colspan="${gw.length+1}"></td></tr>`+friends.map(f=>`<tr class="rv-friend"><th class="rv-m"><i class="lgd" style="background:repeating-linear-gradient(90deg,${f.color} 0 5px,transparent 5px 8px)"></i>${esc(f.name)}</th>`
       +gw.map(w=>fcell(f.wkT(w),f.name,wkName(w),f.tb[w],false)).join('')+fcell(f.season,f.name,'season',null,true)+'</tr>').join(''):'';
     const games=gw.map(w=>rows.filter(r=>+r.week===w).length);
-    tab.innerHTML=`<div class="card"><h2>Week by week</h2><p class="muted" style="margin:0 0 10px">Each model’s record by week, shaded red under .500, clear at .500 and green above; the season is the last column.${friends.length?' Each friend’s counts only the games they picked; a game still to play is pending.':''}</p>
+    tab.innerHTML=`<div class="card"><h2>Week by week</h2>
       <div class="rv-gridwrap"><table class="rv-grid"><thead><tr><th class="rv-m"></th>${gw.map((w,i)=>`<th class="rv-c">${wkName(w)}<small>${games[i]?games[i]+' game'+(games[i]===1?'':'s'):'to play'}</small></th>`).join('')}<th class="rv-c rv-season">Season</th></tr></thead>
       <tbody>${gridRows}${friendRows}</tbody></table></div></div>`;
   }

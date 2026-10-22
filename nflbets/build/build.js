@@ -347,7 +347,8 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw&&window.lpAdmin&&wi
 </script>`;
 
 /* the prop model's page, re-headed as NFL Hub, the way the NBA Hub and the NHL Hub are headed: the
-   wordmark and a tagline on the left, when the data was built and which build it is on the right */
+   wordmark on the left (its tagline went with the owner's call of 22 October 2026, "i dont want any
+   descriptions anywhere"), when the data was built and which build it is on the right */
 let html = part1;
 html = sub1(html, '<title>X NFL Prop Model</title>', '<title>NFL Hub</title>', 'title');
 /* the light/dark switch (theme.js, the owner's call of 17 October 2026) heads the stamp, laid over the
@@ -361,8 +362,7 @@ const THEME_TOGGLE = '<button type="button" class="hub-theme" data-theme-toggle 
   + '<path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>'
   + '<svg class="ht-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z"/></svg></button>';
 html = sub1(html, '<h1>X NFL Prop Model</h1>\n    <span class="sub" id="buildTag"></span>\n    <span class="sub grow" id="saveState" style="margin-left:auto"></span>',
-  '<div><h1>NFL <em>Hub</em></h1><p class="tagline">Every game called by three models against Vegas, player props priced against DraftKings\u2019 lines '
-  + 'and a parlay builder, frozen at kickoff and graded in public.</p></div>\n'
+  '<div><h1>NFL <em>Hub</em></h1></div>\n'
   + '    <div class="hub-stamp">' + THEME_TOGGLE + ADMIN_SLOT + '<span class="sub grow" id="saveState"></span><span class="sub" id="buildTag"></span></div>', 'heading');
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n<style>' + CARD_CSS + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
@@ -622,6 +622,102 @@ if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out))
   if (/apiKey=[A-Za-z0-9]{16,}/.test(out)) throw new Error('the page carries an Odds API key: the admin\'s key is kept in his browser, never in the page');
   const at = out.indexOf('<script>\n' + ADMIN_JS);
   if (at < 0 || at > out.indexOf('<style') || at > out.indexOf('<body')) throw new Error("the admin link's script is not in the page's head before its styles and its body"); }
+/* no descriptions (the owner's call of 22 October 2026: "in all sections get rid of all text wall descriptions. i dont
+   want any descriptions anywhere. i want the site to speak for itself without a bunch of reading."): a distinctive
+   phrase of each paragraph, lead, foot, note and clause taken off the page that day (app v130), by the area it was in,
+   none of which comes back anywhere in the page outside a comment, the framed betting app's string among it. A phrase
+   is matched with its apostrophes either way and a script's \u2019, \' and \" read as the characters they write, so a
+   sentence put back in another quoting is caught all the same. Weekly Picks' (picks/) is a page of its own, not built
+   here. The hidden sections the call left as they were (the prop model's Track Record, Weekly Update and Backup, the
+   betting app's own tabs the hub does not frame) carry none of these */
+const GONE_V130 = [
+  /* props */ 'expected points are the biggest single input to every projection', 'Spreads and totals have not been pulled in this browser yet',
+    'it would look authoritative and be stale', 'This model covers the regular season only', 'so no player is marked out, doubtful or questionable',
+    'every projection stands on last season', 'This page holds no data of its own', 'weeks built into this file were replayed',
+    'Lines move; check the number before you bet', 'the latest ones could not be downloaded, so who starts',
+    'Each player below shows what the model projected against', 'These are not the settled numbers',
+    'Player stats come out some hours after the final whistle', 'The final score appears after the next refresh',
+    'Nobody here has enough NFL history to project', 'No games the model counts, last season or this one',
+    'Too little in his games so far to project a starter', 'his own run or catch; a TD pass does not count',
+    'Green means it cleared the model\'s own number', 'a book grades his legs on zero', 'he did not play, and a book voids his legs',
+    'the snap counts that say whether he played are not in yet', 'How each side did against the money line',
+    'Tick one and it joins the parlay like any player line', 'Chances come from our team ratings, pulled halfway to the posted line',
+    'A Suggested Parlays set takes a game total only where', 'No spread posted yet, so only the money line is offered',
+    'No over and under price on file for this total yet',
+  /* builder */ 'Every leg has to land. The chance below is worked out', 'Blank prices the legs that share a game together, the way a book does.',
+    'Blank multiplies the estimated leg prices, which include a typical bookmaker cut.',
+    'Legs here share a game, so they are priced together rather than multiplied', 'Measured across 2019 to 2024. A quarterback throwing for a lot',
+    'tend to happen in the same game', 'The fair chance needs a book price on every leg',
+    'The model\'s own chance has run higher than the book\'s this season.', 'Choose what to build from: the list below takes only the bet types',
+    'The builder below uses this amount, and every parlay on Suggested Parlays pays on it.',
+    'Kickoffs in your time zone; a game leaves the list when it kicks off.',
+    'The model rates each at least 3 points above the chance its price implies', 'though the model still rates each at or above the book’s price',
+    'Game totals are never Value picks: each is priced at the book’s own chance',
+    'Every line has DraftKings’ own price or, marked est., DraftKings’ line read from ESPN', 'and it counts here as a book price does.',
+    'The Elo ratings are still loading: player lines join once they are in.', 'and its edges that large have not held up this season.',
+    'the list takes only lines DraftKings’ betslip can take, by DraftKings’ own id at the line',
+    'Refresh odds reads DraftKings’ current spreads and totals, which the list can take',
+    'removed: the site no longer offers ladder bets (such as 250+ passing yards',
+    'removed because that game has already kicked off. Saved and locked parlays keep theirs.',
+    'Open a game, click a player, and tick any line you like', 'A book voids a leg on a player who does not play and pays the rest',
+    'A parlay has to settle together, so a sportsbook won\'t take this as one ticket.',
+    'may not open that mix as one, so the parlay card gives each of the', 'Press Refresh odds to read them now.', 'press Refresh odds for today’s',
+    'no fair chance: it needs every leg\'s book price', 'No player lines are in yet for your picks, so the list below has none',
+    'No player line on your picks can go on DraftKings’ betslip yet', 'to all land, multiplied as independent; the model\'s own chances multiply to',
+  /* suggest */ 'at or above the book\'s price, but', 'at the book’s own chance with its margin out, so', 'so the price and payout are estimates',
+    'press Refresh odds here for the rest', 'it takes no quarterback’s passing TDs with a teammate’s touchdown',
+    'a parlay takes one leg a player, and one side', 'a parlay takes one game’s legs, one leg a player', 'so the record does not grade',
+    'so there are no Elo picks this time', 'lines as the site read them from ESPN', 'player prices estimated from the line',
+    'gave way to prices published since', 'had no player lines posted when the site read ESPN',
+    'player lines read before or published player prices stand', 'regular season is over: no Thursday, Sunday or Monday night game is left',
+    'No Thursday, Sunday or Monday night game of week', 'sets come once its games are the week’s',
+    'had posted none for it when its lines were last read from ESPN', 'for its games when their lines were last read from ESPN',
+    'its DraftKings lines have not been read from ESPN yet', 'no fair chance: a leg has no book price', '2 hours before the first kickoff',
+  /* card */ 'Yours alone: this card is not saved anywhere', 'Est.: a leg is priced on one side only', 'Est.: a leg is priced from DraftKings',
+    'so only team bets and totals go on the slip from here', 'pulled since will not be on the slip, so check it',
+    'of its own for when that slip comes up short', 'and its slip drops a moved line', 'payout can differ from this card',
+    'since its lines were read will not be on the slip', 'links open them a game at a time', 'is on its ladder, which that pull did not ask',
+    'name for him could not be placed', 'the price pull reads passing, rushing and receiving yards', 'touchdowns goes on the slip only as that',
+    'line read on ESPN, which gives no DraftKings id', 'its line was read from ESPN, which gives no DraftKings id',
+    'had posted no line for him on this stat', 'carried no DraftKings lines for its game when they were last read',
+  /* elo */ 'This season only, rated the way a ranked ladder rates', 'Recent form is his recent average (the latest games count most)',
+    'a team can stand above one with better raw numbers', 'told nothing more about a team\'s next game',
+    'where the same forecast from both teams\' raw numbers so far', 'each game scored on points and EPA a play',
+    'opponents counted ranks the stat\'s own rating, which credits a good game',
+    'The biggest edges this week between an expected starter and the defense', 'Click a row to open the game at his stats',
+    'the best players against the weakest units they face', 'it is no longer a matchup to bet on',
+    '1500 the average, 100 points a standard deviation', 'so this is its overall rank', 'of where it finished then on every stat',
+    'until a club files, a player out at its last report', 'is counted out, and a starter can still change',
+    'not in nflverse\'s player stats yet, so', 'the run, pass and pass-rush tables of each side', 'final table once most clubs have played week 1',
+    'the projections cover quarterbacks, running backs, receivers and tight ends', 'he is not an expected starter in this week\'s file',
+    'so there is no matchup to show',
+  /* snapshot */ 'The calls were made before kickoff and are graded on the result', 'An automatic line until this game\'s preview is written',
+    'Vegas\'s favourite and chance show here once the game has a line', 'The models call a game in the week before it',
+    'They start once a team has a rated game this season', 'No starter here is above his position',
+    'are for games still to kick off, as on the Props tab', 'so there are no mismatches to show', 'week has gone, and its mismatches with it',
+    'week has gone, and its matchups with it', 'called in the eight days before kickoff', 'called in the week of the game',
+    'every team\'s rating takes it in when the Elo job next rebuilds', 'The Deep Dive covers the regular season only; its matchups end',
+    'Overall Offense and Overall Defense start once a team has', 'so the starters cannot be shown', 'take over once most clubs have played week 1',
+    'Also expected to start, not rated yet', 'Each defensive group\'s header carries its unit as the matchup formula',
+    'no expected starter here both stands above his position\'s average', 'The edge is how far above his position\'s average the player stands',
+    'Each bar splits the pair between the two teams, in their colours', 'from TeamRankings\' season tables as the news job pulls them',
+    'The ratings and the Deep Dive are the files as they', 'so the snapshot cannot be drawn: it reads',
+    'No stat of his where the Elo matchup has held up', 'not expected to play, so none to show',
+  /* frames */ 'Every game this season is re-scored each time the table is built', 'so the whole table predates it, not only these teams',
+    'Above the line is beating Vegas, below is trailing it', 'Friends are dashed, counted on the games they picked',
+    'shaded red under .500, clear at .500 and green above', 'and its record stands where it was',
+    'Every week X bet: what went in and what came back', 'against what X deposited: green while above it', 'no week of this one is logged yet',
+    'has a designation against them this week', 'Without it the starting quarterback cannot be identified',
+    'absences appear here once nflverse posts its games', 'nobody is ruled out for it here', 'the first is filed in the week of the opener',
+    'results and stats to start the record', 'you can show it again at the foot of the list', 'each clears itself the day after its last game',
+    'placed parlays, followed live through their games', 'read on every load; the rest of the tab is not affected',
+    'An ad or tracker blocker, a VPN, or a work or school network', 'Every game called by three models against Vegas',
+    'frozen at kickoff and graded in public'
+];
+{ const plain = x => x.replace(/\\+u2019/g, '\u2019').replace(/\\+u2018/g, '\u2018').replace(/\\+u2212/g, '\u2212').replace(/\\+(['"])/g, '$1').replace(/[\u2018\u2019]/g, "'");
+  const bare = plain(out.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, ''));
+  for (const p of GONE_V130) { const at = bare.indexOf(plain(p));
+    if (at >= 0) throw new Error(`a description the owner took off the page on 22 October 2026 is back: "${p}", in ...${bare.slice(Math.max(0, at - 80), at + p.length + 40).replace(/\s+/g, ' ')}...`); } }
 /* the hash of the page with the slot still in it, then set into the slot: the smoke takes it
    out again and checks the page is what was hashed */
 const HASH = crypto.createHash('sha256').update(out).digest('hex').slice(0, 7);

@@ -164,7 +164,7 @@ footer a{color:var(--ink-2)}
     <div class="lp-dlg-panel" role="alertdialog" aria-modal="true" aria-labelledby="lpAskTitle" aria-describedby="lpAskWhat lpAskText">
       <h3 id="lpAskTitle">Clear this parlay?</h3>
       <p class="lp-dlg-what" id="lpAskWhat"></p>
-      <p class="lp-dlg-text" id="lpAskText">It is cleared from X Parlays on this device only, and nothing is sent anywhere; you can show it again at the foot of the list. X’s parlays clear themselves the day after their last game.</p>
+      <p class="lp-dlg-text" id="lpAskText">Hidden on this device only.</p>
       <div class="lp-dlg-btns"><button type="button" class="btn quiet" id="lpAskNo">Cancel</button><button type="button" class="btn danger" id="lpAskYes">Clear</button></div>
     </div>
   </div><!-- /lpAsk -->
@@ -564,8 +564,9 @@ function drawList(){
   const ps=shown(), nHere=STATE.parlays.length-ps.length;
   let html='';
   {
-    if(STATE.dataErr) html+=`<div class="note"><b>X's placed parlays could not be read: ${esc(STATE.dataErr)}</b> They come from <code>liveparlays/parlays.json</code> in the repository, read on every load; the rest of the tab is not affected.</div>`;
-    else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading (${esc(STATE.err)}).</b> This browser could not reach ESPN's live scoreboard, which the page reads directly. An ad or tracker blocker, a VPN, or a work or school network usually causes it; try with the blocker paused, or on another device. The parlays below are still right; only the live numbers against them are stale.</div>`;
+    /* the state alone, its first clause (the owner's call of 22 October 2026: "i dont want any descriptions anywhere") */
+    if(STATE.dataErr) html+=`<div class="note"><b>X's placed parlays could not be read (${esc(STATE.dataErr)}).</b></div>`;
+    else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading (${esc(STATE.err)}).</b></div>`;
   }
   if(!ps.length){
     /* every parlay cleared on this device: it says so quietly, with the way back */
@@ -598,7 +599,7 @@ function drawList(){
     const key=isSettled(p)?'settled':(w0?w0.key:'none');
     if(key!==lastKey){
       lastKey=key;
-      html+=key==='settled'?`<div class="lp-win lp-done"><b>Finished</b><span>${nSettled} · each clears itself the day after its last game</span></div>`
+      html+=key==='settled'?`<div class="lp-win lp-done"><b>Finished</b><span>${nSettled}</span></div>`
         :key==='none'?'<div class="lp-win"><b>Kickoff not known yet</b></div>'
         :`<div class="lp-win"><b>${esc(w0.day)} ${w0.w} games</b><span>first kickoff ${esc(localT(s0))}</span></div>`;
     }
@@ -705,14 +706,14 @@ window.addEventListener('keydown',e=>{
   else if(!e.shiftKey&&(at===f[1]||!$lp('lpAsk').contains(at))){ e.preventDefault(); f[0].focus(); }
 },true);
 /* the live stamp (when the scores were last read) and, under the heading, when X's parlays
-   last changed: the file's own word for it */
+   last changed: the file's own word for it, and nothing else ("updated Tue, Oct 20, 3:14 PM"; the
+   owner's call of 22 October 2026, "i dont want any descriptions anywhere", took off the tagline before it) */
 function foot(){
   document.getElementById('stamp').textContent=STATE.err||STATE.dataErr?'not updating'
     :(STATE.at?'scores '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
       :(STATE.loaded?'loaded':'idle'));
   const up=document.getElementById('lpUpdated');
-  if(up) up.textContent='X’s placed parlays, followed live through their games'
-    +(STATE.updated!=null?' · updated '+new Date(STATE.updated).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'');
+  if(up) up.textContent=STATE.updated!=null?'updated '+new Date(STATE.updated).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
 }
 document.getElementById('now').addEventListener('click',refresh);
 draw(); refresh();

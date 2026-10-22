@@ -142,7 +142,9 @@ async function reality() {
       check(v && Math.abs(Date.parse(v) - pub) < 15 * 60000, `5b: the ${k} was read at ${v}, not by the run that published at ${P.published}`);
     /* stale upstream files are shown as stale: the report not reaching this week a day before its
        first kickoff, no report at all once one is due, a depth chart more than a day and a half
-       old; before the opener "no injury report yet" is said plainly, not flagged */
+       old; before the opener "No injury report yet" is said plainly, not flagged. One short line, the state
+       alone (the owner's call of 22 October 2026): "Injury report through week 7 (read ...) · Depth chart of
+       ...", each stale input flagged in bold after it, and none of the old line's explanations */
     const asof = w.eval(`injAsOf(${pub})`);
     const ks = weekGames.map(kick).filter(t => t != null), wk1 = ks.length ? Math.min(...ks) : null;
     const hasRep = !!(S.injuries && S.injuries.rows && S.injuries.rows.length);
@@ -150,8 +152,9 @@ async function reality() {
     const repLate = hasRep && repWeek < cur && wk1 != null && wk1 - pub < DAY;
     const noRep = !hasRep && due.injuries;
     const depthOld = S.depth && S.depth.dt && pub - Date.parse(S.depth.dt) > 36 * 3600000;
-    const repLine = hasRep ? /the injury report through week \d+/ : due.injuries ? /no injury report</ : /no injury report yet/;
-    warn(repLine.test(asof) && /the depth chart of/.test(asof), '5b: the absences card does not say what it was built from: ' + asof.slice(0, 160));
+    const repLine = hasRep ? /Injury report through week \d+/ : due.injuries ? /No injury report</ : /No injury report yet/;
+    warn(repLine.test(asof) && /Depth chart of/.test(asof) && !/From nflverse|nobody is ruled out|is not out yet|is not on nflverse|filed in the week of the opener|a day and a half old/.test(asof),
+      '5b: the absences card does not say what it was built from in its few words, or still explains it: ' + asof.slice(0, 160));
     warn(/inj-stale/.test(asof) === !!(repLate || noRep || depthOld), `5b: the absences card ${repLate || noRep || depthOld ? 'does not flag' : 'flags'} a stale input (report ${hasRep ? 'through week ' + repWeek : 'none'}, week ${cur}, depth ${S.depth && S.depth.dt}): ` + asof.slice(0, 200));
     /* the card itself, while there is a coming game to list absences for: between playoff rounds it
        says it is waiting for the next one instead */
@@ -328,17 +331,26 @@ async function reality() {
       if (behind) lag++;
       warn(!!t.querySelector('.rt-lag') === behind, `5i: ${tm}'s rating ${behind ? 'predates a final and does not say so' : 'is marked behind but counts every final'}`); }
     warn(!lag || /Rated before their latest game/.test(d.getElementById('ratingsTable').textContent), '5i: teams rated before their latest game, with no note under the table');
+    /* the note is the teams and their games alone, and the table has no lead (the owner's call of 22 October 2026) */
+    warn(!/The record counts it|re-scores every team|Elo job next rebuilds/.test(d.getElementById('ratingsTable').textContent), '5i: the note under Team Rankings still explains the ratings');
     console.log(`  5i: ${lag} team${lag === 1 ? '' : 's'} rated before their latest final`); }
 
   /* 5j. the season's phase: with every game played the absences card stops listing a coming week */
   { const keep = J(S.schedule.map(g => [g.result, g.game_type]));
     /* every game played and no Super Bowl among them (a real one, once posted, is set aside here) */
     w.eval(`S.schedule.forEach(g=>{ if(g.result==null) g.result=3; if(g.game_type==='SB') g.game_type='CON'; })`);
-    check(w.eval('seasonPhase()') === 'waiting' && /next round/.test(w.eval('renderImpact()')), '5j: with every posted game played the absences card does not wait for the next round');
+    check(w.eval('seasonPhase()') === 'waiting' && /^<p class="muted" style="margin:0">Waiting for the next round's games\.<\/p>$/.test(w.eval('renderImpact()')), '5j: with every posted game played the absences card does not say "Waiting for the next round\'s games." alone: ' + w.eval('renderImpact()').slice(0, 200));
     w.eval(`(()=>{ const g=S.schedule[S.schedule.length-1]; g.game_type='SB'; })()`);
     check(w.eval('seasonPhase()') === 'over' && w.eval('renderImpact()') === '', '5j: after the Super Bowl the absences card still lists a coming week');
     w.eval(`(()=>{ const k=${keep}; S.schedule.forEach((g,i)=>{ g.result=k[i][0]; g.game_type=k[i][1]; }); })()`);
-    check(w.eval('seasonPhase()') === phase, '5j: the schedule was not restored'); }
+    check(w.eval('seasonPhase()') === phase, '5j: the schedule was not restored');
+    /* no descriptions (the owner's call of 22 October 2026): the absences card's empty and no-depth-chart lines and the
+       record's empty line are the state alone, never an upload a visitor cannot make (patches.js, 7), in the app as built
+       (renderRecord is wrapped by the build's hook, so its own source is not its toString) */
+    { const src = html;
+      check(/<div class="empty">No absences this week\.<\/div>/.test(src) && /<p class="muted">No depth chart yet\.<\/p>/.test(src) && /<div class="empty">No graded games yet\.<\/div>/.test(src)
+        && !/those groups|Upload a depth chart|cannot be identified|Every posted game has been played|nflverse posts its games|Upload a week/.test(src),
+        '5j: the absences card or the record still explains itself, or asks for an upload'); } }
 
   /* 5k. a scoreboard final counts for every model at once, on the call frozen at kickoff */
   { const g = weekGames.find(x => x.result == null && !P.processed[x.game_id]);
@@ -571,9 +583,13 @@ async function xbetLog() {
     check(!v.d.querySelector('#betTable img') && !v.w.__xss, '6: a note was drawn as markup by the app\'s own Bet Log table');
     v.w.eval('renderBets()');
     { const note = v.d.getElementById('xbNote').textContent;
-      check(v.d.querySelector('#tab-bets h2').textContent === 'X Bet Log' && note.startsWith('Every week X bet: what went in and what came back, from X\u2019s file, read only.') && /Updated /.test(note)
+      check(v.d.querySelector('#tab-bets h2').textContent === 'X Bet Log' && /^Updated \S/.test(note) && !/Every week X bet|read only|from X\u2019s file|One line per week/.test(note)
         && !/owner|Synced|sign|Not synced|store|every device/i.test(note) && !v.d.getElementById('xbSignOut') && !v.d.getElementById('xbBackup'),
-        '6: the X Bet Log is not headed so, does not say what it is ("Every week X bet: what went in and what came back, from X\u2019s file, read only.") and when it changed, or still speaks of an owner, a sign-in, a store or every device: ' + note); }
+        '6: the X Bet Log is not headed so, does not say when it changed ("Updated ...") and nothing else (the owner\'s call of 22 October 2026: no "Every week X bet" lead), or still speaks of an owner, a sign-in, a store or every device: ' + note);
+      /* nor a line under the chart's heading explaining it */
+      const bh = v.d.querySelector('#betChart .bv-hd'), sub = bh && bh.nextElementSibling;
+      check(!!bh && !!sub && sub.classList.contains('bv-wrap') && !/account balance at the end of each week|running profit, week by week|made or lost/.test(v.d.getElementById('betChart').textContent),
+        '6: the X Bet Log\'s Bankroll chart still has a line under its heading explaining it: ' + (sub ? sub.outerHTML.slice(0, 120) : 'no chart')); }
     check(!/Week 5|mine/.test(v.d.getElementById('betTable').textContent) && !/\$40\.00/.test(v.d.getElementById('betChart').textContent), '6: the browser\'s own old log or deposit is shown as X\'s');
     /* a click that saves the app's whole state (the chart's switch) leaves this browser's own log
        and deposit as they were, and keeps the view the viewer chose */
@@ -606,7 +622,7 @@ async function xbetLog() {
   /* a file for another season: no weeks of this one, and the frame says which it holds */
   { const X = stubXB({ weeks: {}, other: APP_SEASON - 1 });
     const v = loadXB(X, 'bets'); await sleep(700);
-    check(new RegExp(String(APP_SEASON - 1)).test(v.d.getElementById('xbNote').textContent) && rows(v.d).length === 0, '6: a log for another season is not said'); }
+    check(v.d.getElementById('xbNote').textContent === 'X\u2019s file holds the ' + (APP_SEASON - 1) + ' season.' && rows(v.d).length === 0, '6: a log for another season is not said ("X\u2019s file holds the ' + (APP_SEASON - 1) + ' season."): ' + v.d.getElementById('xbNote').textContent); }
   /* a visitor's page (20 October 2026: the X Bet Log is the site owner's alone): its XBETS says it has no log. The frame is
      not read only and shows the browser's own log, as the app on its own does, never a week or the deposit of X's, and says
      nothing of X's file; a save leaves the browser's own log as it was */
@@ -705,7 +721,10 @@ async function xbetLog() {
   check(!da.querySelector('#tab-upload #injSuggest'), 'admin: Impact absences is still on Data Upload too');
   check(!/Rank tags and the Elo change column/.test(da.getElementById('ratingsTable').textContent), 'admin: the rank-tag note is still under the ratings');
   warn(da.getElementById('injCard').hidden === !injText, 'admin: the absences card is not hidden exactly when it is empty');
-  for (const [where, re] of [['modelChart', /Running season accuracy after each week/], ['modelChart', /Early weeks bounce around/], ['injSuggest', /Two absences carry a measured effect/]])
+  for (const [where, re] of [['modelChart', /Running season accuracy after each week/], ['modelChart', /Early weeks bounce around/], ['injSuggest', /Two absences carry a measured effect/],
+    /* the leads that went with the owner's call of 22 October 2026 ("i dont want any descriptions anywhere") */
+    ['modelChart', /wins minus the Vegas favourite|one step is one game|Friends are dashed|the zero line/], ['recordTable', /shaded red under \.500|counts only the games they picked/],
+    ['ratingsTable', /rated on this season's results alone|re-scored each time the table is built|Vs average is its chance/]])
     check(!re.test(da.getElementById(where).textContent), `admin: the note is still under ${where}`);
   { const rt = da.getElementById('ratingsTable');
     check(rt.parentElement.id === 'ratingsCard' && rt.parentElement.classList.contains('card') && rt.parentElement.parentElement.id === 'tab-ratings', 'admin: the ratings table is not in a card of its own');

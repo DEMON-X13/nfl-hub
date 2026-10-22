@@ -19,8 +19,9 @@
    October 2026 no one else's page has the X Bet Log tab or reads its file), the log is X's (the X
    Bet Log: the file liveparlays/xbets.json, through window.XBETS, which the build's hook lays into
    S.bets and S.bank.deposit), read only: no entry form, no Remove, no deposit box; the balance from
-   X's deposit, or X's profit against break even when the file has none; and a line saying when the
-   file last changed. Where window.XBETS.enabled() is false (a visitor's page) it is the browser's
+   X's deposit, or X's profit against break even when the file has none; no line under the chart's
+   heading explaining it (the owner's call of 22 October 2026); and a line saying when the file last
+   changed. Where window.XBETS.enabled() is false (a visitor's page) it is the browser's
    own log, as on the app's own page, never shown on the hub. */
 function betsViz(){
   const chart=document.getElementById('betChart'), table=document.getElementById('betTable');
@@ -106,8 +107,7 @@ function betsViz(){
   chart.innerHTML=`<div class="card"><div class="bv-hd"><h2>Bankroll</h2><span class="seg" role="group" aria-label="Chart">`
     +`<button type="button" data-bv="balance" class="${view==='balance'?'on':''}" aria-pressed="${view==='balance'}">Balance</button>`
     +`<button type="button" data-bv="pnl" class="${view==='pnl'?'on':''}" aria-pressed="${view==='pnl'}">Weekly P&amp;L</button></span></div>
-    <p class="muted" style="margin:0 0 8px">${view==='balance'?(ro?(dep==null?'X\u2019s running profit, week by week, against break even.':'X\u2019s account balance at the end of each week, against what X deposited: green while above it, red while below.')
-      :(dep==null?'Your running profit, week by week, against break even. Enter what you deposited below to see the account balance instead.':'Your account balance at the end of each week, against what you deposited: green while you are above it, red while you are below.')):(ro?'What each of X\u2019s weeks made or lost.':'What each week made or lost.')}</p>
+    ${ro?'':`<p class="muted" style="margin:0 0 8px">${view==='balance'?(dep==null?'Your running profit, week by week, against break even. Enter what you deposited below to see the account balance instead.':'Your account balance at the end of each week, against what you deposited: green while you are above it, red while you are below.'):'What each week made or lost.'}</p>`}
     <div class="bv-wrap"><svg class="bv-chart bv-${view}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${view==='balance'?'Account balance by week':'Profit and loss by week'}">${svg}${hits}</svg><div class="bv-tip" hidden></div></div>
     <div class="stat-strip" style="margin-top:12px">
       ${ro&&dep==null?'':`<div class="stat bv-balance"><b>${dep==null?'–':money(dep+net)}</b><span>${dep==null?'balance: enter your deposit below':'balance, '+money(dep)+' deposited'}</span></div>`}
@@ -148,8 +148,9 @@ function betsViz(){
     if(!confirm(`Remove the week ${b.dataset.betdel} bet entry?`)) return;
     delete S.bets[b.dataset.betdel]; save(); renderRecord(); }));
 }
-/* the X Bet Log's note over the (hidden) entry form: what the log is, and when the file last
-   changed or that it could not be read. Save week stays shut: X's log is a file, read only here. */
+/* the X Bet Log's note over the (hidden) entry form: when the file last changed, or that it could not be read, or
+   which season it holds, and nothing else (the owner's call of 22 October 2026: "i dont want any descriptions
+   anywhere"; until then it led with what the log is). Save week stays shut: X's log is a file, read only here. */
 function xbHead(xb){
   const n=document.getElementById('xbNote'), save=document.getElementById('betSave');
   if(save) save.disabled=!!xb;
@@ -159,9 +160,8 @@ function xbHead(xb){
   const s=xb.status||{};
   let line='', cls='';
   if(s.ok===false){ line='X\u2019s bet log could not be read'+(s.err?' ('+esc(s.err)+')':'')+': reload the page to try again.'; cls='bad'; }
-  else if(s.other){ line='The log on file is X\u2019s '+esc(s.other)+' season: no week of this one is logged yet.'; }
+  else if(s.other){ line='X\u2019s file holds the '+esc(s.other)+' season.'; }
   else if(!s.applied) line='Reading X\u2019s bet log\u2026';
   else if(s.at&&when(s.at)) line='Updated '+esc(when(s.at));
-  n.innerHTML='Every week X bet: what went in and what came back, from X\u2019s file, read only.'
-    +(line?'<span class="xb-status '+cls+'">'+line+'</span>':'');
+  n.innerHTML=line?'<span class="xb-status '+cls+'">'+line+'</span>':'';
 }

@@ -138,8 +138,8 @@ function slateOutcome(g){
 function slateResult(g,c){
   const o=slateOutcome(g);
   if(!o){
-    if(gameFinal(g)) return '<b class="sl-sc sl-pend">Final</b><span class="sl-sub">score with the next update</span>';
-    if(gameStarted(g)) return '<b class="sl-sc sl-pend">LIVE</b><span class="sl-sub">Refresh scores reads it</span>';
+    if(gameFinal(g)) return '<b class="sl-sc sl-pend">Final</b>';
+    if(gameStarted(g)) return '<b class="sl-sc sl-pend">LIVE</b>';
     return '<b class="sl-sc sl-pend">0 : 0</b>';
   }
   const win=o.as>o.hs?g.a:(o.hs>o.as?g.h:null), score=`${num(o.as,0)}–${num(o.hs,0)}`;
@@ -203,21 +203,20 @@ function renderSlate(){
   renderRecords(w);
   const gs=gamesIn(w);
   const open=weekOpen(w), lw=liveWeek();
-  /* expected points are the biggest input to every projection, so say so when the lines are stale */
+  /* expected points are the biggest input to every projection, so say so when the lines are stale (app v130: the
+     state alone) */
   { const ln=$('lineNote');
     if(ln){ const soon=gs.some(g=>{ const k=kickoff(g); return k&&!gameFinal(g)&&k.getTime()-Date.now()<3*864e5; });
       const age=S.gamesFetched?(Date.now()-S.gamesFetched)/864e5:null; const stale=open&&soon&&(age==null||age>3);
       ln.hidden=!stale;
-      ln.textContent=!stale?'':(age==null
-        ?'Spreads and totals have not been pulled in this browser yet. Expected points are the biggest single input to every projection, and they are refreshed twice a week.'
-        :`Spreads and totals were last pulled ${age.toFixed(0)} day${age>=1.5?'s':''} ago. They are refreshed twice a week; expected points are the biggest single input to every projection.`); } }
+      ln.textContent=!stale?'':(age==null?'Lines not pulled yet.'
+        :`Lines last pulled ${age.toFixed(0)} day${age>=1.5?'s':''} ago.`); } }
   /* Refresh odds over the game list (app v107): every game of the week still to come */
   { const so=$('slateOdds'); if(so){ const on=open&&w===currentWeek()&&pbGames().length>0; so.hidden=!on; so.innerHTML=on?espnCtl(null,'slate'):''; } }
   if(!open){
     $('gamesList').innerHTML=`<div class="empty" style="text-align:left;padding:26px 30px">
       <b style="font-family:var(--display);font-size:22px;display:block;margin-bottom:8px">Week ${w} isn't open yet</b>
-      <p class="muted" style="margin:0 0 8px">Projections use each player's most recent form, so a number built now, ${w-lw} week${w-lw===1?'':'s'} early, would be based on games that haven't happened. It would be worse than useless: it would look authoritative and be stale.</p>
-      <p class="muted" style="margin:0">This opens once week ${lw} is complete. Fixtures below for reference.</p>
+      <p class="muted" style="margin:0">Opens once week ${lw} is complete.</p>
       <div style="margin-top:16px">${gs.map(g=>{const d=fmtDate(g);
         return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)">
           <span class="muted" style="font-size:12px;width:170px">${d.day} ${d.t}</span>${tag(g.a)}<span class="muted">at</span>${tag(g.h)}</div>`;}).join('')}</div>
@@ -248,7 +247,7 @@ function renderSlate(){
   };
   /* the games still to play, live ones too, first in kickoff order; the finals under a heading */
   const todo=gs.filter(g=>!gameFinal(g)), done=gs.filter(g=>gameFinal(g));
-  const over=seasonOver()?`<div class="card" style="border-left:4px solid var(--gold);margin-bottom:12px"><b>The ${SEASON} regular season is over.</b> <span class="muted">This model covers the regular season only: playoff games are not projected or priced, and no prices are pulled until next season. Every week stays here to look back on.</span></div>`:'';
+  const over=seasonOver()?`<div class="card" style="border-left:4px solid var(--gold);margin-bottom:12px"><b>The ${SEASON} regular season is over.</b></div>`:'';
   const rows=over+notPostedNote()+todo.map(card).join('')+(done.length?`<div class="slatesep">Completed</div>`+done.map(card).join(''):'');
   $('gamesList').innerHTML=rows||'<div class="empty">No games scheduled for this week.</div>';
   $('gamesList').querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>{
@@ -302,9 +301,8 @@ function hitBand(actual,proj){
 function noLineText(g,pl,long){
   const t=tookPart({gid:g.id,week:g.w,pid:pl.id,team:pl.team});
   if(!long) return t===true?'played, no stat line':(t===false?'did not play':'no stat line; snap counts not in yet');
-  return t===true?'No stat line for this player, but the snap counts have him on the field: a book grades his legs on zero.'
-    :(t===false?'No stat line and no snap for this player: he did not play, and a book voids his legs.'
-    :'No stat line for this player, and the snap counts that say whether he played are not in yet.');
+  return t===true?'Played, no stat line: graded on zero.'
+    :(t===false?'Did not play: legs void.':'No stat line; snap counts not in yet.');
 }
 function actualSummary(x,lines,week,src,g){
   /* src is a live box-score block when nflverse has not posted yet; the shape is the same,
@@ -361,8 +359,7 @@ function gameBetsCard(g,locked){
         <td class="num book real">${l.src==='real'?fmtML(l.price):''}</td></tr>`; };
     tot=`<div class="statblk"><h4>Game total <em class="mpts" title="The model's own points for the two sides: shown, not used in the chance">model's points ${modelTotal(g).toFixed(1)}</em><em class="mline">book line ${tb.line}</em></h4><table class="rungs">${trow('over')}${trow('under')}</table></div>`; }
   return `<div class="card gbets"><h2>Game bets</h2>
-    <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line, the spread and the total.':'A team to win, or to cover the spread, or the game total over or under. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that. The total's chance is the book's own, its over and under prices with the margin taken out (an even 50% with no price on file): tested on 2024 to 2026, no points model of ours beat the posted total, so the model's points are shown beside it and not used. A Suggested Parlays set takes a game total only where the game's other legs cannot fill a parlay, and never marks it Value; tick it here to add one yourself. A win or cover leg is priced as unrelated to player legs, which has not been measured here; a total moves with its game's passing and scoring lines, measured on 2019 to 2024.</p>
-    ${lineSource(g)?`<p class="muted" style="margin:0 0 8px;font-size:12px">Lines: ${esc(lineSource(g))}.</p>`:''}${rows}${tot}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}${tb&&(totalBook(g,'over')==null||totalBook(g,'under')==null)?'<p class="muted" style="margin:6px 0 0;font-size:12px">No over and under price on file for this total yet: the chance is an even 50%, and where a price is missing the -110 is an estimate.</p>':''}</div>`;
+    ${lineSource(g)?`<p class="muted" style="margin:0 0 8px;font-size:12px">Lines: ${esc(lineSource(g))}.</p>`:''}${rows}${tot}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet.</p>':''}${tb&&(totalBook(g,'over')==null||totalBook(g,'under')==null)?'<p class="muted" style="margin:6px 0 0;font-size:12px">No total price yet: 50%, \u2212110 est.</p>':''}</div>`;
 }
 /* (app v127) a game's page offers no ladder bet (isLadder): no box to show the ladders, no rung row and no 2+
    touchdowns row. The model still builds every stat's rungs (statLines), and the Track Record still grades them. */
@@ -377,7 +374,6 @@ function renderGame(){
      stats it did not have, and every other game in it said "did not play" */
   const haveStats=!!(S.processedGames&&S.processedGames[g.id]&&S.actuals&&S.actuals[String(g.w)]);
   const d=fmtDate(g);
-  const meta=PAY.mkt_meta&&PAY.mkt_meta[String(g.w)];
   let html=`<div class="bar">
     <button class="btn quiet" id="backBtn">\u2715 Close</button>
     <span class="grow"></span>
@@ -387,11 +383,10 @@ function renderGame(){
       <option value="heavy" ${S.margin==='heavy'?'selected':''}>heavy</option></select></label>
     <label class="muted"><input type="checkbox" id="allCb" ${showAll?'checked':''}> Include backups</label>
   </div>`;
-  if(meta&&!locked) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px">Book lines for this week are ${meta.src}, as of ${meta.asof}. Lines move; check the number before you bet.</p>`;
   /* Refresh odds for this game alone (app v107): its week's scoreboard and its player lines */
   if(!locked&&!hasScore(g)) html+=espnCtl(g.id,'game');
   { const dd=PAY.depth_dt?Date.parse(PAY.depth_dt+'T12:00:00Z'):NaN, bk=PAY.baked_at?Date.parse(PAY.baked_at):NaN;
-    if(!locked&&isFinite(dd)&&isFinite(bk)&&bk-dd>3*864e5) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px;color:#8A5E05">Depth charts as of ${esc(PAY.depth_dt)}: the latest ones could not be downloaded, so who starts may be out of date.</p>`; }
+    if(!locked&&isFinite(dd)&&isFinite(bk)&&bk-dd>3*864e5) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px;color:#8A5E05">Depth charts as of ${esc(PAY.depth_dt)} (may be out of date).</p>`; }
   /* a live score and stats, when the scoreboard has been read for this game */
   const lg=LIVE.games[g.id], lbox=!!LIVE.box[g.id];
   const liveOn=!haveStats&&lbox;
@@ -404,9 +399,7 @@ function renderGame(){
       ${LIVE.at?`<span class="muted" style="font-size:12px">${LIVE.err?'stats not loading':'read '+new Date(LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})}</span>`:''}
       <button class="btn quiet small" id="gameStatsNow" title="Read the score and the box score for this game from ESPN. Free: no odds-API credits, no job.">Refresh stats</button>
     </div>
-    <span class="muted">${haveStats?'Each player below shows what the model projected against what he actually did.'
-      :(liveOn?'Each player below shows what he has done so far, live from the scoreboard, against what was projected. These are not the settled numbers: the season\u2019s stats arrive with the next update, and those are what settle a leg.'
-        :'Player stats come out some hours after the final whistle and appear with the next update. Press Refresh stats to read them live from the scoreboard in the meantime.')}${hasScore(g)||lg?'':' The final score appears after the next refresh.'}</span></div>`;
+    ${haveStats?'':`<span class="muted">${liveOn?'Live from the scoreboard, not settled.':'Stats not in yet.'}</span>`}</div>`;
   html+=gameHeadCard(g);
   html+=gameWinBtns(g);
   html+=gameBetsCard(g,locked);
@@ -414,13 +407,13 @@ function renderGame(){
     const t=roster[team];
     html+=`<div class="teamhdr">${tag(team)} ${TEAM_NAMES[team]||team} <span class="pill">${fin?'played '+t.opp:'playing '+t.opp}</span></div>`;
     if(t.gaps&&t.gaps.length) html+=`<p class="muted" style="margin:-2px 0 8px">Not shown: ${t.gaps.map(x=>`<b>${esc(x.name)}</b> (${x.slot}, ${x.why})`).join(', ')}.</p>`;
-    if(!t.players.length){ html+='<div class="empty">Nobody here has enough NFL history to project. Rosters and depth charts are refreshed twice a week.</div>'; continue; }
+    if(!t.players.length){ html+='<div class="empty">No players to project.</div>'; continue; }
     for(const x of t.players){
       const lines=statLines(x);
       /* a charted player the model has nothing to project for: shown in his place, nothing to bet on */
       if(!lines.length&&nothingToProject(x)) html+=`<div class="plrbtn" data-nohist="${x.pl.id}" style="cursor:default">
         <div class="who">${esc(x.pl.n)}${(!locked&&+g.w===currentWeek())?injChip(x.pl.id):''}<span>${depthLabel(x.pl)||x.pl.pos}${x.starter?'':' \u00b7 backup'}${x.gp<3?' \u00b7 thin history':''}</span></div>
-        <div class="sum"><span class="muted">${noHistory(x.pl)?'No games the model counts, last season or this one, so nothing to project: no lines until he plays this season':'Too little in his games so far to project a starter\u2019s workload: no lines'}</span></div><div></div></div>`;
+        <div class="sum"><span class="muted">${noHistory(x.pl)?'No lines: no games to project from':'No lines yet'}</span></div><div></div></div>`;
       if(!lines.length) continue;
       const open=!!S.ui.open[x.pl.id], stOpen=!!(S.ui.stats&&S.ui.stats[x.pl.id]);
       html+=`<button class="plrbtn" data-open="${x.pl.id}" aria-expanded="${open}">
@@ -462,8 +455,7 @@ function renderGame(){
         if(a) html+=`<div class="recaplegend"><span><i style="background:var(--pick)"></i>beat the projection</span>
           <span><i style="background:#5E35B1"></i>landed exactly on it</span>
           <span><i style="background:var(--gold)"></i>under, but close</span>
-          <span><i style="background:var(--miss)"></i>well under</span></div>
-          <p class="muted" style="margin:6px 0 0;font-size:11px">Green means it cleared the model's own number, which is not the same as clearing your sportsbook's line. The book line and which way it went are on each tile.</p>`;
+          <span><i style="background:var(--miss)"></i>well under</span></div>`;
         if(haveStats&&!a) html+=`<p class="muted" style="margin:8px 0 0">${noLineText(g,x.pl,true)}</p>`;
         html+='</div>'; continue;
       }
@@ -476,7 +468,7 @@ function renderGame(){
           const tf=tod!=null?legFarOff({gid:g.id,pid:x.pl.id,stat:'any_td',k:1,side:'over',main:false,p:l.p,price:tod,src:'real',week:g.w})
             :(te.src==='dkline'?legFarOff({gid:g.id,pid:x.pl.id,stat:'any_td',k:1,side:'over',main:false,p:l.p,price:te.price,src:'dkline',espn:espnOf(te),week:g.w}):null);
           const qb=x.pl.grp==='QB', what=qb?'a rushing or receiving touchdown':'a touchdown';
-          html+=`<div class="statblk"><h4>${qb?'Rushing or receiving TD <em data-qbtd>his own run or catch; a TD pass does not count</em>':'Touchdown'}</h4>
+          html+=`<div class="statblk"><h4>${qb?'Rushing or receiving TD <em data-qbtd>not a TD pass</em>':'Touchdown'}</h4>
             <table class="rungs"><tr class="${ton?'on':''}${tf?' far':''}">
             <td class="pick"><input type="checkbox" ${ton?'checked':''} data-leg="${tk}" data-k="1" data-side="over" aria-label="Add ${esc(x.pl.n)} to score ${what}"></td>
             <td class="thr">Scores one</td>
@@ -716,8 +708,8 @@ const SUGGEST_QUESTIONABLE=false;
    shown as a week with nobody hurt */
 function notPostedNote(){
   const np=new Set((PAY&&PAY.not_posted)||[]), say=[];
-  if(np.has('injuries')) say.push(`nflverse has not posted the ${SEASON} injury report yet, so no player is marked out, doubtful or questionable.`);
-  if(np.has('stats')&&S.sched.some(g=>gameFinal(g))) say.push(`nflverse has not posted this season's player stats yet, so the finished games are not graded and every projection stands on last season.`);
+  if(np.has('injuries')) say.push('No injury report posted yet.');
+  if(np.has('stats')&&S.sched.some(g=>gameFinal(g))) say.push('No player stats posted yet.');
   return say.length?`<div class="card notposted" style="border-left:4px solid var(--gold);margin-bottom:12px">${say.map(t=>`<div class="muted">${t}</div>`).join('')}</div>`:'';
 }
 function practiceOf(s){ s=String(s||''); return /did not/i.test(s)?'DNP':(/limited/i.test(s)?'Limited':(/full/i.test(s)?'Full':'')); }
@@ -939,8 +931,7 @@ async function loadPayload(){
 function payloadFailed(e){
   const m=document.createElement('div');
   m.style.cssText='margin:18px;padding:16px 18px;border-radius:12px;background:#FAE1DE;color:#7A241A;line-height:1.6;font:15px/1.6 system-ui,sans-serif';
-  m.innerHTML='<b>The season data could not be loaded.</b><br>'+String(e&&e.message||e)
-    +'<br><br>This page holds no data of its own \u2014 it reads <code>data/payload.json</code> beside it every time it opens, so that it can never show you a stale number. Reload to try again.';
+  m.innerHTML='<b>The season data could not be loaded</b> ('+esc(e&&e.message||e)+'). Reload to try again.';
   const main=document.querySelector('main')||document.body;
   main.insertBefore(m,main.firstChild);
 }
@@ -957,8 +948,8 @@ async function boot(){
        times a week and a banner on each would bury the one that matters */
     rebuilt=(saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD)?null
       :(saved.dataBuild&&saved.dataBuild!==DATA_BUILD)||!saved.dataBuild
-      ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Saved parlays, the stake and prices were kept; weeks built into this file were replayed.'
-      : 'The model changed, so the season was rebuilt from the current baseline. Saved parlays, the stake and prices were kept; weeks built into this file were replayed.';
+      ? 'Rosters updated: season rebuilt, your builder kept.'
+      : 'Model updated: season rebuilt, your builder kept.';
     /* the season's data is built in and replays below; keep what only you could have made */
     for(const k of ['parlay','saved','odds','stake','bookPrice','margin','gamesFetched','lastBackup']) if(saved[k]!=null) S[k]=saved[k];
   }
@@ -1889,32 +1880,29 @@ function espnStatus(gid){
   const pubs=ids.map(id=>espnPubOf(id,w)).filter(Boolean), tPub=Math.max(0,...pubs.map(P=>Math.max(P.at||0,P.when||0)));
   const pubNone=ids.filter(id=>{ const P=espnPubOf(id,w); return !!P&&P.st==='none'&&!live[id]; }).length;
   const when=PAY&&PAY.baked_at?' '+espnWhen(PAY.baked_at):'';
-  const pub=pubs.length&&tPub?`DraftKings’ lines as the site read them from ESPN ${espnWhen(tPub)}: player prices estimated from the line`
-    +(pubNone?(gid?'; DraftKings had posted no player lines for it when the site read ESPN':`; ${pubNone} game${pubNone===1?'':'s'} had no player lines posted when the site read ESPN`):'')
-    :`Prices as published${when}`;
+  /* (app v130) each part its state alone, joined by " · " (the owner's call of 22 October 2026: "i dont want any
+     descriptions anywhere"); a full stop at the end, never a second one after "est." */
+  const pub=pubs.length&&tPub?`DraftKings via ESPN, ${espnWhen(tPub)} · player prices est.`
+    +(pubNone?(gid?' · no player lines yet':` · ${pubNone} game${pubNone===1?'':'s'} with no player lines yet`):'')
+    :`Prices as published${when}`, fin=s=>/\.$/.test(s)?s:s+'.';
   /* (app v108) a read this browser kept that gave way wholly, on this load, to prices published since */
-  const gave=ids.filter(id=>ESPN_ASIDE[id]&&!espnPressed(id,w)&&!ESPN_GL[id]).length, gaveS=gave?(gid?'your earlier Refresh odds read gave way to prices published since'
-    :`your earlier Refresh odds read of ${gave} game${gave===1?'':'s'} gave way to prices published since`):'';
-  if(!ids.some(id=>ESPN_OUT[id])&&!read.length&&!lined.length) return pub+(gaveS?'; '+gaveS:'')+'.';
+  const gave=ids.filter(id=>ESPN_ASIDE[id]&&!espnPressed(id,w)&&!ESPN_GL[id]).length, gaveS=gave?(gid?'newer prices published since your read'
+    :`newer prices published since your read of ${gave} game${gave===1?'':'s'}`):'';
+  if(!ids.some(id=>ESPN_OUT[id])&&!read.length&&!lined.length) return fin(pub+(gaveS?' · '+gaveS:''));
   const t=Math.max(0,...read.map(id=>Date.parse(live[id].at)),...lined.map(id=>ESPN_GL[id].at));
   /* games of the week no press has asked about (a game's page reads that game alone) */
   const asked=ids.filter(id=>ESPN_OUT[id]||espnPressed(id,w)||ESPN_GL[id]), nm=id=>{ const g=S.sched.find(x=>x.id===id); return g?`${g.a} at ${g.h}`:id; };
   const of=!gid&&asked.length<ids.length?` for ${asked.length} of ${ids.length} games${asked.length<=3?' ('+asked.map(nm).join(', ')+')':''}`:'';
-  const parts=[read.length?`DraftKings’ lines from ESPN${of}, read ${espnClock(t)}: player prices estimated from the line`
-    :(lined.length?`DraftKings’ game lines from ESPN${of}, read ${espnClock(t)}`:pub)];
+  const parts=[read.length?`DraftKings via ESPN${of}, read ${espnClock(t)} · player prices est.`
+    :(lined.length?`DraftKings game lines via ESPN${of}, read ${espnClock(t)}`:pub)];
   /* a game whose scoreboard answered had its game lines read: what failed after was its player lines */
   const out=id=>ESPN_OUT[id]||{}, none=ids.filter(id=>!live[id]&&out(id).st==='none').length;
   const failP=ids.filter(id=>out(id).st==='failed'&&!out(id).sb), failS=ids.filter(id=>out(id).st==='failed'&&out(id).sb);
-  if(none) parts.push(gid?'DraftKings has posted no player lines for it yet':`${none} game${none===1?' has':'s have'} no player lines posted yet`);
-  if(failP.length){ const n=failP.length, old=failP.filter(id=>espnPressed(id,w)).length;
-    parts.push(gid?`couldn’t read DraftKings’ player lines: ${old?'the player lines read before stand':'the published player prices stand'}`
-      :`couldn’t read DraftKings’ player lines for ${n} game${n===1?'':'s'}: ${n===1?'its':'their'} ${old===n?'player lines read before stand':(old?'player lines read before or published player prices stand':'published player prices stand')}`); }
-  if(failS.length){ const n=failS.length, old=failS.filter(id=>espnPressed(id,w)||ESPN_GL[id]).length;
-    parts.push(gid?`couldn’t reach ESPN: ${old?'the lines read before stand':'the published prices stand'}`
-      :`couldn’t reach ESPN for ${n} game${n===1?'':'s'}: ${n===1?'its':'their'} ${old===n?'lines read before stand':(old?'lines read before or published prices stand':'published prices stand')}`); }
+  if(none) parts.push(gid?'no player lines yet':`${none} game${none===1?'':'s'} with no player lines yet`);
+  if(failP.length){ const n=failP.length; parts.push(gid?'couldn’t read player lines':`couldn’t read player lines for ${n} game${n===1?'':'s'}`); }
+  if(failS.length){ const n=failS.length; parts.push(gid?'couldn’t reach ESPN':`couldn’t reach ESPN for ${n} game${n===1?'':'s'}`); }
   if(gaveS) parts.push(gaveS);
-  if(of&&(read.length||lined.length)) parts.push('press Refresh odds here for the rest');
-  const s=parts.join('; ')+'.'; return s[0].toUpperCase()+s.slice(1);
+  const s=fin(parts.join(' · ')); return s[0].toUpperCase()+s.slice(1);
 }
 /* the status lines and buttons on the screen, in place (a read in progress redraws nothing else) */
 function espnPaint(){ try{
@@ -2066,7 +2054,7 @@ const estAttr=o=>o&&(o.src==='dkline'||espnAny())?` title="${esc(estTitle(o))}" 
 function espnReadLine(at){
   const t=at!=null?(typeof at==='number'?at:Date.parse(at)):espnLatest(); if(!isFinite(t)||!t) return '';
   const h=(Date.now()-t)/3600e3;
-  return `DraftKings’ lines as read ${espnWhen(t)}; prices estimated`+(h>DK_EST.staleHours?` (read ${Math.round(h)}h ago: press Refresh odds for today’s)`:'')+'.';
+  return `Price est. from DraftKings’ line, read ${espnWhen(t)}`+(h>DK_EST.staleHours?` (${Math.round(h)}h ago)`:'')+'.';
 }
 
 /* ---------- DraftKings' id for a leg (app v109) ----------
@@ -2311,7 +2299,7 @@ function parlayFair(legs,memo,sims){
    partial parlays at each size, once by expected return and once by chance, so a floor a
    long-shot start cannot reach is still met. The choices are the reader's own, in S.ui.pb; the
    tiers are cached on everything they stand on (PB_CACHE), so ticking back is instant. */
-const PB_KINDS=[['ml','Moneyline','straight up'],['ats','Spread','to cover'],['total','Game total','over/under'],['over','Player overs',''],['under','Player unders','']];
+const PB_KINDS=[['ml','Moneyline'],['ats','Spread'],['total','Game total'],['over','Player overs'],['under','Player unders']];
 const PB_MIXES=[['all','All',['ml','ats','total','over','under']],['teams','Teams only',['ml','ats','total']],['players','Players only',['over','under']]];
 const PB_TIERS=[['safe','Safe',2,0],['med','Medium',3,0.25],['aggr','Aggressive',4,0.12],['xtrm','Extreme',5,0.05]];
 const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_CAP=40, PB_BEAM=12, PB_WIDE=24, PB_LIKELY=3, PB_FINAL=8;
@@ -2424,8 +2412,6 @@ function dkClashWhy(a,b){
 const dkClash=(a,b)=>!!dkClashWhy(a,b);
 /* what a pair is, in the builder's words */
 const DK_CLASH={td:'a quarterback’s passing TDs with a teammate’s touchdown',total:'a quarterback’s passing TDs over with the game total'};
-/* why a level a game's legs make in number has no parlay that goes on one slip */
-const DK_CLASH_WHY='it takes no quarterback’s passing TDs with a teammate’s touchdown, or his passing TDs over with the game total.';
 /* every such pair in a list of legs, by their places in it: [i, j, kind], i before j */
 function dkClashPairs(legs){ const out=[]; (legs||[]).forEach((a,i)=>legs.slice(i+1).forEach((b,k)=>{ const w=dkClashWhy(a,b); if(w) out.push([i,i+1+k,w]); })); return out; }
 window.dkClashWhy=dkClashWhy; window.dkClash=dkClash; window.dkClashPairs=dkClashPairs; window.DK_CLASH=DK_CLASH;
@@ -2597,12 +2583,12 @@ function pbTier(t,pool,memo,opt){ return pbWithFair(pbTierOf(t,pool,memo,opt)); 
    are ticked, and the ticked games' ids */
 /* (app v109, dormant since app v125: a payload whose bake wrote paid ids) player legs priced on the ticked games,
    and none with a DraftKings id */
-const PB_NO_ID='no player legs DraftKings’ betslip can take: a player’s line read from ESPN carries no DraftKings id.';
-/* (app v125) no player line on these games (ids; none: the week's games still to come): DraftKings had posted none
-   when its lines were last read from ESPN (the published read or a press, espnLastRead), or they have not been read */
-function pbNoPl(ids){ const at=espnLastRead(ids||pbGames().map(g=>g.id));
-  return at?`no player lines yet: DraftKings had posted none for these games when its lines were last read from ESPN (${espnWhen(at)}). Press Refresh odds to read them now.`
-    :'no player lines yet: DraftKings’ lines for these games have not been read from ESPN yet. Press Refresh odds to read them now.'; }
+const PB_NO_ID='no player lines with a DraftKings id.';
+/* (app v130) the one phrase for no player lines, every such reason made of it: DraftKings had posted none when its
+   lines were last read from ESPN at t (the published read or a press, espnLastRead), or they have not been read */
+const noPlSay=t=>t?`no player lines yet (read ${espnWhen(t)})`:'player lines not read yet';
+/* (app v125) no player line on these games (ids; none: the week's games still to come) */
+function pbNoPl(ids){ return noPlSay(espnLastRead(ids||pbGames().map(g=>g.id)))+'.'; }
 function pbWhy(n,pool,c){
   const m=pbMaxLegs([...pool.pref,...pool.thin,...(pool.mkt||[])]);
   /* (app v109) short of legs only for want of DraftKings' ids: said so */
@@ -2848,16 +2834,8 @@ function pbSyncBuilder(){ const ps=$('pStake'); if(ps&&stakeRead(ps.value)!==pbS
 function pbWide(){ try{ return typeof window.matchMedia!=='function'||window.matchMedia('(min-width: 761px)').matches; }catch(e){ return true; } }
 /* the builder holds exactly these legs */
 const pbInBuilder=legs=>Object.keys(S.parlay||{}).length===legs.length&&legs.every(l=>suggestLegOn(l));
-/* what a thin edge means for the legs it is on. A team bet has no market + form (that is a player
-   leg's second price, from his Elo), so it is thin only for missing the 3-point bar; a player leg
-   is thin for that or for market + form not agreeing, where the Elo tab is on the page (form). A
-   game total is never thin: it has no edge at all, and pbMktLine speaks for it */
-/* what a total on a tier is: the book's own chance, so never a Value pick, there only because the picks' other legs
-   do not make a parlay of the tier's size */
-function pbMktLine(legs,why){
-  const n=legs.filter(l=>l.market).length, one=n===1;
-  return `${one?'The game total is':n+' game totals are'} at the book’s own chance with its margin out, so ${one?'it is not a Value pick':'they are not Value picks'}: ${one?'it is':'they are'} here because ${why||'your picks’ other legs do not make a parlay of this size'}.`;
-}
+/* (app v130) no card says why a leg is not a Value pick or why the game total is there (pbThinLine and pbMktLine went,
+   the owner's call of 22 October 2026: "i dont want any descriptions anywhere"): the Value mark says which legs are */
 /* (app v112) a Value pick: a leg with the 3-point edge, and market + form agreeing on a player's line, which pbPool
    puts on its preferred list with thin false (a thin one true; a total is market). It wears the one mark a leg
    has (thin edge and no edge went, the owner's call of 17 October 2026: "reverse tags"). An Elo pick's legs come
@@ -2865,21 +2843,16 @@ function pbMktLine(legs,why){
 const pbIsValue=l=>!!l&&l.thin===false&&!l.market;
 const pbValMark=l=>pbIsValue(l)?' <i class="pb-valmark">Value</i>':'';
 window.pbIsValue=pbIsValue;
-/* what a leg priced from DraftKings' line read by Refresh odds is, on a level's card or an Elo pick's */
+/* what a leg priced from DraftKings' line read on ESPN is, on a level's card or an Elo pick's: a price that is an
+   estimate, in a few words (app v130), each such leg wearing its est. mark too; dated by the oldest read */
 function pbEspnLine(legs){
-  const e=legs.filter(l=>l.src==='dkline'), n=e.length, at=e.map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0];
-  return `${n===1?'One leg is':n+' legs are'} priced from DraftKings’ line read on ESPN${at?' ('+espnWhen(at)+')':''}: the line is DraftKings’ own, the price our estimate of DraftKings’, so the price and payout are estimates. Check ${n===1?'it':'them'} on DraftKings before you bet.`;
+  const at=legs.filter(l=>l.src==='dkline').map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0];
+  return `Price est. from DraftKings’ line${at?', read '+espnWhen(at):''}.`;
 }
 /* what a level was chosen by, as its card says it */
 function pbRuleOf(t){
   const n=t.legs.length, pct=Math.round((t.floor||0)*100);
-  return t.likeliest?`the likeliest ${n} legs`:t.floor?`best return that lands ${pct}%+ by the model`:'the likeliest pair';
-}
-function pbThinLine(legs,form){
-  const th=legs.filter(l=>l.thin), n=th.length, tm=th.filter(isGameLeg).length, p=n-tm, s=k=>k===1?'':'s';
-  const bar='not 3 points above', both='not 3 points above with market + form agreeing';
-  const tail=!form||!p?bar:!tm?both:`the team bet${s(tm)} ${bar}, and the player leg${s(p)} ${both}`;
-  return `${n===1?'One leg is not a Value pick: the model rates it':n+' legs are not Value picks: the model rates them'} at or above the book's price, but ${tail}.`;
+  return t.likeliest?`the likeliest ${n} legs`:t.floor?`${pct}%+ by the model`:'the likeliest pair';
 }
 /* a level's chance as its card shows it: the book's fair chance, labelled so (est. where a leg is
    priced on one side only), with whose chance it was chosen on beside it ("model says 53%"; the Elo
@@ -2887,7 +2860,7 @@ function pbThinLine(legs,form){
 function pbChanceHtml(F,chance,o){
   const pc=v=>(v*100).toFixed(0)+'%', by=(o&&o.by)||'model';
   if(F&&F.p!=null) return `<div class="pb-chance"><b data-pb-fair="${F.p}">${pc(F.p)}</b><span${F.est?(F.dk?' title="Estimated: a leg is priced from DraftKings’ line read on ESPN by our estimate, and its fair chance with it"':' title="Estimated: a leg is priced on one side only, so the week’s typical margin is taken out of its price"'):''}>fair chance${F.est?', est.':''}</span><small class="pb-model" data-pb-model="${chance}">${esc(by)} says ${pc(chance)}</small></div>`;
-  return `<div class="pb-chance"><b data-pb-model="${chance}">${pc(chance)}</b><span>${(o&&o.chanceBy)||'model’s chance'}</span><small class="pb-model">no fair chance: a leg has no book price</small></div>`;
+  return `<div class="pb-chance"><b data-pb-model="${chance}">${pc(chance)}</b><span>${(o&&o.chanceBy)||'model’s chance'}</span><small class="pb-model">no fair chance</small></div>`;
 }
 /* (app v111) one leg's own Add: that leg alone into the builder, by toggleLeg's own path (the builder prices it
    as it always has), Added while it is in, a second press taking it off as on a game's page. One delegated
@@ -2919,12 +2892,12 @@ window.glanceLeg=sig=>GLANCE_LEGS.get(String(sig))||null;
 /* a locked level the page or the job built again for a player ruled out after the lock */
 function spUpdLine(u){
   const at=Date.parse(u.at);
-  return `Updated${u.by==='page'?' in this browser':''}: ${esc(u.name)} ${esc(u.reason||'ruled out')}${isFinite(at)?` (${spEt(at,true)})`:''}; this level was built again.`;
+  return `Updated${u.by==='page'?' in this browser':''}: ${esc(u.name)} ${esc(u.reason||'ruled out')}${isFinite(at)?` (${spEt(at,true)})`:''}.`;
 }
 /* one tier's card, or why it has none. The Elo picks draw theirs with it (window.pbTierCard). o.fid: the
    id its Finish names (a Suggested Parlays level's game:level); o.what: the game, for the buttons' names;
-   o.legAdd false: no Add on each leg; o.quiet: no line saying why a leg is not a Value pick or why a total is there
-   (a Suggested Parlays set's, app v113); o.acts false: no Add to builder or Finish (app v118: the Sunday slot under
+   o.legAdd false: no Add on each leg (o.quiet, a card with no line saying why a leg is not a Value pick or why a total
+   is there, went in app v130: every card is so); o.acts false: no Add to builder or Finish (app v118: the Sunday slot under
    way, its first games begun); o.noun: what its buttons call it (an Elo pick's, app v118: 'Elo pick'; else 'parlay');
    o.game (app v121, the Sunday slot's cards): the game its legs are of, under its title */
 function pbTierGame(gid){ const g=(S.sched||[]).find(x=>x.id===gid); if(!g) return '';
@@ -2933,12 +2906,12 @@ function pbTierCard(t,o){
   o=o||{}; const card=!!window.PARLAY_CARD, chance=o.chance!=null?o.chance:t.corr, legAdd=o.legAdd!==false;
   const upd=t.updated?`<p class="pb-thin sp-upd" data-sp-upd="${esc(t.updated.pid)}">${spUpdLine(t.updated)}</p>`:'';
   if(t.why) return `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.n} legs</span></div><p class="pb-why">${esc(t.why)}</p>${upd}</div>`;
-  const form=formSig()!=='', fm={}, nE=t.legs.filter(l=>l.src==='dkline').length, nm=o.what?` the ${esc(t.label)} ${esc(o.noun||'parlay')} for ${esc(o.what)}`:'';
+  const fm={}, nE=t.legs.filter(l=>l.src==='dkline').length, nm=o.what?` the ${esc(t.label)} ${esc(o.noun||'parlay')} for ${esc(o.what)}`:'';
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
     <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.game&&t.legs.length?pbTierGame(t.legs[0].gid):''}${o.rule||(t.floor!=null?`<span class="pb-rule">${pbRuleOf(t)}</span>`:'')}</div>
     <div class="pb-nums">${pbChanceHtml(t.fair,chance,o)}<div><b>${fmtML(decToML(t.dec))}</b><span>${nE?'price, est.':'price'}</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
     <ul class="pb-legs">${t.legs.map(l=>{ const ff=legFarOff(l,fm); return `<li><span class="nm">${o.badge?o.badge(l):''}${glanceName(l)}<small>${esc(l.label)}${pbValMark(l)}</small>${ff?`<small class="faroff" data-pb-far>${farText(l.p,ff)}</small>`:''}</span><span class="pr">${fmtML(l.price)}${l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:''}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span>${legAdd?pbLegAddBtn(l):''}</li>`; }).join('')}</ul>
-    ${t.thin&&!o.quiet?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt&&!o.quiet?`<p class="pb-thin">${pbMktLine(t.legs,o.mktWhy)}</p>`:''}${nE?`<p class="pb-thin pb-espnline">${pbEspnLine(t.legs)}</p>`:''}${upd}
+    ${nE?`<p class="pb-thin pb-espnline">${pbEspnLine(t.legs)}</p>`:''}${upd}
     ${o.acts===false?'':`<div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}${nm?` aria-label="${pbInBuilder(t.legs)?'In the builder:':'Add'}${nm}${pbInBuilder(t.legs)?'':' to the builder'}"`:''}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${o.fid||t.id}"${nm?` aria-label="Finish${nm}"`:''}>Finish</button>`:''}</div>`}</div>`;
 }
 window.pbTierCard=pbTierCard;
@@ -3001,7 +2974,7 @@ function pbTopWhy(r,u){
   if(!r.kinds) return 'No bet types ticked: tick at least one above.';
   if(!r.ticked) return 'No games ticked: tick at least one above.';
   if((u.k.over||u.k.under)&&r.noPlayerPrices){ const np=r.plNoId?PB_NO_ID:pbNoPl(pbGames().filter(g=>!u.off.includes(g.id)).map(g=>g.id));
-    return (u.k.ml||u.k.ats||u.k.total)?`No line on your picks qualifies yet, and ${np}`:np[0].toUpperCase()+np.slice(1); }
+    return (u.k.ml||u.k.ats||u.k.total)?`No line qualifies yet: ${np}`:np[0].toUpperCase()+np.slice(1); }
   return `No line on your picks qualifies yet${r.noId?' that DraftKings’ betslip can take':''}: tick more games or bet types.`;
 }
 const pbMoney1=v=>(v<-0.0005?'−':'+')+'$'+Math.abs(v).toFixed(2);
@@ -3018,49 +2991,47 @@ function pbPanel(){
   const u=pbUi(), w=currentWeek(), games=pbGames(), mix=pbMix(u);
   const head=`<div class="pb-hd"><h2>Top ${PB_TOP_N} lines</h2><span class="pill">week ${w}</span></div>`;
   if(!games.length) return `<div class="card pb" id="pbCard">${head}
-    <p class="pb-none">${seasonOver()?`The ${SEASON} regular season is over: no game is left to build a parlay from.`:`Every week ${w} game has kicked off, so there is nothing left to build from. Week ${w+1} opens once they are final.`}</p></div>`;
-  const r=getPbTop(), nOn=games.filter(g=>!u.off.includes(g.id)).length, open=u.gx!=null?u.gx:pbWide(), form=formSig()!=='';
+    <p class="pb-none">${seasonOver()?'Regular season over.':`No week ${w} games left.`}</p></div>`;
+  const r=getPbTop(), nOn=games.filter(g=>!u.off.includes(g.id)).length, open=u.gx!=null?u.gx:pbWide();
   const seg=`<span class="pb-seg" role="group" aria-label="What to build from">${PB_MIXES.map(([k,l])=>`<button type="button" class="${mix===k?'on':''}" data-pb-mix="${k}" aria-pressed="${mix===k}">${l}</button>`).join('')}</span>`;
-  const chips=PB_KINDS.map(([k,l,s])=>`<label class="pb-chip${u.k[k]?' on':''}"><input type="checkbox" data-pb-kind="${k}" ${u.k[k]?'checked':''}><span>${l}${s?` <small>${s}</small>`:''}</span></label>`).join('');
+  const chips=PB_KINDS.map(([k,l])=>`<label class="pb-chip${u.k[k]?' on':''}"><input type="checkbox" data-pb-kind="${k}" ${u.k[k]?'checked':''}><span>${l}</span></label>`).join('');
   const glist=games.map(g=>{ const on=!u.off.includes(g.id), d=fmtDate(g);
     return `<label class="pb-g${on?' on':''}"><input type="checkbox" data-pb-game="${g.id}" ${on?'checked':''} aria-label="${esc(g.a)} at ${esc(g.h)}, ${esc(d.day)} ${esc(d.t)}"><span><b>${esc(g.a)} @ ${esc(g.h)}</b><small>${esc(d.day)}${d.t?' · '+esc(d.t):''}</small></span></label>`; }).join('');
   const dkLegs=r.rows.filter(l=>l.src==='dkline');
   const notes=[];
-  if(formSig()==='noform') notes.push('The Elo ratings are still loading: player lines join once they are in.');
-  if(dkLegs.length) notes.push(`A player line marked est. is priced from DraftKings’ line read on ESPN: ${esc(espnReadLine(dkLegs.map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0]||null))} The line is DraftKings’, the price our estimate of DraftKings’ (${ESPN_ERR} on weeks it was not fitted on), and it counts here as a book price does.`);
-  if(u.k.total) notes.push('Game totals are never Value picks: each is priced at the book’s own chance, so the totals come last among the other lines, and on a long list the '+PB_TOP_N+' lines can end before them.');
+  if(formSig()==='noform') notes.push('Loading Elo ratings…');
+  if(dkLegs.length) notes.push(esc(espnReadLine(dkLegs.map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0]||null)));
   /* (app v109) player legs priced and none with a DraftKings id: the list has none of them, and why */
   const noIdNote=r.noPlayerPrices&&r.plNoId&&r.rows.length;
-  if(noIdNote) notes.push(`No player line on your picks can go on DraftKings’ betslip yet, so the list below has no player lines: ${PB_NO_ID.replace(/^no player legs DraftKings’ betslip can take: /,'')}`);
-  else if(r.noPlayerPrices&&r.rows.length) notes.push(`No player lines are in yet for your picks, so the list below has none: ${pbNoPl(games.filter(g=>!u.off.includes(g.id)).map(g=>g.id)).replace(/^no player lines yet: /,'')}`);
-  if(r.far) notes.push(`${r.far} line${r.far===1?' is':'s are'} left out: the model rates ${r.far===1?'it':'each'} ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance (DraftKings’ prices with the margin taken out${r.farDk?', or, for a line marked est., our estimate of them from DraftKings’ line read on ESPN':''}), and its edges that large have not held up this season. ${r.far===1?'It is':'They are'} still on the game pages, flagged far off the market.`);
+  const cap1=s=>s[0].toUpperCase()+s.slice(1);
+  if(noIdNote) notes.push(cap1(PB_NO_ID));
+  else if(r.noPlayerPrices&&r.rows.length) notes.push(cap1(pbNoPl(games.filter(g=>!u.off.includes(g.id)).map(g=>g.id))));
+  if(r.far) notes.push(`${r.far} line${r.far===1?'':'s'} left out: far off the market.`);
   /* lines left out for want of a DraftKings id at their line, beyond what the note above says */
-  const mvN=r.moved-(noIdNote?r.movedPl:0), noneN=r.noId-r.moved-(noIdNote?r.noIdPl-r.movedPl:0), nonePl=noIdNote?0:r.noIdPl-r.movedPl, mvTeam=r.moved-r.movedPl;
-  if(noneN) notes.push(`${noneN} line${noneN===1?' is':'s are'} left out: the list takes only lines DraftKings’ betslip can take, by DraftKings’ own id at the line, and DraftKings has none for ${noneN===1?'it':'them'}${nonePl?'. A player’s line read from ESPN carries no id':''}. ${noneN===1?'It is':'They are'} still on the game pages, where you can add ${noneN===1?'it':'them'} to the builder.`);
-  if(mvN) notes.push(`${mvN} line${mvN===1?' is':'s are'} left out: DraftKings had ${mvN===1?'it':'them'} only at another number when its lines were last read, and the list takes only lines DraftKings’ betslip can take at their own number${mvTeam?'. Refresh odds reads DraftKings’ current spreads and totals, which the list can take':''}. Added to the builder from the game pages, ${mvN===1?'it goes':'each goes'} on DraftKings’ slip at DraftKings’ number.`);
+  const mvN=r.moved-(noIdNote?r.movedPl:0), noneN=r.noId-r.moved-(noIdNote?r.noIdPl-r.movedPl:0);
+  if(noneN) notes.push(`${noneN} line${noneN===1?'':'s'} left out: no DraftKings id.`);
+  if(mvN) notes.push(`${mvN} line${mvN===1?'':'s'} left out: DraftKings has ${mvN===1?'it':'them'} at another number.`);
   /* (app v112) two parts, each under its heading: the Value picks (the rows' prefix: the first part is the
      preferred lines alone), then the other lines, their ranks running on (the second list's start) */
   const nV=r.rows.filter(pbIsValue).length, V=r.rows.slice(0,nV), O=r.rows.slice(nV);
   const secHd=(id,title,n)=>`<h3 class="pb-topsec" data-pb-sec="${id}">${title}${n?` <span class="pill">${n}</span>`:''}</h3>`;
   const list=r.rows.length?secHd('value','Value picks',nV)
-      +(nV?`<p class="muted pb-topsub">The model rates each at least 3 points above the chance its price implies${form?', and on a player’s line market + form agrees':''}. Each is marked Value.</p><ol class="pb-top" data-pb-sec="value" aria-label="The ${nV} Value pick${nV===1?'':'s'} on your picks, by expected profit on $1">${V.map((l,i)=>pbTopRow(l,i)).join('')}</ol>`
+      +(nV?`<ol class="pb-top" data-pb-sec="value" aria-label="The ${nV} Value pick${nV===1?'':'s'} on your picks, by expected profit on $1">${V.map((l,i)=>pbTopRow(l,i)).join('')}</ol>`
         :`<p class="muted pb-topsub" data-pb-novalue>No line on your picks is a Value pick right now.</p>`)
-      +(O.length?secHd('other','Other lines',O.length)+`<p class="muted pb-topsub">These miss a Value pick’s bar (3 points above the chance the price implies${form?', and market + form agreeing on a player’s line':''}), though the model still rates each at or above the book’s price${u.k.total?'; the game totals, at the book’s own chance, come last':''}. A suggested parlay takes them only where its Value picks run out.</p><ol class="pb-top" data-pb-sec="other"${nV?` start="${nV+1}"`:''} aria-label="${nV?'Then ':''}${O.length} other line${O.length===1?'':'s'} on your picks, by expected profit on $1">${O.map((l,i)=>pbTopRow(l,nV+i)).join('')}</ol>`:'')
+      +(O.length?secHd('other','Other lines',O.length)+`<ol class="pb-top" data-pb-sec="other"${nV?` start="${nV+1}"`:''} aria-label="${nV?'Then ':''}${O.length} other line${O.length===1?'':'s'} on your picks, by expected profit on $1">${O.map((l,i)=>pbTopRow(l,nV+i)).join('')}</ol>`:'')
     :`<p class="pb-none pb-top-none">${esc(pbTopWhy(r,u))}</p>`;
   return `<div class="card pb" id="pbCard">${head}
-    <p class="muted pb-lead">Choose what to build from: the list below takes only the bet types and games ticked here, every line that qualifies as a suggested leg does: first the Value picks, marked Value, then the other lines${u.k.total?', the game totals last':''}, each part ranked by what $1 on it is expected to make at the model’s chance, best first, ${PB_TOP_N} lines at most. Add any of them to the builder below.</p>
     <div class="pb-ctl">
-      <div class="pb-row pb-amt-row"><label class="pb-lbl" for="pbStake">Bet amount</label><span class="pb-amt"><span aria-hidden="true">$</span><input type="number" id="pbStake" inputmode="decimal" min="${STAKE_MIN}" max="${STAKE_MAX}" step="1" value="${stakeText(pbStake())}" autocomplete="off" aria-describedby="pbStakeHint"></span><span class="pb-amt-hint" id="pbStakeHint">The builder below uses this amount, and every parlay on Suggested Parlays pays on it.</span></div>
+      <div class="pb-row pb-amt-row"><label class="pb-lbl" for="pbStake">Bet amount</label><span class="pb-amt"><span aria-hidden="true">$</span><input type="number" id="pbStake" inputmode="decimal" min="${STAKE_MIN}" max="${STAKE_MAX}" step="1" value="${stakeText(pbStake())}" autocomplete="off"></span></div>
       <div class="pb-row pb-odds-row"><span class="pb-lbl">Odds</span>${espnCtl(null,'pb')}</div>
       <div class="pb-row"><span class="pb-lbl">Build from</span>${seg}</div>
       <div class="pb-row"><span class="pb-lbl">Bet types</span><div class="pb-chips">${chips}</div></div>
-      <details class="pb-games"${open?' open':''}><summary><span class="pb-lbl">Games</span><b>${nOn===games.length?`All ${games.length}`:`${nOn} of ${games.length}`}</b><span class="pb-sum-hint">tap to choose</span></summary>
-        <div class="pb-gbar"><button type="button" class="btn quiet small" data-pb-games="all">All</button><button type="button" class="btn quiet small" data-pb-games="none">None</button><span class="muted">Kickoffs in your time zone; a game leaves the list when it kicks off.</span></div>
+      <details class="pb-games"${open?' open':''}><summary><span class="pb-lbl">Games</span><b>${nOn===games.length?`All ${games.length}`:`${nOn} of ${games.length}`}</b></summary>
+        <div class="pb-gbar"><button type="button" class="btn quiet small" data-pb-games="all">All</button><button type="button" class="btn quiet small" data-pb-games="none">None</button></div>
         <div class="pb-glist">${glist}</div></details>
     </div>
     ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
-    ${list}
-    <p class="muted pb-foot">Every line has DraftKings’ own price or, marked est., DraftKings’ line read from ESPN at our estimate of its price (on main lines and touchdowns, the markets the estimate has been checked on), and a model chance between 45% and 97%, at or above the chance that price implies: 3 points above it or more is a Value pick${form?' (on a player’s line, with market + form, the book’s chance moved by his Elo, 3 points above it too)':''}, and a game total, priced at the book’s own chance, is never one. The Value picks come first, marked Value, then the other lines (the ones a suggested parlay takes only where the Value picks cannot fill it), each part ranked by what $1 on it is expected to make, any game totals last, ${PB_TOP_N} lines at most in all. Only main lines, anytime touchdowns and team bets are listed: no ladder bets, such as 250+ passing yards or 2+ touchdowns. Wins on $1 is what $1 wins if the line lands; expected on $1 is the model’s chance times what $1 returns, less the $1, so it is only as good as the model’s chance, which has run higher than the book’s this season. Each line gives the book’s fair chance beside the model’s, DraftKings’ prices with the margin taken out (est. where it is priced on one side only), and a line the model rates ${Math.round(FAR_OFF*100)} points or more above it is left out.</p></div>`;
+    ${list}</div>`;
 }
 function renderPb(){
   const el=$('pbPanel'); if(!el||!S||!S.sched) return;
@@ -3126,19 +3097,15 @@ function spEt(ms,day){ try{ return new Date(ms).toLocaleString('en-US',{timeZone
 /* (app v125) why a unit has no player line: DraftKings had posted none when its lines were last read from ESPN (the
    published read or a press), or they have not been read; on a payload whose bake wrote paid ids (dormant), none
    with an id */
-function spNoPl(g){ const t=espnLastRead(spGamesOf(g).map(x=>x.id));
-  if(g.slot) return t?`no player lines yet: DraftKings had posted none for its games when their lines were last read from ESPN (${espnWhen(t)}).`
-    :'no player lines yet: DraftKings’ lines for its games have not been read from ESPN yet.';
-  return t?`no player lines yet: DraftKings had posted none for it when its lines were last read from ESPN (${espnWhen(t)}).`
-    :'no player lines yet: its DraftKings lines have not been read from ESPN yet.'; }
+function spNoPl(g){ return noPlSay(espnLastRead(spGamesOf(g).map(x=>x.id)))+'.'; }
 /* why a level of one unit has no parlay: the unit does not make that many legs, and why */
 function spWhy(n,pool,g){
   const m=pbMaxLegs([...pool.pref,...pool.thin,...(pool.mkt||[])]), where=g.slot?'the Sunday slot':'this game';
   const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in ${where}${pool.noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in ${where}`;
-  if(!pool.plGames) return `${what}, and ${pool.plNoId?'no player leg DraftKings’ betslip can take: a player’s line read from ESPN carries no DraftKings id.':spNoPl(g)}`;
+  if(!pool.plGames) return `${what}: ${pool.plNoId?'no player leg with a DraftKings id.':spNoPl(g)}`;
   /* (app v121) legs enough in number, but not on one slip */
-  if(m>=n&&pbMaxFit([...pool.pref,...pool.thin,...(pool.mkt||[])])<n) return `No ${n} of this game’s legs go together on DraftKings’ slip: ${DK_CLASH_WHY}`;
-  return `${what}: a parlay takes one leg a player, and one side and one total a game.`;
+  if(m>=n&&pbMaxFit([...pool.pref,...pool.thin,...(pool.mkt||[])])<n) return `No ${n} of this game’s legs go together on DraftKings’ slip.`;
+  return `${what}.`;
 }
 function spBuild(g){
   if(g.slot) return spSlotBuild(g);
@@ -3182,10 +3149,10 @@ function spSlotLevel(u,t){
 function spWhySlot(n,per,u){
   const m=Math.max(0,...per.map(s=>s.max||0)), noId=per.some(s=>s.noId), pl=per.some(s=>s.plGames), plNoId=per.some(s=>s.plNoId);
   const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in any one game of the Sunday slot${noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in any one game of the Sunday slot`;
-  if(!pl) return `${what}, and ${plNoId?'no player leg DraftKings’ betslip can take: a player’s line read from ESPN carries no DraftKings id.':spNoPl(u)}`;
+  if(!pl) return `${what}: ${plNoId?'no player leg with a DraftKings id.':spNoPl(u)}`;
   const f=Math.max(0,...per.map(s=>s.fit==null?(s.max||0):s.fit));
-  if(m>=n&&f<n) return `No ${n} legs of any one game of the Sunday slot go together on DraftKings’ slip: ${DK_CLASH_WHY}`;
-  return `${what}: a parlay takes one game’s legs, one leg a player, and one side and one total a game.`;
+  if(m>=n&&f<n) return `No ${n} legs of any one game of the Sunday slot go together on DraftKings’ slip.`;
+  return `${what}.`;
 }
 /* a unit's live set, the same for the same data (the searches are seeded), from the cache when nothing it
    stands on has moved: its games' kickoffs and pbDataSig (the publish, the Elo files, ESPN_SEQ) */
@@ -3207,9 +3174,7 @@ function spEloSet(gid,o){ const u=spUnit(gid); if(!u||!spEloOn()) return null;
      model's levels do */
   if(r&&!r.error&&Array.isArray(r.tiers)&&r.tiers.some(t=>!t.legs)){ const s=spSet(gid);
     if(s&&!s.plGames){ const where=u.slot?'in the Sunday slot':'in this game', t=espnLastRead(spGamesOf(u).map(x=>x.id));
-      const why=s.plNoId?`No player leg DraftKings’ betslip can take ${where}: a player’s line read from ESPN carries no DraftKings id.`
-        :`No player lines ${where} yet: `+(t?`DraftKings had posted none${u.slot?' for its games':''} when ${u.slot?'their':'its'} lines were last read from ESPN (${espnWhen(t)}).`
-          :(u.slot?'DraftKings’ lines for its games have not been read from ESPN yet.':'its DraftKings lines have not been read from ESPN yet.'));
+      const why=s.plNoId?`No player leg with a DraftKings id ${where}.`:t?`No player lines ${where} yet (read ${espnWhen(t)}).`:`No player lines ${where} read yet.`;
       r={...r,tiers:r.tiers.map(x=>x.legs?x:{...x,why})}; } }
   return r; }
 /* one level of a unit built again now, from the lines at hand (a locked level holding a player ruled out): a model
@@ -3436,18 +3401,19 @@ function spGameHtml(g,on){
   if(!on&&live&&(!SP_CACHE.has(spSig(g))||(eon&&(spEloSet(g.id,{kept:true})||{}).wait))) return `${open}<p class="sp-lock" data-sp-phase="wait">Built when this tab is open.</p></div>`;
   const v=spShown(g), what=g.slot?'the Sunday slot':`${g.a} at ${g.h}`, lockT=v.lock!=null?spEt(v.lock,true):'';
   /* (app v113) one short line each: the owner's "get rid of all the long paragraph description stuff" */
-  const mark='<span class="sp-lockmark">Locked</span>', before=g.slot?'2 hours before the first kickoff':'2 hours before kickoff';
-  const line=v.phase==='live'?`<p class="sp-lock" data-sp-phase="live">Locks ${lockT}, ${before}.</p>`
+  /* (app v130) and its state alone: when it locks, whose set it is (the owner's call of 22 October 2026) */
+  const mark='<span class="sp-lockmark">Locked</span>';
+  const line=v.phase==='live'?`<p class="sp-lock" data-sp-phase="live">Locks ${lockT}.</p>`
     :v.phase==='loading'?`<p class="sp-lock" data-sp-phase="loading">${mark} since ${lockT}. Loading the site’s set…</p>`
-    :v.under?`<p class="sp-lock" data-sp-phase="under">${mark} since ${lockT}. Under way since ${spEt(kickoff(g).getTime(),true)}.${v.none?' The site’s set was not published in time.':v.own?' This browser’s own set: the site’s was not published in time, so the record does not grade it.':''}</p>`
-    :v.own?`<p class="sp-lock" data-sp-phase="own">${mark} since ${lockT}. This browser’s own set: the site’s was not published in time, so the record does not grade it.</p>`
+    :v.under?`<p class="sp-lock" data-sp-phase="under">${mark} since ${lockT}. Under way since ${spEt(kickoff(g).getTime(),true)}.${v.none?' Not published in time.':v.own?' This browser’s own set (not graded).':''}</p>`
+    :v.own?`<p class="sp-lock" data-sp-phase="own">${mark} since ${lockT}. This browser’s own set (not graded).</p>`
     :`<p class="sp-lock" data-sp-phase="locked">${mark} since ${lockT}.</p>`;
   /* under way, the levels are shown as they locked, with nothing to add or finish */
   const ro=v.under?{acts:false,legAdd:false}:{};
-  const cards=v.tiers?`<h5 class="sp-sub" data-sp-kind="model">Model parlays</h5><div class="pb-tiers" data-sp-kind="model">${v.tiers.map(t=>pbTierCard(t,{kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,quiet:true,game:!!g.slot,mktWhy:'this game’s other legs do not make a parlay of this size',...ro})).join('')}</div>`:'';
+  const cards=v.tiers?`<h5 class="sp-sub" data-sp-kind="model">Model parlays</h5><div class="pb-tiers" data-sp-kind="model">${v.tiers.map(t=>pbTierCard(t,{kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,game:!!g.slot,...ro})).join('')}</div>`:'';
   /* the Elo picks, where the ELO tab is on the page: its cards' own options (eloCardOpt: the Elo chance, each
      player's shield), the set's buttons */
-  const eloCards=!eon||!v.tiers?'':`<h5 class="sp-sub" data-sp-kind="elo">Elo picks</h5>${v.eloErr?`<p class="pb-why" data-sp-elo-err>${esc(v.eloErr)}</p>`:v.eloNone?`<p class="pb-why" data-sp-elo-none>The site’s Elo picks were not published in time.</p>`:v.elo?`${v.eloOwn&&v.phase==='locked'&&!v.own?`<p class="sp-lock" data-sp-phase="eloown">This browser’s own Elo picks: the site’s were not published in time, so the record does not grade them.</p>`:''}<div class="pb-tiers" data-sp-kind="elo">${v.elo.map(t=>pbTierCard(t,{...(typeof window.eloCardOpt==='function'?window.eloCardOpt(t):{}),kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,noun:'Elo pick',quiet:true,game:!!g.slot,...ro})).join('')}</div>`
+  const eloCards=!eon||!v.tiers?'':`<h5 class="sp-sub" data-sp-kind="elo">Elo picks</h5>${v.eloErr?`<p class="pb-why" data-sp-elo-err>${esc(v.eloErr)}</p>`:v.eloNone?`<p class="pb-why" data-sp-elo-none>Elo picks not published in time.</p>`:v.elo?`${v.eloOwn&&v.phase==='locked'&&!v.own?`<p class="sp-lock" data-sp-phase="eloown">This browser’s own Elo picks (not graded).</p>`:''}<div class="pb-tiers" data-sp-kind="elo">${v.elo.map(t=>pbTierCard(t,{...(typeof window.eloCardOpt==='function'?window.eloCardOpt(t):{}),kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,noun:'Elo pick',game:!!g.slot,...ro})).join('')}</div>`
     :`<p class="pb-why" data-sp-elo-wait>Loading the Elo ratings…</p>`}`;
   return `${open}${line}${cards}${eloCards}</div>`;
 }
@@ -3460,22 +3426,20 @@ function spHeadHtml(){
 const spSecHtml=(sec,body)=>`<section class="sp-sec" data-sp-sec="${sec}" aria-labelledby="spsec-${sec}"><h3 class="sp-sech" id="spsec-${sec}">${SP_SEC[sec].name}</h3>${spRecHtml(sec)}${body}</section>`;
 function spNightHtml(on){
   const w=currentWeek(), G=spGames();
-  if(!G.length) return `<p class="pb-none">${seasonOver()?`The ${SEASON} regular season is over: no Thursday, Sunday or Monday night game is left.`:`No Thursday, Sunday or Monday night game of week ${w} is still to kick off. Week ${w+1}’s sets come once its games are the week’s.`}</p>`;
+  if(!G.length) return `<p class="pb-none">${seasonOver()?'Regular season over.':`No night game left in week ${w}.`}</p>`;
   /* (app v112) the next night alone, once its morning has come (spOn: the one place the tab asks which games it
      sets out); until then, which game is next and when its set goes up */
   const On=spOn(), nm=x=>`${TEAM_NAMES[x.a]||x.a} at ${TEAM_NAMES[x.h]||x.h}`;
   let wait='';
-  if(!On.length){ const N=spNight(), two=N.games.length>1, pn=N.prev?SP_NIGHT[new Date(N.prev+'T12:00:00Z').getUTCDay()]:null;
-    const pg=N.prev?(S.sched||[]).filter(x=>spPrime(x)&&x.d===N.prev).length:0;
-    wait=`<p class="pb-none sp-wait" data-sp-wait="${N.open!=null?spIso(N.open):''}" data-sp-next="${esc(N.games.map(x=>x.id).join(' '))}">Next up: ${SP_NIGHT[spDow(N.games[0])]}, ${esc(N.games.map(nm).join(' and '))}.${N.open!=null?` ${two?'Their sets go':'Its set goes'} up ${spEt(N.open,true)}, the morning after ${pn||'the night game before it'}’s ${pg>1?'games':'game'}.`:''}</p>`; }
+  if(!On.length){ const N=spNight(), two=N.games.length>1;
+    wait=`<p class="pb-none sp-wait" data-sp-wait="${N.open!=null?spIso(N.open):''}" data-sp-next="${esc(N.games.map(x=>x.id).join(' '))}">Next up: ${SP_NIGHT[spDow(N.games[0])]}, ${esc(N.games.map(nm).join(' and '))}.${N.open!=null?` ${two?'Sets go':'Set goes'} up ${spEt(N.open,true)}.`:''}</p>`; }
   return On.length?On.map(g=>spGameHtml(g,on)).join(''):wait;
 }
 /* (app v118) the Sunday slot: its set from its morning to its last kickoff; until then, when it goes up */
 function spSlotHtml(on){
   const u=spSlotNext();
-  if(!u) return seasonOver()?'':`<p class="pb-none" data-sp-none="slot">No Sunday game of week ${currentWeek()} is still to kick off.</p>`;
-  if(!u.up){ const pn=u.prev?SP_NIGHT[new Date(u.prev+'T12:00:00Z').getUTCDay()]:null, pg=u.prev?(S.sched||[]).filter(x=>spPrime(x)&&x.d===u.prev).length:0;
-    return `<p class="pb-none sp-wait" data-sp-wait="${u.open!=null?spIso(u.open):''}" data-sp-next="${esc(u.id)}">Next up: week ${u.w}’s Sunday slot, ${u.games.length} game${u.games.length===1?'':'s'}. Its sets go up ${spEt(u.open,true)}, the morning after ${pn||'the night game before it'}’s ${pg>1?'games':'game'}.</p>`; }
+  if(!u) return seasonOver()?'':`<p class="pb-none" data-sp-none="slot">No Sunday game left in week ${currentWeek()}.</p>`;
+  if(!u.up) return `<p class="pb-none sp-wait" data-sp-wait="${u.open!=null?spIso(u.open):''}" data-sp-next="${esc(u.id)}">Next up: week ${u.w}’s Sunday slot, ${u.games.length} game${u.games.length===1?'':'s'}. Sets go up ${spEt(u.open,true)}.</p>`;
   return spGameHtml(u,on);
 }
 /* (app v129) one section, Night games: the night games' sets, then the Sunday slot's */
@@ -3649,10 +3613,10 @@ function renderParlay(o){
   if(!(o&&o.keepPb)) renderPb();
   const legs=parlayLegs();
   const el=$('parlayBody');
-  const droppedNote=(noLadder?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05" data-pb-noladder="${noLadder}">${noLadder} leg${noLadder===1?' was':'s were'} removed: the site no longer offers ladder bets (such as 250+ passing yards or 2+ touchdowns), only main lines, anytime touchdowns and team bets.</p>`:'')+(notDk?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05" data-pb-notdk="${notDk}">${notDk} leg${notDk===1?' was':'s were'} removed: DraftKings does not offer FG attempts.</p>`:'')+(dropped?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">${dropped} leg${dropped===1?' was':'s were'} removed because that game has already kicked off. Saved and locked parlays keep theirs.</p>`:'');
+  const droppedNote=(noLadder?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05" data-pb-noladder="${noLadder}">${noLadder} ladder leg${noLadder===1?'':'s'} removed.</p>`:'')+(notDk?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05" data-pb-notdk="${notDk}">${notDk} leg${notDk===1?'':'s'} removed: DraftKings has no FG attempts.</p>`:'')+(dropped?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">${dropped} leg${dropped===1?'':'s'} removed: ${dropped===1?'its game':'their games'} kicked off.</p>`:'');
   if(!legs.length){
     el.innerHTML=droppedNote+`<div class="card"><h2>Parlay Builder</h2>${espnCtl(null,'builder')}
-      <p class="muted" style="margin:0 0 10px">Open a game, click a player, and tick any line you like, or add a parlay from Suggested Parlays or a line from the Top ${PB_TOP_N} below. Each leg lands here and gets priced.</p></div>`+renderSaved()+renderBetParlays();
+      <p class="muted" style="margin:0 0 10px">No legs yet.</p></div>`+renderSaved()+renderBetParlays();
     wireSaved(); wireStakeChips();
     return;
   }
@@ -3676,7 +3640,6 @@ function renderParlay(o){
   const payout=stake*useDec, profit=payout-stake;
 
   let html=droppedNote+`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">${legs.length}-leg parlay <span class="pill">building</span></h2>${espnCtl(null,'builder')}
-    <p class="muted" style="margin:0 0 12px">Every leg has to land. The chance below is worked out with the legs' real relationship to each other, not by multiplying them together.</p>
     <table><thead><tr><th>Player</th><th>The bet</th><th class="num">Projected</th><th class="num">Chance</th><th class="num">Price</th><th></th></tr></thead><tbody>`;
   /* (app v109) the parlay card's own reading of each leg for DraftKings' betslip (window.PARLAY_CARD's
      dkPlan, on the hub page only), so the builder says before Finish which leg goes on at DraftKings'
@@ -3693,36 +3656,32 @@ function renderParlay(o){
   });
   html+=`</tbody></table>`;
   { const out=legs.filter(l=>l.grp!=='TEAM'&&S.inactive&&S.inactive[l.pid]);
-    if(out.length) html+=`<p class="delta down" style="margin:10px 0 0">${out.map(l=>esc(l.name)).join(', ')} ${out.length===1?'is':'are'} not expected to play (${out.map(l=>inactiveWhy(S.inactive[l.pid])).join('; ')}). A book voids a leg on a player who does not play and pays the rest at their own prices; take ${out.length===1?'it':'them'} off to see what the rest pay.</p>`; }
-  if(prices.some(p=>p.src==='dkline')) html+=`<p class="muted espn-read" style="margin:10px 0 0;font-size:12px" data-espn-read>${esc(espnReadLine(legs.filter((l,i)=>prices[i].src==='dkline').map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0]||null))} A leg marked est. is priced from DraftKings’ line read on ESPN: the line is DraftKings’, the price and its fair chance our estimate.</p>`;
-  if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">These legs are in different weeks (${wks.join(', ')}). A parlay has to settle together, so a sportsbook won't take this as one ticket.</p>`;
+    if(out.length) html+=`<p class="delta down" style="margin:10px 0 0">${out.map(l=>esc(l.name)).join(', ')} ${out.length===1?'is':'are'} not expected to play (${out.map(l=>inactiveWhy(S.inactive[l.pid])).join('; ')}).</p>`; }
+  if(prices.some(p=>p.src==='dkline')) html+=`<p class="muted espn-read" style="margin:10px 0 0;font-size:12px" data-espn-read>${esc(espnReadLine(legs.filter((l,i)=>prices[i].src==='dkline').map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0]||null))}</p>`;
+  if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">Legs in different weeks (${wks.join(', ')}): not one ticket.</p>`;
   /* (app v121) a pair DraftKings will not take on one slip (dkClash), and a same-game parlay mixed with legs of other
      games, whose one betslip link DraftKings does not open: the parlay card gives each game its own (where it is on the
      page), read off the card's own plan, which counts the legs that go on the slip alone, and only where the card can
      be finished (the legs of one week). One leg a game is a plain parlay, which opens as one link */
   { const cp=dkClashPairs(legs), nm=l=>`${esc(l.name)}, ${esc(l.label)}`;
-    if(cp.length) html+=`<p class="delta down" style="margin:10px 0 0" data-pb-clash="${cp.length}">DraftKings may refuse ${cp.length===1?'this pair':'these pairs'} on one slip: ${cp.map(([i,j,k])=>`${nm(legs[i])}, with ${nm(legs[j])} (${DK_CLASH[k]})`).join('; ')}.</p>`;
+    if(cp.length) html+=`<p class="delta down" style="margin:10px 0 0" data-pb-clash="${cp.length}">DraftKings may refuse ${cp.length===1?'this pair':'these pairs'} on one slip: ${cp.map(([i,j])=>`${nm(legs[i])}, with ${nm(legs[j])}`).join('; ')}.</p>`;
     if(plan&&plan.multi&&Array.isArray(plan.games)&&wks.length===1){ const nG=plan.games.length;
-      html+=`<p class="muted" style="margin:10px 0 0;font-size:12px" data-pb-multigame="${nG}">These legs mix a same-game parlay with other games. DraftKings’ betslip may not open that mix as one, so the parlay card gives each of the ${nG} games a link of its own beside one that tries them on one slip.</p>`; } }
+      html+=`<p class="muted" style="margin:10px 0 0;font-size:12px" data-pb-multigame="${nG}">Mixed same-game parlay: DraftKings may not open it as one slip.</p>`; } }
   /* what it pays, inside the same card, then the two actions as buttons only */
   html+=`<div class="pays"><h3>What it pays</h3>
     <div class="bar">
       <label>Your stake $<input type="number" id="pStake" inputmode="decimal" min="${STAKE_MIN}" max="${STAKE_MAX}" step="1" value="${stakeText(stake)}" style="width:110px"></label>
       ${stakeChips()}
       <label>Your book's parlay price <input type="number" id="pBook" step="5" placeholder="${allBook?(decToML(bookDec)||''):'e.g. +250'}" value="${S.bookPrice!=null?esc(S.bookPrice):''}" style="width:110px"></label>
-      <span class="muted">${sg?`Blank prices the legs that share a game together, the way a book does.`:(allBook?'Blank multiplies your real leg prices.':'Blank multiplies the estimated leg prices, which include a typical bookmaker cut.')}</span>
     </div>
     <div class="bigp">
       ${fair&&fair.p!=null?`<div class="box hero"><b data-fair="${fair.p}">${(fair.p*100).toFixed(1)}%</b><span>fair chance all ${legs.length} land${fair.est?', est.':''}</span><small data-model="${pr.corr}">model says ${(pr.corr*100).toFixed(1)}%</small></div>`
-        :`<div class="box hero"><b data-model="${pr.corr}">${(pr.corr*100).toFixed(1)}%</b><span>model's chance all ${legs.length} land</span><small>no fair chance: it needs every leg's book price</small></div>`}
+        :`<div class="box hero"><b data-model="${pr.corr}">${(pr.corr*100).toFixed(1)}%</b><span>model's chance all ${legs.length} land</span><small>no fair chance</small></div>`}
       <div class="box"><b>${fmtML(fairML)}</b><span>fair price for the model's chance</span></div>
       <div class="box"><b class="payout">$${payout.toFixed(2)}</b><span>${(realPrice||estPrice)?`returned if it lands, $${profit.toFixed(2)} profit`:`if you got the fair price, $${profit.toFixed(2)} profit`}</span></div>
       ${(()=>{ const on=fair&&fair.p!=null, cp=on?fair.p:pr.corr, [c,l]=confTier(cp);
         return `<div class="box tier ${c}" data-conf="${cp}"><b>${l}</b><span>confidence all ${legs.length} land, on the ${on?'fair':'model\u2019s'} chance</span></div>`; })()}
-    </div>
-    <p class="muted fair-note">${fair&&fair.p!=null?`The fair chance is the book's: DraftKings' prices with the margin taken out${fair.est?(fair.dk?' (estimated: a leg is priced from DraftKings\u2019 line read on ESPN by our estimate, and its fair chance with it)':' (estimated, since a leg is priced on one side only: the week\u2019s typical margin is taken out of its price)'):''}, the legs moving together as the model's do. The model's own chance has run higher than the book's this season.`
-      :`The fair chance needs a book price on every leg; ${fair&&fair.miss===1?'one leg has':(fair?fair.miss:0)+' legs have'} none, so this is the model's chance alone.`}</p>
-    ${sg&&override==null?`<p class="muted" style="margin:10px 0 0;font-size:12px">Legs here share a game, so they are priced together rather than multiplied: multiplying them would say <b>$${(stake*multDec).toFixed(2)}</b>, which is what a book pays only when the legs are in different games. The estimate carries a same-game cut fitted to real DraftKings tickets; type your book's own parlay price above to override it.</p>`:''}`;
+    </div>`;
   const canSave=wks.length===1&&(realPrice||estPrice);
   html+=`<div class="actions"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><button class="btn quiet" id="pClear">Clear ALL</button></div></div>`;
   html+=`</div>`;
@@ -3731,14 +3690,12 @@ function renderParlay(o){
   let pairsHtml='';
   if(pr.pairs.length){
     pairsHtml+=`<div class="card"><h2>Legs that move together</h2>
-      <table><thead><tr><th>Pair</th><th class="num">Strength</th><th>What it means</th></tr></thead><tbody>`+
+      <table><thead><tr><th>Pair</th><th class="num">Strength</th></tr></thead><tbody>`+
       pr.pairs.sort((a,b)=>Math.abs(b.rho)-Math.abs(a.rho)).map(x=>{
         const A=legs[x.i],B=legs[x.j];
         return `<tr><td>${esc(A.name)} ${esc(A.label)}<br>${esc(B.name)} ${esc(B.label)}</td>
-          <td class="num">${x.rho>0?'+':''}${x.rho.toFixed(2)}</td>
-          <td class="${x.rho>0?'delta up':'delta down'}">${x.rho>0?'tend to happen in the same game':'tend to happen at each other\u2019s expense'}</td></tr>`;
-      }).join('')+`</tbody></table>
-      <p class="muted" style="margin:10px 0 0">Measured across 2019 to 2024. A quarterback throwing for a lot and his receiver catching a lot is the same afternoon described twice, which is why stacking them is worth more than a book's multiplied price suggests.</p></div>`;
+          <td class="num">${x.rho>0?'+':''}${x.rho.toFixed(2)}</td></tr>`;
+      }).join('')+`</tbody></table></div>`;
   }
   html+=renderSaved()+renderBetParlays();
   html+=pairsHtml;

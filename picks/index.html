@@ -76,7 +76,7 @@
 
   <div class="card">
     <label class="f" for="who">Your name</label>
-    <input type="text" id="who" autocomplete="name" maxlength="60" placeholder="So X knows whose picks these are">
+    <input type="text" id="who" autocomplete="name" maxlength="60">
   </div>
 
   <div class="card" id="games"><p class="note">Loading…</p></div>
@@ -86,9 +86,6 @@
     <input type="number" id="tb" inputmode="numeric" min="0" max="200" step="1" placeholder="e.g. 45">
   </div>
 
-  <p class="note">Tap the team you think wins each game. Your picks stay in this browser until you
-  save them; nothing is sent anywhere. <b>Save file</b> downloads them as a file you can send to X.
-  A game that has kicked off can no longer be picked or changed.</p>
   <p class="note"><button class="btn" id="clear" type="button">Clear my picks</button></p>
 </main>
 
@@ -189,7 +186,7 @@ function file(){
 function say(t,err){ const m=el('msg'); m.textContent=t; m.className='msg'+(err?' err':''); }
 function nameCheck(){
   if(P.who.trim()) return true;
-  say('Add your name first, so X knows whose picks these are.',true); el('who').focus(); return false;
+  say('Add your name first.',true); el('who').focus(); return false;
 }
 function save(){
   if(!nameCheck()) return;
@@ -254,8 +251,8 @@ setInterval(()=>{ if(G.games.length) draw(); },30000);
   el('title').textContent=`${weekName(G.week)} Picks`;
   document.title=`${weekName(G.week)} Picks`;
   const first=kickAt(G.games[0].gameday,G.games[0].gametime), last=kickAt(G.games[G.games.length-1].gameday,G.games[G.games.length-1].gametime);
-  const d=x=>x?x.toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
-  el('lede').textContent=`${G.season} season, ${G.games.length} games, ${d(first)} to ${d(last)}. Pick a winner in each, then save the file and send it to X.`;
+  const d=x=>x?x.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}):'';
+  el('lede').textContent=`${G.season} season \u00b7 ${G.games.length} game${G.games.length===1?'':'s'} \u00b7 ${d(first)} \u2013 ${d(last)}`;
   const tbG=G.games[G.games.length-1];
   el('tbLabel').textContent=`Tiebreaker (optional): total points in ${team(tbG.away_team).name} at ${team(tbG.home_team).name}`;
   el('tbCard').hidden=false;

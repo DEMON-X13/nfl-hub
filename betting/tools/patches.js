@@ -43,6 +43,10 @@
  *  6. The Challenger Model (MODEL_H) is off the site, the owner's call of 13 October 2026: the
  *     app still embeds it (its source is never edited), but its ratings are never made, so it is
  *     never rated, called or graded; update.js drops what earlier runs published of it.
+ *  7. No descriptions, the owner's call of 22 October 2026 ("i dont want any descriptions
+ *     anywhere"): the absences card's lines and the record's empty line say the state alone, a
+ *     few words with the names, weeks and times they carry (the card's source line keeps its
+ *     stale flags), and never ask for an upload a visitor of the published page cannot make.
  *
  * The app's version line (APP_BUILD) gains the patches' own version, HUB_PATCHES: bump it with
  * any change here or to what betting/tools/build.js lays over the app (the record, the pick grid),
@@ -153,21 +157,24 @@ function freezeAtKickoff(now){ now=now??Date.now(); S.atKickoff=S.atKickoff||{};
 /* what the absences card was built from, and when: the job's last download of each file. A report
    that has not reached this week says so (in bold from a day before the week's first kickoff, when
    it should be in), and so does a depth chart more than a day and a half old: stale inputs are
-   shown as stale, never as this week's. */
+   shown as stale, never as this week's. One short line, the state alone (the owner's call of 22
+   October 2026, "i dont want any descriptions anywhere"): "Injury report through week 7 (read ...)
+   · Depth chart of ...", each stale input flagged in bold after it, and before the opener "No
+   injury report yet". */
 function injAsOf(now){ now=now??Date.now(); const w=currentWeekDefault(), bits=[];
   const fmt=t=>new Date(t).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
   const ks=S.schedule.filter(g=>+g.week===+w).map(kickoffMs).filter(t=>t!=null), first=ks.length?Math.min(...ks):null;
   if(S.injuries&&S.injuries.rows&&S.injuries.rows.length){ const iw=Math.max(...S.injuries.rows.map(r=>+r.week||0));
     const late=iw<w&&first!=null&&first-now<24*3600000;
-    bits.push('the injury report through week '+iw+(S.injuries.loaded?' (read '+fmt(S.injuries.loaded)+')':'')
-      +(iw<w?(late?' <b class="inj-stale">(week '+w+'\'s is not on nflverse yet: nobody is ruled out for it here)</b>':' (week '+w+'\'s is not out yet)'):'')); }
-  else if(S.schedule.length) bits.push(filesDue(S.schedule,now).injuries?'<b class="inj-stale">no injury report</b>':'no injury report yet (the first is filed in the week of the opener)');
+    bits.push('Injury report through week '+iw+(S.injuries.loaded?' (read '+fmt(S.injuries.loaded)+')':''));
+    if(late) bits.push('<b class="inj-stale">week '+w+'\'s not posted</b>'); }
+  else if(S.schedule.length) bits.push(filesDue(S.schedule,now).injuries?'<b class="inj-stale">No injury report</b>':'No injury report yet');
   if(S.depth&&S.depth.dt){ const d=new Date(S.depth.dt), old=now-d.getTime()>36*3600000;
-    bits.push('the depth chart of '+fmt(d)+(old?' <b class="inj-stale">(more than a day and a half old)</b>':'')); }
-  return bits.length?'<p class="muted inj-asof" style="margin:8px 0 0">From nflverse: '+bits.join(' and ')+'.</p>':''; }
+    bits.push('Depth chart of '+fmt(d)); if(old) bits.push('<b class="inj-stale">over 36 hours old</b>'); }
+  return bits.length?'<p class="muted inj-asof" style="margin:8px 0 0">'+bits.join(' · ')+'</p>':''; }
 `;
 
-const HUB_PATCHES = 'hub patches 5 \\u00b7 2026-10-13';
+const HUB_PATCHES = 'hub patches 6 \\u00b7 2026-10-22';
 
 function logic(html) {
   { const m = html.match(/^const APP_BUILD='([^'\n]*)';$/mg) || [];
@@ -214,7 +221,10 @@ function logic(html) {
   html = edit(html, '.filter(tm=>!qbShown.has(tm)&&qbAdj(tm).pts).forEach(',
     '.filter(tm=>{ if(qbShown.has(tm)) return false; const q=qbAdj(tm); return q.pts||q.held; }).forEach(', 'the absences card rows, held starters');
   html = edit(html, `return h+'<div class="empty">Nobody in those groups has a designation against them this week.</div>';`,
-    `return h+'<div class="empty">Nobody in those groups has a designation against them this week.</div>'+injAsOf();`, 'the absences card source line, empty');
+    `return h+'<div class="empty">No absences this week.</div>'+injAsOf();`, 'the absences card source line, empty');
+  /* no depth chart: the state alone, never an upload a visitor cannot make (the owner's call of 22 October 2026) */
+  html = edit(html, `if((S.roster||S.injuries)&&!S.depth) return '<p class="muted">Upload a depth chart too. Without it the starting quarterback cannot be identified.</p>';`,
+    `if((S.roster||S.injuries)&&!S.depth) return '<p class="muted">No depth chart yet.</p>';`, 'the absences card, no depth chart');
   html = edit(html, `+body+'</tbody></table>';
   return h;`, `+body+'</tbody></table>'+injAsOf();
   return h;`, 'the absences card source line');
@@ -222,7 +232,7 @@ function logic(html) {
   const w=currentWeekDefault();`, `function renderImpact(){
   const w=currentWeekDefault();
   if(seasonPhase()==='over') return '';
-  if(seasonPhase()==='waiting') return '<p class="muted" style="margin:0">Every posted game has been played. The next round\\'s absences appear here once nflverse posts its games.</p>';`, 'the absences card, season over');
+  if(seasonPhase()==='waiting') return '<p class="muted" style="margin:0">Waiting for the next round\\'s games.</p>';`, 'the absences card, season over');
 
   /* 3. neutral sites */
   html = edit(html, `  for(const r of rows){ if(+r.season!==S.season) continue;
@@ -250,6 +260,12 @@ function logic(html) {
   html = edit(html, 'S.teamsH??=JSON.parse(JSON.stringify(MODEL_H.teams));', 'delete S.teamsH;', 'the saved state, its Challenger ratings dropped');
   html = edit(html, 'S.teams=JSON.parse(JSON.stringify(MODEL.teams)); S.teamsH=JSON.parse(JSON.stringify(MODEL_H.teams));',
     'S.teams=JSON.parse(JSON.stringify(MODEL.teams)); delete S.teamsH;', 'Rebuild ratings, no Challenger ratings');
+
+  /* 7. no descriptions (the owner's call, 22 October 2026: "i dont want any descriptions anywhere"): the
+     Pick'em Record's empty line says the state alone, never an upload a visitor of the published page
+     cannot make */
+  html = edit(html, `el.innerHTML='<div class="empty">No graded games yet. Upload a week\\'s results and stats to start the record.</div>';`,
+    `el.innerHTML='<div class="empty">No graded games yet.</div>';`, 'the record, empty');
   return html;
 }
 
