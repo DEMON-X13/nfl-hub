@@ -1559,8 +1559,9 @@ no box score, which a press reads for a kept parlay's game under way), and only 
 (`gamesIn(slateWeek())`) has kicked off by the page's clock with no score in the payload (`gameStarted`, `hasScore`), the
 one case it can add anything, and none is running (`LIVE.busy`); with no game under way no scoreboard is asked on load at
 all, and never on a timer. The read goes where a press puts it (`LIVE.games`, `LIVE.slate`), so the Props list's
-final-score cells, the stamp and the Game snapshot's standing (`outcome`: the published result, else `LIVE.games` once
-`LIVE.slate`) show it; but it redraws nothing the visitor is using (the review of 22 October 2026: its first form pressed
+final-score cells, the stamp and the Game snapshot's standing (`outcome`: the betting job's published result, else the
+props job's final in the payload, the prop model's own row, so a final the betting job has not graded yet is drawn played
+though no read is asked for it, else `LIVE.games` once `LIVE.slate`) show it; but it redraws nothing the visitor is using (the review of 22 October 2026: its first form pressed
 the button itself, whose `renderSlate` rebuilt the list's rows, and the game's page where one was open, under the visitor,
 taking the scroll lock from a window opened meanwhile and the focus off a row onto the page's body). The list is drawn
 again with it only while nothing is open over the page (`pageBusy`: no `modal-open`, no `.modal` or X Parlays' dialog
@@ -1575,7 +1576,11 @@ score, its score in the list, the stamp and the snapshot, and no second read; ev
 and the read held back while the visitor uses the page: with the focus on that game's row, the row drawn again with the
 score and the focus on it; with that game's page open and the focus on its Game snapshot button, nothing drawn under it,
 the page, the lock and that very button kept, and Back drawing the list with the score; and the list drawn again under a
-Game snapshot opened from elsewhere keeping its lock. Every old address sends a visitor to the page at the site's root (the owner's call of
+Game snapshot opened from elsewhere keeping its lock. Its no-read fixture always plants a game of the week four hours past
+its kickoff with a final in the payload and none in the season, so it bites on a weekday too, and holds that game's Game
+snapshot played on the payload's score; and a game of the week at nflverse's neutral site that is no 9:30 kickoff,
+Wembley, drawn "vs" on its Props row and in its snapshot's title, "Home (listed)" and "a neutral site" (the snapshot's
+head held on the smoke's own rule, never the page's `neutral`). Every old address sends a visitor to the page at the site's root (the owner's call of
 17 October 2026, above, when it moved there from `nflbets/`), by `location.replace`, so Back does not loop, with a link
 for a browser without scripts: `nflbets/` with its own query and tab (`location.replace('../'+search+hash)`, so
 `nflbets/#suggest` lands on the root's `#suggest`, and `#tracker`, `#pickems` or `#matchups` on the Props tab by the
@@ -2776,7 +2781,7 @@ box). Opening a card, a fold or a tab never redraws
 the window, and nothing of it is saved.
 It computes nothing of its own beyond the vote's counts and the Elo gap: the page's glue (`hub.html`, the board until it
 went on 22 October 2026) hands it the season, the Vegas call, where a game stands (`outcome`: the published result, else
-the Props tab's scoreboard read) and the way to the Props tab (`window.pkBoard`), and the ELO tab its one read of
+the payload's final, else the Props tab's scoreboard read) and the way to the Props tab (`window.pkBoard`), and the ELO tab its one read of
 `elo/data/` (`window.eloFiles`) and its Mismatches (`window.eloMismatches`). A played game says the
 ratings, lineups and units are the files as they stand now, and a file that did not load, a game outside the
 matchups' week or a team whose lineup is for another game is said in its card while the rest draws.

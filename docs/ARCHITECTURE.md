@@ -734,7 +734,7 @@ The page's glue (`nflbets/build/hub.html`) reads the season once, `betting/state
 `ST.done` (`ST.err` the reason where it failed), dispatches `pk-state` on the document and wires the frames, which do not
 depend on it. `pkBoard` hands the Game snapshot, the matchup bubble and the Props list's `slateNeutral` the season,
 Vegas's call on nflverse's lines (`call`: the two moneylines with the margin out, else the spread about 13.5 points), where
-a game stands (`outcome`: the published result, else the Props tab's scoreboard read, `LIVE.games` once `LIVE.slate`), its
+a game stands (`outcome`: the published result, else the props job's final in the payload, else the Props tab's scoreboard read, `LIVE.games` once `LIVE.slate`), its
 kickoff, its site ("vs" for nflverse's Neutral or a 9:30am Eastern kickoff) and week name (weeks 19-22 Wild Card to Super
 Bowl), `probCols` and the way to the game's page on the Props tab (`canProps`, `propsPlayers`, `openOnProps`). The
 scoreboard on load (`scoresOnLoad`, app v128): once the prop model is up (app-ready, and 300 ms) the glue reads ESPN's

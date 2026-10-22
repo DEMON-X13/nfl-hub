@@ -4172,13 +4172,47 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(D.calls.filter(c => /\/scoreboard\?/.test(c.url)).length === 1 && !D.calls.some(c => /\/summary\?/.test(c.url)), 'the scoreboard on load, held back, on a game\'s page: not one read of the scoreboard alone');
         chk(bad.length === 0 && D.errs.length === 0, `the scoreboard on load, held back, on a game's page: ${bad.join('; ')} ${D.errs.join('; ')}`);
         D.w.close(); } }
-    const PB = JSON.parse(PAYLOAD_TXT);
-    for (const g of PB.sched || []) if (+g.w === PW && isFinite(etKick(g)) && etKick(g) <= pageNow + 600e3 && !scoredOwn(g)) { g.hs = 20; g.as = 17; }
-    const B = await run(state, SITE + '#matchups', wk => scoreboard(state, wk), false, { pay: JSON.stringify(PB) }); landed(B, '#matchups');
-    await wait(700);
-    chk(sbOnLoadHeld(B, 'every game of the week kicked off with a score', pageNow) === 0, 'the scoreboard on load: a game is still under way on the fixture with every kicked-off game scored');
-    chk(B.errs.length === 0, 'the scoreboard on load (none under way): the page threw: ' + B.errs.join('; '));
-    B.w.close(); }
+    /* B: every game of the week kicked off by then given a score, and one planted four hours past its kickoff with a
+       final in the payload (24-20 to the home side) and none in the season (the props job published before the betting job
+       graded it: the two run hours apart), so at every hour some game of the week has kicked off with a score: no read on
+       load, and that game's Game snapshot played, on the payload's score (outcome falls back to the prop model's row; the
+       review of 22 October 2026 found it drawn as to come). And one game of the week planted at a neutral site that is not
+       a 9:30 kickoff (nflverse's Neutral, Wembley, two days out), the rule's other branch, on the smoke's own reading: "vs"
+       on its Props row, in its snapshot's title, its home side "Home (listed)" and its kickoff line naming the neutral
+       site (the board held that case until it went) */
+    const PB = JSON.parse(PAYLOAD_TXT), stB = JSON.parse(JSON.stringify(state)), wkB = (PB.sched || []).filter(g => +g.w === PW);
+    for (const g of wkB) if (isFinite(etKick(g)) && etKick(g) <= pageNow + 600e3 && !scoredOwn(g)) { g.hs = 20; g.as = 17; }
+    const Y = wkB[0], Z = wkB.find(g => g !== Y);
+    if (!Y || !Z) chk(false, `the scoreboard on load: the payload has not two games of the Props list's week ${PW} to plant`);
+    else {
+      const ky = etParts(pageNow - 4 * 3600e3), kz = etParts(pageNow + 2 * 864e5);
+      Y.d = ky.d; Y.t = ky.t; Y.hs = 24; Y.as = 20; Z.d = kz.d; Z.t = kz.t === '09:30' ? '13:00' : kz.t; delete Z.hs; delete Z.as;
+      const sY = stB.schedule.find(g => g.game_id === Y.id), sZ = stB.schedule.find(g => g.game_id === Z.id);
+      if (sY) { sY.gameday = Y.d; sY.gametime = Y.t; for (const f of ['result', 'home_score', 'away_score']) delete sY[f]; }
+      if (sZ) { sZ.gameday = Z.d; sZ.gametime = Z.t; sZ.location = 'Neutral'; sZ.stadium = 'Wembley Stadium'; for (const f of ['result', 'home_score', 'away_score']) delete sZ[f]; }
+      const B = await run(stB, SITE + '#matchups', wk => scoreboard(stB, wk), false, { pay: JSON.stringify(PB) }); landed(B, '#matchups');
+      await wait(700);
+      chk(sbOnLoadHeld(B, 'every game of the week kicked off with a score', pageNow) === 0, 'the scoreboard on load: a game is still under way on the fixture with every kicked-off game scored');
+      chk((B.w.eval('S').sched || []).some(g => +g.w === PW && etKick(g) <= pageNow && scoredOwn(g)), 'the scoreboard on load: the fixture has no game of the week kicked off with a score, so no read proves nothing');
+      if (sY) { const o = await snapOpen(B, sY), md = o.md;
+        chk(!!md && txt(md.querySelector('[data-gs-score]')) === '20–24' && !!md.querySelector('#gsPast') && txt(md.querySelector('#gsMatch .gs-sc small')) === 'Final',
+          `the scoreboard on load: a game the payload has scored and the season has not graded is not drawn played on the payload's score in its Game snapshot: '${md ? txt(md.querySelector('#gsMatch .gs-sc')) : 'no window'}', played note ${!!(md && md.querySelector('#gsPast'))}`);
+        if (md && !md.hidden) B.w.gameSnapshotClose(false); }
+      if (sZ) { const bad = [];
+        if (B.w.eval('S').ui.game) { B.w.closeGame(); await wait(40); }
+        const row = B.d.querySelector(`#gamesList .game[data-game="${Z.id}"]`);
+        if (!row || txt(row.querySelector('.at')) !== 'vs') bad.push(`its Props row reads '${row ? txt(row.querySelector('.at')) : 'no row'}'`);
+        const o = await snapOpen(B, sZ), md = o.md;
+        if (!md) bad.push('its Game snapshot did not open');
+        else {
+          if (txt(B.d.getElementById('gsTitle')).replace(/Game snapshot.*$/, '') !== `${Z.a}vs${Z.h}`) bad.push(`its snapshot's title reads '${txt(B.d.getElementById('gsTitle'))}'`);
+          const labs = [...md.querySelectorAll('#gsMatch .gs-team > .gs-lab')].map(txt).join();
+          if (labs !== 'Away,Home (listed)') bad.push(`its teams are labelled ${labs}`);
+          if (!/Wembley Stadium, a neutral site/.test(txt(md.querySelector('#gsMatch .gs-when')))) bad.push(`its kickoff line reads '${txt(md.querySelector('#gsMatch .gs-when'))}'`);
+          B.w.gameSnapshotClose(false); }
+        chk(bad.length === 0, `a game at nflverse's neutral site, not a 9:30 kickoff (${Z.id}), is not drawn as one: ${bad.join('; ')}`); }
+      chk(B.errs.length === 0, 'the scoreboard on load (none under way): the page threw: ' + B.errs.join('; '));
+      B.w.close(); } }
 
   /* ---- Player Elo: the ratings and the roster model, read from elo/data ---- */
   { const eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M);
@@ -6567,7 +6601,8 @@ async function snapshotChecks() {
       const pw = (win !== undefined ? ['score'] : []).concat('when', q('.gs-prev') ? ['preview'] : []).join();
       if (parts.join() !== pw) bad.push(`the middle holds ${parts.join() || 'nothing'}, not ${pw}`);
       if (md.querySelector('.gs-at') || /^(at|vs)$/m.test(mid ? [...mid.childNodes].map(n => n.textContent.trim()).join('\n') : '')) bad.push('an "at" circle is still drawn');
-      const neu = R.w.pkBoard.neutral(g), labs = [...md.querySelectorAll('#gsMatch .gs-team > .gs-lab')].map(txt).join();
+      /* a neutral site on the smoke's own rule (nflverse's Neutral, or a 9:30am Eastern kickoff, which is one played abroad) */
+      const neu = g.location === 'Neutral' || g.gametime === '09:30', labs = [...md.querySelectorAll('#gsMatch .gs-team > .gs-lab')].map(txt).join();
       if (labs !== (neu ? 'Away,Home (listed)' : 'Away,Home')) bad.push(`the teams are labelled ${labs}`);
       if (neu && !/a neutral site/.test(txt(q('#gsMatch .gs-when')))) bad.push(`a neutral site's kickoff line reads '${txt(q('#gsMatch .gs-when'))}'`);
       if (q('#gsPast') && q('#gsMatch .gs-hero').nextElementSibling !== q('#gsPast')) bad.push('the played note is not right after the head');

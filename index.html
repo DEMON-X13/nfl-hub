@@ -7686,7 +7686,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='505ccef';
+const PAGE_HASH='0f5f14c';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -9830,11 +9830,17 @@ const neutral=g=>g.location==='Neutral'||g.gametime==='09:30';
 /* nflverse runs the playoffs on as weeks 19-22 */
 const PLAYOFF={19:'Wild Card',20:'Divisional',21:'Conference',22:'Super Bowl'};
 const weekName=w=>w>18?(PLAYOFF[w]||'Playoffs '+(w-18)):'Week '+w;
-/* where a game stands: the published result when the betting job has graded it, otherwise what the
-   scoreboard said when the Props tab last read it (LIVE: its Refresh scores, or the page's own read once on load
-   where a game is under way, scoresOnLoad, below). final says the game is over; live says it is on. */
+/* where a game stands: the published result when the betting job has graded it, else the final score the props job
+   has published (the prop model's own row: the two jobs run hours apart, and the read on load below asks nothing for a
+   game the payload has scored, so a final the betting job has not graded yet showed as to come, the review of 22
+   October 2026), otherwise what the scoreboard said when the Props tab last read it (LIVE: its Refresh scores, or the
+   page's own read once on load where a game is under way, scoresOnLoad, below). final says the game is over; live
+   says it is on. */
 function outcome(g){
   if(g.result!=null) return {final:true,live:false,as:g.away_score,hs:g.home_score,winner:winnerOf(g),clock:''};
+  const r=mkt(g.game_id);
+  if(r&&r.hs!=null&&r.as!=null&&isFinite(r.hs)&&isFinite(r.as)){ const hs=+r.hs, as=+r.as;
+    return {final:true,live:false,as,hs,winner:hs>as?g.home_team:(as>hs?g.away_team:null),clock:''}; }
   let s=null; try{ s=typeof LIVE==='object'&&LIVE&&LIVE.slate&&LIVE.games?LIVE.games[g.game_id]:null; }catch(e){}
   if(!s||s.as==null||s.hs==null||s.state==='pre') return null;
   const winner=s.hs>s.as?g.home_team:(s.as>s.hs?g.away_team:null);
