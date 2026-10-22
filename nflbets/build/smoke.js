@@ -180,11 +180,13 @@ function finish(why) {
    stack, so a mistake in the smoke is a fast exit 1, never a run that waits on open windows. */
 process.on('unhandledRejection', e => { checks++; fails.push('the page threw in an async handler: ' + (e && e.stack || e)); });
 /* and it never hangs: the elo job runs it every morning with no time limit of its own, so a run
-   still going after fifteen minutes stops with what it has, and fails (it took six to eight minutes, the
+   still going after twenty minutes stops with what it has, and fails (it took six to eight minutes, the
    upper end on a payload whose Sunday slot is live, since app v118 checks the slot's set; ten until then. Since app
    v125, with the admin's boots and the published read's checks, about ten and a half on a 4-core box beside another
-   heavy check, eleven on a payload carrying the read) */
-const SMOKE_LIMIT_MS = 15 * 60 * 1000;
+   heavy check, eleven on a payload carrying the read; on 22 October 2026, app v129, 14 min 59 s on a 4-core box with
+   under 15 GB and nothing else running, its 2,795 checks passing, where the limit, fifteen minutes until then, stopped
+   a run two sections short; twenty since, still well inside the elo job's forty) */
+const SMOKE_LIMIT_MS = 20 * 60 * 1000;
 setTimeout(() => finish(`the smoke did not finish in ${Math.round(SMOKE_LIMIT_MS / 1000)} s: stopped with what it had`), SMOKE_LIMIT_MS).unref();
 /* nor does it pass by running out of things to wait on: a body stuck on a promise nothing will
    settle, with no window open to keep the process up, would otherwise end Node with exit 0 and
@@ -4042,7 +4044,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      October 2026; #pickems before it, and pickems/'s redirect; #tracker, where news/ once sent every visitor) or, on a
      visitor's page, on an admin's address (#xparlays, where the old Live Parlays links go, and #bets), the page lands on
      the Props tab, the address written over as #slate, its games drawn. Each fresh load is one of the boots below, held
-     as it comes up, before anything is pressed (a boot costs some seconds, and the run has fifteen minutes) */
+     as it comes up, before anything is pressed (a boot costs some seconds, and the run has twenty minutes) */
   const landed = (R, at) => { const open = [...R.d.querySelectorAll('main section[id^="tab-"]')].filter(x => !x.hidden).map(x => x.id).join();
     chk(!R.timedOut && R.errs.length === 0 && open === 'tab-slate' && R.w.location.hash === '#slate' && txt(R.d.querySelector('#tabs button[aria-selected="true"]')) === 'Props'
       && R.d.querySelectorAll('#gamesList .game').length > 0,
