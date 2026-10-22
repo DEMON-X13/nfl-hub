@@ -2054,7 +2054,7 @@ const estAttr=o=>o&&(o.src==='dkline'||espnAny())?` title="${esc(estTitle(o))}" 
 function espnReadLine(at){
   const t=at!=null?(typeof at==='number'?at:Date.parse(at)):espnLatest(); if(!isFinite(t)||!t) return '';
   const h=(Date.now()-t)/3600e3;
-  return `est.: estimated from DraftKings’ line, read ${espnWhen(t)}`+(h>DK_EST.staleHours?` (${Math.round(h)}h ago)`:'')+'.';
+  return `Price est. from DraftKings’ line, read ${espnWhen(t)}`+(h>DK_EST.staleHours?` (${Math.round(h)}h ago)`:'')+'.';
 }
 
 /* ---------- DraftKings' id for a leg (app v109) ----------
@@ -2584,10 +2584,11 @@ function pbTier(t,pool,memo,opt){ return pbWithFair(pbTierOf(t,pool,memo,opt)); 
 /* (app v109, dormant since app v125: a payload whose bake wrote paid ids) player legs priced on the ticked games,
    and none with a DraftKings id */
 const PB_NO_ID='no player lines with a DraftKings id.';
-/* (app v125) no player line on these games (ids; none: the week's games still to come): DraftKings had posted none
-   when its lines were last read from ESPN (the published read or a press, espnLastRead), or they have not been read */
-function pbNoPl(ids){ const at=espnLastRead(ids||pbGames().map(g=>g.id));
-  return at?`no player lines (read ${espnWhen(at)}).`:'player lines not read yet.'; }
+/* (app v130) the one phrase for no player lines, every such reason made of it: DraftKings had posted none when its
+   lines were last read from ESPN at t (the published read or a press, espnLastRead), or they have not been read */
+const noPlSay=t=>t?`no player lines yet (read ${espnWhen(t)})`:'player lines not read yet';
+/* (app v125) no player line on these games (ids; none: the week's games still to come) */
+function pbNoPl(ids){ return noPlSay(espnLastRead(ids||pbGames().map(g=>g.id)))+'.'; }
 function pbWhy(n,pool,c){
   const m=pbMaxLegs([...pool.pref,...pool.thin,...(pool.mkt||[])]);
   /* (app v109) short of legs only for want of DraftKings' ids: said so */
@@ -2990,7 +2991,7 @@ function pbPanel(){
   const u=pbUi(), w=currentWeek(), games=pbGames(), mix=pbMix(u);
   const head=`<div class="pb-hd"><h2>Top ${PB_TOP_N} lines</h2><span class="pill">week ${w}</span></div>`;
   if(!games.length) return `<div class="card pb" id="pbCard">${head}
-    <p class="pb-none">${seasonOver()?'Season over.':`No week ${w} games left.`}</p></div>`;
+    <p class="pb-none">${seasonOver()?'Regular season over.':`No week ${w} games left.`}</p></div>`;
   const r=getPbTop(), nOn=games.filter(g=>!u.off.includes(g.id)).length, open=u.gx!=null?u.gx:pbWide();
   const seg=`<span class="pb-seg" role="group" aria-label="What to build from">${PB_MIXES.map(([k,l])=>`<button type="button" class="${mix===k?'on':''}" data-pb-mix="${k}" aria-pressed="${mix===k}">${l}</button>`).join('')}</span>`;
   const chips=PB_KINDS.map(([k,l])=>`<label class="pb-chip${u.k[k]?' on':''}"><input type="checkbox" data-pb-kind="${k}" ${u.k[k]?'checked':''}><span>${l}</span></label>`).join('');
@@ -3096,8 +3097,7 @@ function spEt(ms,day){ try{ return new Date(ms).toLocaleString('en-US',{timeZone
 /* (app v125) why a unit has no player line: DraftKings had posted none when its lines were last read from ESPN (the
    published read or a press), or they have not been read; on a payload whose bake wrote paid ids (dormant), none
    with an id */
-function spNoPl(g){ const t=espnLastRead(spGamesOf(g).map(x=>x.id));
-  return t?`no player lines yet (read ${espnWhen(t)}).`:'player lines not read yet.'; }
+function spNoPl(g){ return noPlSay(espnLastRead(spGamesOf(g).map(x=>x.id)))+'.'; }
 /* why a level of one unit has no parlay: the unit does not make that many legs, and why */
 function spWhy(n,pool,g){
   const m=pbMaxLegs([...pool.pref,...pool.thin,...(pool.mkt||[])]), where=g.slot?'the Sunday slot':'this game';
@@ -3174,7 +3174,7 @@ function spEloSet(gid,o){ const u=spUnit(gid); if(!u||!spEloOn()) return null;
      model's levels do */
   if(r&&!r.error&&Array.isArray(r.tiers)&&r.tiers.some(t=>!t.legs)){ const s=spSet(gid);
     if(s&&!s.plGames){ const where=u.slot?'in the Sunday slot':'in this game', t=espnLastRead(spGamesOf(u).map(x=>x.id));
-      const why=s.plNoId?`No player leg with a DraftKings id ${where}.`:t?`No player lines ${where} yet (read ${espnWhen(t)}).`:'No player lines read yet.';
+      const why=s.plNoId?`No player leg with a DraftKings id ${where}.`:t?`No player lines ${where} yet (read ${espnWhen(t)}).`:`No player lines ${where} read yet.`;
       r={...r,tiers:r.tiers.map(x=>x.legs?x:{...x,why})}; } }
   return r; }
 /* one level of a unit built again now, from the lines at hand (a locked level holding a player ruled out): a model
@@ -3413,7 +3413,7 @@ function spGameHtml(g,on){
   const cards=v.tiers?`<h5 class="sp-sub" data-sp-kind="model">Model parlays</h5><div class="pb-tiers" data-sp-kind="model">${v.tiers.map(t=>pbTierCard(t,{kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,game:!!g.slot,...ro})).join('')}</div>`:'';
   /* the Elo picks, where the ELO tab is on the page: its cards' own options (eloCardOpt: the Elo chance, each
      player's shield), the set's buttons */
-  const eloCards=!eon||!v.tiers?'':`<h5 class="sp-sub" data-sp-kind="elo">Elo picks</h5>${v.eloErr?`<p class="pb-why" data-sp-elo-err>${esc(v.eloErr)}</p>`:v.eloNone?`<p class="pb-why" data-sp-elo-none>The site’s Elo picks were not published in time.</p>`:v.elo?`${v.eloOwn&&v.phase==='locked'&&!v.own?`<p class="sp-lock" data-sp-phase="eloown">This browser’s own Elo picks (not graded).</p>`:''}<div class="pb-tiers" data-sp-kind="elo">${v.elo.map(t=>pbTierCard(t,{...(typeof window.eloCardOpt==='function'?window.eloCardOpt(t):{}),kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,noun:'Elo pick',game:!!g.slot,...ro})).join('')}</div>`
+  const eloCards=!eon||!v.tiers?'':`<h5 class="sp-sub" data-sp-kind="elo">Elo picks</h5>${v.eloErr?`<p class="pb-why" data-sp-elo-err>${esc(v.eloErr)}</p>`:v.eloNone?`<p class="pb-why" data-sp-elo-none>Elo picks not published in time.</p>`:v.elo?`${v.eloOwn&&v.phase==='locked'&&!v.own?`<p class="sp-lock" data-sp-phase="eloown">This browser’s own Elo picks (not graded).</p>`:''}<div class="pb-tiers" data-sp-kind="elo">${v.elo.map(t=>pbTierCard(t,{...(typeof window.eloCardOpt==='function'?window.eloCardOpt(t):{}),kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,noun:'Elo pick',game:!!g.slot,...ro})).join('')}</div>`
     :`<p class="pb-why" data-sp-elo-wait>Loading the Elo ratings…</p>`}`;
   return `${open}${line}${cards}${eloCards}</div>`;
 }

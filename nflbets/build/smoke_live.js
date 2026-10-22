@@ -1957,7 +1957,6 @@ const ladderBoot = async (x, seeded, how) => {
             const one = (qq, o) => gameLegOwn(qq) || qq.stat !== 'passing_tds' ? null : !gameLegOwn(o) && o.stat === 'any_td' && o.team === qq.team && o.pid !== qq.pid ? 'td' : qq.side !== 'under' && o.stat === 'total' ? 'total' : null;
             return one(a, b) || one(b, a); };
           const clashPairsOwn = legs => legs.flatMap((a, i) => legs.slice(i + 1).map((b, k) => [i, i + 1 + k, clashOwn(a, b)])).filter(x => x[2]);
-          const CLASH_SAY = { td: 'a quarterback’s passing TDs with a teammate’s touchdown', total: 'a quarterback’s passing TDs over with the game total' };
           const ML2_ID = 'SMOKE5#ml_' + g2.h, ML3_ID = 'SMOKE7#ml_3', near = [g1.a, g1.h, g2.a, g2.h];
           const pick3 = byWeek[wk].find(x => x.id !== g1.id && x.id !== g2.id) || P0.sched.find(x => +x.w !== wk && !(other && x.id === other.id) && !near.includes(x.a) && !near.includes(x.h));
           const G3 = pick3 ? w.eval('S').sched.find(x => x.id === pick3.id) : null, was3 = G3 ? { w: G3.w, d: G3.d, t: G3.t } : null;
@@ -2126,7 +2125,8 @@ const ladderBoot = async (x, seeded, how) => {
               chk(builderNote('clash') === wantB && builderNote('multigame') === null, `${how}: (c) ${what}: the builder does not say, word for word, which pairs DraftKings may refuse on one slip: ${builderNote('clash')}, not ${wantB}`);
               await reopen();
               const ids = qc.legs.map(l => onSlip ? cId(l) : null), cl = [...d.querySelectorAll('#pcDkNote [data-pc-dkclash]')];
-              const wantC = pairs.length ? `DraftKings may refuse ${pairs.length === 1 ? 'this pair' : 'these pairs'} on one slip: ${pairs.map(([i, j, k]) => `legs ${i + 1} and ${j + 1} (${CLASH_SAY[k]})`).join('; ')}.` : null;
+              /* (app v130) the card names the pairs alone, as the builder does, never what kind of pair each is */
+              const wantC = pairs.length ? `DraftKings may refuse ${pairs.length === 1 ? 'this pair' : 'these pairs'} on one slip: ${pairs.map(([i, j]) => `legs ${i + 1} and ${j + 1}`).join('; ')}.` : null;
               const bad = (onSlip ? legLinks(slipOf(qc.legs, ids), { clash: pairs.length }) : noteBody() === 'first hand' + (isAdmin ? '' : ' byhand') + (pairs.length ? ' clash' : '') ? checkBad() : `its blocks are "${noteParts()}"`) || gameBtns(null);
               chk(cl.length === (wantC ? 1 : 0) && (!wantC || (txt(cl[0]) === wantC && cl[0].getAttribute('data-pc-dkclash') === String(pairs.length))) && !bad
                 && (onSlip ? !dkA.hidden && dkA.getAttribute('href') === DKU(ids) : txt(dkA) === 'Open DraftKings'),

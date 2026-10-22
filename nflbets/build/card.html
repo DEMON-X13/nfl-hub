@@ -586,10 +586,11 @@ window.PARLAY_CARD=(function(){
     const mix=dk.multi?' Mixed same-game parlay: DraftKings may not open it as one slip.':'';
     return `<p>${when}check each leg on the slip.${mix}${dk.miss.length?' Add by hand:':''}</p>${hand}${one}${dkSwapHtml(dk)}${dkClashHtml(dk)}`;
   }
-  /* (app v121) the pairs DraftKings will not take on one slip, by the legs' numbers, and what each is */
-  const DK_CLASH_SAY={td:'a quarterback\u2019s passing TDs with a teammate\u2019s touchdown',total:'a quarterback\u2019s passing TDs over with the game total'};
+  /* (app v121) the pairs DraftKings will not take on one slip, by the legs' numbers; (app v130, the owner's call of 22
+     October 2026: "i dont want any descriptions anywhere") the pairs alone, as the builder's line names them, never what
+     kind of pair each is */
   function dkClashHtml(dk){ const c=dk&&dk.clash||[]; if(!c.length) return '';
-    return `<p data-pc-dkclash="${c.length}">DraftKings may refuse ${c.length===1?'this pair':'these pairs'} on one slip: ${c.map(([a,b,k])=>`legs ${a} and ${b} (${DK_CLASH_SAY[k]||'they move together'})`).join('; ')}.</p>`; }
+    return `<p data-pc-dkclash="${c.length}">DraftKings may refuse ${c.length===1?'this pair':'these pairs'} on one slip: ${c.map(([a,b])=>`legs ${a} and ${b}`).join('; ')}.</p>`; }
   /* (20 October 2026, the owner's call: DraftKings' lines from ESPN for everyone) on a visitor's card, where a player's
      leg is left off the slip, one line saying every such leg goes on by hand: ESPN gives no DraftKings id for a
      player's line (the admin's card has Pull from DraftKings in its place). Since app v130 the line alone, never why */

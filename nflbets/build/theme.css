@@ -39,8 +39,8 @@ html:not(.embed) body::before{content:"";position:fixed;inset:0;pointer-events:n
 ::selection{background:var(--gold);color:#000}
 a{color:var(--ice)}
 
-/* header: no slab, the page's own glow behind the hub's two-tone wordmark, a tagline and the stamp,
-   then pill tabs */
+/* header: no slab, the page's own glow behind the hub's two-tone wordmark and the stamp, then pill tabs (the
+   tagline went with the owner's call of 22 October 2026, "i dont want any descriptions anywhere") */
 header{background:transparent;color:var(--ink);padding:26px 22px 0;max-width:1240px;margin:0 auto;position:relative}
 header::after{display:none}
 .brand{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -50,7 +50,6 @@ header::after{display:none}
 .brand h1::after{width:.62em;height:.38em;border-radius:50%;margin-left:.16em;vertical-align:.1em;transform:rotate(-24deg);
   background:linear-gradient(#fff,#fff) center/38% 2px no-repeat,repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 5px) center/30% 7px no-repeat,
     radial-gradient(ellipse at 35% 30%,#E9A66B,#B2581F 55%,#6E2F0D);box-shadow:0 0 22px rgba(255,209,102,.45)}
-.tagline{color:var(--ink-2);font-size:13px;margin:8px 0 0;max-width:560px;font-weight:500;letter-spacing:0}
 .hub-stamp{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;line-height:1.5}
 .brand .sub{color:var(--ink-2);font-size:12px}
 .hub-stamp #saveState{color:var(--ink-2);font-weight:600;margin-left:0!important}
@@ -154,7 +153,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
    His Admin mark and Sign out (a text button whose 44px tap target comes from padding taken back out by a negative
    margin) are in the stamp's place after the switch: on a screen wider than a phone that place is laid on the
    switch's own row, to its left and out of the flow, so the stamp keeps its height and nothing comes near the
-   switch; on a phone (620px and under) it is the stamp's first line, under the tagline. On a visitor's page the
+   switch; on a phone (620px and under) it is the stamp's first line, under the wordmark. On a visitor's page the
    place is empty and hidden, and the header is exactly as it was, but for the one line a refused link draws there */
 html:not([data-admin="on"]) #tabs [data-admin-only]{display:none!important}
 .hub-admin{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;font-size:12px;line-height:18px}

@@ -1141,7 +1141,7 @@ function positions(P,g,F){
   const outsOf=t=>sidelinedOf(Pl,t);
   const outs=t=>{ const xs=outsOf(t);
     return `<div data-gs-outs="${esc(t)}"${xs.length?' class="gs-hasout"':''}><h5>${tg(t,true)} ${xs.length?`${xs.length} ranked ${xs.length===1?'player':'players'} out`:'<span class="gs-none">No ranked player out.</span>'}</h5>${xs.length?`<ul>${xs.map(x=>`<li data-pid="${esc(x.id)}"><b>${esc(x.name)}</b> (${esc(x.grp)}, ${esc(x.elo)}, would be #${esc(x.would_rank)}): ${esc(x.why)}</li>`).join('')}</ul>`:''}</div>`; };
-  const unk=[[a,LA],[h,LH]].filter(([,x])=>x&&x.unknown.length).map(([t,x])=>`${esc(t)} ${x.unknown.length}`);
+  const unk=[[a,LA],[h,LH]].filter(([,x])=>x&&x.unknown.length).map(([t,x])=>`${esc(t)} ${x.unknown.length} ${x.unknown.length===1?'player':'players'}`);
   /* the summary: who is out and who is questionable, by team; the badge counts the players out */
   const sumT=t=>{ const no=outsOf(t).length, nq=qCount(mu,t); return `${esc(t)} ${no?`${N('outn:'+t,no)} out`:'none out'}${nq?`, ${N('qn:'+t,nq)} Q`:''}`; };
   const nOut=outsOf(a).length+outsOf(h).length;
