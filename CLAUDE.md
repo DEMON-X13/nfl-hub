@@ -1517,8 +1517,8 @@ X NHL Bets moved to its own repo, `DEMON-X13/nhl-hub`, on 2026-10-13, with its o
 
 ## Bets and Stats: the loop
 
-The tab bar (`TABS` in `nflbets/build/build.js`) is Props (the first tab, which a load with no address opens on, since the
-Matchups tab went: next), Suggested Parlays (Suggest Parlays until the owner's call of 17 October 2026, "tab name suggest parlay should be
+The tab bar (`TABS` in `nflbets/build/build.js`) is Props (the first tab since the Matchups tab went,
+next: a load with no address opens on it), Suggested Parlays (Suggest Parlays until the owner's call of 17 October 2026, "tab name suggest parlay should be
 Suggested Parlays", app v112: its button, its heading and every word a visitor reads that names it; its section, address
 and `sp` names keep the old one; the prop model's own section `tab-suggest`, `#suggest`, after Props since app v111: the
 next prime-time night's parlays and the Elo picks), Parlay Builder (the prop model's own Parlay Builder tab, `#parlay`: the builder, then its
@@ -1532,7 +1532,7 @@ think we are good to remove matchups tabs since most the important info was move
 board's whole Game snapshot should open from once its rows were gone, "Button on Props"). Until then the bar began with
 Matchups, the board (Pick'ems until the owner's call of 16 October 2026, "change the name Pickems to matchups"; its section
 `tab-pickems`, its button id, its file and the `pk-` prefix kept the old name): Vegas's call on every game of a week on
-nflverse's lines, in six columns, its records, a week picker and a foot, each row the button to the game's Game snapshot.
+nflverse's lines in six columns, Vegas's records, a week picker and a foot, each row the button to the game's Game snapshot.
 Its row had been the Props list's since app v122 and three of the snapshot's cards opened from a game's page there since
 app v124, so the board, its section, its script and its styles are gone, and the snapshot opens from a fourth button on
 each game's page (**The Game snapshot**, below). Its file is **the page's glue** now, `nflbets/build/hub.html` (a few
@@ -1542,7 +1542,7 @@ handed to the Game snapshot, the matchup bubble and the Props list's `slateNeutr
 read has answered, ok or not, `ST.err` where it failed, and a `pk-state` event on the document then), the betting app's
 tag, colour, confidence-band and Elo-tier code lifted into its BETTING slot at build time (`window.pkTag`, `pkTierBadge`
 and the rest, which the ELO Ratings tab, the snapshot and the bubble draw with), `probCols`, the Props tab's stamp in the
-page's words (`window.slateStamp`: nothing until the scoreboard has been read, then when, or "scores not loading" in red),
+page's words (`window.slateStamp`: nothing until a read, "reading…" during one, then when, or "scores not loading" in red),
 the scoreboard on load (next), the tabs as addresses (`routeTabs`) and the framed betting tabs (`frames`). Nothing on the
 page draws a failed read of the season but the snapshot (below), and the framed tabs are wired either way. `build.js` stops
 if `nflbets/build/tab_pickems.html` comes back or `hub.html` carries a section, if the page carries the board again
@@ -1555,7 +1555,8 @@ the scoreboard on load (`scoresOnLoad`), the snapshot opens whole from a game's 
 finished since the betting job last ran, or on, showed its score unasked, and the snapshot's standing read it. Now, once
 the prop model is up (app-ready, and 300 ms), `scoresOnLoad` in `hub.html` presses the Props tab's own Refresh scores once
 (`LIVE.slate`, `liveRefresh`: one free read of `${ESPN_SB}?seasontype=2&week=<the Props list's week>&dates=<SEASON>`, no
-credit), and only where a game of that week (`gamesIn(slateWeek())`) has kicked off by the page's clock with no score in
+credit, and, as the button always has, the box score of each game under way that a parlay this browser keeps has a leg
+in, `liveWanted`: its old saved list or the betting app's Bet Build), and only where a game of that week (`gamesIn(slateWeek())`) has kicked off by the page's clock with no score in
 the payload (`gameStarted`, `hasScore`), the one case it can add anything, and none is running (`LIVE.busy`); with no game
 under way no scoreboard is asked on load at all, and never on a timer. Its read fills the Props list's final-score cells
 and the stamp, and the Game snapshot's standing reads the same read (`outcome`: the published result, else `LIVE.games`
@@ -1604,8 +1605,8 @@ bubble opens is no tab's window (the bubble opens it from the Parlay Builder and
 did until 22 October 2026) and stays open over the tab the address goes to; closing it there gives the focus to the name
 that opened it where that is on the screen, else to that tab's button.
 The audit's G7 (on the prop model's own page) and the nflbets smoke's A WINDOW IS ITS TAB'S OWN (each window left by
-the address for the Pick'em Record, the Matchups tab until it went, with the focus in it, Escape afterwards and on a
-game's page planted on the hidden tab, the bubble's Game snapshot across a move; the one-card window's and, since app
+the address with the focus in it, for the Pick'em Record (the Matchups tab until 22 October 2026), Escape
+afterwards and on a game's page planted on the hidden tab, the bubble's Game snapshot across a move; the one-card window's and, since app
 v128, the page's whole Game snapshot's checks also hold the game's page closed and the window gone with it) hold it,
 blocking.
 **The Props list in the board's columns, and its old row at each game's head** (app v122, `patch_props_rows.py`, the
@@ -2715,8 +2716,8 @@ shown -- first, where the Props tab can open the game (`pkBoard.canProps`: the p
 its week is open) and the window is not over that very game's page (`overOwnPage`: the game's page on the screen with
 `S.ui.game` that game, as when its own Game snapshot button opened it, where the button would only redraw the page under
 it; app v128), a 44px **Game bets and player props** button, which closes the window and opens the
-game's own page on the Props tab with its Game bets card brought into view (`pkBoard.openOnProps`); so the snapshot the
-matchup bubble opens has it and the one a game's page opens does not; then
+game's own page on the Props tab with its Game bets card brought into view (`pkBoard.openOnProps`): where the Props tab
+can open the game, the snapshot the matchup bubble opens has it and the one the game's page opens does not; then
 the head (`.gs-hero`): the away team, the middle (`.gs-mid`) and the home team, each team labelled Away or Home
 ("Home (listed)" at a neutral site) over its name and its record alone (3-2, bold, with no words for which games it
 counts; the playoffs beside it once there are any; where the Elo file has counted a final the results have not,

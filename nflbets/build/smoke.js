@@ -47,6 +47,20 @@
  *                                                       the smoke's own shift below laid over it
  */
 'use strict';
+/* the heap: the smoke boots the page some seventy-five times, and V8 frees a closed jsdom window only when it must, so a
+   run's heap reaches about 3 GB (22 October 2026, measured with room to spare); Node's default ceiling is about 4.3 GB
+   on a 16 GB machine (a GitHub runner, where the elo job runs it) but 2.2 GB on one with under 15 GB, where it ran out
+   of heap two thirds of the way through. Where the ceiling is under 3.5 GB the smoke runs itself again in a child with
+   a ceiling of 6 GB (as the props gate gives smoke_live.js), passing its arguments and environment on and ending with
+   the child's exit code; it never does so twice */
+{ const lim = require('v8').getHeapStatistics().heap_size_limit;
+  if (lim < 3.5e9 && !process.env.SMOKE_HEAP_CHILD) {
+    const r = require('child_process').spawnSync(process.execPath, [...process.execArgv, '--max-old-space-size=6144', __filename, ...process.argv.slice(2)],
+      { stdio: 'inherit', env: { ...process.env, SMOKE_HEAP_CHILD: '1' } });
+    if (r.status == null) console.log(`the smoke's child run ended on ${r.signal || (r.error && r.error.message) || 'nothing'}: 1 failure`);
+    process.exit(r.status == null ? 1 : r.status); }
+  /* the child ends with its parent: one killed outright (a phase replay's timeout) leaves no smoke running on its own */
+  if (process.env.SMOKE_HEAP_CHILD) { const pp = process.ppid; setInterval(() => { if (process.ppid !== pp) process.exit(1); }, 2000).unref(); } }
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -232,7 +246,7 @@ process.on('beforeExit', () => finish('the smoke stopped before it finished: its
     if (/<script[^>]+src=|<link[^>]+stylesheet|<iframe/i.test(html)) bad.push('it loads something');
     if (/nflbets\//.test(html.replace(/\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->/g, ''))) bad.push('it still names nflbets/');
     { const said = html.replace(/<!--[\s\S]*?-->/g, ' ').replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]*>/g, ' ').replace(/&#?\w+;/g, ' ');
-      const hit = said.match(/.{0,30}(?:\bMatchups\b|\bpick['’]?ems\b).{0,30}/i);
+      const hit = said.match(/.{0,30}\bMatchups\b.{0,30}/) || said.match(/.{0,30}\bpick['’]?ems\b.{0,30}/i);
       if (hit) bad.push(`its words name the Matchups tab, its board or Pick'ems: '${hit[0].trim()}'`); }
     chk(!bad.length, `${file}, the old address ${at}, does not send a visitor to the site's root as it should: ` + bad.join('; ')); } }
 /* ---- the betting app inside the page carries the gated model numbers ----
@@ -831,9 +845,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   GC();
   return new Promise(resolve0 => {
     const errs = [], fetched = [], urls = [], calls = [];
-    /* resolved once: the 20-second stop below is cleared then, since its closure holds the whole window, which a check
-       has closed long before, alive until it fires (some forty boots, a dozen of them within twenty seconds of each
-       other, held at once, ran the heap out at Node's default ceiling on a 16 GB machine, 2.2 GB) */
+    /* resolved once: the 20-second stop below is cleared then, since its closure holds the whole window alive until it
+       fires, long after a check has closed it (a dozen boots come within twenty seconds of each other) */
     let stop = null, done = false;
     const resolve = v => { if (done) return; done = true; if (stop) clearTimeout(stop); stop = null; resolve0(v); };
     const vc = new VirtualConsole(); vc.sendTo(console, { omitJSDOMErrors: true });
@@ -1189,8 +1202,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     else {
       const b0 = snapBtn(); b0.focus(); b0.click(); await wait(120);
       const md = gsm(), ttl = txt(d.getElementById('gsTitle'));
-      if (!md || md.hidden || md.classList.contains('gs-one') || md.dataset.gsOnly || !md.querySelector('#gsMatch') || !md.querySelector('#gsUnits') || md.querySelectorAll('#gsView > section').length < 6)
-        bad.push('it did not open the whole snapshot (not one card alone)');
+      if (!md || md.hidden || md.classList.contains('gs-one') || md.dataset.gsOnly || md.querySelector('[data-gs-only]') || !['gsMatch', 'gsCalls', 'gsTeams', 'gsUnits', 'gsMism', 'gsPos'].every(id => md.querySelector('#' + id)))
+        bad.push(`it did not open the whole snapshot (not one card alone): ${md ? `${md.hidden ? 'hidden' : 'open'}, ${md.className}, only ${md.dataset.gsOnly || 'none'}, ${[...md.querySelectorAll('section[id]')].map(x => x.id).join(' ')}` : 'no window'}`);
       else {
         if (!new RegExp(`^${fg.away_team}(at|vs)${fg.home_team}Game snapshot · ${w.pkBoard.weekName(+pkRow(first).w)}$`).test(ttl)) bad.push(`its title reads '${ttl}'`);
         if (d.activeElement !== d.getElementById('gsClose')) bad.push('the focus is not on Close');
@@ -3904,10 +3917,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   { const g0 = w.eval('(S.sched||[]).find(g=>g.w===S.ui.week)||(S.sched||[])[0]');
     w.location.hash = '#slate'; await wait(40);
     if (g0) { w.eval(`S.ui.game=${JSON.stringify(g0.id)};S.ui.open={};renderGame()`); await wait(60); }
-    const old = /pick['’]?ems\b|\bMatchups (?:tab|board)\b|\bthe Matchups\b|\bthe board\b/i, said = [];
-    const walk = n => { if (n.nodeType === 3) { if (old.test(n.nodeValue)) said.push(n.nodeValue.trim().slice(0, 80)); return; }
+    /* (the tab's name with its capital: "the matchups" in lower case is the Elo matchup formula's, as the ELO Ratings
+       tab says it) */
+    const oldRe = [/pick['’]?ems\b/i, /\bMatchups (?:tab|board)\b|\bthe Matchups\b|\b[Tt]he board\b/], old = { test: t => oldRe.some(r => r.test(t)) }, said = [];
+    const hit = t => { const m = oldRe.map(r => t.match(r)).find(Boolean); const i = m ? m.index : 0; return t.slice(Math.max(0, i - 40), i + 40).trim(); };
+    const walk = n => { if (n.nodeType === 3) { if (old.test(n.nodeValue)) said.push(hit(n.nodeValue)); return; }
       if (n.nodeType !== 1 || /^(SCRIPT|STYLE|TEMPLATE)$/.test(n.tagName)) return;
-      for (const a of ['title', 'aria-label', 'placeholder', 'alt']) if (old.test(n.getAttribute(a) || '')) said.push(`${a}="${n.getAttribute(a).slice(0, 80)}"`);
+      for (const a of ['title', 'aria-label', 'placeholder', 'alt']) if (old.test(n.getAttribute(a) || '')) said.push(`${a}="${hit(n.getAttribute(a))}"`);
       for (const c of n.childNodes) walk(c); };
     walk(d.body); if (old.test(d.title)) said.push('title: ' + d.title);
     chk(!said.length, 'the page still names Pick\'ems or the Matchups tab or board where a visitor reads it: ' + said.join(' | '));
@@ -4029,17 +4045,17 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   /* opened on #slate, the Props tab is the one showing; opened on an old address of the board (#matchups, from 16 to 22
      October 2026; #pickems before it, and pickems/'s redirect; #tracker, where news/ once sent every visitor) or, on a
      visitor's page, on an admin's address (#xparlays, where the old Live Parlays links go, and #bets), the page lands on
-     the Props tab, the address written over as #slate */
-  for (const at of ['#slate', '#matchups', '#pickems', '#tracker', '#xparlays', '#bets']) {
-    const t2 = await run(state, 'https://demon-x13.github.io/nfl-hub/' + at), open = [...t2.d.querySelectorAll('main section[id^="tab-"]')].filter(x => !x.hidden).map(x => x.id).join();
-    chk(!t2.timedOut && t2.errs.length === 0 && open === 'tab-slate' && t2.w.location.hash === '#slate' && txt(t2.d.querySelector('#tabs button[aria-selected="true"]')) === 'Props'
-      && t2.d.querySelectorAll('#gamesList .game').length > 0,
-      `opened on ${at}, the page does not land on the Props tab, its games drawn, as #slate: ${t2.w.location.hash}, ${open} shown ${t2.errs.join('; ')}`);
-    t2.w.close(); }
+     the Props tab, the address written over as #slate, its games drawn. Each fresh load is one of the boots below, held
+     as it comes up, before anything is pressed (a boot costs some seconds, and the run has fifteen minutes) */
+  const landed = (R, at) => { const open = [...R.d.querySelectorAll('main section[id^="tab-"]')].filter(x => !x.hidden).map(x => x.id).join();
+    chk(!R.timedOut && R.errs.length === 0 && open === 'tab-slate' && R.w.location.hash === '#slate' && txt(R.d.querySelector('#tabs button[aria-selected="true"]')) === 'Props'
+      && R.d.querySelectorAll('#gamesList .game').length > 0,
+      `opened on ${at}, the page does not land on the Props tab, its games drawn, as #slate: ${R.w.location.hash}, ${open} shown ${R.errs.join('; ')}`); };
+  { const t2 = await run(state, SITE + '#slate'); landed(t2, '#slate'); t2.w.close(); }
 
   /* the page with no scoreboard to read: Refresh scores on the Props tab says so (the page's own stamp, window.slateStamp
      in hub.html, red), and the list stands */
-  { const b = await run(state); await wait(400);
+  { const b = await run(state, SITE + '#xparlays'); landed(b, '#xparlays'); await wait(400);
     b.d.getElementById('slateNow').click(); await wait(400);
     const st = b.d.getElementById('slateStamp');
     chk(/scores not loading/.test(txt(st)) && st.classList.contains('bad'), 'an unreachable scoreboard is not said on the Props tab: ' + txt(st));
@@ -4048,7 +4064,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
 
   /* the betting tabs do not depend on the season's read (state.json, the page glue's): with it gone they still frame;
      and a game's page's Game snapshot says the season did not load, and why, drawing nothing else and throwing nothing */
-  { const noState = await run(state, undefined, null, true);
+  { const noState = await run(state, SITE + '#tracker', null, true); landed(noState, '#tracker');
     [...noState.d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'ratings').click();
     await wait(60);
     const ff = noState.d.querySelector('#tab-ratings iframe.pk-frame');
@@ -4066,7 +4082,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      "Loading the season…" (data-gs-season="loading"), then the whole window once the season comes in (pk-state, from
      the page's glue), still open, with nothing thrown */
   { let go; const gS = new Promise(r => { go = r; });
-    const SL = await run(state, undefined, null, false, { gate: { state: gS } });
+    const SL = await run(state, SITE + '#pickems', null, false, { gate: { state: gS } }); landed(SL, '#pickems');
     const gid = !SL.timedOut ? (SL.w.eval('S').sched || []).map(g => g.id).find(id => SL.w.pkBoard.canProps(id)) : null, bad = [];
     if (!gid) bad.push('no game the Props tab can open before the season is in');
     else {
@@ -4099,7 +4115,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       chk(Math.abs(etKick(X) - (pageNow - 3600e3)) < 61e3, `the scoreboard on load: the smoke's planted kickoff ${X.d} ${X.t} is not an hour before the page's clock`);
       const stA = JSON.parse(JSON.stringify(state)), sX = stA.schedule.find(g => g.game_id === X.id);
       if (sX) { sX.gameday = X.d; sX.gametime = X.t; for (const f of ['result', 'home_score', 'away_score']) delete sX[f]; }
-      const A = await run(stA, undefined, wk => scoreboardOn(stA, wk, X.id), false, { pay: JSON.stringify(PA) });
+      const A = await run(stA, SITE + '#bets', wk => scoreboardOn(stA, wk, X.id), false, { pay: JSON.stringify(PA) }); landed(A, '#bets');
       await wait(700);
       const n = sbOnLoadHeld(A, `${X.id} planted under way`, pageNow);
       chk(n >= 1 && +A.d.getElementById('weekSel').value === PW, `the scoreboard on load: the planted game ${X.id} is not under way on the Props list's week ${PW} (${n} under way, week ${A.d.getElementById('weekSel').value})`);
@@ -4115,7 +4131,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       A.w.close(); }
     const PB = JSON.parse(PAYLOAD_TXT);
     for (const g of PB.sched || []) if (+g.w === PW && isFinite(etKick(g)) && etKick(g) <= pageNow + 600e3 && !scoredOwn(g)) { g.hs = 20; g.as = 17; }
-    const B = await run(state, undefined, wk => scoreboard(state, wk), false, { pay: JSON.stringify(PB) });
+    const B = await run(state, SITE + '#matchups', wk => scoreboard(state, wk), false, { pay: JSON.stringify(PB) }); landed(B, '#matchups');
     await wait(700);
     chk(sbOnLoadHeld(B, 'every game of the week kicked off with a score', pageNow) === 0, 'the scoreboard on load: a game is still under way on the fixture with every kicked-off game scored');
     chk(B.errs.length === 0, 'the scoreboard on load (none under way): the page threw: ' + B.errs.join('; '));
@@ -6963,6 +6979,15 @@ async function snapshotChecks() {
         const props = R.w.pkBoard.canProps(toCome.game_id) && !o.page ? ['props'] : [];
         const order = f.map(key).filter(Boolean).join(), want = ['close', ...props, 'gl:vote', 'gl:elo', 'gl:units', 'gl:out', 'gl:mism', 'all', ...SNAP_CARDS.map(id => 'card:' + id)].join();
         chk(order === want && !f.some(x => x.getAttribute('role') === 'tab' && x.getAttribute('aria-selected') !== 'true'), `snapshot: the Tab order is not Close, the props button, the verdict, Open all and the cards: ${order}`); }
+      /* opened as the matchup bubble opens it, where the Props tab can open the game: its button to the game's page is
+         second in the Tab order, after Close; then the window opened over the game's page again for the checks below */
+      if (o.page) { const ob = await open(R, toCome, 'bubble'), md = ob.md;
+        const f = md ? [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && !x.closest('[hidden]') && x.tabIndex !== -1) : [];
+        const key = x => x.id === 'gsClose' ? 'close' : x.dataset.gsProps ? 'props' : x.dataset.gsGl ? 'gl:' + x.dataset.gsGl : x.dataset.gsAll ? 'all' : x.dataset.gsFold ? 'card:' + x.dataset.gsFold : null;
+        const order = f.map(key).filter(Boolean).join(), want = ['close', 'props', 'gl:vote', 'gl:elo', 'gl:units', 'gl:out', 'gl:mism', 'all', ...SNAP_CARDS.map(id => 'card:' + id)].join();
+        chk(!!md && order === want, `snapshot: opened as the matchup bubble opens it, the Tab order is not Close, the props button, the verdict, Open all and the cards: ${order}`);
+        R.w.gameSnapshotClose(false); await wait(10);
+        o = await open(R, toCome); }
       /* Escape closes it alone, and the focus goes back to the button: over the game's page, the page open under it with
          its scroll lock and no listener beneath hearing the key; opened from elsewhere, the page free to scroll */
       { R.d.getElementById('gsClose').focus();

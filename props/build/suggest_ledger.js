@@ -289,8 +289,9 @@ async function ready(w, errs, payload, asked) {
     if (blocks.length && !(espnGame && blocks.some(([gid, e]) => !!espnGame(gid, String(e.w)))))
       why.push(`the page did not apply the payload's ESPN read (${blocks.length} game${blocks.length === 1 ? '' : 's'} with player lines, none read by the page)`);
   }
-  /* nothing asked of ESPN's player lines on load: the record stands on the payload alone (the board's scoreboard on
-     site.api answers 404 here, as ever) */
+  /* nothing asked of ESPN's player lines on load: the record stands on the payload alone (the Props tab's scoreboard on
+     site.api, read on load only where a game of its week is under way since the Matchups board went on 22 October 2026,
+     answers 404 here, as the board's read on every load did) */
   const core = (asked || []).filter(u => /^https:\/\/sports\.core\.api\.espn\.com\//.test(u));
   if (core.length) why.push(`the page asked ESPN for player lines on load (${core.length}: ${core[0]})`);
   return why;
