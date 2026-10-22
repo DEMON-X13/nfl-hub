@@ -191,10 +191,6 @@
 #gsModal .gs-pv .gs-lab{display:inline;margin-right:8px;color:var(--ink-2)}
 /* a player the note names, bold (the notes mark him **so**; the automatic line bolds each name it lists) */
 #gsModal .gs-prev b.gs-pn{font-weight:700;color:var(--ink)}
-#gsModal .gs-pauto{margin:6px 0 0;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
-/* a played game: a slim note under the head, ruled in gold */
-.gs-past{margin:18px auto 0;max-width:640px;padding:4px 0 4px 12px;border-left:3px solid var(--gold);font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
-.gs-past b{color:var(--ink)}
 /* the headline: who is favoured and by how much, or who won; the chance and its confidence band
    beside it, the split bar in the clubs' colours under it */
 .gs-fav{margin:20px 0 0;padding:16px 18px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md)}
@@ -440,8 +436,6 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 .gs-mmsc .gs-mmv{display:inline-flex;align-items:center;gap:8px}
 .gs-mmsc b{font-family:var(--display);font-size:var(--gs-t4);line-height:1;color:var(--ink)}
 .gs-mmsc small{font-size:var(--gs-t2);font-weight:700}
-.gs-scale{display:flex;flex-wrap:wrap;gap:6px 16px;margin:14px 0 0;font-size:var(--gs-t2);color:var(--ink-2)}
-.gs-scale>span{display:inline-flex;align-items:center;gap:6px}
 
 /* ---- one card in a little window of its own, over a game's page on the Props tab (Matchup, Mismatches
    and Team Stats, the owner's call of 20 October 2026): the same window, narrower, its one card unfolded ---- */
@@ -783,20 +777,19 @@ const possession=(U,o,d)=>{ const vo=U.off[o], vd=U.def[d]; if(!vo||!vd) return 
 const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
 const mmGrade=s=>{ const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4',4]:x>=2?['Big','pe-g3',3]:x>=1?['Solid','pe-g2',2]:['Slight','pe-g1',1]; };
 const meter=(lv,cls)=>`<span class="gs-meter gs-l${lv}${cls?' '+cls:''}" aria-hidden="true"><i></i><i></i><i></i><i></i></span>`;
-/* with no list: why (the card), short (its summary), and the verdict's answer and its reason */
+/* with no list: why (the card), short (its summary), and the verdict's answer */
 function mmOf(P,g,F){
-  if(!F) return {why:'Loading the matchups…',short:'loading…',v:'loading…',c:''};
+  if(!F) return {why:'Loading the matchups…',short:'loading…',v:'loading…'};
   const mu=F.mu;
-  if(!mu||!mu.players) return {why:`The matchups did not load${F.muErr?' ('+esc(F.muErr)+')':''}, so there are no mismatches to show.`,short:'the matchups did not load',v:'Not loaded',c:'The matchups did not load.'};
-  if(typeof window.eloMismatches!=='function') return {why:'The Mismatches are not on this page.',short:'not on this page',v:'Not on this page',c:''};
+  if(!mu||!mu.players) return {why:`The matchups did not load${F.muErr?' ('+esc(F.muErr)+')':''}.`,short:'the matchups did not load',v:'Not loaded'};
+  if(typeof window.eloMismatches!=='function') return {why:'The Mismatches are not on this page.',short:'not on this page',v:'Not on this page'};
   const st=standing(P,g);
   if(String(g.game_id).slice(0,4)!==String(mu.season)||+g.week!==+mu.week){
     const gone=+g.week<+mu.week||st.fin, wk=esc(P.weekName(+mu.week).toLowerCase())+(+mu.season!==+P.ST.season?' of '+esc(mu.season):'');
-    return {why:`The matchups are for ${wk}: ${gone?'this game\'s week has gone, and its mismatches with it':'this game\'s come with its week'}.`,
-      short:gone?'its week has gone':'they come with its week',v:gone?'Its week has gone':'Not yet',c:`The matchups are for ${wk}.`}; }
+    return {why:`The matchups are for ${wk}.`,short:gone?'its week has gone':'not yet',v:gone?'Its week has gone':'Not yet'}; }
   const on=typeof window.eloGameOn==='function'?window.eloGameOn(g.game_id):st.started;
-  if(on||st.started) return {why:'This game has kicked off. The Mismatches are for games still to kick off, as on the Props tab, so there are none to show for it.',short:'none once it kicks off',v:'Kicked off',c:'Mismatches are for games still to kick off, as on the Props tab.'};
-  let all=[]; try{ all=window.eloMismatches()||[]; }catch(e){ return {why:'The Mismatches could not be worked out on this page.',short:'could not be worked out',v:'Not worked out',c:''}; }
+  if(on||st.started) return {why:'This game has kicked off.',short:'kicked off',v:'Kicked off'};
+  let all=[]; try{ all=window.eloMismatches()||[]; }catch(e){ return {why:'The Mismatches could not be worked out on this page.',short:'could not be worked out',v:'Not worked out'}; }
   const mine=all.map((v,i)=>({...v,n:i+1})).filter(v=>v.game_id===g.game_id);
   return {all,mine};
 }
@@ -833,7 +826,8 @@ function preview(P,g,F,st){
     return `<div class="gs-prev" data-gs-note="written"><p class="gs-pv"><span class="gs-lab">${esc(lab)}</span><span data-gs-preview>${noteHtml(n.preview)}</span></p></div>`;
   }
   /* no note: an automatic line, once the week's file has answered, and only for a game still to come
-     (a played game says what happened above, and an automatic preview of it would read wrong) */
+     (a played game says what happened above, and an automatic preview of it would read wrong); no line under it
+     saying it is automatic (the owner's call of 22 October 2026: no descriptions) */
   const rec=NEWS[`notes:${seasonOf(P,g)}-${+g.week}`];
   if(st.started||!rec||!rec.done) return '';
   const M=F&&F.model, a=g.away_team, h=g.home_team, r=t=>wl(recordOf(P,M,t).reg);
@@ -842,7 +836,7 @@ function preview(P,g,F,st){
   const line=P.neutral(g)
     ? `${cap(who(a))} (<span data-gs-prec="${esc(a)}">${r(a)}</span>) play ${who(h)} (<span data-gs-prec="${esc(h)}">${r(h)}</span>)${g.stadium?' at '+esc(g.stadium):''}${when}.`
     : `${cap(who(a))} (<span data-gs-prec="${esc(a)}">${r(a)}</span>) visit ${who(h)} (<span data-gs-prec="${esc(h)}">${r(h)}</span>)${when}.`;
-  return `<div class="gs-prev" data-gs-note="auto"><p class="gs-pv"><span class="gs-lab">Preview</span><span data-gs-preview>${line}</span></p><p class="gs-pauto">An automatic line until this game's preview is written.</p></div>`;
+  return `<div class="gs-prev" data-gs-note="auto"><p class="gs-pv"><span class="gs-lab">Preview</span><span data-gs-preview>${line}</span></p></div>`;
 }
 
 /* ---- the verdict: the matchup, the headline, the line, and the answers at a glance ---- */
@@ -859,7 +853,6 @@ function matchup(P,g,F){
       <div class="gs-rec"><b data-gs-rec="${esc(t)}"${r.fromFile?' title="The Elo file\'s count: it has a final the results have not taken in yet"':''}>${wl(r.reg)}</b>${po?` <span data-gs-po="${esc(t)}">playoffs ${wl(r.po)}</span>`:''}</div></div>`; };
   const score=o?`<div class="gs-sc"><span class="gs-score" data-gs-score>${o.as}–${o.hs}</span><small>${o.final?'Final':esc(o.clock||'On now')}</small></div>`:'';
   const where=neu?`${g.stadium?esc(g.stadium)+', ':''}a neutral site`:(g.stadium?esc(g.stadium):'');
-  const past=st.fin?`<p class="gs-past" id="gsPast"><b>Played.</b> The calls were made before kickoff and are graded on the result; the ratings, lineups and units are the files as they stand now, after the game.</p>`:'';
   /* first in the window, the game's own page on the Props tab, where its game bets and every player
      line are, where the Props tab can open it */
   const props=typeof P.canProps==='function'&&P.canProps(g.game_id)
@@ -884,7 +877,7 @@ function matchup(P,g,F){
       <div class="gs-split" role="img" aria-label="Vegas win chance: ${esc(a)} ${pa}%, ${esc(h)} ${ph}%"><span class="gs-slab${c.pick===a?' gs-w':''}">${esc(a)}</span>
         <div class="pk-prob" aria-hidden="true"><div class="pk-a" style="width:${pa}%;background:${pc[0].bg};color:${pc[0].ink}"><span class="${c.pick===a?'pk-w':''}">${pa>=14?N('vaway',pa+'%'):''}</span></div><div class="pk-h" style="width:${ph}%;background:${pc[1].bg};color:${pc[1].ink}"><span class="${c.pick===h?'pk-w':''}">${ph>=14?N('vhome',ph+'%'):''}</span></div></div>
         <span class="gs-slab${c.pick===h?' gs-w':''}">${esc(h)}</span></div>`;
-  } else fav=`<div class="gs-favh"><span class="gs-favt">${st.fin&&win?`${tg(win,true)} <span class="gs-nw">${esc(teamName(win))} won</span>`:st.fin?'<span>A tie</span>':'<span>No line posted yet</span>'}</span></div><p class="gs-favsub">Vegas's favourite and chance show here once the game has a line.</p>`;
+  } else fav=`<div class="gs-favh"><span class="gs-favt">${st.fin&&win?`${tg(win,true)} <span class="gs-nw">${esc(teamName(win))} won</span>`:st.fin?'<span>A tie</span>':'<span>No line posted yet</span>'}</span></div>`;
   const tile=(lab,val,attr)=>`<div><span class="gs-lab">${lab}</span><b${attr||''}>${val==null?'–':val}</b></div>`;
   const tiles=`<div class="gs-tiles">
     ${tile('Spread',L.spTxt?esc(L.spTxt):null,' data-gs-spread')}
@@ -897,7 +890,7 @@ function matchup(P,g,F){
   const loading=['<span class="gs-load">loading…</span>',''];
   const glance=`<div class="gs-glance">
     ${line('vote','Model picks','gsCalls',()=>{ const W=voteOf(P,g,F,st), past=st.fin;
-      if(!W.n) return ['<span class="gs-load">No calls yet</span>','The models call a game in the week before it.'];
+      if(!W.n) return ['<span class="gs-load">No calls yet</span>',''];
       let v;
       if(W.vg&&!W.mods.length) v=`${tg(W.base,true)}<small>Vegas's pick; no model has called it yet</small>`;
       else if(W.vg) v=`${tg(W.base,true)}${N('vote',W.count)}<small>models ${past?'agreed':'agree'} with Vegas</small>`;
@@ -918,7 +911,7 @@ function matchup(P,g,F){
       return [v,`${side(a)} ${side(h)}`]; })}
     ${line('units','Offense vs defense','gsUnits',()=>{ if(!F) return loading; const X=unitsOf(F);
       if(!X) return ['<span class="gs-load">Not loaded</span>','The unit ratings did not load.'];
-      if(!X.on) return ['<span class="gs-load">Not yet</span>','They start once a team has a rated game this season.'];
+      if(!X.on) return ['<span class="gs-load">Not yet</span>',''];
       const p1=possession(X.U,a,h), p2=possession(X.U,h,a);
       if(!p1||!p2) return ['<span class="gs-load">No rating</span>','A team has no unit rating in the file.'];
       let v;
@@ -939,15 +932,15 @@ function matchup(P,g,F){
         :qa||qh?`Questionable starters: ${esc(a)} ${qa?N('qn:'+a,qa):0}, ${esc(h)} ${qh?N('qn:'+h,qh):0}`:'No expected starter is questionable.';
       return [v,cx]; })}
     ${line('mism','Top mismatch','gsMism',()=>{ const R=mmOf(P,g,F);
-      if(!R.mine) return [`<span class="gs-load">${esc(R.v)}</span>`,R.c];
-      if(!R.mine.length) return ['<span class="gs-load">None in this game</span>','No starter here is above his position\'s average facing a unit below the league\'s.'];
+      if(!R.mine) return [`<span class="gs-load">${esc(R.v)}</span>`,''];
+      if(!R.mine.length) return ['<span class="gs-load">None in this game</span>',''];
       const v0=R.mine[0], [gw,gc,lv]=mmGrade(v0.score), se=plSe(F,v0.pid);
       const v=`<span class="gs-mm1">${se!=null?shield(se):''} <span data-gs-n="mm1:${esc(v0.pid)}">${esc(plName(F,v0.pid))}</span> <small>${esc(v0.group)} · ${esc(v0.team)}</small></span>`;
       const cx=`${meter(lv,gc)}${N('mm1score',v0.score.toFixed(1))} ${gw} edge, against the ${esc(v0.opp)} ${esc(v0.against||'defense')}, ${ordinal(v0.defRank)} by player Elo${R.mine.length>1?` · all ${R.mine.length} in Mismatches`:''}`;
       return [v,cx]; })}
   </div>`;
   let prev=''; try{ prev=preview(P,g,F,st); }catch(e){ prev=''; }
-  return `<section class="card gs-sec gs-verdict" id="gsMatch">${props}<div class="gs-hero">${team(a,'gs-away')}<div class="gs-mid">${score}<p class="gs-when"><b>${esc(day)}</b>${time?' · '+esc(time):''}${where?' · '+where:''}</p>${prev}</div>${team(h,'gs-home')}</div>${past}
+  return `<section class="card gs-sec gs-verdict" id="gsMatch">${props}<div class="gs-hero">${team(a,'gs-away')}<div class="gs-mid">${score}<p class="gs-when"><b>${esc(day)}</b>${time?' · '+esc(time):''}${where?' · '+where:''}</p>${prev}</div>${team(h,'gs-home')}</div>
     <div class="gs-fav">${fav}${tiles}</div>${glance}</section>`;
 }
 /* the game in one line, for the header once the verdict's line has scrolled away (the verdict
@@ -964,9 +957,9 @@ function callsSec(P,g,F){
   const st=standing(P,g), W=voteOf(P,g,F,st), C=W.C, win=st.fin?st.o.winner:null, a=g.away_team, h=g.home_team;
   const why=(id)=>{
     if(id==='vegas') return 'no line posted yet';
-    if(id==='elo') return F&&F.model?(C.eloNext!=null&&+g.week>C.eloNext&&!st.started?`called in week ${+g.week}`:'no call on file'):(F?'the Elo ratings did not load':'loading…');
+    if(id==='elo') return F&&F.model?(C.eloNext!=null&&+g.week>C.eloNext&&!st.started?'no call yet':'no call on file'):(F?'the Elo ratings did not load':'loading…');
     if(st.started||st.fin) return 'no call on file';
-    return id==='alpha'?'called in the eight days before kickoff':'called in the week of the game';
+    return 'no call yet';
   };
   const rows=MODELS.map(([id,label,col])=>{
     const x=C[id], name=`<span class="gs-mname"><i class="gs-dot" style="--gs-mc:${col}"></i><span>${label}</span>${id==='vegas'?'<small>baseline</small>':''}</span>`;
@@ -1016,7 +1009,7 @@ function teamElo(P,g,F){
     row('Chance vs an average team',(v,t)=>`<b class="gs-num" data-gs-tavg="${esc(t)}">${v.p_avg!=null?pct(v.p_avg):'–'}</b>`,'avg',best(v=>v.p_avg,true)),
   ].join('');
   return fold('gsTeams',T0,'',`<table class="gs-vs" aria-label="${S0}"><thead><tr><th class="gs-a"><span class="gs-thn">${tg(a,true)}<span class="gs-tnm">${esc(teamName(a))}</span></span></th><th class="gs-mlab"><span class="gs-key"><i></i>edge</span></th><th class="gs-h"><span class="gs-thn">${tg(h,true)}<span class="gs-tnm">${esc(teamName(h))}</span></span></th></tr></thead><tbody>${body}</tbody></table>
-    ${lags.length?`<p class="gs-note">* Rated before its latest game: ${lags.map(([t,x])=>esc(t)+' ('+esc(x)+')').join(', ')}. The record counts it; every team's rating takes it in when the Elo job next rebuilds the ratings.</p>`:''}`);
+    ${lags.length?`<p class="gs-note">* Rated before its latest game: ${lags.map(([t,x])=>esc(t)+' ('+esc(x)+')').join(', ')}.</p>`:''}`);
 }
 
 /* ---- Overall Offense against Overall Defense, both ways (`units`, as the ELO Ratings tab) ---- */
@@ -1030,15 +1023,15 @@ function deepDive(P,g,o,d,F){
   const dd=DD(), rec=NEWS.units;
   const why=t=>`<p class="gs-ddwhy" data-gs-ddwhy>${t}</p>`;
   if(!dd) return why('The Deep Dive is not on this page.');
-  if(playoff(g)) return why('The Deep Dive covers the regular season only; its matchups end with week 18.');
+  if(playoff(g)) return why('Regular season only.');
   if(!rec||!rec.done) return why('Loading the Deep Dive…');
   const D=rec.data;
   if(!D) return why(`The Deep Dive did not load${rec.err?' ('+esc(rec.err)+')':''}.`);
   const season=seasonOf(P,g), wk=+g.week, m=D.meta||{};
   if(!dd.applies(D,season,wk)){
-    const fs=+m.season, fw=+m.week, later=season>fs||(season===fs&&wk>fw);
+    const fs=+m.season, fw=+m.week;
     const of=`week ${isFinite(fw)?fw:'?'}${fs!==season&&isFinite(fs)?' of '+fs:''}`;
-    return why(`The Deep Dive's matchups are for ${of}: ${later?'this game\'s come with its week':'this game\'s week has gone, and its matchups with it'}.`); }
+    return why(`Position matchups are for ${of}.`); }
   const E=F&&F.model?dd.eloSides(F.model,F.players,F.mu,g.game_id,o,d,tierName,shield):null;
   const x=dd.possession(D,o,d,E);
   if(!x) return why(`The Deep Dive has no matchups for ${esc(!D.units[dd.club(o)]?o:d)}.`);
@@ -1053,7 +1046,7 @@ function unitsBody(P,g,F){
   const a=g.away_team, h=g.home_team;
   const X=F?unitsOf(F):null, U=X&&X.on?X.U:null, C=X&&X.C, dd=DD(), D=NEWS.units&&NEWS.units.data;
   /* why the Overall ratings are not drawn, said once over the two possessions; the Deep Dive draws either way */
-  const eloWhy=!F?'Loading the ratings…':!X?`The unit ratings did not load${F.err?': '+esc(F.err):''}.`:!X.on?'Overall Offense and Overall Defense start once a team has a rated game this season.':'';
+  const eloWhy=!F?'Loading the ratings…':!X?`The unit ratings did not load${F.err?': '+esc(F.err):''}.`:!X.on?'No unit ratings yet.':'';
   const n=s=>Object.keys(U[s]||{}).length;
   /* what a box's rating is, said on hover (the note that sat under the card until 14 October 2026) */
   const why=s=>`Overall ${s==='off'?'Offense':'Defense'}, ranked among the league's ${n(s)}: this season's key stats, opponents and home field counted${C?`, each team starting the season from ${C.c} of its final rating in ${C.from} (one with no game yet is shown on that, marked carried)`:''}. 1st is the best on that side of the ball, and the better rank of the two has the edge.`;
@@ -1088,7 +1081,7 @@ function positions(P,g,F){
   if(!F) return fold('gsPos',T0,'loading…','<p class="gs-msg">Loading the ratings…</p>');
   const Pl=F.players, mu=F.mu;
   if(!Pl||!Pl.players||!Pl.groups) return fold('gsPos',T0,'did not load',`<p class="gs-msg">The player ratings did not load${F.err?': '+esc(F.err):''}.</p>`);
-  if(!mu||!mu.lineups) return fold('gsPos',T0,'did not load',`<p class="gs-msg">The expected lineups did not load${F.muErr?' ('+esc(F.muErr)+')':''}, so the starters cannot be shown.</p>`);
+  if(!mu||!mu.lineups) return fold('gsPos',T0,'did not load',`<p class="gs-msg">The expected lineups did not load${F.muErr?' ('+esc(F.muErr)+')':''}.</p>`);
   const a=g.away_team, h=g.home_team, L=mu.lineups, groups=Object.keys(Pl.groups);
   const depth=typeof PAY==='object'&&PAY&&PAY.depth||{};
   /* each team's lineup by position, in the file's order; a starter the ratings do not know yet
@@ -1155,12 +1148,11 @@ function positions(P,g,F){
   const badge=nOut?`<span class="gs-badge gs-bout" data-gs-badge="out">${nOut} out</span>`:'';
   return fold('gsPos',T0,`<span class="gs-nw">${sumT(a)}</span> · <span class="gs-nw">${sumT(h)}</span>`,`<div class="gs-outs">${outs(a)}${outs(h)}</div>
     ${notes.length?`<p class="gs-msg" style="margin:0 0 12px">${notes.map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join('. ')}.</p>`:''}
-    ${+Pl.season!==+P.ST.season?`<p class="gs-msg" style="margin:0 0 12px">These are ${esc(Pl.season)}'s ratings: ${esc(P.ST.season)}'s take over once most clubs have played week 1.</p>`:''}
+    ${+Pl.season!==+P.ST.season?`<p class="gs-msg" style="margin:0 0 12px">These are ${esc(Pl.season)}'s ratings.</p>`:''}
     <div class="gs-ptabs" role="tablist" aria-label="Starters">${tabs.map(([k,lab])=>`<button type="button" role="tab" id="gsTab-${k}" data-gs-tab="${k}" aria-controls="gsPanel-${k}" aria-selected="${k===sel}" tabindex="${k===sel?0:-1}">${lab}</button>`).join('')}</div>
     <div class="gs-pteams" aria-hidden="true"><span class="gs-thn">${tg(a,true)}<span class="gs-tnm">${esc(teamName(a))}</span></span><span class="gs-thn"><span class="gs-tnm">${esc(teamName(h))}</span>${tg(h,true)}</span></div>
     ${tabs.map(([k,lab])=>`<div role="tabpanel" id="gsPanel-${k}" aria-labelledby="gsTab-${k}" data-gs-panel="${k}" tabindex="0"${k===sel?'':' hidden'}><table class="gs-pos" aria-label="${esc(lab)} starters, ${esc(a)} on the left and ${esc(h)} on the right"><tbody>${panels[k]}</tbody></table></div>`).join('')}
-    ${unk.length?`<p class="gs-note">Also expected to start, not rated yet: ${unk.join(', ')} player${unk.length===1&&/ 1$/.test(unk[0])?'':'s'}.</p>`:''}
-    <p class="gs-note">Each team's expected starters${mu.built_at?` as of ${esc(stamp(mu.built_at))}`:''}, rated on ${Pl.season?esc(Pl.season+' '+(Pl.through||'')):'season Elo'}: that day's depth chart, less the injury report's Out and Doubtful. Each wears his season Elo, his rank at the position and his shield, as on the ELO Ratings tab, the higher Elo of each pair marked; Q is questionable on the report. Each defensive group's header carries its unit as the matchup formula reads it (pass rush and run front, linebackers, secondary), ranked among the league's (1st the best).</p>`,badge);
+    ${unk.length?`<p class="gs-note">Not rated yet: ${unk.join(', ')}</p>`:''}`,badge);
 }
 
 /* ---- the Props tab's Mismatches, in this game ---- */
@@ -1168,7 +1160,7 @@ function positions(P,g,F){
 function mmParts(P,g,F){
   const R=mmOf(P,g,F);
   if(!R.mine) return {sum:esc(R.short),body:`<p class="gs-msg">${R.why}</p>`};
-  if(!R.mine.length) return {sum:'none in this game',body:`<p class="gs-msg" id="gsMmNone">No mismatches in this game: no expected starter here both stands above his position's average and faces a unit below the league's.</p>`};
+  if(!R.mine.length) return {sum:'none in this game',body:'<p class="gs-msg" id="gsMmNone">No mismatches in this game.</p>'};
   const li=R.mine.map(v=>{ const [gw,gc,lv]=mmGrade(v.score), se=plSe(F,v.pid);
     return `<li data-pid="${esc(v.pid)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
       <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small><span class="gs-mmvs">${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span></span>
@@ -1176,9 +1168,8 @@ function mmParts(P,g,F){
       <div class="gs-mmsc"><span class="gs-mmv">${meter(lv,gc)}<b class="${gc}" data-gs-mm>${v.score.toFixed(1)}</b></span><small class="${gc}">${gw}</small></div></li>`; }).join('');
   const v0=R.mine[0];
   const sum=`best ${esc(plName(F,v0.pid))} ${N('mm1score',v0.score.toFixed(1))}`;
-  const scale=`<div class="gs-scale" aria-hidden="true">${[['Slight','under 1',1,'pe-g1'],['Solid','1 to 2',2,'pe-g2'],['Big','2 to 3',3,'pe-g3'],['Huge','3 and up',4,'pe-g4']].map(([w,r,l,c])=>`<span>${meter(l,c)}<b>${w}</b> <span class="gs-flat">${r}</span></span>`).join('')}</div>`;
-  return {sum,body:`<ul class="gs-mm">${li}</ul>${scale}
-    <p class="gs-note">The Props tab's Mismatches in this game, ranked among the week's (${R.all.length} in all). The edge is how far above his position's average the player stands plus how far below the league's average the defense he faces stands, in standard deviations.</p>`,
+  /* the list alone: no scale legend and no note under it (the owner's call of 22 October 2026: no descriptions) */
+  return {sum,body:`<ul class="gs-mm">${li}</ul>`,
     badge:`<span class="gs-badge" data-gs-badge="mism">${R.mine.length} in this game</span>`};
 }
 function mismatchSec(P,g,F){ const x=mmParts(P,g,F); return fold('gsMism','Mismatches',x.sum,x.body,x.badge); }
@@ -1238,8 +1229,8 @@ function teamStatsBody(P,g){
     :`<span class="gs-nw">${esc(a)} better on <b data-gs-sb="${esc(a)}">${na}</b></span>, <span class="gs-nw">${esc(h)} on <b data-gs-sb="${esc(h)}">${nh}</b></span>`;
   return `<p class="gs-tsum" data-gs-tsum>${sum}</p><div class="gs-steams" aria-hidden="true"><span class="gs-thn">${tg(a,true)}<span class="gs-tnm">${esc(teamName(a))}</span></span><span class="gs-thn"><span class="gs-tnm">${esc(teamName(h))}</span>${tg(h,true)}</span></div>
     <div class="gs-sbars">${rows}</div>
-    ${missing.length?`<p class="gs-note">Not in the file yet: ${missing.join(' and ')}; ${missing.length===1?'its':'their'} numbers show as dashes.</p>`:''}
-    <p class="gs-note" data-gs-sbasis>${basis}. Each bar splits the pair between the two teams, in their colours, and the better number of each pair is marked; per game, from TeamRankings' season tables as the news job pulls them${J.asof?`, as of ${esc(dayOnly(J.asof))}`:''}, so a game played shows the numbers as they stand now.</p>`;
+    ${missing.length?`<p class="gs-note">Not in the file yet: ${missing.join(' and ')}.</p>`:''}
+    <p class="gs-note" data-gs-sbasis>${basis}.</p>`;
 }
 
 /* the one card a game's page on the Props tab asked for, unfolded under the window's title ("Matchup ·
@@ -1251,7 +1242,7 @@ function drawOne(gid){
   let body;
   try{
     if(ONLY==='units'){ const st=standing(P,g);
-      body=(st.fin?'<p class="gs-onepast" data-gs-past><b>Played.</b> The ratings and the Deep Dive are the files as they stand now, after the game.</p>':'')+unitsBody(P,g,F); }
+      body=(st.fin?'<p class="gs-onepast" data-gs-past><b>Played.</b></p>':'')+unitsBody(P,g,F); }
     else if(ONLY==='mism') body=mmParts(P,g,F).body;
     else body=teamStatsBody(P,g);
   }catch(e){ body=`<p class="gs-msg">This part could not be drawn: ${esc(e&&e.message||e)}.</p>`; }
@@ -1275,7 +1266,7 @@ function draw(gid){
       $('gsTitle').innerHTML=`<span class="gs-tm">${tg(pg.away_team,true)}<span>${P.neutral(pg)?'vs':'at'}</span>${tg(pg.home_team,true)}</span><span class="gs-tsub">Game snapshot · ${esc(P.weekName(+pg.week))}</span>`;
       $('gsMini').innerHTML='';
       view.innerHTML=`<section class="card gs-sec gs-verdict" id="gsMatch"><p class="gs-msg" data-gs-season="${done?'failed':'loading'}">${done
-        ?`The season did not load (${esc(P.ST.err)}), so the snapshot cannot be drawn: it reads <code>betting/state.json</code>. Reload the page to try again.`
+        ?`The season did not load (${esc(P.ST.err)}). Reload the page to try again.`
         :'Loading the season…'}</p></section>`;
       stuck(); return;
     }

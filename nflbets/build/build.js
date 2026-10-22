@@ -347,7 +347,8 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw&&window.lpAdmin&&wi
 </script>`;
 
 /* the prop model's page, re-headed as NFL Hub, the way the NBA Hub and the NHL Hub are headed: the
-   wordmark and a tagline on the left, when the data was built and which build it is on the right */
+   wordmark on the left (its tagline went with the owner's call of 22 October 2026, "i dont want any
+   descriptions anywhere"), when the data was built and which build it is on the right */
 let html = part1;
 html = sub1(html, '<title>X NFL Prop Model</title>', '<title>NFL Hub</title>', 'title');
 /* the light/dark switch (theme.js, the owner's call of 17 October 2026) heads the stamp, laid over the
@@ -361,8 +362,7 @@ const THEME_TOGGLE = '<button type="button" class="hub-theme" data-theme-toggle 
   + '<path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>'
   + '<svg class="ht-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z"/></svg></button>';
 html = sub1(html, '<h1>X NFL Prop Model</h1>\n    <span class="sub" id="buildTag"></span>\n    <span class="sub grow" id="saveState" style="margin-left:auto"></span>',
-  '<div><h1>NFL <em>Hub</em></h1><p class="tagline">Every game called by three models against Vegas, player props priced against DraftKings\u2019 lines '
-  + 'and a parlay builder, frozen at kickoff and graded in public.</p></div>\n'
+  '<div><h1>NFL <em>Hub</em></h1></div>\n'
   + '    <div class="hub-stamp">' + THEME_TOGGLE + ADMIN_SLOT + '<span class="sub grow" id="saveState"></span><span class="sub" id="buildTag"></span></div>', 'heading');
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n<style>' + CARD_CSS + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's

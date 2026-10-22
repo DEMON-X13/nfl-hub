@@ -7,11 +7,17 @@
  *
  * Each check is the tab's behaviour on any week's files, never this week's names:
  *   - a game that has kicked off leaves the Mismatches (it was promoted as this week's edge
- *     for a game already played), and a player's window says so;
+ *     for a game already played), and a player's window says so, "This game has kicked off." alone;
+ *   - no description on the tab (22 October 2026, the owner's call: "i dont want any descriptions
+ *     anywhere"): no lead under the rankings or a team table, no note under a window's stats, no lead in
+ *     the Mismatches window; the curve's key "N ranked <label>" and "bell curve"; the rankings' opening
+ *     note, the files' lag (sourceNote), the Mismatches card's title and its filing line and the player
+ *     window's empty states each in their few words, word for word, on copies planted so;
  *   - a Mismatches bubble wears the same season shield as the player's ranking and badge
  *     (it wore the raw career rating's, so one card disagreed with itself);
  *   - a player the build counts out (out last week and not practising, say) is ruled out on
- *     the page, with the build's reason in his window;
+ *     the page, with the build's reason in his window ("Not expected to play: <reason>."), one the
+ *     page's inactive list holds "Ruled out for week N." and one with no matchup "No matchup for week N.";
  *   - the rankings say how far the season has got as the build words it, a questionable
  *     player carries a Q, and the bar draws no ELO Model record or walk-forward pill (it split the
  *     record into calls made before kickoff and backtest until 22 October 2026, the owner's call),
@@ -21,10 +27,12 @@
  *     reads the rating he took into each week he played (it graded those weeks at 1500);
  *   - Overall Offense and Overall Defense are two pills in the position row, each opening a table
  *     of the 32 teams in the file's rank order, ratings never rising, each with a shield, every
- *     stat's value and league rank the file's; the text gives the file's weights (summing to 100,
- *     and a copy with other weights shows those, so the page cannot carry its own) and names the
- *     stats that weigh nothing; a column sorts best first and back, # keeping the overall rank; a
- *     team's window lists every stat, its line, and its coming opponent when the file calls one;
+ *     stat's value and league rank the file's; the column heads give the file's weights (summing to
+ *     100, and a copy with other weights shows those, so the page cannot carry its own) and mark the
+ *     stats that weigh nothing "shown only", with no lead, note or walk-forward text on the card; a
+ *     column sorts best first and back, # keeping the overall rank; a team's window lists every stat,
+ *     its line, and its coming opponent when the file calls one ("Next: week 8 vs KC, 5th of 32 in
+ *     Overall Offense (1540, Gold)", no more);
  *     Close and Escape shut it; and a model.json from before the stats still draws the old columns;
  *   - Run Defense, Pass Defense and Pass Rush, and their offense sides Run Offense, Pass Offense and
  *     Pass Protection (16 October 2026, the owner's asks), the file's own position tables
@@ -33,16 +41,15 @@
  *     Overall Offense and the offense tables, and "Defense", then Overall Defense and the defense
  *     tables, each in the file's order and named as it names them; each table held to all of the
  *     above on its own stats, its window's coming opponent its pair's rank (Run Defense's opponent in
- *     Run Offense), and its text giving the pair's walk-forward test and its own alone from the file,
- *     never that a rating alone was scored where the file has no such test; a file with the defense
+ *     Run Offense), and no text of its walk-forward tests (the file keeps them); a file with the defense
  *     tables and no pair (every build of 16 October 2026 before the offense tables) draws them as it
- *     did, its opponent's Overall Offense rank said so; a file without the tables (every build before
+ *     did, its opponent's Overall Offense rank named; a file without the tables (every build before
  *     them) draws exactly the two pills;
  *   - each club's line starts at its own start from the file; a club with no game yet this season
  *     (a copy of the file with one made so) is ranked and shown on its carried rating, marked
- *     "carried from" the season the file names, on the curve, with its window saying so, and the
- *     text gives the carried share; a file from before the carry (one start a side, no carry)
- *     still draws, its lines from that start, with no carried mark and no carry in the text;
+ *     "carried from" the season the file names, on the curve, with its window saying "No game yet this
+ *     season: carried from <season>."; a file from before the carry (one start a side, no carry)
+ *     still draws, its lines from that start, with no carried mark;
  *   - the team table scrolls sideways inside its card at a desktop width, not only on a phone: it, or
  *     a box between it and the card, has overflow-x auto by a rule outside any media query (fifteen
  *     columns ran past the card at 1280 px and the whole page scrolled), and the team column can
@@ -101,8 +108,8 @@
  *     (clashOwn) on every pair of F7's legs and of game legs beside them; no Elo pick level, on the files, the check's
  *     fixtures, a unit or the slot, holding a quarterback's passing TDs with a teammate's touchdown; every level worked out
  *     in full over the parlays with no such pair (F1 to F7, the units, F6's slates); and a level whose candidates are
- *     enough but none of whose parlays goes on one slip empty, saying "No 3 of the 3 players in this game go together on
- *     DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown." (F7: a quarterback's passing
+ *     enough but none of whose parlays goes on one slip empty, saying "No 3 of these 3 players go together on DraftKings’
+ *     slip." (app v130: the reason alone, with no clause after it spelling out DraftKings' rule) (F7: a quarterback's passing
  *     TDs, his receivers' touchdowns, the levels the page took before app v121 shown to hold such pairs);
  *   - the Mismatches bubbles' words (18 October 2026): what an edge ranks is the matchup formula's units
  *     by their players' Elo ("vs the LAC secondary and defensive line, 32nd by player Elo"), never "a
@@ -137,6 +144,16 @@ const rankRowsOk = (R, T) => R.every((tr, i) => {
   return !!v && txt(tr.querySelector('.pe-rank')) === String(v.rank)
     && (v.rank === i + 1 || (!!p && v.rank === p.rank && v.elo === p.elo && !!(v.games || v.carried) && !!(p.games || p.carried)));
 });
+/* the descriptions the tab drew until 22 October 2026 (the owner's call: "in all sections get rid of all text wall
+   descriptions. i dont want any descriptions anywhere"), a phrase of each: the rankings' lead, each team table's lead,
+   its note on the stats that weigh nothing and its walk-forward note, the team window's note under its stats and its
+   carried note's tail, the player window's note under his stats and the tails of its empty states, the Mismatches
+   card's tagline and its filing line's rule, the Mismatches window's lead, the curve key's scale, the source note's
+   clauses and the Next line's tail. None may come back on the tab, wherever it is read */
+const ELO_GONE = /ranked ladder rates|placement games|Click a player for|Career is the rating with|rated on this season's games|a standard deviation better|standard deviations?:|weighs? nothing|told nothing more|Fitted on|root mean square|a forecast of the|used only for that test|the best eight green|click a column|a team can stand above|on today's curve|moves from its first game|League rank is the season's|Adds is what each|Recent form is his|Faded rows|the projections cover|so there is no matchup to show|not an expected starter in this week|The projection below was made|leave it out|the best players against the weakest|in the games still to kick off|until a club files|starter can still change|The biggest edges this week|Facing<\/b> ranks|Facing ranks|Click a row|coloured by shield|1500 the average|not in nflverse's player stats|wait on nflverse's play-by-play|table to set against|so this is its overall rank|whose (?:offense|defense) is|take over from|has begun/;
+const eloGone = el => { const m = ELO_GONE.exec(txt(el)); return m ? m[0] : ''; };
+/* the stub's tier (page()'s pkEloTier, below), the name each Elo is given on these pages */
+const stubTier = e => e >= 1700 ? 'Elite' : e >= 1600 ? 'Diamond' : e >= 1500 ? 'Gold' : 'Silver';
 /* the tab's own word on whether a game has kicked off (a tab without it says no game ever has) */
 const on = (w, gid) => typeof w.eloGameOn === 'function' ? w.eloGameOn(gid) : false;
 /* the page's stylesheet, round the tab as on the site: a page-wide rule counts (every table is
@@ -250,8 +267,9 @@ function clashOwn(a, b) {
   return one(a, b) || one(b, a);
 }
 const clashIn = legs => legs.some((a, i) => legs.some((b, j) => j > i && clashOwn(a, b)));
-/* the words an Elo pick level says when its candidates are enough but no parlay of its size goes on one slip (eloPicks's) */
-const CLASH_WHY = (n, N, where) => `No ${n} of the ${N} players ${where} go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.`;
+/* the words an Elo pick level says when its candidates are enough but no parlay of its size goes on one slip (eloPicks's;
+   app v130, the owner's call of 22 October 2026: the reason alone, where it is not named, nor DraftKings' rule after it) */
+const CLASH_WHY = (n, N) => `No ${n} of these ${N} players go together on DraftKings’ slip.`;
 /* whether any n of the candidates go on one slip (one leg a player, as the candidates are): a search of its own, stopping
    at the first */
 function anyAllowed(C, n) {
@@ -422,7 +440,7 @@ function unitHeld(nm, w, legs, MU, players, corr, units) {
       const t = r.tiers[i]; if (!t) return;
       let best = null, bi = -1; per.forEach((x, gi) => { const L = x.levels[i]; if (L && !L.none && (!best || slotBetterOwn(L, best))) { best = L; bi = gi; } });
       const has = Array.isArray(t.legs) && t.legs.length > 0;
-      if (!best) { const why = most >= n ? `No ${n} players ${where} go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.`
+      if (!best) { const why = most >= n ? `No ${n} players ${where} go together on DraftKings’ slip.`
           : `Only ${most} player${most === 1 ? '' : 's'} ${where} qualif${most === 1 ? 'ies' : 'y'}: this level takes ${n}.`; if (!tag) empty++;
         chk(!has && Object.keys(t).sort().join() === 'floor,id,label,n,why' && t.why === why, `${lab}: the ${label} Elo pick, which no game of the slot fills, is not handed over empty saying why ("${why}"): ${JSON.stringify(has ? t.legs.map(idC) : t)}`);
         return; }
@@ -498,7 +516,31 @@ function page(MU, opts) {
         `${lab}: the ELO tab's bar does not keep its stamp, "${wantStamp}": "${txt(stamp)}"`);
     };
     barGone(d, 'the real files');
+    /* no lead under the rankings (22 October 2026, the owner's call): the card is its title, the position row, the
+       curve, the table and its notes of who is not ranked; the curve's key "N ranked <position>" and "bell curve" */
+    { const card = [...d.querySelectorAll('#peBody .card')].find(c => /^Rankings/.test(txt(c.querySelector('h2')))), g0 = Object.keys(P.groups)[0], grp = P.groups[g0];
+      const key = card && card.querySelector('.pe-cv-key'), want = [`${(grp.curve || []).length} ranked ${grp.label.toLowerCase()}`, 'bell curve'];
+      chk(!!card && !card.querySelector('.pe-sub') && !eloGone(card), 'the rankings still carry a description: ' + (card ? (eloGone(card) || txt(card.querySelector('.pe-sub')).slice(0, 120)) : 'no card'));
+      chk(!(grp.curve && grp.curve.length >= 5) || (!!key && [...key.children].map(txt).join('|') === want.join('|')),
+        `the rankings curve's key is not "${want.join('" and "')}": ` + (key ? [...key.children].map(txt).join(' | ') : 'no key')); }
     void w; }
+  /* the opening of a season (a copy with phase 'opening' and the next season in play) says so in a few words, and the
+     files' lag (the player stats and the play-by-play waiting on finals, the week's statuses not all filed: a copy of
+     model.json planted so) is the state alone, "2 finals not rated yet. Team tables: 1 final not rated yet. Week W
+     statuses filed: 1 of 2 clubs." */
+  { const P2 = JSON.parse(JSON.stringify(P)), M2 = JSON.parse(JSON.stringify(M)), wk = MU0 && MU0.week != null ? MU0.week : 1;
+    P2.phase = 'opening'; P2.season_in_play = +P2.season + 1;
+    M2.sources = Object.assign({}, M2.sources, { player_stats_pending: ['g1', 'g2'], team_stats_pending: ['g3'],
+      injury_report: { AAA: { week: wk, statuses_filed: true }, BBB: { week: wk, statuses_filed: false } } });
+    const { d } = page(MU0 || { week: wk, players: {} }, { P: P2, M: M2 }); await wait(60);
+    const notes2 = [...d.querySelectorAll('#peBody .card .pe-note')].map(txt), want = `2 finals not rated yet. Team tables: 1 final not rated yet. Week ${wk} statuses filed: 1 of 2 clubs.`;
+    chk(notes2.includes(`${P2.season_in_play} rankings start after week 1.`), 'the rankings do not open the next season in a few words: ' + notes2.join(' | '));
+    chk(notes2.includes(want), `the files' lag is not said as the state alone ("${want}"): ` + notes2.join(' | '));
+    M2.sources.player_stats_pending = ['g1']; M2.sources.team_stats_pending = ['g3', 'g4']; M2.sources.injury_report.BBB.statuses_filed = true;
+    const { d: d1 } = page(MU0 || { week: wk, players: {} }, { P: P2, M: M2 }); await wait(60);
+    const notes1 = [...d1.querySelectorAll('#peBody .card .pe-note')].map(txt);
+    chk(notes1.includes('1 final not rated yet. Team tables: 2 finals not rated yet.') && !notes1.some(x => /statuses filed/.test(x)),
+      'the files\' lag, one final waiting on the player stats, two on the play-by-play and every status filed, is not said so: ' + notes1.join(' | ')); }
   /* the same bar on copies of the record with calls on the Joker graded, re-picked games and the Joker baseline's
      walk-forward: still nothing of them drawn */
   { const had = JSON.stringify(M.record || {}), hadJB = JSON.stringify(M.joker_base || null);
@@ -572,11 +614,20 @@ function page(MU, opts) {
       w.renderSlate(); await wait(20);
       const bubbles = [...d.querySelectorAll('#peMism .pe-mm-b')];
       chk(bubbles.length === Math.min(5, before.length), 'the Mismatches card did not draw its bubbles');
-      /* while clubs have not filed their game statuses, the card says the starters can change */
+      /* while clubs have not filed their game statuses, the card says how many have, the count alone, and its title is
+         the week alone (22 October 2026, the owner's call: no descriptions): on the files, then on a copy of the
+         matchups with two clubs' reports, one filed */
       const rep = Object.values(MU0.reports || {}).filter(r => r.week === +MU0.week);
       const unfiled = rep.filter(r => !r.statuses_filed).length;
-      chk(!unfiled || new RegExp(`filed for ${rep.length - unfiled} of ${rep.length} clubs`).test(txt(d.getElementById('peMism'))),
+      chk(!unfiled || txt(d.getElementById('peMism')).includes(`Statuses filed: ${rep.length - unfiled} of ${rep.length} clubs.`),
         'the Mismatches card does not say the game statuses are not all filed');
+      chk(txt(d.querySelector('#peMism h2 small')) === `week ${MU0.week}` && !eloGone(d.getElementById('peMism')),
+        `the Mismatches card's title is not "week ${MU0.week}" alone, or the card explains: "${txt(d.querySelector('#peMism h2 small'))}" ${eloGone(d.getElementById('peMism'))}`);
+      { const MUf = JSON.parse(JSON.stringify(MU0)); MUf.reports = { AAA: { week: +MU0.week, statuses_filed: true }, BBB: { week: +MU0.week, statuses_filed: false } };
+        const { w: wf, d: df } = page(MUf); await wait(60); wf.renderSlate(); await wait(20);
+        const line = [...df.querySelectorAll('#peMism > p.pe-mm-sub')].map(txt);
+        chk(line.join('|') === 'Statuses filed: 1 of 2 clubs.' && !eloGone(df.getElementById('peMism')),
+          'with one of two clubs filed, the Mismatches card does not say "Statuses filed: 1 of 2 clubs." alone: ' + line.join(' | ')); }
       for (const b of bubbles) {
         const pid = b.dataset.mmPid, e = P.players[pid], sh = b.querySelector('.pe-mm-sh svg.tierbadge');
         const want = e && e.se != null ? String(e.se) : null;
@@ -629,7 +680,8 @@ function page(MU, opts) {
         const more = d.getElementById('peMore'); if (r.rank > 10 && more) { more.click(); await wait(20); }
         const tr = [...d.querySelectorAll('#peBody tr.pe-plrow')].find(x => x.dataset.pePl === r.id);
         if (tr) { tr.click(); await wait(20);
-          chk(/has kicked off/.test(txt(d.getElementById('pePlView'))), `${r.name}'s window does not say his game has kicked off`);
+          chk(txt(d.querySelector('#pePlView .pe-begun')) === 'This game has kicked off.' && !d.querySelector('#pePlView .pe-note') && !eloGone(d.getElementById('pePlView')),
+            `${r.name}'s window does not say "This game has kicked off." alone, or explains its stats: ${txt(d.querySelector('#pePlView .pe-begun'))} ${eloGone(d.getElementById('pePlView'))}`);
           d.getElementById('pePlClose').click(); await wait(10); }
       } else notes.push('no ranked player in the first game with a mismatch: the window\'s kicked-off note is not checked');
       /* every game over: no card at all */
@@ -644,13 +696,26 @@ function page(MU, opts) {
     /* the top-ranked receiver with a projection is made "out last week, not practising" in a copy */
     const top = P.groups.WR.top.find(r => MU.players && MU.players[r.id]) || P.groups.WR.top[0];
     MU.out = Object.assign({}, MU.out, { [top.id]: 'out (hamstring) in week 4, not practising for week 5: counted out' });
+    /* two more of the ten receivers shown: one the page's own inactive list rules out, one taken out of this copy of
+       the matchups (no matchup this week) */
+    const ten = P.groups.WR.top.slice(0, 10).filter(r => r.id !== top.id && MU.players && MU.players[r.id] && !(MU.out || {})[r.id]);
+    const inact = ten[0], gone = ten[1];
+    if (gone) delete MU.players[gone.id];
     const { w, d } = page(MU); await wait(60);
     chk(w.eloRuledOut(top.id) === true, 'a player the build counts out is not ruled out on the page');
     chk(!w.eloMismatches().some(v => v.pid === top.id), 'a player the build counts out is still on the Mismatches');
     [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'WR').click(); await wait(20);
     const row = [...d.querySelectorAll('#peBody tr.pe-plrow')].find(tr => tr.dataset.pePl === top.id);
     if (row) { row.click(); await wait(20);
-      chk(/not practising/.test(txt(d.getElementById('pePlView'))), 'his window does not give the build\'s reason: ' + txt(d.getElementById('pePlView')).slice(0, 160)); }
+      chk(txt(d.querySelector('#pePlView .pe-sub')) === `Not expected to play: ${MU.out[top.id]}.`, 'his window does not give the build\'s reason, in a few words: ' + txt(d.getElementById('pePlView')).slice(0, 160));
+      d.getElementById('pePlClose').click(); await wait(10); }
+    const say = async (r, want, what) => { const tr = r && [...d.querySelectorAll('#peBody tr.pe-plrow')].find(x => x.dataset.pePl === r.id);
+      if (!tr) { notes.push(`no receiver shown to check the window's "${what}" line on`); return; }
+      tr.click(); await wait(20);
+      chk(txt(d.querySelector('#pePlView .pe-sub')) === want && !eloGone(d.getElementById('pePlView')), `${r.name}'s window does not say "${want}" alone: ` + txt(d.getElementById('pePlView')).slice(0, 200));
+      d.getElementById('pePlClose').click(); await wait(10); };
+    if (inact) { w.eval('S').inactive[inact.id] = { week: +MU.week, status: 'Out' }; await say(inact, `Ruled out for week ${MU.week}.`, 'ruled out'); delete w.eval('S').inactive[inact.id]; }
+    await say(gone, `No matchup for week ${MU.week}.`, 'no matchup');
   }
 
   /* ---- Overall Offense and Overall Defense: the two pills, the table, the sort, the window ---- */
@@ -711,46 +776,18 @@ function page(MU, opts) {
         if (!got || got[0] !== show(e && e.v, s.fmt) || got[1] !== nth(e && e.rank)) bad.push(`${tr.dataset.team} ${s.key} ${got} for ${show(e && e.v, s.fmt)} ${nth(e && e.rank)}`);
       }
       chk(!bad.length, `${name} shows values or ranks that are not the file's: ${bad.slice(0, 3).join('; ')}`);
-      /* the text names every weighted stat with its share, the shares sum to 100, and the stats
-         that weigh nothing are named as such */
-      const why = txt(card.querySelector('#peTeamsWhy')), weighted = stats.filter(s => s.weight);
-      const shares = (why.match(/(\d+)%/g) || []).map(x => parseInt(x, 10));
-      const said = s => why.toLowerCase().includes(`${s.label.toLowerCase()} ${s.weight}%`);
-      chk(weighted.every(said) && shares.join() === weighted.map(s => s.weight).join()
-        && shares.reduce((a, b) => a + b, 0) === 100, `${name}'s text does not give the file's weights summing to 100: ${shares.join(', ')}`);
-      const zero = stats.filter(s => !s.weight), zt = txt(card.querySelector('#peTeamsZero'));
-      chk(!zero.length || (zero.every(s => zt.includes(s.label)) && /weighs? nothing/.test(zt)), `${name} does not say which stats weigh nothing, and why`);
-      /* a position table's own test, from the file: the measure it is for, its miss beside the raw numbers' */
-      if (POS.includes(side)) { const tw = U0.tables[side].walk_forward || {}, wt = txt(card.querySelector('#peTeamsWf'));
-        const f = x => (+x).toFixed(x < 0.1 ? 4 : 3);
-        /* the pair's test was a forecast from this rating with the other side's own ratings on the same
-           stats (its pair, named), the raw baseline both teams' raw numbers (def_units_fit.py); and the
-           table's own, from this rating alone against its side's raw numbers alone: the note says each
-           so, never that a rating alone was scored beyond the file's `alone` */
-        const dfnT = sideOf(side) === 'def', pl = U0.tables[U0.tables[side].pair].label;
-        const pairSaid = dfnT ? `a forecast of the ${tw.measure} an offense had in its next game against the team, from this rating with the offense's own ratings on the same stats (its ${pl}), missed by ${f(tw.rmse)}`
-          : `a forecast of the ${tw.measure} the team had in its next game, from this rating with the defense's own ratings on the same stats (its ${pl}), missed by ${f(tw.rmse)}`;
-        const level = f(tw.alone) === f(tw.alone_raw);
-        chk(!!tw.rmse && wt.includes(pairSaid)
-          && wt.includes(`same forecast from both teams' raw numbers`) && !/this rating missed/.test(wt)
-          && wt.includes(`missed by ${f(tw.raw)}`) && wt.includes(`${tw.fit}`) && wt.includes(`${tw.test}`)
-          && wt.includes(`, in ${tw.seasons_better} of ${tw.seasons} seasons`)
-          && wt.includes(`On its own, from this rating and nothing of the ${dfnT ? 'offense' : 'defense'} it met, the forecast missed by ${f(tw.alone)}, and from the team's own raw numbers so far alone by ${f(tw.alone_raw)}`)
-          && wt.includes(level ? `level with them at this precision (ahead in ${tw.alone_better} of ${tw.seasons} seasons).` : `better than their raw numbers do, in ${tw.alone_better} of ${tw.seasons} seasons.`)
-          && !/used only for that test/.test(wt),
-          `${name}'s text does not give its walk-forward tests from the file: ${wt.slice(0, 420)}`);
-        chk(!/points and EPA|Overall/.test(txt(card.querySelector('#peTeamsZero'))), `${name}'s note borrows Overall's test`);
-        /* which way is better, in the table's own words: "less allowed" only with a stat the defense
-           allows, "more made" only with one it makes (Pass Rush's both), never Overall's "taken" */
-        const lo = stats.some(s => s.better === 'low'), hi = stats.some(s => s.better === 'high');
-        const way = dfnT ? (lo && hi ? 'less allowed, more made by the defense' : hi ? 'more made by the defense' : 'less allowed')
-          : (lo && hi ? 'more gained, fewer taken' : hi ? 'more gained' : 'fewer taken');
-        chk(why.includes(`what was expected against the ${dfnT ? 'offense' : 'defense'} it faced`), `${name}'s text has its teams facing the wrong side of the ball: ${why.slice(0, 400)}`);
-        chk(why.includes(`a standard deviation better (${way})`) && !/more taken/.test(why), `${name}'s text does not say which way is better in its own stats' words (${way}): ${why.slice(-330)}`); }
-      /* the old measure's walk-forward on the carried file is the old measure carried the same way,
-         which the site never ran: the text says so */
-      chk(POS.includes(side) || !zero.length || (U0.walk_forward || {}).no_carry == null || /old rating on points and EPA alone, carried the same way, by/.test(zt),
-        `${name}'s walk-forward note gives the old rating's carried score as if it were the old rating's own: ${zt.slice(0, 260)}`);
+      /* the column heads give every weighted stat its share, the shares summing to 100, and mark the stats that weigh
+         nothing "shown only"; the card says nothing of how it is rated: no lead (#peTeamsWhy), no note on the stats
+         that weigh nothing (#peTeamsZero) and no walk-forward note (#peTeamsWf), Overall's or a position table's, whose
+         tests the file keeps (22 October 2026, the owner's call: "i dont want any descriptions anywhere") */
+      const weighted = stats.filter(s => s.weight), zero = stats.filter(s => !s.weight);
+      const headOf = s => txt(card.querySelector(`thead th[data-sort="${s.key}"] small`));
+      const shares = weighted.map(s => parseInt(headOf(s), 10));
+      chk(weighted.length > 0 && weighted.every(s => headOf(s) === `${s.weight}%`) && shares.reduce((a, b) => a + b, 0) === 100,
+        `${name}'s column heads do not give the file's weights summing to 100: ${weighted.map(s => s.key + ' ' + headOf(s)).join(', ')}`);
+      chk(zero.every(s => headOf(s) === 'shown only'), `${name}'s column heads do not mark the stats that weigh nothing "shown only": ${zero.map(s => s.key + ' ' + headOf(s)).join(', ')}`);
+      chk(!card.querySelector('#peTeamsWhy, #peTeamsZero, #peTeamsWf, .pe-sub') && !eloGone(card),
+        `${name} still says how it is rated: ` + (eloGone(card) || txt(card.querySelector('#peTeamsWhy, #peTeamsZero, #peTeamsWf, .pe-sub')).slice(0, 160)));
       /* a stat's header sorts by it, best first, then the other way; # keeps the overall rank */
       const k = stats[1].key, th = () => card.ownerDocument.querySelector(`#peUnits thead th[data-sort="${k}"]`);
       th().click(); await wait(20);
@@ -780,11 +817,12 @@ function page(MU, opts) {
       const N = M.next || {}, g = +N.season === +U0.season ? (N.games || []).find(x => { const p = String(x.game_id).split('_'); return p[2] === t || p[3] === t; }) : null;
       /* the coming opponent on the other side: the other Overall, or a position table's pair */
       if (g) { const p = g.game_id.split('_'), opp = p[3] === t ? p[2] : p[3], ok = POS.includes(side) ? U0.tables[side].pair : side === 'off' ? 'def' : 'off', other = U0[ok][opp];
-        const nt = txt(d.getElementById('peTmNext'));
-        chk(!!d.getElementById('peTmNext') && nt.includes(opp) && nt.includes(`${nth(other.rank)} of 32 in ${label(ok)} (${other.elo},`),
-          `${t}'s window does not give its coming opponent ${opp} and its rank in ${label(ok)}: ${nt}`);
+        const nt = txt(d.getElementById('peTmNext')), wantN = `Next: week ${+p[1]} ${p[3] === t ? 'vs' : 'at'} ${opp}, ${nth(other.rank)} of 32 in ${label(ok)} (${other.elo}, ${stubTier(other.elo)})`;
+        chk(!!d.getElementById('peTmNext') && nt === wantN,
+          `${t}'s window does not give its coming opponent ${opp} and its rank in ${label(ok)}, and no more ("${wantN}"): ${nt}`);
         chk(!/no (offense|defense) table/.test(nt), `${t}'s window in ${name} says the site has no table to set against it: ${nt}`); }
       else chk(!d.getElementById('peTmNext'), `${t}'s window names an opponent the file does not call`);
+      chk(!view.querySelector('.pe-note') && !eloGone(view), `${t}'s window in ${name} explains its stats: ` + (eloGone(view) || txt(view.querySelector('.pe-note')).slice(0, 160)));
       d.getElementById('peTmClose').click(); await wait(10);
       chk(m.hidden, 'Close does not shut a team\'s window');
       rows()[1].click(); await wait(20);
@@ -813,16 +851,12 @@ function page(MU, opts) {
           && txt(tr.querySelector('.pe-carry')) === `carried from ${from}`, `${t5}, yet to play, is not shown on its carried rating with its rank and marked carried from ${from}: ${tr ? txt(tr) : 'no row'}`);
         chk(/ranked/.test(txt(card.querySelector('.pe-curve'))) && txt(card.querySelector('.pe-curve')).includes(`${Object.values(M5.units[side]).filter(x => x.games || x.carried).length} ranked`),
           `the ${side} curve does not count the club carried from last season`);
-        const why = txt(card.querySelector('#peTeamsWhy'));
-        chk(why.includes(`each starting from ${C} of its final rating in ${from}`) && why.includes(`marked carried from ${from}`) && !/everyone started at 1500/.test(why),
-          `the ${side} text does not say each team starts from ${C} of ${from}: ${why.slice(0, 220)}`);
-        /* the player rankings carry nothing in: the text never likens the carry to them */
-        chk(!/the way the player rankings are/.test(why) && /As in the player rankings, after each game/.test(why),
-          `the ${side} text likens the carried start to the player rankings, which start every season at 1500: ${why.slice(0, 220)}`);
+        /* no text names the share (22 October 2026: the lead went), the row's mark says it */
+        chk(!card.querySelector('#peTeamsWhy, .pe-sub') && !eloGone(card), `the ${side} card still explains the carry: ` + (eloGone(card) || txt(card.querySelector('#peTeamsWhy, .pe-sub')).slice(0, 220)));
         if (tr) { tr.click(); await wait(20);
           const view = d5.getElementById('peTmView');
-          chk(/No game yet this season/.test(txt(d5.getElementById('peTmCarried'))) && txt(d5.getElementById('peTmCarried')).includes(`carried from ${from}`)
-            && txt(view.querySelector('.pe-pl-tiles')).includes(`carried from ${from}`), `${t5}'s window does not say its rating is carried from ${from}`);
+          chk(txt(d5.getElementById('peTmCarried')) === `No game yet this season: carried from ${from}.`
+            && txt(view.querySelector('.pe-pl-tiles')).includes(`carried from ${from}`), `${t5}'s window does not say "No game yet this season: carried from ${from}." alone: ${txt(d5.getElementById('peTmCarried'))}`);
           d5.getElementById('peTmClose').click(); await wait(10); }
       }
       /* the real file: a club with a game has no carried mark */
@@ -879,14 +913,14 @@ function page(MU, opts) {
       delete M4.units.params.carry; delete M4.units.params.carry_from; M4.units.start = { off: 1487, def: 1509 };
       for (const side of TABS) for (const v of Object.values(M4.units[side])) { delete v.start; delete v.carried; }
       const { d: d4 } = page(MU0, { M: M4 }); await wait(60);
-      const card = await open(d4, 'def'), why = txt(card && card.querySelector('#peTeamsWhy'));
-      chk(!!card && /the way the player rankings are: everyone started at 1500/.test(why) && !card.querySelector('.pe-carry'), 'a file from before the carry does not draw as one: ' + why.slice(0, 160));
+      const card = await open(d4, 'def');
+      chk(!!card && !card.querySelector('.pe-carry') && !card.querySelector('#peTeamsWhy, .pe-sub') && !eloGone(card), 'a file from before the carry does not draw as one, with no carried mark and nothing said of how it is rated: ' + (card ? eloGone(card) : 'no card'));
       const tr = card && card.querySelector('tbody tr.pe-tmrow');
       if (tr) { tr.click(); await wait(20);
         chk(txt(d4.querySelector('#peTmView .pe-tline circle title')) === 'Season start: 1509', 'a file from before the carry does not start a line at its side\'s start'); }
-      const pc = POS.length && await open(d4, POS[0]), pw = txt(pc && pc.querySelector('#peTeamsWhy'));
-      chk(!POS.length || (!!pc && /the way the player rankings are: everyone started at 1500/.test(pw) && !pc.querySelector('.pe-carry')),
-        'a position table on a file without the carry does not draw as one: ' + pw.slice(0, 160)); }
+      const pc = POS.length && await open(d4, POS[0]);
+      chk(!POS.length || (!!pc && !pc.querySelector('.pe-carry') && !pc.querySelector('#peTeamsWhy, .pe-sub') && !eloGone(pc)),
+        'a position table on a file without the carry does not draw as one: ' + (pc ? eloGone(pc) : 'no card')); }
     /* a file with the defense tables and no pair or test alone (every build of 16 October 2026 before
        the offense tables): the defense tables draw as they did, their note saying the offense's side
        was used only for the test and never that a rating alone was scored, a window's opponent given
@@ -898,16 +932,16 @@ function page(MU, opts) {
       const { d: d8 } = page(MU0, { M: M8 }); await wait(60);
       const u8 = d8.querySelector('#peBody .pe-pos .pe-units'), s8 = u8 ? [...u8.children].map(e => e.matches('button[data-unit]') ? e.dataset.unit : '[' + txt(e) + ']').join('|') : '';
       chk(s8 === ['[Offense]', 'off', '[Defense]', 'def', ...defT].join('|'), 'a file with the defense tables alone does not draw Overall Offense alone in the Offense row and the defense tables in the Defense row: ' + s8);
-      const c8 = await open(d8, defT[0]), w8 = txt(c8 && c8.querySelector('#peTeamsWf')), tw = M8.units.tables[defT[0]].walk_forward;
-      chk(!!c8 && w8.includes(`from this rating with the offense's own ratings on the same stats, missed by ${(+tw.rmse).toFixed(tw.rmse < 0.1 ? 4 : 3)}`)
-        && /used only for that test and are not shown/.test(w8) && !/On its own/.test(w8) && !/this rating missed/.test(w8),
-        `a file with the defense tables and no pair does not give their test as it did: ${w8.slice(0, 400)}`);
+      const c8 = await open(d8, defT[0]);
+      chk(!!c8 && c8.querySelectorAll('tbody tr.pe-tmrow').length === 32 && !c8.querySelector('#peTeamsWhy, #peTeamsZero, #peTeamsWf, .pe-sub') && !eloGone(c8),
+        `a file with the defense tables and no pair does not draw them as it did, with nothing said of how they are rated: ${c8 ? eloGone(c8) : 'no card'}`);
       const N = M.next || {}, g8 = +N.season === +U0.season && (N.games || [])[0], r8 = c8 && c8.querySelector('tbody tr.pe-tmrow');
       if (g8 && r8) { const t8 = String(g8.game_id).split('_')[2];
         const tr8 = [...c8.querySelectorAll('tbody tr.pe-tmrow')].find(x => x.dataset.team === t8);
         if (tr8) { tr8.click(); await wait(20);
-          const nt = txt(d8.getElementById('peTmNext'));
-          chk(nt.includes('in Overall Offense') && nt.includes(`no offense table to set against ${label(defT[0])}`), `a file with no pair does not give the opponent's Overall Offense rank, said so: ${nt}`);
+          const p8 = String(g8.game_id).split('_'), o8 = M8.units.off[p8[3]], nt = txt(d8.getElementById('peTmNext'));
+          const want8 = o8 ? `Next: week ${+p8[1]} at ${p8[3]}, ${nth(o8.rank)} of 32 in Overall Offense (${o8.elo}, ${stubTier(o8.elo)})` : null;
+          chk(!!want8 && nt === want8, `a file with no pair does not give the opponent's Overall Offense rank, and no more ("${want8}"): ${nt}`);
           d8.getElementById('peTmClose').click(); await wait(10); } } }
     /* a file without the position tables (every build before 16 October 2026): exactly the two pills,
        each table as before */
@@ -926,8 +960,8 @@ function page(MU, opts) {
       const ws = M2.units.stats.filter(s => s.side === 'off' && s.weight);
       ws.forEach((s, i) => { s.weight = wts[i] != null ? wts[i] : 0; M2.units.weights.off[s.key] = s.weight; });
       const { d: d2 } = page(MU0, { M: M2 }); await wait(60);
-      const card = await open(d2, 'off'), why = txt(card && card.querySelector('#peTeamsWhy'));
-      chk(ws.every(s => why.toLowerCase().includes(`${s.label.toLowerCase()} ${s.weight}%`)), 'the page does not read the weights from the file: ' + why.slice(0, 200)); }
+      const card = await open(d2, 'off'), headOf = s => txt(card && card.querySelector(`thead th[data-sort="${s.key}"] small`));
+      chk(!!card && ws.every(s => headOf(s) === (s.weight ? `${s.weight}%` : 'shown only')), 'the page does not read the weights from the file: ' + ws.map(s => s.key + ' ' + headOf(s)).join(', ')); }
     /* a model.json from before the stats (the page and the data ship apart) still draws, on the old columns */
     { const M3 = JSON.parse(JSON.stringify(M));
       delete M3.units.stats; delete M3.units.weights; delete M3.units.tables;
@@ -1260,8 +1294,7 @@ function page(MU, opts) {
          (0.323), so that with no rule Safe is him and his first receiver (the owner's case), and Aggressive and Extreme
          hold a pair too;
        - T at U: three candidates, a quarterback's passing TDs under 1.5 and his receiver's touchdown among them, so Medium,
-         which takes all three, is the rule's to empty: "No 3 of the 3 players in this game go together on DraftKings’
-         slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.";
+         which takes all three, is the rule's to empty: "No 3 of these 3 players go together on DraftKings’ slip.";
        - V at W and X at Y: two candidates each, one game the other's mirror, so their Safe pairs tie to the bit, each
          likelier than R at S's Safe and of less value.
        Held: the props parts' rule as loaded into the page (dkClashWhy) the check's own (clashOwn) on every pair of R at
@@ -1328,11 +1361,11 @@ function page(MU, opts) {
       /* the words, as the owner reads them, and the branches the slots were made to meet */
       { const unit = (g, o) => { try { return w.eloUnit(g, o); } catch (err) { return { error: 'threw ' + err.message }; } }, lv = (u, id) => u && Array.isArray(u.tiers) ? u.tiers.find(t => t.id === id) || null : null;
         const t1 = lv(unit([G7B], { where: 'in this game' }), 'elo-med');
-        chk(!!t1 && !t1.legs && t1.why === 'No 3 of the 3 players in this game go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.',
-          `F7: T at U's Medium, its three players holding a quarterback's passing TDs and his receiver's touchdown, is not empty saying "No 3 of the 3 players in this game go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.": ${JSON.stringify(t1)}`);
+        chk(!!t1 && !t1.legs && t1.why === 'No 3 of these 3 players go together on DraftKings’ slip.',
+          `F7: T at U's Medium, its three players holding a quarterback's passing TDs and his receiver's touchdown, is not empty saying "No 3 of these 3 players go together on DraftKings’ slip.": ${JSON.stringify(t1)}`);
         const s2 = unit([G7B, G7C], { where: 'in the Sunday slot', perGame: true });
         const w2 = ['elo-med', 'elo-aggr', 'elo-xtrm'].map(id => (lv(s2, id) || {}).why);
-        chk(w2.join('|') === ['No 3 players in any one game of the Sunday slot go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown.',
+        chk(w2.join('|') === ['No 3 players in any one game of the Sunday slot go together on DraftKings’ slip.',
           'Only 3 players in any one game of the Sunday slot qualify: this level takes 4.', 'Only 3 players in any one game of the Sunday slot qualify: this level takes 5.'].join('|') && !!lv(s2, 'elo-safe') && Array.isArray(lv(s2, 'elo-safe').legs),
           `F7: the Sunday slot of T at U and V at W does not say why its Medium, Aggressive and Extreme are empty of any one game: ${w2.join(' | ')}`);
         const s3 = unit([G7B, G7C, G7], { where: 'in the Sunday slot', perGame: true }), vw = lv(unit([G7C], { where: 'in this game' }), 'elo-safe'), s3s = lv(s3, 'elo-safe');

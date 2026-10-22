@@ -11,7 +11,7 @@
      model's chance beside it (an Elo pick's own, the Elo's) and the chance the price implies, the
      week and its dates, and the site's mark -- and Download saves it as a PNG, drawn on a canvas at
      twice its size. A parlay with a leg on no book price has no fair chance: the card gives the
-     model's chance alone and says the fair chance needs every leg's book price. Where
+     model's chance alone and says "No fair chance". Where
      the browser can share a file (a phone), the share sheet is offered too, which is how an image
      reaches Photos.
 
@@ -93,7 +93,6 @@
 .pc-chance{padding:12px 20px 0;font-size:13px;color:#CDD2DF}
 .pc-chance b{color:#F6F7FB;font-variant-numeric:tabular-nums}
 .pc-chance div+div{margin-top:2px}
-.pc-chance small{display:block;margin-top:4px;font-size:11.5px;color:#B3B9CB}
 .pc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;margin:14px 0 0;padding:10px 20px 13px;border-top:1px solid #4A5269;font-size:12px;color:#B3B9CB}
 .pc-foot b{color:#CDD2DF;font-weight:700}
 .pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
@@ -121,7 +120,6 @@
 .pc-pullask p{margin:0;flex:1 1 100%}
 .pc-pullask .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
 .pc-msg{min-height:1.4em;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
-.pc-note{font-size:12px;color:var(--ink-2);margin:2px 0 0;line-height:1.5}
 @media(max-width:430px){
   #pcModal .modal-panel{padding:12px 12px 22px}
   .pc-head{padding:14px 15px 13px} .pc-legs{padding:2px 15px} .pc-money{padding:6px 15px 0;gap:6px} .pc-chance{padding:11px 15px 0} .pc-foot{padding:10px 15px 12px}
@@ -145,7 +143,6 @@
     <div class="pc-pullask" id="pcPullAsk" role="group" aria-label="Pull from DraftKings" hidden></div>
     <div class="pc-dk" id="pcDkNote"></div>
     <p class="pc-msg" id="pcMsg" role="status" aria-live="polite"></p>
-    <p class="pc-note">Yours alone: this card is not saved anywhere, on this site or in X&#8217;s parlays. Change the builder and finish again for a new one.</p>
   </div>
 </div>
 <script>
@@ -204,8 +201,8 @@ window.PARLAY_CARD=(function(){
      DraftKings has only at another number goes on at DraftKings' number, and the note says so (dkLeg, app v109);
      a leg it cannot open at all is named with why. An id names one outcome at one number, so a line DraftKings
      has moved (or pulled) since the read is not on the slip, and DraftKings drops it without a word: the note
-     dates the read (the oldest of the legs it opens) and says the link opens the legs as DraftKings had them
-     then, never that every leg will land. With no leg to open, the button and Share link take the visitor to the
+     dates the read (the oldest of the legs it opens) and says to check each leg on the slip, never that every
+     leg will land. With no leg to open, the button and Share link take the visitor to the
      game's DraftKings page, or to DraftKings' NFL page, to add the legs by hand, and each leg says why. The
      builder shows under each of its own legs what this card will do with it (dkPlan's each, read by
      renderParlay). Since app v127 (21 October 2026, the owner's call: no ladder bets) no suggestion, game page or
@@ -216,9 +213,11 @@ window.PARLAY_CARD=(function(){
   const dkUrl=ids=>DKS+'?outcomes='+ids.map(encodeURIComponent).join('+');
   /* a player's leg priced from DraftKings' line read on ESPN (src 'dkline'): ESPN gives no id for a player's line, so
      with nothing from a pull it goes on DraftKings by hand. On the admin's device, Pull from DraftKings reads it where
-     its market is one the pull reads (PULL_BASE, below) */
-  const DKLINE_WHY='price estimated from DraftKings\u2019 line read on ESPN, which gives no DraftKings id for a player\u2019s line: add it on DraftKings by hand';
+     its market is one the pull reads (PULL_BASE, below). (app v130, the owner's call of 22 October 2026, "i dont want
+     any descriptions anywhere": every reason the note gives a leg is a few words, the state and what to do, never why;
+     the brief is what Share link's text and the builder's row say) */
   const DKLINE_BRIEF='no DraftKings id: add it by hand';
+  const DKLINE_WHY=DKLINE_BRIEF;
   const pt=x=>String(+x), signed=x=>(+x>0?'+':'')+pt(x);
   function dkGame(l){ try{ const D=typeof PAY==='object'&&PAY&&PAY.dk, W=D&&D[String(l.week)]; return (W&&W[l.gid])||null; }catch(e){ return null; } }
   /* a payload baked with ids at all (dk), as against one baked before them */
@@ -254,10 +253,10 @@ window.PARLAY_CARD=(function(){
      the same bet; at any other (4+ receptions with the main line moved to 4.5, which is 5+) the leg's own bet is
      named, and that the main line is another (the review of 19 October 2026). pulled: the id was Pull from DraftKings'
      (since 20 October 2026), said so, and the admin can pull again */
-  const dkMoved=(l,R,at,pulled)=>{ const q=pt(R.q), s=statLbl(l.stat), since=pulled?'you pulled from DraftKings':'its prices were read', was=pulled?'pulled':'read', again=pulled?' (or pull again)':'';
-    const head=`DraftKings has moved his ${s} line to ${q} since ${since} (${readOf(at)}), and its slip drops a moved line: `;
+  const dkMoved=(l,R,at,pulled)=>{ const q=pt(R.q), s=statLbl(l.stat), was=pulled?'pulled':'read', again=pulled?' (or pull again)':'';
+    const head=`moved to ${q} since it was ${was}: `;
     if(l.main||+R.q===+l.k-0.5||+R.q===+l.k-1) return {why:head+`add it by hand at ${q}`+again,brief:`moved to ${q} since it was ${was}`,moved:R.q};
-    return {why:head+`add ${pt(l.k)}+ ${s} by hand (DraftKings’ Over ${q} is another bet)`+again,brief:`moved to ${q} since it was ${was}; add ${pt(l.k)}+ by hand, not Over ${q}`,moved:R.q}; };
+    return {why:head+`add ${pt(l.k)}+ ${s} by hand, not Over ${q}`+again,brief:`moved to ${q} since it was ${was}; add ${pt(l.k)}+ by hand, not Over ${q}`,moved:R.q}; };
   /* the player markets Pull from DraftKings reads, a page stat each, as The Odds API names them (props/data/oddsfetch.py's
      MARKETS, turned round), and the ones with an alternate ladder there (its FULL_EXTRA): a rung k+ is asked of the
      ladder unless DraftKings' main line for him is k-0.5. Rush + rec yards, kicking points and field goals made are
@@ -326,7 +325,7 @@ window.PARLAY_CARD=(function(){
        it is opened all the same); on the admin's device, what Pull from DraftKings does with it. On a game the paid pull
        never read, every player leg has the ESPN read's reason (dkNoLine), whose tail says the same */
     const unread=!(player&&!DK_READ.includes(l.stat))?null:{why:admin()?`DraftKings’ ${statLbl(l.stat)} lines are not read by the price pull`+pullTail(l,rung,td2)
-      :`DraftKings’ ${statLbl(l.stat)} lines are not read here (the price pull reads passing, rushing and receiving yards, receptions, passing touchdowns and anytime touchdowns)`,brief:'its market is not read here'};
+      :`DraftKings’ ${statLbl(l.stat)} lines are not read here`,brief:'its market is not read here'};
     if(td2&&D&&D[l.pid+'|any_td']){ const key=l.pid+'|any_td'; return {id:D[key],at:dkIdAt(l,key,at),swap:'anytime touchdown'}; }
     if(player){
       /* no paid player price for its game, and none on the leg: the ESPN read's reason (dkNoLine) */
@@ -372,7 +371,7 @@ window.PARLAY_CARD=(function(){
        offer it then (a leg the card prices from the book has an id unless it was dropped: neutral) */
     if(unread) return miss(unread);
     /* 2+ touchdowns, his game's prices read and no anytime touchdown of his among them */
-    if(td2&&!dkBooked(l)&&(D.at||dkHasPlayer(D))) return miss({why:'DraftKings did not offer his anytime touchdown when its prices were read'+(at?` (${readOf(at)})`:'')+`, and ${+l.k}+ touchdowns goes on the slip only as that`,brief:'no anytime TD of his read'});
+    if(td2&&!dkBooked(l)&&(D.at||dkHasPlayer(D))) return miss({why:'DraftKings did not offer his anytime touchdown when its prices were read'+(at?` (${readOf(at)})`:''),brief:'no anytime TD of his read'});
     if(player&&D.at&&!dkBooked(l)) return miss({why:'DraftKings did not offer this line when its prices were read'+(at?` (${readOf(at)})`:''),brief:'DraftKings did not offer it when read'});
     return miss({why:'not among the DraftKings lines read for its game',brief:'not among the lines read'});
   }
@@ -387,8 +386,8 @@ window.PARLAY_CARD=(function(){
      player lines is on record, espnWasRead) and carried no DraftKings lines for it, or not read yet */
   function dkNoGameLines(l){ let read=false;
     try{ const g=game(l.gid); read=typeof espnWasRead==='function'&&!!espnWasRead(l.gid,l.week!=null?l.week:(g&&g.w)); }catch(e){}
-    return read?{why:'ESPN carried no DraftKings lines for its game when they were last read',brief:'no DraftKings lines read for its game'}
-      :{why:'DraftKings’ lines for its game have not been read from ESPN',brief:'its game’s lines not read'}; }
+    return read?{why:'no DraftKings lines read for its game',brief:'no DraftKings lines read for its game'}
+      :{why:'its game’s lines not read',brief:'its game’s lines not read'}; }
   /* a player's leg on the model's own estimate (no DraftKings line of his priced it), with no id: his game's player
      lines not read from ESPN yet; read, with a line of his there (his main line on the stat, a ladder rung DraftKings
      lists, his touchdown), which ESPN gives no id for; or read with none of his on the stat */
@@ -400,9 +399,9 @@ window.PARLAY_CARD=(function(){
       if(e){ read=true;
         if(l.stat==='any_td') has=Array.isArray(e.td)&&e.td.includes(l.pid);
         else has=(typeof espnLineOf==='function'&&espnLineOf(e,l.pid,l.stat)!=null)||(!!e.rungs&&!!e.rungs[l.pid]&&Array.isArray(e.rungs[l.pid][l.stat])&&e.rungs[l.pid][l.stat].some(k=>+k===+l.k)); } }catch(e){}
-    if(!read) return {why:'DraftKings’ lines for its game have not been read from ESPN'+tail,brief:'its game’s lines not read'};
-    if(has) return {why:'its line was read from ESPN, which gives no DraftKings id for a player’s line: add it on DraftKings by hand'+tail,brief:DKLINE_BRIEF};
-    return {why:'DraftKings had posted no line for him on this stat when its lines were last read from ESPN'+tail,brief:'no DraftKings line read for it'};
+    if(!read) return {why:'its game’s lines not read'+tail,brief:'its game’s lines not read'};
+    if(has) return {why:'its line read from ESPN has no DraftKings id: add it by hand'+tail,brief:DKLINE_BRIEF};
+    return {why:'no DraftKings line read for it'+tail,brief:'no DraftKings line read for it'};
   }
   /* a leg Pull from DraftKings read (pullFor's answer P), as dkLeg answers: on the slip at the pull's own id (P.sid;
      P.swap, 2+ touchdowns as his anytime touchdown), converted (P.moved: his main line at DraftKings' number; P.near:
@@ -412,19 +411,18 @@ window.PARLAY_CARD=(function(){
     const at=new Date(P.at), side=s=>s==='under'?'Under':'Over', s=l.stat==='any_td'?'anytime touchdowns':statLbl(l.stat);
     if(P.dead) return dkMoved(l,{q:P.dead.q,at:P.dead.at},at,true);
     if(P.sid) return Object.assign({id:P.sid,at,pulled:true},P.swap?{swap:P.swap}:{});
-    const when=`when you pulled from DraftKings (${readOf(at)})`;
     if(P.moved){ const own=l.side==='under'?{sid:P.moved.sidUnder,px:P.moved.under}:{sid:P.moved.sidOver,px:P.moved.over};
       if(own.sid) return {id:own.sid,at,pulled:true,swap:`${side(l.side)} ${pt(P.moved.line)} ${s}`,now:P.moved.line,swapPx:own.px};
-      return {why:`DraftKings had his ${s} line at ${pt(P.moved.line)}, with no ${side(l.side)} there, ${when}`,brief:`no ${side(l.side)} at DraftKings’ ${pt(P.moved.line)}`}; }
+      return {why:`no ${side(l.side)} at DraftKings’ ${pt(P.moved.line)} when pulled`,brief:`no ${side(l.side)} at DraftKings’ ${pt(P.moved.line)}`}; }
     if(P.near) return {id:P.near.sid,at,pulled:true,swap:`Over ${pt(P.near.line)} ${s}`,now:P.near.line,swapPx:P.near.price,swapWhy:`DraftKings lists no ${pt(l.k)}+ ${s} for him`};
-    if(P.whyOf==='name') return {why:`DraftKings’ name for him could not be placed ${when}: add it by hand`,brief:'his DraftKings name not placed'};
-    if(P.whyOf==='posted') return {why:`DraftKings had not posted ${s} for this game ${when}, so it cost no credit`,brief:`${s} not posted on DraftKings when pulled`};
-    if(P.whyOf==='none') return {why:`DraftKings had no ${s} line for him ${when}`,brief:`no ${s} line of his on DraftKings when pulled`};
+    if(P.whyOf==='name') return {why:'his DraftKings name not placed: add it by hand',brief:'his DraftKings name not placed'};
+    if(P.whyOf==='posted') return {why:`${s} not posted on DraftKings when pulled (no credit spent)`,brief:`${s} not posted on DraftKings when pulled`};
+    if(P.whyOf==='none') return {why:`no ${s} line of his on DraftKings when pulled`,brief:`no ${s} line of his on DraftKings when pulled`};
     /* a rung the base market did not have (DraftKings' main line for him off k-0.5), his ladder not asked: the next
        pull asks it (pullMarket) */
     if(P.whyOf==='ladder') return P.main!=null
-      ?{why:`DraftKings had his ${s} line at ${pt(P.main)} ${when}, so ${pt(l.k)}+ is on its ladder, which that pull did not ask: pull again for his ladder`,brief:`his main line at ${pt(P.main)} when pulled; pull again for his ladder`}
-      :{why:`DraftKings had no Over ${pt(+l.k-0.5)} ${s} of his on its main line ${when}, and that pull did not ask his ladder: pull again for it`,brief:'not on his main line when pulled; pull again for his ladder'};
+      ?{why:`his main line at ${pt(P.main)} when pulled: pull again for his ladder`,brief:`his main line at ${pt(P.main)} when pulled; pull again for his ladder`}
+      :{why:'not on his main line when pulled: pull again for his ladder',brief:'not on his main line when pulled; pull again for his ladder'};
     return null;
   }
   /* which of DraftKings' numbers for one bet (the ids under near, keyed near+number) the leg goes on at:
@@ -541,14 +539,15 @@ window.PARLAY_CARD=(function(){
 
   /* the chance, in two lines: the book's fair chance (est. where a leg is priced on one side only),
      then whose chance the parlay is on (the model's, an Elo pick's the Elo's) and the price's; with
-     no fair chance, the model's and the price's, then why there is none. Each line is a list of
-     [text, bold] pieces, so the window, the image and the share text say the same */
+     no fair chance, the model's and the price's, then "No fair chance" (app v130, the owner's call of 22 October
+     2026: no descriptions, so not why). Each line is a list of [text, bold] pieces, so the window, the image and the
+     share text say the same */
   function chanceLines(m){
     const n=m.legs.length, by=m.chanceBy==='Elo'?'Elo':'model', price=[[' · the price says '],[m.implied,1]];
     if(m.fair) return [[['Fair chance all '+n+' land '],[m.fair,1],...(m.fairEst?[[' (est.)']]:[])],
       [...(m.chance?[[by+' says '],[m.chance,1]]:[]),...(m.chance?price:[['the price says '],[m.implied,1]])]];
     return [[...(m.chance?[[m.chanceBy+'\u2019s chance all '+n+' land '],[m.chance,1]]:[]),...(m.chance?price:[['the price says '],[m.implied,1]])],
-      [['No fair chance: it needs every leg\u2019s book price']]];
+      [['No fair chance']]];
   }
   const lineText=l=>l.map(x=>x[0]).join('');
   /* ---- the window ---- */
@@ -563,11 +562,11 @@ window.PARLAY_CARD=(function(){
         <span><span class="pc-who">${h(l.who)}</span><span class="pc-what">${h(l.what)}</span>${l.meta?`<span class="pc-meta">${h(l.meta)}</span>`:''}</span>
         <span class="pc-lp">${h(l.price)}<small>${h(l.tag)}</small></span></li>`).join('')}</ol>
       ${m.stake?`<div class="pc-money"><div><span>Stake</span><b>${money(m.stake)}</b></div><div><span>Pays</span><b>${money(m.payout)}</b></div><div class="pc-win"><span>Profit</span><b>+${money(m.profit)}</b></div></div>`:''}
-      <div class="pc-chance">${chanceLines(m).map(l=>`<div>${l.map(([t,b])=>b?`<b>${h(t)}</b>`:h(t)).join('')}</div>`).join(' ')}${m.fair&&m.fairEst?`<small>${m.fairDk?'Est.: a leg is priced from DraftKings\u2019 line read on ESPN by our estimate, and its fair chance with it.':'Est.: a leg is priced on one side only, so the week\u2019s typical margin is taken out of its price.'}</small>`:''}</div>
+      <div class="pc-chance">${chanceLines(m).map(l=>`<div>${l.map(([t,b])=>b?`<b>${h(t)}</b>`:h(t)).join('')}</div>`).join(' ')}</div>
       <div class="pc-foot"><b>${h(m.site)}</b><span>Made ${h(m.made)}</span></div>
     </div>`;
   }
-  /* under the buttons: what Open in DraftKings opens, each leg on its own (DraftKings documents no
+  /* under the buttons: when the lines were read, each leg on its own (DraftKings documents no
      link for several outcomes, so one at a time is there too), and the legs to add by hand, why */
   function dkHtml(dk){
     if(!dk||!dk.n) return '';
@@ -578,33 +577,33 @@ window.PARLAY_CARD=(function(){
     const one=dk.ok.length>1?`<p class="pc-dkone">Each leg on its own:</p><ul class="pc-dklegs">${dk.ok.map(x=>`<li><a href="${h(dkUrl([x.id]))}" target="_blank" rel="noopener" data-pc-dkleg="${x.n}" aria-label="Open leg ${x.n}, ${h(x.who)} ${h(x.what)}${as(x)}, in DraftKings">${name(x)}${as(x)}</a></li>`).join('')}</ul>`:'';
     const hand=dk.miss.length?`<ul>${dk.miss.map(x=>`<li data-pc-dkmiss="${x.n}">${name(x)}: ${h(x.why)}</li>`).join('')}</ul>${dkByHandHtml(dk)}`:'';
     /* none on the slip: the button opens the game's page (or DraftKings' NFL page) to add them there */
-    if(!dk.ok.length) return `<p>${dk.n===1?'This leg cannot':'None of these legs can'} go on DraftKings\u2019 betslip from here, so ${dk.event?'Open game in DraftKings opens the game\u2019s page':'Open DraftKings opens its NFL page'}: add ${dk.n===1?'it':'them'} there by hand.</p>${hand}${dkClashHtml(dk)}`;
-    /* dated always, and never a promise that every leg lands: the legs as DraftKings had them at that
-       read, and a line moved or pulled since is not on the slip */
-    const when=`<span data-pc-dkread="${dk.read?h(dk.read.toISOString()):''}">${dk.read?'DraftKings\u2019 lines as read '+h(readOf(dk.read)):'When DraftKings\u2019 lines were read is not recorded'}</span>: `;
-    const caution=`a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.`;
-    const opens=dk.multi?`these legs mix a same-game parlay with other games, which DraftKings may not open on one slip; ${dkAllText(dk)} tries it all the same, and each of the ${dk.games.length} games has a link of its own for when that slip comes up short. Each opens its legs as DraftKings had them ${dk.read?'then':'when last read'}; ${caution}`
-      :`Open in DraftKings opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'} ${dk.read?'then':'when last read'}; ${caution}`;
-    return `<p>${when}${opens}${dk.miss.length?' Add by hand:':''}</p>${hand}${one}${dkSwapHtml(dk)}${dkClashHtml(dk)}`;
+    if(!dk.ok.length) return `<p>Add ${dk.n===1?'this leg':'these legs'} on DraftKings by hand:</p>${hand}${dkClashHtml(dk)}`;
+    /* dated always, and never a promise that every leg lands: the lines as that read had them, and each leg to check on
+       the slip (a line moved or pulled since is not on it). (app v130, the owner's call of 22 October 2026: no
+       descriptions) the state and what to do in a few words: when, check each leg, a mix DraftKings may not open as one
+       slip, and the legs to add by hand; what each button opens is the button's own words */
+    const when=`<span data-pc-dkread="${dk.read?h(dk.read.toISOString()):''}">${dk.read?'Lines as read '+h(readOf(dk.read)):'Read time not recorded'}</span>: `;
+    const mix=dk.multi?' Mixed same-game parlay: DraftKings may not open it as one slip.':'';
+    return `<p>${when}check each leg on the slip.${mix}${dk.miss.length?' Add by hand:':''}</p>${hand}${one}${dkSwapHtml(dk)}${dkClashHtml(dk)}`;
   }
   /* (app v121) the pairs DraftKings will not take on one slip, by the legs' numbers, and what each is */
   const DK_CLASH_SAY={td:'a quarterback\u2019s passing TDs with a teammate\u2019s touchdown',total:'a quarterback\u2019s passing TDs over with the game total'};
   function dkClashHtml(dk){ const c=dk&&dk.clash||[]; if(!c.length) return '';
     return `<p data-pc-dkclash="${c.length}">DraftKings may refuse ${c.length===1?'this pair':'these pairs'} on one slip: ${c.map(([a,b,k])=>`legs ${a} and ${b} (${DK_CLASH_SAY[k]||'they move together'})`).join('; ')}.</p>`; }
   /* (20 October 2026, the owner's call: DraftKings' lines from ESPN for everyone) on a visitor's card, where a player's
-     leg is left off the slip, one line saying why every such leg goes on by hand: ESPN gives no DraftKings id for a
-     player's line (the admin's card has Pull from DraftKings in its place) */
-  const BYHAND='Player legs go on DraftKings by hand: the site reads DraftKings’ lines from ESPN, which gives no DraftKings id for a player’s line, so only team bets and totals go on the slip from here.';
+     leg is left off the slip, one line saying every such leg goes on by hand: ESPN gives no DraftKings id for a
+     player's line (the admin's card has Pull from DraftKings in its place). Since app v130 the line alone, never why */
+  const BYHAND='Player legs: add them on DraftKings by hand.';
   function dkByHandHtml(dk){ return !admin()&&dk&&(dk.miss||[]).some(x=>x.player&&!x.kicked&&x.espnOnly)?`<p data-pc-dkbyhand>${BYHAND}</p>`:''; }
   /* what a leg goes on at DraftKings' own line as: its line there, and DraftKings' price there where Pull from
      DraftKings read it (and, a rung, that DraftKings lists no such rung for him) */
   const swapSay=x=>`${x.swapWhy?x.swapWhy+'; ':''}goes on as ${x.swap}${x.swapPx!=null&&isFinite(x.swapPx)?', which DraftKings prices at '+ml(x.swapPx):''}`;
-  /* the legs that go on the slip at DraftKings' own line, and that DraftKings prices them there */
+  /* the legs that go on the slip at DraftKings' own line, and that the payout there can differ */
   function dkSwapHtml(dk){
     const sw=dk&&dk.swaps||[]; if(!sw.length) return '';
     const name=x=>`${x.n}. ${h(x.who)}${x.what?', '+h(x.what):''}`;
     return `<p>On DraftKings’ slip at its own line:</p><ul>${sw.map(x=>`<li data-pc-dkswap="${x.n}">${name(x)}: ${h(swapSay(x))}</li>`).join('')}</ul>`
-      +`<p>DraftKings prices ${sw.length===1?'a changed leg at its own line':'changed legs at its own lines'}, so its slip’s payout can differ from this card’s.</p>`;
+      +`<p>Payout on DraftKings can differ.</p>`;
   }
   /* (app v123) the all-legs link's words on a mixed parlay: "Open all 3 legs in DraftKings", "Open 3 of 4 legs in DraftKings" */
   const dkAllText=dk=>dk.miss.length?`Open ${dk.ok.length} of ${dk.n} legs in DraftKings`:`Open all ${dk.ok.length} legs in DraftKings`;
@@ -658,7 +657,7 @@ window.PARLAY_CARD=(function(){
      it waits. The read is a press of Refresh odds for those games, so a live set of them re-picks on what it read as it
      does after a press (a locked set never) */
   const CHECK_CAP_MS=10000, CHECK_FRESH_MS=2*60e3;
-  const COULD='Could not check DraftKings’ current lines: a leg DraftKings has moved since its lines were read will not be on the slip.';
+  const COULD='Could not check DraftKings’ current lines.';
   let ck=null;
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const espnOut=gid=>{ try{ return typeof ESPN_OUT==='object'&&ESPN_OUT?ESPN_OUT[gid]||null:null; }catch(e){ return null; } };
@@ -721,10 +720,13 @@ window.PARLAY_CARD=(function(){
     c.state='busy';
     return c;
   }
-  /* what the card's status line says once the check settles: the slip it opens, or that it could not check */
+  /* what the card's status line says once the check settles: how many legs are on the slip ("3 of 4 legs on the slip",
+     never "all": a line moved since drops off; on a mix, "5 of 7 legs on one slip, 2 game links"), or that it could not
+     check */
   function checkSay(c){ const dk=c.m.dk||{}; if(!dk.n) return '';
     if(c.state!=='done') return COULD;
-    return 'DraftKings’ lines checked: '+(dk.url?`Open in DraftKings opens ${dkWhich(dk)}.`:dk.multi?`the all-legs link tries ${dkWhich(dk)} on one slip, and the ${dk.games.length} games’ links open them a game at a time.`:`${dk.n===1?'this leg cannot':'none of these legs can'} go on the betslip from here.`); }
+    const of=`${(dk.ok||[]).length} of ${dk.n} leg${dk.n===1?'':'s'}`;
+    return 'DraftKings’ lines checked: '+(dk.multi&&dk.all?`${of} on one slip, ${dk.games.length} game links.`:`${of} on the slip.`); }
   async function runCheck(c){
     let bad=false, owed=false, real=null;
     try{
@@ -1158,10 +1160,10 @@ window.PARLAY_CARD=(function(){
     const noneNames=listOf(none.map(x=>gameName(x.gid)));
     const btn=(id,go,cls,t)=>`<button type="button" class="btn ${cls}" id="${id}" data-pc-pullgo="${go}" aria-describedby="pcPullAskText">${h(t)}</button>`;
     let q, yes, all='';
-    if(p.cost){ q=`Pull now: ${bal(p.cost)}.`+noEv+(none.length?` Left out: ${noneNames} (DraftKings had posted no player lines for ${none.length===1?'it':'them'} when ESPN was last read).`:'');
+    if(p.cost){ q=`Pull now: ${bal(p.cost)}.`+noEv+(none.length?` Left out: ${noneNames} (no player lines posted).`:'');
       yes=btn('pcPullYes','some','go','Pull');
       if(none.length) all=btn('pcPullAll','all','quiet',`Pull anyway · up to ${credits(p.cost+p.noneCost)}`); }
-    else{ q=`DraftKings had posted no player lines for ${noneNames} when ESPN was last read: pull anyway, ${bal(p.noneCost)}?`+noEv;
+    else{ q=`No player lines posted for ${noneNames}: pull anyway, ${bal(p.noneCost)}?`+noEv;
       yes=btn('pcPullYes','all','go','Pull anyway'); }
     return `<p id="pcPullAskText">${h(q)}</p>${yes}${all}<button type="button" class="btn quiet" id="pcPullNo">Cancel</button>`; }
   /* the button (the admin's card alone), drawn in place so the focus on it stays: its words and state (data-pc-pull:
@@ -1430,7 +1432,7 @@ window.PARLAY_CARD=(function(){
      own under a line saying what it opens ("DraftKings betslip (all 3 legs):", "(2 of the 4 legs;
      add legs 3 and 4 by hand):"; with no leg on the slip the game's page where every leg is in one
      game to come, else DraftKings' NFL page, "(add the legs by hand)"); when DraftKings' lines were
-     read, and that a line moved or pulled since will not be on the slip; the legs to add by hand,
+     read, and to check each leg on the slip (app v130: the card's own words); the legs to add by hand,
      each with why in a few words; the site's address last. By the share sheet where the browser has
      one (navigator.share), else copied: the same text either way.
 
@@ -1456,7 +1458,7 @@ window.PARLAY_CARD=(function(){
     if(dk.url){
       /* what the link holds, in the note's own words (dkWhich): never "all", since a line moved since drops off */
       lines.push(`DraftKings betslip (opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'}${miss.length?`; add ${legNums(miss)} by hand`:''}):`, dk.url);
-      lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`);
+      lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: check each leg on the slip`);
       /* a leg that goes on at DraftKings' number, and that DraftKings prices it there */
       const sw=dk.swaps||[];
       if(sw.length) lines.push(`On DraftKings’ slip at its own line: ${sw.map(x=>`leg ${x.n} as ${x.swap}${x.swapPx!=null&&isFinite(x.swapPx)?` (${P(ml(x.swapPx))})`:''}`).join('; ')} (DraftKings prices ${sw.length===1?'it':'them'} at its own line, so its payout can differ)`); }
@@ -1466,7 +1468,7 @@ window.PARLAY_CARD=(function(){
       lines.push(`DraftKings betslip, ${miss.length?dkWhich(dk):'every leg'} on one slip (DraftKings may not open a same-game parlay mixed with other games; if it does not, use each game’s link below)${miss.length?`; add ${legNums(miss)} by hand`:''}:`, dk.all);
       lines.push('Each game on its own:');
       for(const G of dk.games) lines.push(`${G.name}, ${legNums(G.ok)}:`, G.url);
-      lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`);
+      lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: check each leg on the slip`);
       const sw=dk.swaps||[];
       if(sw.length) lines.push(`On DraftKings’ slip at its own line: ${sw.map(x=>`leg ${x.n} as ${x.swap}${x.swapPx!=null&&isFinite(x.swapPx)?` (${P(ml(x.swapPx))})`:''}`).join('; ')} (DraftKings prices ${sw.length===1?'it':'them'} at its own line, so its payout can differ)`); }
     else if(url) lines.push(dk.event?`DraftKings, the game’s page (add ${them} by hand):`:`DraftKings’ NFL page (add ${them} by hand):`, url);

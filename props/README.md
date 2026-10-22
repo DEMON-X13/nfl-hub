@@ -298,7 +298,7 @@ chart is.
 is processed, and the injury file before the first report. A 404 on either is judged by what
 has been published: with none of this season's yet it is a file not posted, so the run
 publishes without it (prices, schedule and roster still move), the payload lists it in
-`not_posted`, the slate says "nflverse has not posted the 2026 injury report yet", and the
+`not_posted`, the slate says "No injury report posted yet.", and the
 audit checks the payload holds none of it instead of comparing the file. Once that is overdue
 (the injury report after the first kickoff, the stats two days after the first game) the run
 goes red after its commit. A 404 on a file the site has already published from is a source
