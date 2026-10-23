@@ -1762,7 +1762,9 @@ setTimeout(async()=>{
          builder, nor Finish, where ro: the Sunday slot under way), its chance and price, its payout on the Bet amount, the
          Value mark on its Value picks alone, quiet, its fair chance first and its words */
       const cardsHeld=(box,shown,{g,qV,qT,qM,gl,ro,slot})=>{
-        for(const t of shown){ const c=box.querySelector(`.pb-tier.${t.id}`), tl=`${gl}: the ${t.id} card`;
+        /* (app v132) no Extreme card drawn */
+        chk(!box.querySelector('.pb-tier.xtrm,.pb-tier.elo-xtrm'),`${gl}: an Extreme card is drawn`);
+        for(const t of shown.filter(t=>t&&!/xtrm$/.test(t.id))){ const c=box.querySelector(`.pb-tier.${t.id}`), tl=`${gl}: the ${t.id} card`;
           if(!c){ chk(false,`${tl} is not drawn`); continue; }
           /* (app v121) a card of the Sunday slot names the game its legs are of, under its title, right after the legs'
              pill (data-pb-tgame its id; the game and its kickoff in Eastern time); a night's card, whose unit is its game,
@@ -1998,7 +2000,7 @@ setTimeout(async()=>{
           spAllOn(()=>{ F('renderParlay')();
           if(setsM.length&&d.querySelector('#spPanel [data-pb-leg]')) tryAdd('#spPanel','a set\'s leg');
           /* a set's Add to builder: exactly its legs, on the Bet amount, priced as the set was */
-          const S0=setsM.find(x=>x.s.tiers.some(t=>t.legs)), t=S0&&[...F('spShown')(S0.g).tiers].reverse().find(x=>x.legs);
+          const S0=setsM.find(x=>x.s.tiers.some(t=>t.legs)), t=S0&&[...F('spShown')(S0.g).tiers].reverse().find(x=>x.legs&&x.id!=='xtrm');
           if(t){ const g=S0.g, fid=`${g.id}:${t.id}`;
             S.parlay={'stale|p|x':{gid:'stale',pid:'p',stat:'x',k:1,side:'over',name:'Stale',week:cw,p:0.5,price:-110}}; S.stake=37.5; F('save')(); F('renderParlay')();
             const btn=d.querySelector(`#spPanel [data-sp-add="${fid}"]`);
@@ -3023,6 +3025,9 @@ setTimeout(async()=>{
        page's liveWeek reads one; the last made-up week once every one is */
     const cwAud=now=>{ const up=FX.filter(g=>!(scoredAud(g)||now>=kickAud(g)+4*3600e3)); return up.length?up[0].w:FX[FX.length-1].w; };
     const keepF=w.eval('[currentWeek, pricedLegs, spSet]'), fetch0=w.fetch, asked=[];
+    /* (app v132) the slot's own moments, Sunday evenings among them: Day games drawn whatever the hour (off on a Sunday
+       from 4pm Eastern, held on the week as it stands) */
+    w.__dayOff15=w.eval('spDayOff'); w.eval('spDayOff=function(){ return false; }'); w.__dayStood=true;
     /* the record answered by a stub of its own (the backtest left to the page's fetch, which answers nothing here) */
     let recBody=404; const recStub=(u,o)=>{ if(/suggest_ledger/.test(String(u))){ asked.push(o&&o.cache); return Promise.resolve(recBody===404?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(recBody))}); } return fetch0(u,o); };
     const SS=SPD, slotBox=()=>d.querySelector(SP_SG), tokOf=()=>(F('spState')().split(',').find(x=>x.startsWith('s='))||'(none)');
@@ -3152,6 +3157,7 @@ setTimeout(async()=>{
     finally {
       w.Date.now=nowM; w.fetch=fetch0; for(const g of FX){ const i=S.sched.findIndex(x=>x.id===g.id); if(i>=0) S.sched.splice(i,1); }
       w.__m15k=keepF; w.eval('currentWeek=window.__m15k[0]; pricedLegs=window.__m15k[1]; spSet=window.__m15k[2];'); delete w.__m15k; delete w.__m15;
+      w.eval('spDayOff=window.__dayOff15'); w.__dayStood=false;
       recBody=404; w.fetch=recStub; try{ await w.pbRecLoad(); } finally { w.fetch=fetch0; }
       spKeyClear(); try{ if(spKey0!=null) w.localStorage.setItem(SPK,spKey0); }catch(e){}
       stab.hidden=keepTab; S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; dropCaches(); F('save')(); F('renderParlay')(); }
@@ -3407,7 +3413,7 @@ setTimeout(async()=>{
         try{ w.eval(`spSlotNext=function(){ const u=spSlotUnit(${WK}); return u?{...u,open:null,prev:null,up:true}:null; };`); F('renderSp')();
           const box=d.querySelector(`${SP_SG}[data-sp-game="${SID}"]`), TN=F('TEAM_NAMES');
           chk(!!box,`M16: the made-up Sunday slot (${SID}) is not drawn with its set`);
-          for(const [id] of SPEC_AUD){ const g=WANT[id], c=box&&box.querySelector(`.pb-tier.${id}`), tg=c?[...c.querySelectorAll('.pb-th .pb-tgame')]:[];
+          for(const [id] of SPEC_AUD.filter(([id])=>id!=='xtrm')){ const g=WANT[id], c=box&&box.querySelector(`.pb-tier.${id}`), tg=c?[...c.querySelectorAll('.pb-th .pb-tgame')]:[];
             chk(tg.length===1&&tg[0].dataset.pbTgame===g.id,`M16: the slot's ${id} card does not name its game, ${g.id}: ${tg.map(x=>x.dataset.pbTgame).join(', ')||'none'}`);
             W.wording(!!tg[0]&&tg[0].textContent===`${TN[g.a]||g.a} at ${TN[g.h]||g.h} · ${etAud(kickAud(g))}`,`M16: the slot's ${id} card names its game "${tg[0]?tg[0].textContent:''}"`); } }
         finally { slotPut(keepN); stab.hidden=keepTab; F('renderSp')(); } }
@@ -5493,7 +5499,7 @@ setTimeout(async()=>{
             { const rows=F('getPbTop')().rows, li=[...panel.querySelectorAll('ol.pb-top > li.pb-trow')]; any=rows.some(l=>l.src==='dkline'); n++;
               chk(li.length===rows.length&&rows.every((l,i)=>!!li[i].querySelector('.pb-tc i.est')===(l.src==='dkline')),`${lab}: the Top 30 lines do not mark est. exactly their ${rows.filter(l=>l.src==='dkline').length} lines priced from DraftKings' line`); }
             for(const {g} of (r.sets||[])){ const v=F('spShown')(g), box=d.querySelector(`#spPanel [data-sp-game="${g.id}"]`);
-              for(const t of (v.tiers||[])){ if(!t||!t.legs) continue; const c=box&&box.querySelector(`.pb-tier.${t.id}`), li=c?[...c.querySelectorAll('.pb-legs li')]:[], nd=t.legs.filter(l=>l.src==='dkline').length; n++;
+              for(const t of (v.tiers||[])){ if(!t||!t.legs||t.id==='xtrm') continue; const c=box&&box.querySelector(`.pb-tier.${t.id}`), li=c?[...c.querySelectorAll('.pb-legs li')]:[], nd=t.legs.filter(l=>l.src==='dkline').length; n++;
                 chk(li.length===t.legs.length&&t.legs.every((l,i)=>!!li[i].querySelector('.pr i.est')===(l.src==='dkline'))&&!!c&&c.querySelector('.pb-nums').children[1].querySelector('span').textContent===(nd?'price, est.':'price'),
                   `${lab}: ${g.id}'s ${t.id} card does not mark est. exactly its ${nd} legs priced from DraftKings' line, or its price "${nd?'price, est.':'price'}"`);
                 W.wording(!!c&&!!c.querySelector('.pb-espnline')===nd>0,`${lab}: ${g.id}'s ${t.id} card's line on legs priced from DraftKings' line is ${nd?'missing':'there with none'}`); } }
