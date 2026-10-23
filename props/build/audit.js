@@ -1710,7 +1710,8 @@ setTimeout(async()=>{
         chk(spPartsAud(),`${lab}: the Night games section does not draw the night's sets (or their line) and then the Sunday slot's one part (its set, marked .sp-slot, its line before it is up, or the line that none is left), in that order`);
         W.wording(kids.map(x=>(x.querySelector('h3.sp-sech')||{}).textContent).join('|')===ORD.map(s=>({all:'Record',slot:'Day games',night:'Night games'})[s]).join('|'),`${lab}: the sections are not headed Record, Day games and Night games`);
         /* (app v132) no Extreme level drawn: a set's cards and its Elo picks Safe, Medium and Aggressive alone */
-        chk(!d.querySelector('#spSets .pb-tier.xtrm,#spSets .pb-tier.elo-xtrm,#spSets [data-sp-add$=":xtrm"],#spSets [data-sp-add$=":elo-xtrm"],#spSets [data-pc-finish$=":xtrm"],#spSets [data-pc-finish$=":elo-xtrm"],#spSets [data-sp-rec*="xtrm"]'),`${lab}: Suggested Parlays still draws an Extreme level`);
+        /* (app v132) Extreme hidden by the stylesheet (jsdom lays nothing out, so the rule itself), and no Extreme pill */
+        chk([...d.querySelectorAll('style')].some(x=>x.textContent.includes('#spSets .pb-tier.xtrm,#spSets .pb-tier.elo-xtrm{display:none}'))&&!d.querySelector('#spSets [data-sp-rec*="xtrm"]'),`${lab}: Suggested Parlays does not hide its Extreme cards, or counts an Extreme level`);
         /* the units that draw a set: not one waiting to go up or for the record, nor the Sunday slot under way with
            nothing to show (no record entry and nothing kept: its one line, held in drawSlot below) */
         const units=[...d.querySelectorAll('#spPanel .sp-game')].filter(b=>!b.querySelector('[data-sp-phase="wait"],[data-sp-phase="loading"]')&&!(F('spShown')(F('spUnit')(b.dataset.spGame))||{}).none);
@@ -1762,9 +1763,7 @@ setTimeout(async()=>{
          builder, nor Finish, where ro: the Sunday slot under way), its chance and price, its payout on the Bet amount, the
          Value mark on its Value picks alone, quiet, its fair chance first and its words */
       const cardsHeld=(box,shown,{g,qV,qT,qM,gl,ro,slot})=>{
-        /* (app v132) no Extreme card drawn */
-        chk(!box.querySelector('.pb-tier.xtrm,.pb-tier.elo-xtrm'),`${gl}: an Extreme card is drawn`);
-        for(const t of shown.filter(t=>t&&!/xtrm$/.test(t.id))){ const c=box.querySelector(`.pb-tier.${t.id}`), tl=`${gl}: the ${t.id} card`;
+        for(const t of shown){ const c=box.querySelector(`.pb-tier.${t.id}`), tl=`${gl}: the ${t.id} card`;
           if(!c){ chk(false,`${tl} is not drawn`); continue; }
           /* (app v121) a card of the Sunday slot names the game its legs are of, under its title, right after the legs'
              pill (data-pb-tgame its id; the game and its kickoff in Eastern time); a night's card, whose unit is its game,
@@ -2000,7 +1999,7 @@ setTimeout(async()=>{
           spAllOn(()=>{ F('renderParlay')();
           if(setsM.length&&d.querySelector('#spPanel [data-pb-leg]')) tryAdd('#spPanel','a set\'s leg');
           /* a set's Add to builder: exactly its legs, on the Bet amount, priced as the set was */
-          const S0=setsM.find(x=>x.s.tiers.some(t=>t.legs)), t=S0&&[...F('spShown')(S0.g).tiers].reverse().find(x=>x.legs&&x.id!=='xtrm');
+          const S0=setsM.find(x=>x.s.tiers.some(t=>t.legs)), t=S0&&[...F('spShown')(S0.g).tiers].reverse().find(x=>x.legs);
           if(t){ const g=S0.g, fid=`${g.id}:${t.id}`;
             S.parlay={'stale|p|x':{gid:'stale',pid:'p',stat:'x',k:1,side:'over',name:'Stale',week:cw,p:0.5,price:-110}}; S.stake=37.5; F('save')(); F('renderParlay')();
             const btn=d.querySelector(`#spPanel [data-sp-add="${fid}"]`);
@@ -3413,7 +3412,7 @@ setTimeout(async()=>{
         try{ w.eval(`spSlotNext=function(){ const u=spSlotUnit(${WK}); return u?{...u,open:null,prev:null,up:true}:null; };`); F('renderSp')();
           const box=d.querySelector(`${SP_SG}[data-sp-game="${SID}"]`), TN=F('TEAM_NAMES');
           chk(!!box,`M16: the made-up Sunday slot (${SID}) is not drawn with its set`);
-          for(const [id] of SPEC_AUD.filter(([id])=>id!=='xtrm')){ const g=WANT[id], c=box&&box.querySelector(`.pb-tier.${id}`), tg=c?[...c.querySelectorAll('.pb-th .pb-tgame')]:[];
+          for(const [id] of SPEC_AUD){ const g=WANT[id], c=box&&box.querySelector(`.pb-tier.${id}`), tg=c?[...c.querySelectorAll('.pb-th .pb-tgame')]:[];
             chk(tg.length===1&&tg[0].dataset.pbTgame===g.id,`M16: the slot's ${id} card does not name its game, ${g.id}: ${tg.map(x=>x.dataset.pbTgame).join(', ')||'none'}`);
             W.wording(!!tg[0]&&tg[0].textContent===`${TN[g.a]||g.a} at ${TN[g.h]||g.h} · ${etAud(kickAud(g))}`,`M16: the slot's ${id} card names its game "${tg[0]?tg[0].textContent:''}"`); } }
         finally { slotPut(keepN); stab.hidden=keepTab; F('renderSp')(); } }
@@ -5499,7 +5498,7 @@ setTimeout(async()=>{
             { const rows=F('getPbTop')().rows, li=[...panel.querySelectorAll('ol.pb-top > li.pb-trow')]; any=rows.some(l=>l.src==='dkline'); n++;
               chk(li.length===rows.length&&rows.every((l,i)=>!!li[i].querySelector('.pb-tc i.est')===(l.src==='dkline')),`${lab}: the Top 30 lines do not mark est. exactly their ${rows.filter(l=>l.src==='dkline').length} lines priced from DraftKings' line`); }
             for(const {g} of (r.sets||[])){ const v=F('spShown')(g), box=d.querySelector(`#spPanel [data-sp-game="${g.id}"]`);
-              for(const t of (v.tiers||[])){ if(!t||!t.legs||t.id==='xtrm') continue; const c=box&&box.querySelector(`.pb-tier.${t.id}`), li=c?[...c.querySelectorAll('.pb-legs li')]:[], nd=t.legs.filter(l=>l.src==='dkline').length; n++;
+              for(const t of (v.tiers||[])){ if(!t||!t.legs) continue; const c=box&&box.querySelector(`.pb-tier.${t.id}`), li=c?[...c.querySelectorAll('.pb-legs li')]:[], nd=t.legs.filter(l=>l.src==='dkline').length; n++;
                 chk(li.length===t.legs.length&&t.legs.every((l,i)=>!!li[i].querySelector('.pr i.est')===(l.src==='dkline'))&&!!c&&c.querySelector('.pb-nums').children[1].querySelector('span').textContent===(nd?'price, est.':'price'),
                   `${lab}: ${g.id}'s ${t.id} card does not mark est. exactly its ${nd} legs priced from DraftKings' line, or its price "${nd?'price, est.':'price'}"`);
                 W.wording(!!c&&!!c.querySelector('.pb-espnline')===nd>0,`${lab}: ${g.id}'s ${t.id} card's line on legs priced from DraftKings' line is ${nd?'missing':'there with none'}`); } }

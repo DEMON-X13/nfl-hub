@@ -10,8 +10,8 @@ The tab is three sections, each a <details> open to start whose summary is its h
 the suggestions record's maps, prime and slot, each unit and level once, the backtest's weeks counted as ever), then
 Day games (the Sunday slot's set), then Night games; the two set sections carry no record of their own. A section a
 visitor folds stays folded through every redraw of that page load (`SP_FOLD`, outside S, never saved). Extreme is
-taken off the tab, not out of the engine: `SP_SHOW` is the levels drawn (Safe, Medium, Aggressive), so a set's cards
-and its Elo picks draw no Extreme card and the record counts no Extreme level, while the props job still takes, locks
+taken off the tab, not out of the engine: its cards (a set's and its Elo picks') are hidden by the stylesheet, three
+levels to a row on a wide screen, and the record counts no Extreme level (`SP_SHOW`, Safe, Medium and Aggressive), while the props job still takes, locks
 and grades all four, so the ledger's shape and its guard are untouched. On a Sunday from 4:00 pm Eastern (`spDayOff`,
 through Intl's America/New_York) the Day games section is not drawn; Monday morning it is back with next week's wait.
 """
@@ -31,7 +31,6 @@ sub1('p3', "const SP_SEC={night:{maps:['prime'],name:'Night games'},slot:{maps:[
      "const SP_SEC={night:{maps:['prime'],name:'Night games'},slot:{maps:['slot'],name:'Day games'},all:{maps:['prime','slot'],name:'Record'}};\n"
      "/* (app v132) the levels the tab draws and counts: Extreme off the tab (the job still takes and grades it) */\n"
      "const SP_SHOW=['safe','med','aggr'];\n"
-     "const spShowT=list=>Array.isArray(list)?list.filter(t=>t&&SP_SHOW.includes(String(t.id).replace(/^elo-/,''))):list;\n"
      "/* the sections a visitor folded this page load */\n"
      "const SP_FOLD=new Set();\n"
      "/* (app v132) Day games off on a Sunday from 4pm Eastern */\n"
@@ -50,10 +49,6 @@ sub1('p3', "const spSecHtml=(sec,body)=>`<section class=\"sp-sec\" data-sp-sec=\
 sub1('p3', "function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on))+spSecHtml('slot',spSlotHtml(on)); }",
      "function spSetsHtml(on){ return spSecHtml('all','')+(spDayOff()?'':spSecHtml('slot',spSlotHtml(on)))+spSecHtml('night',spNightHtml(on)); }",
      'spSetsHtml: record, Day games, Night games')
-sub1('p3', "<div class=\"pb-tiers\" data-sp-kind=\"model\">${v.tiers.map(",
-     "<div class=\"pb-tiers\" data-sp-kind=\"model\">${spShowT(v.tiers).map(", 'spGameHtml: no Extreme card')
-sub1('p3', "<div class=\"pb-tiers\" data-sp-kind=\"elo\">${v.elo.map(",
-     "<div class=\"pb-tiers\" data-sp-kind=\"elo\">${spShowT(v.elo).map(", 'spGameHtml: no Extreme Elo pick')
 sub1('p3', "Object.assign(window,{spPrime,", "Object.assign(window,{spDayOff,SP_SHOW,spPrime,", 'window')
 sub1('p1', ".sp-sech{margin:0;",
      ".sp-sum{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;list-style:none}\n"
@@ -61,6 +56,11 @@ sub1('p1', ".sp-sech{margin:0;",
      ".sp-sum::before{content:'\\25BE';font-size:14px;color:var(--ink-2);transition:transform .15s}\n"
      "details.sp-sec:not([open])>.sp-sum::before{transform:rotate(-90deg)}\n"
      ".sp-sech{margin:0;", 'part1: the fold styles')
+sub1('p1', "@media(max-width:640px){ .card.pb{padding:16px 14px}",
+     "/* (app v132) Extreme off Suggested Parlays: its cards hidden, three levels to a row on a wide screen */\n"
+     "#spSets .pb-tier.xtrm,#spSets .pb-tier.elo-xtrm{display:none}\n"
+     "@media(min-width:1101px){ #spSets .pb-tiers{grid-template-columns:repeat(3,minmax(0,1fr))} }\n"
+     "@media(max-width:640px){ .card.pb{padding:16px 14px}", 'part1: Extreme hidden')
 for k, f in FILES.items():
     io.open(f, 'w', encoding='utf-8').write(T[k])
 print('patched: app v132, the record on its own, Day games first, folding, no Extreme, Day games off Sunday 4pm')

@@ -2071,8 +2071,9 @@ above night games, make the sections able to minimize. when its after 4PM please
 games come up on Sundays"). The paragraph above is history: Suggested Parlays is three `<details class="sp-sec">`, open
 to start, each folding under its `summary.sp-sum` heading (a fold kept through redraws for the page load, `SP_FOLD`, never
 saved): Record (`SP_SEC.all`, both maps, the one `.sp-rec`), Day games (the Sunday slot) and Night games, the two set
-sections with no record. Extreme is off the tab only (`SP_SHOW`, `spShowT`: no Extreme card or Elo pick drawn, no Extreme
-pill counted); the props job still takes, locks and grades all four levels, so the ledger and its guard are unchanged. On
+sections with no record. Extreme is off the tab only: its cards, a set's and its Elo picks', are hidden by the stylesheet
+(`#spSets .pb-tier.xtrm,#spSets .pb-tier.elo-xtrm{display:none}`, three levels to a row on a wide screen) and the record
+counts no Extreme level (`SP_SHOW`); the props job still takes, locks and grades all four levels, so the ledger and its guard are unchanged. On
 a Sunday from 4:00 pm Eastern (`spDayOff`, Intl's America/New_York) Day games is not drawn. The audit (`dayOffAud`,
 `spPartsAud`, P2's `SEC_MAP.all`), the nflbets smoke (`dayOffOwn`, `PB_SHOWN_OWN`, `REC_SEC.all`) and `smoke_live.js`
 (`slotHeldL`) hold it, each reading 4pm on its own.

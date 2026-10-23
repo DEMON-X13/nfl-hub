@@ -484,8 +484,6 @@ const pbOwnTxt = panel => { if (!panel) return ''; const c = panel.cloneNode(tru
    and a time as the tab says it, US Eastern ("Sun 6:20 PM ET") */
 const PRIME_NIGHT = { 4: 'Thursday night', 0: 'Sunday night', 1: 'Monday night' };
 const PB_TIERS_OWN = ['safe', 'med', 'aggr', 'xtrm'];
-/* (app v132) the levels Suggested Parlays draws: Extreme off the tab, still built, locked and graded */
-const PB_SHOWN_OWN = ['safe', 'med', 'aggr'];
 /* (app v113) the Parlay Builder's list is the Top 50 lines (the owner, 17 October 2026: "in parlay builder only do top
    50 now instead of 100"; the Top 30 since app v116, 18 October 2026: "its only showing top 30, but honestly top 30 is
    enough if you want to set it at that"), and of the stats the page projects only those DraftKings posts are offered as a bet ("i
@@ -1728,7 +1726,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         { const none = el.querySelector(':scope > [data-sp-elo-none]'); if (none && txt(none) !== 'Elo picks not published in time.') bad.push(`its line on the Elo picks not published in time reads "${txt(none)}"`); }
         for (const [k, pre] of [['model', ''], ['elo', 'elo-']]) { const box = el.querySelector(`:scope > .pb-tiers[data-sp-kind="${k}"]`); if (!box) continue;
           const cards = [...box.children], ids = cards.map(c => c.dataset.pbTier || (c.classList.contains('none') ? c.className.split(' ')[1] : '?'));
-          if (ids.join() !== PB_SHOWN_OWN.map(id => pre + id).join() || cards.some(c => !c.matches('.pb-tier'))) bad.push(`its ${k} levels are ${ids.join(', ')}`);
+          if (ids.join() !== PB_TIERS_OWN.map(id => pre + id).join() || cards.some(c => !c.matches('.pb-tier'))) bad.push(`its ${k} levels are ${ids.join(', ')}`);
           for (const c of cards) { const id = c.dataset.pbTier; if (!id) continue;
             const ab = c.querySelector(`[data-sp-add="${u.id}:${id}"]`), fb = c.querySelector(`[data-pc-finish="sp|${u.id}:${id}"]`), legs = [...c.querySelectorAll('.pb-legs li')], adds = c.querySelectorAll('.pb-legs [data-pb-leg]').length, label = txt(c.querySelector('.pb-tn'));
             if (under ? ab || fb || c.querySelector('.pb-acts') || adds : !ab || !fb || adds !== legs.length || !(ab.getAttribute('aria-label') || '').includes(`the ${label} ${k === 'elo' ? 'Elo pick' : 'parlay'} for ${unitWhat(u)}`) || fb.getAttribute('aria-label') !== `Finish the ${label} ${k === 'elo' ? 'Elo pick' : 'parlay'} for ${unitWhat(u)}`)
@@ -1919,8 +1917,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const x = g.slot ? (G.find(y => y.id === t.legs[0].gid) || g) : g;
         chk(t.legs.every(l => l.gid === x.id), `${lab}, ${g.id}: the ${t.id} level is not one game's legs: ` + t.legs.map(l => l.gid).join(', '));
         tierHeld(`${lab}, ${g.id}`, x, t, vis ? (c || null) : null);
-        if (vis && !c && t.id !== 'xtrm') chk(false, `${lab}, ${g.id}: the ${t.id} level is not drawn`);
-        if (t.id === 'xtrm' && c) chk(false, `${lab}, ${g.id}: the Extreme level is drawn`); });
+        if (vis && !c) chk(false, `${lab}, ${g.id}: the ${t.id} level is not drawn`); });
       /* (app v118) its Elo picks, live: the ELO tab's rule on its games alone (app v121: the slot's on each of its games
          alone, each level the best of theirs), drawn as the page's spEloSet has them */
       if (vis) { const e = w.eval('spEloSet')(g.id), eu = typeof w.eloUnit === 'function' ? w.eloUnit(G.map(x => x.id), { where: `in ${unitWhere(g)}`, perGame: !!g.slot }) : null;
@@ -1934,8 +1931,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const eloCardsHeld = (lab, u, T, el, under) => { const box = el && el.querySelector(':scope > .pb-tiers[data-sp-kind="elo"]'), bad = [], pc = v => (v * 100).toFixed(0) + '%', P = JSON.parse(ELO_P).players || {};
       if (!Array.isArray(T)) return; if (!box) { chk(false, `${lab}, ${u.id}: the unit's Elo picks are not drawn`); return; }
       const ruleOf = t => t.likeliest || !t.floor ? (t.n === 2 ? 'the likeliest pair' : `the likeliest ${t.n} legs`) : `${Math.round(t.floor * 100)}%+ by Elo`;
-      if (box.querySelector(':scope > .pb-tier.elo-xtrm')) bad.push('elo-xtrm drawn');
-      for (const t of T.filter(t => t.id !== 'elo-xtrm')) { const c = box.querySelector(`:scope > .pb-tier.${t.id}`); if (!c) { bad.push(`${t.id} not drawn`); continue; }
+      for (const t of T) { const c = box.querySelector(`:scope > .pb-tier.${t.id}`); if (!c) { bad.push(`${t.id} not drawn`); continue; }
         if (!t.legs || !t.legs.length) { if (!c.classList.contains('none') || txt(c.querySelector('.pb-why')) !== t.why || c.querySelector('.pb-tgame')) bad.push(`${t.id} is empty and does not say why: ${txt(c)}`); continue; }
         /* (app v121) the slot's Elo picks are each one game's, the card naming it; a night game's names none */
         { const gx = u.slot ? unitGames(u).find(x => x.id === t.legs[0].gid) : null;
@@ -2169,7 +2165,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             if (sec === 'night' && (!rest.length || (rest.some(x => x.matches('p')) && rest.length !== 1))) bad.push(`the night games' part is ${rest.map(x => x.tagName + '.' + x.className).join(', ') || 'nothing'}, not their units or one line`);
             if (sec === 'slot' && rest.length !== 1) bad.push(`the Sunday slot's part is ${rest.map(x => x.tagName + '.' + x.className).join(', ') || 'nothing'}, not its unit or its one line`); }
           chk(!bad.length, 'Suggested Parlays is not the sections Record, Day games and Night games, each folding under its heading, the one record in Record and each set section its units or one line: ' + bad.join('; '));
-          chk(!d.querySelector('#spSets .pb-tier.xtrm, #spSets .pb-tier.elo-xtrm, #spSets [data-sp-add$=":xtrm"], #spSets [data-sp-add$=":elo-xtrm"], #spSets [data-sp-rec*="xtrm"]'), 'Suggested Parlays still draws an Extreme level'); }
+          /* (app v132) Extreme hidden by the stylesheet (jsdom lays nothing out, so the rule itself), and no Extreme pill */
+          chk([...d.querySelectorAll('style')].some(x => x.textContent.includes('#spSets .pb-tier.xtrm,#spSets .pb-tier.elo-xtrm{display:none}')) && !d.querySelector('#spSets [data-sp-rec*="xtrm"]'), 'Suggested Parlays does not hide its Extreme cards, or counts an Extreme level in its record'); }
         /* the card's switch, on cards of the smoke's own (pbTierCard, as the page's callers call it): a level holding
            a leg that is not a Value pick and the game's total, and a leg priced from DraftKings' line read on ESPN, with
            a player ruled out after the lock. Drawn without quiet (as the retired Elo picks' section drew theirs until app
@@ -2372,7 +2369,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       let spGame = primeHere().filter(g => onNow.includes(g.id)).find(has3) || null, spStood = false;
       if (!spGame) { spGame = primeHere().find(has3) || null;
         if (spGame) { standOn(true); spStood = true; console.log(`  (${spGame.id}'s set is not on the tab by the night rule now (${onNow.join(', ') || 'none shown'}): spOn stood in for the checks of a set's Add, the Bet amount, Add to builder and Finish)`); } }
-      const t = spGame ? w.eval('spSet')(spGame.id).tiers.filter(x => x.legs && x.id !== 'xtrm').slice(-1)[0] : null, fid = t ? `${spGame.id}:${t.id}` : null;
+      const t = spGame ? w.eval('spSet')(spGame.id).tiers.filter(x => x.legs).slice(-1)[0] : null, fid = t ? `${spGame.id}:${t.id}` : null;
       chk(!!t, `with made-up lines on every starter no prime-time game's set has a level of three legs or more (${builtSp} levels built)`);
       /* a leg's own Add in a set, as on the list: that one leg, by the builder's own path */
       if (t) { const keepP = w.eval('JSON.stringify(S.parlay)'); w.eval('S.parlay={}; save(); renderParlay()'); await wait(30);
@@ -3150,7 +3147,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const TE = (id, label, n, floor, lp, extra) => { const legs = lp.map(([l, pe]) => outE(l, pe)), p0 = lp.reduce((a, [, pe]) => a * pe, 1), d0 = lp.reduce((a, [l]) => a * (l.price > 0 ? 1 + l.price / 100 : 1 + 100 / -l.price), 1);
         return { id, label, n, floor, legs, p: Math.round(p0 * 1e4) / 1e4, fair: 0.3, fair_est: false, dec: Math.round(d0 * 1e3) / 1e3, likeliest: false, thin: 0, mkt: 0, ...(extra || {}) }; };
       const TW = (id, label, n, floor, why, extra) => ({ id, label, n, floor, why, ...(extra || {}) });
-      const eloKeptDrawn = list => list.filter(t => t.id !== 'elo-xtrm').map(t => { if (!t.legs) return `${t.id} none: ${t.why}`; const e = SPHx.eloSumsOwn(t.legs.map(l => ({ ...l, key: `${l.gid}|${l.pid}|${l.stat}` })));
+      const eloKeptDrawn = list => list.map(t => { if (!t.legs) return `${t.id} none: ${t.why}`; const e = SPHx.eloSumsOwn(t.legs.map(l => ({ ...l, key: `${l.gid}|${l.pid}|${l.stat}` })));
         return `${t.id}: ` + t.legs.map(l => `${l.name} ${l.label} ${pc(l.pe)}`).sort().join(' + ') + ` | ${pc(t.fair)} | Elo says ${pc(e.p)} | ${mlOwn(e.d)}`; }).join(' / ');
       const ELO_KEPT = [TE('elo-safe', 'Safe', 2, 0.35, [[wr3, 0.55], [qb1, 0.66]]), TE('elo-med', 'Medium', 3, 0.25, [[wr1, 0.61], [rb1, 0.6], [byTag('P20-WR4'), 0.52]]),
         TW('elo-aggr', 'Aggressive', 4, 0.12, 'Only 3 players in this game qualify: this level takes 4.'), TW('elo-xtrm', 'Extreme', 5, 0.05, 'Only 3 players in this game qualify: this level takes 5.')];
@@ -6249,7 +6246,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(NA.on.some(x => x.id === g.id) && A.w.eval('spOn()').some(x => x.id === g.id), `at ${g.id}'s lock the night rule (${NA.on.map(x => x.id).join(', ') || 'none'}) or the page (${A.w.eval('spOn()').map(x => x.id).join(', ') || 'none'}) does not set it out`); }
       chk(!A.timedOut && A.errs.length === 0 && phase(A.d) === 'own' && !!setA && !!vA && !!vA.games && !!vA.games[g.id] && vA.games[g.id].own === true && vA.games[g.id].kickoff === isoS(etKick(g)) && !JSON.stringify(A.w.eval('S')).includes(KK),
         `at ${g.id}'s lock with no record, the page did not build its set once and keep it in this browser outside S: ${phase(A.d)} ${keptA ? keptA.slice(0, 120) : 'nothing kept'}`);
-      chk(!!eloA && eloA.split(' / ').length === 3 && vA && vA.games && vA.games[g.id] && vA.games[g.id].eloOwn === true && Array.isArray(vA.games[g.id].elo) && vA.games[g.id].elo.map(t => t.id).join() === PB_TIERS_OWN.map(x => 'elo-' + x).join() && eloLine(A.d) === null,
+      chk(!!eloA && eloA.split(' / ').length === 4 && vA && vA.games && vA.games[g.id] && vA.games[g.id].eloOwn === true && Array.isArray(vA.games[g.id].elo) && vA.games[g.id].elo.map(t => t.id).join() === PB_TIERS_OWN.map(x => 'elo-' + x).join() && eloLine(A.d) === null,
         `at ${g.id}'s lock with no record, the page did not build its Elo picks once and keep them beside its own set (no line: the whole set is the browser's): ${eloA} / ${JSON.stringify(vA && vA.games && vA.games[g.id] && { eloOwn: vA.games[g.id].eloOwn, elo: (vA.games[g.id].elo || []).map(t => t.id) })}`);
       A.w.close();
       if (keptA) {

@@ -2352,12 +2352,12 @@ const ladderBoot = async (x, seeded, how) => {
            games', since app v129 its only section) is hidden */
         { const tierId = c => c.dataset.pbTier || [...c.classList].find(k => k !== 'pb-tier' && k !== 'none');
           const parts = set() ? [...set().children].filter(x => x.matches('h5.sp-sub, div.pb-tiers')).map(x => `${x.tagName.toLowerCase()}:${x.dataset.spKind}:${x.tagName === 'H5' ? txt(x) : [...x.children].filter(c => c.matches('.pb-tier')).map(tierId).join('+')}`).join(' / ') : '';
-          const wantParts = 'h5:model:Model parlays / div:model:safe+med+aggr / h5:elo:Elo picks / div:elo:elo-safe+elo-med+elo-aggr';
+          const wantParts = 'h5:model:Model parlays / div:model:safe+med+aggr+xtrm / h5:elo:Elo picks / div:elo:elo-safe+elo-med+elo-aggr+elo-xtrm';
           const E = k => set() && set().querySelector(`.pb-tiers[data-sp-kind="elo"] > .pb-tier.${k}`);
           chk(parts === wantParts, `${how}: the unit does not draw its model parlays and then its Elo picks, each under its own heading: ${parts}`);
           chk(!!E('elo-safe') && E('elo-safe').querySelectorAll('[data-pb-leg]').length === 2 && !!E('elo-safe').querySelector(`[data-sp-add="${g2.id}:elo-safe"]`)
             && /^Finish$/.test(txt(E('elo-safe').querySelector(`[data-pc-finish="sp|${g2.id}:elo-safe"]`)))
-            && ELO_EMPTY.filter(([id]) => id !== 'xtrm').every(([id, , n]) => !!E('elo-' + id) && txt(E('elo-' + id).querySelector('.pb-why')) === eloWhy('in this game', n) && !E('elo-' + id).querySelector('[data-sp-add], [data-pc-finish], [data-pb-leg]')),
+            && ELO_EMPTY.every(([id, , n]) => !!E('elo-' + id) && txt(E('elo-' + id).querySelector('.pb-why')) === eloWhy('in this game', n) && !E('elo-' + id).querySelector('[data-sp-add], [data-pc-finish], [data-pb-leg]')),
             `${how}: the unit's Elo Safe has not its two legs' Adds, an Add to builder and a Finish named sp|${g2.id}:elo-safe, or an empty Elo level does not say why in this game, or offers a button: ` + (set() ? txt(set().querySelector('.pb-tiers[data-sp-kind="elo"]')).slice(0, 300) : 'no set'));
           chk(!d.getElementById('pbElo') && !d.querySelector('[data-pb-elo-add], [data-pc-finish^="elo|"], [data-pb-elo-wait], #spSets [data-sp-elo-wait]'),
             `${how}: something of the Elo picks' old section is still on the page (#pbElo, its Add, its "elo|" Finish or its wait line), or the unit waits on the Elo ratings it was handed`);
