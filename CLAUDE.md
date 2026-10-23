@@ -2057,6 +2057,14 @@ slot's own and no chip, blocking; the nflbets smoke (`recOwn` over both maps, `r
 anywhere, on the real files and made-up pairs) and `smoke_live.js` (its Thursday fixture's slot the one section's last
 part, `slotHeldL`, and the one record, two rows saying none is graded yet) the same.
 
+**Day games** (app v131, `patch_day_games.py`, the owner's call of 23 October 2026: "can you make this bottom section be
+Day Games and include a record up to this point?"). The paragraph above is history: Suggested Parlays is two sections
+again, Night games (`SP_SEC.night`, the record's `prime` map alone) and Day games (`SP_SEC.slot`, `data-sp-sec="slot"`,
+the Sunday slot's set under its own record of the `slot` map, the backtest's slot weeks counted as ever; with the season
+over it says "Regular season over." itself). The slot's set keeps its "Sunday slot" pill. The audit (`SPD`, `spPartsAud`,
+P2's `SEC_MAP` and its hand record, app v128's), the nflbets smoke (`SEC_SLOT`, `recHeld` a section at a time) and
+`smoke_live.js` (`slotHeldL`) hold the two sections and their records.
+
 **Value picks** (app v112, `patch_suggested_night.py`, the owner's call of 17 October 2026, after app v111's tags:
 first "i don't really understand what the no edge and thin edge tags are", then "can we do reverse tags? like get rid
 of thin edge and no edge and come up with a name for that first section?"). The marks are reversed. A leg `pbPool`
