@@ -19,7 +19,7 @@
   "before": "no verdict before 285: until then the summary gives the running numbers and how many of the 285 are in, never a verdict or a word of passing"
  },
  "bar_registered": "2026-10-11T02:01:51Z",
- "run_at": "2026-10-22T22:40:43Z",
+ "run_at": "2026-10-23T01:50:05Z",
  "fits": {
   "2026": {
    "b0": 1.294144,
@@ -31,8 +31,8 @@
  "decision": null,
  "summary": {
   "calls": 56,
-  "to_come": 28,
-  "frozen_awaiting_final": 0,
+  "to_come": 27,
+  "frozen_awaiting_final": 1,
   "graded": 28,
   "pushes": 0,
   "graded_without_market_price": 0,
@@ -927,8 +927,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-10-22T13:57:36Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-10-23T01:50:05Z",
    "final": null
   },
   "2026_07_PIT_NO": {
@@ -1444,18 +1444,18 @@
    "away": "LAC",
    "home": "LA",
    "kickoff": "2026-11-01T21:05:00Z",
-   "line": 46.5,
+   "line": 45.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.526741,
+   "p_model": 0.519194,
    "p_market": 0.5,
-   "mu": 47.385,
+   "mu": 46.135,
    "sd": 13.1937,
    "model_total": 42.9599,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-20T20:48:33Z",
+   "called_at": "2026-10-23T01:50:05Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
