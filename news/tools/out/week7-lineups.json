@@ -316,7 +316,7 @@
   },
   "NO": {
    "kick": "2026-10-25T13:30Z",
-   "built_at": "2026-10-22T08:30:53.454Z",
+   "built_at": "2026-10-23T15:56:20.446Z",
    "units": {
     "qb": [
      {
@@ -357,8 +357,7 @@
      {
       "id": "00-0033906",
       "n": "Alvin Kamara",
-      "pos": "RB",
-      "q": "questionable: back"
+      "pos": "RB"
      },
      {
       "id": "00-0038551",
@@ -2633,7 +2632,7 @@
   },
   "SEA": {
    "kick": "2026-10-26T00:20Z",
-   "built_at": "2026-10-23T11:53:34.016Z",
+   "built_at": "2026-10-23T15:56:20.446Z",
    "units": {
     "qb": [
      {
@@ -2676,9 +2675,10 @@
       "pos": "RB"
      },
      {
-      "id": "00-0039299",
-      "n": "George Holani",
-      "pos": "RB"
+      "id": "00-0039165",
+      "n": "Zach Charbonnet",
+      "pos": "RB",
+      "q": "questionable: knee"
      }
     ],
     "rec": [

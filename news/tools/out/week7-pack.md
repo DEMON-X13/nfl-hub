@@ -44,7 +44,7 @@ New England Patriots, injuries:
 New England Patriots, ESPN headlines:
 
 Chicago Bears, injuries:
-- Anthony Johnson Jr. (S) Out, Undisclosed: out
+- Anthony Johnson Jr. (S) Injured Reserve, Undisclosed: ir
 - Rome Odunze (WR) Active: Odunze brought in four of five targets for 69 yards in the Bears' 30-24 win over the Patriots on Thursday.
 - Colston Loveland (TE) Active: Loveland secured seven of 12 targets for 69 yards and a touchdown during the Bears' 30-24 win over the Patriots on Thursday.
 - Cairo Santos (PK) Active: Santos went 3-for-4 on field-goal tries and made all three of his extra-point attempts in Thursday's 30-24 win over New England.
@@ -83,17 +83,17 @@ Searches to run:
 - "NFL week 7 picks PIT NO"
 
 Pittsburgh Steelers, injuries:
+- T.J. Watt (LB) Active: Watt (calf) practiced fully Friday and doesn't carry an injury designation into Sunday's game against the Saints.
+- Alex Highsmith (LB) Active
+- Jalen Ramsey (CB) Active
+- Rico Dowdle (RB) Questionable, Knee: Dowdle (knee) is listed as questionable for Sunday's game against the Saints in Paris, Alan Saunders of SteelersNow.com reports.
 - Brandin Echols (CB) Out, Hamstring: Echols (hamstring) has been ruled out for Sunday's matchup with the Saints, Mike DeFabo of The Athletic reports.
 - Sebastian Joseph-Day (DT) Injured Reserve, Triceps: Joseph-Day (triceps) was placed on injured reserve by the Steelers on Thursday, Teresa Varley of the team's official website reports.
 - Ben Skowronek (WR) Out, Calf: The Steelers have ruled Skowronek (calf) out for Sunday's matchup against the Saints, Mike DeFabo of The Athletic reports.
-- T.J. Watt (LB) Questionable, Calf: Watt (calf) was added to the Steelers' injury report as a limited participant Thursday, Mike DeFabo of The Athletic reports.
-- Rico Dowdle (RB) Questionable, Knee: Dowdle (knee) was listed as a limited participant on Thursday's injury report, Alan Saunders of SteelersNow.com reports.
 - DeShon Elliott (S) Injured Reserve, Knee: Elliott (knee) was a full participant in Wednesday's practice, Teresa Varley of the Steelers' official site reports.
-- Alex Highsmith (LB) Questionable, Groin: questionable
 - Jaquan Brisker (S) Active: Brisker posted seven tackles (four solo) during the Steelers' 26-19 overtime win over the Buccaneers on Sunday.
 - Payton Wilson (LB) Active: Wilson recorded 11 tackles (seven solo) during Sunday's 26-19 overtime win over the Buccaneers.
 - Nick Herbig (LB) Active: Herbig recorded six solo tackles, including 2.0 sacks, during the Steelers' 26-19 overtime win over the Buccaneers on Sunday.
-- Jalen Ramsey (CB) Questionable, Wrist: Ramsey tallied 10 tackles (nine solo), including 2.0 sacks, during the Steelers' 26-19 overtime win over the Buccaneers on Sunday.
 - Chris Boswell (PK) Active: Boswell went 4-for-5 on field-goal attempts while making both of his extra-point tries during Sunday's 26-19 overtime win against Tampa Bay.
 - Drew Allar (QB) Active
 - Eli Heidenreich (RB) Active
@@ -112,16 +112,16 @@ Pittsburgh Steelers, injuries:
 Pittsburgh Steelers, ESPN headlines:
 
 New Orleans Saints, injuries:
+- Anfernee Jennings (LB) Active
+- Kaden Elliss (LB) Active
+- Nathan Shepherd (DT) Questionable, Achilles: questionable
+- Alvin Kamara (RB) Active: Kamara (back) was limited at Friday's practice but does not have an injury designation for Week 7, Katherine Terrell of ESPN.com reports.
 - CJ Donaldson (RB) Active: Donaldson (shoulder) practiced without limitations Thursday.
-- Alvin Kamara (RB) Questionable, Back: Kamara (back) practiced in a limited capacity Thursday, Katherine Terrell of ESPN.com reports.
 - Quincy Riley (CB) Active: Riley (neck) was a full participant in practice Wednesday.
 - Kool-Aid McKinstry (CB) Active: McKinstry (illness) was a full participant at the Saints' practice Wednesday, Mike Triplett of NewOrleans.Football reports.
-- Kaden Elliss (LB) Questionable, Calf: Elliss (calf) was a limited participant at practice Wednesday.
-- Nathan Shepherd (DT) Active: Shepherd (illness) was a full participant in Wednesday's practice, Ross Jackson of WWL Louisiana reports.
 - Jordyn Tyson (WR) Injured Reserve, Hamstring: Saints general manager Mickey Loomis said Tuesday that Tyson (hamstring) is "getting closer" but won't practice this week, Ross Jackson of WWL Louisiana reports.
 - Pete Werner (LB) Active: Werner recorded 11 total tackles (five solo), including 1.0 sacks, while also adding a pass defensed during Sunday's 34-27 win over the Giants.
 - Martin Emerson Jr. (CB) Active: Emerson recorded seven solo tackles and four passes defensed, including two interceptions, during Sunday's 34-27 win over the Giants.
-- Anfernee Jennings (LB) Questionable, Knee: questionable
 - Daniel Carlson (PK) Active: Carlson made two of his three field-goal attempts and all four PATs in the Saints' 34-27 win over the Giants on Sunday.
 - Cesar Ruiz (G) Questionable, Knee: Ruiz (knee) made the trip to Paris ahead of the Saints' game against the Steelers in Week 7, Nick Underhill of NewOrleans.Football reports.
 - Devaughn Vele (WR) Active: Vele caught three of six targets for 42 yards during the Saints' 34-27 win over the Giants on Sunday.
@@ -355,9 +355,9 @@ Searches to run:
 - "NFL week 7 picks MIA NYJ"
 
 Miami Dolphins, injuries:
+- Jaylen Wright (RB) Questionable, Foot: Dolphins coach Jeff Hafley said Friday that Wright (foot) will play in Sunday's game against the Jets, Barry Jackson of the Miami Herald reports.
+- Caleb Douglas (WR) Questionable, Ankle: Dolphins coach Jeff Hafley said Friday that Douglas (ankle) will play Sunday against the Jets, C. Isaiah Smalls II of the Miami Herald reports.
 - Will Kacmarek (TE) Questionable, Hamstring: Kacmarek (hamstring) was limited in Thursday's practice, but he said he expects to play Sunday versus the Jets, Joe Schad of The Palm Beach Post reports.
-- Jaylen Wright (RB) Questionable, Foot: Wright (foot) remained limited at Thursday's practice, Marce Louis-Jacques of ESPN.com reports.
-- Caleb Douglas (WR) Questionable, Ankle: Douglas (ankle) was a limited participant in Thursday's practice, Marcel Louis-Jacques of ESPN.com reports.
 - Willie Gay Jr. (LB) Questionable, Illness: questionable
 - Jonah Savaiinaea (G) Active: Savaiinaea (ankle) was a full participant in Wednesday's practice, David Furones of the South Florida Sun Sentinel reports.
 - Kyle Louis (LB) Injured Reserve, Knee: The Dolphins opened the 21-day practice window for Louis (knee) on Wednesday, Marcel Louis-Jacques of ESPN.com reports.
@@ -384,13 +384,13 @@ Miami Dolphins, injuries:
 Miami Dolphins, ESPN headlines:
 
 New York Jets, injuries:
-- Max Mitchell (OT) Questionable, Concussion: Mitchell (concussion) did not participate at the Jets' practice Thursday.
+- Adonai Mitchell (WR) Questionable, Finger: Jets coach Aaron Glenn said Friday that Mitchell (finger) will play Sunday against the Dolphins, Brian Costello of the New York Post reports.
+- Breece Hall (RB) Questionable, Quadriceps: Hall (quadriceps) is listed as questionable for Sunday's game against the Dolphins, Brian Costello of the New York Post reports.
+- Joseph Ossai (DE) Out, Ankle: out
+- Kiko Mauigoa (LB) Out, Quadriceps: out
+- Max Mitchell (OT) Out, Concussion: Mitchell (concussion) did not participate at the Jets' practice Thursday.
 - Kene Nwangwu (RB) Questionable, Knee: Nwangwu (knee) did not participate at practice Thursday.
-- Adonai Mitchell (WR) Questionable, Finger: Mitchell (finger) was a limited participant in Thursday's practice.
-- Breece Hall (RB) Questionable, Quadriceps: Hall (quadriceps) was a limited participant at Thursday's practice.
-- Kiko Mauigoa (LB) Doubtful, Quadriceps: Mauigoa (thigh) didn't practice Wednesday, and the Jets are viewing him as week-to-week, Rich Cimini of ESPN.com reports.
 - Dylan Parham (G) Questionable, Knee: Parham (knee) was a limited participant in Wednesday's practice.
-- Joseph Ossai (DE) Doubtful, Ankle: Ossai (ankle) was listed as a non-participant in Wednesday's practice.
 - T'Vondre Sweat (DT) Questionable, Elbow: questionable
 - Will McDonald IV (DE) Questionable, Toe: questionable
 - Jamien Sherwood (LB) Active: Sherwood recorded 11 tackles (six solo), a forced fumble and a fumble recovery during Sunday's 26-19 loss at New England.
@@ -423,13 +423,13 @@ Searches to run:
 - "NFL week 7 picks TB CAR"
 
 Tampa Bay Buccaneers, injuries:
+- Bucky Irving (RB) Questionable, Illness: Irving (illness) is practicing Friday, Pewter Report reports.
+- Emeka Egbuka (WR) Questionable, Concussion: Egbuka (concussion/foot) is practicing Friday, Greg Auman of Fox Sports reports.
 - Christian Rozeboom (LB) Injured Reserve, Finger: Rozeboom (finger) was placed on injured reserve by the Buccaneers on Thursday, Scott Smith of the team's official website reports.
 - Luke Goedeke (OT) Questionable, Calf: Goedeke (calf) did not participate at practice Thursday.
 - David Sills V (WR) Active: Sills (hamstring) was activated from injured reserve by the Buccaneers on Thursday, Scott Smith of the team's official website reports.
 - Zyon McCollum (CB) Questionable, Illness: McCollum (illness) was a limited participant at the Buccaneers' practice Thursday.
 - Baker Mayfield (QB) Questionable, Thumb: Mayfield (right thumb) practiced fully Thursday.
-- Emeka Egbuka (WR) Questionable, Concussion: Egbuka (concussion/foot) was deemed a non-participant at Thursday's practice, Scott Smith of the Buccaneers' official site reports.
-- Bucky Irving (RB) Questionable, Illness: Irving (illness) was a limited participant in Thursday's practice.
 - Calijah Kancey (DT) Active
 - Antoine Winfield Jr. (S) Questionable, Ribs: Winfield (ribs) was a limited participant at practice Wednesday.
 - Sean Tucker (RB) Active: Tucker (quadriceps) was a full participant at practice Wednesday.
@@ -763,7 +763,7 @@ Searches to run:
 - "NFL week 7 picks LAR LV"
 
 Los Angeles Rams, injuries:
-- Puka Nacua (WR) Questionable, Calf: Nacua suffered a calf injury during Thursday's practice and went down as a limited participant, Adam Grosbard of The Orange County Register reports.
+- Puka Nacua (WR) Questionable, Calf: The calf injury Nacua sustained Thursday is believed to be "more minor than anything else" and "not significant," Ian Rapoport of NFL Network reports.
 - Trent McDuffie (CB) Questionable, Groin: McDuffie (groin) did not participate in Wednesday's practice, Adam Grosbard of The Orange County Register reports.
 - Nate Landman (LB) Questionable, Concussion: Landman (concussion) did not participate in Wednesday's practice, Adam Grosbard of The Orange County Register reports.
 - Kobie Turner (DE) Injured Reserve, Groin: The Rams placed Turner (groin) on injured reserve Wednesday.
