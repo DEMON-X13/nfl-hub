@@ -2313,7 +2313,7 @@ const ladderBoot = async (x, seeded, how) => {
         { const S0 = w.eval('S'), G0 = S0.sched.find(x => x.id === g2.id), no = nightOpenL(G0, S0.sched), up = no.open == null || w.eval('Date.now()') >= no.open;
           /* (app v118) in the Night games section; the Sunday slot's wait line and set, in the same section since app v129
              (after the night's, data-sp-next its _SUN id, its set .sp-slot), left out */
-          const NS = '#spSets section.sp-sec[data-sp-sec="night"]';
+          const NS = '#spSets details.sp-sec[data-sp-sec="night"]';
           const el = d.querySelector(`${NS} [data-sp-wait]:not([data-sp-next$="_SUN"])`), on = [...d.querySelectorAll(`${NS} .sp-game[data-sp-game]:not(.sp-slot)`)].map(x => x.dataset.spGame).join();
           const TNl = w.eval('TEAM_NAMES'), say = `Next up: Thursday night, ${TNl[g2.a] || g2.a} at ${TNl[g2.h] || g2.h}.` + (no.open != null ? ` Set goes up ${etSayL(no.open)}.` : '');
           chk(primeL(G0) && (up ? on === g2.id && !el : on === '' && !!el && el.dataset.spWait === new Date(no.open).toISOString().replace(/\.\d{3}Z$/, 'Z') && el.dataset.spNext === g2.id && txt(el) === say && w.eval('spTier')(fid) === null),
@@ -2352,12 +2352,12 @@ const ladderBoot = async (x, seeded, how) => {
            games', since app v129 its only section) is hidden */
         { const tierId = c => c.dataset.pbTier || [...c.classList].find(k => k !== 'pb-tier' && k !== 'none');
           const parts = set() ? [...set().children].filter(x => x.matches('h5.sp-sub, div.pb-tiers')).map(x => `${x.tagName.toLowerCase()}:${x.dataset.spKind}:${x.tagName === 'H5' ? txt(x) : [...x.children].filter(c => c.matches('.pb-tier')).map(tierId).join('+')}`).join(' / ') : '';
-          const wantParts = 'h5:model:Model parlays / div:model:safe+med+aggr+xtrm / h5:elo:Elo picks / div:elo:elo-safe+elo-med+elo-aggr+elo-xtrm';
+          const wantParts = 'h5:model:Model parlays / div:model:safe+med+aggr / h5:elo:Elo picks / div:elo:elo-safe+elo-med+elo-aggr';
           const E = k => set() && set().querySelector(`.pb-tiers[data-sp-kind="elo"] > .pb-tier.${k}`);
           chk(parts === wantParts, `${how}: the unit does not draw its model parlays and then its Elo picks, each under its own heading: ${parts}`);
           chk(!!E('elo-safe') && E('elo-safe').querySelectorAll('[data-pb-leg]').length === 2 && !!E('elo-safe').querySelector(`[data-sp-add="${g2.id}:elo-safe"]`)
             && /^Finish$/.test(txt(E('elo-safe').querySelector(`[data-pc-finish="sp|${g2.id}:elo-safe"]`)))
-            && ELO_EMPTY.every(([id, , n]) => !!E('elo-' + id) && txt(E('elo-' + id).querySelector('.pb-why')) === eloWhy('in this game', n) && !E('elo-' + id).querySelector('[data-sp-add], [data-pc-finish], [data-pb-leg]')),
+            && ELO_EMPTY.filter(([id]) => id !== 'xtrm').every(([id, , n]) => !!E('elo-' + id) && txt(E('elo-' + id).querySelector('.pb-why')) === eloWhy('in this game', n) && !E('elo-' + id).querySelector('[data-sp-add], [data-pc-finish], [data-pb-leg]')),
             `${how}: the unit's Elo Safe has not its two legs' Adds, an Add to builder and a Finish named sp|${g2.id}:elo-safe, or an empty Elo level does not say why in this game, or offers a button: ` + (set() ? txt(set().querySelector('.pb-tiers[data-sp-kind="elo"]')).slice(0, 300) : 'no set'));
           chk(!d.getElementById('pbElo') && !d.querySelector('[data-pb-elo-add], [data-pc-finish^="elo|"], [data-pb-elo-wait], #spSets [data-sp-elo-wait]'),
             `${how}: something of the Elo picks' old section is still on the page (#pbElo, its Add, its "elo|" Finish or its wait line), or the unit waits on the Elo ratings it was handed`);

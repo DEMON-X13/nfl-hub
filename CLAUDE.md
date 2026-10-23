@@ -2065,6 +2065,18 @@ over it says "Regular season over." itself). The slot's set keeps its "Sunday sl
 P2's `SEC_MAP` and its hand record, app v128's), the nflbets smoke (`SEC_SLOT`, `recHeld` a section at a time) and
 `smoke_live.js` (`slotHeldL`) hold the two sections and their records.
 
+**The record on its own, Day games first, folding, no Extreme** (app v132, `patch_sp_record_top.py`, the owner's call of
+23 October 2026: "combine them and put them in their own section ... get rid of the extreme parlays ... put day games
+above night games, make the sections able to minimize. when its after 4PM please remove the day games so only the night
+games come up on Sundays"). The paragraph above is history: Suggested Parlays is three `<details class="sp-sec">`, open
+to start, each folding under its `summary.sp-sum` heading (a fold kept through redraws for the page load, `SP_FOLD`, never
+saved): Record (`SP_SEC.all`, both maps, the one `.sp-rec`), Day games (the Sunday slot) and Night games, the two set
+sections with no record. Extreme is off the tab only (`SP_SHOW`, `spShowT`: no Extreme card or Elo pick drawn, no Extreme
+pill counted); the props job still takes, locks and grades all four levels, so the ledger and its guard are unchanged. On
+a Sunday from 4:00 pm Eastern (`spDayOff`, Intl's America/New_York) Day games is not drawn. The audit (`dayOffAud`,
+`spPartsAud`, P2's `SEC_MAP.all`), the nflbets smoke (`dayOffOwn`, `PB_SHOWN_OWN`, `REC_SEC.all`) and `smoke_live.js`
+(`slotHeldL`) hold it, each reading 4pm on its own.
+
 **Value picks** (app v112, `patch_suggested_night.py`, the owner's call of 17 October 2026, after app v111's tags:
 first "i don't really understand what the no edge and thin edge tags are", then "can we do reverse tags? like get rid
 of thin edge and no edge and come up with a name for that first section?"). The marks are reversed. A leg `pbPool`
