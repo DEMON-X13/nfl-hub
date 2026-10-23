@@ -2471,7 +2471,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v130 \u00b7 2026-10-22';
+const APP_BUILD='app v131 \u00b7 2026-10-23';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -6242,7 +6242,8 @@ window.pbRecLoad=pbRecLoad;
    app v129 one, Night games, its sets the night games' and then the Sunday slot's, its record both maps (the owner's
    call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a part of 'Night Games'").
    slot is kept for a caller that asks for the slot's map by name, and drawn nowhere */
-const SP_SEC={night:{maps:['prime','slot'],name:'Night games'},slot:{maps:['slot'],name:'Sunday slot'}};
+/* (app v131) two sections again: Night games on the prime map, Day games (the Sunday slot) on the slot map */
+const SP_SEC={night:{maps:['prime'],name:'Night games'},slot:{maps:['slot'],name:'Day games'}};
 const SP_KIND={model:{field:'tiers',pre:'',name:'Model parlays'},elo:{field:'elo',pre:'elo-',name:'Elo picks'}};
 /* the record of one section's one kind, a level at a time: each season's unit and level once, the job's entry where
    it holds one (the last key that does: a kickoff the league moved makes a new key), else the backtest's, from the
@@ -7018,12 +7019,12 @@ function spNightHtml(on){
 /* (app v118) the Sunday slot: its set from its morning to its last kickoff; until then, when it goes up */
 function spSlotHtml(on){
   const u=spSlotNext();
-  if(!u) return seasonOver()?'':`<p class="pb-none" data-sp-none="slot">No Sunday game left in week ${currentWeek()}.</p>`;
+  if(!u) return `<p class="pb-none" data-sp-none="slot">${seasonOver()?'Regular season over.':`No Sunday game left in week ${currentWeek()}.`}</p>`;
   if(!u.up) return `<p class="pb-none sp-wait" data-sp-wait="${u.open!=null?spIso(u.open):''}" data-sp-next="${esc(u.id)}">Next up: week ${u.w}’s Sunday slot, ${u.games.length} game${u.games.length===1?'':'s'}. Sets go up ${spEt(u.open,true)}.</p>`;
   return spGameHtml(u,on);
 }
 /* (app v129) one section, Night games: the night games' sets, then the Sunday slot's */
-function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on)+spSlotHtml(on)); }
+function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on))+spSecHtml('slot',spSlotHtml(on)); }
 function renderSp(){
   const el=$('spPanel'); if(!el||!S||!S.sched) return;
   /* the frame once (app v118: the Elo picks are in each unit now, no longer a section of their own at the foot) */
@@ -7621,7 +7622,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='648e4f7';
+const PAGE_HASH='28439fa';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){

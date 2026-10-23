@@ -2662,7 +2662,8 @@ window.pbRecLoad=pbRecLoad;
    app v129 one, Night games, its sets the night games' and then the Sunday slot's, its record both maps (the owner's
    call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a part of 'Night Games'").
    slot is kept for a caller that asks for the slot's map by name, and drawn nowhere */
-const SP_SEC={night:{maps:['prime','slot'],name:'Night games'},slot:{maps:['slot'],name:'Sunday slot'}};
+/* (app v131) two sections again: Night games on the prime map, Day games (the Sunday slot) on the slot map */
+const SP_SEC={night:{maps:['prime'],name:'Night games'},slot:{maps:['slot'],name:'Day games'}};
 const SP_KIND={model:{field:'tiers',pre:'',name:'Model parlays'},elo:{field:'elo',pre:'elo-',name:'Elo picks'}};
 /* the record of one section's one kind, a level at a time: each season's unit and level once, the job's entry where
    it holds one (the last key that does: a kickoff the league moved makes a new key), else the backtest's, from the
@@ -3438,12 +3439,12 @@ function spNightHtml(on){
 /* (app v118) the Sunday slot: its set from its morning to its last kickoff; until then, when it goes up */
 function spSlotHtml(on){
   const u=spSlotNext();
-  if(!u) return seasonOver()?'':`<p class="pb-none" data-sp-none="slot">No Sunday game left in week ${currentWeek()}.</p>`;
+  if(!u) return `<p class="pb-none" data-sp-none="slot">${seasonOver()?'Regular season over.':`No Sunday game left in week ${currentWeek()}.`}</p>`;
   if(!u.up) return `<p class="pb-none sp-wait" data-sp-wait="${u.open!=null?spIso(u.open):''}" data-sp-next="${esc(u.id)}">Next up: week ${u.w}’s Sunday slot, ${u.games.length} game${u.games.length===1?'':'s'}. Sets go up ${spEt(u.open,true)}.</p>`;
   return spGameHtml(u,on);
 }
 /* (app v129) one section, Night games: the night games' sets, then the Sunday slot's */
-function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on)+spSlotHtml(on)); }
+function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on))+spSecHtml('slot',spSlotHtml(on)); }
 function renderSp(){
   const el=$('spPanel'); if(!el||!S||!S.sched) return;
   /* the frame once (app v118: the Elo picks are in each unit now, no longer a section of their own at the foot) */
