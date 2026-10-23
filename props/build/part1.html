@@ -446,6 +446,10 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 /* app v118: two sections, Night games and the Sunday slot, each headed by its record (a row for the model's parlays and
    one for the Elo picks); each unit's model parlays, then its Elo picks */
 .sp-sec{margin:20px 0 0;padding:16px 0 0;border-top:2px solid var(--line-2)}
+.sp-sum{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;list-style:none}
+.sp-sum::-webkit-details-marker{display:none}
+.sp-sum::before{content:'\25BE';font-size:14px;color:var(--ink-2);transition:transform .15s}
+details.sp-sec:not([open])>.sp-sum::before{transform:rotate(-90deg)}
 .sp-sech{margin:0;font-family:var(--display);font-size:19px;font-weight:800;letter-spacing:-.3px}
 .sp-sub{margin:14px 0 8px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
 .sp-reck{flex:0 0 auto;min-width:112px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
