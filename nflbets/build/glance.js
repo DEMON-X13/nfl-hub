@@ -186,7 +186,11 @@ function playerHtml(){
         return `<tr data-glance-stat="${esc(s)}"${L&&L.stat===s?' class="glance-on"':''}><th scope="row">${esc((GL.labels&&GL.labels[s])||s)}</th><td class="glance-n" data-glance-n="form">${esc(dec(a[0]))}</td><td class="glance-n"><span aria-hidden="true">→ </span><b data-glance-n="proj">${esc(dec(a[1]))}</b></td></tr>`; }).join('')}</tbody></table>`
       :`<p class="glance-q glance-none" data-glance-n="notrust">No trusted stats.</p>`;
   }
-  return {title:esc(name),body:`${sub}<dl class="glance-kv">${lines.join('')}</dl>${table}${legHtml(K)}${snapBtn(gid)}`};
+  /* (app v134) his projection for this game and his season week by week (the props parts' playerCard), and a button to
+     his row on the game's page */
+  let card=''; try{ card=typeof window.playerCard==='function'?window.playerCard(pid,gid):''; }catch(e){ card=''; }
+  const PB=board(), propBtn=PB&&typeof PB.openOnProps==='function'&&(!PB.canProps||PB.canProps(gid))?`<div class="glance-acts"><button type="button" class="btn glance-snap" data-glance-prop="${esc(gid)}" data-glance-pid="${esc(pid)}">Open prop leg</button></div>`:'';
+  return {title:esc(name),body:`${sub}<dl class="glance-kv">${lines.join('')}</dl>${table}${legHtml(K)}${card}${propBtn}${snapBtn(gid)}`};
 }
 
 /* ---- a team, or a game ---- */
@@ -257,6 +261,8 @@ function make(){
   box.addEventListener('click',e=>{
     const t=e.target&&e.target.closest?e.target:null; if(!t) return;
     if(t.closest('[data-glance-close]')){ close(true); return; }
+    const pp=t.closest('[data-glance-prop]');
+    if(pp){ const gid=pp.dataset.glanceProp, pid=pp.dataset.glancePid, P=board(); close(false); if(P&&typeof P.openOnProps==='function') P.openOnProps(gid,pid); return; }
     const sn=t.closest('[data-glance-snap]');
     if(sn){ const gid=sn.dataset.glanceSnap, from=anchor(); close(false); if(typeof window.gameSnapshot==='function') window.gameSnapshot(gid,from||undefined); }
   });
@@ -445,6 +451,8 @@ css.textContent=`
 .glance-nums dd{margin:0;color:var(--ink);font-variant-numeric:tabular-nums}
 .glance-acts{margin:10px 0 0}
 .glance-snap{width:100%;min-height:44px;font-size:13px}
+.glance-pop:has(.pcard){width:460px}
+.glance-pop .glance-acts+.glance-acts{margin-top:6px}
 html[data-theme="light"] .glance-pop{box-shadow:0 18px 40px -16px rgba(30,34,48,.38),0 2px 8px rgba(30,34,48,.14)}
 `;
 (document.head||document.documentElement).appendChild(css);

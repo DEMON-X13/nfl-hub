@@ -277,6 +277,40 @@ function weekStats(pl){
     <tbody>${rows}</tbody><tfoot><tr><td colspan="2">Per game (${wks.length})</td>${avg}</tr></tfoot></table></div>`;
 }
 
+/* (app v134) a player's card: his projection for the game and his season week by week (the matchup bubble's) */
+function playerCard(pid,gid){
+  const g=S&&S.sched&&S.sched.find(x=>x.id===gid); if(!g) return '';
+  let x=null;
+  try{ const R=rosterFor(g,true); for(const t of [g.a,g.h]){ const f=((R[t]&&R[t].players)||[]).find(p=>p.pl&&p.pl.id===pid); if(f){ x=f; break; } } }catch(e){ x=null; }
+  if(!x) return '';
+  let lines=[]; try{ lines=statLines(x); }catch(e){ lines=[]; }
+  const vs=`${x.opp?(x.pl.team===g.h?'vs ':'at ')+esc(x.opp):''}`;
+  const proj=lines.length?`<table class="pc-proj"><thead><tr><th>Stat</th><th class="num">Projected</th></tr></thead><tbody>${lines.map(l=>`<tr data-pcard-stat="${esc(l.stat)}"><td>${esc(l.prob?(x.pl.grp==='QB'?'Rush or rec TD':'Touchdown'):l.m.lbl)}</td><td class="num"><b>${l.prob?Math.round(l.p*100)+'%':num(l.mu,l.mu<10?1:0)}</b></td></tr>`).join('')}</tbody></table>`
+    :'<p class="muted pc-none">No projections.</p>';
+  return `<div class="pcard" data-pcard="${esc(pid)}"><h4 class="pc-h">Projected${vs?' '+vs:''}</h4>${proj}<h4 class="pc-h">This season</h4>${weekStats(x.pl)}</div>`;
+}
+window.playerCard=playerCard;
+/* (app v134) the game page's player search: what is typed, kept for that game while the page is open */
+let GAME_Q={gid:null,q:''};
+function gameSearchHtml(g){ if(GAME_Q.gid!==g.id) GAME_Q={gid:g.id,q:''};
+  return `<div class="gsearch"><input type="search" id="gameSearch" placeholder="Find a player" aria-label="Find a player in this game" autocomplete="off" value="${esc(GAME_Q.q)}"></div>`; }
+function gameSearchApply(){
+  const v=$('gameView'); if(!v) return; const q=GAME_Q.q.trim().toLowerCase();
+  let hdr=null, shown=0;
+  const flush=()=>{ if(hdr) hdr.hidden=!!q&&!shown; };
+  let hide=false;
+  for(const el of [...v.children]){
+    if(el.classList.contains('teamhdr')){ flush(); hdr=el; shown=0; hide=false; continue; }
+    if(el.matches('[data-open],[data-nohist]')){ const w=el.querySelector('.who'), n=((w&&w.childNodes[0]&&w.childNodes[0].textContent)||'').toLowerCase();
+      hide=!!q&&!n.includes(q); el.hidden=hide; if(!hide) shown++; continue; }
+    if(el.matches('.plrbody,.wkstats')){ el.hidden=hide; continue; }
+    if(hdr&&el.matches('p.muted,.empty')){ el.hidden=!!q; continue; }
+    hide=false;
+  }
+  flush();
+}
+window.gameSearchApply=gameSearchApply;
+
 /* ---------- one game ---------- */
 function summaryOf(x,lines){
   const want=HEADLINE[x.pl.grp]||[];
@@ -383,6 +417,7 @@ function renderGame(){
       <option value="heavy" ${S.margin==='heavy'?'selected':''}>heavy</option></select></label>
     <label class="muted"><input type="checkbox" id="allCb" ${showAll?'checked':''}> Include backups</label>
   </div>`;
+  html+=gameSearchHtml(g);
   /* Refresh odds for this game alone (app v107): its week's scoreboard and its player lines */
   if(!locked&&!hasScore(g)) html+=espnCtl(g.id,'game');
   { const dd=PAY.depth_dt?Date.parse(PAY.depth_dt+'T12:00:00Z'):NaN, bk=PAY.baked_at?Date.parse(PAY.baked_at):NaN;
@@ -540,6 +575,8 @@ function renderGame(){
   $('backBtn').addEventListener('click',closeGame);
   $('gameStatsNow')?.addEventListener('click',()=>refreshGameStats(g));
   $('allCb').addEventListener('change',e=>{ S.ui.showAll=e.target.checked; save(); renderGame(); });
+  $('gameSearch')?.addEventListener('input',e=>{ GAME_Q.q=e.target.value; gameSearchApply(); });
+  gameSearchApply();
   $('marginSel').addEventListener('change',e=>{ S.margin=e.target.value; save(); renderGame(); renderParlay(); });
   $('gameView').querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',e=>{
     const st=e.target.closest&&e.target.closest('[data-stats]');
