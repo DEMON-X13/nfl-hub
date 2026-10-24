@@ -8358,7 +8358,7 @@ async function glanceChecks() {
     else { const open = gid => { w.eval(`S.ui.game=${JSON.stringify(gid)};S.ui.open={};renderGame()`); };
       open(g.id); await wait(20);
       const inp = () => d.getElementById('gameSearch'), rows = () => [...d.querySelectorAll('#gameView [data-open], #gameView [data-nohist]')];
-      const nm = r => ((r.querySelector('.who') && r.querySelector('.who').childNodes[0] && r.querySelector('.who').childNodes[0].textContent) || '').toLowerCase();
+      const nm = r => { const wh = r.querySelector('.who'), tn = wh && [...wh.childNodes].find(c => c.nodeType === 3 && c.textContent.trim()); return ((tn && tn.textContent) || '').toLowerCase(); };
       const I = inp(), R0 = rows();
       chk(!!I && I.type === 'search' && I.value === '' && I.getAttribute('aria-label') === 'Find a player in this game' && R0.length > 0 && R0.every(x => !x.hidden) && d.querySelector('#gameView > .gsearch') === d.querySelector('#gameView .bar + .gsearch'),
         `${g.id}'s page has no player search under its bar, or hides a row with nothing typed`);

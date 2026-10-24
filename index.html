@@ -3886,7 +3886,7 @@ function gameSearchApply(){
   let hide=false;
   for(const el of [...v.children]){
     if(el.classList.contains('teamhdr')){ flush(); hdr=el; shown=0; hide=false; continue; }
-    if(el.matches('[data-open],[data-nohist]')){ const w=el.querySelector('.who'), n=((w&&w.childNodes[0]&&w.childNodes[0].textContent)||'').toLowerCase();
+    if(el.matches('[data-open],[data-nohist]')){ const w=el.querySelector('.who'), tn=w&&[...w.childNodes].find(c=>c.nodeType===3&&c.textContent.trim()), n=((tn&&tn.textContent)||'').toLowerCase();
       hide=!!q&&!n.includes(q); el.hidden=hide; if(!hide) shown++; continue; }
     if(el.matches('.plrbody,.wkstats')){ el.hidden=hide; continue; }
     if(hdr&&el.matches('p.muted,.empty')){ el.hidden=!!q; continue; }
@@ -7670,7 +7670,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='dee3c98';
+const PAGE_HASH='4c6ac54';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){

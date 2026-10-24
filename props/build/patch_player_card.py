@@ -51,7 +51,7 @@ function gameSearchApply(){
   let hide=false;
   for(const el of [...v.children]){
     if(el.classList.contains('teamhdr')){ flush(); hdr=el; shown=0; hide=false; continue; }
-    if(el.matches('[data-open],[data-nohist]')){ const w=el.querySelector('.who'), n=((w&&w.childNodes[0]&&w.childNodes[0].textContent)||'').toLowerCase();
+    if(el.matches('[data-open],[data-nohist]')){ const w=el.querySelector('.who'), tn=w&&[...w.childNodes].find(c=>c.nodeType===3&&c.textContent.trim()), n=((tn&&tn.textContent)||'').toLowerCase();
       hide=!!q&&!n.includes(q); el.hidden=hide; if(!hide) shown++; continue; }
     if(el.matches('.plrbody,.wkstats')){ el.hidden=hide; continue; }
     if(hdr&&el.matches('p.muted,.empty')){ el.hidden=!!q; continue; }
