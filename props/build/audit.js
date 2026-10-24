@@ -2366,7 +2366,7 @@ setTimeout(async()=>{
       chk((dayOffAud()?!slotTx():slotTx()==='Regular season over.')&&spPartsAud(),'with the season over, the Day games section does not say so in its one line');
       w.eval('seasonOver=function(){ return false; }; renderParlay();');
       chk(/^No week \d+ games left\.$/.test((panel.querySelector('.pb-none')||{}).textContent||'')&&!sp.querySelector('[data-sp-game],[data-sp-wait]'),'with every game of the week under way the panel does not say so, or Suggested Parlays still offers a set');
-      W.wording(/No night game left in week \d+\./.test(sp.textContent)&&/^No Sunday game left in week \d+\.$/.test(slotTx()),'with every game of the week under way Suggested Parlays does not say so, for its night games and for its Sunday slot');
+      W.wording(/No night game left in week \d+\./.test(sp.textContent)&&(dayOffAud()||/^No Sunday game left in week \d+\.$/.test(slotTx())),'with every game of the week under way Suggested Parlays does not say so, for its night games and for its Sunday slot');
       } finally { w.eval('pbGames=window.__pbKeep[0]; seasonOver=window.__pbKeep[1]; spSlotNext=window.__pbKeep[2];'); delete w.__pbKeep; } }
     S.ui.pb=JSON.parse(keepU); F('save')(); F('renderParlay')(); }
     /* ---- M12. the Top 50 lines on made-up games: each bet once, and the totals after every thin-edge line (app v112) ----
@@ -3409,13 +3409,15 @@ setTimeout(async()=>{
         said16.push(`the Sunday slot (${SLOT.length} games, its best pair and Medium across games beating any one game's): Safe ${WANT.safe.a} at ${WANT.safe.h} (the earlier of two alike), Medium and Aggressive ${WANT.med.a} at ${WANT.med.h} (over the likeliest returning more), Extreme ${WANT.xtrm.a} at ${WANT.xtrm.h} (no total, though the likeliest), each one game's own level`); }
       /* each card of the slot names its game, as the tab draws it (the slot stood in as up, put back after) */
       { const keepN=w.eval('spSlotNext'); stab.hidden=false;
+        /* (app v132) Day games drawn whatever the hour (off on a Sunday from 4pm Eastern) */
+        w.__dayOff16=w.eval('spDayOff'); w.eval('spDayOff=function(){ return false; }'); w.__dayStood=true;
         try{ w.eval(`spSlotNext=function(){ const u=spSlotUnit(${WK}); return u?{...u,open:null,prev:null,up:true}:null; };`); F('renderSp')();
           const box=d.querySelector(`${SP_SG}[data-sp-game="${SID}"]`), TN=F('TEAM_NAMES');
           chk(!!box,`M16: the made-up Sunday slot (${SID}) is not drawn with its set`);
           for(const [id] of SPEC_AUD){ const g=WANT[id], c=box&&box.querySelector(`.pb-tier.${id}`), tg=c?[...c.querySelectorAll('.pb-th .pb-tgame')]:[];
             chk(tg.length===1&&tg[0].dataset.pbTgame===g.id,`M16: the slot's ${id} card does not name its game, ${g.id}: ${tg.map(x=>x.dataset.pbTgame).join(', ')||'none'}`);
             W.wording(!!tg[0]&&tg[0].textContent===`${TN[g.a]||g.a} at ${TN[g.h]||g.h} · ${etAud(kickAud(g))}`,`M16: the slot's ${id} card names its game "${tg[0]?tg[0].textContent:''}"`); } }
-        finally { slotPut(keepN); stab.hidden=keepTab; F('renderSp')(); } }
+        finally { slotPut(keepN); w.eval('spDayOff=window.__dayOff16'); w.__dayStood=false; stab.hidden=keepTab; F('renderSp')(); } }
       /* (the review's round) week 94's Sunday slot: each game four legs in number and three on one slip, so its Aggressive
          is empty in the round's words; each level the best of its games' own, worked out in full */
       { const SID2=`${SEA}_${WK2}_SUN`, u2=F('spUnit')(SID2), s2=F('spSet')(SID2), gl0=`M16, week ${WK2}'s Sunday slot`;
