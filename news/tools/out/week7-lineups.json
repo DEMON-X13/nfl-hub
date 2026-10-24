@@ -726,14 +726,13 @@
   },
   "BAL": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-23T23:50:30.583Z",
+   "built_at": "2026-10-24T21:30:36.116Z",
    "units": {
     "qb": [
      {
-      "id": "00-0034796",
-      "n": "Lamar Jackson",
-      "pos": "QB",
-      "q": "questionable: ankle"
+      "id": "00-0035993",
+      "n": "Tyler Huntley",
+      "pos": "QB"
      }
     ],
     "ol": [
@@ -2799,7 +2798,7 @@
   },
   "PHI": {
    "kick": "2026-10-27T00:15Z",
-   "built_at": "2026-10-24T18:04:45.953Z",
+   "built_at": "2026-10-24T21:30:36.116Z",
    "units": {
     "qb": [
      {
@@ -2817,8 +2816,7 @@
      {
       "id": "00-0040631",
       "n": "Willie Lampkin",
-      "pos": "C",
-      "q": "questionable: illness"
+      "pos": "C"
      },
      {
       "id": "00-0040422",
@@ -2828,8 +2826,7 @@
      {
       "id": "00-0039001",
       "n": "Tyler Steen",
-      "pos": "G",
-      "q": "questionable: shoulder"
+      "pos": "G"
      },
      {
       "id": "00-0041554",
@@ -2857,14 +2854,14 @@
       "pos": "WR"
      },
      {
+      "id": "00-0034351",
+      "n": "Dallas Goedert",
+      "pos": "TE"
+     },
+     {
       "id": "00-0040024",
       "n": "Darius Cooper",
       "pos": "WR"
-     },
-     {
-      "id": "00-0033246",
-      "n": "Johnny Mundt",
-      "pos": "TE"
      }
     ],
     "front": [
@@ -2874,14 +2871,13 @@
       "pos": "DT"
      },
      {
-      "id": "00-0039013",
-      "n": "Nolan Smith",
-      "pos": "OLB",
-      "q": "not practising: concussion"
-     },
-     {
       "id": "00-0036418",
       "n": "Zack Baun",
+      "pos": "ILB"
+     },
+     {
+      "id": "00-0040708",
+      "n": "Jihaad Campbell",
       "pos": "ILB"
      }
     ],

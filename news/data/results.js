@@ -476,7 +476,7 @@ const LINES = {
  "wk7:NE-CHI": "CHI -3, O/U 50.5",
  "wk7:PIT-NO": "PIT -3, O/U 44.5",
  "wk7:SF-ATL": "SF -2.5, O/U 49.5",
- "wk7:CIN-BAL": "CIN -1.5, O/U 47.5",
+ "wk7:CIN-BAL": "CIN -2.5, O/U 46.5",
  "wk7:TB-CAR": "CAR -3, O/U 44.5",
  "wk7:NYG-HOU": "HOU -10, O/U 42.5",
  "wk7:IND-MIN": "MIN -6.5, O/U 41.5",
