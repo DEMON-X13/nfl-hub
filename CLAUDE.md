@@ -2783,7 +2783,7 @@ matchups.json's own games and threw once they had kicked off). `SMOKE_PAYLOAD=<f
 payload, to try a week the job has not baked, and `SMOKE_NOW=<ISO time>` runs it as if it were then
 (Node's clock and every page's, the shift above laid over it; `props/build/test_audit_phases.py` uses both). `--season-over` gives every game a result first; run it after a change to the smoke, to the Props tab's rows or to
 the Game snapshot (to the Matchups board until it went on 22 October 2026). Both smokes end on their own: a mistake in the smoke's code exits 1 at once
-with its stack, a run still going after twenty minutes stops and fails (smoke_live.js after ten), and one left waiting on
+with its stack, a run still going after twenty-five minutes stops and fails (smoke_live.js after ten), and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
 Since app v125 (**Reversed in app v125** and **The published read**, under Props; **The admin link**, above) the smoke,
 which has no warnings, holds: its own copies of the id rule by an entry's content on the live table (`dkOwnId`, `dkTakes`),

@@ -185,8 +185,9 @@ process.on('unhandledRejection', e => { checks++; fails.push('the page threw in 
    v125, with the admin's boots and the published read's checks, about ten and a half on a 4-core box beside another
    heavy check, eleven on a payload carrying the read; on 22 October 2026, app v129, 14 min 59 s on a 4-core box with
    under 15 GB and nothing else running, its 2,795 checks passing, where the limit, fifteen minutes until then, stopped
-   a run two sections short; twenty since, still well inside the elo job's forty) */
-const SMOKE_LIMIT_MS = 20 * 60 * 1000;
+   a run two sections short; twenty since; on 24 October 2026, app v134, with the player card's and the game search's checks, 20 min 14 s on the
+   same box, every section done: twenty-five since, still inside the elo job's forty) */
+const SMOKE_LIMIT_MS = 25 * 60 * 1000;
 setTimeout(() => finish(`the smoke did not finish in ${Math.round(SMOKE_LIMIT_MS / 1000)} s: stopped with what it had`), SMOKE_LIMIT_MS).unref();
 /* nor does it pass by running out of things to wait on: a body stuck on a promise nothing will
    settle, with no window open to keep the process up, would otherwise end Node with exit 0 and
