@@ -705,6 +705,8 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 /* app v118: two sections, Night games and the Sunday slot, each headed by its record (a row for the model's parlays and
    one for the Elo picks); each unit's model parlays, then its Elo picks */
 .sp-sec{margin:20px 0 0;padding:16px 0 0;border-top:2px solid var(--line-2)}
+.gsearch{margin:0 0 12px}.gsearch input{width:100%;box-sizing:border-box;min-height:44px;padding:8px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel);color:var(--ink);font:inherit;font-size:15px}
+.pcard .pc-h{margin:12px 0 4px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}.pcard .pc-proj{width:100%;border-collapse:collapse;font-size:12.5px}.pcard .pc-proj td,.pcard .pc-proj th{padding:4px 6px;border-top:1px solid var(--line);text-align:left}.pcard .pc-proj .num{text-align:right}.pcard .wkstats{overflow-x:auto}.pcard .wkstats table{font-size:12px;min-width:100%}
 .sp-sech{margin:0;font-family:var(--display);font-size:19px;font-weight:800;letter-spacing:-.3px}
 .sp-sub{margin:14px 0 8px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
 .sp-reck{flex:0 0 auto;min-width:112px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
@@ -2474,7 +2476,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v133 \u00b7 2026-10-24';
+const APP_BUILD='app v134 \u00b7 2026-10-24';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3860,6 +3862,47 @@ function weekStats(pl){
     <tbody>${rows}</tbody><tfoot><tr><td colspan="2">Per game (${wks.length})</td>${avg}</tr></tfoot></table></div>`;
 }
 
+/* (app v134) a player's card: his projection for the game and his season week by week (the matchup bubble's) */
+const PCARD_CACHE=new Map();
+function playerCard(pid,gid){
+  let sig=''; try{ sig=pid+'|'+gid+'|'+pbDataSig()+'|'+Object.keys(S.actuals||{}).length; }catch(e){ sig=''; }
+  if(sig&&PCARD_CACHE.has(sig)) return PCARD_CACHE.get(sig);
+  const out=playerCardBuild(pid,gid); if(sig){ PCARD_CACHE.set(sig,out); if(PCARD_CACHE.size>200) PCARD_CACHE.delete(PCARD_CACHE.keys().next().value); }
+  return out;
+}
+function playerCardBuild(pid,gid){
+  const g=S&&S.sched&&S.sched.find(x=>x.id===gid); if(!g) return '';
+  let x=null;
+  try{ const R=rosterFor(g,true); for(const t of [g.a,g.h]){ const f=((R[t]&&R[t].players)||[]).find(p=>p.pl&&p.pl.id===pid); if(f){ x=f; break; } } }catch(e){ x=null; }
+  if(!x) return '';
+  let lines=[]; try{ lines=statLines(x); }catch(e){ lines=[]; }
+  const vs=`${x.opp?(x.pl.team===g.h?'vs ':'at ')+esc(x.opp):''}`;
+  const proj=lines.length?`<table class="pc-proj"><thead><tr><th>Stat</th><th class="num">Projected</th></tr></thead><tbody>${lines.map(l=>`<tr data-pcard-stat="${esc(l.stat)}"><td>${esc(l.prob?(x.pl.grp==='QB'?'Rush or rec TD':'Touchdown'):l.m.lbl)}</td><td class="num"><b>${l.prob?Math.round(l.p*100)+'%':num(l.mu,l.mu<10?1:0)}</b></td></tr>`).join('')}</tbody></table>`
+    :'<p class="muted pc-none">No projections.</p>';
+  return `<div class="pcard" data-pcard="${esc(pid)}"><h4 class="pc-h">Projected${vs?' '+vs:''}</h4>${proj}<h4 class="pc-h">This season</h4>${weekStats(x.pl)}</div>`;
+}
+window.playerCard=playerCard;
+/* (app v134) the game page's player search: what is typed, kept for that game while the page is open */
+let GAME_Q={gid:null,q:''};
+function gameSearchHtml(g){ if(GAME_Q.gid!==g.id) GAME_Q={gid:g.id,q:''};
+  return `<div class="gsearch"><input type="search" id="gameSearch" placeholder="Find a player" aria-label="Find a player in this game" autocomplete="off" value="${esc(GAME_Q.q)}"></div>`; }
+function gameSearchApply(){
+  const v=$('gameView'); if(!v) return; const q=GAME_Q.q.trim().toLowerCase();
+  let hdr=null, shown=0;
+  const flush=()=>{ if(hdr) hdr.hidden=!!q&&!shown; };
+  let hide=false;
+  for(const el of [...v.children]){
+    if(el.classList.contains('teamhdr')){ flush(); hdr=el; shown=0; hide=false; continue; }
+    if(el.matches('[data-open],[data-nohist]')){ const w=el.querySelector('.who'), tn=w&&[...w.childNodes].find(c=>c.nodeType===3&&c.textContent.trim()), n=((tn&&tn.textContent)||'').toLowerCase();
+      hide=!!q&&!n.includes(q); el.hidden=hide; if(!hide) shown++; continue; }
+    if(el.matches('.plrbody,.wkstats')){ el.hidden=hide; continue; }
+    if(hdr&&el.matches('p.muted,.empty')){ el.hidden=!!q; continue; }
+    hide=false;
+  }
+  flush();
+}
+window.gameSearchApply=gameSearchApply;
+
 /* ---------- one game ---------- */
 function summaryOf(x,lines){
   const want=HEADLINE[x.pl.grp]||[];
@@ -3966,6 +4009,7 @@ function renderGame(){
       <option value="heavy" ${S.margin==='heavy'?'selected':''}>heavy</option></select></label>
     <label class="muted"><input type="checkbox" id="allCb" ${showAll?'checked':''}> Include backups</label>
   </div>`;
+  html+=gameSearchHtml(g);
   /* Refresh odds for this game alone (app v107): its week's scoreboard and its player lines */
   if(!locked&&!hasScore(g)) html+=espnCtl(g.id,'game');
   { const dd=PAY.depth_dt?Date.parse(PAY.depth_dt+'T12:00:00Z'):NaN, bk=PAY.baked_at?Date.parse(PAY.baked_at):NaN;
@@ -4123,6 +4167,8 @@ function renderGame(){
   $('backBtn').addEventListener('click',closeGame);
   $('gameStatsNow')?.addEventListener('click',()=>refreshGameStats(g));
   $('allCb').addEventListener('change',e=>{ S.ui.showAll=e.target.checked; save(); renderGame(); });
+  $('gameSearch')?.addEventListener('input',e=>{ GAME_Q.q=e.target.value; gameSearchApply(); });
+  gameSearchApply();
   $('marginSel').addEventListener('change',e=>{ S.margin=e.target.value; save(); renderGame(); renderParlay(); });
   $('gameView').querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',e=>{
     const st=e.target.closest&&e.target.closest('[data-stats]');
@@ -7631,7 +7677,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='c978b2d';
+const PAGE_HASH='2531a48';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -12512,7 +12558,11 @@ function playerHtml(){
         return `<tr data-glance-stat="${esc(s)}"${L&&L.stat===s?' class="glance-on"':''}><th scope="row">${esc((GL.labels&&GL.labels[s])||s)}</th><td class="glance-n" data-glance-n="form">${esc(dec(a[0]))}</td><td class="glance-n"><span aria-hidden="true">→ </span><b data-glance-n="proj">${esc(dec(a[1]))}</b></td></tr>`; }).join('')}</tbody></table>`
       :`<p class="glance-q glance-none" data-glance-n="notrust">No trusted stats.</p>`;
   }
-  return {title:esc(name),body:`${sub}<dl class="glance-kv">${lines.join('')}</dl>${table}${legHtml(K)}${snapBtn(gid)}`};
+  /* (app v134) his projection for this game and his season week by week (the props parts' playerCard), and a button to
+     his row on the game's page */
+  let card=''; try{ card=typeof window.playerCard==='function'?window.playerCard(pid,gid):''; }catch(e){ card=''; }
+  const PB=board(), propBtn=PB&&typeof PB.openOnProps==='function'&&(!PB.canProps||PB.canProps(gid))?`<div class="glance-acts"><button type="button" class="btn glance-snap" data-glance-prop="${esc(gid)}" data-glance-pid="${esc(pid)}">Open prop leg</button></div>`:'';
+  return {title:esc(name),body:`${sub}<dl class="glance-kv">${lines.join('')}</dl>${table}${legHtml(K)}${card}${propBtn}${snapBtn(gid)}`};
 }
 
 /* ---- a team, or a game ---- */
@@ -12583,6 +12633,8 @@ function make(){
   box.addEventListener('click',e=>{
     const t=e.target&&e.target.closest?e.target:null; if(!t) return;
     if(t.closest('[data-glance-close]')){ close(true); return; }
+    const pp=t.closest('[data-glance-prop]');
+    if(pp){ const gid=pp.dataset.glanceProp, pid=pp.dataset.glancePid, P=board(); close(false); if(P&&typeof P.openOnProps==='function') P.openOnProps(gid,pid); return; }
     const sn=t.closest('[data-glance-snap]');
     if(sn){ const gid=sn.dataset.glanceSnap, from=anchor(); close(false); if(typeof window.gameSnapshot==='function') window.gameSnapshot(gid,from||undefined); }
   });
@@ -12771,6 +12823,8 @@ css.textContent=`
 .glance-nums dd{margin:0;color:var(--ink);font-variant-numeric:tabular-nums}
 .glance-acts{margin:10px 0 0}
 .glance-snap{width:100%;min-height:44px;font-size:13px}
+.glance-pop:has(.pcard){width:460px}
+.glance-pop .glance-acts+.glance-acts{margin-top:6px}
 html[data-theme="light"] .glance-pop{box-shadow:0 18px 40px -16px rgba(30,34,48,.38),0 2px 8px rgba(30,34,48,.14)}
 `;
 (document.head||document.documentElement).appendChild(css);
