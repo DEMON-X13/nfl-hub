@@ -8363,7 +8363,7 @@ async function glanceChecks() {
       const I = inp(), R0 = rows();
       chk(!!I && I.type === 'search' && I.value === '' && I.getAttribute('aria-label') === 'Find a player in this game' && R0.length > 0 && R0.every(x => !x.hidden) && d.querySelector('#gameView > .gsearch') === d.querySelector('#gameView .bar + .gsearch'),
         `${g.id}'s page has no player search under its bar, or hides a row with nothing typed`);
-      if (I && R0.length) { const q = nm(R0[R0.length - 1]).slice(0, 4), type = async v => { inp().focus(); inp().value = v; inp().dispatchEvent(new w.Event('input', { bubbles: true })); await wait(10); };
+      if (I && R0.length) { const q = nm(R0[R0.length - 1]).trim().slice(0, 4).trim(), type = async v => { inp().focus(); inp().value = v; inp().dispatchEvent(new w.Event('input', { bubbles: true })); await wait(10); };
         await type(q); const want = rows().map(x => nm(x).includes(q));
         chk(rows().every((x, i) => x.hidden === !want[i]) && want.some(Boolean) && d.activeElement === inp() && [...d.querySelectorAll('#gameView .plrbody, #gameView .wkstats')].every(b => { let p = b.previousElementSibling; while (p && !p.matches('[data-open],[data-nohist]')) p = p.previousElementSibling; return !p || b.hidden === p.hidden; }),
           `typing "${q}" on ${g.id}'s page does not leave exactly the players whose names hold it (each open body with its row), the focus in the box`);
