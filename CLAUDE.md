@@ -2078,6 +2078,12 @@ a Sunday from 4:00 pm Eastern (`spDayOff`, Intl's America/New_York) Day games is
 `spPartsAud`, P2's `SEC_MAP.all`), the nflbets smoke (`dayOffOwn`, `PB_SHOWN_OWN`, `REC_SEC.all`) and `smoke_live.js`
 (`slotHeldL`) hold it, each reading 4pm on its own.
 
+**No fold** (app v133, `patch_sp_nofold.py`, the owner's call of 24 October 2026: "actually can you not make it able to
+minimize. the layout looks weird"). The three sections of app v132 are plain `section.sp-sec` again, each its `h3.sp-sech`
+first (the Record's `.sp-rec` right under it), with no `details`, `summary`, arrow or `SP_FOLD`; their order, the one record,
+Extreme hidden and Day games off on a Sunday from 4pm Eastern are as app v132 left them. The audit and the smokes fail a
+`details` or `summary` on the tab.
+
 **Value picks** (app v112, `patch_suggested_night.py`, the owner's call of 17 October 2026, after app v111's tags:
 first "i don't really understand what the no edge and thin edge tags are", then "can we do reverse tags? like get rid
 of thin edge and no edge and come up with a name for that first section?"). The marks are reversed. A leg `pbPool`

@@ -616,7 +616,7 @@ const waitOwn = (N, sched, TN) => { const nm = x => `${(TN && TN[x.a]) || x.a} a
 /* (app v131, the owner's call of 23 October 2026: "make this bottom section be Day Games and include a record") the
    Sunday slot is its own section again, Day games, after Night games */
 /* (app v132) each section a <details>: Record, then Day games (the Sunday slot), then Night games */
-const SEC_NIGHT = '#spSets details.sp-sec[data-sp-sec="night"]', SEC_SLOT = '#spSets details.sp-sec[data-sp-sec="slot"]';
+const SEC_NIGHT = '#spSets section.sp-sec[data-sp-sec="night"]', SEC_SLOT = '#spSets section.sp-sec[data-sp-sec="slot"]';
 /* (app v132) Day games is not drawn on a Sunday from 4pm Eastern: the smoke's own reading at the page's clock */
 const dayOffOwn = d => { const p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(d.defaultView.Date.now()))) p[x.type] = x.value; return p.weekday === 'Sun' && +p.hour >= 16; };
 const NIGHT_UNIT = `${SEC_NIGHT} > .sp-game:not(.sp-slot)`, SLOT_UNIT = `${SEC_SLOT} > .sp-game.sp-slot`;
@@ -2152,15 +2152,16 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           /* (app v132) Record (the one record, both maps), Day games, Night games, each a details whose summary is its
              heading; Day games not drawn on a Sunday from 4pm Eastern */
           const ORD = dayOffOwn(d) ? ['all', 'night'] : ['all', 'slot', 'night'];
-          if (secs.map(x => x.tagName.toLowerCase() + '.' + x.className + '[' + x.dataset.spSec + ']').join(' ') !== ORD.map(x => 'details.sp-sec[' + x + ']').join(' ')) bad.push('its sections are ' + secs.map(x => x.tagName + ' ' + x.className + ' ' + x.dataset.spSec).join(', '));
+          if (secs.map(x => x.tagName.toLowerCase() + '.' + x.className + '[' + x.dataset.spSec + ']').join(' ') !== ORD.map(x => 'section.sp-sec[' + x + ']').join(' ')) bad.push('its sections are ' + secs.map(x => x.tagName + ' ' + x.className + ' ' + x.dataset.spSec).join(', '));
           const isNight = x => x.matches('.sp-game[data-sp-game]:not(.sp-slot)') || x.matches('p.pb-none:not([data-sp-none])') && !(x.dataset.spNext || '').endsWith('_SUN');
           const isSlot = x => x.matches('.sp-game.sp-slot[data-sp-game]') || x.matches('p.pb-none[data-sp-none="slot"]') || x.matches('p.pb-none[data-sp-wait]') && (x.dataset.spNext || '').endsWith('_SUN');
           { const el = secs.find(x => x.dataset.spSec === 'all'), k = el ? [...el.children] : [];
-            if (!el || k.length !== 2 || !k[0].matches('summary.sp-sum') || txt(k[0]) !== 'Record' || !k[1].matches('div.sp-rec[data-sp-recsec="all"]') || k[1].hidden) bad.push('the Record section is not its heading and its one record, drawn'); }
+            if (!el || k.length !== 2 || !k[0].matches('h3.sp-sech') || txt(k[0]) !== 'Record' || !k[1].matches('div.sp-rec[data-sp-recsec="all"]') || k[1].hidden) bad.push('the Record section is not its heading and its one record, drawn'); }
+          if (d.querySelector('#spSets details, #spSets summary')) bad.push('a folding section is drawn (app v133: none)');
           if (d.querySelectorAll('#spSets .sp-rec').length !== 1) bad.push(`${d.querySelectorAll('#spSets .sp-rec').length} records drawn, not one`);
           for (const [sec, name, isIt] of [['night', 'Night games', isNight], ['slot', 'Day games', isSlot]]) { const el = secs.find(x => x.dataset.spSec === sec); if (!el) continue;
-            const k = [...el.children], sm = k[0], h3 = sm && sm.firstElementChild, rest = k.slice(1);
-            if (!sm || !sm.matches('summary.sp-sum') || !h3 || !h3.matches('h3.sp-sech') || txt(h3) !== name || h3.id !== 'spsec-' + sec || !el.open) bad.push(`the ${sec} section is not an open details headed "${name}": ${h3 ? txt(h3) : 'nothing'}`);
+            const k = [...el.children], h3 = k[0], rest = k.slice(1);
+            if (!h3 || !h3.matches('h3.sp-sech') || txt(h3) !== name || h3.id !== 'spsec-' + sec || el.getAttribute('aria-labelledby') !== 'spsec-' + sec) bad.push(`the ${sec} section is not a section headed "${name}": ${h3 ? txt(h3) : 'nothing'}`);
             if (rest.some(x => !isIt(x))) bad.push(`the ${sec} section's body holds ${rest.filter(x => !isIt(x)).map(x => x.tagName + '.' + x.className).join(', ')}`);
             if (sec === 'night' && (!rest.length || (rest.some(x => x.matches('p')) && rest.length !== 1))) bad.push(`the night games' part is ${rest.map(x => x.tagName + '.' + x.className).join(', ') || 'nothing'}, not their units or one line`);
             if (sec === 'slot' && rest.length !== 1) bad.push(`the Sunday slot's part is ${rest.map(x => x.tagName + '.' + x.className).join(', ') || 'nothing'}, not its unit or its one line`); }
@@ -6122,7 +6123,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         return { kind, name: K.name, pills }; });
       return { hidden: false, rows }; };
     /* what it draws, read off the page: in its section, right under the section's heading */
-    const recShown = (D, sec) => { const s = D.querySelector(`#spSets details.sp-sec[data-sp-sec="${sec}"]`), el = s && s.querySelector(`:scope > .sp-rec[data-sp-recsec="${sec}"]`);
+    const recShown = (D, sec) => { const s = D.querySelector(`#spSets section.sp-sec[data-sp-sec="${sec}"]`), el = s && s.querySelector(`:scope > .sp-rec[data-sp-recsec="${sec}"]`);
       if (!el) return { missing: true }; if (el.hidden) return { hidden: true, empty: !el.children.length && !txt(el) };
       const pill = x => ({ id: x.dataset.spRec, text: txt(x), title: x.getAttribute('title') });
       const rows = [...el.querySelectorAll(':scope > .bar[data-sp-reckind]')].map(b => ({ kind: b.dataset.spReckind, name: txt(b.querySelector(':scope > .sp-reck')), pills: [...b.querySelectorAll(':scope > .rec')].map(pill) }));

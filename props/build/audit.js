@@ -1702,11 +1702,13 @@ setTimeout(async()=>{
          of the Sunday slot's own (data-sp-sec="slot") anywhere */
       { const sets=d.getElementById('spSets'), kids=sets?[...sets.children]:[];
         const ORD=dayOffAud()?['all','night']:['all','slot','night'];
-        chk(!!d.querySelector('#spPanel > #spCard > #spHead')&&!!d.querySelector('#spPanel > #spCard > #spSets')&&kids.length===ORD.length&&kids.every((x,i)=>x.tagName==='DETAILS'&&x.classList.contains('sp-sec')&&x.dataset.spSec===ORD[i])
-          &&kids.every(x=>{ const sm=x.firstElementChild, h=sm&&sm.firstElementChild, r=sm&&sm.nextElementSibling; return !!sm&&sm.tagName==='SUMMARY'&&!!h&&h.tagName==='H3'&&h.classList.contains('sp-sech')&&h.id===`spsec-${x.dataset.spSec}`
+        /* (app v133) no fold: no details or summary on the tab */
+        chk(!d.querySelector('#spSets details,#spSets summary'),`${lab}: Suggested Parlays still draws a folding section`);
+        chk(!!d.querySelector('#spPanel > #spCard > #spHead')&&!!d.querySelector('#spPanel > #spCard > #spSets')&&kids.length===ORD.length&&kids.every((x,i)=>x.tagName==='SECTION'&&x.classList.contains('sp-sec')&&x.dataset.spSec===ORD[i])
+          &&kids.every(x=>{ const h=x.firstElementChild, r=h&&h.nextElementSibling; return x.getAttribute('aria-labelledby')===`spsec-${x.dataset.spSec}`&&!!h&&h.tagName==='H3'&&h.classList.contains('sp-sech')&&h.id===`spsec-${x.dataset.spSec}`
             &&(x.dataset.spSec==='all'?!!r&&r.classList.contains('sp-rec')&&r.dataset.spRecsec==='all':!x.querySelector('.sp-rec')); })
           &&!d.getElementById('spRec')&&!d.querySelector('#spHead .sp-rec,#spHead [data-sp-rec]'),
-          `${lab}: Suggested Parlays is not its head and the sections Record, Day games and Night games (no Day games on a Sunday from 4pm ET), each folding under its heading, the record in Record alone: ${kids.map(x=>x.tagName+(x.dataset.spSec?'['+x.dataset.spSec+']':'')).join(', ')||'no sections'}`);
+          `${lab}: Suggested Parlays is not its head and the sections Record, Day games and Night games (no Day games on a Sunday from 4pm ET), each a plain section under its heading, no fold, the record in Record alone: ${kids.map(x=>x.tagName+(x.dataset.spSec?'['+x.dataset.spSec+']':'')).join(', ')||'no sections'}`);
         chk(spPartsAud(),`${lab}: the Night games section does not draw the night's sets (or their line) and then the Sunday slot's one part (its set, marked .sp-slot, its line before it is up, or the line that none is left), in that order`);
         W.wording(kids.map(x=>(x.querySelector('h3.sp-sech')||{}).textContent).join('|')===ORD.map(s=>({all:'Record',slot:'Day games',night:'Night games'})[s]).join('|'),`${lab}: the sections are not headed Record, Day games and Night games`);
         /* (app v132) no Extreme level drawn: a set's cards and its Elo picks Safe, Medium and Aggressive alone */
@@ -6337,7 +6339,7 @@ setTimeout(async()=>{
         'the page did not ask for the suggestions record and its backtest beside its payload, each once as it loaded, with no-store: '+JSON.stringify([...askL,...askB])); }
     F('renderSp')();
     chk(SECS.every(sec=>{ const b=recBox(sec); return !!b&&b.hidden&&!txt(b); }),'with no record file and no backtest Suggested Parlays draws a record anyway: '+SECS.map(s=>txt(recBox(s))).join(' / '));
-    chk(!d.getElementById('pbRec')&&!d.getElementById('spRec')&&!d.querySelector('#spHead .sp-rec,#spHead [data-sp-rec]')&&SECS.every(sec=>{ const b=recBox(sec); return !!b&&b.previousElementSibling&&b.previousElementSibling.matches('summary.sp-sum'); }),
+    chk(!d.getElementById('pbRec')&&!d.getElementById('spRec')&&!d.querySelector('#spHead .sp-rec,#spHead [data-sp-rec]')&&SECS.every(sec=>{ const b=recBox(sec); return !!b&&b.previousElementSibling&&b.previousElementSibling.matches('h3.sp-sech'); }),
       'the all-games record is still drawn, the record is still at the head of Suggested Parlays, or a section\'s record is not right under its heading');
     /* (app v129) one record, Night games': no record of the Sunday slot's own, wherever it would be drawn */
     /* (app v131) two records, one a section: Night games' (the prime map) and Day games' (the slot map) */
