@@ -28,7 +28,14 @@ def sub1(k, old, new, what):
 
 sub1('p2', "const APP_BUILD='app v133 \\u00b7 2026-10-24';", "const APP_BUILD='app v134 \\u00b7 2026-10-24';", 'APP_BUILD')
 sub1('p3', "/* ---------- one game ---------- */", r"""/* (app v134) a player's card: his projection for the game and his season week by week (the matchup bubble's) */
+const PCARD_CACHE=new Map();
 function playerCard(pid,gid){
+  let sig=''; try{ sig=pid+'|'+gid+'|'+pbDataSig()+'|'+Object.keys(S.actuals||{}).length; }catch(e){ sig=''; }
+  if(sig&&PCARD_CACHE.has(sig)) return PCARD_CACHE.get(sig);
+  const out=playerCardBuild(pid,gid); if(sig){ PCARD_CACHE.set(sig,out); if(PCARD_CACHE.size>200) PCARD_CACHE.delete(PCARD_CACHE.keys().next().value); }
+  return out;
+}
+function playerCardBuild(pid,gid){
   const g=S&&S.sched&&S.sched.find(x=>x.id===gid); if(!g) return '';
   let x=null;
   try{ const R=rosterFor(g,true); for(const t of [g.a,g.h]){ const f=((R[t]&&R[t].players)||[]).find(p=>p.pl&&p.pl.id===pid); if(f){ x=f; break; } } }catch(e){ x=null; }

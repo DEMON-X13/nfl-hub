@@ -3863,7 +3863,14 @@ function weekStats(pl){
 }
 
 /* (app v134) a player's card: his projection for the game and his season week by week (the matchup bubble's) */
+const PCARD_CACHE=new Map();
 function playerCard(pid,gid){
+  let sig=''; try{ sig=pid+'|'+gid+'|'+pbDataSig()+'|'+Object.keys(S.actuals||{}).length; }catch(e){ sig=''; }
+  if(sig&&PCARD_CACHE.has(sig)) return PCARD_CACHE.get(sig);
+  const out=playerCardBuild(pid,gid); if(sig){ PCARD_CACHE.set(sig,out); if(PCARD_CACHE.size>200) PCARD_CACHE.delete(PCARD_CACHE.keys().next().value); }
+  return out;
+}
+function playerCardBuild(pid,gid){
   const g=S&&S.sched&&S.sched.find(x=>x.id===gid); if(!g) return '';
   let x=null;
   try{ const R=rosterFor(g,true); for(const t of [g.a,g.h]){ const f=((R[t]&&R[t].players)||[]).find(p=>p.pl&&p.pl.id===pid); if(f){ x=f; break; } } }catch(e){ x=null; }
@@ -7670,7 +7677,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='4c6ac54';
+const PAGE_HASH='2531a48';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
