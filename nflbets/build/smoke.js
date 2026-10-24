@@ -2585,7 +2585,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const yr = w.eval('SEASON');
       chk(txt(panel.querySelector('.pb-none')) === 'Regular season over.' && !panel.querySelector('[data-pb-mix], .pb-tier, ol.pb-top, [data-pb-leg], [data-pc-finish]')
         && secLine('night') === 'Regular season over.' && (dayOffOwn(d) ? !d.querySelector(SEC_SLOT) : secLine('slot') === 'Regular season over.' && d.querySelector(SEC_SLOT).lastElementChild === d.querySelector(SLOT_NONE)) && !offers()
-        && d.querySelectorAll('#spSets > details').length === (dayOffOwn(d) ? 2 : 3),
+        && d.querySelectorAll('#spSets > section').length === (dayOffOwn(d) ? 2 : 3),
         'with the season over the Parlay Builder or a section of Suggested Parlays does not say so, or still offers something: ' + txt(panel).slice(0, 120) + ' / ' + secLine('night') + ' / ' + secLine('slot'));
       w.eval('seasonOver=function(){ return false; }; renderParlay(); renderSp();'); await wait(20);
       const wk0 = w.eval('currentWeek()');
