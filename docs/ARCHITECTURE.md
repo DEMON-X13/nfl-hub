@@ -592,8 +592,11 @@ nflbets/
                                  gsReadings and gameSnapshot (snapshot.html), pkBoard and the
                                  parts' legFair, legPrice, injTag and S; it keeps its place
                                  (placeOf) and the leg's key, side and line across redraws by
-                                 a MutationObserver connected only while open; fetches and
-                                 keeps nothing (build.js refuses one that does)
+                                 a MutationObserver connected only while open; a player's
+                                 Elo by his name and no leg box (24 October 2026); Open prop
+                                 leg and Open game snapshot, closed, open it again (closeGame
+                                 wrapped, gameSnapshot's {back}); fetches and keeps nothing
+                                 (build.js refuses one that does)
   build/smoke.js  smoke_live.js  the page, and the X Parlays section, in jsdom: the gates
                                  (smoke.js also: Suggested Parlays' sets, their night rule,
                                  their lock and their short lines, the Elo picks' four
@@ -758,7 +761,8 @@ alone under `nflhub_theme_v1` (CLAUDE.md, "The light look"; the nflbets smoke's 
 card and its image keep `card.html`'s dark palette.
 The header's stamp (`.hub-stamp`) is the light/dark switch, the admin's place (`#hubAdmin`, `.hub-admin`: empty and
 hidden but on the admin's page, the Admin mark and Sign out, or for one load the line saying an admin link was refused;
-`admin.js` fills it), when the data was built and the build tag. The header's `buildTag` is the prop model's `APP_BUILD` and the page's own hash (`PAGE_HASH`,
+`admin.js` fills it), when the data was built and the build tag, a column kept clear of the switch on its right on any
+screen wider than a phone (24 October 2026). The header's `buildTag` is the prop model's `APP_BUILD` and the page's own hash (`PAGE_HASH`,
 seven hex of the page's SHA-256 taken with a placeholder in its slot), so every source change
 shows. `smoke.js` builds the page in memory and fails unless the published files match it, checks
 the hash, and runs `betting/tools/reference_models.json`'s gate on the `BET_APP` string.
@@ -1984,7 +1988,8 @@ owner may delete the database, or set its rules to `{"rules":{".read":false,".wr
 The owner tracks some friends' picks over the season (15 October 2026). A friend picks a week on
 `picks/` and sends the owner its Save file (kind `nfl-hub-weekly-picks`, version 1); Claude merges it
 into `picks/friends.json` with `node picks/tools/add.js <file>...` (`--check` holds the file to its rules
-and `betting/state.json`'s schedule; `test_add.js` is its test). The tool refuses a file whole for a
+and `betting/state.json`'s schedule, `--remove <name>...` takes friends off; `test_add.js` is its test; the list is
+empty since 24 October 2026, when the owner took all four off). The tool refuses a file whole for a
 wrong kind, version, season, week, name or game id; a pick saved at or after its game's kickoff (the
 schedule's, never the file's) is left out and named; a week sent again replaces that friend's week but
 keeps the earlier pick on a game that had kicked off when the new file was saved. The file is written

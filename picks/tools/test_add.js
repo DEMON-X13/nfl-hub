@@ -129,6 +129,31 @@ const read = () => JSON.parse(fs.readFileSync(fFile, 'utf8'));
   const H = JSON.parse(JSON.stringify(F)); H.friends[1].aka = ['D money fresh'];
   ok(T.check(H, st).some(x => /listed twice/.test(x)), 'check: an aka that is another friend\'s too');
   H.friends[1].aka = 'D'; ok(T.check(H, st).some(x => /aka is not a list/.test(x)), 'check: an aka that is not a list'); }
+/* a removal: by name or aka, without regard to case, whole; a name no friend has refuses it all; the command writes the
+   file without them, and a file sent later under a removed name adds that friend again from it alone */
+{ const F = T.empty(2030);
+  T.merge(F, T.readSent(sent(), st), st);
+  T.merge(F, T.readSent(sent({ name: 'Gonz' }), st), st);
+  T.merge(F, T.readSent(sent({ name: 'K' }), st), st);
+  T.rename(F, 'D money fresh', 'D');
+  const G = JSON.parse(JSON.stringify(F));
+  throws(() => T.remove(G, ['gonz', 'Nobody']), /no friend is named "Nobody"/, 'remove: a name no friend has refuses the removal');
+  ok(G.friends.length === 3, 'remove: a refused removal takes nobody out');
+  const gone = T.remove(G, ['d MONEY fresh', ' k ']);
+  ok(JSON.stringify(gone) === '["D","K"]' && G.friends.map(f => f.name).join() === 'Gonz' && T.check(G, st).length === 0, 'remove: found by an aka and by name without regard to case or spaces, the rest kept: ' + G.friends.map(f => f.name).join());
+  T.remove(G, ['Gonz', 'GONZ']);
+  ok(G.friends.length === 0 && T.check(G, st).length === 0, 'remove: the last friend out leaves an empty list that passes its rules');
+  fs.writeFileSync(fFile, JSON.stringify(F));
+  let r = run('--remove', 'D', 'Gonz', 'K');
+  const W = JSON.parse(fs.readFileSync(fFile, 'utf8'));
+  ok(r.code === 0 && W.friends.length === 0 && /removed D, Gonz, K; 0 friend\(s\) left/.test(r.out), 'remove: the command writes the file without them: ' + r.out);
+  fs.writeFileSync(fFile, JSON.stringify(F));
+  r = run('--remove', 'D', 'Zed');
+  ok(r.code === 1 && /no friend is named "Zed"/.test(r.out) && JSON.parse(fs.readFileSync(fFile, 'utf8')).friends.length === 3, 'remove: the command with a name no friend has writes nothing');
+  r = run('--remove');
+  ok(r.code === 2, 'remove: the command with no name is a usage error');
+  T.merge(G, T.readSent(sent({ name: 'D money fresh', week: 7, saved_at: '2030-10-22T09:00:00.000Z', picks: [{ game_id: '2030_07_SF_SEA', pick: 'SF' }] }), st), st);
+  ok(G.friends.length === 1 && G.friends[0].name === 'D money fresh' && Object.keys(G.friends[0].weeks).join() === 'w7', 'remove: a file sent later under a removed name adds that friend again from it alone'); }
 fs.rmSync(dir, { recursive: true, force: true });
 
 /* the real file, against the real schedule */

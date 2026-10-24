@@ -538,8 +538,12 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
 { const GL = rd('nflbets', 'build', 'glance.js');
   if (/<\/script|<!--/i.test(GL)) throw new Error('nflbets/build/glance.js has a closing script tag or a comment opener, which would end its script in the page');
   for (const need of ['window.hubGlance=', "setAttribute('role','dialog')", "setAttribute('aria-modal','false')", "setAttribute('aria-labelledby','glanceTitle')", "'Escape'",
-    'window.gsReadings', 'window.eloGlance', 'window.gameSnapshot(', 'window.glanceLeg', "matchMedia('(max-width:640px)')"])
+    'window.gsReadings', 'window.eloGlance', 'window.gameSnapshot(', 'window.glanceLeg', "matchMedia('(max-width:640px)')",
+    /* (24 October 2026) a player's Elo by his name, and Open prop leg and Open game snapshot handing back to the bubble */
+    'data-glance-elo', 'closeGame=function()', '{back:()=>reopen(r),props:g=>keepRet(r,g)}', '.glance-pop:not(.glance-sheet):has(.pcard)'])
     if (!GL.includes(need)) throw new Error('nflbets/build/glance.js no longer has ' + need);
+  if (/\$\{legHtml\(K\)\}\$\{card\}/.test(GL)) throw new Error("nflbets/build/glance.js draws the leg in a player's bubble again (the owner's call of 24 October 2026 took it off)");
+  if (!/if\(bk&&typeof bk\.back==='function'\) try\{ bk\.back\(\); \}catch\(e\)\{\}/.test(rd('nflbets', 'build', 'snapshot.html'))) throw new Error("the Game snapshot no longer hands back to the matchup bubble when it is closed ({back})");
   for (const gone of ['fetch(', 'XMLHttpRequest', 'sendBeacon', 'localStorage', 'sessionStorage', 'indexedDB', 'window.storage', 'save('])
     if (GL.includes(gone)) throw new Error('nflbets/build/glance.js has ' + gone + ': the bubble reads what the page already has and keeps nothing');
   if (!/\nwindow\.gsReadings=\{recordOf,lineOf,callsOf,chanceOf,teamsOf,unitsOf\};\n/.test(rd('nflbets', 'build', 'snapshot.html'))) throw new Error('the Game snapshot no longer hands the matchup bubble its readings (window.gsReadings)');

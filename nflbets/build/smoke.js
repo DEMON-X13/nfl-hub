@@ -8483,17 +8483,20 @@ async function glanceChecks() {
   /* ---- what one bubble holds, against the smoke's own reading ---- */
   const legBad = (kind, K, wantPrice, wantSrc) => {
     const bad = [], l = K.leg, B = box(), lb = B && B.querySelector('[data-glance-legbox]');
-    if (!lb) return ['no leg in the bubble'];
     if (K.price !== wantPrice || (K.src || '') !== (wantSrc || '')) bad.push(`the leg is kept at ${K.price} ${K.src}, not the ${wantPrice} ${wantSrc} its row shows`);
+    /* a player's bubble draws no leg (the owner's call of 24 October 2026, "remove what I crossed out": its line, price,
+       model, fair chance and market + form), nor any of its numbers */
+    if (kind === 'p') { const left = ['label', 'price', 'model', 'fair', 'mf', 'mu'].filter(k => nOf(k) !== null);
+      if (lb || left.length || /This leg/.test(txt(B))) bad.push(`a player's bubble draws the leg it was opened from (${lb ? 'its box' : ''}${left.length ? ' ' + left.join(', ') : ''})`);
+      return bad; }
+    if (!lb) return bad.concat('no leg in the bubble');
     if (nOf('label') !== l.label) bad.push(`line ${nOf('label')}, not ${l.label}`);
     if (nOf('price') !== pxOwn(wantPrice) + estOwn(wantSrc)) bad.push(`price ${nOf('price')}, not ${pxOwn(wantPrice) + estOwn(wantSrc)}`);
     if (nOf('model') !== (l.p * 100).toFixed(0) + '%') bad.push(`model ${nOf('model')}, not ${(l.p * 100).toFixed(0)}%`);
     const f = fo(l), fw = f && f.p != null ? (f.p * 100).toFixed(0) + '%' + (f.est ? ' est.' : '') : 'none';
     if (nOf('fair') !== fw) bad.push(`fair ${nOf('fair')}, not ${fw}`);
-    /* a player the page has ruled out shows no Elo matchup: his bubble says he has none to show */
-    const mf = kind === 'p' ? mfOwn(l, wantPrice, wantSrc) : null, mu = kind === 'p' && !(typeof w.eloRuledOut === 'function' && w.eloRuledOut(l.pid)) ? muOwn(l, wantPrice) : null;
-    if (mf == null ? nOf('mf') !== null : !near(nOf('mf'), mf)) bad.push(`market + form ${nOf('mf')}, not ${mf == null ? 'none' : (mf * 100).toFixed(2)}`);
-    if (mu == null ? nOf('mu') !== null : !near(nOf('mu'), mu)) bad.push(`Elo matchup ${nOf('mu')}, not ${mu == null ? 'none' : (mu * 100).toFixed(2)}`);
+    /* market + form and the Elo matchup are a player's (a team's or a game's leg has neither) */
+    if (nOf('mf') !== null || nOf('mu') !== null) bad.push(`a team's or a game's leg drawn with market + form or an Elo matchup (${nOf('mf')} / ${nOf('mu')})`);
     return bad; };
   const playerBad = (pid, gid, K) => {
     const bad = [], l = K && K.leg, e = Pl.players[pid], sp = S.players[pid] || null, r = S.sched.find(x => x.id === gid) || null, B = box();
@@ -8506,6 +8509,12 @@ async function glanceChecks() {
     if (nOf('inj') !== wantInj || (wantInj && txt(why) !== (it ? it.title : ow))) bad.push(`status ${nOf('inj')} (${txt(why)}), not ${wantInj} (${it ? it.title : ow})`);
     if (e && e.se != null) { const gx = Pl.groups[e.group], row = gx && (gx.top || []).find(x => x.id === pid), sh = B.querySelector('.glance-sh'), want = d.createElement('span'); want.innerHTML = w.pkTierBadge(e.se);
       if (nOf('se') !== String(e.se) || nOf('tier') !== tierOwn(e.se) || !sh || sh.innerHTML !== want.innerHTML) bad.push(`Elo ${nOf('se')} ${nOf('tier')}, not ${e.se} ${tierOwn(e.se)} with its shield`);
+      /* beside his name in the bubble's head, not a row of its own (the owner's call of 24 October 2026: "move up the elo
+         button up next to the name and the ELO"), the heading itself his name alone */
+      const hd = B.querySelector('.glance-hd'), el = hd && hd.querySelector('[data-glance-elo]');
+      if (!el || !el.contains(sh) || !el.querySelector('[data-glance-n="se"]') || !el.querySelector('[data-glance-n="tier"]') || el.closest('#glanceTitle')
+        || B.querySelectorAll('[data-glance-n="se"]').length !== 1 || [...B.querySelectorAll('.glance-kv dt')].some(x => txt(x) === 'Season Elo'))
+        bad.push('his season Elo, shield and tier are not beside his name in the bubble\'s head (once, and no Season Elo row)');
       if (e.rank && (nOf('rank') !== '#' + e.rank || nOf('of') !== String(gx.active) || (nOf('prov') === 'prov.') !== !!(row && row.prov))) bad.push(`rank ${nOf('rank')} of ${nOf('of')} ${nOf('prov') || ''}, not #${e.rank} of ${gx.active}${row && row.prov ? ' prov.' : ''}`); }
     else { const sd = Object.values(Pl.groups || {}).flatMap(x => x.sidelined || []).find(x => x.id === pid), want = sd ? 'not ranked: ' + sd.why : 'no Elo rating this season';
       if (nOf('noelo') !== want || nOf('se') !== null) bad.push(`no Elo row said "${nOf('noelo')}", not "${want}"`); }
@@ -8777,13 +8786,29 @@ async function glanceChecks() {
       if (shown() || d.activeElement !== b2) bad.push('Escape on the second bubble does not give its name the focus back');
       b2.click(); await wait(20); b2.click(); await wait(10);
       if (shown()) bad.push('its own name pressed again does not close it');
-      /* Open game snapshot: the bubble closes and that game's window opens; closing it gives the name the focus back */
-      b2.click(); await wait(20); const sn = box().querySelector('[data-glance-snap]');
-      if (!sn) bad.push('no Open game snapshot on a game the season\'s schedule has');
-      else { sn.click(); await wait(80); const gm = d.getElementById('gsModal'), g = STATE.schedule.find(x => x.game_id === r.id), tt = gm && [...gm.querySelectorAll('#gsTitle .pk-ttag')].map(txt);
-        if (shown() || !gm || gm.hidden || !tt || tt.join() !== [g.away_team, g.home_team].join()) bad.push(`Open game snapshot does not close the bubble and open ${r.id}'s window (${tt})`);
-        w.gameSnapshotClose(); await wait(20);
-        if (d.activeElement !== b2) bad.push('closing the game snapshot does not give the name the focus back'); }
+      /* Open game snapshot: the bubble closes and that game's window opens; closing it (Close, Escape, a click outside)
+         opens the bubble again on its name, the focus in it (the owner's call of 24 October 2026: "when I close it go back
+         to the player pop up"), for the player's bubble and the team's alike */
+      { const g = STATE.schedule.find(x => x.game_id === r.id), gm = () => d.getElementById('gsModal');
+        const back = (b, how) => { if (!shown() || box().dataset.glanceOf !== b.dataset.glance || b.getAttribute('aria-expanded') !== 'true' || !box().contains(d.activeElement) || (gm() && !gm().hidden))
+          bad.push(`the game snapshot closed by ${how} does not open ${b.dataset.glance}'s bubble again with the focus in it (${shown() ? 'open on ' + box().dataset.glanceOf : 'closed'}, the focus on ${d.activeElement && (d.activeElement.id || d.activeElement.className || d.activeElement.tagName)})`); };
+        /* the player's name only where his line is on the fixture's game (a made-up player stands on the made-up game,
+           which the season's schedule has not) */
+        const cases = [[b2, 'its Close'], [b2, 'Escape']].concat(b1.dataset.glanceGame === r.id ? [[b1, 'a click outside'], [b1, 'gameSnapshotClose()']] : [[b2, 'a click outside'], [b2, 'gameSnapshotClose()']]);
+        for (const [b, how] of cases) {
+          if (!shown() || box().dataset.glanceOf !== b.dataset.glance) { if (shown()) key(d.activeElement, 'Escape'); await wait(10); b.click(); await wait(20); }
+          const sn = box().querySelector('[data-glance-snap]');
+          if (!sn) { bad.push(`no Open game snapshot in ${b.dataset.glance}'s bubble, on a game the season's schedule has`); continue; }
+          sn.click(); await wait(80); const tt = gm() && [...gm().querySelectorAll('#gsTitle .pk-ttag')].map(txt);
+          if (shown() || !gm() || gm().hidden || !tt || tt.join() !== [g.away_team, g.home_team].join()) bad.push(`Open game snapshot does not close the bubble and open ${r.id}'s window (${tt})`);
+          if (how === 'its Close') d.getElementById('gsClose').click();
+          else if (how === 'Escape') key(d.activeElement, 'Escape');
+          else if (how === 'a click outside') gm().dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
+          else w.gameSnapshotClose();
+          await wait(30); back(b, how); }
+        const bl = cases[cases.length - 1][0];
+        key(d.activeElement, 'Escape'); await wait(10);
+        if (shown() || d.activeElement !== bl) bad.push('Escape on the bubble the snapshot gave back does not close it with the focus on its name'); }
       /* the tab changed by the address (a hash change, as Back makes) with the focus in the bubble: the page clicks the
          tab's button for the reader, the bubble closes and the focus goes to the chosen tab's button, never the body */
       { const t0 = d.querySelector('#tabs button[aria-selected="true"]'), sec0 = d.querySelector('main section:not([hidden])');
@@ -8834,13 +8859,52 @@ async function glanceChecks() {
         if (shown() || d.activeElement !== copyIn(builder(), L)) bad.push(`Escape after renderParlay gives the focus to ${where(d.activeElement)}, not the builder's copy of ${L.name}`);
         copyIn(builder(), L).click(); await wait(20); w.eval('renderParlay()'); await wait(30); copyIn(builder(), L).click(); await wait(20);
         if (shown() || expanded().length) bad.push('after renderParlay the builder\'s name pressed again does not close its bubble');
-        /* its price moved under it (a Refresh odds press, a rung's book price): the bubble follows the copy's numbers */
-        copyIn(builder(), L).click(); await wait(20); S.parlay[L.key].price = 105; w.eval('renderParlay()'); await wait(30);
-        { const lp = legPrice(S.parlay[L.key]), c = copyIn(builder(), L);
-          if (!shown() || nOf('price') !== pxOwn(lp.ml) + estOwn(lp.src) || !c || c.getAttribute('aria-expanded') !== 'true')
-            bad.push(`a builder leg's price moved under its open bubble: the bubble says ${nOf('price')}, not ${pxOwn(lp.ml) + estOwn(lp.src)}`); }
-        key(d.activeElement, 'Escape'); await wait(10); }
+        /* its price moved under it (a Refresh odds press, a rung's book price): the bubble follows the copy's numbers, on the
+           team's leg beside it (a player's bubble draws no price since 24 October 2026) */
+        { const was = legPrice(S.parlay[X.key]);
+          copyIn(builder(), X).click(); await wait(20); S.parlay[X.key].price = 105; S.parlay[X.key].src = 'real'; w.eval('renderParlay()'); await wait(30);
+          const lp = legPrice(S.parlay[X.key]), c = copyIn(builder(), X);
+          if (!shown() || box().dataset.glanceOf !== 't:XXA' || lp.ml === was.ml || nOf('price') !== pxOwn(lp.ml) + estOwn(lp.src) || !c || c.getAttribute('aria-expanded') !== 'true')
+            bad.push(`a builder leg's price moved under its open bubble (${was.ml} to ${lp.ml}): the bubble says ${nOf('price')}, not ${pxOwn(lp.ml) + estOwn(lp.src)}`);
+          key(d.activeElement, 'Escape'); await wait(10); S.parlay[X.key] = { ...X }; w.eval('renderParlay()'); await wait(30); } }
       part('renderParlay: the builder\'s copy, its focus, its toggle and a price moved under it');
+      /* Open prop leg (the owner's call of 24 October 2026: "on the open prop leg or open game snapshot, when I close it go
+         back to the player pop up"): the bubble closes and the game's page opens on the Props tab; that page closed by its
+         Back, Escape or a click outside takes the reader back to the tab the bubble was on, the Parlay Builder, and opens the
+         bubble again on the builder's copy of the leg, the focus in it. The page left for another tab by the address brings
+         nothing back (that tab stands), and a game's page not opened from a bubble keeps its Back on the Props tab. On the
+         made-up game two days out, which the Props tab opens at any hour */
+      if (b0) { const gm = () => d.getElementById('gameModal'), selTab = () => (d.querySelector('#tabs button[aria-selected="true"]') || { dataset: {} }).dataset.tab;
+        S.parlay = { [L.key]: { ...L }, [X.key]: { ...X } }; w.eval('renderParlay()'); await wait(30);
+        const toProps = async () => { if (shown()) { key(d.activeElement, 'Escape'); await wait(10); }
+          const b = copyIn(builder(), L); if (!b) return `the builder does not draw ${L.name}`;
+          b.click(); await wait(20); const pb = shown() && box().querySelector('[data-glance-prop]');
+          if (!pb) return `no Open prop leg in ${L.name}'s bubble (the Props tab ${w.pkBoard.canProps(L.gid) ? 'can' : 'cannot'} open ${L.gid})`;
+          pb.click(); await wait(60);
+          if (shown() || selTab() !== 'slate' || !w.eval('gameShown()') || w.eval('S.ui.game') !== L.gid) return `Open prop leg does not close the bubble and open ${L.gid}'s page on the Props tab (tab ${selTab()}, the page's game ${w.eval('S.ui.game')})`;
+          return ''; };
+        for (const how of ['its Back', 'Escape', 'a click outside']) {
+          const e1 = await toProps(); if (e1) { bad.push(e1); break; }
+          if (how === 'its Back') d.getElementById('backBtn').click();
+          else if (how === 'Escape') key(d.body, 'Escape');
+          else gm().dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true }));
+          await wait(150);
+          const c = copyIn(builder(), L);
+          if (selTab() !== 'parlay' || w.eval('gameShown()') || w.eval('S.ui.game') || !shown() || box().dataset.glanceOf !== 'p:' + L.pid || !c || c.getAttribute('aria-expanded') !== 'true' || !box().contains(d.activeElement) || w.hubGlanceBack())
+            bad.push(`the game's page Open prop leg opened, closed by ${how}, does not take the reader back to the Parlay Builder with ${L.name}'s bubble open again, the focus in it (tab ${selTab()}, the page ${w.eval('gameShown()') ? 'open' : 'closed'}, the bubble ${shown() ? 'open on ' + box().dataset.glanceOf : 'closed'}, the focus on ${where(d.activeElement)})`); }
+        /* left for another tab by the address: that tab stands, no bubble, and none on coming back */
+        { const e1 = await toProps();
+          if (e1) bad.push(e1);
+          else { w.location.hash = '#elo'; await wait(150);
+            if (selTab() !== 'elo' || shown() || w.eval('gameShown()') || w.hubGlanceBack()) bad.push(`the game's page left for another tab by the address brings the bubble back or keeps the page (tab ${selTab()}, the bubble ${shown() ? 'open' : 'closed'})`);
+            tab('parlay'); await wait(150);
+            if (shown()) bad.push('back on the Parlay Builder after leaving the game\'s page for another tab, the bubble opens again'); } }
+        /* a game's page not opened from a bubble: its Back stays on the Props tab */
+        { tab('slate'); await wait(20); w.pkBoard.openOnProps(L.gid, L.pid); await wait(40);
+          const bb = d.getElementById('backBtn'); if (bb) bb.click(); await wait(150);
+          if (!bb || selTab() !== 'slate' || shown() || w.eval('gameShown()')) bad.push(`a game's page not opened from a bubble, closed by its Back, goes to ${selTab()}${shown() ? ' with a bubble open' : ''}`);
+          tab('parlay'); await wait(40); }
+        part('Open prop leg: the game\'s page closed takes the reader back to the bubble'); }
       /* the reader's place in the bubble kept through a redraw and a resize: scrolled to its foot (the leg's own box), a
          redraw on the page that leaves the leg as it was, or a resize, places it again and must not take it back to the
          top. jsdom lays nothing out, so the browser's rule is stood in on the bubble alone: a measure of its height with
@@ -8931,15 +8995,12 @@ async function glanceChecks() {
         if (lp.ml !== -114 || lp.src !== 'real') bad.push(`the rung planted at the book's -114 shows ${lp.ml} ${lp.src}`);
         if (mf == null ? !!alt : !alt || Math.abs(+alt.dataset.p - mf) > 1e-4) bad.push(`the builder row's market + form is ${alt ? alt.dataset.p : 'none'}, not ${mf == null ? 'none' : mf.toFixed(4)} on the -114 it shows (on the -174 it was stored at: ${(mfOwn(rung, -174, 'real') || 0).toFixed(4)})`);
         if (mu == null ? !!mul : !mul || !near(txt(mul.querySelector('b')), mu)) bad.push(`the builder row's Elo matchup is ${mul ? txt(mul.querySelector('b')) : 'none'}, not ${mu == null ? 'none' : (mu * 100).toFixed(2)} on the -114 it shows`);
-        if (b) { b.click(); await wait(20);
-          if (alt && nOf('mf') !== txt(alt.querySelector('b'))) bad.push(`the bubble's market + form ${nOf('mf')} is not its row's ${txt(alt.querySelector('b'))}`);
-          if (mul && nOf('mu') !== txt(mul.querySelector('b'))) bad.push(`the bubble's Elo matchup ${nOf('mu')} is not its row's ${txt(mul.querySelector('b'))}`);
-          key(d.activeElement, 'Escape'); await wait(10);
-          await openOn(b, lp.ml, lp.src, 'the builder, a rung at the book\'s price now'); }
+        /* its bubble keeps the row's leg at the price the row shows (and, a player's, draws none of its numbers) */
+        if (b) await openOn(b, lp.ml, lp.src, 'the builder, a rung at the book\'s price now');
         else bad.push('the rung\'s name is not drawn as the bubble\'s button');
         delete OD[FAKE.id];
         S.parlay = JSON.parse(keepP); w.eval('renderParlay()'); await wait(40); }
-      part('a builder row\'s market + form and Elo matchup on the price it shows, as its bubble\'s');
+      part('a builder row\'s market + form and Elo matchup on the price it shows');
       tab('suggest'); await wait(40); }
 
     /* ---- the builder at any hour: a made-up player with no Elo row, on no book price (the builder shows the model's

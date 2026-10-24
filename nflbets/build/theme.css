@@ -151,10 +151,14 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 /* the admin link (admin.js, 20 October 2026): X Parlays and the X Bet Log are on the site owner's tab bar alone,
    hidden from the first paint unless the page is his (html[data-admin="on"], set in the head before the body).
    His Admin mark and Sign out (a text button whose 44px tap target comes from padding taken back out by a negative
-   margin) are in the stamp's place after the switch: on a screen wider than a phone that place is laid on the
-   switch's own row, to its left and out of the flow, so the stamp keeps its height and nothing comes near the
-   switch; on a phone (620px and under) it is the stamp's first line, under the wordmark. On a visitor's page the
-   place is empty and hidden, and the header is exactly as it was, but for the one line a refused link draws there */
+   margin) are in the stamp's place after the switch, the stamp's first line, over when the data was built and the
+   build tag. On a screen wider than a phone the stamp keeps 56px clear on its right for the switch (44px and a
+   12px gap), so none of its lines runs under it: the owner's screenshot of 24 October 2026, "top right thing in
+   admin page is all squished", once the tagline had gone (22 October) and the wordmark alone no longer held the
+   stamp below the switch's corner, showed the switch over the end of "Updated ..." and the build tag on every page
+   and, on his, the Admin mark and Sign out (laid out of the flow on the switch's row until then) on top of
+   "Updated ...". On a phone (620px and under) the stamp sits under the wordmark, clear of the switch already. On a
+   visitor's page the place is empty and hidden, but for the one line a refused link draws there */
 html:not([data-admin="on"]) #tabs [data-admin-only]{display:none!important}
 .hub-admin{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;font-size:12px;line-height:18px}
 .hub-admin[hidden]{display:none}
@@ -162,7 +166,7 @@ html:not([data-admin="on"]) #tabs [data-admin-only]{display:none!important}
 .ha-out{font:inherit;font-weight:600;color:var(--ink-2);background:none;border:0;border-radius:6px;padding:13px 6px;margin:-13px -6px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
 .ha-out:hover{color:var(--ink)}
 .ha-msg{color:var(--miss);font-weight:600}
-@media(min-width:621px){ .hub-admin{position:absolute;top:26px;right:74px;min-height:44px;max-width:calc(100% - 440px);flex-wrap:wrap;text-align:right} }
+@media(min-width:621px){ .hub-stamp{padding-right:56px} }
 .card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}
 
 /* inside the framed betting tabs (html.embed): the page's glow shows through */
@@ -223,7 +227,6 @@ line[stroke="#E6EAEF"]{stroke:#4A5269}
 html[data-theme="light"] .hub-theme .ht-sun{display:none}
 html[data-theme="light"] .hub-theme .ht-moon{display:block}
 @media(max-width:900px){ .hub-theme{top:12px;right:16px} }
-@media(min-width:621px) and (max-width:900px){ .hub-admin{top:12px;right:68px} }
 /* under about 340px the wordmark's football reaches the switch's corner: the wordmark keeps clear of it */
 @media(max-width:340px){ .brand h1{padding-right:52px} }
 
