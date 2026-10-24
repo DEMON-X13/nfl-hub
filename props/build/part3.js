@@ -2666,8 +2666,6 @@ window.pbRecLoad=pbRecLoad;
 const SP_SEC={night:{maps:['prime'],name:'Night games'},slot:{maps:['slot'],name:'Day games'},all:{maps:['prime','slot'],name:'Record'}};
 /* (app v132) the levels the tab draws and counts: Extreme off the tab (the job still takes and grades it) */
 const SP_SHOW=['safe','med','aggr'];
-/* the sections a visitor folded this page load */
-const SP_FOLD=new Set();
 /* (app v132) Day games off on a Sunday from 4pm Eastern */
 function spDayOff(now){ const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',hourCycle:'h23'}).formatToParts(new Date(now==null?Date.now():now)).map(x=>[x.type,x.value]));
   return p.weekday==='Sun'&&+p.hour>=16; }
@@ -3431,9 +3429,8 @@ function spHeadHtml(){
     <div class="pb-row pb-odds-row sp-odds"><span class="pb-lbl">Odds</span>${espnCtl(null,'sp')}</div>`;
 }
 /* a section: its heading, its record, then its sets or why there are none */
-const spSecHtml=(sec,body)=>`<details class="sp-sec" data-sp-sec="${sec}"${SP_FOLD.has(sec)?'':' open'}><summary class="sp-sum"><h3 class="sp-sech" id="spsec-${sec}">${SP_SEC[sec].name}</h3></summary>${sec==='all'?spRecHtml(sec):''}${body}</details>`;
-if(typeof document!=='undefined') document.addEventListener('toggle',e=>{ const d=e.target;
-  if(d&&d.matches&&d.matches('details.sp-sec[data-sp-sec]')){ const s=d.dataset.spSec; if(d.open) SP_FOLD.delete(s); else SP_FOLD.add(s); } },true);
+/* (app v133) a plain section, no fold */
+const spSecHtml=(sec,body)=>`<section class="sp-sec" data-sp-sec="${sec}" aria-labelledby="spsec-${sec}"><h3 class="sp-sech" id="spsec-${sec}">${SP_SEC[sec].name}</h3>${sec==='all'?spRecHtml(sec):''}${body}</section>`;
 function spNightHtml(on){
   const w=currentWeek(), G=spGames();
   if(!G.length) return `<p class="pb-none">${seasonOver()?'Regular season over.':`No night game left in week ${w}.`}</p>`;
