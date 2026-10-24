@@ -185,8 +185,9 @@ process.on('unhandledRejection', e => { checks++; fails.push('the page threw in 
    v125, with the admin's boots and the published read's checks, about ten and a half on a 4-core box beside another
    heavy check, eleven on a payload carrying the read; on 22 October 2026, app v129, 14 min 59 s on a 4-core box with
    under 15 GB and nothing else running, its 2,795 checks passing, where the limit, fifteen minutes until then, stopped
-   a run two sections short; twenty since, still well inside the elo job's forty) */
-const SMOKE_LIMIT_MS = 20 * 60 * 1000;
+   a run two sections short; twenty since; on 24 October 2026, app v134, with the player card's and the game search's checks, 20 min 14 s on the
+   same box, every section done: twenty-five since, still inside the elo job's forty) */
+const SMOKE_LIMIT_MS = 25 * 60 * 1000;
 setTimeout(() => finish(`the smoke did not finish in ${Math.round(SMOKE_LIMIT_MS / 1000)} s: stopped with what it had`), SMOKE_LIMIT_MS).unref();
 /* nor does it pass by running out of things to wait on: a body stuck on a promise nothing will
    settle, with no window open to keep the process up, would otherwise end Node with exit 0 and
@@ -8352,6 +8353,27 @@ async function glanceChecks() {
   try { await w.eloFiles(); } catch (e) {}
   await wait(300);
   const S = w.eval('S'), TN = w.eval('TEAM_NAMES'), fo = fairRule(w), legPrice = w.eval('legPrice'), legKey = w.eval('legKey');
+  /* ---- (app v134) a game's page: the player search at its top ---- */
+  { const g = (w.eval('typeof pbGames==="function"?pbGames():[]') || [])[0] || (w.eval('S.sched') || []).find(x => +x.w === +w.eval('currentWeek()'));
+    if (!g) console.log('  (no game to stand the game page search on)');
+    else { const open = gid => { w.eval(`S.ui.game=${JSON.stringify(gid)};S.ui.open={};renderGame()`); };
+      open(g.id); await wait(20);
+      const inp = () => d.getElementById('gameSearch'), rows = () => [...d.querySelectorAll('#gameView [data-open], #gameView [data-nohist]')];
+      const nm = r => { const wh = r.querySelector('.who'), tn = wh && [...wh.childNodes].find(c => c.nodeType === 3 && c.textContent.trim()); return ((tn && tn.textContent) || '').toLowerCase(); };
+      const I = inp(), R0 = rows();
+      chk(!!I && I.type === 'search' && I.value === '' && I.getAttribute('aria-label') === 'Find a player in this game' && R0.length > 0 && R0.every(x => !x.hidden) && d.querySelector('#gameView > .gsearch') === d.querySelector('#gameView .bar + .gsearch'),
+        `${g.id}'s page has no player search under its bar, or hides a row with nothing typed`);
+      if (I && R0.length) { const q = nm(R0[R0.length - 1]).trim().slice(0, 4).trim(), type = async v => { inp().focus(); inp().value = v; inp().dispatchEvent(new w.Event('input', { bubbles: true })); await wait(10); };
+        await type(q); const want = rows().map(x => nm(x).includes(q));
+        chk(rows().every((x, i) => x.hidden === !want[i]) && want.some(Boolean) && d.activeElement === inp() && [...d.querySelectorAll('#gameView .plrbody, #gameView .wkstats')].every(b => { let p = b.previousElementSibling; while (p && !p.matches('[data-open],[data-nohist]')) p = p.previousElementSibling; return !p || b.hidden === p.hidden; }),
+          `typing "${q}" on ${g.id}'s page does not leave exactly the players whose names hold it (each open body with its row), the focus in the box`);
+        await type('zzqxw'); chk(rows().every(x => x.hidden) && [...d.querySelectorAll('#gameView .teamhdr')].every(h => h.hidden), 'a search no name holds leaves a row or a team heading shown');
+        await type(q); w.eval('renderGame()'); await wait(10);
+        chk(inp().value === q && rows().every((x, i) => x.hidden === !rows().map(y => nm(y).includes(q))[i]), 'the search is lost when the game\'s page is drawn again');
+        const g2 = (w.eval('S.sched') || []).find(x => x.id !== g.id && +x.w === +g.w);
+        if (g2) { open(g2.id); await wait(10); chk(inp().value === '' && rows().every(x => !x.hidden), 'the search is carried to another game'); }
+        await type(''); chk(rows().every(x => !x.hidden), 'clearing the search does not show every row again'); }
+      w.eval('closeGame()'); await wait(10); } }
   const box = () => d.getElementById('glanceBox'), shown = () => { const b = box(); return !!b && !b.hidden; };
   const nOf = k => { const b = box(), e = b && b.querySelector(`[data-glance-n="${k}"]`); return e ? txt(e) : null; };
   /* a whole per cent shown against a chance worked out here (the page's normal curve and the smoke's agree to 1e-7) */
@@ -8567,6 +8589,13 @@ async function glanceChecks() {
     const xb = B.querySelector('button[data-glance-close]'); if (!xb || txt(xb) !== 'Close' || w.getComputedStyle(xb).minHeight !== '44px') bad.push('no 44px Close');
     const sn = B.querySelector('button[data-glance-snap]'), onBoard = STATE.schedule.some(x => x.game_id === gid);
     if (!!sn !== onBoard || (sn && (txt(sn) !== 'Open game snapshot' || sn.dataset.glanceSnap !== gid || w.getComputedStyle(sn).minHeight !== '44px'))) bad.push(`Open game snapshot ${sn ? 'drawn' : 'missing'} for a game ${onBoard ? 'on' : 'not on'} the season's schedule (state.json)`);
+    /* (app v134) a player's card (his projection for the game and his season week by week, the props parts' own
+       playerCard) and Open prop leg, wherever the page has his game */
+    if (kind === 'p') { const pc = B.querySelector('.pcard'), want = typeof w.playerCard === 'function' ? w.playerCard(id, gid) : '', tmp = d.createElement('div'); tmp.innerHTML = want;
+      if ((tmp.firstElementChild ? tmp.firstElementChild.outerHTML : '') !== (pc ? pc.outerHTML : '')) bad.push('the player card is not his projection and season log as the page draws them');
+      if (pc && (pc.dataset.pcard !== id || !pc.querySelector('.wkstats'))) bad.push('the player card is not his, or has no season log');
+      const pb = B.querySelector('button[data-glance-prop]'), P = w.pkBoard, can = !!P && typeof P.openOnProps === 'function' && (!P.canProps || P.canProps(gid));
+      if (!!pb !== can || (pb && (txt(pb) !== 'Open prop leg' || pb.dataset.glanceProp !== gid || pb.dataset.glancePid !== id || w.getComputedStyle(pb).minHeight !== '44px'))) bad.push(`Open prop leg ${pb ? 'drawn wrong or where the Props tab cannot open the game' : 'missing'}`); }
     if (!K) bad.push('its leg is not kept'); else bad.push(...legBad(kind, K, wantPrice, wantSrc));
     bad.push(...(kind === 'p' ? playerBad(id, gid, K) : teamBad(gid, kind === 't' ? id : null, K ? K.leg.stat : String(btn.dataset.glanceLeg || '').split('|')[2])));
     return bad; };

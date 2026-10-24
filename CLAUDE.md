@@ -2406,6 +2406,22 @@ game snapshot and a tab changed by the address, the redraws (renderParlay, a pri
 an Elo pick's card), the reader's scroll, a stale stored price, and nothing written to storage, all on fixtures of its
 own at any hour (the builder's legs on a made-up game two days out).
 
+**A player's card, and a game page's search** (app v134, `patch_player_card.py`, the owner's call of 24 October 2026:
+"anytime a player name is mentioned you are able to click that for more information ... show what the attachment shows
+[the Show stats game log] ALSO what their projections are for next game ... have button: opens the prop leg for that
+particular player. also when clicking into a particular game, have a search box at the top to find a player"). A player's
+matchup bubble (every player's name on the Parlay Builder and Suggested Parlays) carries, after the leg, the props parts'
+`playerCard(pid, gid)`: the prop model's projection for that game (each stat `statLines` gives him, its mean or the
+touchdown's chance) and his season week by week, the very table Show stats draws (`weekStats`), then an "Open prop leg"
+button (`data-glance-prop`, 44px) opening the game's page with his row open (`pkBoard.openOnProps`); the bubble widens to
+460px with a card in it. A game's page has a search box under its bar (`#gameSearch`, type search, "Find a player"):
+typing hides every row whose name does not hold the text, with its open body and stats, and a team heading left with
+none (`gameSearchApply`, in place, the focus kept; the name read from the row's own text node, since the ELO tab sets a
+shield before it); the text is kept for that game while the page is open (`GAME_Q`, outside `S`) and cleared when
+another game opens. The nflbets smoke holds the card (the page's own `playerCard` output, his id, the season log) and
+Open prop leg on every player bubble it opens, and the search on a game of the week (the rows it leaves, the focus,
+nothing matching, a redraw keeping it, another game clearing it, clearing it showing all).
+
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
 from its biggest edges, collected its mistakes; the 1pm Safe pair said 53% where its fair chance was
@@ -2767,7 +2783,7 @@ matchups.json's own games and threw once they had kicked off). `SMOKE_PAYLOAD=<f
 payload, to try a week the job has not baked, and `SMOKE_NOW=<ISO time>` runs it as if it were then
 (Node's clock and every page's, the shift above laid over it; `props/build/test_audit_phases.py` uses both). `--season-over` gives every game a result first; run it after a change to the smoke, to the Props tab's rows or to
 the Game snapshot (to the Matchups board until it went on 22 October 2026). Both smokes end on their own: a mistake in the smoke's code exits 1 at once
-with its stack, a run still going after twenty minutes stops and fails (smoke_live.js after ten), and one left waiting on
+with its stack, a run still going after twenty-five minutes stops and fails (smoke_live.js after ten), and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
 Since app v125 (**Reversed in app v125** and **The published read**, under Props; **The admin link**, above) the smoke,
 which has no warnings, holds: its own copies of the id rule by an entry's content on the live table (`dkOwnId`, `dkTakes`),
