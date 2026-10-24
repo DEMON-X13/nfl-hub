@@ -1062,9 +1062,12 @@ setTimeout(async()=>{
   const SPN='#spPanel [data-sp-sec="night"]', SP_NG=`${SPN} [data-sp-game]:not(.sp-slot)`, SP_NW=`${SPN} [data-sp-wait]:not([data-sp-next$="_SUN"])`;
   /* (app v131) the Sunday slot is its own section again, Day games: its one part there */
   const SPD='#spPanel [data-sp-sec="slot"]', SP_SG=`${SPD} [data-sp-game].sp-slot`, SP_SW=`${SPD} [data-sp-wait][data-sp-next$="_SUN"]`, SP_SN=`${SPD} [data-sp-none="slot"]`;
+  /* (app v132) Day games is not drawn on a Sunday from 4pm Eastern, worked here through Intl at the page's clock */
+  const dayOffAud=()=>{ if(w.__dayStood) return false; const p={}; for(const x of new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',hourCycle:'h23'}).formatToParts(new Date(w.Date.now()))) p[x.type]=x.value; return p.weekday==='Sun'&&+p.hour>=16; };
   const spPartsAud=()=>{ const dd=w.document, A=[...dd.querySelectorAll(`${SP_NG},${SP_NW}`)], B=[...dd.querySelectorAll(`${SP_SG},${SP_SW},${SP_SN}`)], slotId=/^\d{4}_\d{2}_SUN$/;
-    /* (app v129) at most one slot part: none once the season is over, the night games' line then saying it once */
-    return B.length===1&&A.every(a=>B.every(b=>!!(a.compareDocumentPosition(b)&4)))&&!dd.querySelector(`${SPN} .sp-slot,${SPN} [data-sp-next$="_SUN"],${SPN} [data-sp-none]`)
+    /* (app v132) Day games above Night games, its one part first; none on a Sunday from 4pm Eastern */
+    if(dayOffAud()) return !B.length&&!dd.querySelector(SPD)&&!dd.querySelector(`${SPN} .sp-slot,${SPN} [data-sp-next$="_SUN"],${SPN} [data-sp-none]`);
+    return B.length===1&&A.every(a=>B.every(b=>!!(b.compareDocumentPosition(a)&4)))&&!dd.querySelector(`${SPN} .sp-slot,${SPN} [data-sp-next$="_SUN"],${SPN} [data-sp-none]`)
       &&[...dd.querySelectorAll('#spPanel [data-sp-game]')].every(x=>x.classList.contains('sp-slot')===slotId.test(x.dataset.spGame||'')); };
   /* the slot's own words, worked here: its wait line, its head (its week and games, its first kickoff to its last, in
      Eastern time), and the line that says why a level of it is empty */
@@ -1075,8 +1078,9 @@ setTimeout(async()=>{
   /* a check that holds the slot's cards before the tab sets it out stands in the page's spSlotNext to say it is up (its
      own answer otherwise), and puts it back on every path, as spAllOn does for the nights */
   const slotPut=w.eval('(function(f){ spSlotNext=f; })');
-  const slotAllOn=f=>{ const keep=w.eval('spSlotNext');
-    try{ slotPut(function(){ const s=keep(); return s?{...s,up:true}:s; }); return f(); } finally { slotPut(keep); } };
+  const slotAllOn=f=>{ const keep=w.eval('spSlotNext'); w.__dayOff=w.eval('spDayOff');
+    /* (app v132) and Day games drawn whatever the hour (it is off on a Sunday from 4pm Eastern) */
+    try{ slotPut(function(){ const s=keep(); return s?{...s,up:true}:s; }); w.eval('spDayOff=function(){ return false; }'); w.__dayStood=true; return f(); } finally { slotPut(keep); w.eval('spDayOff=window.__dayOff'); w.__dayStood=false; } };
   const SPEC_AUD=[['safe','Safe',2,0],['med','Medium',3,0.25],['aggr','Aggressive',4,0.12],['xtrm','Extreme',5,0.05]];
   const ALL_U={k:{ml:true,ats:true,total:true,over:true,under:true},off:[]};
   const legIdAud=l=>l.key+'|'+l.side+'|'+l.k, ordAud=(a,b)=>legIdAud(a).localeCompare(legIdAud(b));
@@ -1697,12 +1701,17 @@ setTimeout(async()=>{
          Games'") one section, Night games, its record first, then the night's sets and then the Sunday slot's; no section
          of the Sunday slot's own (data-sp-sec="slot") anywhere */
       { const sets=d.getElementById('spSets'), kids=sets?[...sets.children]:[];
-        chk(!!d.querySelector('#spPanel > #spCard > #spHead')&&!!d.querySelector('#spPanel > #spCard > #spSets')&&kids.length===2&&kids.every((x,i)=>x.tagName==='SECTION'&&x.classList.contains('sp-sec')&&x.dataset.spSec===['night','slot'][i])
-          &&kids.every(x=>{ const h=x.firstElementChild, r=h&&h.nextElementSibling; return !!h&&h.tagName==='H3'&&h.classList.contains('sp-sech')&&h.id===`spsec-${x.dataset.spSec}`&&x.getAttribute('aria-labelledby')===h.id&&!!r&&r.classList.contains('sp-rec')&&r.dataset.spRecsec===x.dataset.spSec; })
+        const ORD=dayOffAud()?['all','night']:['all','slot','night'];
+        chk(!!d.querySelector('#spPanel > #spCard > #spHead')&&!!d.querySelector('#spPanel > #spCard > #spSets')&&kids.length===ORD.length&&kids.every((x,i)=>x.tagName==='DETAILS'&&x.classList.contains('sp-sec')&&x.dataset.spSec===ORD[i])
+          &&kids.every(x=>{ const sm=x.firstElementChild, h=sm&&sm.firstElementChild, r=sm&&sm.nextElementSibling; return !!sm&&sm.tagName==='SUMMARY'&&!!h&&h.tagName==='H3'&&h.classList.contains('sp-sech')&&h.id===`spsec-${x.dataset.spSec}`
+            &&(x.dataset.spSec==='all'?!!r&&r.classList.contains('sp-rec')&&r.dataset.spRecsec==='all':!x.querySelector('.sp-rec')); })
           &&!d.getElementById('spRec')&&!d.querySelector('#spHead .sp-rec,#spHead [data-sp-rec]'),
-          `${lab}: Suggested Parlays is not its head and two sections, Night games and Day games, each its heading and its record first: ${kids.map(x=>x.tagName+(x.dataset.spSec?'['+x.dataset.spSec+']':'')).join(', ')||'no sections'}`);
+          `${lab}: Suggested Parlays is not its head and the sections Record, Day games and Night games (no Day games on a Sunday from 4pm ET), each folding under its heading, the record in Record alone: ${kids.map(x=>x.tagName+(x.dataset.spSec?'['+x.dataset.spSec+']':'')).join(', ')||'no sections'}`);
         chk(spPartsAud(),`${lab}: the Night games section does not draw the night's sets (or their line) and then the Sunday slot's one part (its set, marked .sp-slot, its line before it is up, or the line that none is left), in that order`);
-        W.wording(kids.length===2&&(kids[0].querySelector('h3.sp-sech')||{}).textContent==='Night games'&&(kids[1].querySelector('h3.sp-sech')||{}).textContent==='Day games',`${lab}: the sections are not headed Night games and Day games`);
+        W.wording(kids.map(x=>(x.querySelector('h3.sp-sech')||{}).textContent).join('|')===ORD.map(s=>({all:'Record',slot:'Day games',night:'Night games'})[s]).join('|'),`${lab}: the sections are not headed Record, Day games and Night games`);
+        /* (app v132) no Extreme level drawn: a set's cards and its Elo picks Safe, Medium and Aggressive alone */
+        /* (app v132) Extreme hidden by the stylesheet (jsdom lays nothing out, so the rule itself), and no Extreme pill */
+        chk([...d.querySelectorAll('style')].some(x=>x.textContent.includes('#spSets .pb-tier.xtrm,#spSets .pb-tier.elo-xtrm{display:none}'))&&!d.querySelector('#spSets [data-sp-rec*="xtrm"]'),`${lab}: Suggested Parlays does not hide its Extreme cards, or counts an Extreme level`);
         /* the units that draw a set: not one waiting to go up or for the record, nor the Sunday slot under way with
            nothing to show (no record entry and nothing kept: its one line, held in drawSlot below) */
         const units=[...d.querySelectorAll('#spPanel .sp-game')].filter(b=>!b.querySelector('[data-sp-phase="wait"],[data-sp-phase="loading"]')&&!(F('spShown')(F('spUnit')(b.dataset.spGame))||{}).none);
@@ -1797,8 +1806,10 @@ setTimeout(async()=>{
       { const SS=SPD, boxes=[...d.querySelectorAll(SP_SG)], wt=[...d.querySelectorAll(SP_SW)], nn=d.querySelector(SP_SN);
         const tok=(F('spState')().split(',').find(x=>x.startsWith('s='))||'(none)');
         chk(tok===slotTokAud(SL),`${lab}: the page's state carries ${tok} for the Sunday slot, where the rule gives ${slotTokAud(SL)}`);
+        /* (app v132) Day games off on a Sunday from 4pm Eastern: nothing of the slot's drawn */
+        if(dayOffAud()){ chk(!boxes.length&&!wt.length&&!nn&&!d.querySelector(SPD),`${lab}: on a Sunday from 4pm Eastern Day games is still drawn`); slotSaid.push(`${lab}: Day games off (Sunday from 4pm ET)`); }
         /* (app v129) with the season over the night games' line says so once and the slot draws nothing */
-        if(!SL){ const over=F('seasonOver')();
+        else if(!SL){ const over=F('seasonOver')();
           chk(!boxes.length&&!wt.length&&(over?!nn:!!nn),`${lab}: with no Sunday slot to come${over?' and the season over':''}, the slot's part draws ${boxes.length?'a set':wt.length?'a wait line':over?'a line':'no line saying so'}`);
           const cw=liveWeekAud(S.sched,now), want=`No Sunday game left in week ${cw}.`;
           if(!over) W.wording(!!nn&&nn.textContent===want,`${lab}: with no Sunday slot to come, its section reads "${nn?nn.textContent:''}", not "${want}"`);
@@ -1844,7 +1855,7 @@ setTimeout(async()=>{
           for(const t of shown.filter(t=>t.legs)){ const x=F('spTier')(`${g.id}:${t.id}`);
             chk(ph0==='under'?x===null:(!!x&&x.legs.map(legIdAud).join()===t.legs.map(legIdAud).join()),`${gl}: the ${t.id} level, ${ph0}, is ${x?'':'not '}found for its Finish (spTier)`);
             if(x) W.wording(x.game==='the Sunday slot',`${gl}: the ${t.id} level's Finish names it "${x.game}", not the Sunday slot`); } };
-        if(out.slot){ if(SL.up) drawSlot(out.slot); else { slotAllOn(()=>{ F('renderSp')(); drawSlot(out.slot); }); F('renderSp')(); } } }
+        if(out.slot){ if(SL.up&&!dayOffAud()) drawSlot(out.slot); else { slotAllOn(()=>{ F('renderSp')(); drawSlot(out.slot); }); F('renderSp')(); } } }
       /* (app v113, the owner's "get rid of all the long paragraph description stuff. we dont need to clutter the page") the
          tab's lead under its heading and the foot under the sets are gone, and nothing of their paragraphs is left */
       { const box=['#spHead','#spSets'].map(s=>d.querySelector('#spPanel '+s)).filter(Boolean), tx=box.map(x=>x.textContent).join(' ').replace(/\s+/g,' ');
@@ -2352,10 +2363,10 @@ setTimeout(async()=>{
       const sp=d.getElementById('spPanel'), slotTx=()=>((d.querySelector(SP_SN)||{}).textContent||'');
       chk((panel.querySelector('.pb-none')||{}).textContent==='Regular season over.'&&!panel.querySelector('[data-pb-mix],.pb-tier,[data-pb-add],[data-pb-leg]')&&!sp.querySelector('[data-sp-game],.pb-tier,[data-sp-add],[data-pb-leg],[data-sp-wait]'),'with the season over the panel does not say so, or the list or Suggested Parlays still offers something');
       W.wording(/Regular season over\./.test(sp.textContent),'with the season over Suggested Parlays does not say so');
-      chk(slotTx()==='Regular season over.'&&spPartsAud(),'with the season over, the Day games section does not say so in its one line');
+      chk((dayOffAud()?!slotTx():slotTx()==='Regular season over.')&&spPartsAud(),'with the season over, the Day games section does not say so in its one line');
       w.eval('seasonOver=function(){ return false; }; renderParlay();');
       chk(/^No week \d+ games left\.$/.test((panel.querySelector('.pb-none')||{}).textContent||'')&&!sp.querySelector('[data-sp-game],[data-sp-wait]'),'with every game of the week under way the panel does not say so, or Suggested Parlays still offers a set');
-      W.wording(/No night game left in week \d+\./.test(sp.textContent)&&/^No Sunday game left in week \d+\.$/.test(slotTx()),'with every game of the week under way Suggested Parlays does not say so, for its night games and for its Sunday slot');
+      W.wording(/No night game left in week \d+\./.test(sp.textContent)&&(dayOffAud()||/^No Sunday game left in week \d+\.$/.test(slotTx())),'with every game of the week under way Suggested Parlays does not say so, for its night games and for its Sunday slot');
       } finally { w.eval('pbGames=window.__pbKeep[0]; seasonOver=window.__pbKeep[1]; spSlotNext=window.__pbKeep[2];'); delete w.__pbKeep; } }
     S.ui.pb=JSON.parse(keepU); F('save')(); F('renderParlay')(); }
     /* ---- M12. the Top 50 lines on made-up games: each bet once, and the totals after every thin-edge line (app v112) ----
@@ -3013,6 +3024,9 @@ setTimeout(async()=>{
        page's liveWeek reads one; the last made-up week once every one is */
     const cwAud=now=>{ const up=FX.filter(g=>!(scoredAud(g)||now>=kickAud(g)+4*3600e3)); return up.length?up[0].w:FX[FX.length-1].w; };
     const keepF=w.eval('[currentWeek, pricedLegs, spSet]'), fetch0=w.fetch, asked=[];
+    /* (app v132) the slot's own moments, Sunday evenings among them: Day games drawn whatever the hour (off on a Sunday
+       from 4pm Eastern, held on the week as it stands) */
+    w.__dayOff15=w.eval('spDayOff'); w.eval('spDayOff=function(){ return false; }'); w.__dayStood=true;
     /* the record answered by a stub of its own (the backtest left to the page's fetch, which answers nothing here) */
     let recBody=404; const recStub=(u,o)=>{ if(/suggest_ledger/.test(String(u))){ asked.push(o&&o.cache); return Promise.resolve(recBody===404?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(recBody))}); } return fetch0(u,o); };
     const SS=SPD, slotBox=()=>d.querySelector(SP_SG), tokOf=()=>(F('spState')().split(',').find(x=>x.startsWith('s='))||'(none)');
@@ -3142,6 +3156,7 @@ setTimeout(async()=>{
     finally {
       w.Date.now=nowM; w.fetch=fetch0; for(const g of FX){ const i=S.sched.findIndex(x=>x.id===g.id); if(i>=0) S.sched.splice(i,1); }
       w.__m15k=keepF; w.eval('currentWeek=window.__m15k[0]; pricedLegs=window.__m15k[1]; spSet=window.__m15k[2];'); delete w.__m15k; delete w.__m15;
+      w.eval('spDayOff=window.__dayOff15'); w.__dayStood=false;
       recBody=404; w.fetch=recStub; try{ await w.pbRecLoad(); } finally { w.fetch=fetch0; }
       spKeyClear(); try{ if(spKey0!=null) w.localStorage.setItem(SPK,spKey0); }catch(e){}
       stab.hidden=keepTab; S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; dropCaches(); F('save')(); F('renderParlay')(); }
@@ -3394,13 +3409,15 @@ setTimeout(async()=>{
         said16.push(`the Sunday slot (${SLOT.length} games, its best pair and Medium across games beating any one game's): Safe ${WANT.safe.a} at ${WANT.safe.h} (the earlier of two alike), Medium and Aggressive ${WANT.med.a} at ${WANT.med.h} (over the likeliest returning more), Extreme ${WANT.xtrm.a} at ${WANT.xtrm.h} (no total, though the likeliest), each one game's own level`); }
       /* each card of the slot names its game, as the tab draws it (the slot stood in as up, put back after) */
       { const keepN=w.eval('spSlotNext'); stab.hidden=false;
+        /* (app v132) Day games drawn whatever the hour (off on a Sunday from 4pm Eastern) */
+        w.__dayOff16=w.eval('spDayOff'); w.eval('spDayOff=function(){ return false; }'); w.__dayStood=true;
         try{ w.eval(`spSlotNext=function(){ const u=spSlotUnit(${WK}); return u?{...u,open:null,prev:null,up:true}:null; };`); F('renderSp')();
           const box=d.querySelector(`${SP_SG}[data-sp-game="${SID}"]`), TN=F('TEAM_NAMES');
           chk(!!box,`M16: the made-up Sunday slot (${SID}) is not drawn with its set`);
           for(const [id] of SPEC_AUD){ const g=WANT[id], c=box&&box.querySelector(`.pb-tier.${id}`), tg=c?[...c.querySelectorAll('.pb-th .pb-tgame')]:[];
             chk(tg.length===1&&tg[0].dataset.pbTgame===g.id,`M16: the slot's ${id} card does not name its game, ${g.id}: ${tg.map(x=>x.dataset.pbTgame).join(', ')||'none'}`);
             W.wording(!!tg[0]&&tg[0].textContent===`${TN[g.a]||g.a} at ${TN[g.h]||g.h} · ${etAud(kickAud(g))}`,`M16: the slot's ${id} card names its game "${tg[0]?tg[0].textContent:''}"`); } }
-        finally { slotPut(keepN); stab.hidden=keepTab; F('renderSp')(); } }
+        finally { slotPut(keepN); w.eval('spDayOff=window.__dayOff16'); w.__dayStood=false; stab.hidden=keepTab; F('renderSp')(); } }
       /* (the review's round) week 94's Sunday slot: each game four legs in number and three on one slip, so its Aggressive
          is empty in the round's words; each level the best of its games' own, worked out in full */
       { const SID2=`${SEA}_${WK2}_SUN`, u2=F('spUnit')(SID2), s2=F('spSet')(SID2), gl0=`M16, week ${WK2}'s Sunday slot`;
@@ -6311,7 +6328,7 @@ setTimeout(async()=>{
      nowhere. Nothing drawn while there is neither file (this audit's page has none) ---- */
   { d.querySelector('#tabs button[data-tab="suggest"]').click();
     const txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'', recBox=sec=>d.querySelector(`#spSets [data-sp-sec="${sec}"] > .sp-rec[data-sp-recsec="${sec}"]`);
-    const SECS=['night','slot'], SEC_MAP={night:['prime'],slot:['slot']}, KINDS_R={model:{pre:'',f:'tiers',by:'the model',name:'Model parlays'},elo:{pre:'elo-',f:'elo',by:'the Elo chance',name:'Elo picks'}};
+    const SECS=['all'], SEC_MAP={all:['prime','slot']}, KINDS_R={model:{pre:'',f:'tiers',by:'the model',name:'Model parlays'},elo:{pre:'elo-',f:'elo',by:'the Elo chance',name:'Elo picks'}};
     /* the two files, each asked for once as the page loaded, beside its payload, with no-store; the backtest, which never
        changes once written, never again (a set reaching its lock has the record read again alone) */
     { const askL=BOOT_CALLS.filter(c=>/suggest_ledger\.json/.test(c.url)), askB=BOOT_CALLS.filter(c=>/suggest_backtest\.json/.test(c.url));
@@ -6320,17 +6337,18 @@ setTimeout(async()=>{
         'the page did not ask for the suggestions record and its backtest beside its payload, each once as it loaded, with no-store: '+JSON.stringify([...askL,...askB])); }
     F('renderSp')();
     chk(SECS.every(sec=>{ const b=recBox(sec); return !!b&&b.hidden&&!txt(b); }),'with no record file and no backtest Suggested Parlays draws a record anyway: '+SECS.map(s=>txt(recBox(s))).join(' / '));
-    chk(!d.getElementById('pbRec')&&!d.getElementById('spRec')&&!d.querySelector('#spHead .sp-rec,#spHead [data-sp-rec]')&&SECS.every(sec=>{ const b=recBox(sec); return !!b&&b.previousElementSibling&&b.previousElementSibling.matches('h3.sp-sech'); }),
+    chk(!d.getElementById('pbRec')&&!d.getElementById('spRec')&&!d.querySelector('#spHead .sp-rec,#spHead [data-sp-rec]')&&SECS.every(sec=>{ const b=recBox(sec); return !!b&&b.previousElementSibling&&b.previousElementSibling.matches('summary.sp-sum'); }),
       'the all-games record is still drawn, the record is still at the head of Suggested Parlays, or a section\'s record is not right under its heading');
     /* (app v129) one record, Night games': no record of the Sunday slot's own, wherever it would be drawn */
     /* (app v131) two records, one a section: Night games' (the prime map) and Day games' (the slot map) */
-    const noSlotRec=()=>d.querySelectorAll('#spPanel .sp-rec').length===2&&!!recBox('night')&&!!recBox('slot');
-    chk(noSlotRec(),'Suggested Parlays does not draw exactly one record in each of its two sections');
+    /* (app v132) one record, a section of its own (Record), both maps */
+    const noSlotRec=()=>d.querySelectorAll('#spPanel .sp-rec').length===1&&!!recBox('all');
+    chk(noSlotRec(),'Suggested Parlays does not draw exactly one record, in its Record section');
     /* each file answered by its own name (the record or the backtest; 404 where none is given) */
     const fetch0=w.fetch, ans=b=>b===404||b===undefined?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(b))};
     const load=async (body,bt)=>{ w.fetch=u=>Promise.resolve(/suggest_backtest/.test(String(u))?ans(bt):ans(body));
       try{ await w.pbRecLoad(); } finally { w.fetch=fetch0; } F('renderSp')(); };
-    const LAB={safe:'Safe',med:'Medium',aggr:'Aggressive',xtrm:'Extreme'};
+    const LAB={safe:'Safe',med:'Medium',aggr:'Aggressive'};
     const isMapA=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
     /* which files are a record and a backtest, by the audit's own reading: a record with an entries, prime or slot map,
        a backtest with a prime or slot map */
@@ -6445,14 +6463,11 @@ setTimeout(async()=>{
        section counted it until then: model Safe 2-2 +1.60, Medium 2-1 +6.20, Aggressive 2-0 +20.00, Extreme 0-0, Elo Safe
        2-0 +3.30, Medium 0-1, Extreme 0-1; the slot map alone: model Safe 2-0 +3.90, Medium 0-2, Elo Safe 1-1 +1.00) */
     /* (app v131) two sections again: Night games the prime map, Day games the slot map (the hand record of app v128) */
-    const HAND={night:{model:{pills:{safe:'Safe 2–2 +1.60 units',med:'Medium 2–1 +6.20 units',aggr:'Aggressive 2–0 +20.00 units',xtrm:'Extreme 0–0'},pending:1,
-        titles:{safe:{graded:4,won:2,fair:'1.8',fairOn:null,model:'2.1',push:1,bt:2},med:{graded:3,won:2,fair:'0.5',fairOn:2,model:'0.9',push:0,bt:1},aggr:{graded:2,won:2,fair:'0.2',fairOn:null,model:'0.3',push:1,bt:1},xtrm:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0}}},
-      elo:{pills:{safe:'Safe 2–0 +3.30 units',med:'Medium 0–1 −1.00 units',aggr:'Aggressive 0–0',xtrm:'Extreme 0–1 −1.00 units'},pending:1,
-        titles:{safe:{graded:2,won:2,fair:'0.8',fairOn:null,model:'0.9',push:1,bt:1},med:{graded:1,won:0,fair:'0.3',fairOn:null,model:'0.3',push:0,bt:0},aggr:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0},xtrm:{graded:1,won:0,fair:'0.0',fairOn:null,model:'0.1',push:0,bt:1}}},weeks:[3,5]},
-      slot:{model:{pills:{safe:'Safe 2–0 +3.90 units',med:'Medium 0–2 −2.00 units',aggr:'Aggressive 0–0',xtrm:'Extreme 0–0'},pending:0,
-        titles:{safe:{graded:2,won:2,fair:'0.9',fairOn:null,model:'1.1',push:0,bt:1},med:{graded:2,won:0,fair:'0.5',fairOn:null,model:'0.6',push:0,bt:1},aggr:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0},xtrm:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0}}},
-      elo:{pills:{safe:'Safe 1–1 +1.00 units',med:'Medium 0–0',aggr:'Aggressive 0–0',xtrm:'Extreme 0–0'},pending:0,
-        titles:{safe:{graded:2,won:1,fair:'0.7',fairOn:null,model:'0.8',push:0,bt:1},med:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0},aggr:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0},xtrm:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0}}},weeks:[4]}};
+    /* (app v132) one record over both maps (app v129's hand record), Extreme off the tab */
+    const HAND={all:{model:{pills:{safe:'Safe 4–2 +5.50 units',med:'Medium 2–3 +4.20 units',aggr:'Aggressive 2–0 +20.00 units'},pending:0,
+        titles:{safe:{graded:6,won:4,fair:'2.6',fairOn:null,model:'3.1',push:1,bt:3},med:{graded:5,won:2,fair:'0.9',fairOn:4,model:'1.5',push:0,bt:2},aggr:{graded:2,won:2,fair:'0.2',fairOn:null,model:'0.3',push:1,bt:1}}},
+      elo:{pills:{safe:'Safe 3–1 +4.30 units',med:'Medium 0–1 −1.00 units',aggr:'Aggressive 0–0'},pending:1,
+        titles:{safe:{graded:4,won:3,fair:'1.5',fairOn:null,model:'1.7',push:1,bt:2},med:{graded:1,won:0,fair:'0.3',fairOn:null,model:'0.3',push:0,bt:0},aggr:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0}}},weeks:[3,4,5]}};
     { const bad=[];
       for(const sec of SECS){ const wk=new Set(); for(const kind of Object.keys(KINDS_R)){ const R=recAud(L,BT,sec,kind), H=HAND[sec][kind]; R.weeks.forEach(x=>wk.add(x));
           for(const id of Object.keys(LAB)){ if(pillOf(id,R.o[id])!==H.pills[id]) bad.push(`${sec} ${kind} ${id} pill ${pillOf(id,R.o[id])}`);
@@ -6475,8 +6490,8 @@ setTimeout(async()=>{
       await load({how:'made up',prime:{}},B2); holdRec('a record with nothing graded and a backtest of weeks 3 and 4',{how:'made up',prime:{}},B2);
       /* by hand: the prime map's week-4 Safe won at 2.5 and the slot map's week-3 Safe lost, its week-4 Medium won at 6, all
          in the one Night games record (app v129), with no chip naming the weeks */
-      chk(txt(d.querySelector('#spSets [data-sp-rec="night:safe"]'))==='Safe 1–0 +1.50 units'&&txt(d.querySelector('#spSets [data-sp-rec="slot:safe"]'))==='Safe 0–1 −1.00 units'&&txt(d.querySelector('#spSets [data-sp-rec="slot:med"]'))==='Medium 1–0 +5.00 units'&&!d.querySelector('#spSets [data-sp-rec$=":bt"],#spSets .sp-recbt'),
-        'a backtest of a prime-time Safe won in week 4, and a Sunday slot\'s Safe lost in week 3 and Medium won in week 4, does not read "Safe 1–0 +1.50 units" in Night games and "Safe 0–1 −1.00 units" and "Medium 1–0 +5.00 units" in Day games, with no chip: '+txt(recBox('night'))+' / '+txt(recBox('slot'))); }
+      chk(txt(d.querySelector('#spSets [data-sp-rec="all:safe"]'))==='Safe 1–1 +0.50 units'&&txt(d.querySelector('#spSets [data-sp-rec="all:med"]'))==='Medium 1–0 +5.00 units'&&!d.querySelector('#spSets [data-sp-rec$=":bt"],#spSets .sp-recbt'),
+        'a backtest of a prime-time Safe won in week 4, and a Sunday slot\'s Safe lost in week 3 and Medium won in week 4, does not read "Safe 1–1 +0.50 units" and "Medium 1–0 +5.00 units" in the one record, with no chip: '+txt(recBox('all'))); }
     /* a backtest that is junk or missing: the record drawn as it is with none, no chip */
     for(const bt of [404,'junk',[],{prime:[]},{entries:{}},{how:'x'}]){ await load(L,bt); holdRec(`the made-up record with a backtest file that is not one (${JSON.stringify(bt)})`,L,bt);
       chk(!d.querySelector('#spSets .sp-recbt,#spSets [data-sp-rec$=":bt"]'),`with a backtest file that is not one (${JSON.stringify(bt)}) the record still says some of it is the backtest`); }

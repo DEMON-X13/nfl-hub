@@ -687,6 +687,9 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pb-elo h3{margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .pb-elo .pb-tiers{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:1100px){ .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-nums{display:flex;flex-wrap:wrap} }
+/* (app v132) Extreme off Suggested Parlays: its cards hidden, three levels to a row on a wide screen */
+#spSets .pb-tier.xtrm,#spSets .pb-tier.elo-xtrm{display:none}
+@media(min-width:1101px){ #spSets .pb-tiers{grid-template-columns:repeat(3,minmax(0,1fr))} }
 @media(max-width:640px){ .card.pb{padding:16px 14px} .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:minmax(0,1fr)} .pb-lbl{min-width:0;flex-basis:100%} .pb-ctl{padding:12px} .pb-glist{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-seg{display:flex;width:100%} .pb-seg button{flex:1 1 auto;padding:8px 10px}
   .pb-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%} .pb-chip{border-radius:12px;padding:7px 10px;line-height:1.25} .pb-chip small{display:block} .pb-chip span{min-width:0} }
 /* app v111: Suggested Parlays (each Thursday, Sunday and Monday night game's own set, its lock and the record bar)
@@ -702,6 +705,10 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 /* app v118: two sections, Night games and the Sunday slot, each headed by its record (a row for the model's parlays and
    one for the Elo picks); each unit's model parlays, then its Elo picks */
 .sp-sec{margin:20px 0 0;padding:16px 0 0;border-top:2px solid var(--line-2)}
+.sp-sum{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;list-style:none}
+.sp-sum::-webkit-details-marker{display:none}
+.sp-sum::before{content:'\25BE';font-size:14px;color:var(--ink-2);transition:transform .15s}
+details.sp-sec:not([open])>.sp-sum::before{transform:rotate(-90deg)}
 .sp-sech{margin:0;font-family:var(--display);font-size:19px;font-weight:800;letter-spacing:-.3px}
 .sp-sub{margin:14px 0 8px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
 .sp-reck{flex:0 0 auto;min-width:112px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
@@ -2471,7 +2478,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v131 \u00b7 2026-10-23';
+const APP_BUILD='app v132 \u00b7 2026-10-23';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -6243,7 +6250,14 @@ window.pbRecLoad=pbRecLoad;
    call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a part of 'Night Games'").
    slot is kept for a caller that asks for the slot's map by name, and drawn nowhere */
 /* (app v131) two sections again: Night games on the prime map, Day games (the Sunday slot) on the slot map */
-const SP_SEC={night:{maps:['prime'],name:'Night games'},slot:{maps:['slot'],name:'Day games'}};
+const SP_SEC={night:{maps:['prime'],name:'Night games'},slot:{maps:['slot'],name:'Day games'},all:{maps:['prime','slot'],name:'Record'}};
+/* (app v132) the levels the tab draws and counts: Extreme off the tab (the job still takes and grades it) */
+const SP_SHOW=['safe','med','aggr'];
+/* the sections a visitor folded this page load */
+const SP_FOLD=new Set();
+/* (app v132) Day games off on a Sunday from 4pm Eastern */
+function spDayOff(now){ const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',hourCycle:'h23'}).formatToParts(new Date(now==null?Date.now():now)).map(x=>[x.type,x.value]));
+  return p.weekday==='Sun'&&+p.hour>=16; }
 const SP_KIND={model:{field:'tiers',pre:'',name:'Model parlays'},elo:{field:'elo',pre:'elo-',name:'Elo picks'}};
 /* the record of one section's one kind, a level at a time: each season's unit and level once, the job's entry where
    it holds one (the last key that does: a kickoff the league moved makes a new key), else the backtest's, from the
@@ -6255,9 +6269,9 @@ const SP_KIND={model:{field:'tiers',pre:'',name:'Model parlays'},elo:{field:'elo
    graded included): the backtest counts only for a unit the record has none of, as week 6's Sunday night game's Elo
    picks, which the record took before app v118 gave it any */
 function spRecSum(L,sec,kind,B){
-  sec=SP_SEC[sec]?sec:'night'; kind=SP_KIND[kind]?kind:'model';
+  sec=SP_SEC[sec]?sec:'all'; kind=SP_KIND[kind]?kind:'model';
   const maps=SP_SEC[sec].maps, {field,pre}=SP_KIND[kind];
-  const out=PB_TIERS.map(([id,label])=>({id:pre+id,label,graded:0,won:0,lost:0,push:0,fair:0,fairN:0,model:0,units:0,bt:0}));
+  const out=PB_TIERS.filter(([id])=>SP_SHOW.includes(id)).map(([id,label])=>({id:pre+id,label,graded:0,won:0,lost:0,push:0,fair:0,fairN:0,model:0,units:0,bt:0}));
   let pending=0; const last=new Map(), units=new Set(), wk=new Set(), mine=new Set();
   for(const map of maps) for(const e of Object.values(L&&pbIsMap(L[map])?L[map]:{})) if(pbIsMap(e)&&Array.isArray(e[field])) mine.add(e.season+'|'+e.gid);
   const take=(src,bt)=>{ for(const map of maps){ const E=src&&pbIsMap(src[map])?src[map]:{};
@@ -7004,7 +7018,9 @@ function spHeadHtml(){
     <div class="pb-row pb-odds-row sp-odds"><span class="pb-lbl">Odds</span>${espnCtl(null,'sp')}</div>`;
 }
 /* a section: its heading, its record, then its sets or why there are none */
-const spSecHtml=(sec,body)=>`<section class="sp-sec" data-sp-sec="${sec}" aria-labelledby="spsec-${sec}"><h3 class="sp-sech" id="spsec-${sec}">${SP_SEC[sec].name}</h3>${spRecHtml(sec)}${body}</section>`;
+const spSecHtml=(sec,body)=>`<details class="sp-sec" data-sp-sec="${sec}"${SP_FOLD.has(sec)?'':' open'}><summary class="sp-sum"><h3 class="sp-sech" id="spsec-${sec}">${SP_SEC[sec].name}</h3></summary>${sec==='all'?spRecHtml(sec):''}${body}</details>`;
+if(typeof document!=='undefined') document.addEventListener('toggle',e=>{ const d=e.target;
+  if(d&&d.matches&&d.matches('details.sp-sec[data-sp-sec]')){ const s=d.dataset.spSec; if(d.open) SP_FOLD.delete(s); else SP_FOLD.add(s); } },true);
 function spNightHtml(on){
   const w=currentWeek(), G=spGames();
   if(!G.length) return `<p class="pb-none">${seasonOver()?'Regular season over.':`No night game left in week ${w}.`}</p>`;
@@ -7024,7 +7040,7 @@ function spSlotHtml(on){
   return spGameHtml(u,on);
 }
 /* (app v129) one section, Night games: the night games' sets, then the Sunday slot's */
-function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on))+spSecHtml('slot',spSlotHtml(on)); }
+function spSetsHtml(on){ return spSecHtml('all','')+(spDayOff()?'':spSecHtml('slot',spSlotHtml(on)))+spSecHtml('night',spNightHtml(on)); }
 function renderSp(){
   const el=$('spPanel'); if(!el||!S||!S.sched) return;
   /* the frame once (app v118: the Elo picks are in each unit now, no longer a section of their own at the foot) */
@@ -7038,7 +7054,7 @@ function renderSp(){
 if(typeof document!=='undefined') document.addEventListener('click',e=>{
   const b=e.target&&e.target.closest?e.target.closest('#tabs button[data-tab="suggest"]'):null;
   if(b&&typeof S==='object'&&S&&S.sched) try{ renderSp(); }catch(err){ console.error(err); } });
-Object.assign(window,{spPrime,spGames,spNight,spOn,spOnAll,spOpenAt,spSlotUnit,spSlotNext,spUnit,spLockAt,spSet,spEloSet,spRebuild,spOutWhy,spTierOut,spShown,spTier,renderSp});
+Object.assign(window,{spDayOff,SP_SHOW,spPrime,spGames,spNight,spOn,spOnAll,spOpenAt,spSlotUnit,spSlotNext,spUnit,spLockAt,spSet,spEloSet,spRebuild,spOutWhy,spTierOut,spShown,spTier,renderSp});
 /* exactly these legs into the builder, in its own order, so it prices them as the tier did */
 function pbPut(legs,what){
   const L=pbOrder(legs), have=Object.keys(S.parlay||{});
@@ -7622,7 +7638,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='28439fa';
+const PAGE_HASH='91876aa';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){

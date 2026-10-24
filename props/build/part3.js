@@ -2663,7 +2663,14 @@ window.pbRecLoad=pbRecLoad;
    call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a part of 'Night Games'").
    slot is kept for a caller that asks for the slot's map by name, and drawn nowhere */
 /* (app v131) two sections again: Night games on the prime map, Day games (the Sunday slot) on the slot map */
-const SP_SEC={night:{maps:['prime'],name:'Night games'},slot:{maps:['slot'],name:'Day games'}};
+const SP_SEC={night:{maps:['prime'],name:'Night games'},slot:{maps:['slot'],name:'Day games'},all:{maps:['prime','slot'],name:'Record'}};
+/* (app v132) the levels the tab draws and counts: Extreme off the tab (the job still takes and grades it) */
+const SP_SHOW=['safe','med','aggr'];
+/* the sections a visitor folded this page load */
+const SP_FOLD=new Set();
+/* (app v132) Day games off on a Sunday from 4pm Eastern */
+function spDayOff(now){ const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',hourCycle:'h23'}).formatToParts(new Date(now==null?Date.now():now)).map(x=>[x.type,x.value]));
+  return p.weekday==='Sun'&&+p.hour>=16; }
 const SP_KIND={model:{field:'tiers',pre:'',name:'Model parlays'},elo:{field:'elo',pre:'elo-',name:'Elo picks'}};
 /* the record of one section's one kind, a level at a time: each season's unit and level once, the job's entry where
    it holds one (the last key that does: a kickoff the league moved makes a new key), else the backtest's, from the
@@ -2675,9 +2682,9 @@ const SP_KIND={model:{field:'tiers',pre:'',name:'Model parlays'},elo:{field:'elo
    graded included): the backtest counts only for a unit the record has none of, as week 6's Sunday night game's Elo
    picks, which the record took before app v118 gave it any */
 function spRecSum(L,sec,kind,B){
-  sec=SP_SEC[sec]?sec:'night'; kind=SP_KIND[kind]?kind:'model';
+  sec=SP_SEC[sec]?sec:'all'; kind=SP_KIND[kind]?kind:'model';
   const maps=SP_SEC[sec].maps, {field,pre}=SP_KIND[kind];
-  const out=PB_TIERS.map(([id,label])=>({id:pre+id,label,graded:0,won:0,lost:0,push:0,fair:0,fairN:0,model:0,units:0,bt:0}));
+  const out=PB_TIERS.filter(([id])=>SP_SHOW.includes(id)).map(([id,label])=>({id:pre+id,label,graded:0,won:0,lost:0,push:0,fair:0,fairN:0,model:0,units:0,bt:0}));
   let pending=0; const last=new Map(), units=new Set(), wk=new Set(), mine=new Set();
   for(const map of maps) for(const e of Object.values(L&&pbIsMap(L[map])?L[map]:{})) if(pbIsMap(e)&&Array.isArray(e[field])) mine.add(e.season+'|'+e.gid);
   const take=(src,bt)=>{ for(const map of maps){ const E=src&&pbIsMap(src[map])?src[map]:{};
@@ -3424,7 +3431,9 @@ function spHeadHtml(){
     <div class="pb-row pb-odds-row sp-odds"><span class="pb-lbl">Odds</span>${espnCtl(null,'sp')}</div>`;
 }
 /* a section: its heading, its record, then its sets or why there are none */
-const spSecHtml=(sec,body)=>`<section class="sp-sec" data-sp-sec="${sec}" aria-labelledby="spsec-${sec}"><h3 class="sp-sech" id="spsec-${sec}">${SP_SEC[sec].name}</h3>${spRecHtml(sec)}${body}</section>`;
+const spSecHtml=(sec,body)=>`<details class="sp-sec" data-sp-sec="${sec}"${SP_FOLD.has(sec)?'':' open'}><summary class="sp-sum"><h3 class="sp-sech" id="spsec-${sec}">${SP_SEC[sec].name}</h3></summary>${sec==='all'?spRecHtml(sec):''}${body}</details>`;
+if(typeof document!=='undefined') document.addEventListener('toggle',e=>{ const d=e.target;
+  if(d&&d.matches&&d.matches('details.sp-sec[data-sp-sec]')){ const s=d.dataset.spSec; if(d.open) SP_FOLD.delete(s); else SP_FOLD.add(s); } },true);
 function spNightHtml(on){
   const w=currentWeek(), G=spGames();
   if(!G.length) return `<p class="pb-none">${seasonOver()?'Regular season over.':`No night game left in week ${w}.`}</p>`;
@@ -3444,7 +3453,7 @@ function spSlotHtml(on){
   return spGameHtml(u,on);
 }
 /* (app v129) one section, Night games: the night games' sets, then the Sunday slot's */
-function spSetsHtml(on){ return spSecHtml('night',spNightHtml(on))+spSecHtml('slot',spSlotHtml(on)); }
+function spSetsHtml(on){ return spSecHtml('all','')+(spDayOff()?'':spSecHtml('slot',spSlotHtml(on)))+spSecHtml('night',spNightHtml(on)); }
 function renderSp(){
   const el=$('spPanel'); if(!el||!S||!S.sched) return;
   /* the frame once (app v118: the Elo picks are in each unit now, no longer a section of their own at the foot) */
@@ -3458,7 +3467,7 @@ function renderSp(){
 if(typeof document!=='undefined') document.addEventListener('click',e=>{
   const b=e.target&&e.target.closest?e.target.closest('#tabs button[data-tab="suggest"]'):null;
   if(b&&typeof S==='object'&&S&&S.sched) try{ renderSp(); }catch(err){ console.error(err); } });
-Object.assign(window,{spPrime,spGames,spNight,spOn,spOnAll,spOpenAt,spSlotUnit,spSlotNext,spUnit,spLockAt,spSet,spEloSet,spRebuild,spOutWhy,spTierOut,spShown,spTier,renderSp});
+Object.assign(window,{spDayOff,SP_SHOW,spPrime,spGames,spNight,spOn,spOnAll,spOpenAt,spSlotUnit,spSlotNext,spUnit,spLockAt,spSet,spEloSet,spRebuild,spOutWhy,spTierOut,spShown,spTier,renderSp});
 /* exactly these legs into the builder, in its own order, so it prices them as the tier did */
 function pbPut(legs,what){
   const L=pbOrder(legs), have=Object.keys(S.parlay||{});

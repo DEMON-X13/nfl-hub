@@ -615,7 +615,10 @@ const waitOwn = (N, sched, TN) => { const nm = x => `${(TN && TN[x.a]) || x.a} a
    or its line data-sp-none="slot"); no data-sp-sec="slot" section */
 /* (app v131, the owner's call of 23 October 2026: "make this bottom section be Day Games and include a record") the
    Sunday slot is its own section again, Day games, after Night games */
-const SEC_NIGHT = '#spSets section.sp-sec[data-sp-sec="night"]', SEC_SLOT = '#spSets section.sp-sec[data-sp-sec="slot"]';
+/* (app v132) each section a <details>: Record, then Day games (the Sunday slot), then Night games */
+const SEC_NIGHT = '#spSets details.sp-sec[data-sp-sec="night"]', SEC_SLOT = '#spSets details.sp-sec[data-sp-sec="slot"]';
+/* (app v132) Day games is not drawn on a Sunday from 4pm Eastern: the smoke's own reading at the page's clock */
+const dayOffOwn = d => { const p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(d.defaultView.Date.now()))) p[x.type] = x.value; return p.weekday === 'Sun' && +p.hour >= 16; };
 const NIGHT_UNIT = `${SEC_NIGHT} > .sp-game:not(.sp-slot)`, SLOT_UNIT = `${SEC_SLOT} > .sp-game.sp-slot`;
 const NIGHT_WAIT = `${SEC_NIGHT} > [data-sp-wait]:not([data-sp-next$="_SUN"])`, SLOT_WAIT = `${SEC_SLOT} > [data-sp-wait][data-sp-next$="_SUN"]`;
 const NIGHT_NONE = `${SEC_NIGHT} > p.pb-none:not([data-sp-wait]):not([data-sp-none])`, SLOT_NONE = `${SEC_SLOT} > [data-sp-none="slot"]`;
@@ -661,7 +664,9 @@ const slotWaitOwn = (u, sched) => `Next up: week ${u.w}’s Sunday slot, ${u.gam
    line naming it and when its sets go up and no set; up, its unit (.sp-game.sp-slot) and no wait line; none to come,
    one line saying so and no set; whichever it is, after everything of the night games' (the section's last child), and
    no Sunday slot section of its own */
-const slotWaitHeld = (d, U, sched, wk, seasonOver) => { const sec = d.querySelector(SEC_SLOT); if (!sec) return 'Suggested Parlays has no Day games section';
+const slotWaitHeld = (d, U, sched, wk, seasonOver) => { const sec = d.querySelector(SEC_SLOT);
+  if (dayOffOwn(d)) return sec ? 'Day games is drawn on a Sunday from 4pm Eastern' : null;
+  if (!sec) return 'Suggested Parlays has no Day games section';
   if (d.querySelector(`${SEC_NIGHT} .sp-slot, ${SEC_NIGHT} [data-sp-none="slot"], ${SEC_NIGHT} [data-sp-next$="_SUN"]`)) return 'the Night games section still draws something of the Sunday slot';
   const els = [...d.querySelectorAll(SLOT_WAIT)], el = els[0], units = [...d.querySelectorAll(SLOT_UNIT)], nones = [...d.querySelectorAll(SLOT_NONE)], none = nones[0], bad = [];
   const mine = [...els, ...units, ...nones];
@@ -2144,17 +2149,24 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         { const secs = [...sets.children], bad = [];
           /* (app v131) two sections: Night games (its units or one line) and Day games (the Sunday slot's unit or one
              line), each its heading and its one record right under it */
-          if (secs.map(x => x.tagName.toLowerCase() + '.' + x.className + '[' + x.dataset.spSec + ']').join(' ') !== 'section.sp-sec[night] section.sp-sec[slot]') bad.push('its sections are ' + secs.map(x => x.tagName + ' ' + x.className + ' ' + x.dataset.spSec).join(', '));
+          /* (app v132) Record (the one record, both maps), Day games, Night games, each a details whose summary is its
+             heading; Day games not drawn on a Sunday from 4pm Eastern */
+          const ORD = dayOffOwn(d) ? ['all', 'night'] : ['all', 'slot', 'night'];
+          if (secs.map(x => x.tagName.toLowerCase() + '.' + x.className + '[' + x.dataset.spSec + ']').join(' ') !== ORD.map(x => 'details.sp-sec[' + x + ']').join(' ')) bad.push('its sections are ' + secs.map(x => x.tagName + ' ' + x.className + ' ' + x.dataset.spSec).join(', '));
           const isNight = x => x.matches('.sp-game[data-sp-game]:not(.sp-slot)') || x.matches('p.pb-none:not([data-sp-none])') && !(x.dataset.spNext || '').endsWith('_SUN');
           const isSlot = x => x.matches('.sp-game.sp-slot[data-sp-game]') || x.matches('p.pb-none[data-sp-none="slot"]') || x.matches('p.pb-none[data-sp-wait]') && (x.dataset.spNext || '').endsWith('_SUN');
+          { const el = secs.find(x => x.dataset.spSec === 'all'), k = el ? [...el.children] : [];
+            if (!el || k.length !== 2 || !k[0].matches('summary.sp-sum') || txt(k[0]) !== 'Record' || !k[1].matches('div.sp-rec[data-sp-recsec="all"]') || k[1].hidden) bad.push('the Record section is not its heading and its one record, drawn'); }
+          if (d.querySelectorAll('#spSets .sp-rec').length !== 1) bad.push(`${d.querySelectorAll('#spSets .sp-rec').length} records drawn, not one`);
           for (const [sec, name, isIt] of [['night', 'Night games', isNight], ['slot', 'Day games', isSlot]]) { const el = secs.find(x => x.dataset.spSec === sec); if (!el) continue;
-            const k = [...el.children], h3 = k[0], rec = k[1], rest = k.slice(2);
-            if (!h3 || !h3.matches('h3.sp-sech') || txt(h3) !== name || h3.id !== 'spsec-' + sec || el.getAttribute('aria-labelledby') !== 'spsec-' + sec) bad.push(`the ${sec} section is not headed "${name}": ${h3 ? txt(h3) : 'nothing'}`);
-            if (!rec || !rec.matches(`div.sp-rec[data-sp-recsec="${sec}"]`) || rec.hidden || el.querySelectorAll('.sp-rec').length !== 1) bad.push(`the ${sec} section's one record is not right under its heading, drawn`);
+            const k = [...el.children], sm = k[0], h3 = sm && sm.firstElementChild, rest = k.slice(1);
+            if (!sm || !sm.matches('summary.sp-sum') || !h3 || !h3.matches('h3.sp-sech') || txt(h3) !== name || h3.id !== 'spsec-' + sec || !el.open) bad.push(`the ${sec} section is not an open details headed "${name}": ${h3 ? txt(h3) : 'nothing'}`);
             if (rest.some(x => !isIt(x))) bad.push(`the ${sec} section's body holds ${rest.filter(x => !isIt(x)).map(x => x.tagName + '.' + x.className).join(', ')}`);
             if (sec === 'night' && (!rest.length || (rest.some(x => x.matches('p')) && rest.length !== 1))) bad.push(`the night games' part is ${rest.map(x => x.tagName + '.' + x.className).join(', ') || 'nothing'}, not their units or one line`);
             if (sec === 'slot' && rest.length !== 1) bad.push(`the Sunday slot's part is ${rest.map(x => x.tagName + '.' + x.className).join(', ') || 'nothing'}, not its unit or its one line`); }
-          chk(!bad.length, 'Suggested Parlays is not two sections, Night games and Day games, each its heading, its one record and its units or one line: ' + bad.join('; ')); }
+          chk(!bad.length, 'Suggested Parlays is not the sections Record, Day games and Night games, each folding under its heading, the one record in Record and each set section its units or one line: ' + bad.join('; '));
+          /* (app v132) Extreme hidden by the stylesheet (jsdom lays nothing out, so the rule itself), and no Extreme pill */
+          chk([...d.querySelectorAll('style')].some(x => x.textContent.includes('#spSets .pb-tier.xtrm,#spSets .pb-tier.elo-xtrm{display:none}')) && !d.querySelector('#spSets [data-sp-rec*="xtrm"]'), 'Suggested Parlays does not hide its Extreme cards, or counts an Extreme level in its record'); }
         /* the card's switch, on cards of the smoke's own (pbTierCard, as the page's callers call it): a level holding
            a leg that is not a Value pick and the game's total, and a leg priced from DraftKings' line read on ESPN, with
            a player ruled out after the lock. Drawn without quiet (as the retired Elo picks' section drew theirs until app
@@ -2571,13 +2583,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; spSlotNext=function(){ return null; }; renderParlay(); renderSp();'); await wait(20);
       const yr = w.eval('SEASON');
       chk(txt(panel.querySelector('.pb-none')) === 'Regular season over.' && !panel.querySelector('[data-pb-mix], .pb-tier, ol.pb-top, [data-pb-leg], [data-pc-finish]')
-        && secLine('night') === 'Regular season over.' && secLine('slot') === 'Regular season over.' && !offers()
-        && d.querySelectorAll('#spSets > section').length === 2 && d.querySelector(SEC_SLOT).lastElementChild === d.querySelector(SLOT_NONE),
+        && secLine('night') === 'Regular season over.' && (dayOffOwn(d) ? !d.querySelector(SEC_SLOT) : secLine('slot') === 'Regular season over.' && d.querySelector(SEC_SLOT).lastElementChild === d.querySelector(SLOT_NONE)) && !offers()
+        && d.querySelectorAll('#spSets > details').length === (dayOffOwn(d) ? 2 : 3),
         'with the season over the Parlay Builder or a section of Suggested Parlays does not say so, or still offers something: ' + txt(panel).slice(0, 120) + ' / ' + secLine('night') + ' / ' + secLine('slot'));
       w.eval('seasonOver=function(){ return false; }; renderParlay(); renderSp();'); await wait(20);
       const wk0 = w.eval('currentWeek()');
       chk(txt(panel.querySelector('.pb-none')) === `No week ${wk0} games left.` && secLine('night') === `No night game left in week ${wk0}.`
-        && secLine('slot') === `No Sunday game left in week ${wk0}.` && !offers(),
+        && (dayOffOwn(d) || secLine('slot') === `No Sunday game left in week ${wk0}.`) && !offers(),
         'with every game of the week under way the Parlay Builder or a section of Suggested Parlays does not say so: ' + txt(panel).slice(0, 120) + ' / ' + secLine('night') + ' / ' + secLine('slot')); }
     finally { w.eval('pbGames=window.__pbKeep[0]; seasonOver=window.__pbKeep[1]; spSlotNext=window.__pbKeep[2]; delete window.__pbKeep; renderParlay(); renderSp();'); await wait(20); } }
   /* every level shows a parlay of its size: ten made-up games standing in for the week's (pbGames
@@ -6079,8 +6091,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      object with one of its maps an object (the ledger: entries, prime or slot; the backtest: prime or slot); with
      neither, nothing is drawn (the record's place hidden). Held on the real files as they stand and on made-up pairs,
      word for word: every number the page states, and so blocking ---- */
-  { const LAB = { safe: 'Safe', med: 'Medium', aggr: 'Aggressive', xtrm: 'Extreme' }, isMap = v => !!v && typeof v === 'object' && !Array.isArray(v);
-    const REC_SEC = { night: ['prime'], slot: ['slot'] }, REC_KIND = { model: { field: 'tiers', pre: '', name: 'Model parlays', by: 'the model' }, elo: { field: 'elo', pre: 'elo-', name: 'Elo picks', by: 'the Elo chance' } };
+  { const LAB = { safe: 'Safe', med: 'Medium', aggr: 'Aggressive' }, isMap = v => !!v && typeof v === 'object' && !Array.isArray(v);
+    const REC_SEC = { all: ['prime', 'slot'] }, REC_KIND = { model: { field: 'tiers', pre: '', name: 'Model parlays', by: 'the model' }, elo: { field: 'elo', pre: 'elo-', name: 'Elo picks', by: 'the Elo chance' } };
     const isRec = L => isMap(L) && (isMap(L.entries) || isMap(L.prime) || isMap(L.slot)), isBt = B => isMap(B) && (isMap(B.prime) || isMap(B.slot));
     const recOwn = (L, B, sec, kind) => { const K = REC_KIND[kind], o = {}; for (const id of Object.keys(LAB)) o[K.pre + id] = { label: LAB[id], won: 0, lost: 0, push: 0, u: 0, fair: 0, fairN: 0, model: 0, bt: 0 };
       const last = new Map(), wk = new Set(); let pending = 0;
@@ -6110,7 +6122,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         return { kind, name: K.name, pills }; });
       return { hidden: false, rows }; };
     /* what it draws, read off the page: in its section, right under the section's heading */
-    const recShown = (D, sec) => { const s = D.querySelector(`#spSets section.sp-sec[data-sp-sec="${sec}"]`), el = s && s.querySelector(`:scope > .sp-rec[data-sp-recsec="${sec}"]`);
+    const recShown = (D, sec) => { const s = D.querySelector(`#spSets details.sp-sec[data-sp-sec="${sec}"]`), el = s && s.querySelector(`:scope > .sp-rec[data-sp-recsec="${sec}"]`);
       if (!el) return { missing: true }; if (el.hidden) return { hidden: true, empty: !el.children.length && !txt(el) };
       const pill = x => ({ id: x.dataset.spRec, text: txt(x), title: x.getAttribute('title') });
       const rows = [...el.querySelectorAll(':scope > .bar[data-sp-reckind]')].map(b => ({ kind: b.dataset.spReckind, name: txt(b.querySelector(':scope > .sp-reck')), pills: [...b.querySelectorAll(':scope > .rec')].map(pill) }));
@@ -6122,7 +6134,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const t = txt(D.getElementById('spSets') || D.body);
       return hit ? 'drawn: ' + hit.tagName.toLowerCase() + '.' + hit.className + (hit.dataset.spRec ? '[' + hit.dataset.spRec + ']' : '') : /Incl\. backtest/.test(t) ? 'it still says "Incl. backtest"' : null; };
     /* (app v131) each section's record its own map's: Night games the prime-time games, Day games the Sunday slots */
-    const recHeld = (D, L, B, lab) => { for (const sec of ['night', 'slot']) recHeld1(D, L, B, lab, sec); };
+    const recHeld = (D, L, B, lab) => { for (const sec of ['all']) recHeld1(D, L, B, lab, sec); };
     const recHeld1 = (D, L, B, lab, sec) => { const want = recWant(L, B, sec), got = recShown(D, sec), gone = recGone(D);
       const ok = want.hidden ? got.hidden === true && got.empty === true
         : !got.hidden && !got.missing && got.first && JSON.stringify(got.rows) === JSON.stringify(want.rows) && !got.other.length && got.order === 'model,elo';
@@ -6142,7 +6154,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const R = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest'); await wait(300);
     { const real = LEDGER_REAL ? JSON.parse(LEDGER_REAL) : null, bt = BACKTEST_REAL ? JSON.parse(BACKTEST_REAL) : null;
       recHeld(R.d, real, bt, 'the real record and backtest');
-      { const want = recWant(real, bt, 'night'); console.log(`  (the real record, Night games with the Sunday slots: ${want.hidden ? 'hidden' : want.rows.map(r => r.name + ' ' + r.pills.map(p => p.text).join(', ')).join(' | ')})`); }
+      { const want = recWant(real, bt, 'all'); console.log(`  (the real record, night games and Sunday slots: ${want.hidden ? 'hidden' : want.rows.map(r => r.name + ' ' + r.pills.map(p => p.text).join(', ')).join(' | ')})`); }
       chk(!R.timedOut && R.errs.length === 0 && !/NaN|undefined/.test(txt(R.d.getElementById('spSets'))) && !R.d.getElementById('pbRec') && !R.d.getElementById('spRec'),
         'the page threw, the record reads NaN, or the old record (#pbRec, or #spRec in the tab\'s head) is still drawn: ' + R.errs.join('; ')); }
     const f0 = R.w.fetch;
@@ -6177,35 +6189,36 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       /* by hand, each section on its own map (app v131, as until app v129): Night games' model Safe 2-2 +1.30, Medium
          0-1, one pending; its Elo Safe 2-2 +1.30; Day games' model Safe week 4's slot won (2.6), Medium lost, week 6's
          Safe pending */
-      { const n = recWant(FL, FB, 'night'), sl = recWant(FL, FB, 'slot'), row = r => r ? r.pills.map(p => p.text).join(' | ') : '';
-        const hand = { model: 'Safe 2–2 +1.30 units | Medium 0–1 −1.00 units | Aggressive 0–1 −1.00 units | Extreme 0–1 −1.00 units | Pending 1',
-          elo: 'Safe 2–2 +1.30 units | Medium 1–1 +3.00 units | Aggressive 0–0 | Extreme 0–0', slotModel: 'Safe 1–0 +1.60 units | Medium 0–1 −1.00 units | Aggressive 0–0 | Extreme 0–0 | Pending 1',
-          safeTitle: 'Model parlays, Safe: 4 graded, 2 won; wins expected 1.2 by the book’s fair chance (on the 3 with one), 2.0 by the model; 2 of them from the backtest' };
-        const got = { model: row(n.rows[0]), elo: row(n.rows[1]), slotModel: row(sl.rows[0]), safeTitle: n.rows[0].pills[0].title };
+      /* (app v132) one record over both maps, no Extreme */
+      { const n = recWant(FL, FB, 'all'), row = r => r ? r.pills.map(p => p.text).join(' | ') : '';
+        const hand = { model: 'Safe 3–2 +2.90 units | Medium 0–2 −2.00 units | Aggressive 0–1 −1.00 units | Pending 2',
+          elo: 'Safe 2–3 +0.30 units | Medium 1–1 +3.00 units | Aggressive 0–0',
+          safeTitle: 'Model parlays, Safe: 5 graded, 3 won; wins expected 1.6 by the book’s fair chance (on the 4 with one), 2.5 by the model; 3 of them from the backtest' };
+        const got = { model: row(n.rows[0]), elo: row(n.rows[1]), safeTitle: n.rows[0].pills[0].title };
         chk(JSON.stringify(got) === JSON.stringify(hand), 'the smoke\'s own reading of the made-up record is not the one worked out by hand: ' + JSON.stringify(got)); }
       /* the record alone (a backtest that is not one), and the backtest alone (no record): each counted on its own */
       for (const [lab, L, B] of [['the made-up record with a backtest that is not one', FL, { prime: [] }], ['the made-up backtest with no record', 404, FB]]) {
         await reread(L, B); recHeld(R.d, L === 404 ? null : L, isBt(B) ? B : null, lab); }
       /* a record with entries and no set graded yet, no backtest: each row says none is graded */
       await reread({ entries: FL.entries, prime: { [Object.keys(FL.prime)[1]]: { ...FL.prime[Object.keys(FL.prime)[1]], grade: undefined } } }, 404);
-      { const sh = recShown(R.d, 'night'), gone = recGone(R.d);
-        chk(!sh.hidden && !!sh.rows && sh.rows.map(r => r.pills.map(p => p.id + ' ' + p.text).join()).join(' | ') === 'night:model:none None graded yet | night:elo:none None graded yet' && !gone,
+      { const sh = recShown(R.d, 'all'), gone = recGone(R.d);
+        chk(!sh.hidden && !!sh.rows && sh.rows.map(r => r.pills.map(p => p.id + ' ' + p.text).join()).join(' | ') === 'all:model:none None graded yet | all:elo:none None graded yet' && !gone,
           'a record with no set graded does not say so in each row: ' + JSON.stringify([sh, gone]).slice(0, 400)); }
       /* a record of Sunday slots alone (no prime-time entry), no backtest: counted in the Day games record */
       await reread({ slot_since: FL.slot_since, slot: { '2026|05|2026-10-11T17:00:00Z|2026_05_SUN': { season: 2026, week: 5, gid: '2026_05_SUN', kickoff: '2026-10-11T17:00:00Z', lock: '2026-10-11T15:00:00Z', taken_at: '2026-10-11T15:00:00Z',
         tiers: [T('safe', 2, 0.5, 0.4, 2.5, 'u')], grade: { safe: G('won', 2, 2.5) } } } }, 404);
-      { const sh = recShown(R.d, 'slot'), gone = recGone(R.d);
-        chk(!sh.hidden && !!sh.rows && sh.rows[0] && sh.rows[0].pills.map(p => p.text).join(' | ') === 'Safe 1–0 +1.50 units | Medium 0–0 | Aggressive 0–0 | Extreme 0–0' && !gone,
-          'a record of a Sunday slot alone is not counted in the Day games record: ' + JSON.stringify([sh, gone]).slice(0, 400)); }
+      { const sh = recShown(R.d, 'all'), gone = recGone(R.d);
+        chk(!sh.hidden && !!sh.rows && sh.rows[0] && sh.rows[0].pills.map(p => p.text).join(' | ') === 'Safe 1–0 +1.50 units | Medium 0–0 | Aggressive 0–0' && !gone,
+          'a record of a Sunday slot alone is not counted in the record: ' + JSON.stringify([sh, gone]).slice(0, 400)); }
       /* a record file that is not one with no backtest, and a backtest file that is not one with no record: nothing drawn */
       for (const [L, B] of [[[], 404], [5, 404], ['junk', 404], [{ how: 'x' }, 404], [{ entries: [] }, 404], [404, 'junk'], [404, { how: 'x', prime: [] }]]) {
-        await reread(L, B); const a2 = recShown(R.d, 'night'), gone = recGone(R.d);
+        await reread(L, B); const a2 = recShown(R.d, 'all'), gone = recGone(R.d);
         chk(a2.hidden === true && a2.empty === true && !gone, `a record file ${JSON.stringify(L)} and a backtest file ${JSON.stringify(B)}, neither one, drew something on Suggested Parlays`); }
       chk(R.errs.length === 0, 'the page threw reading the made-up records: ' + R.errs.join('; ')); }
     delete R.w.__recOv; R.w.fetch = f0; R.w.close();
     /* and a load with neither file there (404): nothing drawn, nothing thrown */
     { const N = await run(state, 'https://demon-x13.github.io/nfl-hub/#suggest', null, false, { ledger: 404, backtest: 404 }); await wait(300);
-      const a2 = recShown(N.d, 'night'), gone = recGone(N.d);
+      const a2 = recShown(N.d, 'all'), gone = recGone(N.d);
       chk(a2.hidden === true && a2.empty === true && !gone && N.errs.length === 0, 'a load with no record and no backtest drew something on Suggested Parlays, or threw');
       N.w.close(); } }
   /* ---- the set the page builds at a game's lock where the record has none, kept in this browser across a real
