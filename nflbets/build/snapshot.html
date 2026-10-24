@@ -662,6 +662,12 @@ const playoff=g=>g.game_type?g.game_type!=='REG':+g.week>18;
 const ddFor=(P,g)=>{ const dd=DD(), D=NEWS.units&&NEWS.units.data; return dd&&D&&!playoff(g)&&dd.applies(D,seasonOf(P,g),+g.week)?D:null; };
 
 let cur=null, opener=null;
+/* the matchup bubble's hand-back (24 October 2026, the owner: "on the open prop leg or open game snapshot, when I close
+   it go back to the player pop up"): the whole snapshot opened from a bubble is handed {back, props}; back runs once the
+   reader has closed it (Close, Escape, a click outside), after the focus has gone back to the name, and props once a
+   starter's name or the Game bets and player props button has opened the game's page instead, so that page's Back
+   brings the bubble back too (glance.js). null for one card alone, and for any snapshot not opened so */
+let BACK=null;
 /* one card alone in the window (a game's page on the Props tab: its Matchup, Mismatches and Team Stats
    buttons, the owner's call of 20 October 2026), else null for the whole snapshot */
 let ONLY=null, ONE_AT=0;
@@ -1367,9 +1373,9 @@ function wire(){
     const gl=t.closest('[data-gs-goto]'); if(gl){ goCard(gl.dataset.gsGoto); return; }
     /* a starter's name: the window closes and the game's page on the Props tab opens at his row (pkBoard);
        the game is read before close() lets it go */
-    const pl=t.closest('[data-gs-player]'); if(pl){ const gid=cur, pid=pl.dataset.gsPlayer, P=B(); close(false); if(gid&&P&&typeof P.openOnProps==='function') P.openOnProps(gid,pid); return; }
+    const pl=t.closest('[data-gs-player]'); if(pl){ const gid=cur, pid=pl.dataset.gsPlayer, P=B(), bk=BACK; close(false); if(gid&&P&&typeof P.openOnProps==='function'){ P.openOnProps(gid,pid); toProps(bk,gid); } return; }
     /* the game's own page on the Props tab: the window closes and it opens (pkBoard) */
-    const pp=t.closest('[data-gs-props]'); if(pp){ const id=pp.dataset.gsProps, P=B(); close(false); if(P&&typeof P.openOnProps==='function') P.openOnProps(id); }
+    const pp=t.closest('[data-gs-props]'); if(pp){ const id=pp.dataset.gsProps, P=B(), bk=BACK; close(false); if(P&&typeof P.openOnProps==='function'){ P.openOnProps(id); toProps(bk,id); } }
   });
   /* Escape closes this window alone (ahead of the windows beneath it), Tab stays inside it, and
      the arrow keys, Home and End move along the Starters tabs */
@@ -1393,6 +1399,8 @@ function wire(){
   },true);
   return md;
 }
+/* the bubble told that the game's page took the snapshot's place (BACK, above) */
+const toProps=(bk,gid)=>{ if(bk&&typeof bk.props==='function') try{ bk.props(gid); }catch(e){} };
 /* the game's page on the Props tab, on the screen: the one card's window sits over it */
 const hostShown=()=>{ const gm=$('gameModal'); return !!gm&&!gm.hidden&&!gm.closest('[hidden]'); };
 /* the whole snapshot (the matchup bubble's Open game snapshot; until 22 October 2026 a board row, and for a few hours of
@@ -1403,6 +1411,7 @@ function open(gid,from,o){
   const P=B(), g=gameFor(gid); if(!P||!g) return false;
   const md=wire();
   cur=gid; opener=from||document.activeElement||null; ONLY=only; ONE_AT=Date.now();
+  BACK=!only&&o&&(typeof o.back==='function'||typeof o.props==='function')?{back:o.back,props:o.props}:null;
   md.classList.toggle('gs-one',!!only);
   if(only){ md.dataset.gsOnly=only; eloFiles(); unitsFile(); if(only==='stats') statFile(); }
   else{ delete md.dataset.gsOnly;
@@ -1418,7 +1427,7 @@ function open(gid,from,o){
 }
 function close(restore=true){
   const md=$('gsModal'); if(!md||md.hidden) return;
-  md.hidden=true; const gid=cur, one=ONLY; cur=null; ONLY=null;
+  md.hidden=true; const gid=cur, one=ONLY, bk=BACK; cur=null; ONLY=null; BACK=null;
   md.classList.remove('gs-one'); delete md.dataset.gsOnly;
   if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open');
   /* one card opened from a game's page: its button, or the one drawn since, the page's Back, the game's row, the
@@ -1432,6 +1441,7 @@ function close(restore=true){
   const back=vis(opener)?opener:document.querySelector('#tabs button[aria-selected="true"]');
   opener=null;
   try{ if(vis(back)) back.focus(); }catch(e){}
+  if(bk&&typeof bk.back==='function') try{ bk.back(); }catch(e){}
 }
 /* where the focus goes when one card's window closes: the button that opened it, else the same button on
    the game's page drawn since (a Refresh odds press, a score read), else the page's Back, else the game's

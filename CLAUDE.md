@@ -1761,8 +1761,12 @@ free check, `{left, used}`) and `signOut()`, with a `hub-admin` event on the doc
 is refused. The header's stamp has an empty `#hubAdmin` right after the light/dark switch (`.hub-admin`): on the admin's
 page an Admin mark (`.ha-mark`, gold, its title when the key was checked and the credits left as of when) and Sign out (a
 `<button>`, `data-admin-out`, `.ha-out`, a 44px target from padding a negative margin takes back out); on any page that
-opened a refused link, its one line (`.ha-msg`, `role="status"`); on a visitor's, nothing, pixel for pixel the header it
-was. Sign out asks ("Sign out of admin on this device?"), removes the record and nothing else, takes the two tabs off the
+opened a refused link, its one line (`.ha-msg`, `role="status"`); on a visitor's, nothing. The place is the stamp's
+first line, over when the data was built and the build tag, and on a screen wider than a phone the stamp keeps 56px
+clear on its right for the switch (`theme.css`, the owner's screenshot of 24 October 2026, "top right thing in admin page
+is all squished": once the tagline went on 22 October the stamp rose into the switch's corner, the switch covering the
+end of "Updated ..." and the build tag on every page, and the Admin mark and Sign out, laid out of the flow on the
+switch's row until then, sat on top of "Updated ..."); on a phone it sits under the wordmark as before. Sign out asks ("Sign out of admin on this device?"), removes the record and nothing else, takes the two tabs off the
 bar (an open one landing on the Props tab, written over as `#slate`; on the board until 22 October 2026), empties X Parlays and drops the card's Pull, with no reload; another tab of the
 site signing out is followed, writing nothing, and one signing in waits for this tab's next load (or the link opened in
 it). The two tabs' buttons
@@ -2421,6 +2425,31 @@ shield before it); the text is kept for that game while the page is open (`GAME_
 another game opens. The nflbets smoke holds the card (the page's own `playerCard` output, his id, the season log) and
 Open prop leg on every player bubble it opens, and the search on a game of the week (the rows it leaves, the focus,
 nothing matching, a redraw keeping it, another game clearing it, clearing it showing all).
+
+**A player's bubble: his Elo by his name, no leg, and back to it** (`glance.js` and `snapshot.html`, the owner's calls of
+24 October 2026, a screenshot of Darren Waller's bubble: "move up the elo button up next to the name and the ELO. remove
+what I crossed out", the lines "This leg Over 2.5 receptions" and its "Price +130 · Model 53% · Fair 49% est. · Market +
+form 55%"; and "on the open prop leg or open game snapshot, when I close it go back to the player pop up. its just staying
+at the page"). A player's season Elo, shield and tier sit beside his name in the bubble's head (`.glance-hl`, the heading
+his name alone, then `span.glance-elo[data-glance-elo]`), and the Season Elo row is drawn only where he has none (or the
+ratings are still loading); a player's bubble draws no leg box (`legHtml` is a team's or a game's alone, its line, price,
+model and fair chance; market + form and the Elo matchup are still on the builder's own rows). A team's or a game's bubble
+is as before. Open game snapshot hands the snapshot `{back, props}` (`window.gameSnapshot(gid, from, o)`, `BACK` in
+`snapshot.html`): closed by its Close, Escape or a click outside, it calls back once the focus is on the name, and the
+bubble opens again on its leg's copy in the place it was opened from where that is on the screen (`reopen`); a starter's
+name or Game bets and player props there hands on to the game's page instead. Open prop leg (and those two) keeps a return
+(`RET`, `keepRet`, only where the game's page opened on that game; `window.hubGlanceBack()` reads it): the page closed by
+its Back, Escape or a click outside (each calls `closeGame` by name, wrapped in `glance.js` as `snapshot.html` wraps
+`closeGameModal`) takes the reader back to the tab the bubble was on, at the scroll it was left at (put back at once, the
+page scrolling smoothly), and opens the bubble there (`backFromProps`, which looks for the name again for up to two
+seconds while that tab stands). The page left for another tab by the address (routeTabs clicks the tab's button, which
+drops the return first), a second bubble, or a game's page not opened from a bubble brings nothing back. The bubble's
+460px for a player's card no longer applies to the phone's sheet (`.glance-pop:not(.glance-sheet):has(.pcard)`: app v134's
+rule, later and as specific, set a 460px sheet across a 390px screen). The nflbets smoke holds the head (once, beside the
+name, no Season Elo row), no leg box or leg number on any player's bubble, a team's leg's price followed through a redraw,
+the snapshot closed four ways opening the bubble again with the focus in it, and Open prop leg's page closed by its Back,
+Escape and a click outside landing on the Parlay Builder with the bubble open, left by the address bringing nothing back,
+and a page opened from the Props tab keeping its Back there.
 
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
@@ -3278,10 +3307,14 @@ Claude adds it:
 node picks/tools/add.js <sent file>...   # merge each into picks/friends.json, then rebuild nothing: the page reads it
 node picks/tools/add.js --check          # the file against its rules and betting/state.json's schedule
 node picks/tools/add.js --rename <old> <new>   # show a friend under another name; the old one goes in `aka`, so a later file under it lands on them
+node picks/tools/add.js --remove <name>...     # take friends off, by name or aka, their weeks with them; a name no friend has refuses it all
 node picks/tools/test_add.js             # the tool's test, and the real file held to its rules
 ```
 
-then the branch, commit, PR and merge, as with any file the owner sends. `picks/friends.json` is
+then the branch, commit, PR and merge, as with any file the owner sends. On 24 October 2026 the owner took all four
+friends off ("get rid of the real life players for the pick em record, K, X, D, Gonz"): `--remove K X D Gonz` left the
+list empty, so the Pick'em Record draws no Friends line, row or column until a file is sent again (a file under a
+removed name adds that friend again, from that file alone). `picks/friends.json` is
 `{how, season, updated, friends:[{name, weeks:{w6:{saved_at, tiebreaker, picks:{<game_id>:{pick, saved_at}}}}}]}`,
 its `how` saying the same; written only by the tool (never by hand, never by a job), indented one space, a
 pick a line. The tool refuses a file whole for a kind, version or season that is not the file's

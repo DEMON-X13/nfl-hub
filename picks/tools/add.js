@@ -7,6 +7,9 @@
  *   node picks/tools/add.js --check     hold picks/friends.json to its rules; exit 1 on a problem
  *   node picks/tools/add.js --rename <old> <new>   show a friend under another name (the owner's
  *                                       call, 15 October 2026: "make D money fresh just D")
+ *   node picks/tools/add.js --remove <name>...   take friends off the Pick'em Record, their weeks with
+ *                                       them (the owner's call, 24 October 2026: "get rid of the real
+ *                                       life players for the pick em record, K, X, D, Gonz")
  *
  * A sent file is what picks/index.html's Save file writes (kind 'nfl-hub-weekly-picks', version 1:
  * name, season, week, saved_at, tiebreaker, picks[{game_id, pick, kickoff, ...}]). It is refused
@@ -22,6 +25,10 @@
  * earlier file made before kickoff stands, since the new file could not change it (picks/ locks a
  * game at kickoff, so its pick in a later file is the old one, or none). Each pick keeps the
  * saved_at of the file it came from, so the page and --check can hold it to its kickoff.
+ *
+ * A removal takes the friend out of the file whole, found by their name or any name in their `aka`
+ * (without regard to case or spaces); a name no friend has refuses the whole removal, nothing written.
+ * A file sent later under a removed name adds that friend again, from that file alone.
  *
  * A rename keeps the names the friend went by before in `aka`, so a later file still saved under
  * the old name lands on the same friend and keeps the name the owner chose; no two friends share a
@@ -150,6 +157,20 @@ function rename(F, from, to, now = new Date()) {
   return old;
 }
 
+/* take friends out of the file, each found by their name or an aka; every name must find one, else nothing is
+   removed. Says whom it took out */
+function remove(F, names, now = new Date()) {
+  const found = [];
+  for (const n of names) {
+    const f = F.friends.find(x => key(x.name) === key(n) || (Array.isArray(x.aka) && x.aka.some(a => key(a) === key(n))));
+    if (!f) throw new Error(`no friend is named ${JSON.stringify(n)}`);
+    if (!found.includes(f)) found.push(f);
+  }
+  F.friends = F.friends.filter(f => !found.includes(f));
+  F.updated = now.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  return found.map(f => f.name);
+}
+
 /* the friends file against its rules and the schedule: a list of problems, none when it is good */
 function check(F, st) {
   const bad = [];
@@ -210,10 +231,15 @@ function main(argv) {
     console.log(bad.length ? `${path.relative(ROOT, FILE)}: ${bad.length} problem(s)` : `${path.relative(ROOT, FILE)}: ${(F.friends || []).length} friend(s), ${n} pick(s), all on the schedule and saved before kickoff`);
     return bad.length ? 1 : 0;
   }
-  if (!argv.length || (argv[0] === '--rename' && argv.length !== 3)) { console.error('usage: node picks/tools/add.js <sent file>... | --check | --rename <old name> <new name>'); return 2; }
+  if (!argv.length || (argv[0] === '--rename' && argv.length !== 3) || (argv[0] === '--remove' && argv.length < 2)) { console.error('usage: node picks/tools/add.js <sent file>... | --check | --rename <old name> <new name> | --remove <name>...'); return 2; }
   const F = load(FILE, st.season);
   const before = check(F, st);
-  if (before.length) { console.error(`${path.relative(ROOT, FILE)} does not pass its rules as it stands; nothing ${argv[0] === '--rename' ? 'renamed' : 'added'}:\n  ` + before.join('\n  ')); return 1; }
+  if (before.length) { console.error(`${path.relative(ROOT, FILE)} does not pass its rules as it stands; nothing ${argv[0] === '--rename' ? 'renamed' : argv[0] === '--remove' ? 'removed' : 'added'}:\n  ` + before.join('\n  ')); return 1; }
+  if (argv[0] === '--remove') {
+    try { const gone = remove(F, argv.slice(1)); const bad = check(F, st); if (bad.length) throw new Error('the file without them breaks its rules: ' + bad.join('; '));
+      write(F); console.log(`${path.relative(ROOT, FILE)}: removed ${gone.join(', ')}; ${F.friends.length} friend(s) left`); return 0; }
+    catch (e) { console.error('  REFUSED: ' + e.message); return 1; }
+  }
   if (argv[0] === '--rename') {
     try { const old = rename(F, argv[1], argv[2]); const bad = check(F, st); if (bad.length) throw new Error('the renamed file breaks its rules: ' + bad.join('; '));
       write(F); console.log(`${path.relative(ROOT, FILE)}: ${old} is now ${F.friends.find(x => (x.aka || []).includes(old)).name} (a file sent as ${old} still lands on them)`); return 0; }
@@ -234,5 +260,5 @@ function main(argv) {
   return refused ? 1 : 0;
 }
 
-module.exports = { kickAt, readState, readSent, merge, rename, check, write, empty, HOW };
+module.exports = { kickAt, readState, readSent, merge, rename, remove, check, write, empty, HOW };
 if (require.main === module) process.exit(main(process.argv.slice(2)));

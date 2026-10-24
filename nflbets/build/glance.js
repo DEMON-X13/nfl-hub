@@ -29,14 +29,27 @@
    back its Run Defense, a receiver or tight end its Pass Defense, as the Game snapshot's position matchups set them:
    window.eloGlance.unit), his mismatch's grade and edge where the Props tab's Mismatches have one (matchups.json,
    window.eloMismatches; no rank of its own), the stats where the Elo part of the matchup has held up (muTrusted)
-   with his recent form and the matchup's projection, and the leg it was opened from: its line, the price its row
-   shows, the model's chance, the book's fair chance (legFair), market + form (eloAltP) and the Elo matchup's chance
-   (eloMatchupP), both on that price. For a team's or a game's leg, both clubs' records as Team Rankings counts
+   with his recent form and the matchup's projection, then his card (the props parts' playerCard: his projection for the
+   game and his season week by week, app v134) and Open prop leg. His season Elo, shield and tier sit beside his name in
+   the bubble's head, and a player's bubble draws no leg box (the owner's call of 24 October 2026, a screenshot of
+   Darren Waller's bubble: "move up the elo button up next to the name and the ELO. remove what I crossed out", the
+   crossed-out lines "This leg Over 2.5 receptions" and its price, model, fair and market + form). For a team's or a
+   game's leg, both clubs' records as Team Rankings counts
    them, the line the leg stands on (the prop model's own row, DraftKings' named so; state.json's closing line only for
    a game it has no row for), each club's Power Rating and rank, Overall Offense against Overall Defense
    each way, each model's pick (the Game snapshot's own readings, window.gsReadings), the leg's team marked "this
-   leg" and, on a moneyline alone, each model picking that team to win ticked, the leg, and Open game snapshot.
-   What a file has not given says so in its own line, and the rest draws. */
+   leg" and, on a moneyline alone, each model picking that team to win ticked, the leg (its line, the price its row
+   shows, the model's chance and the book's fair chance, legFair), and Open game snapshot.
+   What a file has not given says so in its own line, and the rest draws.
+
+   Open prop leg and Open game snapshot hand back to the bubble (the owner's call of 24 October 2026: "on the open prop
+   leg or open game snapshot, when I close it go back to the player pop up. its just staying at the page"): the
+   snapshot, closed by its Close, Escape or a click outside, calls back (window.gameSnapshot's {back}), and the bubble
+   opens again on its leg's copy in the place it was opened from, where that is on the screen; the game's page on the
+   Props tab, closed by its Back, Escape or a click outside (closeGame, wrapped here as snapshot.html wraps
+   closeGameModal), takes the reader back to the tab the bubble was on, at the scroll it was left at, and opens the
+   bubble again there. Leaving the game's page for another tab (a tab's button, or the address) is the reader going
+   elsewhere: nothing is opened again. */
 (function(){
 'use strict';
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -107,7 +120,7 @@ function anchor(){
   return same;
 }
 
-/* ---- the leg it was opened from ---- */
+/* ---- the leg it was opened from (a team's or a game's bubble: a player's draws none since 24 October 2026) ---- */
 function legHtml(K){
   if(!K||!K.leg) return '';
   const l=K.leg, price=K.price, src=K.src, out=[];
@@ -116,15 +129,6 @@ function legHtml(K){
   if(l.p!=null&&isFinite(l.p)) out.push(`<div><dt>Model</dt><dd>${N('model',pc0(l.p))}</dd></div>`);
   let f=null; try{ f=typeof legFair==='function'?legFair(l):null; }catch(e){ f=null; }
   out.push(`<div><dt>Fair</dt><dd>${f&&f.p!=null?N('fair',pc0(f.p)+(f.est?' est.':'')):'<span class="glance-q" data-glance-n="fair">none</span>'}</dd></div>`);
-  if(!/^(t|g):/.test(cur.of)){
-    let mf=null; try{ mf=typeof window.eloAltP==='function'?window.eloAltP(l.pid,l.side,price,src,l.stat):null; }catch(e){ mf=null; }
-    if(mf!=null) out.push(`<div><dt>Market + form</dt><dd>${N('mf',Math.round(mf*100)+'%')}</dd></div>`);
-    /* no Elo matchup for a player the page has ruled out: the bubble says above that he has none to show (the
-       matchups file can be hours behind the report the page reads) */
-    const ruled=typeof window.eloRuledOut==='function'&&window.eloRuledOut(l.pid);
-    let mu=null; try{ mu=!ruled&&typeof window.eloMatchupP==='function'&&typeof mlProb==='function'&&price!=null&&isFinite(price)?window.eloMatchupP(l,mlProb(price)):null; }catch(e){ mu=null; }
-    if(mu!=null) out.push(`<div><dt>Elo matchup</dt><dd>${N('mu',Math.round(mu*100)+'%')}</dd></div>`);
-  }
   return `<div class="glance-leg" data-glance-legbox><p class="glance-lt"><span class="glance-k">This leg</span> ${N('label',l.label||'')}</p><dl class="glance-nums">${out.join('')}</dl></div>`;
 }
 function snapBtn(gid){
@@ -148,11 +152,13 @@ function playerHtml(){
   const status=it?`<span class="inj inj-${esc(it.k)}" data-glance-n="inj">${esc(it.t)}</span> <span class="glance-why">${esc(it.title||'')}</span>`
     :outWhy?`<span class="inj inj-out" data-glance-n="inj">OUT</span> <span class="glance-why">${esc(outWhy)}</span>`:'';
   const sub=`<p class="glance-sub"><span data-glance-n="pos">${esc(pos)}</span>${team?` · <span data-glance-n="team">${esc(team)}</span>`:''}${status?` ${status}`:''}</p>`;
-  /* his season Elo, its shield and tier, and his rank at his position */
+  /* his season Elo, its shield and tier, beside his name in the head (24 October 2026), and his rank at his position;
+     where he has none, or the ratings are still being read, a line saying so */
+  let head='';
   if(!F) lines.push(`<div><dt>Season Elo</dt><dd class="glance-q">Loading the ratings…</dd></div>`);
   else if(e&&e.se!=null){
     const grpX=Pl.groups&&Pl.groups[e.group], row=grpX&&(grpX.top||[]).find(x=>x.id===pid);
-    lines.push(`<div><dt>Season Elo</dt><dd><span class="glance-sh">${shield(e.se)}</span>${N('se',e.se)} <span data-glance-n="tier">${esc(tierName(e.se))}</span></dd></div>`);
+    head=`<span class="glance-elo" data-glance-elo title="Season Elo"><span class="glance-sh">${shield(e.se)}</span>${N('se',e.se)} <span data-glance-n="tier">${esc(tierName(e.se))}</span></span>`;
     if(e.rank) lines.push(`<div><dt>Rank</dt><dd>${N('rank','#'+e.rank)}${grpX&&grpX.active?` <span class="glance-q">of <span data-glance-n="of">${esc(grpX.active)}</span> ${esc(String(grpX.label||e.group).toLowerCase())}</span>`:''}${row&&row.prov?' <span class="glance-prov" data-glance-n="prov">prov.</span>':''}</dd></div>`);
   } else {
     const sd=Pl&&Pl.groups?Object.values(Pl.groups).flatMap(x=>x.sidelined||[]).find(x=>x.id===pid):null;
@@ -190,7 +196,7 @@ function playerHtml(){
      his row on the game's page */
   let card=''; try{ card=typeof window.playerCard==='function'?window.playerCard(pid,gid):''; }catch(e){ card=''; }
   const PB=board(), propBtn=PB&&typeof PB.openOnProps==='function'&&(!PB.canProps||PB.canProps(gid))?`<div class="glance-acts"><button type="button" class="btn glance-snap" data-glance-prop="${esc(gid)}" data-glance-pid="${esc(pid)}">Open prop leg</button></div>`:'';
-  return {title:esc(name),body:`${sub}<dl class="glance-kv">${lines.join('')}</dl>${table}${legHtml(K)}${card}${propBtn}${snapBtn(gid)}`};
+  return {title:esc(name),head,body:`${sub}<dl class="glance-kv">${lines.join('')}</dl>${table}${card}${propBtn}${snapBtn(gid)}`};
 }
 
 /* ---- a team, or a game ---- */
@@ -262,9 +268,12 @@ function make(){
     const t=e.target&&e.target.closest?e.target:null; if(!t) return;
     if(t.closest('[data-glance-close]')){ close(true); return; }
     const pp=t.closest('[data-glance-prop]');
-    if(pp){ const gid=pp.dataset.glanceProp, pid=pp.dataset.glancePid, P=board(); close(false); if(P&&typeof P.openOnProps==='function') P.openOnProps(gid,pid); return; }
+    if(pp){ const gid=pp.dataset.glanceProp, pid=pp.dataset.glancePid, P=board(), r=retOf(); close(false);
+      if(P&&typeof P.openOnProps==='function'){ P.openOnProps(gid,pid); keepRet(r,gid); }
+      return; }
     const sn=t.closest('[data-glance-snap]');
-    if(sn){ const gid=sn.dataset.glanceSnap, from=anchor(); close(false); if(typeof window.gameSnapshot==='function') window.gameSnapshot(gid,from||undefined); }
+    if(sn){ const gid=sn.dataset.glanceSnap, from=anchor(), r=retOf(); close(false);
+      if(typeof window.gameSnapshot==='function') window.gameSnapshot(gid,from||undefined,{back:()=>reopen(r),props:g=>keepRet(r,g)}); }
   });
   box.addEventListener('keydown',e=>{
     if(e.key!=='Tab') return;
@@ -311,10 +320,10 @@ function place(){
 }
 function draw(){
   if(!cur||!box) return;
-  const at=document.activeElement, inBox=box.contains(at), key=inBox&&at!==box?['glanceClose','glanceSnap'].find(k=>at.dataset&&at.dataset[k]!=null):null;
+  const at=document.activeElement, inBox=box.contains(at), key=inBox&&at!==box?['glanceClose','glanceSnap','glanceProp'].find(k=>at.dataset&&at.dataset[k]!=null):null;
   let v; try{ v=cur.of.startsWith('p:')?playerHtml():teamHtml(); }catch(e){ v={title:'Matchup',body:`<p class="glance-q">This could not be drawn: ${esc(e&&e.message||e)}.</p>`}; }
   box.dataset.glanceOf=cur.of; box.dataset.glanceGame=cur.gid;
-  box.innerHTML=`<div class="glance-hd"><h3 class="glance-title" id="glanceTitle">${v.title}</h3><button type="button" class="btn quiet glance-x" data-glance-close>Close</button></div><div class="glance-body">${v.body}</div>`;
+  box.innerHTML=`<div class="glance-hd"><div class="glance-hl"><h3 class="glance-title" id="glanceTitle">${v.title}</h3>${v.head||''}</div><button type="button" class="btn quiet glance-x" data-glance-close>Close</button></div><div class="glance-body">${v.body}</div>`;
   if(key){ const nx=box.querySelector(`[data-${key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}]`); try{ (nx||box).focus({preventScroll:true}); }catch(e){} }
   else if(inBox){ try{ box.focus({preventScroll:true}); }catch(e){} }
   place();
@@ -322,6 +331,7 @@ function draw(){
 function open(btn){
   const of=btn.dataset.glance||'', i=of.indexOf(':'); if(i<1) return;
   if(cur) close(false);
+  RET=null;
   const sig=btn.dataset.glanceLeg||'', place=placeOf(btn), tab=btn.closest('[id^="tab-"]');
   cur={of,kind:of.slice(0,i),id:of.slice(i+1),gid:btn.dataset.glanceGame||'',sig,leg:legId(sig),from:btn,place,tab:tab?tab.id:null,
     at:Math.max(0,namesIn(place&&document.querySelector(place)).indexOf(btn))};
@@ -377,10 +387,57 @@ function gone(){
   const to=names[Math.min(c.at,names.length-1)]||focusables(pl)[0]||focusables(c.tab&&document.getElementById(c.tab))[0]||null;
   if(to) try{ to.focus({preventScroll:true}); }catch(e){}
 }
+/* ---- back to the bubble from Open prop leg and Open game snapshot (24 October 2026) ----
+   What the bubble needs to open again where it was: its leg (kind, id, game, key, side and line), the place it was
+   drawn in, the tab that place is on and where the page was scrolled. reopen finds that leg's copy in that place, on
+   the screen (a name on a tab the reader has left is not), brings it back into view where the page has moved, and
+   opens the bubble on it; false where it cannot */
+let RET=null;
+/* kept only where the game's page did open on that game: its Back (or Escape, or a click outside) brings the bubble back */
+const keepRet=(r,gid)=>{ if(r&&typeof gameShown==='function'&&gameShown()&&Sx()&&Sx().ui&&Sx().ui.game===gid) RET={...r,game:gid}; };
+const retOf=()=>cur?{of:cur.of,gid:cur.gid,leg:cur.leg,place:cur.place,tab:cur.tab,y:window.scrollY||0}:null;
+function reopen(r){
+  if(!r) return false;
+  const pl=r.place?document.querySelector(r.place):null, b=namesIn(pl).find(x=>sameLeg(x,r)&&!x.disabled&&!x.closest('[hidden]'))||null;
+  if(!b) return false;
+  try{ const rc=b.getBoundingClientRect(), vh=window.innerHeight||document.documentElement.clientHeight||0;
+    if(vh&&(rc.bottom<0||rc.top>vh)&&b.scrollIntoView) b.scrollIntoView({block:'center',behavior:'instant'}); }catch(e){}
+  open(b); return true;
+}
+/* the game's page Open prop leg opened, closed by the reader (its Back, Escape or a click outside: each calls closeGame
+   by name, so the wrap below is what runs): once the page has closed, back to the tab the bubble was on, at the scroll
+   it was left at, and the bubble open again there. Only for the game it opened, only while the Props tab is still the
+   one on the screen (leaving the page for another tab closes it too, through tabLeft: that tab stands), and only once:
+   a tab's button pressed (by the reader, or by the address through routeTabs) drops the return first, and so does
+   another bubble opening. The place a tab draws on showing (Suggested Parlays' sets) may come a moment later, so the
+   name is looked for again a few times, for at most two seconds, while that tab is still the one shown and no other
+   bubble has opened */
+function backFromProps(r){
+  const sel=document.querySelector('#tabs button[aria-selected="true"]');
+  if(!sel||sel.dataset.tab!=='slate'||cur) return;
+  const tb=r.tab?[...document.querySelectorAll('#tabs button')].find(b=>'tab-'+b.dataset.tab===r.tab):null;
+  if(r.tab&&!tb) return;
+  /* the page scrolls smoothly (part1's html{scroll-behavior:smooth}): the reader's place is put back at once, so the name
+     is where it was before the bubble is placed on it */
+  if(tb){ tb.click(); try{ window.scrollTo({top:r.y||0,behavior:'instant'}); }catch(e){} try{ tb.focus({preventScroll:true}); }catch(e){} }
+  let n=0;
+  const tryIt=()=>{ if(cur) return;
+    const on=document.querySelector('#tabs button[aria-selected="true"]'); if(tb&&on!==tb) return;
+    if(reopen(r)||++n>40) return; setTimeout(tryIt,50); };
+  tryIt();
+}
+if(typeof closeGame==='function'){ const was=closeGame;
+  closeGame=function(){ const r=RET, mine=!!r&&!!Sx()&&!!Sx().ui&&Sx().ui.game===r.game; RET=null;
+    const out=was.apply(this,arguments);
+    if(mine) setTimeout(()=>backFromProps(r),0);
+    return out; }; }
+
 /* a click outside the bubble closes it, before anything else answers it; a name opens its own (or, the open
    one's, closes it); the focus goes back to the name unless the click was on something that takes it */
 document.addEventListener('click',e=>{
   const t=e.target&&e.target.closest?e.target:null; if(!t) return;
+  /* a tab's button: the reader is going elsewhere, so a game's page Open prop leg opened brings no bubble back */
+  if(RET&&t.closest('#tabs button')) RET=null;
   const nm=t.closest('[data-glance]');
   if(cur&&box&&!box.contains(t)){
     if(nm&&nm===anchor()){ close(false); return; }
@@ -408,7 +465,10 @@ css.textContent=`
 .glance-pop:focus{outline:none}
 .glance-pop.glance-sheet{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;max-width:none;max-height:min(78vh,640px);border-radius:18px 18px 0 0;border-bottom:0;padding:6px 16px calc(16px + env(safe-area-inset-bottom,0px))}
 .glance-hd{display:flex;align-items:center;gap:10px;margin:0 -4px 0 0}
-.glance-title{flex:1 1 auto;min-width:0;margin:0;font:700 16px/1.3 var(--body);color:var(--ink);overflow-wrap:anywhere}
+.glance-hl{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px}
+.glance-title{flex:0 1 auto;min-width:0;margin:0;font:700 16px/1.3 var(--body);color:var(--ink);overflow-wrap:break-word}
+.glance-elo{flex:none;display:inline-flex;align-items:center;white-space:nowrap;font-size:13px;color:var(--ink-2)}
+.glance-elo b{color:var(--ink);font-weight:700;margin-right:4px}
 .glance-x{flex:none;min-height:44px;min-width:44px;padding:0 12px;font-size:13px}
 .glance-sub{margin:0 0 8px;color:var(--ink-2);font-size:12.5px}
 .glance-sub .inj{margin-left:4px}
@@ -451,7 +511,9 @@ css.textContent=`
 .glance-nums dd{margin:0;color:var(--ink);font-variant-numeric:tabular-nums}
 .glance-acts{margin:10px 0 0}
 .glance-snap{width:100%;min-height:44px;font-size:13px}
-.glance-pop:has(.pcard){width:460px}
+/* a player's card widens the bubble, never the phone's sheet (until 24 October 2026 this rule, later in the file and as
+   specific, set a 460px sheet across a 390px screen) */
+.glance-pop:not(.glance-sheet):has(.pcard){width:460px}
 .glance-pop .glance-acts+.glance-acts{margin-top:6px}
 html[data-theme="light"] .glance-pop{box-shadow:0 18px 40px -16px rgba(30,34,48,.38),0 2px 8px rgba(30,34,48,.14)}
 `;
@@ -461,4 +523,5 @@ html[data-theme="light"] .glance-pop{box-shadow:0 18px 40px -16px rgba(30,34,48,
 window.hubGlance=function(btn){ if(btn&&btn.dataset&&btn.dataset.glance) open(btn); };
 window.hubGlanceClose=()=>close(true);
 window.hubGlanceState=()=>cur?{of:cur.of,gid:cur.gid,sig:cur.sig}:null;
+window.hubGlanceBack=()=>RET?{of:RET.of,gid:RET.gid,game:RET.game,tab:RET.tab}:null;
 })();

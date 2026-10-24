@@ -151,18 +151,25 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 /* the admin link (admin.js, 20 October 2026): X Parlays and the X Bet Log are on the site owner's tab bar alone,
    hidden from the first paint unless the page is his (html[data-admin="on"], set in the head before the body).
    His Admin mark and Sign out (a text button whose 44px tap target comes from padding taken back out by a negative
-   margin) are in the stamp's place after the switch: on a screen wider than a phone that place is laid on the
-   switch's own row, to its left and out of the flow, so the stamp keeps its height and nothing comes near the
-   switch; on a phone (620px and under) it is the stamp's first line, under the wordmark. On a visitor's page the
-   place is empty and hidden, and the header is exactly as it was, but for the one line a refused link draws there */
+   margin) are in the stamp's place after the switch, the stamp's first line, over when the data was built and the
+   build tag. On a screen wider than a phone the stamp keeps 56px clear on its right for the switch (44px and a
+   12px gap), so none of its lines runs under it: the owner's screenshot of 24 October 2026, "top right thing in
+   admin page is all squished", once the tagline had gone (22 October) and the wordmark alone no longer held the
+   stamp below the switch's corner, showed the switch over the end of "Updated ..." and the build tag on every page
+   and, on his, the Admin mark and Sign out (laid out of the flow on the switch's row until then) on top of
+   "Updated ...". On a phone (620px and under) the stamp is a line of its own under the wordmark, clear of the switch. On a
+   visitor's page the place is empty and hidden, but for the one line a refused link draws there */
 html:not([data-admin="on"]) #tabs [data-admin-only]{display:none!important}
-.hub-admin{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;font-size:12px;line-height:18px}
+/* 12px under it at every width, so Sign out's 44px (13px of padding below its 18px line) never reaches under "Updated ...",
+   which paints after it (the review of 24 October 2026: in the flow at 621px and up without it, the lowest 11px of its
+   target fell to the line under it) */
+.hub-admin{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;font-size:12px;line-height:18px;margin-bottom:12px}
 .hub-admin[hidden]{display:none}
 .ha-mark{background:var(--gold-soft);color:var(--gold);border-radius:999px;padding:0 8px;font-weight:700;letter-spacing:.02em}
 .ha-out{font:inherit;font-weight:600;color:var(--ink-2);background:none;border:0;border-radius:6px;padding:13px 6px;margin:-13px -6px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
 .ha-out:hover{color:var(--ink)}
 .ha-msg{color:var(--miss);font-weight:600}
-@media(min-width:621px){ .hub-admin{position:absolute;top:26px;right:74px;min-height:44px;max-width:calc(100% - 440px);flex-wrap:wrap;text-align:right} }
+@media(min-width:621px){ .hub-stamp{padding-right:56px} }
 .card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}
 
 /* inside the framed betting tabs (html.embed): the page's glow shows through */
@@ -210,7 +217,10 @@ line[stroke="#E6EAEF"]{stroke:#4A5269}
 #gsModal .pe-g3{color:#7BD88F!important}
 
 @media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }
-@media(max-width:620px){ .hub-stamp{align-items:flex-start;text-align:left} .hub-admin{justify-content:flex-start;margin-bottom:12px} }
+/* on a phone the stamp is a line of its own under the wordmark, at every width up to 620px: until 24 October 2026 it
+   dropped there only where it could not fit beside the wordmark, and from about 430 to 620px it sat beside it, under the
+   switch (the review of that day) */
+@media(max-width:620px){ .hub-stamp{flex-basis:100%;align-items:flex-start;text-align:left} .hub-admin{justify-content:flex-start} }
 
 /* the light/dark switch at the top right of the header (theme.js): a round 44px button, its glyph the
    look a press gives (a sun while dark, a moon while light). It is laid over the header's corner, out
@@ -223,7 +233,6 @@ line[stroke="#E6EAEF"]{stroke:#4A5269}
 html[data-theme="light"] .hub-theme .ht-sun{display:none}
 html[data-theme="light"] .hub-theme .ht-moon{display:block}
 @media(max-width:900px){ .hub-theme{top:12px;right:16px} }
-@media(min-width:621px) and (max-width:900px){ .hub-admin{top:12px;right:68px} }
 /* under about 340px the wordmark's football reaches the switch's corner: the wordmark keeps clear of it */
 @media(max-width:340px){ .brand h1{padding-right:52px} }
 
