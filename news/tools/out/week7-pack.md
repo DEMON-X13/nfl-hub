@@ -1,6 +1,6 @@
 # Week 7 reading pack
 
-Generated 2026-10-23. Facts below are pulled; everything narrative still has to be read and written.
+Generated 2026-10-24. Facts below are pulled; everything narrative still has to be read and written.
 
 ## Games
 
@@ -15,6 +15,11 @@ Searches to run:
 - "NFL week 7 picks NE CHI"
 
 New England Patriots, injuries:
+- Kyle Williams (WR) Active: Williams returned two kickoffs for 47 yards and failed to haul in his lone target during the Patriots' 30-24 loss to the Bears on Thursday.
+- Corey Kiner (RB) Active: Kiner rushed four times for 13 yards in Thursday's Week 7 loss to Chicago. He also returned four kickoffs for 102 yards.
+- Eli Raridon (TE) Active: Raridon caught three of four targets for 56 yards and a touchdown in Thursday's Week 7 loss to the Bears.
+- Efton Chism III (WR) Active: Chism caught his sole target for 16 yards in the Patriots' 30-24 loss to the Bears on Thursday.
+- DeMario Douglas (WR) Active: Douglas caught three of his four targets for 23 yards in the Patriots' 30-24 loss to the Bears on Thursday.
 - TreVeyon Henderson (RB) Active: Henderson rushed three times for nine yards and secured both targets for 14 yards in the Patriots' 30-24 loss to the Bears on Thursday.
 - Hunter Henry (TE) Active: Henry secured all seven targets for 71 yards in the Patriots' 30-24 loss to the Bears on Thursday.
 - Andy Borregales (PK) Active: Borregales made his only field-goal attempt and was successful on all three extra-point tries Thursday in a Week 7 loss to the Bears.
@@ -34,19 +39,17 @@ New England Patriots, injuries:
 - Ben Brown (C) Out, Knee: Brown (knee) has been ruled out for Thursday's game against the Bears.
 - Carlton Davis III (CB) Out, Neck: Davis (neck) has been ruled out ahead of Thursday night's game against the Bears.
 - Marcus Bryant (OT) Injured Reserve, Ankle: Bryant (ankle) was a full participant at the Patriots' practice Tuesday.
-- Corey Kiner (RB) Active: Kiner rushed 11 times for 57 yards while also adding 88 yards as a kick returner during Sunday's 26-19 win over the Jets.
 - Romeo Doubs (WR) Injured Reserve, Shoulder: Doubs (shoulder) is hopeful to return after the Patriots' Week 11 bye and isn't expected to face a long-term absence, Jeremy Fowler of ESPN.com reports.
-- Tanner Arkin (TE) Active
-- Dametrious Crownover (OT) Active
-- DeMario Douglas (WR) Active: Douglas caught seven of eight targets for 86 yards and a touchdown in Sunday's 26-19 win over the Jets.
-- Will Campbell (OT) Active: Campbell (knee) is active for Sunday's game against the Jets.
 
 New England Patriots, ESPN headlines:
 
 Chicago Bears, injuries:
 - Anthony Johnson Jr. (S) Injured Reserve, Undisclosed: ir
+- Sam Roush (TE) Active: Roush is expected to get more work on offense after Cole Kmet (knee) landed on injured reserve Friday.
+- Kalif Raymond (WR) Active: Raymond did not catch either of his two targets and returned one punt for seven yards Thursday in a 30-24 win over New England.
+- Roschon Johnson (RB) Active: Johnson rushed twice for 13 yards in the Bears' 30-24 victory over the Patriots on Thursday.
+- Montez Sweat (DE) Active: The NFL reinstated Sweat on Friday after he served a two-game suspension for violating the league's performance-enhancing substances policy.
 - Cole Kmet (TE) Injured Reserve, Knee: The Bears placed Kmet (knee) on injured reserve Friday.
-- Montez Sweat (DE) Active
 - Rome Odunze (WR) Active: Odunze brought in four of five targets for 69 yards in the Bears' 30-24 win over the Patriots on Thursday.
 - Colston Loveland (TE) Active: Loveland secured seven of 12 targets for 69 yards and a touchdown during the Bears' 30-24 win over the Patriots on Thursday.
 - Cairo Santos (PK) Active: Santos went 3-for-4 on field-goal tries and made all three of his extra-point attempts in Thursday's 30-24 win over New England.
@@ -61,14 +64,11 @@ Chicago Bears, injuries:
 - Nick McCloud (CB) Out, Coach's Decision: inactive
 - Jordan McFadden (G) Out, Coach's Decision: inactive
 - Kyle Monangai (RB) Out, Toe: inactive
-- Zavier Scott (RB) Active: Scott has been elevated from Chicago's practice squad ahead of Thursday's game against the Patriots.
 - Jonah Jackson (G) Active: Jackson (hip/quadricep) does not have any injury designation ahead of Thursday night's game against the Patriots.
 - Jack Sanborn (LB) Out, Concussion: Sanborn (concussion) is officially listed as out for Thursday's game versus the Patriots.
-- Kalif Raymond (WR) Active: Raymond caught both of his targets for 18 yards and returned three punts for 54 yards during Chicago's win over the Falcons on Sunday.
 - Keyshaun Elliott (LB) Active: Elliott (quadriceps) was estimated as a full participant on the Bears' official injury report Monday.
 - Kyler Gordon (CB) Active: Gordon posted four solo tackles, including 3.0 sacks, and two forced fumbles during the Bears' 31-23 win over the Falcons on Sunday.
 - Jahdae Walker (WR) Active: Walker went without a target while playing 10 of the Bears' 77 snaps on offense in Sunday's 31-23 win over the Falcons.
-- Roschon Johnson (RB) Active: Johnson rushed 13 times for 51 yards and a touchdown in Sunday's 31-23 win over the Falcons. He caught both of his targets for 34 yards.
 
 Chicago Bears, ESPN headlines:
 
@@ -83,6 +83,9 @@ Searches to run:
 - "NFL week 7 picks PIT NO"
 
 Pittsburgh Steelers, injuries:
+- Brandon Johnson (WR) Active: The Steelers elevated Johnson from the practice squad Saturday ahead of Sunday's game against the Saints.
+- Brandon Smith (WR) Active: The Steelers elevated Smith from the practice squad Saturday ahead of Sunday's game against the Saints.
+- DeShon Elliott (S) Active: The Steelers activated Elliott (knee) from IR on Saturday ahead of Sunday's game against the Saints.
 - Rico Dowdle (RB) Questionable, Knee: Dowdle (knee) was a limited participant in Friday's practice and is listed as questionable for Sunday's game against the Saints in Paris, NFL insider Adam Caplan reports.
 - T.J. Watt (LB) Active: Watt (calf) practiced fully Friday and doesn't carry an injury designation into Sunday's game against the Saints.
 - Alex Highsmith (LB) Active
@@ -90,7 +93,6 @@ Pittsburgh Steelers, injuries:
 - Brandin Echols (CB) Out, Hamstring: Echols (hamstring) has been ruled out for Sunday's matchup with the Saints, Mike DeFabo of The Athletic reports.
 - Sebastian Joseph-Day (DT) Injured Reserve, Triceps: Joseph-Day (triceps) was placed on injured reserve by the Steelers on Thursday, Teresa Varley of the team's official website reports.
 - Ben Skowronek (WR) Out, Calf: The Steelers have ruled Skowronek (calf) out for Sunday's matchup against the Saints, Mike DeFabo of The Athletic reports.
-- DeShon Elliott (S) Injured Reserve, Knee: Elliott (knee) was a full participant in Wednesday's practice, Teresa Varley of the Steelers' official site reports.
 - Jaquan Brisker (S) Active: Brisker posted seven tackles (four solo) during the Steelers' 26-19 overtime win over the Buccaneers on Sunday.
 - Payton Wilson (LB) Active: Wilson recorded 11 tackles (seven solo) during Sunday's 26-19 overtime win over the Buccaneers.
 - Nick Herbig (LB) Active: Herbig recorded six solo tackles, including 2.0 sacks, during the Steelers' 26-19 overtime win over the Buccaneers on Sunday.
@@ -106,15 +108,15 @@ Pittsburgh Steelers, injuries:
 - Jaylen Warren (RB) Active: Warren carried the ball 14 times for 50 yards and caught two of four targets for 28 yards in Sunday's 26-19 overtime win over the Buccaneers.
 - Aaron Rodgers (QB) Active: Rodgers completed 33 of 49 passes for 253 yards and two touchdowns with one interception in Sunday's 26-19 overtime win over the Buccaneers.
 - Darnell Washington (TE) Active: Washington caught four of six targets for 25 yards and a touchdown in Sunday's 26-19 overtime win over the Bucs.
-- Germie Bernard (WR) Active: Bernard caught 11 of 12 targets for 87 yards and a touchdown in Sunday's 26-19 overtime win over the Bucs.
-- Jamel Dean (CB) Active: Dean (ankle) is active for Sunday's game against the Buccaneers.
 
 Pittsburgh Steelers, ESPN headlines:
 
 New Orleans Saints, injuries:
+- Cedric Tillman (WR) Active: The Saints elevated Tillman from the practice squad to the active roster Saturday ahead of Sunday's game against the Steelers.
+- Cesar Ruiz (G) Questionable, Knee: Ruiz (knee) is listed as questionable for Sunday's game against the Steelers.
+- Anfernee Jennings (LB) Active: Jennings (knee) does not have any injury designation ahead of Sunday's game against the Steelers.
 - Nathan Shepherd (DT) Questionable, Illness: Shepherd (illness) is listed as questionable for Sunday's game against the Steelers in Paris.
 - Kaden Elliss (LB) Active: Elliss (calf) doesn't carry an injury designation into Sunday's game against the Steelers.
-- Anfernee Jennings (LB) Active
 - Alvin Kamara (RB) Active: Kamara (back) was limited at Friday's practice but does not have an injury designation for Week 7, Katherine Terrell of ESPN.com reports.
 - CJ Donaldson (RB) Active: Donaldson (shoulder) practiced without limitations Thursday.
 - Quincy Riley (CB) Active: Riley (neck) was a full participant in practice Wednesday.
@@ -123,7 +125,6 @@ New Orleans Saints, injuries:
 - Pete Werner (LB) Active: Werner recorded 11 total tackles (five solo), including 1.0 sacks, while also adding a pass defensed during Sunday's 34-27 win over the Giants.
 - Martin Emerson Jr. (CB) Active: Emerson recorded seven solo tackles and four passes defensed, including two interceptions, during Sunday's 34-27 win over the Giants.
 - Daniel Carlson (PK) Active: Carlson made two of his three field-goal attempts and all four PATs in the Saints' 34-27 win over the Giants on Sunday.
-- Cesar Ruiz (G) Questionable, Knee: Ruiz (knee) made the trip to Paris ahead of the Saints' game against the Steelers in Week 7, Nick Underhill of NewOrleans.Football reports.
 - Devaughn Vele (WR) Active: Vele caught three of six targets for 42 yards during the Saints' 34-27 win over the Giants on Sunday.
 - Bryce Lance (WR) Active: Lance caught two of four passes for nine yards and a touchdown during the Saints' 34-27 win over the Giants on Sunday.
 - Zach Wilson (QB) Active
@@ -136,7 +137,6 @@ New Orleans Saints, injuries:
 - Zach Wood (LS) Active: Wood (calf) is active for Sunday's game against the Giants.
 - Jeremiah Wright (G) Active: Wright (concussion) is active for Sunday's game against the Giants.
 - Lorenzo Styles Jr. (S) Active
-- Vernon Broughton (DT) Active: Broughton (illness) does not have an injury designation for Sunday's game against the Giants, Jeff Nowak of The Big 870 New Orleans reports.
 
 New Orleans Saints, ESPN headlines:
 
@@ -151,26 +151,26 @@ Searches to run:
 - "NFL week 7 picks SF ATL"
 
 San Francisco 49ers, injuries:
-- Mykel Williams (DE) Active
-- Jaden Dugger (LB) Active
+- Garret Wallow (LB) Out, Hamstring: Wallow (hamstring) has been ruled out for Sunday's game against Atlanta.
+- Luke Gifford (LB) Out, Groin: Gifford (groin) has been ruled out for Sunday's game against the Falcons.
+- Mykel Williams (DE) Active: Williams (knee) does not have any injury designation ahead of Sunday's game against the Falcons.
+- Upton Stout (CB) Questionable, Shoulder - AC Joint: Stout (shoulder) is listed as questionable for Sunday's game against the Falcons.
+- Marques Sigle (S) Out, Ankle: Sigle (ankle) has been ruled out ahead of Sunday's game against the Falcons.
+- Jaden Dugger (LB) Active: Dugger (knee) does not have any injury designation ahead of Sunday's game against the Falcons.
+- Jordan Watkins (WR) Active: Watkins could take on a significant role Sunday against Atlanta with Mike Evans (Achilles) and Deebo Samuel (hamstring) both sidelined, Brooke Evans of the 49ers' official site reports.
+- Nick Bosa (DE) Out, Knee: Bosa (knee) has been ruled out ahead of Sunday's game against the Falcons.
+- Brandin Cooks (WR) Active: Cooks could be set to work as San Francisco's top wideout Week 7 against Atlanta, as both Mike Evans (Achilles) and Deebo Samuel (hamstring) have been ruled out for the contest, per Brooke Evans of the team's official site.
 - Ashtyn Davis (S) Active
 - Deebo Samuel Sr. (WR) Out, Hamstring: Samuel (hamstring) has been ruled out for Sunday's game at Atlanta, Matt Barrows of The Athletic reports.
 - Christian Kirk (WR) Injured Reserve, Calf: Kirk (calf) is questionable for Sunday's game against the Falcons, Matt Barrows of The Athletic reports.
-- Marques Sigle (S) Out, Ankle: out
-- Luke Gifford (LB) Out, Groin: out
 - Mike Evans (WR) Out, Achilles: Evans (Achilles) is out for Sunday's game against the Falcons, Matt Barrows of The Athletic reports.
-- Nick Bosa (DE) Out, Knee: Bosa (calf) did not participate at the 49ers' practice Thursday, Nick Wagoner of ESPN.com reports.
 - Siran Neal (S) Questionable, Knee: questionable
 - Fred Warner (LB) Active: Warner totaled eight tackles (six solo) during the 49ers' 23-17 win over the Commanders on Monday.
 - Eddy Pineiro (PK) Active: Pineiro made his lone field-goal attempt and went 2-for-3 on extra-point tries during the 49ers' 23-17 win over the Commanders on Monday.
-- Upton Stout (CB) Questionable, Shoulder - AC Joint: Head coach Kyle Shanahan said that Stout's removal from Monday's 23-17 win over the Commanders was due to an AC sprain in his shoulder, David Lombardi of SFStandard.com reports.
 - Dre Greenlaw (LB) Active: Greenlaw was reinstated by the NFL on Tuesday after he served a one-game suspension in Week 6, David Lombardi of SFStandard.com reports.
-- Jordan Watkins (WR) Active: Watkins caught his lone target for 22 yards during the 49ers' 23-17 win over the Commanders on Monday.
 - Jacob Cowing (WR) Active: Cowing accrued zero targets during Monday's 23-17 win against Washington.
-- Garret Wallow (LB) Out, Hamstring: out
 - Enrique Cruz Jr. (OT) Active
 - Kurtis Rourke (QB) Active
-- Brandin Cooks (WR) Active: Cooks brought in one of two targets for 13 yards in the 49ers' 23-17 win over the Commanders on Monday night.
 - Kaelon Black (RB) Active: Black rushed eight times for 34 yards and brought in his only target for three yards in the 49ers' 23-17 win over the Commanders on Monday night.
 - George Kittle (TE) Active: Kittle brought in five of eight targets for 69 yards and a touchdown in the 49ers' 23-17 win over the Commanders on Monday night.
 - Brock Purdy (QB) Active: Purdy completed 21 of 29 passes for 264 yards with one touchdown and no interceptions while adding five rushes for 28 yards in the 49ers' 23-17 win over the Commanders on Monday night.
@@ -180,6 +180,7 @@ San Francisco 49ers, injuries:
 San Francisco 49ers, ESPN headlines:
 
 Atlanta Falcons, injuries:
+- Michael Jerrell (OT) Out, Biceps: Jerrell (biceps) has been ruled out for Sunday's game against the 49ers, Will McFadden of the Falcons' official site reports.
 - Billy Bowman Jr. (CB) Out, Hamstring: Bowman (hamstring) has been ruled out for Sunday's game against the 49ers, Will McFadden of the Falcons' official site reports.
 - Za'Darius Smith (DE) Questionable, Neck: Smith (neck) is listed as questionable for Sunday's game against the 49ers, Will McFadden of the Falcons' official site reports.
 - Kendal Daniels (LB) Questionable, Neck: Daniels (neck) is questionable for Sunday's game against the 49ers, Will McFadden of the Falcons' official site reports.
@@ -189,10 +190,9 @@ Atlanta Falcons, injuries:
 - Beaux Collins (WR) Injured Reserve, Hip: Collins (hip) is listed as questionable for Sunday's game against the 49ers, Will McFadden of the Falcons' official site reports.
 - Olamide Zaccheaus (WR) Questionable, Shoulder: Zaccheaus (shoulder) is questionable for Sunday's game against the 49ers, Will McFadden of the Falcons' official site reports.
 - Khalil Herbert (RB) Active: After Brian Robinson (hamstring) was ruled out, Falcons coach Kevin Stefanski said Friday that Herbert will be Bijan Robinson's backup against the 49ers on Sunday, Marc Raimondi of ESPN.com reports.
-- Michael Jerrell (OT) Out, Biceps: out
 - Cameron Thomas (DE) Active
 - Brian Robinson Jr. (RB) Out, Hamstring: Robinson (hamstring) has been ruled out for Sunday's game against the 49ers, Will McFadden of the Falcons' official site reports.
-- Cameron Williams (OL) Injured Reserve, Ankle: The Falcons designated Williams (ankle) for return to practice from their injured reserve list Thursday, per the NFL's transaction log.
+- Cameron Williams (OL) Injured Reserve, Ankle: The Falcons designated Williams (ankle) for return to practice from injured reserve Thursday, per the NFL's transaction log.
 - Gervon Dexter Sr. (DT) Questionable, Hamstring: questionable
 - Andy Dalton (QB) Active: Head coach Kevin Stefanski said Wednesday that Dalton is in a "ramp-up period" and will be inactive for Sunday's game against the 49ers, Tori McElhaney of the Falcons' official site reports.
 - Avieon Terrell (CB) Questionable, Back: questionable
@@ -219,20 +219,22 @@ Searches to run:
 - "NFL week 7 picks CLE TEN"
 
 Cleveland Browns, injuries:
+- Grant Delpit (S) Active: Delpit (concussion) does not have any injury designation ahead of Sunday's game against the Titans.
+- Dylan Sampson (RB) Active: Sampson (knee) was activated from injured reserve Saturday.
+- Teven Jenkins (G) Injured Reserve, Back: Jenkins (back) has been ruled out for Sunday's game against the Titans, Zac Jackson of The Athletic reports.
+- Jaleel McLaughlin (RB) Active: McLaughlin's role in the offense could sharply decrease against the Titans on Sunday, as Quinshon Judkins (ankle) has been cleared to play and Dylan Sampson (knee) is expected to be activated off injured reserve, Daniel Oyefusi of ESPN.com reports.
+- Dillon Gabriel (QB) Injured Reserve, Back: Gabriel (back) has been ruled out ahead of Sunday's game against the Titans, Zac Jackson of The Athletic reports.
 - Mason Graham (DT) Active: Graham (knee/ankle) does not have any injury designation ahead of Sunday's game against the Titans, Zac Jackson of The Athletic reports.
-- Grant Delpit (S) Questionable, Concussion: Delpit (concussion) is listed as questionable for Sunday's game against the Titans, Zac Jackson of The Athletic reports.
 - Mike Hall Jr. (DT) Out, Ankle: Hall (ankle) has been ruled out ahead of Sunday's game against the Titans, Zac Jackson of The Athletic reports.
-- Quincy Williams (LB) Questionable, Neck: Williams (neck) is listed as questionable for Sunday's game against the Titans but expressed optimism Friday that he would play, Zac Jackson of The Athletic reports.
+- Quincy Williams (LB) Questionable, Neck: Williams (neck) is listed as questionable for Sunday's game against the Titans but expressed optimism Friday that he will play, Zac Jackson of The Athletic reports.
 - Kalia Davis (DT) Injured Reserve, Quadriceps: Davis (quadriceps) has been ruled out for Sunday's game against the Titans, Zac Jackson of The Athletic reports.
 - Denzel Ward (CB) Questionable, Hand: Ward (hand) is listed as questionable for Sunday's game against the Titans, Zac Jackson of The Athletic reports.
 - Quinshon Judkins (RB) Active: Judkins (ankle) doesn't have an injury designation and said he's "good to go" for Sunday's game against the Titans, Mary Kay Cabot of the Cleveland Plain Dealer reports.
 - Denzel Boston (WR) Active: Boston (foot) doesn't have an injury designation for Sunday's game against the Titans, Zac Jackson of The Athletic reports.
 - KC Concepcion (WR) Active: Concepcion (calf/quadriceps) doesn't have an injury designation for Sunday's game against the Titans, Zac Jackson of The Athletic reports.
-- Teven Jenkins (G) Out, Back: out
 - Tytus Howard (OT) Active
 - Derek Barnett (DE) Active
 - Elgton Jenkins (C) Active
-- Dylan Sampson (RB) Injured Reserve, Knee: Sampson (knee) is listed as questionable for Sunday's game against the Titans, Scott Petrak of the Elyria Chronicle-Telegram reports.
 - Carson Schwesinger (LB) Active: Schwesinger (ankle) was a limited participant at the Browns' practice Thursday.
 - Maliek Collins (DT) Active
 - Justin Jefferson (LB) Active: Jefferson (hip) was a full participant at practice Wednesday, Mary Kay Cabot of The Cleveland Plain Dealer reports.
@@ -241,17 +243,18 @@ Cleveland Browns, injuries:
 - Noah Igbinoghene (CB) Active
 - Taylen Green (QB) Active
 - Parker Brailsford (C) Active
-- Jaleel McLaughlin (RB) Active: McLaughlin rushed nine times for 41 yards and brought in all four targets for 14 yards in the Browns' 13-10 win over the Ravens on Sunday.
 - Harold Fannin Jr. (TE) Active: Fannin brought in one of three targets for nine yards in the Browns' 13-10 win over the Ravens on Sunday.
-- Deshaun Watson (QB) Active: Watson completed 16 of 26 passes for 164 yards with no touchdowns or interceptions and added eight carries for 29 yards in the Browns' 13-10 win over the Ravens on Sunday.
 
 Cleveland Browns, ESPN headlines:
 
 Tennessee Titans, injuries:
+- K.J. Osborn (WR) Active: The Titans elevated Osborn from the practice squad to the active roster Saturday, Jim Wyatt of the team's official site reports.
+- Kalel Mullings (RB) Active: The Titans elevated Mullings from the practice squad to the active roster Saturday, Jim Wyatt of the team's official site reports.
+- Tony Adams (S) Questionable, Ankle: Adams (ankle) is questionable for Sunday's game against the Browns, Jim Wyatt of the Titans' official site reports.
+- Kevin Winston Jr. (S) Questionable, Quadriceps: Winston (quadriceps) is listed as questionable for Sunday's game against the Browns, Jim Wyatt of the Titans' official site reports.
 - Tyjae Spears (RB) Questionable, Knee: Spears (knee) is listed as questionable for Sunday's game against the Browns, Jim Wyatt of the Titans' official site reports.
 - Calvin Ridley (WR) Questionable, Hip: Ridley (hip) will not practice Friday and is listed as questionable for Sunday's game against Cleveland, Turron Davenport of ESPN.com reports.
 - Dorian Mausi (LB) Injured Reserve, Foot: The Titans opened Mausi's 21-day practice window Wednesday, Jim Wyatt of the team's official website reports.
-- Kevin Winston Jr. (S) Questionable, Quadriceps: Winston (quadriceps) was a limited participant in Wednesday's practice, Jim Wyatt of the Titans' official site reports.
 - Jeffery Simmons (DT) Active: Simmons logged six tackles (three solo), including 2.0 sacks, one forced fumble and one fumble recovery during the Titans' 26-20 win over the Colts on Sunday.
 - Amani Hooker (S) Active: Hooker logged 13 tackles (seven solo) and one interception during the Titans' 26-20 win over the Colts on Sunday.
 - Gunnar Helm (TE) Active: Helm was on the field for 33 of 46 offensive snaps (71.7 percent) but didn't show up on the box score otherwise during the Titans' 26-20 win over the Colts on Sunday.
@@ -265,14 +268,11 @@ Tennessee Titans, injuries:
 - Carnell Tate (WR) Active: Tate caught six of seven targets for 70 yards and a touchdown in Sunday's 26-20 win over the Colts.
 - Tony Pollard (RB) Active: Pollard carried the ball 19 times for 76 yards and failed to catch his only target in Sunday's 26-20 win over the Colts.
 - Cam Ward (QB) Active: Ward completed 11 of 22 passes for 102 yards and one touchdown with one interception in Sunday's 26-20 win over the Colts. He added seven yards on three carries.
-- Tony Adams (S) Questionable, Ankle: Adams (ankle) is questionable to return to Sunday's game against the Colts.
 - Joshua Williams (CB) Active: The Titans activated Williams (pectoral) from reserve/PUP on Saturday.
 - David Martin-Robinson (TE) Active: Martin-Robinson (hamstring) does not have any injury designation ahead of Sunday's game against the Colts.
 - Marcus Harris (CB) Active
 - Cor'Dale Flott (CB) Active: Flott (chest) was a full participant in Wednesday's practice session.
 - Elic Ayomanor (WR) Active: Ayomanor caught one of two passes for 17 yards during the Titans' 26-3 loss to the Texans on Sunday. He also added a tackle on special teams.
-- Jaylon Jones (CB) Active
-- Michael Carter (RB) Active
 
 Tennessee Titans, ESPN headlines:
 
@@ -287,6 +287,10 @@ Searches to run:
 - "NFL week 7 picks IND MIN"
 
 Indianapolis Colts, injuries:
+- CJ Allen (LB) Out, Ankle: out
+- Rigoberto Sanchez (P) Active
+- Mo Alie-Cox (TE) Active: Alie-Cox will operate in an expanded role against the Vikings on Sunday due to the absence of Tyler Warren (groin), Abby Halpin of the Colts' official site reports.
+- Will Mallory (TE) Active: Mallory will once again operate in an expanded role after Tyler Warren (groin) was ruled out ahead of Sunday's game against the Vikings, Abby Halpin of the Colts' official site reports.
 - Bryce Boettcher (LB) Questionable, Groin: questionable
 - Sauce Gardner (CB) Out, Calf: out
 - Tyler Warren (TE) Out, Groin: Warren (groin) is ruled out for Sunday's game against the Vikings, FOX59's Mike Chappell reports.
@@ -298,11 +302,8 @@ Indianapolis Colts, injuries:
 - Austin Ajiake (LB) Active
 - Jalen Travis (OT) Active
 - Matt Goncalves (G) Active
-- CJ Allen (LB) Questionable, Ankle: questionable
 - Justin Walley (CB) Questionable, Knee: questionable
 - Laquon Treadwell (WR) Active: Treadwell caught two of five targets for 21 yards during Sunday's 26-20 loss to the Titans.
-- Will Mallory (TE) Active: Mallory caught two of six passes for 20 yards during Sunday's 26-20 loss to the Titans.
-- Mo Alie-Cox (TE) Active: Alie-Cox caught his only target for a one-yard touchdown during Sunday's 26-20 loss to the Titans.
 - Seth McGowan (RB) Active: McGowan took four carries for 27 yards during Sunday's 26-20 loss versus the Titans.
 - Spencer Shrader (PK) Active: Shrader made both of his field-goal attempts and both of his PATs in the Colts' 26-20 loss to the Titans on Sunday.
 - Alec Pierce (WR) Injured Reserve, Heel: Colts head coach Shane Steichen said Monday that Pierce (heel) won't have his 21-day practice window opened in Week 7, Nathan Brown of The Indianapolis Star reports.
@@ -311,14 +312,14 @@ Indianapolis Colts, injuries:
 - Keenan Allen (WR) Active: Allen caught eight of 11 targets for 82 yards in Sunday's 26-20 loss to the Titans.
 - Josh Downs (WR) Active: Downs caught four of eight targets for 40 yards in Sunday's 26-20 loss to the Titans. He added seven rushing yards on his only carry.
 - Daniel Jones (QB) Active: Jones completed 22 of 42 passes for 269 yards and a touchdown with two interceptions in Sunday's 26-20 loss to the Titans.
-- Jonathan Taylor (RB) Active: Taylor carried the ball 21 times for 94 yards and a touchdown and caught two of four targets for 57 yards in Sunday's 26-20 loss to the Titans. He also lost a fumble.
 
 Indianapolis Colts, ESPN headlines:
 
 Minnesota Vikings, injuries:
+- Christian Darrisaw (OT) Active: Darrisaw (concussion) does not have any injury designation ahead of Sunday's game against the Colts, Craig Peters of the Vikings' official site reports.
+- Aaron Jones Sr. (RB) Active: Jones may log fewer touches in Week 7 against Indianapolis on Sunday, as fellow RB Jordan Mason (thumb) is questionable to suit up, Craig Peters of the Vikings' official site reports.
 - T.J. Hockenson (TE) Active: Hockenson (concussion) practiced fully Friday and doesn't have a designation for Sunday's game versus the Colts, Adam Caplan of SiriusXM NFL Radio reports.
 - Jordan Mason (RB) Injured Reserve, Thumb: Head coach Kevin O'Connell said Friday that Mason (thumb) is listed as questionable for Sunday's game against the Colts after practicing fully all week, Alec Lewis of The Athletic reports.
-- Christian Darrisaw (OT) Active: Darrisaw (concussion) was a full participant at the Vikings practice Thursday.
 - Justin Jefferson (WR) Active: Jefferson (ankle) practiced in full Thursday, Adam Caplan of SiriusXM NFL Radio reports.
 - James Pierre (CB) Active
 - Brian O'Neill (OT) Active
@@ -330,7 +331,6 @@ Minnesota Vikings, injuries:
 - Max Brosmer (QB) Active
 - Will Reichard (PK) Active: Reichard made all three of his field-goal attempts and both extra-point tries during the Vikings' 23-13 win over the Saints on Sunday.
 - Kyler Murray (QB) Active: Murray completed 24 of 30 passes for 229 yards with a touchdown and no interceptions while adding 10 rushes for 51 yards in the Vikings' 23-13 win over the Saints on Sunday. He also recovered a fumble.
-- Aaron Jones Sr. (RB) Active: Jones rushed 25 times for 113 yards and a touchdown and brought in all three targets for four yards in the Vikings' 23-13 win over the Saints on Sunday.
 - Michael Jurgens (C) Active: Jurgens (elbow) is active for Sunday's game against the Saints, Craig Peters of the Vikings' official site reports.
 - Ben Yurosek (TE) Active: Yurosek (ankle) is listed as active for Sunday's game against the Saints, Craig Peters of the Vikings' official site reports.
 - Brett Thorson (P) Active: Thorson (hamstring) was a full participant in practice Wednesday and Thursday.
@@ -355,15 +355,16 @@ Searches to run:
 - "NFL week 7 picks MIA NYJ"
 
 Miami Dolphins, injuries:
+- Zane Gonzalez (PK) Active: The Dolphins elevated Gonzalez from the practice squad to the active roster Saturday ahead of Sunday's game against the Jets.
+- Kyle Louis (LB) Questionable, Knee: questionable
+- Reese Taylor (CB) Out, Quadriceps: Taylor (quadriceps) has been ruled out ahead of Sunday's game against the Jets, David Furones of the South Florida Sun Sentinel reports.
 - Jaylen Wright (RB) Active: Wright (foot) doesn't have an injury designation for Sunday's game at the Jets, David Furones of the South Florida Sun Sentinel reports.
-- Reese Taylor (CB) Out, Quadriceps: out
 - Robert Beal Jr. (DE) Doubtful, Hamstring: doubtful
 - Tucker Addington (LS) Active
 - Caleb Douglas (WR) Active: Dolphins coach Jeff Hafley said Friday that Douglas (ankle) will play Sunday against the Jets, C. Isaiah Smalls II of the Miami Herald reports.
 - Will Kacmarek (TE) Active: Kacmarek (hamstring) was limited in Thursday's practice, but he said he expects to play Sunday versus the Jets, Joe Schad of The Palm Beach Post reports.
 - Willie Gay Jr. (LB) Questionable, Illness: questionable
 - Jonah Savaiinaea (G) Active: Savaiinaea (ankle) was a full participant in Wednesday's practice, David Furones of the South Florida Sun Sentinel reports.
-- Kyle Louis (LB) Injured Reserve, Knee: The Dolphins opened the 21-day practice window for Louis (knee) on Wednesday, Marcel Louis-Jacques of ESPN.com reports.
 - JuJu Brents (CB) Active: Brents (neck) was a full participant at the Dolphins' practice Wednesday, David Furones of the South Florida Sun Sentinel reports.
 - Justin Joly (TE) Active: Joly (concussion) did not appear on the Dolphins' injury report Wednesday, David Furones of the South Florida Sun Sentinel reports.
 - Michael Taaffe (S) Active: Taaffe (chest) did not appear on the Dolphins' injury report Wednesday, David Furones of the South Florida Sun Sentinel reports.
@@ -379,19 +380,20 @@ Miami Dolphins, injuries:
 - Jordyn Brooks (LB) Active: Brooks (foot) returned to Sunday's game against the Bengals in the third quarter, Travis Wingfield of the Dolphins' official site reports.
 - Jackson Woodard (LB) Active: Woodard (ankle) is listed as active for Sunday's game against the Bengals.
 - Kenneth Grant (DT) Active: The Dolphins activated Grant (toe) from injured reserve Saturday.
-- Dante Trader Jr. (S) Active: Trader (shin) does not have an injury designation against the Bengals on Sunday, Paul Dehner Jr. of The Athletic reports.
 
 Miami Dolphins, ESPN headlines:
 
 New York Jets, injuries:
+- Kiko Mauigoa (LB) Injured Reserve, Quadriceps: ir
+- Max Mitchell (OT) Out, Concussion: Mitchell (concussion) has been ruled out for Sunday's game against the Dolphins, Rich Cimini of ESPN.com reports.
+- Omar Cooper Jr. (WR) Active: Cooper may get fewer looks in the passing game Sunday versus Miami with Adonai Mitchell cleared to return from a finger injury, Amanda Vogt of the Jets' official site reports.
+- Braelon Allen (RB) Active: Allen's workload and role Sunday against Miami is unclear given that Breece Hall (quadriceps) is officially questionable to play, per Amanda Vogt of the Jets' official site.
+- Kene Nwangwu (RB) Questionable, Knee: Nwangwu (knee) is listed as questionable for Sunday's game against the Dolphins.
 - Joseph Ossai (DE) Out, Ankle: Ossai (ankle) has been ruled out for Sunday's game against the Dolphins, Rich Cimini of ESPN.com reports.
 - Adonai Mitchell (WR) Active: Mitchell (finger) doesn't have an injury designation for Sunday's game against the Dolphins.
 - T'Vondre Sweat (DT) Active
 - Will McDonald IV (DE) Active
 - Breece Hall (RB) Questionable, Quadriceps: Hall (quadriceps) is listed as questionable for Sunday's game against the Dolphins, Brian Costello of the New York Post reports.
-- Kiko Mauigoa (LB) Out, Quadriceps: out
-- Max Mitchell (OT) Out, Concussion: Mitchell (concussion) did not participate at the Jets' practice Thursday.
-- Kene Nwangwu (RB) Questionable, Knee: Nwangwu (knee) did not participate at practice Thursday.
 - Dylan Parham (G) Questionable, Knee: Parham (knee) was a limited participant in Wednesday's practice.
 - Jamien Sherwood (LB) Active: Sherwood recorded 11 tackles (six solo), a forced fumble and a fumble recovery during Sunday's 26-19 loss at New England.
 - Dane Belton (S) Active: Belton recorded nine tackles (four solo) and a pass defensed during Sunday's 26-19 loss at New England.
@@ -401,9 +403,7 @@ New York Jets, injuries:
 - Mason Taylor (TE) Active: Taylor caught four of six targets for 33 yards during Sunday's 26-19 loss to the Patriots.
 - Nahshon Wright (CB) Active
 - Jack Heflin (DT) Active
-- Omar Cooper Jr. (WR) Active: Cooper brought in six of seven targets for 103 yards and a touchdown in the Jets' 26-19 loss to the Patriots on Sunday.
 - Geno Smith (QB) Active: Smith completed 20 of 30 passes for 252 yards with one touchdown and one interception while adding two rushes for minus-1 yard in the Jets' 26-19 loss to the Patriots on Sunday.
-- Braelon Allen (RB) Active: Allen rushed 17 times for 78 yards and brought in both targets for 26 yards in the Jets' 26-19 loss to the Patriots on Sunday.
 - Garrett Wilson (WR) Active: Wilson brought in four of six targets for 44 yards in the Jets' 26-19 loss to the Patriots on Sunday.
 - Kenyon Sadiq (TE) Active: Sadiq caught one of three targets for 12 yards in Sunday's 26-19 loss to the Patriots.
 - Isaiah Williams (WR) Active: Williams should continue to serve as the No. 3 wide receiver behind Garrett Wilson and Tim Patrick for Sunday's game against the Patriots due to the absence of Adonai Mitchell (finger).
@@ -423,11 +423,12 @@ Searches to run:
 - "NFL week 7 picks TB CAR"
 
 Tampa Bay Buccaneers, injuries:
+- Luke Goedeke (OT) Out, Calf: Goedeke (calf) has been ruled out for Sunday's game against the Panthers.
+- Jalon Daniels (QB) Active: Daniels is expected to work as Tampa Bay's No. 2 QB on Sunday in Carolina, as Baker Mayfield (thumb) is questionable to play but is expected to start, Scott Smith and Brianna Dix of the Buccaneers' official site report.
 - Zyon McCollum (CB) Active: McCollum (illness) does not carry an injury designation into Sunday's game against the Panthers, Greg Auman of Fox Sports reports.
 - Antoine Winfield Jr. (S) Out, Ribs: Winfield (ribs) has been ruled out for Sunday's game against Carolina, Greg Auman of Fox Sports reports.
 - Tez Johnson (WR) Active: Emeka Egbuka (concussion/foot) has been ruled out ahead of Sunday's game against the Panthers, so Johnson and the rest of the Buccaneers pass catchers will be tasked with larger roles offensively.
 - Ted Hurst III (WR) Active: Hurst and the other Buccaneers' wide receivers will have elevated roles against the Panthers on Sunday due to the absence of Emeka Egbuka (concussion/foot).
-- Luke Goedeke (OT) Out, Calf: out
 - Bucky Irving (RB) Active: Irving (illness) doesn't have an injury designation for Sunday's game at Carolina, Greg Auman of Fox Sports reports.
 - Emeka Egbuka (WR) Out, Concussion: Egbuka (concussion) has been ruled out for Sunday's game against the Panthers, Greg Auman of Fox Sports reports.
 - Baker Mayfield (QB) Questionable, Thumb: Head coach Todd Bowles said Friday that Mayfield (right thumb) is ready for Sunday's game at Carolina, Greg Auman of Fox Sports reports.
@@ -446,15 +447,14 @@ Tampa Bay Buccaneers, injuries:
 - Luke Haggard (G) Active
 - Cade Otton (TE) Active: Otton caught one of two targets for four yards in Sunday's 26-19 overtime loss to the Steelers.
 - Chris Godwin Jr. (WR) Active: Godwin caught four of eight targets for 37 yards in Sunday's 26-19 overtime loss to the Steelers.
-- Jalon Daniels (QB) Active: Daniels completed 22 of 43 passes for 164 yards and one touchdown with two interceptions in Sunday's 26-19 overtime loss to the Steelers. He added 39 rushing yards on four carries.
 - Kenny Gainwell (RB) Active: Gainwell rushed two times for 17 yards in Sunday's 26-19 overtime loss to the Steelers. He caught his only target for seven yards.
 
 Tampa Bay Buccaneers, ESPN headlines:
 
 Carolina Panthers, injuries:
+- Thomas Incoom (LB) Out, Calf: Incoom (calf) has been ruled out for Sunday's game against the Buccaneers.
 - Jaelan Phillips (LB) Out, Hamstring: Phillips (hamstring) has been ruled out for Sunday's game against the Buccaneers.
 - Monroe Freeling (OT) Questionable, Knee: questionable
-- Thomas Incoom (LB) Out, Calf: out
 - Devin Lloyd (LB) Active: Lloyd recorded four tackles (three solo), including 1.0 sacks, during the Panthers' 25-14 win over the Eagles in Week 6.
 - Bobby Okereke (LB) Active: Okereke recorded eight tackles (seven solo), including 1.0 sacks, and two pass defenses during the Panthers' 25-14 win over the Eagles in Week 6.
 - Bam Martin-Scott (LB) Injured Reserve, Hamstring: The Panthers designated Martin-Scott (hamstring) to return from injured reserve Wednesday, Darin Gantt of the team's official site reports.
@@ -481,7 +481,7 @@ Carolina Panthers, injuries:
 Carolina Panthers, ESPN headlines:
 
 ### Cincinnati Bengals at Baltimore Ravens
-Sun, Oct 25, 1:00 PM ET, CBS, M&T Bank Stadium, Baltimore. Line: CIN -1.5, O/U 48.5
+Sun, Oct 25, 1:00 PM ET, CBS, M&T Bank Stadium, Baltimore. Line: CIN -1.5, O/U 47.5
 
 Searches to run:
 - "Cincinnati Bengals Baltimore Ravens preview week 7"
@@ -491,7 +491,7 @@ Searches to run:
 - "NFL week 7 picks CIN BAL"
 
 Cincinnati Bengals, injuries:
-- Kyle Dugger (S) Active: Dugger (quadriceps) was a full participant at practice Thursday, Cordell Woodland of 105.7 The Fan Baltimore reports.
+- Kyle Dugger (S) Active: Dugger (quadriceps) doesn't have an injury designation against the Ravens on Sunday, Mike Garafolo of NFL Network reports.
 - Colbie Young (WR) Active: Young (knee) was not listed on the Bengals' injury report Wednesday.
 - Josh Kattus (TE) Active: The Bengals have signed Kattus to their practice squad.
 - Tanner Hudson (TE) Injured Reserve, Pectoral: Hudson (pectoral) was placed on injured reserve by the Bengals on Monday.
@@ -520,21 +520,21 @@ Cincinnati Bengals, injuries:
 Cincinnati Bengals, ESPN headlines:
 
 Baltimore Ravens, injuries:
+- Cam Jurgens (C) Active: Jurgens (concussion) does not have any injury designation ahead of Sunday's game against the Bengals.
+- Broderick Washington Jr. (DT) Questionable, Ankle: Washington (ankle) is listed as questionable for Sunday's game against the Bengals.
 - Tyler Huntley (QB) Active: Huntley will start Sunday's Week 7 matchup against Cincinnati if Lamar Jackson (ankle) is unable to play, Ryan Mink of the Ravens' official site reports.
 - Jaylinn Hawkins (S) Out, Knee: Hawkins (knee) has been ruled out for Sunday's game against the Bengals, Cordell Woodland of 105.7 The Fan Baltimore reports.
 - Tavius Robinson (LB) Out, Pectoral: Head coach Jesse Minter said Friday that Robinson will be sidelined for the rest of the 2026 season due to a pectoral injury, Cordell Woodland of 105.7 The Fan Baltimore reports.
 - Lamar Jackson (QB) Questionable, Ankle: Jackson (ankle) was a limited participant in Friday's practice and is listed as questionable for Sunday's game against the Bengals.
-- Cam Jurgens (C) Active
 - Andrew Vorhees (G) Active: Vorhees (foot) was a full participant at the Ravens' practice Thursday.
 - Matt Hibner (TE) Active: Hibner (hand) was a full participant at practice Thursday.
 - Rashod Bateman (WR) Active: Bateman (shoulder) was a full participant in Thursday's practice.
 - Olaivavega Ioane (G) Active
 - John Simpson (G) Active
-- T.J. Tampa (CB) Injured Reserve, Toe: The Ravens designated Tampa (toe/ankle) to return from injured reserve Wednesday.
+- T.J. Tampa (CB) Injured Reserve, Knee: The Ravens designated Tampa (toe/ankle) to return from injured reserve Wednesday.
 - Kyle Hamilton (S) Active: Hamilton finished Sunday's 13-10 loss to the Browns with seven tackles (six solo).
 - Roquan Smith (LB) Active: Smith logged five tackles (three solo), including 1.0 sacks, during Sunday's 13-10 loss to the Browns.
 - Justice Hill (RB) Active: Hill caught all three of his targets for nine yards during the Ravens' 13-10 loss to the Browns on Sunday.
-- Broderick Washington Jr. (DT) Questionable, Ankle: questionable
 - Tyler Loop (PK) Active: Loop converted one his two field-goal attempts and his lone extra-point try during Baltimore's loss to Cleveland on Sunday.
 - Mark Andrews (TE) Active: Andrews caught one of three targets for four yards during the Ravens' 13-10 loss to the Browns on Sunday.
 - K'Von Wallace (CB) Active
@@ -549,7 +549,7 @@ Baltimore Ravens, injuries:
 Baltimore Ravens, ESPN headlines:
 
 ### New York Giants at Houston Texans
-Sun, Oct 25, 1:00 PM ET, Fox, Reliant Stadium, Houston. Line: HOU -10.5, O/U 42.5
+Sun, Oct 25, 1:00 PM ET, Fox, Reliant Stadium, Houston. Line: HOU -10, O/U 42.5
 
 Searches to run:
 - "New York Giants Houston Texans preview week 7"
@@ -559,19 +559,19 @@ Searches to run:
 - "NFL week 7 picks NYG HOU"
 
 New York Giants, injuries:
+- Theo Johnson (TE) Out, Neck: Johnson (neck) has been ruled out ahead of Sunday's game against the Texans, Mike Garafolo of NFL Network reports.
+- Jevon Holland (S) Out, Concussion: Holland (concussion) has been ruled out ahead of Sunday's game against the Texans, Mike Garafolo of NFL Network reports.
 - Jermaine Eluemunor (OT) Questionable, Calf: questionable
+- Andrew Thomas (OT) Active: Thomas (groin) does not have an injury designation against the Texans on Sunday.
+- Tremaine Edmunds (LB) Out, Chest: Edmunds will miss the rest of the 2026 season due to a torn chest muscle, Jordan Raanan of ESPN.com reports.
+- Greg Newsome II (CB) Out, Concussion: Newsome (concussion) has been ruled out for Sunday's game against the Texans.
+- Paulson Adebo (CB) Injured Reserve, Knee: Adebo (knee) is questionable for Sunday's game against the Texans.
 - Cam Skattebo (RB) Active: Head coach John Harbaugh said Friday that Skattebo had a "good week" of practice and that the second-year running back should be back in the mix for backfield touches against the Texans on Sunday, Jordan Ranaan of ESPN.com reports.
-- Greg Newsome II (CB) Out, Concussion: out
 - Charlie Jones (WR) Active
 - Chris Manhertz (TE) Active
-- Tremaine Edmunds (LB) Out, Shoulder: out
-- Andrew Thomas (OT) Active: Thomas (groin) was a limited participant at the Giants' practice Thursday.
 - Colton Hood (CB) Active: Hood (concussion) was a full participant at practice Thursday.
-- Jevon Holland (S) Questionable, Concussion: Holland (concussion) was a limited participant at practice Thursday.
-- Theo Johnson (TE) Doubtful, Neck: Johnson (neck) was a limited participant at practice Thursday.
 - Jordan Stout (P) Active
 - Kayvon Thibodeaux (LB) Active
-- Paulson Adebo (CB) Injured Reserve, Knee: The Giants designated Adebo (knee) to return from injured reserve Wednesday, Dan Duggan of The Athletic reports.
 - Darnell Mooney (WR) Active: Mooney (neck) was a full participant in Wednesday's practice, Dan Salomone of the Giants' official site reports.
 - Marcus Mbow (OT) Questionable, Knee: questionable
 - J.J. McCarthy (QB) Active: McCarthy will start at quarterback in Week 7 against Houston, coach John Harbaugh confirmed Wednesday.
@@ -588,14 +588,15 @@ New York Giants, injuries:
 New York Giants, ESPN headlines:
 
 Houston Texans, injuries:
+- Blake Fisher (OT) Out, Thumb: Fisher (thumb) has been ruled out against the Giants on Sunday, Adam Caplan of SiriusXM NFL Radio reports.
+- Jalen Pitre (S) Out, Shoulder - AC Joint: Pitre (shoulder) has been ruled out ahead of Sunday's game against the Giants, Adam Caplan of SiriusXM NFL Radio reports.
+- Reed Blankenship (S) Out, Concussion: Blankenship (concussion/hand) has been ruled out ahead of Sunday's game against the Giants, Adam Caplan of SiriusXM NFL Radio reports.
+- Brevin Jordan (TE) Active: Jordan (foot) does not have any injury designation ahead of Sunday's game against the Giants, Adam Caplan of SiriusXM NFL Radio reports.
+- Azeez Al-Shaair (LB) Active: Al-Shaair (knee) does not have any injury designation for Sunday's game against the Giants, Adam Caplan of SiriusXM NFL Radio reports.
+- Woody Marks (RB) Active: Marks is lined up to start at running back against the Giants on Sunday with David Montgomery (groin) ruled out.
 - Dalton Schultz (TE) Active: Schultz (quadriceps) was a full participant in Friday's practice and doesn't have an injury designation for Sunday's game against the Giants, Adam Caplan or SiriusXM reports.
 - David Montgomery (RB) Out, Groin: Montgomery (groin) has been ruled out for Sunday's game against the Giants, Adam Caplan of SiriusXM NFL Radio reports.
-- Jalen Pitre (S) Out, Shoulder - AC Joint: out
-- Blake Fisher (OT) Out, Thumb: out
-- Azeez Al-Shaair (LB) Active
 - Henry To'oTo'o (LB) Active
-- Reed Blankenship (S) Out, Concussion: out
-- Brevin Jordan (TE) Active
 - Logan Hall (DE) Active
 - Jadeveon Clowney (DE) Active
 - Trent Brown (OT) Active
@@ -612,7 +613,6 @@ Houston Texans, injuries:
 - Braden Smith (OT) Active
 - Foster Moreau (TE) Active: Moreau caught both of his targets for seven yards and two touchdowns in Sunday's 34-31 win over the Jaguars in London.
 - Jaylin Noel (WR) Active: Noel gathered in all four targets for 107 yards and one touchdown during Sunday's 34-31 win against the Jaguars in London.
-- Woody Marks (RB) Active: Marks carried the ball 15 times for 56 yards and caught two of three targets for 25 yards in Sunday's 34-31 win over the Jaguars.
 
 Houston Texans, ESPN headlines:
 
@@ -627,11 +627,11 @@ Searches to run:
 - "NFL week 7 picks DEN ARI"
 
 Denver Broncos, injuries:
+- Talanoa Hufanga (S) Out, Ankle: Hufanga (ankle) has been ruled out for Sunday's game against the Cardinals.
+- Jonah Elliss (LB) Out, Ankle: Elliss (ankle) has been ruled out for Sunday's game against Arizona.
+- Tyler Badie (RB) Out, Thumb: Badie (thumb) has been ruled out for Sunday's game against the Cardinals.
 - Jonah Coleman (RB) Injured Reserve, Ankle: Coleman (ankle) is listed as questionable for Sunday's game at Arizona.
 - Jaylen Waddle (WR) Active: Waddle (chest) doesn't have an injury designation for Sunday's game at Arizona.
-- Talanoa Hufanga (S) Out, Ankle: out
-- Jonah Elliss (LB) Out, Ankle: out
-- Tyler Badie (RB) Out, Thumb: Badie (thumb) did not participate at practice Thursday, Parker Gabriel of The Denver Post reports.
 - Pat Surtain II (CB) Questionable, Ankle: Surtain (ankle) remained limited in Thursday's practice.
 - Dallen Bentley (TE) Active
 - Sam Ehlinger (QB) Active
@@ -656,17 +656,17 @@ Denver Broncos, injuries:
 Denver Broncos, ESPN headlines:
 
 Arizona Cardinals, injuries:
+- Wydett Williams Jr. (S) Active: Williams (concussion) does not have an injury designation against the Broncos on Sunday, Zach Gershman of the Cardinals' official site reports.
+- Jon Gaines II (G) Out, Knee: Gaines (knee) has been ruled out ahead of Sunday's game against the Broncos, Darren Urban of the Cardinals' official site reports.
+- Andrew Wingard (S) Out, Knee: Wingard (knee) has been ruled out for Sunday's game against the Broncos, Darren Urban of the Cardinals' official site reports.
+- Max Melton (CB) Questionable, Knee: Melton (knee) is questionable for Sunday's game against the Broncos, Darren Urban of the Cardinals' official site reports.
+- Budda Baker (S) Questionable, Groin: Baker (groin/illness) is questionable for Sunday's game against the Broncos, Darren Urban of the Cardinals' official site reports.
+- Carson Beck (QB) Questionable, Back: Beck (back) is questionable for Sunday's game against the Broncos, Darren Urban of the Cardinals' official site reports.
 - Walter Nolen III (DT) Out, Ankle: Nolen (ankle) has been ruled out ahead of Sunday's game against the Broncos, Darren Urban of the Cardinals' official site reports.
-- Wydett Williams Jr. (S) Active
 - Garrett Williams (CB) Active
 - Bam Knight (RB) Active: Jeremiyah Love (ankle) will be sidelined for Sunday's game against the Broncos, so Knight and Tyler Allgeier will be used in tandem in Love's absence, Darren Urban of the Cardinals' official site reports.
 - Tyler Allgeier (RB) Active: Allgeier and Bam Knight will be the Cardinals' top backs for Sunday's game against the Broncos due to the absence of Jeremiyah Love (ankle), Darren Urban of the Cardinals' official site reports.
-- Jon Gaines II (G) Out, Knee: out
 - Jeremiyah Love (RB) Out, Ankle: Head coach Mike LaFleur said Friday that Love (ankle) won't play Sunday against the Broncos, Darren Urban of the Cardinals' official site reports.
-- Andrew Wingard (S) Out, Knee: Wingard (knee) did not participate at practice Thursday, Darren Urban of the Cardinals' official site reports.
-- Max Melton (CB) Questionable, Knee: Melton (knee) did not participate at practice Thursday, Darren Urban of the Cardinals' official site reports.
-- Budda Baker (S) Questionable, Groin: Baker (groin/illness) did not participate at practice Thursday, Darren Urban of the Cardinals' official site reports.
-- Carson Beck (QB) Questionable, Back: Beck (back) did not participate at practice Thursday, Darren Urban of the Cardinals' official site reports.
 - Darius Robinson (DE) Questionable, Back: questionable
 - Jedrick Wills Jr. (OT) Active
 - Jalen Brooks (WR) Active: Brooks caught two of three targets for 30 yards and returned a kickoff for 25 yards during Sunday's 18-16 win over the Rams.
@@ -695,16 +695,16 @@ Searches to run:
 - "NFL week 7 picks GB DET"
 
 Green Bay Packers, injuries:
+- Aaron Banks (G) Questionable, Knee: Banks (knee/toe) is listed as questionable for Sunday's game against the Lions, Wes Hodkiewicz of the Packers' official site reports.
+- Lukas Van Ness (DE) Active: Van Ness (illness) does not have an injury designation for Sunday's game against the Lions.
+- Bo Melton (WR) Questionable, Back: Melton (back) is questionable for Sunday's game against the Lions, Wes Hodkiewicz of the Packers' official site reports.
+- Brandon Cisse (CB) Active: Cisse (shoulder) does not have any injury designation ahead of Sunday's game against the Lions, Wes Hodkiewicz of the Packers' official site reports.
 - Zaire Franklin (LB) Out, Shin: Franklin (shin) has been ruled out ahead of Sunday's game against the Lions, Weston Hodkiewicz of the Packers' official site reports.
 - Savion Williams (WR) Active: Williams (ankle) does not carry an injury designation ahead of Sunday's game against the Lions, Wes Hodkiewicz of the Packers' official site reports.
-- Brandon Cisse (CB) Active
 - Anthony Campbell (DT) Active
 - Matthew Golden (WR) Active: Golden (shoulder) doesn't have an injury designation for Sunday's game against the Lions.
 - Christian Watson (WR) Active: Watson (ankle) doesn't have a designation for Sunday's game in Detroit, Wes Hodkiewicz of the Packers' official site reports.
 - Josh Jacobs (RB) Active: Packers coach Matt LaFleur said Jacobs is on track to play Sunday against the Lions, Rob Demovsky of ESPN reports.
-- Aaron Banks (G) Questionable, Knee: Banks (toe) logged a limited practice session Wednesday and Thursday.
-- Lukas Van Ness (DE) Active: Van Ness (illness) was limited in practice Thursday.
-- Bo Melton (WR) Questionable, Back: Melton (back) did not participate in practice Thursday, Weston Hodkiewicz of the Packers' official site reports.
 - Luke Musgrave (TE) Out, Neck: Packers head coach Matt Lafleur said Thursday it's "tough to say" whether Musgrave (neck) plays this season, Weston Hodkiewicz of the Packers' official site reports.
 - Jordan Love (QB) Active: Love (back) was a full practice participant Thursday, Rob Demovsky of ESPN.com reports.
 - Evan Williams (S) Active: Williams recorded six total tackles (five solo) and an interception during Sunday night's 23-13 win over the Cowboys.
@@ -724,9 +724,10 @@ Green Bay Packers, injuries:
 Green Bay Packers, ESPN headlines:
 
 Detroit Lions, injuries:
-- Rock Ya-Sin (CB) Active
+- Cade Mays (C) Injured Reserve, Wrist: Mays (wrist) is questionable against the Packers on Sunday.
+- Rock Ya-Sin (CB) Active: Ya-Sin (hamstring) does not have an injury designation for Sunday's game against the Packers.
+- Brian Branch (S) Out, Achilles: Branch (Achilles) is listed as questionable for Sunday's game against the Packers.
 - DeAndre Carter (WR) Active: The Lions signed Carter to the active roster Thursday.
-- Brian Branch (S) Out, Achilles: The Lions listed Branch as a full participant on Wednesday's estimated practice report.
 - Kerby Joseph (S) Out, Knee: Lions head coach Dan Campbell stated Kerby (knee) "is in a good headspace" and expects the 25-year-old to play at some point this season, Nolan Bianchi of The Detroit News reports.
 - Ben Bartch (G) Injured Reserve, Foot: The Lions placed Bartch (foot) on injured reserve Friday.
 - Devin White (LB) Injured Reserve, Forearm: The Lions placed White (forearm) on injured reserve Friday.
@@ -743,7 +744,6 @@ Detroit Lions, injuries:
 - Jahmyr Gibbs (RB) Active: Gibbs rushed 25 times for 151 yards and two touchdowns while bringing in five of six targets for 56 yards in the Lions' 45-21 win over the Cardinals on Sunday.
 - Tyleik Williams (DT) Active: Williams (foot) is active for Sunday's game against the Cardinals.
 - Jackson Meeks (WR) Active: Meeks (coach's decision) is inactive for Sunday's game against Arizona.
-- Cade Mays (C) Injured Reserve, Wrist: Mays (wrist) has been ruled out for Sunday's game against the Cardinals.
 - DJ Wonnum (LB) Active
 - Christian Izien (S) Active: Izien recorded 11 tackles (seven solo) including 1.0 sacks during Sunday's 32-26 loss at Carolina.
 - Jack Campbell (LB) Active: Campbell recorded 14 tackles (six solo) during Sunday's 32-26 loss at Carolina.
@@ -763,14 +763,15 @@ Searches to run:
 - "NFL week 7 picks LAR LV"
 
 Los Angeles Rams, injuries:
+- Jordan Whittington (WR) Active: Whittington could operate in an expanded role offensively if Puka Nacua (calf, questionable) cannot play against the Raiders on Sunday.
+- Konata Mumpfield (WR) Active: Mumpfield could get a significant bump in opportunity Sunday in Week 7 against Las Vegas since Davante Adams (hamstring) is on IR and Puka Nacua (calf) is questionable to play, Stu Jackson of the Rams' official site reports.
+- Trent McDuffie (CB) Questionable, Groin: McDuffie (groin) is listed as questionable for Sunday's game against the Raiders, Sarah Barshop of ESPN.com reports.
 - Nate Landman (LB) Out, Concussion: Landman (concussion) has been ruled out for Sunday's game against the Raiders, Gary Klein of the Los Angeles Times reports.
 - Myles Garrett (DE) Injured Reserve, Knee: Rams coach Sean McVay said Friday that Garrett (knee) could have his 21-day practice window opened next week, Nate Atkins of The Athletic reports.
 - Puka Nacua (WR) Questionable, Calf: Nacua (calf) won't practice Friday and will be listed as questionable for Sunday's game at Las Vegas, Sarah Barshop of ESPN.com reports.
-- Trent McDuffie (CB) Questionable, Groin: McDuffie (groin) did not participate in Wednesday's practice, Adam Grosbard of The Orange County Register reports.
 - Kobie Turner (DE) Injured Reserve, Groin: The Rams placed Turner (groin) on injured reserve Wednesday.
 - Kam Curl (S) Active: Curl finished Sunday's 18-16 loss to the Cardinals with eight tackles (three solo).
 - Quentin Lake (S) Active: Lake registered seven tackles (six solo) and an interception during the Rams' 18-16 loss to the Cardinals on Sunday.
-- Konata Mumpfield (WR) Active: Mumpfield caught two of three passes for 15 yards during the Rams' 18-16 loss to the Cardinals on Sunday.
 - Poona Ford (DT) Injured Reserve, Triceps: The Rams placed Ford (triceps) on injured reserve Tuesday.
 - Terrance Ferguson (TE) Injured Reserve, Ankle: Ferguson (ankle), who is eligible to come off injured reserve next week, isn't expected to be ready at that time, Adam Schefter of ESPN reports.
 - Davante Adams (WR) Injured Reserve, Hamstring: Adams (hamstring) was placed on injured reserve Tuesday, Ian Rapoport of NFL Network reports.
@@ -787,19 +788,18 @@ Los Angeles Rams, injuries:
 - Kyren Williams (RB) Active: Williams notched 10 carries for 50 yards and recorded three catches (on six targets) for 17 yards during Sunday's 18-16 defeat to the Cardinals.
 - Ty Simpson (QB) Active: Simpson (coach's decision) is inactive but will serve as the Rams' emergency third quarterback against the Cardinals on Sunday.
 - Tutu Atwell (WR) Active: Atwell (coach's decision) is inactive for Sunday's game against the Cardinals.
-- Keagen Trost (OT) Active: The Rams activated Trost (hamstring) from injured reserve Saturday.
 
 Los Angeles Rams, ESPN headlines:
 
 Las Vegas Raiders, injuries:
-- Tonka Hemingway (DT) Active
-- Quay Walker (LB) Active
+- Quay Walker (LB) Active: Walker (chest) does not have an injury designation ahead of Sunday's game against the Rams.
+- Tonka Hemingway (DT) Active: Hemingway (concussion) does not have an injury designation for Sunday's game against the Rams.
+- Dont'e Thornton Jr. (WR) Injured Reserve, Hamstring: Thornton (hamstring) has been ruled out for Sunday's game against the Rams, Sam Warren of The Athletic reports.
 - Mike Washington Jr. (RB) Questionable, Foot: Washington (foot) is questionable for Sunday's game against the Rams, Sam Warren of The Athletic reports.
 - Brock Bowers (TE) Active: Bowers (hamstring/calf) upgraded to a full practice Thursday, Anthony Galaviz of The Fresno Bee reports.
 - Kolton Miller (OT) Active
 - Folorunso Fatukasi (DT) Active
 - Carter Runyon (TE) Injured Reserve, Foot: Runyon (foot) was a full participant in practice Wednesday.
-- Dont'e Thornton Jr. (WR) Injured Reserve, Hamstring: Thornton (hamstring) was a full participant at practice Wednesday.
 - Jeremy Chinn (S) Active: Chinn recorded 10 total tackles (nine solo) during Sunday's 33-30 loss to Buffalo.
 - Nakobe Dean (LB) Active: Dean registered 12 total tackles (three solo) during Sunday's 33-30 loss to the Bills.
 - Matt Gay (PK) Active: Gay converted all three of his field-goal attempts and all three extra-point tries during Las Vegas' loss to the Bills on Sunday.
@@ -831,19 +831,20 @@ Searches to run:
 - "NFL week 7 picks KC SEA"
 
 Kansas City Chiefs, injuries:
+- Jaydn Ott (RB) Active: The Chiefs signed Ott from the practice squad to the active roster Saturday.
+- Cooper McDonald (LB) Active
+- Andrew Armstrong (WR) Active: The Chiefs signed Armstrong from the practice squad to the active roster Friday, Aaron Wilson of KPRC 2 Houston reports.
+- L'Jarius Sneed (CB) Questionable, Knee: Sneed (knee) is questionable for Sunday's game against the Seahawks.
+- Brashard Smith (RB) Injured Reserve, Hamstring: Smith (hamstring) has been ruled out for Sunday's game against the Seahawks.
 - Xavier Worthy (WR) Active: Worthy will once again operate as the Chiefs' top wide receiver after Rashee Rice (hamstring/knee) was ruled out ahead of Sunday's game against the Seahawks, Pete Sweeney of The Kansas City Star reports.
 - Travis Kelce (TE) Active: Kelce (ankle) doesn't have an injury designation for Sunday's game against the Seahawks.
-- Brashard Smith (RB) Out, Hamstring: out
 - Jaylon Moore (OT) Out, Concussion: out
 - Rashee Rice (WR) Out, Hamstring: Rice (hamstring/knee) was not present during the portion of Friday's practice open to the media, Pete Sweeney of The Kansas City Star reports.
 - Josh Simmons (OT) Injured Reserve, Back: The Chiefs placed Simmons (lower back) on injured reserve Thursday.
-- L'Jarius Sneed (CB) Questionable, Knee: questionable
 - George Karlaftis (DE) Active: Karlaftis registered six total tackles, a sack and two pass breakups in Sunday's 22-6 win over the Chargers.
 - Nick Bolton (LB) Active: Bolton recorded 11 total tackles (three solo) during Sunday's 22-6 win over the Chargers.
 - Jalen Royals (WR) Active: Royals caught two of his four targets for 24 yards during Kansas City's win over the Chargers on Sunday.
-- Cooper McDonald (LB) Injured Reserve, Knee: The Chiefs designated McDonald (knee) to return from injured reserve Tuesday, Charles Goldman of AtoZSports.com reports.
 - Harrison Butker (PK) Active: Butker made three of his four field-goal attempts and one of two PATs in the Chiefs' 22-6 win over the Chargers on Sunday.
-- Andrew Armstrong (WR) Active: Armstrong reverted to the Chiefs' practice squad Monday, per the NFL's transaction log.
 - Emmett Johnson (RB) Active: Johnson turned three carries into six yards and caught two of three targets for 18 yards during Sunday's 22-6 win over the Chargers. He also returned two kickoffs for 50 yards.
 - Cyrus Allen (WR) Active: Allen caught both of his passes for 27 yards during the Chiefs' 22-6 win over the Chargers on Sunday.
 - Noah Gray (TE) Active: Gray caught all three of his targets for 53 yards during the Chiefs' 22-6 win over the Chargers on Sunday.
@@ -855,25 +856,25 @@ Kansas City Chiefs, injuries:
 - Patrick Mahomes (QB) Active: Mahomes completed 23 of 30 passes for 272 yards, no touchdowns and one interception and rushed five times for 16 yards during Sunday's 22-6 win versus the Chargers.
 - Kenneth Walker III (RB) Active: Walker ripped off 128 yards and two touchdowns on 19 carries and added two catches (on three targets) for 11 yards during Sunday's 22-6 win against the Chargers.
 - Peter Woods (DT) Active
-- Tyquan Thornton (WR) Injured Reserve, Ankle: The Chiefs placed Thornton (ankle) on injured reserve Tuesday.
 
 Kansas City Chiefs, ESPN headlines:
 
 Seattle Seahawks, injuries:
+- Anthony Bradford (G) Injured Reserve, Knee: Bradford (knee) does not have any injury designation ahead of Sunday's game against the Chiefs, John Boyle of the Seahawks' official site reports.
+- Chazz Surratt (LB) Out, Calf: Surratt (calf) has been ruled out ahead of Sunday's game against the Chiefs, John Boyle of the Seahawks' official site reports.
+- George Holani (RB) Active: Holani is slated to remain Seattle's No. 2 running back Sunday against Kansas City, as Zach Charbonnet (knee) has been ruled out for the contest, John Boyle of the team's official site reports.
+- Nick Emmanwori (S) Questionable, Hip: Emmanwori (hip) is listed as questionable for Sunday's game against the Chiefs, John Boyle of the Seahawks' official site reports.
+- Drake Thomas (LB) Out, Ankle: Thomas (ankle) has been ruled out ahead of Sunday's game against the Chiefs, John Boyle of the Seahawks' official site reports.
+- Drew Lock (QB) Questionable, Elbow: Lock (elbow) is listed as questionable ahead of Sunday's game against the Chiefs, John Boyle of the Seahawks' official site reports.
 - Emanuel Wilson (RB) Active: Wilson will be the lead back for Sunday's game against the Chiefs after Zach Charbonnet (knee) was ruled out ahead of that contest, John Boyle of the Seahawks' official site reports.
 - Elijah Arroyo (TE) Injured Reserve, Shoulder: Head coach Mike Macdonald told reporters Friday that Arroyo (shoulder) underwent surgery and will likely be out for the rest of the season, Curtis Crabtree of Fox 13 Seattle reports.
-- Chazz Surratt (LB) Out, Calf: out
-- Drake Thomas (LB) Out, Ankle: out
-- Nick Emmanwori (S) Questionable, Hip: questionable
 - Zach Charbonnet (RB) Out, Knee - ACL: Head coach Mike Macdonald said Friday that Charbonnet (knee) has been ruled out for Sunday's game versus the Chiefs, Curtis Crabtree of Fox 13 Seattle reports.
-- Drew Lock (QB) Questionable, Elbow: Lock (elbow) was a limited practice participant Thursday, John Boyle of the Seahawks' official site reports.
 - Rashid Shaheed (WR) Active: Shaheed (hip) was a full participant in Thursday's practice, John Boyle of the Seahawks' official site reports.
 - Beau Stephens (G) Active
 - Tyrice Knight (LB) Active
 - Uchenna Nwosu (LB) Questionable, Hip: questionable
 - DeMarcus Lawrence (LB) Questionable, Knee: questionable
 - Connor O'Toole (LB) Questionable, Hamstring: questionable
-- Anthony Bradford (G) Injured Reserve, Knee: Bradford (knee) was designated to return from injured reserve by the Seahawks on Monday, John Boyle of the team's official website reports.
 - Robert Henry Jr. (RB) Active
 - Jalen Milroe (QB) Active
 - Avery Smith (CB) Active
@@ -884,7 +885,6 @@ Seattle Seahawks, injuries:
 - Ernest Jones IV (LB) Active: Jones recorded nine tackles (five solo), including 1.0 sacks, in Thursday night's 17-14 overtime loss to the Broncos.
 - Jason Myers (PK) Active: Myers went 2-for-3 on field-goal attempts during the Seahawks' 17-14 overtime loss to the Broncos on Thursday.
 - Cooper Kupp (WR) Active: Kupp caught five of 10 targets for 50 yards during the Seahawks' 17-14 overtime loss to the Broncos on Thursday.
-- AJ Barner (TE) Active: Barner caught three of four passes for 16 yards during the Seahawks' 17-14 overtime loss to the Broncos on Thursday.
 
 Seattle Seahawks, ESPN headlines:
 
@@ -899,11 +899,12 @@ Searches to run:
 - "NFL week 7 picks DAL PHI"
 
 Dallas Cowboys, injuries:
+- Cobie Durant (CB) Questionable, Hamstring: Durant (hamstring) was a full participant in Friday's practice, Todd Archer of ESPN.com reports.
+- P.J. Locke (S) Injured Reserve, Foot: The Cowboys opened Locke's (foot) 21-day practice window Friday, Tommy Yarrish of the team's official site reports.
 - Tyler Guyton (OT) Active
 - Broderick Jones (OT) Questionable, Wrist: questionable
 - George Pickens (WR) Active: Pickens (shoulder) was a full participant in Friday's practice, Tommy Yarrish of the Cowboys' official site reports.
 - Marist Liufau (LB) Injured Reserve, Forearm: The Cowboys designated Liufau (forearm) to return from injured reserve Thursday.
-- Cobie Durant (CB) Active: Durant (hamstring) was a limited participant at practice Thursday, Tommy Yarrish of the Cowboys' official site reports.
 - KaVontae Turpin (WR) Questionable, Ribs: Turpin (ribs) did not participate at practice Thursday, Tommy Yarrish of the Cowboys' official site reports.
 - DeMarvion Overshown (LB) Active: Overshown (hamstring) practiced in full Thursday, Jon Machota of The Athletic reports.
 - Caleb Downs (S) Active: Downs recorded 12 total tackles (six solo) during Sunday night's 23-13 loss to the Packers.
@@ -923,23 +924,23 @@ Dallas Cowboys, injuries:
 - Emari Demercado (RB) Active: Demercado (coach's decision) is inactive for Sunday night's matchup with the Packers, Patrik Walker of the Cowboys' official site reports.
 - LT Overton (DT) Active
 - Ameer Speed (CB) Active
-- Malachi Lawrence (LB) Active: Lawrence is expected to get more opportunities on the Cowboys' defense moving forward, Jon Machota of The Athletic reports.
 
 Dallas Cowboys, ESPN headlines:
 
 Philadelphia Eagles, injuries:
+- Saquon Barkley (RB) Questionable, Hamstring: Barkley (hamstring) was on the field for the start of Saturday's practice, Dave Zangaro of NBC Sports Philadelphia reports.
+- Dontayvion Wicks (WR) Questionable, Ankle: Wicks (ankle) was not on the field for the start of Saturday's practice, Andrew DiCecco of Inside the Birds reports.
+- DeVonta Smith (WR) Questionable, Hamstring: Smith (hamstring) was not seen at the Eagles' practice Saturday, EJ Smith of The Philadelphia Inquirer reports.
+- Dallas Goedert (TE) Questionable, Knee: Goedert (knee) is on the field for the start of Saturday's practice, Dave Zangaro of NBC Sports Philadelphia reports.
+- Willie Lampkin (C) Questionable, Illness: Lampkin (illness) was a limited participant in Friday's practice.
+- Tyler Steen (G) Questionable, Shoulder: Steen (shoulder) was a limited participant in Friday's practice.
+- Landon Dickerson (G) Injured Reserve, Knee: Dickerson (knee) was a limited participant in Friday's practice.
 - Fred Johnson (OT) Questionable, Illness: questionable
 - Drew Kendall (C) Active
-- Dontayvion Wicks (WR) Questionable, Ankle: Wicks (ankle) didn't take part in Friday's practice.
-- Dallas Goedert (TE) Questionable, Knee: Goedert (knee) was a non-participant at Friday's practice.
-- DeVonta Smith (WR) Questionable, Hamstring: Smith (hamstring) didn't practice Friday.
-- Saquon Barkley (RB) Questionable, Hamstring: Barkley (hamstring) was a limited practice participant Friday.
 - Eli Stowers (TE) Injured Reserve, Quadriceps: Stowers (quadriceps) was a full participant at the Eagles' practice Thursday.
 - Grant Calcaterra (TE) Injured Reserve, Back: Calcaterra (back) was a full participant at the Eagles' practice Thursday.
 - Moro Ojomo (DT) Questionable, Abdomen: questionable
-- Tyler Steen (G) Questionable, Shoulder: questionable
 - Jonathan Greenard (LB) Questionable, Ankle: questionable
-- Willie Lampkin (C) Questionable, Illness: questionable
 - Cooper DeJean (CB) Active: DeJean posted five solo tackles and a pass defense in the Eagles' 25-14 loss to the Panthers in Week 6.
 - Zack Baun (LB) Active: Baun registered six tackles (four solo) and a pass defense during the Eagles' 25-14 loss to the Panthers in Week 6.
 - Darius Cooper (WR) Active: Cooper caught one of two targets for nine yards and added 38 yards as a kick returner during Sunday's 25-14 loss to the Panthers.
@@ -952,7 +953,6 @@ Philadelphia Eagles, injuries:
 - Jalen Hurts (QB) Injured Reserve, Calf: Hurts (calf) is expected to be held out of football activities for multiple months and miss the rest of the season after new imaging over the weekend revealed several blood clots in his lungs, Tom Pelissero of Netflix reports.
 - Tanner McKee (QB) Active: McKee completed 26 of 45 passes for 215 yards with a touchdown and no interceptions while adding one carry for no gain in the Eagles' 25-14 loss to the Panthers on Sunday. He also recovered a fumble.
 - Dameon Pierce (RB) Active: Pierce rushed 12 times for 35 yards and a touchdown and brought in four of five targets for 15 yards in the Eagles' 25-14 loss to the Panthers on Sunday.
-- Makai Lemon (WR) Active: Lemon caught three of six targets for 19 yards in Sunday's 25-14 loss to the Panthers.
 
 Philadelphia Eagles, ESPN headlines:
 
