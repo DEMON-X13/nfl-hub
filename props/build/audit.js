@@ -901,7 +901,10 @@ setTimeout(async()=>{
       chk(Array.isArray(sn.r)&&sn.r.length>=1,`rungs not frozen for ${pid} ${stat}`); stored++;
       const pl=S.players[pid]; if(!pl) continue;
       for(const [k,p] of sn.r){ faithful++; if(Math.abs(pOver(pl.grp,stat,sn.mu,k-0.5)-p)>6e-5) off++; }
-      if(sn.ml){ const L=marketLine(1,pid,stat); chk(!!L&&L.line===sn.ml[0],`frozen main line differs from the market table ${pid} ${stat}`); }
+      /* the paid pull's main line, else (app v136) DraftKings' line kept at kickoff for one of week 1's games, as gradeGame
+         freezes it: a new season's week 1 has no paid line, and its opener's kept lines are in espn_close */
+      if(sn.ml){ const L=marketLine(1,pid,stat), kept=!L&&S.sched.some(x=>+x.w===1&&F('closeLine')(x.id,pid,stat)===sn.ml[0]);
+        chk(L?L.line===sn.ml[0]:kept,`frozen main line is neither the market table's nor one kept at kickoff ${pid} ${stat}`); }
     }
     chk(stored>0,'no frozen rungs found'); chk(off===0,`frozen rung chances disagree with the frozen projection: ${off} of ${faithful}`);
     const bands=[TR.filter(r=>r.p>=0.7),TR.filter(r=>r.p>=0.45&&r.p<0.7),TR.filter(r=>r.p<0.45)];
@@ -943,7 +946,11 @@ setTimeout(async()=>{
         else for(const [wk,G] of Object.entries(C.weeks)) for(const [gid,e] of Object.entries(G||{})){ n++;
           const g=S.sched.find(z=>z.id===gid), ko=g&&F('kickoff')(g), t=Date.parse(e&&e.at);
           if(!g||String(+g.w)!==wk) { bad.push(gid+' is not a game of week '+wk); continue; }
-          if(!F('gameStarted')(g)&&!F('gameFinal')(g)) bad.push(gid+' has not kicked off');
+          /* kicked off by the time the payload was baked (its baked_at, the run's own clock, which espn_close judged by),
+             or scored: never the page's clock, which the audit moves back to before the week's last kickoff once none is
+             left to start (the hours after Monday night's kickoff), where every game kept that night would read as to come */
+          const bk=Date.parse(PAY.baked_at||''), kicked=isFinite(bk)?ko.getTime()<=bk:F('gameStarted')(g);
+          if(!kicked&&!F('gameFinal')(g)) bad.push(gid+' had not kicked off when the payload was baked ('+PAY.baked_at+')');
           if(!(t<ko.getTime())) bad.push(gid+' was read at or after its kickoff ('+(e&&e.at)+')');
           for(const [pid,L] of Object.entries((e&&e.lines)||{})){ if(!/^(?!__proto__$)[A-Za-z0-9_.:\-]{1,40}$/.test(pid)) bad.push(gid+': player id '+pid);
             for(const [st,v] of Object.entries(L||{})){ m++; if(!(typeof v==='number'&&v>0&&v<=1000&&Number.isInteger(v*2))) bad.push(`${gid} ${pid} ${st} ${v}`); } } } }

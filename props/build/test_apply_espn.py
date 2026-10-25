@@ -36,10 +36,10 @@ a credit; the last one boots the real page in jsdom.
      has been played (the off-season) as well as mid-season
 
   N. espn_close (app v136): a game that kicked off gets DraftKings' main lines as the last published read had them
-     before its kickoff (no rung, touchdown or game line), or this run's read where later and still before it; nothing
-     read at or after the kickoff; an entry carried as it stands and never replaced; a game still to come never in it;
-     a junk entry, another season's game or a bad line dropped; nothing carried across a rollover; and payload.py
-     never carries it
+     before its kickoff (no rung, touchdown or game line), never this run's own read; nothing read at or after the
+     kickoff; an entry carried as it stands and never replaced, but dropped where its game is to come again or it was
+     read after the kickoff as now scheduled; a game still to come never in it; a junk entry, another season's game or a
+     bad line dropped; the seed; nothing carried across a rollover; and payload.py never carries it
 
     python3 props/build/test_apply_espn.py        must end "0 failures"
 """
@@ -359,10 +359,11 @@ def n():
     chk(C == {'v': 1, 'weeks': {'7': {LV: {'at': before, 'lines': main}}}}, f"N: a game kicked off since keeps the published read's main lines, no rung, touchdown or game line: {C}")
     chk(any('kept for 1 game(s) played this season, 1 new' in x for x in notes), f'N: the report says it: {notes}')
     chk(LV not in p['espn']['games'], 'N: and the game leaves espn as before')
-    # this run's read of it, later and still before the kickoff, wins; one at or after the kickoff never
+    # this run's own read never feeds it (espn_read.js reads only games to come, by a later clock): a read handed for a
+    # game kicked off is not taken, the published block is; one at or after the kickoff never
     later = iso(ko - datetime.timedelta(hours=1))
     p = pay(); apply(p, pv({LV: {'w': '7', 'pl': block(before), 'out': {'st': 'ok', 'at': before}}}), read({LV: rg('ok', block(later, lines={'00-0036275': {'rushing_yards': 59.5}}), at=later)}))
-    chk(p['espn_close']['weeks']['7'][LV] == {'at': later, 'lines': {'00-0036275': {'rushing_yards': 59.5}}}, f"N: this run's later read before the kickoff is kept: {p['espn_close']}")
+    chk(p['espn_close']['weeks']['7'][LV] == {'at': before, 'lines': main}, f"N: this run's own read is never taken, the published block is: {p['espn_close']}")
     p = pay(); apply(p, pv({LV: {'w': '7', 'pl': block(at_ko), 'out': {'st': 'ok', 'at': at_ko}}}), read({LV: rg('ok', block(at_ko), at=at_ko)}))
     chk(p['espn_close'] == {'v': 1, 'weeks': {}}, f"N: nothing read at or after the kickoff is kept: {p['espn_close']}")
     # a 'none' published (no player lines posted) keeps nothing; a game still to come is never in it
@@ -404,6 +405,13 @@ def n():
             open(f, 'w').write(body)
             chk(keep_real(f) == want, f'N: espn_close_seed reads {body[:50]!r} as {want}')
         chk(keep_real(os.path.join(td, 'none.json')) == {}, 'N: espn_close_seed with no file gives nothing')
+    # a game to come again (postponed once its listed kickoff had passed) drops its kept entry, as does one read at or
+    # after its kickoff as the schedule now has it (moved earlier); each is kept afresh at its real kickoff
+    p = pay(); G(p, LV)['d'] = '2026-10-22'; apply(p, pv({}, {'v': 1, 'weeks': {'7': {LV: kept}}}), None)
+    chk(LV not in p['espn_close']['weeks'].get('7', {}), f"N: a carried entry for a game to come again is dropped: {p['espn_close']}")
+    p = pay(); G(p, LV)['t'] = '02:00'
+    apply(p, pv({}, {'v': 1, 'weeks': {'7': {LV: {'at': iso(W.kickoff(G(p, LV)) + datetime.timedelta(minutes=5)), 'lines': main}}}}), None)
+    chk(LV not in p['espn_close']['weeks'].get('7', {}), f"N: a carried entry read after its kickoff as now scheduled is dropped: {p['espn_close']}")
     # a rollover: the published payload another season's carries nothing
     p = pay(); apply(p, pv({LV: {'w': '7', 'pl': block(before), 'out': {'st': 'ok', 'at': before}}}, {'v': 1, 'weeks': {'6': {NYJ: old6}}}, season=S - 1), None)
     chk(p['espn_close'] == {'v': 1, 'weeks': {}}, f"N: nothing carried across a rollover: {p['espn_close']}")

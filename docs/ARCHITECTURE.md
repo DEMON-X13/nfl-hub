@@ -1481,9 +1481,11 @@ engine (`pbPool`, `pbTier` and the searches, `pbBuild`, `getPbTiers`) is kept an
 defaulting to the reader's own and `PB_SEARCH`, so a call as before is exactly as before; `getPbTiers()` still
 builds the all-games levels on the ticks, which nothing on the page draws, and the audit and the smoke hold the
 engine through it. The search is a beam over a pairwise approximation of the copula (each correlated pair's joint
-chance exact, by a Plackett integral), its finalists worked by `parlayProb` with fewer draws, and the winner by the
-builder's own `parlayProb` and `parlayDec` on the legs in the builder's order, so Add to builder shows the same
-price and chance as the level did. A game that kicks off with the page open leaves the games list, the list and
+chance exact, by a Plackett integral), its finalists that clear the floor by the search's own score kept in the
+beam's own order (best expected return, or the highest chance for Safe) and each worked in full by the builder's own
+`parlayProb` and `parlayDec` on the legs in the builder's order (`pbExact`), the first to clear the floor taken (app
+v136; until then the finalists were re-ranked on `parlayProb` with fewer draws, noisier than the gaps between them), so
+Add to builder shows the same price and chance as the level did. A game that kicks off with the page open leaves the games list, the list and
 Suggested Parlays at the next look (`pbWatch`, every 30 seconds, through `pbStale`: the games drawn, `PB_SHOWN`, or
 the sets' sides of their locks and the games set out, `SP_SHOWN`, no longer what they are) or draw. The old Suggested parlays window
 (`suggModal`, its Any/overs/unders switch and stake box) is gone; a game page's High/Medium/Low suggestions stayed
