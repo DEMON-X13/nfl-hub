@@ -3955,6 +3955,17 @@ setTimeout(async()=>{
     /* (app v108) the read kept in this browser: its key, and the page's keeping state as M8 found it, put back after */
     const LS=w.localStorage, KK=F('ESPN_KEEP_KEY'), lsGet=()=>{ try{ return LS.getItem(KK); }catch(e){ return null; } }, setVar=(n,v)=>w.eval(`(function(v){ ${n}=v; })`)(v);
     const key0=lsGet(), keep0={ESPN_KEPT:clone(F('ESPN_KEPT')),ESPN_ASIDE:clone(F('ESPN_ASIDE')),ESPN_KEEP_GONE:clone(F('ESPN_KEEP_GONE')),ESPN_KEEP_OFF:F('ESPN_KEEP_OFF')};
+    /* the bake before the page's clock, for M8 alone (the review of 25 October 2026). A press applies over lines
+       nflverse gave (no ls, lat or lsr) only where it is newer than PAY.baked_at, as it always is in a browser, which
+       loads a payload after it was baked. A run that lands after a week's last kickoff and before its final (Monday
+       night under way) bakes the game's lines as nflverse's, since apply_espn publishes nothing of a game kicked off,
+       and the audit then sets the page's clock back to before that kickoff (above), hours before the bake: every
+       press on the one game left read as older than the publish and was ignored, 40 of M8's checks failed, and the
+       run was refused. Where the bake is later than the page's clock M8 dates it an hour before the clock, the
+       world a browser sees, and puts it back after; G3b, which judges what the job kept by the bake's own time, ran
+       before this and reads the real one */
+    const bake0=P().baked_at, tBake0=Date.parse(bake0||''), tNow0=clock0.call(w.Date), bakeMoved=isFinite(tBake0)&&tBake0>tNow0;
+    if(bakeMoved){ P().baked_at=new Date(tNow0-3600e3).toISOString(); console.log(`M8: the payload was baked ${((tBake0-tNow0)/3600e3).toFixed(1)}h after the page's clock (set back above): dated an hour before the clock while M8 runs, then put back`); }
     /* the page's built-ins as M8 found them. A kept value may never set anything on them: on 16 October 2026 a
        kept game "__proto__" did (espnRestore's ESPN_KEEP_GONE['__proto__'] is Object.prototype, and the
        times of its halves were set there as gl and pl), every for-in on the page then read them (rosterFor's
@@ -5718,6 +5729,7 @@ setTimeout(async()=>{
     } catch(e){ chk(false,'M8 threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
     finally {
       w.fetch=realFetch; w.Date.now=clock0; net.gate=null;
+      if(bakeMoved){ if(bake0===undefined) delete P().baked_at; else P().baked_at=bake0; }
       for(const [n,v] of Object.entries(keep0)) setVar(n,v);
       try{ if(key0==null) LS.removeItem(KK); else LS.setItem(KK,key0); }catch(e){}
       if(keepIds===undefined) delete P().espn_ids; else P().espn_ids=keepIds;

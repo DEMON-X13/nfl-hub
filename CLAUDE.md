@@ -256,8 +256,10 @@ the check can stand on, planted data on its own fixture, the page's fallbacks, t
 together, `clock_now.js`), and `python3 test_audit_phases.py` (about nine minutes, four at a time;
 `--quick` three cases) replays it on past payloads at their own moment, each beside its own commit's
 `props/data` (a Saturday before the pull, a Sunday priced, mid-slate, 3pm and night, a Monday before
-and during its game, a week with no player prices, paid ids to come, the season played out with and
-without late lines), and the page smoke on four with `SMOKE_NOW` (two Monday nights under way among them,
+and during its game, a Monday night on a payload baked during the game (`mon_baked`, built from the 25 October
+payload by `apply_espn`: its bake hours after the page's clock once the audit sets it back, which refused every such
+run until the review of 25 October 2026, M8 dating the bake an hour before the clock while it runs), a week with no
+player prices, paid ids to come, the season played out with and without late lines), and the page smoke on four with `SMOKE_NOW` (two Monday nights under way among them,
 when the smoke sets the page's clock back, one on a payload baked that Monday, its DraftKings lines then
 newer than a press there): a change to the audit, the smoke or
 the props parts comes with a run of it. **The props gate** (`.github/workflows/props-gate.yml`, its
@@ -374,8 +376,9 @@ kicks off, `apply_espn` keeps DraftKings' main lines as the last published read 
 `espn_close`, `{v:1, weeks:{w:{gid:{at, lines:{pid:{stat:line}}}}}}`: from the published payload's `espn` block for the
 game or `props/data/espn_close_seed.json` (whichever was read latest, each only before the kickoff; never this run's own
 read, which no visitor saw, the review of 25 October 2026), frozen once made, carried run to run within the season
-(nothing across a rollover, nor a game carried that is to come again or whose kept read is at or after its kickoff as it
-now stands, a game postponed or moved later; `payload.py` never carries it, `_REDERIVED`), cleaned by the page's rules, main lines alone (no rung,
+(nothing across a rollover, nor a game carried that is to come again, postponed, or whose kept read is at or after its
+kickoff as it now stands, moved earlier past the read, nor one no longer the schedule's game of that week with a kickoff,
+which G3b would refuse on every run after; `payload.py` never carries it, `_REDERIVED`), cleaned by the page's rules, main lines alone (no rung,
 touchdown, game line or price). `props/build/espn_close_seed.py`, run by hand with history back to 19 October (`git fetch
 --shallow-since=2026-10-19 origin main`), recovered the games played before this from the last payload committed before
 each kickoff (week 7's Patriots at Bears, 60 lines on 20 players read 7 hours before kickoff); the job takes a game from
@@ -384,7 +387,8 @@ grade the model's side of it where the paid pull wrote no main line (the paid li
 were). It is a line, never a price: its row carries no `ml` or `imp`, so the hidden Track Record's "against the book" and
 market + form leave it out, and the pills count it. Held by `test_apply_espn.py`'s N (kept, read at the kickoff, later
 read winning, never replaced, a 'none', a game to come, junk, the seed and its reader, a rollover, the carry, this run's
-own read never taken, a carried game to come again or kept at its moved kickoff dropped) and the audit's G3b, blocking
+own read never taken, a carried game to come again, kept at or after its moved kickoff, off the schedule, under another
+week or with no kickoff dropped) and the audit's G3b, blocking
 (the real table's shape: games of this season kicked off by the payload's `baked_at`, the run's own clock, since the
 audit sets the page's clock back on a Monday night; read before kickoff, valid lines; and on a
 planted week-1 final the kept line frozen with the model's chance at it, graded on the model's side with no price,

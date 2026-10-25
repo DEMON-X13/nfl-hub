@@ -460,13 +460,19 @@ def espn_close(pay,prev,games0,to_come,now,rules):
     run's own read never feeds it: espn_read.js reads only games still to come by a clock later than this run's, so
     a game it read is to come here too, and one that kicks off during the run is kept by the next run, from the espn
     this run publishes. Carried from the published payload's espn_close within the season, nothing across a rollover,
-    each block cleaned by the page's rules (espn_block), but an entry whose game is to come again (postponed after its
-    listed kickoff passed) or was read at or after its kickoff as the schedule now has it is dropped, to be kept
-    afresh at its real kickoff (the review of 25 October 2026: carried, it stood as a game still to come). The main
+    each block cleaned by the page's rules (espn_block), but an entry is dropped whose game is to come again (postponed
+    after its listed kickoff passed: kept afresh at its real kickoff), was read at or after its kickoff as the schedule
+    now has it (moved earlier past the read: never kept again, since what was read came after the real kickoff), or is
+    no longer the schedule's game of that week with a kickoff (re-identified, moved to another week, its date gone), as
+    the audit's G3b would refuse it on this run and every run after (the reviews of 25 October 2026). The main
     lines alone: no rung, touchdown, game line or price (a line read from ESPN is never a book price: the record's
     "against the book" table and market + form leave a row with no price out). test_apply_espn.py holds it"""
     C0=prev.get('espn_close') if isinstance(prev,dict) and payload_season(prev or {})==SEASON else None
     ko_of={g.get('id'):kickoff(g) for g in pay.get('sched') or []}
+    wk_of={}
+    for g in pay.get('sched') or []:
+        try: wk_of[g.get('id')]=str(int(g.get('w')))
+        except (TypeError,ValueError): pass
     weeks={}
     if isinstance(C0,dict) and C0.get('v')==1 and isinstance(C0.get('weeks'),dict):
         for w,G in C0['weeks'].items():
@@ -476,7 +482,7 @@ def espn_close(pay,prev,games0,to_come,now,rules):
                 b=espn_block({'at':e.get('at'),'lines':e.get('lines')},rules)
                 if not (b and b['lines']): continue
                 ko=ko_of.get(gid)
-                if gid in to_come or (ko is not None and espn_time(b['at'])>=ko): continue
+                if ko is None or wk_of.get(gid)!=str(int(w)) or gid in to_come or espn_time(b['at'])>=ko: continue
                 weeks.setdefault(str(int(w)),{})[gid]={'at':b['at'],'lines':b['lines']}
     seed=espn_close_seed()
     new=0

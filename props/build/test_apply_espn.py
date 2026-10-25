@@ -412,6 +412,19 @@ def n():
     p = pay(); G(p, LV)['t'] = '02:00'
     apply(p, pv({}, {'v': 1, 'weeks': {'7': {LV: {'at': iso(W.kickoff(G(p, LV)) + datetime.timedelta(minutes=5)), 'lines': main}}}}), None)
     chk(LV not in p['espn_close']['weeks'].get('7', {}), f"N: a carried entry read after its kickoff as now scheduled is dropped: {p['espn_close']}")
+    p = pay(); G(p, LV)['t'] = '02:00'
+    apply(p, pv({}, {'v': 1, 'weeks': {'7': {LV: {'at': iso(W.kickoff(G(p, LV))), 'lines': main}}}}), None)
+    chk(LV not in p['espn_close']['weeks'].get('7', {}), f"N: a carried entry read at its kickoff as now scheduled is dropped: {p['espn_close']}")
+    # one no longer the schedule's game of that week (re-identified, moved to another week) or with no kickoff is dropped:
+    # carried, the audit's G3b refuses it on that run and every run after
+    gone = f'{S}_07_AAA_BBB'
+    p = pay(); apply(p, pv({}, {'v': 1, 'weeks': {'7': {gone: kept, LV: kept}, '6': {NYJ: old6}}}), None)
+    chk(gone not in p['espn_close']['weeks'].get('7', {}) and p['espn_close']['weeks'].get('7', {}).get(LV) == kept,
+        f"N: a carried entry for a game off the schedule is dropped, and the game's neighbour kept: {p['espn_close']}")
+    p = pay(); apply(p, pv({}, {'v': 1, 'weeks': {'6': {LV: kept}}}), None)
+    chk(LV not in p['espn_close']['weeks'].get('6', {}), f"N: a carried entry under another week than its game's is dropped: {p['espn_close']}")
+    p = pay(); G(p, LV)['d'] = None; apply(p, pv({}, {'v': 1, 'weeks': {'7': {LV: kept}}}), None)
+    chk(LV not in p['espn_close']['weeks'].get('7', {}), f"N: a carried entry for a game with no kickoff is dropped: {p['espn_close']}")
     # a rollover: the published payload another season's carries nothing
     p = pay(); apply(p, pv({LV: {'w': '7', 'pl': block(before), 'out': {'st': 'ok', 'at': before}}}, {'v': 1, 'weeks': {'6': {NYJ: old6}}}, season=S - 1), None)
     chk(p['espn_close'] == {'v': 1, 'weeks': {}}, f"N: nothing carried across a rollover: {p['espn_close']}")
