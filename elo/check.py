@@ -63,7 +63,14 @@ all pass. What each one would have caught is said beside it.
              and its `was` as they stand on every run after) and the one held to elo/history/; every
              game of the season played before JOKER_FROM that the Joker called is re-picked; each
              graded call's `was` is the ledger's; and the record's `repicked` and `repicked_was` count
-             the graded re-picks and their first calls.
+             the graded re-picks and their first calls. A re-pick done again (`joker_fix`, the build's
+             refix, 25 October 2026: five weeks 3-4 re-picks stood on Joker calls that moved after
+             kickoff, which betting/joker/history/2026_w3_w4.json put back) stands on a call the state
+             marks published (while the state has the game), and the re-pick it replaced is whole and the rule's on another Joker
+             chance; RECORD lets that one change through (only the chance, the pick and the Joker's
+             chance, onto the state's) and holds it as it stands after. On fixtures, refix turns LA at
+             DEN's re-pick round on the Joker's published 50.93% and keeps the rest, and
+             joker_published reads only the calls marked published.
   SOURCES    the season's injury report, roster and play-by-play are present, and the play-by-play
              of the season before the units' (which they carry in); no group is empty.
   GAMES      the game model's walk-forward counts, for every finished season, every final games.csv
@@ -233,6 +240,28 @@ def unit_checks():
     chk(on.get('base') == 'joker' and on['p_joker'] == 0.4 and on['p_elo'] == alone['p_elo'] and abs(on['m'] - mj) < 1e-4
         and on['p_home'] == round(1 / (1 + math.exp(-(math.log(0.4 / 0.6) + build.JOKER_BASE['beta'] * mj))), 4),
         f'JOKER: a call on the Joker\'s 40% is not the rule\'s: {on}')
+    # a re-pick done again on the Joker's call as published before kickoff (refix): LA at DEN's re-pick stood on the
+    # Joker's 51.78%, which moved after kickoff from the 50.93% published before it; on 50.93% and the same matchup it
+    # turns round to LA, everything but the chance, the pick and the Joker's chance kept, the old re-pick in joker_fix
+    rp = {'pick': 'DEN', 'p_home': 0.5077, 'at': '2026-10-19T16:39+00:00', 'src': 'backtest', 'base': 'joker', 'p_joker': 0.5178,
+          'p_elo': 0.5124, 'm': -0.1972, 'was': {'pick': 'LA', 'p_home': 0.3806, 'at': '2026-09-25T17:33+00:00', 'src': 'published'}}
+    fx = build.refix(rp, 0.5093, 'DEN', 'LA', '2026-10-26T12:40+00:00')
+    chk(fx['pick'] == 'LA' and fx['p_home'] == 0.4992 and fx['p_joker'] == 0.5093
+        and all(fx[k] == rp[k] for k in ('at', 'src', 'base', 'p_elo', 'm', 'was'))
+        and fx['joker_fix'] == {'pick': 'DEN', 'p_home': 0.5077, 'p_joker': 0.5178, 'at': '2026-10-26T12:40+00:00'},
+        f'JOKER: a re-pick done again on the Joker\'s published call is not the rule\'s: {fx}')
+    fx2 = build.refix({**rp, 'pick': 'IND', 'p_home': 0.3304, 'p_joker': 0.3325, 'm': -0.0463}, 0.4265, 'WAS', 'IND', 'x')
+    chk(fx2['pick'] == 'IND' and fx2['p_home'] == 0.4242, f'JOKER: IND at WAS\'s re-pick on 42.65% is not IND at 42.42%: {fx2}')
+    import tempfile
+    with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as tf:
+        json.dump({'joker': {'g1': {'pick': 'A', 'pHome': 0.4, 'src': 'published'}, 'g2': {'pick': 'B', 'pHome': 0.6},
+                             'g3': {'pick': 'C', 'pHome': 0.7, 'src': 'backtest'}, 'g4': {'pick': 'D', 'pHome': 1.2, 'src': 'published'},
+                             'g5': 'junk'}}, tf)
+    try:
+        chk(build.joker_published(tf.name) == {'g1': 0.4}, f'JOKER: joker_published read more than the calls marked published: {build.joker_published(tf.name)}')
+        chk(set(build.joker_calls(tf.name)) == {'g1', 'g2', 'g3'}, 'JOKER: joker_calls changed with joker_published')
+    finally:
+        os.unlink(tf.name)
     # the depth chart: a fullback at rank 1 sorts after the running backs
     ranked = build._ranked([('RB', 'rb1', (0, 1)), ('RB', 'fb', (1, 1)), ('RB', 'rb2', (0, 2)), ('RB', 'rb3', (0, 3))])
     chk([p for p, _ in ranked['RB']][:2] == ['rb1', 'rb2'], f'UNITS: a fullback took the second running back\'s place: {ranked["RB"]}')
@@ -1057,6 +1086,7 @@ def main():
 
     # ---- JOKER: the calls on the Joker's baseline (THE JOKER BASELINE) ----
     joker = build.joker_calls(a.joker_state)
+    jpub = build.joker_published(a.joker_state)
     beta = build.JOKER_BASE['beta']
     jb = M.get('joker_base') or {}
     chk(all(jb.get(k) == v for k, v in build.JOKER_BASE.items()), 'JOKER: model.json does not carry the build\'s JOKER_BASE')
@@ -1101,6 +1131,22 @@ def main():
             bad.append(f'{gid} is re-picked on the Joker at {e.get("p_joker")}, but the Joker\'s call is {joker[gid]}')
         elif not all(k in e['was'] for k in ('pick', 'at', 'src')):
             bad.append(f'{gid} is re-picked with no first call kept: {e["was"]}')
+        fx = e.get('joker_fix')
+        if fx is not None:
+            # done again on the Joker's call as published before kickoff (betting/joker/history/, build.refix): the
+            # state marks that call published, and the re-pick it replaced was the rule's on another Joker chance
+            if not (isinstance(fx, dict) and all(isinstance(fx.get(k), (int, float)) for k in ('p_home', 'p_joker'))
+                    and isinstance(fx.get('pick'), str) and isinstance(fx.get('at'), str)):
+                bad.append(f'{gid}\'s re-pick done again keeps no whole re-pick it replaced: {fx}')
+            elif gid in joker and gid not in jpub:
+                # held only while the state still has the game (a new season's state carries none of last season's calls,
+                # and the ledger keeps last season's entries a season more), as the rule above holds p_joker
+                bad.append(f'{gid}\'s re-pick was done again, but the Joker\'s call it stands on is not one restored as published')
+            elif fx['p_joker'] == e.get('p_joker') or abs(own(fx['p_joker'], e['m']) - fx['p_home']) > 2e-4:
+                bad.append(f'{gid}\'s re-pick done again replaced {fx}, which is not the rule\'s on another Joker chance')
+    for gid, e in ((L or {}).get('calls') or {}).items():
+        if e.get('joker_fix') is not None and not e.get('was'):
+            bad.append(f'{gid} carries a re-pick done again but was never re-picked')
     for c in (M.get('graded') or []):
         gid = c['game_id']
         e = ((L or {}).get('calls') or {}).get(gid) or {}
@@ -1304,7 +1350,18 @@ def main():
                 if any(cur['was'].get(k) != e.get(k) for k in ('pick', 'p_home', 'at', 'src')):
                     moved_calls.append(gid)
                 continue
-            if cur is None or cur['pick'] != e['pick'] or cur.get('src') != e.get('src') or cur.get('was') != e.get('was'):
+            if cur is not None and cur.get('was') and e.get('was') and cur.get('joker_fix') and not e.get('joker_fix'):
+                # a re-pick done again this run on the Joker's call as published before kickoff (build.refix): the re-pick
+                # the last publish had is the one kept in joker_fix, its matchup, game model chance, time, source and
+                # first call unchanged, and the Joker's chance the state's restored one
+                fx = cur['joker_fix']
+                if (cur.get('was') != e.get('was') or any(cur.get(k) != e.get(k) for k in ('src', 'base', 'at', 'm', 'p_elo'))
+                        or any(fx.get(k) != e.get(k) for k in ('pick', 'p_home', 'p_joker'))
+                        or gid not in jpub or cur.get('p_joker') != round(jpub[gid], 4)):
+                    moved_calls.append(gid)
+                continue
+            if (cur is None or cur['pick'] != e['pick'] or cur.get('src') != e.get('src') or cur.get('was') != e.get('was')
+                    or cur.get('joker_fix') != e.get('joker_fix')):
                 moved_calls.append(gid)
         chk(not moved_calls, f'RECORD: calls the last publish had frozen were changed or dropped: {sorted(moved_calls)[:6]}{" ..." if len(moved_calls) > 6 else ""} of {len(moved_calls)}')
     elif L is not None:

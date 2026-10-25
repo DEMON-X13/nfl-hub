@@ -1291,8 +1291,10 @@ disclosure of a model that could not run, the Joker's calls on 2026 weeks 1-2 it
 Model) gone from a state the run wrote, drawn nowhere from one that still carries them, and the
 Challenger never made by the app (5m). A few of its checks are warnings (`warn` in `smoke.js`, which
 says why): the absences card's source line, its stale flag and its "returning" and "A -> A" wording, the
-behind mark and note on a Team Rankings rating, the absences card's heading and hiding, and the week the
-Pick'em Record's picker opens on. They print WARN, the state publishes, and the job's last step goes red
+behind mark and note on a Team Rankings rating, the absences card's heading and hiding, the week the
+Pick'em Record's picker opens on, and a call of a Joker history file that the Joker has not reached yet on a run whose
+Joker step could not run (`modelStatus.joker`, the call untouched and carrying no `src`: 5h lets it stand unmoved and 5n
+says it, so a Joker refusal never holds back the other models' finals). They print WARN, the state publishes, and the job's last step goes red
 on `SMOKE_WARNINGS_FILE` after its commit; every other check holds the state back. The file is written
 only by a smoke with no failure, and the last step runs only after one, worded by the commit's outcome:
 a failed smoke holds the commit back, and nothing then says the state was published.
@@ -1347,6 +1349,17 @@ the refit showed 25-7, +2. A week in `fitted_weeks` with a game missing from the
 run; the smoke's 5n holds the published calls and grades to the file and the file to the last commit's
 copy, and 5h let such a call move onto it once, from the refit's (no `src`), then holds it like any other. The Pick'em Record draws those weeks like every other week, counted in the Joker's
 record and its line against Vegas with no mark, label or note (the owner's call, October 2026).
+**Five Joker calls of weeks 3-4 as published before kickoff** (`betting/joker/history/2026_w3_w4.json`, the owner's
+"dig into the joker weeks 3-4" of 25 October 2026, after the check of every number): until the freeze at kickoff
+(`jobkit.freeze`, a62e7fe, 9 October 2026) every run scored every game of the season again, so 2026_03_ATL_GB (with the
+refit, a64ed4e, 3h41m after its kickoff), 2026_03_LA_DEN, 2026_04_IND_WAS, 2026_04_JAX_CIN and 2026_04_DET_CAR (closing
+lines nflverse posted after the game began) moved after kickoff, and the freeze then held the moved chance as if a reader
+had seen it (IND at WAS 42.65% published, 33.25% held). A walk over every first-parent commit of `state.json` found these
+five of weeks 3-6's 61 games and no others. The file holds each as the last commit on main before its kickoff carried it
+(`src: 'published'`, with `commit` and `at`), and `joker.py` takes them like week 2's (5h lets each move once onto the
+file's, 5n holds them after). No pick changed, so the Joker's record (63-30, +5 against Vegas) stands; the ELO Model's
+re-picks that stood on the moved chances are done again on these (under Player Elo, `joker_fix`). `jokerFit.calls` names
+only the files that hold the fitted weeks.
 `joker.py` reads the files `update.js` downloads into `/data` and fetches the season's
 play-by-play, so it runs after it and needs the network.
 
@@ -1452,11 +1465,21 @@ re-picked on it the same day, the owner's call ("i just dont see any changes in 
 you to change it based on what it would have picked"): each called again once, after the game, on what was known before
 its kickoff (the Joker's call as frozen at kickoff, the game model fitted before the season on the pre-game ratings and
 lineups), marked a backtest, the call first made kept in `was` (ledger and graded call), so the Pick'em Record grades the
-re-pick: 62-29 where the first picks went 52-39 (`record.repicked`, `repicked_was`; the tab's bar named both until 22
-October 2026). The gate
+re-pick: 61-30 where the first picks went 52-39 (`record.repicked`, `repicked_was`; the tab's bar named both until 22
+October 2026; 62-29 until 25 October, below). The gate
 allows exactly that change to a frozen call (JOKER and RECORD: a game kicked off before `JOKER_FROM`, on the Joker's
 frozen call, a backtest, its `was` the call the last publish had, every such game re-picked, and the re-pick held as it
-stands on every run after). The game model is unchanged (fitted, its walk-forward graded, read by the power ratings):
+stands on every run after). Five of those re-picks (weeks 3 and 4) stood on Joker calls that had moved after kickoff before
+the Joker's freeze; `betting/joker/history/2026_w3_w4.json` put those calls back to what was published before kickoff (25
+October 2026, under "Betting: the loop"), and the build does each such re-pick again once on the restored call (`refix`,
+on `betting/state.json`'s calls marked `src: 'published'`, `joker_published`): only its chance, pick and `p_joker` move,
+its `m`, `p_elo`, time, source and `was` kept, the re-pick it replaces in `joker_fix`. One pick turned round, LA at DEN
+from DEN (right) to LA (wrong), so the re-picks are 61-30, the ELO Model's season 63-30 where it was 64-29 and its line
+against Vegas +5 where it was +6 (23 picks turned round by the re-pick, 16 of them right, where it was 24 and 17). The gate
+allows exactly that (JOKER: a `joker_fix` only on a re-pick, standing on a call the state marks published, the re-pick it
+replaced whole and the rule's on another Joker chance; RECORD: on the run that does it, only the chance, the pick and
+`p_joker` moved onto the state's, the last publish's re-pick in `joker_fix`, and held as it stands after), and its fixtures
+hold `refix` on LA at DEN and IND at WAS and `joker_published` reading only the calls marked published. The game model is unchanged (fitted, its walk-forward graded, read by the power ratings):
 never refit BETA on the season in play. **The tab's bar is its stamp alone** (the owner's call of 22 October 2026: "in elot
 ratings get rid of the visual buttons", naming both, "On the Joker: 2022–2025 65% walk-forward" and "ELO Model 2026: 62–29
 re-picked on the Joker after the games (52–39 as first picked), 1–0 picked on the Joker before kickoff (from week 6)"): its

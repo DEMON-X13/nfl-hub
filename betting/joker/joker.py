@@ -10,16 +10,19 @@ into betting/state.json:
     since kickoff, regular season and playoffs),
   processed[gid].joker = {pick, pHome, correct} on graded games,
   state.jokerFit = the weeks of this season the model was fitted on after they were played
-    (model.json, from tune_2026.py), kept as data, with `calls`, the file their calls come from.
+    (model.json, from tune_2026.py), kept as data, with `calls`, the history file(s) their calls come from.
 A game keeps the call it had on the last run before its kickoff (betting/jobkit.py): a closing
 line nflverse posts after that, or a refit, never rewrites a call a reader has already seen.
 
-A game in a file of betting/joker/history/ (2026_w1_w2.json: 2026 weeks 1 and 2) takes its call
-from that file on every run, never from the model, and carries its `src` ('published', the call in
-state.json before its kickoff; 'backtest', called after the games by a model that never saw them)
-into the state and the grade. The model in model.joblib was refitted on those games' results
+A game in a file of betting/joker/history/ takes its call from that file on every run, never from
+the model, and carries its `src` ('published', the call in state.json before its kickoff; 'backtest',
+called after the games by a model that never saw them) into the state and the grade. 2026_w1_w2.json
+holds 2026 weeks 1 and 2: the model in model.joblib was refitted on those games' results
 (tune_2026.py), so its calls on them are fits, not predictions; the owner asked on 12 October 2026
-for the record the Joker really had, and the file holds it (its header says where each came from).
+for the record the Joker really had. 2026_w3_w4.json holds five games of weeks 3 and 4 that moved
+after kickoff before the freeze at kickoff landed (9 October 2026), four on closing lines posted
+after the game began and one with the refit: their calls as published before kickoff, found in the
+check of 25 October 2026 (no pick changed). Each file's header says where each call came from.
 
 Once a final of the season is a day and a half old, the season's team stats and play-by-play are
 required: without them the run refuses, the last good picks stay, state.modelStatus.joker says
@@ -63,7 +66,8 @@ def fetch_pbp(season: int) -> bool:
 
 
 def history_calls(season: int) -> dict:
-    """the Joker's real calls on games its model was later fitted on: {game_id: {pick, pHome, src}}"""
+    """the Joker's real calls from betting/joker/history/ (games its model was later fitted on, and calls
+    restored to what was published before kickoff): {game_id: {pick, pHome, src}}"""
     out = {}
     for f in sorted((HERE / "history").glob(f"{season}_*.json")):
         doc = json.loads(f.read_text(encoding="utf-8"))
@@ -148,7 +152,9 @@ def main():
         if bare:
             raise J.Refuse(f"the model was fitted on week(s) {sorted(fw)} after they were played, and {len(bare)} of their games "
                            f"({', '.join(bare[:3])}) have no real call in betting/joker/history/")
-        fit["calls"] = sorted(f"betting/joker/history/{f.name}" for f in (HERE / "history").glob(f"{season}_*.json"))
+        # the history files that hold the fitted weeks (2026_w3_w4.json holds restored calls, not fitted weeks)
+        fit["calls"] = sorted(f"betting/joker/history/{f.name}" for f in (HERE / "history").glob(f"{season}_*.json")
+                              if fw & {int(w) for w in json.loads(f.read_text(encoding="utf-8")).get("weeks", [])})
     if st.get("jokerFit") != fit:
         if fit:
             st["jokerFit"] = fit

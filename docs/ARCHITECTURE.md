@@ -474,7 +474,9 @@ elo/
                                  before each kickoff (on the Joker's baseline from 19 October
                                  2026, each with its `p_joker`, `p_elo` and `m`; the season's
                                  games before that re-picked on it as backtests, the call first
-                                 made kept in `was`); the record grades these
+                                 made kept in `was`, five of weeks 3-4 done again on the Joker's
+                                 calls as published before kickoff, the re-pick replaced kept in
+                                 `joker_fix`); the record grades these
   requirements.txt               pandas, numpy, tzdata, pinned
 
 news/
@@ -2504,7 +2506,11 @@ model's calls were made before kickoff and stand. `joker.py` refuses a run where
 `fitted_weeks` has a game with no call in a history file, and the smoke test (5n) holds every call
 of the file to the published state and its grade, and every call the last commit's copy of the file
 held to that copy; 5h let such a call move onto the file's once, from the refit's call (which carries
-no `src`), and holds it from then like any other call after its kickoff.
+no `src`), and holds it from then like any other call after its kickoff. A second file,
+`betting/joker/history/2026_w3_w4.json` (25 October 2026), holds five games of weeks 3-4 that moved after kickoff
+before the freeze at kickoff landed (9 October 2026), each as the last commit on main before its kickoff carried it
+(`src: 'published'`); no pick changed, and the ELO Model's re-picks that stood on the moved chances are done again on
+these (`elo/build.py`'s `refix`, `joker_fix` in the ledger).
 Each run also logs, in the job's
 output, any input that has drifted from the scale it was fitted on (`drift.py`). It refuses a season more than
 one past its frozen data.

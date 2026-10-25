@@ -577,9 +577,14 @@ based on what it would have picked"): each such game the Joker has a call for, g
 called again once, after the game, on what was known before its kickoff (the Joker's call as frozen at kickoff, the
 game model fitted before the season on the pre-game ratings and lineups, as any backtest is), marked a backtest,
 with the call first made kept beside it in `was` (in the ledger and on the graded call), so the record grades the
-re-pick and still says what was first picked (`record.repicked` and `repicked_was`): 62-29 where the first picks
-went 52-39, 24 picks turned round, 17 of them right. A game that kicked off after JOKER_FROM is called on the Joker
-before its kickoff and never re-picked.
+re-pick and still says what was first picked (`record.repicked` and `repicked_was`): 61-30 where the first picks
+went 52-39, 23 picks turned round, 16 of them right. A game that kicked off after JOKER_FROM is called on the Joker
+before its kickoff and never re-picked. Five of the re-picks (weeks 3 and 4) first stood on Joker calls that had moved
+after kickoff, before the Joker's call was frozen at kickoff (9 October 2026): betting/joker/history/2026_w3_w4.json put
+those calls back to what was published before kickoff (25 October 2026), and each such re-pick is done again once on
+the restored call, its matchup, game model chance, time and first call kept, the re-pick it replaces in `joker_fix`
+(`refix`, on the state's calls marked src 'published', `joker_published`). One pick turned round, LA at DEN from DEN to
+LA, and the re-picks went from 62-29 to 61-30.
 
 THE SEASON comes from games.csv alone. The newest schedule nflverse has posted is the season
 in play once its first game kicked off UNDER_WAY hours ago; before that (from the spring
@@ -1636,6 +1641,28 @@ def joker_calls(path=None):
     return out
 
 
+def joker_published(path=None):
+    """the Joker's calls its history files restored to what was published before kickoff ({game_id: pHome}): the state's
+    calls marked src 'published' by betting/joker/joker.py (betting/joker/history/), read as joker_calls reads them"""
+    out = {}
+    for gid, c in ((read_json(path or JOKER_STATE) or {}).get('joker') or {}).items():
+        if not isinstance(c, dict) or c.get('src') != 'published':
+            continue
+        p = c.get('pHome')
+        if isinstance(p, (int, float)) and not isinstance(p, bool) and 0 < p < 1:
+            out[gid] = float(p)
+    return out
+
+
+def refix(c, p_joker, home, away, stamp):
+    """a re-pick on the Joker done again on the Joker's call as published before kickoff (THE JOKER BASELINE's re-picks):
+    only the Joker's chance changes, the matchup (m), the game model's own chance, the re-pick's time and source and the
+    first call (`was`) kept as they were, and the re-pick as it stood kept in `joker_fix` with when it was done again"""
+    p = round(on_joker(p_joker, c['m']), 4)
+    return {**c, 'pick': home if p >= 0.5 else away, 'p_home': p, 'p_joker': round(float(p_joker), 4),
+            'joker_fix': {'pick': c['pick'], 'p_home': c['p_home'], 'p_joker': c['p_joker'], 'at': stamp}}
+
+
 def matchup_logit(w, x):
     """the game model's matchup alone: its weights times the lineups' Elo gaps, home field left out"""
     return float(np.dot(w[1:], x))
@@ -1937,6 +1964,7 @@ def main():
     w_grade = fit_before(last)
     # THE JOKER BASELINE: the Joker's chance for every game it has called (betting/state.json)
     joker = joker_calls()
+    jpub = joker_published()
     kick_at = dict(zip(games.game_id, games.kick))
     graded = []
     for r in game_feat:
@@ -1956,6 +1984,13 @@ def main():
             c = ledger[r['game_id']] = {'pick': r['home'] if n['p_home'] >= 0.5 else r['away'], 'p_home': n['p_home'], 'at': stamp,
                                         'src': 'backtest', **{k: n[k] for k in CALL_KEEP if k in n},
                                         'was': {k: c[k] for k in ('pick', 'p_home', 'at', 'src') if k in c}}
+        elif (c.get('was') and c.get('base') == 'joker' and c.get('src') == 'backtest' and r['game_id'] in jpub
+              and c.get('p_joker') != round(jpub[r['game_id']], 4) and kick_at.get(r['game_id']) is not None
+              and kick_at[r['game_id']] < JOKER_FROM):
+            # a re-pick that stood on a Joker call which moved after kickoff, before the Joker's freeze at kickoff (9
+            # October 2026), and which betting/joker/history/ has since put back to what was published before kickoff
+            # (2026_w3_w4.json, 25 October 2026): done again once on that call, the re-pick it replaces in joker_fix
+            c = ledger[r['game_id']] = refix(c, jpub[r['game_id']], r['home'], r['away'], stamp)
         winner = r['home'] if r['result'] > 0 else r['away'] if r['result'] < 0 else None
         graded.append({'game_id': r['game_id'], 'p_home': c['p_home'], 'pick': c['pick'],
                        'correct': None if winner is None else c['pick'] == winner, 'src': c['src'],
