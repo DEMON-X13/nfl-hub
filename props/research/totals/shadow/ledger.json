@@ -19,7 +19,7 @@
   "before": "no verdict before 285: until then the summary gives the running numbers and how many of the 285 are in, never a verdict or a word of passing"
  },
  "bar_registered": "2026-10-11T02:01:51Z",
- "run_at": "2026-10-25T17:12:17Z",
+ "run_at": "2026-10-25T19:54:59Z",
  "fits": {
   "2026": {
    "b0": 1.294144,
@@ -32,29 +32,29 @@
  "summary": {
   "calls": 56,
   "to_come": 19,
-  "frozen_awaiting_final": 7,
-  "graded": 30,
+  "frozen_awaiting_final": 6,
+  "graded": 31,
   "pushes": 0,
   "graded_without_market_price": 0,
-  "compared": 30,
+  "compared": 31,
   "scores": {
    "model": {
-    "brier": 0.247744,
-    "logloss": 0.688631
+    "brier": 0.247091,
+    "logloss": 0.687325
    },
    "market": {
-    "brier": 0.246561,
-    "logloss": 0.686266
+    "brier": 0.246672,
+    "logloss": 0.686488
    },
-   "brier_diff": 0.001183,
+   "brier_diff": 0.00042,
    "brier_diff_ci90": [
-    -0.007042,
-    0.009657
+    -0.00768,
+    0.008723
    ],
-   "logloss_diff": 0.002365,
+   "logloss_diff": 0.000837,
    "logloss_diff_ci90": [
-    -0.014111,
-    0.019338
+    -0.015378,
+    0.017469
    ]
   },
   "picks": {
@@ -65,7 +65,7 @@
    "units": -2.0,
    "at_est_price": 0
   },
-  "standing": "30 of 285 graded games toward the verdict; the bar is judged at 285, not before"
+  "standing": "31 of 285 graded games toward the verdict; the bar is judged at 285, not before"
  },
  "calls": {
   "2026_05_PHI_JAX": {
@@ -1035,7 +1035,14 @@
    "called_at": "2026-10-23T07:53:45Z",
    "frozen": true,
    "frozen_at": "2026-10-25T17:12:17Z",
-   "final": null
+   "final": {
+    "home": 16,
+    "away": 10,
+    "total": 26,
+    "result": "under",
+    "units": null,
+    "graded_at": "2026-10-25T19:54:59Z"
+   }
   },
   "2026_07_MIA_NYJ": {
    "season": 2026,
@@ -1137,17 +1144,17 @@
    "home": "ARI",
    "kickoff": "2026-10-25T20:05:00Z",
    "line": 43.5,
-   "over_odds": -110,
-   "under_odds": -110,
+   "over_odds": -115,
+   "under_odds": -105,
    "p_model": 0.490886,
-   "p_market": 0.5,
+   "p_market": 0.510834,
    "mu": 43.1986,
    "sd": 13.1937,
    "model_total": 44.7058,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-25T17:12:17Z",
+   "called_at": "2026-10-25T19:54:59Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1160,17 +1167,17 @@
    "home": "DET",
    "kickoff": "2026-10-25T20:25:00Z",
    "line": 55.5,
-   "over_odds": -110,
-   "under_odds": -110,
+   "over_odds": -108,
+   "under_odds": -112,
    "p_model": 0.534475,
-   "p_market": 0.5,
+   "p_market": 0.49567,
    "mu": 56.6416,
    "sd": 13.1937,
    "model_total": 50.9337,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-25T17:12:17Z",
+   "called_at": "2026-10-25T19:54:59Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1183,17 +1190,17 @@
    "home": "LV",
    "kickoff": "2026-10-25T20:25:00Z",
    "line": 48.5,
-   "over_odds": -110,
-   "under_odds": -110,
+   "over_odds": -115,
+   "under_odds": -105,
    "p_model": 0.500437,
-   "p_market": 0.5,
+   "p_market": 0.510834,
    "mu": 48.5144,
    "sd": 13.1937,
    "model_total": 48.4422,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-23T07:53:45Z",
+   "called_at": "2026-10-25T19:54:59Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1231,15 +1238,15 @@
    "line": 43.5,
    "over_odds": -118,
    "under_odds": -102,
-   "p_model": 0.471154,
+   "p_model": 0.471898,
    "p_market": 0.517364,
-   "mu": 42.5452,
+   "mu": 42.5699,
    "sd": 13.1937,
-   "model_total": 47.3192,
+   "model_total": 47.2206,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-25T17:12:17Z",
+   "called_at": "2026-10-25T19:54:59Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
