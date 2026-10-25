@@ -3414,8 +3414,15 @@ const ladderBoot = async (x, seeded, how) => {
           `${how}: the builder's rows do not say what the slip does with the pulled legs: ` + slips.join(' | ')); }
       /* nothing kept but in memory, and the key nowhere */
       { d.getElementById('pcDownload').click(); await wait(80);
-        chk(all3(x) === before1 && JSON.stringify(w.eval('S')) === S1json && !/pulled|J3#/.test(JSON.stringify(w.eval('S'))) && JSON.parse(w.localStorage.getItem(ADMIN_KEY)).left === OA.left,
-          `${how}: the pull changed what the browser keeps (or S), beside the admin record's credits left, or that record's credits are not the header's`);
+        const a3 = all3(x), S3 = JSON.stringify(w.eval('S'));
+        /* what moved, said in the failure: the stored keys that differ, and S's top-level fields that differ */
+        const moved = () => { const A = JSON.parse(before1), B = JSON.parse(a3), out = [];
+          for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) if (A[k] !== B[k]) out.push('storage ' + k + (A[k] === undefined ? ' (added)' : B[k] === undefined ? ' (removed)' : ''));
+          const sa = JSON.parse(S1json), sb = JSON.parse(S3);
+          for (const k of new Set([...Object.keys(sa), ...Object.keys(sb)])) if (JSON.stringify(sa[k]) !== JSON.stringify(sb[k])) out.push('S.' + k + ': ' + JSON.stringify(sa[k]).slice(0, 160) + ' -> ' + JSON.stringify(sb[k]).slice(0, 160));
+          return out.join('; '); };
+        chk(a3 === before1 && S3 === S1json && !/pulled|J3#/.test(S3) && JSON.parse(w.localStorage.getItem(ADMIN_KEY)).left === OA.left,
+          `${how}: the pull changed what the browser keeps (or S), beside the admin record's credits left, or that record's credits are not the header's: ` + moved() + ` (credits left ${JSON.parse(w.localStorage.getItem(ADMIN_KEY)).left}, the header's ${OA.left})`);
         chk(!keyIn(x) && !rec3.texts.some(s => s.includes(FAKE_KEY)) && rec3.texts.length > 0, `${how}: the key is in the page, an attribute or the image`); }
       /* (4) three games one leg each: one call, for the passer's game alone (the touchdown pulled under five minutes ago,
          the money line's id the read's); the price a plain product; one link in the card's order */
