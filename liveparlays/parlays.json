@@ -1,6 +1,6 @@
 {
  "how": "X's placed parlays: what X Parlays shows, read only, on the site owner's devices (admin only: the admin link, #owner=<his Odds API key>, makes a browser his; no one else's page has the tab or reads this file, which stays public all the same). Claude keeps this file from the slips the owner sends in chat; the page only reads it, on every load of the owner's browser, so a change here is what his devices see on their next load. A parlay is id (any name not used before), week, stake, price (the American odds it was placed at), payout (what it pays, stake included), note (optional) and legs. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet, total for the game's points. A whole-game bet takes line 0 (the spread for ats), team set to the side you are on, and player set to whatever you want it called; a total takes the line and side over or under. A line the book moved before X placed the bet is written as the line X took. A parlay X has cleared (settled, and no longer wanted on the page) stays here as history with \"cleared\": true and is not drawn. A finished one clears itself: the betting job marks it cleared (cleared_by auto, cleared_on the date) two Eastern days after its last game, once every game has a final in games.csv (liveparlays/tools/autoclear.py), so it shows in full on its game day and the next day. updated is when this file last changed what X Parlays shows.",
- "updated": "2026-10-24T06:23:03Z",
+ "updated": "2026-10-25T01:00:02Z",
  "games": [
   "2026_02_NO_BAL",
   "2026_02_PHI_TEN",
@@ -46,7 +46,13 @@
   "2026_06_ARI_LA",
   "2026_06_DAL_GB",
   "2026_06_WAS_SF",
-  "2026_07_NE_CHI"
+  "2026_07_NE_CHI",
+  "2026_07_KC_SEA",
+  "2026_07_SF_ATL",
+  "2026_07_CLE_TEN",
+  "2026_07_TB_CAR",
+  "2026_07_LA_LV",
+  "2026_07_NYG_HOU"
  ],
  "parlays": [
   {
@@ -2219,6 +2225,143 @@
    "cleared": true,
    "cleared_on": "2026-10-24",
    "cleared_by": "auto"
+  },
+  {
+   "id": "w7-dk-kcsea-4",
+   "week": 7,
+   "stake": 1,
+   "price": 800,
+   "payout": 9.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 45,
+     "player": "AJ Barner",
+     "team": "SEA",
+     "stat": "receiving_yards",
+     "line": 24.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 45,
+     "player": "Cooper Kupp",
+     "team": "SEA",
+     "stat": "receptions",
+     "line": 2.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 45,
+     "player": "Patrick Mahomes",
+     "team": "KC",
+     "stat": "passing_yards",
+     "line": 218.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 45,
+     "player": "Sam Darnold",
+     "team": "SEA",
+     "stat": "passing_yards",
+     "line": 223.5,
+     "side": "under",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w7-dk-ml-4",
+   "week": 7,
+   "stake": 1,
+   "price": 666,
+   "payout": 7.66,
+   "legs": [
+    {
+     "game": 46,
+     "player": "49ers",
+     "team": "SF",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 47,
+     "player": "Browns",
+     "team": "CLE",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 48,
+     "player": "Panthers",
+     "team": "CAR",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 49,
+     "player": "Rams",
+     "team": "LA",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w7-dk-sgpx-4-boost",
+   "week": 7,
+   "stake": 1,
+   "price": 1391,
+   "payout": 14.91,
+   "note": "SGPx · +30% boost",
+   "legs": [
+    {
+     "game": 46,
+     "player": "Brock Purdy",
+     "team": "SF",
+     "stat": "passing_yards",
+     "line": 262.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 46,
+     "player": "Kyle Pitts Sr.",
+     "team": "ATL",
+     "stat": "receiving_yards",
+     "line": 33.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 50,
+     "player": "Isaiah Likely",
+     "team": "NYG",
+     "stat": "receiving_yards",
+     "line": 40.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 50,
+     "player": "Malik Nabers",
+     "team": "NYG",
+     "stat": "receiving_yards",
+     "line": 68.5,
+     "side": "under",
+     "main": true
+    }
+   ]
   }
  ]
 }
