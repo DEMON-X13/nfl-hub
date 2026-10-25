@@ -481,7 +481,9 @@ if (!html.includes(anchor)) throw new Error('could not find the main script star
    elo/data/model.json. (The record's chart and week-by-week table are record_viz.js's, which
    draws the Elo model itself.) The same two lines add a column for each friend with picks that
    week (record_viz.js's rvFriends(), from window.FRIENDS: the owner's call of 15 October 2026),
-   after Vegas, each the friend's pick where it counts. Each edit must land exactly once, so a change to the app that
+   after Vegas, each the friend's pick where it counts. Vegas's own column is called as the record's
+   tiles, legend and chart call it (record_viz.js's rvVegasPick: the closing moneylines with the margin
+   out, else the spread), where the app took the spread alone. Each edit must land exactly once, so a change to the app that
    moves these lines stops the build rather than dropping the Elo model from the grid. The
    app file itself is not touched: it is the source shipped from nfl-model-lab. */
 const patch = (from, to, what) => {
@@ -506,7 +508,8 @@ patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB
   const cols=[['Alpha Model','#1F6F4A'],...(showAll?[['The Joker','#C0392B'],['ELO Model','#E8730A'],['Vegas','#0F1B2D']]:[]),...fr.map(f=>[String(f.name).replace(/[<>&"]/g,''),f.color]),['You','#C98B0F']];`, 'the pick grid columns');
 patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
 `    const ek=(done&&done.elo)||elo[g.game_id]||null;
-    const picks=[pr?pr.pick:null,...(showAll?[jk?jk.pick:null,ek?ek.pick:null,vg]:[]),...fr.map(f=>{ const x=f.weeks[w].find(p=>p.gid===g.game_id); return x?x.pick:null; }),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
+    const vgO=rvVegasPick({home:g.home_team,away:g.away_team,line:g.spread_line==null?null:+g.spread_line},(S.odds||{})[g.game_id]);
+    const picks=[pr?pr.pick:null,...(showAll?[jk?jk.pick:null,ek?ek.pick:null,vgO]:[]),...fr.map(f=>{ const x=f.weeks[w].find(p=>p.gid===g.game_id); return x?x.pick:null; }),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
 patch(`  let html='<div class="pickgrid"><table><thead><tr><th>Game</th>'`,
 `  let html='<div class="pickgrid"><table style="min-width:'+(176+76*cols.length)+'px"><thead><tr><th>Game</th>'`, 'the pick grid\'s even columns');
 patch(`  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';

@@ -6624,7 +6624,8 @@ async function snapshotChecks() {
   const poOf = t => { const r = [0, 0, 0];
     for (const g of st.schedule) if (g.result != null && !reg(g) && (g.home_team === t || g.away_team === t)) { const m = g.home_team === t ? g.result : -g.result; r[m > 0 ? 0 : m < 0 ? 1 : 2]++; }
     return r[0] + r[1] + r[2] ? r[0] + '-' + r[1] + (r[2] ? '-' + r[2] : '') : ''; };
-  const tRank = t => Object.entries(eloM.teams || {}).sort((a, b) => b[1].elo - a[1].elo).findIndex(([k]) => k === t) + 1;
+  /* clubs level on the Elo shown share its rank: one more than the clubs above it (since 25 October 2026) */
+  const tRank = t => 1 + Object.values(eloM.teams || {}).filter(v => v.elo > eloM.teams[t].elo).length;
   const im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
   const unitsOn = !!(eloM.units && eloM.units.off && Object.values(eloM.units.off).some(v => v.games || v.carried));
   /* every model's call on a game, from the files: the graded one, else the one published */
@@ -8058,7 +8059,10 @@ async function friendsChecks() {
   const at = [['2026-10-15', '20:15'], ['2026-10-18', '13:00'], ['2026-10-18', '16:25'], ['2026-10-19', '20:15']];
   const kick = ['2026-10-16T00:15:00.000Z', '2026-10-18T17:00:00.000Z', '2026-10-18T20:25:00.000Z', '2026-10-20T00:15:00.000Z'];
   const res = [7, -3, null, 0];
-  games.forEach((g, i) => { g.gameday = at[i][0]; g.gametime = at[i][1]; g.spread_line = 3;
+  /* each game's closing moneylines name the spread's favourite too, the home side, so Vegas's pick is the home side
+     by either reading (the record calls it on the moneylines first since 25 October 2026) */
+  st.odds = Object.assign({}, st.odds || {});
+  games.forEach((g, i) => { g.gameday = at[i][0]; g.gametime = at[i][1]; g.spread_line = 3; st.odds[g.game_id] = { home: -150, away: 130, src: 'stand-in' };
     if (res[i] == null) { g.result = null; g.home_score = null; g.away_score = null; delete st.processed[g.game_id]; return; }
     Object.assign(g, { result: res[i], home_score: 20 + Math.max(0, res[i]), away_score: 20 - Math.min(0, res[i]) });
     st.processed[g.game_id] = { week: Wk, home: g.home_team, away: g.away_team, pick: g.home_team, conf: 0.6, margin: 3, pHome: 0.6, blended: false,
@@ -8074,7 +8078,7 @@ async function friendsChecks() {
     { name: 'Bo', weeks: { ['w' + Wk]: { saved_at: kick[1], tiebreaker: null,
       picks: { [g1.game_id]: pk(A(g1)), [g2.game_id]: pk(A(g2), kick[1]), [g3.game_id]: pk(H(g3)) } } } },
     { name: 'Cy', weeks: { ['w' + Wk]: { saved_at: early, tiebreaker: null, picks: { [g3.game_id]: pk(H(g3)) } } } }] };
-  /* worked out by hand: Vegas picks the home side (line 3) and is right on g1, wrong on g2.
+  /* worked out by hand: Vegas picks the home side (line 3, -150 to +130) and is right on g1, wrong on g2.
      Ann: g1 won, g2 lost, g3 pending, g4 a tie (nobody): 1-1, 1 pending, against Vegas 0.
      Bo: g1 lost, g2 saved at kickoff (not counted), g3 pending: 0-1, 1 pending, against Vegas -1.
      Cy: g3 pending alone: no line on the chart. */
@@ -8452,7 +8456,7 @@ async function glanceChecks() {
   const recOwn = (t, sched = STATE.schedule) => { const reg = g => g.game_type ? g.game_type === 'REG' : +g.week <= 18, r = [0, 0, 0]; let n = 0;
     for (const g of sched) if (g.result != null && (g.home_team === t || g.away_team === t) && reg(g)) { n++; const m = g.home_team === t ? g.result : -g.result; r[m > 0 ? 0 : m < 0 ? 1 : 2]++; }
     const f = (MO.teams && MO.teams[t] && MO.teams[t].record) || [0, 0, 0], x = n >= f[0] + f[1] + f[2] ? r : f; return x[0] + '-' + x[1] + (x[2] ? '-' + x[2] : ''); };
-  const prRank = t => Object.entries(MO.teams || {}).sort((x, y) => y[1].elo - x[1].elo).findIndex(x => x[0] === t) + 1;
+  const prRank = t => 1 + Object.values(MO.teams || {}).filter(v => v.elo > MO.teams[t].elo).length;
   /* every model's call as the Game snapshot reads it: Vegas (the moneylines with the margin out, else the spread), Alpha
      (graded, else frozen at kickoff), the Joker, the ELO Model (graded, else this season's next) */
   const callsOwn = g => { const gid = g.game_id, pr = (STATE.processed || {})[gid], ak = (STATE.atKickoff || {})[gid], one = x => x && x.pick ? { pick: x.pick, pHome: x.pHome != null ? +x.pHome : null } : null;

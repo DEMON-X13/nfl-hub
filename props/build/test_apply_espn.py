@@ -35,6 +35,12 @@ a credit; the last one boots the real page in jsdom.
      games are the published payload's last week's first three with their scores taken off, so it holds once every game
      has been played (the off-season) as well as mid-season
 
+  N. espn_close (app v136): a game that kicked off gets DraftKings' main lines as the last published read had them
+     before its kickoff (no rung, touchdown or game line), or this run's read where later and still before it; nothing
+     read at or after the kickoff; an entry carried as it stands and never replaced; a game still to come never in it;
+     a junk entry, another season's game or a bad line dropped; nothing carried across a rollover; and payload.py
+     never carries it
+
     python3 props/build/test_apply_espn.py        must end "0 failures"
 """
 import contextlib, copy, datetime, io, json, os, re, shutil, subprocess, sys, tempfile, types
@@ -46,6 +52,8 @@ UTC = datetime.timezone.utc
 S = W.SEASON
 NOW = datetime.datetime(2026, 10, 21, 12, 0, tzinfo=UTC)          # a Wednesday
 RULES = W.espn_rules()
+keep_real = W.espn_close_seed
+W.espn_close_seed = lambda path=None: {}          # the cases hand a seed where one is meant (N); the real file is not theirs
 NOT_POSTED = re.compile(r'^\s*\S+: not posted yet \(', re.M)
 
 checks = []
@@ -332,11 +340,74 @@ def l():
     # payload.py's own carry, from its retired set to the end of its loop, run on a published payload holding a read
     start = src.index('_RETIRED='); end = src.index('\n', src.index('for _k,_v in _prev.items():'))
     end = src.index('\n', end + 1)
-    ns = {'_prev': {'espn': {'v': 1, 'games': {'x': 1}}, 'roster_season': 2025, 'kept': 1, 'mkt': 'new'}, 'out': {'mkt': 'built'}}
+    ns = {'_prev': {'espn': {'v': 1, 'games': {'x': 1}}, 'espn_close': {'v': 1, 'weeks': {}}, 'roster_season': 2025, 'kept': 1, 'mkt': 'new'}, 'out': {'mkt': 'built'}}
     exec(src[start:end], ns)
-    chk('espn' not in ns['out'] and ns['out'].get('kept') == 1 and ns['out']['mkt'] == 'built' and 'roster_season' not in ns['out'],
-        f"L: payload.py's carry keeps what it does not rebuild, but never espn: {sorted(ns['out'])}")
+    chk('espn' not in ns['out'] and 'espn_close' not in ns['out'] and ns['out'].get('kept') == 1 and ns['out']['mkt'] == 'built' and 'roster_season' not in ns['out'],
+        f"L: payload.py's carry keeps what it does not rebuild, but never espn or espn_close: {sorted(ns['out'])}")
 case('L', l)
+
+# ---------------------------------------------------------------------------------------------------------- N
+def n():
+    LV, NYJ = gid('LA', 'LV'), gid('NYJ', 'NE', 6)
+    ko = W.kickoff(G(pay(), LV)); before = iso(ko - datetime.timedelta(hours=9)); at_ko = iso(ko)
+    main = {'00-0039851': {'passing_yards': 248.5, 'passing_tds': 1.5}, '00-0036275': {'rushing_yards': 61.5}}
+    def pv(games, close=None, season=S):
+        x = prev(games, season); x['espn_close'] = close if close is not None else {'v': 1, 'weeks': {}}; return x
+    # the published read of a game that has kicked off since: its main lines kept, nothing else
+    p = pay(); notes, _ = apply(p, pv({LV: {'w': '7', 'gl': gl(before), 'pl': block(before), 'out': {'st': 'ok', 'at': before}}}), None)
+    C = p['espn_close']
+    chk(C == {'v': 1, 'weeks': {'7': {LV: {'at': before, 'lines': main}}}}, f"N: a game kicked off since keeps the published read's main lines, no rung, touchdown or game line: {C}")
+    chk(any('kept for 1 game(s) played this season, 1 new' in x for x in notes), f'N: the report says it: {notes}')
+    chk(LV not in p['espn']['games'], 'N: and the game leaves espn as before')
+    # this run's read of it, later and still before the kickoff, wins; one at or after the kickoff never
+    later = iso(ko - datetime.timedelta(hours=1))
+    p = pay(); apply(p, pv({LV: {'w': '7', 'pl': block(before), 'out': {'st': 'ok', 'at': before}}}), read({LV: rg('ok', block(later, lines={'00-0036275': {'rushing_yards': 59.5}}), at=later)}))
+    chk(p['espn_close']['weeks']['7'][LV] == {'at': later, 'lines': {'00-0036275': {'rushing_yards': 59.5}}}, f"N: this run's later read before the kickoff is kept: {p['espn_close']}")
+    p = pay(); apply(p, pv({LV: {'w': '7', 'pl': block(at_ko), 'out': {'st': 'ok', 'at': at_ko}}}), read({LV: rg('ok', block(at_ko), at=at_ko)}))
+    chk(p['espn_close'] == {'v': 1, 'weeks': {}}, f"N: nothing read at or after the kickoff is kept: {p['espn_close']}")
+    # a 'none' published (no player lines posted) keeps nothing; a game still to come is never in it
+    p = pay(); apply(p, pv({LV: {'w': '7', 'out': {'st': 'none', 'at': before}}, TNF: {'w': '7', 'pl': block(ago(5)), 'out': {'st': 'ok', 'at': ago(5)}}}), None)
+    chk(p['espn_close'] == {'v': 1, 'weeks': {}} and TNF in p['espn']['games'], f"N: a 'none' keeps nothing and a game to come stays in espn alone: {p['espn_close']}")
+    # carried as it stands, never replaced by a later published read; junk dropped
+    kept = {'at': iso(ko - datetime.timedelta(hours=20)), 'lines': {'00-0039851': {'passing_yards': 240.5}}}
+    old6 = {'at': '2026-10-18T12:00:00.000Z', 'lines': {'00-0036275': {'receptions': 3.5, 'rushing_yards': 0.3, 'carries': 1001}}}
+    junk = {'7': {LV: kept, '2025_07_LA_LV': kept, 'not_an_id': kept}, '6': {NYJ: old6, gid('BUF', 'MIA', 6): {'at': 'never', 'lines': main}}, 'x': {}}
+    p = pay(); apply(p, pv({LV: {'w': '7', 'pl': block(before), 'out': {'st': 'ok', 'at': before}}}, {'v': 1, 'weeks': junk}), None)
+    W7, W6 = p['espn_close']['weeks'].get('7', {}), p['espn_close']['weeks'].get('6', {})
+    chk(W7 == {LV: kept}, f"N: a kept entry is carried as it stands and never replaced, another season's or a junk id dropped: {W7}")
+    chk(W6 == {NYJ: {'at': old6['at'], 'lines': {'00-0036275': {'receptions': 3.5}}}} and list(p['espn_close']['weeks']) == ['6', '7'],
+        f"N: a carried entry cleaned by the page's rules, one with no time dropped, the weeks in order: {p['espn_close']['weeks']}")
+    for bad in ({'v': 2, 'weeks': junk}, 'junk', None, {'v': 1, 'weeks': []}):
+        p = pay(); apply(p, pv({}, bad), None)
+        chk(p['espn_close'] == {'v': 1, 'weeks': {}}, f'N: a kept table that is not one carries nothing: {bad!r:.40}')
+    # the seed (espn_close_seed.py's recovery from git) fills a game kept nowhere else, read before the kickoff, and
+    # never replaces a kept entry or wins over a later read
+    keep_seed = W.espn_close_seed
+    try:
+        W.espn_close_seed = lambda path=None: {'7': {LV: {'at': before, 'lines': {'00-0039851': {'passing_yards': 239.5, 'rushing_yards': 0.2}}}}}
+        p = pay(); apply(p, pv({}), None)
+        chk(p['espn_close']['weeks'] == {'7': {LV: {'at': before, 'lines': {'00-0039851': {'passing_yards': 239.5}}}}}, f"N: the seed fills a game kept nowhere else, cleaned: {p['espn_close']}")
+        p = pay(); apply(p, pv({}, {'v': 1, 'weeks': {'7': {LV: kept}}}), None)
+        chk(p['espn_close']['weeks']['7'][LV] == kept, 'N: the seed never replaces a kept entry')
+        p = pay(); apply(p, pv({LV: {'w': '7', 'pl': block(later), 'out': {'st': 'ok', 'at': later}}}), None)
+        chk(p['espn_close']['weeks']['7'][LV]['at'] == later, "N: a later published read wins over the seed")
+        W.espn_close_seed = lambda path=None: {'7': {LV: {'at': at_ko, 'lines': main}}}
+        p = pay(); apply(p, pv({}), None)
+        chk(p['espn_close'] == {'v': 1, 'weeks': {}}, 'N: a seed read at the kickoff is never kept')
+    finally:
+        W.espn_close_seed = keep_seed
+    # espn_close_seed itself: no file, junk, another season's give nothing; this season's weeks come back
+    with tempfile.TemporaryDirectory() as td:
+        f = os.path.join(td, 's.json')
+        for body, want in (('{', {}), (json.dumps({'v': 1, 'season': S - 1, 'weeks': {'7': {}}}), {}), (json.dumps({'v': 2, 'season': S, 'weeks': {'7': {}}}), {}),
+                           (json.dumps({'v': 1, 'season': S, 'weeks': {'7': {LV: kept}, '8': 'x'}}), {'7': {LV: kept}})):
+            open(f, 'w').write(body)
+            chk(keep_real(f) == want, f'N: espn_close_seed reads {body[:50]!r} as {want}')
+        chk(keep_real(os.path.join(td, 'none.json')) == {}, 'N: espn_close_seed with no file gives nothing')
+    # a rollover: the published payload another season's carries nothing
+    p = pay(); apply(p, pv({LV: {'w': '7', 'pl': block(before), 'out': {'st': 'ok', 'at': before}}}, {'v': 1, 'weeks': {'6': {NYJ: old6}}}, season=S - 1), None)
+    chk(p['espn_close'] == {'v': 1, 'weeks': {}}, f"N: nothing carried across a rollover: {p['espn_close']}")
+case('N', n)
 
 # ---------------------------------------------------------------------------------------------------------- M
 BOOT = r"""
