@@ -755,9 +755,12 @@ async function xbetLog() {
             if (d === 0 ? txt !== '·' : txt !== (d > 0 ? '▲' : '▼') + Math.abs(d)) bad.push(`${tm}'s arrow reads "${txt}", the ranks move ${d}`); } });
         check(!bad.length, `admin: Team Rankings' ranks (${tag}) are not shared on a tie: ` + bad.slice(0, 4).join('; ')); };
       rankHeld(want, 'the real file');
-      { const W = a.window, keepT = W.__eloTeams, TT = JSON.parse(JSON.stringify(keepT)), ord = Object.keys(TT).sort((x, y) => TT[y].elo - TT[x].elo);
-        /* a club with clear air above it and two below: the next one made level with it, rated a hair higher */
-        const E = k => TT[ord[k]].elo, i = [...ord.keys()].find(k => k > 0 && k + 2 < ord.length && E(k - 1) > E(k) && E(k) > E(k + 1) && E(k + 1) > E(k + 2));
+      { const W = a.window, keepT = W.__eloTeams, TT = JSON.parse(JSON.stringify(keepT)), ord = Object.keys(TT).sort((x, y) => (TT[y].elo - TT[x].elo) || x.localeCompare(y));
+        /* on a table of its own, every club 10 apart (so it holds at a rollover, every club 1500, and on any
+           order the real file has, the review of 25 October 2026): the third club made level with the second,
+           rated a hair higher */
+        ord.forEach((t, k) => { TT[t].elo = 1700 - 10 * k; TT[t].p_avg = +(0.8 - 0.01 * k).toFixed(4); TT[t].before = 1700 - 10 * k + (k % 2 ? 4 : -4); });
+        const E = k => TT[ord[k]].elo, i = 1;
         TT[ord[i + 1]].elo = E(i); TT[ord[i + 1]].p_avg = TT[ord[i]].p_avg + 0.0001; W.__eloTeams = TT; W.eval('ratingsViz()');
         const at = [...rt.querySelectorAll('table.rt-v tbody tr')].slice(i, i + 3).map(tr => tr.children[0].textContent.trim() + ' ' + tr.children[1].textContent.trim().split(/\s+/)[0]);
         check(at[0] === (i + 1) + ' ' + ord[i + 1] && at[1] === (i + 1) + ' ' + ord[i] && at[2] === (i + 3) + ' ' + ord[i + 2], `admin: two clubs level on the Elo shown do not share #${i + 1}, the one rated higher first, the next #${i + 3}: ` + at.join(', '));

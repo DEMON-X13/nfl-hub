@@ -372,9 +372,10 @@ the numbers frozen before kickoff) read their lines from the paid pull's `PAY.mk
 October 2026) Week 7 read 0-0 with Thursday's game final, and the season stood at week 6's 1302-1203. Now, when a game
 kicks off, `apply_espn` keeps DraftKings' main lines as the last published read had them before kickoff in the payload's
 `espn_close`, `{v:1, weeks:{w:{gid:{at, lines:{pid:{stat:line}}}}}}`: from the published payload's `espn` block for the
-game, this run's read of a game that kicked off during it, or `props/data/espn_close_seed.json` (whichever was read
-latest, each only before the kickoff), frozen once made, carried run to run within the season (nothing across a
-rollover; `payload.py` never carries it, `_REDERIVED`), cleaned by the page's rules, main lines alone (no rung,
+game or `props/data/espn_close_seed.json` (whichever was read latest, each only before the kickoff; never this run's own
+read, which no visitor saw, the review of 25 October 2026), frozen once made, carried run to run within the season
+(nothing across a rollover, nor a game carried that is to come again or whose kept read is at or after its kickoff as it
+now stands, a game postponed or moved later; `payload.py` never carries it, `_REDERIVED`), cleaned by the page's rules, main lines alone (no rung,
 touchdown, game line or price). `props/build/espn_close_seed.py`, run by hand with history back to 19 October (`git fetch
 --shallow-since=2026-10-19 origin main`), recovered the games played before this from the last payload committed before
 each kickoff (week 7's Patriots at Bears, 60 lines on 20 players read 7 hours before kickoff); the job takes a game from
@@ -382,8 +383,10 @@ the seed only where it keeps none. On the page `closeLine(gid, pid, stat)` reads
 grade the model's side of it where the paid pull wrote no main line (the paid line first, so weeks 1 to 6 are as they
 were). It is a line, never a price: its row carries no `ml` or `imp`, so the hidden Track Record's "against the book" and
 market + form leave it out, and the pills count it. Held by `test_apply_espn.py`'s N (kept, read at the kickoff, later
-read winning, never replaced, a 'none', a game to come, junk, the seed and its reader, a rollover, the carry) and the
-audit's G3b, blocking (the real table's shape: games of this season played, read before kickoff, valid lines; and on a
+read winning, never replaced, a 'none', a game to come, junk, the seed and its reader, a rollover, the carry, this run's
+own read never taken, a carried game to come again or kept at its moved kickoff dropped) and the audit's G3b, blocking
+(the real table's shape: games of this season kicked off by the payload's `baked_at`, the run's own clock, since the
+audit sets the page's clock back on a Monday night; read before kickoff, valid lines; and on a
 planted week-1 final the kept line frozen with the model's chance at it, graded on the model's side with no price,
 counted by the week's pill, a paid line winning, another game's and junk never read).
 
@@ -1571,7 +1574,7 @@ legend and the grid and 58-35 on the tile, and every model's line against Vegas 
 +4 for +5, the ELO Model +5 for +6). A week's header in the grid counts every game played, a tie among it (week 5 read
 "14 games" of 15). Team Rankings lists clubs level on the Elo shown by the rating behind it (`p_avg`) and gives them one
 rank, one more than the clubs above them, as the ELO tab's tables do since 22 October 2026, and the rank arrows read
-those ranks (KC was #1 over SF at 1590 though SF rated higher, its arrow ▲3 for ▲4); the Game snapshot's and the matchup
+those ranks (SF and KC, level at 1590, read #2 and #1, and SF's arrow ▼1 and CHI's ▲1 where neither had moved); the Game snapshot's and the matchup
 bubble's Power Rating rank (`teamsOf` in `snapshot.html`) the same. The betting smoke holds all of it, on a game planted
 with its spread and moneylines apart and a table with two clubs made level, and the nflbets smoke's own rank readers
 follow. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record, every model's every week drawn alike), which the build puts in front of the app's script and `renderRecord()` calls last. Friends stand beside the models there (see "Friends' picks" below).  The X Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total, with no Note column since 22 October 2026 (the owner's call: "in x bet log please remove the note column section"; a week's `note` stays in the file, unshown, and the nflbets smoke holds the column gone and a note's markup drawn nowhere); the weeks and the deposit are X's, from `liveparlays/xbets.json` (see "X's parlays and the X Bet Log" below), read only, on the site owner's devices alone since 20 October 2026 (the admin link; on a visitor's page `XBETS.enabled()` is false, the frame is not read only and keeps the browser's own log, which no tab of the hub shows) (with no deposit in the file it is X's profit against break even, no balance), and the chosen view is each viewer's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates daily, queued at 12:40 UTC, plus Saturday 20:40 and Sunday 03:40 UTC
