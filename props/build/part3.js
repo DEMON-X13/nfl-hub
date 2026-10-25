@@ -2505,7 +2505,11 @@ function bvnLower(h,k,r){
   for(let i=0;i<10;i++){ const t=a*(PB_GLX[i]+1)/2, c=Math.cos(t); s+=PB_GLW[i]*Math.exp(-(h*h-2*h*k*Math.sin(t)+k*k)/(2*c*c)); }
   return Math.max(0,gbNorm(h)*gbNorm(k)+s*a/(4*Math.PI));
 }
-const pbId=l=>l.key+'|'+l.side+'|'+l.k;
+/* (app v135) a leg's id kept with the leg (checked against its key, side and line, so one whose line moved is worked
+   afresh): the same string, hashed once for the search's maps */
+const PB_IDS=new WeakMap();
+const pbId=l=>{ const c=PB_IDS.get(l); if(c&&c[0]===l.key&&c[1]===l.side&&c[2]===l.k) return c[3];
+  const s=l.key+'|'+l.side+'|'+l.k; PB_IDS.set(l,[l.key,l.side,l.k,s]); return s; };
 /* the chance every leg lands, each leg's chance from pf: the legs' own, times each moving pair's lift */
 function pbJoint(legs,pf,memo){
   let p=1; for(const l of legs) p*=pf(l);
@@ -2540,8 +2544,16 @@ function pbBeam(pools,floor,by,width,memo){
   let beam=[{legs:[],id:''}];
   for(let s=0;s<pools.length;s++){
     const next=new Map();
-    for(const b of beam) for(const c of pools[s]){ if(!pbFits(b.legs,c)) continue;
-      const e=pbEval([...b.legs,c],memo); if(next.has(e.id)||(floor&&e.pr<floor*0.9)) continue; next.set(e.id,e); }
+    for(const b of beam){
+      /* (app v135) each candidate's id is the parent's ids, already sorted, with the new leg's put in its place (the string
+         pbEval would make), and a parlay scored already is taken from the memo by it */
+      const bi=b.ids||(b.ids=b.legs.map(pbId).sort());
+      for(const c of pools[s]){ if(!pbFits(b.legs,c)) continue;
+        const ci=pbId(c); let lo=0, hi=bi.length; while(lo<hi){ const m=(lo+hi)>>1; if(bi[m]<ci) lo=m+1; else hi=m; }
+        const ids=bi.slice(0,lo); ids.push(ci); for(let t=lo;t<bi.length;t++) ids.push(bi[t]);
+        const id=ids.join(','); if(next.has(id)) continue;
+        let e=memo.get(id); if(!e||typeof e!=='object') e=pbEval([...b.legs,c],memo);
+        if(next.has(e.id)||(floor&&e.pr<floor*0.9)) continue; if(!e.ids) e.ids=ids; next.set(e.id,e); } }
     if(!next.size) return [];
     beam=[...next.values()].sort((a,b)=>(b[by]-a[by])||a.id.localeCompare(b.id)).slice(0,width);
   }
@@ -3123,7 +3135,7 @@ const SP_SEARCH={cap:60,beam:200,wide:400,likely:4,final:10};
 /* (app v121) the Sunday slot has no search of its own: each of its games' sets is built as a night game's is (spSet),
    and each of its levels is the best of theirs (spSlotBuild) */
 const SP_NIGHT={4:'Thursday night',0:'Sunday night',1:'Monday night'};
-let SP_CACHE=new Map(), SP_SHOWN=null;
+let SP_CACHE=new Map(), SP_SHOWN=null, SP_SOFT=null;
 function spDow(g){ return g&&g.d?new Date(g.d+'T12:00:00Z').getUTCDay():null; }
 function spPrime(g){ const d=spDow(g); return d!=null&&SP_NIGHT[d]!=null&&typeof g.t==='string'&&/^\d\d:\d\d$/.test(g.t)&&g.t>='19:00'; }
 /* the week's prime-time games still to kick off (and with no score), in kickoff order */
@@ -3497,18 +3509,55 @@ function spSlotHtml(on){
 function spSetsHtml(on){ return spSecHtml('all','')+(spDayOff()?'':spSecHtml('slot',spSlotHtml(on)))+spSecHtml('night',spNightHtml(on)); }
 function renderSp(){
   const el=$('spPanel'); if(!el||!S||!S.sched) return;
+  SP_SOFT=null;   /* (app v135) drawn whole: a run of spOpenSoft still going has nothing left to do */
   /* the frame once (app v118: the Elo picks are in each unit now, no longer a section of their own at the foot) */
   if(!$('spSets')) el.innerHTML='<div class="card pb sp" id="spCard"><div id="spHead"></div><div id="spSets"></div></div>';
   const tab=$('tab-suggest'), on=!tab||!tab.hidden;
   $('spHead').innerHTML=spHeadHtml(); $('spSets').innerHTML=spSetsHtml(on);
   SP_SHOWN=spState();
 }
+/* (app v135) what opening the tab has still to build, a step a game: each live unit's games (a night game, or each game
+   of the Sunday slot), its own set (spSet, the cache the slot's levels are taken from) and its Elo picks on that game
+   alone ('in this game', as eloUnit builds them for a night game and the slot builds them a game at a time), each only
+   where it is not built yet; a unit locked or under way builds nothing new (the record's set) */
+function spWarmSteps(){
+  const steps=[], now=Date.now(), units=[...(spDayOff()?[]:[spSlotNext()].filter(u=>u&&u.up)),...spOn()];
+  for(const u of units){
+    const lock=spLockAt(u); if(lock!=null&&now>=lock) continue;
+    for(const x of (u.slot?u.games:[u])){ const g=spUnit(x.id); if(!g) continue;
+      if(!SP_CACHE.has(spSig(g))) steps.push(()=>spSet(g.id));
+      if(spEloOn()){ let k=null; try{ k=window.eloUnit([g.id],{where:'in this game',kept:true}); }catch(e){ k=null; }
+        if(k&&k.wait) steps.push(()=>window.eloUnit([g.id],{where:'in this game'})); } } }
+  return steps;
+}
+/* (app v135) the tab opened without holding the page: drawn at once with the record and a line saying the sets are being
+   built, then each step in a task of its own, the page free between them, and drawn whole from those caches (renderSp,
+   the same HTML as drawing it at once). Leaving the tab stops it, and any other draw of the tab ends it. null where
+   nothing is left to build (then the caller draws the tab at once); else a promise of true once drawn, false if stopped */
+function spOpenSoft(){
+  if(!$('spPanel')||!S||!S.sched) return null;
+  const steps=spWarmSteps(); if(!steps.length) return null;
+  if(!$('spSets')) renderSp();
+  const run={steps}; SP_SOFT=run;
+  $('spHead').innerHTML=spHeadHtml();
+  $('spSets').innerHTML=spSecHtml('all','')+'<p class="pb-none sp-building" data-sp-building role="status">Building the sets…</p>';
+  return new Promise(done=>{
+    const next=()=>{
+      if(SP_SOFT!==run){ done(false); return; }
+      const tab=$('tab-suggest'); if(tab&&tab.hidden){ SP_SOFT=null; done(false); return; }
+      const f=run.steps.shift();
+      if(f){ try{ f(); }catch(err){ console.error(err); } setTimeout(next,0); return; }
+      SP_SOFT=null; try{ renderSp(); }catch(err){ console.error(err); } done(true); };
+    const first=()=>setTimeout(next,0);
+    if(typeof requestAnimationFrame==='function') requestAnimationFrame(first); else first();
+  });
+}
 /* the tab opened: its sets built and drawn (the prop model's tab switch has shown the section by the time
-   the click reaches the document) */
+   the click reaches the document); by the reader's own click or key, without holding the page (spOpenSoft) */
 if(typeof document!=='undefined') document.addEventListener('click',e=>{
   const b=e.target&&e.target.closest?e.target.closest('#tabs button[data-tab="suggest"]'):null;
-  if(b&&typeof S==='object'&&S&&S.sched) try{ renderSp(); }catch(err){ console.error(err); } });
-Object.assign(window,{spDayOff,SP_SHOW,spPrime,spGames,spNight,spOn,spOnAll,spOpenAt,spSlotUnit,spSlotNext,spUnit,spLockAt,spSet,spEloSet,spRebuild,spOutWhy,spTierOut,spShown,spTier,renderSp});
+  if(b&&typeof S==='object'&&S&&S.sched) try{ if(!(e.isTrusted&&spOpenSoft())) renderSp(); }catch(err){ console.error(err); } });
+Object.assign(window,{spOpenSoft,spWarmSteps,spDayOff,SP_SHOW,spPrime,spGames,spNight,spOn,spOnAll,spOpenAt,spSlotUnit,spSlotNext,spUnit,spLockAt,spSet,spEloSet,spRebuild,spOutWhy,spTierOut,spShown,spTier,renderSp});
 /* exactly these legs into the builder, in its own order, so it prices them as the tier did */
 function pbPut(legs,what){
   const L=pbOrder(legs), have=Object.keys(S.parlay||{});

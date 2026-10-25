@@ -1125,7 +1125,10 @@ at Rams, 26 legs, 1.1 s against 1.0 s at the panel's widths, the same four parla
 1.45 s), most of it the real sums' draws, so a hidden tab draws only a set already built and says "Built when this
 tab is open." for the rest. A set is cached in `SP_CACHE` on `spSig(g)` (the game, its kickoff and `pbDataSig`, so
 a publish, the Elo files arriving and a press, `ESPN_SEQ`, rebuild it); the searches are seeded, so the same data
-gives the same set. The audit's M and the smoke hold the engine's likeliest level (and Safe's pair) to its word:
+gives the same set. Since app v135 (`patch_fast_tabs.py`) `parlayProb` keeps its seeded trials' normals and its answers
+on `parlayProb.cache` (the same answers to the bit, an eighth of the time), and the tab opened by the reader's own click is
+drawn at once with "Building the sets…" and built a game at a time (`spOpenSoft`, `spWarmSteps`) before `renderSp` draws it
+from the caches; a check's `.click()` draws it at once as before. The audit's M and the smoke hold the engine's likeliest level (and Safe's pair) to its word:
 wherever no two legs that could share a parlay move together, so that every parlay is a plain product, every parlay
 of its size with as many thin legs is worked with `parlayProb` and none may land likelier, on the week's own picks
 through `getPbTiers` (Spread alone, Moneyline alone, and in the audit Teams only on four games) and on ten made-up

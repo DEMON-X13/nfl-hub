@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v134 \u00b7 2026-10-24';
+const APP_BUILD='app v135 \u00b7 2026-10-25';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -382,21 +382,50 @@ function parlayProb(legs,sims=40000){
   const pairs=[];
   for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) if(Math.abs(R[i][j])>=0.03) pairs.push({i,j,rho:R[i][j]});
   if(!pairs.length) return {indep,corr:indep,pairs};
+  /* (app v135) the trials' normals worked once and kept, and an answer worked once and kept, both on the function itself:
+     every call draws from the one seeded stream, ceil(n/2) Box-Muller pairs a trial (trial s of n legs: pairs s*q to
+     s*q+q-1), and the count is a pure function of the trials, each leg's chance and side and the correlations Cholesky
+     reads, which are the memo's key; the same answer to the bit, in an eighth of the time (patch_fast_tabs.py) */
+  const C=parlayProb.cache||(parlayProb.cache={z:null,have:0,rnd:null,memo:new Map()});
+  const dir=legs.map(l=>l.side==='under'?-1:1);
+  let key=sims+'|';
+  for(let i=0;i<n;i++){ key+=legs[i].p+(dir[i]<0?'u':'o'); for(let j=0;j<i;j++) key+=','+R[i][j]; key+=';'; }
+  const kept=C.memo.get(key);
+  if(kept!==undefined) return {indep,corr:kept,pairs};
   let L=null, lam=0;
   while(!L&&lam<1){ const Rs=R.map((row,i)=>row.map((v,j)=>i===j?1:v*(1-lam))); L=cholesky(Rs); if(!L) lam+=0.1; }
   if(!L) return {indep,corr:indep,pairs};
-  const dir=legs.map(l=>l.side==='under'?-1:1);
   const thr=legs.map(l=>invNorm(1-l.p));   /* leg hits when dir*z > thr */
-  const rnd=mulberry(20260908); let hits=0;
-  const g=new Array(n);
-  for(let s=0;s<sims;s++){
-    for(let i=0;i<n;i+=2){ const u1=rnd()||1e-12,u2=rnd(); const m=Math.sqrt(-2*Math.log(u1));
-      g[i]=m*Math.cos(2*Math.PI*u2); if(i+1<n) g[i+1]=m*Math.sin(2*Math.PI*u2); }
-    let ok=true;
-    for(let i=0;i<n&&ok;i++){ let z=0; for(let k=0;k<=i;k++) z+=L[i][k]*g[k]; if(dir[i]*z<=thr[i]) ok=false; }
-    if(ok) hits++;
+  const q=(n+1)>>1, need=sims*q;
+  let hits=0;
+  if(need<=1500000){
+    if(C.have<need){
+      const cap=Math.min(1500000,Math.max(need,2*C.have,3*sims)), z=new Float64Array(2*cap);
+      if(C.z) z.set(C.z.subarray(0,2*C.have));
+      const rnd=C.rnd||(C.rnd=mulberry(20260908));
+      for(let k=C.have;k<cap;k++){ const u1=rnd()||1e-12,u2=rnd(); const m=Math.sqrt(-2*Math.log(u1));
+        z[2*k]=m*Math.cos(2*Math.PI*u2); z[2*k+1]=m*Math.sin(2*Math.PI*u2); }
+      C.z=z; C.have=cap;
+    }
+    const Z=C.z, F=new Float64Array(n*n);
+    for(let i=0;i<n;i++) for(let k=0;k<=i;k++) F[i*n+k]=L[i][k];
+    for(let s=0,b=0;s<sims;s++,b+=2*q){ let ok=true;
+      for(let i=0,o=0;i<n&&ok;i++,o+=n){ let z=0; for(let k=0;k<=i;k++) z+=F[o+k]*Z[b+k]; if(dir[i]*z<=thr[i]) ok=false; }
+      if(ok) hits++; }
+  } else {
+    const rnd=mulberry(20260908), g=new Array(n);
+    for(let s=0;s<sims;s++){
+      for(let i=0;i<n;i+=2){ const u1=rnd()||1e-12,u2=rnd(); const m=Math.sqrt(-2*Math.log(u1));
+        g[i]=m*Math.cos(2*Math.PI*u2); if(i+1<n) g[i+1]=m*Math.sin(2*Math.PI*u2); }
+      let ok=true;
+      for(let i=0;i<n&&ok;i++){ let z=0; for(let k=0;k<=i;k++) z+=L[i][k]*g[k]; if(dir[i]*z<=thr[i]) ok=false; }
+      if(ok) hits++;
+    }
   }
-  return {indep,corr:hits/sims,pairs};
+  const corr=hits/sims;
+  if(C.memo.size>=50000) C.memo.clear();
+  C.memo.set(key,corr);
+  return {indep,corr,pairs};
 }
 
 /* ---------- threshold ladders: "10+, 20+, 30+" style ---------- */

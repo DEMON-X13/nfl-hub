@@ -2088,6 +2088,31 @@ first (the Record's `.sp-rec` right under it), with no `details`, `summary`, arr
 Extreme hidden and Day games off on a Sunday from 4pm Eastern are as app v132 left them. The audit and the smokes fail a
 `details` or `summary` on the tab.
 
+**Opened without a freeze, and the sums kept** (app v135, `patch_fast_tabs.py`, whose docstring is the design and the
+measurements; the owner, 24 October 2026: "I found that after a few changes it takes a few seconds to load between tabs
+sometimes"). Measured in Chromium that night: every tab opened in under 35 ms but Suggested Parlays, whose first opening
+held the page 3.1 s inside its click (about 12 s at a phone's speed), 2.75 s of it the Sunday slot (app v121's set for each
+of its 11 games, and their Elo picks) and 2.0 s inside `parlayProb`, called 1,186 times. Three changes, none moving a
+number: `parlayProb` keeps its trials' normals (every call draws the one seeded stream, ceil(n/2) Box-Muller pairs a
+trial, so they are worked once into a growing Float64Array, up to 1.5 million pairs) and its answers (a memo keyed on the
+trial count, each leg's chance and side and the correlations Cholesky reads, so a kept answer is never another's), both on
+`parlayProb.cache`, so `check_tab.js`'s standalone copy carries them; the search's ids (`pbId` kept with the leg in a
+WeakMap, checked against its key, side and line; `pbBeam` putting the new leg's id in its place among the parent's sorted
+ids and taking a scored parlay from the memo by it); and the tab opened by the reader (a real click or key, `e.isTrusted`)
+is drawn at once with the record and one line, "Building the sets…" (`data-sp-building`, role status), its sets built a
+game at a time in tasks of their own (`spOpenSoft`, `spWarmSteps`: each live unit's games' own sets and their Elo picks on
+the game alone, the caches the slot's levels are taken from; a unit locked or under way builds nothing new), then drawn by
+`renderSp` from those caches, the same HTML. Leaving the tab stops it, any other draw of the tab ends it, and a click no
+reader made (the checks' `.click()`, the address moved by `routeTabs`) draws the tab at once as before. Against app v134
+in the page on the same data: every Suggested Parlays set and Elo pick, the Top 30 and the all-games levels identical to the
+byte, and 1,200 `parlayProb` calls identical; the first opening on the screen in 65 ms (0.27 s at a phone's speed), its
+sets in 1.46 s (5.9 s) in steps of 0.18 s (0.74 s) at most, the synchronous draw 1.12 s. The nflbets smoke's THE FAST SUMS
+AND SUGGESTED PARLAYS OPENED WITHOUT A FREEZE (`softChecks`, blocking) holds `parlayProb` to its own copy of the function as
+it was (`ppOwn`) to the bit on made-up legs at any hour, this week's legs, three trial counts, each call twice and one past
+the kept stream, and `spOpenSoft` on the real week's live units and on a made-up night game two days out: the building
+line at once, the synchronous draw's HTML at the end, a run stopped by leaving the tab and ended by another draw, nothing to
+build once built.
+
 **Value picks** (app v112, `patch_suggested_night.py`, the owner's call of 17 October 2026, after app v111's tags:
 first "i don't really understand what the no edge and thin edge tags are", then "can we do reverse tags? like get rid
 of thin edge and no edge and come up with a name for that first section?"). The marks are reversed. A leg `pbPool`
@@ -2782,7 +2807,7 @@ rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the ne
 
 ```
 node nflbets/build/build.js      # writes the page, the root's index.html
-node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 30 lines, their two parts, the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, clubs level on a unit sharing its rank, the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
+node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 30 lines, their two parts, the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, clubs level on a unit sharing its rank, the parlay sums the same to the bit and Suggested Parlays opened without a freeze, the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on the admin's browser and a visitor's, and the parlay card (the builder's and a Suggested Parlays level's, its check of DraftKings' current lines as it opens, and the admin's Pull from DraftKings on a stubbed Odds API), each boot's seeded ladder legs taken out with the builder's line; must end "0 failures"
 node nflbets/build/smoke_admin.js # the admin link and the hidden X tabs (admin.js, HUB_ADMIN, the header, Sign out, a visitor's page, the key nowhere but The Odds API's requests); must end "0 failures"

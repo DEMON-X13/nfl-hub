@@ -6513,6 +6513,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   await friendsChecks();
   /* ---- the matchup bubble a leg's name opens: its own section, at the end of this file ---- */
   await glanceChecks();
+  /* ---- (app v135) the parlay sums the same to the bit, and Suggested Parlays opened without a freeze ---- */
+  await softChecks();
   /* ---- clubs level on a matchup unit share its rank: its own section, at the end of this file ---- */
   await tieChecks();
   /* ---- the light look and its switch: its own section, at the end of this file ---- */
@@ -9026,6 +9028,110 @@ async function glanceChecks() {
   w.close();
   const kinds = Object.keys(byPlace).map(k => k.replace('|', ' ')).join(', '), gradesSeen = GRADES_SEEN;
   console.log(`the matchup bubble: ${checks - c0} checks (${L0.length} names on the week as it stands${kinds ? ', opened from ' + kinds : ''}; fixtures on ${r ? r.id + (pid ? ', ' + pid + (mrow ? ' with his matchup' : ' with no matchup row') : '') + (gradesSeen.length ? ', a mismatch graded ' + gradesSeen.join(', ') : '') : 'no game'} and a made-up game), ${fails.length - f0} failures`);
+}
+
+/* =====================================================================================
+   THE FAST SUMS AND SUGGESTED PARLAYS OPENED WITHOUT A FREEZE (app v135, props/build/patch_fast_tabs.py; the owner, 24
+   October 2026: "it takes a few seconds to load between tabs sometimes": Suggested Parlays' first opening held the page
+   for 3.1 seconds inside its click). Blocking.
+   1. parlayProb keeps its trials' normals and its answers (parlayProb.cache) and must give exactly what the function gave
+      before, every bit: held to the smoke's own copy of that function (ppOwn, the code as it stood in app v134, on the
+      page's own legRho, cholesky, invNorm and mulberry) on made-up legs at any hour (game legs, whose correlations are the
+      code's own, and players whose pairs the payload's table holds, over and under, 2 to 9 legs, both trial counts the
+      page uses, one call past the kept stream's 1.5 million pairs), and on this week's priced legs where there are any,
+      each call made twice (the second from the memo).
+   2. spOpenSoft (the reader's own click on the tab) draws the tab at once with the record and one line, "Building the
+      sets…" (role status, no level yet), builds one step a task, and then draws exactly the HTML the synchronous draw
+      gives; leaving the tab stops it (false, the tab drawn whole again when it opens); any other draw of the tab ends it
+      (false); with everything built it builds nothing (null). On a made-up night game two days out (stood in as the only
+      night set out, no Sunday slot), so it holds at any hour, and on the real week's live units where there are any.
+   ==================================================================================== */
+async function softChecks() {
+  const c0 = checks, f0 = fails.length;
+  const R = await run(STATE); const { w, d, errs } = R;
+  try { await w.eloFiles(); } catch (e) {}
+  await wait(300);
+  /* ---- 1. the sums ---- */
+  const legRho = w.eval('legRho'), cholesky = w.eval('cholesky'), invNorm = w.eval('invNorm'), mulberry = w.eval('mulberry'), pp = w.eval('parlayProb');
+  const ppOwn = (legs, sims = 40000) => {
+    const n = legs.length; if (!n) return { indep: 0, corr: 0, pairs: [] };
+    const indep = legs.reduce((a, l) => a * l.p, 1);
+    const Rm = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => i === j ? 1 : legRho(legs[i], legs[j])));
+    const pairs = []; for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (Math.abs(Rm[i][j]) >= 0.03) pairs.push({ i, j, rho: Rm[i][j] });
+    if (!pairs.length) return { indep, corr: indep, pairs };
+    let L = null, lam = 0;
+    while (!L && lam < 1) { const Rs = Rm.map((row, i) => row.map((v, j) => i === j ? 1 : v * (1 - lam))); L = cholesky(Rs); if (!L) lam += 0.1; }
+    if (!L) return { indep, corr: indep, pairs };
+    const dir = legs.map(l => l.side === 'under' ? -1 : 1), thr = legs.map(l => invNorm(1 - l.p)), rnd = mulberry(20260908), g = new Array(n); let hits = 0;
+    for (let t = 0; t < sims; t++) {
+      for (let i = 0; i < n; i += 2) { const u1 = rnd() || 1e-12, u2 = rnd(); const m = Math.sqrt(-2 * Math.log(u1)); g[i] = m * Math.cos(2 * Math.PI * u2); if (i + 1 < n) g[i + 1] = m * Math.sin(2 * Math.PI * u2); }
+      let ok = true; for (let i = 0; i < n && ok; i++) { let z = 0; for (let k = 0; k <= i; k++) z += L[i][k] * g[k]; if (dir[i] * z <= thr[i]) ok = false; }
+      if (ok) hits++; }
+    return { indep, corr: hits / sims, pairs }; };
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const corrKeys = Object.keys((w.eval('PAY') || {}).corr || {}).filter(k => /^team\|/.test(k)).slice(0, 40);
+  const made = [];
+  for (let t = 0; t < 60; t++) {
+    const gid = 'XX_' + (t % 3), legs = [{ gid, pid: 'team:XXA', team: 'XXA', grp: 'TEAM', stat: 'ml', k: 0 }, { gid, pid: 'team:XXA', team: 'XXA', grp: 'TEAM', stat: 'ats', k: -2.5 }, { gid, pid: 'game', team: 'XXA', grp: 'TEAM', stat: 'total', k: 44.5 }];
+    for (const ck of corrKeys.slice(t % Math.max(1, corrKeys.length - 3), (t % Math.max(1, corrKeys.length - 3)) + 3)) { const [, a, b] = ck.split('|'), [ga, sa] = a.split(':'), [gb, sb] = b.split(':');
+      legs.push({ gid, pid: 'P' + t + a, team: 'XXA', grp: ga, stat: sa, k: 10.5 }, { gid, pid: 'Q' + t + b, team: 'XXA', grp: gb, stat: sb, k: 20.5 }); }
+    legs.push({ gid: 'XX_other', pid: 'team:XXB', team: 'XXB', grp: 'TEAM', stat: 'ml', k: 0 });
+    const k = 2 + (t % 8), pick = []; const pool = legs.slice(); while (pick.length < k && pool.length) pick.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+    made.push(pick.map(l => ({ ...l, side: rnd() < 0.3 ? 'under' : 'over', p: Math.min(0.96, Math.max(0.04, 0.2 + rnd() * 0.7)) }))); }
+  const real = []; { let legs = []; try { legs = w.eval('pricedLegs()') || []; } catch (e) { legs = []; }
+    const byG = {}; for (const l of legs) (byG[l.gid] = byG[l.gid] || []).push(l); const gs = Object.values(byG).filter(a => a.length >= 4);
+    for (let t = 0; gs.length && t < 80; t++) { const G = gs[t % gs.length], k = 2 + (t % 6), pool = G.slice(), pick = [];
+      while (pick.length < k && pool.length) pick.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+      real.push(pick.map(l => ({ ...l, side: l.side || 'over' }))); } }
+  { const bad = []; let n = 0, withPairs = 0;
+    for (const [what, sets] of [['made-up', made], ['this week\'s', real]]) for (const ls of sets) for (const sims of [40000, 20000, 6000]) {
+      const o = ppOwn(ls, sims), m = pp(ls, sims), m2 = pp(ls, sims); n++; if (o.pairs.length) withPairs++;
+      if (o.corr !== m.corr || m2.corr !== o.corr || o.indep !== m.indep || JSON.stringify(o.pairs) !== JSON.stringify(m.pairs)) bad.push(`${what} ${ls.length} legs, ${sims} trials: ${o.corr} where the page says ${m.corr} then ${m2.corr}`); }
+    /* past the kept stream (1.5 million pairs): the page draws as before */
+    const big = made.find(x => x.length >= 5 && x.length <= 6), o = ppOwn(big, 600000), m = pp(big, 600000); n++;
+    if (o.corr !== m.corr) bad.push(`${big.length} legs at 600,000 trials, past the kept stream: ${o.corr} where the page says ${m.corr}`);
+    chk(bad.length === 0 && withPairs > 50, `parlayProb is not the same to the bit as the function it was (app v134's, the smoke's own copy): ${bad.slice(0, 4).join(' | ') || withPairs + ' calls with correlated legs, too few'}`);
+    console.log(`  (fast sums: ${n} parlayProb calls, ${withPairs} with correlated legs, each twice, ${real.length} parlays of this week's legs, the same to the bit as app v134's)`); }
+  /* ---- 2. the tab opened without a freeze ---- */
+  const tabBtn = t => [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === t);
+  const sets = () => (d.getElementById('spSets') || {}).innerHTML || '';
+  const softRun = async (label) => {
+    const bad = [], p = w.spOpenSoft();
+    if (!p || typeof p.then !== 'function') return [`${label}: spOpenSoft did not start a run (${p})`];
+    const bl = d.querySelector('#spSets [data-sp-building]');
+    if (!bl || bl.textContent !== 'Building the sets…' || bl.getAttribute('role') !== 'status' || d.querySelector('#spSets .pb-tier') || !d.querySelector('#spSets [data-sp-sec="all"]'))
+      bad.push(`${label}: the tab was not drawn at once with the record and one "Building the sets…" line (role status) and no level`);
+    const done = await Promise.race([p, new Promise(r => setTimeout(() => r('timeout'), 240000))]);
+    if (done !== true) bad.push(`${label}: the run did not end drawn (${done})`);
+    return bad; };
+  const keep = { on: w.spOn, games: w.spGames, slot: w.spSlotNext, day: w.spDayOff }, season = +w.eval('SEASON'), wk = w.eval('currentWeek()');
+  const at = new Date(w.Date.now() + 2 * 86400e3).toISOString().slice(0, 10), FAKE = { id: `${season}_${String(wk).padStart(2, '0')}_XXS_XXT`, w: wk, d: at, t: '20:15', a: 'XXS', h: 'XXT' };
+  const S0 = w.eval('S'); S0.sched.push(FAKE);
+  try {
+    tabBtn('suggest').click(); await wait(30);
+    /* the real week first, where it has a unit still live */
+    { w.eval('SP_CACHE.clear()'); const n = w.spWarmSteps().length;
+      if (!n) console.log('  (the tab opened without a freeze: no live unit this week to build, the made-up night game below stands for it)');
+      else { const bad = await softRun('the real week'), soft = sets(); w.renderSp(); const sync = sets(); w.eval('SP_CACHE.clear()'); w.renderSp(); const cold = sets();
+        chk(!bad.length && soft === sync && soft === cold && w.spOpenSoft() === null, `the tab opened without a freeze, on the real week (${n} steps): ${bad.join('; ') || (soft !== cold ? 'its sets are not the HTML the synchronous draw gives' : 'with everything built it still starts a run')}`); } }
+    /* the made-up night game two days out, the only set out */
+    w.spOn = () => [FAKE]; w.spGames = () => [FAKE]; w.spSlotNext = () => null; w.spDayOff = () => true;
+    w.eval('SP_CACHE.clear()'); w.renderSp(); const cold = sets();
+    chk(w.spOpenSoft() === null && !d.querySelector('#spSets [data-sp-building]'), 'with every set built, opening the tab starts a run or draws the building line');
+    w.eval('SP_CACHE.clear()');
+    { const bad = await softRun('the made-up night game'), soft = sets();
+      chk(!bad.length && soft === cold && soft.includes(FAKE.id), `the tab opened without a freeze on a made-up night game: ${bad.join('; ') || 'its set is not the HTML the synchronous draw gives'}`); }
+    /* leaving the tab stops the run; opening it again draws it whole */
+    { w.eval('SP_CACHE.clear()'); const p = w.spOpenSoft(); tabBtn('parlay').click(); const r = await Promise.race([p, new Promise(x => setTimeout(() => x('timeout'), 60000))]);
+      tabBtn('suggest').click(); await wait(30); const again = sets();
+      chk(r === false && again === cold, `leaving the tab while its sets were being built did not stop the run (${r}), or opening it again did not draw it whole`); }
+    /* any other draw of the tab ends the run */
+    { w.eval('SP_CACHE.clear()'); const p = w.spOpenSoft(); w.renderSp(); const r = await Promise.race([p, new Promise(x => setTimeout(() => x('timeout'), 60000))]);
+      chk(r === false && sets() === cold && !d.querySelector('#spSets [data-sp-building]'), `a draw of the tab while its sets were being built did not end the run (${r}) with the tab drawn whole`); }
+  } finally { w.spOn = keep.on; w.spGames = keep.games; w.spSlotNext = keep.slot; w.spDayOff = keep.day; S0.sched.splice(S0.sched.indexOf(FAKE), 1); w.eval('SP_CACHE.clear()'); }
+  chk(errs.length === 0, 'the fast sums and the tab opened without a freeze: the page threw: ' + errs.join('; '));
+  w.close();
+  console.log(`the fast sums and Suggested Parlays opened without a freeze: ${checks - c0} checks, ${fails.length - f0} failures`);
 }
 
 /* =====================================================================================
