@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. Since app v118 each entry holds the unit's Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe), taken, locked, replaced and graded with the model's levels; and slot holds each week's Sunday slot (every Sunday game before 7 pm Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary, slot_summary (each with its elo) and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-10-25T15:56:03Z",
+ "updated": "2026-10-25T17:25:00Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -672,8 +672,8 @@
    "home": "SEA",
    "kickoff": "2026-10-26T00:20:00Z",
    "lock": "2026-10-25T22:20:00Z",
-   "baked_at": "2026-10-25T09:25+00:00",
-   "pool": {"pref":1,"thin":20,"mkt":2,"far":12},
+   "baked_at": "2026-10-25T17:23+00:00",
+   "pool": {"pref":1,"thin":19,"mkt":2,"far":12},
    "tiers": [
     {
      "id": "safe",
@@ -826,7 +826,7 @@
      "mkt": 0
     }
    ],
-   "taken_at": "2026-10-25T09:26:34Z"
+   "taken_at": "2026-10-25T17:25:00Z"
   },
   "2026|07|2026-10-27T00:15:00Z|2026_07_DAL_PHI": {
    "season": 2026,
@@ -836,7 +836,7 @@
    "home": "PHI",
    "kickoff": "2026-10-27T00:15:00Z",
    "lock": "2026-10-26T22:15:00Z",
-   "baked_at": "2026-10-25T15:54+00:00",
+   "baked_at": "2026-10-25T17:23+00:00",
    "pool": {"pref":4,"thin":11,"mkt":2,"far":5},
    "tiers": [
     {
@@ -881,14 +881,14 @@
      "floor": 0.12,
      "legs": [
       {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"rushing_yards","k":9.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Dak Prescott","label":"Under 9.5 rushing yards","p":0.6271,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":170,"src":"real","name":"Eagles","label":"To win","p":0.4758,"fair":0.3553,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":180,"src":"real","name":"Eagles","label":"To win","p":0.4758,"fair":0.3425,"fair_est":false,"thin":false,"market":false},
       {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0036997","team":"DAL","grp":"RB","stat":"rushing_yards","k":64.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Javonte Williams","label":"Under 64.5 rushing yards","p":0.6404,"fair":0.5,"fair_est":true,"thin":true,"market":false},
       {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"rushing_yards","k":5.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 5.5 rushing yards","p":0.6429,"fair":0.5,"fair_est":true,"thin":false,"market":false}
      ],
      "p": 0.1285,
-     "fair": 0.0461,
+     "fair": 0.0445,
      "fair_est": true,
-     "dec": 15.872,
+     "dec": 16.471,
      "likeliest": false,
      "thin": 2,
      "mkt": 0
@@ -901,14 +901,14 @@
      "legs": [
       {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"rushing_yards","k":9.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Dak Prescott","label":"Under 9.5 rushing yards","p":0.6271,"fair":0.5,"fair_est":true,"thin":true,"market":false},
       {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0034351","team":"PHI","grp":"TE","stat":"receiving_yards","k":48.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Dallas Goedert","label":"Under 48.5 receiving yards","p":0.6193,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":170,"src":"real","name":"Eagles","label":"To win","p":0.4758,"fair":0.3553,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":180,"src":"real","name":"Eagles","label":"To win","p":0.4758,"fair":0.3425,"fair_est":false,"thin":false,"market":false},
       {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0036997","team":"DAL","grp":"RB","stat":"rushing_yards","k":64.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Javonte Williams","label":"Under 64.5 rushing yards","p":0.6404,"fair":0.5,"fair_est":true,"thin":true,"market":false},
       {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"rushing_yards","k":5.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 5.5 rushing yards","p":0.6429,"fair":0.5,"fair_est":true,"thin":false,"market":false}
      ],
      "p": 0.0796,
-     "fair": 0.0243,
+     "fair": 0.0235,
      "fair_est": true,
-     "dec": 28.581,
+     "dec": 29.425,
      "likeliest": false,
      "thin": 3,
      "mkt": 0
@@ -990,7 +990,7 @@
      "mkt": 0
     }
    ],
-   "taken_at": "2026-10-25T15:56:03Z"
+   "taken_at": "2026-10-25T17:25:00Z"
   }
  },
  "slot_since": "2026-10-19",
