@@ -19,9 +19,10 @@
  * committed state: BETTING_PREV_STATE names another file, for tests); a scoreboard final is
  * counted for every model at once, on the call frozen at kickoff; Team Rankings' record is the
  * season's and a rating that predates a final says so; a model that could not run is disclosed on
- * the Pick'em Record; the Joker's calls on the weeks its model was later refitted on (2026 weeks 1-2)
- * are its real ones, betting/joker/history/ (held to the last commit's copy: BETTING_PREV_HISTORY
- * names another folder), never the refit's, and are drawn like every other week,
+ * the Pick'em Record; the Joker's calls on the weeks its model was later refitted on (2026 weeks 1-2),
+ * and five of weeks 3-4 that moved after kickoff before the freeze, are its real ones,
+ * betting/joker/history/ (held to the last commit's copy: BETTING_PREV_HISTORY names another
+ * folder), never the refit's or the moved ones, and are drawn like every other week,
  * with no mark, note or record without them; the retired models, Joker Jr (a test model, October
  * 2026) and the Challenger and Broly Models (taken off the site on 13 October 2026), are gone from a
  * state this run wrote and draw nothing from one that still carries them, and the app makes no
@@ -104,7 +105,8 @@ function boot(st, opts = {}) {
 }
 const kick = PATCHES.kickoffMs;
 /* the Joker's real calls on the games its model was refitted on after they were played (2026 weeks
-   1-2): betting/joker/history/<season>_*.json, written once from git; joker.py publishes them */
+   1-2) and on five of weeks 3-4 restored to what was published before kickoff:
+   betting/joker/history/<season>_*.json, written once from git; joker.py publishes them */
 function jokerHistory(season) {
   const dir = path.join(ROOT, 'betting', 'joker', 'history'), out = {};
   if (!fs.existsSync(dir)) return out;
@@ -125,6 +127,7 @@ function vegasOwn(r, st) {
 }
 async function reality() {
   const P = JSON.parse(state), pub = Date.parse(P.published), JH = jokerHistory(P.season);
+  const jokerDown = !!(P.modelStatus && P.modelStatus.joker);   /* the Joker step could not run on this state */
   const J = JSON.stringify;
   /* 5a. one season: the app's (freshState), published as `season`, every scheduled game in it */
   check(P.season === APP_SEASON, `5a: the state's season ${P.season} is not the app's ${APP_SEASON}`);
@@ -266,12 +269,16 @@ async function reality() {
         for (const k of ['joker']) { const a = (prev[k] || {})[gid], b = (P[k] || {})[gid];
           /* a Joker call in its history file may move onto the file's call once, from a call that
              carries no src (the refit's in-sample calls on 2026 weeks 1-2, replaced so on 12 October
-             2026); once the last commit's call is the file's (it carries src), it is held like any
-             other, so an edit to the file cannot move a call after its kickoff (5n holds the file to
-             the last commit's too) */
+             2026; five of weeks 3-4 rescored after kickoff before the freeze, put back to what was
+             published before kickoff on 25 October 2026); once the last commit's call is the file's
+             (it carries src), it is held like any other, so an edit to the file cannot move a call
+             after its kickoff (5n holds the file to the last commit's too) */
+          /* a call left exactly as it was, on a run whose Joker step could not run (modelStatus.joker), has not moved:
+             the file reaches it on the Joker's next run (5n says so, as a warning) */
           if (k === 'joker' && JH[gid]) { if (b) { n++;
             if (a && a.src) check(a.pick === b.pick && a.pHome === b.pHome && a.src === b.src, `5h: the Joker's call for ${gid} moved after kickoff: ${J(a)} -> ${J(b)}`);
-            else check(b.pick === JH[gid].pick && b.pHome === JH[gid].pHome, `5h: the Joker's call for ${gid} is not its history file's: ${J(b)}`); } continue; }
+            else check((b.pick === JH[gid].pick && b.pHome === JH[gid].pHome) || (jokerDown && !!a && !b.src && J(a) === J(b)),
+              `5h: the Joker's call for ${gid} is not its history file's: ${J(b)}`); } continue; }
           if (a && b) { n++; check(a.pick === b.pick && a.pHome === b.pHome, `5h: ${k}'s call for ${gid} moved after kickoff: ${J(a)} -> ${J(b)}`); } }
         /* Alpha's call (the Challenger's, h, which a state before 13 October 2026 carries beside
            it, is retired and no longer held) */
@@ -284,21 +291,30 @@ async function reality() {
 
   /* 5n. the Joker's weeks 1-2 are the calls it really made. Its model was refitted on 24 September
      2026 with those games' results in its training (tune_2026.py), so its calls on them are fits;
-     the owner asked on 12 October 2026 for the record it actually had. Every game of the history
-     file is called in the published state as the file has it (state.joker and the grade, pick,
-     chance and source), the grade follows the result, and every game of a week the model was
-     fitted on after it was played (state.jokerFit) is in the file */
+     the owner asked on 12 October 2026 for the record it actually had. Five games of weeks 3-4
+     moved after kickoff before the freeze landed (9 October 2026), and 2026_w3_w4.json holds their
+     calls as published before kickoff (25 October 2026). Every game of a history file is called in
+     the published state as the file has it (state.joker and the grade, pick, chance and source),
+     the grade follows the result, and every game of a week the model was fitted on after it was
+     played (state.jokerFit) is in a file */
   { const ids = Object.keys(JH);
     if (!ids.length) console.log(`  (5n skipped: no history file of the Joker's for ${P.season})`);
     else {
       const before = fails, calls = P.joker || {};
       const head = { src: (x, e) => x.src === e.src, pick: (x, e) => x.pick === e.pick, pHome: (x, e) => x.pHome === e.pHome };
       const off = (x, e) => Object.keys(head).filter(k => !head[k](x, e)).map(k => `${k} ${J(x[k])} not ${J(e[k])}`).join(', ');
+      let pend = 0;
       for (const gid of ids) { const e = JH[gid], c = calls[gid], r = P.processed[gid];
-        check(!!c && !off(c, e), `5n: the Joker's call for ${gid} is not its real one (${e.file}): ${c ? off(c, e) : 'none'}`);
+        /* the Joker could not run on this state (modelStatus.joker), so a history file new since its last run has not
+           reached a call it has not touched yet (no src): said, never held, so a Joker refusal never holds back the
+           other models' finals (2026_w3_w4.json, 25 October 2026: the file lands with the code, the calls on the Joker's
+           next run); a call the Joker has written from a file (src) is held as ever */
+        const pending = jokerDown && !!c && !c.src, hold = pending ? warn : check;
+        if (pending) pend++;
+        hold(!!c && !off(c, e), `5n: the Joker's call for ${gid} is not its real one (${e.file})${pending ? ' yet: the Joker could not run on this state' : ''}: ${c ? off(c, e) : 'none'}`);
         if (r && r.result != null) {
           const winner = r.result > 0 ? r.home : r.result < 0 ? r.away : null;
-          check(!!r.joker && !off(r.joker, e) && r.joker.correct === (winner === null ? null : e.pick === winner),
+          hold(!!r.joker && !off(r.joker, e) && r.joker.correct === (winner === null ? null : e.pick === winner),
             `5n: ${gid} is graded on a Joker call other than its real one (${e.file}): ${r.joker ? off(r.joker, e) || 'correct ' + r.joker.correct : 'none'}`); }
         const g = S.schedule.find(x => x.game_id === gid);
         check(!!g && g.home_team === e.home && g.away_team === e.away && +g.week === +e.week, `5n: ${gid} in ${e.file} is not that game on the schedule`);
@@ -321,7 +337,7 @@ async function reality() {
       if (fails === before) {
         const n = ids.filter(gid => P.processed[gid] && P.processed[gid].joker), w = n.filter(gid => P.processed[gid].joker.correct === true).length;
         const src = ids.reduce((a, gid) => (a[JH[gid].src] = (a[JH[gid].src] || 0) + 1, a), {});
-        console.log(`  5n: the Joker's ${ids.length} calls from its history file are the state's (${Object.entries(src).map(([k, v]) => v + ' ' + k).join(', ')}), graded ${w}-${n.length - w}`); } } }
+        console.log(`  5n: the Joker's ${ids.length} calls from its history file are the state's${pend ? ` but ${pend}, which the Joker could not reach this run` : ''} (${Object.entries(src).map(([k, v]) => v + ' ' + k).join(', ')}), graded ${w}-${n.length - w}`); } } }
 
   /* 5i. Team Rankings: the record is the season's results, and a rating that predates a final says so */
   { const EM = JSON.parse(eloModel), T = EM.teams || {}, tr = [...d.querySelectorAll('#ratingsTable table.rt-v tbody tr')];
