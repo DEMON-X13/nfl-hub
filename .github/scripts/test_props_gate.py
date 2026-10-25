@@ -70,9 +70,11 @@ case(ok is True and infra and verdict('x', False, ok, 'here', 'exit 0', infra)[0
 # the schedule's refusal counts as a download (DOWNLOAD's second branch), as before
 case(G.base_result(AUDIT_REFUSAL, 1, 'BLOCKED: schedule (games.csv): missing\n') == (None, True), 'a base refused at the schedule is compared with')
 
-# the page's files: neutral_sites.json is built into the page
-a, p, labels, audit, page = G.plan(['betting/neutral_sites.json'])
-case(p and not a and page == ['betting/neutral_sites.json'], f'betting/neutral_sites.json is not a PAGE path: {(a, p, page)}')
+# neutral_sites.json is built into the page (patches.js) and, since app v137, read by payload.py into each game's neu;
+# reference_models.json is the app's gate and the audit's T2 holds the team model to it: both AUDIT and PAGE paths
+for f in ('betting/neutral_sites.json', 'betting/tools/reference_models.json'):
+    a, p, labels, audit, page = G.plan([f])
+    case(p and a and page == [f] and audit == [f], f'{f} is not an AUDIT and a PAGE path: {(a, p, audit, page)}')
 yml = open(os.path.join(ROOT, '.github', 'workflows', 'props-gate.yml'), encoding='utf-8').read()
 for f in ('betting/neutral_sites.json', '.github/scripts/test_props_gate.py'):
     case(f'- "{f}"' in yml, f'props-gate.yml\'s push paths leave out {f}')

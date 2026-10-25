@@ -53,7 +53,10 @@ GATE = ['.github/workflows/props-gate.yml', '.github/scripts/props_gate.py', '.g
 # '/**' is everything under a folder; otherwise a glob within one folder ('*' never crosses a '/')
 AUDIT = ['props/build/**', 'props/data/*.py', 'props/data/*.json', 'props/research/features.py',
          'props/research/qb_td.py', 'props/raw/feat.pkl', 'props/raw/fake_wk1.csv', 'props/requirements.txt',
-         'lib/**', '.github/workflows/props.yml'] + GATE
+         'lib/**', '.github/workflows/props.yml',
+         # payload.py reads the neutral sites into each game's neu, and the audit's T2 holds the team model to the
+         # app's equation in reference_models.json (app v137): both PAGE paths too
+         'betting/neutral_sites.json', 'betting/tools/reference_models.json'] + GATE
 # the props job's own outputs: a run commits them, and they are data, not code
 AUDIT_OUTPUTS = ['props/data/payload.json', 'props/data/priced_at.json', 'props/data/pricepull.json',
                  'props/data/credits.json', 'props/data/suggest_ledger.json', 'props/data/dk_links_wk*.json']
