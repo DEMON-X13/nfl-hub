@@ -439,6 +439,59 @@ def espn_gl(x):
 
 def has_score(g): return g.get('hs') is not None and g.get('as') is not None
 
+def espn_close_seed(path=None):
+    """the games played before espn_close began (app v136) and their lines at kickoff, recovered once from git by
+    espn_close_seed.py into data/espn_close_seed.json: {w:{gid:{at, lines}}} of this season, or {} (no file, junk,
+    another season's). espn_close takes a game from it only where it keeps none, read before the kickoff as any other"""
+    try: x=json.load(open(path or os.path.join(DATA,'espn_close_seed.json'),encoding='utf-8'))
+    except Exception: return {}
+    if not isinstance(x,dict) or x.get('v')!=1 or int(x.get('season') or 0)!=SEASON or not isinstance(x.get('weeks'),dict): return {}
+    return {str(w):G for w,G in x['weeks'].items() if isinstance(G,dict)}
+
+def espn_close(pay,prev,rd,games0,to_come,now,rules):
+    """DraftKings' main lines as the last published read had them before kickoff, for each game of this season
+    that has kicked off: ({v:1, weeks:{w:{gid:{at, lines:{pid:{stat:line}}}}}}, how many new on this run, how many in
+    all). The props tab's week and season record grades the model's side of them (gradeGame and trackRecord, app
+    v136), as it graded the paid pull's main lines (PAY.mkt) until that pull ended on 20 October 2026: from then on
+    Week 7 read 0-0 on the first tab, every week after it would have, and the season stood at week 6. Frozen at
+    kickoff: an entry once made is never replaced. A new one is the published payload's espn block for the game
+    (what the page showed before kickoff), this run's read of a game that kicked off during the run, or for a game
+    played before app v136 the copy espn_close_seed.py recovered from git (data/espn_close_seed.json), whichever was
+    read latest, each only where read before the kickoff; carried from the published payload's espn_close
+    within the season, nothing across a rollover, each block cleaned by the page's rules (espn_block). The main
+    lines alone: no rung, touchdown, game line or price (a line read from ESPN is never a book price: the record's
+    "against the book" table and market + form leave a row with no price out). test_apply_espn.py holds it"""
+    C0=prev.get('espn_close') if isinstance(prev,dict) and payload_season(prev or {})==SEASON else None
+    weeks={}
+    if isinstance(C0,dict) and C0.get('v')==1 and isinstance(C0.get('weeks'),dict):
+        for w,G in C0['weeks'].items():
+            if not isinstance(G,dict) or not str(w).isdigit(): continue
+            for gid,e in G.items():
+                if not (isinstance(gid,str) and gid.startswith(f'{SEASON}_') and isinstance(e,dict)): continue
+                b=espn_block({'at':e.get('at'),'lines':e.get('lines')},rules)
+                if b and b['lines']: weeks.setdefault(str(int(w)),{})[gid]={'at':b['at'],'lines':b['lines']}
+    seed=espn_close_seed()
+    new=0
+    for g in pay.get('sched') or []:
+        gid=g.get('id'); ko=kickoff(g)
+        if not gid or gid in to_come or ko is None or (ko>now and not has_score(g)): continue
+        w=str(int(g['w']))
+        if gid in weeks.get(w,{}): continue
+        best=None
+        o0=games0.get(gid)
+        cands=[espn_block(o0.get('pl'),rules) if isinstance(o0,dict) and str(o0.get('w'))==w else None]
+        sd=seed.get(w,{}).get(gid)
+        if isinstance(sd,dict): cands.append(espn_block({'at':sd.get('at'),'lines':sd.get('lines')},rules))
+        r=rd['games'].get(gid) if rd and str(rd.get('week'))==w else None
+        if isinstance(r,dict) and isinstance(r.get('out'),dict) and r['out'].get('st')=='ok': cands.append(espn_block(r.get('pl'),rules))
+        for b in cands:
+            t=espn_time(b['at']) if b else None
+            if t is None or t>=ko or not b['lines']: continue
+            if best is None or t>espn_time(best['at']): best=b
+        if best: weeks.setdefault(w,{})[gid]={'at':best['at'],'lines':best['lines']}; new+=1
+    weeks={w:dict(sorted(weeks[w].items())) for w in sorted(weeks,key=int)}
+    return {'v':1,'weeks':weeks},new,sum(len(G) for G in weeks.values())
+
 def apply_espn(pay,prev,read,now,rules=None):
     """The ESPN read into the payload (step 5), returning (notes for the report, problems). It runs on every run,
     whatever the read did, so carrying and pruning always happen. pay is the payload just baked, prev the published
@@ -500,6 +553,7 @@ def apply_espn(pay,prev,read,now,rules=None):
             e[h]=x
         if len(e)>1: out[gid]=e
     pay['espn']={'v':1,'read_at':rd.get('read_at') if rd else None,'games':out}
+    pay['espn_close'],kept_new,kept_all=espn_close(pay,prev,rd,games0,to_come,now,rules)
     # the game lines onto the schedule, by the press's own rule, under the bake's 24-hour rule
     lines=stale=kept=0
     for gid,e in out.items():
@@ -525,6 +579,7 @@ def apply_espn(pay,prev,read,now,rules=None):
                  +(f", {stale} left at nflverse's as more than {ESPN_STALE}h old" if stale else '')
                  +(f", {kept} at a newer DraftKings pull" if kept else '')
                  +(f"; {n['dropped']} read(s) dated at or after a kickoff left out" if n['dropped'] else ''))
+    notes.append(f"ESPN at kickoff: DraftKings' main lines kept for {kept_all} game(s) played this season, {kept_new} new on this run (the props tab's record grades them)")
     late=espn_overdue(out,to_come,now)
     if late: probs.append(f"ESPN: DraftKings' player lines not read in the last {ESPN_STALE}h for {len(late)} game(s) kicking off within {ESPN_SOON}h ({'; '.join(late[:6])}{'...' if len(late)>6 else ''}): the last read stays published")
     return notes,probs

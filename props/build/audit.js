@@ -929,6 +929,96 @@ setTimeout(async()=>{
     const kinds={}; for(const r of TR) kinds[r.kind]=(kinds[r.kind]||0)+1;
     console.log(`G3. track record: ${priced.length} priced; ${TR.length} graded lines (${Object.entries(kinds).map(([k,v])=>k+' '+v).join(', ')}), said ${(t.said*100).toFixed(1)}% happened ${(t.hit*100).toFixed(1)}%, ${stored} snapshots carry frozen rungs, ${faithful} rung chances all match the frozen projection`);
   }
+  /* ---- G3b. DraftKings' lines kept at kickoff (app v136): the record grades the model's side of them ----
+     Since the paid pull ended (20 October 2026) PAY.mkt has no week past 6, and the props tab's Week and Season pills
+     read 0-0 from week 7 on. weekly.py's espn_close keeps DraftKings' main lines as the last published read had them
+     before kickoff (PAY.espn_close), and gradeGame and trackRecord grade on them where no paid line is. Planted on the
+     week-1 final G2 graded, every stand-in put back: the kept line frozen into the snapshot with the model's chance at
+     it, graded on the model's side with no price, counted by the week's pill, a paid line winning over it, another
+     game's kept line and a junk one never read. Blocking: a number the page states. */
+  { /* the real table first: every game of it this season's, on the schedule in that week, kicked off (or scored), each
+       read before its kickoff, each line a half point above 0 and at most 1000 on a player id of the page's shape */
+    { const C=PAY.espn_close, bad=[]; let n=0, m=0;
+      if(C!=null){ if(C.v!==1||!C.weeks||typeof C.weeks!=='object') bad.push('not {v:1, weeks}');
+        else for(const [wk,G] of Object.entries(C.weeks)) for(const [gid,e] of Object.entries(G||{})){ n++;
+          const g=S.sched.find(z=>z.id===gid), ko=g&&F('kickoff')(g), t=Date.parse(e&&e.at);
+          if(!g||String(+g.w)!==wk) { bad.push(gid+' is not a game of week '+wk); continue; }
+          if(!F('gameStarted')(g)&&!F('gameFinal')(g)) bad.push(gid+' has not kicked off');
+          if(!(t<ko.getTime())) bad.push(gid+' was read at or after its kickoff ('+(e&&e.at)+')');
+          for(const [pid,L] of Object.entries((e&&e.lines)||{})){ if(!/^(?!__proto__$)[A-Za-z0-9_.:\-]{1,40}$/.test(pid)) bad.push(gid+': player id '+pid);
+            for(const [st,v] of Object.entries(L||{})){ m++; if(!(typeof v==='number'&&v>0&&v<=1000&&Number.isInteger(v*2))) bad.push(`${gid} ${pid} ${st} ${v}`); } } } }
+      chk(!bad.length,'G3b: PAY.espn_close is not what the props job keeps: '+bad.slice(0,4).join('; '));
+      console.log(`G3b. DraftKings' lines kept at kickoff on the payload: ${n} game(s), ${m} line(s)`); }
+    const gp=S.sched.find(x=>x.w===1&&F('gameFinal')(x));
+    if(!gp) console.log('G3b. no final in week 1 to plant on: skipped');
+    else {
+      const keepMkt=PAY.mkt, hadClose='espn_close' in PAY, keepClose=PAY.espn_close;
+      const keepP=JSON.stringify((S.projections||{})['1']||{}), keepH=JSON.stringify(((S.headlines||{})['1']||{})[gp.id]||null);
+      const wr=d.getElementById('weekRec'), sr=d.getElementById('seasonRec'), keepW=wr.innerHTML, keepS=sr.innerHTML;
+      try{
+        const roster=rosterFor(gp,true), A1=(S.actuals||{})['1']||{}; let x=null,l=null;
+        for(const t in roster){ for(const y of roster[t].players){ const A=A1[y.pl.id]; if(!A) continue;
+          const z=statLines(y).find(q=>!q.prob&&q.mu>0.5&&A[q.stat]!=null&&isFinite(A[q.stat])); if(z){ x=y; l=z; break; } } if(x) break; }
+        chk(!!x,'G3b: no player of the week-1 final with a stat line to plant on');
+        if(x){
+          const pid=x.pl.id, stat=l.stat, v=A1[pid][stat], line=Math.floor(l.mu)+0.5;
+          const other=S.sched.find(z=>z.w===1&&z.id!==gp.id), at='2026-09-01T00:00:00.000Z';
+          const otherE=other?{[other.id]:{at,lines:{[pid]:{[stat]:line+10}}}}:{};
+          PAY.mkt=Object.assign({},keepMkt||{},{'1':{}});
+          PAY.espn_close={v:1,weeks:{'1':Object.assign({[gp.id]:{at,lines:{[pid]:{[stat]:line}}}},otherE)}};
+          F('gradeGame')(gp);
+          const sn=S.projections['1'][pid][stat], pO=+pOver(x.pl.grp,stat,sn.mu,line).toFixed(4);
+          chk(Array.isArray(sn.ml)&&sn.ml[0]===line&&sn.ml[1]===pO,`G3b: the kept line ${line} was not frozen into ${pid}'s ${stat} snapshot with the model's chance ${pO}: ${JSON.stringify(sn.ml)}`);
+          const rows=F('trackRecord')().filter(r=>r.w===1&&r.pid===pid&&r.stat===stat&&r.kind==='main');
+          const over=pO>=0.5, hit=(over?v>line:v<line)?1:0;
+          chk(rows.length===1&&rows[0].k===line&&rows[0].side===(over?'over':'under')&&rows[0].hit===hit&&Math.abs(rows[0].p-(over?pO:1-pO))<1e-9&&rows[0].ml==null&&rows[0].imp==null,
+            `G3b: the record does not grade the model's side of the kept line with no price: ${JSON.stringify(rows)}`);
+          F('renderRecords')(1);
+          const m1=F('trackRecord')().filter(r=>r.kind==='main'&&+r.w===1);
+          chk(m1.some(r=>r.pid===pid&&r.stat===stat)&&wr.textContent===`Week 1 ${m1.filter(r=>r.hit).length}–${m1.filter(r=>!r.hit).length}`,`G3b: the week pill does not count the kept line: ${wr.textContent}`);
+          PAY.mkt['1']={[pid]:{[stat]:{line:line+1,over:-110,under:-110}}}; F('gradeGame')(gp);
+          chk(S.projections['1'][pid][stat].ml&&S.projections['1'][pid][stat].ml[0]===line+1,'G3b: the kept line stood over the paid one');
+          PAY.mkt['1']={};
+          if(other){ PAY.espn_close={v:1,weeks:{'1':otherE}}; F('gradeGame')(gp);
+            chk(!S.projections['1'][pid][stat].ml,'G3b: another game\'s kept line was read for this one'); }
+          for(const junk of [{v:2,weeks:{'1':{[gp.id]:{at,lines:{[pid]:{[stat]:line}}}}}},{v:1,weeks:{'1':{[gp.id]:{at,lines:{[pid]:{[stat]:'7.5'}}}}}},{v:1,weeks:{'1':{[gp.id]:{at,lines:{[pid]:{[stat]:-3.5}}}}}},'junk',null]){
+            PAY.espn_close=junk; F('gradeGame')(gp);
+            chk(!S.projections['1'][pid][stat].ml,`G3b: a kept table that is not one was read: ${JSON.stringify(junk)}`); }
+          console.log(`G3b. DraftKings' line kept at kickoff: ${x.pl.n}'s ${stat} at ${line} frozen, graded ${over?'over':'under'} (${hit?'hit':'miss'}) with no price and counted by the week's pill; a paid line wins, another game's and junk never read`);
+        }
+      } finally {
+        PAY.mkt=keepMkt; if(hadClose) PAY.espn_close=keepClose; else delete PAY.espn_close;
+        S.projections['1']=JSON.parse(keepP); const h=JSON.parse(keepH); if(h) S.headlines['1'][gp.id]=h;
+        wr.innerHTML=keepW; sr.innerHTML=keepS; } } }
+  /* ---- T1. the team model's ratings are this season's (25 October 2026) ----
+     payload.py's team_grid: each club's elo, off_epa and d_off_epa from betting/state.json's teams (Alpha Model's ratings,
+     the inputs the betting app's equation runs on), the file's preseason seed only for a club the state has not got whole,
+     src saying which; the coefficients grid_model.json's own. Until that day every team bet stood on the preseason seeds.
+     Held against the state on disk where the payload says it read it (a payload baked before reads as the seeds) */
+  { const G=PAY.grid, fsT=require('fs'), pathT=require('path'), bad=[];
+    const gm=JSON.parse(fsT.readFileSync(pathT.join(__dirname,'..','data','grid_model.json'),'utf8'));
+    for(const k of ['coef','feats','intercept']) if(JSON.stringify(G[k])!==JSON.stringify(gm[k])) bad.push(k+' is not grid_model.json\'s');
+    let st=null; try{ st=JSON.parse(fsT.readFileSync(pathT.join(__dirname,'..','..','betting','state.json'),'utf8')); }catch(e){}
+    const src=G.src||null, fin=x=>typeof x==='number'&&isFinite(x);
+    if(src&&src.teams==='betting/state.json'){
+      /* the values against the state on disk only where it is the one the payload was baked from (its publish time):
+         a replay of an older payload beside today's state holds the shape alone (each club the state's kind of
+         number, n games, or exactly its seed) */
+      const same=!!st&&st.published!=null&&st.published===src.published, T=(st&&st.teams)||{}; let on=0, seed=0;
+      for(const [t,v] of Object.entries(G.teams||{})){
+        if(same){ const s0=T[t]||{};
+          if(['elo','off_epa','d_off_epa'].every(k=>fin(s0[k]))){ on++;
+            if(Math.abs(v.elo-s0.elo)>0.006||Math.abs(v.off_epa-s0.off_epa)>6e-6||Math.abs(v.d_off_epa-s0.d_off_epa)>6e-6||v.n!==(+s0.n||0)) bad.push(`${t}: ${v.elo}/${v.off_epa}/${v.d_off_epa}, the state ${s0.elo}/${s0.off_epa}/${s0.d_off_epa}`); }
+          else { seed++; if(JSON.stringify(v)!==JSON.stringify(gm.teams[t])) bad.push(t+': not on the state and not its seed'); } }
+        else if(JSON.stringify(v)===JSON.stringify(gm.teams[t])&&!('n' in v&&v.n>0)) seed++;
+        else if(['elo','off_epa','d_off_epa'].every(k=>fin(v[k]))&&Number.isInteger(v.n)) on++;
+        else bad.push(t+': '+JSON.stringify(v)); }
+      if(!same) console.log(`T1. betting/state.json on disk is not the one this payload was baked from (${src.published} against ${st&&st.published}): held to its shape`);
+      if(on!==src.clubs||seed!==src.seeds) bad.push(`src says ${src.clubs} on the state and ${src.seeds} seeds, the table ${on} and ${seed}`);
+      console.log(`T1. the team model's ratings: ${on} clubs on betting/state.json's, ${seed} on the preseason seed`); }
+    else { if(JSON.stringify(G.teams)!==JSON.stringify(gm.teams)) bad.push('a payload with no src whose teams are not the seeds');
+      console.log('T1. the team model\'s ratings: the preseason seeds (a payload baked before 25 October 2026, or the state did not read)'); }
+    chk(!bad.length,'T1: the team model\'s ratings are not what payload.py takes: '+bad.slice(0,4).join('; ')); }
   /* ---- the rules a suggested leg keeps, worked here on their own (app v111) ----
      Since app v111 the suggestions are two things: Suggested Parlays (#suggest), each Thursday, Sunday and
      Monday night game's own Safe, Medium, Aggressive and Extreme from that game's lines alone, locked 2 hours

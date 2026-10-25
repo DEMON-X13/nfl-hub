@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v135 \u00b7 2026-10-25';
+const APP_BUILD='app v136 \u00b7 2026-10-25';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -638,6 +638,14 @@ function marketLine(week,pid,stat){
   const M=PAY.mkt&&PAY.mkt[String(week)]; if(!M||!M[pid]) return null;
   return M[pid][stat]||null;
 }
+/* DraftKings' main line for a player and stat as the props job's last published read of ESPN had it before his game
+   kicked off (PAY.espn_close, weekly.py's espn_close), or null. The record grades the model's side of it where the
+   paid pull wrote no main line (from week 7 on, app v136). The number alone: never a price */
+function closeLine(gid,pid,stat){
+  const C=PAY.espn_close, W=C&&C.v===1&&C.weeks; if(!W||!gid) return null;
+  const wk=String(+String(gid).split('_')[1]), G=W[wk]&&W[wk][gid], L=G&&G.lines&&G.lines[pid], v=L&&L[stat];
+  return typeof v==='number'&&isFinite(v)&&v>0?v:null;
+}
 function mlProb(ml){ return ml>0?100/(ml+100):Math.abs(ml)/(Math.abs(ml)+100); }
 function devigOver(over,under){
   const a=mlProb(over), b=mlProb(under); return a/(a+b);
@@ -1082,7 +1090,8 @@ function trackRecord(){
         let r=sn.r; if(!r&&grp) r=rungs(grp,stat,sn.mu).map(x=>[x.k,x.p]);
         for(const [k,p] of (r||[])) if(p>0&&p<1) out.push(priced({w:+w,pid,stat,kind:'rung',k,p,hit:v>=k?1:0},gid?oddsFor(gid,pid,stat,k):null));
         let ml=sn.ml;
-        if(!ml&&grp){ const L=marketLine(+w,pid,stat); if(L) ml=[L.line,pOver(grp,stat,sn.mu,L.line)]; }
+        if(!ml&&grp){ const L=marketLine(+w,pid,stat), c=L?null:closeLine(gid,pid,stat);
+          if(L) ml=[L.line,pOver(grp,stat,sn.mu,L.line)]; else if(c!=null) ml=[c,pOver(grp,stat,sn.mu,c)]; }
         /* a book line is scored on the side the model favoured, the one you would have bet */
         if(ml&&ml[1]>0&&ml[1]<1&&v!==ml[0]){
           const over=ml[1]>=0.5; const L=marketLine(+w,pid,stat);

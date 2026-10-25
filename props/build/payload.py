@@ -159,7 +159,35 @@ for _pid,(_t,_pos,_rk,_nm) in sorted(_chart.items()):
     players.append({'id':_pid,'n':str(_full) if isinstance(_full,str) and _full else _nm,'p':_rpos,'g':_grp,'t':_team,'gp':0,'cn':0})
     _have.add(_pid); _add+=1
 print('players',len(players),f'({_add} of them charted with no row last season)')
-out={'mkt':_prev.get('mkt',{}),'mkt_meta':_prev.get('mkt_meta',{}),'grid':json.load(open('../data/grid_model.json')),'pts':json.load(open('../data/pts_model.json')),'corr':json.load(open('../data/corr.json')),'players':players,'toff':toff,'tdef':tdef,'tdefg':tdefg,'norm':norm,'sched':sched,
+# ---- the team model's ratings (a team bet's chance, and a game's margin where no line is posted) ----
+# grid_model.json is the betting app's own equation (its "market" coefficients) with the app's preseason
+# seeds, every club at n 0. The app runs that equation on its ratings as they stand (S.teams, which the
+# betting job publishes in betting/state.json after every final), and those are the inputs it was fitted
+# on, so they are what the bake reads: each club's elo, off_epa and d_off_epa from the season's state, the
+# seed kept only for a club the state has not got whole, or the whole file when the state is of another
+# season or unreadable. Until 25 October 2026 the seeds were all it read, so every team bet stood on
+# preseason ratings all season (KC 1476 at 5-0 where the season had it 1601, MIA 1434 at 0-5 where it had
+# 1321, and the Dolphins' moneyline led the Top 30 as a Value pick at 46.9% against a fair 33.6%). The
+# coefficients are untouched: nothing is fitted on the season in play.
+def team_grid():
+    G=json.load(open('../data/grid_model.json'))
+    try:
+        st=json.load(open('../../betting/state.json'))
+    except Exception as e:
+        print(f'grid: betting/state.json did not read ({e}): the preseason ratings stand'); return G
+    if int(st.get('season') or 0)!=SEASON:
+        print(f"grid: betting/state.json is of season {st.get('season')}, not {SEASON}: the preseason ratings stand"); return G
+    T=st.get('teams') or {}; ok=0
+    fin=lambda x: isinstance(x,(int,float)) and not isinstance(x,bool) and np.isfinite(x)
+    for t,seed in G['teams'].items():
+        v=T.get(t) or {}
+        if all(fin(v.get(k)) for k in ('elo','off_epa','d_off_epa')):
+            G['teams'][t]={'elo':round(float(v['elo']),2),'off_epa':round(float(v['off_epa']),5),'d_off_epa':round(float(v['d_off_epa']),5),'n':int(v.get('n') or 0)}
+            ok+=1
+    G['src']={'teams':'betting/state.json','season':SEASON,'published':st.get('published'),'clubs':ok,'seeds':len(G['teams'])-ok}
+    print(f'grid: {ok} clubs on the season\'s ratings from betting/state.json, {len(G["teams"])-ok} on the preseason seed')
+    return G
+out={'mkt':_prev.get('mkt',{}),'mkt_meta':_prev.get('mkt_meta',{}),'grid':team_grid(),'pts':json.load(open('../data/pts_model.json')),'corr':json.load(open('../data/corr.json')),'players':players,'toff':toff,'tdef':tdef,'tdefg':tdefg,'norm':norm,'sched':sched,
      'model':FM['model'],'dist':FM['dist'],'qs':FM['qs'],'prior':FM['prior'],'k':FM['k']}
 # the fitted per-stat market scale and touchdown-per-touch rates: data/ is their source, as it
 # is the model's, so a payload rebuilt from nothing still has them (tdrate at five decimals)
@@ -172,7 +200,7 @@ if _depth is not None: out['depth']=_depth; out['depth_dt']=_depth_dt
 # on every run from the published payload's and this run's read, and a run that cannot must never
 # publish the old read as if it were this one's (it refuses instead, and the last good payload stays)
 _RETIRED={'roster_season'}
-_REDERIVED={'espn'}
+_REDERIVED={'espn','espn_close'}   # espn_close, DraftKings' main lines kept at kickoff, is apply_espn's too
 for _k,_v in _prev.items():
     if _k not in out and _k not in _RETIRED and _k not in _REDERIVED: out[_k]=_v
 # DATA_BUILD (bug 3): derived from the roster/schedule content, so it changes exactly when a

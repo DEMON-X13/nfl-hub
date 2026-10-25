@@ -69,12 +69,25 @@ function rvFriends(){
     if(Object.keys(weeks).length) out.push({name:f.name,color:RV_FRIEND_COLORS[out.length%RV_FRIEND_COLORS.length],weeks,tb,friend:true,dash:true}); });
   return out;
 }
+/* Vegas's pick on a graded game r (S.processed's shape) with its closing odds o (S.odds'): the
+   moneylines with the margin out, the home side at 50% or more, else the spread's favourite; null on a
+   pick'em with no moneylines. The pick grid's Vegas column reads it too (betting/tools/build.js). */
+function rvVegasPick(r,o){
+  if(o&&isFinite(o.home)&&isFinite(o.away)&&o.home&&o.away){ const im=x=>x<0?-x/(-x+100):100/(x+100), h=im(+o.home), a=im(+o.away); return h/(h+a)>=0.5?r.home:r.away; }
+  return r.line==null||r.line===0?null:(r.line>0?r.home:r.away);
+}
 function recordViz(rows){
   const card=document.querySelector('#modelChart .card'), tab=document.getElementById('recordTable');
   if(!card||!rows||!rows.length) return;
   const showAll=!!S.showAllModels;
   const winner=r=>r.result>0?r.home:r.away;
-  const vPick=r=>r.line==null||r.line===0?null:(r.line>0?r.home:r.away);
+  /* Vegas's pick, called as the headline tiles and the Game snapshot call it: the closing moneylines
+     with the margin out (the home side at 50% or more), else the spread's favourite, none on a pick'em
+     with neither (until 25 October 2026 the legend, the grid and the chart took the spread alone, so a
+     game whose spread and moneylines named different favourites, NO at NYG in week 6, gave Vegas 59-34
+     there and 58-35 on the tile) */
+  const gidOf=new Map(Object.entries(S.processed||{}).map(([gid,r])=>[r,gid]));
+  const vPick=r=>rvVegasPick(r,(S.odds||{})[gidOf.get(r)]);
   const vOk=r=>vPick(r)===null?null:vPick(r)===winner(r);
   const flag=v=>v===true||v===false?v:null;
   const MODELS=[
@@ -218,7 +231,9 @@ function recordViz(rows){
       return `<td class="${cls}" style="${shade(t)}" title="${esc(name)}, ${label}: ${t.w} of ${g} (${Math.round(100*t.w/g)}%)${t.p?`, ${t.p} pending`:''}${tbx}"><b>${rec(t)}</b><small>${Math.round(100*t.w/g)}%${t.p?` · ${t.p} pending`:''}</small></td>`; };
     const friendRows=friends.length?`<tr class="rv-sep"><th class="rv-m">Friends</th><td colspan="${gw.length+1}"></td></tr>`+friends.map(f=>`<tr class="rv-friend"><th class="rv-m"><i class="lgd" style="background:repeating-linear-gradient(90deg,${f.color} 0 5px,transparent 5px 8px)"></i>${esc(f.name)}</th>`
       +gw.map(w=>fcell(f.wkT(w),f.name,wkName(w),f.tb[w],false)).join('')+fcell(f.season,f.name,'season',null,true)+'</tr>').join(''):'';
-    const games=gw.map(w=>rows.filter(r=>+r.week===w).length);
+    /* every game played that week, a tie among them (it counts for nobody, so the rows above leave it out) */
+    const played=Object.values(S.processed||{}).filter(r=>r.result!=null);
+    const games=gw.map(w=>played.filter(r=>+r.week===w).length);
     tab.innerHTML=`<div class="card"><h2>Week by week</h2>
       <div class="rv-gridwrap"><table class="rv-grid"><thead><tr><th class="rv-m"></th>${gw.map((w,i)=>`<th class="rv-c">${wkName(w)}<small>${games[i]?games[i]+' game'+(games[i]===1?'':'s'):'to play'}</small></th>`).join('')}<th class="rv-c rv-season">Season</th></tr></thead>
       <tbody>${gridRows}${friendRows}</tbody></table></div></div>`;

@@ -17,9 +17,13 @@ function ratingsViz(){
   const el=document.getElementById('ratingsTable'); if(!el||!S.teams) return;
   const T=window.__eloTeams;
   if(!T||!Object.keys(T).length){ el.innerHTML='<h2>Team rankings <span class="pill">Team Elo</span></h2><p class="muted">The team ratings did not load. Refresh the page to try again.</p>'; return; }
-  const rows=Object.entries(T).map(([t,v])=>({t,...v})).sort((a,b)=>b.elo-a.elo);
-  const prior=rows.filter(x=>x.before!=null).sort((a,b)=>b.before-a.before), rankBefore=Object.fromEntries(prior.map((x,i)=>[x.t,i+1]));
-  const mv=(t,i)=>{ if(!rankBefore[t]) return ''; const d=rankBefore[t]-(i+1);
+  /* clubs level on the Elo shown share its rank, one more than the clubs shown above it (the ELO tab's
+     tables' rule of 22 October 2026), listed by the rating behind it (p_avg); until 25 October 2026 a tie
+     was listed in the file's order and ranked by place, KC #1 over SF at 1590 though SF rated higher */
+  const rows=Object.entries(T).map(([t,v])=>({t,...v})).sort((a,b)=>(b.elo-a.elo)||((b.p_avg||0)-(a.p_avg||0))||a.t.localeCompare(b.t));
+  const rankNow=Object.fromEntries(rows.map(x=>[x.t,1+rows.filter(y=>y.elo>x.elo).length]));
+  const prior=rows.filter(x=>x.before!=null), rankBefore=Object.fromEntries(prior.map(x=>[x.t,1+prior.filter(y=>y.before>x.before).length]));
+  const mv=(t,i)=>{ if(!rankBefore[t]) return ''; const d=rankBefore[t]-rankNow[t];
     if(d===0) return '<span class="rankmv flat" title="No change since its last game, the league\'s results since included">·</span>';
     return `<span class="rankmv ${d>0?'up':'down'}" title="${d>0?'Up':'Down'} ${Math.abs(d)} since its last game, the league's results since included"><i>${d>0?'▲':'▼'}</i>${Math.abs(d)}</span>`; };
   const eloMv=x=>{ if(x.before==null) return ''; const d=x.elo-x.before;
@@ -48,7 +52,7 @@ function ratingsViz(){
   const lagging=[];
   const row=(x,i)=>{ const m=S.teams[x.t]; const bh=behind(x.t); if(bh) lagging.push([x.t,bh]);
     const e=m?`<td class="num">${epa(stateVal(m,'off_epa','off_epa'))}</td><td class="num">${epa(stateVal(m,'d_off_epa','off_epa'))}</td>`:'<td></td><td></td>';
-    return `<tr><td class="muted">${i+1}</td><td style="white-space:nowrap">${tag(x.t,tagColor(x.t),true,'mini')} <span class="muted">${TEAM_NAMES[x.t]||''}</span>${mv(x.t,i)}</td><td class="num rt-rec">${wl(x.t)}</td><td class="num" style="white-space:nowrap"><span class="elocell">${tierBadge(x.elo)}<b>${x.elo}</b></span>${bh?`<span class="rt-lag" title="This rating is from before ${bh}: the Elo job has not taken that game in yet">*</span>`:''}</td><td class="movecell">${eloMv(x)}</td><td class="num rt-pct">${Math.round(x.p_avg*100)}%</td>${e}</tr>`; };
+    return `<tr><td class="muted">${rankNow[x.t]}</td><td style="white-space:nowrap">${tag(x.t,tagColor(x.t),true,'mini')} <span class="muted">${TEAM_NAMES[x.t]||''}</span>${mv(x.t,i)}</td><td class="num rt-rec">${wl(x.t)}</td><td class="num" style="white-space:nowrap"><span class="elocell">${tierBadge(x.elo)}<b>${x.elo}</b></span>${bh?`<span class="rt-lag" title="This rating is from before ${bh}: the Elo job has not taken that game in yet">*</span>`:''}</td><td class="movecell">${eloMv(x)}</td><td class="num rt-pct">${Math.round(x.p_avg*100)}%</td>${e}</tr>`; };
   el.innerHTML=TIER_DEFS+`<h2>Team rankings <span class="pill">Team Elo</span></h2>
     <div class="rt-wrap"><table class="rt-v"><thead><tr><th>#</th><th>Team</th><th class="num">Record</th><th class="num">Elo</th><th class="num">Elo change</th><th class="num">Vs average</th><th class="num">Off EPA/play</th><th class="num">Def EPA/play</th></tr></thead><tbody>`
     +rows.map(row).join('')+'</tbody></table></div>';

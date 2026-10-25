@@ -661,7 +661,10 @@ function gradeGame(g){
       if(l.prob){ snap[l.stat]={p:l.p}; continue; }
       /* keep the chances shown, not just the projection, so the track record scores what was on screen */
       const o={mu:l.mu,r:l.rungs.map(r=>[r.k,+r.p.toFixed(4)])};
-      const L=marketLine(w,x.pl.id,l.stat); if(L) o.ml=[L.line,+pOver(x.pl.grp,l.stat,l.mu,L.line).toFixed(4)];
+      /* the paid pull's main line, else DraftKings' line as the last published read had it before kickoff (app v136) */
+      const L=marketLine(w,x.pl.id,l.stat), c=L?null:closeLine(g.id,x.pl.id,l.stat);
+      if(L) o.ml=[L.line,+pOver(x.pl.grp,l.stat,l.mu,L.line).toFixed(4)];
+      else if(c!=null) o.ml=[c,+pOver(x.pl.grp,l.stat,l.mu,c).toFixed(4)];
       snap[l.stat]=o;
     }
   }
@@ -2578,13 +2581,12 @@ function pbBestReturn([id,label,n,floor],pool,memo,kMax,opt){
     const fin=new Map();
     if(!floor) for(const e of pbBeam(pools,0,'pr',Infinity,memo)) fin.set(e.id,e);
     else for(const e of [...pbBeam(pools,floor,'ev',o.beam,memo),...pbBeam(pools,floor,'pr',o.beam,memo)]) fin.set(e.id,e);
-    /* the finalists that clear the floor by the search's own score, best first, worked with the
-       real sums on fewer draws; then the best in full, which is what the card shows and what the
-       floor is held to */
-    const top=[...fin.values()].filter(e=>!floor||e.pr>=floor*0.97).sort((a,b)=>((floor?b.ev-a.ev:b.pr-a.pr))||a.id.localeCompare(b.id)).slice(0,o.final)
-      .map(e=>{ const L=pbOrder(e.legs), pr=parlayProb(L,6000).corr, d=parlayDec(L.map(l=>({leg:l,ml:l.price})),4000); return {e,sc:floor?pr*d:pr,ok:!floor||pr>=floor*0.97}; })
-      .filter(x=>x.ok).sort((a,b)=>(b.sc-a.sc)||a.e.id.localeCompare(b.e.id));
-    for(const x of top){ const r=pbExact(x.e.legs); if(!floor||r.corr>=floor) return r; }
+    /* the finalists that clear the floor by the search's own score, in the beam's own order (app v136): its
+       score is exact where the legs are independent and close within a game, where a re-rank on a few
+       thousand draws was noisier than the gaps between them; then each in full, which is what the card shows
+       and what the floor is held to, the first to clear it taken */
+    const top=[...fin.values()].filter(e=>!floor||e.pr>=floor*0.97).sort((a,b)=>((floor?b.ev-a.ev:b.pr-a.pr))||a.id.localeCompare(b.id)).slice(0,o.final);
+    for(const e of top){ const r=pbExact(e.legs); if(!floor||r.corr>=floor) return r; }
   }
   return null;
 }

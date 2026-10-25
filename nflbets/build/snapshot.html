@@ -762,11 +762,12 @@ function voteOf(P,g,F,st){
   return {C,rows,vg,mods,nA,nH,base,agree,dis,missing,n:rows.length,hits,
     count:base?agree.length+' of '+mods.length:nA+'–'+nH};
 }
-/* Power Ratings, ranked as Team Rankings ranks them: by rating, highest first */
+/* Power Ratings, ranked as Team Rankings ranks them: by rating, highest first, clubs level on the Elo
+   shown sharing its rank, one more than the clubs shown above it (since 25 October 2026) */
 function teamsOf(F,g){
   const M=F&&F.model, T=M&&M.teams; if(!T||!T[g.away_team]||!T[g.home_team]) return null;
-  const order=Object.entries(T).map(([t,v])=>({t,...v})).sort((x,y)=>y.elo-x.elo);
-  return {M,T,order,rank:t=>order.findIndex(x=>x.t===t)+1};
+  const order=Object.entries(T).map(([t,v])=>({t,...v})).sort((x,y)=>(y.elo-x.elo)||((y.p_avg||0)-(x.p_avg||0))||x.t.localeCompare(y.t));
+  return {M,T,order,rank:t=>1+order.filter(x=>x.elo>T[t].elo).length};
 }
 /* Overall Offense and Overall Defense, as the ELO Ratings tab has them: on once a team has a
    rating (a rated game, or its start carried from last season); C the carry the file names */

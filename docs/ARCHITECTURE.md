@@ -2069,6 +2069,13 @@ name within his game where it lacks him), `espn` (app v125: the props job's read
 read_at, games:{gid:{w, gl:{at, lines, ids, event}, pl:{at, lines, rungs, td}, out:{st 'ok'|'none', at}}}}`, one entry a
 game still to come with anything to publish, every time before its kickoff; `apply_espn` in `weekly.py` works it out again
 on every run from this run's read and the published payload's, and `payload.py` never carries it; about 23 KB a week),
+`espn_close` (app v136: DraftKings' main lines as the last published read had them before each kickoff, `{v:1, weeks:{w:
+{gid:{at, lines:{pid:{stat:line}}}}}}`, frozen once made and carried within the season by `apply_espn`'s `espn_close`, the
+games played before it recovered from git into `data/espn_close_seed.json` by `build/espn_close_seed.py`; the props tab's
+record grades the model's side of them where the paid pull's `mkt` has no line, `closeLine` in part2.js), `grid` (the team
+model: the betting app's coefficients from `data/grid_model.json` with each club's `elo`, `off_epa` and `d_off_epa` from
+`betting/state.json`'s teams since 25 October 2026, `payload.py`'s `team_grid()`, the file's preseason seeds the fallback,
+`src` saying which),
 `season`, `week` and
 `season_over`, `not_posted` (`stats` and/or `injuries` when nflverse has not posted this
 season's file yet: the slate says so, and the audit expects none of it), `build` (the data

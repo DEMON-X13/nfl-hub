@@ -1,0 +1,117 @@
+{
+ "v": 1,
+ "season": 2026,
+ "how": "props/build/espn_close_seed.py: DraftKings' main lines as the last published read had them before kickoff, recovered from git for the games played before weekly.py's espn_close began keeping them (app v136); espn_close takes a game from here only where it keeps none. Written by the tool, never by hand.",
+ "weeks": {
+  "7": {
+   "2026_07_NE_CHI": {
+    "at": "2026-10-22T16:59:04.000Z",
+    "lines": {
+     "00-0031203": {
+      "kick_pts": 7.5,
+      "fg_made": 1.5
+     },
+     "00-0032464": {
+      "receiving_yards": 25.5,
+      "receptions": 2.5
+     },
+     "00-0033090": {
+      "receiving_yards": 35.5,
+      "receptions": 3.5
+     },
+     "00-0035676": {
+      "receiving_yards": 69.5,
+      "receptions": 5.5
+     },
+     "00-0036290": {
+      "receiving_yards": 8.5,
+      "receptions": 1.5
+     },
+     "00-0036275": {
+      "carries": 14.5,
+      "rushing_yards": 61.5,
+      "receiving_yards": 20.5,
+      "receptions": 2.5,
+      "scrim_yards": 86.5
+     },
+     "00-0039021": {
+      "carries": 6.5,
+      "receiving_yards": 7.5,
+      "receptions": 1.5,
+      "scrim_yards": 39.5
+     },
+     "00-0038621": {
+      "receiving_yards": 39.5,
+      "receptions": 3.5
+     },
+     "00-0039919": {
+      "receiving_yards": 43.5,
+      "receptions": 3.5
+     },
+     "00-0040556": {
+      "rushing_yards": 14.5
+     },
+     "00-0039851": {
+      "passing_yards": 246.5,
+      "completions": 20.5,
+      "passing_tds": 1.5,
+      "carries": 5.5,
+      "rushing_yards": 29.5,
+      "passing_interceptions": 0.5,
+      "attempts": 31.5
+     },
+     "00-0039918": {
+      "passing_yards": 244.5,
+      "completions": 20.5,
+      "passing_tds": 1.5,
+      "carries": 4.5,
+      "rushing_yards": 18.5,
+      "passing_interceptions": 0.5,
+      "attempts": 32.5
+     },
+     "00-0040734": {
+      "carries": 6.5,
+      "rushing_yards": 24.5,
+      "receiving_yards": 3.5,
+      "receptions": 0.5,
+      "scrim_yards": 31.5
+     },
+     "00-0036875": {
+      "carries": 11.5,
+      "rushing_yards": 43.5,
+      "receiving_yards": 18.5,
+      "receptions": 2.5,
+      "scrim_yards": 65.5
+     },
+     "00-0040200": {
+      "kick_pts": 6.5,
+      "fg_made": 1.5
+     },
+     "00-0040131": {
+      "receiving_yards": 19.5,
+      "receptions": 1.5
+     },
+     "00-0040735": {
+      "receiving_yards": 58.5,
+      "receptions": 4.5
+     },
+     "00-0040563": {
+      "receiving_yards": 17.5,
+      "receptions": 1.5
+     },
+     "00-0040126": {
+      "receiving_yards": 44.5,
+      "receptions": 3.5
+     },
+     "00-0041395": {
+      "receiving_yards": 14.5,
+      "receptions": 1.5
+     }
+    }
+   }
+  }
+ },
+ "from": {
+  "2026_07_NE_CHI": "3071324e0337"
+ }
+}

@@ -114,6 +114,15 @@ function jokerHistory(season) {
     for (const [gid, e] of Object.entries(d.games)) out[gid] = Object.assign({ file: f }, e); }
   return out; }
 const DAY = 86400000;
+/* Vegas's pick on a graded game, the smoke's own reading of the rule the record's tiles, legend, grid and
+   chart share (since 25 October 2026): the closing moneylines in st.odds with the margin out, the home side
+   at 50% or more, else the spread's favourite, none on a pick'em with neither */
+function vegasOwn(r, st) {
+  const gid = Object.keys(st.processed || {}).find(k => st.processed[k] === r), o = gid && (st.odds || {})[gid];
+  const im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
+  if (o && isFinite(o.home) && isFinite(o.away) && o.home && o.away) return im(+o.home) / (im(+o.home) + im(+o.away)) >= 0.5 ? r.home : r.away;
+  return r.line == null || r.line === 0 ? null : (r.line > 0 ? r.home : r.away);
+}
 async function reality() {
   const P = JSON.parse(state), pub = Date.parse(P.published), JH = jokerHistory(P.season);
   const J = JSON.stringify;
@@ -450,7 +459,7 @@ async function reality() {
       const T = tally(rows), sc = jr.children[jr.children.length - 1];
       check(sc.textContent.trim() === `${T.w}–${T.l}${pct(T)}%` && sc.getAttribute('title') === `The Joker, season: ${T.w} of ${T.w + T.l} (${pct(T)}%)`, `5l${tag}: the Joker's season cell does not count every week: ${sc.outerHTML.slice(0, 200)}`);
       let net = 0;
-      for (const r of rows) { const a = jok(r), vp = r.line == null || r.line === 0 ? null : (r.line > 0 ? r.home : r.away);
+      for (const r of rows) { const a = jok(r), vp = vegasOwn(r, S2);
         if (a === null || vp === null) continue; net += (a ? 1 : 0) - (vp === (r.result > 0 ? r.home : r.away) ? 1 : 0); }
       const sign = n => n > 0 ? '+' + n : (n < 0 ? '−' + Math.abs(n) : '0');
       const lg = tx('#modelChart .lgdrow');
@@ -732,6 +741,27 @@ async function xbetLog() {
     { const rows = [...rt.querySelectorAll('table.rt-v tbody tr')], vals = rows.map(tr => +tr.querySelector('.elocell b').textContent), want = JSON.parse(eloModel).teams;
       check(rows.length === 32 && rows.length === Object.keys(want).length && vals.every((v, i) => i === 0 || v <= vals[i - 1]), 'admin: Power Ratings does not show the 32 team ratings, best first');
       check(Math.abs(vals.reduce((x, v) => x + v, 0) / vals.length - 1500) < 2, 'admin: the team ratings do not average 1500');
+      /* clubs level on the Elo shown share its rank, one more than the clubs above it, listed by the rating
+         behind it (p_avg), and the arrows read those ranks (since 25 October 2026), held on the real file and
+         on one with the third club made level with the second */
+      const rankHeld = (TT, tag) => { const rs = [...rt.querySelectorAll('table.rt-v tbody tr')], bad = [];
+        rs.forEach((tr, i) => { const tm = tr.children[1].textContent.trim().split(/\s+/)[0], v = TT[tm]; if (!v) { bad.push('no row for ' + tm); return; }
+          const want = 1 + Object.values(TT).filter(y => y.elo > v.elo).length;
+          if (tr.children[0].textContent.trim() !== String(want)) bad.push(`${tm} #${tr.children[0].textContent.trim()}, want #${want}`);
+          const prev = i && TT[rs[i - 1].children[1].textContent.trim().split(/\s+/)[0]];
+          if (prev && (prev.elo < v.elo || (prev.elo === v.elo && (prev.p_avg || 0) < (v.p_avg || 0)))) bad.push(`${tm} listed below a club it rates above`);
+          const bw = v.before == null ? null : 1 + Object.values(TT).filter(y => y.before != null && y.before > v.before).length, mvEl = tr.querySelector('.rankmv');
+          if (bw != null) { const d = bw - want, txt = mvEl ? mvEl.textContent.trim() : '';
+            if (d === 0 ? txt !== '·' : txt !== (d > 0 ? '▲' : '▼') + Math.abs(d)) bad.push(`${tm}'s arrow reads "${txt}", the ranks move ${d}`); } });
+        check(!bad.length, `admin: Team Rankings' ranks (${tag}) are not shared on a tie: ` + bad.slice(0, 4).join('; ')); };
+      rankHeld(want, 'the real file');
+      { const W = a.window, keepT = W.__eloTeams, TT = JSON.parse(JSON.stringify(keepT)), ord = Object.keys(TT).sort((x, y) => TT[y].elo - TT[x].elo);
+        /* a club with clear air above it and two below: the next one made level with it, rated a hair higher */
+        const E = k => TT[ord[k]].elo, i = [...ord.keys()].find(k => k > 0 && k + 2 < ord.length && E(k - 1) > E(k) && E(k) > E(k + 1) && E(k + 1) > E(k + 2));
+        TT[ord[i + 1]].elo = E(i); TT[ord[i + 1]].p_avg = TT[ord[i]].p_avg + 0.0001; W.__eloTeams = TT; W.eval('ratingsViz()');
+        const at = [...rt.querySelectorAll('table.rt-v tbody tr')].slice(i, i + 3).map(tr => tr.children[0].textContent.trim() + ' ' + tr.children[1].textContent.trim().split(/\s+/)[0]);
+        check(at[0] === (i + 1) + ' ' + ord[i + 1] && at[1] === (i + 1) + ' ' + ord[i] && at[2] === (i + 3) + ' ' + ord[i + 2], `admin: two clubs level on the Elo shown do not share #${i + 1}, the one rated higher first, the next #${i + 3}: ` + at.join(', '));
+        rankHeld(TT, 'two made level'); W.__eloTeams = keepT; W.eval('ratingsViz()'); }
       check(rows.every(tr => tr.children.length === 8 && /^\d+-\d+(-\d+)?$/.test(tr.querySelector('.rt-rec').textContent) && tr.querySelector('.tierbadge') && tr.querySelector('.movecell .elomv') && /^\d+%$/.test(tr.querySelector('.rt-pct').textContent)), 'admin: every row should carry its record, tier shield, Elo change and chance against an average team');
       check(!rt.querySelector('[data-rv]') && !/Vegas|Alpha Model/.test(rt.textContent), 'admin: Power Ratings still shows Vegas or a Alpha Model switch');
       check(!!rt.querySelector('svg defs linearGradient[id^="tg-"]'), 'admin: the tier shields have no gradients to fill them');
@@ -830,10 +860,35 @@ async function xbetLog() {
       SB.bets = JSON.parse(keepB); SB.bank = JSON.parse(keepK); e.window.eval('renderRecord()'); }
     check(/= Vegas/.test(rec.querySelector('svg.rv-chart').textContent), 'embed: the zero line is not marked as Vegas');
     /* the Main Model against Vegas, counted here from the published games */
-    { const win = r => r.result > 0 ? r.home : r.away, vp = r => !r.line ? null : (r.line > 0 ? r.home : r.away);
+    { const win = r => r.result > 0 ? r.home : r.away, vp = r => vegasOwn(r, SE);
       let net = 0; for (const r of Object.values(SE.processed)) { if (r.correct === null || vp(r) === null) continue; net += (r.correct ? 1 : 0) - (vp(r) === win(r) ? 1 : 0); }
       const sg = net > 0 ? '+' + net : (net < 0 ? '\u2212' + Math.abs(net) : '0');
       check(rtxt.includes('Alpha Model') && new RegExp('Alpha Model \\d+\u2013\\d+ ' + sg.replace('+', '\\+') + ' vs Vegas').test(rtxt), `embed: Alpha Model should read ${sg} vs Vegas: ` + rtxt.slice(0, 300)); }
+    /* one Vegas (since 25 October 2026): the legend, the grid's season cell and the tiles call Vegas's pick by
+       one rule, the moneylines with the margin out before the spread, held on a game planted so that its
+       spread and its moneylines name different favourites (until then the legend and the grid read the spread
+       alone: NO at NYG in week 6 gave Vegas 59-34 there and 58-35 on the tile) */
+    { const win = r => r.result > 0 ? r.home : r.away;
+      const gid = Object.keys(SE.processed).find(k => { const r = SE.processed[k]; return r.correct !== null && r.result && r.line; });
+      if (!gid) console.log('  one Vegas: no graded game with a line to plant on; skipped');
+      else { const r = SE.processed[gid], keepO = JSON.stringify(SE.odds || {});
+        SE.odds = SE.odds || {}; SE.odds[gid] = r.line > 0 ? { home: 130, away: -150, src: 'smoke' } : { home: -150, away: 130, src: 'smoke' };
+        e.window.eval('renderRecord()');
+        let w = 0, l = 0; for (const x of Object.values(SE.processed)) { if (x.correct === null) continue; const v = vegasOwn(x, SE); if (v === null) continue; if (v === win(x)) w++; else l++; }
+        let c = 0, n = 0; for (const x of Object.values(SE.processed)) { if (x.result == null || x.result === 0) continue; const v = vegasOwn(x, SE); if (v === null) continue; n++; if (v === win(x)) c++; }
+        const t2 = [...de.querySelectorAll('#modelChart .lgdrow')].map(x => x.textContent).join(' ').replace(/\s+/g, ' ');
+        const vRow = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(tr => tr.querySelector('th').textContent.trim() === 'Vegas');
+        check(vegasOwn(r, SE) === (r.line > 0 ? r.away : r.home), 'one Vegas: the plant did not make the moneylines name the other side');
+        check(t2.includes(`Vegas ${w}\u2013${l}`), `one Vegas: the legend does not give Vegas ${w}\u2013${l} on the moneylines first: ` + t2.slice(0, 200));
+        check(!!vRow && vRow.querySelector('td.rv-season b').textContent === `${w}\u2013${l}`, 'one Vegas: the grid\'s Vegas season cell is not ' + `${w}\u2013${l}: ` + (vRow ? vRow.querySelector('td.rv-season').textContent : 'no row'));
+        check(de.getElementById('recordStats').textContent.includes(`Vegas Record, ${c}/${n}`), `one Vegas: the tile is not Vegas Record, ${c}/${n}: ` + de.getElementById('recordStats').textContent.slice(0, 120));
+        SE.odds = JSON.parse(keepO); e.window.eval('renderRecord()'); } }
+    /* the week-by-week grid's header counts every game played that week, a tie among them */
+    { const heads = [...de.querySelectorAll('#recordTable table.rv-grid thead th.rv-c')].filter(th => !th.classList.contains('rv-season'));
+      const bad = []; heads.forEach(th => { const m = /^(Week|Playoffs) (\d+)/.exec(th.firstChild ? th.firstChild.textContent : ''); if (!m) { bad.push('a header reads ' + th.textContent); return; }
+        const w = m[1] === 'Week' ? +m[2] : 18 + +m[2], n = Object.values(SE.processed).filter(r => +r.week === w && r.result != null).length;
+        const sm = (th.querySelector('small') || {}).textContent || ''; if (sm !== (n ? n + ' game' + (n === 1 ? '' : 's') : 'to play')) bad.push(`week ${w} says "${sm}", played ${n}`); });
+      check(!bad.length, 'embed: the week-by-week grid\'s header miscounts the games played: ' + bad.slice(0, 3).join('; ')); }
     const gridRows = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].map(tr => tr.querySelector('th').textContent.trim());
     /* every model with a decided game, in order, then Vegas: a model that has none (the Joker in a
        season it could not call, say) is left out rather than shown empty */
@@ -848,6 +903,23 @@ async function xbetLog() {
     check(gridHead.join('|') === 'Game|Alpha Model|The Joker|ELO Model|Vegas', 'embed: the pick grid\'s columns should be Game, Alpha Model, The Joker, ELO Model and Vegas: ' + gridHead.join('|'));
     const firstRow = de.querySelector('.pickgrid tbody tr');
     check(!!firstRow && firstRow.querySelectorAll('td').length === gridHead.length, 'embed: the pick grid rows do not match its columns');
+    /* its Vegas column called by the record's rule (moneylines before the spread), on a game of the week
+       shown planted so that the two name different favourites */
+    { const vi = gridHead.indexOf('Vegas'), wk = +((de.getElementById('picksWeek') || {}).value || 0);
+      const g = SE.schedule.find(x => +x.week === wk && x.spread_line != null && +x.spread_line !== 0), keepO = JSON.stringify(SE.odds || {});
+      if (vi < 0 || !g) console.log('  pick grid Vegas: no game with a spread in the week shown; skipped');
+      else { SE.odds = SE.odds || {}; SE.odds[g.game_id] = +g.spread_line > 0 ? { home: 130, away: -150, src: 'smoke' } : { home: -150, away: 130, src: 'smoke' };
+        e.window.eval('renderRecord()'); await sleep(40);
+        const bad = [];
+        for (const tr of de.querySelectorAll('.pickgrid tbody tr')) { const gm = tr.querySelector('td.gm b'), hm = tr.querySelectorAll('td.gm b')[1];
+          const sg = gm && hm && SE.schedule.find(x => +x.week === wk && x.away_team === gm.textContent && x.home_team === hm.textContent); if (!sg) continue;
+          const want = vegasOwn({ home: sg.home_team, away: sg.away_team, line: sg.spread_line == null ? null : +sg.spread_line }, { processed: {}, odds: {} }) ;
+          const o = (SE.odds || {})[sg.game_id], im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
+          const exp = o && o.home && o.away ? (im(+o.home) / (im(+o.home) + im(+o.away)) >= 0.5 ? sg.home_team : sg.away_team) : want;
+          const got = (tr.children[vi].querySelector('.ttag') || {}).textContent || null;
+          if (got !== exp) bad.push(`${sg.game_id}: ${got} where the rule gives ${exp}`); }
+        check(!bad.length, 'embed: the pick grid\'s Vegas column is not called on the moneylines first: ' + bad.slice(0, 3).join('; '));
+        SE.odds = JSON.parse(keepO); e.window.eval('renderRecord()'); await sleep(40); } }
     /* one week at a time: this week by default, the weeks before it in the picker, nothing beyond */
     const weeksAll = [...new Set(SE.schedule.map(g => +g.week))].sort((x, y) => x - y);
     const cur = weeksAll.find(w => SE.schedule.some(g => +g.week === w && g.result == null)) || weeksAll[weeksAll.length - 1];

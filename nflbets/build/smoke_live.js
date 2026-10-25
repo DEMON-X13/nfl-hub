@@ -3338,6 +3338,12 @@ const ladderBoot = async (x, seeded, how) => {
         && missTxt(x, n1(LEG.te2)).endsWith(': no DraftKings line read for it (Pull from DraftKings puts it on as his anytime touchdown)')
         && !noteOf(x).querySelector('p[data-pc-dkbyhand]'),
         `${how}: before the pull, the admin's card does not say what Pull from DraftKings does with each player's leg, or says player legs go on by hand: ` + txt(noteOf(x)));
+      /* the snapshot only once the card's check of DraftKings' lines has really ended: checking() settles at its
+         10-second cap while a slow read goes on, and that read's end draws the page again (once, after the cap), which
+         landed inside this window on a slow runner once (props gate, 25 October 2026); 'late' is that state */
+      for (let i = 0; i < 400 && ['busy', 'late'].includes((cardCheck(w) || {}).state); i++) await wait(50);
+      chk(!['busy', 'late'].includes((cardCheck(w) || {}).state), `${how}: the card's check of DraftKings' lines never ended: ${JSON.stringify(cardCheck(w))}`);
+      await wait(20);
       const before1 = all3(x), S1json = JSON.stringify(w.eval('S'));
       /* (1) a press: one free events call, the question; Cancel; Escape */
       const log0 = OA.log.length;
