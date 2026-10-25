@@ -33,7 +33,11 @@ change to the audit, the smoke or the props parts is held to every shape the job
 
 The season played out (every game given a score, the week 17 and 18 games given week 7's lines, as
 real closing lines would be; and the same with no lines past week 7, nflverse's shape for weeks not
-yet posted) is built here from the 15 October payload, never committed.
+yet posted) is built here from the 15 October payload, never committed. So is a run that lands while the week's last
+game is under way (mon_baked, the review of 25 October 2026): the 25 October payload baked again by weekly.py's own
+apply_espn five minutes before the case's moment, the Sunday games scored, so the payload's bake is hours after the
+page's clock once the audit sets it back before that kickoff. The Monday nights above were baked before their kickoffs,
+and a payload baked during the game had M8 refuse every such run until then (and G3b, before #326).
 
 No credit is spent and nothing is downloaded: every input is in git. One audit takes about 2.5
 minutes alone, 3 to 6.5 four at a time; the off-season ones about a minute.
@@ -63,6 +67,7 @@ CASES = [
     ('paid_ids',     'paid DraftKings ids on a game to come',        '417be84', '2026-10-15T19:05Z', 'audit'),
     ('sun_3pm',      'Sunday 3pm, a first game whose RB1 has no lines', '417be84', '2026-10-18T19:00Z', 'audit'),
     ('mon_live6',    'Monday night under way, week 6',               '417be84', '2026-10-20T01:30Z', 'audit'),
+    ('mon_baked',    'Monday night under way, the payload baked during the game', '744f059', '2026-10-27T01:20Z', 'audit:mon_baked'),
     ('season_over',  'the season played out, closing lines on weeks 17-18', '417be84', '2027-02-15T15:00Z', 'audit:over_lines'),
     ('season_bare',  'the season played out, no lines past week 7',  '417be84', '2027-02-15T15:00Z', 'audit:over_bare'),
     ('smoke_paid',   'page smoke, paid ids on a game to come',       '417be84', '2026-10-15T19:05Z', 'smoke'),
@@ -92,6 +97,31 @@ def season_over(pay, lines):
                 if src[i % len(src)].get(k) is not None: g[k] = src[i % len(src)][k]
     P['week'] = max(int(g['w']) for g in P['sched'])
     P['season_over'] = True
+    return json.dumps(P)
+
+
+def mon_baked(pay, now):
+    """A props run five minutes before now, with the week's last game under way: the published payload (pay) baked
+    again as weekly.py bakes it then, every game four hours past its kickoff given a score, the lines the published
+    read put on the schedule taken off (payload.py rebuilds the schedule from games.csv), apply_espn run with no read
+    of its own (espn_read.js reads no game once none is to come), baked_at the run's minute. Held to the shape it
+    stands for, so a change to the payload or to apply_espn cannot quietly turn it into another case"""
+    import copy, datetime as dt, weekly as W
+    prev = json.loads(pay); P = copy.deepcopy(prev)
+    N = dt.datetime.fromisoformat(now.replace('Z', '+00:00')) - dt.timedelta(minutes=5)
+    for g in P['sched']:
+        k = W.kickoff(g)
+        if k and k + dt.timedelta(hours=4) <= N and g.get('hs') is None: g['hs'], g['as'] = 21.0, 17.0
+        if g.get('lsr') == 'espn':
+            for x in ('ls', 'lat', 'lsr'): g.pop(x, None)
+    W.apply_espn(P, prev, None, N)
+    P['baked_at'] = N.isoformat(timespec='minutes')
+    wk = max(int(g['w']) for g in P['sched'] if W.kickoff(g) and W.kickoff(g) <= N)
+    last = max((g for g in P['sched'] if int(g['w']) == wk), key=W.kickoff)
+    ko = W.kickoff(last)
+    assert ko <= N < ko + dt.timedelta(hours=4) and last.get('hs') is None, f'mon_baked: {last["id"]} is not under way at {N}'
+    assert not any(W.kickoff(g) > N and int(g['w']) == wk for g in P['sched']), f'mon_baked: week {wk} has a game still to come'
+    assert last['id'] in P['espn_close']['weeks'].get(str(wk), {}), f'mon_baked: {last["id"]} was not kept at its kickoff'
     return json.dumps(P)
 
 
@@ -129,7 +159,9 @@ def run_case(case, base, a):
             if ':' in kind:
                 pf = os.path.join(d, 'props', 'data', 'payload.json')
                 with open(pf) as f: pay = f.read()
-                with open(pf, 'w') as f: f.write(season_over(pay, kind.endswith('lines')))
+                synth = kind.split(':', 1)[1]
+                built = mon_baked(pay, now) if synth == 'mon_baked' else season_over(pay, synth == 'over_lines')
+                with open(pf, 'w') as f: f.write(built)
             cwd = os.path.join(d, 'props', 'build')
             subprocess.run([sys.executable, 'assemble.py'], cwd=cwd, check=True, capture_output=True)
             r = subprocess.run(['node', 'audit.js'], cwd=cwd, env={**env, 'PROPS_AUDIT_NOW': now}, capture_output=True, text=True, timeout=a.timeout)

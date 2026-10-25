@@ -760,12 +760,18 @@ async function xbetLog() {
            order the real file has, the review of 25 October 2026): the third club made level with the second,
            rated a hair higher */
         ord.forEach((t, k) => { TT[t].elo = 1700 - 10 * k; TT[t].p_avg = +(0.8 - 0.01 * k).toFixed(4); TT[t].before = 1700 - 10 * k + (k % 2 ? 4 : -4); });
+        /* and the fifth and sixth level on the rating before their last game, so the arrows' shared rank is held here too */
+        TT[ord[5]].before = TT[ord[4]].before;
         const E = k => TT[ord[k]].elo, i = 1;
         TT[ord[i + 1]].elo = E(i); TT[ord[i + 1]].p_avg = TT[ord[i]].p_avg + 0.0001; W.__eloTeams = TT; W.eval('ratingsViz()');
         const at = [...rt.querySelectorAll('table.rt-v tbody tr')].slice(i, i + 3).map(tr => tr.children[0].textContent.trim() + ' ' + tr.children[1].textContent.trim().split(/\s+/)[0]);
         check(at[0] === (i + 1) + ' ' + ord[i + 1] && at[1] === (i + 1) + ' ' + ord[i] && at[2] === (i + 3) + ' ' + ord[i + 2], `admin: two clubs level on the Elo shown do not share #${i + 1}, the one rated higher first, the next #${i + 3}: ` + at.join(', '));
         rankHeld(TT, 'two made level'); W.__eloTeams = keepT; W.eval('ratingsViz()'); }
-      check(rows.every(tr => tr.children.length === 8 && /^\d+-\d+(-\d+)?$/.test(tr.querySelector('.rt-rec').textContent) && tr.querySelector('.tierbadge') && tr.querySelector('.movecell .elomv') && /^\d+%$/.test(tr.querySelector('.rt-pct').textContent)), 'admin: every row should carry its record, tier shield, Elo change and chance against an average team');
+      /* the Elo change only where the club has a rating before its last game: at a rollover a club yet to play has none
+         (elo/build.py writes before null), and the row draws no change rather than a made-up one */
+      check(rows.every(tr => { const v = want[tr.children[1].textContent.trim().split(/\s+/)[0]], mv = tr.querySelector('.movecell .elomv');
+        return tr.children.length === 8 && /^\d+-\d+(-\d+)?$/.test(tr.querySelector('.rt-rec').textContent) && tr.querySelector('.tierbadge') && !!v && (v.before == null ? !mv : !!mv) && /^\d+%$/.test(tr.querySelector('.rt-pct').textContent); }),
+        'admin: every row should carry its record, tier shield, Elo change (where it has a rating before its last game) and chance against an average team');
       check(!rt.querySelector('[data-rv]') && !/Vegas|Alpha Model/.test(rt.textContent), 'admin: Power Ratings still shows Vegas or a Alpha Model switch');
       check(!!rt.querySelector('svg defs linearGradient[id^="tg-"]'), 'admin: the tier shields have no gradients to fill them');
       const T = e => a.window.eval('eloTier(' + e + ')[0]');
