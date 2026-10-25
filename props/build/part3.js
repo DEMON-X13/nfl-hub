@@ -4109,7 +4109,7 @@ function applyBaked(){
   buildNorm();   /* price matching projects every player, which needs the league averages ready */
   const byId=Object.fromEntries(S.sched.map(g=>[g.id,g]));
   for(const p of PAY.sched){ const g=byId[p.id]; if(!g) continue;
-    for(const k of ['d','t','sp','tot','hs','as','mla','mlh','spa','sph','tov','tou']) if(p[k]!=null&&g[k]!==p[k]){ g[k]=p[k]; done.sched++; } }
+    for(const k of ['d','t','sp','tot','hs','as','mla','mlh','spa','sph','tov','tou','neu']) if(p[k]!=null&&g[k]!==p[k]){ g[k]=p[k]; done.sched++; } }
   /* the build pulled lines when it ran, so the freshness note counts from then */
   if(PAY.baked_at){ const t=Date.parse(PAY.baked_at); if(isFinite(t)&&!(S.gamesFetched>t)) S.gamesFetched=t; }
   /* the season replays week by week, each week graded on its own injury report, the one that

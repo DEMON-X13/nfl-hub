@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v136 \u00b7 2026-10-25';
+const APP_BUILD='app v137 \u00b7 2026-10-25';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -136,12 +136,15 @@ function modelPoints(team,opp,isHome){
   v+=P.coef[P.feats.length+1]*(isHome?1:0);
   return clip(v,3,45);
 }
-/* the team model from the other project: predicted winning margin, home side */
+/* the team model from the other project: predicted winning margin, home side. A neutral site (the payload's neu,
+   app v137) is read as the betting app's own equation reads it: grid_model.json's neutral coefficient is the app's
+   MODEL.pure, minus the intercept, so the home field comes out exactly (PIT at NO at the Stade de France, -5.153, Alpha's
+   own frozen margin); a payload baked before the flag reads every game as a home game, as before */
 function modelMargin(g){
   const G=PAY.grid; if(!G) return 0;
   const h=G.teams[g.h], a=G.teams[g.a]; if(!h||!a) return 0;
   const net=(h.off_epa-h.d_off_epa)-(a.off_epa-a.d_off_epa);
-  const f={elo_diff:h.elo-a.elo, rest:0, neutral:0, net_epa:net};
+  const f={elo_diff:h.elo-a.elo, rest:0, neutral:g&&g.neu===1?1:0, net_epa:net};
   let m=G.intercept;
   G.feats.forEach((k,i)=>{ m+=G.coef[i]*(f[k]||0); });
   return m;
@@ -163,6 +166,8 @@ function gameCtx(g,team){
   implied=clip(implied,3,45);
   const teamSpread=(sp!=null)?(isHome?-sp:sp)
     :(isHome?-modelMargin(g):modelMargin(g));
+  /* home is the listed home side even at a neutral site: the player model was fitted on nflverse's listed home team,
+     which reads no location, and the margin above already takes a neutral site's home field out of a game with no line */
   return {home:isHome?1:0, sprd:clip(teamSpread/7,-3,3), implied, src,
     imp:clip((implied-PAY.norm.implied_mean)/(PAY.norm.implied_sd||1),-3,3)};
 }

@@ -351,11 +351,30 @@ state has not got whole, or the whole file when the state is of another season o
 which (`{teams:'betting/state.json', season, clubs, seeds}`). The coefficients are untouched (nothing is fitted on the
 season in play), and the page reads `PAY.grid` as before. On week 7 the home side's chance moved toward the market's
 almost everywhere it had drifted (KC at SEA 68.4% to 58.9% against the market's 57.2%, LA at LV 32.1% to 39.9% against
-39.1%), and 9 of the 11 team Value picks on the Top 30 lost the mark. Not changed, and open: the team model passes rest 0
-and neutral 0 (at Stade de France, PIT at NO, the Saints keep 0.87 of a point of home field after the pull toward the
-spread; the app's own `pure` variant takes a neutral site's home field out, but the payload's schedule carries no neutral
-flag, and the player projections read `home` the same way), and Alpha's quarterback and event adjustments (`teamAdj`) are
-not in it.
+39.1%), and 9 of the 11 team Value picks on the Top 30 lost the mark. Not changed, and open: the team model passes rest 0,
+and Alpha's quarterback and event adjustments (`teamAdj`) are not in it.
+
+**A neutral site takes the home field out** (app v137, `patch_neutral_site.py`, whose docstring is the design, the owner's
+call of 25 October 2026, "do the neutral site fix"). Until then the team model passed neutral 0 on every game (the payload's
+schedule carried no flag), so at a game abroad the listed home side kept the whole home field: 1.743 points on the margin
+(the equation's intercept) and 0.87 on `gameMu` once pulled halfway to the spread (PIT at NO at the Stade de France, NO to win
+40.6% where the app's equation gives 38.1%), and all 1.743 where no line is posted, with the no-line points the player
+projections read. Three parts: `props/data/grid_model.json` is now the app's `MODEL.pure` (reference_models.json's `A.pure`,
+the spec Alpha's calls run on), its neutral coefficient -1.7430521789557656, minus the intercept, so a neutral site takes the
+home field out exactly, where the file had carried the app's unused `market` variant, +0.4214, which would have added home
+field had the flag been read (its other coefficients and intercept are the same); `payload.py` writes each game's `neu`, 1 where
+games.csv's `location` is not 'Home' after `betting/neutral_sites.json` turns a 'Home' row played abroad 'Neutral' (the rule
+the betting job, the Joker and the betting smoke read; nine games of 2026); and `modelMargin` reads it (`neu===1`, so a
+payload baked before it reads every game as a home game), `applyBaked` copying it into the saved schedule. With it PIT at NO's
+margin is -5.153, Alpha's own frozen pre-kickoff margin to the third place. Left as fitted, on purpose: the player model's
+`home` (gameCtx's, the listed home side 1: `props/research/features.py` codes nflverse's listed home team and reads no
+location, and 2019-2025's neutral games cannot tell 1 from 0 for any stat), `modelPoints`' home term (its fit is not in this
+repo) and rest 0. The audit's TN holds it, blocking, on its own reading: `PAY.grid`'s equation `A.pure` exactly, `neu` 0 or 1
+on every game and on the page's schedule, every game's margin its own sum with the flag, a planted neutral copy of a home game
+with a spread (margin moved by the coefficient, `gameMu` by half, the to-win and to-cover chances its own Normal) and with no
+line (the points split by the equation, the total unchanged, `home` still the listed side), and with `PROPS_AUDIT_RAW` each
+`neu` worked out from raw/games.csv and the list; a payload baked before the flag is skipped. `betting/neutral_sites.json`
+and `betting/tools/reference_models.json` are AUDIT paths of the props gate as well as PAGE ones.
 
 **A level's best return, in the search's own order** (app v136, `patch_best_return.py`, the same check). A brute force
 over every parlay the rules allow on week 7's sets found three levels where a clearly better parlay cleared the same floor

@@ -2075,7 +2075,9 @@ on every run from this run's read and the published payload's, and `payload.py` 
 {gid:{at, lines:{pid:{stat:line}}}}}}`, frozen once made and carried within the season by `apply_espn`'s `espn_close`, the
 games played before it recovered from git into `data/espn_close_seed.json` by `build/espn_close_seed.py`; the props tab's
 record grades the model's side of them where the paid pull's `mkt` has no line, `closeLine` in part2.js), `grid` (the team
-model: the betting app's coefficients from `data/grid_model.json` with each club's `elo`, `off_epa` and `d_off_epa` from
+model: the betting app's coefficients from `data/grid_model.json`, its `MODEL.pure` since app v137 (the neutral coefficient
+minus the intercept, reference_models.json's `A.pure`, which the audit's TN holds it to; the file had carried the app's
+unused market variant), with each club's `elo`, `off_epa` and `d_off_epa` from
 `betting/state.json`'s teams since 25 October 2026, `payload.py`'s `team_grid()`, the file's preseason seeds the fallback,
 `src` saying which),
 `season`, `week` and
@@ -2087,7 +2089,10 @@ carries `ls` (`dk` or `nflverse`: whose moneyline, spread and total it has), `la
 DraftKings' were read, to the second) and, since app v125, `lsr` 'espn' where they are the job's read of ESPN (else a
 pull by hand's, which a newer read replaces); DraftKings' are used only while under a day old. Its total `tot` comes
 with the over and under prices `tov`/`tou` (nflverse's `over_odds`/`under_odds`, or DraftKings'
-own where its total is used: since app v125 the read's), absent on a payload baked before them.
+own where its total is used: since app v125 the read's), absent on a payload baked before them; and since app v137 `neu`,
+1 at a neutral site (games.csv's `location` not 'Home', after `betting/neutral_sites.json` turns a 'Home' row played abroad
+'Neutral'), 0 elsewhere, which `modelMargin` reads as the app's equation does (a payload baked before it reads every game
+as a home game).
 
 **Refresh odds** (app v107, `patch_espn_prices.py`; CLAUDE.md's Props loop has the design and the held-out
 table). A visitor's press reads ESPN's free feed in the browser: the week's scoreboard

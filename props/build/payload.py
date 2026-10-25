@@ -99,12 +99,28 @@ norm['implied_mean']=round(float(i25.implied.mean()),3); norm['implied_sd']=roun
 # ---- this season's schedule ----
 g=pd.read_csv('../raw/'+GAMES,low_memory=False)
 g26=g[(g.season==SEASON)&(g.game_type=='REG')]
+# a neutral site (app v137): neu 1 where games.csv's location is not 'Home', after betting/neutral_sites.json turns a
+# 'Home' row played abroad 'Neutral' (its game named under games, or its stadium listed), the rule the betting app
+# (patches.js neutralRow), the Joker (jobkit.neutral) and the betting smoke read; a location missing from the file is
+# read as 'Home' (nflverse writes only Home or Neutral). The page's team model takes a neutral site's home field out on
+# it (modelMargin), as the app's own equation does; a file that will not read leaves the location field alone, said so
+def _neutral_sites():
+    try:
+        N=json.load(open('../../betting/neutral_sites.json'))
+        return {str(x).strip().lower() for x in N.get('stadiums',[])}, {k for k,v in (N.get('games') or {}).items() if v=='Neutral'}
+    except Exception as e:
+        print(f'neutral: betting/neutral_sites.json did not read ({e}): the location field alone decides'); return set(),set()
+_nst,_nfg=_neutral_sites()
+def _neu(r):
+    loc=str(r.location).strip() if 'location' in g26.columns and not pd.isna(r.location) else 'Home'
+    if loc=='Home' and (r.game_id in _nfg or ('stadium' in g26.columns and str(r.stadium).strip().lower() in _nst)): loc='Neutral'
+    return 0 if loc=='Home' else 1
 sched=[]
 for _,r in g26.iterrows():
     _g={'id':r.game_id,'w':int(r.week),'d':str(r.gameday),'t':str(r.gametime),
         'a':r.away_team,'h':r.home_team,
         'sp':None if pd.isna(r.spread_line) else float(r.spread_line),
-        'tot':None if pd.isna(r.total_line) else float(r.total_line)}
+        'tot':None if pd.isna(r.total_line) else float(r.total_line),'neu':_neu(r)}
     # the total's over and under prices (tov, tou) come with it: nflverse posts them beside the
     # line, free, so a game total is a leg with a real price wherever the file has one
     for f,c in (('mla','away_moneyline'),('mlh','home_moneyline'),('spa','away_spread_odds'),('sph','home_spread_odds'),('tov','over_odds'),('tou','under_odds')):
@@ -112,7 +128,7 @@ for _,r in g26.iterrows():
     # keep scores that games.csv already has, so a rebuild does not un-final played games
     if not pd.isna(r.home_score) and not pd.isna(r.away_score): _g['hs']=float(r.home_score); _g['as']=float(r.away_score)
     sched.append(_g)
-print('sched games',len(sched),'weeks',g26.week.max())
+print('sched games',len(sched),'weeks',g26.week.max(),'neutral sites',sum(x['neu'] for x in sched))
 
 _prev=json.load(open('../data/payload.json')) if __import__('os').path.exists('../data/payload.json') else {}
 
@@ -160,7 +176,9 @@ for _pid,(_t,_pos,_rk,_nm) in sorted(_chart.items()):
     _have.add(_pid); _add+=1
 print('players',len(players),f'({_add} of them charted with no row last season)')
 # ---- the team model's ratings (a team bet's chance, and a game's margin where no line is posted) ----
-# grid_model.json is the betting app's own equation (its "market" coefficients) with the app's preseason
+# grid_model.json is the betting app's own equation (its MODEL.pure, the spec Alpha's calls run on, reference_models.json's
+# A.pure; the file carried the app's unused "market" variant until app v137, whose neutral coefficient, +0.42, would have
+# added home field at a neutral site where pure's, minus the intercept, takes it out) with the app's preseason
 # seeds, every club at n 0. The app runs that equation on its ratings as they stand (S.teams, which the
 # betting job publishes in betting/state.json after every final), and those are the inputs it was fitted
 # on, so they are what the bake reads: each club's elo, off_epa and d_off_epa from the season's state, the

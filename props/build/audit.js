@@ -1026,6 +1026,78 @@ setTimeout(async()=>{
     else { if(JSON.stringify(G.teams)!==JSON.stringify(gm.teams)) bad.push('a payload with no src whose teams are not the seeds');
       console.log('T1. the team model\'s ratings: the preseason seeds (a payload baked before 25 October 2026, or the state did not read)'); }
     chk(!bad.length,'T1: the team model\'s ratings are not what payload.py takes: '+bad.slice(0,4).join('; ')); }
+  /* ---- TN. a neutral site (TN, the team model's neutral flag, beside T1, its ratings; section V's T2 and T3 are the games tab's) takes the home field out (app v137) ----
+     The team model is the betting app's own equation, MODEL.pure (betting/tools/reference_models.json's A.pure, which
+     the betting job's gate holds the app to): margin = intercept + coef . (Elo gap, rest, neutral, net EPA). Until app
+     v137 the payload carried no neutral flag and the page passed neutral 0, so a game abroad kept the listed home side's
+     whole home field (PIT at NO at the Stade de France). payload.py writes neu, 1 at a neutral site by games.csv's
+     location with betting/neutral_sites.json turning a 'Home' row played abroad 'Neutral', and modelMargin reads it.
+     Held here on its own, never the page's reading: PAY.grid's equation the app's pure one exactly (its neutral
+     coefficient minus the intercept, so the home field comes out exactly); neu 0 or 1 on every game, the page's
+     schedule carrying the payload's; every game's margin the audit's own sum with the flag as the payload has it; a
+     planted neutral copy of a home game with a spread (and the same with none) moving the margin by the neutral
+     coefficient, the mu a team bet is priced on by half of it, the to-win and to-cover chances the audit's own Normal
+     on them, and the no-line points the player projections read shifting toward the road side with their total
+     unchanged; and with PROPS_AUDIT_RAW, each game's neu the rule worked out from raw/games.csv. A payload baked
+     before the flag says so and is skipped (the replays of past payloads) */
+  { const G=PAY.grid, fsN=require('fs'), pathN=require('path'), bad=[];
+    const hasNeu=(PAY.sched||[]).length>0&&PAY.sched.every(x=>Object.prototype.hasOwnProperty.call(x,'neu'));
+    if(!G||!hasNeu) console.log('TN. a neutral site: the payload carries no neu flag (baked before app v137): skipped');
+    else {
+      let ref=null; try{ ref=JSON.parse(fsN.readFileSync(pathN.join(__dirname,'..','..','betting','tools','reference_models.json'),'utf8')).A.pure; }catch(e){}
+      if(!ref) bad.push('betting/tools/reference_models.json\'s A.pure did not read');
+      else for(const k of ['feats','coef','intercept']) if(JSON.stringify(G[k])!==JSON.stringify(ref[k])) bad.push(`PAY.grid's ${k} is not the betting app's MODEL.pure (${JSON.stringify(G[k])} against ${JSON.stringify(ref[k])})`);
+      const iN=G.feats.indexOf('neutral'), cN=iN>=0?G.coef[iN]:NaN, I=G.intercept;
+      if(!(Math.abs(cN+I)<1e-12)) bad.push(`the neutral coefficient ${cN} is not minus the intercept ${I}`);
+      const own=(g,n)=>{ const h=G.teams[g.h], a=G.teams[g.a]; if(!h||!a) return 0;
+        const v={elo_diff:h.elo-a.elo, rest:0, neutral:n, net_epa:(h.off_epa-h.d_off_epa)-(a.off_epa-a.d_off_epa)};
+        return G.feats.reduce((m,f,i)=>m+G.coef[i]*v[f],I); };
+      /* Phi by erfc's Chebyshev fit (Numerical Recipes' erfcc, fractional error under 1.2e-7), not the page's gbErf */
+      const erfc=x=>{ const z=Math.abs(x), t=1/(1+0.5*z), r=t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277))))))))); return x>=0?r:2-r; };
+      const Phi=z=>0.5*erfc(-z/Math.SQRT2), SD=13.5;
+      const byId=Object.fromEntries(S.sched.map(g=>[g.id,g])); let nNeu=0; const ids=[];
+      for(const p of PAY.sched){
+        if(p.neu!==0&&p.neu!==1){ bad.push(`${p.id}: neu ${JSON.stringify(p.neu)}, not 0 or 1`); continue; }
+        if(p.neu===1){ nNeu++; ids.push(p.id); }
+        const g=byId[p.id]; if(!g){ bad.push(`${p.id}: not on the page's schedule`); continue; }
+        if(g.neu!==p.neu) bad.push(`${p.id}: the page's schedule has neu ${g.neu}, the payload ${p.neu}`);
+        const m=modelMargin(g), m0=own(g,p.neu);
+        if(!(Math.abs(m-m0)<1e-9)) bad.push(`${p.id}: margin ${m}, the equation with neutral ${p.neu} ${m0}`); }
+      /* a planted copy: the first home game (neu 0) with a spread posted, made neutral, and the same with no line */
+      const g0=S.sched.find(x=>x.neu===0&&x.sp!=null&&isFinite(x.sp)&&G.teams[x.h]&&G.teams[x.a]);
+      if(!g0) console.log('TN. no home game with a spread to plant on (a week with no line): the planted copy skipped');
+      else {
+        const gN={...g0,neu:1}, near=(a,b,e)=>Math.abs(a-b)<(e||1e-9);
+        if(!near(modelMargin(gN)-modelMargin(g0),cN)) bad.push(`planted ${g0.id}: neutral moved the margin ${modelMargin(gN)-modelMargin(g0)}, not ${cN}`);
+        if(!near(gameMu(gN),(own(g0,1)+g0.sp)/2)||!near(gameMu(g0),(own(g0,0)+g0.sp)/2)) bad.push(`planted ${g0.id}: mu ${gameMu(g0)} / ${gameMu(gN)} is not halfway from the equation to the spread`);
+        if(!near(gameMu(gN)-gameMu(g0),cN/2)) bad.push(`planted ${g0.id}: neutral moved mu ${gameMu(gN)-gameMu(g0)}, not half the coefficient`);
+        for(const [x,n] of [[g0,0],[gN,1]]){ const mu=(own(g0,n)+g0.sp)/2;
+          const hw=gameBet(x,x.h,'ml'), aw=gameBet(x,x.a,'ml'), hc=gameBet(x,x.h,'ats'), ac=gameBet(x,x.a,'ats');
+          if(!near(hw.p,Phi(mu/SD),1e-6)||!near(aw.p,1-Phi(mu/SD),1e-6)) bad.push(`planted ${g0.id} neutral ${n}: to win ${hw.p}/${aw.p}, the audit's ${Phi(mu/SD)}`);
+          if(!hc||!ac||!near(hc.p,1-Phi((g0.sp-mu)/SD),1e-6)||!near(ac.p,Phi((g0.sp-mu)/SD),1e-6)) bad.push(`planted ${g0.id} neutral ${n}: to cover ${hc&&hc.p}/${ac&&ac.p}, the audit's ${1-Phi((g0.sp-mu)/SD)}`); }
+        if(!(gameBet(gN,gN.h,'ml').p<gameBet(g0,g0.h,'ml').p)) bad.push(`planted ${g0.id}: a neutral site did not lower the listed home side's chance to win`);
+        /* no line posted: gameCtx builds the game from the model, the margin its split (the clip at 3 and 45 aside) */
+        const L0={...g0,sp:null,tot:null}, LN={...L0,neu:1};
+        const c=x=>[gameCtx(x,x.a),gameCtx(x,x.h)], [a0,h0]=c(L0), [aN,hN]=c(LN), inside=v=>v>3&&v<45;
+        if(a0.src!=='model'||aN.src!=='model') bad.push(`planted ${g0.id}: with no line gameCtx did not build from the model`);
+        else if([a0,h0,aN,hN].every(v=>inside(v.implied))){
+          if(!near(hN.implied-aN.implied,own(g0,1),1e-6)||!near(h0.implied-a0.implied,own(g0,0),1e-6)) bad.push(`planted ${g0.id}: with no line the points split ${h0.implied-a0.implied} / ${hN.implied-aN.implied}, the equation ${own(g0,0)} / ${own(g0,1)}`);
+          if(!near(hN.implied+aN.implied,h0.implied+a0.implied,1e-6)) bad.push(`planted ${g0.id}: a neutral site moved the no-line total`);
+          if(!near(h0.implied-hN.implied,-cN/2,1e-6)) bad.push(`planted ${g0.id}: the home side's no-line points moved ${h0.implied-hN.implied}, not half the home field`);
+          if(hN.home!==1||aN.home!==0) bad.push(`planted ${g0.id}: gameCtx's home is not the listed home side at a neutral site (the player model's as fitted)`); } }
+      /* the flag against its source, with the raw files the job downloaded */
+      if(process.env.PROPS_AUDIT_RAW==='1'){
+        const gp=pathN.join(__dirname,'..','raw','games.csv'), np=pathN.join(__dirname,'..','..','betting','neutral_sites.json');
+        if(!fsN.existsSync(gp)) bad.push('raw/games.csv is missing: the job downloads it before the audit runs');
+        else { let NS={stadiums:[],games:{}}; try{ NS=JSON.parse(fsN.readFileSync(np,'utf8')); }catch(e){ bad.push('betting/neutral_sites.json did not read'); }
+          const st=new Set((NS.stadiums||[]).map(x=>String(x).trim().toLowerCase())), fg=new Set(Object.keys(NS.games||{}).filter(k=>NS.games[k]==='Neutral'));
+          const rows=Papa.parse(fsN.readFileSync(gp,'utf8'),{header:true,skipEmptyLines:true}).data.filter(r=>+r.season===+PAY.season&&r.game_type==='REG');
+          const want=Object.fromEntries(rows.map(r=>{ const loc=String(r.location==null?'':r.location).trim()||'Home';
+            const home=loc==='Home'&&!fg.has(r.game_id)&&!st.has(String(r.stadium==null?'':r.stadium).trim().toLowerCase()); return [r.game_id,home?0:1]; }));
+          for(const p of PAY.sched) if(want[p.id]!==undefined&&want[p.id]!==p.neu) bad.push(`${p.id}: neu ${p.neu}, games.csv and neutral_sites.json say ${want[p.id]}`);
+          console.log(`TN. neu held to raw/games.csv's location and betting/neutral_sites.json on ${rows.length} games`); } }
+      console.log(`TN. a neutral site: ${nNeu} of ${PAY.sched.length} games${ids.length?' ('+ids.join(', ')+')':''}, the margin the app's pure equation on every game${g0?', a planted neutral copy of '+g0.id+' held':''}`); }
+    chk(!bad.length,'TN: a neutral site is not read as the betting app\'s equation reads it: '+bad.slice(0,4).join('; ')); }
   /* ---- the rules a suggested leg keeps, worked here on their own (app v111) ----
      Since app v111 the suggestions are two things: Suggested Parlays (#suggest), each Thursday, Sunday and
      Monday night game's own Safe, Medium, Aggressive and Extreme from that game's lines alone, locked 2 hours
