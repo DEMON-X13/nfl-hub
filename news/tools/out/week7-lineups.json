@@ -213,7 +213,7 @@
   },
   "PIT": {
    "kick": "2026-10-25T13:30Z",
-   "built_at": "2026-10-24T18:04:45.953Z",
+   "built_at": "2026-10-25T08:19:47.654Z",
    "units": {
     "qb": [
      {
@@ -241,7 +241,7 @@
      {
       "id": "00-0037336",
       "n": "Brock Hoffman",
-      "pos": "C"
+      "pos": "G"
      },
      {
       "id": "00-0041482",
@@ -421,7 +421,7 @@
   },
   "SF": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-23T23:50:30.583Z",
+   "built_at": "2026-10-25T08:19:47.654Z",
    "units": {
     "qb": [
      {
@@ -481,8 +481,8 @@
       "pos": "WR"
      },
      {
-      "id": "00-0039365",
-      "n": "Jacob Cowing",
+      "id": "00-0040172",
+      "n": "Jordan Watkins",
       "pos": "WR"
      }
     ],
@@ -524,7 +524,7 @@
   },
   "ATL": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-23T23:50:30.583Z",
+   "built_at": "2026-10-25T08:19:47.654Z",
    "units": {
     "qb": [
      {
@@ -564,6 +564,11 @@
      {
       "id": "00-0038542",
       "n": "Bijan Robinson",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0036906",
+      "n": "Khalil Herbert",
       "pos": "RB"
      }
     ],
@@ -1036,7 +1041,7 @@
   },
   "NYG": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-23T23:50:30.583Z",
+   "built_at": "2026-10-25T08:19:47.654Z",
    "units": {
     "qb": [
      {
@@ -1121,20 +1126,20 @@
     ],
     "db": [
      {
-      "id": "00-0036998",
-      "n": "Jevon Holland",
-      "pos": "FS",
-      "q": "questionable: concussion"
-     },
-     {
       "id": "00-0039821",
       "n": "Andru Phillips",
       "pos": "CB"
      },
      {
-      "id": "00-0039000",
-      "n": "Deonte Banks",
-      "pos": "CB"
+      "id": "00-0039861",
+      "n": "Tyler Nubin",
+      "pos": "SS",
+      "q": "questionable: neck"
+     },
+     {
+      "id": "00-0036587",
+      "n": "Ar'Darius Washington",
+      "pos": "FS"
      }
     ]
    }
@@ -1347,7 +1352,7 @@
   },
   "MIN": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-24T18:04:45.953Z",
+   "built_at": "2026-10-25T08:19:47.654Z",
    "units": {
     "qb": [
      {
@@ -1390,9 +1395,10 @@
       "pos": "RB"
      },
      {
-      "id": "00-0041104",
-      "n": "Demond Claiborne",
-      "pos": "RB"
+      "id": "00-0037525",
+      "n": "Jordan Mason",
+      "pos": "RB",
+      "q": "questionable: thumb"
      }
     ],
     "rec": [
@@ -1658,7 +1664,7 @@
   },
   "CLE": {
    "kick": "2026-10-25T17:00Z",
-   "built_at": "2026-10-23T23:50:30.583Z",
+   "built_at": "2026-10-25T08:19:47.654Z",
    "units": {
     "qb": [
      {
@@ -1701,8 +1707,8 @@
       "pos": "RB"
      },
      {
-      "id": "00-0038794",
-      "n": "Jaleel McLaughlin",
+      "id": "00-0040162",
+      "n": "Dylan Sampson",
       "pos": "RB"
      }
     ],
@@ -1755,8 +1761,7 @@
      {
       "id": "00-0036282",
       "n": "Grant Delpit",
-      "pos": "SS",
-      "q": "questionable: concussion"
+      "pos": "SS"
      }
     ]
    }
@@ -2075,7 +2080,7 @@
   },
   "GB": {
    "kick": "2026-10-25T20:25Z",
-   "built_at": "2026-10-23T23:50:30.583Z",
+   "built_at": "2026-10-25T08:19:47.654Z",
    "units": {
     "qb": [
      {
@@ -2114,13 +2119,13 @@
     ],
     "rb": [
      {
-      "id": "00-0039811",
-      "n": "MarShawn Lloyd",
+      "id": "00-0035700",
+      "n": "Josh Jacobs",
       "pos": "RB"
      },
      {
-      "id": "00-0038098",
-      "n": "Pierre Strong",
+      "id": "00-0039811",
+      "n": "MarShawn Lloyd",
       "pos": "RB"
      }
     ],
@@ -2179,7 +2184,7 @@
   },
   "DET": {
    "kick": "2026-10-25T20:25Z",
-   "built_at": "2026-10-20T11:56:02.569Z",
+   "built_at": "2026-10-25T08:19:47.654Z",
    "units": {
     "qb": [
      {
@@ -2200,9 +2205,10 @@
       "pos": "G"
      },
      {
-      "id": "00-0038936",
-      "n": "Juice Scruggs",
-      "pos": "G"
+      "id": "00-0037297",
+      "n": "Cade Mays",
+      "pos": "C",
+      "q": "questionable: wrist"
      },
      {
       "id": "00-0040728",
@@ -2592,7 +2598,7 @@
   },
   "SEA": {
    "kick": "2026-10-26T00:20Z",
-   "built_at": "2026-10-23T23:50:30.583Z",
+   "built_at": "2026-10-25T08:19:47.654Z",
    "units": {
     "qb": [
      {
@@ -2618,8 +2624,8 @@
       "pos": "C"
      },
      {
-      "id": "00-0039839",
-      "n": "Christian Haynes",
+      "id": "00-0039020",
+      "n": "Anthony Bradford",
       "pos": "G"
      },
      {

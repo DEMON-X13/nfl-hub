@@ -15,6 +15,8 @@ Searches to run:
 - "NFL week 7 picks NE CHI"
 
 New England Patriots, injuries:
+- Marcus Jones (CB) Active: Jones registered nine tackles (five solo), including 1.0 sacks, and returned one punt for 19 yards in Thursday's loss to the Bears.
+- Christian Elliss (LB) Active: Elliss tallied 13 tackles (eight solo) in a Week 7 loss to Chicago on Thursday.
 - Kyle Williams (WR) Active: Williams returned two kickoffs for 47 yards and failed to haul in his lone target during the Patriots' 30-24 loss to the Bears on Thursday.
 - Corey Kiner (RB) Active: Kiner rushed four times for 13 yards in Thursday's Week 7 loss to Chicago. He also returned four kickoffs for 102 yards.
 - Eli Raridon (TE) Active: Raridon caught three of four targets for 56 yards and a touchdown in Thursday's Week 7 loss to the Bears.
@@ -30,7 +32,6 @@ New England Patriots, injuries:
 - Morgan Moses (OT) Active: Moses (foot) is officially active for Thursday's game at Chicago.
 - Craig Woodson (S) Active: Woodson (shoulder) is officially active for Thursday's game against the Bears.
 - Behren Morton (QB) Out, Coach's Decision: Morton (coach's decision) is inactive and designated as New England's emergency third quarterback for Thursday's matchup versus Chicago.
-- Christian Elliss (LB) Active: Elliss (chest) is officially active for Thursday's game at Chicago.
 - Kevin Byard (S) Active: Byard (chest) is officially active for Thursday's game at Chicago.
 - Christian Gonzalez (CB) Active: Gonzalez (illness) is listed as active for Thursday night's game against the Bears.
 - Joshua Farmer (DT) Out, Coach's Decision: inactive
@@ -39,12 +40,14 @@ New England Patriots, injuries:
 - Ben Brown (C) Out, Knee: Brown (knee) has been ruled out for Thursday's game against the Bears.
 - Carlton Davis III (CB) Out, Neck: Davis (neck) has been ruled out ahead of Thursday night's game against the Bears.
 - Marcus Bryant (OT) Injured Reserve, Ankle: Bryant (ankle) was a full participant at the Patriots' practice Tuesday.
-- Romeo Doubs (WR) Injured Reserve, Shoulder: Doubs (shoulder) is hopeful to return after the Patriots' Week 11 bye and isn't expected to face a long-term absence, Jeremy Fowler of ESPN.com reports.
 
 New England Patriots, ESPN headlines:
 
 Chicago Bears, injuries:
 - Anthony Johnson Jr. (S) Injured Reserve, Undisclosed: ir
+- Kyler Gordon (CB) Active: Gordon recorded five tackles (three solo), including 1.0 sacks, in Thursday's 30-24 win over the Patriots.
+- Dillon Thieneman (S) Active: Thieneman tallied eight tackles (three solo), including 0.5 sacks, in a 30-24 victory versus the Patriots on Thursday.
+- D'Marco Jackson (LB) Active: Jackson finished with six tackles (three solo) and an interception Thursday in a 30-24 victory over New England.
 - Sam Roush (TE) Active: Roush is expected to get more work on offense after Cole Kmet (knee) landed on injured reserve Friday.
 - Kalif Raymond (WR) Active: Raymond did not catch either of his two targets and returned one punt for seven yards Thursday in a 30-24 win over New England.
 - Roschon Johnson (RB) Active: Johnson rushed twice for 13 yards in the Bears' 30-24 victory over the Patriots on Thursday.
@@ -66,9 +69,6 @@ Chicago Bears, injuries:
 - Kyle Monangai (RB) Out, Toe: inactive
 - Jonah Jackson (G) Active: Jackson (hip/quadricep) does not have any injury designation ahead of Thursday night's game against the Patriots.
 - Jack Sanborn (LB) Out, Concussion: Sanborn (concussion) is officially listed as out for Thursday's game versus the Patriots.
-- Keyshaun Elliott (LB) Active: Elliott (quadriceps) was estimated as a full participant on the Bears' official injury report Monday.
-- Kyler Gordon (CB) Active: Gordon posted four solo tackles, including 3.0 sacks, and two forced fumbles during the Bears' 31-23 win over the Falcons on Sunday.
-- Jahdae Walker (WR) Active: Walker went without a target while playing 10 of the Bears' 77 snaps on offense in Sunday's 31-23 win over the Falcons.
 
 Chicago Bears, ESPN headlines:
 
@@ -209,7 +209,7 @@ Atlanta Falcons, injuries:
 Atlanta Falcons, ESPN headlines:
 
 ### Cleveland Browns at Tennessee Titans
-Sun, Oct 25, 1:00 PM ET, CBS, Nissan Stadium, Nashville. Line: CLE -2.5, O/U 36.5
+Sun, Oct 25, 1:00 PM ET, CBS, Nissan Stadium, Nashville. Line: CLE -1.5, O/U 36.5
 
 Searches to run:
 - "Cleveland Browns Tennessee Titans preview week 7"
@@ -219,6 +219,7 @@ Searches to run:
 - "NFL week 7 picks CLE TEN"
 
 Cleveland Browns, injuries:
+- Maliek Collins (DT) Active: Collins and the Browns agreed to a two-year, $30 million contract extension Saturday, Ian Rapoport of NFL Network reports.
 - Teven Jenkins (G) Injured Reserve, Back: The Browns placed Jenkins (back) on injured reserve Saturday.
 - Grant Delpit (S) Active: Delpit (concussion) does not have any injury designation ahead of Sunday's game against the Titans.
 - Dylan Sampson (RB) Active: Sampson (knee) was activated from injured reserve Saturday.
@@ -236,7 +237,6 @@ Cleveland Browns, injuries:
 - Derek Barnett (DE) Active
 - Elgton Jenkins (C) Active
 - Carson Schwesinger (LB) Active: Schwesinger (ankle) was a limited participant at the Browns' practice Thursday.
-- Maliek Collins (DT) Active
 - Justin Jefferson (LB) Active: Jefferson (hip) was a full participant at practice Wednesday, Mary Kay Cabot of The Cleveland Plain Dealer reports.
 - Andre Szmyt (PK) Active: Szmyt went 2-for-3 on field-goal attempts and made his only PAT during Sunday's 13-10 win over the Ravens.
 - Audric Estime (RB) Active: Estime turned nine carries into 19 yards and a touchdown during the Browns' 13-10 win over the Ravens on Sunday.
@@ -549,7 +549,7 @@ Baltimore Ravens, injuries:
 Baltimore Ravens, ESPN headlines:
 
 ### New York Giants at Houston Texans
-Sun, Oct 25, 1:00 PM ET, Fox, Reliant Stadium, Houston. Line: HOU -10, O/U 42.5
+Sun, Oct 25, 1:00 PM ET, Fox, Reliant Stadium, Houston. Line: HOU -10.5, O/U 42.5
 
 Searches to run:
 - "New York Giants Houston Texans preview week 7"
@@ -685,7 +685,7 @@ Arizona Cardinals, injuries:
 Arizona Cardinals, ESPN headlines:
 
 ### Green Bay Packers at Detroit Lions
-Sun, Oct 25, 4:25 PM ET, Fox, Ford Field, Detroit. Line: DET -3.5, O/U 54.5
+Sun, Oct 25, 4:25 PM ET, Fox, Ford Field, Detroit. Line: DET -3.5, O/U 55.5
 
 Searches to run:
 - "Green Bay Packers Detroit Lions preview week 7"
