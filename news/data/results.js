@@ -474,19 +474,19 @@ const LINES = {
  "wk6:DAL-GB": "DAL -1.5, O/U 53.5",
  "wk6:WAS-SF": "SF -7.5, O/U 51.5",
  "wk7:NE-CHI": "CHI -3, O/U 50.5",
- "wk7:PIT-NO": "PIT -3, O/U 44.5",
- "wk7:SF-ATL": "SF -2.5, O/U 49.5",
- "wk7:CIN-BAL": "CIN -2.5, O/U 46.5",
+ "wk7:PIT-NO": "PIT -3, O/U 43.5",
+ "wk7:SF-ATL": "SF -2.5, O/U 50.5",
+ "wk7:CIN-BAL": "CIN -3, O/U 46.5",
  "wk7:TB-CAR": "CAR -3, O/U 44.5",
  "wk7:NYG-HOU": "HOU -10, O/U 42.5",
  "wk7:IND-MIN": "MIN -6.5, O/U 41.5",
  "wk7:MIA-NYJ": "NYJ -4.5, O/U 39.5",
  "wk7:CLE-TEN": "CLE -2.5, O/U 36.5",
  "wk7:DEN-ARI": "DEN -4.5, O/U 43.5",
- "wk7:GB-DET": "DET -3, O/U 53.5",
+ "wk7:GB-DET": "DET -3.5, O/U 54.5",
  "wk7:LAR-LV": "LAR -3, O/U 48.5",
  "wk7:KC-SEA": "SEA -3, O/U 42.5",
- "wk7:DAL-PHI": "DAL -4.5, O/U 44.5",
+ "wk7:DAL-PHI": "DAL -4.5, O/U 43.5",
  "wk8:CAR-GB": "GB -3, O/U 47.5",
  "wk8:BAL-BUF": "BUF -3, O/U 52.5",
  "wk8:TEN-CIN": "CIN -10, O/U 46.5",
@@ -502,4 +502,4 @@ const LINES = {
  "wk8:PHI-WAS": "WAS -3.5, O/U 41.5",
  "wk8:CHI-SEA": "SEA -3, O/U 46.5"
 };
-const LINES_ASOF = "2026-10-24";
+const LINES_ASOF = "2026-10-25";
