@@ -73,7 +73,7 @@ Chicago Bears, injuries:
 Chicago Bears, ESPN headlines:
 
 ### Pittsburgh Steelers at New Orleans Saints
-Sun, Oct 25, 9:30 AM ET, NFL Net, Stade de France, Saint-Denis. Line: PIT -3, O/U 43.5
+Sun, Oct 25, 9:30 AM ET, NFL Net, Stade de France, Saint-Denis. Line: PIT -3, O/U 42.5
 
 Searches to run:
 - "Pittsburgh Steelers New Orleans Saints preview week 7"
@@ -83,24 +83,24 @@ Searches to run:
 - "NFL week 7 picks PIT NO"
 
 Pittsburgh Steelers, injuries:
+- Ben Skowronek (WR) Out, Calf: inactive
+- Terell Smith (CB) Out, Coach's Decision: inactive
+- Eli Heidenreich (RB) Out, Coach's Decision: inactive
+- Will Howard (QB) Out, Coach's Decision: inactive
+- Drew Allar (QB) Out, Coach's Decision: inactive
+- Brandin Echols (CB) Out, Hamstring: inactive
+- DeShon Elliott (S) Active
+- Rico Dowdle (RB) Active: Dowdle (knee) is active for Sunday's game against the Saints in Paris, Nick Farabaugh of PennLive.com reports.
 - Brandon Johnson (WR) Active: The Steelers elevated Johnson from the practice squad Saturday ahead of Sunday's game against the Saints.
 - Brandon Smith (WR) Active: The Steelers elevated Smith from the practice squad Saturday ahead of Sunday's game against the Saints.
-- DeShon Elliott (S) Questionable, Knee: The Steelers activated Elliott (knee) from IR on Saturday ahead of Sunday's game against the Saints.
-- Rico Dowdle (RB) Questionable, Knee: Dowdle (knee) was a limited participant in Friday's practice and is listed as questionable for Sunday's game against the Saints in Paris, NFL insider Adam Caplan reports.
 - T.J. Watt (LB) Active: Watt (calf) practiced fully Friday and doesn't carry an injury designation into Sunday's game against the Saints.
 - Alex Highsmith (LB) Active
 - Jalen Ramsey (CB) Active
-- Brandin Echols (CB) Out, Hamstring: Echols (hamstring) has been ruled out for Sunday's matchup with the Saints, Mike DeFabo of The Athletic reports.
 - Sebastian Joseph-Day (DT) Injured Reserve, Triceps: Joseph-Day (triceps) was placed on injured reserve by the Steelers on Thursday, Teresa Varley of the team's official website reports.
-- Ben Skowronek (WR) Out, Calf: The Steelers have ruled Skowronek (calf) out for Sunday's matchup against the Saints, Mike DeFabo of The Athletic reports.
 - Jaquan Brisker (S) Active: Brisker posted seven tackles (four solo) during the Steelers' 26-19 overtime win over the Buccaneers on Sunday.
 - Payton Wilson (LB) Active: Wilson recorded 11 tackles (seven solo) during Sunday's 26-19 overtime win over the Buccaneers.
 - Nick Herbig (LB) Active: Herbig recorded six solo tackles, including 2.0 sacks, during the Steelers' 26-19 overtime win over the Buccaneers on Sunday.
 - Chris Boswell (PK) Active: Boswell went 4-for-5 on field-goal attempts while making both of his extra-point tries during Sunday's 26-19 overtime win against Tampa Bay.
-- Drew Allar (QB) Active
-- Eli Heidenreich (RB) Active
-- Terell Smith (CB) Active
-- Will Howard (QB) Active
 - Sean Murphy-Bunting (CB) Active
 - Kevin Jobity Jr. (DT) Active
 - Pat Freiermuth (TE) Active: Freiermuth caught two of three targets for 11 yards in Sunday's 26-19 overtime win over the Bucs.
@@ -112,10 +112,15 @@ Pittsburgh Steelers, injuries:
 Pittsburgh Steelers, ESPN headlines:
 
 New Orleans Saints, injuries:
+- Cesar Ruiz (G) Out, Knee: Ruiz (knee) is inactive for Sunday's game against the Steelers in Paris, Ross Jackson of WWL Louisiana reports.
+- Tyree Wilson (DE) Out, Coach's Decision: inactive
+- Zach Wilson (QB) Out, Coach's Decision: inactive
+- Mike Reid (CB) Out, Coach's Decision: inactive
+- John Ridgeway III (DT) Out, Coach's Decision: inactive
+- Nathan Shepherd (DT) Out, Illness: inactive
+- Treyton Welch (TE) Out, Coach's Decision: inactive
 - Cedric Tillman (WR) Active: The Saints elevated Tillman from the practice squad to the active roster Saturday ahead of Sunday's game against the Steelers.
-- Cesar Ruiz (G) Questionable, Knee: Ruiz (knee) is listed as questionable for Sunday's game against the Steelers.
 - Anfernee Jennings (LB) Active: Jennings (knee) does not have any injury designation ahead of Sunday's game against the Steelers.
-- Nathan Shepherd (DT) Questionable, Illness: Shepherd (illness) is listed as questionable for Sunday's game against the Steelers in Paris.
 - Kaden Elliss (LB) Active: Elliss (calf) doesn't carry an injury designation into Sunday's game against the Steelers.
 - Alvin Kamara (RB) Active: Kamara (back) was limited at Friday's practice but does not have an injury designation for Week 7, Katherine Terrell of ESPN.com reports.
 - CJ Donaldson (RB) Active: Donaldson (shoulder) practiced without limitations Thursday.
@@ -127,16 +132,11 @@ New Orleans Saints, injuries:
 - Daniel Carlson (PK) Active: Carlson made two of his three field-goal attempts and all four PATs in the Saints' 34-27 win over the Giants on Sunday.
 - Devaughn Vele (WR) Active: Vele caught three of six targets for 42 yards during the Saints' 34-27 win over the Giants on Sunday.
 - Bryce Lance (WR) Active: Lance caught two of four passes for nine yards and a touchdown during the Saints' 34-27 win over the Giants on Sunday.
-- Zach Wilson (QB) Active
-- Mike Reid (CB) Active
-- John Ridgeway III (DT) Active
 - Juwan Johnson (TE) Active: Johnson failed to reel in either of his targets during Sunday's 34-27 win over the Giants.
 - Kendre Miller (RB) Active: Miller carried the ball 20 times for 70 yards and caught both his targets for zero yards in Sunday's 34-27 win over the Giants.
 - Tyler Shough (QB) Active: Shough completed 16 of 30 passes for 144 yards and three touchdowns in Sunday's 34-27 win over the Giants. He added 32 yards and a TD on five carries.
 - Chris Olave (WR) Active: Olave caught four of seven targets for 43 yards and a touchdown in Sunday's 34-27 win over the Giants.
 - Zach Wood (LS) Active: Wood (calf) is active for Sunday's game against the Giants.
-- Jeremiah Wright (G) Active: Wright (concussion) is active for Sunday's game against the Giants.
-- Lorenzo Styles Jr. (S) Active
 
 New Orleans Saints, ESPN headlines:
 
@@ -384,6 +384,7 @@ Miami Dolphins, injuries:
 Miami Dolphins, ESPN headlines:
 
 New York Jets, injuries:
+- Breece Hall (RB) Questionable, Quadriceps: Hall (quadriceps) is unlikely to suit up for Sunday's game against the Dolphins, Ian Rapoport of NFL Network reports.
 - Kiko Mauigoa (LB) Injured Reserve, Quadriceps: The Jets placed Mauigoa (quadriceps) on injured reserve Saturday, Zack Rosenblatt of The Athletic reports.
 - Max Mitchell (OT) Out, Concussion: Mitchell (concussion) has been ruled out for Sunday's game against the Dolphins, Rich Cimini of ESPN.com reports.
 - Omar Cooper Jr. (WR) Active: Cooper may get fewer looks in the passing game Sunday versus Miami with Adonai Mitchell cleared to return from a finger injury, Amanda Vogt of the Jets' official site reports.
@@ -393,7 +394,6 @@ New York Jets, injuries:
 - Adonai Mitchell (WR) Active: Mitchell (finger) doesn't have an injury designation for Sunday's game against the Dolphins.
 - T'Vondre Sweat (DT) Active
 - Will McDonald IV (DE) Active
-- Breece Hall (RB) Questionable, Quadriceps: Hall (quadriceps) is listed as questionable for Sunday's game against the Dolphins, Brian Costello of the New York Post reports.
 - Dylan Parham (G) Questionable, Knee: Parham (knee) was a limited participant in Wednesday's practice.
 - Jamien Sherwood (LB) Active: Sherwood recorded 11 tackles (six solo), a forced fumble and a fumble recovery during Sunday's 26-19 loss at New England.
 - Dane Belton (S) Active: Belton recorded nine tackles (four solo) and a pass defensed during Sunday's 26-19 loss at New England.
@@ -560,6 +560,7 @@ Searches to run:
 
 New York Giants, injuries:
 - Jermaine Eluemunor (OT) Questionable, Calf: questionable
+- Cam Skattebo (RB) Active: Skattebo is expected to resume his role as the Giants' lead running back in Sunday's game at Houston, Ian Rapoport of NFL Network reports.
 - Jalin Hyatt (WR) Active: The Giants elevated Hyatt from the practice squad to the active roster Saturday, Dan Duggan of The Athletic reports.
 - Paulson Adebo (CB) Questionable, Knee: The Giants activated Adebo (knee) from injured reserve Saturday, Dan Duggan of The Athletic reports.
 - Tremaine Edmunds (LB) Injured Reserve, Chest: Edmunds (chest) was placed on injured reserve Saturday, Dan Duggan of The Athletic reports.
@@ -567,7 +568,6 @@ New York Giants, injuries:
 - Jevon Holland (S) Out, Concussion: Holland (concussion) has been ruled out ahead of Sunday's game against the Texans, Mike Garafolo of NFL Network reports.
 - Andrew Thomas (OT) Active: Thomas (groin) does not have an injury designation against the Texans on Sunday.
 - Greg Newsome II (CB) Out, Concussion: Newsome (concussion) has been ruled out for Sunday's game against the Texans.
-- Cam Skattebo (RB) Active: Head coach John Harbaugh said Friday that Skattebo had a "good week" of practice and that the second-year running back should be back in the mix for backfield touches against the Texans on Sunday, Jordan Ranaan of ESPN.com reports.
 - Charlie Jones (WR) Active
 - Chris Manhertz (TE) Active
 - Colton Hood (CB) Active: Hood (concussion) was a full participant at practice Thursday.
@@ -617,7 +617,7 @@ Houston Texans, injuries:
 Houston Texans, ESPN headlines:
 
 ### Denver Broncos at Arizona Cardinals
-Sun, Oct 25, 4:05 PM ET, CBS, State Farm Stadium, Glendale. Line: DEN -4.5, O/U 43.5
+Sun, Oct 25, 4:05 PM ET, CBS, State Farm Stadium, Glendale. Line: DEN -4.5, O/U 42.5
 
 Searches to run:
 - "Denver Broncos Arizona Cardinals preview week 7"
@@ -627,13 +627,13 @@ Searches to run:
 - "NFL week 7 picks DEN ARI"
 
 Denver Broncos, injuries:
+- Pat Surtain II (CB) Questionable, Ankle: Surtain (ankle) isn't likely to play Sunday at Arizona, Ian Rapoport of NFL Network reports.
 - Tyler Badie (RB) Injured Reserve, Thumb: The Broncos placed Badie (thumb) on injured reserve Saturday, Aric DiLalla of the team's official site reports.
 - Jonah Elliss (LB) Injured Reserve, Ankle: The Broncos placed Elliss (ankle) on injured reserve Saturday, Aric DiLalla of the team's official site reports.
 - Jonathon Cooper (LB) Active: Cooper had his roster exemption removed by the Broncos on Saturday and is available for Sunday's road game against the Cardinals, Aric DiLalla of the Broncos' official site reports.
 - Jonah Coleman (RB) Questionable, Ankle: The Broncos activated Coleman (ankle) from injured reserve Saturday, Jeremy Fowler of ESPN.com reports.
 - Talanoa Hufanga (S) Out, Ankle: Hufanga (ankle) has been ruled out for Sunday's game against the Cardinals.
 - Jaylen Waddle (WR) Active: Waddle (chest) doesn't have an injury designation for Sunday's game at Arizona.
-- Pat Surtain II (CB) Questionable, Ankle: Surtain (ankle) remained limited in Thursday's practice.
 - Dallen Bentley (TE) Active
 - Sam Ehlinger (QB) Active
 - Kage Casey (OT) Active
@@ -753,7 +753,7 @@ Detroit Lions, injuries:
 Detroit Lions, ESPN headlines:
 
 ### Los Angeles Rams at Las Vegas Raiders
-Sun, Oct 25, 4:25 PM ET, Fox, Allegiant Stadium, Las Vegas. Line: LAR -3, O/U 48.5
+Sun, Oct 25, 4:25 PM ET, Fox, Allegiant Stadium, Las Vegas. Line: LAR -3.5, O/U 48.5
 
 Searches to run:
 - "Los Angeles Rams Las Vegas Raiders preview week 7"
@@ -763,13 +763,13 @@ Searches to run:
 - "NFL week 7 picks LAR LV"
 
 Los Angeles Rams, injuries:
+- Puka Nacua (WR) Questionable, Calf: The Rams are optimistic that Nacua (calf), who is listed as questionable for Week 7, will play in Sunday's game at Las Vegas, Adam Schefter of ESPN reports.
 - Eric Kendricks (LB) Active: The Rams elevated Kendricks from the practice squad to the active roster Saturday.
 - Jordan Whittington (WR) Active: Whittington could operate in an expanded role offensively if Puka Nacua (calf, questionable) cannot play against the Raiders on Sunday.
 - Konata Mumpfield (WR) Active: Mumpfield could get a significant bump in opportunity Sunday in Week 7 against Las Vegas since Davante Adams (hamstring) is on IR and Puka Nacua (calf) is questionable to play, Stu Jackson of the Rams' official site reports.
 - Trent McDuffie (CB) Questionable, Groin: McDuffie (groin) is listed as questionable for Sunday's game against the Raiders, Sarah Barshop of ESPN.com reports.
 - Nate Landman (LB) Out, Concussion: Landman (concussion) has been ruled out for Sunday's game against the Raiders, Gary Klein of the Los Angeles Times reports.
 - Myles Garrett (DE) Injured Reserve, Knee: Rams coach Sean McVay said Friday that Garrett (knee) could have his 21-day practice window opened next week, Nate Atkins of The Athletic reports.
-- Puka Nacua (WR) Questionable, Calf: Nacua (calf) won't practice Friday and will be listed as questionable for Sunday's game at Las Vegas, Sarah Barshop of ESPN.com reports.
 - Kobie Turner (DE) Injured Reserve, Groin: The Rams placed Turner (groin) on injured reserve Wednesday.
 - Kam Curl (S) Active: Curl finished Sunday's 18-16 loss to the Cardinals with eight tackles (three solo).
 - Quentin Lake (S) Active: Lake registered seven tackles (six solo) and an interception during the Rams' 18-16 loss to the Cardinals on Sunday.
@@ -792,10 +792,10 @@ Los Angeles Rams, injuries:
 Los Angeles Rams, ESPN headlines:
 
 Las Vegas Raiders, injuries:
+- Mike Washington Jr. (RB) Questionable, Foot: Washington (foot/back) is considered a game-time decision for Sunday's contest against the Rams, Jeremy Fowler of ESPN reports.
 - Quay Walker (LB) Questionable, Chest: Walker (chest) is listed as questionable for Sunday's game against the Rams, Ryan McFadden of ESPN.com reports.
 - Tonka Hemingway (DT) Active: Hemingway (concussion) does not have an injury designation for Sunday's game against the Rams.
 - Dont'e Thornton Jr. (WR) Injured Reserve, Hamstring: Thornton (hamstring) has been ruled out for Sunday's game against the Rams, Sam Warren of The Athletic reports.
-- Mike Washington Jr. (RB) Questionable, Foot: Washington (foot) is questionable for Sunday's game against the Rams, Sam Warren of The Athletic reports.
 - Brock Bowers (TE) Active: Bowers (hamstring/calf) upgraded to a full practice Thursday, Anthony Galaviz of The Fresno Bee reports.
 - Kolton Miller (OT) Active
 - Folorunso Fatukasi (DT) Active
