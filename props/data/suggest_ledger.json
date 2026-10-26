@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. Since app v118 each entry holds the unit's Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe), taken, locked, replaced and graded with the model's levels; and slot holds each week's Sunday slot (every Sunday game before 7 pm Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary, slot_summary (each with its elo) and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-10-25T17:25:00Z",
+ "updated": "2026-10-26T01:07:07Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -206,7 +206,7 @@
    "aggr": {"label":"Aggressive","graded":3,"won":0,"lost":3,"push":0,"exp_fair":0.1764,"fair_n":3,"exp_model":0.4255,"units":-3},
    "xtrm": {"label":"Extreme","graded":3,"won":0,"lost":3,"push":0,"exp_fair":0.0839,"fair_n":3,"exp_model":0.2531,"units":-3}
   },
-  "pending": 0,
+  "pending": 4,
   "elo": {
    "tiers": {
     "elo-safe": {"label":"Safe","graded":2,"won":2,"lost":0,"push":0,"exp_fair":0.5389,"fair_n":2,"exp_model":0.6677,"units":4.001},
@@ -214,11 +214,11 @@
     "elo-aggr": {"label":"Aggressive","graded":2,"won":0,"lost":2,"push":0,"exp_fair":0.1495,"fair_n":2,"exp_model":0.2194,"units":-2},
     "elo-xtrm": {"label":"Extreme","graded":2,"won":0,"lost":2,"push":0,"exp_fair":0.0531,"fair_n":2,"exp_model":0.0897,"units":-2}
    },
-   "pending": 0
+   "pending": 4
   },
   "games": 5,
   "entries": 5,
-  "graded_entries": 3,
+  "graded_entries": 4,
   "updates": 0
  },
  "prime": {
@@ -826,7 +826,17 @@
      "mkt": 0
     }
    ],
-   "taken_at": "2026-10-25T17:25:00Z"
+   "taken_at": "2026-10-25T17:25:00Z",
+   "grade": {
+    "safe": {"result":"pending","legs":[null,null]},
+    "med": {"result":"pending","legs":[null,null,null]},
+    "aggr": {"result":"pending","legs":[null,null,null,null]},
+    "xtrm": {"result":"pending","legs":[null,null,null,null,null]},
+    "elo-safe": {"result":"pending","legs":[null,null]},
+    "elo-med": {"result":"pending","legs":[null,null,null]},
+    "elo-aggr": {"result":"pending","legs":[null,null,null,null]},
+    "elo-xtrm": {"result":"pending","legs":[null,null,null,null,null]}
+   }
   },
   "2026|07|2026-10-27T00:15:00Z|2026_07_DAL_PHI": {
    "season": 2026,
@@ -836,7 +846,7 @@
    "home": "PHI",
    "kickoff": "2026-10-27T00:15:00Z",
    "lock": "2026-10-26T22:15:00Z",
-   "baked_at": "2026-10-25T17:23+00:00",
+   "baked_at": "2026-10-26T01:05+00:00",
    "pool": {"pref":4,"thin":11,"mkt":2,"far":5},
    "tiers": [
     {
@@ -846,9 +856,9 @@
      "floor": 0,
      "legs": [
       {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ats","k":4.5,"side":"over","main":false,"price":-112,"src":"real","name":"Eagles","label":"To cover +4.5","p":0.6074,"fair":0.5043,"fair_est":false,"thin":false,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"rushing_yards","k":5.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 5.5 rushing yards","p":0.6429,"fair":0.5,"fair_est":true,"thin":false,"market":false}
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"rushing_yards","k":5.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 5.5 rushing yards","p":0.6452,"fair":0.5,"fair_est":true,"thin":false,"market":false}
      ],
-     "p": 0.3905,
+     "p": 0.3919,
      "fair": 0.2522,
      "fair_est": true,
      "dec": 3.21,
@@ -863,10 +873,10 @@
      "floor": 0.25,
      "legs": [
       {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ats","k":4.5,"side":"over","main":false,"price":-112,"src":"real","name":"Eagles","label":"To cover +4.5","p":0.6074,"fair":0.5043,"fair_est":false,"thin":false,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0036997","team":"DAL","grp":"RB","stat":"rushing_yards","k":64.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Javonte Williams","label":"Under 64.5 rushing yards","p":0.6404,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"rushing_yards","k":5.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 5.5 rushing yards","p":0.6429,"fair":0.5,"fair_est":true,"thin":false,"market":false}
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0036997","team":"DAL","grp":"RB","stat":"rushing_yards","k":64.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Javonte Williams","label":"Under 64.5 rushing yards","p":0.6408,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"rushing_yards","k":5.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 5.5 rushing yards","p":0.6452,"fair":0.5,"fair_est":true,"thin":false,"market":false}
      ],
-     "p": 0.254,
+     "p": 0.2551,
      "fair": 0.13,
      "fair_est": true,
      "dec": 5.893,
@@ -880,15 +890,15 @@
      "n": 4,
      "floor": 0.12,
      "legs": [
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"rushing_yards","k":9.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Dak Prescott","label":"Under 9.5 rushing yards","p":0.6271,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":180,"src":"real","name":"Eagles","label":"To win","p":0.4758,"fair":0.3425,"fair_est":false,"thin":false,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0036997","team":"DAL","grp":"RB","stat":"rushing_yards","k":64.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Javonte Williams","label":"Under 64.5 rushing yards","p":0.6404,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"rushing_yards","k":5.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 5.5 rushing yards","p":0.6429,"fair":0.5,"fair_est":true,"thin":false,"market":false}
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"rushing_yards","k":9.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Dak Prescott","label":"Under 9.5 rushing yards","p":0.6278,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":185,"src":"real","name":"Eagles","label":"To win","p":0.4758,"fair":0.3364,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0036997","team":"DAL","grp":"RB","stat":"rushing_yards","k":64.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Javonte Williams","label":"Under 64.5 rushing yards","p":0.6408,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"rushing_yards","k":5.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 5.5 rushing yards","p":0.6452,"fair":0.5,"fair_est":true,"thin":false,"market":false}
      ],
-     "p": 0.1285,
-     "fair": 0.0445,
+     "p": 0.1292,
+     "fair": 0.0437,
      "fair_est": true,
-     "dec": 16.471,
+     "dec": 16.811,
      "likeliest": false,
      "thin": 2,
      "mkt": 0
@@ -899,16 +909,16 @@
      "n": 5,
      "floor": 0.05,
      "legs": [
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"rushing_yards","k":9.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Dak Prescott","label":"Under 9.5 rushing yards","p":0.6271,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0034351","team":"PHI","grp":"TE","stat":"receiving_yards","k":48.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Dallas Goedert","label":"Under 48.5 receiving yards","p":0.6193,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":180,"src":"real","name":"Eagles","label":"To win","p":0.4758,"fair":0.3425,"fair_est":false,"thin":false,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0036997","team":"DAL","grp":"RB","stat":"rushing_yards","k":64.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Javonte Williams","label":"Under 64.5 rushing yards","p":0.6404,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"rushing_yards","k":5.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 5.5 rushing yards","p":0.6429,"fair":0.5,"fair_est":true,"thin":false,"market":false}
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"rushing_yards","k":9.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Dak Prescott","label":"Under 9.5 rushing yards","p":0.6278,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0034351","team":"PHI","grp":"TE","stat":"receiving_yards","k":48.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Dallas Goedert","label":"Under 48.5 receiving yards","p":0.6195,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":185,"src":"real","name":"Eagles","label":"To win","p":0.4758,"fair":0.3364,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0036997","team":"DAL","grp":"RB","stat":"rushing_yards","k":64.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Javonte Williams","label":"Under 64.5 rushing yards","p":0.6408,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"rushing_yards","k":5.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 5.5 rushing yards","p":0.6452,"fair":0.5,"fair_est":true,"thin":false,"market":false}
      ],
-     "p": 0.0796,
-     "fair": 0.0235,
+     "p": 0.0801,
+     "fair": 0.0229,
      "fair_est": true,
-     "dec": 29.425,
+     "dec": 29.917,
      "likeliest": false,
      "thin": 3,
      "mkt": 0
@@ -921,13 +931,13 @@
      "n": 2,
      "floor": 0.35,
      "legs": [
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"passing_tds","k":1.5,"side":"over","main":true,"price":-134,"src":"dkline","name":"Dak Prescott","label":"Over 1.5 passing tds","p":0.4476,"pe":0.5729,"fair":0.5403,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0037247","team":"DAL","grp":"WR","stat":"receiving_yards","k":62.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"George Pickens","label":"Over 62.5 receiving yards","p":0.4945,"pe":0.5404,"fair":0.5,"fair_est":true,"thin":null,"market":null}
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"passing_tds","k":1.5,"side":"over","main":true,"price":-135,"src":"dkline","name":"Dak Prescott","label":"Over 1.5 passing tds","p":0.4503,"pe":0.5746,"fair":0.542,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0037247","team":"DAL","grp":"WR","stat":"receiving_yards","k":62.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"George Pickens","label":"Over 62.5 receiving yards","p":0.4941,"pe":0.5404,"fair":0.5,"fair_est":true,"thin":null,"market":null}
      ],
-     "p": 0.3401,
-     "fair": 0.3016,
+     "p": 0.3406,
+     "fair": 0.3025,
      "fair_est": true,
-     "dec": 2.668,
+     "dec": 2.664,
      "likeliest": true,
      "thin": 0,
      "mkt": 0
@@ -938,14 +948,14 @@
      "n": 3,
      "floor": 0.25,
      "legs": [
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"passing_tds","k":1.5,"side":"over","main":true,"price":-134,"src":"dkline","name":"Dak Prescott","label":"Over 1.5 passing tds","p":0.4476,"pe":0.5729,"fair":0.5403,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0037247","team":"DAL","grp":"WR","stat":"receiving_yards","k":62.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"George Pickens","label":"Over 62.5 receiving yards","p":0.4945,"pe":0.5404,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0040867","team":"PHI","grp":"WR","stat":"receiving_yards","k":38.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Makai Lemon","label":"Over 38.5 receiving yards","p":0.2659,"pe":0.5348,"fair":0.5,"fair_est":true,"thin":null,"market":null}
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"passing_tds","k":1.5,"side":"over","main":true,"price":-135,"src":"dkline","name":"Dak Prescott","label":"Over 1.5 passing tds","p":0.4503,"pe":0.5746,"fair":0.542,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0037247","team":"DAL","grp":"WR","stat":"receiving_yards","k":62.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"George Pickens","label":"Over 62.5 receiving yards","p":0.4941,"pe":0.5404,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0040867","team":"PHI","grp":"WR","stat":"receiving_yards","k":37.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Makai Lemon","label":"Over 37.5 receiving yards","p":0.2769,"pe":0.5348,"fair":0.5,"fair_est":true,"thin":null,"market":null}
      ],
-     "p": 0.1898,
-     "fair": 0.1587,
+     "p": 0.19,
+     "fair": 0.159,
      "fair_est": true,
-     "dec": 4.883,
+     "dec": 4.878,
      "likeliest": true,
      "thin": 0,
      "mkt": 0
@@ -956,15 +966,15 @@
      "n": 4,
      "floor": 0.12,
      "legs": [
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"passing_tds","k":1.5,"side":"over","main":true,"price":-134,"src":"dkline","name":"Dak Prescott","label":"Over 1.5 passing tds","p":0.4476,"pe":0.5729,"fair":0.5403,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0037247","team":"DAL","grp":"WR","stat":"receiving_yards","k":62.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"George Pickens","label":"Over 62.5 receiving yards","p":0.4945,"pe":0.5404,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0040867","team":"PHI","grp":"WR","stat":"receiving_yards","k":38.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Makai Lemon","label":"Over 38.5 receiving yards","p":0.2659,"pe":0.5348,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"passing_yards","k":193.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 193.5 passing yards","p":0.5771,"pe":0.5503,"fair":0.5,"fair_est":true,"thin":null,"market":null}
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"passing_tds","k":1.5,"side":"over","main":true,"price":-135,"src":"dkline","name":"Dak Prescott","label":"Over 1.5 passing tds","p":0.4503,"pe":0.5746,"fair":0.542,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0034351","team":"PHI","grp":"TE","stat":"any_td","k":1,"side":"over","main":false,"price":227,"src":"dkline","name":"Dallas Goedert","label":"Scores a touchdown","p":0.2171,"pe":0.3494,"fair":0.2894,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0037247","team":"DAL","grp":"WR","stat":"receiving_yards","k":62.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"George Pickens","label":"Over 62.5 receiving yards","p":0.4941,"pe":0.5404,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0040867","team":"PHI","grp":"WR","stat":"receiving_yards","k":37.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Makai Lemon","label":"Over 37.5 receiving yards","p":0.2769,"pe":0.5348,"fair":0.5,"fair_est":true,"thin":null,"market":null}
      ],
      "p": 0.0734,
-     "fair": 0.0505,
+     "fair": 0.0517,
      "fair_est": true,
-     "dec": 11.843,
+     "dec": 14.188,
      "likeliest": true,
      "thin": 0,
      "mkt": 0
@@ -975,41 +985,41 @@
      "n": 5,
      "floor": 0.05,
      "legs": [
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"passing_tds","k":1.5,"side":"over","main":true,"price":-134,"src":"dkline","name":"Dak Prescott","label":"Over 1.5 passing tds","p":0.4476,"pe":0.5729,"fair":0.5403,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0033077","team":"DAL","grp":"QB","stat":"passing_tds","k":1.5,"side":"over","main":true,"price":-135,"src":"dkline","name":"Dak Prescott","label":"Over 1.5 passing tds","p":0.4503,"pe":0.5746,"fair":0.542,"fair_est":true,"thin":null,"market":null},
       {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0034351","team":"PHI","grp":"TE","stat":"any_td","k":1,"side":"over","main":false,"price":227,"src":"dkline","name":"Dallas Goedert","label":"Scores a touchdown","p":0.2171,"pe":0.3494,"fair":0.2894,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0037247","team":"DAL","grp":"WR","stat":"receiving_yards","k":62.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"George Pickens","label":"Over 62.5 receiving yards","p":0.4945,"pe":0.5404,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0040867","team":"PHI","grp":"WR","stat":"receiving_yards","k":38.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Makai Lemon","label":"Over 38.5 receiving yards","p":0.2659,"pe":0.5348,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"passing_yards","k":193.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 193.5 passing yards","p":0.5771,"pe":0.5503,"fair":0.5,"fair_est":true,"thin":null,"market":null}
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0037247","team":"DAL","grp":"WR","stat":"receiving_yards","k":62.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"George Pickens","label":"Over 62.5 receiving yards","p":0.4941,"pe":0.5404,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0040867","team":"PHI","grp":"WR","stat":"receiving_yards","k":37.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Makai Lemon","label":"Over 37.5 receiving yards","p":0.2769,"pe":0.5348,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_07_DAL_PHI","week":7,"pid":"00-0038400","team":"PHI","grp":"QB","stat":"passing_yards","k":195.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tanner McKee","label":"Under 195.5 passing yards","p":0.584,"pe":0.5503,"fair":0.5,"fair_est":true,"thin":null,"market":null}
      ],
-     "p": 0.0256,
-     "fair": 0.0154,
+     "p": 0.0257,
+     "fair": 0.0155,
      "fair_est": true,
-     "dec": 38.727,
+     "dec": 38.604,
      "likeliest": true,
      "thin": 0,
      "mkt": 0
     }
    ],
-   "taken_at": "2026-10-25T17:25:00Z"
+   "taken_at": "2026-10-26T01:07:07Z"
   }
  },
  "slot_since": "2026-10-19",
  "slot_summary": {
   "tiers": {
-   "safe": {"label":"Safe","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
-   "med": {"label":"Medium","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
-   "aggr": {"label":"Aggressive","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
-   "xtrm": {"label":"Extreme","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0}
+   "safe": {"label":"Safe","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.2817,"fair_n":1,"exp_model":0.381,"units":-1},
+   "med": {"label":"Medium","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.1617,"fair_n":1,"exp_model":0.2745,"units":-1},
+   "aggr": {"label":"Aggressive","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.0595,"fair_n":1,"exp_model":0.1267,"units":-1},
+   "xtrm": {"label":"Extreme","graded":1,"won":1,"lost":0,"push":0,"exp_fair":0.0244,"fair_n":1,"exp_model":0.0748,"units":26.569}
   },
-  "pending": 4,
+  "pending": 0,
   "elo": {
    "tiers": {
-    "elo-safe": {"label":"Safe","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
-    "elo-med": {"label":"Medium","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
-    "elo-aggr": {"label":"Aggressive","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
-    "elo-xtrm": {"label":"Extreme","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0}
+    "elo-safe": {"label":"Safe","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.2469,"fair_n":1,"exp_model":0.3539,"units":-1},
+    "elo-med": {"label":"Medium","graded":1,"won":1,"lost":0,"push":0,"exp_fair":0.1849,"fair_n":1,"exp_model":0.2483,"units":3.245},
+    "elo-aggr": {"label":"Aggressive","graded":1,"won":1,"lost":0,"push":0,"exp_fair":0.0822,"fair_n":1,"exp_model":0.1329,"units":7.88},
+    "elo-xtrm": {"label":"Extreme","graded":1,"won":0,"lost":1,"push":0,"exp_fair":0.0261,"fair_n":1,"exp_model":0.0597,"units":-1}
    },
-   "pending": 4
+   "pending": 0
   },
   "games": 1,
   "entries": 1,
@@ -1181,14 +1191,14 @@
    ],
    "taken_at": "2026-10-25T09:26:34Z",
    "grade": {
-    "safe": {"result":"pending","legs":[null,null]},
-    "med": {"result":"pending","legs":[null,null,null]},
-    "aggr": {"result":"pending","legs":[null,null,null,null]},
-    "xtrm": {"result":"pending","legs":[null,null,null,null,null]},
-    "elo-safe": {"result":"pending","legs":[null,null]},
-    "elo-med": {"result":"pending","legs":[null,null,null]},
-    "elo-aggr": {"result":"pending","legs":[null,null,null,null]},
-    "elo-xtrm": {"result":"pending","legs":[null,null,null,null,null]}
+    "safe": {"result":"lost","legs":["loss","loss"],"payout":0},
+    "med": {"result":"lost","legs":["loss","win","loss"],"payout":0},
+    "aggr": {"result":"lost","legs":["loss","win","loss","loss"],"payout":0},
+    "xtrm": {"result":"won","legs":["win","win","win","win","win"],"payout":27.569},
+    "elo-safe": {"result":"lost","legs":["win","loss"],"payout":0},
+    "elo-med": {"result":"won","legs":["win","win","win"],"payout":4.245},
+    "elo-aggr": {"result":"won","legs":["win","win","win","win"],"payout":8.88},
+    "elo-xtrm": {"result":"lost","legs":["loss","win","loss","loss","win"],"payout":0}
    }
   }
  }
