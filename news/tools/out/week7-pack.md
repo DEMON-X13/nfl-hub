@@ -44,7 +44,7 @@ New England Patriots, injuries:
 New England Patriots, ESPN headlines:
 
 Chicago Bears, injuries:
-- Anthony Johnson Jr. (S) Injured Reserve, Undisclosed: ir
+- Anthony Johnson Jr. (S) Out, Undisclosed: out
 - Kyler Gordon (CB) Active: Gordon recorded five tackles (three solo), including 1.0 sacks, in Thursday's 30-24 win over the Patriots.
 - Dillon Thieneman (S) Active: Thieneman tallied eight tackles (three solo), including 0.5 sacks, in a 30-24 victory versus the Patriots on Thursday.
 - D'Marco Jackson (LB) Active: Jackson finished with six tackles (three solo) and an interception Thursday in a 30-24 victory over New England.
