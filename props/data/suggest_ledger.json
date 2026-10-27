@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. Since app v118 each entry holds the unit's Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe), taken, locked, replaced and graded with the model's levels; and slot holds each week's Sunday slot (every Sunday game before 7 pm Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary, slot_summary (each with its elo) and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-10-26T21:00:01Z",
+ "updated": "2026-10-27T05:26:11Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -201,24 +201,24 @@
  "prime_since": "2026-10-16",
  "prime_summary": {
   "tiers": {
-   "safe": {"label":"Safe","graded":4,"won":0,"lost":4,"push":0,"exp_fair":1.0581,"fair_n":4,"exp_model":1.5197,"units":-4},
-   "med": {"label":"Medium","graded":4,"won":0,"lost":4,"push":0,"exp_fair":0.5103,"fair_n":4,"exp_model":1.0256,"units":-4},
-   "aggr": {"label":"Aggressive","graded":4,"won":0,"lost":4,"push":0,"exp_fair":0.2394,"fair_n":4,"exp_model":0.5793,"units":-4},
-   "xtrm": {"label":"Extreme","graded":4,"won":0,"lost":4,"push":0,"exp_fair":0.1152,"fair_n":4,"exp_model":0.3481,"units":-4}
+   "safe": {"label":"Safe","graded":5,"won":0,"lost":5,"push":0,"exp_fair":1.3103,"fair_n":5,"exp_model":1.9131,"units":-5},
+   "med": {"label":"Medium","graded":5,"won":0,"lost":5,"push":0,"exp_fair":0.6403,"fair_n":5,"exp_model":1.2822,"units":-5},
+   "aggr": {"label":"Aggressive","graded":5,"won":0,"lost":5,"push":0,"exp_fair":0.2831,"fair_n":5,"exp_model":0.7081,"units":-5},
+   "xtrm": {"label":"Extreme","graded":5,"won":0,"lost":5,"push":0,"exp_fair":0.1381,"fair_n":5,"exp_model":0.4281,"units":-5}
   },
   "pending": 0,
   "elo": {
    "tiers": {
-    "elo-safe": {"label":"Safe","graded":3,"won":2,"lost":1,"push":0,"exp_fair":0.8464,"fair_n":3,"exp_model":1.026,"units":3.001},
-    "elo-med": {"label":"Medium","graded":3,"won":0,"lost":3,"push":0,"exp_fair":0.4791,"fair_n":3,"exp_model":0.6162,"units":-3},
-    "elo-aggr": {"label":"Aggressive","graded":3,"won":0,"lost":3,"push":0,"exp_fair":0.2395,"fair_n":3,"exp_model":0.3406,"units":-3},
-    "elo-xtrm": {"label":"Extreme","graded":3,"won":0,"lost":3,"push":0,"exp_fair":0.081,"fair_n":3,"exp_model":0.1422,"units":-3}
+    "elo-safe": {"label":"Safe","graded":4,"won":2,"lost":2,"push":0,"exp_fair":1.1506,"fair_n":4,"exp_model":1.3671,"units":2.001},
+    "elo-med": {"label":"Medium","graded":4,"won":0,"lost":4,"push":0,"exp_fair":0.639,"fair_n":4,"exp_model":0.8064,"units":-4},
+    "elo-aggr": {"label":"Aggressive","graded":4,"won":0,"lost":4,"push":0,"exp_fair":0.3186,"fair_n":4,"exp_model":0.4456,"units":-4},
+    "elo-xtrm": {"label":"Extreme","graded":4,"won":0,"lost":4,"push":0,"exp_fair":0.1205,"fair_n":4,"exp_model":0.1988,"units":-4}
    },
    "pending": 0
   },
-  "games": 5,
-  "entries": 5,
-  "graded_entries": 4,
+  "games": 8,
+  "entries": 8,
+  "graded_entries": 5,
   "updates": 0
  },
  "prime": {
@@ -1000,7 +1000,289 @@
      "mkt": 0
     }
    ],
-   "taken_at": "2026-10-26T21:00:01Z"
+   "taken_at": "2026-10-26T21:00:01Z",
+   "grade": {
+    "safe": {"result":"lost","legs":["loss","win"],"payout":0},
+    "med": {"result":"lost","legs":["loss","loss","win"],"payout":0},
+    "aggr": {"result":"lost","legs":["win","loss","loss","win"],"payout":0},
+    "xtrm": {"result":"lost","legs":["win","win","loss","loss","win"],"payout":0},
+    "elo-safe": {"result":"lost","legs":["win","loss"],"payout":0},
+    "elo-med": {"result":"lost","legs":["win","loss","win"],"payout":0},
+    "elo-aggr": {"result":"lost","legs":["win","loss","win","loss"],"payout":0},
+    "elo-xtrm": {"result":"lost","legs":["win","loss","loss","win","loss"],"payout":0}
+   }
+  },
+  "2026|08|2026-10-30T00:15:00Z|2026_08_CAR_GB": {
+   "season": 2026,
+   "week": 8,
+   "gid": "2026_08_CAR_GB",
+   "away": "CAR",
+   "home": "GB",
+   "kickoff": "2026-10-30T00:15:00Z",
+   "lock": "2026-10-29T22:15:00Z",
+   "baked_at": "2026-10-27T05:24+00:00",
+   "pool": {"pref":1,"thin":17,"mkt":2,"far":9},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0031610","team":"CAR","grp":"TE","stat":"receptions","k":2.5,"side":"over","main":true,"price":112,"src":"dkline","name":"Darren Waller","label":"Over 2.5 receptions","p":0.5332,"fair":0.4455,"fair_est":true,"thin":false,"market":false},
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0038996","team":"GB","grp":"TE","stat":"receptions","k":4.5,"side":"under","main":true,"price":-126,"src":"dkline","name":"Tucker Kraft","label":"Under 4.5 receptions","p":0.6247,"fair":0.5257,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.3331,
+     "fair": 0.2342,
+     "fair_est": true,
+     "dec": 3.407,
+     "likeliest": false,
+     "thin": 1,
+     "mkt": 0
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "legs": [
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0036555","team":"CAR","grp":"RB","stat":"receiving_yards","k":14.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Chuba Hubbard","label":"Under 14.5 receiving yards","p":0.6286,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0036264","team":"GB","grp":"QB","stat":"passing_yards","k":259.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Jordan Love","label":"Under 259.5 passing yards","p":0.6123,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0040667","team":"GB","grp":"WR","stat":"receptions","k":4.5,"side":"under","main":true,"price":-105,"src":"dkline","name":"Matthew Golden","label":"Under 4.5 receptions","p":0.6149,"fair":0.4825,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.263,
+     "fair": 0.1426,
+     "fair_est": true,
+     "dec": 5.447,
+     "likeliest": false,
+     "thin": 3,
+     "mkt": 0
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "legs": [
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0038124","team":"GB","grp":"WR","stat":"receiving_yards","k":69.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Christian Watson","label":"Under 69.5 receiving yards","p":0.6118,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0036555","team":"CAR","grp":"RB","stat":"receiving_yards","k":14.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Chuba Hubbard","label":"Under 14.5 receiving yards","p":0.6286,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0031610","team":"CAR","grp":"TE","stat":"receptions","k":2.5,"side":"over","main":true,"price":112,"src":"dkline","name":"Darren Waller","label":"Over 2.5 receptions","p":0.5332,"fair":0.4455,"fair_est":true,"thin":false,"market":false},
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0040667","team":"GB","grp":"WR","stat":"receptions","k":4.5,"side":"under","main":true,"price":-105,"src":"dkline","name":"Matthew Golden","label":"Under 4.5 receptions","p":0.6149,"fair":0.4825,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.1222,
+     "fair": 0.0521,
+     "fair_est": true,
+     "dec": 13.333,
+     "likeliest": false,
+     "thin": 3,
+     "mkt": 0
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "legs": [
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0039150","team":"CAR","grp":"QB","stat":"rushing_yards","k":10.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Bryce Young","label":"Under 10.5 rushing yards","p":0.6116,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0038124","team":"GB","grp":"WR","stat":"receiving_yards","k":69.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Christian Watson","label":"Under 69.5 receiving yards","p":0.6118,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0036555","team":"CAR","grp":"RB","stat":"receiving_yards","k":14.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Chuba Hubbard","label":"Under 14.5 receiving yards","p":0.6286,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0031610","team":"CAR","grp":"TE","stat":"receptions","k":2.5,"side":"over","main":true,"price":112,"src":"dkline","name":"Darren Waller","label":"Over 2.5 receptions","p":0.5332,"fair":0.4455,"fair_est":true,"thin":false,"market":false},
+      {"gid":"2026_08_CAR_GB","week":8,"pid":"00-0040667","team":"GB","grp":"WR","stat":"receptions","k":4.5,"side":"under","main":true,"price":-105,"src":"dkline","name":"Matthew Golden","label":"Under 4.5 receptions","p":0.6149,"fair":0.4825,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.0754,
+     "fair": 0.0262,
+     "fair_est": true,
+     "dec": 26.237,
+     "likeliest": false,
+     "thin": 4,
+     "mkt": 0
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0.35,
+     "why": "Only 0 players in this game qualify: this level takes 2."
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 0 players in this game qualify: this level takes 3."
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 0 players in this game qualify: this level takes 4."
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 0 players in this game qualify: this level takes 5."
+    }
+   ],
+   "taken_at": "2026-10-27T05:26:11Z"
+  },
+  "2026|08|2026-11-02T01:20:00Z|2026_08_PHI_WAS": {
+   "season": 2026,
+   "week": 8,
+   "gid": "2026_08_PHI_WAS",
+   "away": "PHI",
+   "home": "WAS",
+   "kickoff": "2026-11-02T01:20:00Z",
+   "lock": "2026-11-01T23:20:00Z",
+   "baked_at": "2026-10-27T05:24+00:00",
+   "pool": {"pref":1,"thin":0,"mkt":2,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_08_PHI_WAS","week":8,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ats","k":4.5,"side":"over","main":false,"price":-112,"src":"real","name":"Eagles","label":"To cover +4.5","p":0.5719,"fair":0.5043,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_08_PHI_WAS","week":8,"pid":"game","team":"PHI","grp":"TEAM","stat":"total","k":40.5,"side":"over","main":true,"price":-110,"src":"real","name":"Eagles at Commanders","label":"Over 40.5 points","p":0.5,"fair":0.5,"fair_est":false,"thin":false,"market":true}
+     ],
+     "p": 0.286,
+     "fair": 0.2522,
+     "fair_est": false,
+     "dec": 3.238,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 1
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 2 legs in this game: no player lines yet (read Tue 1:25 AM ET)."
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 2 legs in this game: no player lines yet (read Tue 1:25 AM ET)."
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 2 legs in this game: no player lines yet (read Tue 1:25 AM ET)."
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0.35,
+     "why": "No player lines in this game yet (read Tue 1:25 AM ET)."
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "No player lines in this game yet (read Tue 1:25 AM ET)."
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "No player lines in this game yet (read Tue 1:25 AM ET)."
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "No player lines in this game yet (read Tue 1:25 AM ET)."
+    }
+   ],
+   "taken_at": "2026-10-27T05:26:11Z"
+  },
+  "2026|08|2026-11-03T01:15:00Z|2026_08_CHI_SEA": {
+   "season": 2026,
+   "week": 8,
+   "gid": "2026_08_CHI_SEA",
+   "away": "CHI",
+   "home": "SEA",
+   "kickoff": "2026-11-03T01:15:00Z",
+   "lock": "2026-11-02T23:15:00Z",
+   "baked_at": "2026-10-27T05:24+00:00",
+   "pool": {"pref":0,"thin":0,"mkt":2,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "why": "Only 1 leg in this game."
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 1 leg in this game."
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 1 leg in this game."
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 1 leg in this game."
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0.35,
+     "why": "Only 0 players in this game qualify: this level takes 2."
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 0 players in this game qualify: this level takes 3."
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 0 players in this game qualify: this level takes 4."
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 0 players in this game qualify: this level takes 5."
+    }
+   ],
+   "taken_at": "2026-10-27T05:26:11Z"
   }
  },
  "slot_since": "2026-10-19",
@@ -1021,8 +1303,8 @@
    },
    "pending": 0
   },
-  "games": 1,
-  "entries": 1,
+  "games": 2,
+  "entries": 2,
   "graded_entries": 1,
   "updates": 0
  },
@@ -1200,6 +1482,88 @@
     "elo-aggr": {"result":"won","legs":["win","win","win","win"],"payout":8.88},
     "elo-xtrm": {"result":"lost","legs":["loss","win","loss","loss","win"],"payout":0}
    }
+  },
+  "2026|08|2026-11-01T18:00:00Z|2026_08_SUN": {
+   "season": 2026,
+   "week": 8,
+   "gid": "2026_08_SUN",
+   "games": ["2026_08_BAL_BUF","2026_08_TEN_CIN","2026_08_ARI_DAL","2026_08_MIN_DET","2026_08_IND_JAX","2026_08_LV_NYJ","2026_08_CLE_PIT","2026_08_ATL_TB","2026_08_LAC_LA","2026_08_KC_DEN","2026_08_NE_MIA"],
+   "kickoff": "2026-11-01T18:00:00Z",
+   "last": "2026-11-01T21:25:00Z",
+   "lock": "2026-11-01T16:00:00Z",
+   "baked_at": "2026-10-27T05:24+00:00",
+   "pool": {"pref":5,"thin":6,"mkt":22,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_08_KC_DEN","week":8,"pid":"team:DEN","team":"DEN","grp":"TEAM","stat":"ats","k":1.5,"side":"over","main":false,"price":-110,"src":"real","name":"Broncos","label":"To cover +1.5","p":0.5792,"fair":0.5,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_08_KC_DEN","week":8,"pid":"game","team":"KC","grp":"TEAM","stat":"total","k":41.5,"side":"under","main":true,"price":-115,"src":"real","name":"Chiefs at Broncos","label":"Under 41.5 points","p":0.5108,"fair":0.5108,"fair_est":false,"thin":false,"market":true}
+     ],
+     "p": 0.2959,
+     "fair": 0.2554,
+     "fair_est": false,
+     "dec": 3.198,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 1
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 2 legs in any one game of the Sunday slot."
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 2 legs in any one game of the Sunday slot."
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 2 legs in any one game of the Sunday slot."
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0.35,
+     "why": "Only 0 players in any one game of the Sunday slot qualify: this level takes 2."
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 0 players in any one game of the Sunday slot qualify: this level takes 3."
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 0 players in any one game of the Sunday slot qualify: this level takes 4."
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 0 players in any one game of the Sunday slot qualify: this level takes 5."
+    }
+   ],
+   "taken_at": "2026-10-27T05:26:11Z"
   }
  }
 }
