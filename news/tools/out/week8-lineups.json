@@ -216,7 +216,7 @@
   },
   "BAL": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-27T12:31:27.360Z",
+   "built_at": "2026-10-27T16:52:35.238Z",
    "units": {
     "qb": [
      {
@@ -242,10 +242,9 @@
       "pos": "C"
      },
      {
-      "id": "00-0040866",
-      "n": "Olaivavega Ioane",
-      "pos": "G",
-      "q": "questionable: knee"
+      "id": "00-0040068",
+      "n": "Emery Jones Jr.",
+      "pos": "G"
      },
      {
       "id": "00-0039233",
@@ -320,7 +319,7 @@
   },
   "BUF": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-27T12:31:27.360Z",
+   "built_at": "2026-10-27T16:52:35.238Z",
    "units": {
     "qb": [
      {
@@ -409,13 +408,13 @@
       "pos": "SS"
      },
      {
-      "id": "00-0035253",
-      "n": "C.J. Gardner-Johnson",
-      "pos": "SS"
-     },
-     {
       "id": "00-0037288",
       "n": "Christian Benford",
+      "pos": "CB"
+     },
+     {
+      "id": "00-0041391",
+      "n": "Davison Igbinosun",
       "pos": "CB"
      }
     ]
@@ -423,7 +422,7 @@
   },
   "TEN": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-27T12:31:27.360Z",
+   "built_at": "2026-10-27T16:52:35.238Z",
    "units": {
     "qb": [
      {
@@ -466,9 +465,10 @@
       "pos": "RB"
      },
      {
-      "id": "00-0037594",
-      "n": "Julius Chestnut",
-      "pos": "RB"
+      "id": "00-0039032",
+      "n": "Tyjae Spears",
+      "pos": "RB",
+      "q": "questionable: knee"
      }
     ],
     "rec": [
@@ -629,7 +629,7 @@
   },
   "ARI": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-27T12:31:27.360Z",
+   "built_at": "2026-10-27T16:52:35.238Z",
    "units": {
     "qb": [
      {
@@ -723,9 +723,10 @@
       "pos": "CB"
      },
      {
-      "id": "00-0039007",
-      "n": "Garrett Williams",
-      "pos": "CB"
+      "id": "00-0039807",
+      "n": "Max Melton",
+      "pos": "CB",
+      "q": "questionable: knee"
      }
     ]
    }
@@ -1353,7 +1354,7 @@
   },
   "NYJ": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-27T12:31:27.360Z",
+   "built_at": "2026-10-27T16:52:35.238Z",
    "units": {
     "qb": [
      {
@@ -1391,13 +1392,14 @@
     ],
     "rb": [
      {
-      "id": "00-0039794",
-      "n": "Braelon Allen",
-      "pos": "RB"
+      "id": "00-0038120",
+      "n": "Breece Hall",
+      "pos": "RB",
+      "q": "questionable: quadriceps"
      },
      {
-      "id": "00-0039798",
-      "n": "Isaiah Davis",
+      "id": "00-0039794",
+      "n": "Braelon Allen",
       "pos": "RB"
      }
     ],
@@ -2486,7 +2488,7 @@
   },
   "PHI": {
    "kick": "2026-11-02T01:20Z",
-   "built_at": "2026-10-27T12:31:27.360Z",
+   "built_at": "2026-10-27T16:52:35.238Z",
    "units": {
     "qb": [
      {
@@ -2532,7 +2534,8 @@
      {
       "id": "00-0037258",
       "n": "Dameon Pierce",
-      "pos": "RB"
+      "pos": "RB",
+      "q": "questionable: undisclosed"
      }
     ],
     "rec": [
@@ -2693,7 +2696,7 @@
   },
   "CHI": {
    "kick": "2026-11-03T01:15Z",
-   "built_at": "2026-10-27T12:31:27.360Z",
+   "built_at": "2026-10-27T16:52:35.238Z",
    "units": {
     "qb": [
      {
@@ -2760,14 +2763,14 @@
     ],
     "front": [
      {
-      "id": "00-0039840",
-      "n": "Austin Booker",
-      "pos": "DE"
-     },
-     {
       "id": "00-0035525",
       "n": "Devin Bush",
       "pos": "MLB"
+     },
+     {
+      "id": "00-0035647",
+      "n": "Montez Sweat",
+      "pos": "DE"
      },
      {
       "id": "00-0031583",
