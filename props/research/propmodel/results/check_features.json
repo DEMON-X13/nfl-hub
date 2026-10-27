@@ -1,0 +1,53 @@
+{
+ "p_receiving_yards_szn": {
+  "checked": 367,
+  "matched": 366,
+  "examples_of_misses": [
+   [
+    "00-0035891",
+    "2021",
+    18,
+    5.5,
+    2.357142857142857
+   ]
+  ]
+ },
+ "x_gp_szn": {
+  "checked": 400,
+  "matched": 399,
+  "examples_of_misses": [
+   [
+    "00-0035891",
+    "2021",
+    18,
+    6,
+    14
+   ]
+  ]
+ },
+ "p_off_pct_l1": {
+  "checked": 366,
+  "matched": 366,
+  "examples_of_misses": []
+ },
+ "t_plays_szn": {
+  "checked": 373,
+  "matched": 373,
+  "examples_of_misses": []
+ },
+ "g_implied": {
+  "checked": 400,
+  "matched": 400,
+  "examples_of_misses": []
+ },
+ "dc_depth": {
+  "checked": 357,
+  "matched": 357,
+  "examples_of_misses": []
+ },
+ "inj_questionable": {
+  "checked": 400,
+  "matched": 400,
+  "examples_of_misses": []
+ }
+}

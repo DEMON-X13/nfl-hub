@@ -1,0 +1,252 @@
+{
+ "W": 0.25,
+ "note": "What the preregistered one-shot test can detect: a simulation on made-up lines only (no data of any season).",
+ "sizes": {
+  "priced_lines": 2400,
+  "priced_games": 70,
+  "price_free_lines": 4800,
+  "price_free_games": 107
+ },
+ "cells": [
+  {
+   "sd_logit_departure": 0.2,
+   "approx_points_at_even": 5.0,
+   "beta": 0.0,
+   "pass_A1": 0.02,
+   "pass_A2": 0.02,
+   "pass_A3": 0.0575,
+   "pass_B1": 0.005,
+   "pass_A1_A2_A3_B1": 0.0
+  },
+  {
+   "sd_logit_departure": 0.2,
+   "approx_points_at_even": 5.0,
+   "beta": 0.1,
+   "pass_A1": 0.0375,
+   "pass_A2": 0.0375,
+   "pass_A3": 0.1225,
+   "pass_B1": 0.045,
+   "pass_A1_A2_A3_B1": 0.0025
+  },
+  {
+   "sd_logit_departure": 0.2,
+   "approx_points_at_even": 5.0,
+   "beta": 0.2,
+   "pass_A1": 0.1225,
+   "pass_A2": 0.1225,
+   "pass_A3": 0.305,
+   "pass_B1": 0.1425,
+   "pass_A1_A2_A3_B1": 0.02
+  },
+  {
+   "sd_logit_departure": 0.2,
+   "approx_points_at_even": 5.0,
+   "beta": 0.3,
+   "pass_A1": 0.2175,
+   "pass_A2": 0.2175,
+   "pass_A3": 0.4175,
+   "pass_B1": 0.32,
+   "pass_A1_A2_A3_B1": 0.07
+  },
+  {
+   "sd_logit_departure": 0.2,
+   "approx_points_at_even": 5.0,
+   "beta": 0.4,
+   "pass_A1": 0.39,
+   "pass_A2": 0.3925,
+   "pass_A3": 0.615,
+   "pass_B1": 0.64,
+   "pass_A1_A2_A3_B1": 0.2625
+  },
+  {
+   "sd_logit_departure": 0.2,
+   "approx_points_at_even": 5.0,
+   "beta": 0.5,
+   "pass_A1": 0.59,
+   "pass_A2": 0.5925,
+   "pass_A3": 0.785,
+   "pass_B1": 0.83,
+   "pass_A1_A2_A3_B1": 0.495
+  },
+  {
+   "sd_logit_departure": 0.2,
+   "approx_points_at_even": 5.0,
+   "beta": 0.7,
+   "pass_A1": 0.8875,
+   "pass_A2": 0.8875,
+   "pass_A3": 0.97,
+   "pass_B1": 0.9875,
+   "pass_A1_A2_A3_B1": 0.875
+  },
+  {
+   "sd_logit_departure": 0.2,
+   "approx_points_at_even": 5.0,
+   "beta": 1.0,
+   "pass_A1": 0.9925,
+   "pass_A2": 0.9925,
+   "pass_A3": 1.0,
+   "pass_B1": 1.0,
+   "pass_A1_A2_A3_B1": 0.9925
+  },
+  {
+   "sd_logit_departure": 0.3,
+   "approx_points_at_even": 7.5,
+   "beta": 0.0,
+   "pass_A1": 0.0125,
+   "pass_A2": 0.0125,
+   "pass_A3": 0.06,
+   "pass_B1": 0.0025,
+   "pass_A1_A2_A3_B1": 0.0
+  },
+  {
+   "sd_logit_departure": 0.3,
+   "approx_points_at_even": 7.5,
+   "beta": 0.1,
+   "pass_A1": 0.0375,
+   "pass_A2": 0.0375,
+   "pass_A3": 0.2,
+   "pass_B1": 0.0425,
+   "pass_A1_A2_A3_B1": 0.0075
+  },
+  {
+   "sd_logit_departure": 0.3,
+   "approx_points_at_even": 7.5,
+   "beta": 0.2,
+   "pass_A1": 0.1475,
+   "pass_A2": 0.1475,
+   "pass_A3": 0.4025,
+   "pass_B1": 0.21,
+   "pass_A1_A2_A3_B1": 0.04
+  },
+  {
+   "sd_logit_departure": 0.3,
+   "approx_points_at_even": 7.5,
+   "beta": 0.3,
+   "pass_A1": 0.36,
+   "pass_A2": 0.36,
+   "pass_A3": 0.7125,
+   "pass_B1": 0.565,
+   "pass_A1_A2_A3_B1": 0.215
+  },
+  {
+   "sd_logit_departure": 0.3,
+   "approx_points_at_even": 7.5,
+   "beta": 0.4,
+   "pass_A1": 0.665,
+   "pass_A2": 0.665,
+   "pass_A3": 0.89,
+   "pass_B1": 0.8975,
+   "pass_A1_A2_A3_B1": 0.605
+  },
+  {
+   "sd_logit_departure": 0.3,
+   "approx_points_at_even": 7.5,
+   "beta": 0.5,
+   "pass_A1": 0.855,
+   "pass_A2": 0.855,
+   "pass_A3": 0.97,
+   "pass_B1": 0.9825,
+   "pass_A1_A2_A3_B1": 0.84
+  },
+  {
+   "sd_logit_departure": 0.3,
+   "approx_points_at_even": 7.5,
+   "beta": 0.7,
+   "pass_A1": 0.9875,
+   "pass_A2": 0.9875,
+   "pass_A3": 1.0,
+   "pass_B1": 1.0,
+   "pass_A1_A2_A3_B1": 0.9875
+  },
+  {
+   "sd_logit_departure": 0.3,
+   "approx_points_at_even": 7.5,
+   "beta": 1.0,
+   "pass_A1": 1.0,
+   "pass_A2": 1.0,
+   "pass_A3": 1.0,
+   "pass_B1": 1.0,
+   "pass_A1_A2_A3_B1": 1.0
+  },
+  {
+   "sd_logit_departure": 0.45,
+   "approx_points_at_even": 11.2,
+   "beta": 0.0,
+   "pass_A1": 0.0,
+   "pass_A2": 0.0,
+   "pass_A3": 0.0475,
+   "pass_B1": 0.0,
+   "pass_A1_A2_A3_B1": 0.0
+  },
+  {
+   "sd_logit_departure": 0.45,
+   "approx_points_at_even": 11.2,
+   "beta": 0.1,
+   "pass_A1": 0.035,
+   "pass_A2": 0.035,
+   "pass_A3": 0.2925,
+   "pass_B1": 0.0225,
+   "pass_A1_A2_A3_B1": 0.0
+  },
+  {
+   "sd_logit_departure": 0.45,
+   "approx_points_at_even": 11.2,
+   "beta": 0.2,
+   "pass_A1": 0.205,
+   "pass_A2": 0.205,
+   "pass_A3": 0.6875,
+   "pass_B1": 0.3125,
+   "pass_A1_A2_A3_B1": 0.0575
+  },
+  {
+   "sd_logit_departure": 0.45,
+   "approx_points_at_even": 11.2,
+   "beta": 0.3,
+   "pass_A1": 0.63,
+   "pass_A2": 0.635,
+   "pass_A3": 0.9525,
+   "pass_B1": 0.8975,
+   "pass_A1_A2_A3_B1": 0.57
+  },
+  {
+   "sd_logit_departure": 0.45,
+   "approx_points_at_even": 11.2,
+   "beta": 0.4,
+   "pass_A1": 0.915,
+   "pass_A2": 0.915,
+   "pass_A3": 1.0,
+   "pass_B1": 0.9925,
+   "pass_A1_A2_A3_B1": 0.91
+  },
+  {
+   "sd_logit_departure": 0.45,
+   "approx_points_at_even": 11.2,
+   "beta": 0.5,
+   "pass_A1": 0.9925,
+   "pass_A2": 0.9925,
+   "pass_A3": 1.0,
+   "pass_B1": 1.0,
+   "pass_A1_A2_A3_B1": 0.9925
+  },
+  {
+   "sd_logit_departure": 0.45,
+   "approx_points_at_even": 11.2,
+   "beta": 0.7,
+   "pass_A1": 1.0,
+   "pass_A2": 1.0,
+   "pass_A3": 1.0,
+   "pass_B1": 1.0,
+   "pass_A1_A2_A3_B1": 1.0
+  },
+  {
+   "sd_logit_departure": 0.45,
+   "approx_points_at_even": 11.2,
+   "beta": 1.0,
+   "pass_A1": 1.0,
+   "pass_A2": 1.0,
+   "pass_A3": 1.0,
+   "pass_B1": 1.0,
+   "pass_A1_A2_A3_B1": 1.0
+  }
+ ]
+}

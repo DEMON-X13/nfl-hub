@@ -1,0 +1,340 @@
+{
+ "about": "Holds predict mode (build_features.py --predict, what predict.py runs) to the feature table the models were",
+ "weeks": [
+  {
+   "season": 2025,
+   "week": 1,
+   "candidates": 693,
+   "candidates_by_src": {
+    "depth": 604,
+    "history": 85,
+    "roster": 4
+   },
+   "roster_carried": [],
+   "full_rows": 416,
+   "full_role_rows": 380,
+   "full_rows_without_candidate": 0,
+   "full_role_rows_without_candidate": 0,
+   "missed": [],
+   "features": 510,
+   "rows_compared": 416,
+   "features_differing": {},
+   "features_differing_by_floating_point_only": {},
+   "grp_differing": 0,
+   "team_differing": 0,
+   "candidates_who_did_not_play": 235,
+   "predictions_compared": 1751,
+   "predictions_differing": 1,
+   "prediction_max_abs_diff": {
+    "p_over_at_floor_mean_plus_half": 6.046615177890402e-06,
+    "mean": 2.086643000609456e-05
+   },
+   "predictions_differing_rows": [
+    {
+     "pid": "00-0037085",
+     "stat": "receiving_yards"
+    }
+   ],
+   "ok": true,
+   "seconds": 51.9
+  },
+  {
+   "season": 2025,
+   "week": 6,
+   "candidates": 605,
+   "candidates_by_src": {
+    "depth": 582,
+    "history": 16,
+    "roster": 7
+   },
+   "roster_carried": [],
+   "full_rows": 384,
+   "full_role_rows": 360,
+   "full_rows_without_candidate": 0,
+   "full_role_rows_without_candidate": 0,
+   "missed": [],
+   "features": 510,
+   "rows_compared": 384,
+   "features_differing": {},
+   "features_differing_by_floating_point_only": {},
+   "grp_differing": 0,
+   "team_differing": 0,
+   "candidates_who_did_not_play": 184,
+   "predictions_compared": 1616,
+   "predictions_differing": 2,
+   "prediction_max_abs_diff": {
+    "p_over_at_floor_mean_plus_half": 0.005414576726226361,
+    "mean": 0.12670299026404308
+   },
+   "predictions_differing_rows": [
+    {
+     "pid": "00-0040218",
+     "stat": "receiving_yards"
+    },
+    {
+     "pid": "00-0040218",
+     "stat": "any_td"
+    }
+   ],
+   "ok": true,
+   "seconds": 50.6
+  },
+  {
+   "season": 2025,
+   "week": 12,
+   "candidates": 586,
+   "candidates_by_src": {
+    "depth": 564,
+    "history": 17,
+    "roster": 5
+   },
+   "roster_carried": [],
+   "full_rows": 360,
+   "full_role_rows": 334,
+   "full_rows_without_candidate": 0,
+   "full_role_rows_without_candidate": 0,
+   "missed": [],
+   "features": 510,
+   "rows_compared": 360,
+   "features_differing": {},
+   "features_differing_by_floating_point_only": {},
+   "grp_differing": 0,
+   "team_differing": 0,
+   "candidates_who_did_not_play": 190,
+   "predictions_compared": 1524,
+   "predictions_differing": 6,
+   "prediction_max_abs_diff": {
+    "p_over_at_floor_mean_plus_half": 0.00457010419554682,
+    "mean": 0.10943523164141578
+   },
+   "predictions_differing_rows": [
+    {
+     "pid": "00-0039577",
+     "stat": "passing_yards"
+    },
+    {
+     "pid": "00-0039577",
+     "stat": "rushing_yards"
+    },
+    {
+     "pid": "00-0040363",
+     "stat": "receiving_yards"
+    },
+    {
+     "pid": "00-0040668",
+     "stat": "attempts"
+    },
+    {
+     "pid": "00-0040668",
+     "stat": "passing_interceptions"
+    },
+    {
+     "pid": "00-0039577",
+     "stat": "passing_interceptions"
+    }
+   ],
+   "ok": true,
+   "seconds": 54.0
+  },
+  {
+   "season": 2025,
+   "week": 18,
+   "candidates": 698,
+   "candidates_by_src": {
+    "depth": 680,
+    "history": 16,
+    "roster": 2
+   },
+   "roster_carried": [],
+   "full_rows": 409,
+   "full_role_rows": 390,
+   "full_rows_without_candidate": 0,
+   "full_role_rows_without_candidate": 0,
+   "missed": [],
+   "features": 510,
+   "rows_compared": 409,
+   "features_differing": {},
+   "features_differing_by_floating_point_only": {
+    "p_passing_epa_ew4": {
+     "rows": 1,
+     "max_abs_diff": 8.960381669975703e-07
+    }
+   },
+   "grp_differing": 0,
+   "team_differing": 0,
+   "candidates_who_did_not_play": 250,
+   "predictions_compared": 1776,
+   "predictions_differing": 4,
+   "prediction_max_abs_diff": {
+    "p_over_at_floor_mean_plus_half": 0.01281759317344211,
+    "mean": 0.02332874310376809
+   },
+   "predictions_differing_rows": [
+    {
+     "pid": "00-0037015",
+     "stat": "receiving_yards"
+    },
+    {
+     "pid": "00-0040387",
+     "stat": "receiving_yards"
+    },
+    {
+     "pid": "00-0040628",
+     "stat": "receiving_yards"
+    },
+    {
+     "pid": "00-0038647",
+     "stat": "receiving_yards"
+    }
+   ],
+   "ok": true,
+   "seconds": 53.0
+  },
+  {
+   "season": 2024,
+   "week": 9,
+   "candidates": 542,
+   "candidates_by_src": {
+    "depth": 455,
+    "roster": 56,
+    "history": 31
+   },
+   "roster_carried": [],
+   "full_rows": 382,
+   "full_role_rows": 367,
+   "full_rows_without_candidate": 0,
+   "full_role_rows_without_candidate": 0,
+   "missed": [],
+   "features": 510,
+   "rows_compared": 382,
+   "features_differing": {},
+   "features_differing_by_floating_point_only": {},
+   "grp_differing": 0,
+   "team_differing": 0,
+   "candidates_who_did_not_play": 126,
+   "predictions_compared": 1615,
+   "predictions_differing": 2,
+   "prediction_max_abs_diff": {
+    "p_over_at_floor_mean_plus_half": 0.0,
+    "mean": 0.008064204774458794
+   },
+   "predictions_differing_rows": [
+    {
+     "pid": "00-0039410",
+     "stat": "receiving_yards"
+    },
+    {
+     "pid": "00-0039379",
+     "stat": "receiving_yards"
+    }
+   ],
+   "ok": true,
+   "seconds": 47.0
+  },
+  {
+   "season": 2019,
+   "week": 1,
+   "candidates": 641,
+   "candidates_by_src": {
+    "depth": 528,
+    "history": 93,
+    "roster": 20
+   },
+   "roster_carried": [],
+   "full_rows": 416,
+   "full_role_rows": 381,
+   "full_rows_without_candidate": 0,
+   "full_role_rows_without_candidate": 0,
+   "missed": [],
+   "features": 510,
+   "rows_compared": 416,
+   "features_differing": {},
+   "features_differing_by_floating_point_only": {},
+   "grp_differing": 0,
+   "team_differing": 0,
+   "candidates_who_did_not_play": 185,
+   "predictions_compared": 1819,
+   "predictions_differing": 0,
+   "prediction_max_abs_diff": {
+    "p_over_at_floor_mean_plus_half": 0.0,
+    "mean": 0.0
+   },
+   "predictions_differing_rows": [],
+   "ok": true,
+   "seconds": 27.3
+  },
+  {
+   "season": 2016,
+   "week": 8,
+   "candidates": 467,
+   "candidates_by_src": {
+    "depth": 428,
+    "roster": 29,
+    "history": 10
+   },
+   "roster_carried": [],
+   "full_rows": 324,
+   "full_role_rows": 309,
+   "full_rows_without_candidate": 0,
+   "full_role_rows_without_candidate": 0,
+   "missed": [],
+   "features": 510,
+   "rows_compared": 324,
+   "features_differing": {},
+   "features_differing_by_floating_point_only": {},
+   "grp_differing": 0,
+   "team_differing": 0,
+   "candidates_who_did_not_play": 114,
+   "predictions_compared": 1416,
+   "predictions_differing": 8,
+   "prediction_max_abs_diff": {
+    "p_over_at_floor_mean_plus_half": 0.007908741071646963,
+    "mean": 0.06605841014873448
+   },
+   "predictions_differing_rows": [
+    {
+     "pid": "00-0032636",
+     "stat": "rushing_yards"
+    },
+    {
+     "pid": "00-0032636",
+     "stat": "receiving_yards"
+    },
+    {
+     "pid": "00-0032190",
+     "stat": "receiving_yards"
+    },
+    {
+     "pid": "00-0032362",
+     "stat": "receiving_yards"
+    },
+    {
+     "pid": "00-0030404",
+     "stat": "rush_rec_yards"
+    },
+    {
+     "pid": "00-0033077",
+     "stat": "attempts"
+    },
+    {
+     "pid": "00-0032636",
+     "stat": "carries"
+    },
+    {
+     "pid": "00-0032362",
+     "stat": "any_td"
+    }
+   ],
+   "ok": true,
+   "seconds": 17.6
+  }
+ ],
+ "full_build_unchanged": {
+  "rows_built": 94562,
+  "rows_committed": 94562,
+  "columns_same_order": true,
+  "columns_differing": {},
+  "ok": true
+ },
+ "ok": true
+}
