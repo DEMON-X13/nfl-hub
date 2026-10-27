@@ -7,11 +7,11 @@
      and its Save and lock is Finish parlay on every device (Pull from DraftKings, below, on the admin's alone). Finish parlay opens
      this window with the parlay drawn as a card -- every leg with its price, the parlay's price,
      the stake and what it pays, the book's fair chance first (DraftKings' prices with the margin
-     taken out, parlayFair in the props parts; est. where a leg is priced on one side only), the
-     model's chance beside it (an Elo pick's own, the Elo's) and the chance the price implies, the
+     taken out, parlayFair in the props parts; est. where a leg is priced on one side only), then (app v138)
+     what $1 is expected to return at it and the chance the price implies (no model's or Elo's chance), the
      week and its dates, and the site's mark -- and Download saves it as a PNG, drawn on a canvas at
      twice its size. A parlay with a leg on no book price has no fair chance: the card gives the
-     model's chance alone and says "No fair chance". Where
+     price's chance alone and says "No fair chance". Where
      the browser can share a file (a phone), the share sheet is offered too, which is how an image
      reaches Photos.
 
@@ -482,14 +482,15 @@ window.PARLAY_CARD=(function(){
   }
   function kickedOff(l){ try{ const g=game(l.gid); return !!g&&typeof gameStarted==='function'&&gameStarted(g); }catch(e){ return false; } }
   /* the card: everything it shows, worked out once, drawn twice (the window, and the image) */
-  function card({kicker,legs,dec,priceNote,chance,chanceBy,fair,stake,source,from}){
+  function card({kicker,legs,dec,priceNote,fair,stake,source,from}){
     const w=legs.reduce((a,l)=>(+l.week&&(a==null||+l.week<a))?+l.week:a,null), n=legs.length;
     /* from: where a suggested level's card came from ({kind, id}), so a pull can draw it again on its prices */
     const m={source,from:from||null,kicker,title:n+'-leg parlay',week:w,weekText:weekText(w),dateText:dates(legs),
       price:ml(typeof decToML==='function'?decToML(dec):null),dec:isFinite(dec)?dec.toFixed(2):'–',implied:dec>1?pct(1/dec):'–',priceNote,
       legs:legs.map(x=>x.card),stake:stake>0?stake:0,payout:stake>0?stake*dec:0,profit:stake>0?stake*dec-stake:0,
-      chance:chance!=null&&isFinite(chance)?pct(chance):null,chanceBy,
       fair:fair&&fair.p!=null&&isFinite(fair.p)?pct(fair.p):null,fairEst:!!(fair&&fair.p!=null&&fair.est),
+      /* (app v138) what $1 is expected to return at the fair chance, fair x price - 1, in whole percent */
+      ev:fair&&fair.p!=null&&isFinite(fair.p)&&dec>1?evText(fair.p*dec-1):null,
       /* a leg priced from DraftKings' line read by Refresh odds (app v107): its fair chance is the estimate's */
       fairDk:legs.some(x=>x&&x.src==='dkline'),
       made:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),site:SITE,
@@ -498,6 +499,8 @@ window.PARLAY_CARD=(function(){
       dk:dkPlan(legs),dkLegs:legs};
     return m;
   }
+  /* "-23%": a return as the card says it, whole percent, a true minus sign */
+  const evText=v=>{ const r=Math.round(v*100); return (r<0?'−':r>0?'+':'')+Math.abs(r)+'%'; };
   /* from the builder: the legs as they stand, priced as the builder prices them */
   function fromBuilder(){
     const q=quote(); if(!q) return null;
@@ -506,7 +509,7 @@ window.PARLAY_CARD=(function(){
     const legs=q.legs.map((l,i)=>Object.assign({},l,l.src==='dkline'&&q.prices[i].src!=='dkline'?{src:q.prices[i].src}:{},{card:leg(l,q.prices[i].ml,q.prices[i].src)}));
     return card({source:'builder',kicker:'Your parlay',legs,dec:q.useDec,
       priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
-      chance:q.pr.corr,chanceBy:'Model',fair:q.fair,stake:q.stake});
+      fair:q.fair,stake:q.stake});
   }
   /* from a level of Suggested Parlays (kind sp, id "<unit>:<level>": window.spTier, the level as the tab shows it,
      live or locked, of a night game or the Sunday slot; since app v118 an Elo pick is one of a unit's levels too, id
@@ -534,20 +537,19 @@ window.PARLAY_CARD=(function(){
        so as the builder does */
     const elo=!!t.elo;
     return card({source:elo?'elo':kind,from:{kind,id},kicker:(elo?t.label+' Elo pick':t.label+' parlay')+(t.game?' \u00b7 '+t.game:''),legs,dec,priceNote:legs.some(l=>l.src&&l.src!=='real')?'estimated price':'book price',
-      chance:elo?t.p:t.corr,chanceBy:elo?'Elo':'Model',fair,stake:pbStake()});
+      fair,stake:pbStake()});
   }
 
-  /* the chance, in two lines: the book's fair chance (est. where a leg is priced on one side only),
-     then whose chance the parlay is on (the model's, an Elo pick's the Elo's) and the price's; with
-     no fair chance, the model's and the price's, then "No fair chance" (app v130, the owner's call of 22 October
-     2026: no descriptions, so not why). Each line is a list of [text, bold] pieces, so the window, the image and the
-     share text say the same */
+  /* the chance, in two lines: the book's fair chance (est. where a leg is priced on one side only), then (app v138, the
+     owner's call of 27 October 2026: no model's or Elo's chance where a chance is stated) what $1 is expected to return
+     at it and the chance the price implies ("expected −23% · the price says 10.5%"); with no fair chance, the price's
+     alone, then "No fair chance". Each line is a list of [text, bold] pieces, so the window, the image and the share text
+     say the same */
   function chanceLines(m){
-    const n=m.legs.length, by=m.chanceBy==='Elo'?'Elo':'model', price=[[' · the price says '],[m.implied,1]];
+    const n=m.legs.length, price=[['the price says '],[m.implied,1]];
     if(m.fair) return [[['Fair chance all '+n+' land '],[m.fair,1],...(m.fairEst?[[' (est.)']]:[])],
-      [...(m.chance?[[by+' says '],[m.chance,1]]:[]),...(m.chance?price:[['the price says '],[m.implied,1]])]];
-    return [[...(m.chance?[[m.chanceBy+'\u2019s chance all '+n+' land '],[m.chance,1]]:[]),...(m.chance?price:[['the price says '],[m.implied,1]])],
-      [['No fair chance']]];
+      [...(m.ev?[['expected '],[m.ev,1],[' · ']]:[]),...price]];
+    return [price,[['No fair chance']]];
   }
   const lineText=l=>l.map(x=>x[0]).join('');
   /* ---- the window ---- */
@@ -1389,7 +1391,7 @@ window.PARLAY_CARD=(function(){
         ty+=TILE_H+TILE_GAP; });
       y+=tilesH(t);
     }
-    /* the chance: the book's fair chance first, then the model's (or the Elo's) and the price's */
+    /* the chance: the book's fair chance first, then its expected return and the price's (app v138) */
     chanceLines(m).forEach((ln,i)=>{ let cx=L; const yy=y+24+i*18;
       for(const [t1,b] of ln) cx+=text(x,t1,cx,yy,(b?'700 ':'500 ')+'13px '+FB,b?C.ink:C.ink2); });
     y+=CHANCE_H;

@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v137 \u00b7 2026-10-25';
+const APP_BUILD='app v138 \u00b7 2026-10-27';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -412,9 +412,25 @@ function parlayProb(legs,sims=40000){
         z[2*k]=m*Math.cos(2*Math.PI*u2); z[2*k+1]=m*Math.sin(2*Math.PI*u2); }
       C.z=z; C.have=cap;
     }
-    const Z=C.z, F=new Float64Array(n*n);
+    const Z=C.z, F=new Float64Array(n*n), st=2*q;
     for(let i=0;i<n;i++) for(let k=0;k<=i;k++) F[i*n+k]=L[i][k];
-    for(let s=0,b=0;s<sims;s++,b+=2*q){ let ok=true;
+    /* (app v138) 2 to 5 legs, every leg of a trial worked and a hit counted where all land, with no branch on each leg
+       (a coin flip the processor guesses wrong half the time): each leg's z is the very sum it was (0, then each term
+       added in turn, row i's terms in order, so the same double), and a leg lands exactly where dir*z<=thr is false
+       (z is never NaN), so the same count to the bit, in about a third of the time. 6 legs or more as before */
+    if(n===2){ const d0=dir[0], d1=dir[1], t0=thr[0], t1=thr[1], a0=F[0], b0=F[2], b1=F[3];
+      for(let s=0,b=0;s<sims;s++,b+=st){ const z0=Z[b], z1=Z[b+1];
+        hits+=(d0*(0+a0*z0)>t0)&(d1*(0+b0*z0+b1*z1)>t1); } }
+    else if(n===3){ const d0=dir[0], d1=dir[1], d2=dir[2], t0=thr[0], t1=thr[1], t2=thr[2], a0=F[0], b0=F[3], b1=F[4], c0=F[6], c1=F[7], c2=F[8];
+      for(let s=0,b=0;s<sims;s++,b+=st){ const z0=Z[b], z1=Z[b+1], z2=Z[b+2];
+        hits+=(d0*(0+a0*z0)>t0)&(d1*(0+b0*z0+b1*z1)>t1)&(d2*(0+c0*z0+c1*z1+c2*z2)>t2); } }
+    else if(n===4){ const d0=dir[0], d1=dir[1], d2=dir[2], d3=dir[3], t0=thr[0], t1=thr[1], t2=thr[2], t3=thr[3], a0=F[0], b0=F[4], b1=F[5], c0=F[8], c1=F[9], c2=F[10], e0=F[12], e1=F[13], e2=F[14], e3=F[15];
+      for(let s=0,b=0;s<sims;s++,b+=st){ const z0=Z[b], z1=Z[b+1], z2=Z[b+2], z3=Z[b+3];
+        hits+=(d0*(0+a0*z0)>t0)&(d1*(0+b0*z0+b1*z1)>t1)&(d2*(0+c0*z0+c1*z1+c2*z2)>t2)&(d3*(0+e0*z0+e1*z1+e2*z2+e3*z3)>t3); } }
+    else if(n===5){ const d0=dir[0], d1=dir[1], d2=dir[2], d3=dir[3], d4=dir[4], t0=thr[0], t1=thr[1], t2=thr[2], t3=thr[3], t4=thr[4], a0=F[0], b0=F[5], b1=F[6], c0=F[10], c1=F[11], c2=F[12], e0=F[15], e1=F[16], e2=F[17], e3=F[18], g0=F[20], g1=F[21], g2=F[22], g3=F[23], g4=F[24];
+      for(let s=0,b=0;s<sims;s++,b+=st){ const z0=Z[b], z1=Z[b+1], z2=Z[b+2], z3=Z[b+3], z4=Z[b+4];
+        hits+=(d0*(0+a0*z0)>t0)&(d1*(0+b0*z0+b1*z1)>t1)&(d2*(0+c0*z0+c1*z1+c2*z2)>t2)&(d3*(0+e0*z0+e1*z1+e2*z2+e3*z3)>t3)&(d4*(0+g0*z0+g1*z1+g2*z2+g3*z3+g4*z4)>t4); } }
+    else for(let s=0,b=0;s<sims;s++,b+=st){ let ok=true;
       for(let i=0,o=0;i<n&&ok;i++,o+=n){ let z=0; for(let k=0;k<=i;k++) z+=F[o+k]*Z[b+k]; if(dir[i]*z<=thr[i]) ok=false; }
       if(ok) hits++; }
   } else {
@@ -825,18 +841,27 @@ function rungPriceOf(p){
 function rungPriceGuess(stat,line,k,fair){ return rungPriceOf(rungFairGuess(stat,line,k,fair)); }
 /* the anytime touchdown: the touches that score his touchdown (a QB's runs, a back's runs and catches,
    a receiver's or tight end's catches) where DraftKings lines them; else, his club's lines complete
-   and he no charted starter, DraftKings treats him as a backup; else the model alone */
-function guessTdPrice({p,grp,rushLine=null,recLine=null,teamImplied=null,gameLined=true,starter=false}){
+   and he no charted starter, DraftKings treats him as a backup; else the model alone.
+   (app v138) tdBranch says which: 'lined', 'backup' or 'model'. Against DraftKings' real prices of weeks 2 to 6 the lined
+   branch lands within about 1.5 implied points in every band (the held-out weeks 4 to 6 too) and the backup within half
+   a point; the model alone was all but untested (54 legs) and runs high where it matters, its fair chance +3.1 points
+   over DraftKings' where it states 45%+ and +8.9 at 70%+, so a touchdown it prices is no tested kind (espnPrice) */
+function tdBranch({grp,rushLine=null,recLine=null,gameLined=true,starter=false}){
+  const ok=v=>v!=null&&isFinite(v), parts=grp==='QB'?[rushLine]:grp==='RB'?[rushLine,recLine]:[recLine];
+  return parts.some(ok)&&DK_EST.td.yd[grp]!=null?'lined':(gameLined&&!starter?'backup':'model');
+}
+function guessTdPrice(o){
+  const {p,grp,rushLine=null,recLine=null,teamImplied=null}=o, b=tdBranch(o);
   if(!(p>0&&p<1)) return null;
   const C=DK_EST.td, logit=x=>Math.log(x/(1-x)), ok=v=>v!=null&&isFinite(v);
   const parts=grp==='QB'?[rushLine]:grp==='RB'?[rushLine,recLine]:[recLine];
   const have=parts.filter(ok);
   let z;
-  if(have.length&&C.yd[grp]!=null){
+  if(b==='lined'){
     const yards=Math.max(0.5,have.reduce((s,v)=>s+v,0));
     const pts=Math.min(40,Math.max(10,ok(teamImplied)?teamImplied:22));
     z=C.a+C.b*logit(p)+C.yd[grp]*Math.log(yards)+C.pts*Math.log(pts/22);
-  } else if(gameLined&&!starter){
+  } else if(b==='backup'){
     z=C.a0+C.b0*logit(p);
   } else {
     z=C.a1+C.b1*logit(p);
@@ -851,7 +876,7 @@ function guessTdPrice({p,grp,rushLine=null,recLine=null,teamImplied=null,gameLin
    the paid pull has the main line at this number, anchors a count ladder on DraftKings' own fair chance */
 function estPrice(leg){
   if(!leg) return null;
-  if(leg.kind==='td'){ const price=guessTdPrice(leg); return price==null?null:{price,fair:null,how:'anytime TD'}; }
+  if(leg.kind==='td'){ const price=guessTdPrice(leg), alone=tdBranch(leg)==='model'; return price==null?null:{price,fair:null,how:alone?'anytime TD: the model alone':'anytime TD',alone}; }
   const main=dkGuessPrice(leg);
   if(leg.kind==='main') return main&&{price:leg.side==='under'?main.under:main.over,fair:leg.side==='under'?1-main.fair:main.fair,how:main.how};
   if(leg.kind==='rung'){

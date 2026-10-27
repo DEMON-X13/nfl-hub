@@ -324,8 +324,34 @@ props/
   build/patch_quiet_suggest.py   Parlays and the Refresh odds status line, then one wording a
   build/patch_quiet_tidy.py      state across them, applied in that order (CLAUDE.md, "No
                                  descriptions"); build.js's GONE_V130 refuses a removed one back
+  build/patch_market_chance.py   app v138 (27 October 2026, the owner's call): every leg stated
+                                 and chosen at DraftKings' fair chance (legChance, beside
+                                 legFair; a pool copy's p the chance, pm the model's); one side
+                                 a line, a tie broken by the model's projection (pbEvKey,
+                                 pbLean, pbRank), never a number moved; the levels the least
+                                 costly parlay at their floors, their expected return stated;
+                                 the Top 30 lines Player lines then Game bets (PB_TOP_PL); no
+                                 Value mark without a hook (setChanceHook, null, refused by
+                                 build.js); market + form (formAgrees) and the far-off flags
+                                 gone; each level the record takes chance 'fair' (its docstring
+                                 is the design); the review of 27 October 2026: the best of a
+                                 set's 40 finalists by the real sums (SP_SEARCH), a total on one
+                                 price stated at its own 50% wherever a fair chance is
+                                 (legFairStated), a locked level's pill only with chance 'fair'
+                                 (pbRuleKnown); an anytime touchdown priced on the model alone
+                                 (tdBranch 'model') no tested kind, never suggested; the sets at
+                                 app v137's speed, choosing the same: pbBeam scored from each
+                                 parent's figures (pbCtx, pbGrow, pbKth), parlayProb's hits of 2
+                                 to 5 legs with no branch a leg (the same to the bit), no price
+                                 worked for a finalist under its floor (pbExact's floor), and
+                                 spOpenSoft a level a step (spPartStep, SP_SLICE_MS); the third
+                                 review: a draw during a run takes its steps again (spSoftAgain),
+                                 renderSp keeps the reader's focus (spFocusOf, spFocusBack), and
+                                 a read of touchdown lists alone says "no yards lines yet"
+                                 (espnTdOnly)
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
-                                 answers (audit M8, the nflbets smoke)
+                                 answers (audit M8 and M17, the nflbets smoke), its own tdBranch
+                                 among it
   build/fixtures/espn/           ESPN's recorded answers for week 6 of 2026 (the scoreboard, two
                                  games' player lines, athletes, the roster's ESPN ids): the
                                  audit's fetch stub serves them, so M8 never touches the network
@@ -424,16 +450,19 @@ elo/
                                  pill whatever the file's record holds (22 October 2026); clubs
                                  level on a matchup unit, to the hundredth, sharing its rank on
                                  the Mismatches;
-                                 and the money the files feed: market + form on every rated
-                                 player, the Elo matchup chance on every matchup line, the Elo
-                                 picks' four levels at the builder's own sums (parlayProb,
-                                 parlayDec, PB_TIERS, pbOrder loaded from the props parts),
-                                 each its floor's rule, likeliest only under its floor, the
-                                 fast sums the parts' to the bit, and fixtures F1-F6 held to a
-                                 full enumeration (the search's quality: correlated one-game
-                                 slates, seeded slates clustered at the floors, the union of
-                                 the 30 best by value and the 10 likeliest), no error (the
-                                 gate on that, the page smoke running after the commit)
+                                 and the money the files feed (app v138): the Elo matchup
+                                 chance on every matchup line (DraftKings' fair chance moved by
+                                 the matchup's nudge), the Elo picks the strongest leans
+                                 that go together on one DraftKings slip (none refused, none
+                                 moving against another by the pair table) at the builder's own sums
+                                 (parlayProb, parlayDec, PB_TIERS, pbOrder loaded from the
+                                 props parts), their stated fair chance parlayFair's, on a fair
+                                 chance of the check's own (legFairStand), with fixtures F1
+                                 (the candidates' rule) and F2 (the greedy prefix, the pairs
+                                 DraftKings refuses, the legs moving against each other, ties,
+                                 the slot's summed lean, the empty levels' words), no error (the gate on that, the page smoke
+                                 running after the commit; market + form, the search on the Elo
+                                 chance over floors, its fast sums and F3-F6 until app v138)
   tools/units_fit.py             the fit and the walk-forward test behind Overall Offense and
                                  Overall Defense: 2012-2025 play-by-play, every constant fitted
                                  on 2012-2017 (the carry's share chosen there, one season left
@@ -619,8 +648,11 @@ nflbets/
   build/smoke.js  smoke_live.js  the page, and the X Parlays section, in jsdom: the gates
                                  (smoke.js also: Suggested Parlays' sets, their night rule,
                                  their lock and their short lines, the Elo picks' four
-                                 levels, the matchup bubble (THE MATCHUP BUBBLE), and the Parlay Builder,
-                                 the builder first, its Top 30 lines, their two parts, the
+                                 levels, every leg at DraftKings' fair chance (app v138: no
+                                 Value mark, model chance or far-off flag drawn, each level's
+                                 quality by its own enumeration), the matchup bubble (THE MATCHUP BUBBLE), and the Parlay Builder,
+                                 the builder first, its Top 30 lines, their two parts (Player
+                                 lines and Game bets since app v138), the
                                  totals last, each bet once and a Refresh odds read's lines
                                  kept with their slip line, only DraftKings' markets offered,
                                  no ladder bet anywhere (app v127, and one kept in the
@@ -1022,7 +1054,7 @@ defense tables and no pair says, as it did, that the opponent's rank is Overall 
 without any draws the two pills alone.
 The same script puts the Mismatches card on the Props tab (games still to kick off only) and, on a game's page,
 a MISMATCH tag beside the name of each player with a Solid, Big or Huge mismatch that week (`mmTags`), a ranked player's shield and his
-Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
+Elo matchup chance on each leg in the builder (since app v138 its nudge alone, "Elo +2.1"), until app v138 a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
 and the Elo picks, since app v118 each Suggested Parlays set's own on its night game's or Sunday slot's games alone
 (`window.eloUnit`, drawn by the props parts with `window.eloCardOpt`, the mismatch tags put on by `eloDecorate`, no
@@ -1030,7 +1062,11 @@ longer on the Parlay Builder's ticks), from app v111 to v117 at the foot of Sugg
 Builder's suggested parlays; drawn with the sets' own `pbTierCard`, each leg with its own Add and no Value mark,
 since `pricedLegs` sets neither `thin` nor `market` and the picks are chosen on the Elo matchup, and kept to the
 Parlay Builder's ticked games and player sides by `pbAllows` and, since app v109, wherever the payload carries
-DraftKings' ids, to legs with one at their own line, `dkIdOf`). Since 18 October 2026 they are Suggested Parlays' own
+DraftKings' ids, to legs with one at their own line, `dkIdOf`). Since app v138 each level is the n strongest Elo leans
+that go together on one DraftKings slip (`eloCands` against each leg's own fair chance, `epTake`, passing over a pair
+`dkClash` refuses and, since the review of 27 October 2026, a leg moving against one taken by more than `EP.opp`, -0.05,
+`epOpposed` on the props parts' `legRho`), at the fair chance; from 18
+October 2026 until then they were Suggested Parlays' own
 four levels on the Elo chance (`eloPicks`, `eloSuggest`; ids `elo-safe`, `elo-med`, `elo-aggr`, `elo-xtrm`, which the
 card's `elo|elo-<level>` names): the candidates (`eloCands`) each player's best leg by value, searched from the 30 best
 by value and the 10 likeliest (`epKeep`), each level the best expected return over its floor, Safe's the Elo picks'
@@ -1126,13 +1162,15 @@ never a day game, a Saturday or a Friday. `spGames()` is those of `pbGames()` (t
 with no score), in kickoff order, every one of which the record takes; which of them the tab sets out is `spOn()`
 (**one night at a time**, below). A game's set is `spBuild(g)`: `pbPool([g], SP_ALL, SP_SEARCH)` and `pbTier` on
 each of `PB_TIERS`, so Safe, the likeliest 2-leg parlay, and Medium, Aggressive and Extreme, the 3-, 4- and 5-leg
-parlay with the best expected return (the model's chance times the book's price) that lands at least 25%, 12% and
+parlay with the best expected return (the model's chance times the book's price; DraftKings' fair chance since app
+v138, the least costly parlay) that lands at least 25%, 12% and
 5% of the time (`pbBestReturn`, which Safe, with no floor, also is), each a same-game parlay. Where no parlay of a
 level's size clears its floor with any count of thin legs, the level is the likeliest parlay of that size instead
 (`pbLikeliest`): chosen as Safe is, the preferred legs alone first and then the fewest thin legs, by a beam on the
 search's own chance, its best few worked with the builder's own `parlayProb` and the highest of those taken. The
 level carries `likeliest: true`, and its card's rule reads "the likeliest 3 legs" (4, 5) where a level over its
-floor reads "best return that lands 25%+ by the model" and Safe "the likeliest pair"; the card shows its chance and
+floor reads "best return that lands 25%+ by the model" ("least costly · 25%+" since app v138) and Safe "the likeliest
+pair"; the card shows its chance and
 price like any other and says nothing about the floor (the owner's call, October 2026: every level shows a parlay,
 "just state the percentage"). The tab's footer says so in a line. `SP_ALL` ticks every bet type, whatever the
 Parlay Builder's boxes say, so the page and the record agree. `SP_SEARCH` is the owner's "absolute best" on one
@@ -1147,7 +1185,17 @@ a publish, the Elo files arriving and a press, `ESPN_SEQ`, rebuild it); the sear
 gives the same set. Since app v135 (`patch_fast_tabs.py`) `parlayProb` keeps its seeded trials' normals and its answers
 on `parlayProb.cache` (the same answers to the bit, an eighth of the time), and the tab opened by the reader's own click is
 drawn at once with "Building the sets…" and built a game at a time (`spOpenSoft`, `spWarmSteps`) before `renderSp` draws it
-from the caches; a check's `.click()` draws it at once as before. The audit's M and the smoke hold the engine's likeliest level (and Safe's pair) to its word:
+from the caches; a check's `.click()` draws it at once as before. Since app v138's speed change (CLAUDE.md, "The sets at
+app v137's speed") `pbBeam` scores a parlay one leg longer from its parent's figures, every leg and pair it meets indexed
+once with the memo (`pbCtx`: the leg's chance, the price's implied chance, decimal price, lean and game; per pair
+`pbFits` and `pbJoint`'s lift by each reading), keys a set by its legs' indexes and keeps each step's best `width` by a
+selection on the rounded score (`pbKth`) before sorting only those, the same parlays in the same order as before;
+`parlayProb` counts the hits of 2 to 5 legs with no branch on each leg, the same to the bit; `spOpenSoft`'s step is one
+level of one game's set (`spPartStep`, `spLevel`), a task running steps for `SP_SLICE_MS`; and inside one draw of the tab
+the ELO tab works each unit's Elo candidates once (`EP_DRAW`). Since its third review a draw of the tab while a run is
+still building it on the screen (the half-minute look, the record read again, a press) takes the run's steps again and
+keeps the building line (`spSoftAgain`), where it ended the run and built every set left in one task, and `renderSp` puts
+the reader's focus back on the same control drawn again, else on the tab's button (`spFocusOf`, `spFocusBack`). The audit's M and the smoke hold the engine's likeliest level (and Safe's pair) to its word:
 wherever no two legs that could share a parlay move together, so that every parlay is a plain product, every parlay
 of its size with as many thin legs is worked with `parlayProb` and none may land likelier, on the week's own picks
 through `getPbTiers` (Spread alone, Moneyline alone, and in the audit Teams only on four games) and on ten made-up
@@ -1155,7 +1203,8 @@ games whose covers are priced so that the likeliest ones (-115) and the best-pay
 fallback chosen by return fails; and the audit's M10 works each level of a set out in full on made-up prime-time
 games whose made-up players' lines do not move together (a Monday doubleheader, one game of nine legs, where Medium
 has no parlay over 25%, the other of eighteen, past the panel's beam, where only a search as wide as the set's
-finds them). A leg qualifies from `pricedLegs()` (a real book price, or a `dkline` one, DraftKings' line read on ESPN at
+finds them). Until app v138 (since, on DraftKings' fair chance alone, 45-97%, one side a line, every leg thin but a
+total: CLAUDE.md, **DraftKings' chance on every leg**) a leg qualified from `pricedLegs()` (a real book price, or a `dkline` one, DraftKings' line read on ESPN at
 the formula's price, on a tested kind: until app v125 only on a payload baked before `dk`, after a Refresh odds press;
 since, from the props job's published read or a press, on every payload; the
 model's chance 45-97% and 3 points over the chance that price implies, `mlProb(price)`, the book's margin left in,
@@ -1265,7 +1314,8 @@ and the others are not; both went with app v113. The audit holds `pbIsValue` on 
 neither, `thin` undefined or 0, no leg) and the marks on cards of its own, and with the nflbets smoke the Value mark
 on every Value pick and on nothing else, and no old tag, on every set's cards and every Top 30 row; the smoke holds
 the Elo picks' legs unmarked too, and `smoke_live.js` each leg of a locked set the record kept as Value picks marked
-Value.
+Value. Reversed in app v138: `pbIsValue` needs a hook's chance (`l.hook`), none is set, so no leg is a Value pick and
+no mark is drawn, a locked set's legs among them (CLAUDE.md, **DraftKings' chance on every leg**).
 
 **One night at a time** (app v112, `patch_suggested_night.py`, the owner's call of 17 October 2026: "just show the
 next night game dont stack the mondy night game until monday morning"). `spNight()` is `{games, open, prev, up}`:
@@ -1397,7 +1447,9 @@ unticked, the boxes and `pbDataSig`, so ticking back is instant and a press or a
 (the preferred, the thin and, with Game total ticked, the totals), every rule above held but for the read option
 (app v115, the list's alone: a player's line read by Refresh odds kept with no DraftKings id, **The Top lines keep a
 line DraftKings moved**, below), in two parts (app v112, the
-owner's call of 17 October 2026, under **Value picks** above): `rows = [...rank(P1), ...rank(P2), ...rank(P3)]
+owner's call of 17 October 2026, under **Value picks** above; since app v138 Player lines, up to `PB_TOP_PL`, 20, then
+Game bets to 30, each ranked by expected return at DraftKings' fair chance, then the chance, the lean and `pbOrd`, a
+Value part only from a hook's rows, `getPbTop().parts`): `rows = [...rank(P1), ...rank(P2), ...rank(P3)]
 .slice(0, PB_TOP_N)`, `P1` the Value picks (`pref`), `P2` the thin legs and `P3` the totals (`mkt`), each after
 `once()` (below) and each ranked on its own by `p × dec − 1`, what $1 on the leg is expected to make at the model's
 chance, best first (the lower `pbOrd` on a tie), at most `PB_TOP_N`, 30 (100 until app v113, 50 until app v116), in all: the Value picks, then the other
@@ -1467,13 +1519,14 @@ Under main line with a rung on its stat kept, a 225+ rung in another game kept, 
 thin main line, a rung whose main line does not qualify (or has none) kept, and the game's total priced on its over
 alone at +120, put at 50% and expected to make $0.10, more than any thin leg there, still after every thin leg (the
 smoke: nine rows in an order worked out by hand, six Value picks, two thin legs, the total, `same` 2, market + form
-stood in for the made-up players; the audit's M12 A, and B: 103 lines once its nine rungs are dropped, more than the
+stood in for the made-up players (until app v138; since, no Value pick without a chance hook and no market + form, the
+rows ranked at DraftKings' fair chance: CLAUDE.md, **DraftKings' chance on every leg**); the audit's M12 A, and B: 103 lines once its nine rungs are dropped, more than the
 30 the list holds, eight Value-pick pairs at the top, whose freed slots go to the lines ranked 23 to 30 without them,
 the 31st off the list, exactly 30 rows drawn, and a thin main line past the 30th off the list with its rung dropped
 all the same; until app v116 the same lines cut at 50, the lines ranked 43 to 50 taking the slots). The smoke holds
 the cut on sixty made-up games of its own too (Moneyline only, each home side at -110, twenty Value picks rated 60.0%
 down to 58.1% a tenth of a point at a time and forty thin legs 55.0% down to 53.05% a twentieth at a time; forty and
-twenty, cut at 50, until app v116): the first 30, the twenty (H100 to H119) and the ten best thin legs (H120 to H129),
+twenty, cut at 50, until app v116; the Value part, since app v138, a chance hook's alone): the first 30, the twenty (H100 to H119) and the ten best thin legs (H120 to H129),
 H130 to H159 off, under "Top 30 lines", the parts counting 20 and 10, the second list starting at 21; and it fails
 unless some list it held had more lines than 30 (`topOver`). Which lines, their part, rank and numbers are blocking; the words are
 warnings in the audit (`W.wording`) and fail the smoke, which has no warnings.
@@ -1619,7 +1672,11 @@ priced so beside it drawing no row, box or flag; the Game bets card's to win and
 which rates the fair chance where there is one (app v100), and until app v124 each game hand as its card drew it,
 with made-up hands sure to take every branch, which went with the card) hold it, and the nflbets smoke and `smoke_live.js` section J
 hold the same on the page, the Elo picks and the card. App v100 (`patch_honest_review.py`) also says on
-a game page that its hands' floors are by the model's chance and lets the panel's fair-chance label wrap.
+a game page that its hands' floors are by the model's chance and lets the panel's fair-chance label wrap. Reversed in
+part in app v138: the fair chance is the chance every leg and level is chosen and stated at (`legChance`), so no card
+says "model says" or "Elo says" and no level "by the model", the builder states its expected return with no
+confidence tile, and the far-off guard and its flags left every suggestion and drawn surface (`legFarOff`, `FAR_OFF`
+and `farText` kept for `gameLegPool` alone).
 
 **The suggestions record** (app v99, `patch_suggest_record.py`; the third change after that review; since app v111
 the record of Suggested Parlays, the owner's call of 16 October 2026: "do similar tracking/grading as ELO tracking";
@@ -1628,8 +1685,8 @@ reads `spGames`) is what the page suggested, written down before the games and g
 the page rather than remembered. `props/build/suggest_ledger.js` runs in the props job (`weekly.py`, once the audit
 is clean; never a reason to refuse or redden a run). It boots the published page, the root's `index.html`
 (`nflbets/index.html` until 17 October 2026), in jsdom at the site's root on
-the payload just baked, the Elo files beside it (market + form decides which player legs qualify, so the props app
-alone would not be the page a visitor sees) and the window's clock held at the run's time (moving, a boot of a few
+the payload just baked, the Elo files beside it (the Elo picks stand on them, and until app v138 market + form
+decided which player legs qualify, so the props app alone would not be the page a visitor sees) and the window's clock held at the run's time (moving, a boot of a few
 seconds could carry it past a lock or a kickoff the script still counts as to come), and reads each prime-time
 game's set with the page's own `spGames`, `spSet` and `spTierOut`, into the ledger's `prime` map, keyed
 `season|WW|kickoff|game id`: `{season, week, gid, away, home, kickoff, lock, baked_at, pool, tiers, taken_at}`,
@@ -1700,7 +1757,9 @@ its price and whether that is the book's or an estimate), the parlay's price as 
 works it out (American, decimal and implied), the stake and what it pays, the book's fair chance
 first ("Fair chance all 3 land 21.0%", "(est.)" where a leg is priced on one side only), then the
 model's ("model says 15.9%"; an Elo pick's, "Elo says") and the price's implied chance, or with no
-fair chance the model's and the price's and "No fair chance: it needs every leg's book price"
+fair chance the model's and the price's and "No fair chance: it needs every leg's book price" (since app v138 the
+fair chance, "expected −23%" at it and the price's implied, no model's or Elo's chance; with none, the price's implied
+and "No fair chance": CLAUDE.md, **DraftKings' chance on every leg**)
 (`chanceLines`, read by the window, the image and Share link's text alike), the week and its
 dates, the site's mark and address -- and **Download
 image** saves it as a PNG (`parlay-week6-3legs.png`), drawn with the canvas 2D API at twice its
@@ -2146,7 +2205,9 @@ dated after the page's clock is dropped; a write merges half by half with the br
 from whichever tab read it later, never one this load set aside (`ESPN_KEEP_GONE`, `{gl, pl}`); a failed
 save of `S` empties the key and retries (`espnKeepDrop`). Where legs
 are chosen (`pricedLegs`, `pbPool`, `gameLegPool`, the Elo picks) a `dkline` leg counts as a book price on
-a tested kind only (`ESPN_TESTED`; since app v127 its yards rungs among them no leg, **No ladder bets**, below), and from app v109 to v124 was suggested only on a payload baked before `dk`:
+a tested kind only (`ESPN_TESTED`; since app v127 its yards rungs among them no leg, **No ladder bets**, below; since app
+v138 an anytime touchdown priced on the model alone, `tdBranch` 'model' in `part2.js`, no tested kind: `espnPrice` marks
+it `tested:false`, `alone:true`, and `estTitle` says "untested: from the model alone, no yards line of his read"), and from app v109 to v124 was suggested only on a payload baked before `dk`:
 where the payload carries ids a suggested leg needs one at its own line, and ESPN gives none for a
 player's line (the game-line ids a press reads do count: a team leg it re-priced can be suggested; the
 `PAY.dk` a press makes on a payload with none is marked, `dkPressMade`, and does not count as carrying
@@ -2202,6 +2263,35 @@ M7, M8, M17's G, V14, I3 and the Top 30 foot's words; the nflbets smoke's no-lad
 prices on every rung and 2+ touchdowns, the no-line line, `toggleLeg`, after its press, a real reboot); `smoke_live.js`'s
 `ladderBoot` in J2's and J3's boots and R8; and `test_suggest_ledger.js`'s `offeredOwn` on every set's legs. Each by its
 own reading of a ladder (`ladderAud`, `ladderOwn`, `offeredOwn`), never the page's.
+
+**DraftKings' chance on every leg** (app v138, `patch_market_chance.py`, whose docstring is the design; the owner's call
+of 27 October 2026, "Every player leg uses DraftKings' fair chance, as game totals already do; the model's projection
+stays on screen as information"; CLAUDE.md's Props loop has the whole of it, with the evidence). `legChance(l)`
+(`part3.js`, after `legFair`): a hook's chance where `setChanceHook` set one (none is, and `build.js` refuses a page
+that calls it), else `legFair`, and for a game total missing a price its own 50%, est. `l.p` stays the model's chance on
+every leg `pricedLegs`, `toggleLeg` and `totalLeg` make; `pbLegs` alone copies each leg with `p` the chance and `pm` the
+model's, in the 45-97% band on the chance, one side a line (`pbSideBetter`: the higher chance to 1e-9, `pbEvKey`, then
+the higher `pm`, then the over or the home side), with no edge test, no market + form and no far-off guard, every copy
+`thin` but a hook's 3-point leg (`pref`, `hook`), so with no hook every search runs its one all-thin pass. The searches
+break a tie of the rounded score by the parlay's summed lean (`pbLean`, `pbEval`'s `ln`, `pbRank`) before the id;
+`spSlotBetter` is as it was. `pbIsValue` needs `l.hook`; `pbRuleOf` reads "least costly · 25%+" (`pbRuleTitle`,
+`pbRuleHtml`) and `pbChanceHtml` the fair chance and "expected −22%" (`small.pb-ev[data-pb-ev]`); `getPbTop().parts` is
+`{value, player, game}`, Player lines up to `PB_TOP_PL` (20) then Game bets to 30; the builder has a Fair column
+(`data-legchance`) and its hero the expected return on the price it pays; a game's page states each line's chance by
+`gpChance`; `spLegOut` and `spTierOut` keep the record's `p` the model's (on `pm`) and mark each level `chance:'fair'`;
+`pbPut` writes `p = pm ?? p` into `S.parlay`. In `tab_elo.html` market + form is gone (`altP`, `eloAltP`, `eloAltZ`,
+`trackAlt`), `muP(l, fair)` moves the leg's fair chance by the matchup's nudge, `eloCands` keeps a trusted leg at a fair
+chance of 30% or more whose Elo chance is above it by more than 1e-6 (each player's largest lean; a nudge of 0 leans
+nowhere), and `epTake` walks them by lean passing over a pair `dkClash` refuses and (the review of 27 October 2026) a
+leg that moves against one already taken (`epOpposed`: the props parts' `legRho` for the pair, the correlation
+`parlayProb`'s Cholesky rows read, turned by the two legs' sides, below `EP.opp`, -0.05: below nothing until the same
+day, which emptied week 7's KC at SEA's Medium, Aggressive and Extreme over pairs of -0.034 to -0.102), each level its
+first n (`floor:0`,
+"strongest Elo leans"; `eloCardOpt` is `{badge, legNote, rule}`, `eloLeanNote` "Elo +2.1"; a level the walk leaves short
+though as many qualify says what the walk found, `epFitWhy`, "Strongest first, only 3 leans in this game go together on
+one DraftKings slip: this level takes 4."); `epSlotBetter` takes the larger summed lean. Held by `build.js`'s v138
+guards, the audit's `chanceAud`, `qualAud` and section MC, the nflbets smoke's `chanceOwn`, `qualOwn` and `pbTopOwn`,
+`check_tab.js`'s F1 and F2, `test_suggest_ledger.js` and `smoke_live.js`'s J.
 
 Who is playing is decided on every load from the payload, outside `S`: `RSTAT` (the roster
 status by player) and `INJ` (this week's tags: Q, did not practise, limited), with the ruled
@@ -2309,7 +2399,7 @@ Mismatches and Team Stats**, has the whole of it).
   touchdown the player scores himself, running or catching, never a pass he throws, as DraftKings
   settles it and as `rowStats` and `espnStats` count it. Its chance is a logit capped by expected
   touches at `tdrate` x `tdmult`. A quarterback's is worded "Scores a rushing or receiving TD (not
-  a TD pass)" (`tdLabel()`), and market + form gives it no second price (his rating is a passer's).
+  a TD pass)" (`tdLabel()`), and until app v138 market + form gave it no second price (his rating is a passer's).
   Two or more (`tdPlus`) is still priced and settled, but a ladder bet: a game's page drew it as a
   "Scores two or more" row until app v127, and since nothing offers it.
 - **game bets** -- `ml` (to win), `ats` (to cover) and `total` (the game's points over or
@@ -2333,17 +2423,20 @@ Mismatches and Team Stats**, has the whole of it).
   same-game parlay (never longer than multiplying), legs across games multiply.
 - **margin** -- the book's cut, `light`/`typical`/`heavy`, a visitor setting.
 - **suggested parlays** -- two engines. The levels (`PB_TIERS`: Safe/Medium/Aggressive/Extreme,
-  2/3/4/5 legs, floors 25/12/5% after Safe, `pbTier` on `pbPool`) are, since app v111, each
+  2/3/4/5 legs, floors 25/12/5% after Safe, by DraftKings' fair chance since app v138, the least costly parlay
+  clearing each, `pbTier` on `pbPool`) are, since app v111, each
   prime-time game's set on Suggested Parlays (`spSet`, from that game's `pricedLegs` and its total
   on every bet type, `SP_ALL`, searched wider, `SP_SEARCH`, cached in `SP_CACHE`, outside `S`;
   the tab sets out one night's at a time, `spOn`, the record every one); `getPbTiers()`, the same
   levels over every ticked game, is kept for the audit and the smoke and drawn nowhere. The
   Parlay Builder's Top 30 lines (`getPbTop`, `PB_TOP_CACHE`) rank the legs those levels are
-  searched from, the Value picks first, then the other lines, the thin ones and then the
-  totals, each bet once (a ladder rung that is a half-point main Over's bet left out; dormant since app
+  searched from (since app v138 Player lines, up to 20, then Game bets to 30, by expected return at the fair
+  chance; until then the Value picks first, then the other lines, the thin ones and then the
+  totals), each bet once (a ladder rung that is a half-point main Over's bet left out; dormant since app
   v127, no rung reaching the list). The
   Elo picks use `pricedLegs()` too, and since 18 October 2026 the same four levels on the Elo
-  chance (`eloPicks` in `tab_elo.html`, an exact search by the builder's own sums); since app v109 all of them, and a game page's hands,
+  chance (`eloPicks` in `tab_elo.html`, an exact search by the builder's own sums; since app v138 each level the n
+  strongest Elo leans that go together on one DraftKings slip, `epTake`, at the fair chance); since app v109 all of them, and a game page's hands,
   take only legs with DraftKings' id at their own line, `dkIdOf`,
   wherever the payload carries ids (from app v115 to v118 the Top lines also kept a player's line read
   by Refresh odds with none, `pbTopSlip`; dormant since app v125, no payload the job bakes carrying ids, so
@@ -2367,7 +2460,20 @@ Mismatches and Team Stats**, has the whole of it).
   own chance) are not Value picks, fill a level only where the Value picks cannot, and wear no
   mark, a line under the level saying why (`pbThinLine`, `pbMktLine`); they wore "thin edge" and
   "no edge" until app v112. An Elo pick's legs say neither and are not marked. The record keeps
-  `thin` and `market` on every leg.
+  `thin` and `market` on every leg. Since app v138 a Value pick needs a hook's chance (`l.hook`), none is set,
+  so no leg is one and none is marked: every pool leg is thin but a total.
+- **chance / fair chance** -- (app v138) `legChance(l)`, the chance every leg is stated and chosen at:
+  DraftKings' fair chance, `legFair` (its prices with the margin out, both sides where both are on file,
+  else over the week's typical overround, est.; a `dkline` leg's the formula's own), a game total missing a
+  price its own 50%, est., and a hook's chance where one is set (none is). `l.p` on a leg `pricedLegs` makes
+  is the model's chance; a pool copy (`pbLegs`) carries `p` the chance and `pm` the model's. A level's
+  expected return, fair x price - 1, is stated on every card ("expected −22%").
+- **lean** -- (app v138) the model's chance less the stated chance on a leg's own side (`pbLean`, `pm - p`),
+  which breaks a tie in the side a line keeps and among parlays of one expected return, and is stated
+  nowhere; an Elo pick's lean is its Elo chance less its fair chance, which ranks the Elo picks.
+- **chance hook** -- (app v138) `window.setChanceHook(fn)`, null and never called by the page (`build.js`
+  refuses a page that calls it): where a model earns the right, its chance stands in for the fair chance and
+  a leg 3 points over its price's implied chance becomes a Value pick; the checks plant one on fixtures alone.
 - **night** -- (app v112) the prime-time games of one Eastern date: Suggested Parlays sets out the
   next night still to come alone (`spNight`, `spOn`), from 6:00 AM Eastern (`SP_OPEN_H`) on the
   morning after the prime-time night before it on the schedule.

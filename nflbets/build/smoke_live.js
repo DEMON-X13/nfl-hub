@@ -135,6 +135,9 @@ const slotNextL = (weeks, sched, now, season) => { const w0 = liveWeekL(weeks, s
   for (const wk of [w0, w0 + 1]) { const u = slotL(sched, wk, season); if (u && u.games.some(g => now < etKickL(g) && !scoredL(g))) return { ...u, up: u.open == null || now >= u.open }; }
   return null; };
 /* a kickoff's day and time as a set's head says them ("Sun, Jan 3", "9:30 AM ET"), through Intl */
+/* (app v138) what $1 is expected to return at DraftKings' fair chance, as the parlay card says it: fair x price - 1 in
+   whole percent, with a minus or a plus sign, none at 0 (the smoke's own copy of the card's words) */
+const evSayL = v => { const r = Math.round(v * 100); return (r < 0 ? '−' : r > 0 ? '+' : '') + Math.abs(r) + '%'; };
 const etDayL = ms => new Date(ms).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });
 const etTimeL = ms => new Date(ms).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }) + ' ET';
 /* the Sunday slot's part of Suggested Parlays as drawn, held to the rule at the page's clock (now): since app v129 (the
@@ -1310,8 +1313,10 @@ const ladderBoot = async (x, seeded, how) => {
       /* the chance: the book's fair chance first, worked here from the prices pinned above (the money
          line's two sides with the margin out; the runner's over and under where his line is the
          payload's, else his price over the week's median overround, est.), the legs in different games
-         so a plain product; then the model's and the price's. In the window, in the image and in the
-         text Share link sends */
+         so a plain product; then (app v138, the owner's call of 27 October 2026: every leg at DraftKings' fair
+         chance, no model percentage where a chance is stated) what $1 is expected to return at that chance, the
+         fair chance times the price less 1, and the price's own. In the window, in the image and in the text
+         Share link sends */
       const imp = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), pc1 = p => (p * 100).toFixed(1) + '%';
       const fML = imp(ML_G1.h) / (imp(ML_G1.h) + imp(ML_G1.a));
       /* the week's median overround on its two-sided player lines: the pinned week's own, the runner's among them */
@@ -1320,12 +1325,31 @@ const ladderBoot = async (x, seeded, how) => {
       const vigP = twoSided.length % 2 ? twoSided[twoSided.length >> 1] : (twoSided[twoSided.length / 2 - 1] + twoSided[twoSided.length / 2]) / 2;
       const fRB = side === 'over' ? imp(RB_PX.over) / (imp(RB_PX.over) + imp(RB_PX.under)) : Math.max(0.001, Math.min(0.999, imp(105) / vigP));
       const fair = q.legs.reduce((a, l) => a * (l.stat === 'ml' ? fML : fRB), 1), est = side !== 'over';
-      const line1 = `Fair chance all 2 land ${pc1(fair)}${est ? ' (est.)' : ''}`, line2 = `model says ${pc1(q.pr.corr)} · the price says ${(100 / q.useDec).toFixed(1)}%`;
+      const line1 = `Fair chance all 2 land ${pc1(fair)}${est ? ' (est.)' : ''}`, line2 = `expected ${evSayL(fair * q.useDec - 1)} · the price says ${(100 / q.useDec).toFixed(1)}%`;
       /* (app v130, the owner's call of 22 October 2026: no descriptions) the two lines alone: an estimated fair chance says
          "(est.)" on its own line and nothing under it says why */
       chk(!!q.fair && Math.abs(q.fair.p - fair) < 1e-12 && q.fair.est === est && txt(view.querySelector('.pc-chance')) === line1 + ' ' + line2
-        && !view.querySelector('.pc-chance small') && !/Est\.:|one side only|typical margin/.test(txt(view.querySelector('.pc-chance'))),
-        `${how}: the card does not give the fair chance (${line1}), then the model's and the price's, and nothing else: ` + txt(view.querySelector('.pc-chance')));
+        && !view.querySelector('.pc-chance small') && !/Est\.:|one side only|typical margin|model says|Model’s chance/.test(txt(view.querySelector('.pc-chance'))),
+        `${how}: the card does not give the fair chance (${line1}), then the expected return at it and the price's (${line2}), and nothing else: ` + txt(view.querySelector('.pc-chance')));
+      /* the card's model carries no model chance (app v138: fromBuilder no longer hands one over), its expected return the line's */
+      { const m = w.PARLAY_CARD.current();
+        chk(!!m && !('chance' in m) && !('chanceBy' in m) && m.ev === evSayL(fair * q.useDec - 1), `${how}: the card still carries the model's chance, or its expected return is not the fair chance times the price less 1: ` + JSON.stringify(m && { chance: m.chance, chanceBy: m.chanceBy, ev: m.ev })); }
+      /* the builder under the card says the same (app v138): each leg's Fair column DraftKings' fair chance on it (the money
+         line's two sides with the margin out, the runner's as worked above, est. where it is), no model percentage beside
+         it; the hero box the fair chance all land and what the stake is expected to return at it on the price the builder
+         pays, in dollars and percent; the second box "fair price"; no confidence tile */
+      { const stakeB = w.eval('S').stake, amtS = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
+        const ev = fair * q.useDec - 1, amt = stakeB * ev, sg = v => v < -0.0005 ? '−' : v > 0.0005 ? '+' : '';
+        const hero = d.querySelector('#parlayBody .bigp .box.hero'), boxes = [...d.querySelectorAll('#parlayBody .bigp > .box')];
+        const heads = [...d.querySelectorAll('#parlayBody table thead th')].map(txt).join('|');
+        const rows = [...d.querySelectorAll('#parlayBody tr.legrow')].map(tr => { const k = (tr.querySelector('button[data-drop]') || {}).dataset, l = k && w.eval('S').parlay[k.drop], td = tr.querySelectorAll('td')[3];
+          const f = l && (l.stat === 'ml' ? fML : fRB), e = !!l && l.stat !== 'ml' && est;
+          return !l || !td ? 'no leg' : Math.abs(+td.dataset.legchance - f) < 1e-12 && txt(td) === `${(f * 100).toFixed(0)}%${e ? ' est.' : ''}` && !td.querySelector('.conf, .legfair, .faroff') ? '' : `${l.stat}: ${td.dataset.legchance} "${txt(td)}" for ${f}`; }).filter(Boolean);
+        chk(heads === 'Player|The bet|Projected|Fair|Price|' && rows.length === 0 && !!hero && Math.abs(+hero.querySelector('b').dataset.fair - fair) < 1e-12 && txt(hero.querySelector('b')) === pc1(fair)
+          && txt(hero.querySelector('span')) === `fair chance all 2 land${est ? ', est.' : ''}` && txt(hero.querySelector('small')) === `expected ${sg(amt)}$${Math.abs(amt).toFixed(2)} on ${amtS(stakeB)} (${sg(ev * 100)}${Math.abs(ev * 100).toFixed(1)}%)`
+          && boxes.length === 3 && txt(boxes[1].querySelector('span')) === 'fair price' && !d.querySelector('#parlayBody .box.tier, #parlayBody [data-conf], #parlayBody [data-legfair], #parlayBody [data-far]')
+          && !/model says|confidence all|fair price for the model/.test(txt(d.getElementById('parlayBody'))),
+          `${how}: the builder does not state each leg's fair chance in its Fair column and, in its hero box, the fair chance all land and what the stake is expected to return at it, with "fair price" beside it and no confidence tile: ` + JSON.stringify({ heads, rows, hero: hero && [...hero.children].map(txt), boxes: boxes.map(txt) })); }
       chk(new RegExp(`^${wk <= 18 ? 'Week ' + wk : '(Wild Card|Divisional|Conference|Super Bowl)'}`).test(txt(view.querySelector('.pc-sub'))) && /Dec 31/.test(txt(view.querySelector('.pc-sub')))
         && /NFL Hub/.test(txt(view)) && txt(view.querySelector('.pc-foot b')) === 'demon-x13.github.io/nfl-hub' && !/nfl-hub\/nflbets/.test(txt(view)), `${how}: the card has no week and date, or no mark and the site's address (its root, demon-x13.github.io/nfl-hub): ` + txt(view.querySelector('.pc-head')) + ' / ' + txt(view.querySelector('.pc-foot')));
       chk(d.activeElement === d.getElementById('pcDownload'), `${how}: the window did not take the focus`);
@@ -1505,7 +1529,7 @@ const ladderBoot = async (x, seeded, how) => {
         chk(!!link && !link.hidden && txt(link) === 'Share link', `${how}: the card has no Share link`);
         link.click(); await wait(30);
         const s0 = shared[0] || {}, t0 = s0.text || '';
-        chk(t0.includes(`\n${line1} · ${line2}\nDraftKings betslip (`), `${how}: Share link does not send the fair chance first, then the model's and the price's, then the DraftKings link: ` + JSON.stringify(t0));
+        chk(t0.includes(`\n${line1} · ${line2}\nDraftKings betslip (`) && !/model says|Model’s chance/.test(t0), `${how}: Share link does not send the fair chance first, then the expected return at it and the price's, then the DraftKings link: ` + JSON.stringify(t0));
         chk(shared.length === 1 && !('url' in s0) && !s0.files && JSON.stringify(Object.keys(s0).sort()) === '["text","title"]',
           `${how}: Share link handed the share sheet a url (or anything) beside its title and text, which an iPhone shows as a bare domain or drops: ` + JSON.stringify(s0));
         chk(asked.length === 1 && JSON.stringify(asked[0]) === JSON.stringify({ title: s0.title, text: t0 }), `${how}: canShare was not asked about the title and the text alone: ` + JSON.stringify(asked));
@@ -1610,9 +1634,10 @@ const ladderBoot = async (x, seeded, how) => {
             chk(G2.length === 2 && !multiOf(G2) && builderNote('multigame') === builderWant(G2),
               `${how}: the money line and the runner's line on the slip, his rung and 2+ touchdowns with no id beside them: the builder says the legs mix a same-game parlay with other games, though the card gives them one link: ` + builderNote('multigame')); }
           chk(qe.legs.length === 4 && /\+210\s*est\./.test(txt(d.getElementById('pcView'))) && /estimated price/.test(txt(d.querySelector('#pcView .pc-sub'))), `${how}: the card does not mark the rung's estimated price: ` + txt(d.getElementById('pcView')));
-          /* a leg on no book price: no fair chance, the model's alone, and the card says there is none (app v130: never why) */
-          chk(!!qe.fair && qe.fair.p === null && txt(d.querySelector('#pcView .pc-chance')) === `Model’s chance all 4 land ${(qe.pr.corr * 100).toFixed(1)}% · the price says ${(100 / qe.useDec).toFixed(1)}% No fair chance`,
-            `${how}: a parlay with a leg on no book price does not give the model's chance alone and say "No fair chance", and nothing more: ` + txt(d.querySelector('#pcView .pc-chance')));
+          /* a leg on no book price: no fair chance, and the card says the price's chance and that there is none (app v130:
+             never why; app v138: no model percentage where a chance is stated) */
+          chk(!!qe.fair && qe.fair.p === null && txt(d.querySelector('#pcView .pc-chance')) === `the price says ${(100 / qe.useDec).toFixed(1)}% No fair chance` && w.PARLAY_CARD.current().ev === null,
+            `${how}: a parlay with a leg on no book price does not give the price's chance and say "No fair chance", and nothing more: ` + txt(d.querySelector('#pcView .pc-chance')));
           /* the rung and the 2+ touchdowns have nothing to convert to here (no receiving line and no
              touchdown of his among DraftKings' ids), so they stay off the slip: the button says how many it
              opens, and the builder's rows say why, in the card's few words */
@@ -1629,7 +1654,7 @@ const ladderBoot = async (x, seeded, how) => {
           d.getElementById('pcLink').click(); await wait(30);
           const se = shared[0] || {};
           chk(new RegExp(`(^|\\n)${ne}\\. Card Runner: 100\\+ receiving yards \\(\\+210 est\\.\\)(\\n|$)`).test(se.text || '') && se.title === `4-leg parlay ${pe} (estimated price)`
-            && (se.text || '').includes(`\nAdd by hand at DraftKings:\n${hand.map(n => n === ne ? `${ne}. Card Runner 100+ receiving yards (no receiving yards line of his read)` : `${nt}. Card Runner 2+ touchdowns (no anytime TD of his read)`).join('\n')}\n`) && /\(-135\)/.test(se.text || '') && /\nModel’s chance all 4 land [\d.]+% · the price says [\d.]+% · No fair chance\n/.test(se.text || ''),
+            && (se.text || '').includes(`\nAdd by hand at DraftKings:\n${hand.map(n => n === ne ? `${ne}. Card Runner 100+ receiving yards (no receiving yards line of his read)` : `${nt}. Card Runner 2+ touchdowns (no anytime TD of his read)`).join('\n')}\n`) && /\(-135\)/.test(se.text || '') && /\nthe price says [\d.]+% · No fair chance\n/.test(se.text || '') && !/Model’s chance|model says/.test(se.text || ''),
             `${how}: Share link sends an estimated price as if it were the book's, or does not name the legs to add by hand: ` + JSON.stringify(se));
           chk(!('url' in se) && (se.text || '').includes(slipLines(`2 of the 4 legs as DraftKings had them; add legs ${hand[0]} and ${hand[1]} by hand`, DKU(onSlip), null)) && !promises(se.text || ''),
             `${how}: Share link on four legs with two on the slip does not say it opens 2 of the 4 and which to add by hand, over the link: ` + JSON.stringify(se));
@@ -2156,7 +2181,7 @@ const ladderBoot = async (x, seeded, how) => {
         `${how}: the image does not carry every leg, the price, the stake and the mark: ` + rec.texts.join(' | '));
       chk(!rec.texts.some(x => /DraftKings|Share link/.test(x)), `${how}: the image carries the DraftKings link or the Share link: ` + rec.texts.join(' | '));
       { const all = rec.texts.join('');
-        chk(all.includes(line1) && all.includes(line2), `${how}: the image does not lead its chance with the fair chance (${line1}), then the model's and the price's: ` + rec.texts.filter(x => /chance|says|%/.test(x)).join(' | ')); }
+        chk(all.includes(line1) && all.includes(line2) && !/model says|Model’s chance/.test(all), `${how}: the image does not lead its chance with the fair chance (${line1}), then the expected return at it and the price's (${line2}): ` + rec.texts.filter(x => /chance|says|expected|%/.test(x)).join(' | ')); }
       chk(new RegExp('Saved as ' + file).test(txt(d.getElementById('pcMsg'))), `${how}: the window does not say the image was saved`);
       /* Escape closes it, and the focus goes back to Finish; the builder keeps its legs */
       d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -2283,10 +2308,12 @@ const ladderBoot = async (x, seeded, how) => {
            and put back with it */
         const PO = w.eval('pbOrder'), PP = w.eval('parlayProb'), PD = w.eval('parlayDec');
         const eloLeg = (gid, pid, stat, k, price, pe, name, team, opp, grp, words) => ({ key: `${gid}|${pid}|${stat}`, gid, pid, stat, k, side: 'over', main: true, p: 0.55, pe, price, src: 'real', mu: k, name, pos: grp, grp, team, opp, week: wk, label: `Over ${k} ${words}` });
-        const ELO_EMPTY = [['med', 'Medium', 3, 0.25], ['aggr', 'Aggressive', 4, 0.12], ['xtrm', 'Extreme', 5, 0.05]];
+        /* (app v138) an Elo pick level has no floor and is never the likeliest: the n strongest Elo leans DraftKings takes on
+           one slip */
+        const ELO_EMPTY = [['med', 'Medium', 3, 0], ['aggr', 'Aggressive', 4, 0], ['xtrm', 'Extreme', 5, 0]];
         const eloWhy = (where, n, m = 2) => `Only ${m} player${m === 1 ? '' : 's'} ${where} qualif${m === 1 ? 'ies' : 'y'}: this level takes ${n}.`;
         const eloSafe = (legs, fair) => { const L = PO(legs).map(l => ({ ...l })), p = PP(L.map(l => ({ ...l, p: l.pe }))).corr, dec = PD(L.map(l => ({ leg: l, ml: l.price })));
-          return { id: 'elo-safe', label: 'Safe', n: 2, floor: 0.35, legs: L, p, dec, ...(fair != null ? { fair: { p: fair, est: false } } : {}) }; };
+          return { id: 'elo-safe', label: 'Safe', n: 2, floor: 0, legs: L, p, dec, likeliest: false, ...(fair != null ? { fair: { p: fair, est: false } } : {}) }; };
         const eloSet = (safe, where) => ({ tiers: [safe, ...ELO_EMPTY.map(([id, label, n, floor]) => ({ id: 'elo-' + id, label, n, floor, why: eloWhy(where, n) }))], candidates: safe ? 2 : 0 });
         const RB_E = eloLeg(g2.id, 'card-rb', 'rushing_yards', 64.5, 105, 0.58, 'Card Runner', g2.h, g2.a, 'RB', 'rushing yards');
         const WR_E = eloLeg(g2.id, 'card-wr', 'receiving_yards', 55.5, -115, 0.62, 'Card Catcher', g2.a, g2.h, 'WR', 'receiving yards');
@@ -2296,7 +2323,7 @@ const ladderBoot = async (x, seeded, how) => {
         const SLOT_E = { ids: null, safe: null };
         const eloStand = (gids, o) => { const ids = [...(gids || [])].map(String).sort().join(), where = (o && o.where) || 'on your picks';
           const r = ids === g2.id ? eloSet(NIGHT_E, where) : SLOT_E.ids && ids === SLOT_E.ids ? eloSet(SLOT_E.safe, where)
-            : { tiers: [['safe', 'Safe', 2, 0.35], ...ELO_EMPTY].map(([id, label, n, floor]) => ({ id: 'elo-' + id, label, n, floor, why: eloWhy(where, n, 0) })), candidates: 0 };
+            : { tiers: [['safe', 'Safe', 2, 0], ...ELO_EMPTY].map(([id, label, n, floor]) => ({ id: 'elo-' + id, label, n, floor, why: eloWhy(where, n, 0) })), candidates: 0 };
           return w.JSON.parse(JSON.stringify(r)); };
         /* the Sunday slot's part of Night games at the fixture's own clock, before anything stands in for the tab's rules: the rule
            worked out here (slotNextL) on the schedule as the fixture has it, every number and word the rule's. The
@@ -2343,7 +2370,7 @@ const ladderBoot = async (x, seeded, how) => {
           `${how}: a set's level has no Finish and Add to builder, or an empty level offers one or does not say why`);
         /* (app v121) only the Sunday slot's cards name their game (a night game's set is the game, named in its head) */
         chk(!!set() && !set().querySelector('.pb-tgame, [data-pb-tgame]'), `${how}: a night game's cards name their game, as only the Sunday slot's do: ` + (set() ? [...set().querySelectorAll('.pb-tgame, [data-pb-tgame]')].map(txt).join(' | ') : 'no set'));
-        /* (app v118) the unit's two kinds of level, in this order: "Model parlays" over its four cards, then "Elo picks"
+        /* (app v118) the unit's two kinds of level, in this order: "Parlays" ("Model parlays" until app v138) over its four cards, then "Elo picks"
            over the four Elo cards, elo-safe to elo-xtrm (the Elo picks are each unit's own since that day, no longer one
            section at the tab's foot over the Parlay Builder's ticks); the Elo Safe's two legs each with an Add, its Add to
            builder and Finish named for the unit and the level (sp|<unit>:elo-safe); the empty three saying why, "in this
@@ -2352,7 +2379,7 @@ const ladderBoot = async (x, seeded, how) => {
            games', since app v129 its only section) is hidden */
         { const tierId = c => c.dataset.pbTier || [...c.classList].find(k => k !== 'pb-tier' && k !== 'none');
           const parts = set() ? [...set().children].filter(x => x.matches('h5.sp-sub, div.pb-tiers')).map(x => `${x.tagName.toLowerCase()}:${x.dataset.spKind}:${x.tagName === 'H5' ? txt(x) : [...x.children].filter(c => c.matches('.pb-tier')).map(tierId).join('+')}`).join(' / ') : '';
-          const wantParts = 'h5:model:Model parlays / div:model:safe+med+aggr+xtrm / h5:elo:Elo picks / div:elo:elo-safe+elo-med+elo-aggr+elo-xtrm';
+          const wantParts = 'h5:model:Parlays / div:model:safe+med+aggr+xtrm / h5:elo:Elo picks / div:elo:elo-safe+elo-med+elo-aggr+elo-xtrm';
           const E = k => set() && set().querySelector(`.pb-tiers[data-sp-kind="elo"] > .pb-tier.${k}`);
           chk(parts === wantParts, `${how}: the unit does not draw its model parlays and then its Elo picks, each under its own heading: ${parts}`);
           chk(!!E('elo-safe') && E('elo-safe').querySelectorAll('[data-pb-leg]').length === 2 && !!E('elo-safe').querySelector(`[data-sp-add="${g2.id}:elo-safe"]`)
@@ -2377,7 +2404,7 @@ const ladderBoot = async (x, seeded, how) => {
         if (tb) { tb.click(); await wait(20);
           chk(!md.hidden && txt(d.querySelector('#pcView .pc-kick')) === `Safe parlay · ${g2.a} at ${g2.h}` && txt(d.querySelector('#pcView .pc-price')) === '+210'
             && ['Home Side', 'To win', '−135', 'Card Runner', rbLabel, '+105'].every(t => txt(d.getElementById('pcView')).includes(t))
-            && txt(d.querySelector('#pcView .pc-chance')).startsWith('Fair chance all 2 land 33.0% model says 41.0% · the price says ')
+            && txt(d.querySelector('#pcView .pc-chance')).startsWith(`Fair chance all 2 land 33.0% expected ${evSayL(0.33 * 3.1 - 1)} · the price says `)
             && cash() === '$40.00 | $124.00 | +$84.00' && d.getElementById('pcAgain').hidden,
             `${how}: the set's card is not its game, legs, price, chance and the $40 amount it pays on (with no Start over, which is the builder's): ` + txt(d.getElementById('pcView')));
           const tA = d.getElementById('pcDk');
@@ -2442,7 +2469,8 @@ const ladderBoot = async (x, seeded, how) => {
               `${how}: a leg's Add did not put that leg in the builder at the game's own moneyline, or does not read Added with the focus on it: ` + JSON.stringify(L)); } }
         /* (app v118) an Elo pick's Finish (data-pc-finish="sp|<unit>:elo-<level>") opens the card on the level as the tab
            shows it, as an Elo pick: its kicker "<Label> Elo pick · <game>", every leg with its book price, the price its
-           sums give, the chance the Elo's (the book's fair chance first, then "Elo says" and the price's), what the Bet
+           sums give, the chance the book's fair chance, then (app v138, where "Elo says" and the Elo chance stood) what $1 is
+           expected to return at it and the price's, what the Bet
            amount pays, and both legs on DraftKings' slip at their own ids, in the card's order; Escape gives the focus back
            to the Finish. Its Add to builder leaves exactly its legs in the builder, the focus kept on it. eloCard: what the
            card holds, against a level (t, its legs as drawn) and its fair chance, the Elo chance worked by the builder's own
@@ -2456,8 +2484,8 @@ const ladderBoot = async (x, seeded, how) => {
           const pr = w.eval('fmtML')(w.eval('decToML')(dec)).replace('-', '−'); if (txt(view.querySelector('.pc-price')) !== pr) bad.push(`its price is ${txt(view.querySelector('.pc-price'))}, not ${pr}`);
           if (lis.length !== L.length || !L.every(l => lis.some(li => txt(li.querySelector('.pc-who')) === l.name && txt(li.querySelector('.pc-what')) === l.label && txt(li.querySelector('.pc-lp')).startsWith(fmtL(l.price)))))
             bad.push(`its legs are ${lis.map(li => txt(li)).join(' | ')}, not ${L.map(l => l.name + ' ' + l.label + ' ' + fmtL(l.price)).join(' | ')}`);
-          const ch = `Fair chance all ${L.length} land ${(fair * 100).toFixed(1)}% Elo says ${(p * 100).toFixed(1)}% · the price says ${(100 / dec).toFixed(1)}%`;
-          if (!txt(view.querySelector('.pc-chance')).startsWith(ch)) bad.push(`its chance reads "${txt(view.querySelector('.pc-chance'))}", not "${ch}"`);
+          const ch = `Fair chance all ${L.length} land ${(fair * 100).toFixed(1)}% expected ${evSayL(fair * dec - 1)} · the price says ${(100 / dec).toFixed(1)}%`;
+          if (txt(view.querySelector('.pc-chance')) !== ch) bad.push(`its chance reads "${txt(view.querySelector('.pc-chance'))}", not "${ch}" (and no Elo chance: ${(p * 100).toFixed(1)}%)`);
           if (cash() !== `${mny2(stake)} | ${mny2(stake * dec)} | +${mny2(stake * dec - stake)}`) bad.push(`it pays ${cash()} on ${mny2(stake)}`);
           if (dkIds) { const want = 'https://sportsbook.draftkings.com/?outcomes=' + lis.map(li => dkIds[(L.find(l => l.name === txt(li.querySelector('.pc-who'))) || {}).pid] || 'none').map(x => x.replace(/#/g, '%23')).join('+');
             if (d.getElementById('pcDk').getAttribute('href') !== want) bad.push(`Open in DraftKings is ${d.getElementById('pcDk').getAttribute('href')}, not ${want}`); }
@@ -2492,7 +2520,7 @@ const ladderBoot = async (x, seeded, how) => {
              ones (the runner's and the receiver's) */
           const eloOut = l => ({ gid: l.gid, week: wk, pid: l.pid, team: l.team, grp: l.grp, stat: l.stat, k: l.k, side: l.side, main: !!l.main, price: l.price, src: 'real', name: l.name, label: l.label, p: l.p, pe: l.pe, fair: null, fair_est: false, thin: null, market: null });
           const REC_E = eloSafe([RB_E, TE_E], 0.27);
-          const eloRec = [{ id: 'elo-safe', label: 'Safe', n: 2, floor: 0.35, legs: REC_E.legs.map(eloOut), p: Math.round(REC_E.p * 1e4) / 1e4, fair: 0.27, fair_est: false, dec: Math.round(REC_E.dec * 1e3) / 1e3, likeliest: false, thin: 0, mkt: 0 },
+          const eloRec = [{ id: 'elo-safe', label: 'Safe', n: 2, floor: 0, legs: REC_E.legs.map(eloOut), p: Math.round(REC_E.p * 1e4) / 1e4, fair: 0.27, fair_est: false, dec: Math.round(REC_E.dec * 1e3) / 1e3, likeliest: false, thin: 0, mkt: 0, chance: 'fair' },
             ...ELO_EMPTY.map(([id, label, n, floor]) => ({ id: 'elo-' + id, label, n, floor, why: eloWhy('in this game', n) }))];
           const entry = { season: SEA, week: wk, gid: g2.id, away: g2.a, home: g2.h, kickoff: kIso, lock: new Date(LOCK).toISOString().replace(/\.\d{3}Z$/, 'Z'), baked_at: taken, pool: {}, taken_at: taken,
             tiers: [{ id: 'safe', label: 'Safe', n: 2, floor: 0, legs: safeLegs, p: Math.round(pj * 1e4) / 1e4, fair: 0.25, fair_est: false, dec: Math.round(dj * 1e3) / 1e3, likeliest: false, thin: 0, mkt: 0 },
@@ -2507,7 +2535,7 @@ const ladderBoot = async (x, seeded, how) => {
              record at the tab's head */
           { const rows = sec => { const r = d.querySelector(`#spSets section.sp-sec[data-sp-sec="${sec}"] > h3.sp-sech + div.sp-rec[data-sp-recsec="${sec}"]`);
               return !r ? 'no record under its heading' : r.hidden ? 'hidden' : [...r.querySelectorAll(':scope > .bar[data-sp-reckind]')].map(b => `${b.dataset.spReckind}:${txt(b.querySelector('.sp-reck'))}:${[...b.querySelectorAll('[data-sp-rec]')].map(x => x.dataset.spRec + '=' + txt(x)).join('+')}`).join(' / '); };
-            const want = sec => `model:Model parlays:${sec}:model:none=None graded yet / elo:Elo picks:${sec}:elo:none=None graded yet`;
+            const want = sec => `model:Parlays:${sec}:model:none=None graded yet / elo:Elo picks:${sec}:elo:none=None graded yet`;
             chk(rows('all') === want('all') && !d.querySelector('#spHead .sp-rec, #spHead [data-sp-rec]') && d.querySelectorAll('#spSets .sp-rec').length === 1,
               `${how}: with a record read and nothing graded, the Record section's record is not its two rows saying none is graded yet, or another record is drawn: ${rows('all')}`); }
           const ph = set() && set().querySelector('[data-sp-phase]');
@@ -2518,7 +2546,7 @@ const ladderBoot = async (x, seeded, how) => {
           if (lf) { lf.click(); await wait(20); }
           chk(!!lf && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === `Safe parlay · ${g2.a} at ${g2.h}` && txt(d.querySelector('#pcView .pc-price')) === w.eval('fmtML')(w.eval('decToML')(dj)).replace('-', '−')
             && ['Away Side', '+115', 'Card Runner', rbLabel, '+105'].every(t => txt(d.getElementById('pcView')).includes(t)) && !txt(d.getElementById('pcView')).includes('Home Side')
-            && txt(d.querySelector('#pcView .pc-chance')).startsWith(`Fair chance all 2 land 25.0% model says ${(pj * 100).toFixed(1)}% · the price says `)
+            && txt(d.querySelector('#pcView .pc-chance')).startsWith(`Fair chance all 2 land 25.0% expected ${evSayL(0.25 * dj - 1)} · the price says `)
             && cash() === `${mny(12.5)} | ${mny(12.5 * dj)} | +${mny(12.5 * dj - 12.5)}`
             && d.getElementById('pcDk').getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + [DK_ML2.a, DK_RB].map(x => x.replace(/#/g, '%23')).join('+'),
             `${how}: Finish on a locked set does not open the record's set, its legs, price, chance and the amount: ` + txt(d.getElementById('pcView')) + ' / ' + d.getElementById('pcDk').getAttribute('href'));
@@ -2530,9 +2558,10 @@ const ladderBoot = async (x, seeded, how) => {
              until the night of 18 October 2026, when it failed on main for that) */
           { let kept = null; try { kept = JSON.parse(w.localStorage.getItem('props_sp_lock_v1') || 'null'); } catch (e) { kept = 'junk'; }
             chk(kept !== 'junk' && !(kept && kept.games && kept.games[g2.id]), `${how}: a locked set the record has was kept in the browser as the page's own`); }
-          /* the record keeps both legs as Value picks (thin false, no total): the locked card marks each Value (app v112) */
-          chk(!!set() && [...set().querySelectorAll('[data-pb-tier="safe"] .pb-legs li')].length === 2 && [...set().querySelectorAll('[data-pb-tier="safe"] .pb-legs li')].every(li => li.querySelectorAll('i.pb-valmark').length === 1 && txt(li.querySelector('i.pb-valmark')) === 'Value')
-            && !/\bthin[ -]edge\b|\bno edge\b/i.test(txt(set())), `${how}: the locked set's legs, kept as Value picks, are not each marked Value, or the set still says thin edge or no edge`);
+          /* the record keeps both legs as they were taken before app v138 (thin false, no total), but a leg is marked Value
+             only where a validated model's chance stands behind it (app v138: none does), so the locked card marks none */
+          chk(!!set() && [...set().querySelectorAll('[data-pb-tier="safe"] .pb-legs li')].length === 2 && !set().querySelector('i.pb-valmark')
+            && !/\bthin[ -]edge\b|\bno edge\b|\bValue\b/.test(txt(set())), `${how}: the locked set's legs, kept with thin false from before app v138, are marked Value, or the set still says Value, thin edge or no edge`);
           /* (app v118) the locked Elo picks are the record's too (its entry's elo), drawn under the set's, with no line saying
              they are this browser's own; Finish on the Elo Safe opens the card on the record's legs, its Elo chance worked
              again by the builder's own sums on their Elo chances as kept, its fair chance the one kept */
@@ -3481,7 +3510,8 @@ const ladderBoot = async (x, seeded, how) => {
           chk(OA.log.length === nA && txt(d2.getElementById('pcMsg')) === 'Checking DraftKings’ lines first…', `${how}: a press while the card checks asked The Odds API, or did not say it waits for the check`);
           espHold.gate.go(); espHold.gate = null; await cardSettled(w2); await wait(30);
           const pre = w2.PARLAY_CARD.current();
-          chk(btnOf(y).getAttribute('data-pc-pull') === 'ready' && pre.dec === tdec.toFixed(2) && pre.fair === (TFAIR.p * 100).toFixed(1) + '%', `${how}: the level's card is not on the level's own price and fair chance before a pull: ` + JSON.stringify({ dec: pre.dec, fair: pre.fair }));
+          chk(btnOf(y).getAttribute('data-pc-pull') === 'ready' && pre.dec === tdec.toFixed(2) && pre.fair === (TFAIR.p * 100).toFixed(1) + '%' && pre.ev === evSayL(TFAIR.p * tdec - 1),
+            `${how}: the level's card is not on the level's own price, fair chance and expected return before a pull: ` + JSON.stringify({ dec: pre.dec, fair: pre.fair, ev: pre.ev }));
           await press(y); OA.hold = gateJ3(); d2.getElementById('pcPullYes').click(); await wait(40);
           const dkA = d2.getElementById('pcDk'), link = d2.getElementById('pcLink'), sh = [];
           Object.defineProperty(w2.navigator, 'share', { value: async z => { sh.push(z); }, configurable: true });
@@ -3494,9 +3524,9 @@ const ladderBoot = async (x, seeded, how) => {
           delete w2.navigator.share;
           const m2 = w2.PARLAY_CARD.current(), Lp = m2.dkLegs, decP = w2.eval('parlayDec')(Lp.map(l => ({ leg: l, ml: l.stat === 'any_td' ? 140 : -110 })));
           const fairP = w2.eval('parlayFair')(Lp.map(l => Object.assign({}, l)));
-          chk(m2.from && m2.from.id === 'J3U:safe' && m2.dec === decP.toFixed(2) && m2.priceNote === 'book price' && !!fairP && m2.fair === (fairP.p * 100).toFixed(1) + '%' && m2.fair !== pre.fair
+          chk(m2.from && m2.from.id === 'J3U:safe' && m2.dec === decP.toFixed(2) && m2.priceNote === 'book price' && !!fairP && m2.fair === (fairP.p * 100).toFixed(1) + '%' && m2.fair !== pre.fair && m2.ev === evSayL(fairP.p * decP - 1)
             && txt(d2.querySelector('#pcView .pc-kick')) === 'Safe parlay · made up' && dkA.getAttribute('href') === DKU(Lp.map(l => l.stat === 'any_td' ? 'J3#rb_td' : 'J3#wr_o595')),
-            `${how}: a level of Suggested Parlays, pulled, is not priced again by parlayDec on DraftKings' prices (a book price), its fair chance worked again, on the pulled sids: ` + JSON.stringify({ dec: m2.dec, decP, fair: m2.fair, note: m2.priceNote, href: dkA.getAttribute('href') }));
+            `${how}: a level of Suggested Parlays, pulled, is not priced again by parlayDec on DraftKings' prices (a book price), its fair chance and expected return worked again, on the pulled sids: ` + JSON.stringify({ dec: m2.dec, decP, fair: m2.fair, ev: m2.ev, note: m2.priceNote, href: dkA.getAttribute('href') }));
           d2.getElementById('pcClose').click(); await wait(10);
           /* (8) signing out while a pull runs: the passer's game, held */
           await mkCard(y); await press(y); OA.hold = gateJ3(); d2.getElementById('pcPullYes').click(); await wait(30);

@@ -126,9 +126,13 @@ function legHtml(K){
   const l=K.leg, price=K.price, src=K.src, out=[];
   const est=src==='dkline'||src==='est'?' est.':src==='fair'?' fair':'';
   out.push(`<div><dt>Price</dt><dd>${N('price',price!=null&&isFinite(price)?fmtPx(price)+est:'–')}</dd></div>`);
-  if(l.p!=null&&isFinite(l.p)) out.push(`<div><dt>Model</dt><dd>${N('model',pc0(l.p))}</dd></div>`);
-  let f=null; try{ f=typeof legFair==='function'?legFair(l):null; }catch(e){ f=null; }
+  /* (app v138) DraftKings' fair chance on the leg as the page states it (legFairStated: legFair, a total on one price at
+     its own 50%) and what $1 on it at the price shown is expected to return at that chance, to a tenth of a percent; no
+     model's chance (the owner's call of 27 October 2026) */
+  let f=null; try{ f=typeof legFairStated==='function'?legFairStated(l):typeof legFair==='function'?legFair(l):null; }catch(e){ f=null; }
   out.push(`<div><dt>Fair</dt><dd>${f&&f.p!=null?N('fair',pc0(f.p)+(f.est?' est.':'')):'<span class="glance-q" data-glance-n="fair">none</span>'}</dd></div>`);
+  const dec=price!=null&&isFinite(price)&&typeof mlToDec==='function'?mlToDec(price):null, ev=f&&f.p!=null&&dec>1?f.p*dec-1:null;
+  out.push(`<div><dt>Expected</dt><dd>${ev!=null?N('ev',(ev<-0.0005?'−':ev>0.0005?'+':'')+Math.abs(ev*100).toFixed(1)+'%'):'<span class="glance-q" data-glance-n="ev">none</span>'}</dd></div>`);
   return `<div class="glance-leg" data-glance-legbox><p class="glance-lt"><span class="glance-k">This leg</span> ${N('label',l.label||'')}</p><dl class="glance-nums">${out.join('')}</dl></div>`;
 }
 function snapBtn(gid){

@@ -397,6 +397,8 @@ body.modal-open{overflow:hidden}
 .pb-nums span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .pb-nums small{display:block;font-size:11px;font-weight:600;color:var(--ink-2);white-space:nowrap;margin-top:1px}
 .pb-nums .pb-chance span,.pb-nums .pb-chance small{white-space:normal;overflow-wrap:anywhere}
+/* app v138: a level's expected return at DraftKings' fair chance, negative in the red text either look keeps legible */
+.pb-nums small.pb-ev.neg{color:var(--miss)}
 .faroff{color:#8A5E05}
 small.faroff{display:block;font-size:11px;font-weight:600;margin-top:2px;white-space:normal}
 p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
@@ -479,7 +481,8 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pb-tc small{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .pb-tc .est{font-style:normal;font-size:10.5px;font-weight:500;color:var(--ink-2);margin-left:2px}
 .pb-trow .pb-legadd{grid-area:ad}
-/* app v112: the Top 100 lines in two parts, each under its heading (Value picks, Other lines) */
+/* app v112: the Top lines in parts, each under its heading (app v138: Player lines, then Game bets; Value picks only with
+   a hook's rows) */
 .pb-topsec{display:flex;align-items:center;gap:8px;margin:16px 0 2px;font-size:15px}
 .pb-topsub{margin:0 0 6px;font-size:12px}
 @media(max-width:1100px){ .pb-trow{grid-template-columns:26px minmax(0,1fr) auto;grid-template-areas:"rk nm ad" ". cs cs"} .pb-tcs{justify-content:start} .pb-tc{text-align:left} }
@@ -488,7 +491,7 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pays{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
 .pays h3{margin:0 0 12px}
 .pays .bar{margin:0 0 4px}
-.pays .bigp{grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 0}
+.pays .bigp{grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 0}
 .pays .bigp .box{padding:10px 12px}
 .pays .bigp b{font-size:20px}
 .pays .bigp span{font-size:11px}
@@ -588,8 +591,8 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
   <div id="slateView">
     <div class="bar">
       <label>Week <select id="weekSel"></select></label>
-      <span class="rec" id="weekRec" title="The model's side of every sportsbook main line in this week, graded from the numbers frozen before kickoff"></span>
-      <span class="rec" id="seasonRec" title="The model's side of every sportsbook main line this season, graded from the numbers frozen before kickoff"></span>
+      <span class="rec" id="weekRec" title="The model’s side of every DraftKings main line, graded on lines frozen before kickoff · at −112 it needs 52.8% to break even"></span>
+      <span class="rec" id="seasonRec" title="The model’s side of every DraftKings main line, graded on lines frozen before kickoff · at −112 it needs 52.8% to break even"></span>
       <span class="grow"></span>
       <span class="livestamp" id="slateStamp"></span>
       <button class="btn quiet" id="slateNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
