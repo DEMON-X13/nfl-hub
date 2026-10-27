@@ -113,17 +113,21 @@ list until 18 October 2026). Under it a visitor picks All, Teams only or
 Players only (or ticks moneyline, spread, game total, player overs and player
 unders by hand) and the week's games to build from, types a Bet amount (the
 builder's own stake, one number), and gets the Top 30 lines those choices make
-(the Top 100 until 17 October 2026, the Top 50 until 18 October 2026): the Value
-picks first, then the other lines, each ranked by what $1 on it is expected to
-make, each with its own Add. A player's line DraftKings has moved since its prices
+(the Top 100 until 17 October 2026, the Top 50 until 18 October 2026): up to 20
+player lines, then the game bets, each ranked by what $1 on it is expected to
+return at DraftKings' fair chance (since 27 October 2026, app v138: every leg is
+stated at DraftKings' fair chance, the model's projection beside it as information,
+and no line is marked a Value pick until a model earns it), each with its own Add. A player's line DraftKings has moved since its prices
 were pulled stays on the list at DraftKings' new number once Refresh odds reads it,
 with a line saying what DraftKings' slip will do with it; a suggested parlay takes
 only legs DraftKings' slip can take. Suggested Parlays (`#suggest`) gives the next Thursday, Sunday or Monday
 night game a Safe 2-leg, Medium 3-leg, Aggressive 4-leg and Extreme 5-leg parlay
-of its own, each with its book price, the model's chance and what the Bet amount
-pays, Add to builder and Finish, locked 2 hours before kickoff and graded by the
-props job's suggestions record, with the Elo picks under them: the same four levels
-on the Elo matchup's chance, chosen on value. A tap on a player's or a team's name on
+of its own (Safe the likeliest pair, the others the least costly parlay of their size
+landing 25%, 12% or 5% at DraftKings' fair chance), each with its price, that fair chance, its expected return at it (negative:
+the book's margin) and what the Bet amount pays, Add to builder and Finish, locked 2
+hours before kickoff and graded by the props job's suggestions record, with the Elo
+picks under them: four levels of the strongest Elo leans that go together on one DraftKings slip (none DraftKings refuses
+beside another, none moving against another). A tap on a player's or a team's name on
 either tab opens the matchup bubble, their matchup for the day at a glance. Only the bets
 DraftKings posts are offered (FG attempts went on 17 October 2026). A game total
 is priced at the book's own chance (`props/research/totals/README.md` says why),

@@ -16,8 +16,9 @@
    DraftKings' line: a main line the read has at another number is the read's (moved, paidStands).
 
    Which kinds the page may take into a suggestion is also said here, on its own (TESTED): a main line
-   on passing, rushing or receiving yards, receptions or passing touchdowns, the anytime touchdown, and
-   a yards rung DraftKings lists; every other priced leg is shown and never suggested.
+   on passing, rushing or receiving yards, receptions or passing touchdowns, the anytime touchdown (since
+   app v138 not one priced on the model alone, tdBranch), and a yards rung DraftKings lists; every other
+   priced leg is shown and never suggested.
 
    Change a constant here only with the formula itself, and the page's copy with it: the audit fails
    every price that moves on one side alone. */
@@ -161,13 +162,21 @@ function rungFair(stat, L, k, f) {
   return Math.min(1 - 1e-6, Math.max(1e-6, p));
 }
 function rungPrice(p) { const a = american(logistic(logit(p) + K.rungHold)); return a < 0 ? Math.max(a, K.shortest) : Math.min(a, K.longest); }
+/* which of the three prices his touchdown, read here on its own: 'lined' (a yards line of his touches read: a quarterback's
+   rushing, a back's rushing or receiving, a receiver's or tight end's receiving), 'backup' (none, his club's lines
+   complete and he no charted starter) or 'model' (the model alone). Since app v138 a touchdown on the model alone is no
+   tested kind: never checked against DraftKings' prices (54 legs of weeks 2 to 6) and high where it states 45%+ */
+function tdBranch(o) {
+  const lines = (o.grp === 'QB' ? [o.rushLine] : o.grp === 'RB' ? [o.rushLine, o.recLine] : [o.recLine]).filter(finite);
+  return lines.length && K.td.yd[o.grp] != null ? 'lined' : (o.complete && !o.starter ? 'backup' : 'model');
+}
 function tdPrice(o) {
   if (!(o.p > 0 && o.p < 1)) return null;
-  const c = K.td, lines = (o.grp === 'QB' ? [o.rushLine] : o.grp === 'RB' ? [o.rushLine, o.recLine] : [o.recLine]).filter(finite);
+  const c = K.td, lines = (o.grp === 'QB' ? [o.rushLine] : o.grp === 'RB' ? [o.rushLine, o.recLine] : [o.recLine]).filter(finite), b = tdBranch(o);
   let z;
-  if (lines.length && c.yd[o.grp] != null) z = c.a + c.b * logit(o.p) + c.yd[o.grp] * Math.log(Math.max(0.5, lines.reduce((s, v) => s + v, 0)))
+  if (b === 'lined') z = c.a + c.b * logit(o.p) + c.yd[o.grp] * Math.log(Math.max(0.5, lines.reduce((s, v) => s + v, 0)))
     + c.pts * Math.log(Math.min(40, Math.max(10, finite(o.teamImplied) ? o.teamImplied : 22)) / 22);
-  else if (o.complete && !o.starter) z = c.a0 + c.b0 * logit(o.p);
+  else if (b === 'backup') z = c.a0 + c.b0 * logit(o.p);
   else z = c.a1 + c.b1 * logit(o.p);
   return american(Math.min(1000 / 1100, Math.max(100 / 2100, logistic(z))));
 }
@@ -218,10 +227,12 @@ function make(w) {
     const T = ctx && finite(ctx.implied) ? ctx.implied : null;
     if (l.stat === 'any_td') {
       if ((+l.k || 1) !== 1 || !Array.isArray(e.td) || !e.td.includes(l.pid)) return null;
-      const r = F('project')(pl, 'any_td', opp, ctx), a = tdPrice({ p: r && r.p, grp: pl.grp, rushLine: line(e, l.pid, 'rushing_yards'), recLine: line(e, l.pid, 'receiving_yards'),
-        teamImplied: T, complete: complete(e, g, team), starter: starter(pl, team) });
+      const r = F('project')(pl, 'any_td', opp, ctx), o = { p: r && r.p, grp: pl.grp, rushLine: line(e, l.pid, 'rushing_yards'), recLine: line(e, l.pid, 'receiving_yards'),
+        teamImplied: T, complete: complete(e, g, team), starter: starter(pl, team) }, a = tdPrice(o);
       if (a == null) return null;
-      return { price: a, fair: Math.max(0.001, Math.min(0.999, implied(a) / playerVig(l.week))), kind: 'td', tested: true, listed: true, line: null };
+      /* (app v138) a touchdown on the model alone is priced and shown, never suggested: no tested kind */
+      const alone = tdBranch(o) === 'model';
+      return { price: a, fair: Math.max(0.001, Math.min(0.999, implied(a) / playerVig(l.week))), kind: 'td', tested: !alone, alone, listed: true, line: null };
     }
     const L = line(e, l.pid, l.stat); if (L == null) return null;
     const inputs = { stat: l.stat, line: L, grp: pl.grp, recYdsLine: line(e, l.pid, 'receiving_yards'), passYdsLine: line(e, l.pid, 'passing_yards'), teamImplied: T };
@@ -246,4 +257,4 @@ function make(w) {
   const takeable = d => !!d && d.tested && d.listed && !d.mainOver;
   return { entry, line, readLine, paidStands, real, price, takeable, complete, starter, playerVig };
 }
-module.exports = { K, TESTED, TYPES, parse, block, oddsOf, make, mainFair, sidePrice, rungFair, rungPrice, tdPrice, implied, american };
+module.exports = { K, TESTED, TYPES, parse, block, oddsOf, make, mainFair, sidePrice, rungFair, rungPrice, tdPrice, tdBranch, implied, american };

@@ -56,61 +56,67 @@
  *     stick in that box: nothing between them clips, as the page's own rule clips every table. The
  *     page's stylesheet (props/build/part1.html) goes round the tab for this. jsdom lays nothing
  *     out and reads only the rules a desktop screen gets, so this is the style, not a measured width;
- *   - the money the files feed, on every rated player and every matchup line in them: market + form
- *     (eloAltP, which decides whether a player leg qualifies for the Parlay Builder's suggestions),
- *     the Elo matchup chance (eloMatchupP) and the Elo picks (eloPicks: the candidates the rule's,
- *     worked out here, ranked on value, what the levels are searched from the 30 best by value and
- *     the 10 likeliest by the Elo chance, each once (18 October 2026); Suggested Parlays' four levels,
- *     each at the builder's own sums, parlayProb on the Elo chances and parlayDec, compiled here from
- *     the props parts' own source, its floor held, a level marked the likeliest only under its floor,
- *     and none worse than the best parlay of its size whose legs are all in different games; and the
- *     tab's fast sums, the search's, parlayProb's and parlayDec's to the bit on the levels and 240
- *     parlays of the candidates, many with legs of one game), on made-up book prices, with no error
- *     thrown or logged;
- *   - the Elo picks' four levels (17 October 2026) on made-up players, games, prices, nudges and
- *     correlations of the check's own, so it holds in any week: the candidates the rule's, a -115 main
- *     line of the better value leading a +150 touchdown (never plus money first), every line the rule
- *     refuses refused; every level Suggested Parlays' rule on the Elo chance worked out in full over
- *     every parlay of its size by the builder's own sums (the best return over the floor, Safe's the
- *     Elo picks' own 35% since 18 October 2026, else the likeliest, marked so), legs of one game taken
- *     and priced together, and a
- *     level with too few candidates empty, saying why;
- *   - the search's quality (18 October 2026, after a review found the levels several percent short of
- *     the best on a one-game slate, and both gates passing with the search cut to one parlay): on two
- *     sets of made-up candidates where the first search went wrong, every level the rule worked out in
- *     full by the builder's own sums, and the tab's fast sums those sums to the bit on every parlay:
- *     F3, ten legs of one game that move together (the stress harness's seed 303, its 22nd set), whose
- *     quick reading misorders parlays so that the first search marked Aggressive "the likeliest 4 legs"
- *     at 12.03%, over its 12% floor, and with one parlay worked picked a worse one; F4, six legs of one
- *     game that move together strongly, which the quick reading overrates, and three games of one leg
- *     each, where the likeliest four legs are one of each game, a parlay the first search reached only
- *     as its best parlay of legs all in different games; and F6, the search's pruning and bounds near the
- *     floors, on twenty seeded one-game slates of 9 to 12 legs whose chances cluster where each level's
- *     floor falls, every level held to every parlay of its size worked out in full (a review planted two
- *     slips, a partial parlay pruned at the floor itself and the price-first pass reading the quick
- *     chance as its most, which passed every other check);
+ *   - the money the files feed, on every matchup line in them (app v138, the owner's call of 27 October 2026: every leg
+ *     at DraftKings' fair chance, and market + form, fitted on this season's games and showing no signal, gone): the Elo
+ *     matchup chance (eloMatchupP, DraftKings' fair chance on a leg moved by the matchup's nudge) a chance on every line,
+ *     the check's own where the stat's nudge has held up and none where it has not; and the Elo picks (eloPicks): the
+ *     candidates the rule's, worked out here on a fair chance of the check's own (legFairStand, set into the page in the
+ *     props parts' legFair's place): a rated player's line DraftKings prices, -200 to +300, DraftKings' fair chance on it
+ *     30% or more and his Elo chance above it (the lean), his largest lean (the main line on a tie, then the lower id),
+ *     ranked by lean, every one kept; and Suggested Parlays' four sizes, each the first n candidates that go together on
+ *     one DraftKings slip (a greedy prefix: a candidate DraftKings will not take beside one already taken passed over,
+ *     and since the review of 27 October 2026 one that moves against one already taken by more than -0.05, by the payload's
+ *     pair table as the builder's sums read it, signed by the legs' sides, the check's own reading, rhoOwn, OPP_OWN and
+ *     opposedOwn), floor 0 and
+ *     never the likeliest, at the builder's own sums compiled here from the props parts' source (parlayProb on the Elo
+ *     chances, parlayDec on the prices), its stated fair chance parlayFair's (parlayProb on DraftKings' fair chances),
+ *     with no error thrown or logged; market + form (eloAltP, eloAltZ) and the old search's fast sums (eloSums) gone;
+ *   - the Elo picks on made-up players, games, prices, nudges and correlations of the check's own, so it holds in any
+ *     week: F1, the candidates' rule (a line two-sided with its margin out, one-sided over the check's margin, a price
+ *     from DraftKings' line read on ESPN, the price band's end, a price past it either way, a fair chance under 30%, an
+ *     Elo chance under the fair chance, one above the price's one-sided reading but under DraftKings' fair chance with
+ *     both sides' margin out and one the other way round, a player's second line, a stat the matchup has not earned, a
+ *     team bet, the model's own estimate, a player the ratings do not have and a nudge of 0), the levels, one holding two legs of one
+ *     game priced together, the card's options (each leg's Elo lean, how a level was chosen), and the id rule by an
+ *     entry's content; F2, the greedy prefix (a quarterback's passing TDs leaning furthest, his receivers' touchdowns
+ *     passed over, so a level runs short and says so, and with no pair rule the same levels hold a pair), leans tied to
+ *     the bit broken by the main line then the lower id, a player's two lines tied keeping his main line, the slot's
+ *     summed lean and its tie to the earlier game, the levels' words where too few qualify and where too few go together,
+ *     every candidate kept with no cap, and the props parts' DraftKings pair rule as loaded the check's own on every pair;
  *   - each unit's Elo picks (app v118, the owner's call of 19 October 2026: "I would like it to have ELO picks for the
  *     slot of Sunday games"): window.eloUnit, which Suggested Parlays draws in each night game and in the Sunday slot,
  *     on the files for each game of the matchups' week with lines and for that week's Sunday games before 7 pm Eastern
- *     (from the published payload's schedule), and on the check's own games (F1, F2 and F7: a game alone and two or
- *     three as a slot): the candidates the rule's on those games' legs alone, every level the rule worked out in full by
- *     the builder's own sums (or held as the week's are, past a size), an empty level handed over saying why "in this
- *     game", all of it the same with the Parlay Builder's ticks planted to nothing (eloPicks() too, over every game), and
- *     null until the ratings and the matchups are both in; the Sunday slot one game a level since app v121 (the owner,
- *     19 October 2026: "the legs need to be part of the same game parlay only, and anytime there's a mix it bombs the
- *     hyperlink"): each of its games held alone, and each slot level one game's legs, the best of its games' own by the
- *     check's own copy of the slot's rule (one that meets its floor before the likeliest, then the better return over its
- *     floor, else the higher Elo chance, then the earlier game), an empty one saying so of "any one game of the Sunday
- *     slot";
+ *     (from the published payload's schedule), and on the check's own games (F1 and F2: a game alone and two as a slot):
+ *     the candidates the rule's on those games' legs alone, every level the greedy prefix worked out here, an empty level
+ *     handed over saying why "in this game", all of it the same with the Parlay Builder's ticks planted to nothing
+ *     (eloPicks() too, over every game), and null until the ratings and the matchups are both in; the Sunday slot one game
+ *     a level since app v121 (the owner, 19 October 2026: "the legs need to be part of the same game parlay only, and
+ *     anytime there's a mix it bombs the hyperlink"): each of its games held alone, and each slot level one game's legs,
+ *     the best of its games' own by the check's own copy of the slot's rule (since app v138 the larger lean summed over
+ *     its legs, then the earlier game), an empty one saying so of "any one game of the Sunday slot";
  *   - the pairs DraftKings will not take on one slip (app v121, the owner, 19 October 2026: "If your parlay already has a
  *     receiver anytime TD, a team total, or the game total, adding the QB's passing TD over often gets blocked"): the
  *     props parts' rule (dkClash) loaded beside the tab, as the hub has it, and the same as the check's own copy
- *     (clashOwn) on every pair of F7's legs and of game legs beside them; no Elo pick level, on the files, the check's
- *     fixtures, a unit or the slot, holding a quarterback's passing TDs with a teammate's touchdown; every level worked out
- *     in full over the parlays with no such pair (F1 to F7, the units, F6's slates); and a level whose candidates are
- *     enough but none of whose parlays goes on one slip empty, saying "No 3 of these 3 players go together on DraftKings’
- *     slip." (app v130: the reason alone, with no clause after it spelling out DraftKings' rule) (F7: a quarterback's passing
- *     TDs, his receivers' touchdowns, the levels the page took before app v121 shown to hold such pairs);
+ *     (clashOwn) on every pair of F2's legs and of game legs beside them; no Elo pick level, on the files, the check's
+ *     fixtures, a unit or the slot, holding a quarterback's passing TDs with a teammate's touchdown; and a level with
+ *     enough candidates but a shorter greedy prefix empty, saying what the walk found, "Strongest first, only 2 leans in
+ *     this game go together on one DraftKings slip: this level takes 3." (F2: a quarterback's passing TDs and his receivers'
+ *     touchdowns; until the check of 27 October 2026 it said "No 3 players in this game go together on DraftKings’ slip.",
+ *     which the walk cannot know: it passes over a receiver beside his quarterback where three others may go together;
+ *     from that check to its review the same day "... go on one DraftKings slip ...", which a walk passing over legs that
+ *     move against each other, which DraftKings would take, makes untrue);
+ *   - the legs that move against each other (the review of 27 October 2026: week 7's DAL at PHI Extreme held Tanner
+ *     McKee's Under 192.5 passing yards with his receivers' overs, -44.8% at DraftKings' fair chance, the parlay's chance
+ *     falling under the legs multiplied while parlayDec never pays more than multiplying): no Elo pick level, on the files,
+ *     the check's fixtures, a unit or the slot, holding two legs whose correlation, as the builder's sums read it and
+ *     turned by their sides, is below -0.05 (opposedOwn, OPP_OWN: the bar was nothing until the same day, which emptied
+ *     week 7's KC at SEA's Medium, Aggressive and Extreme over pairs of -0.034 to -0.102); F2's L at M, a back's receiving
+ *     yards over leaning furthest with a teammate's receptions over at -0.04 kept and the other club's tight end's yards
+ *     over at -0.06 passed over, so the walk tells the bar from nothing and from no bar; F2's J at K, a quarterback's passing yards under leaning
+ *     furthest with his receiver's and his tight end's yards over passed over beside it, so its Safe takes the other
+ *     club's back and its Medium and Aggressive run short, saying so ("Strongest first, only 2 leans in this game go
+ *     together on one DraftKings slip: this level takes 3."), where with neither rule its Safe is the quarterback and his
+ *     receiver, no pair DraftKings refuses, so the fixture tells the walk from one without the rule;
  *   - the Mismatches bubbles' words (18 October 2026): what an edge ranks is the matchup formula's units
  *     by their players' Elo ("vs the LAC secondary and defensive line, 32nd by player Elo"), never "a
  *     pass defense ranked", which on the page is the ELO Ratings tab's Pass Defense table; clubs level on a unit (to
@@ -198,13 +204,21 @@ const SUMS_SRC = [[PART2, 'const clip='], [PART2, 'const TOTAL_RHO='], [PART2, '
   [PART2, 'function cholesky('], [PART2, 'function mulberry('], [PART2, 'function parlayProb('], [PART2, 'function mlProb('], [PART3, 'function mlToDec('],
   [PART3, 'const SGP_HOLD='], [PART3, 'function parlayDec('], [PART3, 'const PB_TIERS='], [PART3, 'const pbOrder='],
   [PART3, 'const dkPassTd='], [PART3, 'function dkClashWhy('], [PART3, 'const dkClash=']].map(([s, h]) => srcOf(s, h)).join('\n');
-const sumsOwn = corr => new Function('PAY', SUMS_SRC + '\nreturn {parlayProb,parlayDec,pbOrder,PB_TIERS,mlProb,mlToDec,legRho};')({ corr: corr || {} });
+const sumsOwn = corr => new Function('PAY', SUMS_SRC + '\nreturn {parlayProb,parlayDec,pbOrder,PB_TIERS,mlProb,mlToDec,legRho,CORR:PAY.corr};')({ corr: corr || {} });
 /* (app v125) the page's id rule (part3.js: dkCarries, which reads a PAY.dk entry's content, and dkIdOf), set into a tab's
    page as the hub page has it beside the tab, for F1's read-made entry */
 const DK_SRC = [[PART3, 'const DK_PRESS_MADE='], [PART3, 'function dkPressMade('], [PART3, 'function dkEntryCarries('], [PART3, 'function dkCarries('], [PART3, 'function dkIdOf(']]
   .map(([s, h]) => srcOf(s, h)).join('\n').replace(/^const /gm, 'var ');
-/* the same into a tab's page, with its PAY's correlation table */
-const sumsInto = (w, corr) => { w.eval(`var PAY={corr:${JSON.stringify(corr || {})}};\n${SUMS_SRC.replace(/^const /gm, 'var ')}`); };   /* a top-level const in eval'd code is the eval's own: var makes it the page's */
+/* the same into a tab's page, with its PAY's correlation table; and (app v138) the check's own fair chance in the props
+   parts' legFair's place (legFairStand, below), the stated rule on it in legFairStated's (the review of 27 October 2026:
+   a total on one price at its own 50%; an Elo pick holds none), legPrice standing for the price a leg is shown at (its
+   own), and the parts' own parlayFair on them, which the Elo picks state a level's fair chance by (tab_elo.html's epFair) */
+const PFAIR_SRC = srcOf(PART3, 'function parlayFair(');
+const sumsInto = (w, corr) => { w.eval(`var PAY={corr:${JSON.stringify(corr || {})}};\n${SUMS_SRC.replace(/^const /gm, 'var ')}
+function legFair(l,memo){ return (${legFairStand.toString()})(l); }
+function legFairStated(l,memo){ const f=legFair(l,memo); return l&&l.stat==='total'&&(!f||f.est)?(l.p>0&&l.p<1?{p:+l.p,est:true}:f):f; }
+function legPrice(l){ return {src:l.src,ml:l.price}; }
+${PFAIR_SRC}`); };   /* a top-level const in eval'd code is the eval's own: var makes it the page's */
 /* the published payload's correlation table, the one the page prices same-game legs with */
 const CORR = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8')).corr || {}; } catch (e) { return {}; } })();
 /* (app v118) and its schedule, whose dates and kickoffs (Eastern) say which of a week's games are its Sunday slot */
@@ -219,39 +233,40 @@ const linesOf = MU => { const legs = [];
   return legs; };
 /* the page's pricedLegs stood in by a list of legs, answering for the games it is asked about as the props parts' does */
 const PRICED_BY = name => `function pricedLegs(games){ const G=games?new Set(games.map(g=>g.id)):null; return window.${name}.filter(l=>!G||G.has(l.gid)).map(l=>Object.assign({},l)); }`;
-/* F6's correlation table, the check's own: the published payload's pairs of two players of one game among the stats
-   its slates draw, as they stood on 18 October 2026 (so only a code change can fail it) */
-const CORR_F6 = {
-  'team|QB:passing_yards|RB:rushing_yards': -0.11, 'team|QB:passing_yards|RB:receptions': 0.118, 'team|QB:passing_yards|WR:receptions': 0.305, 'team|QB:passing_yards|WR:receiving_yards': 0.353,
-  'team|QB:passing_yards|WR:any_td': 0.163, 'team|QB:passing_yards|TE:receiving_yards': 0.229, 'team|QB:passing_yards|TE:any_td': 0.095, 'team|QB:passing_tds|RB:rushing_yards': 0.03,
-  'team|QB:passing_tds|RB:scrim_yards': 0.056, 'team|QB:passing_tds|WR:receptions': 0.116, 'team|QB:passing_tds|WR:receiving_yards': 0.167, 'team|QB:passing_tds|WR:any_td': 0.323,
-  'team|QB:passing_tds|TE:receiving_yards': 0.1, 'team|QB:passing_tds|TE:any_td': 0.246, 'team|QB:completions|RB:rushing_yards': -0.148, 'team|QB:completions|RB:scrim_yards': -0.033,
-  'team|QB:completions|RB:receptions': 0.261, 'team|QB:completions|WR:receptions': 0.335, 'team|QB:completions|WR:receiving_yards': 0.233, 'team|QB:completions|WR:any_td': 0.088,
-  'team|QB:completions|TE:receiving_yards': 0.194, 'team|QB:completions|TE:any_td': 0.066, 'team|RB:rushing_yards|RB:scrim_yards': -0.04, 'team|RB:receptions|RB:rushing_yards': -0.099,
-  'team|RB:rushing_yards|WR:receptions': -0.054, 'team|RB:rushing_yards|WR:receiving_yards': -0.037, 'team|RB:scrim_yards|RB:scrim_yards': -0.034, 'team|RB:receptions|RB:scrim_yards': -0.083,
-  'team|RB:scrim_yards|WR:receptions': -0.046, 'team|RB:scrim_yards|WR:receiving_yards': -0.039, 'team|RB:receptions|WR:receptions': 0.04, 'team|WR:receiving_yards|WR:receiving_yards': -0.038,
-  'team|TE:any_td|WR:receiving_yards': 0.03, 'team|WR:any_td|WR:any_td': -0.032, 'team|TE:receiving_yards|WR:any_td': 0.034, 'team|TE:receiving_yards|TE:receiving_yards': -0.032,
-  'opp|QB:passing_yards|QB:passing_yards': 0.094, 'opp|QB:passing_tds|QB:passing_yards': 0.148, 'opp|QB:completions|QB:passing_yards': 0.04, 'opp|QB:passing_yards|WR:receptions': 0.036,
-  'opp|QB:passing_yards|WR:receiving_yards': 0.064, 'opp|QB:passing_yards|WR:any_td': 0.099, 'opp|QB:passing_yards|TE:any_td': 0.038, 'opp|QB:passing_tds|QB:passing_tds': 0.085,
-  'opp|QB:completions|QB:passing_tds': 0.154, 'opp|QB:passing_tds|RB:rushing_yards': -0.047, 'opp|QB:passing_tds|RB:receptions': 0.038, 'opp|QB:passing_tds|WR:receptions': 0.076,
-  'opp|QB:passing_tds|WR:receiving_yards': 0.07, 'opp|QB:passing_tds|WR:any_td': 0.059, 'opp|QB:passing_tds|TE:receiving_yards': 0.058, 'opp|QB:passing_tds|TE:any_td': 0.031,
-  'opp|QB:completions|QB:completions': -0.037, 'opp|QB:completions|RB:scrim_yards': -0.033, 'opp|QB:completions|RB:receptions': -0.043, 'opp|QB:completions|WR:any_td': 0.113,
-  'opp|QB:completions|TE:any_td': 0.035, 'opp|RB:rushing_yards|RB:rushing_yards': -0.102, 'opp|RB:rushing_yards|RB:scrim_yards': -0.102, 'opp|RB:scrim_yards|RB:scrim_yards': -0.097,
-  'opp|RB:receptions|RB:receptions': -0.032, 'opp|RB:receptions|TE:receiving_yards': -0.03, 'opp|WR:any_td|WR:receptions': 0.051, 'opp|TE:any_td|WR:receptions': 0.032,
-  'opp|WR:receiving_yards|WR:receiving_yards': 0.035, 'opp|WR:any_td|WR:receiving_yards': 0.05, 'opp|TE:any_td|WR:receiving_yards': 0.039, 'opp|TE:receiving_yards|WR:any_td': 0.034 };
-/* the Elo picks' rule, the check's own copy (tab_elo.html, EP and eloCands): a rated player, a trusted stat, a
-   real price (or one from DraftKings' line read by Refresh odds) from -200 to +300, the Elo chance 30% or more and
-   its expected return above 0, one leg a player (his best by value, the main line on a tie, then the lower id),
-   ranked on value; what the levels are searched from, the 30 best by value and the 10 likeliest by the Elo chance
-   (the better value, then the lower id, on a tie), each once, ranked on value (until 18 October 2026 the 30 best
-   by value alone, so a heavy favourite of thin value was cut before the likeliest pair could see him); never plus
-   money first (until 17 October 2026 the picks were the first of a list sorted plus money first, so an anytime
-   touchdown filled them) */
-const EPC = { lo: -200, hi: 300, floor: 0.30, vig: 1.045, cap: 30, capP: 10, safe: 0.35 };
-/* the Elo picks' levels, the check's own copy: Suggested Parlays' (PB_TIERS), Safe given the Elo picks' own floor,
-   35%, so it is the best value over it like the others (the owner's call of 18 October 2026, "yeah safe picked on
-   value too"; until then Safe was the likeliest pair) */
-const tiersOwn = LV => LV.map(t => t[3] ? t : [t[0], t[1], t[2], EPC.safe]);
+/* (app v138) the Elo picks' rule, the check's own copy (tab_elo.html, EP and eloCands; the owner's call of 27 October 2026:
+   every leg at DraftKings' fair chance): a rated player's line DraftKings prices (a book price, or one worked from its
+   line read on ESPN), never a team bet, priced -200 to +300, DraftKings' fair chance on it (legFairStand) 30% or more,
+   and its Elo chance, that fair chance moved by his matchup's nudge in the stat's typical miss toward the side it
+   favours, on a stat the matchup has earned, above that fair chance: its lean, the Elo chance less the fair chance, above
+   nothing. One leg a player, his largest lean (the main line on a tie, then the lower id); the candidates ranked by lean,
+   largest first, every one kept. Until app v138 the Elo chance stood on the book's implied chance over a fixed 4.5%
+   margin, a candidate's expected return at it had to be above nothing, and the levels were searched from the 30 best by
+   value and the 10 likeliest */
+const EPC = { lo: -200, hi: 300, min: 0.30 };
+/* a lean this near nothing is none: only a nudge of 0 gives one (the files write a nudge to the hundredth, and a nudge of
+   0.01 leans 1e-4 or more on every stat's typical miss), and its lean is then the page's normal curves' own rounding
+   (ncdf and nq, which together err by up to 2.1e-7 either way), so such a leg leans nowhere and is no candidate */
+const LEAN_EPS = 1e-6;
+/* DraftKings' fair chance on a leg, the check's own stand-in for the props parts' legFair, which the Elo picks read: a
+   book price (src 'real') with the other side's price on the leg (oth) its share of the two with the margin out; one
+   with no other side its implied chance over a margin of the check's own, 5.66% (the estimate's), est.; a price worked
+   from DraftKings' line read on ESPN (src 'dkline') the read's own fair chance (espn.fair), est.; none for any other
+   (the model's own estimate). Set into each tab's page as legFair (sumsInto) and read here, so a page that took its fair
+   chance from anywhere else (the price's implied chance over the old 4.5% margin, or one side alone) is told apart */
+function legFairStand(l) {
+  if (!l || !(l.src === 'real' || l.src === 'dkline') || !isFinite(l.price) || !l.price) return null;
+  const imp = x => x < 0 ? -x / (100 - x) : 100 / (100 + x);
+  if (l.src === 'dkline') { const f = l.espn && l.espn.fair; return f > 0 && f < 1 ? { p: f, est: true } : null; }
+  if (isFinite(l.oth) && l.oth) { const a = imp(l.price), b = imp(l.oth); return { p: a / (a + b), est: false }; }
+  return { p: Math.max(0.001, Math.min(0.999, imp(l.price) / 1.0566)), est: true };
+}
+/* a parlay's fair chance as the props parts' parlayFair works it, on the check's own fair chances: parlayProb (the
+   check's own compile, sums) on the legs as given, each at its fair chance; p null where a leg has none */
+function fairOwn(legs, sums) {
+  const f = legs.map(legFairStand), miss = f.filter(x => !x).length;
+  if (miss) return { p: null, est: false, miss };
+  return { p: sums.parlayProb(legs.map((l, i) => ({ ...l, side: l.side || 'over', p: f[i].p }))).corr, est: f.some(x => x.est), miss: 0 };
+}
 /* (app v121) the pairs DraftKings will not take on one slip, the check's own copy of the props parts' rule (dkClashWhy;
    the owner, 19 October 2026: "If your parlay already has a receiver anytime TD, a team total, or the game total, adding
    the QB's passing TD over often gets blocked", and "Some combos contradict each other, like QB under 1.5 passing TDs
@@ -267,78 +282,114 @@ function clashOwn(a, b) {
   return one(a, b) || one(b, a);
 }
 const clashIn = legs => legs.some((a, i) => legs.some((b, j) => j > i && clashOwn(a, b)));
-/* the words an Elo pick level says when its candidates are enough but no parlay of its size goes on one slip (eloPicks's;
-   app v130, the owner's call of 22 October 2026: the reason alone, where it is not named, nor DraftKings' rule after it) */
-const CLASH_WHY = (n, N) => `No ${n} of these ${N} players go together on DraftKings’ slip.`;
-/* whether any n of the candidates go on one slip (one leg a player, as the candidates are): a search of its own, stopping
-   at the first */
-function anyAllowed(C, n) {
-  const go = (s0, cur) => { if (cur.length === n) return true;
-    for (let i = s0; i <= C.length - (n - cur.length); i++) if (!cur.some(l => clashOwn(l, C[i])) && go(i + 1, cur.concat(C[i]))) return true; return false; };
-  return go(0, []);
+/* (the review of 27 October 2026) two legs that move against each other, the check's own reading of the correlation the
+   builder's sums read for the pair (the props parts' legRho, which the tab's walk calls): for two players' lines of one
+   game the shipped pair table's entry under rel|grp:stat|grp:stat (rel 'self' for one player, 'team' for one club, 'opp'
+   across, the two keys in order), 0 across games or where the table has none; each leg's side turning it (an under -1,
+   as parlayProb turns it); opposed where that is below OPP_OWN, -0.05, the check's own copy of the tab's EP.opp (two even
+   legs at -0.05 lose about 3% of their chance all land against independence; the McKee case below is about -0.10 and
+   under; until the same day the bar was nothing, and week 7's KC at SEA lost three levels to pairs of -0.034 to -0.102).
+   The Elo picks' candidates are players' lines, never a
+   team bet or a total, so the table is all that meets them. No level may hold such a pair: week 7's DAL at PHI Extreme
+   took Tanner McKee's Under 192.5 passing yards with his receivers' overs, -44.8% at DraftKings' fair chance */
+function rhoOwn(a, b, corr) {
+  if (!a || !b || a.gid !== b.gid) return 0;
+  const x = a.grp + ':' + a.stat, y = b.grp + ':' + b.stat, rel = a.pid === b.pid ? 'self' : a.team === b.team ? 'team' : 'opp';
+  const v = (corr || {})[rel + '|' + (x < y ? x + '|' + y : y + '|' + x)]; return typeof v === 'number' && isFinite(v) ? v : 0;
 }
+const OPP_OWN = -0.05;
+const opposedOwn = (a, b, corr) => (a.side === 'under' ? -1 : 1) * (b.side === 'under' ? -1 : 1) * rhoOwn(a, b, corr) < OPP_OWN;
+const opposedIn = (legs, corr) => legs.some((a, i) => legs.some((b, j) => j > i && opposedOwn(a, b, corr)));
+/* the greedy prefix, the check's own: walking the candidates C in the lean order, one DraftKings will not take beside one
+   already taken (clashOwn) or that moves against one already taken (opposedOwn, on the table corr) passed over; o.free
+   takes them all, as the page did before app v121 */
+function takeOwn(C, corr, o) {
+  const free = !!(o && o.free), take = [];
+  for (const l of C) { if (!free && take.some(t => clashOwn(t, l) || opposedOwn(t, l, corr))) continue; take.push(l); }
+  return take;
+}
+/* the words an empty Elo pick level says (eloPicks and eloUnit, app v138): fewer players qualify than it takes (N, every
+   candidate), or that many do and the greedy prefix of leans that go together on one DraftKings slip (none refused
+   beside another, none moving against another) is shorter, k long (the most of any game's, for the slot); where: the
+   unit's own place ("in this game", "on your picks", "in any one game of the Sunday slot"). App v130 took the clause
+   spelling out DraftKings' rule off it, and the review of 27 October 2026 put "together" in it, so the words stay true
+   of a walk that passes over legs moving against each other, which DraftKings would take */
+const whyOwn = (n, N, where, k) => N >= n ? `Strongest first, only ${k} lean${k === 1 ? '' : 's'} ${where} go${k === 1 ? 'es' : ''} together on one DraftKings slip: this level takes ${n}.`
+  : `Only ${N} player${N === 1 ? '' : 's'} ${where} qualif${N === 1 ? 'ies' : 'y'}: this level takes ${n}.`;
 const erfC = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
 const PhiC = z => 0.5 * (1 + erfC(z / Math.SQRT2));
 const invPhiC = p => { let lo = -9, hi = 9; for (let i = 0; i < 90; i++) { const m = (lo + hi) / 2; if (PhiC(m) < p) lo = m; else hi = m; } return (lo + hi) / 2; };
 const idC = l => l.key + '|' + l.side + '|' + l.k, cmpC = (a, b) => a < b ? -1 : a > b ? 1 : 0;
-/* a leg's Elo chance worked out here: the book's chance, its 4.5% margin out, moved by the matchup's nudge in
-   the stat's typical miss toward the side it favours, on a stat the matchup has earned; null where it has none */
-function eloPOwn(MU, l, imp) {
+/* a leg's Elo chance worked out here: DraftKings' fair chance on it moved by the matchup's nudge in the stat's typical
+   miss toward the side it favours, on a stat the matchup has earned; null where it has none, or with no fair chance */
+function eloPOwn(MU, l, fair) {
   const pl = MU && MU.players && MU.players[l.pid], a = pl && pl.stats && pl.stats[l.stat]; if (!a) return null;
   const r = MU.record && MU.record[pl.group + '|' + l.stat], q = r && r.past; if (!(q && q.rmse_elo < q.rmse_form && q.right_top >= 0.53)) return null;
-  const f = MU.fit && MU.fit[pl.group + '|' + l.stat]; if (!f || !(f.sd > 0)) return null;
-  const fair = Math.min(0.99, Math.max(0.01, imp / EPC.vig));
+  const f = MU.fit && MU.fit[pl.group + '|' + l.stat]; if (!f || !(f.sd > 0) || !(fair > 0 && fair < 1)) return null;
   return PhiC(invPhiC(fair) + (l.side === 'under' ? -1 : 1) * a[2] / f.sd);
 }
-/* the candidates by that rule from a list of legs: {all, kept} (every player's best, ranked; what the levels are
-   searched from) */
-function candsOwn(legs, MU, players, sums) {
-  const c = [];
+/* the candidates by that rule from a list of legs: {all, edge}: all, every player's best by a lean clear of nothing,
+   ranked; edge, the legs whose lean is within LEAN_EPS of nothing (a nudge of 0), none of which may be a candidate */
+function candsOwn(legs, MU, players) {
+  const c = [], e = [];
   for (const l of legs) {
     if (l.grp === 'TEAM' || !(l.src === 'real' || l.src === 'dkline') || !isFinite(l.price) || l.price < EPC.lo || l.price > EPC.hi) continue;
     if (!players[l.pid]) continue;
-    const imp = sums.mlProb(l.price), dec = sums.mlToDec(l.price); if (!(imp > 0 && imp < 1) || !(dec > 1)) continue;
-    const pe = eloPOwn(MU, l, imp); if (pe == null) continue;
-    const ev = pe * dec - 1; if (pe >= EPC.floor && ev > 0) c.push({ ...l, pe, ev });
+    const f = legFairStand(l); if (!f || !(f.p >= EPC.min && f.p < 1)) continue;
+    const pe = eloPOwn(MU, l, f.p); if (pe == null) continue;
+    const lean = pe - f.p, x = { ...l, pe, pf: f.p, lean };
+    if (lean > LEAN_EPS) c.push(x); else if (lean > -LEAN_EPS) e.push(x);
   }
-  c.sort((a, b) => (b.ev - a.ev) || ((b.main ? 1 : 0) - (a.main ? 1 : 0)) || cmpC(idC(a), idC(b)));
+  c.sort((a, b) => (b.lean - a.lean) || ((b.main ? 1 : 0) - (a.main ? 1 : 0)) || cmpC(idC(a), idC(b)));
   const all = [], seen = new Set(); for (const l of c) if (!seen.has(l.pid)) { seen.add(l.pid); all.push(l); }
-  const likely = [...all].sort((a, b) => (b.pe - a.pe) || (b.ev - a.ev) || cmpC(idC(a), idC(b))).slice(0, EPC.capP), keep = new Set([...all.slice(0, EPC.cap), ...likely]);
-  return { all, kept: all.filter(l => keep.has(l)), byValue: all.slice(0, EPC.cap), likely };
+  return { all, edge: e };
 }
-/* every parlay of each level's size from the candidates, worked in full with the builder's own sums (sums: the
-   check's own copy), and each level chosen as Suggested Parlays chooses on the Elo chance, on the Elo picks' floors
-   (tiersOwn: Safe's 35% too): the best expected return (chance times price) over the floor, else the likeliest of
-   its size (likeliest); a tie to the lower ids. legs: the page's candidates (their Elo chances, so the sums
-   are the page's to the bit). Since app v121 only parlays with no pair DraftKings will not take on one slip (clashOwn),
-   a level none of whose parlays goes on one slip empty (none, clash); o.free works it without that rule, as the page
-   did before, to show a fixture would have caught it */
-function levelsOwn(cands, sums, o) {
-  const out = [], memo = new Map(), free = !!(o && o.free);
-  const subsets = (n, start, cur, f) => { if (cur.length === n) { f(cur); return; }
-    for (let i = start; i <= cands.length - (n - cur.length); i++) if (free || !cur.some(j => clashOwn(cands[j], cands[i]))) subsets(n, i + 1, cur.concat(i), f); };
-  const sumOf = ids => { const k = ids.join(','); let e = memo.get(k); if (e) return e;
-    const L = sums.pbOrder(ids.map(i => cands[i])); e = { legs: L, p: sums.parlayProb(L.map(l => ({ ...l, p: l.pe }))).corr, dec: sums.parlayDec(L.map(l => ({ leg: l, ml: l.price }))), id: L.map(idC).sort().join(',') }; memo.set(k, e); return e; };
-  for (const [id, label, n, floor] of tiersOwn(sums.PB_TIERS)) {
-    if (cands.length < n) { out.push({ id: 'elo-' + id, label, n, floor, none: true }); continue; }
-    let best = null, likely = null;
-    subsets(n, 0, [], ids => { const e = sumOf(ids);
-      if (!likely || e.p > likely.p || (e.p === likely.p && e.id < likely.id)) likely = e;
-      if (floor && e.p >= floor) { const s = e.p * e.dec; if (!best || s > best.s || (s === best.s && e.id < best.e.id)) best = { e, s }; } });
-    if (!likely) { out.push({ id: 'elo-' + id, label, n, floor, none: true, clash: true }); continue; }
-    const r = floor ? (best ? best.e : likely) : likely;
-    out.push({ id: 'elo-' + id, label, n, floor, legs: r.legs, p: r.p, dec: r.dec, likeliest: !!floor && !best });
-  }
-  out.sums = [...memo.values()];   /* every parlay worked, its legs in the builder's order and its sums */
-  return out;
+/* the page's candidates C held to the rule's (own): exactly the rule's, in its order, none of them a leg with no lean (a
+   nudge of 0, own.edge); one a player; each carrying its Elo chance (the check's to 1e-6), DraftKings' fair chance on it
+   (pf, the stand-in's exactly) and its lean (pe less pf, above nothing), on the given games. Returns the problem, or '' */
+function candsOff(C, own, gids) {
+  if (!Array.isArray(C)) return 'no candidates';
+  const E = new Set(own.edge.map(idC)), z = C.filter(l => E.has(idC(l)));
+  const say = L => L.map(l => `${l.pid} ${l.stat} ${l.side} ${l.price}`).join(', ') || 'none';
+  if (z.length) return `a leg whose matchup leans nowhere (a nudge of 0: its lean ${z.map(l => l.lean).join(', ')} is the normal curves' rounding) is a candidate: ${say(z)}`;
+  if (C.map(idC).join() !== own.all.map(idC).join()) return `${say(C)}; the rule ${say(own.all)}`;
+  if (new Set(C.map(l => l.pid)).size !== C.length) return 'two legs of one player: ' + say(C);
+  const by = new Map(own.all.map(l => [idC(l), l]));
+  const bad = C.filter(l => { const o = by.get(idC(l));
+    return !o || !(Math.abs(l.pe - o.pe) < 1e-6) || l.pf !== o.pf || l.lean !== l.pe - l.pf || !(l.lean > 0) || (gids && !gids.includes(l.gid)); });
+  return bad.length ? 'not the rule\'s figures: ' + bad.slice(0, 3).map(l => `${l.pid} ${l.stat} pe ${l.pe} pf ${l.pf} lean ${l.lean}`).join('; ') : '';
 }
-/* the tab's fast sums (window.eloSums, the search's own) on parlays of the page's candidates C, held to the props
-   parts' sums worked here (each {legs, p, dec}): the problems, at most a few */
-function fastOff(w, C, worked) {
-  const bad = []; let got;
-  try { got = w.eloSums(C, worked.map(e => e.legs)); } catch (err) { return ['threw ' + err.message]; }
-  worked.forEach((e, i) => { const g = got[i]; if (!g || g.p !== e.p || g.dec !== e.dec) bad.push(`${e.legs.map(l => l.pid).join('+')}: ${g ? g.p + ' at ' + g.dec : 'none'}, the sums ${e.p} at ${e.dec}`); });
-  return bad;
+/* the four levels the rule gives on the page's candidates C (in its order, so every figure is the parts' own sums on the
+   page's Elo chances to the bit): the greedy prefix that goes together on one DraftKings slip (takeOwn, on the table the
+   sums were compiled on: a candidate clashOwn refuses, or one opposedOwn finds moving against one already taken, passed
+   over; o.free takes them all, as the page did before app v121), each of Suggested
+   Parlays' sizes (PB_TIERS, read from the parts) the first n of it in the builder's order, its Elo chance all land
+   (parlayProb on pe), its price (parlayDec), its fair chance (fairOwn, the parts' parlayFair worked here), floor 0, never
+   the likeliest; an empty level {none, why} */
+function levelsOwn(C, sums, where, o) {
+  const take = takeOwn(C, sums.CORR, o);
+  return sums.PB_TIERS.map(([id, label, n]) => {
+    if (take.length < n) return { id: 'elo-' + id, label, n, floor: 0, none: true, take: take.length, why: whyOwn(n, C.length, where, take.length) };
+    const legs = sums.pbOrder(take.slice(0, n));
+    return { id: 'elo-' + id, label, n, floor: 0, legs, p: sums.parlayProb(legs.map(l => ({ ...l, p: l.pe }))).corr,
+      dec: sums.parlayDec(legs.map(l => ({ leg: l, ml: l.price }))), fair: fairOwn(legs, sums), likeliest: false };
+  });
+}
+/* a level the page hands over (eloPicks's, or eloUnit's with o.unit: an empty one exactly {id, label, n, floor, why})
+   held to the rule's (f). Returns the problem, or '' */
+function levelOff(t, f, o) {
+  if (!t) return 'missing';
+  const has = Array.isArray(t.legs) && t.legs.length > 0, say = L => L.map(l => l.pid + ' ' + l.stat).join(', ');
+  if (t.id !== f.id || t.label !== f.label || t.n !== f.n || t.floor !== 0) return `not ${f.id} (${f.label}, ${f.n} legs, floor 0): ${t.id} ${t.label} ${t.n} ${t.floor}`;
+  if (f.none) { const keys = Object.keys(t).sort().join();
+    return !has && t.why === f.why && (o && o.unit ? keys === 'floor,id,label,n,why' : Array.isArray(t.legs)) ? '' : `not empty saying "${f.why}": ${JSON.stringify(has ? t.legs.map(idC) : t)}`; }
+  if (!has) return `empty ("${t.why}") where the rule takes ${say(f.legs)}`;
+  if (t.legs.map(idC).join() !== f.legs.map(idC).join()) return `holds ${say(t.legs)}, the rule ${say(f.legs)}`;
+  if (clashIn(t.legs)) return `holds a pair DraftKings will not take on one slip: ${t.legs.map(l => l.pid + ' ' + l.stat + ' ' + l.team).join(', ')}`;
+  if (o && o.corr && opposedIn(t.legs, o.corr)) return `holds two legs that move against each other: ${t.legs.map(l => l.pid + ' ' + l.side + ' ' + l.stat + ' ' + l.team).join(', ')}`;
+  if (t.p !== f.p || t.dec !== f.dec || t.likeliest !== false) return `not at the builder's own sums: ${t.p} at ${t.dec}${t.likeliest ? ' (likeliest)' : ''}, the sums ${f.p} at ${f.dec}`;
+  if (!t.fair || t.fair.p !== f.fair.p || !!t.fair.est !== f.fair.est) return `states a fair chance other than parlayFair's: ${JSON.stringify(t.fair)}, the sums ${JSON.stringify(f.fair)}`;
+  return '';
 }
 
 /* ---- (app v118) each unit's Elo picks: window.eloUnit ----
@@ -348,83 +399,49 @@ function fastOff(w, C, worked) {
    set over the games and player sides ticked on the Parlay Builder tab, and a reader with the priced games unticked saw
    them empty all of Sunday 18 October 2026). unitHeld holds a page to it on a list of legs (the page's pricedLegs stood in
    by them, as the checks above stand it in) and units ({lab, gids, where, perGame}): the candidates the rule's on the
-   unit's games' legs alone (candsOwn), every one of those games; Suggested Parlays' four levels on the Elo picks' floors,
-   each the rule worked out in full by the builder's own sums over every parlay of its size (levelsOwn) where the
-   candidates make at most UNIT_FULL parlays, else held as the week's levels are above (its legs the candidates', one a
-   player, in the builder's order, at the builder's own sums, over its floor or the likeliest only under it, and never
-   worse than the best parlay of its size whose legs are all in different games); no level holding a pair DraftKings will
-   not take on one slip (app v121, clashOwn); an empty level handed over with no legs, exactly {id, label, n, floor, why},
-   saying why in the unit's own words by the count of players who qualify ("Only 2 players in this game qualify: this
-   level takes 3."), or, with enough of them and none of its parlays on one slip, "No 3 of the 3 players in this game go
-   together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown." (app v121); eloUnit's
+   unit's games' legs alone (candsOwn, candsOff), every one of those games; Suggested Parlays' four sizes, each the greedy
+   prefix worked out here (levelsOwn), at the builder's own sums, its fair chance parlayFair's, no level holding a pair
+   DraftKings will not take on one slip (app v121, clashOwn); an empty level handed over with no legs, exactly {id, label,
+   n, floor, why}, saying why in the unit's own words ("Only 2 players in this game qualify: this level takes 3.", or with
+   enough of them and a shorter greedy prefix "Strongest first, only 2 leans in this game go together on one DraftKings slip: this
+   level takes 3."); eloUnit's
    levels eloPicks' own on the same games; and then all of it again with the Parlay Builder's ticks planted to nothing (no
    game, no bet type, no player side: pbAllows and pbPlayerSides refusing everything, S.ui.pb unticked), put back after on
    every path.
    The Sunday slot of more than one game (perGame, as Suggested Parlays asks for it since app v121; the owner, 19 October
    2026: "the legs need to be part of the same game parlay only, and anytime there's a mix it bombs the hyperlink"): each
    of its games held alone as a night game's ("in this game"), and each of the slot's levels one game's legs, the best of
-   its games' own levels by the check's own copy of the slot's rule (slotBetterOwn: one that meets its floor before the
-   likeliest of its size, then the better expected return where it met its floor, else the higher Elo chance, then the
-   earlier game of the slot); a level no game fills empty, saying so of "any one game of the Sunday slot" by the most
-   players who qualify in one game; its candidates the count over its games. Until app v121 a slot level was one parlay
-   across its games. Returns how many levels it held worked out in full, how many empty, and how many slot levels it held
-   to its games' own (full, empty, slot) */
-const UNIT_FULL = 2500;
-const binom = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1); return Math.round(r); };
-/* (app v121) the Sunday slot's Elo picks, the check's own copy of the rule a slot level is chosen by among its games' own
-   levels (a level with legs: {floor, likeliest, p, dec}); a tie keeps the earlier game */
-const slotBetterOwn = (a, b) => { const la = a.likeliest ? 1 : 0, lb = b.likeliest ? 1 : 0; if (la !== lb) return la < lb;
-  const v = x => x.floor && !x.likeliest ? x.p * x.dec : x.p; return v(a) > v(b); };
+   its games' own levels by the check's own copy of the slot's rule (slotBetterOwn); a level no game fills empty, saying
+   so of "any one game of the Sunday slot" by the most players who qualify in one game; its candidates the count over its
+   games. Returns how many levels it held with legs, how many empty, and how many slot levels it held to its games' own
+   (full, empty, slot) */
+/* (app v138) the Sunday slot's rule among its games' own levels, the check's own copy: the larger lean summed over a
+   level's legs (each one's Elo chance less DraftKings' fair chance on it), strictly, so a tie keeps the earlier game.
+   Until app v138 it was the floor met before the likeliest, then the better return over the floor, else the higher Elo
+   chance */
+const leanSum = t => t.legs.reduce((a, l) => a + l.lean, 0);
+const slotBetterOwn = (a, b) => leanSum(a) > leanSum(b);
 function unitHeld(nm, w, legs, MU, players, corr, units) {
-  const sums = sumsOwn(corr), ok01 = v => typeof v === 'number' && isFinite(v) && v > 0 && v < 1, memo = new Map();
+  const sums = sumsOwn(corr);
   let full = 0, empty = 0, slot = 0;
-  /* one unit as eloUnit hands it over, held; its four levels as the rule gives them (each {legs, p, dec, likeliest, floor}
-     or {none}) and how many players qualify, for the slot's check, or null where it does not build */
+  /* one unit as eloUnit hands it over, held; its four levels as the rule gives them, and how many players qualify, for
+     the slot's check, or null where it does not build */
   const one = (u, tag) => {
-    const lab = `${nm}, ${u.lab}${tag}`, uLegs = legs.filter(l => u.gids.includes(l.gid)), own = candsOwn(uLegs, MU, players, sums);
+    const lab = `${nm}, ${u.lab}${tag}`, own = candsOwn(legs.filter(l => u.gids.includes(l.gid)), MU, players);
     let r, rp; try { r = w.eloUnit(u.gids, { where: u.where, ...(u.perGame ? { perGame: true } : {}) }); rp = w.eloPicks({ games: u.gids, where: u.where }); } catch (err) { r = 'threw ' + err.message; }
     if (!r || typeof r !== 'object' || !Array.isArray(r.tiers) || !rp || !Array.isArray(rp.cands) || !Array.isArray(rp.tiers)) {
-      chk(false, `${lab}: window.eloUnit does not build the unit's Elo picks on the files: ${typeof r === 'string' ? r : JSON.stringify(r)}`); return null; }
-    const C = rp.cands, N = own.all.length;
-    chk(r.candidates === N && C.map(idC).join() === own.kept.map(idC).join() && C.every((l, i) => Math.abs(l.pe - own.kept[i].pe) < 1e-6) && C.every(l => u.gids.includes(l.gid)),
-      `${lab}: the Elo picks' candidates are not the rule's on the unit's games' legs alone: ${C.map(l => l.pid + ' ' + l.stat + ' ' + l.gid.slice(-7)).join(', ') || 'none'} of ${r.candidates}; the rule ${own.kept.map(l => l.pid + ' ' + l.stat + ' ' + l.gid.slice(-7)).join(', ') || 'none'} of ${N}`);
-    const LT = tiersOwn(sums.PB_TIERS);
-    chk(r.tiers.length === LT.length && r.tiers.every((t, i) => t && t.id === 'elo-' + LT[i][0] && t.label === LT[i][1] && t.n === LT[i][2] && t.floor === LT[i][3])
-      && rp.tiers.length === r.tiers.length && r.tiers.every((t, i) => (t.legs ? t.legs : []).map(idC).join() === (rp.tiers[i].legs || []).map(idC).join()),
-      `${lab}: window.eloUnit does not hand over Suggested Parlays' four levels on the Elo picks' floors, eloPicks' own on the unit's games: ${r.tiers.map(t => t && t.id + ' ' + t.n + ' ' + t.floor).join(', ')}`);
-    const key = u.gids.join() + '|' + C.map(idC).join(), size = LT.reduce((a, t) => a + binom(C.length, t[2]), 0);
-    if (!memo.has(key)) memo.set(key, size <= UNIT_FULL ? levelsOwn(C, sums) : null);
-    const want = memo.get(key); if (want && !tag) full += want.filter(t => !t.none).length;
-    const levels = [];
-    for (const t of r.tiers) {
-      if (!t) { levels.push(null); continue; }
-      const has = Array.isArray(t.legs) && t.legs.length > 0, f = want ? want.find(x => x.id === t.id) : null;
-      if (C.length < t.n) { const why = `Only ${N} player${N === 1 ? '' : 's'} ${u.where} qualif${N === 1 ? 'ies' : 'y'}: this level takes ${t.n}.`; if (!tag) empty++;
-        chk(Object.keys(t).sort().join() === 'floor,id,label,n,why' && t.why === why, `${lab}: the ${t.label} Elo pick, with ${C.length} candidates, is not handed over empty saying why ${u.where} ("${why}"): ${JSON.stringify(t)}`);
-        levels.push({ none: true }); continue; }
-      /* (app v121) enough candidates, and none of its parlays on one slip (the full enumeration's word, else a search of
-         the check's own): empty, saying so; and never empty where one is */
-      if (!has || (f && f.none)) { const none = f ? !!f.none : !anyAllowed(C, t.n), why = CLASH_WHY(t.n, N, u.where); if (!tag) empty++;
-        chk(none && !has && Object.keys(t).sort().join() === 'floor,id,label,n,why' && t.why === why,
-          `${lab}: the ${t.label} Elo pick, with ${C.length} candidates ${none ? `of which no ${t.n} go on one slip, is not handed over empty saying so ("${why}")` : `of which some ${t.n} go on one slip, is empty`}: ${JSON.stringify(has ? t.legs.map(idC) : t)}`);
-        levels.push({ none: true }); continue; }
-      chk(!clashIn(t.legs), `${lab}: the ${t.label} Elo pick holds a pair DraftKings will not take on one slip (a quarterback's passing TDs with a teammate's touchdown): ${t.legs.map(l => l.pid + ' ' + l.stat + ' ' + l.team).join(', ')}`);
-      if (f) {
-        chk(Array.isArray(t.legs) && t.legs.map(idC).join() === f.legs.map(idC).join() && t.p === f.p && t.dec === f.dec && !!t.likeliest === f.likeliest,
-          `${lab}: the ${t.label} Elo pick is not Suggested Parlays' rule on the Elo chance worked out in full on the unit's candidates: it holds ${Array.isArray(t.legs) ? t.legs.map(l => l.pid).join(', ') + ' at ' + t.p + ', ' + t.dec + (t.likeliest ? ' (likeliest)' : '') : JSON.stringify(t)}, the rule ${f.legs.map(l => l.pid).join(', ') + ' at ' + f.p + ', ' + f.dec + (f.likeliest ? ' (likeliest)' : '')}`);
-        levels.push(f); continue; }
-      const L = Array.isArray(t.legs) ? sums.pbOrder(t.legs) : [], p = L.length ? sums.parlayProb(L.map(l => ({ ...l, p: l.pe }))).corr : NaN, dec = L.length ? sums.parlayDec(L.map(l => ({ leg: l, ml: l.price }))) : NaN;
-      chk(L.length === t.n && t.legs.every((l, i) => idC(l) === idC(L[i])) && t.legs.every(l => C.some(c => idC(c) === idC(l))) && new Set(t.legs.map(l => l.pid)).size === t.n
-        && ok01(t.p) && t.p === p && t.dec === dec && (!t.floor || t.likeliest || t.p >= t.floor) && (!t.likeliest || (t.floor > 0 && t.p < t.floor)),
-        `${lab}: the ${t.label} Elo pick is not ${t.n} of the unit's candidates, one a player, in the builder's order, at the builder's own sums on their Elo chances and prices, over its floor: ${t.p} at ${t.dec}, the sums ${p} at ${dec}`);
-      let best = null; const go = (s0, cur) => { if (cur.length === t.n) { if (new Set(cur.map(l => l.gid)).size !== t.n) return; const pp = cur.reduce((a, l) => a * l.pe, 1), dd = cur.reduce((a, l) => a * sums.mlToDec(l.price), 1);
-          if (t.floor && pp < t.floor) return; const sc = t.floor ? pp * dd : pp; if (!best || sc > best.sc) best = { sc, cur }; return; }
-        for (let i = s0; i <= C.length - (t.n - cur.length); i++) go(i + 1, cur.concat(C[i])); };
-      go(0, []);
-      chk(!best || (t.floor && t.likeliest ? false : (t.floor ? t.p * t.dec : t.p) >= best.sc * (1 - 1e-9)),
-        `${lab}: the ${t.label} Elo pick is worse than ${best && best.cur.map(l => l.pid + ' ' + l.stat).join(', ')}, legs all in different games`);
-      levels.push({ id: t.id, n: t.n, floor: t.floor, legs: t.legs, p: t.p, dec: t.dec, likeliest: !!t.likeliest }); }
-    return { levels, N };
+      chk(false, `${lab}: window.eloUnit does not build the unit's Elo picks: ${typeof r === 'string' ? r : JSON.stringify(r)}`); return null; }
+    const C = rp.cands, off = candsOff(C, own, u.gids);
+    chk(!off && r.candidates === C.length && rp.candidates === C.length,
+      `${lab}: the Elo picks' candidates are not the rule's on the unit's games' legs alone (${r.candidates} counted, ${C.length} handed over): ${off}`);
+    const want = levelsOwn(C, sums, u.where);
+    chk(r.tiers.length === want.length && rp.tiers.length === want.length && r.tiers.every((t, i) => !!t && (t.legs || []).map(idC).join() === (rp.tiers[i].legs || []).map(idC).join()),
+      `${lab}: window.eloUnit does not hand over eloPicks' own four levels on the unit's games: ${r.tiers.map(t => t && t.id).join(', ')}`);
+    want.forEach((f, i) => { const bad = levelOff(r.tiers[i], f, { unit: true, corr });
+      chk(!bad, `${lab}: the ${f.label} Elo pick is not the first ${f.n} of the unit's candidates that go together on one DraftKings slip: ${bad}`);
+      if (!tag) { if (f.none) empty++; else full++; } });
+    const K = takeOwn(C, corr).length;
+    return { levels: want, N: C.length, K };
   };
   /* (app v121) the Sunday slot, one game a level */
   const slotOne = (u, tag) => {
@@ -433,22 +450,16 @@ function unitHeld(nm, w, legs, MU, players, corr, units) {
     if (!r || typeof r !== 'object' || !Array.isArray(r.tiers)) { chk(false, `${lab}: window.eloUnit does not build the slot's Elo picks one game a level: ${typeof r === 'string' ? r : JSON.stringify(r)}`); return; }
     const per = u.gids.map(g => one({ lab: `${u.lab}, ${g} alone`, gids: [g], where: 'in this game' }, tag));
     if (per.some(x => !x)) return;
-    const LT = tiersOwn(sums.PB_TIERS), most = Math.max(0, ...per.map(x => x.N)), sum = per.reduce((a, x) => a + x.N, 0), where = 'in any one game of ' + u.where.replace(/^in /, '');
-    chk(r.candidates === sum && r.tiers.length === LT.length && r.tiers.every((t, i) => t && t.id === 'elo-' + LT[i][0] && t.label === LT[i][1] && t.n === LT[i][2] && t.floor === LT[i][3]),
-      `${lab}: window.eloUnit does not hand over the slot's four levels on the Elo picks' floors with its games' candidates counted (${sum}): ${r.candidates}; ${r.tiers.map(t => t && t.id + ' ' + t.n + ' ' + t.floor).join(', ')}`);
-    LT.forEach(([, label, n], i) => {
-      const t = r.tiers[i]; if (!t) return;
-      let best = null, bi = -1; per.forEach((x, gi) => { const L = x.levels[i]; if (L && !L.none && (!best || slotBetterOwn(L, best))) { best = L; bi = gi; } });
-      const has = Array.isArray(t.legs) && t.legs.length > 0;
-      if (!best) { const why = most >= n ? `No ${n} players ${where} go together on DraftKings’ slip.`
-          : `Only ${most} player${most === 1 ? '' : 's'} ${where} qualif${most === 1 ? 'ies' : 'y'}: this level takes ${n}.`; if (!tag) empty++;
-        chk(!has && Object.keys(t).sort().join() === 'floor,id,label,n,why' && t.why === why, `${lab}: the ${label} Elo pick, which no game of the slot fills, is not handed over empty saying why ("${why}"): ${JSON.stringify(has ? t.legs.map(idC) : t)}`);
-        return; }
+    const LT = sums.PB_TIERS, most = Math.max(0, ...per.map(x => x.N)), took = Math.max(0, ...per.map(x => x.K)), sum = per.reduce((a, x) => a + x.N, 0), where = 'in any one game of ' + u.where.replace(/^in /, '');
+    chk(r.candidates === sum && r.tiers.length === LT.length, `${lab}: window.eloUnit does not hand over the slot's four levels with its games' candidates counted (${sum}): ${r.candidates}; ${r.tiers.map(t => t && t.id).join(', ')}`);
+    LT.forEach(([id, label, n], i) => {
+      let best = null, bi = -1; per.forEach((x, gi) => { const L = x.levels[i]; if (!L.none && (!best || slotBetterOwn(L, best))) { best = L; bi = gi; } });
+      if (!best) { const bad = levelOff(r.tiers[i], { id: 'elo-' + id, label, n, floor: 0, none: true, why: whyOwn(n, most, where, took) }, { unit: true }); if (!tag) empty++;
+        chk(!bad, `${lab}: the ${label} Elo pick, which no game of the slot fills, is not handed over empty saying why: ${bad}`); return; }
       if (!tag) slot++;
-      chk(has && t.legs.length === n && new Set(t.legs.map(l => l.gid)).size === 1 && !clashIn(t.legs),
-        `${lab}: the ${label} Elo pick is not ${n} legs of one game with no pair DraftKings refuses (a parlay takes one game's legs in the Sunday slot): ${has ? t.legs.map(l => l.pid + ' ' + l.gid.slice(-7)).join(', ') : JSON.stringify(t)}`);
-      chk(has && t.legs.map(idC).join() === best.legs.map(idC).join() && t.p === best.p && t.dec === best.dec && !!t.likeliest === !!best.likeliest,
-        `${lab}: the ${label} Elo pick is not the best of its games' own ${label} by the slot's rule (one that meets its floor before the likeliest, then the better return over its floor, else the higher Elo chance, then the earlier game): it holds ${has ? t.legs.map(l => l.pid).join(', ') + ' at ' + t.p + ', ' + t.dec + (t.likeliest ? ' (likeliest)' : '') : 'nothing'}, the rule ${u.gids[bi]}'s ${best.legs.map(l => l.pid).join(', ')} at ${best.p}, ${best.dec}${best.likeliest ? ' (likeliest)' : ''}`); });
+      const t = r.tiers[i], bad = levelOff(t, best, { unit: true, corr });
+      chk(!bad && new Set(t.legs.map(l => l.gid)).size === 1,
+        `${lab}: the ${label} Elo pick is not the best of its games' own ${label} by the slot's rule (the larger lean summed over its legs, then the earlier game), ${u.gids[bi]}'s: ${bad || 'legs of more than one game'}`); });
   };
   const each = tag => { for (const u of units) { if (u.perGame && u.gids.length > 1) slotOne(u, tag); else one(u, tag); } };
   each('');
@@ -574,15 +585,6 @@ function page(MU, opts) {
     const m = p2.d.querySelector('#peBody tbody tr .pe-prov');
     chk(!!m && txt(m) === 'prov.' && /fewer than \d+ games/.test(m.title), 'a provisional player has no prov. mark in the rankings');
     if (had === undefined) delete P.groups.QB.top[0].prov; else P.groups.QB.top[0].prov = had; }
-  /* market + form reads a rating on the scale its rule was fitted on (ALT in tab_elo.html): across
-     each position the spread of z is the fitted spread over the 40-point step, whatever the
-     ratings' own spread is now (production scoring had widened it 2.4 times at running back) */
-  { const { w } = page(MU0); await wait(60);
-    for (const g of ['QB', 'RB', 'WR', 'TE']) {
-      const v = Object.values(P.players || {}).filter(e => e.group === g && isFinite(e.elo)).map(e => w.eloAltZ(e.elo, g));
-      const m = v.reduce((a, x) => a + x, 0) / v.length, sd = Math.sqrt(v.reduce((a, x) => a + (x - m) ** 2, 0) / v.length);
-      const want = { QB: 34.1, RB: 21.3, WR: 27.6, TE: 27.0 }[g] / 40;
-      chk(v.length >= 10 && Math.abs(sd - want) < 0.005, `market + form reads ${g} ratings ${(sd / want).toFixed(2)} times as far from 1500 as its rule was fitted to`); } }
   /* every ranked player has a trend line, one game in too (in week 1 the whole column was
      blank: a line needs two points, and the season's start is the first); checked with the
      top quarterback cut to his first game in this copy of the file only */
@@ -594,7 +596,7 @@ function page(MU, opts) {
     top.this_season = had; }
   /* a player kept out of the players map (out, or gone from his club) keeps his season so far
      for the Prop Record: the weeks he played are graded on the rating he took into each, not
-     at 1500; and he is still priced by nothing (no market + form, no Elo picks) */
+     at 1500; and he is still priced by nothing (no Elo picks) */
   { const past = Object.entries(P.past || {}).find(([, v]) => (v.h || []).length);
     if (!past) notes.push('nobody kept out of the players map has a game this season: the past-ratings check is skipped');
     else { const [pid, v] = past, { w } = page(MU0); await wait(60);
@@ -975,93 +977,45 @@ function page(MU, opts) {
       chk(!!scroller(w3, card) && sticks(w3, card), 'the old columns\' table has no sideways scroller at a desktop width, or its team column cannot stick in it'); }
   }
 
-  /* ---- the money the files feed: market + form, the Elo matchup chance and the Elo picks, on every
-     rated player and every matchup line in the files, at made-up book prices (the props parts'
-     mlProb and mlToDec, stubbed here as the page has them) ---- */
+  /* ---- the money the files feed (app v138): the Elo matchup chance and the Elo picks, on every matchup line in the
+     files, at made-up book prices, DraftKings' fair chance on each the check's own (legFairStand, set into the page in the
+     props parts' legFair's place) ---- */
   { const errors = [], { w } = page(MU0, { errors }); await wait(60);
-    sumsInto(w, CORR);   /* mlProb, mlToDec and the builder's sums, the props parts' own, as the page has them */
-    /* (app v121) and the props parts' DraftKings pair rule, which the tab's search reads where it is a function: without
-       it the search would take a quarterback's passing TDs with a teammate's touchdown, as it did until app v121 */
+    sumsInto(w, CORR);   /* mlProb, mlToDec, the builder's sums and parlayFair, the props parts' own, as the page has them */
+    /* (app v121) and the props parts' DraftKings pair rule, which the tab's greedy prefix reads where it is a function:
+       without it the picks would take a quarterback's passing TDs with a teammate's touchdown, as they did until app v121 */
     chk(typeof w.dkClash === 'function' && typeof w.dkClashWhy === 'function' && typeof w.dkPassTd === 'function',
-      `the props parts' DraftKings pair rule (dkPassTd, dkClashWhy, dkClash) is not loaded into the tab's page: the Elo picks' search would take pairs DraftKings refuses on one slip (${typeof w.dkClash}, ${typeof w.dkClashWhy}, ${typeof w.dkPassTd})`);
+      `the props parts' DraftKings pair rule (dkPassTd, dkClashWhy, dkClash) is not loaded into the tab's page: the Elo picks would take pairs DraftKings refuses on one slip (${typeof w.dkClash}, ${typeof w.dkClashWhy}, ${typeof w.dkPassTd})`);
+    /* market + form is gone (the owner's call of 27 October 2026: fitted on this season's games, its rating term -0.04
+       +/- 0.06 out of sample against the 0.30 it used), and with it the old search's fast sums */
+    { const left = ['eloAltP', 'eloAltZ', 'eloSums'].filter(k => typeof w[k] !== 'undefined');
+      chk(!left.length, `market + form, or the Elo picks' old search, is still on the page: ${left.join(', ')}`); }
     const ok01 = v => typeof v === 'number' && isFinite(v) && v > 0 && v < 1;
-    let alt = 0; const badAlt = [];
-    for (const [pid, e] of Object.entries(P.players || {})) {
-      if (!e || !['QB', 'RB', 'WR', 'TE'].includes(e.group)) continue;
-      for (const side of ['over', 'under']) for (const price of [-110, 150]) {
-        let v; try { v = w.eloAltP(pid, side, price, 'real', e.group === 'QB' ? 'passing_yards' : 'receptions'); } catch (err) { v = 'threw ' + err.message; }
-        alt++; if (!ok01(v)) badAlt.push(`${e.name || pid} ${side} ${price}: ${v}`); } }
-    chk(alt > 0 && !badAlt.length, `market + form is not a chance on ${badAlt.length} of ${alt} player legs (${badAlt.slice(0, 4).join('; ')}): the Parlay Builder decides which player legs qualify on it`);
-    /* a price the prop model works from DraftKings' line read on ESPN by Refresh odds (src 'dkline', app
-       v107) is read as a book price: the same chance as a real one at that price, and none on the model's
-       own estimate (the nflbets smoke holds the panel to market + form worked on src 'real') */
-    { const badDk = []; let nDk = 0;
-      for (const [pid, e] of Object.entries(P.players || {})) {
-        if (!e || !['RB', 'WR', 'TE'].includes(e.group)) continue;
-        for (const side of ['over', 'under']) { const r = w.eloAltP(pid, side, -115, 'real', 'receptions'), k = w.eloAltP(pid, side, -115, 'dkline', 'receptions'), x = w.eloAltP(pid, side, -115, 'est', 'receptions');
-          nDk++; if (r !== k || x !== null) badDk.push(`${e.name || pid} ${side}: real ${r}, dkline ${k}, est ${x}`); }
-        if (nDk >= 400) break; }
-      chk(nDk > 0 && !badDk.length, `market + form does not read a price from DraftKings' line as a book price (or reads the model's estimate) on ${badDk.length} of ${nDk} legs: ${badDk.slice(0, 3).join('; ')}`); }
     /* a leg for every matchup line in the file, over and under, at -110 and +150, on its player's club */
-    const legs = [];
-    for (const [pid, pl] of Object.entries((MU0 && MU0.players) || {})) for (const st of Object.keys(pl.stats || {})) {
-      const proj = (pl.stats[st] || [])[1], k = isFinite(proj) ? Math.floor(proj) + 0.5 : 0.5;
-      for (const side of ['over', 'under']) for (const price of [-110, 150])
-        legs.push({ key: `${pl.game_id}|${pid}|${st}`, gid: pl.game_id, pid, stat: st, grp: pl.group, team: pl.team, opp: pl.opp, k, side, price, src: 'real', name: pid, label: st }); }
+    const legs = linesOf(MU0);
+    /* the Elo matchup chance on every line: DraftKings' fair chance on it moved by the nudge, a chance, the check's own to
+       1e-6, and none on a stat whose nudge has not held up */
     let mu = 0; const badMu = [];
-    for (const l of legs) { let v; try { v = w.eloMatchupP(l, w.mlProb(l.price)); } catch (err) { v = 'threw ' + err.message; }
-      if (v === null) continue; mu++; if (!ok01(v)) badMu.push(`${l.pid} ${l.stat} ${l.side} ${l.price}: ${v}`); }
-    chk(!badMu.length, `the Elo matchup chance is not a chance on ${badMu.length} of ${mu} matchup lines (${badMu.slice(0, 4).join('; ')})`);
-    w.__legs = legs; w.eval('function pricedLegs(){ return window.__legs; }');
+    for (const l of legs) { const f = legFairStand(l), want = f ? eloPOwn(MU0, l, f.p) : null; let v; try { v = w.eloMatchupP(l, f ? f.p : NaN); } catch (err) { v = 'threw ' + err.message; }
+      if (want === null && v === null) continue; mu++;
+      if (!ok01(v) || want === null || !(Math.abs(v - want) < 1e-6)) badMu.push(`${l.pid} ${l.stat} ${l.side} ${l.price}: ${v}, the rule ${want}`); }
+    chk(!badMu.length, `the Elo matchup chance is not DraftKings' fair chance moved by the matchup's nudge on ${badMu.length} of ${mu} matchup lines (${badMu.slice(0, 4).join('; ')})`);
+    w.__legs = legs; w.eval(PRICED_BY('__legs'));
     let r; try { r = w.eloPicks(); } catch (err) { r = 'threw ' + err.message; }
     chk(!!r && typeof r === 'object' && Array.isArray(r.tiers), `the Elo picks do not build on the files: ${typeof r === 'string' ? r : JSON.stringify(r)}`);
-    /* the candidates: the rule's (worked out here on the files' own matchups, candsOwn), every player's best, ranked on
-       value, the best 30 kept; the levels: Suggested Parlays' four, each priced by the builder's own sums worked out
-       here (sumsOwn), its floor held, and never worse than the best parlay of its size whose legs are all in
-       different games, worked out here in full (a plain product, so its sums are cheap on any week) */
-    const sums = sumsOwn(CORR), own = candsOwn(legs, MU0, (P.players) || {}, sums);
+    /* the candidates: the rule's (worked out here on the files' own matchups, candsOwn), every player's largest lean,
+       ranked by lean, every one kept; the levels: Suggested Parlays' four sizes, each the greedy prefix DraftKings takes on
+       one slip, priced by the builder's own sums worked out here (sumsOwn), its fair chance parlayFair's */
+    const sums = sumsOwn(CORR), own = candsOwn(legs, MU0, P.players || {});
     if (r && Array.isArray(r.tiers)) {
-      const C = r.cands || [], ownPe = new Map(own.all.map(l => [idC(l), l.pe]));
-      const badC = C.filter(l => !(l.grp !== 'TEAM' && (l.src === 'real' || l.src === 'dkline') && l.price >= EPC.lo && l.price <= EPC.hi && ok01(l.pe) && l.pe >= EPC.floor
-        && Math.abs(l.ev - (l.pe * sums.mlToDec(l.price) - 1)) < 1e-12 && l.ev > 0 && ownPe.has(idC(l)) && Math.abs(ownPe.get(idC(l)) - l.pe) < 1e-6));
-      chk(C.length === own.kept.length && C.map(idC).join() === own.kept.map(idC).join() && r.candidates === own.all.length && !badC.length && new Set(C.map(l => l.pid)).size === C.length && C.every((l, i) => !i || C[i - 1].ev >= l.ev),
-        `the Elo picks' candidates on the files are not the rule's (a rated player's best leg by value, ranked on value; searched from the ${EPC.cap} best by value and the ${EPC.capP} likeliest by the Elo chance, each once): ${C.length} kept of ${r.candidates}, the rule ${own.kept.length} of ${own.all.length}; ${badC.slice(0, 3).map(l => l.pid + ' ' + l.stat + ' ' + l.side + ' ' + l.price + ' ' + l.pe).join('; ')}`);
-      /* the union is what is searched: where some of the likeliest are not among the best by value, they are there */
-      notes.push(`the Elo picks' candidates on the files: ${C.length} searched of ${own.all.length}, ${own.likely.filter(l => !own.byValue.includes(l)).length} of the ${EPC.capP} likeliest from past the ${EPC.cap} best by value`);
-      { const LT = tiersOwn(sums.PB_TIERS);
-        chk(r.tiers.length === LT.length && r.tiers.every((t, i) => t.id === 'elo-' + LT[i][0] && t.label === LT[i][1] && t.n === LT[i][2] && t.floor === LT[i][3]),
-          'the Elo picks are not Suggested Parlays\' four levels (PB_TIERS) on their own floors (Safe 35%), each elo-<level>: ' + r.tiers.map(t => t.id + ' ' + t.n + ' ' + t.floor).join(', ')); }
-      const sub = (n, f) => { const go = (s0, cur) => { if (cur.length === n) { f(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); }; go(0, []); };
-      for (const t of r.tiers) {
-        if (C.length < t.n) { chk(!t.legs.length && /^Only \d+ players? on your picks qualif(y|ies): this level takes \d\.$/.test(t.why || ''), `the ${t.id} Elo pick is not empty with its reason where only ${C.length} players qualify: ${JSON.stringify(t)}`); continue; }
-        /* (app v121) enough candidates, and none of its parlays on one slip by the check's own rule: empty, saying so */
-        if (!t.legs.length) { const why = CLASH_WHY(t.n, r.candidates, 'on your picks');
-          chk(!anyAllowed(C, t.n) && t.why === why, `the ${t.id} Elo pick, with ${C.length} candidates, is empty where ${anyAllowed(C, t.n) ? `some ${t.n} of them go on one slip` : `none go on one slip and it does not say so ("${why}")`}: ${JSON.stringify(t)}`); continue; }
-        chk(!clashIn(t.legs), `the ${t.id} Elo pick on the files holds a pair DraftKings will not take on one slip (a quarterback's passing TDs with a teammate's touchdown): ${t.legs.map(l => l.pid + ' ' + l.stat + ' ' + l.team).join(', ')}`);
-        const L = sums.pbOrder(t.legs), p = L.length ? sums.parlayProb(L.map(l => ({ ...l, p: l.pe }))).corr : NaN, dec = L.length ? sums.parlayDec(L.map(l => ({ leg: l, ml: l.price }))) : NaN;
-        chk(t.legs.length === t.n && t.legs.every((l, i) => l === L[i] || idC(l) === idC(L[i])) && t.legs.every(l => C.some(c => idC(c) === idC(l))) && new Set(t.legs.map(l => l.pid)).size === t.n
-          && ok01(t.p) && t.p === p && t.dec === dec && (!t.floor || t.likeliest || t.p >= t.floor) && (!t.likeliest || t.floor > 0),
-          `the ${t.id} Elo pick is not ${t.n} of the candidates, one a player, in the builder's order, at the builder's own sums on their Elo chances and prices, over its floor: ${t.p} at ${t.dec}, the sums ${p} at ${dec}`);
-        /* "the likeliest N legs" only under the floor: a parlay at or over it is the floor's pick */
-        chk(!t.likeliest || (t.floor > 0 && t.p < t.floor), `the ${t.id} Elo pick is marked the likeliest ${t.n} legs at ${t.p}, at or over its ${t.floor} floor`);
-        /* the best parlay of its size with every leg in a different game: no level is worse */
-        let best = null;
-        sub(t.n, ls => { if (new Set(ls.map(l => l.gid)).size !== t.n) return; const pp = ls.reduce((a, l) => a * l.pe, 1), dd = ls.reduce((a, l) => a * sums.mlToDec(l.price), 1);
-          if (t.floor && pp < t.floor) return; const sc = t.floor ? pp * dd : pp; if (!best || sc > best.sc) best = { sc, ls }; });
-        chk(!best || (t.floor && t.likeliest ? false : (t.floor ? t.p * t.dec : t.p) >= best.sc * (1 - 1e-9)),
-          `the ${t.id} Elo pick (${t.likeliest ? 'the likeliest' : t.floor ? 'best return ' + (t.p * t.dec).toFixed(4) : 'chance ' + t.p.toFixed(4)}) is worse than ${best && best.ls.map(l => l.pid + ' ' + l.stat).join(', ')}, legs all in different games (${best && best.sc.toFixed(4)})`); }
-      /* the search's fast sums, parlayProb's and parlayDec's to the bit: on the levels and on 240 parlays of the
-         candidates, two to five legs, most with two or three of one game (a fixed draw of its own) */
-      { let seed = 20261018; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-        const byG = {}; for (const l of C) (byG[l.gid] = byG[l.gid] || []).push(l); const multi = Object.values(byG).filter(g => g.length > 1);
-        const sets = r.tiers.filter(t => t.legs.length).map(t => t.legs);
-        for (let q = 0; q < 240 && C.length >= 5; q++) { const n = 2 + (q % 4), pick = new Set();
-          if (multi.length && q % 5) { const g = multi[Math.floor(rnd() * multi.length)]; for (let j = 0; j < Math.min(g.length, 2 + (q % 2)) && pick.size < n; j++) pick.add(g[Math.floor(rnd() * g.length)]); }
-          while (pick.size < n) pick.add(C[Math.floor(rnd() * C.length)]);
-          sets.push([...pick]); }
-        const worked = sets.map(ls => { const O = sums.pbOrder(ls); return { legs: O, p: sums.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr, dec: sums.parlayDec(O.map(l => ({ leg: l, ml: l.price }))) }; });
-        const bad = fastOff(w, C, worked);
-        chk(!bad.length, `the Elo picks' fast sums are not parlayProb's and parlayDec's to the bit on ${bad.length} of ${worked.length} parlays of the files' candidates: ${bad.slice(0, 3).join('; ')}`); } }
+      const C = r.cands || [], off = candsOff(C, own);
+      chk(!off && r.candidates === C.length,
+        `the Elo picks' candidates on the files are not the rule's (a rated player's line, -200 to +300, DraftKings' fair chance 30% or more and his Elo chance above it, his largest lean, ranked by lean, every one kept): ${r.candidates} counted, ${C.length} handed over; ${off}`);
+      const want = levelsOwn(C, sums, 'on your picks');
+      chk(r.tiers.length === want.length, `the Elo picks are not Suggested Parlays' four sizes: ${r.tiers.map(t => t && t.id).join(', ')}`);
+      want.forEach((f, i) => { const bad = levelOff(r.tiers[i], f, { corr: CORR });
+        chk(!bad, `the ${f.label} Elo pick on the files is not the first ${f.n} of the candidates that go together on one DraftKings slip: ${bad}`); });
+      notes.push(`the Elo picks' candidates on the files: ${C.length}${own.edge.length ? `, beside ${own.edge.length} line${own.edge.length === 1 ? '' : 's'} with a nudge of 0 (no lean, no candidate)` : ''}`); }
     /* (app v118) window.eloPicks() with no games is every game the page prices, whatever the Parlay Builder's ticks say:
        the same levels with the ticks planted to nothing (until app v118 it took only the games and player sides ticked) */
     if (r && Array.isArray(r.tiers)) {
@@ -1074,176 +1028,177 @@ function page(MU, opts) {
        v121 (perGame, as Suggested Parlays asks for it; which games those are worked out here from the published payload's
        schedule: the matchups' season and week, a Sunday, a kickoff before 19:00, both Eastern as the schedule writes them;
        the games of it already played have no lines, so the slot can hand over four empty levels, each saying why) */
-    { w.eval(PRICED_BY('__legs'));
-      const gids = [...new Set(legs.map(l => l.gid))].sort(), wk = MU0 && MU0.week;
+    { const gids = [...new Set(legs.map(l => l.gid))].sort(), wk = MU0 && MU0.week;
       const slot = SCHED.filter(g => +g.w === +wk && (!MU0 || !MU0.season || String(g.id).startsWith(MU0.season + '_')) && /^\d{4}-\d\d-\d\d$/.test(g.d || '')
         && new Date(g.d + 'T12:00:00Z').getUTCDay() === 0 && /^\d\d:\d\d$/.test(g.t || '') && g.t < '19:00').map(g => g.id);
       const units = [...gids.map(g => ({ lab: `the files' ${g} alone`, gids: [g], where: 'in this game' })), ...(slot.length ? [{ lab: `the files' week ${wk} Sunday slot (${slot.length} games)`, gids: slot, where: 'in the Sunday slot', perGame: true }] : [])];
       if (!units.length) notes.push('no game in the matchups\' week has lines and the schedule has no Sunday slot for it: the units\' Elo picks are held on the check\'s own games alone');
       else { const nf = unitHeld('the files', w, legs, MU0, P.players || {}, CORR, units);
-        notes.push(`each unit's Elo picks on the files: ${gids.length} game${gids.length === 1 ? '' : 's'} alone${slot.length ? ` and week ${wk}'s Sunday slot of ${slot.length} (${slot.filter(g => gids.includes(g)).length} with lines)` : ', no Sunday slot on the schedule'}, ${nf.full} levels worked out in full, ${nf.empty} empty, ${nf.slot} slot levels held to their games' own`); } }
+        notes.push(`each unit's Elo picks on the files: ${gids.length} game${gids.length === 1 ? '' : 's'} alone${slot.length ? ` and week ${wk}'s Sunday slot of ${slot.length} (${slot.filter(g => gids.includes(g)).length} with lines)` : ', no Sunday slot on the schedule'}, ${nf.full} levels with legs, ${nf.empty} empty, ${nf.slot} slot levels held to their games' own`); } }
     chk(!errors.length, `the tab threw or logged an error on the files: ${errors.slice(0, 3).join('; ')}`);
-    notes.push(`money paths: market + form on ${alt} player legs, the Elo matchup chance on ${mu} of ${legs.length} lines, the Elo picks' ${r && r.tiers ? r.tiers.filter(t => t.legs.length).length : 0} levels from ${r && r.cands ? r.cands.length : 0} of ${r && r.candidates || 0} candidates`); }
+    notes.push(`money paths: the Elo matchup chance on ${mu} of ${legs.length} lines, the Elo picks' ${r && r.tiers ? r.tiers.filter(t => t.legs.length).length : 0} levels from ${r && r.cands ? r.cands.length : 0} candidates`); }
 
   /* ---- (app v118) window.eloUnit hands over nothing until the ratings and the matchups are both in ----
-     Suggested Parlays says it is loading the Elo ratings while eloUnit gives null, and draws each unit's picks once it
-     gives levels (a pick stands on both: the player's rating and his matchup). So: null before any file has answered;
-     null with the ratings and the model in (market + form prices a player) and the matchups still being read (held
+     Suggested Parlays waits on the Elo files while eloUnit gives null, and draws each unit's picks once it gives levels
+     (a pick stands on both: the player's rating and his matchup). So: null before any file has answered; null with the
+     ratings in (the tab's own word for it, eloLoaded: its players file read) and the matchups still being read (held
      here); the four levels once the matchups answer */
   { let release = null; const hold = new Promise(res => { release = res; }), errors = [], { w } = page(MU0, { errors, hold: { 'matchups.json': hold } });
     sumsInto(w, CORR); w.__legs = linesOf(MU0); w.eval(PRICED_BY('__legs'));
     const gids = [...new Set(w.__legs.map(l => l.gid))].slice(0, 1), at = () => { try { return w.eloUnit(gids, { where: 'in this game' }); } catch (err) { return 'threw ' + err.message; } };
-    const pid = Object.keys(P.players || {}).find(k => ['QB', 'RB', 'WR', 'TE'].includes((P.players[k] || {}).group));
     const r0 = at(); await wait(60);
-    /* the ratings in is the tab's own word for it (eloLoaded: its players file read), not a market + form price, which the
-       page works out with no Elo at all */
-    const rated = typeof w.eloLoaded === 'function' && w.eloLoaded() === true ? (pid ? w.eloAltP(pid, 'over', -110, 'real', 'receptions') : 0) : 'not loaded', r1 = at();
+    const rated = typeof w.eloLoaded === 'function' && w.eloLoaded() === true, r1 = at();
     release(); await wait(60);
     const r2 = at();
-    chk(r0 === null && typeof rated === 'number' && r1 === null && !!r2 && typeof r2 === 'object' && Array.isArray(r2.tiers) && r2.tiers.map(t => t.id).join() === 'elo-safe,elo-med,elo-aggr,elo-xtrm',
-      `window.eloUnit does not give null until the ratings and the matchups are both in, and the four levels once they are: before any file ${JSON.stringify(r0)}, with the ratings in (market + form ${rated}) and the matchups held ${JSON.stringify(r1)}, once they answer ${typeof r2 === 'string' ? r2 : JSON.stringify(r2 && r2.tiers && r2.tiers.map(t => t.id))}`);
+    chk(r0 === null && rated && r1 === null && !!r2 && typeof r2 === 'object' && Array.isArray(r2.tiers) && r2.tiers.map(t => t.id).join() === 'elo-safe,elo-med,elo-aggr,elo-xtrm',
+      `window.eloUnit does not give null until the ratings and the matchups are both in, and the four levels once they are: before any file ${JSON.stringify(r0)}, with the ratings in (eloLoaded ${rated}) and the matchups held ${JSON.stringify(r1)}, once they answer ${typeof r2 === 'string' ? r2 : JSON.stringify(r2 && r2.tiers && r2.tiers.map(t => t.id))}`);
     chk(!errors.length, `the tab threw or logged an error while its files were still being read: ${errors.slice(0, 3).join('; ')}`); }
 
-  /* ---- the Elo picks' four levels on made-up lines of the check's own (17 October 2026, the owner's call: "for
-     the ELO picks suggestions, can we also add an aggressive and extreme versions. is it touchdowns only or did it
-     just so happen to show that? would want to see the best lines:value ratio for ELO mismatches etc") ----
-     Made-up players in three made-up games, each priced at a made-up book price, his Elo chance set by a made-up
-     matchup nudge (a copy of the matchups file with the fixture's players, fits and records in it), and a
-     correlation table of the check's own for the same-game pairs, so it holds in any week and the off-season:
-     - the candidates are the rule's, ranked on value: a -115 main line whose value beats a +150 anytime touchdown's
-       leads (plus money first, the rule until that day, put the touchdown first, and every pick was touchdowns);
-       a player's second line, a price past +300, a chance under 30%, a return at or under 0, a stat the matchup has
-       not earned, a team bet, the model's own estimate and a player the ratings do not have are none of them, and
-       a price from DraftKings' line read by Refresh odds is one;
-     - every level is Suggested Parlays' rule worked out here in full (levelsOwn: every parlay of its size from the
-       candidates, by the builder's own sums), its legs, chance and price exactly those, the likeliest marked so;
-     - legs from one game are taken and priced together: a level with two legs of one game that move together is
-       at parlayProb's and parlayDec's figures, never the legs multiplied;
-     - with four candidates, Extreme is empty and says why, and the levels no parlay of whose size reaches the
-       floor are the likeliest of their size. */
-  { const GA = '2026_06_FXA_FXB', GB = '2026_06_FXC_FXD', GC = '2026_06_FXE_FXF', SD = 10;
-    /* pid, group, team, opp, game, stat, side, line, price, the Elo chance wanted (the nudge is set to give it) */
-    const ROWS1 = [
-      ['fx-qa', 'QB', 'FXA', 'FXB', GA, 'passing_yards', 'over', 249.5, -115, 0.62],
-      ['fx-wa', 'WR', 'FXA', 'FXB', GA, 'receiving_yards', 'over', 69.5, -110, 0.60],
-      ['fx-ta', 'TE', 'FXB', 'FXA', GA, 'any_td', 'over', 1, 150, 0.44],
-      ['fx-rb', 'RB', 'FXC', 'FXD', GB, 'rushing_yards', 'over', 59.5, -120, 0.62],
-      ['fx-wb', 'WR', 'FXD', 'FXC', GB, 'receptions', 'over', 4.5, -130, 0.64],
-      ['fx-tc', 'TE', 'FXE', 'FXF', GC, 'any_td', 'over', 1, 180, 0.38],
-      ['fx-qc', 'QB', 'FXF', 'FXE', GC, 'passing_tds', 'under', 1.5, -140, 0.66],
-      ['fx-wc', 'WR', 'FXE', 'FXF', GC, 'receiving_yards', 'under', 52.5, 105, 0.52, { src: 'dkline', espn: { fair: 0.46, at: '2026-10-15T03:08Z', tested: true, listed: true } }],
-      /* none of these is a candidate */
-      ['fx-qa', 'QB', 'FXA', 'FXB', GA, 'passing_tds', 'over', 1.5, -150, 0.63, { why: 'his second line, of lower value' }],
-      ['fx-wd', 'WR', 'FXD', 'FXC', GB, 'receiving_yards', 'over', 89.5, 350, 0.40, { why: 'a price past +300' }],
-      ['fx-rc', 'RB', 'FXE', 'FXF', GC, 'rushing_yards', 'over', 79.5, 250, 0.29, { why: 'a chance under 30%' }],
-      ['fx-te', 'TE', 'FXF', 'FXE', GC, 'receiving_yards', 'over', 39.5, -200, 0.64, { why: 'a return under 0' }],
-      ['fx-wa', 'WR', 'FXA', 'FXB', GA, 'targets', 'over', 6.5, 120, 0.70, { why: 'a stat the matchup has not earned', untrusted: true }],
-      ['fx-wb', 'WR', 'FXD', 'FXC', GB, 'receiving_yards', 'over', 49.5, 100, 0.70, { why: 'the model\'s own estimate', src: 'est' }],
-      ['fx-xx', 'WR', 'FXB', 'FXA', GA, 'receiving_yards', 'over', 59.5, 100, 0.70, { why: 'a player the ratings do not have', unrated: true }]];
-    /* four candidates whose chances no parlay of three or more brings to its floor */
-    const ROWS2 = [
-      ['fx-qa', 'QB', 'FXA', 'FXB', GA, 'passing_yards', 'over', 249.5, 120, 0.50],
-      ['fx-wa', 'WR', 'FXA', 'FXB', GA, 'receiving_yards', 'over', 69.5, 130, 0.47],
-      ['fx-rb', 'RB', 'FXC', 'FXD', GB, 'rushing_yards', 'over', 59.5, 110, 0.52],
-      ['fx-tc', 'TE', 'FXE', 'FXF', GC, 'any_td', 'over', 1, 140, 0.45]];
-    /* the same-game pairs that move together, by the builder's keys (rel|grp:stat|grp:stat) */
-    const CORR_FX = { 'team|QB:passing_yards|WR:receiving_yards': 0.45, 'opp|QB:passing_yards|TE:any_td': 0.08, 'opp|TE:any_td|WR:receiving_yards': 0.05,
-      'opp|RB:rushing_yards|WR:receptions': -0.10, 'team|TE:any_td|WR:receiving_yards': -0.06, 'opp|QB:passing_tds|TE:any_td': 0.12, 'opp|QB:passing_tds|WR:receiving_yards': 0.10 };
-    /* F3 (18 October 2026): ten legs of one game that move together, the stress harness's seed 303 and its 22nd set
-       (props/build's own correlations for these pairs, copied here so the fixture is the check's), where the
-       quick reading misorders parlays: the first search marked Aggressive "the likeliest 4 legs" at 12.03%, over its
-       12% floor, and with one parlay worked (fin 1, tol 1) picked one of 11.95%; the Elo chances as the harness had
-       them, to six places */
-    const G3 = '2026_06_FXG_FXH';
-    const ROWS3 = [
-      ['fx-p009', 'WR', 'FXH', 'FXG', G3, 'receptions', 'over', 1.5, 117, 0.529182], ['fx-p002', 'WR', 'FXH', 'FXG', G3, 'any_td', 'over', 1.5, 108, 0.54943],
-      ['fx-p008', 'QB', 'FXG', 'FXH', G3, 'completions', 'under', 1.5, 191, 0.391457], ['fx-p007', 'WR', 'FXG', 'FXH', G3, 'receptions', 'under', 1.5, 232, 0.340325],
-      ['fx-p004', 'RB', 'FXH', 'FXG', G3, 'rushing_yards', 'over', 1.5, -157, 0.66656], ['fx-p000', 'TE', 'FXG', 'FXH', G3, 'any_td', 'over', 1.5, -126, 0.604264],
-      ['fx-p006', 'TE', 'FXG', 'FXH', G3, 'any_td', 'over', 1.5, -101, 0.539813], ['fx-p005', 'QB', 'FXG', 'FXH', G3, 'passing_tds', 'over', 1.5, 220, 0.331885],
-      ['fx-p001', 'RB', 'FXG', 'FXH', G3, 'scrim_yards', 'over', 1.5, -114, 0.541961], ['fx-p003', 'QB', 'FXH', 'FXG', G3, 'passing_yards', 'over', 1.5, 160, 0.387538]];
-    const CORR_F3 = { 'team|RB:rushing_yards|WR:receptions': -0.054, 'opp|TE:any_td|WR:receptions': 0.032, 'opp|QB:passing_tds|WR:receptions': 0.076, 'team|QB:passing_yards|WR:receptions': 0.305,
-      'opp|QB:completions|WR:any_td': 0.113, 'opp|WR:any_td|WR:receptions': 0.051, 'opp|QB:passing_tds|WR:any_td': 0.059, 'team|QB:passing_yards|WR:any_td': 0.163, 'team|QB:completions|WR:receptions': 0.335,
-      'team|QB:completions|TE:any_td': 0.066, 'team|QB:completions|RB:scrim_yards': -0.033, 'opp|QB:completions|QB:passing_yards': 0.04, 'team|QB:passing_tds|WR:receptions': 0.116,
-      'team|RB:scrim_yards|WR:receptions': -0.046, 'opp|QB:passing_yards|WR:receptions': 0.036, 'opp|QB:passing_tds|RB:rushing_yards': -0.047, 'opp|RB:rushing_yards|RB:scrim_yards': -0.102,
-      'team|QB:passing_yards|RB:rushing_yards': -0.11, 'team|QB:passing_tds|TE:any_td': 0.246, 'opp|QB:passing_yards|TE:any_td': 0.038, 'team|QB:passing_tds|RB:scrim_yards': 0.056,
-      'opp|QB:passing_tds|QB:passing_yards': 0.148 };
-    /* F4: six receivers of one club whose yards move together strongly (0.4 a pair), each 31% at +230, which the quick
-       reading overrates when several are taken, and three backs of three other games, each 65% at -170: the likeliest
-       four legs (no four reach 12%) are one receiver and the three backs, all in different games, which the first
-       search reached only as its best parlay of legs all in different games */
-    const G4 = ['2026_06_FXJ_FXK', '2026_06_FXL_FXM', '2026_06_FXN_FXO', '2026_06_FXP_FXQ'];
-    const ROWS4 = [...[0, 1, 2, 3, 4, 5].map(i => ['fx-a' + i, 'WR', 'FXJ', 'FXK', G4[0], 'receiving_yards', 'over', 1.5, 230, 0.31]),
-      ...[1, 2, 3].map(i => ['fx-b' + (i - 1), 'RB', G4[i].slice(8, 11), G4[i].slice(12), G4[i], 'rushing_yards', 'over', 1.5, -170, 0.65])];
-    const CORR_F4 = { 'team|WR:receiving_yards|WR:receiving_yards': 0.4 };
-    /* F5: thirty legs at +150 and four heavy favourites at -190 of thinner value, each in a game of its own: the levels
-       are searched from the 30 best by value and the 10 likeliest, so the favourites are there, and Safe, the best
-       value over 35%, is two of them, since only the favourites' pairs reach it (until 18 October 2026 the 30 best by
-       value alone cut all four) */
-    const ROWS5 = [...[...Array(30)].map((_, i) => ['fx-v' + String(i).padStart(2, '0'), 'WR', 'FV' + String.fromCharCode(65 + (i % 26)) + Math.floor(i / 26), 'FW' + i, `2026_06_FV${i}_FW${i}`, 'receiving_yards', 'over', 49.5, 150, 0.45 + i * 0.0005]),
-      ...[0, 1, 2, 3].map(i => ['fx-f' + i, 'RB', 'FF' + i, 'FG' + i, `2026_06_FF${i}_FG${i}`, 'rushing_yards', 'over', 59.5, -190, 0.72 - i * 0.01])];
-    const sums = sumsOwn(CORR_FX);
+  /* ---- the Elo picks on made-up lines of the check's own (app v138, the owner's call of 27 October 2026: every leg at
+     DraftKings' fair chance; the picks are the players whose Elo matchup leans furthest their way, that go together on one
+     DraftKings slip) ----
+     Made-up players in made-up games, each priced at a made-up book price, DraftKings' fair chance on each the check's own
+     (legFairStand: a two-sided line its share with the margin out, a one-sided one over 5.66%, DraftKings' line read on
+     ESPN its read's), his Elo chance set by a made-up matchup nudge (a copy of the matchups file with the fixture's
+     players, fits and records in it), and a correlation table of the check's own for the same-game pairs, so it holds in
+     any week and the off-season.
+     F1, the candidates' rule, on ten candidates in three games and as many lines that are none: the largest lean first
+     (a quarterback's two-sided passing yards, his second line of a smaller lean passed over), a price from DraftKings'
+     line read on ESPN one, the price band's end (-200) one; a price past +300 or under -200, a fair chance under 30%, an
+     Elo chance under the fair chance, a stat the matchup has not earned, a team bet, the model's own estimate, a player
+     the ratings do not have and a nudge of 0 (his matchup leaning nowhere, though the page's normal curves round its Elo
+     chance 2e-7 above the fair chance) none of them; and, where both sides are on file, the fair chance with both sides' margin out
+     deciding it: an Elo chance above the price's one-sided reading but under that fair chance no candidate, and one under
+     the one-sided reading but above it one. Every level the greedy prefix worked out here (the first n candidates that go
+     together: no pair DraftKings refuses among them, and three passed over for moving against one taken before them,
+     the back's rushing yards beside the other club's receptions, -0.10 in the fixture's table, the tight end's touchdown
+     beside the other club's quarterback's passing TDs under, 0.12 turned by the under, and the back's rushing yards beside
+     his quarterback's passing yards, -0.11), one with two legs of one game that move together at the builder's sums and
+     not the legs multiplied; the card's options (each player's shield, each leg's Elo lean "Elo +2.1", the rule "strongest Elo leans"
+     and no chance); the id rule by an entry's content; game A alone and games B and C as a Sunday slot.
+     F2, the levels: R at S, a quarterback's passing TDs over leaning furthest, two of his receivers' touchdowns second and
+     fourth (passed over: DraftKings takes no quarterback's passing TDs with a teammate's touchdown) and his back third, so
+     Safe and Medium skip the receivers and Aggressive and Extreme are short, "Strongest first, only 3 leans in this game
+     go together on one DraftKings slip: this level takes 4." (though four others go together: the words say what the walk found,
+     never that no four do); with no pair rule its Safe is the quarterback and his first receiver, so the fixture tells the
+     greedy prefix from a page with none; T at U, a quarterback's passing TDs under, his receiver's touchdown and the other
+     club's back, its Medium "Strongest first, only 2 leans in this game go together on one DraftKings slip: this level takes 3." and
+     Aggressive "Only 3 players in
+     this game qualify: this level takes 4."; V at W, four legs at one fair chance and one Elo chance, so their leans tie to
+     the bit: three main lines by id and a touchdown after them (by id alone it would come third), and one player's
+     touchdown at the same lean as his main line, his main line kept; X at Y, V at W's mirror. The Sunday slot of V at W
+     and R at S takes R at S's Safe (the larger summed lean, though V at W is listed first) and V at W's Medium and
+     Aggressive, its Extreme "Strongest first, only 4 leans in any one game of the Sunday slot go together on one DraftKings slip:
+     this level takes 5."; of T at U
+     and V at W, its Extreme "Only 4 players in any one game of the Sunday slot qualify: this level takes 5."; of V at W
+     and X at Y, whose summed leans tie to the bit, the earlier game's every level, each way round; J at K (the review of
+     27 October 2026), a quarterback's passing yards under leaning furthest, his receiver's and his tight end's yards over
+     passed over beside it (each moving against it), so its Safe is the quarterback and the other club's back and its
+     Medium and Aggressive run short, saying so, where with neither rule its Safe would be the quarterback and his
+     receiver, which DraftKings takes; L at M, the bar from both sides, a back's receiving yards over leaning furthest,
+     his teammate's receptions over at -0.04 kept and the other club's tight end's yards over at -0.06 passed over (Safe the
+     back and the receiver, Medium the quarterback too, Aggressive short, Extreme too few); the props parts' legRho as
+     loaded the check's own reading of the table on every pair of F2's players' legs; eloPicks() over all six; every unit by unitHeld; the props parts' DraftKings pair rule as loaded the check's own on every pair of R at
+     S's legs and of made-up legs beside them; and thirty-five candidates in as many games, every one kept (until app v138
+     the levels were searched from the 30 best by value and the 10 likeliest), Extreme the five largest leans. */
+  { const SD = 10;
     const build = rows => {
       const MUf = JSON.parse(JSON.stringify(MU0 || { week: 6, players: {}, fit: {}, record: {} }));
       MUf.players = MUf.players || {}; MUf.fit = MUf.fit || {}; MUf.record = MUf.record || {};
       const Pf = JSON.parse(JSON.stringify(P)); Pf.players = Pf.players || {};
       const legs = [];
       for (const [pid, grp, team, opp, gid, stat, side, k, price, want, x = {}] of rows) {
+        const l = { key: `${gid}|${pid}|${stat}`, gid, pid, stat, grp, k, side, main: stat !== 'any_td' && grp !== 'TEAM', p: 0.5, price, src: x.src || 'real',
+          ...(x.oth != null ? { oth: x.oth } : {}), ...(x.espn ? { espn: x.espn } : {}),
+          name: 'Fixture ' + pid.slice(3).toUpperCase(), team, opp, week: 6, label: side + ' ' + k + ' ' + stat, mu: k, why: x.why || null };
+        legs.push(l);
+        if (grp === 'TEAM') continue;
         MUf.fit[grp + '|' + stat] = { sd: SD };
         MUf.record[grp + '|' + stat] = { past: x.untrusted ? { rmse_elo: 2, rmse_form: 1, right_top: 0.4 } : { rmse_elo: 1, rmse_form: 2, right_top: 0.6 } };
-        const fair = Math.min(0.99, Math.max(0.01, sums.mlProb(price) / EPC.vig)), nudge = (side === 'under' ? -1 : 1) * SD * (invPhiC(want) - invPhiC(fair));
+        /* the nudge that moves DraftKings' fair chance on the leg to the Elo chance wanted */
+        const f = legFairStand(l), fair = f ? f.p : 0.5, nudge = x.zero ? 0 : (side === 'under' ? -1 : 1) * SD * (invPhiC(want) - invPhiC(fair));
         const v = MUf.players[pid] || (MUf.players[pid] = { group: grp, game_id: gid, team, opp, home: gid.endsWith(team), elo: 1600, opp_def: { DL: 1500, LB: 1500, DB: 1500 }, stats: {} });
         v.stats[stat] = [k, k, nudge];
-        if (!x.unrated) Pf.players[pid] = { name: 'Fixture ' + pid.slice(3).toUpperCase(), group: grp, team, elo: 1600, se: 1600, rank: 3 };
-        legs.push({ key: `${gid}|${pid}|${stat}`, gid, pid, stat, grp, k, side, main: stat !== 'any_td', p: 0.5, price, src: x.src || 'real', ...(x.espn ? { espn: x.espn } : {}),
-          name: 'Fixture ' + pid.slice(3).toUpperCase(), team, opp, week: 6, label: side + ' ' + k + ' ' + stat, mu: k, why: x.why || null }); }
+        if (!x.unrated) Pf.players[pid] = { name: 'Fixture ' + pid.slice(3).toUpperCase(), group: grp, team, elo: 1600, se: 1600, rank: 3 }; }
       return { MUf, Pf, legs: legs.map(({ why, ...l }) => l), whys: legs.filter(l => l.why) };
     };
-    for (const [nm, rows, corr] of [['F1', ROWS1, CORR_FX], ['F2', ROWS2, CORR_FX], ['F3', ROWS3, CORR_F3], ['F4', ROWS4, CORR_F4], ['F5', ROWS5, {}]]) {
-      const { MUf, Pf, legs, whys } = build(rows), errors = [], { w } = page(MUf, { errors, P: Pf }); await wait(60);
-      sumsInto(w, corr);
-      const sums = sumsOwn(corr);
-      w.__fx = legs; w.eval('function pricedLegs(){ return window.__fx.map(l=>Object.assign({},l)); }');
+    const say = L => (L || []).map(l => l.pid + ' ' + l.stat).join(', ') || 'none';
+    const lvOf = (u, id) => u && Array.isArray(u.tiers) ? u.tiers.find(t => t.id === id) || null : null;
+    const pids = t => t && Array.isArray(t.legs) ? t.legs.map(l => l.pid).sort().join('+') : 'none';
+
+    /* ---- F1: the candidates' rule ---- */
+    { const GA = '2026_06_FXA_FXB', GB = '2026_06_FXC_FXD', GC = '2026_06_FXE_FXF';
+      /* pid, group, team, opp, game, stat, side, line, price, the Elo chance wanted (the nudge is set to give it) */
+      const ROWS1 = [
+        ['fx-qa', 'QB', 'FXA', 'FXB', GA, 'passing_yards', 'over', 249.5, -115, 0.60, { oth: -105 }],
+        ['fx-qc', 'QB', 'FXF', 'FXE', GC, 'passing_tds', 'under', 1.5, -140, 0.62],
+        ['fx-wb', 'WR', 'FXD', 'FXC', GB, 'receptions', 'over', 4.5, -130, 0.60],
+        ['fx-wa', 'WR', 'FXA', 'FXB', GA, 'receiving_yards', 'over', 69.5, -110, 0.56],
+        ['fx-ta', 'TE', 'FXB', 'FXA', GA, 'any_td', 'over', 1, 150, 0.43],
+        ['fx-rb', 'RB', 'FXC', 'FXD', GB, 'rushing_yards', 'over', 59.5, -120, 0.57, { oth: 100 }],
+        ['fx-wc', 'WR', 'FXE', 'FXF', GC, 'receiving_yards', 'under', 52.5, 105, 0.50, { src: 'dkline', espn: { fair: 0.46, at: '2026-10-15T03:08Z', tested: true, listed: true } }],
+        ['fx-tc', 'TE', 'FXE', 'FXF', GC, 'any_td', 'over', 1, 180, 0.37],
+        ['fx-rd', 'RB', 'FXA', 'FXB', GA, 'rushing_yards', 'over', 44.5, -200, 0.66],
+        ['fx-rh', 'RB', 'FXF', 'FXE', GC, 'rushing_yards', 'over', 64.5, -110, 0.49, { oth: -130 }],
+        /* none of these is a candidate */
+        ['fx-qa', 'QB', 'FXA', 'FXB', GA, 'passing_tds', 'over', 1.5, -150, 0.60, { why: 'his second line, of a smaller lean' }],
+        ['fx-wd', 'WR', 'FXD', 'FXC', GB, 'receiving_yards', 'over', 99.5, 310, 0.45, { src: 'dkline', espn: { fair: 0.35, at: '2026-10-15T03:08Z', tested: true, listed: true }, why: 'a price past +300' }],
+        ['fx-rf', 'RB', 'FXD', 'FXC', GB, 'rushing_yards', 'over', 39.5, -210, 0.72, { why: 'a price under -200' }],
+        ['fx-rc', 'RB', 'FXE', 'FXF', GC, 'scrim_yards', 'over', 79.5, 250, 0.33, { why: 'DraftKings\' fair chance under 30%' }],
+        ['fx-te', 'TE', 'FXF', 'FXE', GC, 'receiving_yards', 'over', 39.5, -150, 0.52, { why: 'an Elo chance under the fair chance' }],
+        ['fx-rg', 'RB', 'FXB', 'FXA', GA, 'rushing_yards', 'over', 54.5, -110, 0.497, { oth: -110, why: 'an Elo chance above the price\'s one-sided reading but under DraftKings\' fair chance with both sides\' margin out' }],
+        ['fx-wa', 'WR', 'FXA', 'FXB', GA, 'targets', 'over', 6.5, 120, 0.70, { why: 'a stat the matchup has not earned', untrusted: true }],
+        ['fx-wb', 'WR', 'FXD', 'FXC', GB, 'receiving_yards', 'over', 49.5, 100, 0.70, { why: 'the model\'s own estimate', src: 'est' }],
+        ['fx-xx', 'WR', 'FXB', 'FXA', GA, 'receiving_yards', 'over', 59.5, 100, 0.70, { why: 'a player the ratings do not have', unrated: true }],
+        ['team:FXA', 'TEAM', 'FXA', 'FXB', GA, 'ml', 'over', 0, -110, 0.70, { why: 'a team bet' }],
+        /* a nudge of exactly 0 on a stat the matchup has earned, at a fair chance (-120 on one side, 51.6%) where the page's
+           normal curves round its Elo chance up by 2e-7: it leans nowhere */
+        ['fx-z0', 'RB', 'FXC', 'FXD', GB, 'receptions', 'over', 2.5, -120, null, { why: 'a nudge of 0: his matchup leans nowhere', zero: true }]];
+      /* the same-game pairs that move together, by the builder's keys (rel|grp:stat|grp:stat) */
+      const CORR_FX = { 'team|QB:passing_yards|WR:receiving_yards': 0.45, 'opp|QB:passing_yards|TE:any_td': 0.08, 'opp|TE:any_td|WR:receiving_yards': 0.05,
+        'opp|RB:rushing_yards|WR:receptions': -0.10, 'team|TE:any_td|WR:receiving_yards': -0.06, 'opp|QB:passing_tds|TE:any_td': 0.12, 'opp|QB:passing_tds|WR:receiving_yards': 0.10,
+        'team|QB:passing_yards|RB:rushing_yards': -0.11 };
+      const { MUf, Pf, legs, whys } = build(ROWS1), errors = [], { w } = page(MUf, { errors, P: Pf }); await wait(60);
+      sumsInto(w, CORR_FX); w.__fx = legs; w.eval(PRICED_BY('__fx'));
+      const sums = sumsOwn(CORR_FX), own = candsOwn(legs, MUf, Pf.players), by = (pid, stat) => legs.find(l => l.pid === pid && l.stat === stat);
       let r; try { r = w.eloPicks(); } catch (err) { r = 'threw ' + err.message; }
-      if (!r || !Array.isArray(r.tiers)) { chk(false, `${nm}: the Elo picks do not build on the check's own lines: ${typeof r === 'string' ? r : JSON.stringify(r)}`); continue; }
-      const own = candsOwn(legs, MUf, Pf.players, sums), C = r.cands || [];
-      chk(C.map(idC).join() === own.kept.map(idC).join() && C.every((l, i) => Math.abs(l.pe - own.kept[i].pe) < 1e-6) && r.candidates === own.all.length,
-        `${nm}: the Elo picks' candidates are not the rule's, ranked on value: ${C.map(l => l.pid + ' ' + l.stat + ' ' + l.price).join(', ')}; the rule ${own.kept.map(l => l.pid + ' ' + l.stat + ' ' + l.price).join(', ')}`);
-      chk(!C.some(l => whys.some(x => idC(x) === idC(l))), `${nm}: a line that is no candidate is one: ` + C.filter(l => whys.some(x => idC(x) === idC(l))).map(l => whys.find(x => idC(x) === idC(l)).why).join('; '));
-      if (nm === 'F5') {
-        /* all 34 searched, the four favourites among them, and Safe two of them: the best value over 35%, worked out here
-           over every pair (the likeliest pair where none reaches it) */
-        let likely = null, best = null; for (let i = 0; i < C.length; i++) for (let j = i + 1; j < C.length; j++) { if (clashOwn(C[i], C[j])) continue; const O = sums.pbOrder([C[i], C[j]]), p = sums.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr,
-            d = sums.parlayDec(O.map(l => ({ leg: l, ml: l.price }))), k = O.map(idC).sort().join(',');
-          if (!likely || p > likely.p || (p === likely.p && k < likely.k)) likely = { O, p, k };
-          if (p >= EPC.safe && (!best || p * d > best.v || (p * d === best.v && k < best.k))) best = { O, p, k, v: p * d }; }
-        const want5 = best || likely, safe = r.tiers.find(t => t.id === 'elo-safe');
-        chk(C.length === 34 && ['fx-f0', 'fx-f1', 'fx-f2', 'fx-f3'].every(pid => C.some(l => l.pid === pid)) && !!best && !!safe && safe.legs.map(idC).sort().join(',') === want5.k && safe.p === want5.p
-          && !safe.likeliest && safe.legs.every(l => /^fx-f/.test(l.pid)),
-          `F5: the Elo picks are not searched from the 30 best by value and the 10 likeliest, or Safe is not the best value over 35%: ${C.length} searched; Safe ${safe ? safe.legs.map(l => l.pid).join('+') + ' at ' + safe.p : 'none'}, the rule's ${want5.O.map(l => l.pid).join('+')} at ${want5.p}`);
-        notes.push(`the Elo picks on 34 candidates, four heavy favourites of thin value among them: ${C.length} searched, Safe ${safe ? safe.legs.map(l => l.pid.slice(3)).join('+') : 'none'}`);
-        chk(!errors.length, `${nm}: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); continue; }
-      const want = levelsOwn(C, sums);
-      /* the search's fast sums are the props parts' to the bit on every parlay worked out here */
-      { const bad = fastOff(w, C, want.sums);
-        chk(!bad.length, `${nm}: the Elo picks' fast sums are not parlayProb's and parlayDec's to the bit on ${bad.length} of ${want.sums.length} parlays: ${bad.slice(0, 3).join('; ')}`); }
-      for (const t of want) { const g = r.tiers.find(x => x.id === t.id);
-        if (t.none) { const why = t.clash ? CLASH_WHY(t.n, r.candidates, 'on your picks') : `Only ${C.length} players on your picks qualify: this level takes ${t.n}.`;
-          chk(!!g && !g.legs.length && g.why === why, `${nm}: the ${t.label} Elo pick is not empty, saying why ("${why}"), with ${C.length} candidates: ${JSON.stringify(g && (g.why || g.legs.map(idC)))}`); continue; }
-        chk(!!g && !clashIn(g.legs), `${nm}: the ${t.label} Elo pick holds a pair DraftKings will not take on one slip (a quarterback's passing TDs with a teammate's touchdown): ${g ? g.legs.map(l => l.pid + ' ' + l.stat + ' ' + l.team).join(', ') : 'none'}`);
-        chk(!!g && g.legs.map(idC).join() === t.legs.map(idC).join() && g.p === t.p && g.dec === t.dec && !!g.likeliest === t.likeliest,
-          `${nm}: the ${t.label} Elo pick is not Suggested Parlays' rule on the Elo chance worked out in full (${t.likeliest ? 'the likeliest ' + t.n + ' legs' : t.floor ? 'best return over ' + t.floor : 'the likeliest pair'}): it holds ${g ? g.legs.map(l => l.pid).join(', ') + ' at ' + g.p + ', ' + g.dec + (g.likeliest ? ' (likeliest)' : '') : 'nothing'}, the rule ${t.legs.map(l => l.pid).join(', ')} at ${t.p}, ${t.dec}`); }
-      if (nm === 'F1') {
-        /* the -115 main line leads, ahead of the +150 touchdown: on value, never plus money first */
-        const td = C.find(l => l.pid === 'fx-ta');
-        chk(!!C[0] && C[0].pid === 'fx-qa' && C[0].price === -115 && C[0].main && !!td && C[0].ev > td.ev && C.indexOf(td) > 0,
-          `F1: the -115 main line of the better value does not lead the Elo picks' candidates, ahead of the +150 touchdown: ${C.map(l => l.pid + ' ' + l.price + ' ' + l.ev.toFixed(3)).join(', ')}`);
-        chk(C.some(l => l.src === 'dkline'), 'F1: a price from DraftKings\' line read by Refresh odds is not a candidate, on a payload with no DraftKings ids');
-        /* legs of one game, priced together: some level holds two legs of one game that move together, at the
-           builder's sums and not at the legs multiplied */
+      if (!r || !Array.isArray(r.tiers) || !Array.isArray(r.cands)) chk(false, `F1: the Elo picks do not build on the check's own lines: ${typeof r === 'string' ? r : JSON.stringify(r)}`);
+      else {
+        const C = r.cands, off = candsOff(C, own), has = (pid, stat) => C.some(l => l.pid === pid && l.stat === stat);
+        chk(!off && r.candidates === C.length && C.length === 10 && own.edge.length === 1,
+          `F1: the Elo picks' candidates are not the rule's (DraftKings' fair chance 30% or more, the Elo chance above it, -200 to +300, his largest lean, ranked by lean): ${off || say(C)} (${r.candidates} counted)`);
+        chk(!C.some(l => whys.some(x => idC(x) === idC(l))), 'F1: a line that is no candidate is one: ' + C.filter(l => whys.some(x => idC(x) === idC(l))).map(l => whys.find(x => idC(x) === idC(l)).why).join('; '));
+        chk(!!C[0] && C[0].pid === 'fx-qa' && C[0].stat === 'passing_yards' && has('fx-rd', 'rushing_yards') && C.some(l => l.src === 'dkline'),
+          `F1: the largest lean (fx-qa's two-sided passing yards) does not lead, or the price band's end (-200) or a price from DraftKings' line read on ESPN is not a candidate: ${say(C)}`);
+        chk(has('fx-rh', 'rushing_yards') && !has('fx-rg', 'rushing_yards'),
+          `F1: where both sides are on file, the lean is not against DraftKings' fair chance with both sides' margin out (an Elo chance above that fair chance and under the one side's reading a candidate, and one the other way round none): ${say(C)}`);
+        /* the levels: the first n candidates that go together on one DraftKings slip */
+        const want = levelsOwn(C, sums, 'on your picks');
+        want.forEach((f, i) => { const bad = levelOff(r.tiers[i], f, { corr: CORR_FX });
+          chk(!bad, `F1: the ${f.label} Elo pick is not the first ${f.n} of the candidates that go together on one DraftKings slip: ${bad}`); });
+        chk(r.tiers.length === 4 && r.tiers.every(t => t.legs.length === t.n), 'F1: an Elo pick level is empty with ten candidates and no pair DraftKings refuses');
+        /* legs of one game, priced together: some level holds two legs of one game that move together, at the builder's
+           sums and not at the legs multiplied */
         const sg = r.tiers.filter(t => t.legs.length && t.legs.some((a, i) => t.legs.some((b, j) => j > i && a.gid === b.gid && Math.abs(sums.legRho(a, b)) >= 0.03)));
         chk(sg.length > 0 && sg.every(t => Math.abs(t.dec - t.legs.reduce((a, l) => a * sums.mlToDec(l.price), 1)) > 1e-3 && Math.abs(t.p - t.legs.reduce((a, l) => a * l.pe, 1)) > 1e-3),
           `F1: no Elo pick takes two legs of one game that move together, or one is priced as its legs multiplied: ${r.tiers.map(t => t.id + ' ' + t.legs.map(l => l.gid.slice(-3)).join('/') + ' ' + t.p + ' ' + t.dec).join('; ')}`);
-        chk(r.tiers.every(t => t.legs.length === t.n), 'F1: an Elo pick level is empty with eight candidates');
+        /* the card's options (app v138): each player's shield, each leg's Elo lean (the nudge his matchup gives his
+           projection, in the stat's own units, where it has held up), how the level was chosen; no chance of any kind */
+        { let o = null, o0 = null; try { o = w.eloCardOpt(r.tiers[0]); o0 = w.eloCardOpt({ legs: [] }); } catch (err) { o = { err: err.message }; }
+          /* the nudge as the note says it (the check's own reading): a tenth in the stat's units, a touchdown's a hundredth,
+             signed but a figure shown as 0 unsigned (the review of 27 October 2026: "Elo +0.0" and "Elo −0.0" said nothing) */
+          const leanOwn = (v, stat) => { const sh = Math.abs(v).toFixed(stat === 'any_td' ? 2 : 1); return +sh === 0 ? sh : (v > 0 ? '+' : '−') + sh; };
+          const noteOwn = (v, stat) => `<small class="pe-lean" data-pe-lean="${v}" title="His Elo against the defenders he faces moves his projection ${leanOwn(v, stat)}">Elo ${leanOwn(v, stat)}</small>`;
+          { const nTd = MUf.players['fx-ta'].stats.any_td[2], tdN = o && typeof o.legNote === 'function' ? o.legNote(by('fx-ta', 'any_td')) : null, z0 = o && typeof o.legNote === 'function' ? o.legNote(by('fx-z0', 'receptions')) : null;
+            chk(tdN === noteOwn(nTd, 'any_td') && /Elo [+−]\d\.\d\d</.test(tdN || '') && z0 === noteOwn(0, 'receptions') && /Elo 0\.0</.test(z0 || ''),
+              `F1: an Elo lean is not said to its unit's precision, a figure shown as 0 unsigned: the touchdown's ${tdN} (want ${noteOwn(nTd, 'any_td')}), a nudge of 0 ${z0}`); }
+          const nud = MUf.players['fx-qa'].stats.passing_yards[2], sg1 = leanOwn(nud, 'passing_yards');
+          const wantNote = `<small class="pe-lean" data-pe-lean="${nud}" title="His Elo against the defenders he faces moves his projection ${sg1}">Elo ${sg1}</small>`;
+          const note = o && typeof o.legNote === 'function' ? o.legNote(by('fx-qa', 'passing_yards')) : null, none = o && typeof o.legNote === 'function' ? o.legNote(by('fx-wa', 'targets')) : null;
+          chk(!!o && Object.keys(o).sort().join() === 'badge,legNote,rule' && typeof o.badge === 'function' && note === wantNote && none === ''
+            && o.rule === '<span class="pb-rule" title="The players whose Elo matchup leans furthest their way, that go together on one DraftKings slip">strongest Elo leans</span>'
+            && !!o0 && Object.keys(o0).sort().join() === 'badge,legNote',
+            `F1: the Elo picks' card options are not each player's shield, each leg's Elo lean ("${wantNote}", none on a stat the matchup has not earned) and the rule "strongest Elo leans" (none on an empty level), with no chance: ${JSON.stringify(o && Object.keys(o))}, ${note}, ${JSON.stringify(none)}, ${o && o.rule}`); }
         /* (app v125) the id rule by content, as the hub page carries it beside the tab: a game whose PAY.dk entry a read of
            ESPN made (its event, glat and game lines' ids: the props job's published read, a press, the parlay card's check)
            carries no ids of the pull's, so its candidate priced from DraftKings' line stays, as on a JSON copy of that
@@ -1257,83 +1212,64 @@ function page(MU, opts) {
           chk(!!wc && wc.gid === GC && withRead === base && withCopy === base && typeof w.eval('dkCarries') === 'function' && !w.eval(`dkCarries({week:6,gid:${JSON.stringify(GC)}})`),
             `F1: a candidate priced from DraftKings' line on a game whose PAY.dk entry a read made (or a JSON copy of it) is dropped: ${withRead || 'none'} against ${base}`);
           chk(!!wc && carried !== base && !carried.split(',').includes(idC(wc)), 'F1: a game whose PAY.dk entry carries the pull\'s ids keeps a candidate with no id at its line, so the read-made case cannot tell');
-          notes.push(`the id rule by content: a candidate from DraftKings' line on a game whose PAY.dk entry a read made stays, and leaves where the entry carries the pull's ids`); }
-        notes.push(`the Elo picks on the check's own lines: ${r.tiers.map(t => `${t.label} ${t.legs.map(l => l.pid.slice(3)).join('+')} ${(t.p * 100).toFixed(1)}% at ${t.dec.toFixed(2)}${t.likeliest ? ' (likeliest)' : ''}`).join('; ')}`); }
-      else if (nm === 'F2') {
-        chk(r.tiers.filter(t => t.likeliest).length >= 2 && r.tiers.every(t => !t.likeliest || (t.floor && t.p < t.floor)),
-          `F2: the levels no parlay of whose size reaches the floor are not the likeliest of their size, marked so: ${r.tiers.map(t => t.id + (t.likeliest ? ' likeliest' : '') + ' ' + t.p).join(', ')}`);
-        notes.push(`the Elo picks on four candidates: ${r.tiers.map(t => t.legs.length ? `${t.label} ${t.legs.length}${t.likeliest ? ' (likeliest)' : ''}` : `${t.label} empty`).join('; ')}`); }
-      else {
-        /* every level here is held above to the rule worked out in full; and none is marked the likeliest at or over its floor */
-        chk(r.tiers.every(t => !t.likeliest || (t.floor && t.p < t.floor)), `${nm}: a level is marked the likeliest at or over its floor: ${r.tiers.map(t => t.id + (t.likeliest ? ' likeliest' : '') + ' ' + t.p).join(', ')}`);
-        notes.push(`the Elo picks on ${nm}'s ${C.length} candidates (${want.sums.length} parlays worked in full): ${r.tiers.map(t => `${t.label} ${(t.p * 100).toFixed(2)}%${t.likeliest ? ' (likeliest)' : ''} in ${new Set(t.legs.map(l => l.gid)).size} game${new Set(t.legs.map(l => l.gid)).size > 1 ? 's' : ''}`).join('; ')}`); }
-      /* (app v118) each unit's Elo picks on the check's own games (unitHeld), so it holds in any week: game A alone, "in
-         this game", and games B and C together as a Sunday slot, one game a level since app v121 (eloUnit takes the unit's
-         games as Suggested Parlays hands them over, perGame for the slot). F1's game A has three of its eight candidates,
-         so its Aggressive and Extreme are empty, saying why, and B two and C three, so the slot's Safe is the better of
-         theirs, its Medium C's and its Aggressive and Extreme empty, "Only 3 players in any one game of the Sunday slot
-         qualify"; F2's two, one and one, so every level of the slot is ("Only 1 player ... qualifies"); the check fails
-         unless it met a level worked out in full, an empty one and a slot level held to its games' own (F1), and a unit
-         whose candidates are not the whole week's */
-      if (nm === 'F1' || nm === 'F2') { w.eval(PRICED_BY('__fx'));
-        const nf = unitHeld(nm, w, legs, MUf, Pf.players, corr, [{ lab: 'game A alone', gids: [GA], where: 'in this game' }, { lab: 'games B and C as a Sunday slot', gids: [GB, GC], where: 'in the Sunday slot', perGame: true }]);
-        const nA = candsOwn(legs.filter(l => l.gid === GA), MUf, Pf.players, sums).all.length;
-        chk(nf.full > 0 && nf.empty > 0 && (nm !== 'F1' || nf.slot > 0) && nA > 0 && nA < own.all.length, `${nm}: the units' check met ${nf.full} levels worked out in full, ${nf.empty} empty and ${nf.slot} slot levels held to their games' own, and game A has ${nA} of ${own.all.length} candidates: it holds less than it says`);
-        notes.push(`each unit's Elo picks on ${nm}: game A alone (${nA} candidates) and games B and C as a Sunday slot, ${nf.full} levels worked out in full, ${nf.empty} empty, ${nf.slot} slot levels held to their games' own`); }
-      chk(!errors.length, `${nm}: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); }
+          notes.push('the id rule by content: a candidate from DraftKings\' line on a game whose PAY.dk entry a read made stays, and leaves where the entry carries the pull\'s ids'); }
+        notes.push(`the Elo picks on F1's ${C.length} candidates: ${r.tiers.map(t => `${t.label} ${t.legs.map(l => l.pid.slice(3)).join('+')} fair ${(t.fair.p * 100).toFixed(1)}% at ${t.dec.toFixed(2)}`).join('; ')}`); }
+      /* game A alone, "in this game", and games B and C together as a Sunday slot, one game a level: game A has four of the
+         ten candidates, its back's rushing yards passed over beside his quarterback's passing yards, so its Aggressive is
+         empty saying three go together and its Extreme saying four qualify; B two, which move against each other, so none
+         of its levels fills, and C four, its tight end's touchdown passed over beside the other club's quarterback's
+         passing TDs under, so the slot's Safe and Medium are C's, its Aggressive "Strongest first, only 3 leans in any one
+         game of the Sunday slot go together on one DraftKings slip" and its Extreme "Only 4 players in any one game of the
+         Sunday slot qualify" (since the review of 27 October 2026; until then B's pair went together and the slot's Safe
+         was the larger summed lean of B's and C's) */
+      const nf = unitHeld('F1', w, legs, MUf, Pf.players, CORR_FX, [{ lab: 'game A alone', gids: [GA], where: 'in this game' }, { lab: 'games B and C as a Sunday slot', gids: [GB, GC], where: 'in the Sunday slot', perGame: true }]);
+      const nA = candsOwn(legs.filter(l => l.gid === GA), MUf, Pf.players).all.length;
+      chk(nf.full > 0 && nf.empty > 0 && nf.slot > 0 && nA > 0 && nA < own.all.length, `F1: the units' check met ${nf.full} levels with legs, ${nf.empty} empty and ${nf.slot} slot levels held to their games' own, and game A has ${nA} of ${own.all.length} candidates: it holds less than it says`);
+      notes.push(`each unit's Elo picks on F1: game A alone (${nA} candidates) and games B and C as a Sunday slot, ${nf.full} levels with legs, ${nf.empty} empty, ${nf.slot} slot levels held to their games' own`);
+      chk(!errors.length, `F1: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); }
 
-    /* ---- F7 (app v121): the pairs DraftKings will not take on one slip, and the Sunday slot one game a level ----
-       The owner, 19 October 2026: "If your parlay already has a receiver anytime TD, a team total, or the game total,
-       adding the QB's passing TD over often gets blocked", "Some combos contradict each other, like QB under 1.5 passing
-       TDs alongside two of his receivers to score. The book rejects it outright.", and then "the legs need to be part of
-       the same game parlay only, and anytime there's a mix it bombs the hyperlink". Made-up players in four made-up games
-       of the check's own, on a correlation table of its own (the published payload's pairs, as F6's), so it holds in any
-       week:
-       - R at S: a quarterback's passing TDs over 1.5 and two of his receivers' anytime touchdowns, with his back and the
-         other club's quarterback, receiver and tight end; his passing TDs and his receivers' touchdowns move together
-         (0.323), so that with no rule Safe is him and his first receiver (the owner's case), and Aggressive and Extreme
-         hold a pair too;
-       - T at U: three candidates, a quarterback's passing TDs under 1.5 and his receiver's touchdown among them, so Medium,
-         which takes all three, is the rule's to empty: "No 3 of these 3 players go together on DraftKings’ slip.";
-       - V at W and X at Y: two candidates each, one game the other's mirror, so their Safe pairs tie to the bit, each
-         likelier than R at S's Safe and of less value.
-       Held: the props parts' rule as loaded into the page (dkClashWhy) the check's own (clashOwn) on every pair of R at
-       S's legs and of made-up legs beside them (his passing TDs under and a rung of them, his own touchdown, the game's
-       total over and under, a moneyline, a leg of another game), both kinds met; R at S and T at U each alone as a night
-       game's (unitHeld: every level the rule worked out in full, no pair on any level, the empty levels' words); the
-       Sunday slot, one game a level, of T at U and V at W (Medium "No 3 players in any one game of the Sunday slot go
-       together on DraftKings’ slip: ...", Aggressive "Only 3 players in any one game of the Sunday slot qualify: this
-       level takes 4."), of T at U, V at W and R at S (R at S's levels, Safe on value though V at W's is likelier), and of
-       V at W and X at Y both ways (the tie to the earlier game); and eloPicks() over all four games, each level the rule
-       worked out in full on the tab's fast sums (which the checks above hold to the props parts' sums to the bit) over
-       the parlays a quarter of which hold a pair, no level holding one. And the fixture is held to mean what it says:
-       worked out with no rule, R at S's Safe, Aggressive and Extreme and T at U's Medium each hold a pair, as the page
-       took them before app v121 (over all four games, where the mirror games' likely legs fill every level, the levels
-       hold no pair with no rule either, so the note only counts them there). */
-    { const G7 = '2026_06_FXR_FXS', G7B = '2026_06_FXT_FXU', G7C = '2026_06_FXV_FXW', G7D = '2026_06_FXX_FXY';
-      /* pid, group, team, opp, game, stat, side, line, price, the Elo chance wanted */
-      const ROWS7 = [
-        ['fx-q7', 'QB', 'FXR', 'FXS', G7, 'passing_tds', 'over', 1.5, 120, 0.58],
-        ['fx-w7', 'WR', 'FXR', 'FXS', G7, 'any_td', 'over', 1, 150, 0.535],
-        ['fx-w8', 'WR', 'FXR', 'FXS', G7, 'any_td', 'over', 1, 170, 0.46],
+    /* ---- F2: the greedy prefix, the pairs DraftKings refuses, ties and the slot ---- */
+    { const G7 = '2026_06_FXR_FXS', G7B = '2026_06_FXT_FXU', G7C = '2026_06_FXV_FXW', G7D = '2026_06_FXX_FXY', G7E = '2026_06_FXJ_FXK', G7F = '2026_06_FXL_FXM';
+      const ROWS2 = [
+        ['fx-q7', 'QB', 'FXR', 'FXS', G7, 'passing_tds', 'over', 1.5, 120, 0.56],
+        ['fx-w7', 'WR', 'FXR', 'FXS', G7, 'any_td', 'over', 1, 150, 0.49],
         ['fx-r7', 'RB', 'FXR', 'FXS', G7, 'rushing_yards', 'over', 59.5, -115, 0.60],
-        ['fx-t7', 'TE', 'FXS', 'FXR', G7, 'any_td', 'over', 1, 200, 0.38],
-        ['fx-q8', 'QB', 'FXS', 'FXR', G7, 'passing_yards', 'over', 229.5, -110, 0.58],
-        ['fx-w9', 'WR', 'FXS', 'FXR', G7, 'receiving_yards', 'over', 64.5, -105, 0.56],
-        ['fx-qt', 'QB', 'FXT', 'FXU', G7B, 'passing_tds', 'under', 1.5, -120, 0.62],
+        ['fx-w8', 'WR', 'FXR', 'FXS', G7, 'any_td', 'over', 1, 170, 0.43],
+        ['fx-q8', 'QB', 'FXS', 'FXR', G7, 'passing_yards', 'over', 229.5, -110, 0.52],
+        ['fx-qt', 'QB', 'FXT', 'FXU', G7B, 'passing_tds', 'under', 1.5, -120, 0.60],
         ['fx-wt', 'WR', 'FXT', 'FXU', G7B, 'any_td', 'over', 1, 140, 0.47],
-        ['fx-ru', 'RB', 'FXU', 'FXT', G7B, 'rushing_yards', 'over', 54.5, -110, 0.59],
-        ['fx-qv', 'QB', 'FXV', 'FXW', G7C, 'passing_yards', 'over', 239.5, -125, 0.66],
-        ['fx-ww', 'WR', 'FXW', 'FXV', G7C, 'receptions', 'over', 4.5, -130, 0.68],
-        ['fx-qx', 'QB', 'FXX', 'FXY', G7D, 'passing_yards', 'over', 239.5, -125, 0.66],
-        ['fx-wy', 'WR', 'FXY', 'FXX', G7D, 'receptions', 'over', 4.5, -130, 0.68]];
-      const CORR_F7 = { 'team|QB:passing_tds|WR:any_td': 0.323, 'team|QB:passing_tds|RB:rushing_yards': 0.03, 'opp|QB:passing_tds|TE:any_td': 0.031, 'opp|QB:passing_tds|QB:passing_yards': 0.148,
+        ['fx-ru', 'RB', 'FXU', 'FXT', G7B, 'rushing_yards', 'over', 54.5, -110, 0.56],
+        ['fx-av', 'WR', 'FXV', 'FXW', G7C, 'receiving_yards', 'over', 64.5, -110, 0.58],
+        ['fx-qv', 'QB', 'FXV', 'FXW', G7C, 'passing_yards', 'over', 239.5, -110, 0.58],
+        ['fx-tv', 'TE', 'FXW', 'FXV', G7C, 'any_td', 'over', 1, -110, 0.58],
+        ['fx-ww', 'WR', 'FXW', 'FXV', G7C, 'receptions', 'over', 4.5, -110, 0.58],
+        ['fx-ww', 'WR', 'FXW', 'FXV', G7C, 'any_td', 'over', 1, -110, 0.58, { why: 'his touchdown, level with his main line' }],
+        ['fx-ax', 'WR', 'FXX', 'FXY', G7D, 'receiving_yards', 'over', 64.5, -110, 0.58],
+        ['fx-qx', 'QB', 'FXX', 'FXY', G7D, 'passing_yards', 'over', 239.5, -110, 0.58],
+        ['fx-tx', 'TE', 'FXY', 'FXX', G7D, 'any_td', 'over', 1, -110, 0.58],
+        ['fx-wy', 'WR', 'FXY', 'FXX', G7D, 'receptions', 'over', 4.5, -110, 0.58],
+        /* (the review of 27 October 2026) J at K: a quarterback's passing yards under leaning furthest, his receiver's and
+           his tight end's yards over second and fourth (each moving against it), the other club's back third */
+        ['fx-qj', 'QB', 'FXJ', 'FXK', G7E, 'passing_yards', 'under', 192.5, -110, 0.60],
+        ['fx-wj', 'WR', 'FXJ', 'FXK', G7E, 'receiving_yards', 'over', 38.5, -110, 0.57],
+        ['fx-rk', 'RB', 'FXK', 'FXJ', G7E, 'rushing_yards', 'over', 59.5, -110, 0.56],
+        ['fx-tj', 'TE', 'FXJ', 'FXK', G7E, 'receiving_yards', 'over', 44.5, -110, 0.55],
+        /* L at M: a back's receiving yards over leaning furthest; his teammate's receptions over second, at -0.04 with it (kept:
+           above the bar); the other club's tight end's receiving yards over third, at -0.06 with the back (passed over); the
+           other club's quarterback's passing TDs fourth, with neither */
+        ['fx-ll', 'RB', 'FXL', 'FXM', G7F, 'receiving_yards', 'over', 24.5, -110, 0.60],
+        ['fx-wl', 'WR', 'FXL', 'FXM', G7F, 'receptions', 'over', 4.5, -110, 0.58],
+        ['fx-tm', 'TE', 'FXM', 'FXL', G7F, 'receiving_yards', 'over', 39.5, -110, 0.56],
+        ['fx-qm', 'QB', 'FXM', 'FXL', G7F, 'passing_tds', 'over', 1.5, -110, 0.54]];
+      const CORR_F2 = { 'team|QB:passing_tds|WR:any_td': 0.323, 'team|QB:passing_tds|RB:rushing_yards': 0.03, 'opp|QB:passing_tds|TE:any_td': 0.031, 'opp|QB:passing_tds|QB:passing_yards': 0.148,
         'opp|QB:passing_tds|WR:receiving_yards': 0.07, 'team|WR:any_td|WR:any_td': -0.032, 'opp|TE:any_td|WR:receiving_yards': 0.039, 'team|QB:passing_yards|WR:receiving_yards': 0.353,
         'opp|QB:passing_yards|WR:any_td': 0.099, 'opp|QB:passing_yards|TE:any_td': 0.038, 'opp|QB:passing_tds|RB:rushing_yards': -0.047, 'opp|QB:passing_yards|WR:receptions': 0.036,
-        'opp|RB:rushing_yards|WR:receiving_yards': -0.037, 'team|TE:any_td|WR:receiving_yards': 0.03 };
-      const { MUf, Pf, legs } = build(ROWS7), errors = [], { w } = page(MUf, { errors, P: Pf }); await wait(60);
-      sumsInto(w, CORR_F7); w.__f7 = legs; w.eval(PRICED_BY('__f7'));
-      const sums7 = sumsOwn(CORR_F7), by = pid => legs.find(l => l.pid === pid), ids = ls => ls.map(idC).sort().join(',');
+        'opp|RB:rushing_yards|WR:receiving_yards': -0.037, 'team|TE:any_td|WR:receiving_yards': 0.03, 'opp|TE:any_td|WR:receptions': 0.032,
+        'team|QB:passing_yards|TE:receiving_yards': 0.229, 'team|RB:receiving_yards|WR:receptions': -0.04, 'opp|RB:receiving_yards|TE:receiving_yards': -0.06 };
+      const { MUf, Pf, legs, whys } = build(ROWS2), errors = [], { w } = page(MUf, { errors, P: Pf }); await wait(60);
+      sumsInto(w, CORR_F2); w.__fx = legs; w.eval(PRICED_BY('__fx'));
+      const sums = sumsOwn(CORR_F2), by = pid => legs.find(l => l.pid === pid);
+      const unit = (g, o) => { try { return w.eloUnit(g, o); } catch (err) { return { error: 'threw ' + err.message }; } };
       /* the rule as the page has it loaded, against the check's own, on every ordered pair */
       { const q = by('fx-q7'), wt = by('fx-wt');
         const more = [{ ...q, k: 2.5, main: false, label: 'over 2.5 passing_tds' }, { ...q, side: 'under', label: 'under 1.5 passing_tds' },
@@ -1344,109 +1280,105 @@ function page(MU, opts) {
         for (const a of L) for (const b of L) { if (a === b) continue; n++; const want = clashOwn(a, b); let got; try { got = w.dkClashWhy(a, b); } catch (err) { got = 'threw ' + err.message; }
           met.add(String(want)); if (got !== want) bad.push(`${a.pid} ${a.stat} ${a.side} with ${b.pid} ${b.stat} ${b.side}: ${got}, the rule ${want}`); }
         chk(!bad.length && ['td', 'total', 'null'].every(k => met.has(k)) && typeof w.dkClash === 'function' && L.every(a => L.every(b => a === b || w.dkClash(a, b) === !!clashOwn(a, b))),
-          `F7: the props parts' DraftKings pair rule, as loaded beside the tab, is not the rule (a quarterback's passing TDs with a teammate's anytime touchdown, or his passing TDs over with the game's total), on ${bad.length} of ${n} pairs (kinds met: ${[...met].join(', ')}): ${bad.slice(0, 3).join('; ')}`); }
-      /* the fixture means what it says: with no rule, the levels the page took before app v121 hold a pair */
-      { const cands = g => { const r = w.eloPicks({ games: [g], where: 'in this game' }); return r && Array.isArray(r.cands) ? r.cands : []; };
-        const freeR = levelsOwn(cands(G7), sums7, { free: true }), freeT = levelsOwn(cands(G7B), sums7, { free: true });
-        const pairIn = (lv, id) => { const t = lv.find(x => x.id === id); return !!t && !t.none && clashIn(t.legs); };
-        chk(['elo-safe', 'elo-aggr', 'elo-xtrm'].every(id => pairIn(freeR, id)) && pairIn(freeT, 'elo-med') && freeR.find(t => t.id === 'elo-safe').legs.every(l => ['fx-q7', 'fx-w7'].includes(l.pid)),
-          `F7: worked out with no rule, R at S's Safe (the quarterback's passing TDs and his receiver's touchdown), Aggressive and Extreme and T at U's Medium do not each hold a pair DraftKings refuses, so the fixture no longer tells the page from the one before app v121: ${freeR.map(t => t.id + ' ' + (t.legs || []).map(l => l.pid).join('+')).join('; ')}; T at U's Medium ${(freeT.find(t => t.id === 'elo-med').legs || []).map(l => l.pid).join('+')}`); }
+          `F2: the props parts' DraftKings pair rule, as loaded beside the tab, is not the rule (a quarterback's passing TDs with a teammate's anytime touchdown, or his passing TDs over with the game's total), on ${bad.length} of ${n} pairs (kinds met: ${[...met].join(', ')}): ${bad.slice(0, 3).join('; ')}`); }
+      /* leans tied to the bit: the main lines first, by id, then the touchdown; and a player's two lines tied, his main line */
+      { const r = w.eloPicks({ games: [G7C], where: 'in this game' }), C = r && Array.isArray(r.cands) ? r.cands : [];
+        chk(C.map(l => l.pid + ' ' + l.stat).join(', ') === 'fx-av receiving_yards, fx-qv passing_yards, fx-ww receptions, fx-tv any_td' && C.length === 4 && C.every(l => l.lean === C[0].lean),
+          `F2: four legs whose leans tie to the bit are not ranked the main lines first by id, then the touchdown, with a player's main line kept over his touchdown at the same lean: ${C.map(l => l.pid + ' ' + l.stat + ' ' + l.lean).join(', ')}`);
+        chk(!C.some(l => whys.some(x => idC(x) === idC(l))), 'F2: a player\'s touchdown, level with his main line, is taken in its place'); }
+      /* the fixture means what it says: with no pair rule, R at S's Safe is its quarterback's passing TDs and his first
+         receiver's touchdown, a pair DraftKings refuses (so the greedy prefix's skipping is what the levels below meet) */
+      { const r = w.eloPicks({ games: [G7], where: 'in this game' }), C = r && Array.isArray(r.cands) ? r.cands : [], free = levelsOwn(C, sums, 'in this game', { free: true });
+        chk(!free[0].none && clashIn(free[0].legs) && pids(free[0]) === 'fx-q7+fx-w7' && C.map(l => l.pid).join() === 'fx-q7,fx-w7,fx-r7,fx-w8,fx-q8',
+          `F2: R at S's candidates are not its quarterback's passing TDs, his receiver's touchdown, his back, his other receiver's touchdown and the other quarterback by lean, or with no pair rule its Safe holds no pair, so the fixture no longer tells the greedy prefix from a page with none: ${say(C)}; with no rule ${pids(free[0])}`); }
+      /* (the review of 27 October 2026) the legs that move against each other. The props parts' legRho, as loaded beside
+         the tab (the correlation parlayProb's Cholesky rows read, which the tab's walk calls), the check's own reading of
+         the table on every ordered pair of F2's legs, so the walk and the check stand on one correlation */
+      { const PL = legs.filter(l => l.grp !== 'TEAM'), bad = []; let n = 0, neg = 0;
+        for (const a of PL) for (const b of PL) { if (a === b) continue; n++; let got; try { got = w.legRho(a, b); } catch (err) { got = 'threw ' + err.message; }
+          const want = rhoOwn(a, b, CORR_F2); if (opposedOwn(a, b, CORR_F2)) neg++; if (got !== want) bad.push(`${a.pid} ${a.stat} with ${b.pid} ${b.stat}: ${got}, the table ${want}`); }
+        chk(!bad.length && neg > 0, `F2: the props parts' legRho, as loaded beside the tab, is not the pair table read by the check on ${bad.length} of ${n} pairs (${neg} opposed): ${bad.slice(0, 3).join('; ')}`); }
+      /* J at K: its quarterback's passing yards under leans furthest, his receiver's yards over second and his tight end's
+         fourth, each moving against it (the table's team pairs 0.353 and 0.229, turned by the under) and passed over, and
+         the other club's back third, moving with neither; with neither rule its Safe is the quarterback and his receiver,
+         a pair DraftKings takes, so only the walk's passing over legs that move against each other tells the levels below
+         from a page without it; and the same pair the other way round, V at W's quarterback's passing yards over with his
+         receiver's over, moves together and stays together in its Safe */
+      { const r = w.eloPicks({ games: [G7E], where: 'in this game' }), C = r && Array.isArray(r.cands) ? r.cands : [], free = levelsOwn(C, sums, 'in this game', { free: true });
+        chk(C.map(l => l.pid).join() === 'fx-qj,fx-wj,fx-rk,fx-tj' && !free[0].none && pids(free[0]) === 'fx-qj+fx-wj' && !clashIn(free[0].legs)
+          && opposedOwn(C[0], C[1], CORR_F2) && opposedOwn(C[0], C[3], CORR_F2) && !opposedOwn(C[0], C[2], CORR_F2) && !opposedOwn(by('fx-qv'), by('fx-av'), CORR_F2),
+          `F2: J at K's candidates are not its quarterback's passing yards under, his receiver's yards over, the other club's back and his tight end's yards over by lean, the first moving against the second and the fourth and not the third (and V at W's passing yards over with its receiver's over together), or with neither rule its Safe is not the quarterback and his receiver, no pair DraftKings refuses, so the fixture no longer tells the walk from one without the rule: ${say(C)}; with neither rule ${pids(free[0])}`);
+        const jk = unit([G7E], { where: 'in this game' });
+        chk(pids(lvOf(jk, 'elo-safe')) === 'fx-qj+fx-rk' && (lvOf(jk, 'elo-med') || {}).why === 'Strongest first, only 2 leans in this game go together on one DraftKings slip: this level takes 3.'
+          && (lvOf(jk, 'elo-aggr') || {}).why === 'Strongest first, only 2 leans in this game go together on one DraftKings slip: this level takes 4.'
+          && (lvOf(jk, 'elo-xtrm') || {}).why === 'Only 4 players in this game qualify: this level takes 5.',
+          `F2: J at K's levels do not pass over the receiver's and the tight end's yards over beside the quarterback's passing yards under (Safe the quarterback and the other club's back, Medium and Aggressive "Strongest first, only 2 leans in this game go together on one DraftKings slip: this level takes 3 (4).", Extreme "Only 4 players in this game qualify: this level takes 5."): ${jk && jk.tiers ? jk.tiers.map(t => t.id + ' ' + (t.legs ? pids(t) : t.why)).join('; ') : JSON.stringify(jk)}`); }
+      /* L at M: the bar, -0.05, from both sides. The back's receiving yards over leans furthest; his teammate's receptions
+         over, at -0.04 with it, is kept (above the bar); the other club's tight end's yards over, at -0.06 with the back, is
+         passed over; the quarterback's passing TDs moves with neither. So Safe is the back and the receiver, Medium the
+         quarterback too, Aggressive runs short (3 go together) and Extreme too few. At a bar of nothing (the rule until
+         the review of 27 October 2026) the receiver would go too and Safe be the back and the quarterback; with no bar the
+         tight end would stay and Medium be the back, the receiver and the tight end */
+      { const r = w.eloPicks({ games: [G7F], where: 'in this game' }), C = r && Array.isArray(r.cands) ? r.cands : [], lm = unit([G7F], { where: 'in this game' });
+        chk(C.map(l => l.pid).join() === 'fx-ll,fx-wl,fx-tm,fx-qm' && !opposedOwn(C[0], C[1], CORR_F2) && rhoOwn(C[0], C[1], CORR_F2) === -0.04 && opposedOwn(C[0], C[2], CORR_F2) && rhoOwn(C[0], C[2], CORR_F2) === -0.06
+          && !opposedOwn(C[1], C[2], CORR_F2) && C.slice(0, 3).every(l => !opposedOwn(l, C[3], CORR_F2)) && !clashIn(C),
+          `F2: L at M's candidates are not the back's receiving yards, the receiver's receptions, the tight end's yards and the quarterback's passing TDs by lean, the first two at -0.04 and the first and third at -0.06, no other pair moving against another: ${say(C)}`);
+        chk(pids(lvOf(lm, 'elo-safe')) === 'fx-ll+fx-wl' && pids(lvOf(lm, 'elo-med')) === 'fx-ll+fx-qm+fx-wl'
+          && (lvOf(lm, 'elo-aggr') || {}).why === 'Strongest first, only 3 leans in this game go together on one DraftKings slip: this level takes 4.'
+          && (lvOf(lm, 'elo-xtrm') || {}).why === 'Only 4 players in this game qualify: this level takes 5.',
+          `F2: L at M's levels do not keep the receiver at -0.04 and pass over the tight end at -0.06 beside the back (Safe the back and the receiver, Medium the quarterback too, Aggressive "Strongest first, only 3 leans in this game go together on one DraftKings slip: this level takes 4.", Extreme "Only 4 players in this game qualify: this level takes 5."): ${lm && lm.tiers ? lm.tiers.map(t => t.id + ' ' + (t.legs ? pids(t) : t.why)).join('; ') : JSON.stringify(lm)}`); }
+      /* the words and the branches, as the owner reads them */
+      { const rs = unit([G7], { where: 'in this game' }), tu = unit([G7B], { where: 'in this game' }), vw = unit([G7C], { where: 'in this game' });
+        chk(pids(lvOf(rs, 'elo-safe')) === 'fx-q7+fx-r7' && pids(lvOf(rs, 'elo-med')) === 'fx-q7+fx-q8+fx-r7'
+          && (lvOf(rs, 'elo-aggr') || {}).why === 'Strongest first, only 3 leans in this game go together on one DraftKings slip: this level takes 4.' && (lvOf(rs, 'elo-xtrm') || {}).why === 'Strongest first, only 3 leans in this game go together on one DraftKings slip: this level takes 5.',
+          `F2: R at S's levels do not pass over his receivers' touchdowns (Safe his passing TDs and his back, Medium the other quarterback too, Aggressive and Extreme "Strongest first, only 3 leans in this game go together on one DraftKings slip: this level takes 4 (5)."): ${rs && rs.tiers ? rs.tiers.map(t => t.id + ' ' + (t.legs ? pids(t) : t.why)).join('; ') : JSON.stringify(rs)}`);
+        chk(pids(lvOf(tu, 'elo-safe')) === 'fx-qt+fx-ru' && (lvOf(tu, 'elo-med') || {}).why === 'Strongest first, only 2 leans in this game go together on one DraftKings slip: this level takes 3.'
+          && (lvOf(tu, 'elo-aggr') || {}).why === 'Only 3 players in this game qualify: this level takes 4.',
+          `F2: T at U's levels are not its quarterback's passing TDs under and the other club's back, then "Strongest first, only 2 leans in this game go together on one DraftKings slip: this level takes 3." and "Only 3 players in this game qualify: this level takes 4.": ${tu && tu.tiers ? tu.tiers.map(t => t.id + ' ' + (t.legs ? pids(t) : t.why)).join('; ') : JSON.stringify(tu)}`);
+        chk((lvOf(vw, 'elo-xtrm') || {}).why === 'Only 4 players in this game qualify: this level takes 5.' && pids(lvOf(vw, 'elo-safe')) === 'fx-av+fx-qv',
+          `F2: V at W's Safe is not its first two main lines by id, or its Extreme does not say "Only 4 players in this game qualify: this level takes 5.": ${vw && vw.tiers ? vw.tiers.map(t => t.id + ' ' + (t.legs ? pids(t) : t.why)).join('; ') : JSON.stringify(vw)}`);
+        const s1 = unit([G7C, G7], { where: 'in the Sunday slot', perGame: true });
+        chk(pids(lvOf(s1, 'elo-safe')) === 'fx-q7+fx-r7' && ['elo-med', 'elo-aggr'].every(id => { const t = lvOf(s1, id); return !!t && Array.isArray(t.legs) && t.legs.every(l => l.gid === G7C); })
+          && (lvOf(s1, 'elo-xtrm') || {}).why === 'Strongest first, only 4 leans in any one game of the Sunday slot go together on one DraftKings slip: this level takes 5.',
+          `F2: the Sunday slot of V at W and R at S does not take R at S's Safe (the larger summed lean, though V at W is listed first) and V at W's Medium and Aggressive, its Extreme "Strongest first, only 4 leans in any one game of the Sunday slot go together on one DraftKings slip: this level takes 5.": ${s1 && s1.tiers ? s1.tiers.map(t => t.id + ' ' + (t.legs ? pids(t) : t.why)).join('; ') : JSON.stringify(s1)}`);
+        const s2 = unit([G7B, G7C], { where: 'in the Sunday slot', perGame: true });
+        chk((lvOf(s2, 'elo-xtrm') || {}).why === 'Only 4 players in any one game of the Sunday slot qualify: this level takes 5.',
+          `F2: the Sunday slot of T at U and V at W does not say its Extreme is empty of any one game, "Only 4 players in any one game of the Sunday slot qualify: this level takes 5.": ${JSON.stringify(lvOf(s2, 'elo-xtrm'))}`);
+        const tie = [[G7C, G7D], [G7D, G7C]].map(g => unit(g, { where: 'in the Sunday slot', perGame: true })), xy = unit([G7D], { where: 'in this game' });
+        const sumOf = t => t && Array.isArray(t.legs) ? t.legs.reduce((a, l) => a + l.lean, 0) : NaN;
+        chk(tie.every((u, i) => !!u && Array.isArray(u.tiers) && u.tiers.slice(0, 3).every(t => Array.isArray(t.legs) && t.legs.every(l => l.gid === [G7C, G7D][i])))
+          && ['elo-safe', 'elo-med', 'elo-aggr'].every(id => sumOf(lvOf(vw, id)) === sumOf(lvOf(xy, id))),
+          `F2: two games whose levels' summed leans tie to the bit do not give the Sunday slot the earlier game's, each way round: ${tie.map(u => u && u.tiers ? u.tiers.map(t => t.legs ? t.legs.map(l => l.gid.slice(-3)).join('/') : '-').join(' ') : 'none').join(' | ')}`); }
       /* each game alone and the Sunday slots, by unitHeld (the ticks planted to nothing too) */
-      const nf = unitHeld('F7', w, legs, MUf, Pf.players, CORR_F7, [
-        { lab: 'R at S alone', gids: [G7], where: 'in this game' }, { lab: 'T at U alone', gids: [G7B], where: 'in this game' },
+      const nf = unitHeld('F2', w, legs, MUf, Pf.players, CORR_F2, [
+        { lab: 'R at S alone', gids: [G7], where: 'in this game' }, { lab: 'T at U alone', gids: [G7B], where: 'in this game' }, { lab: 'V at W alone', gids: [G7C], where: 'in this game' },
+        { lab: 'J at K alone', gids: [G7E], where: 'in this game' }, { lab: 'the Sunday slot of J at K and R at S', gids: [G7E, G7], where: 'in the Sunday slot', perGame: true },
+        { lab: 'L at M alone', gids: [G7F], where: 'in this game' },
+        { lab: 'the Sunday slot of V at W and R at S', gids: [G7C, G7], where: 'in the Sunday slot', perGame: true },
         { lab: 'the Sunday slot of T at U and V at W', gids: [G7B, G7C], where: 'in the Sunday slot', perGame: true },
-        { lab: 'the Sunday slot of T at U, V at W and R at S', gids: [G7B, G7C, G7], where: 'in the Sunday slot', perGame: true },
         { lab: 'the Sunday slot of V at W and X at Y', gids: [G7C, G7D], where: 'in the Sunday slot', perGame: true },
         { lab: 'the Sunday slot of X at Y and V at W', gids: [G7D, G7C], where: 'in the Sunday slot', perGame: true }]);
-      /* the words, as the owner reads them, and the branches the slots were made to meet */
-      { const unit = (g, o) => { try { return w.eloUnit(g, o); } catch (err) { return { error: 'threw ' + err.message }; } }, lv = (u, id) => u && Array.isArray(u.tiers) ? u.tiers.find(t => t.id === id) || null : null;
-        const t1 = lv(unit([G7B], { where: 'in this game' }), 'elo-med');
-        chk(!!t1 && !t1.legs && t1.why === 'No 3 of these 3 players go together on DraftKings’ slip.',
-          `F7: T at U's Medium, its three players holding a quarterback's passing TDs and his receiver's touchdown, is not empty saying "No 3 of these 3 players go together on DraftKings’ slip.": ${JSON.stringify(t1)}`);
-        const s2 = unit([G7B, G7C], { where: 'in the Sunday slot', perGame: true });
-        const w2 = ['elo-med', 'elo-aggr', 'elo-xtrm'].map(id => (lv(s2, id) || {}).why);
-        chk(w2.join('|') === ['No 3 players in any one game of the Sunday slot go together on DraftKings’ slip.',
-          'Only 3 players in any one game of the Sunday slot qualify: this level takes 4.', 'Only 3 players in any one game of the Sunday slot qualify: this level takes 5.'].join('|') && !!lv(s2, 'elo-safe') && Array.isArray(lv(s2, 'elo-safe').legs),
-          `F7: the Sunday slot of T at U and V at W does not say why its Medium, Aggressive and Extreme are empty of any one game: ${w2.join(' | ')}`);
-        const s3 = unit([G7B, G7C, G7], { where: 'in the Sunday slot', perGame: true }), vw = lv(unit([G7C], { where: 'in this game' }), 'elo-safe'), s3s = lv(s3, 'elo-safe');
-        chk(!!s3s && Array.isArray(s3s.legs) && s3s.legs.every(l => l.gid === G7) && !!vw && Array.isArray(vw.legs) && vw.p > s3s.p && vw.p * vw.dec < s3s.p * s3s.dec
-          && s3.tiers.every(t => Array.isArray(t.legs) && t.legs.every(l => l.gid === G7)),
-          `F7: the Sunday slot of T at U, V at W and R at S does not take R at S's levels, its Safe on value over V at W's likelier pair: ${s3 && s3.tiers ? s3.tiers.map(t => t.id + ' ' + (t.legs || []).map(l => l.pid).join('+')).join('; ') : JSON.stringify(s3)}`);
-        const tie = [[G7C, G7D], [G7D, G7C]].map(g => lv(unit(g, { where: 'in the Sunday slot', perGame: true }), 'elo-safe')), xy = lv(unit([G7D], { where: 'in this game' }), 'elo-safe');
-        chk(tie.every((t, i) => !!t && Array.isArray(t.legs) && t.legs.every(l => l.gid === [G7C, G7D][i])) && !!xy && !!vw && xy.p === vw.p && xy.dec === vw.dec,
-          `F7: two games whose Safe pairs tie to the bit do not give the Sunday slot the earlier game's, each way round: ${tie.map(t => t && t.legs ? t.legs.map(l => l.pid).join('+') : 'none').join(' / ')}`); }
-      /* eloPicks() over every game: each level the rule worked out in full, on the tab's fast sums for every parlay of two to
-         five candidates in one batch (the props parts' own where those give none), and its figures the parts' own sums */
+      chk(nf.full > 0 && nf.empty > 0 && nf.slot > 0, `F2: the units' check met ${nf.full} levels with legs, ${nf.empty} empty and ${nf.slot} slot levels held to their games' own: it holds less than it says`);
+      /* eloPicks() over all six games: the candidates the rule's across them, each level the greedy prefix */
       { let r; try { r = w.eloPicks(); } catch (err) { r = 'threw ' + err.message; }
-        if (!r || !Array.isArray(r.tiers) || !Array.isArray(r.cands)) chk(false, `F7: the Elo picks do not build over every game: ${typeof r === 'string' ? r : JSON.stringify(r)}`);
-        else { const C = r.cands, sets = [];
-          for (let n = 2; n <= 5; n++) { const go = (s0, cur) => { if (cur.length === n) { sets.push(cur); return; } for (let i = s0; i <= C.length - (n - cur.length); i++) go(i + 1, cur.concat(C[i])); }; go(0, []); }
-          let fast; try { fast = w.eloSums(C, sets); } catch (err) { fast = []; }
-          const e = sets.map((ls, i) => { const f = fast[i], O = sums7.pbOrder(ls), x = f || { p: sums7.parlayProb(O.map(l => ({ ...l, p: l.pe }))).corr, dec: sums7.parlayDec(O.map(l => ({ leg: l, ml: l.price }))) };
-            return { legs: ls, p: x.p, dec: x.dec, id: ids(ls), cl: clashIn(ls) }; });
-          const pick = (n, floor, free) => { let best = null, likely = null;
-            for (const x of e) { if (x.legs.length !== n || (x.cl && !free)) continue;
-              if (!likely || x.p > likely.p || (x.p === likely.p && x.id < likely.id)) likely = x;
-              if (x.p >= floor) { const v = x.p * x.dec; if (!best || v > best.v || (v === best.v && x.id < best.x.id)) best = { x, v }; } }
-            return best ? { ...best.x, likeliest: false } : likely ? { ...likely, likeliest: true } : null; };
-          const bad = []; let freeCl = 0;
-          for (const [id, label, n, floor] of tiersOwn(sums7.PB_TIERS)) { const t = r.tiers.find(x => x.id === 'elo-' + id), want = pick(n, floor, false), free = pick(n, floor, true);
-            if (free && free.cl) freeCl++;
-            const L = t && t.legs.length ? sums7.pbOrder(t.legs) : [], p = L.length ? sums7.parlayProb(L.map(l => ({ ...l, p: l.pe }))).corr : null, dec = L.length ? sums7.parlayDec(L.map(l => ({ leg: l, ml: l.price }))) : null;
-            if (!t || !want || ids(t.legs) !== want.id || !!t.likeliest !== want.likeliest || clashIn(t.legs) || t.p !== p || t.dec !== dec)
-              bad.push(`${label}: ${t ? t.legs.map(l => l.pid).join('+') + ' at ' + t.p + ', ' + t.dec + (t.likeliest ? ' (likeliest)' : '') : 'none'}, the rule ${want ? want.legs.map(l => l.pid).join('+') + (want.likeliest ? ' (likeliest)' : '') : 'none'}`); }
-          chk(!bad.length, `F7: the Elo picks over every game are not the rule worked out in full on every parlay of their size that DraftKings takes on one slip (${e.length} worked): ${bad.join('; ')}`);
-          notes.push(`the Elo picks on F7's ${C.length} candidates in four games (${e.length} parlays worked on the fast sums, ${e.filter(x => x.cl).length} holding a pair DraftKings refuses; ${freeCl} of the levels would hold one with no rule): ${r.tiers.map(t => `${t.label} ${t.legs.map(l => l.pid.slice(3)).join('+')}`).join('; ')}; ${nf.full} levels worked out in full on units, ${nf.empty} empty, ${nf.slot} slot levels held to their games' own`); } }
-      chk(nf.full > 0 && nf.empty > 0 && nf.slot > 0, `F7: the units' check met ${nf.full} levels worked out in full, ${nf.empty} empty and ${nf.slot} slot levels held to their games' own: it holds less than it says`);
-      chk(!errors.length, `F7: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); }
-  }
+        if (!r || !Array.isArray(r.tiers) || !Array.isArray(r.cands)) chk(false, `F2: the Elo picks do not build over every game: ${typeof r === 'string' ? r : JSON.stringify(r)}`);
+        else { const own = candsOwn(legs, MUf, Pf.players), off = candsOff(r.cands, own), want = levelsOwn(r.cands, sums, 'on your picks');
+          chk(!off && r.candidates === r.cands.length, `F2: the Elo picks' candidates over every game are not the rule's: ${off}`);
+          want.forEach((f, i) => { const bad = levelOff(r.tiers[i], f, { corr: CORR_F2 }); chk(!bad, `F2: the ${f.label} Elo pick over every game is not the first ${f.n} of the candidates that go together on one DraftKings slip: ${bad}`); });
+          notes.push(`the Elo picks on F2's ${r.cands.length} candidates in six games: ${r.tiers.map(t => `${t.label} ${t.legs.length ? t.legs.map(l => l.pid.slice(3)).join('+') : 'empty'}`).join('; ')}; ${nf.full} levels with legs on units, ${nf.empty} empty, ${nf.slot} slot levels held to their games' own`); } }
+      chk(!errors.length, `F2: the tab threw or logged an error on the check's own lines: ${errors.slice(0, 3).join('; ')}`); }
 
-  /* ---- F6 (18 October 2026): the search's pruning and its bounds, on seeded one-game slates of the check's own ----
-     A review planted two plausible slips in the search, a partial parlay pruned at the floor itself rather than at the
-     least quick chance whose most reaches it, and the price-first pass reading a parlay's quick chance as its most, and
-     both gates passed while levels came up to 29% short of the best (F3 to F5 catch a search that is broken outright,
-     not one a little off near a floor). So: twenty one-game slates of 9 to 12 made-up candidates, four in five on one
-     club, each leg's Elo chance clustered about where its level's floor falls (0.592 a leg for Safe's 35%, the Elo
-     picks' own since 18 October 2026, 0.63 for Medium's 25%, 0.589 for
-     Aggressive's 12%, 0.549 for Extreme's 5%) at +100 to +140, on a correlation table of the check's own (the
-     published payload's pairs among the stats drawn, as of October 2026), and every level the search picks (the tab's
-     own code, compiled here on its own, so it is quick) held to every parlay of its size worked out in full by the
-     tab's fast sums, which the checks above hold to the props parts' sums to the bit (the parts' own where they give
-     none). Planted, the two slips fail it 4 and 3 times. Since app v121 the search compiled here carries the props parts'
-     DraftKings pair rule (SUMS_SRC), the slates' quarterbacks' passing TDs and their teammates' touchdowns among them, and
-     every parlay worked out in full is one with no such pair (clashOwn). */
-  { const a0 = TAB.indexOf('const EP={'), b0 = TAB.indexOf("/* a parlay's fair chance (parlayFair,");
-    let F = null; try { F = new Function('PAY', 'window', SUMS_SRC + '\n' + TAB.slice(a0, b0) + '\nreturn {PB_TIERS,mlToDec,epPrep,epLevel,epSums,epExact,dkClash};')({ corr: CORR_F6 }, {}); } catch (err) { F = 'threw ' + err.message; }
-    if (a0 < 0 || b0 < a0 || !F || typeof F === 'string') chk(false, `F6: the tab's search could not be read on its own (EP to parlayFair): ${typeof F === 'string' ? F : 'not found'}`);
-    else if (typeof F.dkClash !== 'function') chk(false, 'F6: the props parts\' DraftKings pair rule (dkClash) is not loaded beside the tab\'s search compiled on its own');
-    else {
-      let s = 20261018; const rnd = () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
-      const STATS = { QB: ['passing_yards', 'passing_tds', 'completions'], RB: ['rushing_yards', 'scrim_yards', 'receptions'], WR: ['receptions', 'receiving_yards', 'any_td'], TE: ['receiving_yards', 'any_td'] };
-      const GRPS = ['QB', 'RB', 'WR', 'WR', 'WR', 'TE'], gid = '2026_06_FSA_FSB';
-      const slate = (si, near) => { const N = 9 + (si % 4), C = []; let n = 0;
-        while (C.length < N) { const home = rnd() < 0.2, grp = GRPS[Math.floor(rnd() * GRPS.length)], stat = STATS[grp][Math.floor(rnd() * STATS[grp].length)];
-          const pe = near + (rnd() - 0.5) * 0.03, ml = 100 + Math.round(rnd() * 40), side = stat === 'any_td' || rnd() < 0.75 ? 'over' : 'under';
-          if (!(pe * F.mlToDec(ml) > 1)) continue; n++;
-          C.push({ key: `${gid}|fs-${si}-${n}|${stat}`, gid, pid: `fs-${si}-${n}`, name: 'S' + n, grp, team: home ? 'FSB' : 'FSA', opp: home ? 'FSA' : 'FSB', stat, k: 1.5, side, main: true, price: ml, src: 'real', p: 0.5, pe, ev: pe * F.mlToDec(ml) - 1, week: 6 }); }
-        return C.sort((x, y) => (y.ev - x.ev) || cmpC(idC(x), idC(y))); };
-      const full = P => { const out = {}, memo = new Map(), C = P.C;
-        const sumOf = ids => { const k = ids.join(','); let e = memo.get(k); if (e) return e; const legs = ids.map(i => C[i]), f = F.epSums(P, ids), x = f || F.epExact(legs);
-          e = { p: x.p, dec: x.dec, id: legs.map(idC).sort().join(',') }; memo.set(k, e); return e; };
-        for (const [id, , n, floor] of tiersOwn(F.PB_TIERS)) { let best = null, likely = null; const idx = [];
-          const go = (st, d) => { if (d === n) { const e = sumOf(idx.slice()); if (!likely || e.p > likely.p || (e.p === likely.p && e.id < likely.id)) likely = e;
-              if (floor && e.p >= floor) { const v = e.p * e.dec; if (!best || v > best.v || (v === best.v && e.id < best.e.id)) best = { e, v }; } return; }
-            for (let i = st; i <= C.length - (n - d); i++) { if (idx.slice(0, d).some(j => clashOwn(C[j], C[i]))) continue; idx[d] = i; go(i + 1, d + 1); } };
-          go(0, 0); out[id] = !likely ? { id: null, likeliest: false, none: true } : floor ? (best ? { ...best.e, likeliest: false } : { ...likely, likeliest: true }) : { ...likely, likeliest: false }; }
-        return out; };
-      const bad = []; let sets = 0, levels = 0, near = 0, withCl = 0;
-      for (const [floor, at] of [[0.35, 0.592], [0.25, 0.63], [0.12, 0.589], [0.05, 0.549]]) for (let i = 0; i < 5; i++) {
-        const C = slate(sets++, at), P = F.epPrep(C), want = full(P), memo = new Map(); if (C.some((a, i) => C.some((b, j) => j > i && clashOwn(a, b)))) withCl++;
-        for (const t of tiersOwn(F.PB_TIERS)) { const [id, label, , fl] = t, w = want[id]; let r = null; try { r = F.epLevel(P, t, memo); } catch (err) { r = { err: err.message }; }
-          levels++; if (fl && Math.abs(w.p - fl) < 0.004) near++;
-          const got = r && r.legs ? r.legs.map(idC).sort().join(',') : null;
-          if (got !== w.id || !!(r && r.likeliest) !== w.likeliest) bad.push(`slate ${sets - 1} (${C.length} legs, ${floor * 100}%) ${label}: ${r && r.legs ? `${(r.p * 100).toFixed(2)}% at ${r.dec.toFixed(2)}${r.likeliest ? ' (likeliest)' : ''}` : r && r.err ? 'threw ' + r.err : 'none'}, the best ${(w.p * 100).toFixed(2)}% at ${w.dec.toFixed(2)}${w.likeliest ? ' (likeliest)' : ''}`); } }
-      chk(!bad.length, `F6: on ${bad.length} of ${levels} levels of the check's seeded one-game slates, the search does not pick the best its rule allows, every parlay of its size worked out in full: ${bad.slice(0, 3).join('; ')}`);
-      notes.push(`the Elo picks' search on ${sets} seeded one-game slates of 9 to 12 legs near the floors: ${levels - bad.length} of ${levels} levels the full enumeration's, ${near} of them within 0.4 points of a floor, ${withCl} slates with a pair DraftKings refuses`); } }
+    /* ---- F2, every candidate kept: thirty-five in as many games, at leans a little apart ---- */
+    { const ROWS3 = [...Array(35)].map((_, i) => ['fx-n' + String(i).padStart(2, '0'), 'WR', 'FN' + i, 'FO' + i, `2026_06_FN${i}_FO${i}`, 'receiving_yards', 'over', 49.5, -110, 0.52 + i * 0.002]);
+      const { MUf, Pf, legs } = build(ROWS3), errors = [], { w } = page(MUf, { errors, P: Pf }); await wait(60);
+      sumsInto(w, {}); w.__fx = legs; w.eval(PRICED_BY('__fx'));
+      let r; try { r = w.eloPicks(); } catch (err) { r = 'threw ' + err.message; }
+      const own = candsOwn(legs, MUf, Pf.players), C = r && Array.isArray(r.cands) ? r.cands : [], off = candsOff(C, own), want = levelsOwn(C, sumsOwn({}), 'on your picks');
+      const xt = r && Array.isArray(r.tiers) ? r.tiers.find(t => t.id === 'elo-xtrm') : null;
+      chk(!off && C.length === 35 && r.candidates === 35 && !!xt && pids(xt) === 'fx-n30+fx-n31+fx-n32+fx-n33+fx-n34' && want.every((f, i) => !levelOff(r.tiers[i], f)),
+        `F2: thirty-five candidates are not every one kept, ranked by lean, with Extreme the five largest leans: ${C.length} handed over of ${r && r.candidates}; ${off}; Extreme ${pids(xt)}`);
+      chk(!errors.length, `F2: the tab threw or logged an error on thirty-five candidates: ${errors.slice(0, 3).join('; ')}`); }
+  }
 
   console.log(`elo tab check: ${checks} checks, ${fails.length} failures`);
   for (const n of notes) console.log('  note: ' + n);

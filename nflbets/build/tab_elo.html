@@ -41,10 +41,8 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 /* a favourable mismatch this week, beside the name on the game's page: one word, in the Diamond
    shield's blue so it stands out (white on #2563EB to #1E4FA8 is 5.2:1 and up) */
 .plrbtn .who .pe-mmtag{display:inline-block;margin-left:8px;padding:3px 9px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-family:var(--body);font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;line-height:1.3;vertical-align:2px;white-space:nowrap;box-shadow:0 0 0 1px rgba(59,130,246,.35),0 2px 6px rgba(37,99,235,.35)}
-/* the second price on a player leg: the book's chance nudged by the player's form */
-.pe-alt{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
-.pe-alt b{color:var(--ink-2);font-weight:600}
-.pe-altsum{margin:10px 0 0;font-size:12px;color:var(--ink-2)}
+/* (app v138) a player leg's Elo lean, in the builder and on an Elo pick: the nudge his Elo matchup gives his projection */
+.pe-lean{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
 /* mismatches: five bubbles over the Props game list, the rest in a window */
 .pe-mm{margin:0 0 16px}
 .pe-mm h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -113,7 +111,6 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 /* a leg's mismatch this week on an Elo pick, after the name: the game page's tag, its grade in words
    (white on #2563EB to #1E4FA8 is 5.2:1 and up, in either look) */
 .pb-tiers[data-sp-kind="elo"] .pb-legs .nm .pe-mmtag{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-family:var(--body);font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;line-height:1.3;vertical-align:1px;white-space:nowrap;box-shadow:0 0 0 1px rgba(59,130,246,.35)}
-.pe-track table{margin-top:6px}
 .pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
 /* Overall Offense and Overall Defense, then (16 October 2026) Run Defense, Pass Defense and Pass
    Rush and their offense sides, Run Offense, Pass Offense and Pass Protection: pills under the
@@ -402,7 +399,7 @@ function rankings(){
       <td class="pe-m0">${tag(r.team,true)}</td>
       <td class="pe-n"><span class="pe-elo"${r.raw!=null?` title="Raw season rating ${r.raw}"`:''}>${r.elo}</span></td>
       <td><span class="pe-shield">${shield(r.elo)}${tierName(r.elo)}</span></td>
-      <td class="pe-n" title="The rating with every season behind it, which the game model, matchups and market + form use${r.career_raw!=null?' (raw '+r.career_raw+')':''}">${r.career!=null?r.career:'–'}</td>
+      <td class="pe-n" title="The rating with every season behind it, which the game model and matchups use${r.career_raw!=null?' (raw '+r.career_raw+')':''}">${r.career!=null?r.career:'–'}</td>
       <td class="pe-m0">${spark(r.this_season)}</td>
       <td class="pe-n pe-m0">${r.peak}<small class="muted" style="font-size:11px"> · ${r.peak_season}</small></td></tr>`; }).join('');
   const opening=P.phase==='opening'&&P.season_in_play&&P.season_in_play!==P.season;
@@ -595,176 +592,70 @@ function preElo(pid,w){
 }
 window.eloPre=preElo;
 
-/* ---- market + form: a second price on every player leg the book has priced ----
-   The prop model's own chance on a book line has run over-confident: on weeks 1 and 2 it
-   said 62% and 51% happened, while the book's own price said 54%. What did carry signal
-   looked to be the player's rating: overs on the top players hit, unders on them missed,
-   and the reverse below. So this price starts from the book's chance and moves it by the
-   player's Elo on the side of the bet: logit p = -0.05 + 0.8 logit(book) + 0.3 z s, z the
-   rating's distance from 1500 in 40-point steps, s +1 for an over and -1 for an under.
-   Fitted on weeks 1 and 2 of 2026 (765 lines), but with the ratings as they stood after
-   those weeks, which had already seen the games. Replayed on the ratings each week began
-   with, the pull is nothing in week 1 (-0.03 +/- 0.13), real in week 2 (+0.29 +/- 0.13),
-   and the price about ties the book (Brier 0.2486 against 0.2498). So the Prop Record grades
-   it on the rating each player took into the week (preElo), and it stays beside the model's
-   chance, not in its place, until it earns more. Legs without a real book price, and team
-   legs, have no second price; nor has a quarterback's own touchdown (a run or a catch, app v102):
-   his rating is a passer's, and nothing measured says it moves the touchdowns he scores himself
-   (they run a little against the ones he throws). A caller that knows the leg's stat passes it.
-   The 40-point step belongs to the ratings it was fitted on, whose spread across a position
-   (the standard deviation of every rated player's career rating in players.json, 25 September
-   2026) was QB 34.1, RB 21.3, WR 27.6 and TE 27.0 (ALT.fitSd). The formula changes of 11 and 12
-   October (backs, receivers and tight ends on production; equal-weight placement; a new
-   quarterback at 1450) widened them to about 44, 51, 45 and 47, so the same step read a back
-   2.4 times further from 1500 than the rule was fitted to and could move a 50% book chance to
-   76% (the review of Sunday 11 October's parlays found it). So z is the rating's distance in
-   the position's own spread, put back on the fitted scale: (elo - 1500) / step x fitSd / sd,
-   sd measured from the file on every load (altZ). Nothing is refitted: the rule reads as it was
-   fitted, on whatever the ratings' spread is. */
-const ALT={c:-0.05,book:0.8,form:0.3,step:40,fitSd:{QB:34.1,RB:21.3,WR:27.6,TE:27.0}};
-const lgt=p=>Math.log(p/(1-p)), sgm=x=>1/(1+Math.exp(-x));
-/* each position's spread of career ratings in the file as loaded (every rated player in the map) */
-let ALT_SD=null;
-function altSd(){
-  if(ALT_SD&&ALT_SD.src===D.players) return ALT_SD.sd;
-  const by={}, P=(D.players&&D.players.players)||{};
-  for(const id in P){ const e=P[id]; if(e&&e.group&&isFinite(e.elo)) (by[e.group]=by[e.group]||[]).push(e.elo); }
-  const sd={}; for(const g in by){ const v=by[g], m=v.reduce((a,x)=>a+x,0)/v.length; if(v.length>=10) sd[g]=Math.sqrt(v.reduce((a,x)=>a+(x-m)*(x-m),0)/v.length); }
-  ALT_SD={src:D.players,sd}; return sd;
-}
-/* a rating's distance from 1500 in fitted steps, for a player of that position */
-function altZ(v,g){
-  const f=ALT.fitSd[g], sd=altSd()[g];
-  return (v-1500)/ALT.step*(f&&sd>0?f/sd:1);
-}
-window.eloAltZ=altZ;
-/* a graded line's player's position: the ratings file's, else the prop model's own roster */
-function groupOf(r){
-  const e=D.players&&D.players.players&&D.players.players[r.pid];
-  if(e&&e.group) return e.group;
-  const p=typeof S==='object'&&S&&S.players&&S.players[r.pid];
-  return p&&p.grp||null;
-}
-/* src 'dkline' (app v107): a price the prop model works from DraftKings' line read on ESPN by Refresh
-   odds, which the panel takes as a book price on the kinds it has been checked on, so market + form reads
-   it as one */
-function altP(pid,side,price,src,stat){
-  if(!pid||String(pid).startsWith('team:')||pid==='game'||!(src==='real'||src==='dkline')||price==null||!isFinite(price)||typeof mlProb!=='function') return null;
-  if(stat==='any_td'&&groupOf({pid})==='QB') return null;
-  const imp=mlProb(price); if(!(imp>0&&imp<1)) return null;
-  const e=window.eloOf(pid), z=e?altZ(e.elo,e.group):0, s=side==='under'?-1:1;
-  return sgm(ALT.c+ALT.book*lgt(imp)+ALT.form*z*s);
-}
-window.eloAltP=altP;
+/* ---- a builder row's Elo lean ----
+   (app v138) Market + form, the second price this section put on every player leg until then (the book's chance moved by
+   the player's Elo on the side of the bet), is gone with the Prop Record's table of it, the owner's call of 27 October
+   2026: it was fitted on 2026 weeks 1 and 2 with ratings that had already seen those games, and out of sample its
+   rating term was -0.04 +/- 0.06 against the 0.30 it used. What stays is the Elo matchup as a nudge to the projection:
+   under a player leg's projection in the builder, and under each leg of an Elo pick, the nudge his own Elo against the
+   defenders he faces this week gives that stat, in its own units ("Elo +2.1"), where the matchup has held up for the
+   stat (muTrusted). Information beside the projection, never a chance: nothing graded or recorded reads it */
 window.eloLoaded=()=>!!D.players;
-/* a builder row's market + form and Elo matchup, on the price the row shows (legPrice in the props parts: a
-   ladder rung at the book's price now, a leg a Refresh odds press priced back on the published prices once the
-   press gives way), as its price column and the matchup bubble read it (17 October 2026: until then these read
-   the price the leg was stored at, so Michael Wilson's 60+ receiving yards, added at -174 with the book now at
-   -114, said 64% and 58% here and 55% and 48% in his bubble). Display only: nothing graded or recorded reads
-   these lines (the Track Record grades market + form on its own rows, the suggestions record on its sets) */
-const shownPrice=l=>{ try{ const x=typeof legPrice==='function'?legPrice(l):null; if(x&&x.ml!=null&&isFinite(x.ml)) return x; }catch(e){} return {ml:l.price,src:l.src}; };
+/* the nudge as the note says it: in the stat's own units to a tenth, an anytime touchdown's (in touchdowns, about 0.6 a
+   standard deviation, so 0.04 leans as far as two yards of receiving) to a hundredth; signed, but a figure shown as 0
+   unsigned, as the player window shows one */
+const eloLeanTxt=(v,stat)=>{ const s=Math.abs(v).toFixed(stat==='any_td'?2:1); return +s===0?s:(v>0?'+':'−')+s; };
+function eloLeanNote(l){
+  const m=l&&l.pid&&l.stat?muNudge(l.pid,l.stat):null; if(!m||!isFinite(m.nudge)) return '';
+  const v=m.nudge, t=eloLeanTxt(v,l.stat);
+  return `<small class="pe-lean" data-pe-lean="${v}" title="His Elo against the defenders he faces moves his projection ${t}">Elo ${t}</small>`;
+}
 function decorateAlt(){
   if(!D.players||typeof S!=='object'||!S||!S.parlay) return;
-  let any=false, prod=1, prodM=1, n=0;
   document.querySelectorAll('#parlayBody tr.legrow').forEach(tr=>{
     const b=tr.querySelector('button[data-drop]'); if(!b) return;
     const l=S.parlay[b.dataset.drop]; if(!l) return;
-    const cell=tr.querySelectorAll('td')[3]; if(!cell||cell.querySelector('.pe-alt')) { if(cell&&cell.querySelector('.pe-alt')){ const v=+cell.querySelector('.pe-alt').dataset.p; if(v){ prod*=v; prodM*=l.p; n++; } } return; }
-    const sp=shownPrice(l), p=altP(l.pid,l.side,sp.ml,sp.src,l.stat); if(p==null) return;
-    any=true; prod*=p; prodM*=l.p; n++;
-    cell.insertAdjacentHTML('beforeend',`<small class="pe-alt" data-p="${p.toFixed(4)}" title="The book's chance for this line at the price shown, moved by the player's rating on the side of the bet. Beside the model's chance, not in its place.">market + form <b>${Math.round(p*100)}%</b></small>`);
-    const mn=muNudge(l.pid,l.stat), mp=mn?muP(l,mlProb(sp.ml)):null;
-    if(mp!=null) cell.insertAdjacentHTML('beforeend',`<small class="pe-alt pe-muleg" title="His Elo against the defenders he faces this week moves his projection ${mn.nudge>=0?'+':''}${mn.nudge.toFixed(1)}; the book's chance moved by that.">Elo matchup ${mn.nudge>=0?'+':'−'}${Math.abs(mn.nudge).toFixed(1)} <b>${Math.round(mp*100)}%</b></small>`);
+    /* the Projected column (the builder's third) */
+    const cell=tr.querySelectorAll('td')[2]; if(!cell||cell.querySelector('.pe-lean')) return;
+    const h=eloLeanNote(l); if(h) cell.insertAdjacentHTML('beforeend',h);
   });
-  const table=document.querySelector('#parlayBody tr.legrow')&&document.querySelector('#parlayBody tr.legrow').closest('table');
-  const old=document.querySelector('#parlayBody .pe-altsum'); if(old) old.remove();
-  /* (app v130, the owner's call of 22 October 2026: no descriptions) the sum in a few words; what it is, in its title */
-  if(table&&n>=2) table.insertAdjacentHTML('afterend',`<p class="pe-altsum" title="Market + form's chances on the ${n} priced legs multiplied as independent, beside the model's own chances multiplied"><b>Market + form</b>: <b>${(prod*100).toFixed(1)}%</b> all land · model ${(prodM*100).toFixed(1)}%</p>`);
 }
-/* the Prop Record: the same three chances graded on every book line so far, week by week */
-function trackAlt(){
-  const body=document.getElementById('trackBody'); if(!body||!D.players||typeof trackRecord!=='function') return;
-  const old=body.querySelector('.pe-track'); if(old) old.remove();
-  let rows; try{ rows=trackRecord().filter(r=>r.kind==='main'&&r.imp!=null&&r.side); }catch(e){ return; }
-  if(!rows.length) return;
-  for(const r of rows){ const v=preElo(r.pid,r.w), z=v!=null?altZ(v,groupOf(r)):0, s=r.side==='under'?-1:1; r.alt=sgm(ALT.c+ALT.book*lgt(r.imp)+ALT.form*z*s); }
-  const brier=(rs,k)=>rs.reduce((a,r)=>a+(r[k]-r.hit)**2,0)/rs.length;
-  const right=(rs,k)=>rs.filter(r=>(r[k]>=0.5)===(r.hit===1)).length;
-  const hit=rs=>rs.reduce((a,r)=>a+r.hit,0)/rs.length;
-  const said=(rs,k)=>rs.reduce((a,r)=>a+r[k],0)/rs.length;
-  const weeks=[...new Set(rows.map(r=>r.w))].sort((a,b)=>a-b);
-  const line=(lab,rs)=>`<tr><td>${lab}</td><td class="num">${rs.length}</td><td class="num">${(said(rs,'p')*100).toFixed(0)}%</td><td class="num">${(said(rs,'imp')*100).toFixed(0)}%</td><td class="num">${(said(rs,'alt')*100).toFixed(0)}%</td><td class="num">${(hit(rs)*100).toFixed(1)}%</td><td class="num">${brier(rs,'p').toFixed(3)}</td><td class="num">${brier(rs,'imp').toFixed(3)}</td><td class="num"><b>${brier(rs,'alt').toFixed(3)}</b></td><td class="num">${right(rs,'p')}</td><td class="num">${right(rs,'alt')}</td></tr>`;
-  const html=`<div class="card pe-track"><h2>Market + form against the model</h2>
-    <p class="muted" style="margin:0 0 8px">Every book line graded so far, three chances on each: the model's, the book's own, and market + form (the book's chance moved by the Elo the player took into that week, on the side of the bet). Lower Brier is better; "side right" counts lines where the side a chance favoured is the side that happened. The second price is shown in the Parlay Builder beside the model's; it replaces nothing until it has held for more than two weeks.</p>
-    <table><thead><tr><th>Week</th><th class="num">Lines</th><th class="num">Model said</th><th class="num">Book said</th><th class="num">M+F said</th><th class="num">Happened</th><th class="num">Model Brier</th><th class="num">Book Brier</th><th class="num">M+F Brier</th><th class="num">Model side right</th><th class="num">M+F side right</th></tr></thead>
-    <tbody>${weeks.map(w=>line('Week '+w,rows.filter(r=>r.w===w))).join('')}${line('All',rows)}</tbody></table></div>`;
-  body.insertAdjacentHTML('afterbegin',html);
-}
-/* ---- Elo picks: parlays of players whose Elo matchup says they beat the book's price ----
-   Each leg is a line the book has priced for a rated player. The player's chance is the
-   book's own (its price read as a chance) moved by his Elo matchup: the nudge the matchup
-   formula (above) gives that stat this week, his own Elo against the defenders he faces, in
-   units of the stat's typical miss. Only stats where that nudge has held up season by
-   season are used (muTrusted: in the October 2026 file a quarterback's passing yards, passing
-   touchdowns and completions; a back's rushing yards, carries, rush + rec yards and touchdown; a
-   receiver's catches, yards and touchdown; a tight end's yards and touchdown), so never touchdowns
-   alone. A leg is a candidate when that chance is 30% or better and times the payout comes out
-   above the stake, its price between -200 and +300, because an alt line at +1600 is where the
-   rating's nudge is least trustworthy and a parlay of them almost never lands; one leg a player,
-   his best by value (the main line on a tie).
+/* ---- Elo picks: the players whose Elo matchup leans furthest their way ----
+   (app v138, the owner's call of 27 October 2026: every leg at DraftKings' fair chance.) Each leg is a line DraftKings has
+   priced (a book price, or its line read on ESPN at the estimate's price) for a rated player, on a stat where the matchup
+   formula's nudge has held up season by season (muTrusted: in the October 2026 file a quarterback's passing yards,
+   passing touchdowns and completions; a back's rushing yards, carries, rush + rec yards and touchdown; a receiver's
+   catches, yards and touchdown; a tight end's yards and touchdown). Its Elo chance (muP) is DraftKings' fair chance on the
+   leg (legFair: its price with the margin out, est. where it is) moved by the nudge, his own Elo against the defenders he
+   faces this week in units of the stat's typical miss, toward the side it favours. A candidate is priced -200 to +300 (an
+   alt line at +1600 is where the nudge is least trustworthy), DraftKings' fair chance on it 30% or more, and its Elo
+   chance above that fair chance: its lean, the Elo chance less the fair chance, clear of nothing (above 1e-6, so a stat
+   whose nudge is 0 leans nowhere). One leg a player, his
+   largest lean (the main line on a tie, then the lower id), and the candidates ranked by lean, largest first.
 
-   The four levels (17 October 2026, the owner's call: "for the ELO picks suggestions, can we also add
-   an aggressive and extreme versions. is it touchdowns only or did it just so happen to show that?
-   would want to see the best lines:value ratio for ELO mismatches etc"). Until then the candidates
-   were sorted plus money first and the picks were the first two, three and four of them, one leg a
-   game, so an anytime touchdown, nearly always plus money, filled them whatever a main line at -115
-   offered: week 6's were three touchdowns and a passing-touchdowns under. Now the candidates are
-   ranked on value, what $1 on the leg is expected to make at the Elo chance (the chance times the
-   decimal price, less the $1), and the picks are Suggested Parlays' own four levels (PB_TIERS, read
-   from the page, never copied), searched from the EP.cap best by value and the EP.capP likeliest by
-   the Elo chance, each once (18 October 2026: the 30 best by value alone cut a heavy favourite of thin
-   value before Safe, then the likeliest pair, could see him): Safe, Medium, Aggressive and Extreme, the
-   2-, 3-, 4- and 5-leg parlay with the best expected return (the Elo chance all land times what it
-   pays) that lands at least 35%, 25%, 12% and 5% of the time by the Elo chance, else, where none of
-   that size reaches it, the likeliest of its size, marked so ("the likeliest pair", "the likeliest 4
-   legs"; never a parlay at or over the floor). Safe's 35% is the Elo picks' own (EP.safe; Suggested
-   Parlays' Safe, PB_TIERS's, has no floor and is the likeliest pair): the owner's call of 18 October
-   2026, "yeah safe picked on value too", after week 6's Safe was the likeliest pair, two short
-   favourites returning $1.06 on $1 where a pair landing 36% returned $1.32. A level is empty only when fewer players
-   qualify than it takes. Legs from one game are allowed (a weekend's priced games are often four, and
-   one leg a game would leave Extreme empty), and every level's chance and price are the builder's own
-   sums on the legs in the builder's order: parlayProb with each leg's chance its Elo chance (the
-   builder's same-game correlations) and parlayDec on their prices (a game's legs priced together), so
-   Add to builder and Finish pay exactly what the card says. The legs the builder gets keep the
-   model's chance: the Elo chance rides beside it as pe, which pbPut strips.
+   A level of n legs is the first n candidates that go together on one DraftKings slip: walking the lean order, a
+   candidate DraftKings will not take beside one already taken (dkClash: a quarterback's passing TDs with a teammate's
+   anytime touchdown) is passed over, and so is one that moves against a leg already taken (epOpposed: the two legs'
+   correlation as the builder's sums read it, legRho, signed by their sides, below EP.opp, -0.05; the review of 27
+   October 2026, after week 7's DAL at PHI Extreme took Tanner McKee's Under 192.5 passing yards with his receivers'
+   overs, whose chance all land falls below the legs multiplied while parlayDec never pays more than multiplying, -44.8%
+   at DraftKings' fair chance), so Safe is the two strongest leans, Medium the three, Aggressive the four and Extreme the
+   five (PB_TIERS's sizes, read from the page, never copied). Legs of one game may go together. Every level's figures are
+   the builder's own sums on its legs in the builder's order (pbOrder): DraftKings' fair chance all land (parlayFair) and
+   the price (parlayDec, a game's legs priced together), which the card states with what $1 is expected to return at
+   that chance; its p, the Elo chance all land (parlayProb on each leg's Elo chance, pe), is what the record keeps.
 
-   The search (18 October 2026, after a review found the first one several percent short of the best
-   on a one-game slate, where only that game has player prices): each level is the rule's own answer
-   by the builder's sums, every parlay of its size from the candidates in reach. Those sums are a count
-   of 40,000 seeded draws (parlayProb's; parlayDec's 20,000 on a game's legs at the book's chances), the
-   same for a given set of legs every time, about 4 ms a parlay, so they are worked here as parlayProb
-   works them, to the draw, from draws made once (epSums, below: check_tab and the nflbets smoke hold
-   them to parlayProb and parlayDec to the bit, and each level is worked again by the props parts' own
-   before it is shown, the fast sums set aside should they ever differ). Every parlay is read first by
-   a quick reading (each game's legs together by Mendell and Elston's reading of the builder's
-   gaussian copula, a pair of them exactly; legs of different games multiplied), with the most and the
-   least the exact sums can come to on it (EP.z standard deviations of the draws' own noise on its chance
-   and EP.zr on its expected return, and EP.bias for the reading: over every parlay of up to five legs
-   of 10 to 20 made-up candidates the exact chance stayed within 3.1 of those deviations of the reading,
-   and the exact return of a parlay over its floor within 1.9; a parlay with no two legs that move
-   together is read exactly): every parlay whose
-   most reaches the best least found is kept, worked with the exact sums best bound first, until the
-   next one's most falls under the best worked, so no parlay left can beat the one chosen. On 346 sets
-   of made-up candidates, 8 to 18 of them in one to four games, every level was the full enumeration's
-   (the first search missed 29 levels there, up to 10% short of the best return); a fresh build of the
-   four takes 150 to 350 ms in Chromium on week 6's payload and about 100 on a one-game slate of 12. A
-   fun model, not an edge: the first version (the player's own Elo, no matchup) was replayed on weeks 1
-   and 2 and its singles lost. */
-const EP={lo:-200,hi:300,floor:0.30,vig:1.045,cap:30,capP:10,z:4.5,zr:4,bias:0.01,slow:48,safe:0.35};
-/* the Elo picks' levels: Suggested Parlays' own (PB_TIERS), Safe given the Elo picks' own floor, EP.safe, so it
-   too is the best value over a floor rather than the likeliest pair */
-const epTiers=LV=>LV.map(t=>t[3]?t:[t[0],t[1],t[2],EP.safe]);
+   Until app v138 a level was the best expected return at the Elo chance over Suggested Parlays' floors (Safe's 35% its
+   own), on the book's implied chance tilted by a fixed 4.5% margin (EP.vig 1.045), searched by a branch and bound on
+   fast sums of parlayProb's own draws. At DraftKings' fair chance every Elo candidate costs about the same (the
+   estimate's margin), so "least costly" cannot choose between them, and their identity is the matchup: hence the
+   leans. A fun model, not an edge: on every DraftKings line of weeks 3 to 6 the rule's candidates hit 45.8% against
+   48.1% fair and 53.0% by the Elo chance, within noise of the market. */
+/* opp: a pair moving against each other by more than this is passed over (epOpposed). Two even legs at -0.05 lose
+   about 3% of their chance all land against independence; the case that set the rule, a quarterback's passing yards
+   under beside his receivers' overs, is about -0.10 and below. At 0 (below nothing) week 7's KC at SEA lost its Medium,
+   Aggressive and Extreme to pairs of -0.034 to -0.102 */
+const EP={lo:-200,hi:300,min:0.30,opp:-0.05};
 /* the normal curve and its inverse (Acklam's), for moving a chance by a nudge in sd units */
 const ncdf=z=>{ const t=1/(1+0.2316419*Math.abs(z)), d=0.3989423*Math.exp(-z*z/2), p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-p:p; };
 function nq(p){ const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],
@@ -774,258 +665,68 @@ function nq(p){ const a=[-39.69683028665376,220.9460984245205,-275.9285104469687
   if(p<lo){ const q=Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
   if(p>1-lo){ const q=Math.sqrt(-2*Math.log(1-p)); return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
   const q=p-0.5, r=q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
-/* a leg's chance by the Elo matchup: the book's chance with a typical two-way margin
-   (4.5%) taken out, moved by the nudge in the stat's typical miss toward the side it
-   favours. So a leg is only a pick when the matchup outweighs what the book keeps. */
-function muP(l,imp){ const m=muNudge(l.pid,l.stat); if(!m||!(m.sd>0)) return null;
-  const fair=Math.min(0.99,Math.max(0.01,imp/EP.vig));
+/* a leg's chance by the Elo matchup: DraftKings' fair chance on it (fair, legFair's p) moved by the nudge in the stat's
+   typical miss toward the side it favours; null where the stat's nudge has not held up or there is no fair chance */
+function muP(l,fair){ const m=muNudge(l.pid,l.stat); if(!m||!(m.sd>0)||!(fair>0&&fair<1)) return null;
   return ncdf(nq(fair)+(l.side==='under'?-1:1)*m.nudge/m.sd); }
 window.eloMatchupP=muP;
 const epId=l=>l.key+'|'+l.side+'|'+l.k;
 const epCmp=(a,b)=>a<b?-1:a>b?1:0;
-/* the candidates: every leg the rules above allow, one a player (his best by value, the main line on a
-   tie, then the lower id), ranked on value, best first; null where the page cannot price a leg. o.games: the games
-   they are drawn from (app v118: a night game's, or the Sunday slot's), else every game the page prices this week.
-   Until app v118 they were the games and player sides ticked on the Parlay Builder tab (pbAllows), so a reader who
-   had unticked the priced games saw no Elo picks at all (Sunday 18 October 2026) */
+/* the candidates: every leg the rules above allow, one a player (his largest lean, the main line on a tie, then the lower
+   id), ranked on the lean, largest first, each carrying pe (its Elo chance), pf (DraftKings' fair chance on it) and lean;
+   null where the page cannot price a leg. o.games: the games they are drawn from (app v118: a night game's, or the Sunday
+   slot's), else every game the page prices this week. Until app v118 they were the games and player sides ticked on the
+   Parlay Builder tab (pbAllows), so a reader who had unticked the priced games saw no Elo picks at all (18 October 2026).
+   (app v138) Inside one draw of Suggested Parlays (renderSp and its eloDecorate, EP_DRAW) each unit's candidates are worked
+   once: a draw reads every unit's Elo picks several times (the unit, then each of its cards for its mismatch tags), and each
+   read worked pricedLegs again for every game of it, 0.2 s of the tab's last task on week 7's Sunday; nothing they stand
+   on can move inside one draw */
+let EP_DRAW=null;
 function eloCands(o){
-  if(!D.players||typeof pricedLegs!=='function'||typeof mlProb!=='function'||typeof mlToDec!=='function') return null;
+  const dk=EP_DRAW?JSON.stringify(o&&Array.isArray(o.games)?o.games:null):null;
+  if(dk!=null&&EP_DRAW.has(dk)) return EP_DRAW.get(dk);
+  const r=eloCandsOf(o); if(dk!=null) EP_DRAW.set(dk,r); return r;
+}
+function eloCandsOf(o){
+  if(!D.players||typeof pricedLegs!=='function'||typeof legFair!=='function') return null;
   const G=o&&Array.isArray(o.games)?new Set(o.games):null;
   let legs; try{ legs=G&&typeof S==='object'&&S&&Array.isArray(S.sched)?pricedLegs(S.sched.filter(g=>G.has(g.id))):pricedLegs(); }catch(e){ return null; }
-  const c=[];
+  const c=[], fm={};
   for(const l of legs){
-    /* a real price, or (app v107) one worked from DraftKings' line read on ESPN by Refresh odds, which
-       pricedLegs offers only on the kinds the estimate has been checked on */
+    /* a real price, or (app v107) one worked from DraftKings' line read on ESPN, which pricedLegs offers only on the
+       kinds the estimate has been checked on */
     if(l.grp==='TEAM'||!(l.src==='real'||l.src==='dkline')||!isFinite(l.price)||l.price<EP.lo||l.price>EP.hi) continue;
     if(G&&!G.has(l.gid)) continue;
-    /* (app v109) a leg DraftKings' betslip can take, as the Parlay Builder's levels: DraftKings' own id at
-       its line, wherever the payload carries ids for its game (a line read by Refresh odds has none) */
+    /* (app v109) a leg DraftKings' betslip can take, as the Parlay Builder's levels: DraftKings' own id at its line,
+       wherever the payload carries ids for its game (dormant since app v125) */
     if(typeof dkCarries==='function'&&dkCarries(l)&&!(typeof dkIdOf==='function'&&dkIdOf(l))) continue;
     const e=window.eloOf(l.pid); if(!e) continue;
-    const imp=mlProb(l.price), dec=mlToDec(l.price); if(!(imp>0&&imp<1)||!(dec>1)) continue;
-    const pe=muP(l,imp); if(pe==null) continue;
-    const ev=pe*dec-1;
-    if(pe>=EP.floor&&ev>0) c.push({...l,pe,ev,imp});
+    let f=null; try{ f=legFair(l,fm); }catch(err){ f=null; }
+    if(!f||!(f.p>=EP.min&&f.p<1)) continue;
+    const pe=muP(l,f.p); if(pe==null) continue;
+    /* a lean clear of nothing: ncdf(nq(fair)) misses fair by up to about 2e-7 either way, so a stat whose nudge is 0
+       (it leans nowhere) would otherwise pass on that rounding; a nudge of 0.01 already leans 1e-4 or more */
+    const lean=pe-f.p; if(!(lean>1e-6)) continue;
+    c.push({...l,pe,pf:f.p,lean});
   }
-  c.sort((a,b)=>(b.ev-a.ev)||((b.main?1:0)-(a.main?1:0))||epCmp(epId(a),epId(b)));
+  c.sort((a,b)=>(b.lean-a.lean)||((b.main?1:0)-(a.main?1:0))||epCmp(epId(a),epId(b)));
   const best=[], seen=new Set();
   for(const l of c){ if(seen.has(l.pid)) continue; seen.add(l.pid); best.push(l); }
   return best;
 }
-/* what the levels are searched from: the EP.cap best by value and the EP.capP likeliest by the Elo chance (the
-   better value, then the lower id, on a tie), each once, still ranked on value */
-function epKeep(all){
-  const likely=[...all].sort((a,b)=>(b.pe-a.pe)||(b.ev-a.ev)||epCmp(epId(a),epId(b))).slice(0,EP.capP), keep=new Set([...all.slice(0,EP.cap),...likely]);
-  return all.filter(l=>keep.has(l));
-}
-/* P(X<h, Y<k) for two standard normals correlated r: Plackett's integral by ten-point Gauss-Legendre, as the
-   props parts' own search reads a pair (bvnLower there) */
-const EP_GX=[-0.9739065285171717,-0.8650633666889845,-0.6794095682990244,-0.4333953941292472,-0.1488743389816312,0.1488743389816312,0.4333953941292472,0.6794095682990244,0.8650633666889845,0.9739065285171717];
-const EP_GW=[0.0666713443086881,0.1494513491505806,0.2190863625159820,0.2692667193099963,0.2955242247147529,0.2955242247147529,0.2692667193099963,0.2190863625159820,0.1494513491505806,0.0666713443086881];
-function epBvn(h,k,r){ const a=Math.asin(Math.max(-0.9999,Math.min(0.9999,r))); let s=0;
-  for(let i=0;i<10;i++){ const t=a*(EP_GX[i]+1)/2, c=Math.cos(t); s+=EP_GW[i]*Math.exp(-(h*h-2*h*k*Math.sin(t)+k*k)/(2*c*c)); }
-  return Math.max(0,ncdf(h)*ncdf(k)+s*a/(4*Math.PI)); }
-/* ---- the builder's own sums, worked fast ----
-   parlayProb (the props parts) reads a parlay of n legs some of which move together by 40,000 draws of n
-   standard normals from one seeded stream (mulberry(20260908), two uniforms to each two normals, so a parlay of
-   2k-1 or 2k legs reads the same draws), each leg landing on a draw when its z (its row of the Cholesky factor of
-   the legs' correlations times the draw) clears its threshold; parlayDec prices a game's legs together on the
-   same count at the book's chances, 20,000 draws. So the draws are made once for each width and kept (EP_G), and
-   a game's legs at their places in a parlay land on a set of draws kept as bits, the same sums in the same order
-   as parlayProb's (a leg's z sums only its own game's legs, every other term of its row being zero), so a
-   parlay's count is the draws all its games' sets share: parlayProb's to the draw. epSums is null where
-   parlayProb would shrink the correlations (a Cholesky factor it cannot take): the props parts' own are used
-   there. */
-const EP_SIMS=40000, EP_DSIMS=20000, EP_G=[];
-let EP_FAST=true;
-function epDraws(k){
-  if(EP_G[k]) return EP_G[k];
-  const rnd=mulberry(20260908), g=[]; for(let c=0;c<2*k;c++) g.push(new Float64Array(EP_SIMS));
-  for(let s=0;s<EP_SIMS;s++) for(let i=0;i<2*k;i+=2){ const u1=rnd()||1e-12,u2=rnd(); const m=Math.sqrt(-2*Math.log(u1));
-    g[i][s]=m*Math.cos(2*Math.PI*u2); g[i+1][s]=m*Math.sin(2*Math.PI*u2); }
-  return EP_G[k]=g;
-}
-const epPop=x=>{ x=x-((x>>>1)&0x55555555); x=(x&0x33333333)+((x>>>2)&0x33333333); return (((x+(x>>>4))&0x0F0F0F0F)*0x01010101)>>>24; };
-function epCount(b){ let h=0; for(let w=0;w<b.length;w++) h+=epPop(b[w]); return h; }
-/* one game's legs (candidate indices, in the parlay's order) at their columns of the draws of width k: the draws
-   every one of them lands on, as bits (at the book's chances for a price, the first EP_DSIMS draws), the last leg
-   read only on the draws the others land on, which are kept */
-function epBits(P,legs,cols,k,book,keep){
-  const key=(book?'b':'e')+k+':'+legs.map((i,r)=>i+'@'+cols[r]).join(',');
-  let b=P.bits.get(key); if(b!==undefined) return b;
-  const m=legs.length, sims=book?EP_DSIMS:EP_SIMS, W=(sims+31)>>>5, G=epDraws(k);
-  const pre=m>1?epBits(P,legs.slice(0,-1),cols.slice(0,-1),k,book,true):null;
-  const L=m>1&&!pre?null:cholesky(legs.map((a,r)=>legs.map((c,q)=>r===q?1:P.RH[a][c])));
-  if(!L) b=null;
-  else { const Lr=L[m-1], g=cols.map(c=>G[c]), i=legs[m-1], thr=book?P.tb[i]:P.te[i], dir=P.dir[i];
-    b=new Int32Array(W);
-    if(m===1){ const g0=g[0], l0=Lr[0]; for(let s=0;s<sims;s++){ let z=0; z+=l0*g0[s]; if(dir*z>thr) b[s>>>5]|=1<<(s&31); } }
-    else { const c0=Lr[0], c1=Lr[1], c2=m>2?Lr[2]:0, c3=m>3?Lr[3]:0, g0=g[0], g1=g[1], g2=g[2], g3=g[3];
-      for(let w=0;w<W;w++){ let x=pre[w], y=0;
-        while(x){ const t=x&-x, s=(w<<5)+(31-Math.clz32(t)); x^=t;
-          let z=0; z+=c0*g0[s]; z+=c1*g1[s];
-          if(m>2){ z+=c2*g2[s]; if(m>3){ z+=c3*g3[s]; for(let q=4;q<m;q++) z+=Lr[q]*g[q][s]; } }
-          if(dir*z>thr) y|=t; }
-        b[w]=y; } } }
-  if(keep||m===1) P.bits.set(key,b);
-  return b;
-}
-/* parlayProb's chance on candidates ids (ascending: the builder's order) at their Elo chances, and parlayDec's price */
-function epSums(P,ids){
-  const n=ids.length, k=(n+1)>>1;
-  let p=1; for(const i of ids) p=p*P.pe[i];
-  let pairs=false; for(let a=0;a<n&&!pairs;a++) for(let c=a+1;c<n;c++) if(Math.abs(P.RH[ids[a]][ids[c]])>=0.03){ pairs=true; break; }
-  if(pairs){ const by=new Map(); ids.forEach((i,c)=>{ let x=by.get(P.gi[i]); if(!x) by.set(P.gi[i],x={legs:[],cols:[]}); x.legs.push(i); x.cols.push(c); });
-    const gs=[...by.values()], one=gs.length===1; let acc=null;
-    for(const x of gs){ const b=epBits(P,x.legs,x.cols,k,false,!one); if(!b) return null;
-      if(!acc) acc=one?b:b.slice(); else for(let w=0;w<acc.length;w++) acc[w]&=b[w]; }
-    p=epCount(acc)/EP_SIMS; }
-  const dec=epDec(P,ids);
-  return dec==null?null:{p,dec};
-}
-/* parlayDec's price on candidates ids (ascending), its game's legs priced together on parlayProb's count at the
-   book's chances, kept for each game's legs */
-function epDec(P,ids){
-  const byGame={}; for(const i of ids) (byGame[P.C[i].gid]=byGame[P.C[i].gid]||[]).push(i);
-  let dec=1;
-  for(const gid in byGame){ const grp=byGame[gid];
-    let mult=1; for(const i of grp) mult=mult*(P.dec[i]||1);
-    if(grp.length<2){ dec*=mult; continue; }
-    const key=grp.join(','); let f=P.dm.get(key);
-    if(f===undefined){ const m=grp.length; let pj=1; for(const i of grp) pj=pj*P.bk[i];
-      let pr=false; for(let a=0;a<m&&!pr;a++) for(let c=a+1;c<m;c++) if(Math.abs(P.RH[grp[a]][grp[c]])>=0.03){ pr=true; break; }
-      if(pr){ const b=epBits(P,grp,grp.map((_,c)=>c),(m+1)>>1,true,false); pj=b?epCount(b)/EP_DSIMS:null; }
-      f=pj==null?null:(pj>0&&isFinite(pj))?Math.min(mult,(1/pj)*SGP_HOLD):mult; P.dm.set(key,f); }
-    if(f==null) return null;
-    dec*=f; }
-  return dec;
-}
-/* ---- the quick reading, and how far the exact sums can stray from it ---- */
-const epNpdf=z=>0.3989422804014327*Math.exp(-z*z/2);
-/* P(Y_i<b_i for every i), Y standard normals correlated R, by Mendell and Elston's reading: each in turn, the rest
-   taken as normal with the truncated one's mean and variance carried through. On every parlay of up to five legs
-   of one game, of made-up candidates, the exact sums stayed within 3.5 of their draws' own standard deviations of it */
-function epME(b,R){
-  const m=b.length; if(m===1) return ncdf(b[0]);
-  const mu=new Array(m).fill(0), C=R.map(r=>r.slice()); let p=1;
-  for(let k=0;k<m;k++){
-    const s=Math.sqrt(C[k][k]), a=(b[k]-mu[k])/s, pk=ncdf(a); p*=pk; if(!(pk>1e-12)) return 0; if(k===m-1) break;
-    const lam=epNpdf(a)/pk, vt=1-a*lam-lam*lam;
-    for(let j=k+1;j<m;j++){ const bj=C[j][k]/s; mu[j]-=bj*lam; for(let i=k+1;i<=j;i++){ const bi=C[i][k]/s; C[i][j]=C[j][i]=C[i][j]-bi*bj*(1-vt); } } }
-  return p;
-}
-/* what the search stands on, once a candidate list: the candidates in the builder's order (pbOrder, so a parlay's
-   legs in that order are its columns of the draws), each one's Elo chance, price, book chance, thresholds and side,
-   its game, and how each two move together (legRho) */
-function epPrep(C0){
-  const C=typeof pbOrder==='function'?pbOrder(C0):[...C0], games=[...new Set(C.map(l=>l.gid))];
-  const P={C,N:C.length,RH:C.map(a=>C.map(b=>a===b?1:(typeof legRho==='function'?legRho(a,b):0))),gi:C.map(l=>games.indexOf(l.gid)),
-    pe:C.map(l=>l.pe),dec:C.map(l=>mlToDec(l.price)),bk:C.map(l=>mlProb(l.price)),te:C.map(l=>invNorm(1-l.pe)),tb:C.map(l=>invNorm(1-mlProb(l.price))),
-    dir:C.map(l=>l.side==='under'?-1:1),bits:new Map(),dm:new Map(),G:games.length,li:[],gl:games.map(()=>[]),gv:games.map(()=>new Map())};
-  C.forEach((l,i)=>{ const g=P.gi[i]; P.li[i]=P.gl[g].length; P.gl[g].push(i); });
-  P.nqE=P.pe.map(p=>nq(p)); P.nqB=P.bk.map(p=>nq(p));
-  /* (app v121) the pairs DraftKings will not take on one slip (the props parts' dkClash: a quarterback's passing TDs
-     with a teammate's anytime touchdown), which no parlay of the search may hold */
-  P.cl=C.map(a=>C.map(b=>a!==b&&typeof dkClash==='function'&&dkClash(a,b))); P.anyCl=P.cl.some(r=>r.some(Boolean));
-  return P;
-}
-/* one game's legs in a parlay (a mask of its candidates, a sum of powers of two): the quick reading of them all
-   landing at their Elo chances, their price factor (parlayDec's, on the quick reading at the book's chances),
-   whether two of them move together, and the variance of the exact price about it, up and down */
-function epGroup(P,g,mask){
-  let v=P.gv[g].get(mask); if(v) return v;
-  const legs=P.gl[g].filter((_,b)=>Math.floor(mask/2**b)%2===1), m=legs.length;
-  let pairs=false; for(let a=0;a<m&&!pairs;a++) for(let c=a+1;c<m;c++) if(Math.abs(P.RH[legs[a]][legs[c]])>=0.03){ pairs=true; break; }
-  let pe=1, pb=1, mult=1; for(const i of legs){ pe=pe*P.pe[i]; pb=pb*P.bk[i]; mult=mult*(P.dec[i]||1); }
-  if(pairs){ const S=legs.map((a,r)=>legs.map((c,q)=>r===q?1:P.dir[a]*P.dir[c]*P.RH[a][c]));
-    pe=m===2?epBvn(P.nqE[legs[0]],P.nqE[legs[1]],S[0][1]):epME(legs.map(i=>P.nqE[i]),S);
-    pb=m===2?epBvn(P.nqB[legs[0]],P.nqB[legs[1]],S[0][1]):epME(legs.map(i=>P.nqB[i]),S); }
-  const f=m<2?mult:(pb>0&&isFinite(pb))?Math.min(mult,(1/pb)*SGP_HOLD):mult, vv=pairs?(1-pb)/(pb*EP_DSIMS):0;
-  v=[pe,f,pairs?1:0,f<mult?vv:0,vv];
-  P.gv[g].set(mask,v); return v;
-}
-/* the most and the least the exact sums can come to on a parlay the quick reading puts at chance a and price d
-   (k: how many of its games have legs that move together, so its chance is a count of draws; v, vl: its price's
-   variance up and down): [most chance, most return, least chance, least return], EP.z of the draws' standard
-   deviations on the chance and EP.zr on the return. Read exactly with no two legs that move together */
-function epBounds(a,d,k,v,vl){
-  if(!k) return [a*(1+1e-9),a*d*(1+1e-9),a*(1-1e-9),a*d*(1-1e-9)];
-  const sa=(1-Math.min(a,1))/(Math.max(a,1e-12)*EP_SIMS), Z=EP.z, ZR=EP.zr, B=EP.bias, su=Math.sqrt(sa);
-  return [a*Math.exp(Z*su+B),a*d*Math.exp(ZR*Math.sqrt(sa+v)+B),a*Math.exp(-Z*su-B),a*d*Math.exp(-ZR*Math.sqrt(sa+vl)-B)];
-}
-/* the least quick chance whose most reaches a floor */
-const EP_AMIN=new Map();
-function epAMin(floor){
-  let x=EP_AMIN.get(floor); if(x!=null) return x;
-  let lo=floor*0.2, hi=floor; for(let i=0;i<60;i++){ const m=(lo+hi)/2; if(epBounds(m,1,1,0,0)[0]>=floor) hi=m; else lo=m; }
-  EP_AMIN.set(floor,lo); return lo;
-}
-/* every parlay of n candidates (one leg a player, so any n of them, but for a pair DraftKings will not take on one slip:
-   app v121, P.cl) by the quick reading: those whose most (its
-   chance with floor 0, else its expected return) reaches the best least found, best first; one whose chance cannot
-   reach the floor is left out with every parlay it starts, since a leg added only takes draws away */
-function epScan(P,n,floor){
-  const N=P.N, gm=new Array(P.G).fill(0), idx=new Array(n), A=new Float64Array(n+1), D=new Float64Array(n+1), V=new Float64Array(n+1), VL=new Float64Array(n+1), K=new Int32Array(n+1);
-  A[0]=1; D[0]=1;
-  const amin=floor?epAMin(floor):0, amin0=floor/(1+1e-9);
-  /* the most any bound multiplies a reading by, for a parlay whose price strays little (the rest are worked out) */
-  const mx=floor?Math.exp(Math.max(EP.z,EP.zr)*Math.sqrt((1-amin)/(amin*EP_SIMS)+0.002)+EP.bias)*(1+1e-9):Infinity;
-  let list=[], lb=-Infinity, cap=4096;
-  const go=(d,start)=>{
-    for(let i=start;i<=N-(n-d);i++){
-      /* (app v121) never with a leg already in the parlay that DraftKings will not take beside it */
-      if(P.anyCl){ let cl=false; for(let q=0;q<d;q++) if(P.cl[idx[q]][i]){ cl=true; break; } if(cl) continue; }
-      const g=P.gi[i], old=gm[g], nw=old+2**P.li[i], o=old?epGroup(P,g,old):null, x=epGroup(P,g,nw);
-      const a=o?A[d]/o[0]*x[0]:A[d]*x[0], k=K[d]-(o?o[2]:0)+x[2];
-      if(floor&&a<(k?amin:amin0)) continue;
-      const dd=o?D[d]/o[1]*x[1]:D[d]*x[1], v=V[d]-(o?o[3]:0)+x[3], vl=VL[d]-(o?o[4]:0)+x[4];
-      idx[d]=i;
-      if(d+1===n){
-        if(floor&&v<=0.002&&a*dd*mx<lb) continue;
-        const b=epBounds(a,dd,k,v,vl), ub=floor?b[1]:b[0], low=floor?(b[2]>=floor?b[3]:-Infinity):b[2];
-        if(low>lb) lb=low;
-        if(ub>=lb){ list.push({ub,a,k,ids:idx.slice()}); if(list.length>cap){ list=list.filter(y=>y.ub>=lb); cap=Math.max(4096,2*list.length); } }
-        continue; }
-      gm[g]=nw; A[d+1]=a; D[d+1]=dd; V[d+1]=v; VL[d+1]=vl; K[d+1]=k; go(d+1,i+1); gm[g]=old; } };
-  go(0,0);
-  return list.filter(y=>y.ub>=lb).sort((u,w)=>w.ub-u.ub);
-}
-/* the builder's own sums on a parlay's legs, in the builder's order (pbOrder): the chance all land at their Elo
-   chances (parlayProb, its same-game correlations) and the price (parlayDec, a game's legs together) */
-function epExact(legs){
-  const L=typeof pbOrder==='function'?pbOrder(legs):[...legs];
-  return {legs:L,p:parlayProb(L.map(l=>({...l,p:l.pe}))).corr,dec:parlayDec(L.map(l=>({leg:l,ml:l.price})))};
-}
-/* those sums on candidates ids (ascending), the fast way where it can, else the props parts' own; kept */
-function epReal(P,ids,memo){
-  const key=ids.join(','); let e=memo.get(key); if(e) return e;
-  const legs=ids.map(i=>P.C[i]), f=EP_FAST?epSums(P,ids):null;
-  e=f?{legs,p:f.p,dec:f.dec}:epExact(legs);
-  e.id=legs.map(epId).sort().join(','); memo.set(key,e); return e;
-}
-/* the best parlay of n by the exact sums: the best return over the floor (floor>0), else the likeliest; every parlay
-   whose most reaches the best found is worked, so no parlay left can beat it (a tie to the lower ids). With the
-   props parts' own sums alone (the fast ones set aside), the first EP.slow */
-function epBest(P,n,floor,memo){
-  let best=null, worked=0;
-  for(const x of epScan(P,n,floor)){ if(best&&x.ub<best.s) break;
-    /* with a floor the price is worked first (kept for each game's legs, so mostly worked already): a parlay whose
-       chance at its most, times its exact price, cannot reach the best is passed over */
-    if(floor&&best&&EP_FAST&&!memo.has(x.ids.join(','))){ const d=epDec(P,x.ids);
-      if(d!=null&&epBounds(x.a,d,x.k,0,0)[0]*d<best.s) continue; }
-    if(!EP_FAST&&++worked>EP.slow) break;
-    const e=epReal(P,x.ids,memo); if(floor&&!(e.p>=floor)) continue; const v=floor?e.p*e.dec:e.p;
-    if(!best||v>best.s||(v===best.s&&e.id<best.e.id)) best={e,s:v}; }
-  return best&&best.e;
-}
-/* one level, Suggested Parlays' rule on the Elo chance: a level with a floor (every one of the Elo picks', epTiers)
-   the best expected return over it, else, where no parlay of its size reaches it, the likeliest of its size, marked
-   so; one with none the likeliest of its size; null with fewer than n candidates */
-function epLevel(P,t,memo){
-  const [,,n,floor]=t; if(P.N<n) return null;
-  if(floor){ const r=epBest(P,n,floor,memo); if(r) return r; }
-  const x=epBest(P,n,0,memo);
-  return x?(floor&&x.p<floor?{...x,likeliest:true}:x):null;
+/* two legs that move against each other: the correlation parlayProb's Cholesky rows read for the pair (legRho, the props
+   parts' own: the shipped pair table for two players of one game, 0 across games) times each leg's side (an under -1, as
+   parlayProb and the search's pbJoint turn it), below EP.opp (-0.05), so a quarterback's passing yards under against his
+   receiver's yards over (team, 0.353 in the October 2026 table) is opposed and his receiver's yards over is not, nor a
+   pair at -0.034 */
+const epSide=l=>l.side==='under'?-1:1;
+const epOpposed=(a,b)=>typeof legRho==='function'&&epSide(a)*epSide(b)*legRho(a,b)<EP.opp;
+/* the candidates that go together on one slip, in the lean order: each one DraftKings will not take beside one already
+   taken (dkClash), or that moves against one already taken (epOpposed), passed over */
+function epTake(all){
+  const out=[];
+  for(const l of all){ if(out.some(t=>(typeof dkClash==='function'&&dkClash(t,l))||epOpposed(t,l))) continue; out.push(l); }
+  return out;
 }
 /* a parlay's fair chance (parlayFair, the book's prices with the margin out), worked again only when a leg's
    fair chance or price has moved */
@@ -1040,40 +741,37 @@ function epFair(legs){
   if(key!=null){ EP_FAIR.set(key,v); if(EP_FAIR.size>64) EP_FAIR.delete(EP_FAIR.keys().next().value); }
   return v;
 }
-/* the four levels on the candidates, kept until the candidates (or the payload, or the levels) change, so a
-   redraw costs nothing; each level's id is the level's own behind elo- (elo-safe, elo-med, elo-aggr, elo-xtrm),
-   which Add to builder and the parlay card's Finish name. o.kept: only what is already built, else {wait}
-   (the section, drawn while Suggested Parlays is off the screen, builds nothing: a load of the hub pays nothing
-   for a tab nobody opened, as the sets do) */
+/* the four levels on the candidates, kept until the candidates (or the payload, or the levels) change, so a redraw
+   costs nothing; each level's id is the level's own behind elo- (elo-safe, elo-med, elo-aggr, elo-xtrm), which Add to
+   builder and the parlay card's Finish name, each with floor 0 and never likeliest. o.kept: only what is already built,
+   else {wait} (the section, drawn while Suggested Parlays is off the screen, builds nothing: a load of the hub pays
+   nothing for a tab nobody opened, as the sets do). An empty level says why: fewer players qualify than it takes, or
+   that many do and the strongest leans, taken in turn, fill fewer that go together on one slip (epFitWhy: the greedy
+   walk passes over a candidate that clashes with one taken or moves against one, so other players may go together
+   where the walk runs short, and the words say only what the walk found, of either cause) */
+const epFitWhy=(k,n,where)=>`Strongest first, only ${k} lean${k===1?'':'s'} ${where} go${k===1?'es':''} together on one DraftKings slip: this level takes ${n}.`;
 const EP_CACHE=new Map();
 function eloPicks(o){
-  const LV=typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?epTiers(PB_TIERS):null;
-  if(!LV||typeof parlayProb!=='function'||typeof parlayDec!=='function') return null;
+  const LV=typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?PB_TIERS:null;
+  if(!LV||typeof parlayProb!=='function'||typeof parlayDec!=='function'||typeof pbOrder!=='function') return null;
   const all=eloCands(o); if(!all) return null;
-  const where=o&&o.where?o.where:'on your picks';
-  const C=epKeep(all);
-  /* what the levels stand on: the payload, the levels, the candidates and how each pair of them in one game moves together */
-  const rho=[]; for(let i=0;i<C.length;i++) for(let j=i+1;j<C.length;j++) if(C[i].gid===C[j].gid) rho.push(typeof legRho==='function'?legRho(C[i],C[j]):0);
-  const sig=JSON.stringify([typeof PAY==='object'&&PAY?PAY.baked_at||null:null,LV,C,rho,where]);
+  const where=o&&o.where?o.where:'on your picks', take=epTake(all);
+  const sig=JSON.stringify([typeof PAY==='object'&&PAY?PAY.baked_at||null:null,LV.map(t=>t[0]+':'+t[2]),take,all.length,where]);
   let base=EP_CACHE.get(sig)||null;
-  if(!base&&o&&o.kept) return {tiers:null,wait:true,cands:C,candidates:all.length,games:new Set(C.map(l=>l.gid)).size};
+  if(!base&&o&&o.kept) return {tiers:null,wait:true,cands:all,candidates:all.length,taken:take.length,games:new Set(all.map(l=>l.gid)).size};
   if(!base){
-    /* each level's figures are the props parts' own sums on its legs, worked again; the fast sums are theirs to the
-       bit (check_tab and the nflbets smoke hold them so), and should a level ever differ they are set aside */
-    const build=()=>{ const P=epPrep(C), memo=new Map();
-      return LV.map(t=>{ const [id,label,n,floor]=t, r=epLevel(P,t,memo), x=r&&epExact(r.legs);
-        return r?{id:'elo-'+id,label,n,floor,legs:x.legs,p:x.p,dec:x.dec,...(floor&&x.p<floor?{likeliest:true}:{}),same:x.p===r.p&&x.dec===r.dec}
-          :{id:'elo-'+id,label,n,floor,legs:[],why:all.length>=n?`No ${n} of these ${all.length} players go together on DraftKings’ slip.`
-            :`Only ${all.length} player${all.length===1?'':'s'} ${where} qualif${all.length===1?'ies':'y'}: this level takes ${n}.`}; }); };
-    base=build();
-    if(EP_FAST&&base.some(t=>t.legs.length&&!t.same)){ EP_FAST=false; base=build(); }
-    base=base.map(({same,...t})=>t);
+    base=LV.map(([id,label,n])=>{
+      if(take.length>=n){ const legs=pbOrder(take.slice(0,n));
+        return {id:'elo-'+id,label,n,floor:0,legs,p:parlayProb(legs.map(l=>({...l,p:l.pe}))).corr,dec:parlayDec(legs.map(l=>({leg:l,ml:l.price}))),likeliest:false}; }
+      return {id:'elo-'+id,label,n,floor:0,legs:[],why:all.length>=n?epFitWhy(take.length,n,where)
+        :`Only ${all.length} player${all.length===1?'':'s'} ${where} qualif${all.length===1?'ies':'y'}: this level takes ${n}.`}; });
     EP_CACHE.set(sig,base); if(EP_CACHE.size>40) EP_CACHE.delete(EP_CACHE.keys().next().value); }
   const tiers=base.map(t=>t.legs.length?{...t,fair:epFair(t.legs),sig:'elo|'+t.legs.map(epId).join(',')}:t);
-  return {tiers,cands:C,candidates:all.length,games:new Set(C.map(l=>l.gid)).size};
+  return {tiers,cands:all,candidates:all.length,taken:take.length,games:new Set(all.map(l=>l.gid)).size};
 }
-/* how a level was chosen, as its card says it */
-const epRuleOf=t=>t.likeliest||!t.floor?(t.legs.length===2?'the likeliest pair':`the likeliest ${t.legs.length} legs`):`${Math.round(t.floor*100)}%+ by Elo`;
+/* how a level was chosen, as its card says it, and the pill's title */
+const EP_RULE='strongest Elo leans', EP_RULE_TITLE='The players whose Elo matchup leans furthest their way, that go together on one DraftKings slip';
+const epRuleOf=()=>EP_RULE;
 /* each player's mismatch this week where the Props tab's Mismatches has one, Solid and up, as a game's page tags it */
 function epMm(){ const by={}; try{ for(const v of mismatches()) if(mmGrade(v.score)[0]!=='Slight'&&!by[v.pid]) by[v.pid]=v; }catch(e){} return by; }
 /* the side a mismatch favours: every one is a player standing above his position's average against a unit below the
@@ -1107,25 +805,28 @@ window.eloUnit=(gids,o)=>{
 };
 /* (app v121) the Sunday slot's Elo picks, one game a level (the owner, 19 October 2026: "the legs need to be part of the
    same game parlay only, and anytime there's a mix it bombs the hyperlink"): the four levels on each of its games alone,
-   as a night game's are built, and each level the best of theirs: one that meets its floor before the likeliest of its
-   size, then the better expected return (the Elo chance all land times the price) where it met its floor, else the
-   higher Elo chance, then the earlier game. An empty level says so of any one game; {wait} while any game's is not built */
-const epSlotBetter=(a,b)=>{ const la=a.likeliest?1:0, lb=b.likeliest?1:0; if(la!==lb) return la<lb; const v=x=>x.floor&&!x.likeliest?x.p*x.dec:x.p; return v(a)>v(b); };
+   as a night game's are built, and each level the best of theirs: (app v138) the larger lean summed over its legs, then
+   the earlier game. An empty level says so of any one game; {wait} while any game's is not built */
+const epLean=t=>(t&&t.legs||[]).reduce((a,l)=>a+(isFinite(l.lean)?l.lean:0),0);
+const epSlotBetter=(a,b)=>epLean(a)>epLean(b);
 function eloUnitPerGame(gids,o){
-  const LV=typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?epTiers(PB_TIERS):null; if(!LV) return null;
+  const LV=typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?PB_TIERS:null; if(!LV) return null;
   const per=[]; let wait=false;
   for(const gid of gids){ const r=eloPicks({games:[gid],where:'in this game',kept:!!(o&&o.kept)}); if(!r) return null; if(r.wait){ wait=true; continue; } per.push(r); }
   if(wait) return {wait:true};
-  const where='in any one game of '+String((o&&o.where)||'in the Sunday slot').replace(/^in /,''), most=Math.max(0,...per.map(r=>r.candidates||0));
-  const tiers=LV.map(([id,label,n,floor],ti)=>{ let best=null;
+  const where='in any one game of '+String((o&&o.where)||'in the Sunday slot').replace(/^in /,''), most=Math.max(0,...per.map(r=>r.candidates||0)),
+    took=Math.max(0,...per.map(r=>r.taken||0));
+  const tiers=LV.map(([id,label,n],ti)=>{ let best=null;
     for(const r of per){ const t=r.tiers[ti]; if(t&&t.legs&&t.legs.length&&(!best||epSlotBetter(t,best))) best=t; }
-    return best?{...best}:{id:'elo-'+id,label,n,floor,why:most>=n?`No ${n} players ${where} go together on DraftKings’ slip.`
+    return best?{...best}:{id:'elo-'+id,label,n,floor:0,why:most>=n?epFitWhy(took,n,where)
       :`Only ${most} player${most===1?'':'s'} ${where} qualif${most===1?'ies':'y'}: this level takes ${n}.`}; });
   return {tiers,candidates:per.reduce((a,r)=>a+(r.candidates||0),0)};
 }
-/* an Elo pick's card, as Suggested Parlays draws it (pbTierCard): the Elo chance, each leg's own Elo chance, each
-   player's shield, how the level was chosen */
-window.eloCardOpt=t=>({chance:t.p,chanceBy:'Elo chance',by:'Elo',badge:l=>badge(l.pid),legP:l=>l.pe,...(t&&t.legs&&t.legs.length?{rule:`<span class="pb-rule">${epRuleOf(t)}</span>`}:{})});
+/* an Elo pick's card, as Suggested Parlays draws it (pbTierCard): (app v138) DraftKings' fair chance and the expected
+   return as every level's, each player's shield, each leg's Elo lean under it, and how the level was chosen; no Elo
+   chance stated. The rule only where the level was chosen by it: a live level, or one read back with chance 'fair'
+   (pbRuleKnown, the props parts'), since an Elo pick locked before app v138 was the best return over floors of its own */
+window.eloCardOpt=t=>({badge:l=>badge(l.pid),legNote:eloLeanNote,...(t&&t.legs&&t.legs.length&&(typeof pbRuleKnown!=='function'||pbRuleKnown(t))?{rule:`<span class="pb-rule" title="${EP_RULE_TITLE}">${epRuleOf(t)}</span>`}:{})});
 /* the Elo picks drawn in each unit of Suggested Parlays: each leg on a player with a mismatch this week, on the side it
    favours, wears it after his name */
 function eloDecorate(){
@@ -1138,16 +839,14 @@ function eloDecorate(){
       const nm=li.querySelector('.nm'), name=nm&&(nm.querySelector(':scope > .glance-name')||[...nm.childNodes].find(x=>x.nodeType===3&&x.textContent.trim())); if(name) name.after(epMmTag(m)); }); });
 }
 window.eloPicks=eloPicks;
-/* for the checks: the fast sums on parlays of the given candidates (each a list of them), as the search works them,
-   to be held to parlayProb's and parlayDec's own; and the side a leg's mismatch tag reads for */
-window.eloSums=(cands,sets)=>{ const P=epPrep(cands), at=new Map(P.C.map((l,i)=>[l,i])); return sets.map(ls=>epSums(P,ls.map(l=>at.get(l)).sort((a,b)=>a-b))); };
+/* for the checks: the side a leg's mismatch tag reads for (app v138: the fast sums the search worked from, window.eloSums,
+   went with the search) */
 window.eloMmFor=epMmFor;
 /* the Elo picks' mismatch tags, after Suggested Parlays draws its units, wherever it is drawn (renderPb draws it
    last, and the tab's opening draws it alone) */
 if(typeof renderSp==='function'){ const drawSp=renderSp;
-  renderSp=function(){ const r=drawSp.apply(this,arguments); try{ eloDecorate(); }catch(e){} return r; }; }
-if(typeof renderTrack==='function'){ const drawTrack=renderTrack;
-  renderTrack=function(){ const r=drawTrack.apply(this,arguments); trackAlt(); return r; }; }
+  renderSp=function(){ const was=EP_DRAW; EP_DRAW=was||new Map();
+    try{ const r=drawSp.apply(this,arguments); try{ eloDecorate(); }catch(e){} return r; } finally{ EP_DRAW=was; } }; }
 if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
   renderParlay=function(){ const r=drawParlay.apply(this,arguments); decorate(); return r; }; }
 /* ---- mismatches: where a player's Elo meets a weak unit ----
@@ -1305,7 +1004,7 @@ document.addEventListener('app-ready',decorate);
 function draw(){
   const body=el('peBody');
   if(!D.players||!D.model){ body.innerHTML=`<div class="card"><h2>ELO Ratings</h2><p class="pe-sub">${D.err?esc(D.err):'Loading the ratings…'}</p></div>`; return; }
-  defs(); decorate(); trackAlt();
+  defs(); decorate();
   body.innerHTML=rankings();
   body.querySelectorAll('.pe-pos button[data-unit]').forEach(b=>b.addEventListener('click',()=>{ if(D.unit!==b.dataset.unit) D.tsort=null; D.unit=b.dataset.unit; draw(); }));
   body.querySelectorAll('tr.pe-plrow').forEach(tr=>tr.addEventListener('click',()=>playerModal(tr.dataset.pePl)));
@@ -1336,7 +1035,7 @@ async function boot(){
   D.muDone=true;
   filesRead({players:D.players,model:D.model,mu:D.mu,err:D.err||null,muErr});
   draw();
-  /* the Parlay Builder's suggestions stand on market + form, so they are drawn again now */
+  /* the Elo picks and the builder's Elo leans stand on the ratings and the matchups, so the tabs are drawn again now */
   try{ if(typeof S==='object'&&S&&S.sched&&typeof renderPb==='function') renderPb(); }catch(e){}
   try{ mismatchCard(); }catch(e){}
 }

@@ -72,7 +72,17 @@
    the slot's) carrying the four Elo picks, each leg on its unit's games with its Elo chance; B, the slot's games
    following the schedule's moves; C, the slot locked as B left it; D, the slot's levels and every set's Elo picks graded
    by the legs (the same own settlement), the slot's and the Elo picks' summaries worked out here, the next week's slot
-   taken; E, nothing new; F, check() on hand-made slot entries and Elo picks (every rule above). */
+   taken; E, nothing new; F, check() on hand-made slot entries and Elo picks (every rule above).
+   Since app v138 (the owner's call of 27 October 2026: every leg at DraftKings' fair chance) A holds every level a run
+   takes as the new rule states it: each marked chance 'fair', its p the model's chance (or, an Elo pick, the Elo chance)
+   that all land, in (0, 1); each leg of a model level but a game total at a fair chance from 45% to 97%, and none marked a
+   Value pick (thin) with no validated model behind it; each Elo pick's leg DraftKings' fair chance 30% or more and its
+   Elo chance at or above it (its lean), and (the review of 27 October 2026) no two legs of an Elo pick moving against
+   each other by more than -0.05 by the payload's pair table (opposedOwn, the test's own reading). R holds the levels built
+   again for a player ruled out the same way. And (the same review) A holds that no leg of any set or Elo pick is an anytime
+   touchdown priced from the read on the model alone (tdAloneOwn, the test's own reading of the formula's branch: none of
+   the yards lines his touchdown stands on in the read, and his club's lines not complete or he a charted starter), which
+   the read's charted quarterbacks, listed with their passing yards alone, always are. */
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -247,14 +257,35 @@ const slotUnder = (mv, gs = realW) => { const G = gs.map((g, i) => ({ g, i, k: k
   if (!G.length) return null; const k = G[0].k, id = `${season}_${pad(+G[0].g.w)}_SUN`;
   return { id, games: G.map(x => x.g.id), kick: k, lock: k - LOCK, key: `${season}|${pad(+G[0].g.w)}|${iso(k)}|${id}` }; };
 /* a set's Elo picks (since app v118): the four, each a parlay of its size on the unit's games with every leg's Elo
-   chance, or why it has none */
+   chance, or why it has none. Since app v138 each leg is one the Elo matchup leans toward against DraftKings' fair chance
+   on it: that fair chance 30% or more and the Elo chance above it, which the record's rounding to four places can only
+   make level (so pe at or above fair here), never a Value pick (thin null); the level marked chance 'fair' */
 const eloHeld = (e, games, lab) => {
   chk(Array.isArray(e.elo) && e.elo.map(t => t.id).join() === SL.ELO_TIERS.join(), `${lab}: its Elo picks are not the four: ${JSON.stringify((e.elo || []).map(t => t.id))}`);
   for (const x of e.elo || []) {
     if (!x.legs) { chk(typeof x.why === 'string' && x.why.length > 0, `${lab} ${x.id}: an Elo pick with no parlay says no why`); continue; }
     chk(x.legs.length === x.n && x.p > 0 && x.p < 1 && x.dec > 1 && x.legs.every(l => games.includes(l.gid) && l.pe > 0 && l.pe < 1 && l.grp !== 'TEAM' && l.thin === null),
       `${lab} ${x.id}: an Elo pick is not a parlay of its size on the unit's games, each a player's leg with its Elo chance and no Value mark`);
-    chk(new Set(x.legs.map(l => l.pid)).size === x.legs.length, `${lab} ${x.id}: an Elo pick takes a player twice`); } };
+    chk(x.chance === 'fair' && x.legs.every(l => typeof l.fair === 'number' && l.fair >= 0.30 && l.fair < 1 && l.pe >= l.fair),
+      `${lab} ${x.id}: an Elo pick is not marked chance 'fair', or holds a leg whose fair chance is under 30% or whose Elo chance is under it: ` + JSON.stringify({ chance: x.chance, legs: x.legs.map(l => [l.pid, l.stat, l.fair, l.pe]) }));
+    chk(new Set(x.legs.map(l => l.pid)).size === x.legs.length, `${lab} ${x.id}: an Elo pick takes a player twice`);
+    chk(!x.legs.some((a, i) => x.legs.some((b, j) => j > i && opposedOwn(a, b))),
+      `${lab} ${x.id}: an Elo pick holds two legs that move against each other: ` + JSON.stringify(x.legs.map(l => [l.pid, l.team, l.grp, l.stat, l.side]))); } };
+/* (the review of 27 October 2026) two legs that move against each other, the test's own reading of the correlation the
+   builder's sums read for the pair (the props parts' legRho, which the Elo picks' walk calls): two players' lines of one
+   game, the payload's pair table under rel|grp:stat|grp:stat (rel 'self', 'team' or 'opp', the two keys in order; 0 where
+   it has none), each leg's side turning it (an under -1); opposed below -0.05 (the tab's EP.opp; below nothing until the
+   same day, which emptied week 7's KC at SEA's Medium, Aggressive and Extreme over pairs of -0.034 to -0.102). The walk
+   passes such a leg over, so no
+   Elo pick the record takes holds such a pair (week 7's DAL at PHI Extreme held Tanner McKee's Under 192.5 passing yards
+   with his receivers' overs). The made-up weeks are cut from REAL and keep its table */
+function opposedOwn(a, b) {
+  if (!a || !b || a.gid !== b.gid || a.grp === 'TEAM' || b.grp === 'TEAM') return false;
+  const x = a.grp + ':' + a.stat, y = b.grp + ':' + b.stat, rel = a.pid === b.pid ? 'self' : a.team === b.team ? 'team' : 'opp';
+  const v = (REAL.corr || {})[rel + '|' + (x < y ? x + '|' + y : y + '|' + x)], r = typeof v === 'number' && isFinite(v) ? v : 0;
+  return (a.side === 'under' ? -1 : 1) * (b.side === 'under' ? -1 : 1) * r < OPP_OWN;
+}
+const OPP_OWN = -0.05;
 
 const primesA = primesUnder(MOVE);
 const minLock = Math.min(...primesA.map(g => kOf(g, MOVE) - LOCK));
@@ -298,6 +329,7 @@ for (const g of primesA) {
   chk(e.tiers.map(t => t.id).join() === SL.TIERS.join() && !e.grade && !e.updates, `A: ${g.id}'s set does not hold the four levels, ungraded`);
   for (const t of e.tiers.filter(t => t.legs)) {
     chk(t.legs.length === t.n && t.p > 0 && t.p < 1 && t.dec > 1 && (t.fair == null || (t.fair > 0 && t.fair < 1)), `A: ${g.id} ${t.id} is not a parlay of its size with a chance and a price`);
+    chk(t.chance === 'fair', `A: ${g.id} ${t.id} is not marked chance 'fair' (app v138: its legs chosen on DraftKings' fair chance, its p still the model's): ` + JSON.stringify(t.chance));
     chk(t.legs.every(l => l.gid === g.id && l.week === W && l.pid && l.stat && l.side && isFinite(l.k) && isFinite(l.price) && l.name && l.label && l.p > 0 && l.p < 1), `A: a ${g.id} ${t.id} leg is not on its own game, or is missing what it needs to be graded`);
     const pl = t.legs.filter(l => l.grp !== 'TEAM'), side = t.legs.filter(l => l.stat === 'ml' || l.stat === 'ats'), tot = t.legs.filter(l => l.stat === 'total');
     chk(new Set(pl.map(l => l.pid)).size === pl.length && side.length <= 1 && tot.length <= 1, `A: ${g.id} ${t.id} has a player twice, or two sides or two totals of the game`);
@@ -307,13 +339,20 @@ for (const g of primesA) {
 const eA = L.prime[KP];
 chk(!!eA && eA.tiers.some(t => t.legs), `A: the made-up week gives gP (${gP.id}, ${rowsOf(gP.id)} price rows) no parlay to hold the rewrite to`);
 chk(L.prime_summary && L.prime_summary.entries === keysA.length && L.prime_summary.graded_entries === 0, 'A: the prime-time summary does not count the sets, none graded');
-/* (app v125) every set's player legs priced from the test's read: dkline, the fair chance est., never under the price */
-const mlP = ml => ml > 0 ? 100 / (ml + 100) : -ml / (-ml + 100);
+/* (app v125) every set's player legs priced from the test's read: dkline, the fair chance est. (app v138) Every leg of a
+   model level but a game total is chosen on DraftKings' fair chance: it has one, from 45% to 97% (the band, on the fair
+   chance since app v138; the record rounds to four places, so 97% itself can show), and none is a Value pick (thin false)
+   with no validated model behind it; a game total is the market's own (thin false, market true). Until app v138 a leg
+   needed the model's chance (p) at or above the chance its price implies, which the model no longer decides */
+const fairBand = l => typeof l.fair === 'number' && l.fair >= 0.45 && l.fair <= 0.97;
 { const sets = [...Object.values(L.prime), ...Object.values(L.slot || {})], lv = sets.flatMap(e => e.tiers.filter(t => t.legs));
-  const pls = lv.flatMap(t => t.legs.filter(l => l.grp !== 'TEAM'));
+  const pls = lv.flatMap(t => t.legs.filter(l => l.grp !== 'TEAM')), side = lv.flatMap(t => t.legs.filter(l => l.stat !== 'total'));
   chk(pls.length > 0, `A: no set holds a player leg priced from the read (${sets.length} sets)`);
-  chk(pls.every(l => l.src === 'dkline' && l.fair_est === true && isFinite(l.price) && l.price !== 0 && l.p >= mlP(l.price) - 1e-4),
-    'A: a player leg is not priced from the read (dkline, its fair chance est.), or is under its price: ' + JSON.stringify(pls.filter(l => !(l.src === 'dkline' && l.fair_est === true && l.p >= mlP(l.price) - 1e-4)).slice(0, 2)));
+  chk(pls.every(l => l.src === 'dkline' && l.fair_est === true && isFinite(l.price) && l.price !== 0),
+    'A: a player leg is not priced from the read (dkline, its fair chance est.): ' + JSON.stringify(pls.filter(l => !(l.src === 'dkline' && l.fair_est === true)).slice(0, 2)));
+  chk(side.every(l => fairBand(l) && l.thin === true && !l.market),
+    'A: a leg of a model level that is no game total has no fair chance from 45% to 97%, or is a Value pick with no validated model behind it: ' + JSON.stringify(side.filter(l => !(fairBand(l) && l.thin === true && !l.market)).slice(0, 2).map(l => [l.gid, l.pid, l.stat, l.side, l.k, l.fair, l.thin, l.market])));
+  chk(lv.every(t => t.legs.filter(l => l.stat === 'total').every(l => l.thin === false && l.market === true)), 'A: a game total on a model level is not the market\'s own (thin false, market true)');
   chk(lv.every(t => !t.legs.some(l => l.grp !== 'TEAM') || t.fair_est === true), 'A: a level holding a leg priced from the read does not say its fair chance is estimated');
   const elo = sets.flatMap(e => (e.elo || []).filter(t => t.legs).flatMap(t => t.legs));
   chk(elo.every(l => l.src === 'dkline'), 'A: an Elo pick holds a leg not priced from the read: ' + JSON.stringify(elo.filter(l => l.src !== 'dkline').slice(0, 2))); }
@@ -330,6 +369,42 @@ const ladderSay = l => `${l.lvl || ''} ${l.gid} ${l.pid} ${l.stat} ${l.k}${l.mai
   const pls = legs.filter(l => l.grp !== 'TEAM'), bad = legs.filter(l => !offeredOwn(l));
   chk(rungsIn > 0 && pls.length > 0, `A: the run could not tell whether a ladder bet is taken: the read carries ${rungsIn} milestone rungs and the sets ${pls.length} player legs`);
   chk(!bad.length, `A: ${bad.length} of the ${legs.length} legs the sets and their Elo picks take are ladder bets (a rung off a main line, or 2+ touchdowns), which the site no longer offers: ` + bad.slice(0, 4).map(ladderSay).join(' | ')); }
+/* (app v138) an anytime touchdown priced from the read on the model alone is no tested kind, so no set or Elo pick takes
+   one: the test's own reading of the formula's branch (tdAloneOwn) on a read e (a game's entry in PAY.espn): none of the
+   yards lines his touchdown stands on (a quarterback's rushing, a back's rushing or receiving, a receiver's or tight end's
+   receiving), and not a backup (his club's lines complete, four receiving lines of it read within 36 hours of kickoff,
+   and he no charted starter: never in this read, which gives a club three receiving lines at most). The read lists every
+   charted quarterback with his passing yards alone, so each is such a touchdown, though a quarterback's touchdown is
+   seldom in a level's band; so a side run below also takes every charted back's rushing line out, leaving him on the
+   touchdown list, whose touchdown a level would take at the estimate's chance. With his yards line read the estimate has
+   landed within about 1.5 implied points of DraftKings' real prices in every band of weeks 2 to 6; on the model alone it
+   had all but no test (54 legs) and ran +3.1 points over DraftKings' fair chance where it states 45%+ */
+const TD_LINES_OWN = { QB: ['rushing_yards'], RB: ['rushing_yards', 'receiving_yards'], WR: ['receiving_yards'], TE: ['receiving_yards'] };
+const tdAloneOwn = (e, gid, pid, readAt) => { const g = REAL.sched.find(x => x.id === gid), d = (REAL.depth || {})[pid], pl = e && e.pl;
+  if (!g || !pl || !Array.isArray(pl.td) || !pl.td.includes(pid) || !d) return false;
+  const grp = d[1], L = (pl.lines || {})[pid] || {}; if ((TD_LINES_OWN[grp] || []).some(st => L[st] != null)) return false;
+  const club = d[0], nRec = Object.keys(pl.lines || {}).filter(p => ((REAL.depth || {})[p] || [])[0] === club && pl.lines[p].receiving_yards != null).length;
+  const complete = nRec >= 4 && isFinite(readAt) && kOf(g, MOVE_C) - readAt <= 36 * H, starter = +d[2] <= ({ QB: 1, RB: 1, WR: 2, TE: 1 }[grp] || 0);
+  return !(complete && !starter); };
+const setLegs = x => [...Object.values(x.prime), ...Object.values(x.slot || {})].flatMap(e => [...e.tiers, ...(e.elo || [])].filter(t => t.legs)
+  .flatMap(t => t.legs.map(l => ({ ...l, lvl: `${e.gid} ${t.id}`, readAt: Date.parse(e.taken_at) - 30 * 60e3 }))));
+const aloneIn = (x, pay) => setLegs(x).filter(l => l.stat === 'any_td' && l.src === 'dkline' && tdAloneOwn(((pay.espn || {}).games || {})[l.gid], l.gid, l.pid, l.readAt));
+{ const legs = setLegs(L), bad = aloneIn(L, P0);
+  const aloneRead = Object.entries((P0.espn || {}).games || {}).some(([gid, e]) => ((e.pl && e.pl.td) || []).some(pid => tdAloneOwn(e, gid, pid, NaN)));
+  chk(aloneRead && legs.some(l => l.stat === 'any_td'), `A: the run could not tell whether a touchdown on the model alone is taken: the read lists ${aloneRead ? 'one' : 'none'}, and the sets take ${legs.filter(l => l.stat === 'any_td').length} touchdowns`);
+  chk(!bad.length, `A: ${bad.length} of the ${legs.length} legs the sets and their Elo picks take are touchdowns priced from the read on the model alone, no tested kind: ` + bad.slice(0, 4).map(ladderSay).join(' | ')); }
+/* the side run: every charted back's rushing line (and its ladder) out of the read, each left on the touchdown list, so
+   his touchdown is on the model alone by the test's own reading (at the estimate's chance a back's touchdown is often a
+   level's likeliest leg: on a page without the rule this run's sets take them); no set or Elo pick takes one, and the
+   sets still hold player legs from the read, so the read was applied */
+{ const SIDE = path.join(DIR, 'side_td.json'), PT = clone(P0); let nOut = 0;
+  for (const [gid, e] of Object.entries((PT.espn || {}).games || {})) { const pl = e.pl || {};
+    for (const pid of Object.keys(pl.lines || {})) { if (((REAL.depth || {})[pid] || [])[1] !== 'RB' || pl.lines[pid].rushing_yards == null) continue;
+      delete pl.lines[pid].rushing_yards; if (pl.rungs && pl.rungs[pid]) delete pl.rungs[pid].rushing_yards; if (tdAloneOwn(e, gid, pid, NaN)) nOut++; } }
+  fs.writeFileSync(SIDE, bytes()); const rr = run(PT, tA, { SUGGEST_LEDGER: SIDE }), x = JSON.parse(fs.readFileSync(SIDE, 'utf8'));
+  const legs = setLegs(x), bad = aloneIn(x, PT);
+  chk(rr.code === 0 && nOut > 0 && legs.some(l => l.grp !== 'TEAM' && l.src === 'dkline'), `A: the side run with ${nOut} backs' rushing lines out of the read did not run, or its sets hold no player leg from the read: ` + rr.last);
+  chk(!bad.length, `A: with every charted back's rushing line out of the read, ${bad.length} legs the sets and their Elo picks take are a back's touchdown on the model alone: ` + bad.slice(0, 4).map(ladderSay).join(' | ')); }
 /* a side run (its own copy of the ledger): gP's read dated at its kickoff gives it no player leg; a read that is junk, or
    none, gives every set team legs alone and throws nothing; a page that drops a well-formed read is refused, the file
    untouched */
@@ -359,6 +434,7 @@ if (slotA && slotA.lock > tA) {
     chk(e.tiers.map(t => t.id).join() === SL.TIERS.join(), 'A: the slot does not hold the four levels');
     for (const t of e.tiers.filter(t => t.legs)) {
       chk(t.legs.length === t.n && t.legs.every(l => slotA.games.includes(l.gid)), `A: the slot's ${t.id} holds a leg on a game not its own, or is short`);
+      chk(t.chance === 'fair' && t.p > 0 && t.p < 1, `A: the slot's ${t.id} is not marked chance 'fair' with the model's chance in (0, 1): ` + JSON.stringify({ chance: t.chance, p: t.p }));
       const pl = t.legs.filter(l => l.grp !== 'TEAM');
       chk(new Set(pl.map(l => l.pid)).size === pl.length, `A: the slot's ${t.id} takes a player twice`); }
     eloHeld(e, slotA.games, 'A: the slot'); }
@@ -437,6 +513,9 @@ chk(r.code === 0 && /replaced /.test(r.last), 'R: the run did not replace the le
 chk(sR.updated && sR.updated.pid === 'XX-RULED' && sR.updated.name === 'Ruled Out Jr.' && typeof sR.updated.reason === 'string' && sR.updated.reason && sR.updated.at === iso(tR),
   'R: the replaced level is not marked updated with the player, the reason and the run\'s time: ' + JSON.stringify(sR.updated));
 chk(!(sR.legs || []).some(l => l.pid === 'XX-RULED') && (!sR.legs || (sR.legs.length === 2 && sR.legs.every(l => l.gid === gP.id))), 'R: the replaced level still holds him, or is not a pair on its own game');
+/* (app v138) a level built again inside an entry taken before the change is the new rule's, and says so (chance 'fair'), so
+   an entry mixing the two stays readable; its legs held to the band as A holds them */
+chk(!sR.legs || (sR.chance === 'fair' && sR.legs.filter(l => l.stat !== 'total').every(fairBand)), 'R: the level built again is not marked chance \'fair\', or holds a leg off the band: ' + JSON.stringify({ chance: sR.chance, legs: (sR.legs || []).map(l => [l.pid, l.stat, l.fair]) }));
 /* (app v125) built from the read at hand: a player leg on it priced from it, a main line at the read's own number */
 { const rl = (PR.espn.games[gP.id] || { pl: { lines: {} } }).pl.lines;
   chk((sR.legs || []).filter(l => l.grp !== 'TEAM').every(l => l.src === 'dkline' && (!l.main || (rl[l.pid] && rl[l.pid][l.stat] === l.k))), 'R: the level built again holds a player leg not priced from the read at hand: ' + JSON.stringify(sR.legs));
@@ -444,6 +523,7 @@ chk(!(sR.legs || []).some(l => l.pid === 'XX-RULED') && (!sR.legs || (sR.legs.le
   chk((sR.legs || []).every(offeredOwn), 'R: the level built again takes a ladder bet: ' + (sR.legs || []).filter(l => !offeredOwn(l)).map(ladderSay).join(' | ')); }
 const eS = (eR.elo || []).find(t => t.id === 'elo-safe') || {};
 chk(Array.isArray(pR.elo), 'R: the locked set has no Elo picks to plant a ruled-out player in (the run that took it built none)');
+chk(!eS.legs || (eS.chance === 'fair' && eS.legs.every(l => typeof l.fair === 'number' && l.fair >= 0.30 && l.pe >= l.fair)), 'R: the Elo Safe built again is not marked chance \'fair\', or holds a leg the Elo matchup does not lean toward: ' + JSON.stringify(eS).slice(0, 300));
 chk(eS.updated && eS.updated.pid === 'XX-RULED' && eS.updated.at === iso(tR) && !(eS.legs || []).some(l => l.pid === 'XX-RULED') && (!eS.legs || (eS.legs.length === 2 && eS.legs.every(l => l.gid === gP.id && l.pe > 0 && l.pe < 1))),
   'R: the Elo Safe holding the player ruled out was not built again for him, marked updated, on its own game: ' + JSON.stringify(eS).slice(0, 300));
 chk(JSON.stringify(eR.updates) === JSON.stringify([{ tier: 'safe', ...sR.updated }, { tier: 'elo-safe', ...eS.updated }]), 'R: the replacements are not recorded in updates, the model\'s then the Elo pick\'s: ' + JSON.stringify(eR.updates));

@@ -380,7 +380,13 @@ the read's line where DraftKings has moved it since, or where the pull has no pr
 and marked est.; the model's estimate where there is no line at all. The game lines a press reads are
 DraftKings' real prices. A leg priced from the read counts like a book price on the kinds the formula has
 been checked on (main lines on passing, rushing and receiving yards, receptions and passing TDs, the
-anytime TD, yards rungs DraftKings lists); every other kind is shown, est., and never suggested. Since
+anytime TD, yards rungs DraftKings lists); every other kind is shown, est., and never suggested. Since app v138
+an anytime TD the formula prices on the model alone (no rushing or receiving yards line of his read, and his
+club's lines not complete or he a charted starter) is one of those: against DraftKings' real prices of weeks 2-6
+the TD estimate on his yards line lands within about 1.5 implied points in every band (the held-out weeks 4-6
+too), and as a backup within half a point, but the model-alone branch was all but untested (54 of 1,736 legs)
+and runs high where a level takes it, its fair chance +3.1 points [+1.8, +4.5] over DraftKings' where it states
+45%+ and +8.9 at 70%+; so it is shown, est., and suggested only once a later read carries his yards line. Since
 app v109 (`build/patch_dk_slip.py`, the owner's call of 16 October 2026) a suggestion takes only a leg
 with DraftKings' own outcome id at its line wherever the payload carries ids for its game, so that Open in DraftKings
 puts every suggested leg on the betslip (his parlay had opened only its first leg, the others having no

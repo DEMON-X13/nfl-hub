@@ -306,15 +306,23 @@ for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
   if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html still has ' + gone + ': the builder finishes a parlay on every device');
 for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function spTier(', 'function gameStarted', 'function marketLine'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
-/* the Elo picks' four levels (17 October 2026): Suggested Parlays' own (PB_TIERS, which the tab reads from the
-   page, Safe given the Elo picks' own floor by epTiers since 18 October 2026), each named elo-<level> (elo-safe,
-   elo-med, elo-aggr, elo-xtrm); since app v118 each unit's own (a night game's, the Sunday slot's: window.eloUnit),
+/* the Elo picks' four levels (17 October 2026): Suggested Parlays' own sizes (PB_TIERS, which the tab reads from the
+   page; since app v138 each level the strongest Elo leans that go together on one DraftKings slip: a pair DraftKings
+   refuses, dkClash, or two legs that move against each other by more than EP.opp, epOpposed on the props parts' legRho,
+   passed over), each
+   named elo-<level> (elo-safe, elo-med, elo-aggr, elo-xtrm); since app v118 each unit's own (a night game's, the Sunday
+   slot's: window.eloUnit),
    drawn in the unit by the props parts with the ELO tab's card options (window.eloCardOpt), its Finish
    "sp|<unit>:elo-<level>", which the card finds by window.spTier as it finds the unit's other levels */
 { const elo = rd('nflbets', 'build', 'tab_elo.html');
   if (!elo.includes('window.eloUnit=(gids,o)=>') || !elo.includes('window.eloCardOpt=') || !elo.includes('window.eloPicks=eloPicks;')
-    || !elo.includes("id:'elo-'+id") || !elo.includes("typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?epTiers(PB_TIERS):null") || elo.includes("getElementById('pbElo')"))
+    || !elo.includes("id:'elo-'+id") || !elo.includes("typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?PB_TIERS:null") || elo.includes("getElementById('pbElo')"))
     throw new Error("the Elo picks' levels, their ids, window.eloUnit or window.eloCardOpt moved; Suggested Parlays draws each unit's Elo picks with them");
+  /* its bar a named constant, EP.opp, -0.05 (27 October 2026, before app v138 merged: at 0 week 7's KC at SEA lost three
+     levels to pairs of -0.034 to -0.102) */
+  if (!elo.includes("const epOpposed=(a,b)=>typeof legRho==='function'&&epSide(a)*epSide(b)*legRho(a,b)<EP.opp;") || !elo.includes('const EP={lo:-200,hi:300,min:0.30,opp:-0.05};')
+    || !/function epTake\(all\)\{[^}]*epOpposed\(t,l\)/.test(elo) || !part2.includes('function legRho(a,b){'))
+    throw new Error("the Elo picks' walk no longer passes over two legs that move against each other by more than EP.opp (-0.05) on the props parts' legRho (epOpposed in epTake)");
   if (!part3.includes('const PB_TIERS=[') || !part3.includes("window.eloCardOpt(t)") || !part3.includes('add:`data-sp-add="${g.id}:${t.id}"`'))
     throw new Error("Suggested Parlays' levels (PB_TIERS) or its drawing of a unit's Elo picks moved; the Elo picks are built on them");
   if (!CARD_JS.includes("const elo=!!t.elo;") || !CARD_JS.includes("t=kind==='sp'?(typeof window.spTier==='function'?window.spTier(id):null):null;"))
@@ -626,6 +634,41 @@ if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out))
   if (/apiKey=[A-Za-z0-9]{16,}/.test(out)) throw new Error('the page carries an Odds API key: the admin\'s key is kept in his browser, never in the page');
   const at = out.indexOf('<script>\n' + ADMIN_JS);
   if (at < 0 || at > out.indexOf('<style') || at > out.indexOf('<body')) throw new Error("the admin link's script is not in the page's head before its styles and its body"); }
+/* DraftKings' chance on every leg (app v138, the owner's call of 27 October 2026: "Every player leg uses DraftKings' fair
+   chance, as game totals already do; the model's projection stays on screen as information. Value marks disappear until
+   a model earns them. ... I'd also remove market + form"). Outside comments, the props parts, the Player Elo tab, the
+   parlay card and the matchup bubble carry none of what stated or chose on the model's chance or market + form: the
+   rule (formAgrees), the second price (eloAltP, altP, trackAlt), the Elo picks' old tilt and search (EP.vig, epScan),
+   and the words a card, a row or the builder said them with. farText's own definition stays (the hands' engine, drawn
+   nowhere, keeps legFarOff, and no drawn surface calls farText). The chance hook (window.setChanceHook) is defined and
+   never called anywhere in the page: a model that earns it comes with its own change, validated, and its own fields in
+   the record. And the pool every suggestion is built from states each leg at legChance */
+{ const strip = x => x.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '');
+  const SRC = { 'props/build/part1.html': part1, 'props/build/part2.js': part2, 'props/build/part3.js': part3,
+    'nflbets/build/tab_elo.html': eloTab, 'nflbets/build/card.html': cardSrc, 'nflbets/build/glance.js': rd('nflbets', 'build', 'glance.js') };
+  const GONE_V138 = [['formAgrees', /formAgrees/], ['eloAltP', /eloAltP/], ['altP(', /altP\(/], ['trackAlt', /trackAlt/], ['EP.vig', /EP\.vig/],
+    ['epScan', /epScan/], ['market + form', /market \+ form/i], ['model says', /model says/i], ['by the model', /by the model/i], ['Elo says', /Elo says/i],
+    ['far off the market', /far off the market/i], ['fair price for the model', /fair price for the model/i], ['confidence all', /confidence all/i]];
+  for (const [file, src] of Object.entries(SRC)) {
+    let bare = strip(src);
+    if (file.endsWith('part3.js')) { const farDef = bare.match(/\nfunction farText\([^\n]*\n/);
+      if (!farDef) throw new Error("props/build/part3.js no longer defines farText where nflbets/build expects it (the hands' engine keeps it)");
+      bare = bare.replace(farDef[0], '\n'); }
+    for (const [what, re] of GONE_V138) { const m = bare.match(re);
+      if (m) throw new Error(`${file} carries ${what} outside a comment, which app v138 took off the page (every leg at DraftKings' fair chance; no market + form): ...${bare.slice(Math.max(0, m.index - 60), m.index + 40).replace(/\s+/g, ' ')}...`); }
+    /* and no far-off flag drawn anywhere: nothing calls farText (its definition is cut above), legFarOff is called only
+       by the hands' engine (gameLegPool, drawn nowhere) beside its own definition, and no markup carries a far-off flag's
+       class or attribute (the stylesheet's .faroff rules stay, unused) */
+    if (file.endsWith('part3.js')) { const def = bare.match(/\nfunction legFarOff\([^\n]*\n/), a = bare.indexOf('\nfunction gameLegPool('), b = a < 0 ? -1 : bare.indexOf('\nfunction ', a + 1);
+      if (!def || a < 0 || b < 0) throw new Error("props/build/part3.js no longer defines legFarOff or gameLegPool where nflbets/build expects them (the hands' engine keeps the far-off guard)");
+      bare = bare.slice(0, a) + bare.slice(a, b).replace(/legFarOff\(/g, 'legFarOff_engine(') + bare.slice(b); bare = bare.replace(def[0], '\n'); }
+    for (const [what, re] of [['farText(', /farText\(/], ['legFarOff(', /legFarOff\(/], ['a far-off attribute', /data-(?:pb-)?far\b/], ['a far-off class', /class="[^"]*\bfaroff\b/]]) { const m = bare.match(re);
+      if (m) throw new Error(`${file} draws a far-off flag (${what}) outside a comment, which app v138 took off every drawn surface: ...${bare.slice(Math.max(0, m.index - 60), m.index + 40).replace(/\s+/g, ' ')}...`); } }
+  if (!part3.includes('window.setChanceHook=f=>{')) throw new Error('the props parts no longer define the chance hook, window.setChanceHook');
+  { const m = strip(out).match(/setChanceHook\(/);
+    if (m) throw new Error('the page calls the chance hook (setChanceHook): no model has earned it, and one that does comes with its own change, validated: ...' + strip(out).slice(Math.max(0, m.index - 60), m.index + 40) + '...'); }
+  const a = part3.indexOf('\nfunction pbLegs('), b = part3.indexOf('\nfunction pbPool(', a);
+  if (a < 0 || b < 0 || !strip(part3.slice(a, b)).includes('legChance(')) throw new Error("the pool every suggestion is built from (pbLegs) no longer states its legs at legChance, DraftKings' fair chance"); }
 /* no descriptions (the owner's call of 22 October 2026: "in all sections get rid of all text wall descriptions. i dont
    want any descriptions anywhere. i want the site to speak for itself without a bunch of reading."): a distinctive
    phrase of each paragraph, lead, foot, note and clause taken off the page that day (app v130), by the area it was in,

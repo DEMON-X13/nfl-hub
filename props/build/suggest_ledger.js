@@ -270,7 +270,7 @@ async function ready(w, errs, payload, asked) {
   const why = [];
   const PAY = w.eval('typeof PAY==="undefined"?null:PAY');
   if (!PAY || PAY.baked_at !== payload.baked_at) why.push('the page did not load the payload');
-  if (!w.eval("typeof window.eloLoaded==='function'&&window.eloLoaded()")) why.push('the Elo files did not load, so the page would take no player leg (market + form)');
+  if (!w.eval("typeof window.eloLoaded==='function'&&window.eloLoaded()")) why.push('the Elo files did not load, so the page would build no Elo picks');
   if (errs.length) why.push('the page threw: ' + errs.slice(0, 3).join('; '));
   if (w.eval('PB_TIERS').map(t => t[0] + ':' + t[1]).join() !== TIERS.map(id => id + ':' + LABELS[id]).join()) why.push("the page's levels are not the four this record keeps");
   const missing = ['spGames', 'spSet', 'spTierOut', 'spLockAt', 'spOutWhy', 'spRebuild', 'spSlotNext', 'spEloSet', 'spUnit', 'settleLeg', 'parlayDec', 'isGameLeg', 'kickoff']
