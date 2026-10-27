@@ -114,6 +114,15 @@ for f in ('props/build/espn_read.js', 'props/build/test_espn_read.js', 'props/bu
           'lib/test_netfetch.js'):
     a, p, labels, audit, page = G.plan([f])
     case(a and not p and audit == [f], f'{f} is not an AUDIT path alone: {(a, p, audit, page)}')
+# the archive of DraftKings' player lines on ESPN (27 October 2026): its script and test are what the props job runs
+# (AUDIT), and its file is the job's own output, data the job commits, so a push of it alone runs nothing (as the payload's)
+for f in ('props/build/espn_archive.py', 'props/build/test_espn_archive.py', 'props/build/fixtures/espn_archive/propbets_401872926.json'):
+    a, p, labels, audit, page = G.plan([f])
+    case(a and not p and audit == [f], f'{f} is not an AUDIT path alone: {(a, p, audit, page)}')
+for f in ('props/data/espn_lines_2026.json', 'props/data/espn_lines_2027.json'):
+    case(G.parts([f]) == ([], []), f'{f}, the job\'s own output, is sorted as code: {G.parts([f])}')
+case('- "!props/data/espn_lines_*.json"' in yml, 'props-gate.yml\'s push paths do not leave out the archive the props job commits')
+case(('props/build/test_espn_archive.py', 'py') in G.UNITS, 'props/build/test_espn_archive.py is not a py unit of job C')
 for f in ('nflbets/build/test_dkname.js', 'nflbets/build/smoke_admin.js'):
     a, p, labels, audit, page = G.plan([f])
     case(p and not a and page == [f], f'{f} is not a PAGE path alone: {(a, p, audit, page)}')
@@ -174,7 +183,7 @@ for rel, kind in G.UNITS:
 need = {'props/build/test_apply_espn.py', 'props/build/test_espn_read.js', 'props/build/test_lock_runs.py', 'props/build/test_espn_ids.py',
         'props/build/test_dk_links.py', 'props/build/test_unmatched.py', 'props/build/test_who_played.py', 'props/build/test_fetch.py',
         'props/build/test_audit_gate.py', 'lib/test_netfetch.py', 'lib/test_netfetch.js', 'nflbets/build/test_dkname.js', 'nflbets/build/smoke_admin.js',
-        'nflbets/build/smoke_live.js'}
+        'nflbets/build/smoke_live.js', 'props/build/test_espn_archive.py'}
 case(need <= {r for r, _ in G.UNITS}, f'unit tests left out of job C: {sorted(need - {r for r, _ in G.UNITS})}')
 # smoke_live.js (the parlay card's Pull from DraftKings, and X Parlays) runs in job C as node, and a change to the card
 # alone (nflbets/build/card.html, PAGE) is one job C runs on, so a regression in the paid-call path cannot merge unchecked

@@ -1,0 +1,376 @@
+{
+ "count": 19,
+ "pageIndex": 1,
+ "pageSize": 1000,
+ "pageCount": 1,
+ "items": [
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/2578570?lang=en&region=us"
+   },
+   "type": {
+    "id": "8",
+    "name": "Total Passing Yards (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T23:24Z",
+   "current": {
+    "target": {
+     "value": 219.5,
+     "displayValue": "219.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 226.5,
+     "displayValue": "226.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/2578570?lang=en&region=us"
+   },
+   "type": {
+    "id": "8",
+    "name": "Total Passing Yards (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T23:24Z",
+   "current": {
+    "target": {
+     "value": 219.5,
+     "displayValue": "219.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 226.5,
+     "displayValue": "226.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/2578570?lang=en&region=us"
+   },
+   "type": {
+    "id": "10",
+    "name": "Total Passing Touchdowns (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T01:42Z",
+   "current": {
+    "target": {
+     "value": 1.5,
+     "displayValue": "1.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 1.5,
+     "displayValue": "1.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/2578570?lang=en&region=us"
+   },
+   "type": {
+    "id": "10",
+    "name": "Total Passing Touchdowns (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T01:42Z",
+   "current": {
+    "target": {
+     "value": 1.5,
+     "displayValue": "1.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 1.5,
+     "displayValue": "1.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/4361307?lang=en&region=us"
+   },
+   "type": {
+    "id": "13",
+    "name": "Total Receiving Yards (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T22:22Z",
+   "current": {
+    "target": {
+     "value": 56.5,
+     "displayValue": "56.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 60.5,
+     "displayValue": "60.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/4361307?lang=en&region=us"
+   },
+   "type": {
+    "id": "13",
+    "name": "Total Receiving Yards (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T22:22Z",
+   "current": {
+    "target": {
+     "value": 56.5,
+     "displayValue": "56.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 60.5,
+     "displayValue": "60.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/4686612?lang=en&region=us"
+   },
+   "type": {
+    "id": "13",
+    "name": "Total Receiving Yards (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T23:07Z",
+   "current": {
+    "target": {
+     "value": 26.5,
+     "displayValue": "26.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 26.5,
+     "displayValue": "26.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/4686612?lang=en&region=us"
+   },
+   "type": {
+    "id": "13",
+    "name": "Total Receiving Yards (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T23:07Z",
+   "current": {
+    "target": {
+     "value": 27.5,
+     "displayValue": "27.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 26.5,
+     "displayValue": "26.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/4361307?lang=en&region=us"
+   },
+   "type": {
+    "id": "14",
+    "name": "Total Receptions (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T20:48Z",
+   "current": {
+    "target": {
+     "value": 6.5,
+     "displayValue": "6.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 6.5,
+     "displayValue": "6.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/4361307?lang=en&region=us"
+   },
+   "type": {
+    "id": "14",
+    "name": "Total Receptions (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T20:48Z",
+   "current": {
+    "target": {
+     "value": 6.5,
+     "displayValue": "6.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 6.5,
+     "displayValue": "6.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/3045523?lang=en&region=us"
+   },
+   "type": {
+    "id": "19",
+    "name": "Longest Reception (incl. overtime)"
+   },
+   "lastUpdated": "2026-09-13T22:27Z",
+   "current": {
+    "target": {
+     "value": 11.5,
+     "displayValue": "11.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 11.5,
+     "displayValue": "11.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/2578570?lang=en&region=us"
+   },
+   "type": {
+    "id": "29",
+    "name": "First Touchdown Scorer"
+   },
+   "lastUpdated": "2026-09-13T23:23Z",
+   "current": {},
+   "open": {}
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/2578570?lang=en&region=us"
+   },
+   "type": {
+    "id": "31",
+    "name": "Anytime Touchdown Scorer"
+   },
+   "lastUpdated": "2026-09-13T20:12Z",
+   "current": {},
+   "open": {}
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/4361307?lang=en&region=us"
+   },
+   "type": {
+    "id": "31",
+    "name": "Anytime Touchdown Scorer"
+   },
+   "lastUpdated": "2026-09-13T20:12Z",
+   "current": {},
+   "open": {}
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/4429025?lang=en&region=us"
+   },
+   "type": {
+    "id": "31",
+    "name": "Anytime Touchdown Scorer"
+   },
+   "lastUpdated": "2026-09-13T20:12Z",
+   "current": {},
+   "open": {}
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/2578570?lang=en&region=us"
+   },
+   "type": {
+    "id": "32",
+    "name": "Player to score 2 or more touchdowns"
+   },
+   "lastUpdated": "2026-09-13T01:42Z",
+   "current": {},
+   "open": {}
+  },
+  {
+   "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/22?lang=en&region=us"
+   },
+   "type": {
+    "id": "98",
+    "name": "Team Total Points"
+   },
+   "lastUpdated": "2026-09-04T22:15Z",
+   "current": {
+    "target": {
+     "value": 17.5,
+     "displayValue": "17.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 17.5,
+     "displayValue": "17.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/3045523?lang=en&region=us"
+   },
+   "type": {
+    "id": "187",
+    "name": "1st Half Total Receiving Yards"
+   },
+   "lastUpdated": "2026-09-13T23:22Z",
+   "current": {
+    "target": {
+     "value": 6.5,
+     "displayValue": "6.5"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 6.5,
+     "displayValue": "6.5"
+    }
+   }
+  },
+  {
+   "athlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/3045523?lang=en&region=us"
+   },
+   "type": {
+    "id": "195",
+    "name": "Receiving Yards Milestones"
+   },
+   "lastUpdated": "2026-09-13T23:18Z",
+   "current": {
+    "target": {
+     "value": 18.0,
+     "displayValue": "18+"
+    }
+   },
+   "open": {
+    "target": {
+     "value": 18.0,
+     "displayValue": "18+"
+    }
+   }
+  }
+ ]
+}
