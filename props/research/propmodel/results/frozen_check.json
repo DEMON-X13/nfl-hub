@@ -1,0 +1,145 @@
+{
+ "files_verified": 97,
+ "covered": [
+  "QB:any_td=GBM_POIS",
+  "QB:attempts=GBM_NB",
+  "QB:carries=GBM_NB",
+  "QB:completions=GBM_NB",
+  "QB:passing_interceptions=GBM_NB",
+  "QB:passing_tds=GBM_NB",
+  "QB:passing_yards=qgbm",
+  "QB:rushing_yards=qgbm",
+  "RB:any_td=GBM_POIS",
+  "RB:carries=GBM_NB",
+  "RB:receiving_yards=qgbm",
+  "RB:receptions=GBM_NB",
+  "RB:rush_rec_yards=qgbm",
+  "RB:rushing_yards=qgbm",
+  "TE:any_td=GBM_POIS",
+  "TE:receiving_yards=qgbm",
+  "TE:receptions=GBM_NB",
+  "WR:any_td=GBM_POIS",
+  "WR:receiving_yards=qgbm",
+  "WR:receptions=GBM_NB"
+ ],
+ "copies_equal": {
+  "qgbm_cdf_rows_max_abs_diff": 0.0,
+  "nb_cdf_max_abs_diff": 0.0,
+  "ok": true
+ },
+ "refit_reproduces": {
+  "TE:receptions": {
+   "sha256": "d36541f0291905e2a3fd2acebaa5ba196a985041fa7a865b3f2603a1679d6ae3",
+   "manifest": "d36541f0291905e2a3fd2acebaa5ba196a985041fa7a865b3f2603a1679d6ae3",
+   "disp_equal": true
+  },
+  "td:TE": {
+   "sha256": "a8dd7c505e69db591765bfb62727d5380569afbe97aee8c3737ec5a79756153e",
+   "manifest": "a8dd7c505e69db591765bfb62727d5380569afbe97aee8c3737ec5a79756153e"
+  },
+  "ok": true
+ },
+ "in_sample_2025": {
+  "QB:any_td": {
+   "n": 687,
+   "mean_pred": 0.1353,
+   "mean_actual": 0.131
+  },
+  "QB:attempts": {
+   "n": 687,
+   "mean_pred": 25.8856,
+   "mean_actual": 25.3537
+  },
+  "QB:carries": {
+   "n": 687,
+   "mean_pred": 3.3285,
+   "mean_actual": 3.2999
+  },
+  "QB:completions": {
+   "n": 687,
+   "mean_pred": 16.8058,
+   "mean_actual": 16.3144
+  },
+  "QB:passing_interceptions": {
+   "n": 687,
+   "mean_pred": 0.5627,
+   "mean_actual": 0.5502
+  },
+  "QB:passing_tds": {
+   "n": 687,
+   "mean_pred": 1.1831,
+   "mean_actual": 1.1732
+  },
+  "QB:passing_yards": {
+   "n": 687,
+   "mean_pred": 185.349,
+   "mean_actual": 177.9971
+  },
+  "QB:rushing_yards": {
+   "n": 687,
+   "mean_pred": 15.172,
+   "mean_actual": 14.2649
+  },
+  "RB:any_td": {
+   "n": 1633,
+   "mean_pred": 0.2299,
+   "mean_actual": 0.2321
+  },
+  "RB:carries": {
+   "n": 1633,
+   "mean_pred": 7.322,
+   "mean_actual": 7.2694
+  },
+  "RB:receiving_yards": {
+   "n": 1633,
+   "mean_pred": 11.1946,
+   "mean_actual": 10.5964
+  },
+  "RB:receptions": {
+   "n": 1633,
+   "mean_pred": 1.4597,
+   "mean_actual": 1.4256
+  },
+  "RB:rush_rec_yards": {
+   "n": 1633,
+   "mean_pred": 42.921,
+   "mean_actual": 42.196
+  },
+  "RB:rushing_yards": {
+   "n": 1633,
+   "mean_pred": 31.4182,
+   "mean_actual": 31.5995
+  },
+  "TE:any_td": {
+   "n": 1646,
+   "mean_pred": 0.1214,
+   "mean_actual": 0.1276
+  },
+  "TE:receiving_yards": {
+   "n": 1646,
+   "mean_pred": 17.6488,
+   "mean_actual": 17.6203
+  },
+  "TE:receptions": {
+   "n": 1646,
+   "mean_pred": 1.7339,
+   "mean_actual": 1.7363
+  },
+  "WR:any_td": {
+   "n": 2646,
+   "mean_pred": 0.1658,
+   "mean_actual": 0.1618
+  },
+  "WR:receiving_yards": {
+   "n": 2646,
+   "mean_pred": 29.9549,
+   "mean_actual": 28.7026
+  },
+  "WR:receptions": {
+   "n": 2646,
+   "mean_pred": 2.3967,
+   "mean_actual": 2.2695
+  }
+ },
+ "ok": true
+}

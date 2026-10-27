@@ -1,0 +1,86 @@
+{
+ "about": "The evidence behind the preregistered blend weight w = 0.25 (PREREGISTRATION.md, \"The blend weight\"), from the",
+ "by_stat": {
+  "QB:attempts": {
+   "n": 2351,
+   "rho": 0.8765744562648923,
+   "rmse_model_over_standin": 0.8968078619315991
+  },
+  "QB:carries": {
+   "n": 2061,
+   "rho": 0.911084338067815,
+   "rmse_model_over_standin": 0.9399365511417161
+  },
+  "QB:completions": {
+   "n": 2351,
+   "rho": 0.8753291775759775,
+   "rmse_model_over_standin": 0.903405099387547
+  },
+  "QB:passing_interceptions": {
+   "n": 2351,
+   "rho": 0.8789266362178717,
+   "rmse_model_over_standin": 0.8837659152226252
+  },
+  "QB:passing_tds": {
+   "n": 2351,
+   "rho": 0.8816940780863575,
+   "rmse_model_over_standin": 0.9007107306541224
+  },
+  "RB:carries": {
+   "n": 4351,
+   "rho": 0.8995958687388915,
+   "rmse_model_over_standin": 0.890100446365786
+  },
+  "RB:receptions": {
+   "n": 3299,
+   "rho": 0.9160591074740518,
+   "rmse_model_over_standin": 0.9181696502102151
+  },
+  "TE:receptions": {
+   "n": 3303,
+   "rho": 0.9209093564798597,
+   "rmse_model_over_standin": 0.9353491964626488
+  },
+  "WR:receptions": {
+   "n": 7586,
+   "rho": 0.9253288267949075,
+   "rmse_model_over_standin": 0.9248032571438327
+  },
+  "passing_yards": {
+   "n": 2634,
+   "rho": 0.9045568911431773,
+   "rmse_model_over_standin": 0.8748582760030663
+  },
+  "rushing_yards": {
+   "n": 5870,
+   "rho": 0.9204393357175734,
+   "rmse_model_over_standin": 0.9238499297372995
+  },
+  "receiving_yards": {
+   "n": 14573,
+   "rho": 0.9395484265483722,
+   "rmse_model_over_standin": 0.9293602358267082
+  },
+  "rush_rec_yards": {
+   "n": 4312,
+   "rho": 0.9241846138014046,
+   "rmse_model_over_standin": 0.9179006428717511
+  }
+ },
+ "rho_median": 0.911084338067815,
+ "rho_range": [
+  0.8753291775759775,
+  0.9395484265483722
+ ],
+ "rmse_ratio_range": [
+  0.8748582760030663,
+  0.9399365511417161
+ ],
+ "market_sharpness_a_at": {
+  "w*=0.5": 1.0,
+  "w*=0.25": 0.9560473315402502,
+  "w*=0.125": 0.9338980954367477,
+  "w*=0": 0.911084338067815
+ },
+ "note": "a = the market error sd as a share of the model's; 1 - a is how much sharper the market is"
+}

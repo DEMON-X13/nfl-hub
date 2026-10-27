@@ -1,0 +1,3314 @@
+[
+{
+"column": "season",
+"family": "id/flag",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "week",
+"family": "id/flag",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tkey",
+"family": "id/flag",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "game_id",
+"family": "id/flag",
+"dtype": "str",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "gameday",
+"family": "id/flag",
+"dtype": "datetime64[us]",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "kickoff_utc",
+"family": "id/flag",
+"dtype": "datetime64[us, UTC]",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "pid",
+"family": "id/flag",
+"dtype": "str",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "name",
+"family": "id/flag",
+"dtype": "str",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "pos",
+"family": "id/flag",
+"dtype": "str",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "grp",
+"family": "id/flag",
+"dtype": "str",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "team",
+"family": "id/flag",
+"dtype": "str",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "opp",
+"family": "id/flag",
+"dtype": "str",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "stat_row",
+"family": "id/flag",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "snap_row",
+"family": "id/flag",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "role_played",
+"family": "id/flag",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "zero_row",
+"family": "id/flag",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "st_only",
+"family": "id/flag",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_passing_yards",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_passing_tds",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_completions",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_attempts",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_passing_interceptions",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_rushing_yards",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_carries",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_receptions",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_receiving_yards",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_rush_rec_yards",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_any_td",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_rush_rec_tds",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_targets",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_rushing_tds",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_receiving_tds",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_special_teams_tds",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_sacks_suffered",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_fg_made",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_fg_att",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_pat_made",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_pat_att",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_kick_pts",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_fantasy_points_ppr",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "y_off_snaps",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 0.9999
+},
+{
+"column": "y_off_pct",
+"family": "outcome (post-game)",
+"dtype": "float64",
+"nonnull_role_rows": 0.9999
+},
+{
+"column": "d_db_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_db_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_drush_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_drush_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_epa_db_rel",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_epa_rush_rel",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_pass_yds_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_pass_yds_rel",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_pass_yds_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_plays_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_plays_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_points_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_points_rel",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_points_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_epa_db_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_epa_db_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_epa_rush_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_epa_rush_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_expl_pass_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_expl_pass_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_expl_rush_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_expl_rush_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_neu_pass_rate_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_neu_pass_rate_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_pass_rate_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_pass_rate_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_proe_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_proe_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_rz_share_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_rz_share_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_sack_rate_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_sack_rate_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_succ_db_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_succ_db_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_r_succ_rush_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_r_succ_rush_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_rush_yds_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_rush_yds_rel",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_rush_yds_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_rz_plays_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_rz_plays_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "d_sacks_ew8",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "d_sacks_szn",
+"family": "opponent defence, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9396
+},
+{
+"column": "dc_depth",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 0.9461
+},
+{
+"column": "dc_depth_any",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 0.9493
+},
+{
+"column": "dc_fb",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 0.9461
+},
+{
+"column": "dc_is_qb1",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 0.9999
+},
+{
+"column": "dc_listed",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "dc_n_starters",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 0.9461
+},
+{
+"column": "dc_offpos",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "dc_qb1",
+"family": "depth chart that week",
+"dtype": "string",
+"nonnull_role_rows": 0.9999
+},
+{
+"column": "dc_qb1_epa_db",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 0.9887
+},
+{
+"column": "dc_qb1_gp",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 0.9999
+},
+{
+"column": "dc_qb_change",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 0.9999
+},
+{
+"column": "dc_rank",
+"family": "depth chart that week",
+"dtype": "float64",
+"nonnull_role_rows": 0.9461
+},
+{
+"column": "dc_team_chart",
+"family": "depth chart that week",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_div_game",
+"family": "game: market, venue, weather",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_dome",
+"family": "game: market, venue, weather",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_implied",
+"family": "game: market, venue, weather",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_is_home",
+"family": "game: market, venue, weather",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_kick_hour_et",
+"family": "game: market, venue, weather",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_margin",
+"family": "game: market, venue, weather",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_neutral",
+"family": "game: market, venue, weather",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_opp_implied",
+"family": "game: market, venue, weather",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_opp_rest",
+"family": "game: market, venue, weather",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_rest",
+"family": "game: market, venue, weather",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_roof",
+"family": "game: market, venue, weather",
+"dtype": "str",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_spread_line",
+"family": "game: market, venue, weather",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_surface",
+"family": "game: market, venue, weather",
+"dtype": "str",
+"nonnull_role_rows": 0.9869
+},
+{
+"column": "g_temp",
+"family": "game: market, venue, weather",
+"dtype": "float64",
+"nonnull_role_rows": 0.7195
+},
+{
+"column": "g_total_line",
+"family": "game: market, venue, weather",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_weekday",
+"family": "game: market, venue, weather",
+"dtype": "str",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_wet",
+"family": "game: market, venue, weather",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "g_win_prob",
+"family": "game: market, venue, weather",
+"dtype": "float64",
+"nonnull_role_rows": 0.9997
+},
+{
+"column": "g_wind",
+"family": "game: market, venue, weather",
+"dtype": "float64",
+"nonnull_role_rows": 0.9979
+},
+{
+"column": "inj_dnp",
+"family": "player's own injury report that week",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "inj_doubtful",
+"family": "player's own injury report that week",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "inj_limited",
+"family": "player's own injury report that week",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "inj_listed",
+"family": "player's own injury report that week",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "inj_out",
+"family": "player's own injury report that week",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "inj_probable",
+"family": "player's own injury report that week",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "inj_questionable",
+"family": "player's own injury report that week",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "inj_report_team",
+"family": "player's own injury report that week",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "oa_attempts_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_attempts_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_attempts_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0879
+},
+{
+"column": "oa_carries_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.2453
+},
+{
+"column": "oa_carries_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.2453
+},
+{
+"column": "oa_carries_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.2303
+},
+{
+"column": "oa_completions_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_completions_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_completions_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0879
+},
+{
+"column": "oa_fantasy_points_ppr_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.923
+},
+{
+"column": "oa_fantasy_points_ppr_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.923
+},
+{
+"column": "oa_fantasy_points_ppr_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8673
+},
+{
+"column": "oa_fg_att_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.077
+},
+{
+"column": "oa_fg_att_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.077
+},
+{
+"column": "oa_fg_att_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0723
+},
+{
+"column": "oa_fg_made_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.077
+},
+{
+"column": "oa_fg_made_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.077
+},
+{
+"column": "oa_fg_made_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0723
+},
+{
+"column": "oa_kick_pts_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.077
+},
+{
+"column": "oa_kick_pts_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.077
+},
+{
+"column": "oa_kick_pts_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0723
+},
+{
+"column": "oa_passing_interceptions_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_passing_interceptions_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_passing_interceptions_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0879
+},
+{
+"column": "oa_passing_tds_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_passing_tds_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_passing_tds_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0879
+},
+{
+"column": "oa_passing_yards_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_passing_yards_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_passing_yards_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0879
+},
+{
+"column": "oa_receiving_tds_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.5843
+},
+{
+"column": "oa_receiving_tds_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.5843
+},
+{
+"column": "oa_receiving_tds_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.549
+},
+{
+"column": "oa_receiving_yards_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8296
+},
+{
+"column": "oa_receiving_yards_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8296
+},
+{
+"column": "oa_receiving_yards_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.7793
+},
+{
+"column": "oa_receptions_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8296
+},
+{
+"column": "oa_receptions_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8296
+},
+{
+"column": "oa_receptions_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.7793
+},
+{
+"column": "oa_rush_rec_tds_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.2453
+},
+{
+"column": "oa_rush_rec_tds_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.2453
+},
+{
+"column": "oa_rush_rec_tds_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.2303
+},
+{
+"column": "oa_rushing_yards_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.3387
+},
+{
+"column": "oa_rushing_yards_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.3387
+},
+{
+"column": "oa_rushing_yards_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.3183
+},
+{
+"column": "oa_sacks_suffered_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_sacks_suffered_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0934
+},
+{
+"column": "oa_sacks_suffered_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0879
+},
+{
+"column": "oa_targets_ew8",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8296
+},
+{
+"column": "oa_targets_rel",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8296
+},
+{
+"column": "oa_targets_szn",
+"family": "opponent allowed to this group, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.7793
+},
+{
+"column": "od_db_out",
+"family": "opponent's injury report that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "od_front_out",
+"family": "opponent's injury report that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "p_air_yards_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_air_yards_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_air_yards_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_air_yards_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_any_td_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_any_td_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_any_td_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_any_td_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_any_td_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_any_td_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_any_td_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_attempts_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_attempts_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_attempts_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_attempts_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_attempts_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_attempts_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_attempts_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_ay_share_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_ay_share_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_ay_share_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_ay_share_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_ay_share_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_ay_share_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_ay_share_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_car_d_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_car_d_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_car_d_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_car_d_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_car_share_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_car_share_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_car_share_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_car_share_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_car_share_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_car_share_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_car_share_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_car_share_trend",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_carries_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_carries_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_carries_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_carries_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_carries_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_carries_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_carries_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_completions_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_completions_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_completions_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_completions_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_completions_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_completions_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_completions_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_cpoe_n_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_cpoe_n_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_cpoe_n_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_cpoe_n_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_cpoe_sum_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_cpoe_sum_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_cpoe_sum_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_cpoe_sum_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_db_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_db_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_db_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_db_share_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_db_share_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_db_share_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_db_share_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_db_share_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_db_share_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_db_share_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_db_share_trend",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_db_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_deep_tgt_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_deep_tgt_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_deep_tgt_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_deep_tgt_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_est_routes_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_est_routes_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_est_routes_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.7436
+},
+{
+"column": "p_est_routes_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9126
+},
+{
+"column": "p_ez_tgt_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_ez_tgt_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_ez_tgt_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_ez_tgt_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_fantasy_points_ppr_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fantasy_points_ppr_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fantasy_points_ppr_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_fantasy_points_ppr_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_fg50_att_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg50_att_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg50_att_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_fg50_att_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_fg_att_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg_att_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg_att_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg_att_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg_att_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg_att_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_fg_att_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_fg_made_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg_made_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg_made_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg_made_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg_made_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_fg_made_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_fg_made_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_gl_car_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_gl_car_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_gl_car_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_gl_car_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_kick_pts_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_kick_pts_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_kick_pts_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_kick_pts_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_kick_pts_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_kick_pts_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_kick_pts_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_off_pct_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_off_pct_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_off_pct_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_off_pct_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_off_pct_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_off_pct_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.7436
+},
+{
+"column": "p_off_pct_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9126
+},
+{
+"column": "p_off_pct_trend",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_off_snaps_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_off_snaps_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_off_snaps_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.7436
+},
+{
+"column": "p_off_snaps_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9126
+},
+{
+"column": "p_passing_epa_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1972
+},
+{
+"column": "p_passing_epa_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1971
+},
+{
+"column": "p_passing_epa_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1172
+},
+{
+"column": "p_passing_epa_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0998
+},
+{
+"column": "p_passing_interceptions_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_interceptions_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_interceptions_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_interceptions_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_interceptions_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_interceptions_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_passing_interceptions_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_passing_tds_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_tds_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_tds_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_tds_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_tds_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_tds_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_passing_tds_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_passing_yards_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_yards_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_yards_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_yards_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_yards_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_passing_yards_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_passing_yards_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_pat_att_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_pat_att_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_pat_att_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_pat_att_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_qb_epa_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_qb_epa_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_qb_epa_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_qb_epa_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_r_adot_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8376
+},
+{
+"column": "p_r_adot_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8376
+},
+{
+"column": "p_r_adot_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.6979
+},
+{
+"column": "p_r_catch_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8376
+},
+{
+"column": "p_r_catch_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8376
+},
+{
+"column": "p_r_catch_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.6979
+},
+{
+"column": "p_r_comp_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1877
+},
+{
+"column": "p_r_comp_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1877
+},
+{
+"column": "p_r_comp_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0969
+},
+{
+"column": "p_r_cpoe_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1821
+},
+{
+"column": "p_r_cpoe_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1821
+},
+{
+"column": "p_r_cpoe_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0953
+},
+{
+"column": "p_r_epa_db_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.195
+},
+{
+"column": "p_r_epa_db_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.195
+},
+{
+"column": "p_r_epa_db_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0995
+},
+{
+"column": "p_r_fg_pct_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0759
+},
+{
+"column": "p_r_fg_pct_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0759
+},
+{
+"column": "p_r_fg_pct_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0697
+},
+{
+"column": "p_r_int_rate_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1877
+},
+{
+"column": "p_r_int_rate_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1877
+},
+{
+"column": "p_r_int_rate_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0969
+},
+{
+"column": "p_r_ptd_rate_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1877
+},
+{
+"column": "p_r_ptd_rate_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1877
+},
+{
+"column": "p_r_ptd_rate_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0969
+},
+{
+"column": "p_r_sack_rate_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.195
+},
+{
+"column": "p_r_sack_rate_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.195
+},
+{
+"column": "p_r_sack_rate_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0995
+},
+{
+"column": "p_r_td_per_opp_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8905
+},
+{
+"column": "p_r_td_per_opp_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8905
+},
+{
+"column": "p_r_td_per_opp_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.7839
+},
+{
+"column": "p_r_tprr_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9116
+},
+{
+"column": "p_r_tprr_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9116
+},
+{
+"column": "p_r_tprr_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8358
+},
+{
+"column": "p_r_ypa_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1877
+},
+{
+"column": "p_r_ypa_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.1877
+},
+{
+"column": "p_r_ypa_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.0969
+},
+{
+"column": "p_r_ypc_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.6174
+},
+{
+"column": "p_r_ypc_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.6174
+},
+{
+"column": "p_r_ypc_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.4011
+},
+{
+"column": "p_r_yprr_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9116
+},
+{
+"column": "p_r_yprr_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9116
+},
+{
+"column": "p_r_yprr_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8358
+},
+{
+"column": "p_r_ypt_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8376
+},
+{
+"column": "p_r_ypt_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8376
+},
+{
+"column": "p_r_ypt_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.6979
+},
+{
+"column": "p_receiving_yards_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_receiving_yards_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_receiving_yards_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_receiving_yards_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_receiving_yards_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_receiving_yards_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_receiving_yards_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_receptions_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_receptions_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_receptions_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_receptions_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_receptions_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_receptions_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_receptions_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_rush_rec_tds_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rush_rec_tds_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rush_rec_tds_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rush_rec_tds_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rush_rec_tds_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rush_rec_tds_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_rush_rec_tds_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_rush_rec_yards_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rush_rec_yards_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rush_rec_yards_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rush_rec_yards_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rush_rec_yards_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rush_rec_yards_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_rush_rec_yards_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_rushing_yards_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rushing_yards_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rushing_yards_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rushing_yards_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rushing_yards_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rushing_yards_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_rushing_yards_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_rz_car_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_car_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_car_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_rz_car_share_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_car_share_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_car_share_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_car_share_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_car_share_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_car_share_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_rz_car_share_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_rz_car_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_rz_tgt_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_tgt_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_tgt_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_rz_tgt_share_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_tgt_share_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_tgt_share_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_tgt_share_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_tgt_share_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_rz_tgt_share_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_rz_tgt_share_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_rz_tgt_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_sacks_suffered_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_sacks_suffered_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_sacks_suffered_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_sacks_suffered_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_scrambles_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_scrambles_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_scrambles_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_scrambles_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_st_pct_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_st_pct_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9775
+},
+{
+"column": "p_st_pct_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.7436
+},
+{
+"column": "p_st_pct_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9126
+},
+{
+"column": "p_targets_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_targets_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_targets_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_targets_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_targets_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_targets_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_targets_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_tgt_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_tgt_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_tgt_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_tgt_share_car",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_tgt_share_ew10",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_tgt_share_ew4",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_tgt_share_l1",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_tgt_share_l3",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_tgt_share_prev",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.8004
+},
+{
+"column": "p_tgt_share_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "p_tgt_share_trend",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "p_tgt_szn",
+"family": "player, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9127
+},
+{
+"column": "t_air_yards_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_air_yards_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_db_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_db_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_drush_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_drush_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_fg_att_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_fg_att_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_plays_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_plays_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_points_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_points_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_epa_db_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_epa_db_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_epa_rush_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_epa_rush_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_expl_pass_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_expl_pass_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_expl_rush_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_expl_rush_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_neu_pass_rate_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_neu_pass_rate_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_pass_rate_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_pass_rate_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_proe_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_proe_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_rz_share_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_rz_share_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_sack_rate_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_sack_rate_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_succ_db_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_succ_db_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_r_succ_rush_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_r_succ_rush_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_rz_plays_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_rz_plays_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "t_tgt_ew8",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "t_tgt_szn",
+"family": "own team, earlier games",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "tm_is_qb_lead",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_n_absent",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_n_absent_grp",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_ol_out",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_qb_lead_absent",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_ret_ay",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_ret_car",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_ret_rz_car",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_ret_rz_tgt",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_ret_tgt",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_roster_known",
+"family": "teammates available that week",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_top3_tgt_absent",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_ay",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_car",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_car_grp",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_inj_ay",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_inj_car",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_inj_rz_car",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_inj_rz_tgt",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_inj_tgt",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_rz_car",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_rz_tgt",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_tgt",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "tm_vac_tgt_grp",
+"family": "teammates available that week",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_age",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_days_since_last",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "x_draft_number",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 0.6876
+},
+{
+"column": "x_draft_round",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 0.71
+},
+{
+"column": "x_first_game",
+"family": "experience and history counts",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_gp_car",
+"family": "experience and history counts",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_gp_prev",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_gp_share_szn",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 0.9395
+},
+{
+"column": "x_gp_szn",
+"family": "experience and history counts",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_gp_with_team",
+"family": "experience and history counts",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_height",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_new_team",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 0.9827
+},
+{
+"column": "x_rookie",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_team_games_missed",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 0.9594
+},
+{
+"column": "x_undrafted",
+"family": "experience and history counts",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_weight",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 1.0
+},
+{
+"column": "x_years_exp",
+"family": "experience and history counts",
+"dtype": "float64",
+"nonnull_role_rows": 0.9984
+},
+{
+"column": "t_gp_szn",
+"family": "own team, earlier games",
+"dtype": "int64",
+"nonnull_role_rows": 1.0
+}
+]

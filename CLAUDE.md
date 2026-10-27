@@ -473,6 +473,26 @@ its own; before 285 the summary never says passing. `shadow_equiv.py` proves its
 harness's own (identical on every development game), `test_shadow.py` is its test (README.md there,
 "The shadow"). Never edit the ledger or the bar by hand.
 
+**The free-data props model** (`props/research/propmodel/`, its README.md and PREREGISTRATION.md first; 27 October 2026,
+the owner's call after the diagnosis that the prop model's chance carried nothing beyond DraftKings' price, "maybe come
+up with a better model altogether that specializes on this separate than the pickems models", and his choice of the free
+route). A model of its own for player props, on nflverse's free files alone (each player's snap, target, air-yard,
+red-zone and carry shares, the depth chart as it stood before kickoff, the injury report and teammates out, the
+opponent's defence and the game's lines: 510 features, 2013-2025, zero rows from the snap counts included):
+LightGBM quantile regression for the yards stats, a LightGBM Poisson mean with a negative-binomial spread for the
+counts, and a LightGBM Poisson on the touchdown count, each chosen on a 2021-2025 walk-forward (every test season
+fitted only on the seasons before it) where it beat the site's model refitted the same way on every stat in every
+season (CRPS 1.2-5.4% better on the starters a book prices, 8-35% on backups and rookies; the anytime touchdown's
+log loss 0.024 better and calibrated where the site's said 19.6% for 16.4% scored), then refitted on 2013-2025 and
+frozen by SHA-256 (the model files gzipped under `frozen/`, `pack_frozen.py`). Nothing on the site reads it. Its one
+test against 2026 is preregistered and run once, by `oneshot_2026.py`, no sooner than 31 October 2026 00:15 UTC (96
+hours after week 7's last kickoff, so every game's stats and snap counts are in, which it checks): a blend of 0.25 toward
+the model, judged on weeks 1-6's priced main lines and anytime touchdowns and weeks 1-7's closing lines from the archive
+by the bar PREREGISTRATION.md fixes; a PASS only starts a quiet shadow, a FAIL ends it, and the site stays on
+DraftKings' chance either way until a shadow passes. `fetch.py` refuses every 2026 file to every script but the one-shot,
+and to it only under the committed, unmodified preregistration on origin/main; never edit a file the preregistration
+hashes, never read 2026 with this model's code before the test, and never run the test twice.
+
 A quarterback has an anytime touchdown since app v102 (`patch_qb_td.py`; the owner asked, October
 2026): his own rushing or receiving touchdown, as DraftKings settles it, never a pass he throws, and
 settled so everywhere it already was (the stats' `any_td`, the live box score's, `settleLeg`, the
