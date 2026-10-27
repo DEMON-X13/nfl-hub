@@ -25,7 +25,8 @@ all (it still gets --no-odds, which a base from before needs and this one ignore
              a payload from git history at its own moment.
   units      job C: the props job's own tests and the page's (UNITS: the ESPN read and its application, the
              runs against the locks, the ids, the names, who played, the downloads, the audit's verdict, the
-             admin link, and the parlay card with Pull from DraftKings), on fixtures of their own: seconds each,
+             archive of DraftKings' lines on ESPN, the admin link, and the parlay card with Pull from DraftKings),
+             on fixtures of their own: seconds each,
              but for the page's two smokes (smoke_admin.js about a minute, smoke_live.js about four).
 
 Each is differential. A failure is run again on the base's code (a second checkout, `git worktree`):
@@ -59,7 +60,9 @@ AUDIT = ['props/build/**', 'props/data/*.py', 'props/data/*.json', 'props/resear
          'betting/neutral_sites.json', 'betting/tools/reference_models.json'] + GATE
 # the props job's own outputs: a run commits them, and they are data, not code
 AUDIT_OUTPUTS = ['props/data/payload.json', 'props/data/priced_at.json', 'props/data/pricepull.json',
-                 'props/data/credits.json', 'props/data/suggest_ledger.json', 'props/data/dk_links_wk*.json']
+                 'props/data/credits.json', 'props/data/suggest_ledger.json', 'props/data/dk_links_wk*.json',
+                 # the archive of DraftKings' player lines on ESPN (espn_archive.py, weekly.py's step 5b, 27 October 2026)
+                 'props/data/espn_lines_*.json']
 PAGE = ['nflbets/**', 'betting/app/**', 'betting/tools/build.js', 'betting/tools/patches.js',
         'betting/tools/tiers.js', 'betting/tools/*_viz.js', 'betting/tools/reference_models.json',
         'props/build/part1.html', 'props/build/part*.js', 'props/build/espn_rule.js', 'props/build/clock_now.js',
@@ -79,7 +82,8 @@ SMOKE_LINE = re.compile(r'(\d+) checks, (\d+) failures')
 UNITS = [('props/build/test_apply_espn.py', 'py'), ('props/build/test_espn_read.js', 'node'), ('props/build/test_lock_runs.py', 'py'),
          ('props/build/test_espn_ids.py', 'py'), ('props/build/test_dk_links.py', 'py'), ('props/build/test_unmatched.py', 'py'),
          ('props/build/test_who_played.py', 'py'), ('props/build/test_fetch.py', 'py'), ('props/build/test_audit_gate.py', 'py'),
-         ('lib/test_netfetch.py', 'py'), ('lib/test_netfetch.js', 'node'), ('nflbets/build/test_dkname.js', 'node'),
+         ('lib/test_netfetch.py', 'py'), ('lib/test_netfetch.js', 'node'), ('props/build/test_espn_archive.py', 'py'),
+         ('nflbets/build/test_dkname.js', 'node'),
          ('nflbets/build/smoke_admin.js', 'node'), ('nflbets/build/smoke_live.js', 'node')]
 # a unit run only where its file is in the tree; every other one missing fails the gate (none is optional: the parlay
 # card's name rule's test landed with its change)

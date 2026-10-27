@@ -60,6 +60,12 @@ What it does, in order:
      the schedule as a press puts them (ls 'dk', lat the read's time, lsr 'espn') while under a day old.
      Nothing of ESPN's goes into mkt, prices or dk: a line read from ESPN is never a book price. An
      error here refuses the run (the last good payload, with its read, stays live)
+  5b. the archive of DraftKings' player lines on ESPN (archive_step, espn_archive.py): every game of the earliest
+     week with a game to come, and every game played in the last 8 days not yet frozen, read again into
+     data/espn_lines_<season>.json (open, close, the touchdown list), a played game read once more and frozen;
+     research data for a future props model, which nothing on the site reads. It never refuses the run: an
+     exception, or a played game left unfrozen for a day, is a problem (red after the commit), and the last
+     archive stays. --offline (and a run replaying ESPN's answers, PROPS_ESPN_REPLAY) reads nothing for it
   6. runs the audit, which checks the payload against the raw files and this run's read. Its
      failures and runtime errors refuse the run (audit_verdict); its warnings, the checks audit.js
      names as presentation only (who is shown starting, an ordering, which correctly priced parlay
@@ -669,6 +675,30 @@ def espn_step(a,week,season_over,pp,now):
     else: say(f"  ESPN read: week {r.get('week')}, {r.get('requests','?')} requests in {time.time()-t0:.0f}s")
     return r
 
+def archive_step(a,now,run=None):
+    """5b. the archive of DraftKings' player lines on ESPN (espn_archive.py, whose docstring has the rules): the games
+    of the earliest week with a game to come read again, and each game played in the last 8 days read once more and
+    frozen, into data/espn_lines_<season>.json, which the workflow commits with the rest of props/data. Research data
+    for a future props model: nothing on the site reads it. Never refuses the run: an exception is a problem (the run
+    goes red after its commit) and the file is left as it was, since it is written whole or not at all; a game ESPN
+    did not answer for is a note, and a played game left unfrozen for a day a problem. --offline reads nothing, and
+    neither does a run replaying ESPN's recorded answers (PROPS_ESPN_REPLAY: the props gate's base), which would
+    otherwise read ESPN live beside them. The module is imported here, inside the try, so not even a broken
+    espn_archive.py can stop the run"""
+    if a.offline: say(f"  ESPN archive skipped: --offline reads nothing from ESPN (data/espn_lines_{SEASON}.json stays as it was)"); return
+    if os.environ.get('PROPS_ESPN_REPLAY'): say("  ESPN archive skipped: this run replays ESPN's recorded answers (PROPS_ESPN_REPLAY)"); return
+    t0=time.time()
+    try:
+        if run is None:
+            import espn_archive; run=espn_archive.run
+        notes,probs=run(SEASON,now,games_csv=os.path.join(RAW,GAMES),roster_csv=os.path.join(RAW,ROSTER),out=os.path.join(DATA,f'espn_lines_{SEASON}.json'))
+        for n in notes: say('  '+n)
+        problems.extend(probs)
+        say(f"  ESPN archive: done in {time.time()-t0:.0f}s")
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        problems.append(f"ESPN archive: {type(e).__name__}: {e}; data/espn_lines_{SEASON}.json stays as it was (the run publishes)")
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--no-commit',action='store_true',help='accepted for the workflow; nothing commits here')
@@ -757,6 +787,8 @@ def main():
     # 5. the read into the payload: this run's where it read, the published payload's carried where it did not
     espn_apply_step(pp,prev,read,now)
     if blocked(): return finish(a)
+    # 5b. the archive of DraftKings' player lines on ESPN: never refuses the run
+    archive_step(a,now)
     # 6. the audit (and on a clean one the suggestions record): it checks the payload against the raw files just
     # downloaded and this run's read
     audit_step(a)

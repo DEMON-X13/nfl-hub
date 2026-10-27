@@ -81,6 +81,10 @@ at the next refresh:
 - `props/data/suggest_backtest.json` (by `props/build/suggest_backtest.js`, run by hand, never by a job: the record's
   weeks before it took them, rebuilt from git at each lock and graded; the file only grows, and `--check` and the
   record's test refuse it moved)
+- `props/data/espn_lines_<season>.json` (by `props/build/espn_archive.py`, step 5b of `weekly.py` in the props job, and
+  its `--backfill` by hand: DraftKings' player lines on ESPN game by game, open and close, each played game read once
+  more and frozen, never written again, so a hand edit there rewrites the record; research data nothing on the site
+  reads: under "Props: the loop", **The archive of DraftKings' lines**)
 - `news/data/results.js`, `news/data/stats2026.js` and its twin `news/data/stats.json`, `news/data/units2026.js` and its twin `news/data/units.json`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (`news/tools/.cache/` is gitignored; the game notes, `news/data/notes/`, are source, written by hand)
 - `props/research/totals/shadow/ledger.json` (by `shadow.py` in the betting job: the game-totals shadow's calls, frozen at kickoff, and its pre-registered bar, so a hand edit there rewrites the record and `shadow_check.py` fails it)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
@@ -279,7 +283,8 @@ published one when weekly.py refused), within 40 minutes; job B runs each case o
 own (the smoke cases alone when only PAGE changed); job C (since 20 October 2026) runs the unit tests, `UNITS` in
 `props_gate.py`, on fixtures of their own, seconds each but for the page's two smokes: `test_apply_espn.py`,
 `test_espn_read.js`, `test_lock_runs.py`, `test_espn_ids.py`, `test_dk_links.py`, `test_unmatched.py`, `test_who_played.py`,
-`test_fetch.py`, `test_audit_gate.py`, `lib/test_netfetch.py` and `.js`, `nflbets/build/test_dkname.js`,
+`test_fetch.py`, `test_audit_gate.py`, `lib/test_netfetch.py` and `.js`, `test_espn_archive.py` (since 27 October 2026,
+**The archive of DraftKings' lines**), `nflbets/build/test_dkname.js`,
 `nflbets/build/smoke_admin.js` and, since the review of 21 October 2026, `nflbets/build/smoke_live.js` (about four minutes,
 the one place the parlay card's Pull from DraftKings and its money rules are held; job C's `timeout-minutes` went from 20 to
 45 with it, room for both page smokes running to their own caps here and again on the base, which `test_props_gate.py`
@@ -499,7 +504,8 @@ call: no scheduled paid pull, "i want all of everything i see to be the espn est
 on the pull from Draft Kings button available for me to run to pull all the current stuff"): each downloads nflverse's
 files, bakes the payload, assembles the page, reads DraftKings' game lines and player lines from ESPN's free feed with
 the page's own reader and publishes that read with the payload (**The published read**, under "Refresh odds" below),
-then runs the audit and the suggestions record. No odds-API key is mapped in any workflow, and nothing in the job can
+keeps DraftKings' player lines game by game in its archive (**The archive of DraftKings' lines**, after it), then runs
+the audit and the suggestions record. No odds-API key is mapped in any workflow, and nothing in the job can
 spend a credit (`props/data/oddsfetch.py` and `credits.py` are tools to run by hand; `weekly.py` runs neither and reads
 no key). Its run line is `python weekly.py --no-commit`; `--no-odds`, `--catch-up`, `--hours` and `--local` are still
 accepted and do nothing (a run queued with the old line, the props gate on a base from before), and the dispatch's
@@ -1178,6 +1184,46 @@ the audit's own `nameRule` passes or whose surname is ESPN's); a placement by th
 `W.espnName`, argued in `WARN` (the page's placement takes one match only, never a player an ESPN id names or another
 athlete claims, and the owner reads the list to add a nickname). `suggest_ledger.js` refuses a page that drops the read
 (above), and the nflbets smoke holds the page on payloads with a read and without (**Bets and Stats: the loop**).
+
+**The archive of DraftKings' lines** (27 October 2026, `props/build/espn_archive.py`, whose docstring is the design, and
+`weekly.py`'s step 5b, `archive_step`). DraftKings' player lines on ESPN's free feed are the one free source of
+historical prop lines there is, and ESPN keeps them for played games only while their season is in play (every 2025
+game now answers 404); the job published only the current week's read (`PAY.espn`, worked out again on every run) and
+the main lines kept at kickoff for grading (`espn_close`), so a played game's lines went with its season. A future
+props model needs a durable history of DraftKings' opening and closing lines to be validated against, so the job keeps
+them, in `props/data/espn_lines_<season>.json`, committed with the rest of `props/data`: research data, held out as
+`research/` holds 2026 out (never fitted, tuned or chosen on while its season is the season in play), which no page,
+audit check or suggestion reads. Each run reads, one game at a time through `lib/netfetch.py` (a plain User-Agent, then
+another on a 403, a 5xx or a timeout tried again after 2 and 5 seconds, a 404 at once), every page of the game's
+propBets to its pageCount (the page's own page rules), for every game of the earliest week with a game still to come
+and every game played in the last 8 days not yet frozen (played: a score in games.csv, or 4 hours past its kickoff; a
+game in play is not read). Kept a game (`{w, kickoff, espn, first_read, last_read, final, td, conflict, gone,
+lines:{player:{stat:[open, close, lastUpdated]}}}`, which the file's `how` says): the twelve main over/under markets
+the page reads (`ESPN_MAIN`'s, by ESPN's market name held to its id, under the page's stat names, which the test holds
+to `part3.js`), ESPN's own opening line, the latest current as the close (frozen at kickoff: on the 94 games played by
+then no item's `lastUpdated` was more than five minutes past its kickoff, so a final game's is the closing line) and
+`lastUpdated` as ESPN writes it (labelled Z, three hours ahead of UTC), and the anytime touchdown scorer list's players,
+with no line. A player is his gsis id through the run's roster (`espn_id`; an id two players share mapped to neither),
+else `espn:<ESPN id>`, moved onto the gsis id at a later read once the roster has him (never in a frozen game). Twins
+(a main line's Over and Under at the same numbers) are kept once; one athlete and market at two numbers (88 of about
+5,600 on weeks 1 to 8) are kept as they came in `conflict`, never guessed between. A read merges into what is kept and
+never replaces it with less: a 404, a failure or a read with nothing of these markets leaves the game exactly as it
+was, and an entry a later read lacks (a line DraftKings withdrew) is kept with its last numbers and listed in `gone`.
+The first run once a game is played reads it once more and marks it `final`; a final game is never read or written
+again, whatever the clock or ESPN says. It never refuses the run: an exception, a file that will not read or is of
+another season (left as it is) and a game played 30 hours or more and still not frozen are problems (the run goes red
+after its commit), a game ESPN did not answer for a note; `--offline`, and a run replaying ESPN's recorded answers
+(`PROPS_ESPN_REPLAY`, the props gate's base), read nothing for it. The file is written whole or not at all, a game's
+head on a line and each player's lines on a line, so a run moves a few lines. `python3 espn_archive.py --backfill`, by
+hand, reads every played game of the season not yet frozen, whatever its age, and the week's games to come: run on 27
+October 2026 it froze all 107 games of weeks 1 to 7 and read 12 of week 8's 14 (the other two had no player lines
+posted yet), 5,578 lines and 3,195 touchdown-list entries, two athletes kept by ESPN id (each only on a touchdown list),
+about 360 KB (a whole season about 900 KB). `python3 test_espn_archive.py` holds it (a props gate unit, job C), on a
+trimmed real answer of its own (`props/build/fixtures/espn_archive/`) and made-up ones: the market map, twins and
+conflicts, the pages, which games a run reads, the rewrite of a game to come, `gone`, the re-keying, the final read and
+the freeze, a 404, a failure or an empty read leaving a game as it was, the roster's mapping, the overdue problem,
+another season's game, `--offline`, `weekly.py`'s step and the download through `lib/netfetch.py`. To the gate the file
+is the job's output, never code (`AUDIT_OUTPUTS`, and left out of `props-gate.yml`'s push paths), as the payload is.
 
 **No ladder bets** (app v127, `patch_no_ladders.py`, whose docstring is the design, the owner's call of 21 October 2026:
 "general question, is it possible to not do ladders and just include Same Game Parlay eligible stuff show up since we are

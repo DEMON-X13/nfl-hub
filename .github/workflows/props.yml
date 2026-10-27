@@ -105,6 +105,8 @@ jobs:
         # by weekly.py after a clean audit): each prime-time game's Suggested Parlays set and each week's Sunday
         # slot, locked 2 hours before kickoff and graded after (and the retired all-games panel's entries,
         # frozen and still graded); a run whose record the script refused leaves the last good one in place.
+        # And the archive of DraftKings' player lines on ESPN, props/data/espn_lines_<season>.json (espn_archive.py,
+        # weekly.py's step 5b, 27 October 2026): research data, each played game frozen once.
         # The ESPN read's raw answers (props/raw/espn/) are never committed: the read is in the payload.
         run: |
           git config user.name "nfl-hub bot"

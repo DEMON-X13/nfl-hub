@@ -23,6 +23,7 @@ on:
       - "!props/data/credits.json"
       - "!props/data/suggest_ledger.json"
       - "!props/data/dk_links_wk*.json"
+      - "!props/data/espn_lines_*.json"
       - "props/research/features.py"
       - "props/research/qb_td.py"
       - "props/raw/feat.pkl"
