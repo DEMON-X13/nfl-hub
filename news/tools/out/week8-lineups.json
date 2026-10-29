@@ -212,7 +212,7 @@
   },
   "BAL": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-29T09:49:40.864Z",
+   "built_at": "2026-10-29T19:53:32.171Z",
    "units": {
     "qb": [
      {
@@ -241,9 +241,10 @@
       "pos": "C"
      },
      {
-      "id": "00-0040068",
-      "n": "Emery Jones Jr.",
-      "pos": "G"
+      "id": "00-0040866",
+      "n": "Olaivavega Ioane",
+      "pos": "G",
+      "q": "questionable: knee, not practising"
      },
      {
       "id": "00-0039233",
@@ -1905,7 +1906,7 @@
   },
   "LAC": {
    "kick": "2026-11-01T21:05Z",
-   "built_at": "2026-10-29T00:46:51.082Z",
+   "built_at": "2026-10-29T19:53:32.171Z",
    "units": {
     "qb": [
      {
@@ -1936,9 +1937,9 @@
       "pos": "G"
      },
      {
-      "id": "00-0041107",
-      "n": "Alex Harkey",
-      "pos": "G"
+      "id": "00-0039897",
+      "n": "Joe Alt",
+      "pos": "T"
      }
     ],
     "rb": [
@@ -2114,7 +2115,7 @@
   },
   "KC": {
    "kick": "2026-11-01T21:25Z",
-   "built_at": "2026-10-29T09:49:40.864Z",
+   "built_at": "2026-10-29T19:53:32.171Z",
    "units": {
     "qb": [
      {
@@ -2212,7 +2213,8 @@
      {
       "id": "00-0041543",
       "n": "Mansoor Delane",
-      "pos": "CB"
+      "pos": "CB",
+      "q": "questionable: shoulder"
      }
     ]
    }
@@ -2325,7 +2327,7 @@
   },
   "NE": {
    "kick": "2026-11-01T21:25Z",
-   "built_at": "2026-10-29T09:49:40.864Z",
+   "built_at": "2026-10-29T19:53:32.171Z",
    "units": {
     "qb": [
      {
@@ -2372,7 +2374,8 @@
      {
       "id": "00-0040734",
       "n": "TreVeyon Henderson",
-      "pos": "RB"
+      "pos": "RB",
+      "q": "questionable: ankle, not practising"
      }
     ],
     "rec": [
