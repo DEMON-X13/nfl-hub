@@ -151,11 +151,42 @@ all pass. What each one would have caught is said beside it.
              without; no home term at a neutral site, and at home the home field comes off; a tie a
              margin of 0. (A table that counted the team's own last game in `before`, turned home
              field round or fell back to the sequential Elo published green.)
+  AVERAGES   matchups.json's Elo-adjusted averages (`avg`, `avg_ref`, `avg_fit`; ELO-ADJUSTED AVERAGES in the
+             build, 29 October 2026), every number worked out again on the gate's own reading. `avg_fit` is the
+             build's ELO_AVG whole (elo/tools/elo_avg_fit.py holds the constants). The players are exactly the
+             coming week's expected starters (each club's lineup in `lineups`, QB1, RB1, WR1-3, TE1 and K1 by
+             ELO_AVG's `starters`) with `min_games` regular games behind them at the position, counted on the
+             gate's own log: nflverse's player stats read here (its own copy of which positions make each group,
+             what a game's involvement is and a regular's norm), a game kept where it has something on the
+             sheet and a final in games.csv, in games.csv's order, the playoffs after week 18. Each gives his game,
+             club, opponent, home and slot as the schedule and the lineup have them, every leg of his position
+             and no other, and for each: his average (the leg's half-life, season weight and prior games at the
+             position's mean over every season before, the gate's own sums), what the defence allowed the position
+             (its own half-life-six average over the fit's mean), his place on targets among his lineup's receivers
+             at his position (its own half-life four), the opponent's tables and his club's offence table (the
+             gate's own replay of the season from its play-by-play and the carry: raw, the curve unrounded, and the
+             Elo and rank the units show), his career rating the players map's and his season rating the
+             rankings' where they show it (1500 with no game this season), the opposing defenders the league's;
+             then on those inputs the projection, its no-Elo twin, the Elo part, its sd and the part in sd (the
+             gate's own arithmetic of each leg's terms, coefficients and spread), the defence's and player's
+             Elo part's split, the defence's multiplier against `avg_ref` (itself the gate's own league means) and
+             his Elo's, the twin times the two the projection, so together they point the Elo part's way (the old
+             split against a 1500 player, which pointed the other way on 128 trusted legs, refused). Before a new
+             season is under way its player stats are not posted yet, and its file is not asked for. On fixtures
+             (the build's own functions on invented data): its average is the gate's for every shape of half-life,
+             season weight and prior; a game with nothing on the sheet, or under a regular's norm, moves no average;
+             each spread's sd and every leg's projection, twin and split are the gate's (the defence at the league's
+             average multiplies by 1); the gate's own log reads a coming season's missing file only once that
+             season is under way; and on a made-up week the build covers exactly the starters it should, ranks a club's receivers
+             on targets, reads the opponent's tables, his own club's offence and the opposing defenders, and a
+             better defence moves the projection by exactly its coefficient. (A projection read off the wrong
+             club's table, a regular's norm turned round, an average that counted a quiet game, a twin with the
+             Elo terms in, or a leg left out would publish green.)
   UNITS      the build's own functions on fixtures: two equal teams at a neutral site are 50/50;
              a fullback listed first does not take the second running back's place; a club on its
              bye keeps its roster; a player out last week and not practising stays out.
 """
-import argparse, datetime, json, math, os, subprocess, sys
+import argparse, datetime, functools, json, math, os, subprocess, sys
 
 import numpy as np
 import pandas as pd
@@ -583,6 +614,7 @@ RANGE = {'pts': (0, 70), 'tor': (0, 8), 'epa': (-1.5, 1.5), 'ypp': (0, 15), 'rep
 TOL = {'pts': 0.051, 'tor': 0.0051, 'ypp': 0.0051}
 
 
+@functools.lru_cache(maxsize=None)      # read once a run: TEAMS and AVERAGES both replay a season from it
 def pbp_sums(path):
     """each team-game of a season's play-by-play, by (game_id, 'home'|'away'): the sums the stats
     are made of, over scrimmage plays (a pass, sack, scramble or run with an EPA, never a kneel,
@@ -1025,6 +1057,537 @@ def power_fixture_checks():
     chk(ok and all(abs(X[t]['r'] - R[t]) < 1e-4 for t in clubs), 'POWER: the gate\'s iteration and the build\'s solve disagree on an invented season')
 
 
+# ---- AVERAGES: matchups.json's Elo-adjusted averages (ELO-ADJUSTED AVERAGES) on the gate's own reading ----
+# the gate's own copies (a deliberate change edits both and says why in the build's docstring): the positions that
+# make each group, what a game's involvement is for each, a regular's norm (the build's VOLUME; the share is ELO_AVG's
+# `regular`), the playoff rounds' places after week 18, the half-lives of the pecking order on targets and of what a
+# defence has allowed, and the receivers ranked on targets with the places that count (WR1 and WR2; TE1)
+AVG_POS = {'QB': 'QB', 'RB': 'RB', 'FB': 'RB', 'WR': 'WR', 'TE': 'TE', 'K': 'K'}
+AVG_VOL = {'QB': ('attempts', 'carries', 'sacks_suffered'), 'RB': ('carries', 'targets'), 'WR': ('targets', 'carries'),
+           'TE': ('targets', 'carries'), 'K': ('fg_att', 'pat_att')}
+AVG_NORM = {'QB': 25, 'RB': 12, 'WR': 6, 'TE': 4}
+AVG_ORD = {'WC': 100, 'DIV': 101, 'CON': 102, 'SB': 103}
+AVG_TGT_HL, AVG_ALLOWED_HL = 4, 6
+AVG_RANKED = {'WR': 2, 'TE': 1}
+AVG_NUM = ['completions', 'attempts', 'passing_yards', 'passing_tds', 'passing_interceptions', 'sacks_suffered', 'carries',
+           'rushing_yards', 'rushing_tds', 'receptions', 'targets', 'receiving_yards', 'receiving_tds', 'fg_made', 'fg_att',
+           'pat_made', 'pat_att']
+
+
+def avg_ord(game_type, week):
+    return int(week) if game_type == 'REG' else AVG_ORD[game_type]
+
+
+def avg_log(cache, games, upto, built):
+    """every offensive player-game and every kicker's with something on the sheet and a final in games.csv, from
+    nflverse's player stats read here, in games.csv's order: the gate's own log, each game marked regular or not.
+    The coming games' season before it is under way (its fortnight of preseason calls) has no player stats posted
+    yet, as SOURCES allows, and is read only where its file is there"""
+    fin = games[games.home_score.notna()]
+    at = {gid: (int(s), avg_ord(t, w)) for gid, s, w, t in zip(fin.game_id, fin.season, fin.week, fin.game_type)}
+    parts = []
+    for y in range(build.FIRST, upto + 1):
+        path = os.path.join(cache, f'stats_player_week_{y}.csv')
+        if not os.path.exists(path):
+            if y == upto and not build.under_way(games, y, built):
+                continue
+            chk(False, f'AVERAGES: stats_player_week_{y}.csv is not in the cache, so no average can be held against it')
+            continue
+        have = set(pd.read_csv(path, nrows=0).columns)
+        parts.append(pd.read_csv(path, usecols=[c for c in ['player_id', 'position', 'game_id', 'opponent_team'] + AVG_NUM if c in have],
+                                 low_memory=False))
+    d = pd.concat(parts, ignore_index=True)
+    d['group'] = d.position.map(AVG_POS)
+    d = d[d.group.notna() & d.game_id.isin(at)].copy()
+    for c in AVG_NUM:
+        d[c] = pd.to_numeric(d[c], errors='coerce').fillna(0.0) if c in d else 0.0
+    vol = np.zeros(len(d))
+    for g, cols in AVG_VOL.items():
+        m = (d.group == g).values
+        vol[m] = sum(d[c].values[m] for c in cols)
+    d['vol'] = vol
+    d = d[d.vol > 0].copy()
+    d['season'] = [at[g][0] for g in d.game_id]
+    d['ord'] = [at[g][1] for g in d.game_id]
+    d['scrim_yards'] = d.rushing_yards + d.receiving_yards
+    d['any_td'] = d.rushing_tds + d.receiving_tds
+    d['kick_pts'] = 3 * d.fg_made + d.pat_made
+    d['reg'] = (d.group == 'K') | (d.vol >= build.ELO_AVG['regular'] * d.group.map(AVG_NORM))
+    return d.sort_values(['season', 'ord'], kind='mergesort').reset_index(drop=True)
+
+
+def avg_mean_own(vals, seasons, h, k, c, season, prior):
+    """the gate's own average: the latest regular game weighs 1, each before it half as much every h games (h None:
+    all alike), times c for each season boundary between it and the game in question, plus k games at the prior"""
+    n = len(vals)
+    age = np.arange(n - 1, -1, -1, dtype=float)
+    w = (np.power(0.5, age / h) if h else np.ones(n)) * np.power(float(c), season - np.asarray(seasons, dtype=float))
+    tot = float(w.sum()) + k
+    return (float(np.dot(w, np.asarray(vals, dtype=float))) + k * prior) / tot if tot > 0 else None
+
+
+def ewm_last_own(vals, hl):
+    v = np.asarray(vals, dtype=float)
+    w = np.power(0.5, np.arange(len(v) - 1, -1, -1) / hl)
+    return float(np.dot(w, v) / w.sum())
+
+
+def avg_sd_own(sp, mu):
+    mu = max(mu, 1e-3)
+    if sp['dist'] == 'poisson':
+        return mu ** 0.5
+    if sp['dist'] == 'nb':
+        return (mu * (1 + mu / sp['r'])) ** 0.5
+    if sp['dist'] == 'qp':
+        return (sp['phi'] * mu) ** 0.5
+    return mu * sp['rsd'][sum(1 for e in sp['edges'] if e < mu)]      # mu on an edge is the lower fifth
+
+
+def avg_leg_own(leg, avg, x, ref):
+    """one leg on the gate's own arithmetic: the projection, its no-Elo twin, the Elo part, its sd, the part in sd, and
+    the Elo part's split: the defence's multiplier (the projection over the same with the league's average defence)
+    and his Elo's (the rest of the projection over its twin), so the twin times the two is the projection"""
+    lb = math.log(max(leg['eps'] if avg is None else avg, leg['eps']))
+    eta = lambda terms, coef, xx: sum(c * (1.0 if t == 'one' else lb if t == 'log_avg' else xx[t]) for t, c in zip(terms, coef)) + lb
+    ex = lambda z: math.exp(min(30.0, max(-30.0, z)))
+    e1 = eta(leg['terms'], leg['coef'], x)
+    proj, proj0 = ex(e1), ex(eta(leg['no_elo']['terms'], leg['no_elo']['coef'], x))
+    sd = avg_sd_own(leg['spread'], proj)
+    first = 'E:' + leg['tables'][0]
+    xa = {t: (ref[t] if t.startswith('E:') or t in ('DL', 'LB', 'DB') else v) for t, v in x.items()}
+    if 'EP' in x:
+        xa['EP'] = xa[first] * x['P']
+    dx = math.exp(e1 - eta(leg['terms'], leg['coef'], xa))
+    return {'proj': proj, 'no_elo': proj0, 'elo': proj - proj0, 'sd': sd, 'z': (proj - proj0) / sd,
+            'def_x': dx, 'elo_x': proj / (proj0 * dx)}
+
+
+def avg_tables_own(M, games, cache, season):
+    """every club's rating on each of the ELO tab's tables as it stands in `season`, on the gate's own replay (that
+    season's play-by-play from the carry of the one before): {table: {club: (raw, shown unrounded)}}, the clubs with a
+    rating"""
+    U = M.get('units') or {}
+    par, K, W = U['params']['stats'], U['params']['K'], U['weights']
+
+    def season_games(s):
+        x = games[(games.season == s) & games.game_type.isin(['REG', 'WC', 'DIV', 'CON', 'SB'])].copy()
+        for c in ('home_team', 'away_team'):
+            x[c] = x[c].replace(MOVED)
+        return x
+    sg = season_games(season)
+    path = os.path.join(cache, f'play_by_play_{season}.csv.gz')
+    sums, final = pbp_sums(path) if os.path.exists(path) else ({}, {})
+    start = None
+    prev = os.path.join(cache, f'play_by_play_{season - 1}.csv.gz')
+    if season - 1 >= build.FIRST and os.path.exists(prev):
+        p_sums, p_final = pbp_sums(prev)
+        _, PR, _, pacc, _, _ = team_replay(season_games(season - 1), p_sums, p_final, par, K, W)
+        start = {t: {s: {k: CARRY * PR[s][k][t] for k in TEAM_STAT} for s in ('off', 'def')} for t in pacc['off'] if pacc['off'][t]['g']}
+    _, R, _, acc, _, _ = team_replay(sg, sums, final, par, K, W, start)
+    teams = sorted(set(sg.home_team) | set(sg.away_team))
+    rated = [t for t in teams if acc['off'][t]['g'] or t in (start or {})]
+    out = {}
+    for name, (ball, _) in TABLE.items():
+        tot = {t: sum(wt / 100 * R[ball][k][t] for k, wt in W[name].items()) for t in teams}
+        xs = np.array([tot[t] for t in rated]) if rated else np.zeros(1)
+        mu_, sd_ = float(xs.mean()), float(xs.std())
+        out[name] = {t: (tot[t], 1500 + 100 * (tot[t] - mu_) / sd_ if sd_ > 1e-9 else 1500.0) for t in teams}
+    return out, rated
+
+
+def avg_checks(MU, P, M, games, cache, built):
+    """matchups.json's `avg`, `avg_ref` and `avg_fit` against the gate's own reading (AVERAGES)"""
+    A = build.ELO_AVG
+    chk(MU.get('avg_fit') == json.loads(json.dumps(A)), 'AVERAGES: matchups.json does not carry the build\'s ELO_AVG as avg_fit')
+    AV, REF = MU.get('avg'), MU.get('avg_ref')
+    chk(isinstance(AV, dict) and isinstance(REF, dict), 'AVERAGES: matchups.json has no Elo-adjusted averages (avg, avg_ref)')
+    if not isinstance(AV, dict) or not isinstance(REF, dict):
+        return
+    # the coming games, by the build's rule: the earliest week with a game still to kick off (CALL_LEAD from now)
+    g = games.copy()
+    g['ord'] = [avg_ord(t, w) for t, w in zip(g.game_type, g.week)]
+    for c in ('home_team', 'away_team'):
+        g[c] = g[c].replace(MOVED)
+    lead = built + datetime.timedelta(minutes=build.CALL_LEAD)
+    up = g[(g.season >= int(M['season'])) & g.home_score.isna() & (g.kick > lead)].sort_values(['season', 'ord', 'kick'], kind='mergesort')
+    coming = up.iloc[0:0]
+    if len(up):
+        f = up.iloc[0]
+        if not (int(f.season) > int(M['season']) and f.kick - built > datetime.timedelta(days=build.PRESEASON_CALLS)):
+            coming = up[(up.season == f.season) & (up.ord == f.ord)]
+    if not len(coming):
+        chk(not AV, f'AVERAGES: {len(AV)} players projected with no game to come')
+        return
+    season = int(coming.season.iloc[0])
+    chk(MU.get('season') == season and MU.get('week') == int(coming.week.min()),
+        f'AVERAGES: the averages are for {MU.get("season")} week {MU.get("week")}, the coming games {season} week {int(coming.week.min())}')
+    log = avg_log(cache, games, season, built)
+    reg = log[log.reg]
+    n_reg = reg.groupby(['player_id', 'group']).size().to_dict()
+    by_pid = {pid: x for pid, x in log.groupby('player_id', sort=False)}
+    lineups = MU.get('lineups') or {}
+    # the players: each coming game's expected starters with min_games regular games behind them at the position
+    want, bad = {}, []
+    edge = lead + datetime.timedelta(seconds=60)       # built_at is to the minute: a kickoff within it may go either way
+    for r in coming.itertuples(index=False):
+        sides = ((r.home_team, r.away_team, 1), (r.away_team, r.home_team, 0))
+        lus = [lineups.get(t) for t, _, _ in sides]
+        if not all(lu and lu.get('game_id') == r.game_id and lu.get('players') for lu in lus):
+            continue                                # no lineup for a side: the build projects nobody in the game
+        for (t, o, h), lu in zip(sides, lus):
+            grp = lu.get('groups')
+            if not isinstance(grp, list) or len(grp) != len(lu['players']):
+                bad.append(f'{t}\'s lineup carries no groups')
+                continue
+            cnt = {}
+            for pid, gp in zip(lu['players'], grp):
+                cnt[gp] = cnt.get(gp, 0) + 1
+                if gp in A['starters'] and cnt[gp] <= A['starters'][gp] and n_reg.get((pid, gp), 0) >= A['min_games']:
+                    want[pid] = {'game_id': r.game_id, 'team': t, 'opp': o, 'home': h, 'group': gp, 'slot': cnt[gp],
+                                 'games': n_reg[(pid, gp)], 'mates': [p for p, q in zip(lu['players'], grp) if q == gp], '_edge': r.kick <= edge}
+    missing = sorted(p for p, w in want.items() if p not in AV and not w['_edge'])
+    extra = sorted(p for p in AV if p not in want)
+    chk(not missing and not extra, f'AVERAGES: the projected players are not the coming expected starters with {A["min_games"]} regular '
+        f'games: missing {missing[:5]}, extra {extra[:5]}')
+    tabs, rated = avg_tables_own(M, games, cache, season)
+    U = M.get('units') if (M.get('units') or {}).get('season') == season else None
+    LG = (MU.get('league') or {}).get('defs') or {}
+    ref = {'raw': {n: float(np.mean([tabs[n][t][0] for t in rated])) for n in tabs},
+           'shown': {n: float(np.mean([(tabs[n][t][1] - 1500) / 100 for t in rated])) for n in tabs},
+           'defs': {u: float(np.mean([(v[u] - 1500) / 100 for v in LG.values()])) if LG else 0.0 for u in ('DL', 'LB', 'DB')}}
+    rbad = [f'{s} {n} {REF.get(s, {}).get(n)} for {v:.6f}' for s in ('raw', 'shown', 'defs') for n, v in ref[s].items()
+            if not isinstance(REF.get(s, {}).get(n), (int, float)) or abs(REF[s][n] - v) > (1e-3 if s == 'defs' else 1e-5)]
+    chk(not rbad, f'AVERAGES: avg_ref is not the league\'s average defence as it stands: {rbad[:4]}')
+    pl = P.get('players') or {}
+    top = {x['id']: x for grp in (P.get('groups') or {}).values() for x in grp.get('top', [])}
+    prior, allowed, tgt = {}, {}, {}
+    worst = {}
+    for pid, b in AV.items():
+        w = want.get(pid)
+        if w is None:
+            continue
+        gp = b.get('group')
+        if any(b.get(k) != w[k] for k in ('game_id', 'team', 'opp', 'home', 'group', 'slot', 'games')):
+            bad.append(f'{pid} is {[b.get(k) for k in ("game_id", "team", "opp", "home", "group", "slot", "games")]}, the schedule and '
+                       f'lineup say {[w[k] for k in ("game_id", "team", "opp", "home", "group", "slot", "games")]}')
+            continue
+        legs = [(k.split('|')[1], v) for k, v in A['legs'].items() if k.split('|')[0] == gp]
+        if sorted(b.get('stats') or {}) != sorted(c for c, _ in legs):
+            bad.append(f'{pid} ({gp}) has legs {sorted(b.get("stats") or {})}, not his position\'s {sorted(c for c, _ in legs)}')
+            continue
+        if pid in pl and abs(b['R'] - pl[pid]['elo']) > 0.5 + 1e-6:
+            bad.append(f'{pid}\'s career rating {b["R"]} is not the players map\'s {pl[pid]["elo"]}')
+        mine = by_pid[pid]
+        if pid in top and isinstance(top[pid].get('raw'), (int, float)) and abs(b['RS'] - top[pid]['raw']) > 0.5 + 1e-6:
+            bad.append(f'{pid}\'s season rating {b["RS"]} is not the rankings\' {top[pid]["raw"]}')
+        elif not (mine.season == season).any() and b['RS'] != 1500:
+            bad.append(f'{pid} has no game in {season} but a season rating of {b["RS"]}')
+        lg = LG.get(b['opp']) or {}
+        if any(abs(b['D'][u] - lg.get(u, -1e9)) > 0.05 + 1e-6 for u in ('DL', 'LB', 'DB')):
+            bad.append(f'{pid}\'s opposing defenders {b["D"]} are not the league\'s {lg} for {b["opp"]}')
+        for t, e in (b.get('defs') or {}).items():
+            raw, shown = tabs[t][b['opp']]
+            if abs(e['raw'] - raw) > 1e-5 or abs(e['shown'] - shown) > 1e-3 or (U and (e['elo'] != U[t][b['opp']]['elo'] or e['rank'] != U[t][b['opp']]['rank'])):
+                bad.append(f'{pid}: {b["opp"]}\'s {t} {e} is not the gate\'s replay ({raw:.6f}, {shown:.3f}) and the tab\'s Elo and rank')
+        for t, v in (b.get('own') or {}).items():
+            if abs(v - tabs[t][b['team']][0]) > 1e-5:
+                bad.append(f'{pid}: {b["team"]}\'s own {t} {v} is not the gate\'s replay {tabs[t][b["team"]][0]:.6f}')
+        rk = None
+        if gp in AVG_RANKED:
+            for p in w['mates']:
+                if p not in tgt:
+                    x = by_pid.get(p)
+                    x = x[x.group != 'K'] if x is not None else None
+                    tgt[p] = ewm_last_own(x.targets.values, AVG_TGT_HL) if x is not None and len(x) else 0.0
+            r = sum(1 for q in set(w['mates']) if q != pid and tgt[q] > tgt[pid])
+            rk = {'rk0': float(r == 0), 'rk1': float(r == 1 and AVG_RANKED[gp] > 1)}
+            if b.get('rank_on_targets') != r + 1:
+                bad.append(f'{pid} is {b.get("rank_on_targets")} on targets among {w["mates"]}, the gate has him {r + 1}')
+        hr = mine[(mine.group == gp) & mine.reg]
+        for col, leg in legs:
+            st = b['stats'][col]
+            if (gp, col) not in prior:
+                rr = reg[reg.group == gp]
+                before = rr[rr.season < season]
+                prior[(gp, col)] = float(before[col].mean()) if len(before) else float(rr[rr.season == season][col].mean())
+            av = avg_mean_own(hr[col].values, hr.season.values, *leg['avg'], season, prior[(gp, col)])
+            if (av is None) != (st.get('avg') is None) or (av is not None and abs(st['avg'] - av) > 5e-5 + 1e-9 * abs(av)):
+                bad.append(f'{pid} {col}: his average {st.get("avg")}, the gate\'s {av}')
+            x = {'P': ((b['R'] if leg['player'] == 'R' else b['RS']) - 1500) / 100} if leg['player'] else {}
+            for t in leg['tables']:
+                raw, shown = tabs[t][b['opp']]
+                x['E:' + t] = raw if leg['scale'] == 'raw' else (shown - 1500) / 100
+            if leg['player']:
+                x['EP'] = x['E:' + leg['tables'][0]] * x['P']
+            x.update({u: (b['D'][u] - 1500) / 100 for u in ('DL', 'LB', 'DB')}, home=float(w['home']), **(rk or {}))
+            for t in leg['terms']:
+                if t.startswith('own:'):
+                    x[t] = tabs[t[4:]][b['team']][0]
+            if 'log_allowed' in leg['terms']:
+                if (gp, col) not in allowed:
+                    rr = reg[reg.group == gp].groupby(['season', 'ord', 'opponent_team'])[col].mean().reset_index()
+                    rr = rr.sort_values(['season', 'ord'], kind='mergesort')
+                    allowed[(gp, col)] = {t: ewm_last_own(v.values, AVG_ALLOWED_HL) / leg['allowed_mean'] for t, v in rr.groupby('opponent_team')[col]}
+                a = allowed[(gp, col)].get(b['opp'], 1.0)
+                if not isinstance(st.get('allowed'), (int, float)) or abs(st['allowed'] - a) > 2e-6 * max(1.0, a):
+                    bad.append(f'{pid} {col}: {b["opp"]} allowed {st.get("allowed")}, the gate {a:.6f}')
+                x['log_allowed'] = math.log(max(a, 1e-3))
+            rf = {**{'E:' + t: ref[leg['scale']][t] for t in leg['tables']}, **ref['defs']}
+            o = avg_leg_own(leg, av, x, rf)
+            # each number is written to four places (one unit in the last, as a hair either way rounds the other way);
+            # the inputs differ from the build's by the units' raw ratings written to six (a millionth of the projection
+            # at most), and the multipliers' league by its defenders written to a tenth (avg_ref)
+            near = 1e-4 + 1e-6 * o['proj']
+            for k, tol in (('proj', near), ('no_elo', near), ('elo', near), ('sd', near), ('z', 1e-4 + near / o['sd']),
+                           ('def_x', 2e-4), ('elo_x', 2e-4)):
+                miss = abs(st.get(k, float('nan')) - o[k])
+                if not miss <= tol:
+                    bad.append(f'{pid} {col}: {k} {st.get(k)}, the gate\'s {o[k]:.6f}')
+                worst[k] = max(worst.get(k, 0.0), miss / tol if miss == miss else 9.0)
+            # the breakdown agrees with the lean: the twin times the defence's and his Elo's multipliers is the projection,
+            # so the two together point the Elo part's way (the review of 29 October 2026: the old split, against a 1500
+            # player, pointed the other way on 128 trusted legs)
+            if not abs(st['no_elo'] * st['def_x'] * st['elo_x'] - st['proj']) <= 1e-3 * max(1.0, st['proj']):
+                bad.append(f'{pid} {col}: the twin {st["no_elo"]} times the multipliers is not the projection {st["proj"]}')
+            if abs(st['elo']) > 2e-3 * max(1.0, st['proj']) and (st['def_x'] * st['elo_x'] - 1) * st['elo'] <= 0:
+                bad.append(f'{pid} {col}: x{st["def_x"]} x{st["elo_x"]} points away from the Elo part {st["elo"]}')
+            if set(st) & {'player_x', 'level_x'}:
+                bad.append(f'{pid} {col}: carries the old split against a 1500 player')
+            e0 = (b.get('defs') or {}).get(leg['tables'][0]) or {}
+            if st.get('vs') != {'table': leg['tables'][0], 'elo': e0.get('elo'), 'rank': e0.get('rank')}:
+                bad.append(f'{pid} {col}: faces {st.get("vs")}, not {b["opp"]}\'s {leg["tables"][0]}')
+    chk(not bad, f'AVERAGES: {"; ".join(bad[:4])}{" ..." if len(bad) > 4 else ""} ({len(bad)})')
+    n_legs = sum(len(b.get('stats') or {}) for b in AV.values())
+    notes.append(f'averages: {len(AV)} expected starters, {n_legs} legs held on the gate\'s own reading (the largest miss '
+                 f'{max(worst.values(), default=0):.2f} of its tolerance: ' + ', '.join(f'{k} {v:.2f}' for k, v in worst.items())
+                 + f'); {sum(1 for p in AV if p not in pl)} not in the players map')
+
+
+def avg_fixture_checks():
+    """the build's ELO-ADJUSTED AVERAGES functions on invented data, against the gate's own arithmetic (AVERAGES)"""
+    A = build.ELO_AVG
+    vals = [3.0, 7.0, 0.0, 5.0, 4.0, 9.0, 2.0, 6.0]
+    seas = [2023, 2023, 2024, 2024, 2024, 2025, 2025, 2025]
+    bad = []
+    for h, k, c in ((None, 0, 1.0), (None, 8, 1.0), (20, 1, 0.5), (3, 0, 1.0), (None, 2, 0.5), (12, 0, 0.5), (40, 2, 0.5), (2, 4, 1.0)):
+        for season in (2025, 2026):
+            got, want = build.avg_value(vals, seas, h, k, c, season, 4.5), avg_mean_own(vals, seas, h, k, c, season, 4.5)
+            if abs(got - want) > 1e-12:
+                bad.append(f'({h}, {k}, {c}) in {season}: {got} for {want}')
+    chk(not bad and build.avg_value([], [], None, 0, 1.0, 2026, 4.5) is None and build.avg_value([], [], 6, 2, 0.5, 2026, 4.5) == 4.5,
+        f'AVERAGES: the build\'s average is not the gate\'s on invented games: {bad[:3]}')
+    # a regular's game: the norm's share and up, a kicker any game he kicked; a game with nothing on the sheet never
+    reg = [(v, p, build.avg_is_regular(v, p)) for p in ('QB', 'RB', 'WR', 'TE', 'K')
+           for v in (0.0, 1.0, AVG_NORM.get(p, 3) * A['regular'] - 0.01, AVG_NORM.get(p, 3) * A['regular'], 40.0)]
+    chk(all(r == (v > 0 if p == 'K' else v >= A['regular'] * AVG_NORM[p]) for v, p, r in reg),
+        f'AVERAGES: the build\'s regular game is not the gate\'s: {[x for x in reg if x[2] != (x[0] > 0 if x[1] == "K" else x[0] >= A["regular"] * AVG_NORM[x[1]])][:3]}')
+    sps = ({'dist': 'poisson'}, {'dist': 'nb', 'r': 8.4}, {'dist': 'qp', 'phi': 0.83},
+           {'dist': 'ratio', 'edges': [10.0, 20.0, 30.0, 40.0], 'rsd': [1.0, 0.8, 0.6, 0.5, 0.4]})
+    bad = [(sp['dist'], mu) for sp in sps for mu in (0.0, 0.4, 3.0, 10.0, 10.5, 20.0, 25.0, 40.0, 55.0)
+           if abs(build.avg_sd(sp, mu) - avg_sd_own(sp, mu)) > 1e-12]
+    chk(not bad, f'AVERAGES: the build\'s spread is not the gate\'s: {bad[:4]}')
+    # every leg on invented inputs: the projection, twin, Elo part, sd and the Elo part's split; the defence at the
+    # league's average multiplies by 1, and the twin times the two multipliers is the projection
+    bad = []
+    for key, leg in A['legs'].items():
+        x = {'home': 1.0, 'log_allowed': math.log(1.1), 'DL': 0.21, 'LB': -0.12, 'DB': 0.33, 'rk0': 0.0, 'rk1': 1.0}
+        for i, t in enumerate(leg['tables']):
+            x['E:' + t] = (0.31 if leg['scale'] == 'raw' else 0.42) - 0.1 * i
+        if leg['player']:
+            x['P'] = 0.71
+            x['EP'] = x['E:' + leg['tables'][0]] * x['P']
+        for t in leg['terms']:
+            if t.startswith('own:'):
+                x[t] = 0.05
+        ref = {**{'E:' + t: 0.11 for t in leg['tables']}, 'DL': 0.13, 'LB': 0.31, 'DB': 0.25}
+        for avg in (4.0, leg['eps'] / 2, None):
+            proj, proj0, part, sd, z = build.avg_project(leg, avg, x)
+            dx = build.avg_split(leg, x, ref)
+            o = avg_leg_own(leg, avg, x, ref)
+            got = {'proj': proj, 'no_elo': proj0, 'elo': part, 'sd': sd, 'z': z, 'def_x': dx, 'elo_x': proj / (proj0 * dx)}
+            bad += [f'{key} {k} {got[k]} for {o[k]}' for k in got if abs(got[k] - o[k]) > 1e-9 * max(1.0, abs(o[k]))]
+        xa = dict(x, **{t: ref[t] for t in ref if t in x})
+        if leg['player']:
+            xa['EP'] = xa['E:' + leg['tables'][0]] * xa['P']
+        if abs(build.avg_split(leg, xa, ref) - 1) > 1e-12:
+            bad.append(f'{key}: the defence at the league\'s average does not multiply by 1')
+    chk(not bad, f'AVERAGES: the build\'s leg is not the gate\'s on invented inputs: {bad[:3]}')
+    avg_log_fixture()
+    avg_week_fixture()
+
+
+def avg_log_fixture():
+    """the gate's own log in a new season's preseason (the review of 29 October 2026): the coming season's player stats
+    are not posted until its games are played, so before it is under way its missing file is no failure and the log is
+    the seasons before; once it is under way the missing file fails, as SOURCES has it"""
+    import tempfile
+    S = 2030
+    cols = ['player_id', 'position', 'game_id', 'opponent_team'] + AVG_NUM
+    g = pd.DataFrame([{'game_id': f'{S}_01_AAA_BBB', 'season': S, 'week': 1, 'game_type': 'REG', 'home_score': 20.0,
+                       'gameday': f'{S}-09-12', 'gametime': '13:00'},
+                      {'game_id': f'{S + 1}_01_AAA_BBB', 'season': S + 1, 'week': 1, 'game_type': 'REG', 'home_score': np.nan,
+                       'gameday': f'{S + 1}-09-11', 'gametime': '13:00'}])
+    before = datetime.datetime(S + 1, 9, 1, tzinfo=datetime.timezone.utc)
+    after = datetime.datetime(S + 1, 9, 20, tzinfo=datetime.timezone.utc)
+    with tempfile.TemporaryDirectory() as tmp:
+        for y in range(build.FIRST, S + 1):
+            rows = [dict({c: 0 for c in cols}, player_id='p1', position='WR', game_id=f'{S}_01_AAA_BBB', opponent_team='BBB',
+                         receptions=5, targets=7, receiving_yards=61)] if y == S else []
+            pd.DataFrame(rows, columns=cols).to_csv(os.path.join(tmp, f'stats_player_week_{y}.csv'), index=False)
+        n0 = len(fails)
+        d = avg_log(tmp, g, S + 1, before)
+        ok_pre = len(fails) == n0 and len(d) == 1 and d.receptions.iloc[0] == 5 and bool(d.reg.iloc[0])
+        del fails[n0:]
+        avg_log(tmp, g, S + 1, after)
+        ok_live = len(fails) == n0 + 1 and f'stats_player_week_{S + 1}.csv' in fails[-1]
+        del fails[n0:]
+    chk(ok_pre and ok_live, f'AVERAGES: the gate\'s own log in a new season\'s preseason: no failure before it is under way {ok_pre}, '
+                            f'a failure once it is {ok_live}')
+
+
+def avg_week_fixture():
+    """averages() on a made-up week: who it covers, the pecking order, which club's tables it reads, a quiet game
+    moving nothing, and a better defence moving the projection by exactly its coefficient"""
+    A, S = build.ELO_AVG, 2030
+    cols = build.MU_COLS + build.AVG_COLS
+    log = []
+
+    def games_of(pid, grp, team, opp, rows):
+        for i, (season, vol, stat) in enumerate(rows):
+            r = {'season': season, 'ord': i + 1, 'game_id': f'{season}_{i + 1:02d}_{team}_{opp}', 'pid': pid, 'group': grp, 'team': team,
+                 'opp': opp, 'home': 1, 'R': 1500.0, 'vol': vol, **{c: 0.0 for c in cols}}
+            r.update(stat)
+            log.append(r)
+    wr = lambda n, t: [{'targets': t, 'receptions': n, 'receiving_yards': 12.0 * n, 'receiving_tds': float(n > 5)}]
+    games_of('q1', 'QB', 'AAA', 'CCC', [(S - 1 + (i > 2), 34, {'attempts': 30, 'completions': 20 + i, 'passing_yards': 230 + 9 * i,
+                                                                  'passing_tds': i % 3, 'passing_interceptions': 1 + i % 2, 'carries': 4,
+                                                                  'rushing_yards': 15}) for i in range(5)])
+    games_of('q2', 'QB', 'BBB', 'CCC', [(S, 36, {'attempts': 32, 'completions': 22, 'passing_yards': 250, 'passing_tds': 2, 'carries': 3}) for _ in range(5)])
+    games_of('r1', 'RB', 'AAA', 'CCC', [(S, 18, {'carries': 15, 'rushing_yards': 60 + 5 * i, 'rushing_tds': i % 2, 'targets': 3,
+                                                 'receptions': 2, 'receiving_yards': 14}) for i in range(3)])
+    games_of('w1', 'WR', 'AAA', 'CCC', [(S, 7, wr(4.0 + i % 3, 7)[0]) for i in range(6)] + [(S, 2, wr(1.0, 2)[0])])
+    games_of('w2', 'WR', 'AAA', 'CCC', [(S, 9, wr(6.0, 9)[0]) for _ in range(6)])
+    games_of('w3', 'WR', 'AAA', 'CCC', [(S, 6, wr(3.0, 6)[0]) for _ in range(2)] + [(S, 3, wr(1.0, 3)[0])])
+    games_of('w4', 'WR', 'AAA', 'CCC', [(S, 5, wr(3.0, 5)[0]) for _ in range(6)])
+    games_of('t1', 'TE', 'AAA', 'CCC', [(S, 5, {'targets': 5, 'receptions': 3.0, 'receiving_yards': 33.0}) for _ in range(4)])
+    games_of('k1', 'K', 'AAA', 'CCC', [(S, 5, {'fg_att': 2, 'fg_made': 2, 'pat_att': 3, 'pat_made': 3}) for _ in range(4)])
+    games_of('x9', 'WR', 'CCC', 'BBB', [(S, 7, wr(6.0, 7)[0]) for _ in range(4)])      # what BBB has allowed: a WR's TD a game
+    parts_a = [('q1', 'QB'), ('r1', 'RB'), ('w1', 'WR'), ('w2', 'WR'), ('w3', 'WR'), ('w4', 'WR'), ('t1', 'TE'), ('k1', 'K'), ('d1', 'DL')]
+    parts_b = [('q2', 'QB'), ('k9', 'K')]
+    st_a = {'QB': 1500, 'RB': 1500, 'WR': 1500, 'TE': 1500, 'K': 1500, 'DL': 1531.0, 'LB': 1502.0, 'DB': 1488.0}
+    st_b = dict(st_a, DL=1544.0, LB=1521.0, DB=1497.0)
+    coming = [{'game_id': f'{S}_08_BBB_AAA', 'team': 'AAA', 'opp': 'BBB', 'home': 1, 'parts': parts_a, 'opp_strength': st_b, 'rating': {}},
+              {'game_id': f'{S}_08_BBB_AAA', 'team': 'BBB', 'opp': 'AAA', 'home': 0, 'parts': parts_b, 'opp_strength': st_a, 'rating': {}}]
+
+    def tables(shift=0.0):
+        out = {}
+        for n in build.unit_tables():
+            vals = {'AAA': 0.2, 'BBB': -0.3 + (shift if n == 'pass_def' else 0.0), 'CCC': 0.05}
+            m, s = float(np.mean(list(vals.values()))), float(np.std(list(vals.values())))
+            out[n] = {t: {'raw': v, 'shown': 1500 + 100 * (v - m) / s, 'elo': round(1500 + 100 * (v - m) / s), 'rank': 1, 'rated': True}
+                      for t, v in vals.items()}
+        return out
+    rating = {p: 1500.0 + 13 * i for i, p in enumerate(['q1', 'q2', 'r1', 'w1', 'w2', 'w3', 'w4', 't1', 'k1'])}
+    srating = {p: v + 40 for p, v in rating.items()}
+    defs = {'AAA': st_a, 'BBB': st_b}
+    av, ref = build.averages(log, coming, S, tables(), rating, srating, defs)
+    chk(sorted(av) == ['k1', 'q1', 'q2', 'r1', 't1', 'w1', 'w2'],
+        f'AVERAGES: on a made-up week the build projects {sorted(av)}, not the starters with {A["min_games"]} regular games (q1, q2, r1, w1, w2, t1, k1)')
+    if sorted(av) != ['k1', 'q1', 'q2', 'r1', 't1', 'w1', 'w2']:
+        return
+    chk(av['w2'].get('rank_on_targets') == 1 and av['w1'].get('rank_on_targets') == 2 and av['t1'].get('rank_on_targets') == 1,
+        f'AVERAGES: the made-up receivers are not ranked on targets (w2 1, w1 2, t1 1): {[av[p].get("rank_on_targets") for p in ("w2", "w1", "t1")]}')
+    T = tables()
+    bad = []
+    for pid, b in av.items():
+        opp, team = ('BBB', 'AAA') if b['team'] == 'AAA' else ('AAA', 'BBB')
+        if b['opp'] != opp or any(e['raw'] != T[t][opp]['raw'] for t, e in b['defs'].items()) or any(v != T[t][team]['raw'] for t, v in b['own'].items()):
+            bad.append(f'{pid} reads {b["opp"]} {b["defs"]} {b["own"]}')
+        if any(abs(b['D'][u] - (st_b if team == 'AAA' else st_a)[u]) > 1e-9 for u in ('DL', 'LB', 'DB')):
+            bad.append(f'{pid}\'s opposing defenders {b["D"]}')
+    # every leg of every player by hand: his regular games (w1's seventh, under the norm, left out), the prior by the
+    # build's rule, the opponent's tables on the leg's scale, his own Elo as the leg asks, his club's offence, the
+    # opposing defenders, home, his place on targets and what the opponent has allowed, on the gate's own arithmetic
+    stat = lambda r, col: (r['rushing_yards'] + r['receiving_yards'] if col == 'scrim_yards' else r['rushing_tds'] + r['receiving_tds']
+                           if col == 'any_td' else 3 * r['fg_made'] + r['pat_made'] if col == 'kick_pts' else r[col])
+    regular = lambda r: r['vol'] > 0 if r['group'] == 'K' else r['vol'] >= A['regular'] * AVG_NORM[r['group']]
+    tg = lambda p: ewm_last_own([r['targets'] for r in log if r['pid'] == p and r['group'] != 'K'], AVG_TGT_HL) if any(r['pid'] == p for r in log) else 0.0
+    rmean = {sc: {n: float(np.mean([v['raw'] if sc == 'raw' else (v['shown'] - 1500) / 100 for v in T[n].values()])) for n in T} for sc in ('raw', 'shown')}
+    dmean = {u: float(np.mean([(v[u] - 1500) / 100 for v in defs.values()])) for u in ('DL', 'LB', 'DB')}
+    for pid, b in av.items():
+        gp, opp, team = b['group'], b['opp'], b['team']
+        mine = [r for r in log if r['pid'] == pid and r['group'] == gp and regular(r)]
+        mates = [p for p, g in (parts_a if team == 'AAA' else parts_b) if g == gp]
+        rk = {}
+        if gp in AVG_RANKED:
+            r_ = sum(1 for q in set(mates) if q != pid and tg(q) > tg(pid))
+            rk = {'rk0': float(r_ == 0), 'rk1': float(r_ == 1 and AVG_RANKED[gp] > 1)}
+        for key, leg in A['legs'].items():
+            if key.split('|')[0] != gp:
+                continue
+            col = key.split('|')[1]
+            pos_reg = [r for r in log if r['group'] == gp and regular(r)]
+            prior = float(np.mean([stat(r, col) for r in pos_reg if r['season'] < S] or [stat(r, col) for r in pos_reg if r['season'] == S]))
+            a = avg_mean_own([stat(r, col) for r in mine], [r['season'] for r in mine], *leg['avg'], S, prior)
+            x = {'P': (((rating if leg['player'] == 'R' else srating)[pid]) - 1500) / 100} if leg['player'] else {}
+            for t in leg['tables']:
+                x['E:' + t] = T[t][opp]['raw'] if leg['scale'] == 'raw' else (T[t][opp]['shown'] - 1500) / 100
+            if leg['player']:
+                x['EP'] = x['E:' + leg['tables'][0]] * x['P']
+            x.update({u: ((st_b if team == 'AAA' else st_a)[u] - 1500) / 100 for u in ('DL', 'LB', 'DB')}, home=float(team == 'AAA'), **rk)
+            for t in leg['terms']:
+                if t.startswith('own:'):
+                    x[t] = T[t[4:]][team]['raw']
+            if 'log_allowed' in leg['terms']:
+                vs = {}
+                for r in pos_reg:
+                    if r['opp'] == opp:
+                        vs.setdefault((r['season'], r['ord']), []).append(stat(r, col))
+                al = ewm_last_own([float(np.mean(vs[k])) for k in sorted(vs)], AVG_ALLOWED_HL) / leg['allowed_mean'] if vs else 1.0
+                x['log_allowed'] = math.log(max(al, 1e-3))
+            o = avg_leg_own(leg, a, x, {**{'E:' + t: rmean[leg['scale']][t] for t in leg['tables']}, **dmean})
+            got = b['stats'].get(col)
+            if got is None:
+                bad.append(f'{pid} has no {col}, a leg of his position')
+                continue
+            near = 1e-4 + 1e-6 * o['proj']
+            if (abs(got['avg'] - a) > 1e-4 or any(abs(got[k] - o[k]) > near for k in ('proj', 'no_elo', 'elo'))
+                    or abs(got['z'] - o['z']) > 1e-4 + near / o['sd'] or any(abs(got[k] - o[k]) > 1e-4 for k in ('def_x', 'elo_x'))):
+                bad.append(f'{pid} {col}: {got} for avg {a:.4f}, proj {o["proj"]:.4f}, twin {o["no_elo"]:.4f}, z {o["z"]:.4f}')
+    # BBB has allowed a receiver a touchdown a game and no quarterback anything: the allowances over the fit's mean
+    qa = (av['q1']['stats'].get('passing_yards') or {}).get('allowed')
+    if qa != 1.0:
+        bad.append(f'q1 passing yards allowed {qa} where BBB has allowed no quarterback a game')
+    want_a = round(1.0 / A['legs']['WR|any_td']['allowed_mean'], 6)
+    wa = (av['w1']['stats'].get('any_td') or {}).get('allowed')
+    if wa != want_a:
+        bad.append(f'w1 anytime TD allowed {wa} where BBB has allowed a receiver a TD a game ({want_a})')
+    chk(not bad, f'AVERAGES: on a made-up week: {bad[:3]}')
+    # a game with nothing on the sheet (as the build never logs one, but were it there) moves nothing
+    quiet = dict(log[0], pid='w1', group='WR', ord=99, game_id=f'{S}_99_AAA_CCC', vol=0.0, **{c: 0.0 for c in cols})
+    av_q, _ = build.averages(log + [quiet], coming, S, tables(), rating, srating, defs)
+    chk(av_q == av, 'AVERAGES: a game with nothing on the sheet moves a made-up week\'s averages')
+    # a better pass defence (BBB's raw up half a standard deviation of its stats): every AAA leg facing it moves by its
+    # coefficient on the defence and the interaction at his own Elo, and nothing else moves
+    av_b, _ = build.averages(log, coming, S, tables(0.5), rating, srating, defs)
+    Tb = tables(0.5)
+    bad = []
+    for pid in ('q1', 'w1', 'w2', 't1'):
+        for col, st in av[pid]['stats'].items():
+            leg = A['legs'][f'{av[pid]["group"]}|{col}']
+            E = lambda TT: TT['pass_def']['BBB']['raw'] if leg['scale'] == 'raw' else (TT['pass_def']['BBB']['shown'] - 1500) / 100
+            w = dict(zip(leg['terms'], leg['coef']))
+            if 'E:pass_def' not in w:
+                continue
+            P = (((rating if leg['player'] == 'R' else srating)[pid]) - 1500) / 100 if leg['player'] else 0.0
+            dE = E(Tb) - E(T)
+            want = (w['E:pass_def'] + w.get('EP', 0.0) * P) * dE if leg['tables'][0] == 'pass_def' else w['E:pass_def'] * dE
+            got = math.log(av_b[pid]['stats'][col]['proj'] / st['proj'])
+            if abs(got - want) > 1.01e-4 / min(st['proj'], av_b[pid]['stats'][col]['proj']):     # each projection to four places
+                bad.append(f'{pid} {col}: moved {got:.5f}, its coefficient says {want:.5f}')
+    chk(not bad, f'AVERAGES: a better defence does not move the made-up week by its coefficient: {bad[:3]}')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--data', default=os.path.join(HERE, 'data'))
@@ -1037,6 +1600,7 @@ def main():
     unit_checks()
     unit_team_checks()
     power_fixture_checks()
+    avg_fixture_checks()
     P = load_json(os.path.join(a.data, 'players.json'))
     M = load_json(os.path.join(a.data, 'model.json'))
     MU = load_json(os.path.join(a.data, 'matchups.json')) if os.path.exists(os.path.join(a.data, 'matchups.json')) else {}
@@ -1268,6 +1832,10 @@ def main():
             bad = sorted(gone & exp)
             nm = {r.gsis_id: r.full_name for r in mine.itertuples(index=False)}
             chk(not bad, f'REPORT: {t} week {w}: expected to start though out, or out last week and not practising: {[nm.get(p, p) for p in bad]}')
+
+    # ---- AVERAGES: the Elo-adjusted averages on the gate's own reading ----
+    if MU:
+        avg_checks(MU, P, M, games, a.cache, built)
 
     # ---- CARRY ----
     prev = published('players.json', a.prev)
