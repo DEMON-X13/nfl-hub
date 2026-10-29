@@ -1656,6 +1656,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   let MU_NOW = null; if (typeof w.eloFiles === 'function') Promise.resolve(w.eloFiles()).then(F => { MU_NOW = F && F.mu || null; }, () => {});
   const money1 = v => (v < -0.0005 ? '−' : '+') + '$' + Math.abs(v).toFixed(2);
   const addName = (l, on) => `${on ? 'Remove' : 'Add'} ${l.name}, ${l.label}, ${on ? 'from' : 'to'} the builder`;
+  /* (app v139) what a Top 30 projection counts, the smoke's own copy */
+  const UNIT_OWN = { passing_yards: 'yds', rushing_yards: 'yds', receiving_yards: 'yds', scrim_yards: 'yds', receptions: 'catches', passing_tds: 'TDs', attempts: 'att', completions: 'comp', passing_interceptions: 'INTs', carries: 'carries', targets: 'targets', fg_made: 'FGs', fg_att: 'FG att', kick_pts: 'pts', any_td: 'to score' };
+  let SORT_HELD = false;
   const holdTop = (lab, u, on) => {
     const want = pbTopOwn(u, on), rows = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')], fo = fairRule(w), fmt = w.eval('fmtML'), P = w.eval('S').parlay, bad = [];
     const inB = l => { const x = P[l.key]; return !!x && x.k === l.k && x.side === l.side && !!x.main === !!l.main; };
@@ -1675,7 +1678,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
          worked at (a total on one price at its own 50%, est.: chanceOwn, no hook being set here) */
       const b = r.querySelector('button[data-pb-leg]'), cs = [...r.querySelectorAll('.pb-tc')], f = chanceOwn()(l), est = l.src === 'dkline', on2 = inB(l), grp = x.grp;
       const got = cs.map(c => txt(c.querySelector('b')) + '/' + txt(c.querySelector('small')));
-      const proj = !gameLegOwn(l) && l.mu != null && isFinite(l.mu) ? (+l.mu).toFixed(l.mu < 10 ? 1 : 0) : '–';
+      const proj = gameLegOwn(l) ? '–' : l.stat === 'any_td' ? (l.pm != null && isFinite(l.pm) ? Math.round(l.pm * 100) + '% ' + UNIT_OWN.any_td : '–') : l.mu != null && isFinite(l.mu) ? (+l.mu).toFixed(l.mu < 10 ? 1 : 0) + (UNIT_OWN[l.stat] ? ' ' + UNIT_OWN[l.stat] : '') : '–';
       const exp = [`${fmt(l.price)}${est ? ' est.' : ''}/price`, `${proj}/projected`, f ? `${(f.p * 100).toFixed(0)}%/${f.est ? 'fair, est.' : 'fair'}` : '–/no fair', `${money1(x.win)}/wins on $1`, `${money1(x.ev)}/expected on $1`];
       const marks = [...r.querySelectorAll('i.pb-valmark')];
       if (!b || b.dataset.pbLeg !== l.key || b.dataset.side !== l.side || +b.dataset.k !== +l.k || txt(r.querySelector('.pb-trk')) !== String(i + 1) || r.dataset.pbRow !== String(i + 1) || r.dataset.pbGrp !== grp
@@ -1799,6 +1802,22 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       chk(!txt(panel).includes('Game totals are never Value picks'),
         `${lab}: ${u.k.total ? 'Game total is ticked' : 'Game total is not ticked'} and the list still says a total is never a Value pick`);
       holdTop(lab, u, on);
+      /* (app v139) the Player lines: each wears its club's tag, and the sort bar sorts them by a column and back, each row
+         keeping its rank, Rank putting the list's own order back; held once, on the first list with two player lines */
+      if (!SORT_HELD) { const ol = () => panel.querySelector('ol.pb-top[data-pb-sec="player"]'), rowsP = () => ol() ? [...ol().querySelectorAll(':scope > li.pb-trow')] : [];
+        const R0 = rowsP(), top = w.eval('getPbTop()').rows.filter(l => !gameLegOwn(l));
+        if (R0.length > 1) { SORT_HELD = true; const bad = [], ranks = () => rowsP().map(r => r.dataset.pbRow).join();
+          R0.forEach((r, i) => { const l = top[i], c = r.querySelector('.nm > .ttag.pb-tteam');
+            if (!l || !c || txt(c) !== l.team || c.title !== (w.eval('TEAM_NAMES')[l.team] || l.team)) bad.push(`row ${r.dataset.pbRow} wears ${c ? txt(c) : 'no club tag'} where ${l ? l.name + ' plays for ' + l.team : 'no line ranks'}`);
+            const pj = r.querySelector('[data-pb-proj]'); if (pj && UNIT_OWN[l.stat] && !(pj.querySelector('.pb-unit') && txt(pj.querySelector('.pb-unit')) === UNIT_OWN[l.stat])) bad.push(`row ${r.dataset.pbRow}'s projection has no "${UNIT_OWN[l.stat]}"`); });
+          const base = ranks(), press = k => { const b = panel.querySelector(`.pb-tsort button[data-pb-sort="${k}"]`); if (!b) { bad.push(`no ${k} sort button`); return null; } b.click(); return panel.querySelector(`.pb-tsort button[data-pb-sort="${k}"]`); };
+          const decOf = r => w.eval('mlToDec')(+top.find(l => l.key === r.querySelector('button[data-pb-leg]').dataset.pbLeg && l.side === r.querySelector('button[data-pb-leg]').dataset.side).price);
+          for (const [k, val] of [['price', decOf], ['proj', r => { const x = r.querySelector('[data-pb-proj]'); return x ? +x.dataset.pbProj : null; }], ['ev', r => +r.querySelector('[data-pb-ev]').dataset.pbEv], ['fair', r => { const x = r.querySelector('[data-pb-fair]'); return x ? +x.dataset.pbFair : null; }]]) {
+            for (const dir of [1, -1]) { const b = press(k); if (!b) break;
+              const v = rowsP().map(val), have = v.filter(x => x != null), nl = v.indexOf(null), ok = have.every((x, i) => !i || dir * (have[i - 1] - x) >= 0) && (nl < 0 || v.slice(nl).every(x => x == null));
+              if (!ok || b.getAttribute('aria-pressed') !== 'true' || d.activeElement !== b || rowsP().length !== R0.length || ranks().split(',').sort().join() !== base.split(',').sort().join()) bad.push(`${k} ${dir > 0 ? 'highest' : 'lowest'} first: ${v.slice(0, 8).join(',')}, pressed ${b.getAttribute('aria-pressed')}, focus ${d.activeElement === b}`); } }
+          press('rank'); if (ranks() !== base) bad.push(`Rank does not put the order back: ${ranks()} where ${base}`);
+          chk(!bad.length, `${lab}: the Top 30's player lines do not wear their clubs, units and sort: ${bad.slice(0, 4).join('; ')}`); } }
       /* (app v125) with player bets ticked and no player line priced on the ticked games, the list (its note, or with no
          line at all its empty line) and every empty level say why in the page's words (its pbNoPl, worked out here:
          no player lines with the time DraftKings' lines were last read from ESPN, or that they have not been read yet;

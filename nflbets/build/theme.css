@@ -108,7 +108,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
 .pays .box.tier.med{border-color:rgba(255,209,102,.5)}
 .bigp .hero{background:linear-gradient(135deg,var(--panel-3),var(--bg-2));border-color:var(--line-2)}
 .bigp .hero span{color:var(--ink-2)} .bigp .hero small{color:var(--gold)}
-.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}
+.stake-chips button.on,.tbtn.on,.pb-tsort button.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}
 .pb-amt:hover{border-color:var(--ink-2)}
 .pb-tier.xtrm,.pb-tier.elo-xtrm{border-top-color:#B49CFF}
 .faroff{color:var(--gold)}
@@ -268,6 +268,7 @@ html[data-theme="light"]:not(.embed) body::before{opacity:.07;
 html[data-theme="light"] .brand h1 em{color:#9C6A00}
 html[data-theme="light"] nav button[aria-selected=true],
 html[data-theme="light"] .stake-chips button.on,html[data-theme="light"] .tbtn.on,
+html[data-theme="light"] .pb-tsort button.on,
 html[data-theme="light"] .pe-pos button[aria-selected="true"],html[data-theme="light"] .pe-mm-n,
 html[data-theme="light"] .seg button.on,html[data-theme="light"] .wk-chip{color:#FFFFFF}
 html[data-theme="light"] tbody tr:hover{background:rgba(30,34,48,.03)}

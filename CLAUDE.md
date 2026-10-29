@@ -3012,6 +3012,19 @@ the snapshot closed four ways opening the bubble again with the focus in it, and
 Escape and a click outside landing on the Parlay Builder with the bubble open, left by the address bringing nothing back,
 and a page opened from the Props tab keeping its Back there.
 
+**The Top 30's player lines sort, wear their club and name their units** (app v139, `patch_top_sort.py`, whose docstring
+is the design, the owner's call of 29 October 2026: "in the top player lines can you make the columns able to sort for odds
+and model estimate. also can you do a little button icon for what team the players are on. also in projected, can you add
+the qualifier"). Display only, no line, chance, price or part moving. Over the Player lines a sort bar (`div.pb-tsort`,
+`data-pb-sort`: Rank, Price, Projected, Fair, Wins, Expected; a press highest first, a second lowest first, Rank the list's
+own order back; each row keeps its rank number; `PB_TSORT`, this page load's alone, never in `S`; rows with nothing in the
+column last). Each player row wears its club's tag before his name (`pbTeamChip`, `.ttag.sl-mini.pb-tteam`, titled with
+the club). Projected says what it counts (`pbProjUnit`: "17 yds", "4.6 catches", "1.6 TDs"), and an anytime touchdown,
+a dash until then, shows the model's chance he scores, "42% to score" (`pbProjOf`, the pool copy's `pm`), information only.
+The audit's Top lines check and the nflbets smoke's `holdTop` read each projection with its unit by their own copies
+(`UNIT_AUD`, `UNIT_OWN`), and the smoke holds the club tags and the sort (each column both ways, the focus kept, Rank
+putting the order back) on the first list with two player lines.
+
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
 from its biggest edges, collected its mistakes; the 1pm Safe pair said 53% where its fair chance was
