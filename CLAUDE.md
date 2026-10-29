@@ -3024,6 +3024,14 @@ a dash until then, shows the model's chance he scores, "42% to score" (`pbProjOf
 The audit's Top lines check and the nflbets smoke's `holdTop` read each projection with its unit by their own copies
 (`UNIT_AUD`, `UNIT_OWN`), and the smoke holds the club tags and the sort (each column both ways, the focus kept, Rank
 putting the order back) on the first list with two player lines.
+**Reversed in part in app v140** (`patch_top_sort_arrows.py`, the owner's call of the same day: "I want little arrows on the
+columns to sort instead of those sort buttons. and instead of "50% to score" for a josh jacobs touchdown, i want like their
+projected touchdowns"). The sort bar is gone: over the Player lines a heading row (`div.pb-thead`, on the rows' own grid,
+the five columns 92px and the Add column 76px so each heading stands over its column; at 1100px and under one line where
+the figures sit, # beside them) has # and each column as a button (`button.pb-th[data-pb-sort]`) with its arrow
+(`.pb-tharr`: ⇅ unsorted, ▼ highest first, ▲ lowest first). A touchdown projects touchdowns, "0.69 TDs": the model's
+chance read as a Poisson count, -ln(1 - pm), as `tdPlus` prices 2+ (`pbProjOf`). The checks read the same (the smoke's
+sort check through `.pb-thead`, each arrow held).
 
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built

@@ -3226,11 +3226,12 @@ const pbMoney1=v=>(v<-0.0005?'−':'+')+'$'+Math.abs(v).toFixed(2);
 /* (app v139) what a projection counts, by its stat: "17 yds", "4.6 catches" */
 const PB_PROJ_UNIT={passing_yards:'yds',rushing_yards:'yds',receiving_yards:'yds',scrim_yards:'yds',receptions:'catches',
   passing_tds:'TDs',attempts:'att',completions:'comp',passing_interceptions:'INTs',carries:'carries',targets:'targets',
-  fg_made:'FGs',fg_att:'FG att',kick_pts:'pts',any_td:'to score'};
+  fg_made:'FGs',fg_att:'FG att',kick_pts:'pts',any_td:'TDs'};
 const pbProjUnit=stat=>PB_PROJ_UNIT[stat]||'';
-/* (app v139) a row's projection: a player's mean on his stat, or on an anytime touchdown the model's chance he scores
-   (pm, the pool copy's model chance: the figure his game page heads the touchdown with), shown as information only */
-const pbProjOf=l=>isGameLeg(l)?null:l.stat==='any_td'?(l.pm!=null&&isFinite(l.pm)?+l.pm:null):(l.mu!=null&&isFinite(l.mu)?+l.mu:null);
+/* (app v139) a row's projection: a player's mean on his stat. (app v140) On an anytime touchdown the touchdowns the
+   model expects him to score: its chance (pm, the pool copy's model chance) read as a Poisson count, -ln(1-p), as tdPlus
+   prices two or more on; information only */
+const pbProjOf=l=>isGameLeg(l)?null:l.stat==='any_td'?(l.pm!=null&&isFinite(l.pm)&&l.pm>0&&l.pm<1?-Math.log(1-l.pm):null):(l.mu!=null&&isFinite(l.mu)?+l.mu:null);
 /* (app v139) a player line's club, as the Props list draws it */
 function pbTeamChip(l){
   if(isGameLeg(l)||!l.team) return '';
@@ -3245,7 +3246,7 @@ function pbTopRow(l,i){
   const mark=pbValMark(l), td=l.stat==='any_td', proj=pbProjOf(l);
   return `<li class="pb-trow" data-pb-row="${i+1}" data-pb-grp="${pbIsValue(l)?'value':isGameLeg(l)?'game':'player'}"><span class="pb-trk">${i+1}</span>
     <span class="nm">${pbTeamChip(l)}${glanceName(l)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}</span>
-    <span class="pb-tcs"><span class="pb-tc"><b>${fmtML(l.price)}${est}</b><small>price</small></span><span class="pb-tc"><b${proj!=null?` data-pb-proj="${proj}"`:''}>${proj!=null?(td?Math.round(proj*100)+'%':num(proj,proj<10?1:0))+(pbProjUnit(l.stat)?` <span class="pb-unit">${pbProjUnit(l.stat)}</span>`:''):'–'}</b><small>projected</small></span><span class="pb-tc"><b${l.fc?` data-pb-fair="${l.fc.p}"`:''}>${l.fc?pc(l.fc.p):'–'}</b><small>${l.fc?(l.fc.est?'fair, est.':'fair'):'no fair'}</small></span><span class="pb-tc"><b data-pb-win="${l.win}">${pbMoney1(l.win)}</b><small>wins on $1</small></span><span class="pb-tc"><b data-pb-ev="${l.ev}">${pbMoney1(l.ev)}</b><small>expected on $1</small></span></span>
+    <span class="pb-tcs"><span class="pb-tc"><b>${fmtML(l.price)}${est}</b><small>price</small></span><span class="pb-tc"><b${proj!=null?` data-pb-proj="${proj}"`:''}>${proj!=null?num(proj,td?2:proj<10?1:0)+(pbProjUnit(l.stat)?` <span class="pb-unit">${pbProjUnit(l.stat)}</span>`:''):'–'}</b><small>projected</small></span><span class="pb-tc"><b${l.fc?` data-pb-fair="${l.fc.p}"`:''}>${l.fc?pc(l.fc.p):'–'}</b><small>${l.fc?(l.fc.est?'fair, est.':'fair'):'no fair'}</small></span><span class="pb-tc"><b data-pb-win="${l.win}">${pbMoney1(l.win)}</b><small>wins on $1</small></span><span class="pb-tc"><b data-pb-ev="${l.ev}">${pbMoney1(l.ev)}</b><small>expected on $1</small></span></span>
     ${pbLegAddBtn(l)}</li>`;
 }
 /* (app v139) the Player lines' sort, this page load's alone: a column and its way round (1 highest first, -1 lowest) */
@@ -3258,9 +3259,14 @@ function pbTsorted(L){
   const v=c[2], d=PB_TSORT.dir;
   return [...L].sort((a,b)=>{ const x=v(a.l), y=v(b.l); if(x==null||y==null) return (x==null)-(y==null)||a.r-b.r; return d*(y-x)||a.r-b.r; });
 }
-function pbTsortBar(){
-  return `<div class="pb-tsort" role="group" aria-label="Sort the player lines"><span class="pb-lbl">Sort</span>${PB_TSORT_COLS.map(([k,lbl])=>{ const on=PB_TSORT.k===k, ar=on&&k!=='rank'?(PB_TSORT.dir>0?' ▼':' ▲'):'';
-    return `<button type="button" class="${on?'on':''}" data-pb-sort="${k}" aria-pressed="${on}"${on&&k!=='rank'?` title="${PB_TSORT.dir>0?'Highest first: press again for lowest first':'Lowest first: press again for highest first'}"`:''}>${lbl}${ar}</button>`; }).join('')}</div>`;
+/* (app v140) the Player lines' column headings, on the rows' own grid, each column's a button with its arrow: faint both
+   ways while another column sorts, down while it sorts highest first, up lowest first; # the list's own order */
+function pbTsortHead(){
+  const btn=(k,lbl)=>{ const on=PB_TSORT.k===k, rk=k==='rank';
+    const ar=rk?'':on?(PB_TSORT.dir>0?'▼':'▲'):'⇅', way=on?(PB_TSORT.dir>0?'highest first':'lowest first'):'';
+    const say=rk?'Sort by rank, the list’s own order':`Sort by ${lbl.toLowerCase()}${on?`, ${way}: press again for ${PB_TSORT.dir>0?'lowest':'highest'} first`:''}`;
+    return `<button type="button" class="pb-th${on?' on':''}" data-pb-sort="${k}" aria-pressed="${on}" aria-label="${say}" title="${say}">${lbl}${ar?`<span class="pb-tharr" aria-hidden="true">${ar}</span>`:''}</button>`; };
+  return `<div class="pb-thead" role="group" aria-label="Sort the player lines">${btn('rank','#')}<span class="pb-thnm">Player</span><span class="pb-thcs">${PB_TSORT_COLS.filter(([k])=>k!=='rank').map(([k,lbl])=>btn(k,lbl)).join('')}</span><span class="pb-thad" aria-hidden="true"></span></div>`;
 }
 function pbPanel(){
   const u=pbUi(), w=currentWeek(), games=pbGames(), mix=pbMix(u);
@@ -3290,7 +3296,7 @@ function pbPanel(){
   const secHd=(id,title,n)=>`<h3 class="pb-topsec" data-pb-sec="${id}">${title}${n?` <span class="pill">${n}</span>`:''}</h3>`;
   const part=(id,title,L,at,aria)=>{ if(!L.length) return ''; let R=L.map((l,i)=>({l,r:at+i}));
     if(id==='player') R=pbTsorted(R);
-    return secHd(id,title,L.length)+(id==='player'&&L.length>1?pbTsortBar():'')+`<ol class="pb-top" data-pb-sec="${id}"${at?` start="${at+1}"`:''} aria-label="${aria}">${R.map(x=>pbTopRow(x.l,x.r)).join('')}</ol>`; };
+    return secHd(id,title,L.length)+(id==='player'&&L.length>1?pbTsortHead():'')+`<ol class="pb-top" data-pb-sec="${id}"${at?` start="${at+1}"`:''} aria-label="${aria}">${R.map(x=>pbTopRow(x.l,x.r)).join('')}</ol>`; };
   const s=n=>n===1?'':'s';
   const list=r.rows.length?part('value','Value picks',V,0,`The ${V.length} Value pick${s(V.length)} on your picks, by expected return on $1`)
       +part('player','Player lines',Pl,nV,`${nV?'Then ':'The '}${Pl.length} player line${s(Pl.length)} on your picks, by expected return on $1`)
