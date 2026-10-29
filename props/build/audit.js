@@ -1694,13 +1694,13 @@ setTimeout(async()=>{
           W.wording(!P.querySelector('.pb-topsub'),`${lab}: a line is drawn under a part's heading: "${(P.querySelector('.pb-topsub')||{}).textContent||''}"`);
           W.wording(!/far off the market|Loading Elo ratings|No line on your picks is a Value pick|Other lines/.test(P.textContent),`${lab}: the list still speaks of lines far off the market, Elo ratings loading, Value picks there are none of, or Other lines`); } }
       /* (app v139) the projection's unit, the audit's own copy */
-      const UNIT_AUD={passing_yards:'yds',rushing_yards:'yds',receiving_yards:'yds',scrim_yards:'yds',receptions:'catches',passing_tds:'TDs',attempts:'att',completions:'comp',passing_interceptions:'INTs',carries:'carries',targets:'targets',fg_made:'FGs',fg_att:'FG att',kick_pts:'pts',any_td:'to score'};
+      const UNIT_AUD={passing_yards:'yds',rushing_yards:'yds',receiving_yards:'yds',scrim_yards:'yds',receptions:'catches',passing_tds:'TDs',attempts:'att',completions:'comp',passing_interceptions:'INTs',carries:'carries',targets:'targets',fg_made:'FGs',fg_att:'FG att',kick_pts:'pts',any_td:'TDs'};
       want.forEach(({l,dec,win,ev,grp},i)=>{ const row=li[i]; if(!row) return; const q=s=>row.querySelector(s), f=chanceAud.statedOf(l), tx=row.textContent.replace(/\s+/g,' ');
         const tcs=[...row.querySelectorAll('.pb-tc')], priceTx=tcs[0]&&tcs[0].querySelector('b')?tcs[0].querySelector('b').textContent:'';
-        const td=l.stat==='any_td', mu=isGl(l)?null:td?(l.pm!=null&&isFinite(l.pm)?l.pm:null):(l.mu!=null&&isFinite(l.mu)?l.mu:null), pj=q('[data-pb-proj]'), pjB=tcs[1]&&tcs[1].querySelector('b');
+        const td=l.stat==='any_td', mu=isGl(l)?null:td?(l.pm!=null&&isFinite(l.pm)&&l.pm>0&&l.pm<1?-Math.log(1-l.pm):null):(l.mu!=null&&isFinite(l.mu)?l.mu:null), pj=q('[data-pb-proj]'), pjB=tcs[1]&&tcs[1].querySelector('b');
         chk(row.dataset.pbRow===String(i+1)&&(q('.pb-trk')||{}).textContent===String(i+1)&&tx.includes(l.name)&&tx.includes(l.label)
           &&priceTx===fm(l.price)+(l.src==='dkline'?' est.':'')&&!q('[data-pb-model]')
-          &&(mu!=null?(!!pj&&pj===pjB&&nrz(+pj.dataset.pbProj,mu)&&pj.textContent===(td?Math.round(mu*100)+'%':(+mu).toFixed(mu<10?1:0))+(UNIT_AUD[l.stat]?' '+UNIT_AUD[l.stat]:'')):(!pj&&!!pjB&&pjB.textContent==='–'))
+          &&(mu!=null?(!!pj&&pj===pjB&&nrz(+pj.dataset.pbProj,mu)&&pj.textContent===(+mu).toFixed(td?2:mu<10?1:0)+(UNIT_AUD[l.stat]?' '+UNIT_AUD[l.stat]:'')):(!pj&&!!pjB&&pjB.textContent==='–'))
           &&(f?(!!q('[data-pb-fair]')&&nrz(+q('[data-pb-fair]').dataset.pbFair,f.p)&&q('[data-pb-fair]').textContent===pc0(f.p)):!q('[data-pb-fair]'))
           &&nrz(+(q('[data-pb-win]')||{dataset:{}}).dataset.pbWin,win)&&(q('[data-pb-win]')||{}).textContent===m1(win)
           &&nrz(+(q('[data-pb-ev]')||{dataset:{}}).dataset.pbEv,ev)&&(q('[data-pb-ev]')||{}).textContent===m1(ev),
