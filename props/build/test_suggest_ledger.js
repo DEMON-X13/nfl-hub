@@ -256,10 +256,28 @@ const primesUnder = mv => realW.filter(g => primeAt(kOf(g, mv)));
 const slotUnder = (mv, gs = realW) => { const G = gs.map((g, i) => ({ g, i, k: kOf(g, mv) })).filter(x => slotAt(x.k)).sort((a, b) => a.k - b.k || a.i - b.i);
   if (!G.length) return null; const k = G[0].k, id = `${season}_${pad(+G[0].g.w)}_SUN`;
   return { id, games: G.map(x => x.g.id), kick: k, lock: k - LOCK, key: `${season}|${pad(+G[0].g.w)}|${iso(k)}|${id}` }; };
+/* (29 October 2026) the Elo part of a leg, the test's own reading of the matchups file the page reads (MU): the
+   Elo-adjusted averages' (avg: the Elo part's z in the leg's spread, the leg trusted where avg_fit.legs says so) where it
+   carries them, else the matchup formula's (players' stats [form, projection, nudge], fit's sd, record's past); and a
+   leg's Elo chance, DraftKings' fair chance on it moved by that z toward the side it favours (the honesty rule of app
+   v138: never the projection's own chance of the line) */
+const avgOnSL = M => !!(M && M.avg && typeof M.avg === 'object' && M.avg_fit && M.avg_fit.legs && typeof M.avg_fit.legs === 'object');
+function zOwn(M, pid, st) {
+  if (avgOnSL(M)) { const v = M.avg[pid], a = v && v.stats && v.stats[st], f = v && M.avg_fit.legs[v.group + '|' + st];
+    return a && f && f.trusted === true && a.sd > 0 && isFinite(a.z) ? a.z : null; }
+  const v = M && M.players && M.players[pid], a = v && v.stats && v.stats[st], r = v && M.record && M.record[v.group + '|' + st], q = r && r.past, f = v && M.fit && M.fit[v.group + '|' + st];
+  return a && q && q.rmse_elo < q.rmse_form && q.right_top >= 0.53 && f && f.sd > 0 ? a[2] / f.sd : null;
+}
+const erfSL = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
+const PhiSL = z => 0.5 * (1 + erfSL(z / Math.SQRT2));
+const invPhiSL = p => { let lo = -9, hi = 9; for (let i = 0; i < 90; i++) { const m = (lo + hi) / 2; if (PhiSL(m) < p) lo = m; else hi = m; } return (lo + hi) / 2; };
+const peOwn = l => { const z = zOwn(MU, l.pid, l.stat); return z == null || !(l.fair > 0 && l.fair < 1) ? null : PhiSL(invPhiSL(l.fair) + (l.side === 'under' ? -1 : 1) * z); };
 /* a set's Elo picks (since app v118): the four, each a parlay of its size on the unit's games with every leg's Elo
    chance, or why it has none. Since app v138 each leg is one the Elo matchup leans toward against DraftKings' fair chance
    on it: that fair chance 30% or more and the Elo chance above it, which the record's rounding to four places can only
-   make level (so pe at or above fair here), never a Value pick (thin null); the level marked chance 'fair' */
+   make level (so pe at or above fair here), never a Value pick (thin null); the level marked chance 'fair'. Since 29
+   October 2026 each leg's Elo chance is its fair chance moved by its Elo part in the matchups file the page reads (peOwn:
+   the Elo-adjusted averages' where it carries them), to the record's rounding (both kept to four places) */
 const eloHeld = (e, games, lab) => {
   chk(Array.isArray(e.elo) && e.elo.map(t => t.id).join() === SL.ELO_TIERS.join(), `${lab}: its Elo picks are not the four: ${JSON.stringify((e.elo || []).map(t => t.id))}`);
   for (const x of e.elo || []) {
@@ -269,6 +287,8 @@ const eloHeld = (e, games, lab) => {
     chk(x.chance === 'fair' && x.legs.every(l => typeof l.fair === 'number' && l.fair >= 0.30 && l.fair < 1 && l.pe >= l.fair),
       `${lab} ${x.id}: an Elo pick is not marked chance 'fair', or holds a leg whose fair chance is under 30% or whose Elo chance is under it: ` + JSON.stringify({ chance: x.chance, legs: x.legs.map(l => [l.pid, l.stat, l.fair, l.pe]) }));
     chk(new Set(x.legs.map(l => l.pid)).size === x.legs.length, `${lab} ${x.id}: an Elo pick takes a player twice`);
+    chk(x.legs.every(l => { const want = peOwn(l); return want != null && Math.abs(l.pe - want) <= 3e-4; }),
+      `${lab} ${x.id}: an Elo pick holds a leg whose Elo chance is not DraftKings' fair chance moved by its Elo part in the matchups file (the Elo-adjusted averages' where it carries them): ` + JSON.stringify(x.legs.map(l => [l.pid, l.stat, l.side, l.fair, l.pe, peOwn(l)])));
     chk(!x.legs.some((a, i) => x.legs.some((b, j) => j > i && opposedOwn(a, b))),
       `${lab} ${x.id}: an Elo pick holds two legs that move against each other: ` + JSON.stringify(x.legs.map(l => [l.pid, l.team, l.grp, l.stat, l.side]))); } };
 /* (the review of 27 October 2026) two legs that move against each other, the test's own reading of the correlation the

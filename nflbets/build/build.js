@@ -555,7 +555,7 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
   for (const gone of ['fetch(', 'XMLHttpRequest', 'sendBeacon', 'localStorage', 'sessionStorage', 'indexedDB', 'window.storage', 'save('])
     if (GL.includes(gone)) throw new Error('nflbets/build/glance.js has ' + gone + ': the bubble reads what the page already has and keeps nothing');
   if (!/\nwindow\.gsReadings=\{recordOf,lineOf,callsOf,chanceOf,teamsOf,unitsOf\};\n/.test(rd('nflbets', 'build', 'snapshot.html'))) throw new Error('the Game snapshot no longer hands the matchup bubble its readings (window.gsReadings)');
-  if (!ELO_JS.includes('window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,against:mmAgainst,outWhy};')) throw new Error('the Player Elo tab no longer hands the matchup bubble its readings (window.eloGlance)');
+  if (!ELO_JS.includes('window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,against:mmAgainst,outWhy,entry:muGlance};')) throw new Error('the Player Elo tab no longer hands the matchup bubble its readings (window.eloGlance)');
   for (const need of ['function glanceName(', "typeof window.hubGlance!=='function'", '${glanceName(l)}<small>', '${glanceName(l,prices[i])}'])
     if (!part3.includes(need)) throw new Error("the props parts no longer draw a leg's name as the matchup bubble's button (" + need + ')');
   out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>\n' + GL + '</script>\n</body>\n</html>\n', "the matchup bubble's script");

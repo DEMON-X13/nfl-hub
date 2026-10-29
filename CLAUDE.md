@@ -394,9 +394,11 @@ show Price · Fair · Expected; the sub-heading "Model parlays" is "Parlays", th
 chance" where they said "by the model", and the Props tab's pills are titled "The model’s side of every DraftKings main
 line, graded on lines frozen before kickoff · at −112 it needs 52.8% to break even". In `tab_elo.html` market + form is
 gone whole (`altP`, `eloAltP`, `eloAltZ`, `trackAlt` and the hidden Prop Record's card), and the builder's rows carry
-only the Elo nudge, "Elo +2.1" (`eloLeanNote`). The Elo picks are the strongest Elo leans: a candidate is a trusted leg
-priced -200 to +300 whose fair chance is 30% or more and whose Elo chance (`muP(l, fair)`, `window.eloMatchupP`: the
-fair chance moved by the matchup's nudge; `EP.vig` gone) is above it by more than 1e-6 (the normal curves' own rounding
+only the Elo nudge, "Elo +2.1" (`eloLeanNote`; since 29 October 2026 the Elo part of the Elo-adjusted average, "Elo +0.5 ·
+vs CAR Pass D #23": **Elo-adjusted averages**, under Player Elo). The Elo picks are the strongest Elo leans: a candidate is
+a trusted leg priced -200 to +300 whose fair chance is 30% or more and whose Elo chance (`muP(l, fair)`,
+`window.eloMatchupP`: the fair chance moved by the matchup's nudge, since 29 October 2026 the Elo-adjusted average's Elo
+part in its spread, `z`; `EP.vig` gone) is above it by more than 1e-6 (the normal curves' own rounding
 misses a fair chance by up to 2e-7, so a stat whose nudge is 0 leans nowhere), each player's largest lean, ranked by lean;
 a level is the first n of them that go together on one DraftKings slip (`epTake`, a greedy prefix passing over a pair
 `dkClash` refuses and, since the review of 27 October 2026, a leg that moves against one already taken by more than
@@ -1778,7 +1780,87 @@ node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures
 python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offense/Defense: refits its constants on 2012-2017 (the carry's share too); "the build carries these constants"
 python3 elo/tools/def_units_fit.py   # the same for the six position tables, Run, Pass and Pass Rush/Protection a side (their stats' constants and UNIT_TABLES); "the build carries these constants"
 python3 elo/tools/joker_base_fit.py   # after a build: the ELO Model's calls on the Joker's baseline (JOKER_BASE), fitted on 2021-2025, walk-forward on 2022-2025; "the build carries these constants"
+python3 elo/tools/elo_avg_fit.py      # only after a season ends: the Elo-adjusted averages (ELO_AVG), fitted on every expected starter's game of 2016 to the last finished season, chosen on the walk-forward of 2018 on (--offline on elo/cache); "the build carries these constants"
 ```
+
+**Elo-adjusted averages** (29 October 2026; `elo/build.py`'s ELO-ADJUSTED AVERAGES, whose docstring is the rule, and
+`elo/tools/elo_avg_fit.py` its fit; the owner's call: "i want for elo suggestions to match up certain averages vs other
+averages and adjusted for their overall elo rating. for example. Christian watson tonight projected 5 catches in the
+panthers game according to suggested parlays. But I want it calculated as to what his average catch number is, variant
+of how many catches based on what elo pass defense he was facing ... it shouldnt be 1:1 comparison it should be
+dependent on averages on the elo level they face ... there should be some level of ranking adjustment each week so that
+we get accurate estimates based on their current elo ... I want this for every single positional leg and adjustments
+done every week like the rankings"). Every leg of every expected starter (a club's charted QB1, RB1, WR1-3, TE1 and K1
+with three regular games behind him) is projected as his average (his regular games on the stat, the recent ones
+weighing more, last season's discounted, shrunk toward the position's mean where the walk-forward chose it) times a
+smooth curve in the opposing defence's table on the ELO Ratings tab (Pass Defense for catching and passing, Run Defense
+for rushing, Overall Defense for some touchdowns and the kicker) and his own Elo, log-linear with their product, never a
+1:1 difference in Elo; where the walk-forward preferred them, with the matchup formula's other terms (home, what the
+defence allowed, the opposing line's, linebackers' and secondary's player Elo, his club's offence table: a quarterback's
+passing legs, a back's rushing yards, carries, catches and touchdowns, a receiver's touchdowns, a kicker's points) or a
+wide receiver's place in his club's pecking order on targets (his catches and yards; a tight end's are without it, since
+his lineup carries one tight end and the rule's choice of it there stood on 10 fit rows of a fallen-back lineup listing
+two, which at run time moved his projection and his Elo part by a rank coefficient the ridge alone had split: the review
+of 29 October 2026). It is fitted on every
+game of an expected starter judged before kickoff, 2016-2025, his games with nothing on the stat line put back as zeros
+from nflverse's snap counts: the matchup formula, fitted on games where the player turned out to get a regular's
+workload, runs about 30% high on a receiver's and a tight end's catches and yards on those games (Christian Watson at CAR
+on 29 October 2026: the formula 4.89 catches, his average 4.58, the Elo-adjusted average 4.02). Each choice is made once
+by the nested walk-forward on 2018-2025 and frozen in `ELO_AVG` ("the build carries these constants"; refitted by hand
+only after a season ends, never on the season in play), and every build applies it on the ratings and the tables as they
+stand, so it moves week by week as the rankings do. Walk-forward 2019-2025, each season on fits of the seasons before it
+with every choice made on earlier seasons: better than his plain average on 19 of 22 legs and worse on none; better than
+the matchup formula as it is fitted on 13 of 19 and worse on none; against that formula refitted on the same rows better
+on 4, level on 10 and worse on 5, and with the formula's terms (as the legs that chose them carry) level or better on 18
+of 19. The defence's level moves a receiver's catches only about +4% against the weakest tenth of pass defences and -3%
+against the strongest, a back's rushing yards +9% and -8%; his own Elo carries more. matchups.json carries it beside the
+formula's projections: `avg` (each player's legs: `avg` his average, `proj`, `no_elo` the same leg refitted with no Elo
+terms, `elo` the Elo part, `proj` less `no_elo`, `sd` the stat's spread at the projection, `z` the Elo part in it, the Elo part's
+split `def_x` (the defence's multiplier, against the league's average defence) and `elo_x` (his Elo's, given his average:
+the rest), `no_elo` times the two being `proj`, so together they point the Elo part's way, and `vs`, the table he faces with
+its Elo and rank on the tab), `avg_ref` (the league's average defence) and `avg_fit` (`ELO_AVG` whole: each
+leg's terms, spread, record and `trusted`). The honesty rule of app v138 holds: a leg's Elo chance is DraftKings' fair
+chance moved by the Elo part alone, in `z` (`muP`, `window.eloMatchupP`), never the projection's own chance of the line,
+and its lean is that move; a leg leans only where its Elo part beat its no-Elo twin on the nested walk-forward and its
+largest fifth landed on its side more than half the time (the Elo part is the projection less its twin, never the full fit
+with its Elo terms at 0 or at their means: on the nested walk-forward that moved the no-Elo projection worse on 10 of the
+11 trusted legs (level on a quarterback's interceptions), a receiver's yards worse than not moving it, 36.13 against 35.26 and the twin's 35.01, since knowing his Elo
+a high average is worth less, which the line, knowing his average, does not price; so Jaylen Warren's rushing yards at CLE,
+an average of 79.3 his Elo does not match, lean under, −6.7, ×0.93 for his Elo given his average and ×0.98 for the CLE Run
+Defense, where the split it replaced read ×1.15 for his Elo against a 1500 player beside the same −6.7: the review of 29
+October 2026) (`trusted`, 11 of 22: a quarterback's interceptions; a back's
+rushing yards, carries and rush + rec yards; a receiver's catches, yards and touchdowns; a tight end's catches, yards and
+touchdowns; a kicker's points; DraftKings' lines reach a back's rushing yards and the receivers' and tight ends' six), so a
+leg the Elo adds nothing to (a quarterback's rushing yards, a kicker's field goals made) leans nothing. On the page
+(`nflbets/build/tab_elo.html`: `muAvgOn`, `muEntry`, `muLine`, `muNudge`, `muTrusted`) it is the one projection the Elo
+picks, a builder leg's lean and an Elo pick's leg note ("Elo +0.5 · vs CAR Pass D #23", titled with the table's whole
+name, its Elo and its rank and the part's split, "His Elo for his average (×1.13) and the CAR Pass Defense (1448, 23rd,
+×1.01) move his projection +0.5": `eloLeanNote`, `vsShort`), a player's window on the ELO tab (a row a leg: his average,
+Base, his projection with no Elo terms, the table he faces with its Elo and rank, "Pass D 1448 (#23)", ×Def and ×Elo, the
+part's split, Base times the two the projection, the projection and its Elo part, Proj less Base, faded where untrusted; a kicker's two legs, where the window said there was no matchup formula
+for kickers), the matchup bubble's trusted stats (his average and the projection, `window.eloGlance.entry`, headed Avg)
+and the Mismatches' projected line read (its Elo part, "+3.3 from the matchup", only on a trusted leg: a quarterback's
+passing yards, trusted on the formula, are not on the averages); the Mismatches' edge, units and words stay the formula's (its `players`), as do
+the game model's uses, and a player in the formula's players alone has no lean or projection on the page. A file built
+before the block (no `avg`) is read as before, the formula's nudge over its fit's sd, so an older `elo/data` never breaks
+the page. Held: `elo/check.py`'s AVERAGES (every number on its own reading of the raw files); `elo/check_tab.js`
+(`nudgeOwn`, `eloPOwn`, `noteOwn`: every trusted leg's Elo chance on the files, none on a player the block does not cover,
+each trusted leg's `z` its Elo part over its spread, every leg's split making the projection from its twin and pointing
+its Elo part's way, the Mismatches' projection and its Elo part on a trusted leg alone, the files with the block taken out
+holding the old reading on no line in the off-season, said, never failed; F1 and F2 on fixtures planted in the block and F1 again on a file from
+before it, each lean's words; a receiver's and a kicker's window row by row, and the old window on a file from before);
+the nflbets smoke (`muAvgOwn`, `muLegOwn`, `leanNoteOwn`, `muPlantOwn`, `mmSayOwn`: the Elo picks' made-up lines planted
+in the block, the builder's and an Elo pick's notes word for word, a receiver's and a kicker's window, a defensive
+lineman's "There is no matchup formula for defensive line.", the bubble's table, every Mismatches row's projection and its
+Elo part on a trusted leg alone, and each bubble's and Game snapshot Mismatches line's words for it: `mmRowOwn`); and `test_suggest_ledger.js` (each recorded Elo pick's leg
+its fair chance moved by its Elo part in the matchups file, `peOwn`, to the record's four places). Bite-tested on scratch
+copies of the tab, `elo/check_tab.js` failing each of eleven: the formula read on a file with the block, the chance moved
+by the projection less the line, every leg trusted, the twin read as the Elo part, `z` read as the raw Elo part, the note
+without its defence or ranked by its Elo, the window's average, multiplier or fading wrong, and a file from before read
+off the block alone; the nflbets smoke failing the note without its defence (11 failures, Christian Watson's Over 4.5
+receptions in CAR at GB's Elo Safe among them) and the window's player multiplier wrong (a receiver's and a kicker's);
+and `test_suggest_ledger.js` failing a page that reads the formula on a file with the block. The four page smoke cases of
+`test_audit_phases.py`, each on its own commit's `elo/data` from before the block, hold the fallback.
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
 charts, injury report, roster, play-by-play) or any past season's cannot be downloaded (after `lib/netfetch.py`'s
@@ -1968,7 +2050,9 @@ player leg in the Parlay Builder that has a real book price: the book's chance m
 player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`), shown
 beside the model's chance and graded against it, week by week, at the top of the prop
 model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`; a player out, who is kept out of the map so nothing prices him, keeps his in `past` beside it), never today's. It replaces nothing; a switch has to be earned there. (Reversed in app v138: market + form is gone whole, its card on the Prop Record with it, and a builder leg carries only the Elo nudge, "Elo +2.1": **DraftKings' chance on every leg**, under Props.) The matchup formula (`matchups.json`, in the build's docstring) projects each expected
-starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
+starter's stats from his recent form, his Elo and the Elo of the defenders he faces (since 29 October 2026 a player's
+window, a builder leg's lean, the matchup bubble, the Mismatches' projected line and the Elo picks read the Elo-adjusted
+averages instead, the Mismatches' edge staying the formula's: **Elo-adjusted averages**, above); a player's window on the tab
 shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield; what they rank is the matchup formula's units, the player ratings of the defenders he faces, and since 18 October 2026 their words say so, "vs the LAC secondary and defensive line, 32nd by player Elo" (`mmLine`, `mmTitle`, `mmAgainst`), as do a game page's MISMATCH title, the Game snapshot's Mismatches and an Elo pick's tag, since "pass defense ranked" on the page is the ELO Ratings tab's Pass Defense table alone, which can rank the same club far apart: LAC 32nd of the one for Patrick Mahomes in week 6, 4th of the other; clubs level on a unit share its rank, one more than the clubs above them, there, in a player's window and in the Game snapshot's Starters headers, since 20 October 2026, when ATL and NO, level at 1512.6 on the secondary, read 24th and 23rd on the Mismatches by the order the page first met them as opponents, and the other way round in the Starters headers, and the nflbets smoke failed every morning; and since 22 October 2026, the owner's call, "in mismatches, make clubs tied on a defense unit share the same rank in the mismatches, plaer window, and game snapshot", level is read to the hundredth, `mmKey` (`Math.round(x*100)`, in `defRanks` and the Mismatches' `rankOf`, and `snapshot.html`'s `defRank` the same), since `matchups.json` writes a unit to the tenth and a group of two units averages them, so two clubs level on paper can differ by a floating-point hair an exact comparison would part: `check_tab.js` holds it on a copy with one club's secondary a hair above another's, and the nflbets smoke's CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS RANK on fixtures of its own at any hour (a made-up game two days out between two clubs whose secondaries, and a back's unit of two averaged, are level on paper and a floating-point hair apart, each planted starter's Mismatches bubble, his window on the ELO Ratings tab and the game's Game snapshot, its Starters headers and Mismatches, ranking them by the smoke's own reading, `mmRankOwn`); on a game's page each player with a Solid, Big or Huge one wears MISMATCH beside his name in the Diamond shield's blue, `pe-mmtag`, each leg in the builder carries its Elo matchup chance, and the Elo picks
 (since app v118 each Suggested Parlays set's own, on that night game's or Sunday slot's games alone, whatever the Parlay Builder's ticks say, `window.eloUnit`, locked and recorded with the set: under "Bets and Stats: the loop", **Two sections, the Sunday slot and each set's own Elo picks**; from app v111 to v117 their own section at the foot of Suggested Parlays, `#pbElo`, on the Parlay Builder's ticked games and player sides, until then of the Parlay Builder's suggested parlays; their legs wear no Value mark, since they are chosen on the Elo matchup, not the edge: app v112) are built on it.
 From 18 October 2026 to app v138 (the owner's call of 17 October: "for the ELO picks suggestions, can we also add an aggressive
@@ -3369,7 +3453,7 @@ rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the ne
 
 ```
 node nflbets/build/build.js      # writes the page, the root's index.html
-node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 30 lines, their two parts, the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, clubs level on a unit sharing its rank, the parlay sums the same to the bit, the search's beam the same as it stood and Suggested Parlays opened without a freeze a level a step, the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
+node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 30 lines, their two parts, the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, clubs level on a unit sharing its rank, the parlay sums the same to the bit, the search's beam the same as it stood and Suggested Parlays opened without a freeze a level a step, the Elo leans, Elo picks, player window and bubble on the Elo-adjusted averages (the formula's on a file from before them), the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on the admin's browser and a visitor's, and the parlay card (the builder's and a Suggested Parlays level's, its check of DraftKings' current lines as it opens, and the admin's Pull from DraftKings on a stubbed Odds API), each boot's seeded ladder legs taken out with the builder's line; must end "0 failures"
 node nflbets/build/smoke_admin.js # the admin link and the hidden X tabs (admin.js, HUB_ADMIN, the header, Sign out, a visitor's page, the key nowhere but The Odds API's requests); must end "0 failures"
