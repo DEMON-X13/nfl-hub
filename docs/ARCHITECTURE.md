@@ -452,7 +452,10 @@ elo/
                                  the Mismatches;
                                  and the money the files feed (app v138): the Elo matchup
                                  chance on every matchup line (DraftKings' fair chance moved by
-                                 the matchup's nudge), the Elo picks the strongest leans
+                                 the matchup's nudge: since 29 October 2026 the Elo-adjusted
+                                 average's Elo part in its spread, `z`, none on a player the
+                                 block does not cover, and the formula's nudge on a file from
+                                 before it), the Elo picks the strongest leans
                                  that go together on one DraftKings slip (none refused, none
                                  moving against another by the pair table) at the builder's own sums
                                  (parlayProb, parlayDec, PB_TIERS, pbOrder loaded from the
@@ -485,6 +488,13 @@ elo/
                                  walk-forward calls and features.json, tested walk-forward on
                                  2022-2025 against each model alone; run by hand after a build;
                                  says whether the build carries it
+  tools/elo_avg_fit.py           the Elo-adjusted averages (29 October 2026, the owner's call):
+                                 every leg of every expected starter's game of 2016 to the last
+                                 finished season (his zero games put back from the snap counts),
+                                 each leg's average, table, scale, shape and variant chosen on
+                                 the walk-forward of 2018 on, its spread, its no-Elo twin and its
+                                 trust; run by hand only after a season ends (--offline on
+                                 elo/cache); says whether the build carries ELO_AVG
   tools/seed_calls.py            recovers the calls published before the ledger began, from
                                  the commits that changed data/model.json (HEAD's history, or
                                  a ref given), into history/
@@ -515,7 +525,15 @@ elo/
                                  `sources` (what each download gave)
   data/matchups.json             generated: the matchup formula per position and stat (its
                                  terms and spread), its walk-forward record, the coming week's
-                                 projections, each club's expected lineup and who is out of it
+                                 projections, each club's expected lineup and who is out of it;
+                                 since 29 October 2026 the Elo-adjusted averages beside them:
+                                 `avg` (each expected starter's legs, his average, projection,
+                                 no-Elo twin, Elo part `elo` and `z`, spread, the Elo part's
+                                 split `def_x` and `elo_x` (twin x the two = projection) and
+                                 the table he faces, `vs`), `avg_ref` and
+                                 `avg_fit` (ELO_AVG whole, each leg's `trusted`), which the
+                                 page's Elo picks, leans, player window, bubble and Mismatches'
+                                 projected line read
   data/calls.json                generated: the ledger of the ELO Model's calls as published
                                  before each kickoff (on the Joker's baseline from 19 October
                                  2026, each with its `p_joker`, `p_elo` and `m`; the season's
@@ -1026,7 +1044,11 @@ morning, and a news job publish must never turn it red (the real files are `news
 The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closure) reads
 `elo/data/players.json`, `model.json` and `matchups.json` on load and draws one card: the
 rankings by position, a bell-curve histogram by tier shield over the table, each player's
-season line. A click on a player opens his window: his rating, then his matchup this week.
+season line. A click on a player opens his window: his rating, then his matchup this week (since 29 October 2026 the
+Elo-adjusted average's breakdown, a row a leg: his average, Base (no Elo terms), the table he faces with its Elo and rank,
+the Elo part's split ×Def and ×Elo (Base times the two the projection), the projection and its Elo part, faded where
+untrusted; on a file from before the block the
+matchup formula's recent form, nudge and projection: CLAUDE.md, **Elo-adjusted averages**).
 The position row ends with the team pills, Overall Offense and Overall Defense first, which put a table of
 the 32 teams in the card's place (`units` in `model.json`): rank (the club's place on the Elo shown,
 clubs level on it sharing a rank, one more than the clubs above them, since 22 October 2026: until then a
@@ -1054,7 +1076,8 @@ defense tables and no pair says, as it did, that the opponent's rank is Overall 
 without any draws the two pills alone.
 The same script puts the Mismatches card on the Props tab (games still to kick off only) and, on a game's page,
 a MISMATCH tag beside the name of each player with a Solid, Big or Huge mismatch that week (`mmTags`), a ranked player's shield and his
-Elo matchup chance on each leg in the builder (since app v138 its nudge alone, "Elo +2.1"), until app v138 a "market + form" price on each leg with a
+Elo matchup chance on each leg in the builder (since app v138 its nudge alone, "Elo +2.1"; since 29 October 2026 the
+Elo-adjusted average's Elo part with the defence it is set against, "Elo +0.5 · vs CAR Pass D #23"), until app v138 a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
 and the Elo picks, since app v118 each Suggested Parlays set's own on its night game's or Sunday slot's games alone
 (`window.eloUnit`, drawn by the props parts with `window.eloCardOpt`, the mismatch tags put on by `eloDecorate`, no
@@ -2280,7 +2303,9 @@ break a tie of the rounded score by the parlay's summed lean (`pbLean`, `pbEval`
 (`data-legchance`) and its hero the expected return on the price it pays; a game's page states each line's chance by
 `gpChance`; `spLegOut` and `spTierOut` keep the record's `p` the model's (on `pm`) and mark each level `chance:'fair'`;
 `pbPut` writes `p = pm ?? p` into `S.parlay`. In `tab_elo.html` market + form is gone (`altP`, `eloAltP`, `eloAltZ`,
-`trackAlt`), `muP(l, fair)` moves the leg's fair chance by the matchup's nudge, `eloCands` keeps a trusted leg at a fair
+`trackAlt`), `muP(l, fair)` moves the leg's fair chance by the matchup's nudge (since 29 October 2026 the Elo-adjusted
+average's Elo part in its spread, `z`, read by `muLine` and `muNudge` off matchups.json's `avg`, the formula's on a file
+from before it), `eloCands` keeps a trusted leg at a fair
 chance of 30% or more whose Elo chance is above it by more than 1e-6 (each player's largest lean; a nudge of 0 leans
 nowhere), and `epTake` walks them by lean passing over a pair `dkClash` refuses and (the review of 27 October 2026) a
 leg that moves against one already taken (`epOpposed`: the props parts' `legRho` for the pair, the correlation

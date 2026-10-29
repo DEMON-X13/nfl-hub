@@ -29,7 +29,8 @@
    back its Run Defense, a receiver or tight end its Pass Defense, as the Game snapshot's position matchups set them:
    window.eloGlance.unit), his mismatch's grade and edge where the Props tab's Mismatches have one (matchups.json,
    window.eloMismatches; no rank of its own), the stats where the Elo part of the matchup has held up (muTrusted)
-   with his recent form and the matchup's projection, then his card (the props parts' playerCard: his projection for the
+   with his average and the projection the Elo picks read (since 29 October 2026 the Elo-adjusted averages, read through
+   window.eloGlance.entry; on a file from before them the matchup formula's recent form and projection), then his card (the props parts' playerCard: his projection for the
    game and his season week by week, app v134) and Open prop leg. His season Elo, shield and tier sit beside his name in
    the bubble's head, and a player's bubble draws no leg box (the owner's call of 24 October 2026, a screenshot of
    Darren Waller's bubble: "move up the elo button up next to the name and the ELO. remove what I crossed out", the
@@ -177,22 +178,25 @@ function playerHtml(){
   const GL=window.eloGlance||null;
   if(F&&G&&opp&&(team===G.h||team===G.a)){ let u=null; try{ u=GL&&GL.unit?GL.unit(grp,opp):null; }catch(e){ u=null; }
     if(u) lines.push(`<div data-glance-faces="${esc(u.key)}"><dt>Faces</dt><dd title="The ELO Ratings tab's ${esc(u.name)} table: ${esc(u.team)} ${esc(ordinal(u.rank))} of ${esc(u.n)}"><span data-glance-n="uclub">${tg(u.team)}</span> <span data-glance-n="unit">${esc(u.name)}</span> ranked ${N('urank',ordinal(u.rank))} <span class="glance-q">of <span data-glance-n="uof">${esc(u.n)}</span>${u.carried?` · <span data-glance-n="ucarry">carried from ${esc(u.from)}</span>`:''}</span></dd></div>`); }
-  /* his Elo matchup this week, as the ELO Ratings tab and the Mismatches have it */
+  /* his Elo matchup this week, as the ELO Ratings tab and the Mismatches have it: (29 October 2026) his projections as
+     the tab reads them (eloGlance.entry: the Elo-adjusted averages where the file carries them, else the matchup
+     formula's), and the Mismatches' entry (the formula's players), either of which puts him in this game */
   let table='';
-  const v=mu&&mu.players&&mu.players[pid]||null;
+  const v=GL&&typeof GL.entry==='function'?GL.entry(pid):(mu&&mu.players&&mu.players[pid])||null, vm=mu&&mu.players&&mu.players[pid]||null;
+  const here=x=>!!x&&x.game_id===gid;
   const ruled=typeof window.eloRuledOut==='function'&&window.eloRuledOut(pid);
   if(!F) {}
   else if(!mu) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">the matchups did not load</dd></div>`);
-  else if(!v||v.game_id!==gid) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">${v?`the matchups file has him in another game (week ${esc(mu.week)})`:`none in the matchups file for week ${esc(mu.week)}`}</dd></div>`);
+  else if(!here(v)&&!here(vm)) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">${v||vm?`the matchups file has him in another game (week ${esc(mu.week)})`:`none in the matchups file for week ${esc(mu.week)}`}</dd></div>`);
   else if(ruled) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">not expected to play</dd></div>`);
   else {
     /* the Props tab's Mismatches: its grade and edge, on the matchup formula's player ratings of the units he faces
        (its title says which); no rank of its own, so the bubble never ranks one defense twice */
     let mm=null; try{ mm=typeof window.eloMismatches==='function'?(window.eloMismatches()||[]).find(x=>x.pid===pid&&x.game_id===gid):null; }catch(e){ mm=null; }
-    if(mm&&GL&&GL.grade){ const ag=GL.against?GL.against(v.group):null;
-      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="The Props tab's Mismatches: his Elo above his position's average plus how far the ${esc(v.opp)} ${esc(ag||'defense')} stand${ag&&/ and /.test(ag)?'':'s'} below the league's, on the matchup formula's player ratings, in standard deviations">${N('mm',GL.grade(mm.score)[0])} · edge ${N('gap',mm.score.toFixed(1))} <span class="glance-q">SD</span></dd></div>`); }
-    const st=(mu.stats&&mu.stats[v.group]||Object.keys(v.stats||{})).filter(s=>v.stats&&v.stats[s]&&GL&&GL.trusted(v.group,s));
-    table=st.length?`<table class="glance-t" aria-label="His trusted stats: recent form and the Elo matchup's projection"><thead><tr><th scope="col">Stat</th><th scope="col" class="glance-n">Form</th><th scope="col" class="glance-n">Projected</th></tr></thead><tbody>${st.map(s=>{ const a=v.stats[s];
+    if(mm&&GL&&GL.grade){ const ag=GL.against?GL.against(mm.group):null;
+      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="The Props tab's Mismatches: his Elo above his position's average plus how far the ${esc(mm.opp)} ${esc(ag||'defense')} stand${ag&&/ and /.test(ag)?'':'s'} below the league's, on the matchup formula's player ratings, in standard deviations">${N('mm',GL.grade(mm.score)[0])} · edge ${N('gap',mm.score.toFixed(1))} <span class="glance-q">SD</span></dd></div>`); }
+    const pv=here(v)?v:null, st=pv?(pv.order||mu.stats&&mu.stats[pv.group]||Object.keys(pv.stats||{})).filter(s=>pv.stats&&pv.stats[s]&&GL&&GL.trusted(pv.group,s)):[];
+    table=st.length?`<table class="glance-t" aria-label="His trusted stats: ${pv.avg?'his average':'recent form'} and the Elo matchup's projection"><thead><tr><th scope="col">Stat</th><th scope="col" class="glance-n">${pv.avg?'Avg':'Form'}</th><th scope="col" class="glance-n">Projected</th></tr></thead><tbody>${st.map(s=>{ const a=pv.stats[s];
         return `<tr data-glance-stat="${esc(s)}"${L&&L.stat===s?' class="glance-on"':''}><th scope="row">${esc((GL.labels&&GL.labels[s])||s)}</th><td class="glance-n" data-glance-n="form">${esc(dec(a[0]))}</td><td class="glance-n"><span aria-hidden="true">→ </span><b data-glance-n="proj">${esc(dec(a[1]))}</b></td></tr>`; }).join('')}</tbody></table>`
       :`<p class="glance-q glance-none" data-glance-n="notrust">No trusted stats.</p>`;
   }

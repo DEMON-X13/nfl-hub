@@ -886,7 +886,9 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
    shield's blue so it stands out (white on #2563EB to #1E4FA8 is 5.2:1 and up) */
 .plrbtn .who .pe-mmtag{display:inline-block;margin-left:8px;padding:3px 9px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-family:var(--body);font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;line-height:1.3;vertical-align:2px;white-space:nowrap;box-shadow:0 0 0 1px rgba(59,130,246,.35),0 2px 6px rgba(37,99,235,.35)}
 /* (app v138) a player leg's Elo lean, in the builder and on an Elo pick: the nudge his Elo matchup gives his projection */
-.pe-lean{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
+.pe-lean{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:normal;margin-top:3px}
+/* (29 October 2026) the defence it is set against, where the matchups file names it: kept on one line, after the lean */
+.pe-lean-vs{white-space:nowrap}
 /* mismatches: five bubbles over the Props game list, the rest in a window */
 .pe-mm{margin:0 0 16px}
 .pe-mm h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -8099,7 +8101,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='b971876';
+const PAGE_HASH='4955405';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -10537,20 +10539,56 @@ function move(r){
   if(!d) return '<span class="pe-flat">–</span>';
   return d>0?`<span class="pe-up">▲${d}</span>`:`<span class="pe-down">▼${-d}</span>`;
 }
-/* ---- matchups: the coming week's projections from form, Elo and the defenders faced ----
-   elo/build.py fits, for every position and stat, a player's next game on his recent average
-   (half-life four games), home, what the defence has allowed, his own Elo and the Elo of the
-   opposing DL, LB and DB he will face, on every regular's game since 2016, and the same
-   without the two Elo terms. The difference between the two is the Elo nudge. A stat's
-   nudge is trusted when, called season by season by the fit on the seasons before, it
-   lowered the error and its biggest fifth of nudges landed on their side 53% of the time
-   or better; the others are shown faded and are not used for Elo picks. */
+/* ---- matchups: the coming week's projections ----
+   (29 October 2026) The Elo-adjusted averages (elo/build.py, ELO-ADJUSTED AVERAGES; the owner's call: "i want for elo
+   suggestions to match up certain averages vs other averages and adjusted for their overall elo rating ... it shouldnt be
+   1:1 comparison it should be dependent on averages on the elo level they face ... there should be some level of ranking
+   adjustment each week so that we get accurate estimates based on their current elo ... I want this for every single
+   positional leg"): for each expected starter (a club's charted QB1, RB1, WR1-3, TE1 and K1 with three regular games
+   behind him) and each leg of his position, his average (his regular games, the recent ones weighing more) times a smooth
+   curve in the opposing defence's table on this tab (Pass Defense for receiving and passing, Run Defense for rushing,
+   Overall Defense for some touchdowns) and his own Elo, with the matchup formula's other terms where they earned their
+   place (elo/tools/elo_avg_fit.py fits it on every expected starter's game of 2016 to the last finished season and
+   freezes it; the build applies it every run on the ratings as they stand). matchups.json's `avg` holds each player's
+   legs (avg, his average; proj; no_elo, the same leg fitted with no Elo terms; elo, the Elo part, proj less no_elo, in
+   the stat's units; sd, the stat's spread at the projection; z, the Elo part in that sd; def_x and elo_x, the Elo
+   part's split, the defence's multiplier against the league's average defence and his Elo's (given his average, the
+   rest), no_elo x def_x x elo_x = proj, so the two point the Elo part's way; vs, the table he faces, its Elo and rank), and `avg_fit.legs` each leg's fit and record: trusted where, called season by season on 2019-2025 by
+   fits on the seasons before, its Elo part lowered the miss and its largest fifth landed on its side more than half the
+   time. An untrusted leg is shown faded and leans no Elo pick. A file built before the block carries the matchup
+   formula's projections alone (players' stats [recent form, projection, nudge], fit's sd and record's past: the rule
+   until 29 October 2026, his recent average, home, what the defence allowed, his Elo and the opposing DL, LB and DB,
+   trusted where the nudge lowered the error and its biggest fifth landed 53% of the time or better) and is read as before,
+   so an older elo/data never breaks the page. The Mismatches' edge stays the formula's (its players and units). */
 const MU_LBL={passing_yards:'Pass yds',passing_tds:'Pass TD',attempts:'Att',completions:'Comp',passing_interceptions:'INT',
-  rushing_yards:'Rush yds',carries:'Carries',receptions:'Rec',receiving_yards:'Rec yds',targets:'Tgt',scrim_yards:'Rush+rec',any_td:'TDs'};
-function muTrusted(g,st){ const r=D.mu&&D.mu.record&&D.mu.record[g+'|'+st]; const p=r&&r.past;
+  rushing_yards:'Rush yds',carries:'Carries',receptions:'Rec',receiving_yards:'Rec yds',targets:'Tgt',scrim_yards:'Rush+rec',any_td:'TDs',
+  fg_made:'FG made',kick_pts:'Kick pts'};
+/* the tables a leg is set against, named as this tab names them, and in a few words */
+const VS_NAME={def:'Overall Defense',run_def:'Run Defense',pass_def:'Pass Defense'}, VS_SHORT={def:'Overall D',run_def:'Run D',pass_def:'Pass D'};
+/* the file carries the Elo-adjusted averages */
+const muAvgOn=()=>{ const M=D.mu; return !!(M&&M.avg&&typeof M.avg==='object'&&M.avg_fit&&M.avg_fit.legs&&typeof M.avg_fit.legs==='object'); };
+/* a player's projections this week: the block's entry where the file carries it, else the formula's */
+const muEntry=pid=>{ const M=D.mu; if(!M) return null; const v=muAvgOn()?M.avg[pid]:(M.players&&M.players[pid]); return v&&typeof v==='object'?v:null; };
+/* the legs of a position, in the file's order; null where it has none (a defender, or a kicker on a file from before) */
+function muStats(g){ const M=D.mu; if(!M) return null;
+  if(muAvgOn()){ const s=Object.keys(M.avg_fit.legs).filter(k=>k.split('|')[0]===g).map(k=>k.split('|')[1]); return s.length?s:null; }
+  return M.stats&&Array.isArray(M.stats[g])?M.stats[g]:null; }
+function muTrusted(g,st){
+  if(muAvgOn()){ const f=D.mu.avg_fit.legs[g+'|'+st]; return !!f&&f.trusted===true; }
+  const r=D.mu&&D.mu.record&&D.mu.record[g+'|'+st]; const p=r&&r.past;
   return !!p&&p.rmse_elo<p.rmse_form&&p.right_top>=0.53; }
-function muNudge(pid,st){ const pl=D.mu&&D.mu.players&&D.mu.players[pid]; if(!pl||!pl.stats[st]||!muTrusted(pl.group,st)) return null;
-  const f=D.mu.fit[pl.group+'|'+st]; return f?{nudge:pl.stats[st][2],sd:f.sd,proj:pl.stats[st][1],form:pl.stats[st][0]}:null; }
+/* a leg's numbers, one shape whichever file: form (his average; the formula's recent form), proj, nudge (the Elo part, in
+   the stat's units), sd, z (the nudge in that sd: the block's own, else the formula's nudge over its fit's sd), vs (the
+   table he faces; the block's alone) and the multipliers (the block's alone); v, his entry */
+function muLine(pid,st){
+  const v=muEntry(pid), a=v&&v.stats&&v.stats[st]; if(!a) return null;
+  if(muAvgOn()){ const sd=+a.sd;
+    return {form:+a.avg,proj:+a.proj,base:+a.no_elo,nudge:+a.elo,sd,z:isFinite(a.z)?+a.z:(sd>0?a.elo/sd:NaN),vs:a.vs&&typeof a.vs==='object'?a.vs:null,def_x:+a.def_x,elo_x:+a.elo_x,v}; }
+  if(!Array.isArray(a)) return null;
+  const f=D.mu.fit&&D.mu.fit[v.group+'|'+st]; if(!f) return null;
+  return {form:a[0],proj:a[1],nudge:a[2],sd:f.sd,z:a[2]/f.sd,vs:null,v}; }
+/* the Elo part on a leg the Elo picks may lean on: null where his leg's Elo part has not held up */
+function muNudge(pid,st){ const m=muLine(pid,st); if(!m||!muTrusted(m.v.group,st)) return null; return m; }
 /* who will not play. The matchups file is rebuilt from that day's roster and injury report:
    Out and Doubtful, and before a club files its statuses, anyone out at its last report who has
    not practised since (or whose club has filed nothing yet) are off its expected lineup, and
@@ -10586,8 +10624,13 @@ function defRanks(){
 }
 const UNIT_NAME={DL:'Pass rush and run front (DL)',LB:'Linebackers',DB:'Secondary'};
 /* a player's window, opened from his row in the rankings: his place this season, then the
-   coming game as the matchup formula sees it, a row a stat (faded where the Elo part has not
-   held up season by season since 2017, and not used for Elo picks) */
+   coming game, a row a leg (faded where its Elo part has not held up season by season, and not used for Elo picks):
+   since 29 October 2026 the Elo-adjusted average's breakdown, his average, the projection with no Elo terms (Base), the
+   defence's table he faces with its Elo and rank, the Elo part's split (the defence's multiplier and his Elo's, given his
+   average: Base times the two is the projection), the projection and its Elo part (Proj less Base); on a file from
+   before the block the matchup formula's recent form, nudge and projection */
+const numTxt=(x,st)=>!isFinite(x)?'–':st==='any_td'?(+x).toFixed(2):Math.abs(x)>=10?(+x).toFixed(0):(+x).toFixed(1);
+const mulTxt=x=>isFinite(x)?(+x).toFixed(2):'–';
 function playerModal(pid){
   const P=D.players, g=D.pos, r=(P.groups[g].top||[]).find(x=>x.id===pid); if(!r) return;
   let m=el('pePlModal');
@@ -10596,7 +10639,7 @@ function playerModal(pid){
     (el('tab-elo')||document.body).appendChild(m);
     m.addEventListener('click',e=>{ if(e.target===m) plClose(); });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) plClose(); }); }
-  const M=D.mu, v=M&&M.players&&M.players[pid], stats=M&&M.stats&&M.stats[g];
+  const M=D.mu, v=muEntry(pid), stats=muStats(g), avg=muAvgOn();
   const dec=x=>Math.abs(x)>=10?x.toFixed(0):x.toFixed(1);
   let mu;
   if(!stats) mu=`<p class="pe-sub">There is no matchup formula for ${esc(P.groups[g].label.toLowerCase())}.</p>`;
@@ -10605,14 +10648,26 @@ function playerModal(pid){
   else if(ruledOut(pid)) mu=`<p class="pe-sub">Ruled out for week ${esc(M.week)}.</p>`;
   else {
     const R=defRanks(), rk=u=>R[u]&&R[u][v.opp]?`${ordinal(R[u][v.opp])} of ${R.n}`:'–';
-    const rows=stats.map(st=>{ const a=v.stats[st]; if(!a) return '';
-      const [form,proj,n]=a, shown=dec(Math.abs(n)), zero=/^0(\.0)?$/.test(shown), cls=zero?'flat':(n>0?'up':'dn');
-      return `<tr class="${muTrusted(g,st)?'':'pe-weak'}"><td>${MU_LBL[st]||st}</td><td class="pe-n">${dec(form)}</td>
-        <td class="pe-n"><span class="pe-nud ${cls}" style="display:inline">${zero?'0.0':(n>0?'+':'−')+shown}</span></td><td class="pe-n"><b>${dec(proj)}</b></td></tr>`; }).join('');
+    let head, rows;
+    if(avg){
+      head=`<th>Stat</th><th class="pe-n" title="His average">Avg</th><th class="pe-n" title="His projection with no Elo terms">Base</th><th class="pe-n" title="The defence's table he faces: its Elo and rank">Vs</th><th class="pe-n" title="This defence against the league's average one">×Def</th><th class="pe-n" title="His Elo, given his average">×Elo</th><th class="pe-n" title="Base × Def × Elo">Proj</th><th class="pe-n" title="The Elo part: Proj less Base">Elo</th>`;
+      rows=stats.map(st=>{ const x=muLine(pid,st); if(!x) return '';
+        const t=eloLeanTxt(x.nudge,st), cls=/^[0.]+$/.test(t)?'flat':(x.nudge>0?'up':'dn'), q=x.vs;
+        const vs=q&&VS_SHORT[q.table]?`<span title="${esc(`${v.opp} ${VS_NAME[q.table]} ${q.elo}, ${ordinal(q.rank)}`)}">${esc(VS_SHORT[q.table])} ${esc(q.elo)} (#${esc(q.rank)})</span>`:'–';
+        return `<tr class="${muTrusted(g,st)?'':'pe-weak'}" data-pe-stat="${esc(st)}"><td>${MU_LBL[st]||esc(st)}</td><td class="pe-n">${numTxt(x.form,st)}</td><td class="pe-n">${numTxt(x.base,st)}</td><td class="pe-n">${vs}</td>
+          <td class="pe-n">${mulTxt(x.def_x)}</td><td class="pe-n">${mulTxt(x.elo_x)}</td><td class="pe-n"><b>${numTxt(x.proj,st)}</b></td>
+          <td class="pe-n"><span class="pe-nud ${cls}" style="display:inline">${t}</span></td></tr>`; }).join('');
+    } else {
+      head=`<th>Stat</th><th class="pe-n">Recent form</th><th class="pe-n">Elo matchup</th><th class="pe-n">Projection</th>`;
+      rows=stats.map(st=>{ const a=v.stats[st]; if(!a) return '';
+        const [form,proj,n]=a, shown=dec(Math.abs(n)), zero=/^0(\.0)?$/.test(shown), cls=zero?'flat':(n>0?'up':'dn');
+        return `<tr class="${muTrusted(g,st)?'':'pe-weak'}"><td>${MU_LBL[st]||st}</td><td class="pe-n">${dec(form)}</td>
+          <td class="pe-n"><span class="pe-nud ${cls}" style="display:inline">${zero?'0.0':(n>0?'+':'−')+shown}</span></td><td class="pe-n"><b>${dec(proj)}</b></td></tr>`; }).join('');
+    }
     mu=`<h3>Week ${esc(M.week)}: ${tag(v.team,true)} <span class="muted" style="font-weight:500">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</h3>
       ${gameOn(v.game_id)?`<p class="pe-sub pe-begun"><b>This game has kicked off.</b></p>`:''}
       <div class="pe-pl-def">${['DL','LB','DB'].map(u=>`<span>${UNIT_NAME[u]}: <b>${rk(u)}</b></span>`).join('')}</div>
-      <table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">Recent form</th><th class="pe-n">Elo matchup</th><th class="pe-n">Projection</th></tr></thead><tbody>${rows}</tbody></table>`;
+      <table class="pe-t"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
   }
   el('pePlView').innerHTML=`<div class="card pe-pl"><h2>${shield(r.elo)}${esc(r.name)} <span class="pill">${esc(r.pos)} · ${esc(r.team)}</span>${qTag(r)}<span style="flex:1"></span><button class="btn quiet" id="pePlClose">Close</button></h2>
     <div class="pe-pl-tiles">
@@ -10929,16 +10984,23 @@ window.eloPre=preElo;
    rating term was -0.04 +/- 0.06 against the 0.30 it used. What stays is the Elo matchup as a nudge to the projection:
    under a player leg's projection in the builder, and under each leg of an Elo pick, the nudge his own Elo against the
    defenders he faces this week gives that stat, in its own units ("Elo +2.1"), where the matchup has held up for the
-   stat (muTrusted). Information beside the projection, never a chance: nothing graded or recorded reads it */
+   stat (muTrusted). Information beside the projection, never a chance: nothing graded or recorded reads it. Since 29
+   October 2026 it is the Elo part of the Elo-adjusted average (the defence's level and his own Elo: the projection less
+   the same leg fitted with no Elo terms), and where the file names the table he faces, the note names it and its rank
+   ("Elo +0.5 · vs CAR Pass D #23"), its title the part's split, his Elo given his average and the defence, whose
+   product points the part's way (the review of 29 October 2026: a split against a 1500 player could point the other) */
 window.eloLoaded=()=>!!D.players;
 /* the nudge as the note says it: in the stat's own units to a tenth, an anytime touchdown's (in touchdowns, about 0.6 a
    standard deviation, so 0.04 leans as far as two yards of receiving) to a hundredth; signed, but a figure shown as 0
    unsigned, as the player window shows one */
 const eloLeanTxt=(v,stat)=>{ const s=Math.abs(v).toFixed(stat==='any_td'?2:1); return +s===0?s:(v>0?'+':'−')+s; };
+/* the table he faces in a few words ("vs CAR Pass D #23"), where the file names it; '' on a file from before */
+const vsShort=m=>{ const q=m&&m.vs; return q&&VS_SHORT[q.table]&&q.rank!=null&&m.v&&m.v.opp?`vs ${m.v.opp} ${VS_SHORT[q.table]} #${q.rank}`:''; };
 function eloLeanNote(l){
   const m=l&&l.pid&&l.stat?muNudge(l.pid,l.stat):null; if(!m||!isFinite(m.nudge)) return '';
-  const v=m.nudge, t=eloLeanTxt(v,l.stat);
-  return `<small class="pe-lean" data-pe-lean="${v}" title="His Elo against the defenders he faces moves his projection ${t}">Elo ${t}</small>`;
+  const v=m.nudge, t=eloLeanTxt(v,l.stat), vs=vsShort(m), q=m.vs;
+  if(!vs) return `<small class="pe-lean" data-pe-lean="${v}" title="His Elo against the defenders he faces moves his projection ${t}">Elo ${t}</small>`;
+  return `<small class="pe-lean" data-pe-lean="${v}" title="${esc(`His Elo for his average (×${mulTxt(m.elo_x)}) and the ${m.v.opp} ${VS_NAME[q.table]} (${q.elo}, ${ordinal(q.rank)}, ×${mulTxt(m.def_x)}) move his projection ${t}`)}">Elo ${t} <span class="pe-lean-vs">· ${esc(vs)}</span></small>`;
 }
 function decorateAlt(){
   if(!D.players||typeof S!=='object'||!S||!S.parlay) return;
@@ -10952,12 +11014,16 @@ function decorateAlt(){
 }
 /* ---- Elo picks: the players whose Elo matchup leans furthest their way ----
    (app v138, the owner's call of 27 October 2026: every leg at DraftKings' fair chance.) Each leg is a line DraftKings has
-   priced (a book price, or its line read on ESPN at the estimate's price) for a rated player, on a stat where the matchup
-   formula's nudge has held up season by season (muTrusted: in the October 2026 file a quarterback's passing yards,
-   passing touchdowns and completions; a back's rushing yards, carries, rush + rec yards and touchdown; a receiver's
-   catches, yards and touchdown; a tight end's yards and touchdown). Its Elo chance (muP) is DraftKings' fair chance on the
-   leg (legFair: its price with the margin out, est. where it is) moved by the nudge, his own Elo against the defenders he
-   faces this week in units of the stat's typical miss, toward the side it favours. A candidate is priced -200 to +300 (an
+   priced (a book price, or its line read on ESPN at the estimate's price) for a rated player, on a leg whose Elo part has
+   held up season by season (muTrusted: since 29 October 2026 the Elo-adjusted averages' trusted legs, of those DraftKings'
+   lines reach a back's rushing yards, a receiver's catches, yards and touchdown and a tight end's catches, yards and
+   touchdown; in the October 2026 file of the matchup formula a quarterback's passing yards, passing touchdowns and
+   completions, a back's rushing yards, carries, rush + rec yards and touchdown, a receiver's catches, yards and touchdown
+   and a tight end's yards and touchdown). Its Elo chance (muP) is DraftKings' fair chance on the leg (legFair: its price
+   with the margin out, est. where it is) moved by the nudge, the Elo part of his projection (the defence's level and his
+   own Elo; until 29 October 2026 his own Elo against the defenders he faces) in units of the stat's spread (z), toward the
+   side it favours: never the projection's own chance of the line, so the Elo moves the market's chance and nothing else
+   does. A candidate is priced -200 to +300 (an
    alt line at +1600 is where the nudge is least trustworthy), DraftKings' fair chance on it 30% or more, and its Elo
    chance above that fair chance: its lean, the Elo chance less the fair chance, clear of nothing (above 1e-6, so a stat
    whose nudge is 0 leans nowhere). One leg a player, his
@@ -10997,8 +11063,8 @@ function nq(p){ const a=[-39.69683028665376,220.9460984245205,-275.9285104469687
   const q=p-0.5, r=q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
 /* a leg's chance by the Elo matchup: DraftKings' fair chance on it (fair, legFair's p) moved by the nudge in the stat's
    typical miss toward the side it favours; null where the stat's nudge has not held up or there is no fair chance */
-function muP(l,fair){ const m=muNudge(l.pid,l.stat); if(!m||!(m.sd>0)||!(fair>0&&fair<1)) return null;
-  return ncdf(nq(fair)+(l.side==='under'?-1:1)*m.nudge/m.sd); }
+function muP(l,fair){ const m=muNudge(l.pid,l.stat); if(!m||!(m.sd>0)||!isFinite(m.z)||!(fair>0&&fair<1)) return null;
+  return ncdf(nq(fair)+(l.side==='under'?-1:1)*m.z); }
 window.eloMatchupP=muP;
 const epId=l=>l.key+'|'+l.side+'|'+l.k;
 const epCmp=(a,b)=>a<b?-1:a>b?1:0;
@@ -11187,8 +11253,12 @@ if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
    weaker of two defences shown as "ranked 2nd"): a quarterback against the
    opposing secondary and line together, a receiver or tight end against the secondary, a
    back against the line and linebackers. The top five sit over the Props game list as
-   bubbles; Show more opens the top thirty. Each carries the matchup formula's projection for
-   the player's leading stat. Only on the week the matchups are for. */
+   bubbles; Show more opens the top thirty. Each carries the projection for the player's leading
+   stat, the one the Elo picks read (muLine: since 29 October 2026 the Elo-adjusted average and its
+   Elo part, none where the file has no such projection of his; on a file from before, the matchup
+   formula's), and its Elo part ("+3.3 from the matchup") only where it is trusted, as everywhere else
+   on the page (muTrusted: the review of 29 October 2026, a QB's passing yards untrusted on the
+   averages). Only on the week the matchups are for. */
 const MM_UNIT={QB:{units:['DB','DL']},WR:{units:['DB']},TE:{units:['DB']},RB:{units:['DL','LB']}};
 /* how big an edge is, in words and a colour: 3 and up huge, 2 big, 1 solid, less slight */
 const mmGrade=s=>{const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4']:x>=2?['Big','pe-g3']:x>=1?['Solid','pe-g2']:['Slight','pe-g1'];};
@@ -11214,8 +11284,8 @@ function mismatches(){
   const rankOf={}; for(const g of Object.keys(MM_UNIT)){ const vals=Object.entries(byTeam).map(([t,d])=>[t,MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length]);
     rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t,x])=>[t,1+vals.filter(([,y])=>mmKey(y)>mmKey(x)).length]))}; }
   return P.filter(v=>pz[v.group]).map(v=>{ const d=unitOf(v), a=pz[v.group](v.elo), b=dz[v.group](d);
-      const lead=MM_LEAD[v.group], st=v.stats&&v.stats[lead];
-      return {...v,unit:Math.round(d),against:mmAgainst(v.group),defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:st?st[1]:null,nudge:st?st[2]:null}; })
+      const lead=MM_LEAD[v.group], x=muLine(v.pid,lead), ok=!!x&&isFinite(x.proj), tr=ok&&muTrusted(x.v.group,lead);
+      return {...v,unit:Math.round(d),against:mmAgainst(v.group),defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:ok?x.proj:null,nudge:tr&&isFinite(x.nudge)?x.nudge:null}; })
     .filter(v=>v.zp>0&&v.zd<0).sort((x,y)=>y.score-x.score);
 }
 const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
@@ -11253,7 +11323,7 @@ function mismatchCard(){
       <div class="pe-mm-top">${seOf(v.pid)!=null?`<span class="pe-mm-sh" title="${esc(tierName(seOf(v.pid)))} · this season">${shield(seOf(v.pid))}</span>`:''}<span class="pe-mm-nm">${esc(mmName(v.pid))}<small>(${esc(v.group)})</small></span></div>
       <div class="pe-mm-vs">${tag(v.team,true)}<span>${v.home?'vs':'at'}</span>${tag(v.opp,true)}</div>
       <div class="pe-mm-score"><b class="${mmGrade(v.score)[1]}" title="${mmGrade(v.score)[0]} edge">${v.score.toFixed(1)}</b><span class="pe-mm-bar"><i style="width:${Math.max(6,Math.round(100*v.score/max))}%"></i></span></div>
-      <div class="pe-mm-sub">${mmLine(v)}.<br>${mmProj(v)}.</div></button>`;
+      <div class="pe-mm-sub">${mmLine(v)}.${mmProj(v)?`<br>${mmProj(v)}.`:''}</div></button>`;
   /* until a club files its game statuses, who starts is the build's reading of the practice
      reports (a player out last week who has not practised since is counted out): the count alone
      says so (22 October 2026, the owner's call: no descriptions; the card's tagline went with it) */
@@ -11323,7 +11393,13 @@ function unitFaced(group,opp){
 /* what the Mismatches' edge sets a player against: the matchups file's player ratings of the opponent's units */
 const MM_WORDS={DB:'secondary',DL:'defensive line',LB:'linebackers'};
 const mmAgainst=g=>MM_UNIT[g]?MM_UNIT[g].units.map(u=>MM_WORDS[u]||u).join(' and '):null;
-window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,against:mmAgainst,outWhy};
+/* (29 October 2026) and a player's projections as this tab reads them, one shape whichever file (muLine): his entry's
+   group, game, club and opponent, whether they are the Elo-adjusted averages (avg), his position's legs in the file's
+   order and each leg's [his average or recent form, projection, Elo part]; null where the file has none of his */
+function muGlance(pid){ const v=muEntry(pid); if(!v) return null; const order=muStats(v.group)||Object.keys(v.stats||{}), stats={};
+  for(const st of order){ const x=muLine(pid,st); if(x&&isFinite(x.form)&&isFinite(x.proj)) stats[st]=[x.form,x.proj,x.nudge]; }
+  return {group:v.group,game_id:v.game_id,team:v.team,opp:v.opp,avg:muAvgOn(),order,stats}; }
+window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,against:mmAgainst,outWhy,entry:muGlance};
 if(typeof renderSlate==='function'){ const drawSlate=renderSlate;
   renderSlate=function(){ const r=drawSlate.apply(this,arguments); try{ mismatchCard(); }catch(e){} return r; }; }
 if(typeof renderGame==='function'){ const drawGame=renderGame;
@@ -12540,7 +12616,8 @@ document.addEventListener('app-ready',()=>{ if(cur) redraw(); });
    back its Run Defense, a receiver or tight end its Pass Defense, as the Game snapshot's position matchups set them:
    window.eloGlance.unit), his mismatch's grade and edge where the Props tab's Mismatches have one (matchups.json,
    window.eloMismatches; no rank of its own), the stats where the Elo part of the matchup has held up (muTrusted)
-   with his recent form and the matchup's projection, then his card (the props parts' playerCard: his projection for the
+   with his average and the projection the Elo picks read (since 29 October 2026 the Elo-adjusted averages, read through
+   window.eloGlance.entry; on a file from before them the matchup formula's recent form and projection), then his card (the props parts' playerCard: his projection for the
    game and his season week by week, app v134) and Open prop leg. His season Elo, shield and tier sit beside his name in
    the bubble's head, and a player's bubble draws no leg box (the owner's call of 24 October 2026, a screenshot of
    Darren Waller's bubble: "move up the elo button up next to the name and the ELO. remove what I crossed out", the
@@ -12688,22 +12765,25 @@ function playerHtml(){
   const GL=window.eloGlance||null;
   if(F&&G&&opp&&(team===G.h||team===G.a)){ let u=null; try{ u=GL&&GL.unit?GL.unit(grp,opp):null; }catch(e){ u=null; }
     if(u) lines.push(`<div data-glance-faces="${esc(u.key)}"><dt>Faces</dt><dd title="The ELO Ratings tab's ${esc(u.name)} table: ${esc(u.team)} ${esc(ordinal(u.rank))} of ${esc(u.n)}"><span data-glance-n="uclub">${tg(u.team)}</span> <span data-glance-n="unit">${esc(u.name)}</span> ranked ${N('urank',ordinal(u.rank))} <span class="glance-q">of <span data-glance-n="uof">${esc(u.n)}</span>${u.carried?` · <span data-glance-n="ucarry">carried from ${esc(u.from)}</span>`:''}</span></dd></div>`); }
-  /* his Elo matchup this week, as the ELO Ratings tab and the Mismatches have it */
+  /* his Elo matchup this week, as the ELO Ratings tab and the Mismatches have it: (29 October 2026) his projections as
+     the tab reads them (eloGlance.entry: the Elo-adjusted averages where the file carries them, else the matchup
+     formula's), and the Mismatches' entry (the formula's players), either of which puts him in this game */
   let table='';
-  const v=mu&&mu.players&&mu.players[pid]||null;
+  const v=GL&&typeof GL.entry==='function'?GL.entry(pid):(mu&&mu.players&&mu.players[pid])||null, vm=mu&&mu.players&&mu.players[pid]||null;
+  const here=x=>!!x&&x.game_id===gid;
   const ruled=typeof window.eloRuledOut==='function'&&window.eloRuledOut(pid);
   if(!F) {}
   else if(!mu) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">the matchups did not load</dd></div>`);
-  else if(!v||v.game_id!==gid) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">${v?`the matchups file has him in another game (week ${esc(mu.week)})`:`none in the matchups file for week ${esc(mu.week)}`}</dd></div>`);
+  else if(!here(v)&&!here(vm)) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">${v||vm?`the matchups file has him in another game (week ${esc(mu.week)})`:`none in the matchups file for week ${esc(mu.week)}`}</dd></div>`);
   else if(ruled) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">not expected to play</dd></div>`);
   else {
     /* the Props tab's Mismatches: its grade and edge, on the matchup formula's player ratings of the units he faces
        (its title says which); no rank of its own, so the bubble never ranks one defense twice */
     let mm=null; try{ mm=typeof window.eloMismatches==='function'?(window.eloMismatches()||[]).find(x=>x.pid===pid&&x.game_id===gid):null; }catch(e){ mm=null; }
-    if(mm&&GL&&GL.grade){ const ag=GL.against?GL.against(v.group):null;
-      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="The Props tab's Mismatches: his Elo above his position's average plus how far the ${esc(v.opp)} ${esc(ag||'defense')} stand${ag&&/ and /.test(ag)?'':'s'} below the league's, on the matchup formula's player ratings, in standard deviations">${N('mm',GL.grade(mm.score)[0])} · edge ${N('gap',mm.score.toFixed(1))} <span class="glance-q">SD</span></dd></div>`); }
-    const st=(mu.stats&&mu.stats[v.group]||Object.keys(v.stats||{})).filter(s=>v.stats&&v.stats[s]&&GL&&GL.trusted(v.group,s));
-    table=st.length?`<table class="glance-t" aria-label="His trusted stats: recent form and the Elo matchup's projection"><thead><tr><th scope="col">Stat</th><th scope="col" class="glance-n">Form</th><th scope="col" class="glance-n">Projected</th></tr></thead><tbody>${st.map(s=>{ const a=v.stats[s];
+    if(mm&&GL&&GL.grade){ const ag=GL.against?GL.against(mm.group):null;
+      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="The Props tab's Mismatches: his Elo above his position's average plus how far the ${esc(mm.opp)} ${esc(ag||'defense')} stand${ag&&/ and /.test(ag)?'':'s'} below the league's, on the matchup formula's player ratings, in standard deviations">${N('mm',GL.grade(mm.score)[0])} · edge ${N('gap',mm.score.toFixed(1))} <span class="glance-q">SD</span></dd></div>`); }
+    const pv=here(v)?v:null, st=pv?(pv.order||mu.stats&&mu.stats[pv.group]||Object.keys(pv.stats||{})).filter(s=>pv.stats&&pv.stats[s]&&GL&&GL.trusted(pv.group,s)):[];
+    table=st.length?`<table class="glance-t" aria-label="His trusted stats: ${pv.avg?'his average':'recent form'} and the Elo matchup's projection"><thead><tr><th scope="col">Stat</th><th scope="col" class="glance-n">${pv.avg?'Avg':'Form'}</th><th scope="col" class="glance-n">Projected</th></tr></thead><tbody>${st.map(s=>{ const a=pv.stats[s];
         return `<tr data-glance-stat="${esc(s)}"${L&&L.stat===s?' class="glance-on"':''}><th scope="row">${esc((GL.labels&&GL.labels[s])||s)}</th><td class="glance-n" data-glance-n="form">${esc(dec(a[0]))}</td><td class="glance-n"><span aria-hidden="true">→ </span><b data-glance-n="proj">${esc(dec(a[1]))}</b></td></tr>`; }).join('')}</tbody></table>`
       :`<p class="glance-q glance-none" data-glance-n="notrust">No trusted stats.</p>`;
   }

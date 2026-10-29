@@ -35,6 +35,10 @@
  * retired layers left loses none of its own data, and on the admin's shows exactly the files.
  * Since app v125 the payload carries the props job's own read of DraftKings' lines on ESPN (PAY.espn),
  * which every check here that plants lines or a read on a real game sets aside first.
+ * Since 29 October 2026 the Elo matchup the page reads is the Elo-adjusted averages' (matchups.json's avg and
+ * avg_fit) where the file carries them, else the matchup formula's: every Elo lean, Elo pick, player window and
+ * bubble table here is held on the smoke's own reading of whichever the file carries (muLegOwn, leanNoteOwn), and
+ * every nudge it plants goes where the page reads it (muPlantOwn).
  * The news job's files the Game snapshot reads (news/data/units.json and the week's notes; stats.json
  * no more since the Stat breakdown went, 16 October 2026) are never the real ones here: every run answers them with a 404 unless it is handed stand-ins of
  * the smoke's own, since the elo job runs this smoke every morning and a news job publish must never
@@ -136,6 +140,46 @@ const cardReads = (urls, legs, started) => { const gids = [...new Set(legs.map(l
 /* the betting app's own key and season: the X Bet Log is that season's */
 const { BET_KEY, SEASON: BET_SEASON } = require(path.join(ROOT, 'betting', 'tools', 'build.js'));
 const ELO_M = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
+/* (29 October 2026) the Elo part of a player's projection, the smoke's own reading of a matchups file M: the Elo-adjusted
+   averages (elo/build.py, ELO-ADJUSTED AVERAGES: `avg`, each expected starter's legs with the Elo part `elo` in the stat's
+   units, `z` in its spread at the projection and the table he faces `vs`; a leg trusted where `avg_fit.legs` says its Elo
+   part held up) where the file carries them, else the matchup formula's (players' stats [recent form, projection, nudge],
+   fit's sd, record's past), which the page reads as before on a file built before the block */
+const muAvgOwn = M => !!(M && M.avg && typeof M.avg === 'object' && M.avg_fit && M.avg_fit.legs && typeof M.avg_fit.legs === 'object');
+const muEntriesOwn = M => (muAvgOwn(M) ? M.avg : M && M.players) || {};
+const muEntryOwn = (M, pid) => muEntriesOwn(M)[pid] || null;
+const muTrustOwn = (M, g, st) => { if (muAvgOwn(M)) { const f = M.avg_fit.legs[g + '|' + st]; return !!f && f.trusted === true; }
+  const q = ((M && M.record && M.record[g + '|' + st]) || {}).past; return !!q && q.rmse_elo < q.rmse_form && q.right_top >= 0.53; };
+/* a leg's [his average or recent form, projection, Elo part], whichever the file carries */
+const muRowOwn = (M, pid, st) => { const v = muEntryOwn(M, pid), a = v && v.stats && v.stats[st]; if (!a) return null; return Array.isArray(a) ? a : [a.avg, a.proj, a.elo]; };
+/* the Elo part on a leg the Elo picks may lean on: {n, in the stat's units; z, in its spread; v, his entry; vs, the table he
+   faces (the block's alone)}; null on an untrusted leg, or with no projection of his on it */
+const muLegOwn = (M, pid, st) => { const v = muEntryOwn(M, pid), a = v && v.stats && v.stats[st]; if (!a || !muTrustOwn(M, v.group, st)) return null;
+  if (muAvgOwn(M)) return a.sd > 0 && isFinite(a.elo) && isFinite(a.z) ? { n: a.elo, z: a.z, v, vs: a.vs || null } : null;
+  const f = M.fit && M.fit[v.group + '|' + st]; return f && f.sd > 0 && isFinite(a[2]) ? { n: a[2], z: a[2] / f.sd, v, vs: null } : null; };
+/* a planted Elo part, z in the leg's spread, on a file the page holds, whichever its shape (the leg must be his) */
+const muPlantOwn = (M, pid, st, z) => { if (muAvgOwn(M)) { const a = M.avg[pid].stats[st]; a.z = z; a.elo = z * a.sd; }
+  else { const v = M.players[pid]; v.stats[st][2] = z * M.fit[v.group + '|' + st].sd; } };
+/* a player's entries in both maps, kept as text and put back (into the page's own realm, J its JSON) */
+const muKeepOwn = (M, pid) => JSON.stringify({ p: M.players && M.players[pid] !== undefined ? M.players[pid] : null, a: M.avg && M.avg[pid] !== undefined ? M.avg[pid] : null });
+const muBackOwn = (M, pid, k, J) => { const o = J.parse(k);
+  if (M.players) { if (o.p === null) delete M.players[pid]; else M.players[pid] = o.p; }
+  if (M.avg) { if (o.a === null) delete M.avg[pid]; else M.avg[pid] = o.a; } };
+/* an Elo lean as the builder and an Elo pick say it (app v138, the review of 27 October 2026): a tenth in the stat's own
+   units, an anytime touchdown's a hundredth, signed but a figure shown as 0 unsigned; since 29 October 2026, where the file
+   names the table he faces, that table in a few words and its rank on the ELO tab after it ("Elo +0.5 · vs CAR Pass D
+   #23"), titled with its whole name, Elo and rank; {n, the Elo part; t, the note's text; title}, null with no trusted lean */
+const leanTxtOwn = (v, stat) => { const sh = Math.abs(v).toFixed(stat === 'any_td' ? 2 : 1); return +sh === 0 ? sh : (v > 0 ? '+' : '−') + sh; };
+const VS_NAME_OWN = { def: 'Overall Defense', run_def: 'Run Defense', pass_def: 'Pass Defense' }, VS_SHORT_OWN = { def: 'Overall D', run_def: 'Run D', pass_def: 'Pass D' };
+const ordS = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
+/* (the review of 29 October 2026) the title gives the Elo part's split, his Elo given his average and the defence, the
+   file's elo_x and def_x to a hundredth, whose product points the part's way */
+const mulOwnS = x => isFinite(x) ? (+x).toFixed(2) : '–';
+const leanNoteOwn = (M, pid, st) => { const m = muLegOwn(M, pid, st); if (!m) return null;
+  const t = leanTxtOwn(m.n, st), q = m.vs, vs = q && VS_SHORT_OWN[q.table] && q.rank != null && m.v.opp ? `vs ${m.v.opp} ${VS_SHORT_OWN[q.table]} #${q.rank}` : '';
+  const a = m.v.stats[st];
+  return { n: m.n, t: `Elo ${t}${vs ? ' · ' + vs : ''}`, vs,
+    title: vs ? `His Elo for his average (×${mulOwnS(a.elo_x)}) and the ${m.v.opp} ${VS_NAME_OWN[q.table]} (${q.elo}, ${ordS(q.rank)}, ×${mulOwnS(a.def_x)}) move his projection ${t}` : `His Elo against the defenders he faces moves his projection ${t}` }; };
 /* the matchups as published, except in a thin week (a lone Monday game has one or two players
    whose nudge clears the Elo picks' bar): then six rated players' strongest trusted nudges are
    raised to clear it, in this copy only, so the Elo picks checks (six candidates, for the four
@@ -151,14 +195,15 @@ const ELO_MU = (() => {
     for (const [t, lu] of Object.entries(M.lineups || {})) if ((lu.players || []).some(pid => (M.q || {})[pid])) has[sideOf(t, lu)] = true;
     for (const [t, lu] of Object.entries(M.lineups || {})) { const sd = sideOf(t, lu);
       if (sd && !has[sd] && (lu.players || []).length) { M.q = M.q || {}; M.q[lu.players[0]] = "questionable (the smoke's own: no starter on this side was)"; planted = true; } } }
-  const ok = (g, st) => { const q = ((M.record[g + '|' + st] || {}).past); return !!q && q.rmse_elo < q.rmse_form && q.right_top >= 0.53; };
+  /* (29 October 2026) each player's trusted legs in the Elo-adjusted averages where the file carries them (muLegOwn), the
+     matchup formula's nudges on a file from before */
   const best = {}, rated = JSON.parse(ELO_P).players || {};
-  for (const [pid, v] of Object.entries(M.players || {})) for (const [st, a] of Object.entries(v.stats)) {
-    if (!ok(v.group, st) || !rated[pid]) continue; const z = a[2] / M.fit[v.group + '|' + st].sd;
-    if (!best[pid] || z > best[pid].z) best[pid] = { pid, st, z }; }
+  for (const [pid, v] of Object.entries(muEntriesOwn(M))) for (const st of Object.keys(v.stats || {})) {
+    const m = rated[pid] ? muLegOwn(M, pid, st) : null; if (!m) continue;
+    if (!best[pid] || m.z > best[pid].z) best[pid] = { pid, st, z: m.z }; }
   const top = Object.values(best).sort((x, y) => y.z - x.z);
   if (top.filter(x => x.z >= 0.12).length >= 6) return planted ? JSON.stringify(M) : raw;
-  for (const x of top.slice(0, 6)) { const v = M.players[x.pid]; v.stats[x.st][2] = Math.max(v.stats[x.st][2], 0.2 * M.fit[v.group + '|' + x.st].sd); }
+  for (const x of top.slice(0, 6)) muPlantOwn(M, x.pid, x.st, Math.max(x.z, 0.2));
   return JSON.stringify(M);
 })();
 
@@ -305,10 +350,8 @@ function shiftClock(w) {
 }
 if (PAGE_SHIFT_MS) console.log(`the page's week ${PAGE_WEEK} has no game still to kick off: the page is run as at ${new Date(Date.now() - PAGE_SHIFT_MS).toISOString()}, two days before its last kickoff`);
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
-/* (app v138, the review of 27 October 2026) an Elo lean as the builder and an Elo pick say it, the smoke's own reading: a
-   tenth in the stat's own units, an anytime touchdown's (in touchdowns) a hundredth, signed but a figure shown as 0
-   unsigned */
-const leanTxtOwn = (v, stat) => { const sh = Math.abs(v).toFixed(stat === 'any_td' ? 2 : 1); return +sh === 0 ? sh : (v > 0 ? '+' : '−') + sh; };
+/* (app v138, the review of 27 October 2026) an Elo lean as the builder and an Elo pick say it: leanTxtOwn and
+   leanNoteOwn, with the matchups' readers above */
 /* a dollar figure to the cent with its thousands marked, and an amount as a tier names it ("$35",
    "$12.50"), worked here rather than by the page's own helpers */
 const money = v => '$' + (+v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -777,6 +820,19 @@ function dkFixture(legs, read, tag) {
    the ELO Ratings tab's tables alone (18 October 2026: an Elo pick's tag said "a pass defense ranked 20th" beside a
    bubble whose Faces line said the same club's Pass Defense was 12th) */
 const MM_AGAINST_OWN = { QB: 'secondary and defensive line', WR: 'secondary', TE: 'secondary', RB: 'defensive line and linebackers' };
+/* (the review of 29 October 2026) what a Mismatches row says of its projection, the smoke's own reading of a matchups file
+   M: his lead stat's projection as the Elo picks read it (the Elo-adjusted average where the file carries his, else the
+   matchup formula's where its fit has the leg), and its Elo part ("+3.3 from the matchup") only on a trusted leg, as
+   everywhere else on the page (a QB's passing yards are untrusted on the averages); '' with no projection of his. The
+   Props tab's bubble and the Game snapshot's Mismatches line each end with it, or say no projection */
+const MM_LEAD_OWN = { QB: 'passing_yards', RB: 'rushing_yards', WR: 'receiving_yards', TE: 'receiving_yards' }, MM_LBL_OWN = { passing_yards: 'pass yds', rushing_yards: 'rush yds', receiving_yards: 'rec yds' };
+const mmRowOwn = (M, pid, group) => { const st = MM_LEAD_OWN[group], v = muEntryOwn(M, pid), a = st && v && v.stats && v.stats[st], none = { proj: null, nudge: null };
+  if (!a || (!muAvgOwn(M) && !(Array.isArray(a) && M.fit && M.fit[v.group + '|' + st]))) return none;
+  const r = muRowOwn(M, pid, st), p = +r[1], n = +r[2]; if (!isFinite(p)) return none;
+  return { proj: p, nudge: muTrustOwn(M, v.group, st) && isFinite(n) ? n : null, st }; };
+const mmSayOwn = (M, pid, group) => { const x = mmRowOwn(M, pid, group); if (x.proj === null) return '';
+  return `${Math.round(x.proj)} ${MM_LBL_OWN[x.st]} projected${x.nudge ? ` (${x.nudge >= 0 ? '+' : '−'}${Math.abs(x.nudge).toFixed(1)} from the matchup)` : ''}.`; };
+const mmSayOk = (sub, say) => say ? sub.endsWith(say) : !/projected/.test(sub);
 const MM_UNITS_OWN = { QB: ['DB', 'DL'], WR: ['DB'], TE: ['DB'], RB: ['DL', 'LB'] };
 const ordOwn = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
 const mmGradeOwn = s => { const x = Math.round(s * 10) / 10; return x >= 3 ? 'Huge' : x >= 2 ? 'Big' : x >= 1 ? 'Solid' : 'Slight'; };
@@ -2105,9 +2161,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
        leads with the fair chance and what $1 is expected to return at it, as every level's, its rule "strongest Elo
        leans" titled with what it is */
     const EP_RULE_OWN = 'strongest Elo leans', EP_RULE_TITLE_OWN = 'The players whose Elo matchup leans furthest their way, that go together on one DraftKings slip';
-    const leanSayOwn = l => { const M = MU_NOW, v = M && M.players && M.players[l.pid], rec = v && M.record && M.record[v.group + '|' + l.stat], q = rec && rec.past;
-      if (!v || !v.stats || !v.stats[l.stat] || !q || !(q.rmse_elo < q.rmse_form && q.right_top >= 0.53) || !M.fit[v.group + '|' + l.stat]) return null;
-      const n = v.stats[l.stat][2]; return isFinite(n) ? { n, t: `Elo ${leanTxtOwn(n, l.stat)}` } : null; };
+    /* (29 October 2026) the Elo-adjusted averages' Elo part where the tab's matchups carry them, the defence it is set
+       against named and ranked after it (leanNoteOwn) */
+    const leanSayOwn = l => MU_NOW ? leanNoteOwn(MU_NOW, l.pid, l.stat) : null;
     const eloCardsHeld = (lab, u, T, el, under) => { const box = el && el.querySelector(':scope > .pb-tiers[data-sp-kind="elo"]'), bad = [], pc = v => (v * 100).toFixed(0) + '%', P = JSON.parse(ELO_P).players || {}, ch = chanceOwn();
       if (!Array.isArray(T)) return; if (!box) { chk(false, `${lab}, ${u.id}: the unit's Elo picks are not drawn`); return; }
       chk(!!MU_NOW, `${lab}, ${u.id}: the tab's matchups were not read for the Elo leans`);
@@ -2124,7 +2180,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const lis = [...c.querySelectorAll('.pb-legs > li')], first = c.querySelector('.pb-nums > div'), F = t.fair;
         if (lis.length !== t.legs.length || t.legs.some((l, i) => { const b = lis[i].querySelector('button[data-pb-leg]'), em = lis[i].querySelector('.pr em'), sh = lis[i].querySelector('.nm .pe-badge'), cw = ch(l), ln = leanSayOwn(l), note = [...lis[i].querySelectorAll('small.pe-lean')];
             return !nmOk(lis[i].querySelector('.nm'), l) || txt(em) !== (cw ? pc(cw.p) : '–') || (cw && Math.abs(+em.dataset.legchance - cw.p) > 1e-12) || lis[i].querySelector('.pb-valmark, .faroff, [data-pb-far]') || !!sh !== !!(P[l.pid] && P[l.pid].rank && P[l.pid].se != null)
-              || (ln ? note.length !== 1 || txt(note[0]) !== ln.t || +note[0].dataset.peLean !== ln.n || note[0].title !== `His Elo against the defenders he faces moves his projection ${ln.t.slice(4)}` : note.length !== 0)
+              || (ln ? note.length !== 1 || txt(note[0]) !== ln.t || +note[0].dataset.peLean !== ln.n || note[0].title !== ln.title || (ln.vs ? txt(note[0].querySelector('.pe-lean-vs')) !== '· ' + ln.vs : !!note[0].querySelector('.pe-lean-vs')) : note.length !== 0)
               || (under ? !!b : !b || b.dataset.pbLeg !== l.key || b.dataset.side !== l.side || +b.dataset.k !== +l.k || !/^(Add|Remove) /.test(b.getAttribute('aria-label') || '') || w.getComputedStyle(b).minHeight !== '44px'); }))
           bad.push(`${t.id}'s legs are not its legs with DraftKings' fair chances, their Elo leans, their Adds and shields: ${lis.map(x => txt(x.querySelector('.nm')) + ' ' + txt(x.querySelector('.pr em'))).join(', ')} (want ${t.legs.map(l => { const cw = ch(l), ln = leanSayOwn(l); return (cw ? pc(cw.p) : '–') + ' ' + (ln ? ln.t : 'no lean'); }).join(', ')})`);
         { const cb = chanceBlockBad(first, F, t.dec); if (cb) bad.push(`${t.id} does not lead with the fair chance and the expected return: ${cb}`); }
@@ -4625,17 +4681,20 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
          games and shows no signal") no second price on any builder leg and no sum of them; what stays of the Elo tab on a
          builder row is the matchup's nudge under the leg's projection ("Elo +2.1", the third cell), on a player leg whose
          stat the matchup has held up for (the smoke's own reading of the tab's matchups), none on a team leg */
-      const wr = eloP.groups.WR.top[0], key2 = g.id + '|' + wr.id + '|receiving_yards';
+      /* (a receiver whose receiving yards carry a trusted lean in the matchups the page reads, so the note is met; the top
+         one where none does) */
+      const MUw = JSON.parse(ELO_MU), wr = eloP.groups.WR.top.find(r => leanNoteOwn(MUw, r.id, 'receiving_yards')) || eloP.groups.WR.top[0], key2 = g.id + '|' + wr.id + '|receiving_yards';
       S.parlay[key2] = { gid: g.id, pid: wr.id, stat: 'receiving_yards', k: 70, side: 'over', main: true, p: 0.55, price: -115, src: 'real', name: wr.name, pos: 'WR', grp: 'WR', week: g.w, label: '70+ rec yds' };
       S.parlay[key] = Object.assign({}, S.parlay[key], { price: -110, src: 'real', side: 'under' });
       w.eval('renderParlay()'); await wait(80);
-      { const MUx = (await w.eloFiles()).mu, leanOf = (pid, st) => { const v = MUx && MUx.players && MUx.players[pid], q = v && MUx.record && MUx.record[v.group + '|' + st] && MUx.record[v.group + '|' + st].past;
-          return v && v.stats && v.stats[st] && q && q.rmse_elo < q.rmse_form && q.right_top >= 0.53 && MUx.fit[v.group + '|' + st] ? v.stats[st][2] : null; };
+      /* (29 October 2026) the Elo-adjusted averages' Elo part where the tab's matchups carry them, with the defence named and
+         ranked after it (leanNoteOwn) */
+      { const MUx = (await w.eloFiles()).mu, leanOf = (pid, st) => { const x = MUx ? leanNoteOwn(MUx, pid, st) : null; return x ? x.n : null; };
         const held = () => { const rows2 = [...d.querySelectorAll('#parlayBody tr.legrow')], bad = [];
           if (d.querySelector('#parlayBody .pe-alt, #parlayBody .pe-altsum, #parlayBody .pe-muleg') || /market \+ form|Elo matchup \d/i.test(txt(d.getElementById('parlayBody')))) bad.push('a market + form price, its sum or an Elo matchup chance is still drawn');
-          for (const [pid, st, nm] of [[wr.id, 'receiving_yards', wr.name], [top.id, 'passing_yards', top.name]]) { const tr = rows2.find(x => txt(x).includes(nm)), n = leanOf(pid, st), notes = tr ? [...tr.querySelectorAll('small.pe-lean')] : [];
-            const want = n == null ? null : `Elo ${leanTxtOwn(n, st)}`;
-            if (!tr || (want ? notes.length !== 1 || txt(notes[0]) !== want || +notes[0].dataset.peLean !== n || notes[0].closest('td') !== tr.querySelectorAll('td')[2] : notes.length)) bad.push(`${nm}'s ${st} row carries ${notes.map(txt).join(', ') || 'no lean'} where the matchup gives ${want || 'none'}`); }
+          for (const [pid, st, nm] of [[wr.id, 'receiving_yards', wr.name], [top.id, 'passing_yards', top.name]]) { const tr = rows2.find(x => txt(x).includes(nm)), ln = MUx ? leanNoteOwn(MUx, pid, st) : null, n = ln ? ln.n : null, notes = tr ? [...tr.querySelectorAll('small.pe-lean')] : [];
+            const want = ln ? ln.t : null;
+            if (!tr || (want ? notes.length !== 1 || txt(notes[0]) !== want || +notes[0].dataset.peLean !== n || notes[0].title !== ln.title || notes[0].closest('td') !== tr.querySelectorAll('td')[2] : notes.length)) bad.push(`${nm}'s ${st} row carries ${notes.map(txt).join(', ') || 'no lean'} where the matchup gives ${want || 'none'}`); }
           const teamRow = rows2.find(x => txt(x).includes(TEAM(g.h)) && !txt(x).includes(top.name)); if (!teamRow || teamRow.querySelector('.pe-lean')) bad.push('the team leg carries an Elo lean');
           return bad; };
         chk(!held().length, 'the builder still draws market + form, or a player leg does not carry the Elo lean under its projection where the matchup has one: ' + held().join('; '));
@@ -4705,7 +4764,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
        on the Elo chance, searched by a branch and bound on fast sums, which the payload's correlations between two players
        of one game were held to bounds for; neither is there any more) */
     { const MU = JSON.parse(ELO_MU);
-      const trusted = (g, st) => { const p = ((MU.record[g + '|' + st] || {}).past); return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
+      /* (29 October 2026) a leg's trust and Elo part as the page reads them: the Elo-adjusted averages' where the file
+         carries them, else the matchup formula's (muTrustOwn, muLegOwn) */
+      const trusted = (g, st) => muTrustOwn(MU, g, st);
       const liveMu = (await w.eloFiles()).mu, Sx = w.eval('S');
       const gradeOf = s => { const x = Math.round(s * 10) / 10; return x >= 3 ? 'Huge' : x >= 2 ? 'Big' : x >= 1 ? 'Solid' : 'Slight'; };
       /* every leg of the block stands on made-up games of the smoke's own, two days out at the page's clock (on the
@@ -4715,13 +4776,14 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
          his in the tab's own matchups (not interceptions, which no mismatch reads for; a touchdown only where he has
          nothing else) and none ruled out, the first at a position the Mismatches read, for the mismatch planted on him */
       const MMG = ['QB', 'RB', 'WR', 'TE'];
-      const stOf = (pid, v) => { const lv = liveMu && liveMu.players && liveMu.players[pid]; if (!lv) return null;
-        const ok = Object.keys(v.stats || {}).filter(st => trusted(v.group, st) && st !== 'passing_interceptions' && lv.stats && lv.stats[st] && MU.fit[v.group + '|' + st]);
+      const stOf = (pid, v) => { const lv = liveMu && muEntryOwn(liveMu, pid); if (!lv) return null;
+        const ok = Object.keys(v.stats || {}).filter(st => st !== 'passing_interceptions' && muLegOwn(MU, pid, st) && lv.stats && lv.stats[st]);
         return ok.find(st => st !== 'any_td') || ok[0] || null; };
-      const pool = []; for (const [pid, v] of Object.entries(MU.players)) { if (!eloP.players[pid] || w.eloRuledOut(pid)) continue; const st = stOf(pid, v); if (st) pool.push({ pid, st, grp: v.group }); }
-      const i0 = pool.findIndex(c => MMG.includes(c.grp) && c.st !== 'any_td');
+      const pool = []; for (const [pid, v] of Object.entries(muEntriesOwn(MU))) { if (!eloP.players[pid] || w.eloRuledOut(pid)) continue; const st = stOf(pid, v); if (st) pool.push({ pid, st, grp: v.group }); }
+      /* the first at a position the Mismatches read, in the formula's players too (the mismatch is planted on his entry there) */
+      const i0 = pool.findIndex(c => MMG.includes(c.grp) && c.st !== 'any_td' && !!(liveMu && liveMu.players && liveMu.players[c.pid]));
       const byGame = i0 < 0 ? [] : [pool[i0], ...pool.filter((c, i) => i !== i0)].slice(0, 6);
-      const weak = Object.entries(MU.players).flatMap(([pid, v]) => Object.keys(v.stats).filter(st => !trusted(v.group, st) && eloP.players[pid]).map(st => ({ pid, st })))[0];
+      const weak = Object.entries(muEntriesOwn(MU)).flatMap(([pid, v]) => Object.keys(v.stats || {}).filter(st => !trusted(v.group, st) && eloP.players[pid]).map(st => ({ pid, st })))[0];
       const wkE = w.eval('currentWeek()'), seasonE = +w.eval('SEASON'), atE = new Date(w.Date.now() + 2 * 86400e3).toISOString().slice(0, 10);
       const EG = [...'ABCDE'].map(c => ({ id: `${seasonE}_${String(wkE).padStart(2, '0')}_XE${c}_YE${c}`, w: wkE, d: atE, t: '13:00', a: 'XE' + c, h: 'YE' + c }));
       const wkOf = gid => { const g = Sx.sched.find(x => x.id === gid); return g ? g.w : wkE; };
@@ -4740,8 +4802,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
            week's file says: the second the likeliest and the best value, the first and third next */
         const GAME_OF = [0, 0, 0, 0, 0, 0], Z = [0.35, 0.5, 0.3, 0.25, 0.2, 0.15];
         const B = byGame.map((c, i) => ({ ...c, gid: EG[GAME_OF[i]].id, z: Z[i] }));
-        for (const c of B) { keepMu[c.pid] = JSON.stringify(liveMu.players[c.pid]); liveMu.players[c.pid].stats[c.st][2] = c.z * MU.fit[liveMu.players[c.pid].group + '|' + c.st].sd; }
-        const nudgeOf = c => c.z * MU.fit[liveMu.players[c.pid].group + '|' + c.st].sd;
+        /* (29 October 2026) each z planted on his leg as the page reads it (muPlantOwn: the Elo-adjusted averages' Elo part
+           and z, or the formula's nudge on a file from before), both his entries kept and put back below */
+        for (const c of B) { keepMu[c.pid] = muKeepOwn(liveMu, c.pid); muPlantOwn(liveMu, c.pid, c.st, c.z); }
         weak.gid = EG[4].id;
         /* a mismatch of the smoke's own on the first, in his made-up game: his rating set 4 standard deviations above
            his position's (the top of the Mismatches whatever the week has) and the club whose units he faces the
@@ -4889,14 +4952,14 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         /* the chance: (app v138) DraftKings' fair chance on the leg (fairRule, the smoke's own, where until app v138 it was the
            price's implied chance over a fixed 1.045), moved by the nudge in the stat's typical miss; the lean the one less
            the other */
-        { const l = ((r && r.cands) || [])[0], c = l && B.find(x => x.pid === l.pid && x.st === l.stat), sd = c && MU.fit[MU.players[l.pid].group + '|' + l.stat].sd;
+        { const l = ((r && r.cands) || [])[0], c = l && B.find(x => x.pid === l.pid && x.st === l.stat);
           chk(!!c, 'the Elo picks have no candidate of the smoke\'s own to hold the chance to');
           if (c) { const f0 = foE(l), fair = f0 ? f0.p : NaN, want = w.eloMatchupP(l, fair);
             /* the normal curve by hand: the fair chance moved the nudge the smoke set, in standard deviations */
             const erf = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
             const Phi = z => 0.5 * (1 + erf(z / Math.SQRT2));
             let lo = -8, hi = 8; for (let k = 0; k < 80; k++) { const m = (lo + hi) / 2; if (Phi(m) < fair) lo = m; else hi = m; }
-            const byHand = Phi(lo + nudgeOf(c) / sd);
+            const byHand = Phi(lo + c.z);   /* the z the smoke planted: the Elo part in the leg's spread */
             chk(Math.abs(l.pe - want) < 1e-12 && Math.abs(l.pe - byHand) < 2e-4 && l.pe > fair && Math.abs(l.pf - fair) < 1e-12 && Math.abs(l.lean - (l.pe - l.pf)) < 1e-15,
               `an Elo pick's chance is not DraftKings' fair chance moved by the matchup, or its lean not the one less the other: ${l.pe} vs ${byHand} on ${fair} (${l.pf}, lean ${l.lean})`); } }
         /* each pick's fair chance: parlayProb on its legs at the rule's fair chances */
@@ -4978,18 +5041,24 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
              game's, the best by the slot's rule, Medium empty saying the strongest
              leans of any one game, taken in turn, put only two on one slip, Aggressive and Extreme saying no game has as many
              players; and the third game alone says its three do not go together */
-          { const rated = pid => !!eloP.players[pid] && !!liveMu.players[pid], mmPid = mmC.pid, inB = pid => B.some(c => c.pid === pid);
-            const pick = (ok, not) => { const all = Object.keys(liveMu.players).filter(pid => rated(pid) && ok(liveMu.players[pid]) && !not.includes(pid)), score = pid => (inB(pid) ? 2 : 0) + (pid === mmPid ? 4 : 0) + (w.eloRuledOut(pid) ? 1 : 0);
+          /* (29 October 2026) the players, their legs' fits and trust and their planted Elo parts all as the page reads them:
+             the Elo-adjusted averages' (avg and avg_fit.legs) where the file carries them, else the matchup formula's
+             (players, fit, record) */
+          { const AV = muAvgOwn(liveMu), rated = pid => !!eloP.players[pid] && !!muEntryOwn(liveMu, pid), mmPid = mmC.pid, inB = pid => B.some(c => c.pid === pid);
+            const fitOwn = (M, g, st) => muAvgOwn(M) ? !!M.avg_fit.legs[g + '|' + st] : !!(M.fit && M.fit[g + '|' + st]);
+            const pick = (ok, not) => { const E = muEntriesOwn(liveMu), all = Object.keys(E).filter(pid => rated(pid) && ok(E[pid]) && !not.includes(pid)), score = pid => (inB(pid) ? 2 : 0) + (pid === mmPid ? 4 : 0) + (w.eloRuledOut(pid) ? 1 : 0);
               return all.sort((a, b) => (score(a) - score(b)) || (a < b ? -1 : 1))[0] || null; };
-            const qbId = pick(v => v.group === 'QB', []), tdId = qbId && pick(v => ['RB', 'WR', 'TE'].includes(v.group) && !!MU.fit[v.group + '|any_td'], [qbId]);
+            const qbId = pick(v => v.group === 'QB', []), tdId = qbId && pick(v => ['RB', 'WR', 'TE'].includes(v.group) && fitOwn(MU, v.group, 'any_td'), [qbId]);
             const rest = B.filter(c => c.pid !== qbId && c.pid !== tdId && c.pid !== mmPid).slice(0, 3);
-            if (!qbId || !tdId || rest.length < 3 || !MU.fit['QB|passing_tds']) console.log('  (the Elo picks\' two-game slot: no rated quarterback, or no rated back, receiver or tight end beside him, in the tab\'s matchups: skipped)');
-            else { const tdG = liveMu.players[tdId].group, keepRec = { qb: JSON.stringify(liveMu.record['QB|passing_tds'] || null), td: JSON.stringify(liveMu.record[tdG + '|any_td'] || null) }, keepG = w.__eloSlot.G, keepL = w.eval('pricedLegs');
-              const keepX = Object.fromEntries([qbId, tdId, ...rest.map(c => c.pid)].map(pid => [pid, JSON.stringify(liveMu.players[pid].stats)]));
+            if (!qbId || !tdId || rest.length < 3 || !fitOwn(MU, 'QB', 'passing_tds')) console.log('  (the Elo picks\' two-game slot: no rated quarterback, or no rated back, receiver or tight end beside him, in the tab\'s matchups: skipped)');
+            else { const tdG = muEntryOwn(liveMu, tdId).group, TR = AV ? liveMu.avg_fit.legs : liveMu.record, keepRec = { qb: JSON.stringify(TR['QB|passing_tds'] || null), td: JSON.stringify(TR[tdG + '|any_td'] || null) }, keepG = w.__eloSlot.G, keepL = w.eval('pricedLegs');
+              const keepX = Object.fromEntries([qbId, tdId, ...rest.map(c => c.pid)].map(pid => [pid, JSON.stringify(muEntryOwn(liveMu, pid).stats)]));
               let undoX = null;
               try {
-                const trust = { past: { rmse_elo: 1, rmse_form: 2, right_top: 0.6 } }; liveMu.record['QB|passing_tds'] = trust; liveMu.record[tdG + '|any_td'] = trust;
-                const plant = (pid, st, z) => { const v = liveMu.players[pid], sd = MU.fit[v.group + '|' + st].sd; v.stats[st] = [1, 1, z * sd]; };
+                for (const k of ['QB|passing_tds', tdG + '|any_td']) TR[k] = AV ? { ...(TR[k] || {}), trusted: true } : { past: { rmse_elo: 1, rmse_form: 2, right_top: 0.6 } };
+                const plant = (pid, st, z) => { const v = muEntryOwn(liveMu, pid);
+                  if (AV) { const a = v.stats[st] || {}, sd = a.sd > 0 ? a.sd : 1; v.stats[st] = { ...a, avg: 1, proj: 1, no_elo: 1 - z * sd, elo: z * sd, sd, z }; }
+                  else { const sd = MU.fit[v.group + '|' + st].sd; v.stats[st] = [1, 1, z * sd]; } };
                 const [hi, lo, ot] = rest; plant(qbId, 'passing_tds', 0.5); plant(tdId, 'any_td', 0.45); plant(hi.pid, hi.st, 0.5); plant(lo.pid, lo.st, 0.15); plant(ot.pid, ot.st, 0.2);
                 const qbP = [qbId], wrP = [tdId];
                 const G3 = [EG[1], EG[2]], cX = (c, gid, team) => ({ ...c, gid, team });
@@ -5027,8 +5096,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
               finally {
                 if (undoX) undoX();
                 w.__eloSlot.G = keepG; w.__keepLX = keepL; w.eval('pricedLegs=window.__keepLX; delete window.__keepLX; delete window.__legsX');
-                for (const [k, v] of [['QB|passing_tds', keepRec.qb], [tdG + '|any_td', keepRec.td]]) { const o = JSON.parse(v); if (o === null) delete liveMu.record[k]; else liveMu.record[k] = o; }
-                for (const [pid, v] of Object.entries(keepX)) liveMu.players[pid].stats = JSON.parse(v);
+                for (const [k, v] of [['QB|passing_tds', keepRec.qb], [tdG + '|any_td', keepRec.td]]) { const o = w.JSON.parse(v); if (o === null) delete TR[k]; else TR[k] = o; }
+                for (const [pid, v] of Object.entries(keepX)) muEntryOwn(liveMu, pid).stats = w.JSON.parse(v);
                 setDkE(fixE); w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderSp()'); await wait(40); } } } }
         /* (app v138) each card leads with DraftKings' fair chance and what $1 is expected to return at it, never the Elo's
            chance, and says how its level was chosen, "strongest Elo leans", titled so */
@@ -5073,7 +5142,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           if (wsel) liveMu.week = +wsel.value; w.eval('renderSlate()'); await wait(40);
           const mc = d.getElementById('peMism'), b = mc && [...mc.querySelectorAll('.pe-mm-b')].find(x => x.dataset.mmPid === mmC.pid), sub = b && b.querySelector('.pe-mm-sub');
           const want = `vs the ${mmC.opp} ${MM_AGAINST_OWN[mmC.group]}, ${ordOwn(mmC.rank)} by player Elo.`;
-          chk(!!sub && txt(sub).startsWith(want) && !mmOldWords(mc),
+          chk(!!sub && txt(sub).startsWith(want) && mmSayOk(txt(sub), mmSayOwn(liveMu, mmC.pid, mmC.group)) && !mmOldWords(mc),
             `the Props tab's Mismatches do not word the smoke's mismatch as the matchup formula's units ("${want}"), or still say a pass or run defense ranked: ${sub ? txt(sub) : mc ? 'not on the card' : 'no card'}${mmOldWords(mc) ? ' / ' + mmOldWords(mc) : ''}`);
           liveMu.week = keepWk; w.eval('renderSlate()'); await wait(40);
           [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'suggest').click(); await wait(80);
@@ -5082,8 +5151,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
            against him in the tab's matchups, as Matthew Golden's -2.75 receiving yards stood beside his Solid
            mismatch), with a made-up DraftKings id of its own; every level that takes it draws it with no tag, where
            his over above wore one; then all put back and the levels drawn again */
-        if (cardEl()) { const st = liveMu.players[mmC.pid].stats[mmC.st], keepZ = st[2];
-          st[2] = -nudgeOf(B[0]);
+        if (cardEl()) { const keepZ = muKeepOwn(liveMu, mmC.pid);
+          muPlantOwn(liveMu, mmC.pid, mmC.st, -B[0].z);
           const legsU = legs.map((l, i) => i ? l : { ...l, side: 'under', price: -110, label: 'under test line' });
           /* (the review of 27 October 2026) the Under against the block's 0.2 with every other leg would move against each
              of them, and the walk would pass it over: its pairs' keys stand at 0 for the check (put back below), so a level
@@ -5099,7 +5168,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           chk(held.length > 0 && !worn.length && w.eloMmFor && !w.eloMmFor(legsU[0]) && w.eloMmFor(legs[0]),
             `an Under on ${mmC.pid}, whose mismatch favours him, wears his mismatch tag (or no level takes it, or the page's rule reads the sides otherwise): ${held.length} levels hold it; ${worn.join('; ') || 'no tag'}`);
           w.eval(`(function(){ const o=${keepKU}; for(const k in o){ if(o[k]===null) delete PAY.corr[k]; else PAY.corr[k]=o[k]; } })()`);
-          st[2] = keepZ; w.__legs = legs; setDkE(fixE); w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40); }
+          muBackOwn(liveMu, mmC.pid, keepZ, w.JSON); w.__legs = legs; setDkE(fixE); w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40); }
         else chk(false, 'Suggested Parlays drew no Elo picks in the unit to hold the side of a mismatch on');
         /* (app v112) an Elo pick's legs are chosen on the Elo matchup, not the edge: none is marked Value, and neither
            retired tag is drawn */
@@ -5154,10 +5223,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         w.eval(`S.stake=${JSON.stringify(eloStake0)}; save(); renderParlay()`); await wait(20);
         } finally {
           if (undoDk) undoDk(); if (undoCorr) undoCorr(); if (undoMkt) undoMkt(); if (undoSlot) undoSlot();
-          for (const [pid, j] of Object.entries(keepMu)) liveMu.players[pid] = w.JSON.parse(j);
+          for (const [pid, j] of Object.entries(keepMu)) muBackOwn(liveMu, pid, j, w.JSON);
           for (const g of EG) { const i = Sx.sched.indexOf(g); if (i >= 0) Sx.sched.splice(i, 1); }
           w.eval('PB_CACHE=new Map()'); }
-        chk(!Sx.sched.some(g => /_XE[A-E]_YE[A-E]$/.test(g.id)) && Object.keys(keepMu).every(pid => JSON.stringify(liveMu.players[pid]) === keepMu[pid]),
+        chk(!Sx.sched.some(g => /_XE[A-E]_YE[A-E]$/.test(g.id)) && Object.keys(keepMu).every(pid => muKeepOwn(liveMu, pid) === keepMu[pid]),
           'the Elo picks\' made-up games or the smoke\'s own matchups are still on the page after the block');
         [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40);
       } else chk(false, 'the smoke could not find the matchups it needs for Elo picks');
@@ -5166,14 +5235,31 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'WR').click(); await wait(40);
         const rowsWR = [...d.querySelectorAll('#peBody tr.pe-plrow')];
         chk(rowsWR.length === 10 && rowsWR.every(tr => tr.querySelector('button.pe-plbtn')), 'the receivers in the rankings are not clickable');
-        const withMu = rowsWR.find(tr => MU.players[tr.dataset.pePl] && !w.eloRuledOut(tr.dataset.pePl));
+        /* (29 October 2026) a player's legs as the page reads them: the Elo-adjusted averages' where the file carries them
+           (each row his average, his projection with no Elo terms, the table he faces with its Elo and rank, the Elo part's
+           split, the defence's multiplier and his Elo's, the projection and its Elo part, the smoke's own reading; since the
+           review of 29 October 2026 the split from the twin, so it points the Elo part's way), else the matchup formula's */
+        const legsOwn = (g, v) => (muAvgOwn(MU) ? Object.keys(MU.avg_fit.legs).filter(k => k.split('|')[0] === g).map(k => k.split('|')[1]) : (MU.stats[g] || [])).filter(st => v.stats && v.stats[st]);
+        const numOwnW = (x, st) => st === 'any_td' ? x.toFixed(2) : Math.abs(x) >= 10 ? x.toFixed(0) : x.toFixed(1);
+        const LBL_W = { passing_yards: 'Pass yds', passing_tds: 'Pass TD', attempts: 'Att', completions: 'Comp', passing_interceptions: 'INT', rushing_yards: 'Rush yds', carries: 'Carries',
+          receptions: 'Rec', receiving_yards: 'Rec yds', targets: 'Tgt', scrim_yards: 'Rush+rec', any_td: 'TDs', fg_made: 'FG made', kick_pts: 'Kick pts' };
+        const rowsBad = (view, g, v) => { if (!muAvgOwn(MU)) return [];
+          const sts = legsOwn(g, v), rows = [...view.querySelectorAll('tbody tr')], head = [...view.querySelectorAll('thead th')].map(txt).join('|'), bad = [];
+          if (head !== 'Stat|Avg|Base|Vs|×Def|×Elo|Proj|Elo') bad.push('columns ' + head);
+          if (rows.map(x => x.dataset.peStat).join() !== sts.join()) bad.push(`rows ${rows.map(x => x.dataset.peStat).join()}, not ${sts.join()}`);
+          else rows.forEach((x, i) => { const st = sts[i], a = v.stats[st], q = a.vs, c = [...x.querySelectorAll('td')].map(txt);
+            const exp = [LBL_W[st] || st, numOwnW(a.avg, st), numOwnW(a.no_elo, st), q && VS_SHORT_OWN[q.table] ? `${VS_SHORT_OWN[q.table]} ${q.elo} (#${q.rank})` : '–', mulOwnS(a.def_x), mulOwnS(a.elo_x), numOwnW(a.proj, st), leanTxtOwn(a.elo, st)];
+            if (c.join('|') !== exp.join('|')) bad.push(`${st}: ${c.join(' | ')}, not ${exp.join(' | ')}`); });
+          return bad; };
+        const withMu = rowsWR.find(tr => muEntryOwn(MU, tr.dataset.pePl) && !w.eloRuledOut(tr.dataset.pePl));
         if (withMu) { withMu.click(); await wait(40);
-          const view = d.getElementById('pePlView'), pid = withMu.dataset.pePl, v = MU.players[pid];
+          const view = d.getElementById('pePlView'), pid = withMu.dataset.pePl, v = muEntryOwn(MU, pid);
           chk(plOpen() && txt(view).includes(eloP.players[pid].name) && view.querySelectorAll('.pe-pl-tiles div').length === 4, 'clicking a receiver did not open his window with his rating');
           const statRows = [...view.querySelectorAll('tbody tr')];
-          chk(statRows.length === MU.stats.WR.filter(st => v.stats[st]).length && txt(view).includes(v.opp), 'the window does not show a row per stat and the opponent: ' + statRows.length);
-          { const sts = MU.stats.WR.filter(st => v.stats[st]), trusted = st => { const p = (MU.record['WR|' + st] || {}).past; return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
-            chk(statRows.every((tr, i) => tr.classList.contains('pe-weak') === !trusted(sts[i])), 'a stat is faded where it should not be, or the other way round'); }
+          chk(statRows.length === legsOwn('WR', v).length && txt(view).includes(v.opp), 'the window does not show a row per stat and the opponent: ' + statRows.length);
+          { const sts = legsOwn('WR', v), trusted = st => muTrustOwn(MU, 'WR', st);
+            chk(statRows.every((tr, i) => tr.classList.contains('pe-weak') === !trusted(sts[i])), 'a stat is faded where it should not be, or the other way round');
+            const rb = rowsBad(view, 'WR', v); chk(!rb.length, 'a receiver\'s window does not draw the Elo-adjusted average\'s breakdown, a row a leg: ' + rb.slice(0, 3).join('; ')); }
           chk(view.querySelectorAll('.pe-pl-def span').length === 3 && /of \d+/.test(txt(view.querySelector('.pe-pl-def'))), 'the window does not rank the three units he faces');
           /* each of the three ranked as the matchup formula ranks them, the smoke's own reading (mmRankOwn's map of the
              clubs' units): clubs level on a unit share its rank, one more than the clubs above them, as on the Mismatches
@@ -5190,10 +5276,22 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
           chk(!plOpen(), 'Escape did not close the player window');
         } else console.log('  (the player window: none of the ten receivers shown plays a game still to come, as on a Monday with one game left; skipped)');
+        /* a kicker's window: since the Elo-adjusted averages (a file carrying them) his legs, field goals made and kicking
+           points, as a receiver's (the first kicker shown with a projection, not ruled out); on a file from before, the line
+           that there is none for kickers alone; and a position with no legs in either (the defensive line) says so */
         [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'K').click(); await wait(40);
-        d.querySelector('#peBody tr.pe-plrow').click(); await wait(20);
-        chk(plOpen() && txt(d.querySelector('#pePlView .pe-sub')) === 'There is no matchup formula for kickers.' && !/the projections cover/.test(txt(d.getElementById('pePlView'))) && !d.querySelector('#pePlView tbody tr'),
-          'a kicker\'s window does not say "There is no matchup formula for kickers." alone: ' + txt(d.querySelector('#pePlView .pe-sub')));
+        if (muAvgOwn(MU)) { const kr = [...d.querySelectorAll('#peBody tr.pe-plrow')].find(tr => muEntryOwn(MU, tr.dataset.pePl) && !w.eloRuledOut(tr.dataset.pePl));
+          if (!kr) console.log('  (a kicker\'s window: no kicker shown has an Elo-adjusted average this week; skipped)');
+          else { kr.click(); await wait(20); const kv = muEntryOwn(MU, kr.dataset.pePl), rb = rowsBad(d.getElementById('pePlView'), 'K', kv);
+            chk(plOpen() && !rb.length && legsOwn('K', kv).join() === 'fg_made,kick_pts', 'a kicker\'s window does not draw his Elo-adjusted averages, field goals made and kicking points: ' + rb.slice(0, 3).join('; '));
+            d.getElementById('pePlClose').click(); await wait(20); }
+          [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'DL').click(); await wait(40);
+          d.querySelector('#peBody tr.pe-plrow').click(); await wait(20);
+          chk(plOpen() && txt(d.querySelector('#pePlView .pe-sub')) === 'There is no matchup formula for defensive line.' && !d.querySelector('#pePlView tbody tr'),
+            'a defensive lineman\'s window does not say "There is no matchup formula for defensive line." alone: ' + txt(d.querySelector('#pePlView .pe-sub'))); }
+        else { d.querySelector('#peBody tr.pe-plrow').click(); await wait(20);
+          chk(plOpen() && txt(d.querySelector('#pePlView .pe-sub')) === 'There is no matchup formula for kickers.' && !/the projections cover/.test(txt(d.getElementById('pePlView'))) && !d.querySelector('#pePlView tbody tr'),
+            'a kicker\'s window does not say "There is no matchup formula for kickers." alone: ' + txt(d.querySelector('#pePlView .pe-sub'))); }
         d.getElementById('pePlClose').click(); await wait(20); }
       [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'QB').click(); await wait(40);
     }
@@ -5216,9 +5314,14 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(txt(card.querySelector('h2 small')) === `week ${MU.week}` && !/weakest units|still to kick off|until a club files|starter can still change/.test(txt(card)),
           'the Mismatches card\'s title is not the week alone, or the card explains: ' + txt(card.querySelector('h2')));
         /* each bubble words what its edge ranks as the matchup formula's units by their players' Elo, the rank the smoke's own */
-        { const bad = bubbles.map((b, i) => { const r = rows[i], k = mmRankOwn(MU, r.group, r.opp), want = k ? `vs the ${r.opp} ${MM_AGAINST_OWN[r.group]}, ${ordOwn(k.rank)} by player Elo.` : null, sub = b.querySelector('.pe-mm-sub');
-            return want && sub && txt(sub).startsWith(want) ? '' : `${r.pid}: ${sub ? txt(sub) : 'no line'} (want "${want}")`; }).filter(Boolean);
-          chk(!bad.length && !mmOldWords(card), 'a Mismatches bubble does not word its rank as the matchup formula\'s units, or says a pass or run defense ranked: ' + (bad.join(' | ') || mmOldWords(card))); }
+        { const bad = bubbles.map((b, i) => { const r = rows[i], k = mmRankOwn(MU, r.group, r.opp), want = k ? `vs the ${r.opp} ${MM_AGAINST_OWN[r.group]}, ${ordOwn(k.rank)} by player Elo.` : null, sub = b.querySelector('.pe-mm-sub'), say = mmSayOwn(MU, r.pid, r.group);
+            return want && sub && txt(sub).startsWith(want) && mmSayOk(txt(sub), say) ? '' : `${r.pid}: ${sub ? txt(sub) : 'no line'} (want "${want}" ... "${say}")`; }).filter(Boolean);
+          chk(!bad.length && !mmOldWords(card), 'a Mismatches bubble does not word its rank as the matchup formula\'s units, or says a pass or run defense ranked: ' + (bad.join(' | ') || mmOldWords(card)));
+          /* and every row of the week, the five drawn and the rest Show more opens: its projection and its Elo part on a
+             trusted leg alone, the smoke's own reading (a quarterback's passing yards, untrusted on the averages, sit past
+             the five most weeks) */
+          const badRow = rows.map(r => { const x = mmRowOwn(MU, r.pid, r.group); return r.proj === x.proj && r.nudge === x.nudge ? '' : `${r.pid} ${r.group}: ${r.proj} (${r.nudge}), the smoke's ${x.proj} (${x.nudge})`; }).filter(Boolean);
+          chk(!badRow.length, `the Mismatches' rows do not carry the lead stat's projection the Elo picks read, with its Elo part on a trusted leg alone: ${badRow.slice(0, 3).join('; ')}`); }
         w.eval('renderSlate()'); await wait(40);
         chk(d.querySelectorAll('#peMism').length === 1, 'redrawing the Props list doubled the mismatches');
         /* a click on a mismatch opens his game with his stats open, scrolled to and highlighted */
@@ -7198,8 +7301,8 @@ async function snapshotChecks() {
            defense card draws the ELO Ratings tab's Pass Defense and Run Defense), and nothing in the window says a pass
            or run defense ranked */
         { const bad = li.map((x, i) => { const r = mine[i], k = r && mmRankOwn(eloMu, r.group, r.opp), sub = x.querySelector('.gs-mmsub');
-            const want = k ? `Against the ${r.opp} ${MM_AGAINST_OWN[r.group]}, ${ordOwn(k.rank)} of ${k.n} by player Elo.` : null;
-            return want && sub && txt(sub).startsWith(want) ? '' : `${x.dataset.pid}: ${sub ? txt(sub) : 'no line'} (want "${want}")`; }).filter(Boolean);
+            const want = k ? `Against the ${r.opp} ${MM_AGAINST_OWN[r.group]}, ${ordOwn(k.rank)} of ${k.n} by player Elo.` : null, say = r ? mmSayOwn(eloMu, r.pid, r.group) : '';
+            return want && sub && txt(sub).startsWith(want) && mmSayOk(txt(sub), say) ? '' : `${x.dataset.pid}: ${sub ? txt(sub) : 'no line'} (want "${want}" ... "${say}")`; }).filter(Boolean);
           chk(!bad.length && !mmOldWords(md), `snapshot (${label}): a mismatch does not word its rank as the matchup formula's units, or the window says a pass or run defense ranked: ${bad.slice(0, 2).join(' | ') || mmOldWords(md)}`); }
         /* and the bubbles the Props tab draws for this game are among them */
         const bubbles = [...R.d.querySelectorAll('#peMism [data-mm-game]')].filter(b => b.dataset.mmGame === g.game_id).map(b => b.dataset.mmPid);
@@ -8802,9 +8905,11 @@ async function glanceChecks() {
     const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); if (!m) return day; const h = +m[1]; return `${day} · ${(h % 12) || 12}:${m[2]} ${h < 12 ? 'AM' : 'PM'} ET`; };
   const TIERS = [['HOF', 1750], ['Elite', 1700], ['Master', 1650], ['Diamond', 1600], ['Platinum', 1550], ['Gold', 1500], ['Silver', 1450], ['Bronze', 1400], ['Iron', 1350]];
   const tierOwn = e => (TIERS.find(([, lo]) => e >= lo) || ['Wood'])[0];
-  const trustOwn = (g, st) => { const r = MU.record && MU.record[g + '|' + st], p = r && r.past; return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
+  /* (29 October 2026) a leg's trust and a player's projections as the page reads them: the Elo-adjusted averages' where
+     the file carries them, else the matchup formula's */
+  const trustOwn = (g, st) => muTrustOwn(MU, g, st);
   const LBL = { passing_yards: 'Pass yds', passing_tds: 'Pass TD', attempts: 'Att', completions: 'Comp', passing_interceptions: 'INT', rushing_yards: 'Rush yds', carries: 'Carries',
-    receptions: 'Rec', receiving_yards: 'Rec yds', targets: 'Tgt', scrim_yards: 'Rush+rec', any_td: 'TDs' };
+    receptions: 'Rec', receiving_yards: 'Rec yds', targets: 'Tgt', scrim_yards: 'Rush+rec', any_td: 'TDs', fg_made: 'FG made', kick_pts: 'Kick pts' };
   /* the Mismatches' units: the secondary and the line for a quarterback, the secondary for a receiver or tight end, the
      line and the linebackers for a back (the matchup formula's player ratings, matchups.json), for the grade alone */
   const MM_OWN = { QB: [['DB', 'DL'], 'pass defense'], WR: [['DB'], 'pass defense'], TE: [['DB'], 'pass defense'], RB: [['DL', 'LB'], 'run defense'] };
@@ -8939,15 +9044,19 @@ async function glanceChecks() {
       const ml = B.querySelector('[data-glance-mm] dd');
       if (ml && (/\b\d+(st|nd|rd|th)\b|ranked/i.test(txt(ml)) || /\b\d+(st|nd|rd|th)\b|ranked/i.test(ml.title || ''))) bad.push(`the mismatch line states a rank of its own: "${txt(ml)}" (${ml.title})`);
       if ((txt(B).match(/ranked \d+(st|nd|rd|th)\b/g) || []).length > (fw ? 1 : 0)) bad.push(`the bubble ranks a defense more than once: "${txt(B).slice(0, 300)}"`); }
-    const v = MU.players && MU.players[pid];
-    if (!v || v.game_id !== gid || outOwn(pid)) { if (nOf('nomu') === null || B.querySelector('tr[data-glance-stat]') || nOf('mm') !== null) bad.push('a matchup drawn where the file has none for this game, or no line saying so'); }
+    /* his projections (the Elo-adjusted averages' entry where the file carries them, else the formula's) and his entry in
+       the formula's players, which the Mismatches read: either in this game puts him in it; the table his projections' */
+    const v = muEntryOwn(MU, pid), vm = MU.players && MU.players[pid], here = x => !!x && x.game_id === gid;
+    if ((!here(v) && !here(vm)) || outOwn(pid)) { if (nOf('nomu') === null || B.querySelector('tr[data-glance-stat]') || nOf('mm') !== null) bad.push('a matchup drawn where the file has none for this game, or no line saying so'); }
     else {
       const m = mmOwn(pid, gid);
       if (m ? nOf('mm') !== m.grade || nOf('gap') !== m.score.toFixed(1) : nOf('mm') !== null) bad.push(`mismatch ${nOf('mm')} ${nOf('gap')}, not ${m ? m.grade + ' ' + m.score.toFixed(1) : 'none'}`);
-      const sts = (MU.stats && MU.stats[v.group] || Object.keys(v.stats || {})).filter(s => v.stats && v.stats[s] && trustOwn(v.group, s)), rows = [...B.querySelectorAll('tr[data-glance-stat]')];
+      const order = here(v) ? (muAvgOwn(MU) ? Object.keys(MU.avg_fit.legs).filter(k => k.split('|')[0] === v.group).map(k => k.split('|')[1]) : (MU.stats && MU.stats[v.group] || Object.keys(v.stats || {}))) : [];
+      const sts = order.filter(s => v.stats && v.stats[s] && trustOwn(v.group, s)), rows = [...B.querySelectorAll('tr[data-glance-stat]')], head = [...B.querySelectorAll('table.glance-t thead th')].map(txt);
       if (rows.map(x => x.dataset.glanceStat).join() !== sts.join()) bad.push(`trusted stats ${rows.map(x => x.dataset.glanceStat).join()}, not ${sts.join()}`);
-      else rows.forEach((tr, i) => { const a = v.stats[sts[i]], f = tr.querySelector('[data-glance-n="form"]'), p = tr.querySelector('[data-glance-n="proj"]');
+      else rows.forEach((tr, i) => { const a = muRowOwn(MU, pid, sts[i]), f = tr.querySelector('[data-glance-n="form"]'), p = tr.querySelector('[data-glance-n="proj"]');
         if (txt(tr.querySelector('th')) !== (LBL[sts[i]] || sts[i]) || txt(f) !== decOwn(a[0]) || txt(p) !== decOwn(a[1])) bad.push(`${sts[i]}: ${txt(tr)}, not ${decOwn(a[0])} -> ${decOwn(a[1])}`); });
+      if (sts.length && head[1] !== (muAvgOwn(MU) ? 'Avg' : 'Form')) bad.push(`its table heads his ${muAvgOwn(MU) ? 'average' : 'recent form'} "${head[1]}"`);
       if (!sts.length && nOf('notrust') !== 'No trusted stats.') bad.push(`no trusted stat and no line saying so: '${nOf('notrust')}'`); }
     return bad; };
   const teamBad = (gid, me, stat) => {
@@ -9053,7 +9162,8 @@ async function glanceChecks() {
   /* a game both schedules have and a real player on it: a ranked player with a matchup row and a trusted stat where the
      matchups file has one (in the season), else a ranked player of either club (the off-season, a file of no starters) */
   const both = id => S.sched.some(x => x.id === id) && STATE.schedule.some(x => x.game_id === id);
-  const mrow = Object.entries(MU.players || {}).find(([pid, v]) => Pl.players[pid] && Pl.players[pid].se != null && Pl.players[pid].rank && S.players[pid]
+  /* (29 October 2026: the projections' entry, the Elo-adjusted averages' where the file carries them) */
+  const mrow = Object.entries(muEntriesOwn(MU)).find(([pid, v]) => Pl.players[pid] && Pl.players[pid].se != null && Pl.players[pid].rank && S.players[pid]
     && both(v.game_id) && Object.keys(v.stats || {}).some(st => trustOwn(v.group, st)) && !outOwn(pid));
   const r = mrow ? S.sched.find(x => x.id === mrow[1].game_id) : (S.sched.find(x => +x.w === +wk && both(x.id)) || S.sched.find(x => both(x.id)));
   const pid = mrow ? mrow[0] : r ? Object.keys(Pl.players || {}).find(id => Pl.players[id].rank && Pl.players[id].se != null && S.players[id]
@@ -9069,7 +9179,7 @@ async function glanceChecks() {
   let GRADES_SEEN = [];
   if (r) {
     const v = pick[1], sp = pid && S.players[pid], st = v ? Object.keys(v.stats).find(s => trustOwn(v.group, s)) : sp && sp.grp === 'QB' ? 'passing_yards' : 'receiving_yards';
-    const kk = v ? Math.round(v.stats[st][1]) + 0.5 : 50.5, team = v ? v.team : sp && sp.team, opp = team === r.h ? r.a : r.h;
+    const kk = v ? Math.round(muRowOwn(MU, pid, st)[1]) + 0.5 : 50.5, team = v ? v.team : sp && sp.team, opp = team === r.h ? r.a : r.h;
     const realP = sp ? { key: legKey(r.id, pid, st), gid: r.id, pid, stat: st, k: kk, side: 'over', main: true, p: 0.57, price: -110, src: 'real', mu: kk,
       name: sp.n, pos: sp.pos, grp: sp.grp, team, opp, week: r.w, label: `Over ${kk} ${st}` } : null;
     const realT = { key: legKey(r.id, 'team:' + r.h, 'ml'), gid: r.id, pid: 'team:' + r.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.6, price: r.mlh != null ? r.mlh : -150, src: r.mlh != null ? 'real' : 'est', mu: null,
@@ -9426,8 +9536,9 @@ async function glanceChecks() {
         S.parlay = { [rung.key]: rung }; w.eval('renderParlay()'); await wait(40);
         const tr = builder().querySelector('tr.legrow'), lp = legPrice(S.parlay[rung.key]), b = tr && tr.querySelector('[data-glance]');
         const f = fo(S.parlay[rung.key]), fc = tr && tr.querySelectorAll('td')[3], fw = f ? (f.p * 100).toFixed(0) + '%' + (f.est ? ' est.' : '') : '–';
-        const nv = (() => { const v = MU.players && MU.players[rung.pid]; return v && v.stats && v.stats[rung.stat] && trustOwn(v.group, rung.stat) && MU.fit && MU.fit[v.group + '|' + rung.stat] ? v.stats[rung.stat][2] : null; })();
-        const ln = tr ? [...tr.querySelectorAll('small.pe-lean')] : [], lw = nv == null ? null : `Elo ${leanTxtOwn(nv, rung.stat)}`;
+        /* (29 October 2026) the lean the Elo-adjusted averages give where the file carries them, the defence after it */
+        const nl = leanNoteOwn(MU, rung.pid, rung.stat);
+        const ln = tr ? [...tr.querySelectorAll('small.pe-lean')] : [], lw = nl ? nl.t : null;
         if (lp.ml !== -114 || lp.src !== 'real') bad.push(`the rung planted at the book's -114 shows ${lp.ml} ${lp.src}`);
         if (!fc || txt(fc) !== fw || (f && Math.abs(+fc.dataset.legchance - f.p) > 1e-12)) bad.push(`the builder row's Fair column reads ${fc ? txt(fc) : 'nothing'}, not ${fw} on the -114 it shows`);
         if (tr && tr.querySelector('.pe-alt, .pe-muleg, .pe-altsum')) bad.push('the builder row still draws market + form or an Elo matchup chance');
@@ -9753,6 +9864,10 @@ async function tieChecks() {
   const plant = [...wrs.map((r, i) => [r, 'WR', i]), ...rbs.map((r, i) => [r, 'RB', i])].map(([r, g, i]) => { const opp = i % 2 ? B : A, team = opp === A ? B : A;
     MT.players[r.id] = { group: g, game_id: GID, team, opp, home: team === B ? 1 : 0, elo: Math.round(norm(g)[0] + 4 * norm(g)[1]) - i, opp_def: { ...defs[opp] },
       stats: Object.fromEntries(MT.stats[g].map((x, k) => [x, [40 + k, 45 + k, 3]])) };
+    /* (29 October 2026) and his projections in the Elo-adjusted averages, where the file carries them, in the same game
+       (the window reads them for his game and opponent) */
+    if (muAvgOwn(MT)) MT.avg[r.id] = { group: g, game_id: GID, team, opp, home: team === B ? 1 : 0,
+      stats: Object.fromEntries(Object.keys(MT.avg_fit.legs).filter(k => k.split('|')[0] === g).map((k, j) => [k.split('|')[1], { avg: 40 + j, proj: 45 + j, no_elo: 42 + j, elo: 3, sd: 10, z: 0.3, def_x: 1, elo_x: (45 + j) / (42 + j) }])) };
     return { pid: r.id, group: g, opp, name: (Pl.players[r.id] || {}).name || r.name }; });
   const R = await run(st, SITE + '#slate', null, false, { elo: { mu: MT } });
   const { w, d } = R; try { await w.eloFiles(); } catch (e) {}
@@ -9768,7 +9883,7 @@ async function tieChecks() {
       if (!r || !k) { bad.push(`${x.pid} (${x.group} facing ${x.opp}) is not on the Mismatches`); continue; }
       if (r.defRank !== k.rank || r.defN !== k.n) bad.push(`${x.pid} facing ${x.opp}: ranked ${r.defRank} of ${r.defN}, the smoke's reading ${k.rank} of ${k.n}`);
       if (i < 5) { const b = d.querySelector(`#peMism .pe-mm-b[data-mm-pid="${x.pid}"]`), sub = b && b.querySelector('.pe-mm-sub'), line = `vs the ${x.opp} ${MM_AGAINST_OWN[x.group]}, ${ordOwn(k.rank)} by player Elo.`;
-        if (!sub || !txt(sub).startsWith(line)) bad.push(`${x.pid}'s bubble reads '${sub ? txt(sub) : 'nothing'}', not '${line}…'`); } }
+        if (!sub || !txt(sub).startsWith(line) || !mmSayOk(txt(sub), mmSayOwn(MT, x.pid, x.group))) bad.push(`${x.pid}'s bubble reads '${sub ? txt(sub) : 'nothing'}', not '${line}…${mmSayOwn(MT, x.pid, x.group)}'`); } }
     const [wa, wb] = plant.filter(x => x.group === 'WR'), [ra, rb] = plant.filter(x => x.group === 'RB'), rk = x => (rows.find(v => v.pid === x.pid) || {}).defRank;
     if (!(rk(wa) != null && rk(wa) === rk(wb))) bad.push(`the receivers facing ${A} and ${B}, level on the secondary, read ${rk(wa)} and ${rk(wb)}`);
     if (!(rk(ra) != null && rk(ra) === rk(rb))) bad.push(`the backs facing ${A} and ${B}, level on the front and linebackers to the hundredth, read ${rk(ra)} and ${rk(rb)}`);
@@ -9798,7 +9913,7 @@ async function tieChecks() {
       const da = md.querySelector(`[data-gs-def="${A}:DB"]`), db = md.querySelector(`[data-gs-def="${B}:DB"]`);
       if (!da || !db || txt(da) !== txt(db) || da.classList.contains('gs-better') || db.classList.contains('gs-better')) bad.push(`the secondaries of ${A} and ${B} are not drawn level and unmarked: '${da ? txt(da) : ''}' and '${db ? txt(db) : ''}'`);
       for (const x of plant) { const li = md.querySelector(`#gsMism li[data-pid="${x.pid}"] .gs-mmsub`), k = want(x), line = k ? `Against the ${x.opp} ${MM_AGAINST_OWN[x.group]}, ${ordOwn(k.rank)} of ${k.n} by player Elo.` : null;
-        if (!li || !line || !txt(li).startsWith(line)) bad.push(`${x.pid}'s line in the snapshot's Mismatches reads '${li ? txt(li) : 'nothing'}', not '${line}…'`); }
+        if (!li || !line || !txt(li).startsWith(line) || !mmSayOk(txt(li), mmSayOwn(MT, x.pid, x.group))) bad.push(`${x.pid}'s line in the snapshot's Mismatches reads '${li ? txt(li) : 'nothing'}', not '${line}…${mmSayOwn(MT, x.pid, x.group)}'`); }
       w.gameSnapshotClose(false); await wait(20); }
     chk(bad.length === 0 && R.errs.length === 0, `tied ranks: the Game snapshot does not rank ${A} and ${B} level on a unit alike: ${bad.slice(0, 6).join('; ')} ${R.errs.join('; ')}`); }
   w.close();

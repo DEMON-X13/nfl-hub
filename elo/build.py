@@ -473,6 +473,96 @@ and the page fades those. The coming week's projections are for the expected sta
 the latest ratings, the depth charts and the injury report, with the formula fitted on every
 completed season.
 
+ELO-ADJUSTED AVERAGES. The owner (29 October 2026): "i want for elo suggestions to match up certain
+averages vs other averages and adjusted for their overall elo rating ... get the elo pass defense of
+the panthers and what average catches they allow against players against that elo. it shouldnt be
+1:1 comparison it should be dependent on averages on the elo level they face ... there should be
+some level of ranking adjustment each week so that we get accurate estimates based on their current
+elo ... I want this for every single positional leg and adjustments done every week like the
+rankings." So every leg of an expected starter's next game is projected as
+
+    log(projection) = log(his average) + a + b E + g P + d E P  (+ w log(his average))  (+ the leg's other terms)
+
+his average his own games on the stat as a regular (involvement at least 80% of the position's
+norm; a kicker every game he kicked), the latest weighted most (a half-life of h of his regular
+games, or equal weights), each season boundary crossed weighing a game c, and k games of the
+position's mean over every season before added; E the opposing club's rating going in on the ELO
+Ratings tab's table that faces the stat (Pass Defense for catching and passing, Run Defense for
+rushing, Overall Defense for some touchdowns and the kicker, Run and Pass Defense both for a back's
+rush + rec yards), as the build keeps it (raw, in standard deviations of its stats) or as the tab
+shows it ((shown - 1500) / 100, the curve unrounded); P his own Elo, (rating - 1500) / 100, career
+(R) or this season's (RS). Where the matchup formula's other terms helped (variant d: a QB's passing
+yards, passing TDs, completions and attempts; a back's rushing yards, carries, catches and
+touchdowns; a receiver's touchdowns; a kicker's points) the leg adds home, what the defence has
+allowed the position on the stat (half-life six games, over the fit's mean), the opposing line's,
+linebackers' and secondary's player Elo and his club's own offence table on the same facet; a wide
+receiver's catches and yards (crk) his place in his club's pecking order on targets going in (a
+tight end's are c: his lineup carries one tight end, so the rule's crk there stood on 10 fit rows of
+a fallen-back lineup listing two, and a run-time lineup listing two moved his projection and his Elo
+part by a rank coefficient the ridge alone had split from the intercept; the review of 29 October
+2026). That is the owner's averages against averages at the Elo level faced: a quasi-Poisson
+regression with his average as the offset, so a band of defences' factor is what the defences rated
+there allowed, in total, over the faced players' own averages; never a 1:1 difference in Elo, and a
+smooth curve, since ten bands' plain ratios were too noisy (worse on 10 of 22 legs, never better).
+
+It is fitted on EVERY game of an expected starter judged before kickoff (the club's charted QB1,
+RB1, WR1-3, TE1 or K1 with three regular games behind him), 2016-2025, his games with nothing on the
+stat line put back as zeros from nflverse's snap counts, so it carries how often a starter's game
+turns out quiet, where the matchup formula above, fitted on regulars' games, runs about 30% high on
+a receiver's and a tight end's catches and yards on those games. The snap counts are the fit's
+alone: a game with nothing on the stat line is never a regular game, so no average, no prior mean
+and no defence's allowance reads one, and the build needs none and downloads none. Each choice (the
+average's h, k and c; the table, scale and shape; the variant c, crk or d) is the lowest walk-forward
+RMSE on 2018-2025, and every number is elo/tools/elo_avg_fit.py's (ELO_AVG), refitted only by hand
+after a season ends, never on the season in play. Walk-forward 2019-2025, each season on fits of the
+seasons before it with every choice made on earlier seasons only: better than his plain average on
+19 of 22 legs and worse on none; better than the matchup formula as it is fitted on 13 of 19 and
+worse on none, mostly from the rows it is fitted on; against that formula refitted on the same rows
+level on 10, better on 4 and worse on 5 (among them a receiver's catches and yards, where the
+pecking order helps, which the crk legs now carry). The defence's level itself moves a receiver's
+catches only about +4% against the weakest tenth of pass defences and -3% against the strongest, a
+back's rushing yards +9% and -8%; his own Elo carries more.
+
+The Elo part, which the Elo picks move DraftKings' fair chance by (never the projection's own chance:
+app v138's rule), is the projection less its no-Elo twin, the same leg refitted with E, P, E x P and
+the defenders' player Elo left out (the average, the level, home, allowed, his club's offence and the
+rank kept: the twin is calibrated, where the full fit with those terms set to 0 is not; set at
+the fit rows' means instead, the part moved the no-Elo projection worse than the twin's on 10 of the
+11 trusted legs on the nested walk-forward (level on a QB's interceptions, where the two differ by a
+constant, 0.8537 against 0.8538), a receiver's yards worse than not moving it at all,
+36.13 against 35.26 and the twin's 35.01, and its sign was right less often on its largest fifth,
+51.4% against 59.1%: knowing his Elo, a high average is worth less, which the twin's part carries
+and the market's line, which knows his average, does not; the review of 29 October 2026), in the
+stat's sd at the projection from the leg's spread (a negative binomial, a count less spread than a
+Poisson's, a Poisson for the anytime touchdown, or the yards' own ratio of outcome to projection by
+fifths of the projection). It is trusted only where, on the nested walk-forward 2019-2025, the
+projection beat its twin (a 90% interval below zero) and the Elo part's sign was right more than
+half the time on its largest fifth: 11 of 22 legs (a QB's interceptions; a back's rushing yards,
+carries and rush + rec yards; a receiver's catches, yards and touchdowns; a tight end's catches,
+yards and touchdowns; a kicker's points). Elsewhere the Elo adds nothing (a QB's rushing yards, a
+kicker's field goals made) or the twin's own terms take up what it carried (a QB's passing yards).
+ELO_AVG's `record` is each leg's walk-forward 2018-2025 RMSE with and without its Elo part and the
+sign right on the largest fifth (the frozen choice scored on the seasons it was chosen on, so a
+little flattered).
+
+Every run applies them, as the rankings move, to the coming week's expected starters on everything
+as it stands: his games through the latest final, the tables re-rated after every final (a club yet
+to play on its carried rating), his ratings, the defenders the game model expects. matchups.json
+carries them beside the formula's projections, which the Mismatches and the game model's uses keep:
+`avg`, {pid: the game, club, opponent, home, his slot in the lineup, his regular games, R and RS,
+the opponent's tables he faces (raw, the curve unrounded, the Elo and rank the tab shows), his club's
+offence table where a leg reads it, the opposing defenders and his place on targets, with `stats`,
+{stat: his average, the projection, its no-Elo twin, the Elo part, its sd and the Elo part in sd, the
+Elo part's split (def_x, the defence's multiplier, his projection over the same against the league's
+average defence; elo_x, his Elo's, the rest of the projection over its twin; the twin times the two
+is the projection, so the two together point the Elo part's way, where a split against a 1500 player
+pointed the other way on 128 of the 430 trusted legs of week 8, the review of 29 October 2026), the
+table he faces with its Elo and rank, and what the defence allowed where the leg reads it}}; `avg_ref`, the league's average
+defence as it stands; and `avg_fit`, ELO_AVG whole (each leg's terms, coefficients, twin, spread,
+trust and record). elo/check.py works each one out again on its own reading of the raw files (the
+average, the allowance, the pecking order, the tables, the projection and its parts), holding the
+ratings and the opposing defenders, which it does not replay, to the players map and the league's.
+
 THE RANKINGS are of this season alone. Beside the rating above, every player carries a second
 one that starts the season at 1500 and moves only on this season's games, by the same
 formula against the same units but with placement games, as Glicko and the ranked ladders of
@@ -625,7 +715,8 @@ test; no page draws them), each file written whole once everything is built:
                             coming week's calls, the teams' power ratings, the units, `sources`
     elo/data/matchups.json  the matchup formula per position and stat, its walk-forward record,
                             the coming week's projections for every expected starter, each
-                            club's expected lineup and who is out of it and why
+                            club's expected lineup and who is out of it and why, and every
+                            expected starter's Elo-adjusted averages (`avg`, `avg_ref`, `avg_fit`)
     elo/data/calls.json     the ledger of calls as published before kickoff (THE CALLS)
 elo/check.py and elo/check_tab.js are the gate the job runs before it commits.
 """
@@ -1491,6 +1582,46 @@ MU_DEF = ['DL', 'LB', 'DB']
 MU_RANK = {'WR': 2, 'TE': 1}
 MU_RANK_STATS = {'receptions', 'receiving_yards', 'targets'}      # the volume it decides; not the touchdowns
 
+# ELO-ADJUSTED AVERAGES (see the docstring): each positional leg's projection from the player's own average, the
+# opposing defence's rating on the ELO Ratings tab's table that faces the stat and his own Elo (the owner's ask of 29
+# October 2026), fitted on every game of an expected starter of the completed seasons, his games with nothing on the
+# stat line in; each leg's terms and coefficients, its no-Elo twin (the Elo part, which the Elo picks move DraftKings'
+# fair chance by, is the projection less it), its spread (the Elo part's sd), whether its Elo part is trusted and its
+# walk-forward record. Every number from elo/tools/elo_avg_fit.py (its docstring is the method), refitted only by
+# hand after a season ends, never on the season in play; averages() applies them every run on the ratings as they stand.
+AVG_COLS = ['fg_made', 'pat_made']      # a kicker's box score, logged beside MU_COLS for his averages
+ELO_AVG = {
+    'fit': '2016-2025',
+    'record': '2018-2025',
+    'starters': {'QB': 1, 'RB': 1, 'WR': 3, 'TE': 1, 'K': 1},
+    'min_games': 3,
+    'regular': 0.8,
+    'legs': {
+        'QB|passing_yards': {'kind': 'yards', 'avg': [20, 1, 0.5], 'eps': 2.45346, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [1.251959, -0.062742, 0.019897, 0.082343, -0.235574, 0.031575, 0.276388, -0.024318, -0.022881, -0.01816, 0.081646], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [1.141637, -0.217216, 0.032016, 0.325604, 0.106041]}, 'allowed_mean': 240.635031, 'spread': {'dist': 'ratio', 'edges': [213.2859, 230.1251, 245.0347, 261.598], 'rsd': [0.3855, 0.3581, 0.3254, 0.3072, 0.2615]}, 'trusted': False, 'record': {'games': 3789, 'rmse': 77.3097, 'rmse_no_elo': 77.287, 'right_top': 0.5409}},
+        'QB|passing_tds': {'kind': 'count', 'avg': [6, 2, 1.0], 'eps': 0.0152247, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [0.172142, -0.134286, 0.108304, -0.047809, -0.529678, 0.101116, 0.033622, -0.085651, -0.058616, -0.160815, 0.210834], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [0.105905, -0.449408, 0.10359, 0.16784, 0.320251]}, 'allowed_mean': 1.521605, 'spread': {'dist': 'qp', 'phi': 0.8336}, 'trusted': False, 'record': {'games': 3789, 'rmse': 1.1337, 'rmse_no_elo': 1.1361, 'right_top': 0.5449}},
+        'QB|completions': {'kind': 'count', 'avg': [20, 4, 0.5], 'eps': 0.215188, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-0.040496, -0.055005, 0.043491, 0.071755, 0.02049, 0.287756, -0.003004, -0.004662, -0.035912, 0.019741], 'no_elo': {'terms': ['one', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-0.040081, 0.020845, 0.302989, 0.088458]}, 'allowed_mean': 21.566937, 'spread': {'dist': 'nb', 'r': 21.6568}, 'trusted': False, 'record': {'games': 3789, 'rmse': 6.2809, 'rmse_no_elo': 6.2809, 'right_top': 0.5317}},
+        'QB|attempts': {'kind': 'count', 'avg': [8, 8, 1.0], 'eps': 0.342774, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-1.282183, -0.017967, 0.028619, 0.051415, 0.349309, 0.000412, 0.17988, 0.008289, 0.004584, 0.021305, 0.037127], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-1.370467, 0.377815, 0.000231, 0.182925, 0.085411]}, 'allowed_mean': 33.459298, 'spread': {'dist': 'nb', 'r': 18.7851}, 'trusted': False, 'record': {'games': 3789, 'rmse': 8.9438, 'rmse_no_elo': 8.9375, 'right_top': 0.4987}},
+        'QB|passing_interceptions': {'kind': 'count', 'avg': [None, 8, 1.0], 'eps': 0.00834766, 'tables': ['pass_def'], 'scale': 'shown', 'player': None, 'variant': 'c', 'terms': ['one', 'E:pass_def', 'log_avg'], 'coef': [-0.174495, 0.057681, -0.402893], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-0.172616, -0.407186]}, 'spread': {'dist': 'nb', 'r': 10.5947}, 'trusted': True, 'record': {'games': 3789, 'rmse': 0.8598, 'rmse_no_elo': 0.8609, 'right_top': 0.5449}},
+        'QB|rushing_yards': {'kind': 'yards', 'avg': [40, 1, 0.5], 'eps': 0.131725, 'tables': ['run_def'], 'scale': 'raw', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:run_def', 'P', 'EP'], 'coef': [-0.024609, -0.225685, -0.038841, 0.06923], 'no_elo': {'terms': ['one'], 'coef': [-0.024046]}, 'spread': {'dist': 'ratio', 'edges': [5.3696, 9.6611, 15.749, 24.4328], 'rsd': [2.1522, 1.4326, 1.1469, 0.8886, 0.6921]}, 'trusted': False, 'record': {'games': 3789, 'rmse': 16.3866, 'rmse_no_elo': 16.396, 'right_top': 0.4947}},
+        'QB|carries': {'kind': 'count', 'avg': [12, 1, 1.0], 'eps': 0.0303278, 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:run_def', 'P', 'EP'], 'coef': [-0.018408, -0.017859, -0.0353, 0.00863], 'no_elo': {'terms': ['one'], 'coef': [-0.027768]}, 'spread': {'dist': 'nb', 'r': 9.441}, 'trusted': False, 'record': {'games': 3789, 'rmse': 2.3012, 'rmse_no_elo': 2.3025, 'right_top': 0.533}},
+        'QB|any_td': {'kind': 'td', 'avg': [20, 8, 1.0], 'eps': 0.0012406, 'tables': ['run_def'], 'scale': 'shown', 'player': None, 'variant': 'c', 'terms': ['one', 'E:run_def'], 'coef': [0.045365, -0.059759], 'no_elo': {'terms': ['one'], 'coef': [0.046103]}, 'spread': {'dist': 'poisson'}, 'trusted': False, 'record': {'games': 3789, 'rmse': 0.4294, 'rmse_no_elo': 0.4295, 'right_top': 0.5158}},
+        'RB|rushing_yards': {'kind': 'yards', 'avg': [3, 0, 1.0], 'eps': 0.607133, 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:run_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:run_off'], 'coef': [1.494641, -0.051335, 0.185265, 0.018414, -0.406183, 0.065008, 0.157215, -0.048876, -0.003166, -0.12317, -0.012492], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:run_off'], 'coef': [0.667304, -0.190923, 0.066555, 0.325671, 0.019556]}, 'allowed_mean': 61.212786, 'spread': {'dist': 'ratio', 'edges': [46.6874, 54.3819, 61.2079, 70.563], 'rsd': [0.7722, 0.6874, 0.6168, 0.551, 0.5137]}, 'trusted': True, 'record': {'games': 3911, 'rmse': 36.1598, 'rmse_no_elo': 36.4363, 'right_top': 0.5722}},
+        'RB|carries': {'kind': 'count', 'avg': [2, 0, 1.0], 'eps': 0.144535, 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:run_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:run_off'], 'coef': [0.740086, -0.016378, 0.159732, 0.008473, -0.33807, 0.040024, 0.232621, -0.020763, -0.000411, -0.076377, -0.038355], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:run_off'], 'coef': [0.257268, -0.135313, 0.040832, 0.285479, 0.048896]}, 'allowed_mean': 14.185254, 'spread': {'dist': 'nb', 'r': 8.103}, 'trusted': True, 'record': {'games': 3911, 'rmse': 5.6755, 'rmse_no_elo': 5.7442, 'right_top': 0.6105}},
+        'RB|receptions': {'kind': 'count', 'avg': [6, 2, 1.0], 'eps': 0.0258695, 'tables': ['pass_def'], 'scale': 'shown', 'player': 'RS', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-0.148807, -0.03, 0.074699, -0.000692, 0.068569, 0.254634, 0.030498, 0.001428, -0.056834, -0.003964], 'no_elo': {'terms': ['one', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-0.111297, 0.068513, 0.270612, 0.033391]}, 'allowed_mean': 2.73604, 'spread': {'dist': 'nb', 'r': 7.5771}, 'trusted': False, 'record': {'games': 3911, 'rmse': 1.882, 'rmse_no_elo': 1.8866, 'right_top': 0.5581}},
+        'RB|receiving_yards': {'kind': 'yards', 'avg': [40, 2, 0.5], 'eps': 0.206718, 'tables': ['pass_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:pass_def', 'P', 'EP'], 'coef': [-0.174422, -0.051121, 0.095802, -0.013548], 'no_elo': {'terms': ['one'], 'coef': [-0.114229]}, 'spread': {'dist': 'ratio', 'edges': [12.5427, 15.9242, 19.6631, 25.0991], 'rsd': [1.4854, 1.14, 1.0312, 0.9065, 0.7685]}, 'trusted': False, 'record': {'games': 3911, 'rmse': 19.0454, 'rmse_no_elo': 19.1102, 'right_top': 0.5798}},
+        'RB|scrim_yards': {'kind': 'yards', 'avg': [3, 0, 1.0], 'eps': 0.816294, 'tables': ['run_def', 'pass_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:run_def', 'E:pass_def', 'P', 'EP', 'log_avg'], 'coef': [1.917458, -0.044483, -0.039623, 0.209601, 0.013509, -0.478002], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [0.397432, -0.109779]}, 'spread': {'dist': 'ratio', 'edges': [62.7971, 71.6859, 80.5256, 92.9027], 'rsd': [0.6706, 0.5766, 0.5208, 0.5066, 0.4415]}, 'trusted': True, 'record': {'games': 3911, 'rmse': 41.3582, 'rmse_no_elo': 42.0296, 'right_top': 0.6284}},
+        'RB|any_td': {'kind': 'td', 'avg': [4, 4, 1.0], 'eps': 0.00512391, 'tables': ['def'], 'scale': 'shown', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:off'], 'coef': [-0.702624, -0.056338, 0.365136, -0.040536, -0.772685, 0.140737, 0.043108, -0.001139, -0.042026, -0.244696, 0.415102], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:off'], 'coef': [-0.341265, -0.424776, 0.144402, 0.166493, 0.427472]}, 'allowed_mean': 0.577228, 'spread': {'dist': 'poisson'}, 'trusted': False, 'record': {'games': 3911, 'rmse': 0.7536, 'rmse_no_elo': 0.7594, 'right_top': 0.5811}},
+        'WR|receptions': {'kind': 'count', 'avg': [12, 0, 0.5], 'eps': 0.0477782, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'crk', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'rk0', 'rk1'], 'coef': [0.009851, -0.120866, 0.253578, 0.046507, -0.353511, 0.309575, 0.216225], 'no_elo': {'terms': ['one', 'log_avg', 'rk0', 'rk1'], 'coef': [-0.531918, 0.00752, 0.400418, 0.255243]}, 'spread': {'dist': 'nb', 'r': 9.237}, 'trusted': True, 'record': {'games': 10884, 'rmse': 2.2796, 'rmse_no_elo': 2.3023, 'right_top': 0.6073}},
+        'WR|receiving_yards': {'kind': 'yards', 'avg': [20, 0, 0.5], 'eps': 0.623425, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'crk', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'rk0', 'rk1'], 'coef': [2.318657, -0.142201, 0.375358, 0.044041, -0.707875, 0.334254, 0.219916], 'no_elo': {'terms': ['one', 'log_avg', 'rk0', 'rk1'], 'coef': [0.003517, -0.130721, 0.437483, 0.252141]}, 'spread': {'dist': 'ratio', 'edges': [31.394, 39.4209, 49.1151, 61.6809], 'rsd': [1.026, 0.8904, 0.778, 0.6814, 0.5733]}, 'trusted': True, 'record': {'games': 10884, 'rmse': 35.0003, 'rmse_no_elo': 35.2956, 'right_top': 0.5921}},
+        'WR|any_td': {'kind': 'td', 'avg': [6, 0, 0.5], 'eps': 0.00377899, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-1.332681, -0.236989, 0.582557, -0.007023, -0.929081, 0.104763, 0.005451, -0.027491, -0.060391, -0.108317, 0.214138], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-1.021797, -0.789924, 0.104299, 0.085548, 0.396312]}, 'allowed_mean': 0.392135, 'spread': {'dist': 'poisson'}, 'trusted': True, 'record': {'games': 10884, 'rmse': 0.5409, 'rmse_no_elo': 0.5486, 'right_top': 0.6468}},
+        'TE|receptions': {'kind': 'count', 'avg': [8, 0, 0.5], 'eps': 0.0425993, 'tables': ['pass_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg'], 'coef': [-0.171633, -0.028282, 0.268669, -0.003816, -0.15519], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-0.850438, 0.387203]}, 'spread': {'dist': 'nb', 'r': 8.3935}, 'trusted': True, 'record': {'games': 3775, 'rmse': 2.1287, 'rmse_no_elo': 2.1595, 'right_top': 0.6278}},
+        'TE|receiving_yards': {'kind': 'yards', 'avg': [6, 0, 1.0], 'eps': 0.471366, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg'], 'coef': [1.124166, -0.259924, 0.350825, 0.017935, -0.407016], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-1.224902, 0.244953]}, 'spread': {'dist': 'ratio', 'edges': [23.9131, 29.5086, 35.0445, 43.609], 'rsd': [1.0195, 0.8867, 0.8143, 0.722, 0.6215]}, 'trusted': True, 'record': {'games': 3775, 'rmse': 26.9974, 'rmse_no_elo': 27.3226, 'right_top': 0.6053}},
+        'TE|any_td': {'kind': 'td', 'avg': [3, 0, 1.0], 'eps': 0.00352005, 'tables': ['def'], 'scale': 'raw', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:def', 'P', 'EP', 'log_avg'], 'coef': [-1.53624, -0.558342, 0.544633, 0.039456, -0.95522], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-1.116974, -0.831325]}, 'spread': {'dist': 'poisson'}, 'trusted': True, 'record': {'games': 3775, 'rmse': 0.5094, 'rmse_no_elo': 0.5154, 'right_top': 0.6384}},
+        'K|fg_made': {'kind': 'count', 'avg': [12, 0, 0.5], 'eps': 0.0166694, 'tables': ['def'], 'scale': 'shown', 'player': 'RS', 'variant': 'c', 'terms': ['one', 'E:def', 'P', 'EP', 'log_avg'], 'coef': [0.409024, -0.026471, 0.041253, 0.003499, -0.825144], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [0.397738, -0.79034]}, 'spread': {'dist': 'qp', 'phi': 0.8811}, 'trusted': False, 'record': {'games': 3959, 'rmse': 1.2003, 'rmse_no_elo': 1.201, 'right_top': 0.5354}},
+        'K|kick_pts': {'kind': 'yards', 'avg': [None, 2, 0.5], 'eps': 0.073214, 'tables': ['def'], 'scale': 'shown', 'player': None, 'variant': 'd', 'terms': ['one', 'E:def', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:off'], 'coef': [1.215902, -0.031852, -0.623602, 0.049962, 0.0879, -0.039071, -0.023502, -0.067634, 0.14414], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:off'], 'coef': [1.192547, -0.623821, 0.050873, 0.239234, 0.135163]}, 'allowed_mean': 7.22818, 'spread': {'dist': 'ratio', 'edges': [6.6628, 7.0143, 7.3072, 7.6523], 'rsd': [0.5909, 0.5282, 0.5079, 0.486, 0.4341]}, 'trusted': True, 'record': {'games': 3959, 'rmse': 3.6174, 'rmse_no_elo': 3.622, 'right_top': 0.5328}},
+    },
+}
+
 
 def mu_design(b, home, allowed, pz, dz, elo=True, rk=None):
     """the regression's columns: the recent average, home, what the defence has allowed, the
@@ -1616,6 +1747,194 @@ def matchups(log, game_feat, coming, last, lineups=None):
                                                          'opp_def': {u: round(c['opp_strength'][u]) for u in MU_DEF}, 'stats': {}})
                     pl['stats'][st] = [round(b, 2), round(max(e1, 0.0), 2), round(e1 - e0, 2)]
     return out
+
+
+# ---- ELO-ADJUSTED AVERAGES: an expected starter's next game from his own average, the defence's table and his Elo ----
+def avg_is_regular(vol, pos):
+    """a regular's game at the position: involvement at least ELO_AVG['regular'] of the position's norm (a kicker: any
+    game he kicked). A game with nothing on the stat line is never one, so it moves no average."""
+    return vol > 0 if pos == 'K' else vol >= ELO_AVG['regular'] * VOLUME[pos]
+
+
+def avg_value(vals, seasons, h, k, c, season, prior):
+    """his average going into a game of `season`: his regular games' values in order, each weighted 0.5 ** (games since
+    / h) (h None: equal weights) and c for every season boundary crossed, with k games' worth of the position's prior
+    mean added; None where there is nothing to average"""
+    n = len(vals)
+    S = W = 0.0
+    for j, (y, s) in enumerate(zip(vals, seasons)):
+        w = (0.5 ** ((n - 1 - j) / h) if h else 1.0) * c ** (season - s)
+        S += w * y
+        W += w
+    return (S + k * prior) / (W + k) if W + k > 0 else None
+
+
+def avg_sd(spread, mu):
+    """the stat's sd at projection mu under a leg's spread: a negative binomial (nb, var mu + mu^2 / r), a count less
+    spread than a Poisson's (qp, var phi mu), a Poisson (the anytime touchdown), or the yards' own ratio of outcome to
+    projection by fifths of the projection (ratio: rsd times mu, the fifth by edges)"""
+    mu = max(mu, 1e-3)
+    d = spread['dist']
+    if d == 'poisson':
+        return math.sqrt(mu)
+    if d == 'nb':
+        return math.sqrt(mu + mu * mu / spread['r'])
+    if d == 'qp':
+        return math.sqrt(spread['phi'] * mu)
+    return mu * spread['rsd'][bisect.bisect_left(spread['edges'], mu)]
+
+
+def avg_project(leg, avg, x):
+    """one leg for one player and game: his average and the terms' values x ({term: value}, the average's own log_avg
+    and the intercept apart) -> (the projection, its no-Elo twin, the Elo part, its sd at the projection, the Elo part
+    in sd). log(projection) = log(average, floored at eps) + the terms times their coefficients"""
+    lb = math.log(max(avg if avg is not None else leg['eps'], leg['eps']))
+    val = lambda t: 1.0 if t == 'one' else lb if t == 'log_avg' else x[t]
+    lin = lambda terms, coef: sum(w * val(t) for t, w in zip(terms, coef))
+    proj = math.exp(max(-30.0, min(30.0, lin(leg['terms'], leg['coef']) + lb)))
+    proj0 = math.exp(max(-30.0, min(30.0, lin(leg['no_elo']['terms'], leg['no_elo']['coef']) + lb)))
+    sd = avg_sd(leg['spread'], proj)
+    return proj, proj0, proj - proj0, sd, (proj - proj0) / sd
+
+
+def avg_split(leg, x, ref):
+    """the defence's multiplier of the projection, against the league's average defence as it stands (ref: each
+    table's mean over the clubs with a rating, on the leg's scale, and the mean of the clubs' expected defenders): its
+    table(s), the interaction at his own Elo and the opposing defenders' player Elo, over the average defence's. The
+    projection over its twin and this is his Elo's multiplier (elo_x): the twin times the two is the projection, so
+    the Elo part's split agrees with the Elo part."""
+    w = dict(zip(leg['terms'], leg['coef']))
+    first, P = 'E:' + leg['tables'][0], x.get('P', 0.0)
+    d = sum(w[t] * (x[t] - ref[t]) for t in w if t.startswith('E:') or t in MU_DEF)
+    d += w.get('EP', 0.0) * (x[first] - ref[first]) * P
+    return math.exp(d)
+
+
+def avg_tables(units, games, season, pbp):
+    """the ELO Ratings tab's tables as they stand for the coming games' season, {table: {club: {raw, shown, elo,
+    rank}}}: the rankings' units (unit_ratings) where they are of that season, else that season's own from the carry
+    (a new season's week 1, or its opening days before the rankings move to it: a club yet to play on its carried
+    rating). shown is the tab's curve unrounded (1500 + 100 z across the clubs with a rating), which the fit read."""
+    if units.get('season') != season:
+        prev, cur = pbp.get(season - 1), pbp.get(season)
+        carry = unit_carry(games[games.season == season - 1], *pbp_team_games(prev)) if prev is not None else None
+        tg, score = pbp_team_games(cur) if cur is not None else (None, {})
+        units = unit_ratings(games[games.season == season], tg, score, carry)
+    out = {}
+    for name in unit_tables():
+        T = units[name]
+        rated = [t for t, v in T.items() if v['games'] or v['carried']]
+        v = np.array([T[t]['raw'] for t in rated]) if rated else np.zeros(1)
+        mu, sd = float(v.mean()), float(v.std())
+        out[name] = {t: {'raw': e['raw'], 'shown': 1500 + 100 * (e['raw'] - mu) / sd if sd > 1e-9 else 1500.0,
+                         'elo': e['elo'], 'rank': e['rank'], 'rated': t in rated} for t, e in T.items()}
+    return out
+
+
+def averages(log, coming, season, tables, rating, season_rating, defs):
+    """ELO-ADJUSTED AVERAGES for the coming games: each side's expected starters (QB1, RB1, WR1-3, TE1, K1 of its
+    lineup) with ELO_AVG['min_games'] regular games behind him at the position, every leg of his position on the
+    ratings as they stand: tables (avg_tables), his career rating (rating) and season rating (season_rating), the
+    opposing defenders (each side's opp_strength) and, for the league's average defence, every club's expected
+    defenders (defs). Returns ({pid: his block}, the league reference)."""
+    A = ELO_AVG
+    d = pd.DataFrame(log)
+    if d.empty or not coming:
+        return {}, {}
+    d['scrim_yards'] = d.rushing_yards + d.receiving_yards
+    d['any_td'] = d.rushing_tds + d.receiving_tds
+    d['kick_pts'] = 3 * d.fg_made + d.pat_made
+    d = d.sort_values(['season', 'ord'], kind='mergesort').reset_index(drop=True)
+    d['reg'] = [avg_is_regular(v, g) for v, g in zip(d.vol, d.group)]
+    legs = {}
+    for key, leg in A['legs'].items():
+        pos, col = key.split('|')
+        legs.setdefault(pos, []).append((col, leg))
+    # the position's prior mean (every season before the coming one) and what each defence has allowed the position on
+    # the stat (half-life six games, through its latest), over the fit's mean
+    prior, allowed = {}, {}
+    for pos, cols in legs.items():
+        r = d[(d.group == pos) & d.reg]
+        before = r[r.season < season]
+        for col, leg in cols:
+            prior[(pos, col)] = float(before[col].mean()) if len(before) else float(r[r.season == season][col].mean())
+            if 'log_allowed' in leg['terms']:
+                a = r.groupby(['season', 'ord', 'opp'])[col].mean().reset_index().sort_values(['season', 'ord'], kind='mergesort')
+                allowed[(pos, col)] = {t: float(v.ewm(halflife=MU_ALLOWED_HL).mean().iloc[-1]) / leg['allowed_mean']
+                                       for t, v in a.groupby('opp')[col]}
+    by_pid = {pid: x for pid, x in d.groupby('pid', sort=False)}
+    # targets going in (the matchup formula's pecking order: half-life four games, every game he played)
+    tgt = lambda pid: (float(by_pid[pid][by_pid[pid].group != 'K'].targets.ewm(halflife=MU_FORM_HL).mean().iloc[-1])
+                       if pid in by_pid and (by_pid[pid].group != 'K').any() else 0.0)
+    # the league's average defence as it stands: each table's mean over the clubs with a rating, on each scale, and the
+    # mean of every club's expected defenders
+    ref = {'raw': {}, 'shown': {}, 'defs': {}}
+    for name, T in tables.items():
+        rated = [e for e in T.values() if e['rated']] or list(T.values())
+        ref['raw'][name] = float(np.mean([e['raw'] for e in rated]))
+        ref['shown'][name] = float(np.mean([(e['shown'] - 1500) / 100 for e in rated]))
+    for u in MU_DEF:
+        ref['defs'][u] = float(np.mean([(s[u] - 1500) / 100 for s in defs.values()])) if defs else 0.0
+    E = lambda t, club, scale: tables[t][club]['raw'] if scale == 'raw' else (tables[t][club]['shown'] - 1500) / 100
+    out = {}
+    for c in coming:
+        cnt, tl = {}, {}
+        for pid, g in c['parts']:
+            cnt[g] = cnt.get(g, 0) + 1
+            if g not in A['starters'] or cnt[g] > A['starters'][g] or g not in legs:
+                continue
+            mine = by_pid.get(pid)
+            reg = mine[(mine.group == g) & mine.reg] if mine is not None else None
+            if reg is None or len(reg) < A['min_games']:
+                continue
+            R, RS = rating.get(pid, REPLACEMENT), season_rating.get(pid, 1500.0)
+            D = {u: (c['opp_strength'][u] - 1500) / 100 for u in MU_DEF}
+            rk = None
+            if g in MU_RANK:
+                mates = [p for p, gg in c['parts'] if gg == g]
+                for p in mates:
+                    if p not in tl:
+                        tl[p] = tgt(p)
+                r = sum(1 for q in set(mates) if q != pid and tl[q] > tl[pid])
+                rk = {'rk0': float(r == 0), 'rk1': float(r == 1 and MU_RANK[g] > 1)}
+            blk = {'group': g, 'game_id': c['game_id'], 'team': c['team'], 'opp': c['opp'], 'home': c['home'], 'slot': cnt[g],
+                   'games': int(len(reg)), 'R': round(R, 6), 'RS': round(RS, 6), 'defs': {}, 'own': {},
+                   'D': {u: round(c['opp_strength'][u], 6) for u in MU_DEF}, 'stats': {}}
+            if rk is not None:
+                blk['rank_on_targets'] = r + 1
+            for col, leg in legs[g]:
+                av = avg_value(list(reg[col].astype(float)), list(reg.season.astype(int)), *leg['avg'], season, prior[(g, col)])
+                x = {'P': ((R if leg['player'] == 'R' else RS) - 1500) / 100} if leg['player'] else {}
+                for t in leg['tables']:
+                    x['E:' + t] = E(t, c['opp'], leg['scale'])
+                    e = tables[t][c['opp']]
+                    blk['defs'][t] = {'raw': round(e['raw'], 6), 'shown': round(e['shown'], 4), 'elo': e['elo'], 'rank': e['rank']}
+                if leg['player']:
+                    x['EP'] = x['E:' + leg['tables'][0]] * x['P']
+                x.update(D, home=float(c['home']))
+                if rk is not None:
+                    x.update(rk)
+                st = {}
+                if 'log_allowed' in leg['terms']:
+                    a = allowed[(g, col)].get(c['opp'], 1.0)
+                    x['log_allowed'] = math.log(max(a, 1e-3))
+                    st['allowed'] = round(a, 6)
+                for t in leg['terms']:
+                    if t.startswith('own:'):
+                        x[t] = tables[t[4:]][c['team']]['raw']
+                        blk['own'][t[4:]] = round(x[t], 6)
+                proj, proj0, part, sd, z = avg_project(leg, av, x)
+                rf = {**{'E:' + t: ref[leg['scale']][t] for t in leg['tables']}, **ref['defs']}
+                dx = avg_split(leg, x, rf)
+                first = tables[leg['tables'][0]][c['opp']]
+                st = {'avg': None if av is None else round(av, 4), 'proj': round(proj, 4), 'no_elo': round(proj0, 4),
+                      'elo': round(part, 4), 'sd': round(sd, 4), 'z': round(z, 4),
+                      'def_x': round(dx, 4), 'elo_x': round(proj / (proj0 * dx), 4),
+                      'vs': {'table': leg['tables'][0], 'elo': first['elo'], 'rank': first['rank']}, **st}
+                blk['stats'][col] = st
+            out[pid] = blk
+    rd = lambda v: {k: round(x, 6) + 0.0 for k, x in v.items()}
+    return out, {'raw': rd(ref['raw']), 'shown': rd(ref['shown']), 'defs': rd(ref['defs'])}
 
 
 ROUND = {19: 'the Wild Card round', 20: 'the Divisional round', 21: 'the Conference championships', 22: 'the Super Bowl'}
@@ -1793,7 +2112,7 @@ def main():
             parts += [(p, g) for p in picked]
         return parts, chart is not None
 
-    mu_log = []             # every offensive player-game: pre-game rating, opponent, box score
+    mu_log = []             # every offensive player-game and every kicker's: pre-game rating, opponent, box score
     mu_lineups = {}         # (game_id, team) -> the expected lineup, for the receivers' pecking order
     cur_season = None
     for season, ordw in ord_weeks.itertuples(index=False):
@@ -1848,10 +2167,10 @@ def main():
                 # a regular who left early: his involvement collapsed against his own recent
                 # norm, so the game says nothing about how good he is and is not rated
                 rv = recent.setdefault(pid, [])
-                if g in MU_STATS:
+                if g in MU_STATS or g == 'K':
                     mu_log.append({'season': int(season), 'ord': int(ordw), 'game_id': row.game_id, 'pid': pid, 'group': g,
                                    'team': r.team, 'opp': r.opponent_team, 'home': int(r.team == row.home_team), 'R': R[pid],
-                                   'vol': float(r.vol), **{c: (0.0 if pd.isna(getattr(r, c, 0)) else float(getattr(r, c, 0))) for c in MU_COLS}})
+                                   'vol': float(r.vol), **{c: (0.0 if pd.isna(getattr(r, c, 0)) else float(getattr(r, c, 0))) for c in MU_COLS + AVG_COLS}})
                 if (len(rv) >= 3 and np.median(rv) >= 0.8 * VOLUME[g] and r.vol < LEFT_EARLY * np.median(rv)
                         and not short_prev.get(pid)):
                     skipped += 1
@@ -2277,7 +2596,7 @@ def main():
         'prov_games': PROV_GAMES,
         'groups': groups_out, 'players': players, 'past': past,
     }
-    mu = matchups(mu_log, game_feat, coming, call_season, mu_lineups)
+    mu = matchups([r for r in mu_log if r['group'] in MU_STATS], game_feat, coming, call_season, mu_lineups)
     if mu:
         cols = lambda g, st: (['1', 'home x form', 'form', 'form x allowed']
                               + [f'form x {g}{i + 1}' for i in range(MU_RANK.get(g, 0) if st in MU_RANK_STATS else 0)]
@@ -2296,7 +2615,8 @@ def main():
             if len(nxt):
                 r0 = nxt.iloc[0]
                 league[t], _ = expected(int(r0.season), r0.week, t, r0.gameday, fallback(t), gone_now)
-                lineups[t] = {'game_id': r0.game_id, 'week': int(r0.week), 'players': [p for p, _ in league[t]]}
+                lineups[t] = {'game_id': r0.game_id, 'week': int(r0.week), 'players': [p for p, _ in league[t]],
+                              'groups': [g for _, g in league[t]]}
             else:
                 gone = [k for k in mu_lineups if k[1] == t and k[0].startswith(f'{last}_')]
                 if gone:
@@ -2319,6 +2639,14 @@ def main():
         mu['reports'] = report
         mu.update({'built_at': model['built_at'], 'season': call_season, 'week': model['next']['week'],
                    'columns': {f'{g}|{st}': cols(g, st) for g, sts in MU_STATS.items() for st in sts}})
+        # ELO-ADJUSTED AVERAGES: every coming game's expected starters on the ratings and the ELO tab's tables as they
+        # stand, beside the matchup formula's projections (which the Mismatches and the game model's uses keep)
+        av, ref = averages(mu_log, coming, call_season, avg_tables(units, games, call_season, pbp), R,
+                           RSd.get(call_season, {}), {t: strength(parts) for t, parts in league.items()})
+        mu['avg'], mu['avg_ref'], mu['avg_fit'] = av, ref, ELO_AVG
+        nl = sum(len(v['stats']) for v in av.values())
+        print(f"  elo-adjusted averages: {len(av)} expected starters, {nl} legs "
+              f"({sum(1 for v in av.values() for k in v['stats'] if ELO_AVG['legs'][v['group'] + '|' + k]['trusted'])} on a trusted Elo part)")
         for k in ('QB|passing_yards', 'WR|receiving_yards', 'RB|rushing_yards', 'TE|receiving_yards'):
             r = mu['record'].get(k, {}).get('past')
             if r:
