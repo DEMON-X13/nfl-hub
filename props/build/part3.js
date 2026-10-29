@@ -3223,16 +3223,44 @@ function pbTopWhy(r,u){
   return `No line on your picks qualifies yet${r.noId?' that DraftKings’ betslip can take':''}: tick more games or bet types.`;
 }
 const pbMoney1=v=>(v<-0.0005?'−':'+')+'$'+Math.abs(v).toFixed(2);
+/* (app v139) what a projection counts, by its stat: "17 yds", "4.6 catches" */
+const PB_PROJ_UNIT={passing_yards:'yds',rushing_yards:'yds',receiving_yards:'yds',scrim_yards:'yds',receptions:'catches',
+  passing_tds:'TDs',attempts:'att',completions:'comp',passing_interceptions:'INTs',carries:'carries',targets:'targets',
+  fg_made:'FGs',fg_att:'FG att',kick_pts:'pts',any_td:'to score'};
+const pbProjUnit=stat=>PB_PROJ_UNIT[stat]||'';
+/* (app v139) a row's projection: a player's mean on his stat, or on an anytime touchdown the model's chance he scores
+   (pm, the pool copy's model chance: the figure his game page heads the touchdown with), shown as information only */
+const pbProjOf=l=>isGameLeg(l)?null:l.stat==='any_td'?(l.pm!=null&&isFinite(l.pm)?+l.pm:null):(l.mu!=null&&isFinite(l.mu)?+l.mu:null);
+/* (app v139) a player line's club, as the Props list draws it */
+function pbTeamChip(l){
+  if(isGameLeg(l)||!l.team) return '';
+  const nm=esc(TEAM_NAMES[l.team]||l.team);
+  return tag(esc(l.team)).replace('<span class="ttag"',`<span class="ttag sl-mini pb-tteam" title="${nm}" aria-label="${nm}"`);
+}
 /* (app v138) a row: its price, a player's projection (a dash for a game bet or a touchdown), DraftKings' fair chance,
    what $1 wins and what it is expected to return at the fair chance; no model column */
 function pbTopRow(l,i){
   const g=(S.sched||[]).find(x=>x.id===l.gid), pc=v=>(v*100).toFixed(0)+'%';
   const est=l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:'';
-  const mark=pbValMark(l), proj=!isGameLeg(l)&&l.mu!=null&&isFinite(l.mu)?l.mu:null;
+  const mark=pbValMark(l), td=l.stat==='any_td', proj=pbProjOf(l);
   return `<li class="pb-trow" data-pb-row="${i+1}" data-pb-grp="${pbIsValue(l)?'value':isGameLeg(l)?'game':'player'}"><span class="pb-trk">${i+1}</span>
-    <span class="nm">${glanceName(l)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}</span>
-    <span class="pb-tcs"><span class="pb-tc"><b>${fmtML(l.price)}${est}</b><small>price</small></span><span class="pb-tc"><b${proj!=null?` data-pb-proj="${proj}"`:''}>${proj!=null?num(proj,proj<10?1:0):'–'}</b><small>projected</small></span><span class="pb-tc"><b${l.fc?` data-pb-fair="${l.fc.p}"`:''}>${l.fc?pc(l.fc.p):'–'}</b><small>${l.fc?(l.fc.est?'fair, est.':'fair'):'no fair'}</small></span><span class="pb-tc"><b data-pb-win="${l.win}">${pbMoney1(l.win)}</b><small>wins on $1</small></span><span class="pb-tc"><b data-pb-ev="${l.ev}">${pbMoney1(l.ev)}</b><small>expected on $1</small></span></span>
+    <span class="nm">${pbTeamChip(l)}${glanceName(l)}<small>${esc(l.label)}${mark}</small>${g?`<small class="pb-tg">${esc(g.a)} @ ${esc(g.h)}</small>`:''}</span>
+    <span class="pb-tcs"><span class="pb-tc"><b>${fmtML(l.price)}${est}</b><small>price</small></span><span class="pb-tc"><b${proj!=null?` data-pb-proj="${proj}"`:''}>${proj!=null?(td?Math.round(proj*100)+'%':num(proj,proj<10?1:0))+(pbProjUnit(l.stat)?` <span class="pb-unit">${pbProjUnit(l.stat)}</span>`:''):'–'}</b><small>projected</small></span><span class="pb-tc"><b${l.fc?` data-pb-fair="${l.fc.p}"`:''}>${l.fc?pc(l.fc.p):'–'}</b><small>${l.fc?(l.fc.est?'fair, est.':'fair'):'no fair'}</small></span><span class="pb-tc"><b data-pb-win="${l.win}">${pbMoney1(l.win)}</b><small>wins on $1</small></span><span class="pb-tc"><b data-pb-ev="${l.ev}">${pbMoney1(l.ev)}</b><small>expected on $1</small></span></span>
     ${pbLegAddBtn(l)}</li>`;
+}
+/* (app v139) the Player lines' sort, this page load's alone: a column and its way round (1 highest first, -1 lowest) */
+let PB_TSORT={k:'rank',dir:1};
+const PB_TSORT_COLS=[['rank','Rank',null],['price','Price',l=>l.dec],['proj','Projected',pbProjOf],
+  ['fair','Fair',l=>l.fc?l.fc.p:null],['win','Wins',l=>l.win],['ev','Expected',l=>l.ev]];
+function pbTsorted(L){
+  const c=PB_TSORT_COLS.find(x=>x[0]===PB_TSORT.k);
+  if(!c||!c[2]) return L;
+  const v=c[2], d=PB_TSORT.dir;
+  return [...L].sort((a,b)=>{ const x=v(a.l), y=v(b.l); if(x==null||y==null) return (x==null)-(y==null)||a.r-b.r; return d*(y-x)||a.r-b.r; });
+}
+function pbTsortBar(){
+  return `<div class="pb-tsort" role="group" aria-label="Sort the player lines"><span class="pb-lbl">Sort</span>${PB_TSORT_COLS.map(([k,lbl])=>{ const on=PB_TSORT.k===k, ar=on&&k!=='rank'?(PB_TSORT.dir>0?' ▼':' ▲'):'';
+    return `<button type="button" class="${on?'on':''}" data-pb-sort="${k}" aria-pressed="${on}"${on&&k!=='rank'?` title="${PB_TSORT.dir>0?'Highest first: press again for lowest first':'Lowest first: press again for highest first'}"`:''}>${lbl}${ar}</button>`; }).join('')}</div>`;
 }
 function pbPanel(){
   const u=pbUi(), w=currentWeek(), games=pbGames(), mix=pbMix(u);
@@ -3260,7 +3288,9 @@ function pbPanel(){
      Value picks (drawn only with rows), then Player lines, then Game bets; a part with no rows is not drawn */
   const nV=r.rows.filter(pbIsValue).length, V=r.rows.slice(0,nV), rest=r.rows.slice(nV), Pl=rest.filter(l=>!isGameLeg(l)), Gm=rest.filter(isGameLeg);
   const secHd=(id,title,n)=>`<h3 class="pb-topsec" data-pb-sec="${id}">${title}${n?` <span class="pill">${n}</span>`:''}</h3>`;
-  const part=(id,title,L,at,aria)=>L.length?secHd(id,title,L.length)+`<ol class="pb-top" data-pb-sec="${id}"${at?` start="${at+1}"`:''} aria-label="${aria}">${L.map((l,i)=>pbTopRow(l,at+i)).join('')}</ol>`:'';
+  const part=(id,title,L,at,aria)=>{ if(!L.length) return ''; let R=L.map((l,i)=>({l,r:at+i}));
+    if(id==='player') R=pbTsorted(R);
+    return secHd(id,title,L.length)+(id==='player'&&L.length>1?pbTsortBar():'')+`<ol class="pb-top" data-pb-sec="${id}"${at?` start="${at+1}"`:''} aria-label="${aria}">${R.map(x=>pbTopRow(x.l,x.r)).join('')}</ol>`; };
   const s=n=>n===1?'':'s';
   const list=r.rows.length?part('value','Value picks',V,0,`The ${V.length} Value pick${s(V.length)} on your picks, by expected return on $1`)
       +part('player','Player lines',Pl,nV,`${nV?'Then ':'The '}${Pl.length} player line${s(Pl.length)} on your picks, by expected return on $1`)
@@ -3837,6 +3867,9 @@ function wirePb(){
     amt.addEventListener('change',()=>{ const v=stakeRead(amt.value); if(v!=null) S.stake=v;
       S.stake=pbStake(); amt.value=stakeText(S.stake); save(); pbPays(); clearTimeout(PB_AMT_T); pbSyncBuilder(); });
   }
+  el.querySelectorAll('[data-pb-sort]').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.pbSort;
+    PB_TSORT=k==='rank'?{k,dir:1}:PB_TSORT.k===k?{k,dir:-PB_TSORT.dir}:{k,dir:1};
+    redraw(`[data-pb-sort="${k}"]`); }));
   el.querySelectorAll('[data-pb-mix]').forEach(b=>b.addEventListener('click',()=>{ const u=pbUi(), m=PB_MIXES.find(x=>x[0]===b.dataset.pbMix); if(!m) return;
     for(const [k] of PB_KINDS) u.k[k]=m[2].includes(k); save(); redraw(`[data-pb-mix="${m[0]}"]`); }));
   el.querySelectorAll('[data-pb-kind]').forEach(cb=>cb.addEventListener('change',()=>{ const u=pbUi(); u.k[cb.dataset.pbKind]=cb.checked; save(); redraw(`[data-pb-kind="${cb.dataset.pbKind}"]`); }));
