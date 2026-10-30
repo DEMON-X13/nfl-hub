@@ -429,6 +429,10 @@ const RESULTS = {
  "wk7:DAL-PHI": [
   38,
   21
+ ],
+ "wk8:CAR-GB": [
+  19,
+  27
  ]
 };
 const LINES = {
@@ -539,9 +543,9 @@ const LINES = {
  "wk7:LAR-LV": "LAR -3.5, O/U 49.5",
  "wk7:KC-SEA": "SEA -3, O/U 43.5",
  "wk7:DAL-PHI": "DAL -4.5, O/U 43.5",
- "wk8:CAR-GB": "GB -3.5, O/U 46.5",
+ "wk8:CAR-GB": "GB -3.5, O/U 47.5",
  "wk8:BAL-BUF": "BUF -3, O/U 54.5",
- "wk8:TEN-CIN": "CIN -11.5, O/U 46.5",
+ "wk8:TEN-CIN": "CIN -12.5, O/U 46.5",
  "wk8:ARI-DAL": "DAL -7, O/U 54.5",
  "wk8:MIN-DET": "DET -3, O/U 46.5",
  "wk8:IND-JAX": "JAX -10, O/U 46.5",
@@ -564,9 +568,9 @@ const LINES = {
  "wk9:LAR-WAS": "LAR -5.5, O/U 48.5",
  "wk9:HOU-LAC": "HOU -3.5, O/U 42.5",
  "wk9:LV-SF": "SF -9.5, O/U 48.5",
- "wk9:GB-NE": "NE -3, O/U 47.5",
+ "wk9:GB-NE": "NE -2.5, O/U 47.5",
  "wk9:ARI-SEA": "SEA -10.5, O/U 44.5",
  "wk9:TB-CHI": "CHI -6, O/U 47.5",
  "wk9:BUF-MIN": "BUF -2.5, O/U 47.5"
 };
-const LINES_ASOF = "2026-10-29";
+const LINES_ASOF = "2026-10-30";
