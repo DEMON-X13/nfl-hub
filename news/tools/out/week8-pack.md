@@ -15,10 +15,10 @@ Searches to run:
 - "NFL week 8 picks CAR GB"
 
 Carolina Panthers, injuries:
+- Bryce Young (QB) Active: Young has been playing through a left knee issue since initially suffering the injury in Week 3 against the Browns, Mike Kaye of ESPN.com reports.
 - Ryan Fitzgerald (PK) Active: Fitzgerald made both field-goal attempts and converted his only extra-point try in Thursday's 27-19 loss to Green Bay.
 - Jalen Coker (WR) Active: Coker secured two of five targets for 37 yards and a touchdown in the Panthers' 27-19 loss to the Packers on Thursday. He also lost a fumble.
 - Corey Bullock (C) Questionable, Quadriceps: Bullock (quadriceps) exited Thursday's 27-19 loss to Green Bay and did not return, Sheena Quick of Fox Sports Radio 1340 reports.
-- Bryce Young (QB) Active: Young completed 23 of 41 passes for 209 yards with one touchdown and one interception in the Panthers' 27-19 loss to the Packers on Thursday.
 - Chuba Hubbard (RB) Active: Hubbard rushed 22 times for 81 yards and a touchdown and brought in seven of eight targets for 38 yards in the Panthers' 27-19 loss to the Packers on Thursday.
 - Tetairoa McMillan (WR) Active: McMillan brought in six of 11 targets for 57 yards in the Panthers' 27-19 loss to the Packers on Thursday.
 - Will Lee III (CB) Questionable, Hamstring: Lee is dealing with a hamstring injury and is doubtful to return to Thursday's Week 8 matchup against Green Bay, Joe Person of The Athletic reports.
@@ -151,9 +151,9 @@ Searches to run:
 - "NFL week 8 picks TEN CIN"
 
 Tennessee Titans, injuries:
+- Tyjae Spears (RB) Questionable, Knee: Spears (knee) isn't practicing Friday, Jim Wyatt of the Titans' official site reports.
+- Carnell Tate (WR) Questionable, Shoulder: Tate (shoulder) won't practice Friday, and his status for Sunday's game against the Bengals is in doubt, Paul Kuharsky reports.
 - Calvin Ridley (WR) Questionable, Hip: Ridley (hip) was limited at practice Thursday, Jim Wyatt of the Titans' official site reports.
-- Tyjae Spears (RB) Questionable, Knee: Spears (knee) isn't practicing Thursday, Terry McCormick of TitanInsider.com reports.
-- Carnell Tate (WR) Questionable, Shoulder: Tate (shoulder) won't practice Thursday, Jim Wyatt of the Titans' official site reports.
 - Jonah Laulu (DT) Active: The Titans claimed Laulu off waivers from the Raiders on Wednesday, Jim Wyatt of the Titans' official site reports.
 - John Franklin-Myers (DE) Questionable, Groin: questionable
 - Amani Hooker (S) Active: Hooker posted five tackles (two solo) during Sunday's 27-24 loss to Cleveland.
@@ -384,8 +384,8 @@ Las Vegas Raiders, injuries:
 Las Vegas Raiders, ESPN headlines:
 
 New York Jets, injuries:
+- Breece Hall (RB) Questionable, Quadriceps: Hall (quadriceps) is listed as questionable for Sunday's game against the Raiders, Brian Costello of the New York Post reports.
 - Braelon Allen (RB) Active: Allen (ankle) was a full participant at Thursday's practice.
-- Breece Hall (RB) Questionable, Quadriceps: Hall (quadriceps) remained limited at Thursday's practice.
 - Joseph Ossai (DE) Doubtful, Ankle: Ossai (ankle) didn't participate in the Jets' practice Wednesday, Rich Cimini of ESPN.com reports.
 - Kene Nwangwu (RB) Active: Nwangwu was a full participant in Wednesday's practice.
 - David Bailey (LB) Questionable, Groin: Bailey didn't practice Wednesday due to a groin injury.
@@ -481,7 +481,7 @@ Pittsburgh Steelers, injuries:
 Pittsburgh Steelers, ESPN headlines:
 
 ### Atlanta Falcons at Tampa Bay Buccaneers
-Sun, Nov 1, 1:00 PM ET, Fox, Raymond James Stadium, Tampa. Line: TB -2.5, O/U 44.5
+Sun, Nov 1, 1:00 PM ET, Fox, Raymond James Stadium, Tampa. Line: TB -2.5, O/U 43.5
 
 Searches to run:
 - "Atlanta Falcons Tampa Bay Buccaneers preview week 8"
@@ -520,9 +520,9 @@ Atlanta Falcons, injuries:
 Atlanta Falcons, ESPN headlines:
 
 Tampa Bay Buccaneers, injuries:
+- Emeka Egbuka (WR) Out, Foot: Egbuka (foot) has been ruled out for Sunday's game against the Falcons, Scott Smith of the Bucs' official site reports.
 - Luke Goedeke (OT) Questionable, Calf: Goedeke (calf) did not participate at the Buccaneers' practice Thursday.
 - Josiah Trotter (LB) Active: Trotter (illness) was a full participant at the Buccaneers' practice Thursday.
-- Emeka Egbuka (WR) Questionable, Concussion: Egbuka (concussion) was a limited participant in Thursday's practice.
 - Kenny Gainwell (RB) Questionable, Hip: Gainwell (hip) was a limited participant at Thursday's practice, Scott Smith of the Buccaneers' official site reports.
 - Yaya Diaby (LB) Active
 - Josh Hayes (CB) Injured Reserve, Knee: Hayes suffered a small setback in his recovery from a knee injury, Greg Auman of Fox Sports reports.
@@ -559,10 +559,10 @@ Searches to run:
 - "NFL week 8 picks IND JAX"
 
 Indianapolis Colts, injuries:
+- Tyler Warren (TE) Active: Warren (groin) is good to go for Sunday's game against the Jaguars, Mike Chappell of FOX59 reports.
 - Anthony Gould (WR) Questionable, Concussion: Gould (concussion) was a full participant in Thursday's practice.
 - Drew Ogletree (TE) Questionable, Knee: Ogletree (knee) was a limited participant in Thursday's practice.
 - Sauce Gardner (CB) Active: Gardner (calf) practiced in full Thursday.
-- Tyler Warren (TE) Questionable, Groin: Warren (groin) was a limited participant at Thursday's practice.
 - Matt Goncalves (G) Active
 - Tim Smith (DT) Active
 - Jonathan Taylor (RB) Active: Taylor told reporters Thursday that he hasn't requested a trade out of Indianapolis, Stephen Holder of ESPN.com reports. "I haven't heard anything, and I can't control that," Taylor said regarding the possibility of being traded. "Obviously, you guys know that I'm always proud to wear the horseshoe, proud to be here."
@@ -763,8 +763,8 @@ Searches to run:
 - "NFL week 8 picks NE MIA"
 
 New England Patriots, injuries:
-- TreVeyon Henderson (RB) Questionable, Illness: Henderson (illness) did not practice Thursday, David Furones of the South Florida Sun Sentinel reports.
-- A.J. Brown (WR) Questionable, Knee: Brown (ankle/knee) was officially listed as a non-participant at Thursday's practice, David Furones of the South Florida Sun Sentinel reports.
+- TreVeyon Henderson (RB) Questionable, Illness: Henderson (illness) isn't practicing Friday, Mike Reiss of ESPN.com reports.
+- A.J. Brown (WR) Questionable, Knee: Brown (ankle/knee) was not spotted at Friday's practice, Evan Lazar of the Patriots' official site reports.
 - Channing Canada (CB) Active: Canada (hamstring) was a full participant in Wednesday's practice.
 - Karon Prunty (CB) Active: Prunty (hamstring) was a full participant in Wednesday's practice.
 - Carlton Davis III (CB) Active: Davis (neck) was a full participant in Wednesday's practice.
@@ -831,12 +831,12 @@ Searches to run:
 - "NFL week 8 picks PHI WAS"
 
 Philadelphia Eagles, injuries:
-- DeVonta Smith (WR) Questionable, Hamstring: Smith (hamstring) missed Thursday's practice.
+- Dontayvion Wicks (WR) Questionable, Ankle: Wicks (ankle) wasn't spotted at the start of Friday's practice, Andrew DiCecco of InsideTheBirds.com reports.
+- DeVonta Smith (WR) Questionable, Hamstring: Smith (hamstring) remains sidelined for Friday's practice, Jeff McLane of The Philadelphia Inquirer reports.
+- Saquon Barkley (RB) Questionable, Hamstring: Barkley (hamstring/back) is practicing Friday, Dave Zangaro of NBC Sports Philadelphia reports.
 - Jalen Carter (DT) Active
-- Saquon Barkley (RB) Questionable, Hamstring: Barkley (hamstring/back) didn't practice Thursday.
 - Marcus Epps (S) Questionable, Jaw: questionable
 - Smael Mondon Jr. (LB) Active
-- Dontayvion Wicks (WR) Questionable, Ankle: Wicks (ankle) isn't participating in Thursday's practice, Dave Zangaro of NBC Sports Philadelphia reports.
 - Jake Elliott (PK) Active: Elliott made all three of his PAT attempts and didn't attempt a field goal in Monday's 38-21 loss to the Cowboys.
 - Nolan Smith Jr. (LB) Questionable, Concussion: Smith (concussion) was listed as a limited participant in Wednesday's walkthrough.
 - Michael Carter II (CB) Questionable, Abdomen: Carter (abdomen) was estimated to be a limited participant in Wednesday's walkthrough.
@@ -860,12 +860,12 @@ Philadelphia Eagles, injuries:
 Philadelphia Eagles, ESPN headlines:
 
 Washington Commanders, injuries:
-- Treylon Burks (WR) Questionable, Foot: Burks (foot) didn't practice Thursday.
+- Javon Kinlaw (DT) Out, Knee: out
+- Treylon Burks (WR) Questionable, Foot: Burks (foot) participated in Friday's practice, Tashan Reed of The Washington Post reports.
 - Stefon Diggs (WR) Active: Diggs (hand/hamstring) was a full practice participant Thursday.
 - Nick Allegretti (G) Questionable, Back: questionable
 - John Bates (TE) Questionable, Shoulder: Bates was a non-participant in Thursday's practice due to a shoulder injury.
 - Laremy Tunsil (OT) Injured Reserve, Triceps: Tunsil (triceps) could potentially return late in the season, Nicki Jhabvala of The Athletic reports.
-- Javon Kinlaw (DT) Doubtful, Knee: Head coach Dan Quinn said Wednesday that Kinlaw (knee) is "unlikely" to play against the Eagles on Sunday, Zach Selby of the Commanders' official site reports.
 - Van Jefferson (WR) Active: The Commanders signed Jefferson to the active roster Wednesday, Zach Selby of the team's official site reports.
 - Jer'Zhan Newton (DT) Injured Reserve, Pectoral: The Commanders designated Newton (pectoral) for return to practice from their injured reserve list Wednesday.
 - Marcus Mariota (QB) Active: Mariota (knee) was a full participant in Wednesday's practice.

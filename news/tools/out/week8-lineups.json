@@ -425,7 +425,7 @@
   },
   "TEN": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-30T13:16:08.688Z",
+   "built_at": "2026-10-30T17:15:03.432Z",
    "units": {
     "qb": [
      {
@@ -476,12 +476,6 @@
     ],
     "rec": [
      {
-      "id": "00-0041438",
-      "n": "Carnell Tate",
-      "pos": "WR",
-      "q": "questionable: shoulder, not practising"
-     },
-     {
       "id": "00-0038117",
       "n": "Wan'Dale Robinson",
       "pos": "WR"
@@ -490,6 +484,11 @@
       "id": "00-0040170",
       "n": "Elic Ayomanor",
       "pos": "WR"
+     },
+     {
+      "id": "00-0040584",
+      "n": "Gunnar Helm",
+      "pos": "TE"
      }
     ],
     "front": [
@@ -1057,7 +1056,7 @@
   },
   "IND": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-30T13:16:08.688Z",
+   "built_at": "2026-10-30T17:15:03.432Z",
    "units": {
     "qb": [
      {
@@ -1119,8 +1118,7 @@
      {
       "id": "00-0040128",
       "n": "Tyler Warren",
-      "pos": "TE",
-      "q": "questionable: groin"
+      "pos": "TE"
      }
     ],
     "front": [
@@ -1789,7 +1787,7 @@
   },
   "TB": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-30T13:16:08.688Z",
+   "built_at": "2026-10-30T17:15:03.432Z",
    "units": {
     "qb": [
      {
@@ -1840,12 +1838,6 @@
     ],
     "rec": [
      {
-      "id": "00-0040129",
-      "n": "Emeka Egbuka",
-      "pos": "WR",
-      "q": "questionable: concussion"
-     },
-     {
       "id": "00-0033921",
       "n": "Chris Godwin Jr.",
       "pos": "WR"
@@ -1854,6 +1846,11 @@
       "id": "00-0038129",
       "n": "Cade Otton",
       "pos": "TE"
+     },
+     {
+      "id": "00-0041048",
+      "n": "Ted Hurst III",
+      "pos": "WR"
      }
     ],
     "front": [
@@ -2317,7 +2314,7 @@
   },
   "NE": {
    "kick": "2026-11-01T21:25Z",
-   "built_at": "2026-10-30T13:16:08.688Z",
+   "built_at": "2026-10-30T17:15:03.432Z",
    "units": {
     "qb": [
      {
@@ -2362,10 +2359,9 @@
       "pos": "RB"
      },
      {
-      "id": "00-0040734",
-      "n": "TreVeyon Henderson",
-      "pos": "RB",
-      "q": "questionable: illness, not practising"
+      "id": "00-0040556",
+      "n": "Corey Kiner",
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -2380,10 +2376,9 @@
       "pos": "TE"
      },
      {
-      "id": "00-0035676",
-      "n": "A.J. Brown",
-      "pos": "WR",
-      "q": "questionable: ankle, not practising"
+      "id": "00-0040563",
+      "n": "Efton Chism III",
+      "pos": "WR"
      }
     ],
     "front": [
