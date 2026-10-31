@@ -14,9 +14,10 @@ The plan is in four steps:
 1. Build the model on 2025 and earlier.
 2. Commit a bar for it, set in advance.
 3. Test it once against 2026's lines.
-4. Run it quietly as a shadow. It goes live only if it passes.
+4. Run it quietly as a shadow. It goes live only if it passes (the touchdown passed the test and its shadow runs:
+   "The touchdown shadow", at the end).
 
-This folder holds the first two steps:
+This folder holds all four steps:
 
 - **The data and feature pipeline**, described from "Running it" down to "What the next step needs to know".
 - **The models**, in four sections:
@@ -24,15 +25,24 @@ This folder holds the first two steps:
   - "Step 2b" for the yards;
   - "Step 2c" for the anytime touchdown;
   - "Step 3" for the frozen models, `predict.py` and the bar.
+- **The one-shot test and its result**, at the end of "Step 3": main lines FAIL, anytime touchdown PASS.
+- **The touchdown shadow**, the last section.
 
 The bar for step 3 is fixed in `PREREGISTRATION.md` before any 2026 file is read.
 
-**2026 is held out.** No file of 2026 is downloaded and no 2026 outcome, line or price is read.
-`fetch.py` refuses a 2026 season file and cuts games.csv to 2025 before parsing it.
-`build_features.py` refuses `--last 2026` (`HOLDOUT_FROM`). The guard is lifted for the one-shot test
-alone (`fetch.py`): only in `oneshot_2026.py`, and only when `PROPMODEL_LIFT_HOLDOUT` is the SHA-256 of a
-committed, unmodified `PREREGISTRATION.md` whose commit is on origin/main. Any other process that sets the
-variable is refused.
+**2026 was held out until the one-shot ran.** While the model was built, no file of 2026 was downloaded and no 2026
+outcome, line or price was read. `fetch.py` refuses a 2026 season file and cuts games.csv to 2025 before parsing it.
+`build_features.py` refuses `--last 2026` (`HOLDOUT_FROM`).
+
+Two programs lift the guard:
+
+- **The one-shot test** (`fetch.py`): only in `oneshot_2026.py`, and only when `PROPMODEL_LIFT_HOLDOUT` is the SHA-256
+  of a committed, unmodified `PREREGISTRATION.md` whose commit is on origin/main. Any other process that sets the
+  variable is refused.
+- **The touchdown shadow, since the one-shot ran** (`td_shadow.py`): it lifts the holdout inside its own process, in
+  memory, after its hash checks, and never through the variable, which it refuses to run with. The owner signed this
+  off on 31 October 2026, and "The touchdown shadow" argues it. Its one-time equivalence proof, `td_shadow_equiv.py`,
+  ran through the same `lifted()`. No other program may lift it.
 
 ## Running it
 
@@ -71,6 +81,18 @@ The files read, all from nflverse:
 
 The warm-up seasons, 2010-2012, only feed history: career and last-season features for 2013. The
 table itself starts in 2013, the first season with snap counts.
+
+The one-shot test and the touchdown shadow have commands of their own: `oneshot_2026.py` under "Step 3", and the
+shadow's under "Running the shadow", at the end. Among them:
+
+```
+python3 -I props/research/propmodel/td_shadow.py init        # once, in the PR: the shadow's ledger with its bar, no call
+VENV/bin/python -I props/research/propmodel/td_shadow.py rehearse --season 2025 --week 9 --data DIR --ref pred.parquet
+VENV/bin/python -I props/research/propmodel/td_shadow_equiv.py --data DIR   # done once: the shadow's p is the one-shot's
+python3 props/research/propmodel/test_td_shadow.py           # its test (TD_SHADOW_NOW stands in for the clock)
+```
+
+`VENV` is Python 3.13 with `requirements.txt`'s pins, the environment the one-shot ran in.
 
 ## The feature table
 
@@ -1117,7 +1139,8 @@ the week's games:
 
 **The guard.** 2026 stays refused. `fetch.py` lifts the holdout only inside `oneshot_2026.py`, and only when
 `PROPMODEL_LIFT_HOLDOUT` is the SHA-256 of a committed, unmodified PREREGISTRATION.md whose commit is on
-origin/main; `predict.py`, `build_features.py` or `fetch.py` run with the variable set are refused.
+origin/main; `predict.py`, `build_features.py` or `fetch.py` run with the variable set are refused. Since the one-shot
+ran, `td_shadow.py` also lifts it, in memory, inside its own process ("The touchdown shadow").
 
 **The checks.**
 
@@ -1240,3 +1263,623 @@ guards and the download on 2025 stand-in inputs of the test's own shapes:
     not modelled, a stat not covered, no candidate row, players who did not play.
 - **Its verdict means nothing:** the models were fitted on 2025, and the market is made up. It shows that the
   test runs end to end.
+
+## The touchdown shadow
+
+The one-shot failed the main lines and passed the anytime touchdown, so PREREGISTRATION.md section 8 starts one
+shadow, the touchdown shadow, and no main-line shadow. It runs in the props job after each publish, from the merge of
+the PR that added it to the end of 2026's regular season:
+
+- **Calls:** before each game, every player on its anytime-touchdown list in the props job's published ESPN read gets
+  a call. A call holds the model's chance p that he scores a rushing or receiving touchdown, beside the chance the site
+  states for the same leg (m).
+- **Freeze and grade:** each call is frozen at kickoff and graded after the game.
+- **Decision:** made once, on the first 2,000 graded calls, by the bar below.
+
+**It is research only.** No page reads its ledger, no suggestion uses it, and nothing on the site moves because of it.
+A PASS only makes the model a candidate for a change of its own; a FAIL ends it. Either way the site stays on
+DraftKings' chance for every player leg (app v138) until such a change is made.
+
+The files:
+
+| File | What |
+|---|---|
+| `td_shadow.py` | the program: `init`, `plan`, `run`, `notify` and `rehearse`; BAR; the canonical ledger writer; `summarize` and `decide` |
+| `td_shadow_page.js` | m, read off the published page in jsdom, and the site's own settlement of due calls (`page.json`) |
+| `td_shadow_check.py` | the check that holds a new ledger to the last commit's before props.yml moves it into place |
+| `test_td_shadow.py` | the test, a unit of the props gate's job C |
+| `td_shadow_equiv.py` | the equivalence proof, run once by hand; its result is `results/td_shadow_equiv.json` |
+| `shadow/td_ledger.json` | the ledger: the bar, every call, its freeze and grade, the runs, the summary and, once, the decision |
+
+### The bar, as registered
+
+`BAR` in `td_shadow.py`, copied verbatim into the ledger by `td_shadow.py init` before the first call (the ledger's
+`bar_registered`). The check fails any ledger whose bar is not this one, and the bar never changes:
+
+```python
+BAR = {
+    'family': 'anytime touchdown: PREREGISTRATION.md section 8, "The touchdown shadow"',
+    'registered_with': {
+        'preregistration_sha256': 'bd277e0ac76f69389f894fe0e1e21384ae84ee7d7d8b0957bdcf19401decec71',
+        'preregistration_commit': '9b29927a8230cddaea94f162ceda055de3fdcf80',   # text only: the job's checkout is depth 1
+        'oneshot_sha256': 'e5b251a8d090668f8a2602a84f60608959e026907d6715c555f988687908e40a',
+        'oneshot_verdict': 'anytime_td PASS (C1 beta +0.378, 90% [+0.035, +0.750]); main_lines FAIL, so no main-line shadow',
+        'manifest_sha256': 'dbd6646fbba1470828ed73b08efea5520226f1a90cca9409f5aa21d1c9de96a2',
+        'runs': {  # the section 3 files the shadow executes or reads, as PREREGISTRATION.md lists them
+            'props/research/propmodel/fetch.py': '1135ced7eb969901dc664acdfc25def27fc790dd658ae1d8dcfc0657ab43eaae',
+            'props/research/propmodel/build_features.py': '67fdeb569ea13813675c55b879d4c1cb902b818fa5812a851fbc33371d2e5f02',
+            'props/research/propmodel/predict.py': '8c530d667ddb83eb9de949ae8e41cbad6915cd0033c3a70a52b1755bc6fe7427',
+            'props/research/propmodel/oneshot_2026.py': '31c27b07734d65985736395c6de2b4e4fba8e64c32fedcb3c391440ce94cf1dc',
+            'props/research/propmodel/frozen/MANIFEST.json': 'dbd6646fbba1470828ed73b08efea5520226f1a90cca9409f5aa21d1c9de96a2',
+            'props/research/propmodel/requirements.txt': '1c19bc395756e378c65e6facb946e72fae6cce99aeef0d8e479ef2c1e17ae03a'}},
+    'population': ("every player on his game's anytime-touchdown list in the props job's published ESPN read "
+                   "(payload espn.games[gid].pl.td: the athletes the page's reader placed on a player; one it could not "
+                   "place is counted, never called), for each 2026 regular-season game still to come"),
+    'p': ("predict.py's P(1 or more rushing + receiving TDs) = 1 - exp(-lambda) from the frozen files of section 3, "
+          "made in predict mode for the call's week exactly as oneshot_2026.py made it (week_rows, then "
+          "Predictor.predict_rows), on this run's 2026 nflverse files, clipped to [0.001, 0.999]; none where predict.py "
+          "makes no candidate row for him in that game, his group is not covered, or either club's previous 2026 game "
+          "lacks stats, snap counts, play-by-play or weekly roster (oneshot_2026.coverage)"),
+    'm': ("the chance the published page states on his 'Scores one' row (data-legchance: legChance of the leg renderGame "
+          "builds, DraftKings' fair chance, real or estimated), the page booted on this run's published payload at the "
+          "run's clock with nothing kept in the browser; none where the page draws a dash or does not draw him. m is "
+          "whatever the site states at the time: a change to the page's touchdown estimate moves it, recorded by build"),
+    'call': ("p and m from the same run; a call is made or rewritten only while its game kicks off more than 10 minutes "
+             "after the run; rewritten whenever its numbers change; dropped before kickoff when a newer read no longer "
+             "lists him, his game's read is withdrawn (none), or his game leaves the schedule or its week; frozen by the "
+             "first run at or after the earlier of its own kickoff and the schedule's, or a score: the frozen call is the "
+             "last run's before kickoff that made one"),
+    'outcome': ("PREREGISTRATION.md section 4(d), oneshot_2026.outcomes(): he played if the 2026 build has a row for him "
+                "in that game (a snap in his role or on special teams); y = rushing + receiving touchdowns >= 1, a "
+                "quarterback's own included, a pass thrown never; a return or fumble-recovery touchdown is recorded and not "
+                "counted (the model's target and the site's settlement); no row: void"),
+    'void_also': ("the game kicks off more than 24 hours from the call's kickoff, or leaves the schedule; its own files "
+                  "(both clubs' stats, snap counts and weekly roster, its play-by-play) still not complete at kickoff + "
+                  "14 days"),
+    'settle': "graded once, by the first run at or after kickoff + 96 hours whose files cover the game; never changed after",
+    'w': 0.25, 'clip': [0.001, 0.999], 'graded': 2000,
+    'sample': ("the first 2,000 frozen calls graded td or no_td that have p and m"
+               " and m not priced on the model alone: branch real, lined or backup"
+               ", in grading order: graded_at, kickoff, game id, player id"),
+    'bootstrap': ("10,000 resamples of whole games (nflverse game id), numpy default_rng(0), oneshot_2026.boot_weights; "
+                  "90%: the 5th to 95th percentile; T1 and T2 each on its own stream"),
+    'pass_if': ['T1: oneshot_2026.mean_diff(ll(b, y) - ll(m, y), games), b = m + 0.25 (p - m): interval wholly below 0',
+                'T2: oneshot_2026.signal_test(y, m, p, games, one stratum): logit P(TD) = alpha + gamma logit m + '
+                'beta (logit p - logit m), beta\'s interval wholly above 0'],
+    'otherwise': 'FAIL: no new calls, unfrozen calls dropped (frozen calls are still graded); the model is not used',
+    'if_pass': ("a candidate for a change of its own (a PR with the props audit's and the smokes' checks, the blend at "
+                "0.25 on the anytime touchdown); nothing on the site moves by itself; calls go on to the regular season's "
+                "end as description, the verdict fixed"),
+    'before': "no verdict before 2,000: running counts and point estimates only, never an interval, a verdict or a word of passing",
+    'season_end': ("2026's regular season only; with fewer than 2,000 in the sample once its last frozen call is graded, no "
+                   "verdict: undecided, which is not a PASS, and the model is not used"),
+    'changes': ("after the first call the shadow's code changes only to fix a mechanical failure, never a rule, a sample, "
+                "a metric or a threshold, each fix logged with its reason in README.md; this bar never changes"),
+}
+```
+
+Each clause section 8 does not spell out is an operationalisation of it, never a change to it. The owner answered the
+three questions they raised on 31 October 2026, before the bar was registered:
+
+- **Q1, the holdout lifted in memory: allowed.** It is stated openly here (under "p" below), in `td_shadow.py`'s
+  docstring and in the PR that added the shadow, with the probe disclosed.
+- **Q2, touchdowns priced on the model alone: left out of the decision sample** (`sample`: branch real, lined or
+  backup). They are still called, graded and reported, in `by_branch.model`. Section 8's letter includes them ("every
+  player DraftKings lists", "the first 2,000 graded"), so this is the stricter reading. The reasons:
+  - their m is a fixed transform of the site's own projection, never tested against DraftKings' prices, and it runs
+    high where it matters: about +3.1 points over DraftKings' fair chance where it states 45% or more (CLAUDE.md, "A
+    touchdown on the model alone is no tested kind");
+  - the site offers those legs in no suggestion;
+  - T2 on them would test the model against the site's old model, not against the market;
+  - section 4: "Where the diagnosis bears on the bar, the bar takes the stricter side."
+
+  Against it, and said all the same: m leans on the site's projection on every branch (under "m"), so leaving the
+  model branch out does not make m DraftKings' information alone. Two days out, about half of a read's listed players
+  are on the model branch (163 of 343 on the read of 30 October). Eight hours out, when the clubs' lines are
+  complete, about 6% are (20 of 343, the same read moved). The frozen call is the last run's before kickoff.
+- **Q3, the operationalisations: yes, as BAR writes them:**
+  - graded once, at kickoff + 96 hours (the one-shot's wait);
+  - p per game only where both clubs' previous games are complete (section 4(d)'s coverage, applied per game), else
+    none;
+  - void where a game's own files are still not complete at kickoff + 14 days;
+  - the registered "played" rule decides (section 4(d), the rule that earned the PASS), with the site's `settleLeg`
+    recorded beside it as description (the site's rule has no terminal void);
+  - no call made or rewritten within 10 minutes of kickoff;
+  - a game moved more than 24 hours is void;
+  - the outcome is rushing + receiving touchdowns: a return or fumble-recovery touchdown is recorded and not counted.
+    That is the model's target and the site's settlement, though DraftKings may pay one;
+  - after a PASS, calls go on to the season's end as description, the verdict fixed.
+
+### p: the frozen model, and the holdout lifted in memory
+
+p is made by the one-shot's own code, imported unchanged: `oneshot_2026.py`, which brings `fetch.py`,
+`build_features.py` and `predict.py`. Each is hashed where Python loaded it and held to PREREGISTRATION.md section 3,
+and to BAR's copy of those hashes, before anything runs. For the call's week W:
+
+- `predict.week_rows(DATA, 2026, W, fetch=False)`: build_features.py's predict mode, the week's own files read to W-1
+  and the pre-game files to W;
+- `predict.Predictor(...).predict_rows(rows)`: the repo's gzipped model files, each held to `frozen/MANIFEST.json`;
+- p = clip(p_ge1, 0.001, 0.999) on his candidate row in that game, exactly as `oneshot_2026.py` made the chance it
+  scored.
+
+**Coverage is per game.** A game's calls get p only where both clubs' previous 2026 games are complete by
+`oneshot_2026.coverage`: both clubs' stats and snap counts, the play-by-play and both weekly rosters. Otherwise p is
+none, with "history not complete: ..." as its reason, and the week's other games are still called. p is also none,
+with its reason, where predict.py makes no candidate row for him in that game, finds him in another game, or does not
+cover his group. A player signed after 27 October has no row in the frozen `players.csv` (`in_players_csv`); that is
+recorded and never patched.
+
+**The data.** Two folders in the runner's temp folder:
+
+- `pm-hist/raw/` holds the 89 files the manifest names: the 2010-2025 season files, `players.csv` and
+  `games_to2025.csv`. It is kept between runs by `actions/cache` under a key on MANIFEST.json's hash. The two frozen
+  inputs are restored from `frozen/inputs/` on every run (`oneshot_2026.restore_inputs`), so a downloaded `players.csv`
+  never stands in. The cache is saved only when the folder holds exactly those 89 files.
+- `tdshadow/data/raw/` is made afresh each run. It holds:
+  - hard links to the history;
+  - this run's 2026 files from `props/raw`, under the model's names (`pw_2026.csv` as `stats_player_week_2026.csv`,
+    the injuries, the depth charts, the snap counts);
+  - games.csv cut to `games_to2026.csv` (`fetch.cut_games`);
+  - the 2026 play-by-play and weekly roster, downloaded through `fetch.py` and so `lib/netfetch.py`.
+
+  No 2026 file is cached or committed, and `predict.refresh` is never called.
+
+**The holdout, lifted in memory (Q1).**
+
+- **The guard.** `fetch.py` fixes `HOLDOUT_FROM` at 2026 when it is imported. It says "nothing in this folder can move
+  it but the one-shot 2026 test", and its one route, `PROPMODEL_LIFT_HOLDOUT`, refuses any program but
+  `oneshot_2026.py`.
+- **Why it can be lifted now.** The guard existed to keep 2026 unread by this model's code until the one-shot had run.
+  It has run, and its result is committed. Section 8 then directs the shadow's calls to "`predict.py` (these frozen
+  files)", and `predict.py`'s own docstring names "the shadow that may follow it".
+- **Why not edit `fetch.py`.** It has no route for a shadow, and it cannot be edited: section 10 says "any change to a
+  file in section 3 after 2026 results have been seen voids the test", here the touchdown PASS this shadow follows.
+- **What `td_shadow.py` does instead.** After its hash checks pass, it sets `fetch.HOLDOUT_FROM` and
+  `build_features.HOLDOUT_FROM` to 2027 inside its own process. `lifted()` is a context manager that puts both back to
+  2026 in a `finally`. That is the very state the one-shot ran in: with its lift, `fetch.py`'s rule returns 2027 and
+  `build_features.py` copies it. So only registered bytes execute on 2026.
+- **The options rejected:**
+  - editing `fetch.py`, which would void the PASS;
+  - impersonating `oneshot_2026.py` as `__main__`;
+  - running a modified copy of a hashed file;
+  - re-implementing the features, which would not be the frozen pipeline the PASS was earned on.
+- **What becomes untrue** is `fetch.py`'s sentence above. `td_shadow.py` is the second program that moves the value,
+  and the last:
+  - it moves it in memory, never through the variable, and refuses to run with the variable set;
+  - importing `td_shadow` or `td_shadow_check` leaves the value at 2026, which the test holds;
+  - its `run` and `td_shadow_equiv.py` are the only callers of `lifted()`; `rehearse` runs on 2025 without it.
+
+**What else has read 2026 through the lift or around it.** None of it chose anything:
+
+- **A scratch probe, 31 October 2026, about 01:20-01:24 UTC.** It ran after the one-shot wrote its result (its
+  `run_at`, 01:09:45 UTC), and before the bar or any of the answers above.
+  - It ran `predict.py`'s `week_rows` and `Predictor` on 2026 week 8 through this same lift: 573 candidate rows and
+    542 anytime-touchdown chances, summarised by group (count, mean and quantiles).
+  - It timed the outcome build: a full 2013-2026 build that printed only how many 2026 rows played each week.
+  - A third script checked gamebook weather on 2013-2025 alone.
+  - It looked at no outcome, scored nothing and chose nothing. The bar's tests and its size are section 8's of 27
+    October.
+- **The equivalence proof** (below) re-read weeks 1-6's outcomes with the model's code, for code equivalence alone. It
+  records agreement counts, and no metric, rate or interval.
+- **The rehearsal of the mechanics** while the shadow was built made p for week 8's games still to come, on copies of
+  the one-shot's 2026 files, into a scratch ledger that was never committed. Only counts were printed (calls, how many
+  had p, the null reasons, the coverage), and no grade was made on real data.
+- **The page reader's development** read the site's own published payload: public data, not the model's. While
+  learning its shape it printed one week-1 stat row, one week-7 game's snap lists and eight week-7 players' settlement
+  by the site's `settleLeg`. Its checks were then moved onto made-up finals, and nothing was set beside a model chance.
+- **A design-phase sanity script, `settle_sim.py`, 31 October 2026, about 01:38 UTC** (before the bar was registered,
+  04:48:56). It used neither this model's code nor the lift: it ported the site's `settleLeg` for the anytime
+  touchdown and graded every player on the ESPN archive's final weeks 1-7 touchdown lists against the site's
+  published payload (its 2026 stats, snaps and injury report).
+  - 3,137 listed: 440 td, 2,351 no_td (371 of them on zero), 346 void and none pending, a touchdown rate of 15.8%
+    against the one-shot's 15.6%. 12% would have read void or pending without the site's who-played rule, and 11%
+    were void, against 5.8% on the paid prices (ESPN's list keeps inactive players).
+  - The design also counted the 2026 weeks 1-7 raw stat rows with a special-teams touchdown: two.
+  - No model chance was set beside any of it. The void share fed the volume and pace estimate the owner saw ("less
+    voids, about 11%"), the comparison of grading rules fed the discussion of his Q3, and the special-teams count the
+    outcome clause's note on return touchdowns (rushing plus receiving was already the site's, the model's target and
+    the one-shot's rule).
+- **The outcome probe's own words.** "It looked at no outcome" above means it read no touchdown: it printed how many
+  2026 rows played each week (457, 458, 456, 444, 423, 395, 391 and 28 for weeks 1-8) and nothing else of them.
+
+**p is the one-shot's, bit for bit.** `td_shadow_equiv.py` ran once (31 October 2026, 03:07 UTC), in the one-shot's
+own venv on its own data directory. Its seven 2026 files were held to `results/oneshot_2026.json`'s `raw_2026_sha256`.
+It ran for weeks 1-6 inside `lifted()`, and covered every leg the one-shot scored or voided: 1,884 legs, 1,769 scored
+and 115 void. It held each of these equal, bit for bit (`float.hex`):
+
+- p, clipped and unclipped;
+- p again from the repo's gzipped model files (the props job's path), against the one-shot's `DATA/frozen`;
+- the group;
+- y on the scored legs, from `grade_from_played` on `oneshot_2026.outcomes`;
+- void on the 115.
+
+Its verdict is `identical` (`results/td_shadow_equiv.json`), with all 70 games covered, in 348 seconds at a peak of
+4.23 GB.
+
+The proof ran on `td_shadow.py` at sha256 `5f522503…`, which the result records. The file has since gained `plan`,
+`run`, `notify`, `init`, `summarize`, `decide`, the writer and a fix in `run()` (below), so its hash is no longer the
+one recorded. The p functions are unchanged by an AST comparison against the proven file, docstrings aside: `load`,
+`lifted`, `make_predictor`, `predict_week`, `p_from_pred`, `in_players_csv`, `game_coverage` and `grade_from_played`.
+The one exception is `guard_code`, which gained the keyword `versions=True`; its default keeps the proven behaviour, and
+only a `TD_SHADOW_STUB` test passes False, to skip the library pins, never a hash. The check never asks the result's
+hash to be the file's.
+
+**The rehearsal** (`td_shadow.py rehearse --season 2025 --week 9`, no lift) made p for 548 anytime-touchdown rows, equal
+bit for bit to `predict.py --season 2025 --week 9` on the same files, and the whole prediction frame too (2,468 rows,
+every stat and column). Its costs: `week_rows` and p 47 s, the grading build on 2025 41 s, a peak of 4.06 GB. A warm run
+of the real mode on week 8's files took 62 s; a cold history cache (87 files, about 790 MB, downloaded inside the
+20-minute step) has not been timed on a runner.
+
+### m: the page as published
+
+`td_shadow_page.js` boots the root `index.html` in jsdom with `suggest_ledger.js`'s `boot`:
+
+- on the payload the props job has just published, at the run's clock;
+- with nothing kept in the browser, and every address but the payload and the site's own data files answered 404.
+
+For every game of the read still to come, it draws the game's page with every player shown and open. It reads
+`data-legchance` on each listed player's "Scores one" row: DraftKings' fair chance, real or estimated, exactly as the
+page states it. Before m is written it must equal both of these exactly (`===`):
+
+- `legChance` and `legFairStated` of the leg built as `renderGame` builds it, with no chance hook set;
+- `props/build/espn_rule.js`'s own price and fair chance for that touchdown, with the same branch, `tested`, `alone`
+  and overround. That file is the audit's and the smoke's copy of the formula.
+
+Any disagreement refuses the whole reader, so no call is made that run and a wrong m is never written. A request to
+ESPN's core host or to The Odds API refuses it too.
+
+Each call records where m came from:
+
+- `src`: `real` (a price DraftKings quoted) or `dkline` (the page's estimate from DraftKings' line);
+- the price, and `ov`, the overround it was divided by;
+- `branch`: `real`, or the estimate's own, `lined` (on his yards line), `backup` or `model` alone;
+- `tested`;
+- `offered`: whether the site offers the leg in a suggestion;
+- `shown`: how the page shows him;
+- `p_site`: the site's own projection.
+
+m is none, with its reason, where the page:
+
+- rules him out and does not draw him;
+- does not have him;
+- has nothing to project for him;
+- draws a dash;
+- lists him but does not price him from his listing.
+
+**m is whatever the site states at the time.** It leans on the site's own touchdown projection on every branch, the
+lined and backup ones too, because the estimate takes the logit of `project().p`. So it is never DraftKings'
+information alone, and a change to the touchdown estimate or to what it stands on moves it. Each run records the page's
+`app_build`, `PAGE_HASH` and `index.html`'s hash, and the summary counts the sample by build (`by_app_build`).
+
+**While the shadow runs, a PR that changes the touchdown estimate or what it stands on moves the shadow's m.** Such a
+PR must say so in its body and in the log at the end of this section. The parts that move m are:
+
+- `DK_EST` (its td, tdVig and complete), `guessTdPrice`, `tdBranch`, `estPrice` and `espnPrice`'s touchdown path;
+- `espnComplete`, `espnStarter`, `legFair`'s dkline touchdown path and `fairVig`;
+- `project()` and the touchdown projection's inputs (`tdrate`, `tdmult`, the model files);
+- `gameCtx` and `teamImplied`, `PAY.grid` and `depthOf`.
+
+A pull by hand with `oddsfetch.py` moves m too: it turns legs `real` and moves the week's overround.
+
+### Who played, and what a grade is
+
+**When a call is graded.** Once, by the first run at or after kickoff + 96 hours at which the game's own files are in.
+That means both clubs' stats, snap counts and weekly roster and the game's play-by-play (`oneshot_2026.coverage` with
+no entry for the game), and a score in games.csv.
+
+**What decides.** One `oneshot_2026.outcomes(DATA, 2026)` build a run, made only when a grade is due, by the
+registered "played" rule the one-shot graded C1 on (section 4(d)):
+
+- a row in the 2026 build (a snap in his role or on special teams) means he played;
+- y = rushing + receiving touchdowns >= 1;
+- no row is void.
+
+**Beside it.** The site's own `settleLeg` verdict is recorded as description: `site` on the grade, and `vs_site` in
+the summary.
+
+**Never changed.** A grade is never changed after it is made; a stat correction is only logged by the check.
+
+| Case | The grade (decides) | The site's `settleLeg` (recorded) |
+|---|---|---|
+| A stat line with a rushing or receiving TD (a quarterback's own run too) | td | td |
+| A stat line, no rushing or receiving TD (a TD pass never counts) | no_td | no_td |
+| Offensive snaps, no stat line | no_td | no_td |
+| Special-teams snaps only, or a return TD | no_td (`y_special_teams_tds` recorded) | no_td |
+| Defensive snaps only, or a position the build drops | void | no_td |
+| A snap row the build did not place, and no stat | void | no_td where the bake placed him |
+| Inactive, or Out and did not dress | void | void |
+| Traded, and playing in another game | void | void or pending |
+| The game moved more than 24 hours, or off the schedule | void, `game moved` | – |
+| Its files not in at kickoff + 96 hours | pending, looked at again each run; a WARN from 144 hours | – |
+| Its files still not in at kickoff + 14 days | void, `files never complete` (posting only, never the outcome) | – |
+
+### One run, in the props job
+
+The shadow is seven steps of `.github/workflows/props.yml`. They come after "Commit if anything changed" and "Close the
+props-refused issue", and before the props-refused issue's own step; "Fail the run…" is still last.
+
+**When they run:** only on `main`, only when `weekly.py` succeeded and the publish was pushed, and only while the
+repository variable `TD_SHADOW` is not `off`.
+
+**Why they cannot hold back the publish:**
+
+- every step is `continue-on-error` with its own `timeout-minutes`: 2, 4, 4, 20, 4, 3 and 2, 39 in all;
+- none writes the build's problems file, which the last step reads;
+- every step of the job has a cap of its own. The publish's steps (checkout to the props-refused issue it closes: 2,
+  1, 3, 1, 2, `weekly.py`'s 32, 3 and 1) add to 45, the job's whole cap before the shadow, so a stalled publish holds
+  the props concurrency group no longer than it did then; one that stalls past `weekly.py`'s 32 fails that step and
+  refuses the run, opening the props-refused issue. The two steps after the shadow add 3. The job's cap is 90: all 87
+  and 3 minutes for GitHub's own set-up and post steps, so no step running to its own cap cuts off one after it
+  (`test_props_gate.py` holds every cap and both sums; until the review of 31 October 2026 only the shadow's steps had
+  caps, the job's went from 45 to 85, and nothing held the publish to its 45).
+
+So the shadow can never refuse, slow or redden the props publish, which is already pushed when it starts. It does hold
+the job's concurrency group longer: one to three minutes on a warm cache, about five on a cold one. A queued props
+run waits that much more.
+
+The seven steps:
+
+1. **What this run has to do** (`td_shadow.py plan`, standard library on the job's Python 3.12). It gives `work=run`
+   where a game is to be called or a freeze, a drop or a grade is due; otherwise `work=none`, and nothing more runs. It
+   gives `hist=true` where p or a grade needs the model's data.
+2. **Python 3.13** (`actions/setup-python` with `update-environment: false`, so `python` stays 3.12 for every later
+   step).
+3. **The 2010-2025 files**, restored from `actions/cache` (`propmodel-hist-v1-<MANIFEST.json's hash>`).
+4. **Calls, freezes and grades:**
+   - a venv with `requirements.txt`'s pins;
+   - `td_shadow_page.js` writes `page.json`; if it fails, that is DEGRADED and no call is made this run;
+   - `td_shadow.py run` writes the new ledger to the runner's temp folder, never over the committed one;
+   - `td_shadow_check.py` holds it, and only then is it moved into place.
+
+   `run` exits 0 (written), 2 (written, but a phase was skipped: DEGRADED, and the step shows orange) or 1 (REFUSED,
+   nothing written). A step killed at its cap dies before the move, so the tree keeps the committed ledger.
+5. **Keep the 2010-2025 files:** the cache is saved, only when the history held exactly the manifest's 89 files and
+   the restore missed.
+6. **Commit its ledger:** the ledger alone, in a commit of its own ("props: touchdown shadow …"), pushed with three
+   tries. A lost push is a WARN, and the next run starts from the last committed ledger.
+7. **The td-shadow issue** (`td_shadow.py notify`).
+
+**What `run` does, in order, on one clock.** The clock is `run_at`, never earlier than the page reader's.
+
+1. **The guard:**
+   - every registered file by SHA-256, as Python loaded it;
+   - PREREGISTRATION.md, the one-shot's result and its PASS;
+   - the pinned libraries on Python 3.13;
+   - the holdout at 2026 as imported;
+   - the ledger canonical, and its bar BAR;
+   - on Actions, `main` only.
+2. **Stage and predict:** the data is staged where something is to be called or graded, and p is made where something
+   is to be called.
+3. **Freeze** every call whose game has kicked off (the earlier of its own kickoff and the schedule's) or has a score.
+4. **After a FAIL,** drop every unfrozen call and call nothing.
+5. **Drop** the unfrozen calls of a game that left the schedule or its week, or whose read was withdrawn.
+6. **Call:** make, rewrite or keep a call for every listed player of each game more than 10 minutes away, dropping one
+   no longer listed. A newer read with the same numbers rewrites nothing.
+7. **Grade** what is due.
+8. **Decide,** once, at 2,000.
+9. **Write** the summary and the run's entry.
+
+A phase that cannot run is DEGRADED and skipped, and the freezes, grades and decision are written all the same. p and m
+always come from the same run, or no call moves.
+
+**What a problem means.** Each problem is one line in the run's problems file, under one of three classes. `notify`
+keeps one open issue labelled `td-shadow`, "Touchdown shadow needs a look (research only: the site is fine)". It
+comments only when the set of lines changes (digits aside), and the next run with none closes it.
+
+| Class | Means | The ledger |
+|---|---|---|
+| REFUSED | the venv did not install; the guard refused (a registered file not its hash, the variable set, the ledger not canonical or its bar not BAR, a branch); the check failed; a step died with no line; or the plan could not read its inputs | untouched: the committed ledger stands |
+| DEGRADED | the page could not be read, or disagreed with itself; a game to call was not read; the data could not be staged; p could not be made; or the grading build failed | written: freezes, grades and the decision; no call made or rewritten (or no grade, for a failed build) |
+| WARN | written in full, but something wants a look (the list below) | written |
+
+The WARN lines are:
+
+- a call frozen stale: its last run before kickoff, or its read, more than 30 hours before kickoff;
+- a grade more than 144 hours overdue;
+- more than 10% of the listed with no m, or more than 5% with no p for a reason other than coverage;
+- an older hole in the history;
+- a void where a raw stat row exists;
+- `week_rows` over 8 minutes;
+- the history downloaded again on two runs in a row;
+- the pace putting the season's end under 2,000 (from week 15);
+- the ledger's push lost.
+
+The run that writes the decision opens a `td-shadow-verdict` issue, once, with T1, T2 and the standing. Nothing closes
+it but the owner.
+
+### The check and the test
+
+**The check.** `td_shadow_check.py` holds the new ledger against these, and ends "td shadow check: N failures":
+
+- the last commit's ledger (`git show HEAD:`, which works on the job's one-commit checkout);
+- the payload;
+- `page.json`;
+- the run's `evidence.json`;
+- the raw 2026 files the run staged.
+
+It fails when:
+
+1. the file is not the canonical dump of what it parses to (a hand edit);
+2. the bar is not BAR or not the last commit's; `bar_registered` or the model block is not the last commit's; or a
+   call was made at or before `bar_registered`;
+3. PREREGISTRATION.md, the one-shot's result (or its PASS), the manifest or a file BAR registers does not hash to BAR;
+4. a time names no runs entry, an old runs entry has changed, or a run is a stub's; or the ledger differs from the last
+   commit's while its `run_at` is the last commit's (every run moves `run_at`, so such a change is no run's; until the
+   review of 31 October 2026 the check stopped before rules 7 to 15 on such a ledger and passed it);
+5. a key, a week, a field or an enum is wrong;
+6. any of these:
+   - a call was made 10 minutes or less before kickoff, or read after it was made;
+   - p or m is outside [0.001, 0.999], or missing without its reason;
+   - a freeze is out of order;
+7. a new or rewritten call is not this run's, or does not carry exactly page.json's m and evidence.json's p;
+8. a game it called is not covered exactly, or, on a run that made calls, a game the payload offers to call is not in
+   page.json at all;
+9. m is not clip(implied(price) / ov) by the check's own formula, or ov is not its own reading of the week's overround;
+10. a frozen call is gone, unfrozen, or changed in anything but a grade added once; or a call was dropped without a
+    reason the run has;
+11. an old grade has changed or gone;
+12. a new grade is not this run's, came too early, is not the evidence's, or (td or no_td) does not agree with the raw
+    2026 stats;
+13. a frozen call is left ungraded where the run could grade it;
+14. a decision is made before 2,000, is missing at 2,000, is not the check's own recomputation, or changes after; or
+    calls are made after a FAIL;
+15. the summary is not `summarize()`'s.
+
+It logs, and never fails on:
+
+- a grade a fresh reading now sees otherwise (a stat correction);
+- a registered grade the site read otherwise;
+- a no-stat no_td whose snap row it cannot find by PFR id.
+
+**What the check cannot see, and what holds it.** The check holds a ledger a run wrote against the last commit's. A
+hand edit already merged is the last commit's ledger, so the check would build on it. That is held before the merge,
+by the props gate: `props_gate.py classify` runs `ledger_hold` on every pull request that touches the ledger. The
+props job alone writes it, committed straight to main (its commits start no workflow), so a pull request may add it
+once, as `td_shadow.py init` writes the bar's registration (`td_shadow_check.py --registration`: canonical, BAR with no
+open question, the manifest's touchdown files, no run, call or decision, the empty summary), and never change or
+remove it after; one that does fails the gate's first job. A push straight to main bypasses every check of this repo,
+this one with it.
+
+**The test.** `test_td_shadow.py` is a unit of the props gate's job C. It takes about 45 seconds and stops itself,
+failing, at 3 minutes. It writes only to a temporary folder, never to the committed ledger, and reads no 2026 outcome:
+every played row and stat row is made up. Its sections:
+
+- **A and B, the rules and the grades,** on made-up weeks, each run held by the check;
+- **C, the decision:** `decide` with the one-shot's real `mean_diff` and `signal_test`, equal bit for bit to them
+  called directly, and on stand-ins, Q2's sample, the order, FAIL and PASS;
+- **D, the check:** a planted edit for every sub-condition of every rule, each held by its own words (`bites` reads
+  the failure's sentence, never its rule number alone, so no condition passes because another of its rule trips
+  beside it), `main()`'s catch of a crash, its refusal without a last commit and the stub on Actions, and every way a
+  ledger can differ from the registration `--registration` takes;
+- **E and F, the page reader** on the pinned payload of 30 October 2026 (`9dbe81f6`), planted and as published, with
+  the zone database's kickoff equal to the page's on every game, and sixteen refusals on one boot (a price, an
+  overround, a branch, a stated chance, an untested flag or a real price off `espn_rule.js`, a published read not
+  installed, a function gone, a request to ESPN's player lines or The Odds API, a page error, another payload or
+  clock, a touchdown row, its chance or its heading's projection drawn otherwise), each in its own words, the plant
+  taken off after;
+- **G, the plan, notify and the problem classes;**
+- **H, the staging and the glue,** with downloads recorded and `predict.refresh` made to raise, and the per-game
+  coverage on each club's last previous game (two played weeks and a bye), the older holes said;
+- **I, the guard:** the holdout at 2026 on import, every refusal on its own (each registered file altered alone,
+  predict.py's manifest, PREREGISTRATION.md's copy of the hashes, the pins, Python 3.13, the holdout as imported, a
+  ledger whose bar or model block moved, the run without the stub checking the pins first), every file
+  PREREGISTRATION.md registers hashing as registered, so a PR editing one fails job C, and the bar pinned: BAR's own
+  SHA-256 and the committed ledger's `bar_registered`, so a PR that edits BAR, alone or with the ledger, edits those
+  two lines too;
+- **J:** no page, build part or X Parlays source names the ledger;
+- **K, props.yml's shadow step run:** its script taken from props.yml and run under `bash -e` in a copy of the folder
+  that is a git repository of its own (the reader, the run and the check real, a stand-in only for setup-python's
+  3.13, the clock, the model and in one case node): exit 0 with the checked ledger moved, exit 1 with the committed
+  one left where the check refuses, exit 2 (DEGRADED) with the ledger checked and moved where the page is unread.
+
+A, B also hold `init`'s two refusals (a ledger that exists, an open question in BAR), every page.json rule `run`
+keeps (another payload or clock, a kickoff off the schedule's, a list not its players, a game to call unread:
+DEGRADED, no call), and the 24-hour line (a game moved 3 hours after its calls froze graded from its rows, one moved
+25 hours void, and `moved()` itself at 24 hours and a second past).
+
+### Running the shadow
+
+```
+# once, in the PR that added the shadow, before the first call: the ledger, the bar and no call (refuses a ledger that exists)
+python3 -I props/research/propmodel/td_shadow.py init
+# what a run would do now (standard library)
+python3 -I props/research/propmodel/td_shadow.py plan --payload props/data/payload.json
+# the page reader alone (node, with props/build/node_modules)
+node props/research/propmodel/td_shadow_page.js --payload props/data/payload.json --now 2026-11-01T12:00:00Z \
+     --out page.json [--ledger props/research/propmodel/shadow/td_ledger.json]
+# one run as props.yml makes it (Python 3.13 with requirements.txt's pins): the ledger to --out, never over --ledger
+VENV/bin/python -I props/research/propmodel/td_shadow.py run --now ISO --payload props/data/payload.json \
+     --page page.json --props-raw props/raw --hist HIST --data DATA --out NEW.json --evidence evidence.json \
+     --problems problems.txt
+VENV/bin/python -I props/research/propmodel/td_shadow_check.py --ledger NEW.json --payload props/data/payload.json \
+     --page page.json --evidence evidence.json --data DATA [--prev OLD.json | --no-prev]
+# is a ledger the bar's registration as init writes it, and nothing else (the props gate's hold on a PR that adds it)
+python3 -I props/research/propmodel/td_shadow_check.py --registration props/research/propmodel/shadow/td_ledger.json
+# the props gate's hold on a PR's ledger, here (git refs): [] or why
+python3 -c "import sys; sys.path.insert(0, '.github/scripts'); import props_gate as G; print(G.ledger_hold('origin/main', 'HEAD'))"
+# the issues it would make, printed
+python3 -I props/research/propmodel/td_shadow.py notify --tmp DIR --dry-run [--state issues.json]
+# p for a finished week with no lift, held bit for bit to predict.py on the same files
+VENV/bin/python -I props/research/propmodel/td_shadow.py rehearse --season 2025 --week 9 --data DIR --ref pred.parquet
+# the equivalence proof (done once, on the one-shot's data directory, in its venv)
+VENV/bin/python -I props/research/propmodel/td_shadow_equiv.py --data DIR
+python3 props/research/propmodel/test_td_shadow.py
+```
+
+**Stand-ins for tests:**
+
+- `TD_SHADOW_NOW` stands in for the clock.
+- `TD_SHADOW_STUB=<json>` stands in for the model (p, per-game coverage, played rows), in a test or a rehearsal of the
+  mechanics:
+  - it is refused on GitHub Actions, and refused when `--out` is the committed ledger;
+  - every run it makes is marked `stub`, and the check fails such a run unless the same variable is set off Actions.
+
+`run` refuses an `--out` or `--evidence` that is the ledger itself. The run always writes aside.
+
+### Reading the ledger
+
+**The head** holds `what`, `bar`, `bar_registered`, `model` (the manifest's hash and the four touchdown model files'),
+`run_at`, `decision` and `summary`. Then come `runs` and `calls`, one entry a line and sorted by key, so a run moves a
+few lines. A call's key is `2026|WW|game id|player id`.
+
+**The summary:**
+
+- `standing` says where it stands: "412 of 2,000 graded calls toward the verdict; the bar is judged at 2,000, not
+  before", then the verdict, or "undecided";
+- `in_sample` is the count toward 2,000;
+- `running` appears once the sample has 100 calls and 10 touchdowns, and gives point estimates only: the mean p, m and
+  b, the three log losses, T1's mean and T2's point fit, never an interval or a verdict;
+- `by_branch`, `by_group`, `by_shown` and `by_app_build` describe the calls;
+- `null_why` counts why calls lack p or m;
+- `vs_site` sets the registered grades beside the site's `settleLeg`;
+- `pace` projects the sample at the season's end.
+
+**Never edit the ledger.** It is written only by the props job. A hand edit would rewrite the record: one that is not
+canonical is refused by the next run's read and by the check, and any pull request that changes or removes the
+ledger fails the props gate (`ledger_hold`, under "The check and the test"). The check alone cannot refuse a
+canonical edit once it is merged: from then on it is the last commit's.
+
+### The off switch
+
+`gh variable set TD_SHADOW --body off` stops the shadow, and `gh variable delete TD_SHADOW` resumes it.
+
+- While it is off, games are not called and are never backfilled.
+- Calls already made are frozen and graded by the first run after it is back on.
+- After a FAIL, or once the season's last grade is written, the plan finds nothing to do, and the steps come out in an
+  off-season PR.
+
+### PASS, FAIL or undecided
+
+- **Before 2,000:** running counts and point estimates only; never an interval, a verdict or a word of passing.
+- **At 2,000** (the first 2,000 in the sample, in grading order): T1 and T2 are worked by the one-shot's own
+  `mean_diff` and `signal_test` (10,000 game resamples, `default_rng(0)`, 90%). It is a PASS only if both hold. The
+  decision is written once into the ledger's `decision`, and the check holds it to its own recomputation on its run and
+  to the last commit's after.
+- **PASS:** the model becomes a candidate for a change of its own: a PR with the props audit's and the smokes' checks,
+  putting the blend at 0.25 on the anytime touchdown. Nothing on the site moves by itself. Calls go on to the regular
+  season's end as description, the verdict fixed.
+- **FAIL:** no new calls, unfrozen calls dropped, frozen calls still graded. The model is not used.
+- **Undecided:** the regular season ends with fewer than 2,000 in the sample. There is no verdict, which is not a PASS,
+  and the model is not used.
+
+**Expected volume.** At about 25 listed players a game over weeks 9-18's 156 games, less voids, nulls and the model
+branch, about 3,100-3,300 calls should be eligible. 2,000 is expected around week 15's games, in late December.
+
+### The shadow's log
+
+BAR's `changes` clause: after the first call, the shadow's code changes only to fix a mechanical failure, never a rule,
+a sample, a metric or a threshold, and each fix is logged here with its reason. A PR that moves m (under "m") is logged
+here too. Each entry gives the date, the PR, its kind (mechanical fix, or m moved), what changed and why.
+
+**No entry yet:** the bar is registered and no call has been made. One change before registration is noted because the
+equivalence proof's recorded hash predates it: `run()` deleted whatever was at `--out` before its guard, so a stub run
+pointed at the committed ledger would have deleted it and only then refused. It now refuses such a path before removing
+anything. The p functions are untouched.
+
+The review of 31 October 2026, after the bar was registered and before any call, changed no rule, sample, metric or
+threshold: the check fails a ledger that changed at the last commit's `run_at` and a run that made calls with a game to
+call missing from page.json; `--registration` and the props gate's `ledger_hold` hold the ledger before a merge; every
+props.yml step has a cap of its own (the job's 90); and the test holds each of the check's conditions, the reader's
+refusals, the guard's, `init`'s, the 24-hour line, the coverage's last game and the step's script on their own, with
+BAR's hash and the registration time pinned. `td_shadow.py` changed in its docstring alone (the disclosures), so the
+p functions the equivalence proof held are untouched.

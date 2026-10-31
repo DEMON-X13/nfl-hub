@@ -1,0 +1,161 @@
+{
+ "what": "td_shadow.py's p, grade glue and per-game coverage run on the one-shot's own data directory for 2026 weeks 1-6, held to the one-shot's table of the anytime-touchdown legs it scored or voided (oneshot_2026_priced_td.parquet): agreement counts only. Code equivalence: it re-reads weeks 1-6's outcomes with the model's code under the shadow's in-memory lift of the holdout (td_shadow.py's docstring), computes no metric, rate or interval, and chooses nothing.",
+ "run_at": "2026-10-31T03:07:37+00:00",
+ "verdict": "identical",
+ "weeks": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6
+ ],
+ "agreement": {
+  "p_scored": {
+   "rows": 1769,
+   "agree": 1769,
+   "differ": 0
+  },
+  "p_void": {
+   "rows": 115,
+   "agree": 115,
+   "differ": 0
+  },
+  "p_ge1_unclipped": {
+   "rows": 1884,
+   "agree": 1884,
+   "differ": 0
+  },
+  "p_repo_gz_models": {
+   "rows": 1884,
+   "agree": 1884,
+   "differ": 0
+  },
+  "grp": {
+   "rows": 1884,
+   "agree": 1884,
+   "differ": 0
+  },
+  "y_scored": {
+   "rows": 1769,
+   "agree": 1769,
+   "differ": 0
+  },
+  "void": {
+   "rows": 115,
+   "agree": 115,
+   "differ": 0
+  },
+  "p_why_none": {
+   "rows": 1884,
+   "agree": 1884,
+   "differ": 0
+  },
+  "games_covered": {
+   "games": 70,
+   "covered": 70
+  },
+  "legs_on_covered_games": {
+   "rows": 1884,
+   "agree": 1884,
+   "differ": 0
+  }
+ },
+ "code": {
+  "td_shadow.py": "5f522503ff1ec8534a0a36827df28c7e9ee9fd936737bf348f5758b0da3cde65",
+  "td_shadow_equiv.py": "679be6264f9b8df538128c2449e183635f2b2f0bd41955f6f18712303a5c6569",
+  "registered": {
+   "props/research/propmodel/fetch.py": "1135ced7eb969901dc664acdfc25def27fc790dd658ae1d8dcfc0657ab43eaae",
+   "props/research/propmodel/build_features.py": "67fdeb569ea13813675c55b879d4c1cb902b818fa5812a851fbc33371d2e5f02",
+   "props/research/propmodel/predict.py": "8c530d667ddb83eb9de949ae8e41cbad6915cd0033c3a70a52b1755bc6fe7427",
+   "props/research/propmodel/oneshot_2026.py": "31c27b07734d65985736395c6de2b4e4fba8e64c32fedcb3c391440ce94cf1dc",
+   "props/research/propmodel/frozen/MANIFEST.json": "dbd6646fbba1470828ed73b08efea5520226f1a90cca9409f5aa21d1c9de96a2",
+   "props/research/propmodel/requirements.txt": "1c19bc395756e378c65e6facb946e72fae6cce99aeef0d8e479ef2c1e17ae03a"
+  },
+  "preregistration_sha256": "bd277e0ac76f69389f894fe0e1e21384ae84ee7d7d8b0957bdcf19401decec71",
+  "oneshot_result_sha256": "e5b251a8d090668f8a2602a84f60608959e026907d6715c555f988687908e40a"
+ },
+ "inputs": {
+  "raw_2026_sha256": {
+   "depth_charts_2026.csv": "8521a2b63238025be2df4e7a5a11aefaeed295231f996e42b3409f9ce15f621d",
+   "games_to2026.csv": "54b92f708afd65c03adc450bc99486c66d051218837d47863912709727d9258e",
+   "injuries_2026.csv": "d7b7021b17ef704395172dce1ebca90f8902e72f88dc59f293dbf5703fc94741",
+   "play_by_play_2026.parquet": "6a6097066474da7ca867d954d6b04b84905c5e242d13917391237b8334f362fe",
+   "roster_weekly_2026.csv": "5b8e0fc6fb5ac07f6ebbf478c7621c1d4e82e69f238d9c5cd8f62d01cdd4611f",
+   "snap_counts_2026.csv": "03d803cce40868395fb6d7a3903e5e10f2d17651ca2c3391218dde85d5da148e",
+   "stats_player_week_2026.csv": "918be44736b5d191b7efea8b6d916d5da457ae7ed4ed76060b166200f2aaec0a"
+  },
+  "raw_2026_equal_to_oneshot_result": true,
+  "raw_vs_manifest": {
+   "same": 89,
+   "differ": 0,
+   "missing": 0
+  },
+  "oneshot_table": {
+   "file": "oneshot_2026_priced_td.parquet",
+   "sha256": "2e3c22ae75cfb524328e64e092b289f0cb0a640c6ada2d4195a345a7a0a39755",
+   "legs_compared": 1884,
+   "scored": 1769,
+   "void": 115
+  },
+  "candidate_rows": 3984,
+  "any_td_predictions": 3776
+ },
+ "models_source": {
+  "oneshot_path": {
+   "models_dir": 97,
+   "repo_gz": 0
+  },
+  "repo_gz": {
+   "models_dir": 0,
+   "repo_gz": 97
+  },
+  "oneshot_result": {
+   "models_dir": 97,
+   "repo_gz": 0
+  }
+ },
+ "runtime": {
+  "python": "3.13.17",
+  "lightgbm": "4.7.0",
+  "numpy": "2.5.3",
+  "pandas": "3.0.5",
+  "scipy": "1.18.1",
+  "pyarrow": "26.0.0",
+  "scikit-learn": "1.9.1"
+ },
+ "seconds": {
+  "weeks": {
+   "1": {
+    "week_rows": 55.3,
+    "predict_rows": 1.1
+   },
+   "2": {
+    "week_rows": 47.0,
+    "predict_rows": 1.2
+   },
+   "3": {
+    "week_rows": 45.7,
+    "predict_rows": 1.2
+   },
+   "4": {
+    "week_rows": 44.7,
+    "predict_rows": 1.2
+   },
+   "5": {
+    "week_rows": 43.2,
+    "predict_rows": 1.2
+   },
+   "6": {
+    "week_rows": 44.6,
+    "predict_rows": 1.2
+   }
+  },
+  "outcomes_and_grade": 43.9,
+  "total": 347.6
+ },
+ "peak_rss_gb": {
+  "after_predictions": 4.23,
+  "after_outcomes": 4.23
+ }
+}

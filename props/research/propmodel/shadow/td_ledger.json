@@ -1,0 +1,213 @@
+{
+ "what": "The anytime-touchdown shadow (props/research/propmodel/td_shadow.py; PREREGISTRATION.md section 8). Research only: no page reads this file and nothing on the site uses it. Written only by the props job; never by hand.",
+ "bar": {
+  "family": "anytime touchdown: PREREGISTRATION.md section 8, \"The touchdown shadow\"",
+  "registered_with": {
+   "preregistration_sha256": "bd277e0ac76f69389f894fe0e1e21384ae84ee7d7d8b0957bdcf19401decec71",
+   "preregistration_commit": "9b29927a8230cddaea94f162ceda055de3fdcf80",
+   "oneshot_sha256": "e5b251a8d090668f8a2602a84f60608959e026907d6715c555f988687908e40a",
+   "oneshot_verdict": "anytime_td PASS (C1 beta +0.378, 90% [+0.035, +0.750]); main_lines FAIL, so no main-line shadow",
+   "manifest_sha256": "dbd6646fbba1470828ed73b08efea5520226f1a90cca9409f5aa21d1c9de96a2",
+   "runs": {
+    "props/research/propmodel/fetch.py": "1135ced7eb969901dc664acdfc25def27fc790dd658ae1d8dcfc0657ab43eaae",
+    "props/research/propmodel/build_features.py": "67fdeb569ea13813675c55b879d4c1cb902b818fa5812a851fbc33371d2e5f02",
+    "props/research/propmodel/predict.py": "8c530d667ddb83eb9de949ae8e41cbad6915cd0033c3a70a52b1755bc6fe7427",
+    "props/research/propmodel/oneshot_2026.py": "31c27b07734d65985736395c6de2b4e4fba8e64c32fedcb3c391440ce94cf1dc",
+    "props/research/propmodel/frozen/MANIFEST.json": "dbd6646fbba1470828ed73b08efea5520226f1a90cca9409f5aa21d1c9de96a2",
+    "props/research/propmodel/requirements.txt": "1c19bc395756e378c65e6facb946e72fae6cce99aeef0d8e479ef2c1e17ae03a"
+   }
+  },
+  "population": "every player on his game's anytime-touchdown list in the props job's published ESPN read (payload espn.games[gid].pl.td: the athletes the page's reader placed on a player; one it could not place is counted, never called), for each 2026 regular-season game still to come",
+  "p": "predict.py's P(1 or more rushing + receiving TDs) = 1 - exp(-lambda) from the frozen files of section 3, made in predict mode for the call's week exactly as oneshot_2026.py made it (week_rows, then Predictor.predict_rows), on this run's 2026 nflverse files, clipped to [0.001, 0.999]; none where predict.py makes no candidate row for him in that game, his group is not covered, or either club's previous 2026 game lacks stats, snap counts, play-by-play or weekly roster (oneshot_2026.coverage)",
+  "m": "the chance the published page states on his 'Scores one' row (data-legchance: legChance of the leg renderGame builds, DraftKings' fair chance, real or estimated), the page booted on this run's published payload at the run's clock with nothing kept in the browser; none where the page draws a dash or does not draw him. m is whatever the site states at the time: a change to the page's touchdown estimate moves it, recorded by build",
+  "call": "p and m from the same run; a call is made or rewritten only while its game kicks off more than 10 minutes after the run; rewritten whenever its numbers change; dropped before kickoff when a newer read no longer lists him, his game's read is withdrawn (none), or his game leaves the schedule or its week; frozen by the first run at or after the earlier of its own kickoff and the schedule's, or a score: the frozen call is the last run's before kickoff that made one",
+  "outcome": "PREREGISTRATION.md section 4(d), oneshot_2026.outcomes(): he played if the 2026 build has a row for him in that game (a snap in his role or on special teams); y = rushing + receiving touchdowns >= 1, a quarterback's own included, a pass thrown never; a return or fumble-recovery touchdown is recorded and not counted (the model's target and the site's settlement); no row: void",
+  "void_also": "the game kicks off more than 24 hours from the call's kickoff, or leaves the schedule; its own files (both clubs' stats, snap counts and weekly roster, its play-by-play) still not complete at kickoff + 14 days",
+  "settle": "graded once, by the first run at or after kickoff + 96 hours whose files cover the game; never changed after",
+  "w": 0.25,
+  "clip": [
+   0.001,
+   0.999
+  ],
+  "graded": 2000,
+  "sample": "the first 2,000 frozen calls graded td or no_td that have p and m and m not priced on the model alone: branch real, lined or backup, in grading order: graded_at, kickoff, game id, player id",
+  "bootstrap": "10,000 resamples of whole games (nflverse game id), numpy default_rng(0), oneshot_2026.boot_weights; 90%: the 5th to 95th percentile; T1 and T2 each on its own stream",
+  "pass_if": [
+   "T1: oneshot_2026.mean_diff(ll(b, y) - ll(m, y), games), b = m + 0.25 (p - m): interval wholly below 0",
+   "T2: oneshot_2026.signal_test(y, m, p, games, one stratum): logit P(TD) = alpha + gamma logit m + beta (logit p - logit m), beta's interval wholly above 0"
+  ],
+  "otherwise": "FAIL: no new calls, unfrozen calls dropped (frozen calls are still graded); the model is not used",
+  "if_pass": "a candidate for a change of its own (a PR with the props audit's and the smokes' checks, the blend at 0.25 on the anytime touchdown); nothing on the site moves by itself; calls go on to the regular season's end as description, the verdict fixed",
+  "before": "no verdict before 2,000: running counts and point estimates only, never an interval, a verdict or a word of passing",
+  "season_end": "2026's regular season only; with fewer than 2,000 in the sample once its last frozen call is graded, no verdict: undecided, which is not a PASS, and the model is not used",
+  "changes": "after the first call the shadow's code changes only to fix a mechanical failure, never a rule, a sample, a metric or a threshold, each fix logged with its reason in README.md; this bar never changes"
+ },
+ "bar_registered": "2026-10-31T04:48:56Z",
+ "model": {
+  "manifest_sha256": "dbd6646fbba1470828ed73b08efea5520226f1a90cca9409f5aa21d1c9de96a2",
+  "td": {
+   "QB": {
+    "file": "td/QB.txt",
+    "sha256": "805553481e920512b743f0f0bc40b48eb48547f0c674c3aa005ef583b017177a"
+   },
+   "RB": {
+    "file": "td/RB.txt",
+    "sha256": "bf2dd47538f8e4f5a8bf93ef1d39586b114cc66ee13e462aae109454b8d2a2f8"
+   },
+   "WR": {
+    "file": "td/WR.txt",
+    "sha256": "25ec71c88af19308e8d06fe4068e90084ac43ffe3e1b3cdecbac79df2a3cbe3d"
+   },
+   "TE": {
+    "file": "td/TE.txt",
+    "sha256": "a8dd7c505e69db591765bfb62727d5380569afbe97aee8c3737ec5a79756153e"
+   }
+  }
+ },
+ "run_at": null,
+ "decision": null,
+ "summary": {
+  "calls": 0,
+  "to_come": 0,
+  "frozen": 0,
+  "frozen_awaiting_grade": 0,
+  "with_p": 0,
+  "with_m": 0,
+  "with_both": 0,
+  "null_why": {
+   "p": {},
+   "m": {}
+  },
+  "graded": {
+   "td": 0,
+   "no_td": 0,
+   "void": {
+    "did not play": 0,
+    "game moved": 0,
+    "files never complete": 0
+   }
+  },
+  "graded_on_zero": 0,
+  "return_tds_not_counted": 0,
+  "vs_site": {
+   "agree": 0,
+   "void_site_graded": 0,
+   "graded_site_void": 0,
+   "td_differs": 0,
+   "site_pending_or_unread": 0
+  },
+  "in_sample": 0,
+  "of": 2000,
+  "running": null,
+  "by_branch": {
+   "real": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   },
+   "lined": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   },
+   "backup": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   },
+   "model": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   }
+  },
+  "by_group": {
+   "QB": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   },
+   "RB": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   },
+   "WR": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   },
+   "TE": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   },
+   "other": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   }
+  },
+  "by_shown": {
+   "default": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   },
+   "backups": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   },
+   "none": {
+    "calls": 0,
+    "graded": 0,
+    "td": 0,
+    "mean_p": null,
+    "mean_m": null,
+    "T1": null
+   }
+  },
+  "by_app_build": {},
+  "pace": {
+   "per_week": null,
+   "projected_at_season_end": null
+  },
+  "standing": "0 of 2,000 graded calls toward the verdict; the bar is judged at 2,000, not before"
+ },
+ "runs": {},
+ "calls": {}
+}
