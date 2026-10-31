@@ -34,10 +34,16 @@ shadow follows), impersonating oneshot_2026.py as `__main__`, running a modified
 re-implementing the features (not the frozen pipeline). What becomes untrue is fetch.py's sentence above: this program
 is the second, and the last, that moves the value, in memory and never through the variable, which it refuses to run
 with. td_shadow_equiv.py ran the same lift once, on the one-shot's own data directory, to hold the shadow's p equal
-to the one-shot's on weeks 1-6 bit for bit (results/td_shadow_equiv.json: agreement counts only). Disclosed besides:
-a scratch probe on 31 October 2026 at about 01:20-01:24 UTC, after the one-shot wrote its result at 01:10, ran
-predict.py on 2026 week 8 through this same lift and timed the outcome build; it looked at no outcome and chose
-nothing.
+to the one-shot's on weeks 1-6 bit for bit (results/td_shadow_equiv.json: agreement counts only). Disclosed besides
+(README.md, "What else has read 2026", lists every read): a scratch probe on 31 October 2026 at about 01:20-01:24
+UTC, after the one-shot wrote its result at 01:10, ran predict.py on 2026 week 8 through this same lift and timed the
+outcome build, which printed only how many 2026 rows played each week; it read no touchdown, scored nothing and chose
+nothing. And a design-phase sanity script (settle_sim.py, about 01:38 UTC, before the bar was registered at 04:48:56),
+with neither this model's code nor the lift, ported the site's settleLeg and graded the ESPN archive's final weeks
+1-7 touchdown lists against the site's published payload: 3,137 listed, 440 td, 2,351 no_td (371 on zero), 346 void,
+a 15.8% rate; the design also counted two 2026 weeks 1-7 stat rows with a special-teams touchdown. No model chance was
+set beside either; the void share fed the volume and pace estimate the owner saw, and the comparison of grading rules
+fed the discussion of his Q3.
 
 How m is taken: td_shadow_page.js boots the published page on the payload the props job just published, at the run's
 clock with nothing kept in the browser, and reads the chance the page states on each listed player's "Scores one"

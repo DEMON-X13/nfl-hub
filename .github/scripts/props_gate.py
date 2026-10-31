@@ -16,7 +16,10 @@ all (it still gets --no-odds, which a base from before needs and this one ignore
              nflbets/build/ since 17 October 2026) and the old addresses' redirects to it, the betting app,
              betting/neutral_sites.json and the build's parts of betting/tools, the props parts,
              liveparlays/build/). Neither: nothing the props job or the page runs changed, and the
-             gate passes at once. On a push to main or a dispatch, everything runs.
+             gate passes at once. On a push to main or a dispatch, everything runs. And on a pull request
+             that touches the touchdown shadow's ledger, ledger_hold: the props job alone writes it, so a
+             pull request may only add it, as `td_shadow.py init` writes the bar's registration; one that
+             changes or removes it fails here (this job, every job after it skipped).
   bake       job A: `weekly.py --no-odds` on this code (today's nflverse files, today's read of DraftKings' lines
              on ESPN, which espn_read.js records in props/raw/espn/, the audit with PROPS_AUDIT_RAW as weekly.py
              sets it), judged on its exit code; then the page smoke on the payload it baked (SMOKE_PAYLOAD) and
@@ -29,7 +32,7 @@ all (it still gets --no-odds, which a base from before needs and this one ignore
              archive of DraftKings' lines on ESPN, the admin link, the parlay card with Pull from DraftKings, and
              the touchdown shadow), on fixtures of their own: seconds each,
              but for the page's two smokes (smoke_admin.js about a minute, smoke_live.js about four) and the
-             touchdown shadow's test (about 20 seconds).
+             touchdown shadow's test (about 45 seconds).
 
 Each is differential. A failure is run again on the base's code (a second checkout, `git worktree`):
 failing here and passing there fails the gate, since it is the change's; failing on both is reported
@@ -63,6 +66,13 @@ TD_SHADOW = ['props/research/propmodel/td_shadow*', 'props/research/propmodel/te
              'props/research/propmodel/freeze.py', 'props/research/propmodel/model_*.py',
              'props/research/propmodel/requirements.txt', 'props/research/propmodel/PREREGISTRATION.md',
              'props/research/propmodel/frozen/**', 'props/research/propmodel/results/oneshot_2026.json']
+# The shadow's ledger is no code, so it sorts as neither part, and a pull request that touches it alone would pass at
+# once; but td_shadow_check.py holds each run's ledger only to the last commit's, so a hand edit a pull request merged
+# would become its baseline (a frozen call, a grade, the decision rewritten for good). The props job alone writes the
+# ledger, committed straight to main; a pull request may add it once, as `td_shadow.py init` writes it (the bar's
+# registration), and never change or remove it after: ledger_hold, which classify runs on every pull request
+TD_LEDGER = 'props/research/propmodel/shadow/td_ledger.json'
+TD_CHECK = 'props/research/propmodel/td_shadow_check.py'
 # '/**' is everything under a folder; otherwise a glob within one folder ('*' never crosses a '/')
 AUDIT = ['props/build/**', 'props/data/*.py', 'props/data/*.json', 'props/research/features.py',
          'props/research/qb_td.py', 'props/raw/feat.pkl', 'props/raw/fake_wk1.csv', 'props/requirements.txt',
@@ -98,7 +108,7 @@ UNITS = [('props/build/test_apply_espn.py', 'py'), ('props/build/test_espn_read.
          ('nflbets/build/test_dkname.js', 'node'),
          ('nflbets/build/smoke_admin.js', 'node'), ('nflbets/build/smoke_live.js', 'node'),
          # the touchdown shadow's rules, its check, its page reader on the payload pinned at 9dbe81f6 and its guard,
-         # on a stand-in for the model (job C has no lightgbm): about 20 s, three minutes at most by its own stop
+         # on a stand-in for the model (job C has no lightgbm): about 45 s, three minutes at most by its own stop
          ('props/research/propmodel/test_td_shadow.py', 'py')]
 # a unit run only where its file is in the tree; every other one missing fails the gate (none is optional: the parlay
 # card's name rule's test landed with its change)
@@ -160,6 +170,36 @@ def summary(s):
         with open(f, 'a', encoding='utf-8') as fh: fh.write(s + '\n')
 
 
+def ledger_hold(base, head='HEAD', cwd=ROOT, root=ROOT):
+    """[] or why a pull request's change to the touchdown shadow's ledger (TD_LEDGER) is refused: removed, or changed
+    in any byte, or added as anything but the bar's registration as `td_shadow.py init` writes it (td_shadow_check.py
+    --registration, the head's own, run on the head's ledger). git runs in cwd, the checker from root"""
+    def show(rev):
+        r = subprocess.run(['git', '-C', cwd, 'show', f'{rev}:{TD_LEDGER}'], capture_output=True)
+        return r.stdout if r.returncode == 0 else None
+    old, new = show(base), show(head)
+    if old == new:
+        return []
+    why = ('the props job alone writes it (td_shadow.py run, held by td_shadow_check.py to the last commit\'s, '
+           'committed straight to main); take it out of this pull request: git checkout origin/main -- ' + TD_LEDGER)
+    if new is None:
+        return [f'{TD_LEDGER} is removed: {why}']
+    if old is not None:
+        return [f'{TD_LEDGER} is changed: {why}']
+    fd, p = tempfile.mkstemp(suffix='.json')
+    try:
+        with os.fdopen(fd, 'wb') as f:
+            f.write(new)
+        r = subprocess.run([sys.executable, '-I', '-B', os.path.join(root, TD_CHECK), '--registration', p],
+                           capture_output=True, text=True, timeout=300, cwd=root)
+    finally:
+        os.remove(p)
+    if r.returncode == 0:
+        return []
+    said = '; '.join(l[len('FAIL: '):] for l in r.stdout.splitlines() if l.startswith('FAIL: ')) or (r.stdout + r.stderr).strip()[-300:]
+    return [f'{TD_LEDGER} is added, but not as `td_shadow.py init` writes the bar\'s registration ({said})']
+
+
 def plan(changed, everything=False):
     """(audit, page, the cases to replay) for a change"""
     audit, page = parts(changed)
@@ -181,14 +221,19 @@ def classify(args):
     for name, got in (('AUDIT', audit), ('PAGE', page)):
         print(f'  {name}: ' + (', '.join(got[:12]) + (f' and {len(got) - 12} more' if len(got) > 12 else '') if got else 'none'))
     if everything: print(f'  a {ev}: everything runs')
-    if not (a or p):
+    hold = ledger_hold(base) if ev == 'pull_request' and TD_LEDGER in changed else []
+    if hold:
+        for x in hold:
+            print(f'::error::{x}')
+            summary(f"The touchdown shadow's ledger: {x}")
+    elif not (a or p):
         print('nothing the props job or the page runs changed: the props gate passes')
         summary('Nothing the props job or the page runs changed: the props gate passes.')
     else:
         summary(f"Props gate on {ev}: job A (fresh bake) {'runs' if a or p else 'skipped'}, "
                 f"{len(labels)} phase replay case(s){': ' + ', '.join(labels) if labels else ''}.")
     out(audit=str(a).lower(), page=str(p).lower(), base=base, cases=json.dumps(labels))
-    return 0
+    return 1 if hold else 0
 
 
 def dry_run(args):

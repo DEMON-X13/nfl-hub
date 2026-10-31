@@ -89,8 +89,11 @@ at the next refresh:
 - `props/research/totals/shadow/ledger.json` (by `shadow.py` in the betting job: the game-totals shadow's calls, frozen at kickoff, and its pre-registered bar, so a hand edit there rewrites the record and `shadow_check.py` fails it)
 - `props/research/propmodel/shadow/td_ledger.json` (by `props/research/propmodel/td_shadow.py` in the props job, after
   its publish: the touchdown shadow's calls, frozen at kickoff and graded after, under a bar `td_shadow.py init`
-  registered in the ledger before the first call, so a hand edit there rewrites the record and `td_shadow_check.py`
-  refuses it; research data nothing on the site reads: under "Props: the loop", **The touchdown shadow**)
+  registered in the ledger before the first call, so a hand edit there rewrites the record: the next run and
+  `td_shadow_check.py` refuse one that is not canonical, and the props gate's `ledger_hold` fails any pull request that
+  changes or removes the ledger (a pull request may only add it, as `init` writes it; the check alone cannot refuse a
+  canonical edit once merged, since it holds a run's ledger to the last commit's); research data nothing on the site
+  reads: under "Props: the loop", **The touchdown shadow**)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
@@ -278,7 +281,9 @@ still passed `--no-odds`, which a base from before needs and this one ignores; n
 nothing is committed). Its first job sorts the changed paths into AUDIT (what the props job runs: `props/build/`,
 `espn_read.js` among it, the `props/data` scripts and model files but not the job's outputs, the research files `weekly.py`
 runs, `lib/`, `props.yml`, the gate, and since 31 October 2026 the touchdown shadow's code and test and every file
-PREREGISTRATION.md section 3 registers, `TD_SHADOW` in `props_gate.py`, but never its ledger) and PAGE (`nflbets/`, the page itself at the root, `index.html`, and the old addresses' redirects to it,
+PREREGISTRATION.md section 3 registers, `TD_SHADOW` in `props_gate.py`, but never its ledger, which the props job alone
+writes: a pull request that changes or removes it fails this first job outright, `ledger_hold`, and one may only add it
+as `td_shadow.py init` writes the bar's registration, `td_shadow_check.py --registration`) and PAGE (`nflbets/`, the page itself at the root, `index.html`, and the old addresses' redirects to it,
 `pickems/`, `live/`, `liveparlays/` and `news/index.html`, since 17 October 2026, the betting app, `betting/neutral_sites.json`
 and `betting/tools`' build parts, the props parts, `liveparlays/build/`), a renamed file by its old path
 too; with neither it passes at once, and a push or a dispatch runs everything. Job A runs `weekly.py
@@ -291,7 +296,7 @@ own (the smoke cases alone when only PAGE changed); job C (since 20 October 2026
 `test_espn_read.js`, `test_lock_runs.py`, `test_espn_ids.py`, `test_dk_links.py`, `test_unmatched.py`, `test_who_played.py`,
 `test_fetch.py`, `test_audit_gate.py`, `lib/test_netfetch.py` and `.js`, `test_espn_archive.py` (since 27 October 2026,
 **The archive of DraftKings' lines**), `props/research/propmodel/test_td_shadow.py` (since 31 October 2026, **The
-touchdown shadow**: about 20 seconds, stopping itself at 3 minutes), `nflbets/build/test_dkname.js`,
+touchdown shadow**: about 45 seconds, stopping itself at 3 minutes), `nflbets/build/test_dkname.js`,
 `nflbets/build/smoke_admin.js` and, since the review of 21 October 2026, `nflbets/build/smoke_live.js` (about four minutes,
 the one place the parlay card's Pull from DraftKings and its money rules are held; job C's `timeout-minutes` went from 20 to
 45 with it, room for both page smokes running to their own caps here and again on the base, which `test_props_gate.py`
@@ -847,7 +852,9 @@ holds the bar verbatim, and PREREGISTRATION.md section 8; the owner's sign-off o
 touchdown PASS starts it and nothing else: research only, its ledger read by no page and used by no suggestion, and
 nothing on the site moves by it. It is seven steps of `props.yml` after the publish's commit and the props-refused
 issue's close, on `main` only and only when `weekly.py` succeeded, each `continue-on-error` with its own cap (2, 4, 4,
-20, 4, 3 and 2: 39; the job's `timeout-minutes` went from 45 to 85 for them, which `test_props_gate.py` holds), none
+20, 4, 3 and 2: 39; since the review of 31 October 2026 every step of the job has a cap of its own, the publish's
+adding to 45 (`weekly.py`'s 32 among them, its whole cap before the shadow, so a stalled publish holds the concurrency
+group no longer than then) and the job's 90 above all of them, which `test_props_gate.py` holds), none
 writing the build's problems file, so it can never refuse, slow or redden the publish, which is pushed before it
 starts. Before each game it calls every player on the anytime-touchdown list of the job's published ESPN read
 (`PAY.espn.games[gid].pl.td`) with two chances. p is the frozen model's chance he scores a rushing or receiving
@@ -889,7 +896,11 @@ complete), `guessTdPrice`, `tdBranch`, `estPrice`, `espnPrice`'s touchdown path,
 model files), `gameCtx` and `teamImplied`, `PAY.grid` and `depthOf`; a pull by hand with `oddsfetch.py` does the same (it
 turns legs `real` and moves the week's overround). `test_td_shadow.py` is its test, a unit of the props gate's job C,
 and the gate counts the shadow's code and every file section 3 registers as AUDIT paths, so a PR editing one runs the
-whole gate and fails job C.
+whole gate and fails job C. The test pins BAR's own SHA-256 and the committed ledger's `bar_registered` (BAR never
+changes: a PR that moves it must edit those two lines too), holds every sub-condition of the check in its own words,
+and runs props.yml's shadow step script itself under `bash -e` in a copy of the tree (exit 0 moved, 1 refused and left,
+2 DEGRADED moved); the check fails a ledger that changed at the last commit's `run_at` (no run made that change), and
+the props gate's `ledger_hold` keeps a hand edit from ever becoming the last commit's (the review of 31 October 2026).
 
 A quarterback has an anytime touchdown since app v102 (`patch_qb_td.py`; the owner asked, October
 2026): his own rushing or receiving touchdown, as DraftKings settles it, never a pass he throws, and
@@ -949,7 +960,12 @@ only while under a day old (`ESPN_STALE`, as the bake's rule for a pull's), and 
 publishes the last read and goes red after its commit. A visitor's Refresh odds press (below) puts DraftKings' current
 lines, read from ESPN in that browser, over the published read in that browser alone. It commits straight to `main`
 (`props/data`; `props/raw/espn/` is never committed), and the touchdown shadow's ledger in a second commit of its own.
-Its `timeout-minutes` is 85: the publish's 45 and the shadow's step caps, 39.
+Its `timeout-minutes` is 90, and every step has a cap of its own (since the review of 31 October 2026): the publish's
+steps add to 45 (checkout 2, setup-python 1, pip 3, setup-node 1, npm ci 2, `weekly.py` 32, the commit 3, the
+props-refused issue's close 1), the touchdown shadow's to 39 and the two last steps to 3, with 3 minutes for GitHub's
+own; a `weekly.py` that stalls past its 32 fails its step and refuses the run (the props-refused issue then opens, its
+note saying `weekly.py` wrote no problems file), as the job's 45 did before, and `test_props_gate.py` holds every cap
+and both sums.
 A refused run (`weekly.py` exit 1) opens an issue labelled `props-refused`, or comments on the open one, with
 `props/build/refused_note.py`'s text: the problems file, the published payload's bake time and its ESPN read's, the next
 game still to come with its kickoff in ET and the hours left, the run's link, and what to do (merge a fix, then `gh

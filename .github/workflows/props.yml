@@ -64,29 +64,41 @@ jobs:
   props:
     # pinned: ubuntu-latest moves to Ubuntu 26.04 on 19 October 2026; try ubuntu-26.04 on purpose, in a dispatched run on a branch, before moving this line
     runs-on: ubuntu-24.04
-    # a normal run takes a few minutes; a stalled download (lib/netfetch.py and .js give each try a
-    # timeout and the run ten minutes of retry waits) fails the run here, not at GitHub's six hours.
-    # 85: the publish's 45 plus the touchdown shadow's step caps (39), so a shadow step that runs to its own cap
-    # never cuts off anything after it; .github/scripts/test_props_gate.py holds it
-    timeout-minutes: 85
+    # a normal run takes a few minutes (the last 40 runs before the touchdown shadow: weekly.py 2.4 minutes at the
+    # median, 8 at most, every other step seconds). Every step has a cap of its own: the publish's steps, up to and
+    # including the issue it closes, add to 45 (the job's whole cap until the shadow came, so a stalled publish holds
+    # the props concurrency group no longer than before: a stalled download, which lib/netfetch.py and .js give each
+    # try a timeout and the run ten minutes of retry waits, fails at weekly.py's 32 and refuses the run, opening the
+    # props-refused issue below); the touchdown shadow's steps add to 39; the two after it to 3. 90: all of them and
+    # 3 minutes of GitHub's own set-up and post steps, so no step that runs to its own cap cuts off one after it, and
+    # the shadow never turns the run red. .github/scripts/test_props_gate.py holds every cap and both sums
+    timeout-minutes: 90
     steps:
       # the branch as it stands when the run starts, not the commit it was queued on: runs of one job wait
       # in line (concurrency), and one queued behind another would otherwise start from the state the other
       # has since replaced, and lose the push to a conflict on its own file
       - uses: actions/checkout@v7
+        timeout-minutes: 2
         with:
           ref: ${{ github.ref_name }}
       - uses: actions/setup-python@v7
+        timeout-minutes: 1
         with:
           python-version: "3.12"
       - run: pip install -r props/requirements.txt
+        timeout-minutes: 3
       - uses: actions/setup-node@v7
+        timeout-minutes: 1
         with:
           node-version: 22
       - run: npm ci
+        timeout-minutes: 2
         working-directory: props/build
       - name: Weekly refresh (downloads, bake, assemble, ESPN read, audit)
         id: weekly
+        # 32 minutes (its longest of the last 40 runs, 8): one that stalls past it fails here and refuses the run,
+        # as the job's 45 did before every step had a cap; the props-refused issue below then opens
+        timeout-minutes: 32
         working-directory: props/build
         env:
           PYTHONUTF8: "1"
@@ -100,6 +112,7 @@ jobs:
         # with the old run line's --catch-up or --no-odds, which weekly.py accepts and does nothing with.
         run: python weekly.py --no-commit
       - name: Commit if anything changed
+        timeout-minutes: 3
         # props/raw/feat.pkl changes only on the first run of a new season, when weekly.py adds the
         # season just finished to it (the baselines come from there); it is committed here so the
         # next run finds it ready. A refused run never commits it. props/data carries the
@@ -131,6 +144,7 @@ jobs:
         # closes. Never fails the run (continue-on-error), and does nothing when no issue is open
         if: success() && steps.weekly.outcome == 'success'
         continue-on-error: true
+        timeout-minutes: 1
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -144,7 +158,7 @@ jobs:
       # The anytime-touchdown shadow (props/research/propmodel/README.md, "The touchdown shadow"; PREREGISTRATION.md
       # section 8). Research only: no page reads its ledger and nothing on the site uses it. It runs after this run's
       # payload is pushed, on main only, and touches nothing the steps above decided: every step is continue-on-error
-      # with its own timeout-minutes (the job's cap is the publish's 45 plus all of theirs), none writes the build's
+      # with its own timeout-minutes (the job's cap is the publish's 45, all of theirs and the last two's), none writes the build's
       # problems file (the last step's only input), the ledger is written aside, checked and only then moved into
       # place, and it goes in a commit of its own. The model runs on Python 3.13 with requirements.txt's pins, in a
       # venv of its own (`python` stays 3.12 for every step after: refused_note.py imports weekly.py). The off switch is
@@ -253,6 +267,7 @@ jobs:
         # never stands in for the red run below
         if: failure() && steps.weekly.outcome == 'failure'
         continue-on-error: true
+        timeout-minutes: 2
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -265,6 +280,7 @@ jobs:
           else gh issue create --title "Props job refused: nothing published" --label props-refused --body-file "$body"; fi
       - name: Fail the run if the build reported problems
         if: always()
+        timeout-minutes: 1
         run: |
           f="$RUNNER_TEMP/props-build-problems.txt"
           if [ -s "$f" ]; then

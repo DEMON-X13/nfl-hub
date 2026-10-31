@@ -13,7 +13,9 @@ It fails when:
       BAR registers does not hash to BAR;
    4. a called_at, frozen_at, graded_at, decided_at or the ledger's run_at names no runs entry; a runs entry the last
       commit had is changed; a new entry is not this run's; a run is a TD_SHADOW_STUB stand-in's (unless the same
-      variable is set off GitHub Actions);
+      variable is set off GitHub Actions); the ledger differs from the last commit's while its run_at is the last
+      commit's (only a run moves the record, and every run moves run_at, so rules 7 to 15 below are never skipped
+      for a ledger that changed);
    5. a key is not 2026|WW|game id|player id of its own fields, the week is not the game's (on the schedule, and in
       the game id), a field is missing or extra, or an enum is out of range;
    6. a call was made 10 minutes or less before its kickoff, read at or after it or after it was made; p or m is
@@ -23,7 +25,8 @@ It fails when:
       page.json's m side (read on this payload at this run's clock) and evidence.json's p side, its coverage verdict
       included;
    8. on a run that made calls, a game it called is not covered exactly (every listed player a call, no unlisted
-      unfrozen call kept), or a page game it should have called was not;
+      unfrozen call kept), a page game it should have called was not, or a game the payload offers to call is not in
+      page.json at all (td_shadow.py makes no call on such a run: the page did not read every game);
    9. m is not clip(implied(price) / ov, 0.001, 0.999) to 1e-12 by the check's own formula, or (on a call this run
       wrote) ov is not the check's own reading of the week's overround: the median of implied(over) + implied(under)
       over the week's two-sided player main lines in PAY.mkt, else 1.0566 for a price from DraftKings' line; for a
@@ -49,8 +52,15 @@ It fails when:
 Logged and never failed: a grade a fresh reading of the raw files now sees differently (a stat correction since), a
 registered grade the site's settleLeg read otherwise, a no-stat no_td whose snap row is not found by pfr id.
 
+What this check holds is a ledger a run wrote, against the last commit's. It cannot see a hand edit already merged:
+once a pull request puts one on main, it is the last commit's ledger. That is held before the merge instead, by the
+props gate (.github/scripts/props_gate.py, `ledger_hold`): a pull request may add the ledger once, as `td_shadow.py
+init` writes it (--registration below), and never change or remove it after; the props job alone writes it, committed
+straight to main.
+
     python -I td_shadow_check.py --ledger NEW --payload P [--page page.json] [--evidence evidence.json] [--data DIR]
            [--prev OLD | --no-prev] [--problems FILE]
+    python -I td_shadow_check.py --registration FILE     the bar's registration as init writes it, and nothing else
 
 Without --prev the last commit's ledger is read with `git show HEAD:<ledger>` (it works on a one-commit-deep
 checkout). Ends "td shadow check: N failures" (exit 0 on none, 1 otherwise).
@@ -263,6 +273,10 @@ def check(L, text, prev, pay, pay_sha, page, ev, data, allow_stub=False):
     if prev is not None and prev.get('run_at') and ra and t(ra) < t(prev['run_at']):
         fail(4, 'the ledger\'s run_at is earlier than the last commit\'s')
     changed_run = prev is None or ra != (prev or {}).get('run_at')
+    # every run moves run_at, so a ledger at the last commit's run_at is the last commit's ledger, byte for byte; the
+    # rules below that hold a run's changes (7 to 15) are skipped for it, so anything else here is a change no run made
+    if not changed_run and (L != prev or text != TS.dumps(prev)):
+        fail(4, "the ledger changed, but its run_at is the last commit's: no run made the change")
     if ra is None:
         if calls or D is not None:
             fail(4, 'calls or a decision with no run')
@@ -371,6 +385,9 @@ def check(L, text, prev, pay, pay_sha, page, ev, data, allow_stub=False):
             fail(8, f'calls were made with no usable page.json ({page_why})')
         else:
             want = TS.callable_games(pay, t(ev['now']))
+            for gid in sorted(want):
+                if gid not in page['games'] and want[gid][1] > run_at + TS.CALL_MARGIN:
+                    fail(8, f'{gid}, a game the payload offers to call, is not in page.json, yet calls were made')
             for gid, G in page['games'].items():
                 g = sched[gid]
                 if TS.ko(g) > run_at + TS.CALL_MARGIN and G['td'] and gid in want and gid not in called:
@@ -548,10 +565,50 @@ def check(L, text, prev, pay, pay_sha, page, ev, data, allow_stub=False):
     return bad, notes, warns
 
 
+def registration_bad(text):
+    """why a ledger's text is not the bar's registration exactly as `td_shadow.py init` writes it (canonical, BAR with
+    no open question, the manifest's touchdown files, a registration time, no run, no call, no decision and the empty
+    summary), or []. The props gate holds a ledger a pull request adds to this (props_gate.py, `ledger_hold`)"""
+    try:
+        L = json.loads(text)
+    except ValueError as e:
+        return [f'it does not read as JSON ({e})']
+    try:
+        if TS.dumps(L) != text:
+            return ['it is not its own canonical dump']
+    except ValueError as e:
+        return [f"it is not the shadow's ledger ({e})"]
+    bad = []
+    if L.get('what') != TS.WHAT:
+        bad.append("its what is not the shadow's own")
+    if L.get('bar') != TS.BAR:
+        bad.append('its bar is not BAR')
+    if '[Q' in text:
+        bad.append("it holds an open question ('[Q')")
+    try:
+        if L.get('model') != TS.model_block(TS.manifest()):
+            bad.append("its model block is not the manifest's touchdown files")
+    except (OSError, ValueError, KeyError) as e:
+        bad.append(f'the manifest does not read ({e})')
+    try:
+        if not isinstance(L.get('bar_registered'), str) or TS.iso(L['bar_registered']) != L['bar_registered']:
+            bad.append('its bar_registered is not a time as the ledger writes one')
+    except (TypeError, ValueError):
+        bad.append('its bar_registered is not a time')
+    for k, want in (('run_at', None), ('decision', None), ('runs', {}), ('calls', {})):
+        if L.get(k) != want:
+            bad.append(f'its {k} is not {json.dumps(want)}: a registration has no run, call or decision')
+    if L.get('summary') != TS.summarize({}, None):
+        bad.append('its summary is not the empty ledger\'s')
+    return bad
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('--ledger', required=True)
-    ap.add_argument('--payload', required=True)
+    ap.add_argument('--registration', default=None, metavar='FILE',
+                    help="only: is FILE the bar's registration as td_shadow.py init writes it (the props gate's hold)")
+    ap.add_argument('--ledger', default=None)
+    ap.add_argument('--payload', default=None)
     ap.add_argument('--page', default=None)
     ap.add_argument('--evidence', default=None)
     ap.add_argument('--data', default=None)
@@ -560,6 +617,18 @@ def main(argv=None):
     g.add_argument('--no-prev', action='store_true')
     ap.add_argument('--problems', default=None)
     a = ap.parse_args(argv)
+    if a.registration:
+        try:
+            with open(a.registration, encoding='utf-8') as f:
+                bad = registration_bad(f.read())
+        except (OSError, UnicodeDecodeError) as e:
+            bad = [f'it does not read ({e})']
+        for x in bad:
+            print('FAIL:', x)
+        print(f'td shadow registration: {len(bad)} failures')
+        return 1 if bad else 0
+    if not (a.ledger and a.payload):
+        ap.error('--ledger and --payload are required (or --registration FILE alone)')
 
     def opt(p):
         if not p or not os.path.exists(p):

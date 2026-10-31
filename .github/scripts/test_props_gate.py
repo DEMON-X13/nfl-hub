@@ -320,7 +320,54 @@ for pat in G.TD_SHADOW:
 case(('props/research/propmodel/test_td_shadow.py', 'py') in G.UNITS, 'props/research/propmodel/test_td_shadow.py is not a py unit of job C')
 case(G.UNIT_LINE.search('204 checks, 0 failures').group(2) == '0', "job C does not read test_td_shadow.py's summary line")
 
-PUBLISH_CAP = 45      # props.yml's cap before the shadow: download, bake, read, audit, record and publish
+# the shadow's ledger on a pull request (ledger_hold): the props job alone writes it, so a pull request may add it once,
+# as `td_shadow.py init` writes the bar's registration, and never change or remove it (the review of 31 October 2026:
+# td_shadow_check.py holds a run's ledger to the last commit's, so a hand edit merged by a pull request became its
+# baseline). On a scratch repository: base, the registration added, a byte changed, removed, and three additions that
+# are no registration (not canonical, a run_at, a call)
+with tempfile.TemporaryDirectory() as d:
+    gitc = lambda *a: subprocess.run(['git', '-C', d, '-c', 'user.name=t', '-c', 'user.email=t@t', *a],   # noqa: E731
+                                     capture_output=True, text=True, check=True).stdout.strip()
+    gitc('init', '-q')
+    open(os.path.join(d, 'README'), 'w').write('x\n')
+    gitc('add', 'README')
+    gitc('commit', '-q', '-m', 'base')
+    shas = {'base': gitc('rev-parse', 'HEAD')}
+    reg = os.path.join(d, 'reg.json')
+    r = subprocess.run([sys.executable, '-I', '-B', os.path.join(ROOT, 'props', 'research', 'propmodel', 'td_shadow.py'), 'init',
+                        '--ledger', reg], capture_output=True, text=True, env=dict(os.environ, TD_SHADOW_NOW='2026-10-31T04:00:00Z'))
+    case(r.returncode == 0 and os.path.exists(reg), f'td_shadow.py init does not write a registration to hold: {r.stdout}{r.stderr}')
+    text = open(reg, encoding='utf-8').read() if os.path.exists(reg) else '{}'
+    led = os.path.join(d, *G.TD_LEDGER.split('/'))
+
+    def commit(name, body, parent='base'):
+        gitc('checkout', '-q', shas[parent])
+        if body is None:
+            gitc('rm', '-q', G.TD_LEDGER)
+        else:
+            os.makedirs(os.path.dirname(led), exist_ok=True)      # a checkout takes the empty folders away
+            open(led, 'w', encoding='utf-8', newline='\n').write(body)
+            gitc('add', G.TD_LEDGER)
+        gitc('commit', '-q', '-m', name)
+        shas[name] = gitc('rev-parse', 'HEAD')
+    commit('registered', text)
+    commit('changed', text.replace('"run_at": null', '"run_at": "2026-11-01T12:00:00Z"', 1), parent='registered')
+    commit('removed', None, parent='registered')
+    commit('noncanonical', text.replace('\n "run_at"', '\n  "run_at"', 1))
+    commit('with_run_at', text.replace('"run_at": null', '"run_at": "2026-11-01T12:00:00Z"', 1))
+    commit('with_call', text.replace('"calls": {}', '"calls": {\n  "k": {}\n }', 1))
+    for want, a, b, say in ((True, 'base', 'base', ''), (True, 'base', 'registered', ''), (True, 'registered', 'registered', ''),
+                            (False, 'registered', 'changed', 'is changed'), (False, 'registered', 'removed', 'is removed'),
+                            (False, 'base', 'noncanonical', 'canonical'), (False, 'base', 'with_run_at', 'run_at'),
+                            (False, 'base', 'with_call', 'calls')):
+        got = G.ledger_hold(shas[a], shas[b], cwd=d)
+        case((not got) if want else (len(got) == 1 and say in got[0]),
+             f'ledger_hold from {a} to {b} is {got}, not {"[]" if want else "one refusal saying " + repr(say)}')
+
+PUBLISH_CAP = 45      # props.yml's whole cap before the shadow: its publish steps' caps (download, bake, read, audit,
+                      # record, commit and the issue it closes) may add to no more, so a stalled publish holds the props
+                      # concurrency group no longer than it did then
+GH_OWN = 3            # minutes the job's cap leaves for GitHub's own set-up and post steps, beside every step's cap
 def yml_steps(y):
     """a workflow's steps in order, each (name, its text with its comment lines left out)"""
     body = y.split('\n    steps:\n', 1)[1]
@@ -368,9 +415,21 @@ def shadow_steps_bad(y):
         bad.append('the history cache is not saved by one TD shadow step before the last step')
     if 'PROPMODEL_LIFT_HOLDOUT' in y:
         bad.append('props.yml names PROPMODEL_LIFT_HOLDOUT, the one-shot\'s alone')
+    # every step has a cap of its own: the publish's add to PUBLISH_CAP at most, and the job's cap holds them all, so no
+    # step that runs to its own cap cuts off one after it (the shadow never turns the run red by the job's timeout)
+    caps = [(n, re.search(r'(?m)^        timeout-minutes: (\d+)\s*$', t)) for n, t in steps]
+    for n, c in caps:
+        if not c:
+            bad.append(f'the step {n!r} has no timeout-minutes of its own')
+    first_td = td[0][0]
+    publish = sum(int(c.group(1)) if c else 10 ** 6 for n, c in caps[:first_td])
+    if publish > PUBLISH_CAP:
+        bad.append(f'the publish\'s steps (every step before the first TD shadow step) add to {publish} minutes, over {PUBLISH_CAP}')
+    every = sum(int(c.group(1)) if c else 10 ** 6 for n, c in caps)
     job = re.search(r'(?m)^    timeout-minutes: (\d+)\s*$', y)
-    if not job or int(job.group(1)) < PUBLISH_CAP + total:
-        bad.append(f'the job\'s timeout-minutes ({job and job.group(1)}) is under the publish\'s {PUBLISH_CAP} plus the shadow\'s caps ({total})')
+    if not job or int(job.group(1)) < every + GH_OWN:
+        bad.append(f'the job\'s timeout-minutes ({job and job.group(1)}) is under every step\'s caps ({every}) plus {GH_OWN} '
+                   'for GitHub\'s own steps')
     commit = [t for _, _, t in td if 'git commit' in t]
     if len(commit) != 1 or re.findall(r'git add ([^\n;&|]+)', commit[0]) != ['"$L"'] \
             or 'L=props/research/propmodel/shadow/td_ledger.json' not in commit[0] or re.search(r'git commit [^\n]*-[a-zA-Z]*a\b', commit[0]):
@@ -385,6 +444,41 @@ def shadow_steps_bad(y):
     note = [t for _, _, t in td if 'td_shadow.py notify' in t]
     if len(note) != 1 or "steps.tdplan.outcome != 'skipped'" not in note[0]:
         bad.append('the td-shadow issue step does not run whenever the plan ran')
+    # the shadow step's script, command by command (a `\` continuation joined): the page read, the run and the check
+    # on the same files and clock, the check's failure ending the step before the move, and run's own code last
+    if r:
+        body = re.sub(r'\\\n\s*', ' ', r.split('run: |', 1)[-1])
+        cmd = lambda needle: [l.strip() for l in body.splitlines() if needle in l]    # noqa: E731
+        def args(line):
+            return dict(re.findall(r'--([a-z][a-z-]*) ("[^"]*"|\S+)', line))
+        rd, rn, ck = cmd('td_shadow_page.js'), cmd('td_shadow.py run'), cmd('td_shadow_check.py')
+        if len(rd) != 1 or len(rn) != 1 or len(ck) != 1:
+            bad.append('the shadow step does not read the page once, run once and check once')
+        else:
+            A, R, C = args(rd[0]), args(rn[0]), args(ck[0])
+            out = R.get('out')
+            cp = re.search(r'(?m)^\s*cp (\S+) "\$L\.part" && mv "\$L\.part" "\$L"\s*$', body)
+            if not out or out == '"$L"' or C.get('ledger') != out or not cp or cp.group(1) != out:
+                bad.append('the check does not read the ledger run wrote aside, or the move does not move that one')
+            if not re.search(r'\|\| \{ echo "REFUSED: [^"]*" >> "\$P"; exit 1; \}$', ck[0]):
+                bad.append('a failed check does not end the step (`|| { echo "REFUSED: ..." >> "$P"; exit 1; }`, nothing after it)')
+            if not (A.get('out') and A.get('out') == R.get('page') == C.get('page')):
+                bad.append('the run and the check do not read the page.json the reader wrote')
+            if not (R.get('evidence') and R.get('evidence') == C.get('evidence')):
+                bad.append('the check does not read the evidence.json the run wrote')
+            if not (A.get('now') == R.get('now') == '"$NOW"'):
+                bad.append('the reader and the run are not given one clock, "$NOW"')
+            if not (R.get('data') == C.get('data') == '"$T/data"'):
+                bad.append('the check does not read the data the run staged ("$T/data")')
+            if not (A.get('payload') == R.get('payload') == C.get('payload') == 'props/data/payload.json'):
+                bad.append('the reader, the run and the check do not read the payload just published')
+            if A.get('ledger') != '"$L"' or R.get('ledger') != '"$L"':
+                bad.append('the reader and the run do not read the committed ledger')
+        lines = [l.strip() for l in body.splitlines() if l.strip()]
+        if not lines or lines[-1] != 'exit "$rc"':
+            bad.append('the shadow step does not end with run\'s own code (`exit "$rc"`)')
+    if not commit or "steps.tdshadow.outcome == 'failure'" not in commit[0]:
+        bad.append('the commit step does not run after a DEGRADED run (exit 2, its checked ledger moved into place)')
     return bad
 got = shadow_steps_bad(py)
 case(not got, f'props.yml\'s touchdown shadow steps: {got}')
@@ -393,11 +487,28 @@ for what, old, new in (
         ('continue-on-error', '        continue-on-error: true\n        timeout-minutes: 20\n', '        timeout-minutes: 20\n'),
         ('update-environment', '          update-environment: false\n', ''),
         ('the main-only if', " && github.ref_name == 'main' && vars.TD_SHADOW != 'off'", " && vars.TD_SHADOW != 'off'"),
-        ('the job cap', '    timeout-minutes: 85\n', '    timeout-minutes: 60\n'),
         ('git add -A', '          git add "$L"\n', '          git add -A\n'),
         ('rc after a semicolon', ' || rc=$?\n', '; rc=$?\n'),
         ('the move before the check', '          cp "$T/td_ledger.json" "$L.part" && mv "$L.part" "$L"\n', ''),
-        ('the problems file', '"$RUNNER_TEMP/tdshadow/problems.txt"', '"$RUNNER_TEMP/props-build-problems.txt"')):
+        ('the problems file', '"$RUNNER_TEMP/tdshadow/problems.txt"', '"$RUNNER_TEMP/props-build-problems.txt"'),
+        # every step capped, the publish's caps at 45, the job's above them all
+        ('the weekly step\'s cap', '        timeout-minutes: 32\n', ''),
+        ('the publish at 45', '        timeout-minutes: 32\n', '        timeout-minutes: 40\n'),
+        ('the job above every cap', '    timeout-minutes: 90\n', '    timeout-minutes: 86\n'),
+        ('the checkout\'s cap', '      - uses: actions/checkout@v7\n        timeout-minutes: 2\n', '      - uses: actions/checkout@v7\n'),
+        ('the last step\'s cap', '        if: always()\n        timeout-minutes: 1\n', '        if: always()\n'),
+        # the shadow step's script (the review of 31 October 2026: each of these kept props_gate's earlier rules green)
+        ('a failed check ending the step', '>> "$P"; exit 1; }\n', '>> "$P"\n'),
+        ('nothing after the check', '>> "$P"; exit 1; }\n', '>> "$P"; exit 1; } || true\n'),
+        ('the check on the ledger written aside', 'td_shadow_check.py --ledger "$T/td_ledger.json"', 'td_shadow_check.py --ledger "$L"'),
+        ('one clock', '--now "$NOW" --out "$T/page.json"', '--now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --out "$T/page.json"'),
+        ('the run on the page read', '--page "$T/page.json" --props-raw', '--page "$T/page2.json" --props-raw'),
+        ('the run\'s evidence', ' --evidence "$T/evidence.json" --problems "$P" || rc=$?', ' --problems "$P" || rc=$?'),
+        ('the check\'s evidence', '--page "$T/page.json" --evidence "$T/evidence.json" \\\n', '--page "$T/page.json" \\\n'),
+        ('the check\'s data', '               --data "$T/data" --problems "$P" ||', '               --problems "$P" ||'),
+        ('the commit after a DEGRADED run', "(steps.tdshadow.outcome == 'success' || steps.tdshadow.outcome == 'failure')", "steps.tdshadow.outcome == 'success'"),
+        ('run\'s own code last', '          exit "$rc"\n', '          exit 0\n'),
+        ('the move of the checked ledger', 'cp "$T/td_ledger.json" "$L.part"', 'cp "$T/page.json" "$L.part"')):
     case(old in py and shadow_steps_bad(py.replace(old, new, 1)), f'the check on props.yml\'s touchdown shadow steps does not fail one without {what}')
 
 print(f'{n} cases, {bad} failures')

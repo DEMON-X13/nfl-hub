@@ -8,6 +8,8 @@ name: Props gate
 # the page runs passes in seconds. A PR the gate covers is merged once its props-gate check is green
 # (`gh pr checks <n> --watch`); a failure that also fails on the base is reported and does not hold it.
 on:
+  # every pull request, with no paths: the first job sorts them (and holds the touchdown shadow's ledger, which the props
+  # job alone writes: props_gate.py's ledger_hold fails a pull request that changes or removes it)
   pull_request:
   push:
     branches: [main]
@@ -92,7 +94,9 @@ jobs:
         run: python3 .github/scripts/test_props_gate.py
       - id: classify
         # AUDIT: what the props job runs; PAGE: what the Bets and Stats page is built from. Neither: the
-        # gate passes here. A push to main or a dispatch runs everything, on the commit before it as base
+        # gate passes here. A push to main or a dispatch runs everything, on the commit before it as base. On a pull
+        # request that touches the touchdown shadow's ledger, ledger_hold: added once as td_shadow.py init writes it,
+        # or this step fails
         run: python3 .github/scripts/props_gate.py classify --event "${{ github.event_name }}" --before "${{ github.event.before }}"
 
   bake:
@@ -157,7 +161,7 @@ jobs:
     # runs against the locks, the ids, the names, who played, the downloads, the audit's verdict, the admin link, the
     # parlay card and its Pull from DraftKings, the touchdown shadow), on fixtures of their own beside jobs A and B,
     # seconds each but for the page's two smokes (smoke_admin.js about a minute, smoke_live.js about four) and the
-    # touchdown shadow's test (about 20 seconds); a failure is run again on the base's code. 50 minutes: about 8 when
+    # touchdown shadow's test (about 45 seconds); a failure is run again on the base's code. 50 minutes: about 8 when
     # all pass, and room for the worst case, the three running to their own caps (smoke_live.js ten minutes,
     # smoke_admin.js eight, test_td_shadow.py three) here and again on the base, with the base's npm ci
     name: unit tests

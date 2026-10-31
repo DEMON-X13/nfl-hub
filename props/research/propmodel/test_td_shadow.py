@@ -7,28 +7,41 @@ made-up frames. No 2026 outcome is read: every played row and stat row below is 
 used, props/data/payload.json as the props job published it at 9dbe81f6 (30 October 2026, 20:43 UTC), is read for
 its schedule, its published ESPN read and the page's own estimate, at clocks before its games, and for made-up finals.
 
-  A  the call rules on a made-up week (in process: td_shadow.update, then td_shadow_check.check on what it wrote)
+  A  the call rules on a made-up week (in process: td_shadow.update, then td_shadow_check.check on what it wrote),
+     init's two refusals, and every page.json rule update keeps (another payload or clock, a kickoff off the
+     schedule's, a list not its players, a game to call unread: DEGRADED, no call)
   B  the grades: none before 96 h, pending while a game's files are out, void at 14 days, td / no_td / void from
-     made-up played rows, a moved game, the site's reading recorded, a grade never rewritten
+     made-up played rows, a moved game and the 24-hour line (3 hours graded from the rows, 25 void), the site's
+     reading recorded, a grade never rewritten
   C  the decision: decide() with the one-shot's own mean_diff and signal_test equal to them called directly, bit for
      bit; the rest on stand-ins: none at 1,999, the first 2,000 in grading order, PASS and each way to FAIL, the
      owner's Q2 (no touchdown priced on the model alone in the sample), FAIL stopping calls, PASS letting them go on,
      the season ending undecided
-  D  the check bites: one planted edit per rule (1 to 15)
+  D  the check bites: a planted edit for every sub-condition of every rule (1 to 15), each held by its own words, never
+     by another condition of its rule tripping beside it; main()'s crash catch, its refusal with no last commit and
+     the stub on Actions; and --registration, the props gate's hold, on every way a ledger can differ from init's
   E  the page reader on planted copies of the pinned payload (a lined player, a backup, the model alone, a real
      price, one ruled out, one with nothing to project, one shown only with backups; the reader refusing a page whose
-     legChance or row moved; the site's own verdicts on made-up finals) and F on the pinned payload as published,
-     with the zone database's kickoff against the page's on every game, then td_shadow.py run and the check on it
+     legChance or row moved, and sixteen more refusals on one boot, each plant taken off after; the site's own
+     verdicts on made-up finals) and F on the pinned payload as published, with the zone database's kickoff against
+     the page's on every game, then td_shadow.py run and the check on it
   G  plan and notify (--dry-run), the problem classes
   H  staging: props/raw under the model's names, hist_ok only for exactly the manifest's files, the frozen inputs
-     restored, every download through lib/netfetch.py, predict.refresh never called, and the p and grade glue
-  I  the guard: the holdout at 2026 after importing, refusals (PROPMODEL_LIFT_HOLDOUT, a registered file altered in a
-     copy of the tree, a result not the one-shot's, a branch on Actions, the stub on Actions or on the committed
-     ledger, a ledger not canonical, a clock not after the ledger's), the lift undone after an exception, and the
-     checkout's registered files their registered hashes (a PR editing one fails here)
+     restored, every download through lib/netfetch.py, predict.refresh never called, and the p and grade glue; the
+     per-game coverage on each club's last previous game (two played weeks and a bye), the older holes a WARN
+  I  the guard: the holdout at 2026 after importing, every refusal on its own (PROPMODEL_LIFT_HOLDOUT, each registered
+     file altered alone in a copy of the tree, predict.py's manifest, PREREGISTRATION.md's copy of the hashes, the
+     pins, Python 3.13, the holdout as imported, a result not the one-shot's, a branch on Actions, the stub on Actions
+     or on the committed ledger, a ledger not canonical or whose bar or model block moved, a clock not after the
+     ledger's, a run without the stub checking the pins first), the lift undone after an exception, the checkout's
+     registered files their registered hashes (a PR editing one fails here), and the bar pinned: BAR's SHA-256 and
+     the committed ledger's registration time (BAR_SHA256, BAR_REGISTERED)
   J  nothing on the site reads the ledger
+  K  props.yml's shadow step: its script run under bash -e in a copy of the folder that is a git repository of its
+     own (exit 0 and the checked ledger moved; exit 1 and the committed one left where the check refuses; exit 2 and
+     moved where the page is unread)
 
-    python3 props/research/propmodel/test_td_shadow.py      ends "N checks, 0 failures"; stops itself at 3 minutes
+    python3 props/research/propmodel/test_td_shadow.py      ends "N checks, 0 failures" (about 45 s); stops itself at 3 minutes
 """
 import contextlib
 import csv
@@ -53,6 +66,12 @@ T_START = time.time()
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
 PINNED = '9dbe81f6'            # "props: refresh 2026-10-30 20:43 UTC": its payload is the page reader's fixture
+# The bar as registered, pinned (section I): BAR's own SHA-256 (json.dumps, keys sorted) and the registration time of
+# the committed ledger. BAR "never changes" (its `changes` clause), so a pull request that edits BAR, or BAR and the
+# ledger together, must edit these two lines too, where a reviewer sees it; one that edits BAR alone fails job C here
+# before it merges, where until the review of 31 October 2026 it merged and refused every props run's shadow after
+BAR_SHA256 = 'd3da5f402f8f48758f76d1cc4c7365314c7dc12aacedd43d00e250d32ccced73'
+BAR_REGISTERED = '2026-10-31T04:48:56Z'
 # nothing of the props job's environment or the shadow's own knobs leaks into a run here
 STRIP = ('GITHUB_ACTIONS', 'GITHUB_REF_NAME', 'GITHUB_OUTPUT', 'GITHUB_STEP_SUMMARY', 'RUNNER_TEMP', 'TD_SHADOW_STUB',
          'TD_SHADOW_NOW', 'PROPMODEL_LIFT_HOLDOUT', 'PROPMODEL_DUMP_CANDIDATES', 'SUGGEST_PAGE', 'PYTHONPATH')
@@ -285,6 +304,75 @@ const rows = R => Object.entries(R.games).flatMap(([gid, G]) => Object.entries(G
     res.site = Object.assign(r, { expect: Object.fromEntries(Object.entries(calls).map(([k, c]) => [k, { why: c._why, want: c._want }])),
       zeros: `2026|08|2026_08_BAL_BUF|${C}`, line: `2026|08|2026_08_BAL_BUF|${Bp}` });
   }
+  // E4: every refusal of the reader on one boot of the pinned payload as published (read() called again and again on
+  // the same window): each plant put on, the reading refused in its own words, the plant taken off; a reading with
+  // nothing planted written before them and after them, so each refusal is its plant's
+  {
+    const crypto = require('crypto'), sha = b => crypto.createHash('sha256').update(b).digest('hex');
+    const now = Date.parse(T0);
+    const bt = await boot0(BASE, now), w = bt.w, ask = bt.asked, errs = bt.errs;
+    const o = { payload: JSON.parse(BASE), payloadSha: sha(Buffer.from(BASE, 'utf8')), indexSha: sha(fs.readFileSync(path.join(REPO, 'index.html'))),
+      nowText: T0, now, ledger: null, errs, asked: ask };
+    const tryRead = () => { try { const pg = TP.read(w, o); return { written: true, games: pg.counts.games, with_m: pg.counts.with_m }; }
+      catch (e) { return { refused: e instanceof TP.Refuse, msg: String((e && e.message) || e).slice(0, 300) }; } };
+    const ev = c => w.eval(c);
+    const g0 = Object.keys(games).sort()[0];
+    const lp0 = (Object.entries(games[g0].players).find(([pid, r]) => r.m != null && r.src === 'dkline') || [null])[0];
+    // the game's page drawn, then one of its touchdown rows changed (the first that states a chance)
+    const onRow = fn => `(function(){ window.__rg = renderGame; renderGame = function(){ const x = window.__rg.apply(this, arguments);
+      for (const i of document.querySelectorAll('#gameView input[data-leg$="|any_td"][data-k="1"]')) {
+        const tr = i.closest('tr'), c = tr && tr.querySelector('[data-legchance]'); if (c) { (${fn})(i, c); break; } }
+      return x; }; })()`;
+    const offRow = 'renderGame = window.__rg';
+    const plants = [
+      ['the touchdown price moved off the rule', /price \S+ where the rule says/,
+        () => ev('window.__p0 = guessTdPrice; guessTdPrice = function(){ const r = window.__p0.apply(this, arguments); if (r && typeof r === "object" && isFinite(r.price)) return Object.assign({}, r, { price: r.price + 15 }); if (typeof r === "number") return r + 15; return r; }'),
+        () => ev('guessTdPrice = window.__p0')],
+      ["the estimate's overround moved", /overround \S+ where the rule reads/,
+        () => ev('window.__v0 = DK_EST.tdVig; DK_EST.tdVig = 1.08'), () => ev('DK_EST.tdVig = window.__v0')],
+      ["a game's published read not installed", /did not install the payload's ESPN read/,
+        () => ev(`window.__e0 = ESPN_LIVE["8"][${JSON.stringify(g0)}]; delete ESPN_LIVE["8"][${JSON.stringify(g0)}]`),
+        () => ev(`ESPN_LIVE["8"][${JSON.stringify(g0)}] = window.__e0`)],
+      ['a function the reader calls gone', /the page has no tdBranch/,
+        () => ev('window.__t0 = tdBranch; tdBranch = undefined'), () => ev('tdBranch = window.__t0')],
+      ['ESPN asked for player lines', /asked ESPN for player lines/,
+        () => ask.push('https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/1/competitions/1/odds'), () => ask.pop()],
+      ['The Odds API asked', /asked The Odds API/, () => ask.push('https://api.the-odds-api.com/v4/sports/'), () => ask.pop()],
+      ['a page error', /the page threw: planted/, () => errs.push('planted'), () => errs.pop()],
+      ['another payload loaded', /did not load the payload/,
+        () => ev('window.__b0 = PAY.baked_at; PAY.baked_at = "planted"'), () => ev('PAY.baked_at = window.__b0')],
+      ["the page's clock not the run's", /clock is not the run's/,
+        () => ev('window.__d0 = Date.now; Date.now = function(){ return 0; }'), () => ev('Date.now = window.__d0')],
+      ['a touchdown row not drawn', /his touchdown row is not drawn/, () => ev(onRow('(i, c) => i.remove()')), () => ev(offRow)],
+      ['a dash where a chance is stated', /draws a dash where legChance states a chance/,
+        () => ev(onRow('(i, c) => c.removeAttribute("data-legchance")')), () => ev(offRow)],
+      ["the heading's projection moved", /the heading's projection/,
+        () => ev(onRow('(i, c) => { const p = i.closest(".statblk").querySelector("[data-td-proj]"); if (p) p.setAttribute("data-td-proj", "0.123456"); }')),
+        () => ev(offRow)],
+      ['the untested flag flipped off the rule', /alone\/tested \S+ where the rule says/,
+        () => ev('window.__e1 = plEst; plEst = function(){ const r = window.__e1.apply(this, arguments); return r && r.src === "dkline" ? Object.assign({}, r, { tested: !r.tested }) : r; }'),
+        () => ev('plEst = window.__e1')],
+      ["the page's branch off the rule's", /branch backup where the rule reads lined/,
+        () => ev('window.__t1 = tdBranch; tdBranch = function(){ const b = window.__t1.apply(this, arguments); return b === "lined" ? "backup" : b; }'),
+        () => ev('tdBranch = window.__t1')],
+      // legChance reads legFairStated (no hook is set), so moving the one moves both, and they stay equal
+      ["the stated chance off the rule's fair chance (legChance and legFairStated moved together)", /where the rule's fair chance is/,
+        () => ev('window.__c2 = legFairStated; legFairStated = function(l, m){ const c = window.__c2.apply(this, arguments); '
+          + 'return c && l && l.stat === "any_td" ? Object.assign({}, c, { p: Math.min(0.999, c.p + 0.01) }) : c; }'),
+        () => ev('legFairStated = window.__c2')],
+      ['a real price the rule has none for', /the page's real price 250 is not the rule's/,
+        () => ev(`window.__o0 = oddsFor; oddsFor = function(gid, pid, stat, k){ if (gid === ${JSON.stringify(g0)} && pid === ${JSON.stringify(lp0)} && stat === "any_td") return 250; return window.__o0.apply(this, arguments); }`),
+        () => ev('oddsFor = window.__o0')]];
+    res.E4 = { before: tryRead(), plants: [] };
+    for (const [name, re, put, take] of plants) {
+      let r;
+      try { put(); r = tryRead(); } catch (e) { r = { msg: 'the plant threw: ' + String(e) }; }
+      try { take(); } catch (e) { r = { msg: 'the plant could not be taken off: ' + String(e) }; }
+      res.E4.plants.push({ name, refused: !!r.refused, matched: !!(r.msg && re.test(r.msg)), msg: r.msg || null });
+    }
+    res.E4.after = tryRead();
+    try { w.close(); } catch (e) { /* closing only */ }
+  }
   done(0);
 })().catch(e => { res.error = String((e && e.stack) || e); done(1); });
 """
@@ -439,11 +527,14 @@ class World:
                          'team': self.rec(gi, i)['team'], 'rush': rush, 'rec': rec, 'st': st})
 
 
-def step(w, L, now, page=True, data=False, model=None):
-    """one run: td_shadow.update on L at `now` (the run's clock), then td_shadow_check.check on what it wrote"""
+def step(w, L, now, page=True, data=False, model=None, page_edit=None):
+    """one run: td_shadow.update on L at `now` (the run's clock), then td_shadow_check.check on what it wrote;
+    page_edit(page) returns the page.json the run is handed instead of the reader's"""
     now = T(now)
     P, sha, text = w.pay()
     pg = w.page(P, sha, now) if page else None
+    if page_edit:
+        pg = page_edit(json.loads(json.dumps(pg)))
     probs = TS.Problems(None)
     with quiet():
         L2, ev = TS.update(L, P, sha, pg, model or TS.StubModel(w.stub()), now, probs, lambda n: n)
@@ -463,17 +554,27 @@ def init_ledger(at, path=None):
     return jload(path), path
 
 
-def recheck(r, edit, resum=True, prev=None, allow_stub=True):
-    """the check on a copy of a run's ledger with one planted edit (the summary worked again unless the rule is 15)"""
+KEEP = object()
+
+
+def recheck(r, edit=None, resum=True, prev=KEEP, allow_stub=True, page=KEEP, ev=KEEP, data=KEEP):
+    """the check on a copy of a run's ledger with one planted edit (the summary worked again unless the rule is 15).
+    prev, page, ev and data stand in for the run's own; page and ev may be functions, given a copy of the run's own
+    and returning the one to check with"""
     L = json.loads(r.text)
-    text = edit(L)
+    text = edit(L) if edit else None
     if not isinstance(text, str):                 # an edit in place (its own return value aside)
-        if resum:
+        if resum and edit:
             L['summary'] = TS.summarize(L['calls'], L['decision'], L['runs'], TS.season_done(r.pay))
         text = TS.dumps(L)
+
+    def pick(v, own):
+        if v is KEEP:
+            return own
+        return v(json.loads(json.dumps(own))) if callable(v) else v
     with quiet():
-        bad, _, _ = TSC.check(json.loads(text), text, prev if prev is not None else r.prev, r.pay, r.sha, r.page, r.ev,
-                              r.data, allow_stub=allow_stub)
+        bad, _, _ = TSC.check(json.loads(text), text, pick(prev, r.prev), r.pay, r.sha, pick(page, r.page), pick(ev, r.ev),
+                              r.data if data is KEEP else data, allow_stub=allow_stub)
     return bad
 
 
@@ -481,9 +582,12 @@ def rules(bad):
     return sorted({int(m.group(1)) for m in (re.match(r'\[(\d+)\]', b) for b in bad) if m})
 
 
-def bites(name, r, edit, rule, resum=True, prev=None, allow_stub=True):
-    bad = recheck(r, edit, resum, prev, allow_stub)
-    ok(rule in rules(bad), f'D: the check does not fail {name} on rule {rule}', f'rules {rules(bad)}: {bad[:3]}')
+def bites(name, r, edit, rule, msg, **kw):
+    """the check fails a planted edit on its own rule, with its own words (msg, a piece of the failure's sentence):
+    each sub-condition of a rule is held on its own, never by another of the same rule tripping beside it"""
+    bad = recheck(r, edit, **kw)
+    hit = [b for b in bad if b.startswith(f'[{rule}] ') and msg in b]
+    ok(hit, f'D: the check does not fail {name} on rule {rule} ("{msg}")', f'rules {rules(bad)}: {bad[:3]}')
 
 
 def clean(r, what):
@@ -505,9 +609,25 @@ def section_ab():
     ok(abs(TSC.want_ov(P0, 9, 'real') - OV_REAL) < 1e-15 and TSC.want_ov(P0, 9, 'dkline') == OV_DK,
        'A: the made-up week\'s overrounds are not the check\'s own reading')
 
-    L0, _ = init_ledger('2026-11-01T12:00:00Z')
+    L0, l0p = init_ledger('2026-11-01T12:00:00Z')
     ok(L0['calls'] == {} and L0['runs'] == {} and L0['bar'] == TS.BAR and L0['decision'] is None
        and L0['summary'] == TS.summarize({}, None), 'A: init does not write the bar and nothing else')
+    # init registers the bar once: never over a ledger that exists, never with an open question in BAR
+    before = open(l0p, 'rb').read()
+    try:
+        with envset(TD_SHADOW_NOW='2026-11-01T13:00:00Z'), quiet():
+            TS.init(Namespace(ledger=l0p))
+        ok(False, 'A: init writes over a ledger that exists')
+    except TS.Refused as e:
+        ok('registered once' in str(e) and open(l0p, 'rb').read() == before,
+           'A: init refuses a ledger that exists, but does not leave it as it was', e)
+    fresh = os.path.join(TMP, 'init_open_question.json')
+    try:
+        with patched(TS, BAR=dict(TS.BAR, p=TS.BAR['p'] + ' [Q1]')), envset(TD_SHADOW_NOW='2026-11-01T13:00:00Z'), quiet():
+            TS.init(Namespace(ledger=fresh))
+        ok(False, "A: init registers a bar that still holds an open question ('[Q')")
+    except TS.Refused as e:
+        ok('open question' in str(e) and not os.path.exists(fresh), 'A: init refuses an open question, but writes a file', e)
     work, hist, _ = TS.plan_work(P0, L0, T('2026-11-02T12:00:00Z'))
     ok((work, hist) == ('run', True), f'G: plan before the first run is not work=run hist=true: {(work, hist)}')
 
@@ -527,6 +647,37 @@ def section_ab():
     ok(all(cc['m'] == w.recs[cc['game_id']][cc['pid']]['m'] for cc in r1.L['calls'].values()),
        'A: m is not the page\'s')
     ok(TS.dumps(json.loads(r1.text)) == r1.text, 'A: the writer is not canonical on its own output')
+
+    # page.json that cannot be used: read on another payload or at another clock, a kickoff not the schedule's, a list
+    # not its players (either way), or a game the payload offers to call not read at all: DEGRADED, no call moves, and
+    # the check passes what the run wrote (from R1's ledger, an hour on)
+    def pg_kick(pg):
+        pg['games'][G[4]]['kickoff'] = ISO(T(pg['games'][G[4]]['kickoff']) + timedelta(hours=1))
+        return pg
+
+    def pg_drop_player(pg):
+        del pg['games'][G[4]]['players'][pid_of(4, 3)]
+        return pg
+
+    def pg_drop_listed(pg):
+        pg['games'][G[4]]['td'].remove(pid_of(4, 3))
+        return pg
+
+    def pg_drop_game(pg):
+        del pg['games'][G[4]]
+        return pg
+    for name, edit, words in (('read on another payload', lambda pg: dict(pg, payload_sha256='0' * 64), 'was read on another payload'),
+                            ('baked at another time', lambda pg: dict(pg, baked_at='another bake'), 'was read on another payload'),
+                            ('read a minute off the run\'s clock', lambda pg: dict(pg, now='2026-11-02T13:01:00Z'), 'page.json was read at'),
+                            ('a kickoff an hour off the schedule\'s', pg_kick, f"the page's kickoff of {G[4]}"),
+                            ('a listed player with no record', pg_drop_player, f"page.json's list of {G[4]} is not its players"),
+                            ('a recorded player not listed', pg_drop_listed, f"page.json's list of {G[4]} is not its players"),
+                            ('a game to call not read', pg_drop_game, 'the page did not read 1 game(s)')):
+        rx = step(w, r1.L, '2026-11-02T13:00:00Z', page_edit=edit)
+        clean(rx, f'A: page.json {name}')
+        ok(any(x.startswith('DEGRADED') and words in x for x in rx.probs) and rx.L['calls'] == r1.L['calls']
+           and rx.ev['phases']['calls'] == 'skipped',
+           f'A: a page.json {name} is not DEGRADED with no call moved', rx.probs[:3])
 
     # R2: rewrites on p, m and branch; a newer read with the same numbers; drops; a game with no entry left alone
     w.stubp[f'{G[1]}|{pid_of(1, 0)}'] = {'p': 0.3125, 'lam': 0.374693449441411, 'grp': 'QB', 'cand_src': 'stub', 'p_why': None}
@@ -656,7 +807,9 @@ def section_ab():
     ok(S['by_branch']['model']['graded'] == 1 and S['by_branch']['model']['td'] == 1,
        'C: a touchdown priced on the model alone is not reported in by_branch', json.dumps(S['by_branch']['model']))
 
-    # R11 (G8's kickoff + 145 h): G4 graded; the pending G3 call graded; G3's rows changed after: no grade rewritten
+    # R11 (G8's kickoff + 145 h): G4 graded; the pending G3 call graded; G3's rows changed after: no grade rewritten.
+    # G4 moved 3 hours later on the schedule after its calls froze: within the 24 hours, so graded from its rows
+    w.sched[G[4]].update(t='23:15')
     for i, y in enumerate((0, 1, None, 0, 1, 0)):
         if y is None:
             continue                                                  # G4 i2: no row: void, did not play
@@ -668,14 +821,27 @@ def section_ab():
     ok(r11.L['calls'][key_of(3, 0)]['grade'] == r10.L['calls'][key_of(3, 0)]['grade'], 'B: a grade is rewritten')
     ok(r11.L['calls'][key_of(3, 7)]['grade']['result'] == 'no_td' and r11.L['calls'][key_of(4, 2)]['grade']['how'] == 'did not play'
        and r11.L['calls'][key_of(4, 1)]['grade']['result'] == 'td', 'B: R11\'s grades are not the rows\'')
+    ok(all(r11.L['calls'][key_of(4, i)]['grade']['how'] in ('played', 'did not play') for i in range(6))
+       and TS.ko(w.sched[G[4]]) - T(r11.L['calls'][key_of(4, 0)]['kickoff']) == timedelta(hours=3),
+       'B: a game moved 3 hours after its calls froze is not graded from its played rows (void, game moved, is past 24 h)')
     ok(any('still ungraded more than 144 h' in x for x in r11.probs), 'B: a grade overdue at 144 h is not said')
 
-    # R11b (G8's kickoff + 14 days less an hour): still pending, never void before 14 days; G9 (no rows) void
+    # R11b (G8's kickoff + 14 days less an hour): still pending, never void before 14 days; G9, moved 25 hours later
+    # on the schedule after its last call (R11), void as a moved game
+    w.sched[G[9]].update(d='2026-11-16', t='14:00')
     r11b = step(w, r11.L, '2026-11-22T20:25:00Z', data=True)
     clean(r11b, 'R11b')
-    ok(all(r11b.L['calls'][key_of(8, i)]['grade'] is None for i in range(6))
-       and all(r11b.L['calls'][key_of(9, i)]['grade']['how'] == 'did not play' for i in range(6)),
-       'B: a game whose files are not in is void before 14 days, or a call with no played row not void')
+    ok(all(r11b.L['calls'][key_of(8, i)]['grade'] is None for i in range(6)),
+       'B: a game whose files are not in is void before 14 days')
+    ok(all(r11b.L['calls'][key_of(9, i)]['grade']['how'] == 'game moved' for i in range(6))
+       and TS.ko(w.sched[G[9]]) - T(r11b.L['calls'][key_of(9, 0)]['kickoff']) == timedelta(hours=25),
+       'B: a game moved 25 hours after its last call is not void, game moved')
+    # the line itself (BAR's void_also: "more than 24 hours from the call's kickoff"), and a game off the schedule
+    sm = {'X': {'id': 'X', 'd': '2026-11-08', 't': '13:00'}}                    # 18:00 UTC
+    for k, want in (('2026-11-08T18:00:00Z', False), ('2026-11-08T15:00:00Z', False), ('2026-11-07T18:00:00Z', False),
+                    ('2026-11-09T18:00:00Z', False), ('2026-11-07T17:59:59Z', True), ('2026-11-09T18:00:01Z', True)):
+        ok(TS.moved({'game_id': 'X', 'kickoff': k}, sm) is want, f'B: a call kicking off at {k} reads moved {not want}')
+    ok(TS.moved({'game_id': 'Y', 'kickoff': '2026-11-08T18:00:00Z'}, sm), 'B: a game off the schedule is not moved')
     # R12 (G8's kickoff + 14 days): files never complete; the season over below 2,000: undecided; the runs pruned
     for g in w.sched.values():
         g.update(hs=g.get('hs', 21), **{'as': g.get('as', 17)})
@@ -700,86 +866,331 @@ def section_ab():
     ok((work, hist) == ('run', True), f'G: plan with a grade due is not work=run hist=true: {(work, hist, why)}')
     P25 = dict(r1.pay, season=2025)
     ok(TS.plan_work(P25, r1.L, T('2026-11-02T13:00:00Z'))[0] == 'none', 'G: plan on a payload of 2025 is not none')
-    return SimpleNamespace(w=w, r1=r1, r2=r2, r10=r10, r11=r11, r12=r12, L0=L0)
+    return SimpleNamespace(w=w, r1=r1, r2=r2, r3a=r3a, r3b=r3b, r4=r4, r7=r7, r8=r8, r9=r9, r10=r10, r11=r11, r11b=r11b,
+                           r12=r12, L0=L0)
 
 
 # ======================================================================================= D: the check bites
 def section_d(ab):
-    say('D: the check bites (one planted edit per rule)')
-    r1, r2, r10, r11 = ab.r1, ab.r2, ab.r10, ab.r11
+    say('D: the check bites (a planted edit for every sub-condition, each held by its own words)')
+    r1, r2, r3b, r4, r9, r10, r11, r12 = ab.r1, ab.r2, ab.r3b, ab.r4, ab.r9, ab.r10, ab.r11, ab.r12
 
     def first(L, pred):
         return next(k for k, cc in sorted(L['calls'].items()) if pred(cc))
 
-    def e1(L):
-        return TS.dumps(L).replace('"calls": {\n', '"calls": {\n\n', 1)
-    bites('a ledger that is not its canonical dump', r10, e1, 1)
-    bites('the bar moved', r10, lambda L: L['bar'].update(w=0.3), 2)
-    bites('bar_registered moved', r10, lambda L: L.update(bar_registered='2026-11-01T12:00:01Z'), 2)
-    # rule 3: a registered file in a copy of the tree altered (the check hashes the files where it runs)
+    def call(k, **kv):
+        """an edit setting fields of one call"""
+        return lambda L: L['calls'][k].update(**kv)
+
+    def grade(k, **kv):
+        """an edit setting fields of one call's grade"""
+        return lambda L: L['calls'][k]['grade'].update(**kv)
+
+    def evg(k, **kv):
+        """an evidence.json edit beside a grade edit: the run's own record of the grade moved with it"""
+        def f(ev):
+            ev['grades'][k]['evidence'].update(**kv)
+            return ev
+        return f
+    G3 = {i: key_of(3, i) for i in range(8)}
+    D = []                                      # (name, run, edit, rule, words, options)
+
+    def b(name, r, edit, rule, msg, **kw):
+        D.append((name, r, edit, rule, msg, kw))
+
+    # 1. canonical bytes
+    b('a ledger that is not its canonical dump', r10, lambda L: TS.dumps(L).replace('"calls": {\n', '"calls": {\n\n', 1), 1,
+      'is not its own canonical dump')
+    b("a ledger without the shadow's head", r10, lambda L: json.dumps({k: v for k, v in L.items() if k != 'what'}), 1,
+      "is not the shadow's")
+    # 2. the bar, its registration, the model block
+    b('the bar moved', r10, lambda L: L['bar'].update(w=0.3), 2, 'the bar is not BAR')
+    b("the bar not the last commit's", r10, lambda L: L['bar'].update(w=0.3), 2, "bar is not the last commit's")
+    b('bar_registered moved', r10, lambda L: L.update(bar_registered='2026-11-01T12:00:01Z'), 2,
+      "bar_registered is not the last commit's")
+    qsha = lambda L: L['model']['td']['QB'].update(sha256='0' * 64)          # noqa: E731
+    b("the model block not the last commit's", r10, qsha, 2, "model is not the last commit's")
+    b("the model block not the manifest's (and moved in the last commit too)", r10, qsha, 2,
+      "the model block is not the manifest's", prev=lambda p: (qsha(p), p)[1])
+    late = lambda L: L.update(bar_registered=r1.L['run_at'])                 # noqa: E731
+    b('a call made at the registration time', r10, late, 2, 'at or before the bar was registered', prev=lambda p: (late(p), p)[1])
+    # 4. the runs, and a ledger changed with no run
+    b('a referenced run gone', r2, lambda L: L['runs'].pop(r1.L['run_at']), 4, 'has no runs entry')
+    b("a runs entry the last commit had changed", r2, lambda L: L['runs'][r1.L['run_at']].update(seconds=999.0), 4,
+      "is not the last commit's")
+    b('a new runs entry not this run\'s', r2, lambda L: L['runs'].update({'2026-11-02T18:00:00Z': {'counts': {}}}), 4,
+      "is new and not this run's")
+    b('a stub run without TD_SHADOW_STUB', r10, None, 4, 'stood the model in with TD_SHADOW_STUB', allow_stub=False)
+    b("a run_at before the last commit's", r2, lambda L: L.update(run_at='2026-11-01T13:00:00Z'), 4,
+      "run_at is earlier than the last commit's")
+    b('calls with no run', r1, lambda L: L.update(run_at=None), 4, 'calls or a decision with no run')
+
+    def flip_old(L):
+        L['calls'][G3[2]]['grade'].update(result='td', y=1)
+    b("an old grade flipped at the last commit's own run_at", r11, flip_old, 4, "but its run_at is the last commit's",
+      prev=r11.L)
+    reg = SimpleNamespace(text=TS.dumps(ab.L0), prev=ab.L0, pay=r1.pay, sha=r1.sha, page=None, ev=None, data=None)
+    b('the registration edited (no run yet)', reg, lambda L: L.update(what='edited'), 4, "but its run_at is the last commit's")
+    # 5. keys and fields
+    b('a call with a field too many', r10, lambda L: L['calls'][first(L, lambda cc: cc['frozen'])].update(extra=1), 5,
+      "does not carry exactly the call's fields")
+    b('a key not its fields', r10, lambda L: L['calls'].update({'2026|09|2026_09_ZZZ_YYY|00-0000001':
+                                                               L['calls'].pop(first(L, lambda cc: cc['frozen']))}), 5,
+      'is not 2026|WW|game id|player id')
+
+    def rekey(week, pred):
+        def f(L):
+            k = first(L, pred)
+            c = L['calls'].pop(k)
+            c['week'] = week
+            L['calls'][TS.call_key(week, c['game_id'], c['pid'])] = c
+        return f
+    b('a game id not naming its week', r10, rekey(10, lambda cc: cc['frozen'] and cc['week'] == 9), 5,
+      'the game id does not name its week')
+    b("an unfrozen call's week not its game's on the schedule", r1, rekey(10, lambda cc: cc['game_id'] == G[4]), 5,
+      "the week is not its game's on the schedule")
+    b('a branch out of range', r10, lambda L: L['calls'][first(L, lambda cc: cc['frozen'])].update(branch='guess'), 5,
+      "branch 'guess' is out of range")
+    b('p_why out of range', r10, lambda L: L['calls'][first(L, lambda cc: cc['frozen'])].update(p_why='guess'), 5,
+      "p_why 'guess' is out of range")
+    b('a flag not true or false', r10, lambda L: L['calls'][first(L, lambda cc: cc['frozen'])].update(m_est='yes'), 5,
+      'is not true or false')
+    # 6. timing and values
+    b('a kickoff that does not read', r11, call(G3[0], kickoff='not a time'), 6, 'a time does not read')
+
+    def five_before(L):
+        k = first(L, lambda cc: not cc['frozen'])
+        L['calls'][k]['called_at'] = ISO(T(L['calls'][k]['kickoff']) - timedelta(minutes=5))
+    b('a call 5 minutes before kickoff', r10, five_before, 6, 'minutes or less before its kickoff')
+
+    def read_after_call(L):
+        c = L['calls'][key_of(9, 0)]
+        c['read_at'] = ISO(T(c['called_at']) + timedelta(seconds=1))
+    b('a read after the call (before kickoff)', r10, read_after_call, 6, 'read at or after kickoff, or after the call')
+
+    def read_at_kick(L):
+        c = L['calls'][key_of(9, 1)]
+        c['read_at'], c['called_at'] = c['kickoff'], ISO(T(c['kickoff']) + timedelta(hours=1))
+    b('a read at kickoff (before the call)', r10, read_at_kick, 6, 'read at or after kickoff, or after the call')
+    b('no p and no reason', r10, call(key_of(9, 0), p=None, lam=None, p_why=None), 6, 'no p and no reason')
+    b('p out of range', r10, lambda L: L['calls'][first(L, lambda cc: cc['p'] is not None)].update(p=1.2), 6,
+      'is out of range or carries a reason')
+    b('frozen with no frozen_at', r10, call(key_of(9, 0), frozen=True), 6, 'frozen and frozen_at disagree')
+
+    def froze_early(L):
+        c = L['calls'][G3[2]]
+        c['frozen_at'] = ISO(T(c['called_at']) - timedelta(hours=1))
+    b('frozen before it was made', r11, froze_early, 6, 'froze before it was made, or before kickoff')
+    b('a grade on an unfrozen call', r11, call(G3[2], frozen=False, frozen_at=None), 6, 'a grade on an unfrozen call')
+    # 7. a new or rewritten call against page.json and evidence.json
+    k4 = key_of(4, 0)
+    b('a new call not by this run', r1, call(k4, called_at='2026-11-01T18:00:00Z'), 7, 'is new or rewritten but not by this run')
+    b('a new call frozen', r1, call(k4, frozen=True, frozen_at=r1.L['run_at']), 7, 'is new or rewritten and frozen')
+    b('new calls with no page.json', r1, None, 7, 'is new or rewritten with no usable page.json', page=None)
+
+    def pg_no_player(pg):
+        pg['games'][G[4]]['td'].remove(pid_of(4, 3))
+        del pg['games'][G[4]]['players'][pid_of(4, 3)]
+        return pg
+    b('a new call whose player page.json does not list', r1, None, 7, 'its game or player is not in page.json', page=pg_no_player)
+
+    def e7m(L):
+        cc = L['calls'][k4]
+        cc['price'] += 40
+        cc['m'] = m_of(cc['price'], cc['ov'])
+    b("a new call's price and m not page.json's", r1, e7m, 7, "is not page.json's")
+    b("a new call's read time not page.json's", r1, call(k4, read_at='2026-11-02T10:00:00Z'), 7,
+      "its read time, kickoff or week is not page.json's")
+
+    def ev_no_p(ev):
+        del ev['p'][f'{G[4]}|{pid_of(4, 0)}']
+        return ev
+    b('a new call evidence.json has no p for', r1, None, 7, 'evidence.json has no p for it', ev=ev_no_p)
+    b("a new call's p not evidence.json's", r1, call(k4, p=0.5), 7, "is not evidence.json's")
+    b("a new call's group not the model's", r1, call(k4, grp='K'), 7, "grp 'K' is not the model's")
+
+    def ev_cov(v=KEEP):
+        def f(ev):
+            cov = ev['weeks']['9']['coverage']
+            if v is KEEP:
+                del cov[G[4]]
+            else:
+                cov[G[4]] = v
+            return ev
+        return f
+    b('no coverage verdict for a new call\'s game', r1, None, 7, 'records no coverage verdict for its game', ev=ev_cov())
+    b('a new call with p on a game not covered', r1, None, 7, 'its game is not covered', ev=ev_cov('history not complete: x'))
+    b('a new call on a covered game saying it is not', r1, call(k4, p=None, lam=None, p_why='history not complete: x'), 7,
+      'its game is covered but the call says it is not')
+    # 8. the lists called, on a run that made calls
+    b('calls made with no page.json', r1, None, 8, 'calls were made with no usable page.json', page=None)
+
+    def ev_not_called(ev):
+        ev['called'].remove(G[4])
+        return ev
+    b('a game to call not called', r1, None, 8, 'was to be called and was not', ev=ev_not_called)
+
+    def ev_called_late(ev):
+        ev['called'].append(G[1])
+        return ev
+    b('a game called 10 minutes before kickoff', r3b, None, 8, 'was called within 10 minutes of kickoff or off the page',
+      ev=ev_called_late)
+    b('a listed player with no call', r1, lambda L: L['calls'].pop(key_of(4, 3)), 8, 'listed player(s) with no call')
+    b('a delisted call kept', r2, lambda L: L['calls'].update({key_of(1, 4): json.loads(json.dumps(r1.L['calls'][key_of(1, 4)]))}),
+      8, 'unfrozen call(s) of players no longer listed kept')
+
+    def pg_no_game(pg):
+        del pg['games'][G[4]]
+        return pg
+    b('calls made with a game to call missing from page.json', r1, None, 8, 'is not in page.json, yet calls were made',
+      page=pg_no_game)
+    # 9. m against its price
+    b('m with no price', r10, lambda L: L['calls'][first(L, lambda cc: cc['m'] is not None)].update(price=None), 9,
+      'm with no price, source or overround')
+    b('m off its price', r10, lambda L: L['calls'][first(L, lambda cc: cc['m'] is not None)].update(
+        m=L['calls'][first(L, lambda cc: cc['m'] is not None)]['m'] + 1e-4), 9, 'is not clip(implied(')
+
+    def e9ov(L):
+        cc = L['calls'][k4]
+        cc['ov'] = 1.05
+        cc['m'] = m_of(cc['price'], 1.05)
+    b("a new call's overround not the week's", r1, e9ov, 9, "is not the week's overround")
+    # 10. nothing frozen moved; the drops
+    b('a frozen call gone', r10, lambda L: L['calls'].pop(first(L, lambda cc: cc['frozen'])), 10,
+      'was frozen (or its game kicked off) and is gone')
+    k1 = key_of(1, 0)
+    b('a call whose game kicked off left unfrozen', r4, call(k1, frozen=False, frozen_at=None), 10, 'and is not frozen')
+    b('a frozen call unfrozen', r10, call(key_of(4, 0), frozen=False, frozen_at=None), 10, 'and is not frozen')
+    b('a frozen call moved', r10, lambda L: L['calls'][first(L, lambda cc: cc['frozen'] and cc['p'] is not None)].update(p=0.4321),
+      10, 'a frozen call changed')
+    b("a frozen call's frozen_at moved", r10, call(key_of(4, 0), frozen_at=r9.L['run_at']), 10, 'frozen_at moved')
+    b('a call frozen at another time than this run', r4, call(k1, frozen_at=r3b.L['run_at']), 10,
+      'froze at another time than this run')
+    b('a call dropped with no reason', r2, lambda L: L['calls'].pop(key_of(8, 0)), 10, 'was dropped with no reason the run has')
+    b('a new call frozen (rule 10)', r1, call(k4, frozen=True, frozen_at=r1.L['run_at']), 10, 'is new and frozen')
+    b('an unfrozen call of a game off the schedule kept', r2,
+      lambda L: L['calls'].update({key_of(6, 0): json.loads(json.dumps(r1.L['calls'][key_of(6, 0)]))}), 10,
+      'should have been dropped')
+    # 11. old grades
+    b('an old grade changed', r11, grade(G3[2], result='td', y=1), 11, 'its grade changed or went')
+    # 12. new grades
+    b('a grade with a field too many', r10, grade(G3[2], extra=1), 12, 'the grade does not carry exactly its fields')
+    b('a new grade not by this run', r10, grade(G3[2], graded_at=r10.prev['run_at']), 12, 'a new grade not by this run')
+    b('a grade before kickoff + 96 h', r10, call(key_of(4, 0), grade={'result': 'void', 'y': None, 'how': 'did not play',
+                                                                        'evidence': None, 'site': None, 'graded_at': r10.L['run_at']}),
+      12, 'graded before kickoff + 96 h')
+    b("a grade not evidence.json's", r10, lambda L: L['calls'][G3[2]]['grade']['evidence'].update(role_played=0), 12,
+      "the grade is not evidence.json's")
+    b("a site reading not page.json's", r10, grade(G3[2], site={'result': 'td', 'how': {}}), 12,
+      "the site reading is not page.json's")
+    b('a result, y and how that do not go together', r10, grade(G3[2], y=1), 12, 'do not go together')
+    b('a played grade with no evidence', r10, grade(G3[2], evidence=None), 12,
+      'the evidence is there where it should not be, or missing')
+    b('void as a moved game that did not move', r10, grade(G3[2], result='void', y=None, how='game moved', evidence=None), 12,
+      'void as a moved game, but the game kicks off within 24 h')
+    b('void for files never complete on a covered game', r10,
+      grade(G3[2], result='void', y=None, how='files never complete', evidence=None), 12, 'void for files never complete, but')
+    b('a moved game graded from its rows', r9, grade(key_of(2, 0), result='no_td', y=0, how='played',
+                                                        evidence={'stat_row': 1, 'snap_row': 1}), 12,
+      'its game moved, so it is void as a moved game')
+
+    def ev_own(ev):
+        ev['own_coverage'][G[3]] = False
+        return ev
+    b('a grade on files evidence.json does not record as covered', r10, None, 12,
+      'graded on files evidence.json does not record as covered', ev=ev_own)
+    b('grades with no raw stats to hold them to', r10, None, 12, 'graded with no raw 2026 stats', data=None)
+    b('a td the raw row does not count', r10, lambda L: L['calls'][G3[0]]['grade']['evidence'].update(y_rush_rec_tds=2), 12,
+      'td, but the raw stat row says', ev=evg(G3[0], y_rush_rec_tds=2))
+    b('a no_td the raw row counts', r10, lambda L: L['calls'][G3[2]]['grade']['evidence'].update(y_rush_rec_tds=1), 12,
+      'no_td, but the raw stat row says', ev=evg(G3[2], y_rush_rec_tds=1))
+    b('a no_td with no raw row and no snap row', r10, lambda L: L['calls'][G3[4]]['grade']['evidence'].update(snap_row=0), 12,
+      'no_td with no raw stat row and no snap row', ev=evg(G3[4], snap_row=0))
+    # 13. overdue
+    b('a moved game left ungraded', r9, call(key_of(2, 0), grade=None), 13, 'its game moved and it is ungraded')
+    b('a due call left ungraded', r10, call(G3[2], grade=None), 13, "due, its game's files covered, and ungraded")
+    b('a call of files never complete left ungraded at 14 days', r12, call(key_of(8, 0), grade=None), 13,
+      'its files not complete at 14 days and it is not void')
+    # 14 (the rest on section C's runs)
+    b('a decision before 2,000', r10, lambda L: L.update(decision={
+        'verdict': 'PASS', 'decided_at': L['run_at'], 'n': 2000, 'games': 1, 'T1': {}, 'T2': {},
+        'criteria': {'T1': True, 'T2': True}, 'sample': []}), 14, 'a decision with')
+    # 15
+    b('the summary edited', r10, lambda L: L['summary'].update(in_sample=L['summary']['in_sample'] + 1), 15,
+      'the summary is not summarize()', resum=False)
+    # 3: the files the check hashes where it runs (a copy of the tree), and the one-shot's result
+    for name, r, edit, rule, msg, kw in D:
+        bites(name, r, edit, rule, msg, **kw)
     tree = make_tree('d3')
     with open(os.path.join(tree, TS.REL, 'fetch.py'), 'a') as f:
         f.write('\n# altered\n')
     with patched(TS, REPO=tree):
-        bites('a registered file altered', r10, lambda L: None, 3)
-    bites('a referenced run gone', r2, lambda L: L['runs'].pop(r1.L['run_at']), 4)
-    bites('a stub run without TD_SHADOW_STUB', r10, lambda L: None, 4, allow_stub=False)
-    bites('a branch out of range', r10, lambda L: L['calls'][first(L, lambda cc: cc['frozen'])].update(branch='guess'), 5)
-    bites('a key not its fields', r10, lambda L: L['calls'].update({'2026|09|2026_09_ZZZ_YYY|00-0000001':
-                                                                     L['calls'].pop(first(L, lambda cc: cc['frozen']))}), 5)
+        bites('a registered file altered', r10, None, 3, 'does not hash to BAR')
+    tree = make_tree('d3r')
+    res_p = os.path.join(tree, TS.REL, 'results', 'oneshot_2026.json')
+    res = jload(res_p)
+    res['verdict']['anytime_td'] = 'FAIL'
+    dump(res_p, res)
+    with patched(TS, REPO=tree, RESULT=res_p):
+        bites('the one-shot\'s result not a touchdown PASS', r10, None, 3, 'did not pass the anytime touchdown')
+    with patched(TS, RESULT=os.path.join(TMP, 'no_such_result.json')):
+        bites('the one-shot\'s result missing', r10, None, 3, 'results/oneshot_2026.json does not read')
+    with patched(TS, MANIFEST=os.path.join(TMP, 'no_such_manifest.json')):
+        bites('the manifest missing', r10, None, 2, 'the manifest does not read')
+    say(f'   {len(D) + 4} bites')
 
-    def e6(L):
-        k = first(L, lambda cc: cc['grade'] is None)
-        L['calls'][k]['called_at'] = ISO(T(L['calls'][k]['kickoff']) - timedelta(minutes=5))
-    bites('a call 5 minutes before kickoff', r10, e6, 6)
-    bites('p out of range', r10, lambda L: L['calls'][first(L, lambda cc: cc['p'] is not None)].update(p=1.2), 6)
+    # main(): a ledger the check cannot read is a failure, never a pass; no last commit is a failure, never a first
+    # check; the stub's runs are allowed off GitHub Actions alone
+    pay = dump(os.path.join(TMP, 'D_pay.json'), r10.pay)
+    led = os.path.join(TMP, 'D_crash.json')
+    Lx = json.loads(r10.text)
+    Lx['calls'] = {'2026|09|x|y': 5}
+    with open(led, 'w') as f:
+        f.write(TS.dumps(Lx))
+    prevf = os.path.join(TMP, 'D_prev.json')
+    with open(prevf, 'w') as f:
+        f.write(TS.dumps(r10.prev))
+    rc, o = py(os.path.join(HERE, 'td_shadow_check.py'), '--ledger', led, '--payload', pay, '--prev', prevf)
+    ok(rc == 1 and 'td shadow check: 1 failures' in o.splitlines() and 'could not read the ledger' in o,
+       'D: a ledger that crashes the check is not one failure (main\'s catch)', o[-300:])
+    tree = make_tree('d_nogit')
+    good = os.path.join(TMP, 'D_good.json')
+    with open(good, 'w') as f:
+        f.write(r10.text)
+    rc, o = py(os.path.join(tree, TS.REL, 'td_shadow_check.py'), '--ledger', good, '--payload', pay)
+    ok(rc == 1 and 'the last commit has no ledger' in o, 'D: the check with no last commit to read is not refused', o[-300:])
+    rc, o = py(os.path.join(HERE, 'td_shadow_check.py'), '--ledger', good, '--payload', pay, '--prev', prevf,
+               TD_SHADOW_STUB='x', GITHUB_ACTIONS='true')
+    ok(rc == 1 and '[4]' in o and 'TD_SHADOW_STUB' in o, 'D: the check passes a stub\'s run on GitHub Actions', o[-300:])
 
-    def e7m(L):
-        k = key_of(4, 0)
-        cc = L['calls'][k]
-        cc['price'] += 40
-        cc['m'] = m_of(cc['price'], cc['ov'])
-    bites("a new call's price and m not page.json's", r1, e7m, 7)
-    bites("a new call's p not evidence.json's", r1, lambda L: L['calls'][key_of(4, 0)].update(p=0.5), 7)
+    # the registration a pull request may add (the props gate's ledger_hold runs --registration on it): init's own
+    # output, and nothing else, each way it can differ said in its own words
+    regt = TS.dumps(ab.L0)
+    ok(TSC.registration_bad(regt) == [], 'D: init\'s registration is not one', TSC.registration_bad(regt))
 
-    def e8(L):
-        L['calls'][key_of(1, 4)] = json.loads(json.dumps(r1.L['calls'][key_of(1, 4)]))
-    bites('a delisted call kept', r2, e8, 8)
-    bites('a listed player with no call', r1, lambda L: L['calls'].pop(key_of(4, 3)), 8)
-    bites('m off its price', r10, lambda L: L['calls'][first(L, lambda cc: cc['m'] is not None)].update(
-        m=L['calls'][first(L, lambda cc: cc['m'] is not None)]['m'] + 1e-4), 9)
-
-    def e9ov(L):
-        cc = L['calls'][key_of(4, 0)]
-        cc['ov'] = 1.05
-        cc['m'] = m_of(cc['price'], 1.05)
-    bites("a new call's overround not the week's", r1, e9ov, 9)
-    bites('a frozen call moved', r10, lambda L: L['calls'][first(L, lambda cc: cc['frozen'] and cc['p'] is not None)].update(
-        p=0.4321), 10)
-    bites('a frozen call gone', r10, lambda L: L['calls'].pop(first(L, lambda cc: cc['frozen'])), 10)
-    bites('a call dropped with no reason', r2, lambda L: L['calls'].pop(key_of(8, 0)), 10)
-
-    def e11(L):
-        k = key_of(3, 2)
-        L['calls'][k]['grade']['result'], L['calls'][k]['grade']['y'] = 'td', 1
-    bites('an old grade changed', r11, e11, 11)
-
-    def e12(L):
-        k = key_of(3, 2)
-        L['calls'][k]['grade']['result'], L['calls'][k]['grade']['y'] = 'td', 1
-    bites("a new grade not its rows' or the evidence's", r10, e12, 12)
-
-    def e12b(L):
-        k = key_of(3, 2)
-        L['calls'][k]['grade']['graded_at'] = r10.prev['run_at']
-    bites('a new grade not by this run', r10, e12b, 12)
-    bites('a due call left ungraded', r10, lambda L: L['calls'][key_of(3, 2)].update(grade=None), 13)
-
-    def e14(L):
-        L['decision'] = {'verdict': 'PASS', 'decided_at': L['run_at'], 'n': 2000, 'games': 1, 'T1': {}, 'T2': {},
-                         'criteria': {'T1': True, 'T2': True}, 'sample': []}
-    bites('a decision before 2,000', r10, e14, 14)
-    bites('the summary edited', r10, lambda L: L['summary'].update(in_sample=L['summary']['in_sample'] + 1), 15, resum=False)
+    def reg_edit(f):
+        L = json.loads(regt)
+        f(L)
+        return TS.dumps(L)
+    for name, text, words in (
+            ('not JSON', regt[:-3], 'does not read as JSON'),
+            ('not canonical', regt.replace('\n "run_at"', '\n  "run_at"', 1), 'not its own canonical dump'),
+            ("not the shadow's head", json.dumps({k: v for k, v in ab.L0.items() if k != 'what'}), "not the shadow's ledger"),
+            ('its what edited', reg_edit(lambda L: L.update(what='edited')), "its what is not the shadow's own"),
+            ('its bar moved', reg_edit(lambda L: L['bar'].update(w=0.3)), 'its bar is not BAR'),
+            ('an open question', reg_edit(lambda L: L['bar'].update(p=L['bar']['p'] + ' [Q1]')), "holds an open question"),
+            ('its model block moved', reg_edit(lambda L: L['model']['td']['QB'].update(sha256='0' * 64)),
+             "its model block is not the manifest's"),
+            ('a registration time that is no time', reg_edit(lambda L: L.update(bar_registered='soon')), 'its bar_registered is not a time'),
+            ('a registration time not as the ledger writes one', reg_edit(lambda L: L.update(bar_registered='2026-10-31T04:48:56+00:00')),
+             'its bar_registered is not a time as the ledger writes one'),
+            ('a run_at', reg_edit(lambda L: L.update(run_at='2026-11-01T12:00:00Z')), 'its run_at is not null'),
+            ('a decision', reg_edit(lambda L: L.update(decision={'verdict': 'PASS'})), 'its decision is not null'),
+            ('a run', reg_edit(lambda L: L['runs'].update({'2026-11-01T12:00:00Z': {}})), 'its runs is not {}'),
+            ('a call', reg_edit(lambda L: L['calls'].update({'k': {}})), 'its calls is not {}'),
+            ('its summary edited', reg_edit(lambda L: L['summary'].update(calls=1)), "its summary is not the empty ledger's")):
+        got = TSC.registration_bad(text)
+        ok(any(words in x for x in got), f'D: a registration with {name} is taken by --registration', got)
 
 
 # ============================================================================================ C: the decision
@@ -957,6 +1368,11 @@ def section_c_runs():
         ok((r.L['calls'][TS.call_key(9, due_id, due_pid)]['grade'] or {}).get('result') == 'td' and r.L['decision'] == prevF['decision'],
            'C: after a FAIL a frozen call is not graded, or the decision moved')
         ok(TS.plan_work(r.pay, r.L, T('2026-11-14T13:00:00Z'))[0] == 'none', 'G: plan after a FAIL with nothing left is not none')
+        # after a FAIL: a call new on that run, or one left unfrozen, each said apart (rule 14)
+        later = dict(loose, pid='00-0077003', called_at=r.L['run_at'], read_at='2026-11-13T11:00:00.000Z')
+        add = lambda L: L['calls'].update({TS.call_key(10, gc_id, '00-0077003'): dict(later)})   # noqa: E731
+        bites('a call made after a FAIL', r, add, 14, 'is new or rewritten after a FAIL')
+        bites('an unfrozen call kept after a FAIL', r, add, 14, 'is unfrozen after a FAIL')
         # PASS: calls go on, the decision stays as it was
         prevP = big_ledger(2001, decision=dict(D0, verdict='PASS', criteria={'T1': True, 'T2': True}), extra=extra)
         r = step(world(), prevP, '2026-11-14T12:00:00Z', data=True)
@@ -972,11 +1388,16 @@ def section_c_runs():
            and TS.call_key(9, due_id, due_pid) in D['sample'] and D['verdict'] == 'PASS',
            'C: the run that brings the sample to 2,000 does not write the decision', D and {k: D[k] for k in ('n', 'verdict')})
         ok(r.L['summary']['standing'].startswith('decided at 2,000'), 'C: the standing does not say decided')
-        bites('a decision missing at 2,000', r, lambda L: L.update(decision=None), 14)
-        bites('the decision not the check\'s own', r, lambda L: L['decision'].update(verdict='FAIL'), 14)
+        bites('a decision missing at 2,000', r, lambda L: L.update(decision=None), 14, 'in the sample and no decision')
+        bites('the decision not the check\'s own', r, lambda L: L['decision'].update(verdict='FAIL'), 14,
+              "the decision is not the check's own recomputation")
+        bites('a new decision not by this run', r, lambda L: L['decision'].update(decided_at=r.prev['run_at']), 14,
+              'a new decision not by this run')
         r2 = step(world(), r.L, '2026-11-15T12:00:00Z', data=True)
         clean(r2, 'C run after the decision')
         ok(r2.L['decision'] == D, 'C: a run after the decision decides again')
+        bites('the decision moved after it was written', r2, lambda L: L['decision'].update(verdict='FAIL'), 14,
+              "the decision is not the last commit's")
         acts = TS.notify_actions([], {'open': []}, D, 'https://x/run', r.L['summary']['standing'])
         ok(any(a[0] == 'create' and a[2] == TS.VERDICT_LABEL for a in acts), 'G: the verdict issue is not opened with the decision')
         acts = TS.notify_actions([], {'open': [], 'verdict': [{'number': 9}]}, D, 'https://x/run', '')
@@ -1087,6 +1508,14 @@ def section_ef():
     for x in R.get('refusals', []):
         ok(x['refused'] and x['matched'], f"E: the reader does not refuse a page with {x['name']}", x.get('msg'))
     ok(len(R.get('refusals', [])) == 2, 'E: the refusals did not run')
+    E4 = R.get('E4') or {}
+    ok((E4.get('before') or {}).get('written') and (E4.get('after') or {}).get('written')
+       and E4['before'].get('with_m') == E4['after'].get('with_m') == page['counts']['with_m'],
+       'E: the reader does not write the pinned payload before and after the planted refusals (a plant left on?)',
+       (E4.get('before'), E4.get('after')))
+    for x in E4.get('plants', []):
+        ok(x['refused'] and x['matched'], f"E: the reader does not refuse {x['name']} in its own words", x.get('msg'))
+    ok(len(E4.get('plants', [])) == 16, 'E: the reader\'s sixteen planted refusals did not all run', len(E4.get('plants', [])))
     S = R.get('site') or {}
     if ok(S.get('page'), 'E: the reader refused the made-up finals', S.get('msg')):
         site = S['page']['site']
@@ -1161,6 +1590,8 @@ def section_g(ab):
 # ======================================================================================= H: staging and glue
 GAMES_CSV = ('game_id,season,game_type,week,gameday,gametime,away_team,away_score,home_team,home_score\n'
              '2025_01_AAA_BBB,2025,REG,1,2025-09-07,13:00,AAA,10,BBB,20\n'
+             '2026_07_AAA_BBB,2026,REG,7,2026-10-25,13:00,AAA,20,BBB,13\n'    # AAA and BBB play weeks 7 and 8
+             '2026_07_EEE_FFF,2026,REG,7,2026-10-25,13:00,EEE,9,FFF,12\n'     # EEE and FFF: week 8 a bye
              '2026_08_AAA_BBB,2026,REG,8,2026-11-01,13:00,AAA,17,BBB,24\n'
              '2026_08_CCC_DDD,2026,REG,8,2026-11-01,13:00,CCC,3,DDD,6\n'
              '2026_09_AAA_BBB,2026,REG,9,2026-11-08,13:00,AAA,,BBB,\n'
@@ -1300,6 +1731,26 @@ def section_h():
                 out = h.model.predict({9: keys[4:]})
             ok(seen == [] and out['weeks'][9]['predicted'] is False and out['p'][keys[4]]['p'] is None,
                'H: predict mode runs for a week whose every game is not covered')
+            # each club's LAST previous game decides (BAR's p: "either club's previous 2026 game"), never its first:
+            # AAA and BBB played weeks 7 and 8, EEE and FFF week 7 and then a bye. A hole in week 8's game holds week
+            # 9's AAA at BBB; one in week 7's alone holds nothing (an older hole, said) but EEE at FFF, whose last it is
+            nine = ['2026_09_AAA_BBB', '2026_09_EEE_FFF']
+            for holes, want, older in (
+                    (['2026_08_AAA_BBB: snap counts of AAA'], {nine[0]: 'history not complete: 2026_08_AAA_BBB: snap counts of AAA',
+                                                               nine[1]: None}, []),
+                    (['2026_07_AAA_BBB: play-by-play'], {nine[0]: None, nine[1]: None}, ['2026_07_AAA_BBB: play-by-play']),
+                    (['2026_07_EEE_FFF: snap counts of EEE'], {nine[0]: None,
+                                                               nine[1]: 'history not complete: 2026_07_EEE_FFF: snap counts of EEE'}, [])):
+                miss[:] = holes
+                with TS.lifted(OS):                     # games_to2026.csv is read by the holdout, as predict reads it
+                    got, _, old = TS.game_coverage(OS, h.data, 2026, 9, nine)
+                ok(got == want and old == older, f'H: per-game coverage with {holes} is not each club\'s last game\'s',
+                   (got, old))
+                with quiet():
+                    out = h.model.predict({9: [(nine[0], A), (nine[1], Cp)]})
+                ok(out['weeks'][9]['older'] == older and out['weeks'][9]['coverage'] == want,
+                   f'H: RealModel.predict does not carry the coverage and the older holes of {holes}')
+            miss[:] = ['2026_08_CCC_DDD: snap counts of CCC']
             # the grade glue: a game's own files (a score, nothing missing), one outcomes() build inside the lift
             calls_o = []
 
@@ -1334,6 +1785,17 @@ def section_h():
     r2 = step(w, r1.L, '2026-11-02T13:00:00Z', model=Downloads(w.stub()))
     ok(not r1.bad and not r2.bad and not any('downloaded again' in x for x in r1.probs)
        and any('downloaded again on two runs in a row' in x for x in r2.probs), 'H: a history downloaded on two runs in a row is not said')
+
+    # the older holes are said (a WARN), and the run goes on
+    class Older(TS.StubModel):
+        def predict(self, weeks_keys):
+            o = super().predict(weeks_keys)
+            for wk in o['weeks'].values():
+                wk['older'] = ['2026_07_AAA_BBB: play-by-play']
+            return o
+    r3 = step(w, r2.L, '2026-11-02T14:00:00Z', model=Older(w.stub()))
+    ok(not r3.bad and any(x.startswith('WARN: the history has older holes (1: 2026_07_AAA_BBB: play-by-play)') for x in r3.probs)
+       and not any(x.startswith('DEGRADED') for x in r3.probs), 'H: an older hole in the history is not a WARN', r3.probs[:3])
 
 
 # ============================================================================================== I: the guard
@@ -1372,6 +1834,61 @@ def section_i(ab):
     rw = TS.BAR['registered_with']
     ok(TS.sha256_file(TS.PREREG) == rw['preregistration_sha256'] and TS.sha256_file(TS.RESULT) == rw['oneshot_sha256']
        and jload(TS.RESULT)['verdict']['anytime_td'] == 'PASS', 'I: PREREGISTRATION.md or the one-shot\'s result is not BAR\'s')
+    # the bar as registered: BAR's own hash and the committed ledger's registration (pinned at this file's top), the
+    # ledger the shadow's (canonical, its bar BAR, the manifest's touchdown files, no open question)
+    ok(hashlib.sha256(json.dumps(TS.BAR, sort_keys=True, ensure_ascii=False).encode()).hexdigest() == BAR_SHA256,
+       'I: BAR is not the bar registered (its SHA-256 moved: BAR never changes; a PR that moves it edits BAR_SHA256 too)')
+    try:
+        Lc, tc = TS.read_ledger(TS.LEDGER)
+        ok(Lc['bar_registered'] == BAR_REGISTERED and Lc['model'] == TS.model_block(TS.manifest()) and '[Q' not in tc,
+           'I: the committed ledger is not the bar registered at ' + BAR_REGISTERED + ' with the manifest\'s touchdown files',
+           (Lc.get('bar_registered'), '[Q' in tc))
+    except TS.Refused as e:
+        ok(False, 'I: the committed ledger does not read as the shadow\'s (canonical, its bar BAR)', e)
+
+    # every refusal of the guard on its own, in this process: PREREGISTRATION.md, predict.py's manifest, PREREGISTRATION.md's
+    # copy of BAR's hashes, the pinned libraries, Python 3.13 and the holdout as imported
+    def refused(fn):
+        try:
+            fn()
+            return None
+        except TS.Refused as e:
+            return str(e)
+
+    def g0():
+        return TS.guard_code(OS, need_313=False, versions=False)
+    altered = os.path.join(TMP, 'PREREGISTRATION_altered.md')
+    shutil.copy2(TS.PREREG, altered)
+    with open(altered, 'a') as f:
+        f.write('\n')
+    with patched(TS, PREREG=altered):
+        e = refused(g0)
+    ok(e and "not the registered bytes: ['PREREGISTRATION.md']" in e, 'I: the guard takes a PREREGISTRATION.md not BAR\'s', e)
+    with patched(OS.PR, MANIFEST=os.path.join(TMP, 'MANIFEST.json')):
+        e = refused(g0)
+    ok(e and 'predict.py reads another manifest' in e, 'I: the guard takes a predict.py reading another manifest', e)
+    reg0 = OS.registered
+    with patched(OS, registered=lambda p: dict(reg0(p), **{f'{TS.REL}/fetch.py': '0' * 64})):
+        e = refused(g0)
+    ok(e and f'does not register {TS.REL}/fetch.py as BAR does' in e, 'I: the guard takes a PREREGISTRATION.md listing another hash', e)
+
+    def no_pins():
+        raise SystemExit('refused: not the pinned libraries (planted)')
+    with patched(OS, check_versions=no_pins):
+        e = refused(lambda: TS.guard_code(OS, need_313=False, versions=True))
+    ok(e and 'not the pinned libraries (planted)' in e, 'I: the guard takes libraries that are not the pins', e)
+    with patched(OS, check_versions=lambda: None):
+        ok(refused(lambda: TS.guard_code(OS, need_313=False, versions=True)) is None, 'I: the guard refuses the pins')
+    for vi, want in (((3, 12, 9, 'final', 0), True), ((3, 13, 0, 'final', 0), False)):
+        with patched(sys, version_info=vi):
+            e = refused(lambda: TS.guard_code(OS, need_313=True, versions=False))
+        ok(bool(e and 'the model runs on 3.13' in e) is want, f'I: the guard on Python {vi[:2]} does not say {want and "3.13" or "nothing"}', e)
+    try:
+        OS.F.HOLDOUT_FROM = 2027
+        e = refused(g0)
+    finally:
+        OS.F.HOLDOUT_FROM = 2026
+    ok(e and 'the holdout is not 2026 as imported' in e, 'I: the guard takes a holdout already lifted', e)
     try:
         with TS.lifted(OS):
             ok(OS.F.HOLDOUT_FROM == OS.B.HOLDOUT_FROM == 2027, 'I: the lift does not set 2027 in both modules')
@@ -1419,12 +1936,43 @@ def section_i(ab):
                    TD_SHADOW_STUB=stub)
         ok(rc == 1 and 'is the ledger itself' in o and os.path.exists(own) and open(own).read() == ab.r1.text,
            f'I: run with {flag} the ledger it reads is not refused with the ledger left as it was', last(o))
+    # the registered files, each altered alone in a copy of the tree: the run is refused naming that file alone
+    for name in ('PREREGISTRATION.md', 'frozen/MANIFEST.json', 'requirements.txt'):
+        tree_n = make_tree('guard_' + name.replace('/', '_'))
+        with open(os.path.join(tree_n, TS.REL, name), 'a') as f:
+            f.write('\n')
+        rc, o, w = run(script=os.path.join(tree_n, TS.REL, 'td_shadow.py'), TD_SHADOW_STUB=stub)
+        ok(rc == 1 and w is None and f"not the registered bytes: ['{name}']" in o, f'I: run with {name} altered is not refused', last(o))
+    # a ledger whose bar is not BAR, or whose model block is not the manifest's: refused (each canonical)
+    for name, edit, words in (('its bar moved', lambda L: L['bar'].update(w=0.3), "the ledger's bar is not BAR"),
+                            ('its model block moved', lambda L: L['model']['td']['QB'].update(sha256='0' * 64),
+                             "the ledger's model block is not the manifest's")):
+        Lx = json.loads(ab.r1.text)
+        edit(Lx)
+        lx = os.path.join(TMP, 'I_' + name.replace(' ', '_') + '.json')
+        with open(lx, 'w') as f:
+            f.write(TS.dumps(Lx))
+        rc, o, w = run(ledger=lx, TD_SHADOW_STUB=stub)
+        ok(rc == 1 and w is None and words in o, f'I: a canonical ledger with {name} is not refused', last(o))
+    # without the stub, the guard checks the pins and Python 3.13 before the ledger is read: off the registered venv it
+    # refuses there (job C's Python 3.12 always), on it the next refusal is the missing ledger
+    try:
+        OS.check_versions()
+        venv = sys.version_info[:2] == (3, 13)
+    except SystemExit:
+        venv = False
+    rc, o, w = run('--hist', os.path.join(TMP, 'I_hist'), '--data', os.path.join(TMP, 'I_data2'),
+                   ledger=os.path.join(TMP, 'I_no_ledger.json'))
+    ok(rc == 1 and w is None and (('there is no ledger' in o) if venv else
+                                  ('not the pinned libraries' in o or 'the model runs on 3.13' in o) and 'there is no ledger' not in o),
+       'I: run without the stub does not check the pins and Python 3.13 first' + (' (here on the registered venv)' if venv else ''), last(o))
     tree = make_tree('guard')
     tpm = os.path.join(tree, TS.REL)
     with open(os.path.join(tpm, 'build_features.py'), 'a') as f:
         f.write('\n# altered\n')
     rc, o, w = run(script=os.path.join(tpm, 'td_shadow.py'), TD_SHADOW_STUB=stub)
-    ok(rc == 1 and w is None and 'not the registered bytes' in o, 'I: run on an altered registered file is not refused', last(o))
+    ok(rc == 1 and w is None and "not the registered bytes: ['build_features.py as loaded" in o,
+       'I: run on an altered registered file is not refused', last(o))
     shutil.copy2(os.path.join(HERE, 'build_features.py'), os.path.join(tpm, 'build_features.py'))
     res = jload(os.path.join(tpm, 'results', 'oneshot_2026.json'))
     res['verdict']['anytime_td'] = 'FAIL'
@@ -1453,6 +2001,107 @@ def section_i(ab):
     ok(rc == 0 and w == ab.r1.text, 'I: a payload of another season does not leave the ledger as it was', last(o))
 
 
+# ===================================================================== K: props.yml's shadow step, as the runner runs it
+def yml_block(name):
+    """the `run: |` script of props.yml's step `name` as the runner is handed it (its block's indentation taken off)"""
+    y = open(os.path.join(REPO, '.github', 'workflows', 'props.yml'), encoding='utf-8').read()
+    i = y.index(f'      - name: "{name}"')
+    j = y.index('        run: |\n', i)
+    out = []
+    for line in y[j + len('        run: |\n'):].split('\n'):
+        if line.strip() and not line.startswith(' ' * 10):
+            break
+        out.append(line[10:])
+    return '\n'.join(out).rstrip('\n') + '\n'
+
+
+def section_k():
+    """the shadow step's own script, taken from props.yml and run under `bash -e` as GitHub runs a step, in a copy of
+    the shadow's folder that is a git repository of its own (its last commit the registration), on the pinned payload
+    at a clock before its games, with stand-ins only where the runner's own tools are: setup-python's 3.13 (a venv of
+    this Python, its pip doing nothing), the clock `date` gives, the model (TD_SHADOW_STUB) and, in one case, node. The
+    page reader, the run and the check are the real ones. Clean: exit 0, the checked ledger moved over the committed
+    one. A ledger the check refuses (made non-canonical after the run wrote it): exit 1, the committed ledger as it
+    was. The reader failing: exit 2 (DEGRADED), the run's ledger checked and moved"""
+    say("K: props.yml's shadow step, its script run under bash -e in a copy of the tree")
+    if not PINNED_PATH or not os.path.isdir(os.path.join(REPO, 'props', 'build', 'node_modules', 'jsdom')):
+        ok(False, 'K: no pinned payload or no props/build/node_modules (the page reader cannot run)')
+        return
+    NOW = '2026-10-30T21:00:00Z'
+    script = yml_block('TD shadow: calls, freezes and grades (research only, never shown)')
+    root = make_tree('K')
+    pm = os.path.join(root, TS.REL)
+    shutil.copy2(os.path.join(HERE, 'td_shadow_page.js'), os.path.join(pm, 'td_shadow_page.js'))
+    os.symlink(os.path.join(REPO, 'props', 'build'), os.path.join(root, 'props', 'build'))
+    os.symlink(os.path.join(REPO, 'index.html'), os.path.join(root, 'index.html'))
+    os.makedirs(os.path.join(root, 'props', 'data'))
+    shutil.copy2(PINNED_PATH, os.path.join(root, 'props', 'data', 'payload.json'))
+    L = os.path.join(pm, 'shadow', 'td_ledger.json')
+    with envset(TD_SHADOW_NOW='2026-10-30T20:50:00Z'), quiet():
+        TS.init(Namespace(ledger=L))
+    reg = open(L, encoding='utf-8').read()
+    gk = ['git', '-C', root, '-c', 'user.name=t', '-c', 'user.email=t@t']
+    for a in (['init', '-q'], ['add', os.path.relpath(L, root)], ['commit', '-q', '-m', 'the registration']):
+        subprocess.run(gk + a, check=True, capture_output=True)
+    sh_dir = os.path.join(TMP, 'K_bin')
+    tpl = os.path.join(TMP, 'K_venv_tpl')
+    nodefail = os.path.join(TMP, 'K_nodefail')
+    for d in (sh_dir, tpl, nodefail):
+        os.makedirs(d)
+    real_date = shutil.which('date')
+
+    def put(path, body):
+        with open(path, 'w') as f:
+            f.write(body)
+        os.chmod(path, 0o755)
+    # the venv's python: this Python (job C's has numpy and pandas, which the stub's run needs), and the hook that
+    # spoils the ledger run wrote just before the check reads it
+    put(os.path.join(tpl, 'python'), '#!/bin/sh\ncase "$*" in *td_shadow_check.py*) if [ -n "$TD_E2E_SPOIL" ]; then '
+                                     f'printf " " >> "$TD_E2E_SPOIL"; fi ;; esac\nexec "{sys.executable}" "$@"\n')
+    put(os.path.join(tpl, 'pip'), '#!/bin/sh\nexit 0\n')
+    py313 = os.path.join(TMP, 'K_py313')
+    put(py313, '#!/bin/sh\n[ "$1" = "-m" ] && [ "$2" = "venv" ] && [ -n "$3" ] || { echo "py313 stand-in asked: $*" >&2; exit 9; }\n'
+               f'mkdir -p "$3/bin" && cp "{tpl}/python" "{tpl}/pip" "$3/bin/"\n')
+    put(os.path.join(sh_dir, 'date'), f'#!/bin/sh\nif [ "$*" = "-u +%Y-%m-%dT%H:%M:%SZ" ]; then echo {NOW}; else exec "{real_date}" "$@"; fi\n')
+    put(os.path.join(nodefail, 'node'), '#!/bin/sh\necho "node stand-in: failing" >&2\nexit 1\n')
+    sf = os.path.join(TMP, 'K_step.sh')
+    with open(sf, 'w') as f:
+        f.write(script)
+    stub = dump(os.path.join(TMP, 'K_stub.json'), {'p_rule': 'hash'})
+
+    def case(name, spoil=False, node_fails=False):
+        with open(L, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(reg)
+        rt = os.path.join(TMP, 'K_rt_' + name)
+        os.makedirs(rt)
+        T_ = os.path.join(rt, 'tdshadow')
+        path = sh_dir + os.pathsep + (nodefail + os.pathsep if node_fails else '') + os.environ.get('PATH', '')
+        e = env(RUNNER_TEMP=rt, GITHUB_OUTPUT=os.path.join(rt, 'output'), PY313=py313, PATH=path, TD_SHADOW_STUB=stub,
+                TD_SHADOW_NOW=NOW, TD_E2E_SPOIL=os.path.join(T_, 'td_ledger.json') if spoil else None)
+        r = subprocess.run(['bash', '--noprofile', '--norc', '-e', sf], cwd=root, env=e, capture_output=True, text=True,
+                           timeout=150)
+        rd = lambda p: open(p, encoding='utf-8').read() if os.path.exists(p) else None    # noqa: E731
+        return SimpleNamespace(rc=r.returncode, out=(r.stdout + r.stderr), ledger=rd(L), new=rd(os.path.join(T_, 'td_ledger.json')),
+                               probs=rd(os.path.join(T_, 'problems.txt')) or '', page=rd(os.path.join(T_, 'page.json')))
+    c = case('clean')
+    listed = sum(len(Gm['td']) for Gm in json.loads(c.page)['games'].values()) if c.page else -1
+    Lk = json.loads(c.ledger) if c.ledger else {}
+    ok(c.rc == 0 and c.ledger == c.new and c.ledger != reg and len(Lk.get('calls') or {}) == listed > 0
+       and 'td shadow check: 0 failures' in c.out and not re.search(r'^(REFUSED|DEGRADED)', c.probs, re.M),
+       "K: props.yml's shadow step does not exit 0 with every listed player called and the checked ledger moved into place",
+       f'rc {c.rc}, {len(Lk.get("calls") or {})} calls of {listed}: {c.out[-600:]}')
+    s = case('spoiled', spoil=True)
+    ok(s.rc == 1 and s.ledger == reg and 'REFUSED: the check failed: the ledger stays as committed' in s.probs
+       and 'td shadow check: 1 failures' in s.out,
+       "K: props.yml's shadow step moves a ledger the check refused, or does not end the step there", f'rc {s.rc}: {s.out[-600:]}')
+    d = case('degraded', node_fails=True)
+    Ld = json.loads(d.ledger) if d.ledger else {}
+    ok(d.rc == 2 and d.ledger == d.new and Ld.get('calls') == {} and Ld.get('run_at') == NOW
+       and 'DEGRADED: the page could not be read: no call this run' in d.probs and 'td shadow check: 0 failures' in d.out,
+       "K: props.yml's shadow step with the page unread does not exit 2 (DEGRADED) with the checked ledger moved",
+       f'rc {d.rc}: {d.out[-600:]}')
+
+
 # ===================================================================================== J: nothing reads it
 def section_j():
     say('J: nothing on the site reads the ledger')
@@ -1474,7 +2123,7 @@ def main():
     ab = None
     for name, fn in (('A, B', section_ab), ('D', lambda: section_d(ab)), ('C', section_c), ('C runs', section_c_runs),
                      ('G', lambda: section_g(ab)), ('H', section_h), ('I', lambda: section_i(ab)), ('J', section_j),
-                     ('E, F', section_ef)):
+                     ('K', section_k), ('E, F', section_ef)):
         t0 = time.time()
         try:
             r = fn()
