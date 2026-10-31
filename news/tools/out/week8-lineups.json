@@ -212,7 +212,7 @@
   },
   "BAL": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-31T00:43:01.262Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -308,15 +308,14 @@
      {
       "id": "00-0038038",
       "n": "Kyle Hamilton",
-      "pos": "SS",
-      "q": "not practising: knee"
+      "pos": "SS"
      }
     ]
    }
   },
   "BUF": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-31T00:43:01.262Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -350,7 +349,7 @@
       "id": "00-0036976",
       "n": "Spencer Brown",
       "pos": "T",
-      "q": "questionable: back, not practising"
+      "q": "questionable: back"
      }
     ],
     "rb": [
@@ -628,7 +627,7 @@
   },
   "ARI": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-31T00:43:01.262Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -647,12 +646,6 @@
       "id": "00-0032954",
       "n": "Isaac Seumalo",
       "pos": "G"
-     },
-     {
-      "id": "00-0035258",
-      "n": "Hjalte Froholdt",
-      "pos": "C",
-      "q": "questionable: knee"
      },
      {
       "id": "00-0040219",
@@ -674,8 +667,7 @@
      {
       "id": "00-0037263",
       "n": "Tyler Allgeier",
-      "pos": "RB",
-      "q": "not practising: toe"
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -1459,7 +1451,7 @@
   },
   "CLE": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-31T00:43:01.262Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -1490,10 +1482,9 @@
       "pos": "T"
      },
      {
-      "id": "00-0035234",
-      "n": "Tytus Howard",
-      "pos": "T",
-      "q": "questionable: concussion, not practising"
+      "id": "00-0039014",
+      "n": "Dawand Jones",
+      "pos": "T"
      }
     ],
     "rb": [
@@ -1765,7 +1756,7 @@
   },
   "TB": {
    "kick": "2026-11-01T18:00Z",
-   "built_at": "2026-10-30T17:15:03.432Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -1796,9 +1787,10 @@
       "pos": "G"
      },
      {
-      "id": "00-0040417",
-      "n": "Benjamin Chukwuma",
-      "pos": "T"
+      "id": "00-0037835",
+      "n": "Luke Goedeke",
+      "pos": "T",
+      "q": "questionable: calf"
      }
     ],
     "rb": [
@@ -1972,7 +1964,7 @@
   },
   "LAR": {
    "kick": "2026-11-01T21:05Z",
-   "built_at": "2026-10-29T09:49:40.864Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -1996,7 +1988,7 @@
       "id": "00-0034114",
       "n": "Coleman Shelton",
       "pos": "C",
-      "q": "questionable: hip, not practising"
+      "q": "questionable: hip"
      },
      {
       "id": "00-0036339",
@@ -2180,7 +2172,7 @@
   },
   "DEN": {
    "kick": "2026-11-01T21:25Z",
-   "built_at": "2026-10-31T00:43:01.262Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -2221,8 +2213,7 @@
      {
       "id": "00-0036158",
       "n": "J.K. Dobbins",
-      "pos": "RB",
-      "q": "not practising"
+      "pos": "RB"
      },
      {
       "id": "00-0041496",
@@ -2288,7 +2279,7 @@
   },
   "NE": {
    "kick": "2026-11-01T21:25Z",
-   "built_at": "2026-10-31T00:43:01.262Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -2331,10 +2322,9 @@
       "pos": "RB"
      },
      {
-      "id": "00-0040734",
-      "n": "TreVeyon Henderson",
-      "pos": "RB",
-      "q": "questionable: illness, not practising"
+      "id": "00-0040556",
+      "n": "Corey Kiner",
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -2496,7 +2486,7 @@
   },
   "PHI": {
    "kick": "2026-11-02T01:20Z",
-   "built_at": "2026-10-31T00:43:01.262Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -2536,8 +2526,7 @@
      {
       "id": "00-0034844",
       "n": "Saquon Barkley",
-      "pos": "RB",
-      "q": "not practising: hamstring"
+      "pos": "RB"
      },
      {
       "id": "00-0040586",
@@ -2549,8 +2538,7 @@
      {
       "id": "00-0040867",
       "n": "Makai Lemon",
-      "pos": "WR",
-      "q": "not practising"
+      "pos": "WR"
      },
      {
       "id": "00-0034351",
@@ -2704,7 +2692,7 @@
   },
   "CHI": {
    "kick": "2026-11-03T01:15Z",
-   "built_at": "2026-10-31T00:43:01.262Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -2761,8 +2749,7 @@
      {
       "id": "00-0040126",
       "n": "Colston Loveland",
-      "pos": "TE",
-      "q": "questionable: neck"
+      "pos": "TE"
      },
      {
       "id": "00-0039919",
@@ -2808,7 +2795,7 @@
   },
   "SEA": {
    "kick": "2026-11-03T01:15Z",
-   "built_at": "2026-10-31T00:43:01.262Z",
+   "built_at": "2026-10-31T19:14:31.057Z",
    "units": {
     "qb": [
      {
@@ -2849,7 +2836,7 @@
       "id": "00-0039165",
       "n": "Zach Charbonnet",
       "pos": "RB",
-      "q": "questionable: knee - acl"
+      "q": "questionable: knee"
      },
      {
       "id": "00-0038797",
