@@ -2795,15 +2795,18 @@ setTimeout(async()=>{
             -400, so by expected return (the order until app v141) they rank by the chance alone, across the types, an
             order the case tells from the new: 34 receptions
             (c00 to c33, overs and unders by turns, their chances 80% down by 0.75 points a line), three receiving yards
-            (v0 79%, v1 70% leaning 3 points, v2 55%), four rushing yards (r0 78%, r1 70% leaning 5 points, r2 an Under
-            at 70% leaning 2, r3 60%), two passing yards (y0 77% leaning nothing, y1 74%), one anytime touchdown (t0 77%
+            (v0 79%, v1 70% leaning 5 points, v2 55%), four rushing yards (r0 78%, r1 70% leaning 2 points, r2 an Under
+            at 70% leaning 4, r3 60%), two passing yards (y0 77% leaning nothing, y1 74%), one anytime touchdown (t0 77%
             leaning nothing: fewer than its round), two passing touchdowns at 40% and 44% (a type with none: neither
             qualifies), two passing yards a Value pick each (y2 90%, y3 88%, 3 points and more over -400's 80%), and
             each game's home side to win at -110 at 50%: the Value picks y2 and y3 first; then round 1, c00, v0, r0, t0
-            and y0 (t0 and y0 tied on the chance and the lean, by the id); round 2, c01, y1, r1 and v1 (r1 and v1 tied
-            on the chance, by the lean: a round's order is not round 1's order of the types, so the case tells a round
-            left unsorted); round 3, c02, r2 and v2; round 4, c03 and r3; then the receptions alone, c04 to c29, the cut
-            at 40 player lines (c30 to c33 off); then eight of the twelve money lines, by the game's id
+            and y0 (t0 and y0 tied on the chance and the lean, by the id); round 2, c01, y1, v1 and r2 (v1 and r2 tied
+            on the chance, by the lean, 5 points to 4, where the id would put r2 first: a round's order is not round 1's
+            order of the types, so the case tells a round left unsorted); round 3, c02, r1 and v2 (r1 after r2 in its own
+            type's list, by the lean, 4 points to 2, where the id would put r1 first); round 4, c03 and r3; then the
+            receptions alone, c04 to c29, the cut at 40 player lines (c30 to c33 off); then eight of the twelve money
+            lines, by the game's id. Each tie on the chance but round 1's goes against the id by the lean, so the case
+            tells the rule from one with no lean (the review of app v141)
        Since app v127 the page's own pricedLegs makes no rung (the site offers no ladder bet), so no rung reaches the list
        from the week's lines (NL1); the rule stays in the page, dormant, and these made-up lines, standing in for
        pricedLegs, are what hold it. (app v138) Each made-up line's chance is the one the case gives it, on a chance hook
@@ -2844,8 +2847,8 @@ setTimeout(async()=>{
       const GC=[...'ABCDEFGHIJKL'].map(c=>({id:`2099_${pad}_AX${c}_HX${c}`,w:cw,a:'AX'+c,h:'HX'+c,d:'2099-01-04',t:'13:00'}));
       const pc12=(pid,stat,k,side,hp,lean,label)=>({...pl(GC[0],pid,stat,k,side,stat!=='any_td',+(hp+lean).toFixed(6),-400,label),hp});
       const LC12=[...Array.from({length:34},(_,i)=>{ const sd=i%2?'under':'over'; return pc12('mx-c'+String(i).padStart(2,'0'),'receptions',4.5,sd,0.80-0.0075*i,0.01,`${sd==='under'?'Under':'Over'} 4.5 receptions`); }),
-        pc12('mx-v0','receiving_yards',50.5,'over',0.79,0.01,'Over 50.5 receiving yards'),pc12('mx-v1','receiving_yards',50.5,'over',0.70,0.03,'Over 50.5 receiving yards'),pc12('mx-v2','receiving_yards',50.5,'over',0.55,0.01,'Over 50.5 receiving yards'),
-        pc12('mx-r0','rushing_yards',40.5,'over',0.78,0.01,'Over 40.5 rushing yards'),pc12('mx-r1','rushing_yards',40.5,'over',0.70,0.05,'Over 40.5 rushing yards'),pc12('mx-r2','rushing_yards',40.5,'under',0.70,0.02,'Under 40.5 rushing yards'),pc12('mx-r3','rushing_yards',40.5,'over',0.60,0.01,'Over 40.5 rushing yards'),
+        pc12('mx-v0','receiving_yards',50.5,'over',0.79,0.01,'Over 50.5 receiving yards'),pc12('mx-v1','receiving_yards',50.5,'over',0.70,0.05,'Over 50.5 receiving yards'),pc12('mx-v2','receiving_yards',50.5,'over',0.55,0.01,'Over 50.5 receiving yards'),
+        pc12('mx-r0','rushing_yards',40.5,'over',0.78,0.01,'Over 40.5 rushing yards'),pc12('mx-r1','rushing_yards',40.5,'over',0.70,0.02,'Over 40.5 rushing yards'),pc12('mx-r2','rushing_yards',40.5,'under',0.70,0.04,'Under 40.5 rushing yards'),pc12('mx-r3','rushing_yards',40.5,'over',0.60,0.01,'Over 40.5 rushing yards'),
         pc12('mx-y0','passing_yards',230.5,'over',0.77,0,'Over 230.5 passing yards'),pc12('mx-y1','passing_yards',230.5,'over',0.74,0.01,'Over 230.5 passing yards'),
         pc12('mx-y2','passing_yards',230.5,'over',0.90,0.02,'Over 230.5 passing yards'),pc12('mx-y3','passing_yards',230.5,'over',0.88,0.01,'Over 230.5 passing yards'),
         {...pc12('mx-t0','any_td',1,'over',0.77,0,'Scores a touchdown'),main:false},
@@ -2854,7 +2857,7 @@ setTimeout(async()=>{
       const cId=i=>id12(GC[0],'mx-c'+String(i).padStart(2,'0'),'receptions',i%2?'under':'over',4.5), pId=(pid,st,sd,k)=>id12(GC[0],pid,st,sd,k);
       const vId=i=>pId('mx-v'+i,'receiving_yards','over',50.5), rId=i=>pId('mx-r'+i,'rushing_yards',i===2?'under':'over',40.5), yId=i=>pId('mx-y'+i,'passing_yards','over',230.5), tId=pId('mx-t0','any_td','over',1);
       /* the case's answer, by hand */
-      const WANT_C_PL=[cId(0),vId(0),rId(0),tId,yId(0), cId(1),yId(1),rId(1),vId(1), cId(2),rId(2),vId(2), cId(3),rId(3), ...Array.from({length:26},(_,i)=>cId(4+i))];
+      const WANT_C_PL=[cId(0),vId(0),rId(0),tId,yId(0), cId(1),yId(1),vId(1),rId(2), cId(2),rId(1),vId(2), cId(3),rId(3), ...Array.from({length:26},(_,i)=>cId(4+i))];
       const WANT_C=[yId(2),yId(3),...WANT_C_PL,...GC.slice(0,8).map(g=>`${g.id}|team:${g.h}|ml|over|0`)];
       const ON12=new Set([GP.id,GQ.id,...GC.map(g=>g.id)]);
       let said12=[];
@@ -2895,10 +2898,14 @@ setTimeout(async()=>{
           const types=[]; for(const x of byEv.map(id=>T.Pl.find(y=>legIdAud(y.l)===id))) if(!types.includes(x.l.stat)) types.push(x.l.stat);
           const lists=types.map(t=>[...T.Pl].filter(x=>x.l.stat===t).sort((a,b)=>(k9(b.l.p)-k9(a.l.p))||(k9(leanAud(b.l))-k9(leanAud(a.l)))||ordAud(a.l,b.l)));
           const unsorted=[]; for(let i=0;lists.some(L=>i<L.length);i++) for(const L of lists) if(i<L.length) unsorted.push(legIdAud(L[i].l));
+          /* and the same rule with no lean: the chance, then the id, in each type's list and in each round */
+          const nlBy=(a,b)=>(k9(b.l.p)-k9(a.l.p))||ordAud(a.l,b.l), nlAt=new Map(), nlSeen=new Map();
+          for(const x of [...T.Pl].sort(nlBy)){ const n=nlSeen.get(x.l.stat)||0; nlAt.set(x,n); nlSeen.set(x.l.stat,n+1); }
+          const noLean=[...T.Pl].sort((a,b)=>(nlAt.get(a)-nlAt.get(b))||nlBy(a,b)).map(x=>legIdAud(x.l));
           chk(JSON.stringify(got0)===JSON.stringify(WANT_C)&&T.parts.value===2&&T.parts.player===40&&T.parts.game===8&&T.Pl.length===44&&!T.Pl.some(x=>x.l.stat==='passing_tds'),
             `the player lines a mix of bet types on the made-up games: the audit's own rule gives ${JSON.stringify(T.parts)} (${T.Pl.length} player lines) in another order than the case's (first apart at row ${got0.findIndex((id,i)=>id!==WANT_C[i])+1}: ${got0.find((id,i)=>id!==WANT_C[i])||'none'} where the case has ${WANT_C.find((id,i)=>id!==got0[i])||'none'})`);
-          chk(byEv.slice(0,40).join()!==WANT_C_PL.join()&&unsorted.slice(0,40).join()!==WANT_C_PL.join()&&JSON.stringify(plOf.slice(0,40))===JSON.stringify(WANT_C_PL),
-            'the made-up mix of bet types cannot tell the new order from the old (by expected return) or from rounds left in round 1\'s order of the types');
+          chk(byEv.slice(0,40).join()!==WANT_C_PL.join()&&unsorted.slice(0,40).join()!==WANT_C_PL.join()&&noLean.slice(0,40).join()!==WANT_C_PL.join()&&JSON.stringify(plOf.slice(0,40))===JSON.stringify(WANT_C_PL),
+            'the made-up mix of bet types cannot tell the new order from the old (by expected return), from rounds left in round 1\'s order of the types or from the rule with no lean');
           const {r}=holdTop('made-up lines, the player lines a mix of bet types'), got=r.rows.map(legIdAud);
           chk(JSON.stringify(got)===JSON.stringify(WANT_C)&&!!r.parts&&r.parts.value===2&&r.parts.player===40&&r.parts.game===8,
             `the Top ${TOP_N_AUD} lines on the made-up games are not the two Value picks, then the player lines a mix of bet types round by round (each type likeliest first, a round likeliest first, the ties by the lean and the id) cut at ${TOP_PL_AUD}, then eight money lines: ${got.length} rows, first apart at row ${got.findIndex((id,i)=>id!==WANT_C[i])+1} (${got.find((id,i)=>id!==WANT_C[i])||'none'} where the case has ${WANT_C.find((id,i)=>id!==got[i])||'none'})`);

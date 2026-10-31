@@ -3018,7 +3018,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      quarterback's Over 224.5 and the back's Under (tied at 50%, the quarterback leaning 10 points to the back's 8), then
      the receiver's Over 49.5; round 2, the second quarterback's Over 225, then the back's 60+ and the receiver's 70+ (tied
      at -110, by the lean, 9 points to 5); round 3 the other game's 225+ (the passing yards' third); round 4 the 226+;
-     then the total */
+     then the total. Both ties break the same way by the key as by the lean, so this case holds the rounds and not the
+     lean: the mix of bet types' fixture below holds the lean against the key */
   if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepU5 = JSON.stringify(Sx.ui.pb), wk5 = String(cw).padStart(2, '0');
     const O1 = { id: `2099_${wk5}_A40_H40`, w: cw, a: 'A40', h: 'H40', d: '2099-01-02', t: '13:00', tot: 47.5, tov: 120 }, O2 = { id: `2099_${wk5}_A41_H41`, w: cw, a: 'A41', h: 'H41', d: '2099-01-02', t: '16:25' };
     const pl = (g, pid, grp, stat, k, main, side, p, price, label) => ({ key: `${g.id}|${pid}|${stat}`, gid: g.id, pid, stat, k, side, main, p, price, src: 'real', mu: null,
@@ -3072,23 +3073,26 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      side at q times 1.05, so its fair chance is q and what $1 on it is expected to return is 1/1.05 - 1 whatever q is: by
      expected return, the order until app v141, every line ties, as every estimated line of a real week does, and the
      order falls to the chance alone across the types. The lines (q, the model's lean): eight receptions (more than the
-     rest; overs and unders by turns, 80% down 2 points a line, leaning 1), three receiving yards (79%; 70% leaning 3;
-     55%), four rushing yards (78%; 70% leaning 5; an Under at 70% leaning 2; 60%), two passing yards (77% leaning
+     rest; overs and unders by turns, 80% down 2 points a line, leaning 1), three receiving yards (79%; 70% leaning 5;
+     55%), four rushing yards (78%; 70% leaning 2; an Under at 70% leaning 4; 60%), two passing yards (77% leaning
      nothing; 74%), one passing touchdowns line (77% leaning nothing: fewer than its round, and tied with the passing
      yards' first on the chance and the lean), and an anytime touchdown at +200 (under 45% at any overround: a type with
      none), with the game's home side to win. The order worked out here by hand: round 1, receptions 80%, receiving 79%,
      rushing 78%, then the passing touchdowns and the passing yards at 77% (tied, by the key: MIX-P0 before MIX-Y0);
-     round 2, receptions 78% (an Under), passing yards 74%, then rushing and receiving at 70% (tied, by the lean, 5 points
-     to 3: an order that is not round 1's order of the types, so a round left unsorted fails it); round 3, receptions
-     76%, the rushing Under at 70%, receiving 55%; round 4, receptions 74%, rushing 60%; then the receptions alone; then
-     the money line, a game bet ---- */
+     round 2, receptions 78% (an Under), passing yards 74%, then receiving and the rushing Under at 70% (tied on the
+     chance, by the lean, 5 points to 4, where the key would put the rushing Under first: an order that is not round 1's
+     order of the types, so a round left unsorted fails it); round 3, receptions 76%, the rushing Over at 70% (after the
+     Under in its own type's list, by the lean, 4 points to 2, where the key would put the Over first), receiving 55%;
+     round 4, receptions 74%, rushing 60%; then the receptions alone; then the money line, a game bet. Each tie on the
+     chance goes against the key by the lean (but round 1's, which leans nothing either way), so the case tells the lean
+     from the key at any hour, where the week's own lines tie only on some days (the review of app v141) ---- */
   if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepUm = JSON.stringify(Sx.ui.pb), wkm = String(cw).padStart(2, '0'), cwSm = JSON.stringify(String(cw));
     const amerM = q => q >= 0.5 ? -100 * q / (1 - q) : 100 * (1 - q) / q, impM = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), VM = 1.05;
     const GM = { id: `2099_${wkm}_A50_H50`, w: cw, a: 'A50', h: 'H50', d: '2099-01-05', t: '13:00', mlh: -110, mla: amerM(1.04 - impM(-110)) };
     /* [pid, stat, line, side, q, lean, words, position] */
     const SPEC_M = [...[...Array(8)].map((_, i) => [`MIX-C${i}`, 'receptions', 4.5, i % 2 ? 'under' : 'over', 0.80 - 0.02 * i, 0.01, 'receptions', 'WR']),
-      ['MIX-V0', 'receiving_yards', 50.5, 'over', 0.79, 0.01, 'receiving yards', 'WR'], ['MIX-V1', 'receiving_yards', 50.5, 'over', 0.70, 0.03, 'receiving yards', 'WR'], ['MIX-V2', 'receiving_yards', 50.5, 'over', 0.55, 0.01, 'receiving yards', 'WR'],
-      ['MIX-R0', 'rushing_yards', 40.5, 'over', 0.78, 0.01, 'rushing yards', 'RB'], ['MIX-R1', 'rushing_yards', 40.5, 'over', 0.70, 0.05, 'rushing yards', 'RB'], ['MIX-R2', 'rushing_yards', 40.5, 'under', 0.70, 0.02, 'rushing yards', 'RB'], ['MIX-R3', 'rushing_yards', 40.5, 'over', 0.60, 0.01, 'rushing yards', 'RB'],
+      ['MIX-V0', 'receiving_yards', 50.5, 'over', 0.79, 0.01, 'receiving yards', 'WR'], ['MIX-V1', 'receiving_yards', 50.5, 'over', 0.70, 0.05, 'receiving yards', 'WR'], ['MIX-V2', 'receiving_yards', 50.5, 'over', 0.55, 0.01, 'receiving yards', 'WR'],
+      ['MIX-R0', 'rushing_yards', 40.5, 'over', 0.78, 0.01, 'rushing yards', 'RB'], ['MIX-R1', 'rushing_yards', 40.5, 'over', 0.70, 0.02, 'rushing yards', 'RB'], ['MIX-R2', 'rushing_yards', 40.5, 'under', 0.70, 0.04, 'rushing yards', 'RB'], ['MIX-R3', 'rushing_yards', 40.5, 'over', 0.60, 0.01, 'rushing yards', 'RB'],
       ['MIX-Y0', 'passing_yards', 230.5, 'over', 0.77, 0, 'passing yards', 'QB'], ['MIX-Y1', 'passing_yards', 230.5, 'over', 0.74, 0.01, 'passing yards', 'QB'],
       ['MIX-P0', 'passing_tds', 1.5, 'over', 0.77, 0, 'passing TDs', 'QB']];
     const LM = [...SPEC_M.map(([pid, stat, k, side, q, lean, words, pos]) => ({ key: `${GM.id}|${pid}|${stat}`, gid: GM.id, pid, stat, k, side, main: true, p: +(q + lean).toFixed(6), price: amerM(q * VM), src: 'real', mu: k + 2,
@@ -3096,7 +3100,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       { key: `${GM.id}|MIX-T0|any_td`, gid: GM.id, pid: 'MIX-T0', stat: 'any_td', k: 1, side: 'over', main: false, p: 0.40, price: 200, src: 'real', mu: null, name: 'Mix T0', pos: 'RB', grp: 'RB', team: GM.h, opp: GM.a, week: cw, label: 'Scores a touchdown' },
       { key: `${GM.id}|team:${GM.h}|ml`, gid: GM.id, pid: 'team:' + GM.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.55, price: -110, src: 'real', mu: null, name: 'Made-up ' + GM.h, pos: 'Game', grp: 'TEAM', team: GM.h, opp: GM.a, week: cw, label: 'To win' }];
     const idM = (pid, stat, side, k) => `${GM.id}|${pid}|${stat} ${side} ${k}`, sp = pid => SPEC_M.find(x => x[0] === pid), byPid = pid => { const x = sp(pid); return idM(x[0], x[1], x[3], x[2]); };
-    const HAND_M = [...['MIX-C0', 'MIX-V0', 'MIX-R0', 'MIX-P0', 'MIX-Y0', 'MIX-C1', 'MIX-Y1', 'MIX-R1', 'MIX-V1', 'MIX-C2', 'MIX-R2', 'MIX-V2', 'MIX-C3', 'MIX-R3', 'MIX-C4', 'MIX-C5', 'MIX-C6', 'MIX-C7'].map(byPid), `${GM.id}|team:${GM.h}|ml over 0`];
+    const HAND_M = [...['MIX-C0', 'MIX-V0', 'MIX-R0', 'MIX-P0', 'MIX-Y0', 'MIX-C1', 'MIX-Y1', 'MIX-V1', 'MIX-R2', 'MIX-C2', 'MIX-R1', 'MIX-V2', 'MIX-C3', 'MIX-R3', 'MIX-C4', 'MIX-C5', 'MIX-C6', 'MIX-C7'].map(byPid), `${GM.id}|team:${GM.h}|ml over 0`];
     const keepDkM = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), hadM = { mkt: w.eval('!!PAY.mkt'), w: w.eval(`!!(PAY.mkt&&PAY.mkt[${cwSm}])`) }, n0m = Sx.sched.length;
     w.__pbKeepM = w.eval('[pbGames, pricedLegs]'); w.__pbM = { G: [GM], L: LM };
     try {
@@ -3108,14 +3112,18 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(40);
       const own = pbTopOwn(Sx.ui.pb, [GM]), idOf = x => `${x.c.key} ${x.c.side} ${x.c.k}`, plOwn = own.filter(x => x.grp === 'player');
       /* the case can tell: the player lines by expected return (the order until app v141: every one ties on it, so the
-         chance, the lean and the key decide, across the types), and the rounds each left in round 1's order of the types,
-         are each another order than the hand's */
+         chance, the lean and the key decide, across the types), the rounds each left in round 1's order of the types, and
+         the same rule with no lean (the chance, then the key, in each type's list and in each round), are each another
+         order than the hand's */
       const K = evKeyOwn, byEv = [...plOwn].sort((a, b) => (K(b.ev) - K(a.ev)) || (K(b.c.p) - K(a.c.p)) || (K(leanOwn(b.c)) - K(leanOwn(a.c))) || legId(a.c).localeCompare(legId(b.c))).map(idOf);
       const r1 = []; for (const x of plOwn) if (!r1.includes(x.c.stat)) r1.push(x.c.stat);
       const lists = r1.map(t => plOwn.filter(x => x.c.stat === t)), flat = []; for (let i = 0; lists.some(L => i < L.length); i++) for (const L of lists) if (i < L.length) flat.push(idOf(L[i]));
+      const noLeanBy = (a, b) => (K(b.c.p) - K(a.c.p)) || legId(a.c).localeCompare(legId(b.c)), placeNL = new Map(), seenNL = {};
+      for (const x of [...plOwn].sort(noLeanBy)) placeNL.set(x, (seenNL[x.c.stat] = (seenNL[x.c.stat] || 0) + 1));
+      const noLean = [...plOwn].sort((a, b) => (placeNL.get(a) - placeNL.get(b)) || noLeanBy(a, b)).map(idOf);
       const hp = HAND_M.slice(0, 18).join();
-      chk(own.map(idOf).join() === HAND_M.join() && new Set(plOwn.map(x => K(x.ev))).size === 1 && byEv.join() !== hp && flat.join() !== hp && !own.some(x => x.c.stat === 'any_td'),
-        `made-up lines, a mix of bet types: the smoke's own rule gives ${own.map(idOf).map(x => x.split('|')[1]).join(', ')} where the hand has ${HAND_M.map(x => x.split('|')[1]).join(', ')}, or the case cannot tell it from the order by expected return (every line tied on it: ${new Set(plOwn.map(x => K(x.ev))).size} values) or from rounds left in round 1's order of the types`);
+      chk(own.map(idOf).join() === HAND_M.join() && new Set(plOwn.map(x => K(x.ev))).size === 1 && byEv.join() !== hp && flat.join() !== hp && noLean.join() !== hp && !own.some(x => x.c.stat === 'any_td'),
+        `made-up lines, a mix of bet types: the smoke's own rule gives ${own.map(idOf).map(x => x.split('|')[1]).join(', ')} where the hand has ${HAND_M.map(x => x.split('|')[1]).join(', ')}, or the case cannot tell it from the order by expected return (every line tied on it: ${new Set(plOwn.map(x => K(x.ev))).size} values), from rounds left in round 1's order of the types or from the rule with no lean`);
       const n = holdTop('made-up lines, a mix of bet types', Sx.ui.pb, [GM]);
       const got = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')].map(r => { const b = r.querySelector('button[data-pb-leg]'); return b ? `${b.dataset.pbLeg} ${b.dataset.side} ${b.dataset.k}` : 'no leg'; });
       const at = got.findIndex((x, i) => x !== HAND_M[i]), parts = w.eval('getPbTop()').parts;

@@ -237,7 +237,7 @@ props/
                                  four levels, locked 2 hours before kickoff, the record at
                                  the top, the Elo picks at the foot) and the Parlay
                                  Builder's Top 100 lines (the Top 50 from app v113, the Top
-                                 30 since app v116); the
+                                 30 from app v116, the Top 50 again since app v141); the
                                  all-games levels and their locks gone (its docstring is the
                                  design)
   build/patch_suggested_night.py app v112: the tab renamed Suggested Parlays and shown one
@@ -1503,7 +1503,7 @@ Value part only from a hook's rows, `getPbTop().parts`; since app v141 up to 40 
 player lines a mix of bet types, round by round, each type's likeliest first, `pbTypeRounds`): `rows = [...rank(P1), ...rank(P2), ...rank(P3)]
 .slice(0, PB_TOP_N)`, `P1` the Value picks (`pref`), `P2` the thin legs and `P3` the totals (`mkt`), each after
 `once()` (below) and each ranked on its own by `p × dec − 1`, what $1 on the leg is expected to make at the model's
-chance, best first (the lower `pbOrd` on a tie), at most `PB_TOP_N`, 30 (100 until app v113, 50 until app v116), in all: the Value picks, then the other
+chance, best first (the lower `pbOrd` on a tie), at most `PB_TOP_N`, 50 (100 until app v113, 50 until app v116, 30 until app v141), in all: the Value picks, then the other
 lines, the thin ones and then the totals, so a thin edge never ranks over a Value pick, and a total, the book's own
 chance and never a Value pick, comes last, the order a level fills in. The totals' place is set, never left to the
 sort (app v112's second round): a total priced on one side only is put at 50% (`totalOver`, with a price missing),
@@ -1556,10 +1556,11 @@ the parts in that order, and with no Value pick the line saying so; on the week 
 half-point main Over qualifies, `same` the count they work out, and no Value pick after a thin leg or a thin leg
 after a total (the audit reading each row's part from its own pool, never the page's marks); and the audit each
 main line a rung was dropped for exactly at its rank in the order without the dropped rungs, and the list the first
-30 of that order, at most 30 rows drawn, under "Top 30 lines". The heading (`Top ${PB_TOP_N} lines`), the lead, the
-foot, the totals' note and the empty builder's line ("... or a line from the Top 30 below.", "above" until app v116
-put the builder over the list) all read `PB_TOP_N`; the checks keep their own copies of 30 (50 until app v116), the
-audit's `TOP_N_AUD` and the smoke's `PB_TOP_N_OWN`, never read from the page (the heading and the cut blocking, the
+50 of that order (30 from app v116 to v140), at most 50 rows drawn, under "Top 50 lines". The heading (`Top ${PB_TOP_N} lines`), the lead, the
+foot, the totals' note and the empty builder's line ("... or a line from the Top 50 below.", "above" until app v116
+put the builder over the list) all read `PB_TOP_N`; the checks keep their own copies of 50 (30 from app v116 to v140,
+50 before), the audit's `TOP_N_AUD` and the smoke's `PB_TOP_N_OWN`, and of the player part's 40 (20 from app v138 to
+v140), `TOP_PL_AUD` and `PB_TOP_PL_OWN`, never read from the page (the heading and the cut blocking, the
 words warnings in the audit, the empty builder's "below" among them, which the smoke holds blocking). Until app v127
 only the smoke met a priced ladder rung on the week as it stands (week 6's list left out 7; the audit boots with no baked
 odds, `NO_BAKED`, `S.odds` empty, so its real lists carried none); since, no rung reaches either's (the audit's NL1 and
@@ -1578,8 +1579,12 @@ all the same; until app v116 the same lines cut at 50, the lines ranked 43 to 50
 the cut on sixty made-up games of its own too (Moneyline only, each home side at -110, twenty Value picks rated 60.0%
 down to 58.1% a tenth of a point at a time and forty thin legs 55.0% down to 53.05% a twentieth at a time; forty and
 twenty, cut at 50, until app v116; the Value part, since app v138, a chance hook's alone): the first 30, the twenty (H100 to H119) and the ten best thin legs (H120 to H129),
-H130 to H159 off, under "Top 30 lines", the parts counting 20 and 10, the second list starting at 21; and it fails
-unless some list it held had more lines than 30 (`topOver`). Which lines, their part, rank and numbers are blocking; the words are
+H130 to H159 off, under "Top 30 lines", the parts counting 20 and 10, the second list starting at 21 (until app v141;
+since, re-sized for 50: the sixty games' money lines at -110 with sixty made-up players' main Overs of four bet types
+beside them, thirty receiving yards, fifteen receptions, ten rushing yards and five passing yards, so that with Moneyline
+alone the list is the first 50 games, H150 to H159 off, with Moneyline and Player overs the mix's first 40 worked out by
+hand and then the first 10 games, and with Player overs alone the mix's first 50); and it fails
+unless some list it held had more lines than the list holds (`topOver`). Which lines, their part, rank and numbers are blocking; the words are
 warnings in the audit (`W.wording`) and fail the smoke, which has no warnings.
 
 The notes over the list say what the all-games panel's said: the Elo ratings still loading, a line marked est. and
@@ -1960,8 +1965,9 @@ visitor's page the X tabs') landing on it as `#slate` (app v128), the scoreboard
 fixtures of its own at any hour), every file the page reads as it loads read at the root and no request of the page or
 a frame leaving the site or naming a parent folder, the light look and its switch (LIGHT MODE), and holds Suggested Parlays and the Parlay Builder to their rules on the
 week as it stands (the tab's name and no word a visitor reads naming it Suggest Parlays, the mixes and their boxes, a
-box by hand, a game unticked and the games list, the builder first on the tab, the Top 30 lines worked out on its own
-and ranked, cut at 30 (on sixty made-up games of its own too), in their two
+box by hand, a game unticked and the games list, the builder first on the tab, the Top 50 lines (30 from app v116 to
+v140) worked out on its own, the player lines a mix of bet types (`mixOwn`), cut at 50 (on sixty made-up games of its
+own too), in their two
 parts under their headings with the Value mark on the Value picks alone, the totals after every thin leg and each
 bet once, then again on made-up games of its own (a main Over 224.5 with its 225+ rung dropped, a whole-number Over
 225 with its 226+ kept, an Under with a rung kept, a one-sided total at +120 after both thin legs), each line's Add,
@@ -2362,10 +2368,15 @@ qualifying anytime touchdowns ranked ahead of the 397 other player lines. `pbTop
 `p`, to 1e-9; the lean; `pbOrd`), round 1 each type's first, round 2 each type's second, a type run out skipped, a round
 likeliest first, the part that order cut at its length; the Value picks and the game bets are ranked as before (`rank`,
 on the expected return, then `pbByChance`). `PB_TOP_N` is 50 and `PB_TOP_PL` 40. The Player lines list's accessible name
-says "a mix of bet types, each type’s likeliest first"; no other word moved. Held by the audit's `mixAud` in `topFullAud`
+says "a mix of bet types, each type’s likeliest first"; no other word moved but the heading, "Top 50 lines", which reads
+`PB_TOP_N`. Held by the audit's `mixAud` in `topFullAud`
 (`holdTop` on the week, M12's case C on made-up lines, MC's ties), `TOP_N_AUD` 50 and `TOP_PL_AUD` 40, and the nflbets
 smoke's `mixOwn` in `pbTopOwn` (its made-up mix of bet types, the each-bet-once fixture's new order and the sixty games
-re-sized for 50), `PB_TOP_N_OWN` 50 and `PB_TOP_PL_OWN` 40, each on its own reading.
+re-sized for 50), `PB_TOP_N_OWN` 50 and `PB_TOP_PL_OWN` 40, each on its own reading; M12's case C and the smoke's mix of
+bet types each break their ties on the chance against the key by the lean, so each tells the rule from one with no lean
+at any hour (the review of app v141). Wherever this file says, before this paragraph or after it, that the Top lines'
+player lines are ranked by expected return, or that the list is the Top 30 with up to 20 player lines, that is history
+from app v141.
 
 Who is playing is decided on every load from the payload, outside `S`: `RSTAT` (the roster
 status by player) and `INJ` (this week's tags: Q, did not practise, limited), with the ruled
@@ -2503,9 +2514,11 @@ Mismatches and Team Stats**, has the whole of it).
   on every bet type, `SP_ALL`, searched wider, `SP_SEARCH`, cached in `SP_CACHE`, outside `S`;
   the tab sets out one night's at a time, `spOn`, the record every one); `getPbTiers()`, the same
   levels over every ticked game, is kept for the audit and the smoke and drawn nowhere. The
-  Parlay Builder's Top 30 lines (`getPbTop`, `PB_TOP_CACHE`) rank the legs those levels are
-  searched from (since app v138 Player lines, up to 20, then Game bets to 30, by expected return at the fair
-  chance; until then the Value picks first, then the other lines, the thin ones and then the
+  Parlay Builder's Top 50 lines (`getPbTop`, `PB_TOP_CACHE`) rank the legs those levels are
+  searched from (since app v141 up to 40 player lines, a mix of bet types, round by round, each
+  type's likeliest first (`pbTypeRounds`), then Game bets to 50 by expected return at the fair
+  chance; from app v138 to v140 Player lines up to 20, then Game bets to 30, all by expected
+  return; until then the Value picks first, then the other lines, the thin ones and then the
   totals), each bet once (a ladder rung that is a half-point main Over's bet left out; dormant since app
   v127, no rung reaching the list). The
   Elo picks use `pricedLegs()` too, and since 18 October 2026 the same four levels on the Elo

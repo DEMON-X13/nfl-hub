@@ -3025,7 +3025,8 @@ the totals come last among the other lines, and on a long list the 30 lines can 
 length is the page's one number for it, `PB_TOP_N`, which its heading (`Top ${PB_TOP_N} lines`, "Top 30 lines"), the
 lead ("best first, 30 lines at most."), the foot, that note and the empty builder's line ("or add a parlay from
 Suggested Parlays or a line from the Top 30 below.", "above" until app v116 put the builder over the list; the audit
-holds "below" as `W.wording`, the smoke blocking) all read; the checks keep their own copies of 30 (50 until app v116),
+holds "below" as `W.wording`, the smoke blocking) all read; the checks keep their own copies of 30 (50 until app v116;
+50 again since app v141, "Top 50 lines", with the player part's 40 beside them, `TOP_PL_AUD` and `PB_TOP_PL_OWN`),
 `TOP_N_AUD` in the audit and `PB_TOP_N_OWN` in the nflbets smoke, never read from the page. The audit's
 Top lines check (`topAud`, `topFullAud`, its own rung rule `sameBetAud`) and the nflbets smoke's (`pbTopOwn`,
 `sameBetOwn`) work the order, each bet once, the parts (each holding exactly its rows, its heading, its count and
@@ -3221,13 +3222,14 @@ carries is a type of its own), each list likeliest first (`pbByChance`: the chan
 lean, then `pbOrd`, the chain the list read after the expected return); round 1 takes each type's first, round 2 each
 type's second, a type run out skipped; a round's legs likeliest first by the same chain, the rounds one after another;
 the part is that order cut at its length, so a round the cut falls in gives its likeliest legs. Where six types qualify,
-ranks 1 to 6 are one of each. The list is the Top 50 (`PB_TOP_N` 50, 30 since app v116), up to 40 player lines
-(`PB_TOP_PL` 40, 20 since app v138), the game bets filling the rest as before (10 where 40 player lines qualify, more
+ranks 1 to 6 are one of each. The list is the Top 50 (`PB_TOP_N` 50, 30 from app v116 to v140), up to 40 player lines
+(`PB_TOP_PL` 40, 20 from app v138 to v140), the game bets filling the rest as before (10 where 40 player lines qualify, more
 where fewer do). Unchanged: the pool (`pbLegs` on the ticks, every rule a suggested leg keeps), the Game bets part
 (moneylines and spreads, then the totals, by expected return), a hook's Value part (first, by expected return), each bet
 once, every row's columns and numbers, and the sort arrows (# puts this order back). No word on the page moved but the
-Player lines list's accessible name, "... a mix of bet types, each type’s likeliest first" where it said "by expected
-return on $1" (no new paragraph: app v130). The Suggested Parlays sets, the Elo picks and the record never read the Top
+length, which the heading reads ("Top 50 lines", `PB_TOP_N`, as the empty builder's line does), and the Player lines
+list's accessible name, "... a mix of bet types, each type’s likeliest first" where it said "by expected return on $1"
+(no new paragraph: app v130). The Suggested Parlays sets, the Elo picks and the record never read the Top
 lines: on the same payload and clock every set and Elo pick is byte for byte as before. On that payload at 16:30 UTC the
 list is 40 player lines and 10 game bets: Deshaun Watson's Over passing touchdowns (68.4%), Josh Palmer's Under
 receptions (65.0%), Jahmyr Gibbs's touchdown (64.4%), then a receiving, a rushing and a passing yards line at 50.0% each
@@ -3238,26 +3240,34 @@ every one of the 20 was a touchdown. Held, blocking, each on its own copy of the
 likeliest first) on the week as it stands (`holdTop`, `TOP_N_AUD` 50 and `TOP_PL_AUD` 40), M12's case C (twelve games of
 its own on a chance hook, every player line at -400 so the old order is the chance alone across the types: 34
 receptions, overs and unders by turns, against three receiving yards, four rushing yards, two passing yards and one
-touchdown, two passing touchdowns lines that do not qualify, ties on the chance broken by the lean and by the key, a
-round out of round 1's order of the types, two of the hook's Value picks drawn first, and the cut at 40 player lines in
-the receptions' tail with eight money lines after; its answer by hand, and the case shown to tell the old order and a
-round left unsorted from it) and MC's six lines at one chance (round by round, which is the lean's order there); the
+touchdown, two passing touchdowns lines that do not qualify, round 1's tie on the chance and the lean broken by the
+key and every later tie on the chance by the lean against the key (the review of app v141: the case's ties had broken
+the same way by the key as by the lean, so it could not tell the lean was read), a round out of round 1's order of the types, two of the hook's Value picks drawn first, and the cut at 40 player lines in
+the receptions' tail with eight money lines after; its answer by hand, and the case shown to tell the old order, a
+round left unsorted and the rule with no lean from it) and MC's six lines at one chance (round by round, which is the lean's order there); the
 nflbets smoke's `mixOwn` in `pbTopOwn` (`PB_TOP_N_OWN` 50, `PB_TOP_PL_OWN` 40) on the week as it stands, its made-up
 mix of bet types (eight receptions, overs and unders by turns, against three, four, two and one line of four other
 types, an anytime touchdown at +200 that does not qualify, every line tied on its expected return as a real week's
-estimated lines are, ties by the lean and the key, a round out of round 1's order; its answer by hand), its each bet once
-fixture's new order (round 1 the Over 224.5 and the Under, tied at 50% and parted by the lean, then the Over 49.5; round
-2 the Over 225, then the 60+ and the 70+, tied, by the lean; then the 225+ and the 226+; then the total; the week's
+estimated lines are, round 1's tie broken by the key and each later tie on the chance by the lean against the key, so
+the case tells the rule from one with no lean at any hour, where the week's own lines tie only on some days (the review
+of app v141), a round out of round 1's order; its answer by hand, and the case shown to tell the old order, a round left
+unsorted and the rule with no lean from it), its each bet once
+fixture's new order (round 1 the Over 224.5 and the Under, tied at 50%, then the Over 49.5; round
+2 the Over 225, then the 60+ and the 70+, tied; then the 225+ and the 226+; then the total; its two ties break the same
+way by the lean as by the key, so it holds the rounds and the mix fixture the lean; the week's
 market table is now the fixture's own for the run, so the one-sided rungs' overround V is its 1.0909 on any payload,
 since on `test_audit_phases.py`'s paid weeks the real lines' 1.05 or so made a -110 rung likelier than the Over 225 and
 the rounds came out another way) and the sixty
 made-up games re-sized for 50 (sixty player lines of four types, one of them more than the rest and two fewer than
 their rounds: Moneyline alone the first 50 games, Moneyline and Player overs the mix's first 40 by hand and then 10
 games, Player overs alone the mix's first 50; `topOver` met). Bite-tested on scratch copies of the parts: the old
-ranking by expected return put back failed the audit 2,074 times (119 of them M12's case C, the rest the week's lists
+ranking by expected return put back failed the audit 2,074 times (120 of them M12's case C, the rest the week's lists
 and the sections that hold them) and the smoke 14 (the week's lists, its mix fixture, the each bet once fixture and two
 of the sixty games' cases); each round left in round 1's order of the types (the within-round sort taken out) failed the
-audit 583 times (15 of them case C) and the smoke 7 (the week's lists and its mix fixture). Wherever this file says, before
+audit 586 times (18 of them case C) and the smoke 7 (the week's lists and its mix fixture); and the lean taken out of the
+mix (the chance, then `pbOrd`) failed the audit 1,444 times (12 of them case C and 20 MC's) and the smoke 5 (the week's
+lists and its mix fixture: before the review of app v141 the smoke failed it 3 times, all on the week's own tied lines,
+none on a fixture of its own, so on a day with no tie it would have passed). Wherever this file says, before
 this paragraph or after it, that the Top 30 lines' player lines are ranked by expected return, or that the list is the
 Top 30 with up to 20 player lines, that is history from app v141.
 
