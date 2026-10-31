@@ -826,7 +826,14 @@ the model, judged on weeks 1-6's priced main lines and anytime touchdowns and we
 by the bar PREREGISTRATION.md fixes; a PASS only starts a quiet shadow, a FAIL ends it, and the site stays on
 DraftKings' chance either way until a shadow passes. `fetch.py` refuses every 2026 file to every script but the one-shot,
 and to it only under the committed, unmodified preregistration on origin/main; never edit a file the preregistration
-hashes, never read 2026 with this model's code before the test, and never run the test twice.
+hashes, never read 2026 with this model's code before the test, and never run the test twice. **It ran once, on 31
+October 2026 at 01:02 UTC** (`results/oneshot_2026.json` and `oneshot_2026_lines.csv`, committed as written): **main
+lines FAIL** (on 2,544 priced lines the blend level with DraftKings' no-vig chance, A1 Brier +0.0001 [-0.0008,
++0.0010], A2 log loss +0.0002 [-0.0016, +0.0020], and no information beyond it, A3 beta +0.02 [-0.15, +0.19]; B2 failed
+too), so the main-line family is not used anywhere and 2026 is spent for it; **anytime touchdown PASS** (C1 beta +0.38
+[+0.03, +0.75] on 1,769 priced Yes legs; it said 16.0% where 15.6% scored and the price implied 18.9%), which starts
+the quiet touchdown shadow of PREREGISTRATION.md section 8 (T1 and T2 on the first 2,000 graded) and changes nothing on
+the site.
 
 A quarterback has an anytime touchdown since app v102 (`patch_qb_td.py`; the owner asked, October
 2026): his own rushing or receiving touchdown, as DraftKings settles it, never a pass he throws, and

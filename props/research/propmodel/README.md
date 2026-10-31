@@ -1197,6 +1197,23 @@ once. It is never shown and never in a suggestion, and the site changes only by 
 
 **On a FAIL**, the site stays on DraftKings' chance, and 2026 is spent.
 
+**The result** (run once, 31 October 2026 01:02 UTC, from main at b0fa6e5a; `results/oneshot_2026.json` and
+`results/oneshot_2026_lines.csv`, committed as written):
+
+| Family | Criterion | Estimate | 90% interval | Holds |
+|---|---|---|---|---|
+| Main lines | A1 Brier, blend minus market (2,544 priced lines, 85 games) | +0.0001 | [-0.0008, +0.0010] | no |
+| | A2 log loss, blend minus market | +0.0002 | [-0.0016, +0.0020] | no |
+| | A3 beta, the model's information net of the market | +0.02 | [-0.15, +0.19] | no |
+| | A4 picks against the vig (634 picks, +1.3 units where the no-vig chance expects -35.1) | +0.058 a pick | [-0.005, +0.119] | yes |
+| | B1 log loss, blend minus a coin (4,972 closing lines, 107 games) | -0.0020 | [-0.0037, -0.0004] | yes |
+| | B2 log loss, blend minus each stat's own over rate | +0.0003 | [-0.0007, +0.0034] | no |
+| Anytime TD | C1 beta, net of the price (1,769 Yes legs, 70 games) | +0.38 | [+0.03, +0.75] | yes |
+
+**Main lines FAIL**: the family is not used anywhere, and 2026 is spent for it (section 9). **Anytime touchdown
+PASS**: it starts the quiet touchdown shadow of section 8 (T1 and T2, decided once on the first 2,000 graded), which no
+page reads and no suggestion uses.
+
 **The program** that runs the test is `oneshot_2026.py`. It refuses to run unless every registered file has its
 hash (the programs it runs hashed where Python loaded them, in this folder of `--repo`), the libraries are the
 pinned ones, it is late enough, and the test has never run: no result on disk or committed on any branch, and no
