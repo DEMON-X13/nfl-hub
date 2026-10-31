@@ -2503,7 +2503,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v140 \u00b7 2026-10-29';
+const APP_BUILD='app v141 \u00b7 2026-10-31';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -6829,7 +6829,7 @@ function pbTierCard(t,o){
     ${o.acts===false?'':`<div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}${nm?` aria-label="${pbInBuilder(t.legs)?'In the builder:':'Add'}${nm}${pbInBuilder(t.legs)?'':' to the builder'}"`:''}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${o.fid||t.id}"${nm?` aria-label="Finish${nm}"`:''}>Finish</button>`:''}</div>`}</div>`;
 }
 window.pbTierCard=pbTierCard;
-/* ---------- the Parlay Builder's Top lines (app v111; 50 since app v113, 30 since app v116) ----------
+/* ---------- the Parlay Builder's Top lines (app v111; 50 since app v113, 30 since app v116, 50 again since app v141) ----------
    Every leg on the reader's ticks that qualifies as a suggestion's leg does (pbLegs: a real price, or a
    tested DraftKings line read by Refresh odds on a payload baked before ids; DraftKings' id at its line
    where the payload carries ids, a line from the read included (app v119: from app v115 the list kept one
@@ -6852,8 +6852,27 @@ window.pbTierCard=pbTierCard;
    spreads, then the totals), each ranked by what $1 on it is expected to return at DraftKings' fair chance (pbEvKey), then
    the chance, then the lean, then pbOrd; Value picks, a hook's legs, first and only where a hook is set. Ranked as one
    list the team bets' real prices beat the estimate formula's assumed player margin, an artefact of the estimate, and
-   would fill it */
-const PB_TOP_N=30, PB_TOP_PL=20;
+   would fill it.
+   (app v141, the owner's call of 31 October 2026: "The best few of each type (anytime TD, rushing yards, receiving yards,
+   receptions, passing yards, passing TDs), each type's likeliest first. You always see every market", and "maybe expand to
+   50") The Player lines are a mix of bet types (pbTypeRounds), no longer ranked by expected return: every estimated player
+   line returns the same at its own fair chance to a few ten-thousandths of a point, the estimate's flat margins, and that
+   artefact put all 20 qualifying anytime touchdowns ahead of the week's 397 other player lines. The Top 50: up to 40
+   player lines, the game bets filling the rest */
+const PB_TOP_N=50, PB_TOP_PL=40;
+/* (app v141) likeliest first: the chance (the pool copy's p, legChance) to 1e-9, then the lean, then pbOrd: the chain the
+   list read after the expected return */
+const pbByChance=(a,b)=>(pbEvKey(b.p)-pbEvKey(a.p))||(pbEvKey(pbLean(b))-pbEvKey(pbLean(a)))||pbOrd(a,b);
+/* (app v141) the player lines round by round from each bet type's own list, a type the leg's stat (over and under alike),
+   each list likeliest first: round 1 each type's first, round 2 each type's second, a type that has run out skipped, the
+   legs of a round likeliest first, the rounds one after another; the part is this order cut at its length */
+function pbTypeRounds(list){
+  const by=new Map();
+  for(const l of [...list].sort(pbByChance)){ if(!by.has(l.stat)) by.set(l.stat,[]); by.get(l.stat).push(l); }
+  const L=[...by.values()], out=[];
+  for(let i=0;L.some(x=>i<x.length);i++) out.push(...L.filter(x=>i<x.length).map(x=>x[i]).sort(pbByChance));
+  return out;
+}
 let PB_TOP_CACHE=new Map();
 function pbTopBuild(){
   const u=pbUi(), all=pbGames(), games=all.filter(g=>!u.off.includes(g.id)), kinds=PB_KINDS.map(([k])=>k).filter(k=>u.k[k]);
@@ -6866,8 +6885,8 @@ function pbTopBuild(){
   out.espnRead=games.some(g=>espnWasRead(g.id,g.w));
   /* (app v138) fc, the row's fair column, is the leg's fair chance as stated (legFairStated), the chance its expected
      return is worked at: a total on one price at its own 50%, est. */
-  const rank=list=>list.map(l=>{ const dec=mlToDec(l.price); return dec>1?{...l,dec,win:dec-1,ev:l.p*dec-1,fc:legFairStated(l,fm)}:null; })
-    .filter(Boolean).sort((a,b)=>(pbEvKey(b.ev)-pbEvKey(a.ev))||(pbEvKey(b.p)-pbEvKey(a.p))||(pbEvKey(pbLean(b))-pbEvKey(pbLean(a)))||pbOrd(a,b));
+  const priced=list=>list.map(l=>{ const dec=mlToDec(l.price); return dec>1?{...l,dec,win:dec-1,ev:l.p*dec-1,fc:legFairStated(l,fm)}:null; }).filter(Boolean);
+  const rank=list=>priced(list).sort((a,b)=>(pbEvKey(b.ev)-pbEvKey(a.ev))||pbByChance(a,b));
   /* (app v112) each bet once: a ladder rung k+ lands exactly when the player's main Over (k-0.5) on a half-point
      line does and is priced from it, so where that main line is on the list (either part) the rung is not, and its
      slot goes to the next line; the main line is kept, its fair chance the two-sided one (the owner, 17 October
@@ -6880,8 +6899,9 @@ function pbTopBuild(){
   const once=list=>list.filter(l=>!(rungOf(l)&&mainOver.has(`${l.gid}|${l.pid}|${l.stat}|${l.k}`)));
   const P1=once(r.pref), P2=once(r.thin), P3=once(r.mkt); out.same=r.pref.length+r.thin.length+r.mkt.length-P1.length-P2.length-P3.length;
   /* (app v138) a hook's Value picks, then the player lines (up to PB_TOP_PL, more where the game bets do not fill the
-     rest), then the game bets to PB_TOP_N: moneylines and spreads, then the totals */
-  const V=rank(P1), Pl=rank(P2.filter(l=>!isGameLeg(l))), Gm=[...rank(P2.filter(isGameLeg)),...rank(P3)];
+     rest), then the game bets to PB_TOP_N: moneylines and spreads, then the totals. (app v141) The player lines a mix of
+     bet types, each type's likeliest first (pbTypeRounds); the Value picks and the game bets by expected return as before */
+  const V=rank(P1), Pl=pbTypeRounds(priced(P2.filter(l=>!isGameLeg(l)))), Gm=[...rank(P2.filter(isGameLeg)),...rank(P3)];
   const nV=Math.min(V.length,PB_TOP_N), R=PB_TOP_N-nV, nG=Math.min(Gm.length,R-Math.min(Pl.length,Math.min(PB_TOP_PL,R))), nP=Math.min(Pl.length,R-nG);
   out.rows=[...V.slice(0,nV),...Pl.slice(0,nP),...Gm.slice(0,nG)];
   out.parts={value:nV,player:nP,game:nG};
@@ -6979,7 +6999,7 @@ function pbPanel(){
     return secHd(id,title,L.length)+(id==='player'&&L.length>1?pbTsortHead():'')+`<ol class="pb-top" data-pb-sec="${id}"${at?` start="${at+1}"`:''} aria-label="${aria}">${R.map(x=>pbTopRow(x.l,x.r)).join('')}</ol>`; };
   const s=n=>n===1?'':'s';
   const list=r.rows.length?part('value','Value picks',V,0,`The ${V.length} Value pick${s(V.length)} on your picks, by expected return on $1`)
-      +part('player','Player lines',Pl,nV,`${nV?'Then ':'The '}${Pl.length} player line${s(Pl.length)} on your picks, by expected return on $1`)
+      +part('player','Player lines',Pl,nV,`${nV?'Then ':'The '}${Pl.length} player line${s(Pl.length)} on your picks, a mix of bet types, each type’s likeliest first`)
       +part('game','Game bets',Gm,nV+Pl.length,`${nV+Pl.length?'Then ':'The '}${Gm.length} game bet${s(Gm.length)} on your picks, by expected return on $1`)
     :`<p class="pb-none pb-top-none">${esc(pbTopWhy(r,u))}</p>`;
   return `<div class="card pb" id="pbCard">${head}
@@ -8117,7 +8137,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='8656888';
+const PAGE_HASH='b52988a';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){

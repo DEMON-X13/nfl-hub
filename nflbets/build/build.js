@@ -66,7 +66,7 @@ const tab = rd('nflbets', 'build', 'hub.html');
    its own (#xparlays): X's parlays (liveparlays/parlays.json, read only) and nothing else, on the
    site owner's devices alone since 20 October 2026 (the admin link, admin.js: "hide only", the file
    stays public); on anyone else's the tab is off the bar and the section reads nothing. The Parlay
-   Builder is its own tab (#parlay): the builder over its Top 30 lines; Suggested Parlays (#suggest) is
+   Builder is its own tab (#parlay): the builder over its Top 50 lines; Suggested Parlays (#suggest) is
    the prop model's own tab of each prime-time game's parlays. No device keeps a list of its own, and
    the builder finishes a parlay as a card to download (card.html, below), saved nowhere.
    The section's styles are scoped to its card and its script runs in a closure, since the page
@@ -430,7 +430,7 @@ html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
 for (const [t] of TABS) if (t !== 'elo' && !t.match(/^(slate|suggest|parlay)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
 html = sub1(html, '<section id="tab-slate">', FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate">', 'the Games section');
-/* the Parlay Builder keeps the prop model's own section and its address, #parlay: the builder over its Top 30
+/* the Parlay Builder keeps the prop model's own section and its address, #parlay: the builder over its Top 50
    lines and the choices they are built from (app v116; Suggested Parlays, #suggest, is the prop model's own
    section before it, each prime-time game's parlays and the Elo picks). X Parlays is a section of its own after
    it, #xparlays, the site owner's alone (data-admin-only, above). The parlay card's window sits at the end of

@@ -53,7 +53,7 @@ by hand when a source changes, and reads the models' data on every load, every f
 | `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what the page reads, with the job's own read of DraftKings' lines on ESPN in it since 20 October 2026: no job buys a price) | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what the page reads); the app itself lives inside the page, the root's `index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to the root): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`, which since app v124 a game page's Team Stats window reads when it first opens, the Game snapshot's Stat breakdown having gone on 16 October 2026), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches with `units.json` | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
-| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (one section since app v129, Night games, under one record: each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, then the Sunday slot's, one set across the week's Sunday games before 7 pm Eastern, a section with its own record from app v118 to v128; each set with its own four Elo picks, locked 2 hours before its kickoff, the slot's first, and graded by the props job's suggestions record, weeks 3 to 6 replayed as a backtest, and from week 7 on graded at the page's estimated prices on DraftKings' lines read from ESPN), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 30 lines (Value picks first until app v138; since, Player lines then Game bets: **DraftKings' chance on every leg**), each bet once, on the bet types and games a visitor ticks), every price DraftKings' line read from ESPN (the props job's read, published with the payload, or a visitor's Refresh odds press), a player's at the page's estimate of DraftKings' price, X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs on the site owner's devices alone (the admin link, `#owner=<his Odds API key>`, the owner's call of 20 October 2026, "hide only": the files stay public by address), with Pull from DraftKings on the admin's parlay card, the Props tab first (the Matchups tab, the board in front of it, went on 22 October 2026, app v128: its row had been the Props list's since app v122), on each game's page there Matchup, Mismatches and Team Stats buttons, each opening that card alone in a little window (app v124), and the whole Game snapshot of a game (with the news job's preview and Deep Dive) opened by the matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw (and for a few hours of 22 October 2026 by a fourth button on the game's page, app v128, which app v129 took off) | `nflbets/build/hub.html` (the page's glue: the season's read, the tabs as addresses, the framed tabs; `tab_pickems.html`, the Matchups tab, until 22 October 2026) + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css`, `theme.js` and `admin.js` |
+| `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (one section since app v129, Night games, under one record: each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme, shown one night at a time, then the Sunday slot's, one set across the week's Sunday games before 7 pm Eastern, a section with its own record from app v118 to v128; each set with its own four Elo picks, locked 2 hours before its kickoff, the slot's first, and graded by the props job's suggestions record, weeks 3 to 6 replayed as a backtest, and from week 7 on graded at the page's estimated prices on DraftKings' lines read from ESPN), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 50 lines (the Top 30 from app v116 to v140; Value picks first until app v138; since, Player lines then Game bets: **DraftKings' chance on every leg**; the player lines a mix of bet types since app v141: **The Top 50's player lines are a mix of bet types**), each bet once, on the bet types and games a visitor ticks), every price DraftKings' line read from ESPN (the props job's read, published with the payload, or a visitor's Refresh odds press), a player's at the page's estimate of DraftKings' price, X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs on the site owner's devices alone (the admin link, `#owner=<his Odds API key>`, the owner's call of 20 October 2026, "hide only": the files stay public by address), with Pull from DraftKings on the admin's parlay card, the Props tab first (the Matchups tab, the board in front of it, went on 22 October 2026, app v128: its row had been the Props list's since app v122), on each game's page there Matchup, Mismatches and Team Stats buttons, each opening that card alone in a little window (app v124), and the whole Game snapshot of a game (with the news job's preview and Deep Dive) opened by the matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw (and for a few hours of 22 October 2026 by a fourth button on the game's page, app v128, which app v129 took off) | `nflbets/build/hub.html` (the page's glue: the season's read, the tabs as addresses, the framed tabs; `tab_pickems.html`, the Matchups tab, until 22 October 2026) + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css`, `theme.js` and `admin.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the current week (`betting/state.json`'s schedule, the first week with a game still to play, the week the Matchups board opened on until it went on 22 October 2026) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `cfb/` | retired: CFB Hub (then X College Football Bets) moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
@@ -394,7 +394,10 @@ model percentage. `pbIsValue` needs `l.hook`, so no Value mark is drawn, and the
 (`legFarOff`, `FAR_OFF` and `farText` stay for `gameLegPool` alone). The Top 30 lines are Player lines, up to 20
 (`PB_TOP_PL`), then Game bets filling to 30, moneylines and spreads and then totals (`getPbTop().parts`), each part
 ranked by expected return at the chance, then the chance, the lean and `pbOrd`: ranked as one list about 28 team legs
-filled it, their real prices beating the estimate's assumed 5.66% player margin, an artefact of the estimate. A Value
+filled it, their real prices beating the estimate's assumed 5.66% player margin, an artefact of the estimate (since app
+v141 the Top 50, up to 40 player lines, and those a mix of bet types, each type's likeliest first, since ranked by
+expected return the same artefact put every qualifying anytime touchdown first: **The Top 50's player lines are a mix
+of bet types**, under "Bets and Stats: the loop"). A Value
 part is drawn only from a hook's rows, a row's model column is "projected" (a player's mean), and "Other lines", the
 no-Value line, the far-off note and "Loading Elo ratings…" are gone. The builder's Chance column is Fair
 (`data-legchance`), its hero "expected −$4.70 on $20 (−23.5%)" on the price it pays, its second box "fair price", and
@@ -2239,7 +2242,7 @@ next: a load with no address opens on it), Suggested Parlays (Suggest Parlays un
 Suggested Parlays", app v112: its button, its heading and every word a visitor reads that names it; its section, address
 and `sp` names keep the old one; the prop model's own section `tab-suggest`, `#suggest`, after Props since app v111: the
 next prime-time night's parlays and the Elo picks), Parlay Builder (the prop model's own Parlay Builder tab, `#parlay`: the builder, then its
-choices and the Top 30 lines), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
+choices and the Top 50 lines, the Top 30 from app v116 to v140), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
 Player Elo tab, renamed), Pick'em Record, X Bet Log (the Bet Log frame, still `#bets`); a prop model section with no button
 there stays in the page, unshown. X Parlays and the X Bet Log are the site owner's tabs alone since 20 October 2026
 (**The admin link**, below: `TABS`' fourth field marks them, and a visitor's bar is the other six, Props, Suggested
@@ -2938,7 +2941,8 @@ each line item to be added to parley builder") is the builder (`#parlayBody`) at
 **Top 30 lines** they make (the Top 100 until app v113, `patch_declutter_top50.py`, the owner's call of 17 October 2026:
 "in parlay builder only do top 50 now instead of 100"; the Top 50 until app v116, `patch_top30_first.py`, the owner's of
 18 October 2026, with a screenshot of the tab: "its only showing top 30, but honestly top 30 is enough if you want to
-set it at that", the list having shown 30 rows because the reader had ticked a few games)
+set it at that", the list having shown 30 rows because the reader had ticked a few games; the Top 50 again since app
+v141, its player lines a mix of bet types: **The Top 50's player lines are a mix of bet types**, below)
 (`#pbPanel`, drawn by `renderPb()` in `part3.js`, from `renderParlay()`, which draws Suggested Parlays with it). Until
 app v116 the choices and the list were over the builder; that day the owner, with a screenshot of the builder holding
 five legs under the list, asked "that 5 leg parlay section can we move it up to the top of the page?", so `#parlayBody`
@@ -2965,7 +2969,8 @@ the games unticked, whether the games list is open; nothing else holds it): a mi
 Players only, which sets five boxes, Moneyline, Spread, Game total, Player overs and Player unders (a touchdown is an
 over, as a ladder rung was until app v127 offered none; a box changed by hand lights the mix it makes, or no mix at all: there is no Custom tag);
 and the week's games still to kick off, all ticked to start, with All and None. From those alone, the **Top 30
-lines** (`getPbTop`, `pbTopBuild`): every leg on the ticks that qualifies as a suggested leg does (`pbLegs`, the
+lines** (the Top 50 since app v141, up to 40 player lines, a mix of bet types: **The Top 50's player lines are a mix of
+bet types**, below) (`getPbTop`, `pbTopBuild`): every leg on the ticks that qualifies as a suggested leg does (`pbLegs`, the
 lists a level is searched from, uncapped: the preferred and the thin legs and, with Game total ticked, both sides of
 each ticked game's total, every rule above held, the id rule among them (from app v115 to v118 but for a player's line
 read by Refresh odds on a tested kind, which the list alone kept with none, under Props, **The Top lines keep a line
@@ -3020,7 +3025,8 @@ the totals come last among the other lines, and on a long list the 30 lines can 
 length is the page's one number for it, `PB_TOP_N`, which its heading (`Top ${PB_TOP_N} lines`, "Top 30 lines"), the
 lead ("best first, 30 lines at most."), the foot, that note and the empty builder's line ("or add a parlay from
 Suggested Parlays or a line from the Top 30 below.", "above" until app v116 put the builder over the list; the audit
-holds "below" as `W.wording`, the smoke blocking) all read; the checks keep their own copies of 30 (50 until app v116),
+holds "below" as `W.wording`, the smoke blocking) all read; the checks keep their own copies of 30 (50 until app v116;
+50 again since app v141, "Top 50 lines", with the player part's 40 beside them, `TOP_PL_AUD` and `PB_TOP_PL_OWN`),
 `TOP_N_AUD` in the audit and `PB_TOP_N_OWN` in the nflbets smoke, never read from the page. The audit's
 Top lines check (`topAud`, `topFullAud`, its own rung rule `sameBetAud`) and the nflbets smoke's (`pbTopOwn`,
 `sameBetOwn`) work the order, each bet once, the parts (each holding exactly its rows, its heading, its count and
@@ -3197,6 +3203,73 @@ the figures sit, # beside them) has # and each column as a button (`button.pb-th
 (`.pb-tharr`: ⇅ unsorted, ▼ highest first, ▲ lowest first). A touchdown projects touchdowns, "0.69 TDs": the model's
 chance read as a Poisson count, -ln(1 - pm), as `tdPlus` prices 2+ (`pbProjOf`). The checks read the same (the smoke's
 sort check through `.pb-thead`, each arrow held).
+
+**The Top 50's player lines are a mix of bet types** (app v141, `patch_top_mix.py`, whose docstring is the design and the
+diagnosis, the owner's call of 31 October 2026: asked how the Top 30's player lines should be chosen once all 20 were
+anytime touchdowns, "A mix of bet types": "The best few of each type (anytime TD, rushing yards, receiving yards,
+receptions, passing yards, passing TDs), each type's likeliest first. You always see every market", and then "okay lets
+just build it. maybe expand to 50"). The diagnosis, on that day's payload (week 8, the page at 16:30 UTC): since app v138
+every player leg is stated and chosen at DraftKings' fair chance, and nearly every one is DraftKings' line read on ESPN
+at the estimate's price on a flat assumed margin (`DK_EST`, `estPrice`), so every estimated player line has the same
+expected return at its own fair chance: an anytime touchdown exactly 1/1.0566 − 1 = −5.356805% (its fair chance worked
+back from its rounded price over `DK_EST.tdVig`), passing, rushing and receiving yards −5.357143%, receptions −5.48% to
+−5.82% and passing touchdowns −5.43% to −5.74% (assumed margins 5.99% and 5.90%). The Player part ranked by expected
+return first (`pbEvKey`), so a 0.0003-point artefact put all 20 qualifying anytime touchdowns (chance 45-97%) ahead of
+the 397 other player lines that qualified (138 receptions, 137 receiving yards, 71 rushing yards, 26 passing
+touchdowns, 25 passing yards). The rule: the Player part is filled round by round from each bet type's own list
+(`pbTypeRounds` in `part3.js`; a type is the leg's stat, over and under alike, and any other stat a qualifying player leg
+carries is a type of its own), each list likeliest first (`pbByChance`: the chance, the pool copy's `p`, to 1e-9, then the
+lean, then `pbOrd`, the chain the list read after the expected return); round 1 takes each type's first, round 2 each
+type's second, a type run out skipped; a round's legs likeliest first by the same chain, the rounds one after another;
+the part is that order cut at its length, so a round the cut falls in gives its likeliest legs. Where six types qualify,
+ranks 1 to 6 are one of each. The list is the Top 50 (`PB_TOP_N` 50, 30 from app v116 to v140), up to 40 player lines
+(`PB_TOP_PL` 40, 20 from app v138 to v140), the game bets filling the rest as before (10 where 40 player lines qualify, more
+where fewer do). Unchanged: the pool (`pbLegs` on the ticks, every rule a suggested leg keeps), the Game bets part
+(moneylines and spreads, then the totals, by expected return), a hook's Value part (first, by expected return), each bet
+once, every row's columns and numbers, and the sort arrows (# puts this order back). No word on the page moved but the
+length, which the heading reads ("Top 50 lines", `PB_TOP_N`, as the empty builder's line does), and the Player lines
+list's accessible name, "... a mix of bet types, each type’s likeliest first" where it said "by expected return on $1"
+(no new paragraph: app v130). The Suggested Parlays sets, the Elo picks and the record never read the Top
+lines: on the same payload and clock every set and Elo pick is byte for byte as before. On that payload at 16:30 UTC the
+list is 40 player lines and 10 game bets: Deshaun Watson's Over passing touchdowns (68.4%), Josh Palmer's Under
+receptions (65.0%), Jahmyr Gibbs's touchdown (64.4%), then a receiving, a rushing and a passing yards line at 50.0% each
+(the estimate prices most yards lines 50/50, so within those types the lean and then the key decide), and so on: 7
+passing touchdowns lines, 7 receptions, 7 touchdowns, 7 rushing yards, 6 receiving yards and 6 passing yards, where
+every one of the 20 was a touchdown. Held, blocking, each on its own copy of the rule, never the page's
+`pbTypeRounds`: the audit's `mixAud` in `topFullAud` (each leg's place in its own type's list, then by place, then
+likeliest first) on the week as it stands (`holdTop`, `TOP_N_AUD` 50 and `TOP_PL_AUD` 40), M12's case C (twelve games of
+its own on a chance hook, every player line at -400 so the old order is the chance alone across the types: 34
+receptions, overs and unders by turns, against three receiving yards, four rushing yards, two passing yards and one
+touchdown, two passing touchdowns lines that do not qualify, round 1's tie on the chance and the lean broken by the
+key and every later tie on the chance by the lean against the key (the review of app v141: the case's ties had broken
+the same way by the key as by the lean, so it could not tell the lean was read), a round out of round 1's order of the types, two of the hook's Value picks drawn first, and the cut at 40 player lines in
+the receptions' tail with eight money lines after; its answer by hand, and the case shown to tell the old order, a
+round left unsorted and the rule with no lean from it) and MC's six lines at one chance (round by round, which is the lean's order there); the
+nflbets smoke's `mixOwn` in `pbTopOwn` (`PB_TOP_N_OWN` 50, `PB_TOP_PL_OWN` 40) on the week as it stands, its made-up
+mix of bet types (eight receptions, overs and unders by turns, against three, four, two and one line of four other
+types, an anytime touchdown at +200 that does not qualify, every line tied on its expected return as a real week's
+estimated lines are, round 1's tie broken by the key and each later tie on the chance by the lean against the key, so
+the case tells the rule from one with no lean at any hour, where the week's own lines tie only on some days (the review
+of app v141), a round out of round 1's order; its answer by hand, and the case shown to tell the old order, a round left
+unsorted and the rule with no lean from it), its each bet once
+fixture's new order (round 1 the Over 224.5 and the Under, tied at 50%, then the Over 49.5; round
+2 the Over 225, then the 60+ and the 70+, tied; then the 225+ and the 226+; then the total; its two ties break the same
+way by the lean as by the key, so it holds the rounds and the mix fixture the lean; the week's
+market table is now the fixture's own for the run, so the one-sided rungs' overround V is its 1.0909 on any payload,
+since on `test_audit_phases.py`'s paid weeks the real lines' 1.05 or so made a -110 rung likelier than the Over 225 and
+the rounds came out another way) and the sixty
+made-up games re-sized for 50 (sixty player lines of four types, one of them more than the rest and two fewer than
+their rounds: Moneyline alone the first 50 games, Moneyline and Player overs the mix's first 40 by hand and then 10
+games, Player overs alone the mix's first 50; `topOver` met). Bite-tested on scratch copies of the parts: the old
+ranking by expected return put back failed the audit 2,074 times (120 of them M12's case C, the rest the week's lists
+and the sections that hold them) and the smoke 14 (the week's lists, its mix fixture, the each bet once fixture and two
+of the sixty games' cases); each round left in round 1's order of the types (the within-round sort taken out) failed the
+audit 586 times (18 of them case C) and the smoke 7 (the week's lists and its mix fixture); and the lean taken out of the
+mix (the chance, then `pbOrd`) failed the audit 1,444 times (12 of them case C and 20 MC's) and the smoke 5 (the week's
+lists and its mix fixture: before the review of app v141 the smoke failed it 3 times, all on the week's own tied lines,
+none on a fixture of its own, so on a day with no tie it would have passed). Wherever this file says, before
+this paragraph or after it, that the Top 30 lines' player lines are ranked by expected return, or that the list is the
+Top 30 with up to 20 player lines, that is history from app v141.
 
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
@@ -3534,7 +3607,7 @@ rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the ne
 
 ```
 node nflbets/build/build.js      # writes the page, the root's index.html
-node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 30 lines, their two parts, the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, clubs level on a unit sharing its rank, the parlay sums the same to the bit, the search's beam the same as it stood and Suggested Parlays opened without a freeze a level a step, the Elo leans, Elo picks, player window and bubble on the Elo-adjusted averages (the formula's on a file from before them), the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
+node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 50 lines, their two parts (the player lines a mix of bet types), the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, clubs level on a unit sharing its rank, the parlay sums the same to the bit, the search's beam the same as it stood and Suggested Parlays opened without a freeze a level a step, the Elo leans, Elo picks, player window and bubble on the Elo-adjusted averages (the formula's on a file from before them), the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on the admin's browser and a visitor's, and the parlay card (the builder's and a Suggested Parlays level's, its check of DraftKings' current lines as it opens, and the admin's Pull from DraftKings on a stubbed Odds API), each boot's seeded ladder legs taken out with the builder's line; must end "0 failures"
 node nflbets/build/smoke_admin.js # the admin link and the hidden X tabs (admin.js, HUB_ADMIN, the header, Sign out, a visitor's page, the key nowhere but The Odds API's requests); must end "0 failures"
@@ -3549,7 +3622,7 @@ what needs a game to come only when there is one, and, once the page's own week 
 first with a game not yet final, else the last) has no game still to kick off (within the hour of its last
 kickoff or past it: Monday night under way before the props job rebakes after its final, which the Elo job,
 dispatched by the betting job on a final, lands in; and the season's end), boots the page two days before
-that week's last kickoff so the Top 30 lines, the sets, the Elo picks and the builder checks still have a game to stand on;
+that week's last kickoff so the Top 50 lines, the sets, the Elo picks and the builder checks still have a game to stand on;
 a missing section there is a failed check, never a crash. A prime-time game between its set's lock and its kickoff
 (Sunday night's from about 22:20 UTC, when the betting job's late-afternoon finals dispatch the Elo job) is held as
 the set it locked (`holdLocked`), and the checks on made-up lines move it a day and more out, so they stand on live

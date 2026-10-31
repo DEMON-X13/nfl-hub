@@ -15,7 +15,7 @@
  * Builder finishes a parlay as a card to download (nflbets/build/card.html), saved nowhere. There
  * is no sign-in and no shared store: the page writes nothing anywhere but the browser's own storage
  * (the admin's key among it, on the admin's devices alone, sent only to The Odds API). X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the builder
- * over its choices and the Top 30 lines (app v116), and Suggested Parlays (#suggest, app v111) each prime-time
+ * over its choices and the Top 50 lines (app v116), and Suggested Parlays (#suggest, app v111) each prime-time
  * game's own set of four levels, whose Finish opens the same card; with the Sunday slot (every Sunday game before 7 pm
  * Eastern, one set; its own section with its own record from app v118, and since app v129 the last part of the one
  * Night games section, whose one record counts both), and each unit with its own Elo
@@ -528,7 +528,7 @@ const ladderBoot = async (x, seeded, how) => {
   chk(/^app v\d+/.test(txt(d.getElementById('buildTag'))), 'the page does not say which build it is');
   chk(!/Parlays marked/.test(txt(d.getElementById('lpCard'))), 'the old footer text is in the section');
   /* X Parlays is the whole of its own tab, opened at its address; the builder is the Parlay Builder
-     tab's, first on it, over its choices and the Top 30 lines (#pbPanel, app v116), and Suggested Parlays (#suggest, app v111)
+     tab's, first on it, over its choices and the Top 50 lines (#pbPanel, app v116), and Suggested Parlays (#suggest, app v111)
      is a tab of its own, without the builder: no list of a visitor's own anywhere */
   const lpc = d.getElementById('lpCard'), tx = d.getElementById('tab-xparlays'), tb = d.getElementById('tab-parlay'), ts = d.getElementById('tab-suggest');
   chk(!!lpc && !!tx && tx.firstElementChild === lpc && !lpc.nextElementSibling && !tx.hidden && tb.hidden && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'X Parlays'
