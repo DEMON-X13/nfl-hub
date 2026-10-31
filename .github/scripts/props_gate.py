@@ -10,7 +10,8 @@ all (it still gets --no-odds, which a base from before needs and this one ignore
 
   classify   which parts a change touches: AUDIT (what the props job runs: props/build, the props/data
              scripts and the model files weekly.py reads (not the job's own outputs), the research files
-             it runs, lib/, props.yml, this gate) and PAGE (what the Bets and Stats page is built from and
+             it runs, the touchdown shadow props.yml runs after its publish (its code and the registered files of
+             PREREGISTRATION.md section 3, never its ledger), lib/, props.yml, this gate) and PAGE (what the Bets and Stats page is built from and
              its smoke runs on: nflbets/, the page itself at the site's root (index.html, built from
              nflbets/build/ since 17 October 2026) and the old addresses' redirects to it, the betting app,
              betting/neutral_sites.json and the build's parts of betting/tools, the props parts,
@@ -25,9 +26,10 @@ all (it still gets --no-odds, which a base from before needs and this one ignore
              a payload from git history at its own moment.
   units      job C: the props job's own tests and the page's (UNITS: the ESPN read and its application, the
              runs against the locks, the ids, the names, who played, the downloads, the audit's verdict, the
-             archive of DraftKings' lines on ESPN, the admin link, and the parlay card with Pull from DraftKings),
-             on fixtures of their own: seconds each,
-             but for the page's two smokes (smoke_admin.js about a minute, smoke_live.js about four).
+             archive of DraftKings' lines on ESPN, the admin link, the parlay card with Pull from DraftKings, and
+             the touchdown shadow), on fixtures of their own: seconds each,
+             but for the page's two smokes (smoke_admin.js about a minute, smoke_live.js about four) and the
+             touchdown shadow's test (about 20 seconds).
 
 Each is differential. A failure is run again on the base's code (a second checkout, `git worktree`):
 failing here and passing there fails the gate, since it is the change's; failing on both is reported
@@ -51,13 +53,23 @@ import argparse, ast, fnmatch, json, os, re, shutil, subprocess, sys, tempfile, 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 GATE = ['.github/workflows/props-gate.yml', '.github/scripts/props_gate.py', '.github/scripts/test_props_gate.py',
         'props/build/test_audit_phases.py']
+# The anytime-touchdown shadow (props/research/propmodel/README.md, "The touchdown shadow"), which props.yml runs after
+# its publish: its own code and test, and the registered files of PREREGISTRATION.md section 3 (the ones it runs, and
+# the rest too: test_td_shadow.py holds every one to its registered hash, so a PR editing any of them fails job C). By
+# name, so neither its ledger (shadow/td_ledger.json, the job's own output) nor results/td_shadow_equiv.json is code
+TD_SHADOW = ['props/research/propmodel/td_shadow*', 'props/research/propmodel/test_td_shadow.py',
+             'props/research/propmodel/fetch.py', 'props/research/propmodel/build_features.py',
+             'props/research/propmodel/predict.py', 'props/research/propmodel/oneshot_2026.py',
+             'props/research/propmodel/freeze.py', 'props/research/propmodel/model_*.py',
+             'props/research/propmodel/requirements.txt', 'props/research/propmodel/PREREGISTRATION.md',
+             'props/research/propmodel/frozen/**', 'props/research/propmodel/results/oneshot_2026.json']
 # '/**' is everything under a folder; otherwise a glob within one folder ('*' never crosses a '/')
 AUDIT = ['props/build/**', 'props/data/*.py', 'props/data/*.json', 'props/research/features.py',
          'props/research/qb_td.py', 'props/raw/feat.pkl', 'props/raw/fake_wk1.csv', 'props/requirements.txt',
          'lib/**', '.github/workflows/props.yml',
          # payload.py reads the neutral sites into each game's neu, and the audit's T2 holds the team model to the
          # app's equation in reference_models.json (app v137): both PAGE paths too
-         'betting/neutral_sites.json', 'betting/tools/reference_models.json'] + GATE
+         'betting/neutral_sites.json', 'betting/tools/reference_models.json'] + TD_SHADOW + GATE
 # the props job's own outputs: a run commits them, and they are data, not code
 AUDIT_OUTPUTS = ['props/data/payload.json', 'props/data/priced_at.json', 'props/data/pricepull.json',
                  'props/data/credits.json', 'props/data/suggest_ledger.json', 'props/data/dk_links_wk*.json',
@@ -84,7 +96,10 @@ UNITS = [('props/build/test_apply_espn.py', 'py'), ('props/build/test_espn_read.
          ('props/build/test_who_played.py', 'py'), ('props/build/test_fetch.py', 'py'), ('props/build/test_audit_gate.py', 'py'),
          ('lib/test_netfetch.py', 'py'), ('lib/test_netfetch.js', 'node'), ('props/build/test_espn_archive.py', 'py'),
          ('nflbets/build/test_dkname.js', 'node'),
-         ('nflbets/build/smoke_admin.js', 'node'), ('nflbets/build/smoke_live.js', 'node')]
+         ('nflbets/build/smoke_admin.js', 'node'), ('nflbets/build/smoke_live.js', 'node'),
+         # the touchdown shadow's rules, its check, its page reader on the payload pinned at 9dbe81f6 and its guard,
+         # on a stand-in for the model (job C has no lightgbm): about 20 s, three minutes at most by its own stop
+         ('props/research/propmodel/test_td_shadow.py', 'py')]
 # a unit run only where its file is in the tree; every other one missing fails the gate (none is optional: the parlay
 # card's name rule's test landed with its change)
 UNITS_OPTIONAL = set()

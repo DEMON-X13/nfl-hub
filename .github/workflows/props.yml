@@ -65,8 +65,10 @@ jobs:
     # pinned: ubuntu-latest moves to Ubuntu 26.04 on 19 October 2026; try ubuntu-26.04 on purpose, in a dispatched run on a branch, before moving this line
     runs-on: ubuntu-24.04
     # a normal run takes a few minutes; a stalled download (lib/netfetch.py and .js give each try a
-    # timeout and the run ten minutes of retry waits) fails the run here, not at GitHub's six hours
-    timeout-minutes: 45
+    # timeout and the run ten minutes of retry waits) fails the run here, not at GitHub's six hours.
+    # 85: the publish's 45 plus the touchdown shadow's step caps (39), so a shadow step that runs to its own cap
+    # never cuts off anything after it; .github/scripts/test_props_gate.py holds it
+    timeout-minutes: 85
     steps:
       # the branch as it stands when the run starts, not the commit it was queued on: runs of one job wait
       # in line (concurrency), and one queued behind another would otherwise start from the state the other
@@ -139,6 +141,110 @@ jobs:
           for n in $open; do
             gh issue close "$n" --comment "Published: the payload baked at $at is on the site, by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID."
           done
+      # The anytime-touchdown shadow (props/research/propmodel/README.md, "The touchdown shadow"; PREREGISTRATION.md
+      # section 8). Research only: no page reads its ledger and nothing on the site uses it. It runs after this run's
+      # payload is pushed, on main only, and touches nothing the steps above decided: every step is continue-on-error
+      # with its own timeout-minutes (the job's cap is the publish's 45 plus all of theirs), none writes the build's
+      # problems file (the last step's only input), the ledger is written aside, checked and only then moved into
+      # place, and it goes in a commit of its own. The model runs on Python 3.13 with requirements.txt's pins, in a
+      # venv of its own (`python` stays 3.12 for every step after: refused_note.py imports weekly.py). The off switch is
+      # the repository variable TD_SHADOW=off (`gh variable set TD_SHADOW --body off`; `gh variable delete TD_SHADOW`
+      # resumes it); after a FAIL, or once the season's last grade is written, the plan says there is nothing to do.
+      - name: "TD shadow: what this run has to do"
+        id: tdplan
+        if: success() && steps.weekly.outcome == 'success' && github.ref_name == 'main' && vars.TD_SHADOW != 'off'
+        continue-on-error: true
+        timeout-minutes: 2
+        run: python -I props/research/propmodel/td_shadow.py plan --payload props/data/payload.json --ledger props/research/propmodel/shadow/td_ledger.json
+      - name: "TD shadow: Python 3.13"
+        id: tdpy
+        if: success() && steps.tdplan.outputs.work == 'run'
+        continue-on-error: true
+        timeout-minutes: 4
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          update-environment: false
+      - name: "TD shadow: the 2010-2025 files (cached)"
+        id: tdhist
+        if: success() && steps.tdplan.outputs.hist == 'true' && steps.tdpy.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 4
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ runner.temp }}/pm-hist
+          key: propmodel-hist-v1-${{ hashFiles('props/research/propmodel/frozen/MANIFEST.json') }}
+      - name: "TD shadow: calls, freezes and grades (research only, never shown)"
+        id: tdshadow
+        if: success() && steps.tdplan.outputs.work == 'run' && steps.tdpy.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 20
+        env:
+          PYTHONUTF8: "1"
+          PYTHONDONTWRITEBYTECODE: "1"
+          PY313: ${{ steps.tdpy.outputs.python-path }}
+        # td_shadow.py run exits 0 (written), 2 (written, a phase skipped: DEGRADED) or 1 (REFUSED, nothing written);
+        # the ledger it writes to $T is moved over the committed one only once td_shadow_check.py passes it, and the
+        # step ends with run's own code, so a DEGRADED run shows orange with its ledger committed. A step killed at its
+        # cap dies before the move: the tree keeps the committed ledger
+        run: |
+          L=props/research/propmodel/shadow/td_ledger.json; T="$RUNNER_TEMP/tdshadow"; mkdir -p "$T"; P="$T/problems.txt"
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          if ! { "$PY313" -m venv "$T/venv" && "$T/venv/bin/pip" install -q -r props/research/propmodel/requirements.txt; }; then
+            echo "REFUSED: the model's Python 3.13 libraries did not install" >> "$P"; exit 1
+          fi
+          node props/research/propmodel/td_shadow_page.js --payload props/data/payload.json --ledger "$L" \
+               --now "$NOW" --out "$T/page.json" || echo "DEGRADED: the page could not be read: no call this run" >> "$P"
+          rc=0
+          "$T/venv/bin/python" -I props/research/propmodel/td_shadow.py run --now "$NOW" --payload props/data/payload.json \
+               --page "$T/page.json" --props-raw props/raw --hist "$RUNNER_TEMP/pm-hist" --data "$T/data" \
+               --ledger "$L" --out "$T/td_ledger.json" --evidence "$T/evidence.json" --problems "$P" || rc=$?
+          if [ -f "$T/hist_ok" ]; then echo "hist_ok=true" >> "$GITHUB_OUTPUT"; fi
+          if [ "$rc" != 0 ] && [ "$rc" != 2 ]; then exit 1; fi
+          "$T/venv/bin/python" -I props/research/propmodel/td_shadow_check.py --ledger "$T/td_ledger.json" \
+               --payload props/data/payload.json --page "$T/page.json" --evidence "$T/evidence.json" \
+               --data "$T/data" --problems "$P" || { echo "REFUSED: the check failed: the ledger stays as committed" >> "$P"; exit 1; }
+          cp "$T/td_ledger.json" "$L.part" && mv "$L.part" "$L"
+          exit "$rc"
+      - name: "TD shadow: keep the 2010-2025 files"
+        if: success() && steps.tdshadow.outputs.hist_ok == 'true' && steps.tdhist.outputs.cache-hit != 'true'
+        continue-on-error: true
+        timeout-minutes: 4
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ runner.temp }}/pm-hist
+          key: propmodel-hist-v1-${{ hashFiles('props/research/propmodel/frozen/MANIFEST.json') }}
+      - name: "TD shadow: commit its ledger"
+        # the ledger alone, in a commit of its own after the publish's; the tree holds either the committed ledger (no
+        # change, nothing to commit) or one td_shadow_check.py passed
+        if: success() && (steps.tdshadow.outcome == 'success' || steps.tdshadow.outcome == 'failure')
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          L=props/research/propmodel/shadow/td_ledger.json
+          git config user.name "nfl-hub bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add "$L"
+          if git diff --cached --quiet; then echo "the shadow's ledger did not change"; exit 0; fi
+          git commit -m "props: touchdown shadow $(date -u +'%Y-%m-%d %H:%M UTC')"
+          for i in 1 2 3; do
+            if git pull --rebase && git push; then exit 0; fi
+            git rebase --abort 2>/dev/null || true
+            echo "push raced another job, retrying ($i)"; sleep 15
+          done
+          echo "WARN: the ledger's commit lost its push three times: the next run starts from the last committed ledger" >> "$RUNNER_TEMP/tdshadow/problems.txt"
+          exit 1
+      - name: "TD shadow: the td-shadow issue"
+        # one open issue labelled td-shadow, commented only when its problems change and closed by the next clean run,
+        # and the td-shadow-verdict issue opened once, at 2,000 (td_shadow.py notify); the props run itself stays green
+        if: success() && steps.tdplan.outcome != 'skipped'
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          OUTCOMES: "plan=${{ steps.tdplan.outcome }} py=${{ steps.tdpy.outcome }} hist=${{ steps.tdhist.outcome }} shadow=${{ steps.tdshadow.outcome }}"
+        run: python -I props/research/propmodel/td_shadow.py notify --tmp "$RUNNER_TEMP/tdshadow" --ledger props/research/propmodel/shadow/td_ledger.json --run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
       - name: Open or update the props-refused issue (why, and what to do)
         # a refusal reaches the owner (an issue in his own repo: email and GitHub Mobile) and a Claude
         # session can be pointed at it: why it refused, the run, and what to do (props/build/refused_note.py).
