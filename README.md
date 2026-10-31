@@ -112,9 +112,11 @@ The Parlay Builder is its own tab (`#parlay`), the builder at its top (under the
 list until 18 October 2026). Under it a visitor picks All, Teams only or
 Players only (or ticks moneyline, spread, game total, player overs and player
 unders by hand) and the week's games to build from, types a Bet amount (the
-builder's own stake, one number), and gets the Top 30 lines those choices make
-(the Top 100 until 17 October 2026, the Top 50 until 18 October 2026): up to 20
-player lines, then the game bets, each ranked by what $1 on it is expected to
+builder's own stake, one number), and gets the Top 50 lines those choices make
+(the Top 100 until 17 October 2026, the Top 50 until 18 October 2026, the Top 30
+until 31 October 2026): up to 40 player lines, a mix of bet types (each type's
+likeliest first, one of each type, then a second of each, and so on: app v141),
+then the game bets, each ranked by what $1 on it is expected to
 return at DraftKings' fair chance (since 27 October 2026, app v138: every leg is
 stated at DraftKings' fair chance, the model's projection beside it as information,
 and no line is marked a Value pick until a model earns it), each with its own Add. A player's line DraftKings has moved since its prices

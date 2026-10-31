@@ -349,6 +349,13 @@ props/
                                  renderSp keeps the reader's focus (spFocusOf, spFocusBack), and
                                  a read of touchdown lists alone says "no yards lines yet"
                                  (espnTdOnly)
+  build/patch_top_mix.py         app v141 (31 October 2026, the owner's call): the Top 50 lines
+                                 (PB_TOP_N 50, PB_TOP_PL 40), their player lines a mix of bet
+                                 types, round by round from each type's own list, each type's
+                                 likeliest first (pbTypeRounds, pbByChance), where ranked by
+                                 expected return the estimate's flat margins put every
+                                 qualifying anytime touchdown first (its docstring is the
+                                 design and the diagnosis)
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
                                  answers (audit M8 and M17, the nflbets smoke), its own tdBranch
                                  among it
@@ -687,8 +694,9 @@ nflbets/
                                  levels, every leg at DraftKings' fair chance (app v138: no
                                  Value mark, model chance or far-off flag drawn, each level's
                                  quality by its own enumeration), the matchup bubble (THE MATCHUP BUBBLE), and the Parlay Builder,
-                                 the builder first, its Top 30 lines, their two parts (Player
-                                 lines and Game bets since app v138), the
+                                 the builder first, its Top 50 lines (30 from app v116 to
+                                 v140), their two parts (Player lines and Game bets since app
+                                 v138, the player lines a mix of bet types since app v141), the
                                  totals last, each bet once and a Refresh odds read's lines
                                  kept with their slip line, only DraftKings' markets offered,
                                  no ladder bet anywhere (app v127, and one kept in the
@@ -1481,7 +1489,8 @@ boxes; `off`, the games unticked; `gx`, whether the games list is open): a mix -
 Players only -- which sets five boxes, Moneyline (`ml`), Spread (`ats`), Game total (`total`), Player overs and
 Player unders (a touchdown is an over, as a ladder rung was until app v127 offered none), a box changed by hand lighting the mix it makes, or no mix
 at all (`pbMix` answers `custom` inside; there is no Custom tag); and the week's games still to kick off (away @
-home, the viewer's own time), all ticked to start, with All and None. The **Top 30 lines** are `getPbTop()`
+home, the viewer's own time), all ticked to start, with All and None. The **Top 30 lines** (the Top 50 since app v141,
+its player lines a mix of bet types: **The Top 50's player lines are a mix of bet types**, below) are `getPbTop()`
 (`pbTopBuild`, cached in `PB_TOP_CACHE` on `pbSig()`, the levels' own signature of the week, the games, those
 unticked, the boxes and `pbDataSig`, so ticking back is instant and a press or a kickoff rebuilds it):
 `pbLegs(games, u, {read: true})` on the ticked games, the lists a level is searched from before `pbPool` cuts them
@@ -1490,7 +1499,8 @@ unticked, the boxes and `pbDataSig`, so ticking back is instant and a press or a
 line DraftKings moved**, below), in two parts (app v112, the
 owner's call of 17 October 2026, under **Value picks** above; since app v138 Player lines, up to `PB_TOP_PL`, 20, then
 Game bets to 30, each ranked by expected return at DraftKings' fair chance, then the chance, the lean and `pbOrd`, a
-Value part only from a hook's rows, `getPbTop().parts`): `rows = [...rank(P1), ...rank(P2), ...rank(P3)]
+Value part only from a hook's rows, `getPbTop().parts`; since app v141 up to 40 player lines then Game bets to 50, the
+player lines a mix of bet types, round by round, each type's likeliest first, `pbTypeRounds`): `rows = [...rank(P1), ...rank(P2), ...rank(P3)]
 .slice(0, PB_TOP_N)`, `P1` the Value picks (`pref`), `P2` the thin legs and `P3` the totals (`mkt`), each after
 `once()` (below) and each ranked on its own by `p × dec − 1`, what $1 on the leg is expected to make at the model's
 chance, best first (the lower `pbOrd` on a tie), at most `PB_TOP_N`, 30 (100 until app v113, 50 until app v116), in all: the Value picks, then the other
@@ -2321,7 +2331,8 @@ the higher `pm`, then the over or the home side), with no edge test, no market +
 break a tie of the rounded score by the parlay's summed lean (`pbLean`, `pbEval`'s `ln`, `pbRank`) before the id;
 `spSlotBetter` is as it was. `pbIsValue` needs `l.hook`; `pbRuleOf` reads "least costly · 25%+" (`pbRuleTitle`,
 `pbRuleHtml`) and `pbChanceHtml` the fair chance and "expected −22%" (`small.pb-ev[data-pb-ev]`); `getPbTop().parts` is
-`{value, player, game}`, Player lines up to `PB_TOP_PL` (20) then Game bets to 30; the builder has a Fair column
+`{value, player, game}`, Player lines up to `PB_TOP_PL` (20) then Game bets to 30 (40 and 50 since app v141, the player
+lines a mix of bet types: next); the builder has a Fair column
 (`data-legchance`) and its hero the expected return on the price it pays; a game's page states each line's chance by
 `gpChance`; `spLegOut` and `spTierOut` keep the record's `p` the model's (on `pm`) and mark each level `chance:'fair'`;
 `pbPut` writes `p = pm ?? p` into `S.parlay`. In `tab_elo.html` market + form is gone (`altP`, `eloAltP`, `eloAltZ`,
@@ -2339,6 +2350,22 @@ though as many qualify says what the walk found, `epFitWhy`, "Strongest first, o
 one DraftKings slip: this level takes 4."); `epSlotBetter` takes the larger summed lean. Held by `build.js`'s v138
 guards, the audit's `chanceAud`, `qualAud` and section MC, the nflbets smoke's `chanceOwn`, `qualOwn` and `pbTopOwn`,
 `check_tab.js`'s F1 and F2, `test_suggest_ledger.js` and `smoke_live.js`'s J.
+
+**The Top 50's player lines are a mix of bet types** (app v141, `patch_top_mix.py`, whose docstring is the design and the
+diagnosis; the owner's call of 31 October 2026, "The best few of each type (anytime TD, rushing yards, receiving yards,
+receptions, passing yards, passing TDs), each type's likeliest first. You always see every market", and "maybe expand to
+50"; CLAUDE.md under "Bets and Stats: the loop" has the whole of it). At DraftKings' fair chance every estimated player
+line returns the same on $1 to a few ten-thousandths of a point (the estimate's flat margins: an anytime touchdown
+exactly 1/1.0566 − 1), so ranked by expected return the Player part was the estimate's margins: on 31 October all 20
+qualifying anytime touchdowns ranked ahead of the 397 other player lines. `pbTopBuild` now orders the player lines by
+`pbTypeRounds`: each type (the leg's stat, over and under alike) its own list by `pbByChance` (the chance, the pool copy's
+`p`, to 1e-9; the lean; `pbOrd`), round 1 each type's first, round 2 each type's second, a type run out skipped, a round
+likeliest first, the part that order cut at its length; the Value picks and the game bets are ranked as before (`rank`,
+on the expected return, then `pbByChance`). `PB_TOP_N` is 50 and `PB_TOP_PL` 40. The Player lines list's accessible name
+says "a mix of bet types, each type’s likeliest first"; no other word moved. Held by the audit's `mixAud` in `topFullAud`
+(`holdTop` on the week, M12's case C on made-up lines, MC's ties), `TOP_N_AUD` 50 and `TOP_PL_AUD` 40, and the nflbets
+smoke's `mixOwn` in `pbTopOwn` (its made-up mix of bet types, the each-bet-once fixture's new order and the sixty games
+re-sized for 50), `PB_TOP_N_OWN` 50 and `PB_TOP_PL_OWN` 40, each on its own reading.
 
 Who is playing is decided on every load from the payload, outside `S`: `RSTAT` (the roster
 status by player) and `INJ` (this week's tags: Q, did not practise, limited), with the ruled

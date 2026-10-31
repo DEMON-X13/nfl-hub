@@ -582,11 +582,12 @@ const pbOwnTxt = panel => { if (!panel) return ''; const c = panel.cloneNode(tru
 const PRIME_NIGHT = { 4: 'Thursday night', 0: 'Sunday night', 1: 'Monday night' };
 const PB_TIERS_OWN = ['safe', 'med', 'aggr', 'xtrm'];
 /* (app v113) the Parlay Builder's list is the Top 50 lines (the owner, 17 October 2026: "in parlay builder only do top
-   50 now instead of 100"; the Top 30 since app v116, 18 October 2026: "its only showing top 30, but honestly top 30 is
-   enough if you want to set it at that"), and of the stats the page projects only those DraftKings posts are offered as a bet ("i
+   50 now instead of 100"; the Top 30 from app v116, 18 October 2026: "its only showing top 30, but honestly top 30 is
+   enough if you want to set it at that"; the Top 50 again since app v141, 31 October 2026: "okay lets just build it.
+   maybe expand to 50"), and of the stats the page projects only those DraftKings posts are offered as a bet ("i
    only want to show legs that draft kings does"): targets and FG attempts are projected and never a line, a leg or a
    suggestion anywhere. The smoke's own copies, never read from the page (its PB_TOP_N and NO_BET) */
-const PB_TOP_N_OWN = 30;
+const PB_TOP_N_OWN = 50;
 /* the Top lines' check (holdTop), for the Refresh odds checks far below it */
 let holdTopF = null;
 const NO_BET_OWN = new Set(['targets', 'fg_att']);
@@ -1591,7 +1592,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   const legId = l => l.key + '|' + l.side + '|' + l.k;
   /* the rules a suggestion's leg is held to, worked out here on their own from the page's priced lines
      (pricedLegs, which keeps V6's players who will not play off them: the props audit's own check of that),
-     for the Top 30 lines and for each prime-time game's set alike: its box and its game ticked (u), not
+     for the Top 50 lines and for each prime-time game's set alike: its box and its game ticked (u), not
      kicked off, a real price (or the rule's own from DraftKings' line read on ESPN, on a kind it may take:
      takenRule), and DraftKings' id at its own line wherever the payload carries ids (dkTakes). (app v138, the
      owner's call of 27 October 2026: "Every player leg uses DraftKings' fair chance, as game totals already do; the
@@ -1648,14 +1649,21 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         put(tk, `${c.gid}|total`, { ...c, pm: c.p, p: f.p, thin: false, market: true }); }
       out.mkt.push(...tk.values()); }
     return out; };
-  /* the Top 30 lines, worked out here from qualOwn. (app v138, the owner's call of 27 October 2026) Every leg the ticks
+  /* the Top 50 lines, worked out here from qualOwn. (app v138, the owner's call of 27 October 2026) Every leg the ticks
      make, in parts: a hook's Value picks first (none: no model has earned one, so the part is never drawn), then Player
-     lines, up to 20 (PB_TOP_PL_OWN), then Game bets (the moneylines and spreads, then the totals) to the 30 the list
-     holds (PB_TOP_N_OWN), the player lines taking more where the game bets do not fill it. Ranked as one list the team
-     bets' real prices beat the estimate formula's assumed player margin and would fill it. Each part is ranked by what
-     $1 on it is expected to return at DraftKings' fair chance (its chance times its decimal price, less the $1; to 1e-9),
-     then the chance, then the lean (the amendment's tie-break: the model's chance less the fair chance), then the key,
-     side and line. Each row says its part (data-pb-grp player or game) and its rank, running on across the parts, its
+     lines, up to 40 (PB_TOP_PL_OWN; 20 until app v141), then Game bets (the moneylines and spreads, then the totals) to
+     the 50 the list holds (PB_TOP_N_OWN; 30 until app v141), the player lines taking more where the game bets do not fill
+     it. Ranked as one list the team bets' real prices beat the estimate formula's assumed player margin and would fill it.
+     The Value picks and the Game bets are each ranked by what $1 on it is expected to return at DraftKings' fair chance
+     (its chance times its decimal price, less the $1; to 1e-9), then the chance, then the lean (the amendment's
+     tie-break: the model's chance less the fair chance), then the key, side and line. (app v141, the owner's call of 31
+     October 2026: "The best few of each type (anytime TD, rushing yards, receiving yards, receptions, passing yards,
+     passing TDs), each type's likeliest first. You always see every market") The Player lines are a mix of bet types
+     (mixOwn, the smoke's own reading, never the page's pbTypeRounds): a type is the leg's stat, over and under alike;
+     each type's lines likeliest first (the chance to 1e-9, then the lean, then the key, side and line); each line's place
+     in its type's list is its round, and the lines run round after round, likeliest first within a round. By expected
+     return every estimated player line ties to a few ten-thousandths of a point at its own fair chance (the estimate's
+     flat margins), which put all 20 qualifying anytime touchdowns ahead of the week's other player lines. Each row says its part (data-pb-grp player or game) and its rank, running on across the parts, its
      leg, its price (est. where it is priced from DraftKings' line read on ESPN), a player's projection (a dash for a game
      bet or a touchdown), the fair chance (fairRule) or a dash, what $1 wins and what it is expected to return, no mark,
      and its own Add, 44px, named for the leg; each part under its own heading with its count, each list starting where
@@ -1664,16 +1672,21 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      would let me bet both on the same parlay"): a ladder rung k+ lands exactly when the player's main Over at k-0.5
      does, so where that half-point main Over is among the qualifying legs the rung is left out of every part, and the
      main line kept wherever it is (sameBetOwn); the count left out rides on the list as .same */
-  const PB_TOP_PL_OWN = 20;
+  const PB_TOP_PL_OWN = 40;
   const gameLegOwn = l => ['ml', 'ats', 'total'].includes(l.stat);
   const sameBetOwn = legs => { const half = new Set(legs.filter(l => !gameLegOwn(l) && l.main && l.side === 'over' && Math.abs(+l.k % 1) === 0.5).map(l => `${l.gid}|${l.pid}|${l.stat}|${+l.k + 0.5}`));
     return l => !gameLegOwn(l) && !l.main && l.side === 'over' && half.has(`${l.gid}|${l.pid}|${l.stat}|${+l.k}`); };
-  const pbTopOwn = (u, on) => { const q = qualOwn(u, on), ord = (a, b) => legId(a).localeCompare(legId(b)), same = sameBetOwn([...q.pref, ...q.thin]), K = evKeyOwn;
-    const rank = list => list.filter(x => !same(x.c)).map(x => ({ ...x, win: decOwn(x.c.price) - 1, ev: x.c.p * decOwn(x.c.price) - 1 }))
-      .sort((a, b) => (K(b.ev) - K(a.ev)) || (K(b.c.p) - K(a.c.p)) || (K(leanOwn(b.c)) - K(leanOwn(a.c))) || ord(a.c, b.c));
-    const V = rank(q.pref.map(c => ({ c, grp: 'value', value: true, market: false }))), Pl = rank(q.thin.filter(c => !gameLegOwn(c)).map(c => ({ c, grp: 'player', value: false, market: false })));
+  /* (app v141) likeliest first, and the player lines round by round from each type's own list: a line's round is its place
+     in its type's list (the type its stat), and the lines go by round, then likeliest first */
+  const likelyOwn = (a, b) => (evKeyOwn(b.c.p) - evKeyOwn(a.c.p)) || (evKeyOwn(leanOwn(b.c)) - evKeyOwn(leanOwn(a.c))) || legId(a.c).localeCompare(legId(b.c));
+  const mixOwn = list => { const round = new Map(), n = {}; for (const x of [...list].sort(likelyOwn)) round.set(x, (n[x.c.stat] = (n[x.c.stat] || 0) + 1));
+    return [...list].sort((a, b) => (round.get(a) - round.get(b)) || likelyOwn(a, b)); };
+  const pbTopOwn = (u, on) => { const q = qualOwn(u, on), same = sameBetOwn([...q.pref, ...q.thin]), K = evKeyOwn;
+    const priced = list => list.filter(x => !same(x.c)).map(x => ({ ...x, win: decOwn(x.c.price) - 1, ev: x.c.p * decOwn(x.c.price) - 1 }));
+    const rank = list => priced(list).sort((a, b) => (K(b.ev) - K(a.ev)) || likelyOwn(a, b));
+    const V = rank(q.pref.map(c => ({ c, grp: 'value', value: true, market: false }))), Pl = mixOwn(priced(q.thin.filter(c => !gameLegOwn(c)).map(c => ({ c, grp: 'player', value: false, market: false }))));
     const Gm = [...rank(q.thin.filter(gameLegOwn).map(c => ({ c, grp: 'game', value: false, market: false }))), ...rank(q.mkt.map(c => ({ c, grp: 'game', value: false, market: true })))];
-    /* the split, in the smoke's own steps: the Value picks first (to 30), then the player lines take up to 20 of what is
+    /* the split, in the smoke's own steps: the Value picks first (to 50), then the player lines take up to 40 of what is
        left, the game bets as much of the rest as they have, and the player lines whatever the game bets leave */
     const nV = Math.min(V.length, PB_TOP_N_OWN), room = PB_TOP_N_OWN - nV, nP0 = Math.min(Pl.length, PB_TOP_PL_OWN, room), nG = Math.min(Gm.length, room - nP0), nP = Math.min(Pl.length, room - nG);
     const top = [...V.slice(0, nV), ...Pl.slice(0, nP), ...Gm.slice(0, nG)]; top.full = V.length + Pl.length + Gm.length; top.parts = { value: nV, player: nP, game: nG };
@@ -1712,7 +1725,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   let MU_NOW = null; if (typeof w.eloFiles === 'function') Promise.resolve(w.eloFiles()).then(F => { MU_NOW = F && F.mu || null; }, () => {});
   const money1 = v => (v < -0.0005 ? '−' : '+') + '$' + Math.abs(v).toFixed(2);
   const addName = (l, on) => `${on ? 'Remove' : 'Add'} ${l.name}, ${l.label}, ${on ? 'from' : 'to'} the builder`;
-  /* (app v139) what a Top 30 projection counts, the smoke's own copy */
+  /* (app v139) what a Top 50 projection counts, the smoke's own copy */
   const UNIT_OWN = { passing_yards: 'yds', rushing_yards: 'yds', receiving_yards: 'yds', scrim_yards: 'yds', receptions: 'catches', passing_tds: 'TDs', attempts: 'att', completions: 'comp', passing_interceptions: 'INTs', carries: 'carries', targets: 'targets', fg_made: 'FGs', fg_att: 'FG att', kick_pts: 'pts', any_td: 'TDs' };
   let SORT_HELD = false;
   const holdTop = (lab, u, on) => {
@@ -1721,7 +1734,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     if (!want.length) { const none = panel.querySelector('.pb-top-none');
       chk(!rows.length && !!none && txt(none).length > 20 && !/NaN|undefined/.test(txt(none)), `${lab}: nothing qualifies on the ticks and the list draws rows, or does not say why: ${none ? txt(none) : rows.length + ' rows'}`); return 0; }
     if (rows.length !== want.length) bad.push(`${rows.length} rows where ${want.length} lines qualify`);
-    /* the Top 30: at most 30 rows, and where more lines qualify, exactly the parts' first 30 by the split (the rows below
+    /* the Top 50: at most 50 rows, and where more lines qualify, exactly the parts' first 50 by the split (the rows below
        each held to its rank there), under a heading that says so */
     { const h2 = panel.querySelector('#pbCard > .pb-hd h2');
       chk(rows.length <= PB_TOP_N_OWN && want.length === Math.min(PB_TOP_N_OWN, want.full) && !!h2 && txt(h2) === `Top ${PB_TOP_N_OWN} lines`,
@@ -1763,24 +1776,24 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (panel.querySelector('[data-pb-novalue], [data-pb-sec="other"], [data-pb-grp="other"]') || /No line on your picks is a Value pick|Other lines/.test(pbOwnTxt(panel))) bad.push('the list still draws the Other lines part or the line saying no line is a Value pick');
       if (/The model rates each at least 3 points above|These miss a Value pick’s bar|A suggested parlay takes them only where|far off the market|Loading Elo ratings/.test(pbOwnTxt(panel))) bad.push('the list still says what a Value pick is, what the other lines miss, how many lines it left out far off the market, or that the Elo ratings are loading');
       if (OLD_TAG.test(pbOwnTxt(panel)) || panel.querySelector('.pb-thinmark')) bad.push('the panel still speaks of thin edge or no edge: ' + (pbOwnTxt(panel).match(/.{0,60}(thin[ -]edge|no edge).{0,40}/i) || [''])[0]); }
-    chk(!bad.length, `${lab}: the Top 30 lines are not every qualifying line in their parts (Player lines up to ${PB_TOP_PL_OWN}, then Game bets, the totals last), each ranked by what $1 on it is expected to return at DraftKings' fair chance, the ranks running on, each with its numbers, unmarked, and its own Add: ` + bad.slice(0, 3).join('; '));
+    chk(!bad.length, `${lab}: the Top ${PB_TOP_N_OWN} lines are not every qualifying line in their parts (Player lines up to ${PB_TOP_PL_OWN}, a mix of bet types round by round, each type likeliest first; then Game bets by what $1 on each is expected to return at DraftKings' fair chance, the totals last), the ranks running on, each with its numbers, unmarked, and its own Add: ` + bad.slice(0, 3).join('; '));
     /* the order as drawn: the player lines, then the moneylines and spreads, then the totals, never a line of an earlier
        part after one of a later; and each bet once: no row is a ladder rung k+ whose same bet, the player's main Over at
        k-0.5 on a half-point line, is among the qualifying legs, and the page's count of the rungs it left out (getPbTop's
        same) is the one worked out here */
     { const partOf = r => { const b = r.querySelector('button[data-pb-leg]'); return r.dataset.pbGrp === 'value' ? 0 : r.dataset.pbGrp === 'player' ? 1 : b && /\|game\|total$/.test(b.dataset.pbLeg) ? 3 : 2; };
       const NAMES = ['a Value pick', 'a player line', 'a team bet', 'a total'], parts = rows.map(partOf), back = parts.findIndex((x, i) => i > 0 && x < parts[i - 1]);
-      chk(back < 0, `${lab}: the Top 30 lines are not the player lines, then the team bets, then the totals: row ${back + 1} (${back < 0 ? '' : NAMES[parts[back]]}) follows ${back < 0 ? '' : NAMES[parts[back - 1]]}`);
+      chk(back < 0, `${lab}: the Top 50 lines are not the player lines, then the team bets, then the totals: row ${back + 1} (${back < 0 ? '' : NAMES[parts[back]]}) follows ${back < 0 ? '' : NAMES[parts[back - 1]]}`);
       const half = new Set([...want.q.pref, ...want.q.thin].filter(l => !gameLegOwn(l) && l.main && l.side === 'over' && Math.abs(+l.k % 1) === 0.5).map(l => `${l.key}|${+l.k + 0.5}`));
       const twice = rows.map(r => r.querySelector('button[data-pb-leg]')).filter(b => b && b.dataset.side === 'over' && half.has(`${b.dataset.pbLeg}|${+b.dataset.k}`));
       const got = w.eval('typeof getPbTop') === 'function' ? w.eval('getPbTop()').same : undefined;
-      chk(!twice.length && got === want.same, `${lab}: the Top 30 lines list a bet twice, a ladder rung beside the same bet's half-point main Over (${twice.slice(0, 3).map(b => b.dataset.pbLeg + ' ' + b.dataset.k + '+').join(', ') || 'none'}), or the page counts ${got} rungs left out where ${want.same} are`); }
+      chk(!twice.length && got === want.same, `${lab}: the Top 50 lines list a bet twice, a ladder rung beside the same bet's half-point main Over (${twice.slice(0, 3).map(b => b.dataset.pbLeg + ' ' + b.dataset.k + '+').join(', ') || 'none'}), or the page counts ${got} rungs left out where ${want.same} are`); }
     /* (app v112 to v129) a lead over the choices and a foot under the list said the order, the bar, the totals last and
        (app v127) that no ladder bet is listed; since app v130 (the owner's call of 22 October 2026: no descriptions)
        neither is drawn */
     { const ownT = pbOwnTxt(panel);
       chk(!panel.querySelector('.pb-lead, .pb-foot') && !/Choose what to build from|Every line has DraftKings’ own price|The Value picks come first|lines at most|no ladder bets, such as|Each bet is listed once|yards ladders/.test(ownT),
-        `${lab}: the Top 30 lines still draw their lead or foot: ${(ownT.match(/.{0,60}(Choose what to build from|Every line has DraftKings’ own price|The Value picks come first|lines at most|no ladder bets|Each bet is listed once|yards ladders).{0,60}/) || [''])[0]}`); }
+        `${lab}: the Top 50 lines still draw their lead or foot: ${(ownT.match(/.{0,60}(Choose what to build from|Every line has DraftKings’ own price|The Value picks come first|lines at most|no ladder bets|Each bet is listed once|yards ladders).{0,60}/) || [''])[0]}`); }
     return want.length; };
   holdTopF = holdTop;
   /* the panel holds on whatever the week offers: the mix sets the boxes, every tier is its legs or says
@@ -1875,7 +1888,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
               if (arr(k) !== (dir > 0 ? '▼' : '▲') || ['price', 'proj', 'fair', 'win', 'ev'].some(c => c !== k && arr(c) !== '⇅')) bad.push(`${k} ${dir > 0 ? 'highest' : 'lowest'} first: its arrow reads ${arr(k)}, the others ${['price', 'proj', 'fair', 'win', 'ev'].map(arr).join(' ')}`);
               if (!ok || b.getAttribute('aria-pressed') !== 'true' || d.activeElement !== b || rowsP().length !== R0.length || ranks().split(',').sort().join() !== base.split(',').sort().join()) bad.push(`${k} ${dir > 0 ? 'highest' : 'lowest'} first: ${v.slice(0, 8).join(',')}, pressed ${b.getAttribute('aria-pressed')}, focus ${d.activeElement === b}`); } }
           press('rank'); if (ranks() !== base) bad.push(`Rank does not put the order back: ${ranks()} where ${base}`);
-          chk(!bad.length, `${lab}: the Top 30's player lines do not wear their clubs, units and sort: ${bad.slice(0, 4).join('; ')}`); } }
+          chk(!bad.length, `${lab}: the Top 50's player lines do not wear their clubs, units and sort: ${bad.slice(0, 4).join('; ')}`); } }
       /* (app v125) with player bets ticked and no player line priced on the ticked games, the list (its note, or with no
          line at all its empty line) and every empty level say why in the page's words (its pbNoPl, worked out here:
          no player lines with the time DraftKings' lines were last read from ESPN, or that they have not been read yet;
@@ -2363,12 +2376,12 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         hold('this week, Moneyline only');
         /* and no box at all: the list says to tick one */
         d.querySelector('#pbPanel [data-pb-kind="ml"]').click(); await wait(20);
-        chk(KINDS.every(k => !U().k[k]) && !panel.querySelector('ol.pb-top li') && /^No bet types ticked/.test(txt(panel.querySelector('.pb-top-none'))), 'with no bet type ticked the Top 30 lines draw a line, or do not say to tick one');
+        chk(KINDS.every(k => !U().k[k]) && !panel.querySelector('ol.pb-top li') && /^No bet types ticked/.test(txt(panel.querySelector('.pb-top-none'))), 'with no bet type ticked the Top 50 lines draw a line, or do not say to tick one');
         d.querySelector('#pbPanel [data-pb-mix="all"]').click(); await wait(20); }
       /* one game ticked: every leg from it */
       d.querySelector('#pbPanel [data-pb-games="none"]').click(); await wait(20);
       chk(w.eval('getPbTiers()').tiers.every(t => !t.legs && /No games ticked/.test(t.why)) && !panel.querySelector('ol.pb-top li') && /^No games ticked/.test(txt(panel.querySelector('.pb-top-none'))),
-        'None did not leave every tier, and the Top 30 lines, saying no game is ticked');
+        'None did not leave every tier, and the Top 50 lines, saying no game is ticked');
       d.querySelector(`#pbPanel [data-pb-game="${games[0].id}"]`).click(); await wait(20);
       hold('one game');
       d.querySelector('#pbPanel [data-pb-games="all"]').click(); await wait(20);
@@ -2617,7 +2630,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
          through the redraw; a second press takes it off */
       { const keepP = w.eval('JSON.stringify(S.parlay)'); w.eval('S.parlay={}; save(); renderParlay()'); await wait(30);
         const b0 = panel.querySelector('ol.pb-top li [data-pb-leg]'), row = pbTopOwn(U(), games.filter(g => !U().off.includes(g.id)))[0];
-        if (!b0 || !row) chk(false, 'with made-up lines on every starter the Top 30 lines are empty, so no line\'s Add can be pressed');
+        if (!b0 || !row) chk(false, 'with made-up lines on every starter the Top 50 lines are empty, so no line\'s Add can be pressed');
         else { const l = row.c; b0.focus(); b0.click(); await wait(40);
           const P = w.eval('S').parlay, x = P[l.key], b1 = panel.querySelector('ol.pb-top li [data-pb-leg]');
           /* (app v138) the builder holds the leg at the model's chance (its p), the row's pool copy stating DraftKings' fair
@@ -2853,7 +2866,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             w.eval('renderParlay(); renderSp()'); await wait(40);
             chk(!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`) && w.eval('getPbTiers()').tiers.every(x => !x.legs || x.legs.every(l => l.gid !== g0.id))
               && ![...panel.querySelectorAll('ol.pb-top [data-pb-leg]')].some(b => b.dataset.pbLeg.startsWith(g0.id + '|')) && !spOf(g0.id) && !w.eval('spGames()').some(g => g.id === g0.id),
-              `${g0.id}, kicked off, is still on the Parlay Builder's list of games, in a tier, on the Top 30 lines or on Suggested Parlays`); }
+              `${g0.id}, kicked off, is still on the Parlay Builder's list of games, in a tier, on the Top 50 lines or on Suggested Parlays`); }
           finally { w.Date = D0; if (stood) w.eval('spOn=window.__spOnKick; delete window.__spOnKick');
             w.eval('SP_SHOWN=null; renderParlay(); renderSp()'); await wait(40); } } }
       if (planted) { for (const x of planted) Object.assign(x.g, x.was); w.eval('SP_CACHE=new Map()'); }
@@ -2897,7 +2910,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      parlay of their size; Safe is the likeliest pair and Extreme its least costly over 5% (one even cover with the four
      odd ones, each of the four even ones landing it over 5% at the same cost, so the model's lean breaks the tie, the
      amendment's rule: H6, the model 3 points over its fair chance where every other cover is 2, the last of the four by
-     the search's own tie-break, the lower id). The Top 30 lines on them are the ten covers by what $1 on each is expected to return,
+     the search's own tie-break, the lower id). The Top 50 lines on them are the ten covers by what $1 on each is expected to return,
      the even games first, then the odd, then the two at 1.09, each three tied on it in the order of their chances */
   if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepU = JSON.stringify(Sx.ui.pb);
     w.__pbKeep4 = w.eval('[pbGames, pricedLegs]');
@@ -2918,11 +2931,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     chk(kinds === 'built,likeliest,likeliest,built' && r.tiers.every(t => t.legs && t.legs.length === t.n),
       `ten made-up games with only Spread ticked: the levels are ${kinds}, not Safe and Extreme built with Medium and Aggressive the likeliest of their size`);
     chk(!d.querySelector('#pbPanel [data-pb-mix].on') && !d.querySelector('#pbPanel .pb-custom') && !/\bCustom\b/.test(txt(panel)), 'ten made-up games with only Spread ticked: a mix is lit or a Custom tag shows');
-    /* the Top 30 lines on the ten covers, ranked here by hand: what $1 is expected to return, 1/1.02 - 1 = -$0.02 for the
+    /* the Top 50 lines on the ten covers, ranked here by hand: what $1 is expected to return, 1/1.02 - 1 = -$0.02 for the
        even games first (tied on it, the higher chance first), then the odd ones, the two at 1.09 last */
     { const n = holdTop('ten made-up games, Spread only', Sx.ui.pb, G), order = [...panel.querySelectorAll('ol.pb-top li [data-pb-leg]')].map(b => b.dataset.pbLeg.split('|')[1].replace('team:', ''));
       chk(n === 10 && order.join() === 'H0,H2,H4,H6,H1,H3,H5,H7,H8,H9' && txt(panel.querySelector('ol.pb-top li .pb-tc:nth-child(5) b')) === '−$0.02',
-        'ten made-up games: the Top 30 lines are not the ten covers best first by what $1 is expected to return at DraftKings\' fair chance (H0, H2, H4, H6 summing to 1.02, then the 1.06s, the 1.09s last): ' + order.join()); }
+        'ten made-up games: the Top 50 lines are not the ten covers best first by what $1 is expected to return at DraftKings\' fair chance (H0, H2, H4, H6 summing to 1.02, then the 1.06s, the 1.09s last): ' + order.join()); }
     /* the likeliest 3 and 4 legs are the three and four likeliest covers (a plain product, legs in different games), and
        no parlay of their size lands likelier; the best-paying 3 and 4 are the even covers, so the case tells a fallback
        by return from the likeliest; and Extreme the least costly parlay of five over 5%, H6 with the four odd covers */
@@ -2981,7 +2994,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     w.eval('pbGames=window.__pbKeep4[0]; pricedLegs=window.__pbKeep4[1]; PB_CACHE=new Map(); PB_TOP_CACHE=new Map();'); delete w.__pbKeep4; delete w.__pb4; Sx.sched.splice(n4, Sx.sched.length - n4);
     Sx.ui.pb = JSON.parse(keepU); w.eval('renderParlay()'); await wait(20); }
   /* ---- each bet once, and the game bets after the player lines (app v112, round two: the owner, 17 October 2026, "why
-     there are several instances of this where it's only a half yard difference?"; app v138, the Top 30 in parts), on
+     there are several instances of this where it's only a half yard difference?"; app v138, the Top 50 in parts), on
      made-up games of their own: pbGames and pricedLegs stood in for, each in its own slot and put back whatever happens,
      so this holds on any day, the off-season included. (app v138) Each line is stated at DraftKings' fair chance, so the
      fixture is planted on prices: every main line has both its prices in the market table (PAY.mkt, as the price pull
@@ -2989,16 +3002,23 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      implied chances summed, less 1; a rung is priced on one side, its fair chance its price over the week's typical
      player overround (V), so every rung returns 1/V - 1 whatever its price, and rungs tie on it, the shorter price (the
      higher chance) first, then the model's lean. Twenty-five two-sided lines of the smoke's own at -120 each way go in
-     the table too, so V sits at 1.09 or so (a real week's DraftKings lines run 1.045 and up) above every main line here
-     (1.015 to 1.034), and the rungs rank after them. The first game: a quarterback's main Over 224.5 passing yards and
+     the table too, which is the fixture's alone for the run (since app v141; until then they were added to the week's
+     real lines), so V is 1.0909, the median of its 29 lines, above every main line here (1.015 to 1.034), on any
+     payload, and the rungs rank after them. The first game: a quarterback's main Over 224.5 passing yards and
      his 225+ rung, the same bet (the rung left out); another's whole-number main Over 225 and his 226+ rung, two bets
      (both kept); a receiver's main Over 49.5 receiving yards and his 50+ rung (the rung left out); a back's main Under
      59.5 and his 60+ rung (both kept: the main line is an Under); a rung of a receiver with no main line (kept); and its
      game total priced on its over alone at +120, put at its own 50%, expected to return $0.10 on $1, more than any
      player line, which comes after them all, a game bet. The second game: a 225+ rung of the first quarterback's id
-     (kept: another game). The order worked out here by hand: the back's Under (overround 1.0148), the first quarterback's
-     Over 224.5 (1.0196), the second's Over 225 (1.0291), the receiver's Over 49.5 (1.0338), then the three rungs at -110
-     by the model's lean (the back's 60+, the other game's 225+, the receiver's 70+), the 226+ at -108, then the total */
+     (kept: another game). (app v141) The player lines are a mix of bet types, round by round, each type likeliest first
+     (by the expected return, the order until then, the back's Under came first, its overround 1.0148 the least). The
+     chances: the first quarterback's Over 224.5 and the back's Under 50% each (both -104 or -103 each way), the
+     receiver's Over 49.5 49.774%, the second quarterback's Over 225 49.771%, each rung at -110 0.5238 over V (about
+     48.1%), the 226+ at -108 0.5192 over V (about 47.6%). The order worked out here by hand: round 1, the first
+     quarterback's Over 224.5 and the back's Under (tied at 50%, the quarterback leaning 10 points to the back's 8), then
+     the receiver's Over 49.5; round 2, the second quarterback's Over 225, then the back's 60+ and the receiver's 70+ (tied
+     at -110, by the lean, 9 points to 5); round 3 the other game's 225+ (the passing yards' third); round 4 the 226+;
+     then the total */
   if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepU5 = JSON.stringify(Sx.ui.pb), wk5 = String(cw).padStart(2, '0');
     const O1 = { id: `2099_${wk5}_A40_H40`, w: cw, a: 'A40', h: 'H40', d: '2099-01-02', t: '13:00', tot: 47.5, tov: 120 }, O2 = { id: `2099_${wk5}_A41_H41`, w: cw, a: 'A41', h: 'H41', d: '2099-01-02', t: '16:25' };
     const pl = (g, pid, grp, stat, k, main, side, p, price, label) => ({ key: `${g.id}|${pid}|${stat}`, gid: g.id, pid, stat, k, side, main, p, price, src: 'real', mu: null,
@@ -3008,8 +3028,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       pl(O1, 'ONCE-WR1', 'WR', 'receiving_yards', 49.5, true, 'over', 0.54, -106, 'Over 49.5 receiving yards'), pl(O1, 'ONCE-WR1', 'WR', 'receiving_yards', 50, false, 'over', 0.61, -110, '50+ receiving yards'),
       pl(O1, 'ONCE-RB1', 'RB', 'rushing_yards', 59.5, true, 'under', 0.58, -103, 'Under 59.5 rushing yards'), pl(O1, 'ONCE-RB1', 'RB', 'rushing_yards', 60, false, 'over', 0.57, -110, '60+ rushing yards'),
       pl(O1, 'ONCE-WR2', 'WR', 'receiving_yards', 70, false, 'over', 0.53, -110, '70+ receiving yards'), pl(O2, 'ONCE-QB1', 'QB', 'passing_yards', 225, false, 'over', 0.56, -110, '225+ passing yards')];
-    const WANT5 = [[O1, 'ONCE-RB1', 'rushing_yards', 'under', 59.5], [O1, 'ONCE-QB1', 'passing_yards', 'over', 224.5], [O1, 'ONCE-QB2', 'passing_yards', 'over', 225], [O1, 'ONCE-WR1', 'receiving_yards', 'over', 49.5],
-      [O1, 'ONCE-RB1', 'rushing_yards', 'over', 60], [O2, 'ONCE-QB1', 'passing_yards', 'over', 225], [O1, 'ONCE-WR2', 'receiving_yards', 'over', 70], [O1, 'ONCE-QB2', 'passing_yards', 'over', 226],
+    const WANT5 = [[O1, 'ONCE-QB1', 'passing_yards', 'over', 224.5], [O1, 'ONCE-RB1', 'rushing_yards', 'under', 59.5], [O1, 'ONCE-WR1', 'receiving_yards', 'over', 49.5],
+      [O1, 'ONCE-QB2', 'passing_yards', 'over', 225], [O1, 'ONCE-RB1', 'rushing_yards', 'over', 60], [O1, 'ONCE-WR2', 'receiving_yards', 'over', 70],
+      [O2, 'ONCE-QB1', 'passing_yards', 'over', 225], [O1, 'ONCE-QB2', 'passing_yards', 'over', 226],
       [O1, 'game', 'total', 'over', 47.5]].map(([g, pid, st, sd, k]) => `${g.id}|${pid}|${st} ${sd} ${k}`).join(', ');
     /* each main line's two prices in the market table, and the smoke's own -120/-120 lines to set V; all taken out after */
     const MK5 = [['ONCE-QB1', 'passing_yards', 224.5, -104, -104], ['ONCE-QB2', 'passing_yards', 225, -105, -107], ['ONCE-WR1', 'receiving_yards', 49.5, -106, -108], ['ONCE-RB1', 'rushing_yards', 59.5, -103, -103],
@@ -3018,7 +3039,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     w.__pbKeep5 = w.eval('[pbGames, pricedLegs]'); w.__pb5 = { G: [O1, O2], L: L5 };
     try {
       w.eval('pbGames=function(){ return window.__pb5.G; }; pricedLegs=function(games){ return window.__pb5.L.filter(l=>(games||[]).some(g=>g.id===l.gid)).map(l=>({...l})); };');
-      w.eval(`(function(){ PAY.mkt=PAY.mkt||{}; const M=(PAY.mkt[${cwS}]=PAY.mkt[${cwS}]||{}); for(const [pid,st,line,over,under] of ${JSON.stringify(MK5)}) ((M[pid]??={})[st])={line,over,under,n:10,g:${JSON.stringify(O1.id)}}; })()`);
+      /* (app v141) the week's market table is the fixture's own for the run (the week's real lines set aside and put back
+         after), so V is the fixture's (the median of its 29 lines, 1.0909) on any payload: on a week of paid prices the real
+         lines' overround (about 1.05) set it, a rung at -110 then 0.5238 over 1.05, more likely than the second
+         quarterback's Over 225, and the mix's rounds, which read the chance, came out another way */
+      w.eval(`(function(){ PAY.mkt=PAY.mkt||{}; window.__mk5Keep=Object.prototype.hasOwnProperty.call(PAY.mkt,${cwS})?{v:PAY.mkt[${cwS}]}:null; const M=(PAY.mkt[${cwS}]={}); for(const [pid,st,line,over,under] of ${JSON.stringify(MK5)}) ((M[pid]??={})[st])={line,over,under,n:10,g:${JSON.stringify(O1.id)}}; })()`);
       const tl = w.eval('totalLeg')(O1, 'over');
       w.eval(`PAY.dk=${JSON.stringify(dkFixture([...L5, tl].filter(Boolean), new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'ONCE'))}`);
       Sx.ui.pb = { k: { ml: true, ats: true, total: true, over: true, under: true }, off: [], gx: false };
@@ -3031,34 +3056,108 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const n = holdTop('made-up games, each bet once and the game bets last', Sx.ui.pb, [O1, O2]);
       const got = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')].map(r => { const b = r.querySelector('button[data-pb-leg]'); return b ? `${b.dataset.pbLeg} ${b.dataset.side} ${b.dataset.k}` : 'no leg'; }).join(', ');
       const grps = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')].map(r => r.dataset.pbGrp).join();
-      chk(!!tl && tl.src === 'real' && tl.p === 0.5 && V5 > 1.04 && n === 9 && got === WANT5 && grps === 'player,player,player,player,player,player,player,player,game' && w.eval('getPbTop()').same === 2,
-        `made-up games: the Top 30 lines are not the four main lines by their overround, the four rungs (the shorter price first, then the model's lean) and then the one-sided total at +120, with the two rungs that are the same bet as a half-point main Over left out (${w.eval('getPbTop()').same} counted left out; V ${V5}): ` + got + ' / ' + grps);
+      chk(!!tl && tl.src === 'real' && tl.p === 0.5 && V5 > 1.06 && n === 9 && got === WANT5 && grps === 'player,player,player,player,player,player,player,player,game' && w.eval('getPbTop()').same === 2,
+        `made-up games: the Top 50 lines are not the player lines a mix of bet types (round 1 the Over 224.5, the Under and the Over 49.5; round 2 the Over 225, the 60+ and the 70+; then the 225+ and the 226+) and then the one-sided total at +120, with the two rungs that are the same bet as a half-point main Over left out (${w.eval('getPbTop()').same} counted left out; V ${V5}, over 1.06 so every rung is less likely than every main line): ` + got + ' / ' + grps);
     } finally {
       w.eval('pbGames=window.__pbKeep5[0]; pricedLegs=window.__pbKeep5[1]'); delete w.__pbKeep5; delete w.__pb5;
       w.eval(`(function(){ const k=${keep5.dk}; if(k===null) delete PAY.dk; else PAY.dk=k;
-        const M=PAY.mkt&&PAY.mkt[${cwS}]; if(M) for(const [pid] of ${JSON.stringify(MK5)}) delete M[pid];
-        if(!${keep5.hadW}&&PAY.mkt) delete PAY.mkt[${cwS}]; if(!${keep5.hadMkt}) delete PAY.mkt; })()`);
+        if(PAY.mkt&&('__mk5Keep' in window)){ if(window.__mk5Keep) PAY.mkt[${cwS}]=window.__mk5Keep.v; else delete PAY.mkt[${cwS}]; } delete window.__mk5Keep;
+        if(!${keep5.hadMkt}) delete PAY.mkt; })()`);
       Sx.ui.pb = JSON.parse(keepU5); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(20); } }
-  /* ---- the Top 30 (50 from app v113, the owner, 17 October 2026: "in parlay builder only do top 50 now instead of 100";
-     30 since app v116, the owner, 18 October 2026: "its only showing top 30, but honestly top 30 is enough if you want to
+  /* ---- the Top 50's player lines a mix of bet types (app v141, the owner's call of 31 October 2026: "The best few of each
+     type (anytime TD, rushing yards, receiving yards, receptions, passing yards, passing TDs), each type's likeliest first.
+     You always see every market"), on a made-up game of its own (on the schedule for the check, pbGames and pricedLegs
+     stood in for, each in its own slot and put back whatever happens, so this holds on any day, the off-season
+     included). Every player line is a main line priced both ways in the market table at an overround of 1.05, its own
+     side at q times 1.05, so its fair chance is q and what $1 on it is expected to return is 1/1.05 - 1 whatever q is: by
+     expected return, the order until app v141, every line ties, as every estimated line of a real week does, and the
+     order falls to the chance alone across the types. The lines (q, the model's lean): eight receptions (more than the
+     rest; overs and unders by turns, 80% down 2 points a line, leaning 1), three receiving yards (79%; 70% leaning 3;
+     55%), four rushing yards (78%; 70% leaning 5; an Under at 70% leaning 2; 60%), two passing yards (77% leaning
+     nothing; 74%), one passing touchdowns line (77% leaning nothing: fewer than its round, and tied with the passing
+     yards' first on the chance and the lean), and an anytime touchdown at +200 (under 45% at any overround: a type with
+     none), with the game's home side to win. The order worked out here by hand: round 1, receptions 80%, receiving 79%,
+     rushing 78%, then the passing touchdowns and the passing yards at 77% (tied, by the key: MIX-P0 before MIX-Y0);
+     round 2, receptions 78% (an Under), passing yards 74%, then rushing and receiving at 70% (tied, by the lean, 5 points
+     to 3: an order that is not round 1's order of the types, so a round left unsorted fails it); round 3, receptions
+     76%, the rushing Under at 70%, receiving 55%; round 4, receptions 74%, rushing 60%; then the receptions alone; then
+     the money line, a game bet ---- */
+  if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepUm = JSON.stringify(Sx.ui.pb), wkm = String(cw).padStart(2, '0'), cwSm = JSON.stringify(String(cw));
+    const amerM = q => q >= 0.5 ? -100 * q / (1 - q) : 100 * (1 - q) / q, impM = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), VM = 1.05;
+    const GM = { id: `2099_${wkm}_A50_H50`, w: cw, a: 'A50', h: 'H50', d: '2099-01-05', t: '13:00', mlh: -110, mla: amerM(1.04 - impM(-110)) };
+    /* [pid, stat, line, side, q, lean, words, position] */
+    const SPEC_M = [...[...Array(8)].map((_, i) => [`MIX-C${i}`, 'receptions', 4.5, i % 2 ? 'under' : 'over', 0.80 - 0.02 * i, 0.01, 'receptions', 'WR']),
+      ['MIX-V0', 'receiving_yards', 50.5, 'over', 0.79, 0.01, 'receiving yards', 'WR'], ['MIX-V1', 'receiving_yards', 50.5, 'over', 0.70, 0.03, 'receiving yards', 'WR'], ['MIX-V2', 'receiving_yards', 50.5, 'over', 0.55, 0.01, 'receiving yards', 'WR'],
+      ['MIX-R0', 'rushing_yards', 40.5, 'over', 0.78, 0.01, 'rushing yards', 'RB'], ['MIX-R1', 'rushing_yards', 40.5, 'over', 0.70, 0.05, 'rushing yards', 'RB'], ['MIX-R2', 'rushing_yards', 40.5, 'under', 0.70, 0.02, 'rushing yards', 'RB'], ['MIX-R3', 'rushing_yards', 40.5, 'over', 0.60, 0.01, 'rushing yards', 'RB'],
+      ['MIX-Y0', 'passing_yards', 230.5, 'over', 0.77, 0, 'passing yards', 'QB'], ['MIX-Y1', 'passing_yards', 230.5, 'over', 0.74, 0.01, 'passing yards', 'QB'],
+      ['MIX-P0', 'passing_tds', 1.5, 'over', 0.77, 0, 'passing TDs', 'QB']];
+    const LM = [...SPEC_M.map(([pid, stat, k, side, q, lean, words, pos]) => ({ key: `${GM.id}|${pid}|${stat}`, gid: GM.id, pid, stat, k, side, main: true, p: +(q + lean).toFixed(6), price: amerM(q * VM), src: 'real', mu: k + 2,
+        name: 'Mix ' + pid.slice(4), pos, grp: pos, team: GM.h, opp: GM.a, week: cw, label: `${side === 'under' ? 'Under' : 'Over'} ${k} ${words}`, other: amerM((1 - q) * VM) })),
+      { key: `${GM.id}|MIX-T0|any_td`, gid: GM.id, pid: 'MIX-T0', stat: 'any_td', k: 1, side: 'over', main: false, p: 0.40, price: 200, src: 'real', mu: null, name: 'Mix T0', pos: 'RB', grp: 'RB', team: GM.h, opp: GM.a, week: cw, label: 'Scores a touchdown' },
+      { key: `${GM.id}|team:${GM.h}|ml`, gid: GM.id, pid: 'team:' + GM.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.55, price: -110, src: 'real', mu: null, name: 'Made-up ' + GM.h, pos: 'Game', grp: 'TEAM', team: GM.h, opp: GM.a, week: cw, label: 'To win' }];
+    const idM = (pid, stat, side, k) => `${GM.id}|${pid}|${stat} ${side} ${k}`, sp = pid => SPEC_M.find(x => x[0] === pid), byPid = pid => { const x = sp(pid); return idM(x[0], x[1], x[3], x[2]); };
+    const HAND_M = [...['MIX-C0', 'MIX-V0', 'MIX-R0', 'MIX-P0', 'MIX-Y0', 'MIX-C1', 'MIX-Y1', 'MIX-R1', 'MIX-V1', 'MIX-C2', 'MIX-R2', 'MIX-V2', 'MIX-C3', 'MIX-R3', 'MIX-C4', 'MIX-C5', 'MIX-C6', 'MIX-C7'].map(byPid), `${GM.id}|team:${GM.h}|ml over 0`];
+    const keepDkM = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), hadM = { mkt: w.eval('!!PAY.mkt'), w: w.eval(`!!(PAY.mkt&&PAY.mkt[${cwSm}])`) }, n0m = Sx.sched.length;
+    w.__pbKeepM = w.eval('[pbGames, pricedLegs]'); w.__pbM = { G: [GM], L: LM };
+    try {
+      Sx.sched.push(GM);
+      w.eval(`(function(){ PAY.mkt=PAY.mkt||{}; const M=(PAY.mkt[${cwSm}]=PAY.mkt[${cwSm}]||{}); for(const l of ${JSON.stringify(LM.filter(l => l.other != null))}) ((M[l.pid]??={})[l.stat])={line:l.k,over:l.side==='under'?l.other:l.price,under:l.side==='under'?l.price:l.other,n:10,g:l.gid}; })()`);
+      w.eval('pbGames=function(){ return window.__pbM.G; }; pricedLegs=function(games){ return window.__pbM.L.filter(l=>(games||[]).some(g=>g.id===l.gid)).map(l=>{ const c={...l}; delete c.other; return c; }); };');
+      w.eval(`PAY.dk=${JSON.stringify(dkFixture(LM, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'MIX'))}`);
+      Sx.ui.pb = { k: { ml: true, ats: true, total: true, over: true, under: true }, off: [], gx: false };
+      w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(40);
+      const own = pbTopOwn(Sx.ui.pb, [GM]), idOf = x => `${x.c.key} ${x.c.side} ${x.c.k}`, plOwn = own.filter(x => x.grp === 'player');
+      /* the case can tell: the player lines by expected return (the order until app v141: every one ties on it, so the
+         chance, the lean and the key decide, across the types), and the rounds each left in round 1's order of the types,
+         are each another order than the hand's */
+      const K = evKeyOwn, byEv = [...plOwn].sort((a, b) => (K(b.ev) - K(a.ev)) || (K(b.c.p) - K(a.c.p)) || (K(leanOwn(b.c)) - K(leanOwn(a.c))) || legId(a.c).localeCompare(legId(b.c))).map(idOf);
+      const r1 = []; for (const x of plOwn) if (!r1.includes(x.c.stat)) r1.push(x.c.stat);
+      const lists = r1.map(t => plOwn.filter(x => x.c.stat === t)), flat = []; for (let i = 0; lists.some(L => i < L.length); i++) for (const L of lists) if (i < L.length) flat.push(idOf(L[i]));
+      const hp = HAND_M.slice(0, 18).join();
+      chk(own.map(idOf).join() === HAND_M.join() && new Set(plOwn.map(x => K(x.ev))).size === 1 && byEv.join() !== hp && flat.join() !== hp && !own.some(x => x.c.stat === 'any_td'),
+        `made-up lines, a mix of bet types: the smoke's own rule gives ${own.map(idOf).map(x => x.split('|')[1]).join(', ')} where the hand has ${HAND_M.map(x => x.split('|')[1]).join(', ')}, or the case cannot tell it from the order by expected return (every line tied on it: ${new Set(plOwn.map(x => K(x.ev))).size} values) or from rounds left in round 1's order of the types`);
+      const n = holdTop('made-up lines, a mix of bet types', Sx.ui.pb, [GM]);
+      const got = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')].map(r => { const b = r.querySelector('button[data-pb-leg]'); return b ? `${b.dataset.pbLeg} ${b.dataset.side} ${b.dataset.k}` : 'no leg'; });
+      const at = got.findIndex((x, i) => x !== HAND_M[i]), parts = w.eval('getPbTop()').parts;
+      chk(n === 19 && at < 0 && got.length === HAND_M.length && parts.value === 0 && parts.player === 18 && parts.game === 1,
+        `made-up lines, a mix of bet types: the Top 50 lines are not round 1 one of each type, each round likeliest first (the ties by the lean and the key), the receptions alone after the others run out, then the money line: ${got.length} rows, ${JSON.stringify(parts)}${at >= 0 ? `, row ${at + 1} ${(got[at] || '').split('|')[1]} where the hand has ${(HAND_M[at] || '').split('|')[1]}` : ''}`);
+    } finally {
+      Sx.sched.splice(n0m, Sx.sched.length - n0m);
+      w.eval('pbGames=window.__pbKeepM[0]; pricedLegs=window.__pbKeepM[1]'); delete w.__pbKeepM; delete w.__pbM;
+      w.eval(`(function(){ const k=${keepDkM}; if(k===null) delete PAY.dk; else PAY.dk=k;
+        const M=PAY.mkt&&PAY.mkt[${cwSm}]; if(M) for(const l of ${JSON.stringify(SPEC_M.map(x => x[0]))}) delete M[l];
+        if(!${hadM.w}&&PAY.mkt) delete PAY.mkt[${cwSm}]; if(!${hadM.mkt}) delete PAY.mkt; })()`);
+      Sx.ui.pb = JSON.parse(keepUm); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}; renderParlay()'); await wait(20); } }
+  /* ---- the Top 50 (50 from app v113, the owner, 17 October 2026: "in parlay builder only do top 50 now instead of 100";
+     30 from app v116, the owner, 18 October 2026: "its only showing top 30, but honestly top 30 is enough if you want to
      set it at that"; app v138, in parts: Player lines up to 20, then Game bets to 30, the player lines taking more where
-     the game bets do not fill it), on sixty made-up games of their own (on the schedule for the check, and pbGames and
-     pricedLegs stood in for, each in its own slot and put back whatever happens, so this holds on any day, the
+     the game bets do not fill it; app v141, the owner, 31 October 2026: "maybe expand to 50", Player lines up to 40, a mix
+     of bet types, then Game bets to 50), on sixty made-up games of their own (on the schedule for the check, and pbGames
+     and pricedLegs stood in for, each in its own slot and put back whatever happens, so this holds on any day, the
      off-season included). Each game's home side to win at -110 with the away side priced so the two implied chances sum
-     to 1.015 + 0.002 a game (H100 1.015 to H159 1.133), and thirty made-up receivers' main Over 45.5 receiving yards on the
-     first thirty games at -110 with the Under so their two sum to 1.010 + 0.002 a line, both sides in the market table:
-     each line's fair chance is its price with the margin out, so what $1 on it is expected to return is 1 over the two
-     summed, less 1, and the order, worked out here by hand, is the games' and the lines' own order. With Moneyline alone
-     the list is the first 30 games, H100 to H129, under one Game bets heading counting 30 (H130 to H159 left off); with
-     Moneyline and Player overs, the first 20 receivers (the 21st to the 30th left off) and then the first 10 games; with
-     Player overs alone, all thirty receivers, the player lines taking the room the game bets leave ---- */
+     to 1.015 + 0.002 a game (H100 1.015 to H159 1.133), and sixty made-up players' main Overs, one on each game, at -110
+     with the Under so their two sum to 1.010 + 0.002 a line (line j; both sides in the market table): each line's fair
+     chance is its price with the margin out, so the lines' chances run down with j, and what $1 on each is expected to
+     return is 1 over the two summed, less 1, so by expected return (the player lines' order until app v141) the order is
+     j's too. The lines are of four bet types: receiving yards for j 0 to 29 (more than the rest), receptions 30 to 44,
+     rushing yards 45 to 54 and passing yards 55 to 59 (fewer than their rounds), so the mix, worked out here by hand
+     (mixHand: round r takes the r-th line of each type in that order, the likeliest first, a type run out skipped), is
+     0, 30, 45, 55, then 1, 31, 46, 56, and so on. With Moneyline alone the list is the first 50 games, H100 to H149, under
+     one Game bets heading counting 50 (H150 to H159 left off); with Moneyline and Player overs, the mix's first 40 (round
+     12 cut after its first line) and then the first 10 games; with Player overs alone, the mix's first 50, the player
+     lines taking the room the game bets leave ---- */
   if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepU6 = JSON.stringify(Sx.ui.pb), wk6 = String(cw).padStart(2, '0'), cwS6 = JSON.stringify(String(cw));
     const amer = q => q >= 0.5 ? -100 * q / (1 - q) : 100 * (1 - q) / q, imp6 = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100);
     const G6 = [...Array(60)].map((_, i) => ({ id: `2099_${wk6}_A${100 + i}_H${100 + i}`, w: cw, a: 'A' + (100 + i), h: 'H' + (100 + i), d: '2099-01-03', t: '13:00', mlh: -110, mla: amer(1.015 + 0.002 * i - imp6(-110)) }));
     const L6 = G6.map((g, i) => ({ key: `${g.id}|team:${g.h}|ml`, gid: g.id, pid: 'team:' + g.h, stat: 'ml', k: 0, side: 'over', main: false,
       p: 0.55, price: -110, src: 'real', mu: null, name: 'Made-up ' + g.h, pos: 'Game', grp: 'TEAM', team: g.h, opp: g.a, week: cw, label: 'To win' }));
-    const P6 = G6.slice(0, 30).map((g, j) => ({ key: `${g.id}|SIXTY-WR${j}|receiving_yards`, gid: g.id, pid: `SIXTY-WR${j}`, stat: 'receiving_yards', k: 45.5, side: 'over', main: true,
-      p: 0.55, price: -110, src: 'real', mu: 50, name: 'Sixty WR' + j, pos: 'WR', grp: 'WR', team: g.h, opp: g.a, week: cw, label: 'Over 45.5 receiving yards', under: amer(1.010 + 0.002 * j - imp6(-110)) }));
+    /* the four bet types by j: [first j, past the last, stat, line, its words, projection, position] */
+    const TY6 = [[0, 30, 'receiving_yards', 45.5, 'receiving yards', 50, 'WR'], [30, 45, 'receptions', 4.5, 'receptions', 5, 'WR'], [45, 55, 'rushing_yards', 45.5, 'rushing yards', 50, 'RB'], [55, 60, 'passing_yards', 225.5, 'passing yards', 240, 'QB']];
+    const ty6 = j => TY6.find(([a, b]) => j >= a && j < b);
+    const P6 = G6.map((g, j) => { const [, , stat, k, words, mu, pos] = ty6(j); return { key: `${g.id}|SIXTY-P${j}|${stat}`, gid: g.id, pid: `SIXTY-P${j}`, stat, k, side: 'over', main: true,
+      p: 0.55, price: -110, src: 'real', mu, name: 'Sixty P' + j, pos, grp: pos, team: g.h, opp: g.a, week: cw, label: `Over ${k} ${words}`, under: amer(1.010 + 0.002 * j - imp6(-110)) }; });
+    /* the mix by hand: round r the r-th line of each type (j = its first j + r), the types in order, till n */
+    const mixHand = n => { const out = []; for (let r = 0; out.length < n && r < 60; r++) for (const [a, b] of TY6) if (a + r < b && out.length < n) out.push(P6[a + r].key); return out; };
     const keepDk6 = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), had6 = { mkt: w.eval('!!PAY.mkt'), w: w.eval(`!!(PAY.mkt&&PAY.mkt[${cwS6}])`) }, n0 = Sx.sched.length;
     w.__pbKeep6 = w.eval('[pbGames, pricedLegs]'); w.__pb6 = { G: G6, L: [...L6, ...P6] };
     try {
@@ -3068,17 +3167,20 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       w.eval(`PAY.dk=${JSON.stringify(dkFixture([...L6, ...P6], new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'SIXTY'))}`);
       const head = () => txt(panel.querySelector('#pbCard > .pb-hd h2'));
       for (const [lab6, k, hand, parts] of [
-          ['Moneyline only', { ml: true }, G6.slice(0, 30).map(g => `${g.id}|team:${g.h}|ml`), [['game', 30, null]]],
-          ['Moneyline and Player overs', { ml: true, over: true }, [...P6.slice(0, 20).map(l => l.key), ...G6.slice(0, 10).map(g => `${g.id}|team:${g.h}|ml`)], [['player', 20, null], ['game', 10, '21']]],
-          ['Player overs only', { over: true }, P6.map(l => l.key), [['player', 30, null]]]]) {
+          ['Moneyline only', { ml: true }, G6.slice(0, 50).map(g => `${g.id}|team:${g.h}|ml`), [['game', 50, null]]],
+          ['Moneyline and Player overs', { ml: true, over: true }, [...mixHand(40), ...G6.slice(0, 10).map(g => `${g.id}|team:${g.h}|ml`)], [['player', 40, null], ['game', 10, '41']]],
+          ['Player overs only', { over: true }, mixHand(50), [['player', 50, null]]]]) {
         Sx.ui.pb = { k: { ml: !!k.ml, ats: false, total: false, over: !!k.over, under: false }, off: [], gx: false };
         w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); renderParlay()'); await wait(40);
         const own = pbTopOwn(Sx.ui.pb, G6), n = holdTop(`sixty made-up games, ${lab6}`, Sx.ui.pb, G6);
         const rows = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')], got = rows.map(r => (r.querySelector('button[data-pb-leg]') || { dataset: {} }).dataset.pbLeg || 'none');
         const drawn = [...panel.querySelectorAll('ol.pb-top')].map(o => [o.dataset.pbSec, o.querySelectorAll(':scope > li.pb-trow').length, o.getAttribute('start')]);
         const pills = [...panel.querySelectorAll('h3.pb-topsec .pill')].map(txt).join();
-        chk(n === 30 && own.full === (k.ml ? 60 : 0) + (k.over ? 30 : 0) && rows.length === 30 && got.join() === hand.join() && JSON.stringify(drawn) === JSON.stringify(parts) && pills === parts.map(x => x[1]).join() && w.eval('getPbTop()').rows.length === 30 && head() === 'Top 30 lines',
-          `sixty made-up games, ${lab6}: the list is not its first 30 by the split worked out by hand (${parts.map(x => x[0] + ' ' + x[1]).join(', ')}) under "Top 30 lines": ${rows.length} rows, ${JSON.stringify(drawn)}, ${got.slice(17, 23).map(x => x.split('|')[1]).join(', ')} around the turn`); }
+        /* the case can tell: by expected return (the player lines' order until app v141) the player lines would be j's order */
+        if (k.over) chk(mixHand(40).join() !== P6.slice(0, 40).map(l => l.key).join(), `sixty made-up games, ${lab6}: the mix by hand is the lines' own order, so the case cannot tell it from the order by expected return`);
+        const at = got.findIndex((x, i) => x !== hand[i]);
+        chk(n === 50 && own.full === (k.ml ? 60 : 0) + (k.over ? 60 : 0) && rows.length === 50 && at < 0 && got.length === hand.length && JSON.stringify(drawn) === JSON.stringify(parts) && pills === parts.map(x => x[1]).join() && w.eval('getPbTop()').rows.length === 50 && head() === 'Top 50 lines',
+          `sixty made-up games, ${lab6}: the list is not its first 50 by the split and the mix of bet types worked out by hand (${parts.map(x => x[0] + ' ' + x[1]).join(', ')}) under "Top 50 lines": ${rows.length} rows, ${JSON.stringify(drawn)}${at >= 0 ? `, row ${at + 1} ${(got[at] || '').split('|')[1]} where the hand has ${(hand[at] || '').split('|')[1]}` : ''}`); }
     } finally {
       Sx.sched.splice(n0, Sx.sched.length - n0);
       w.eval('pbGames=window.__pbKeep6[0]; pricedLegs=window.__pbKeep6[1]'); delete w.__pbKeep6; delete w.__pb6;
@@ -3115,7 +3217,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const T = w.eval('gameTiers')(g); for (const id of ['high', 'med', 'low']) for (const l of ((T && T[id] && T[id].legs) || [])) if (noBet(l)) bad.push(`the ${id} hand's ` + legTxt(l));
         if (primeOwn(g)) { const s = w.eval('spSet')(g.id); for (const t of ((s && s.tiers) || [])) for (const l of (t.legs || [])) if (noBet(l)) bad.push(`the ${t.id} set's ` + legTxt(l)); } }
       for (const l of w.eval('pricedLegs')(G)) if (noBet(l)) bad.push('a priced line ' + legTxt(l));
-      for (const l of w.eval('getPbTop()').rows) if (noBet(l)) bad.push('a Top 30 line ' + legTxt(l));
+      for (const l of w.eval('getPbTop()').rows) if (noBet(l)) bad.push('a Top 50 line ' + legTxt(l));
       for (const t of w.eval('getPbTiers()').tiers) for (const l of (t.legs || [])) if (noBet(l)) bad.push(`the ${t.id} level's ` + legTxt(l));
       if (typeof w.eloPicks === 'function') { const r = w.eloPicks(); for (const t of ((r && r.tiers) || [])) for (const l of t.legs) if (noBet(l)) bad.push(`the ${t.id} Elo pick's ` + legTxt(l)); }
       for (const l of Object.values(w.eval('S').parlay || {})) if (noBet(l)) bad.push('the builder\'s ' + legTxt(l));
@@ -3206,7 +3308,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      Same Game Parlay eligible stuff show up since we are only doing parlay builder stuff", then "yes" to every place a
      ladder showed): only main lines, anytime touchdowns and team bets, by the smoke's own rule (ladderOwn). Held first on
      the week as it stands, every bet type and game ticked: no ladder among the lines priced (pricedLegs), any game page
-     hands' pool (gameLegPool, the engine drawn nowhere), the Top 30 lines as built and as drawn (and getPbTop's count of
+     hands' pool (gameLegPool, the engine drawn nowhere), the Top 50 lines as built and as drawn (and getPbTop's count of
      the rungs it left out none, since none can reach it), the all-games levels, each prime-time game's set and its Elo
      picks, every live unit Suggested Parlays shows (the Sunday slot's once it is up) and the Elo picks over every game. Then with
      DraftKings' book prices planted on every rung of each starter's ladders the model rates 50% to 90% (each 6 points
@@ -3235,7 +3337,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const ladders = G => { const bad = [], ids = new Set(G.map(g => g.id)), take = (where, legs) => { for (const l of (legs || [])) if (ladderOwn(l)) bad.push(`${where}: ${lgTxt(l)}`); };
       take('a priced line', w.eval('pricedLegs')(G));
       for (const g of G) take(`${g.id}'s hands' pool`, w.eval('gameLegPool')(g, true));
-      const top = w.eval('getPbTop()'); take('a Top 30 line', (top.rows || []).filter(l => ids.has(l.gid)));
+      const top = w.eval('getPbTop()'); take('a Top 50 line', (top.rows || []).filter(l => ids.has(l.gid)));
       /* (with no game to come the list's early return carries no count) */
       if ((top.same || 0) !== 0) bad.push(`getPbTop() counts ${top.same} rung${top.same === 1 ? '' : 's'} left out, where none can reach it`);
       for (const t of (w.eval('getPbTiers()').tiers || [])) take(`the all-games ${t.id} level`, t.legs);
@@ -3246,9 +3348,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         for (const t of (v.tiers || [])) take(`${u.id}'s ${t.id} set as shown`, t.legs); for (const t of (v.elo || [])) take(`${u.id}'s ${t.id} Elo pick as shown`, t.legs); }
       if (typeof w.eloPicks === 'function') { const r = w.eloPicks(); for (const t of ((r && r.tiers) || [])) take(`the ${t.id} Elo pick over every game`, t.legs); }
       return bad; };
-    /* the Top 30 lines as drawn: each row's Add a main line, a touchdown at one, or a game bet */
+    /* the Top 50 lines as drawn: each row's Add a main line, a touchdown at one, or a game bet */
     const drawnTop = () => [...d.querySelectorAll('#pbPanel ol.pb-top button[data-pb-leg]')].filter(b => { const st = b.dataset.pbLeg.split('|')[2];
-      return PLAYER_STATS_OWN.has(st) && (st === 'any_td' ? (+b.dataset.k || 1) >= 2 : b.dataset.main !== '1'); }).map(b => `a drawn Top 30 row ${b.dataset.pbLeg} ${b.dataset.k}+`);
+      return PLAYER_STATS_OWN.has(st) && (st === 'any_td' ? (+b.dataset.k || 1) >= 2 : b.dataset.main !== '1'); }).map(b => `a drawn Top 50 row ${b.dataset.pbLeg} ${b.dataset.k}+`);
     ladderHoldF = async lab => { const keep = JSON.stringify(Sx.ui.pb);
       try { allOn8(); w.eval('renderParlay()'); await wait(30);
         const G = w.eval('pbGames()'), bad = [...ladders(G), ...drawnTop()];
@@ -3282,7 +3384,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       allOn8(); w.eval('renderParlay()'); await wait(40);
       { const G = w.eval('pbGames()'), bad = [...ladders(G), ...drawnTop()];
         chk(!bad.length, `on the week as it stands a line, a list, a level, a set or an Elo pick holds a ladder bet (a rung off a player's main line, or two or more touchdowns): ` + bad.slice(0, 4).join('; '));
-        console.log(`  (no ladder bets: ${G.length} game${G.length === 1 ? '' : 's'} of the week as it stands held, the Top 30 lines, the levels, every set and Elo pick)`); }
+        console.log(`  (no ladder bets: ${G.length} game${G.length === 1 ? '' : 's'} of the week as it stands held, the Top 50 lines, the levels, every set and Elo pick)`); }
       /* the plants: the first game still to come, and the made-up Sunday night game with one starter's main line on it */
       if (F8) Sx.sched.push(F8);
       const plants = [G0, F8].filter(Boolean).map(g => ({ g, ...plantFor(g) }));
@@ -4715,7 +4817,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       finally { S.ui.pb = JSON.parse(keep); } }
     /* (app v138, the owner's call of 27 October 2026) market + form is gone: the page has no eloAltP, eloAltZ or formAgrees
        and the Elo tab no fast sums (eloSums); no leg is preferred (a Value pick) with no chance hook set, and the hook is
-       there and unset; the suggestions' signatures (the levels', the Top 30 lines', a set's) no longer carry the Elo state
+       there and unset; the suggestions' signatures (the levels', the Top 50 lines', a set's) no longer carry the Elo state
        ('form'), since nothing a level takes waits on it */
     { chk(w.eval('window.eloLoaded()') === true, 'the Elo tab does not say its files are in');
       chk(w.eval("typeof window.eloAltP==='undefined'&&typeof window.eloAltZ==='undefined'&&typeof window.eloSums==='undefined'&&typeof formAgrees==='undefined'&&typeof window.setChanceHook==='function'"),
@@ -4724,7 +4826,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const pool = w.eval('pbPool(pbGames())');
         chk(!pool.pref.length && [...pool.thin, ...(pool.mkt || [])].every(c => c.pm != null && !c.hook), 'with no chance hook set a leg is preferred, carries a hook, or has no model chance beside its stated one: ' + pool.pref.slice(0, 3).map(c => c.name + ' ' + c.label).join(', '));
         chk(!w.eval('getPbTiers().sig').split('|').includes('form') && !w.eval('getPbTop().sig').split('|').includes('form') && !w.eval('spSig')(w.eval('S').sched[0] || {}).split('|').includes('form'),
-          'the suggestions\' signature (the levels\', the Top 30 lines\' or a set\'s) still carries the Elo state: ' + w.eval('getPbTiers().sig')); } }
+          'the suggestions\' signature (the levels\', the Top 50 lines\' or a set\'s) still carries the Elo state: ' + w.eval('getPbTiers().sig')); } }
     /* the Props game view: the same shield on a ranked player's row */
     { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
       const S = w.eval('S'); const top = eloP.groups.QB.top[0];
@@ -5833,7 +5935,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
            rushing, a back's rushing and receiving, a receiver's or tight end's receiving): by the smoke's own reading of the
            formula's branch (espn_rule.js tdBranch) his touchdown is then priced on the model alone, untested; the page prices
            it the same, draws it est. on g's page with its title saying so, and no list a suggestion is built from holds it
-           (pricedLegs, the levels' pool, the levels, the hands' pool, the Top 30, a set of g where g has one, the Elo picks),
+           (pricedLegs, the levels' pool, the levels, the hands' pool, the Top 50, a set of g where g has one, the Elo picks),
            where another starter's touchdown on his own yards line is still in pricedLegs; the read's block put back after.
            With his yards line read the estimate has landed within about 1.5 implied points of DraftKings' real prices in
            every band of weeks 2 to 6; on the model alone it had all but no test (54 legs) and ran +3.1 points over
@@ -6411,7 +6513,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         if (spHid) { w.__spOnPress = w.eval('spOn'); w.eval('spOn=function(){ return spGames(); }'); console.log(`  (${g.id}'s set is not on the tab by the night rule now: spOn stood in for the checks of its cards after the press)`); }
         const pnl = d.getElementById('pbPanel'), tops = [...pnl.querySelectorAll('ol.pb-top > li.pb-trow')], topR = w.eval('getPbTop()').rows;
         chk(tops.length === topR.length && topR.some(l => l.src === 'dkline') && topR.every((l, i) => { const m = tops[i].querySelector('.pb-tc i.est'); return l.src === 'dkline' ? !!m && m.title.startsWith('DraftKings’ line from ESPN, read ') : !m; }),
-          'the Top 30 lines do not mark est. exactly their lines priced from DraftKings\' line read on ESPN, with what each is priced from: ' + topR.filter(l => l.src === 'dkline').length + ' of ' + tops.length);
+          'the Top 50 lines do not mark est. exactly their lines priced from DraftKings\' line read on ESPN, with what each is priced from: ' + topR.filter(l => l.src === 'dkline').length + ' of ' + tops.length);
         /* (app v130, the owner's call of 22 October 2026: no descriptions) the note is the state alone, in a set card's
            words (one wording, the review of the merge): "Price est. from DraftKings’ line, read Tue 8:07 AM ET." */
         chk([...pnl.querySelectorAll('p.pb-note')].some(p => txt(p) === 'Price est. from DraftKings’ line, read ' + when(at) + '.') && !/A player line marked est\.|the price our estimate of DraftKings’|est\.: estimated/.test(txt(pnl)),
@@ -9136,7 +9238,7 @@ async function glanceChecks() {
   /* ---- on the week as it stands: every name the page draws, and the first of each kind in each place opened ---- */
   [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'suggest').click(); await wait(400);
   const live = () => { const out = [];
-    for (const li of d.querySelectorAll('#pbPanel ol.pb-top li.pb-trow')) { const a = li.querySelector('button[data-pb-leg]'); if (a) out.push({ where: 'the Top 30', row: li.querySelector('.nm'), key: a.dataset.pbLeg, side: a.dataset.side, k: a.dataset.k }); }
+    for (const li of d.querySelectorAll('#pbPanel ol.pb-top li.pb-trow')) { const a = li.querySelector('button[data-pb-leg]'); if (a) out.push({ where: 'the Top 50', row: li.querySelector('.nm'), key: a.dataset.pbLeg, side: a.dataset.side, k: a.dataset.k }); }
     for (const tr of d.querySelectorAll('#parlayBody tr.legrow')) { const b = tr.querySelector('button[data-drop]'), l = b && S.parlay[b.dataset.drop]; if (l) out.push({ where: 'the builder', row: tr.querySelector('td.plr'), key: b.dataset.drop, side: l.side, k: l.k }); }
     for (const [sel, where] of [['#spSets .pb-tiers[data-sp-kind="model"]', 'a set’s card'], ['#spSets .pb-tiers[data-sp-kind="elo"]', 'an Elo pick’s card']]) for (const li of d.querySelectorAll(`${sel} .pb-tier .pb-legs li`)) {
       const a = li.querySelector('button[data-pb-leg]'); if (a) out.push({ where, row: li.querySelector('.nm'), key: a.dataset.pbLeg, side: a.dataset.side, k: a.dataset.k }); }
@@ -9342,7 +9444,7 @@ async function glanceChecks() {
       chk(bad.length === 0, 'the matchup bubble as a window: ' + bad.join('; ')); }
     host.remove();
 
-    /* (the review of 27 October 2026) a game total on one price is stated at its own 50%, est., as its Top 30 row, a card
+    /* (the review of 27 October 2026) a game total on one price is stated at its own 50%, est., as its Top 50 row, a card
        and the builder state it (legFairStated), and what $1 at its price is expected to return worked on that 50%, never on
        the price's implied chance over the week's typical overround (legFair's estimate, which no other place states):
        planted on the made-up game (its total, 44.5, with the over's price alone, +120, put back after), its over opened
