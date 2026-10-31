@@ -2795,7 +2795,7 @@
   },
   "SEA": {
    "kick": "2026-11-03T01:15Z",
-   "built_at": "2026-10-31T19:14:31.057Z",
+   "built_at": "2026-10-31T22:24:47.026Z",
    "units": {
     "qb": [
      {
@@ -2835,8 +2835,7 @@
      {
       "id": "00-0039165",
       "n": "Zach Charbonnet",
-      "pos": "RB",
-      "q": "questionable: knee"
+      "pos": "RB"
      },
      {
       "id": "00-0038797",
@@ -2851,15 +2850,14 @@
       "pos": "WR"
      },
      {
-      "id": "00-0037545",
-      "n": "Rashid Shaheed",
-      "pos": "WR",
-      "q": "questionable: knee, not practising"
-     },
-     {
       "id": "00-0039793",
       "n": "AJ Barner",
       "pos": "TE"
+     },
+     {
+      "id": "00-0033908",
+      "n": "Cooper Kupp",
+      "pos": "WR"
      }
     ],
     "front": [
@@ -2869,15 +2867,14 @@
       "pos": "DT"
      },
      {
-      "id": "00-0039309",
-      "n": "Byron Murphy II",
-      "pos": "DT",
-      "q": "questionable: back"
+      "id": "00-0039047",
+      "n": "Derick Hall",
+      "pos": "OLB"
      },
      {
-      "id": "00-0036994",
-      "n": "Ernest Jones",
-      "pos": "ILB"
+      "id": "00-0039309",
+      "n": "Byron Murphy II",
+      "pos": "DT"
      }
     ],
     "db": [
