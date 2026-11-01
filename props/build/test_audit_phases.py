@@ -67,6 +67,10 @@ CASES = [
     ('paid_ids',     'paid DraftKings ids on a game to come',        '417be84', '2026-10-15T19:05Z', 'audit'),
     ('sun_3pm',      'Sunday 3pm, a first game whose RB1 has no lines', '417be84', '2026-10-18T19:00Z', 'audit'),
     ('mon_live6',    'Monday night under way, week 6',               '417be84', '2026-10-20T01:30Z', 'audit'),
+    # the Sunday slot locked before its first kickoff (16:00 to 18:00 UTC that day): the props run of 1 November 2026 at
+    # 17:49 UTC was refused there, the audit holding the locked slot's first Add (Day games before Night games since app
+    # v132) to the live toggle; the 11:31 bake, which took the slot's set before its lock
+    ('sun_locked',   'Sunday, the slot locked before its first kickoff', 'c2ebc6f', '2026-11-01T17:30Z', 'audit'),
     ('mon_baked',    'Monday night under way, the payload baked during the game', '744f059', '2026-10-27T01:20Z', 'audit:mon_baked'),
     ('season_over',  'the season played out, closing lines on weeks 17-18', '417be84', '2027-02-15T15:00Z', 'audit:over_lines'),
     ('season_bare',  'the season played out, no lines past week 7',  '417be84', '2027-02-15T15:00Z', 'audit:over_bare'),
@@ -151,7 +155,10 @@ def run_case(case, base, a):
     t0 = time.time()
     try:
         if kind.startswith('audit'):
-            copy_tree(d, ['props/build'])
+            # the betting app's equation and the neutral-site list, which the audit's TN reads beside props/build (the
+            # props job's checkout has them; a payload baked before the neutral-site flag skips TN, so no case before
+            # sun_locked met their absence)
+            copy_tree(d, ['props/build', 'betting/tools/reference_models.json', 'betting/neutral_sites.json'])
             if a.audit: shutil.copy2(a.audit, os.path.join(d, 'props', 'build', 'audit.js'))
             if a.part3: shutil.copy2(a.part3, os.path.join(d, 'props', 'build', 'part3.js'))
             os.makedirs(os.path.join(d, 'props', 'raw')); shutil.copy2(os.path.join(ROOT, 'props', 'raw', 'fake_wk1.csv'), os.path.join(d, 'props', 'raw'))
