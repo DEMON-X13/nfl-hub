@@ -271,7 +271,12 @@ together, `clock_now.js`), and `python3 test_audit_phases.py` (about nine minute
 and during its game, a Monday night on a payload baked during the game (`mon_baked`, built from the 25 October
 payload by `apply_espn`: its bake hours after the page's clock once the audit sets it back, which refused every such
 run until the review of 25 October 2026, M8 dating the bake an hour before the clock while it runs), a week with no
-player prices, paid ids to come, the season played out with and without late lines), and the page smoke on four with `SMOKE_NOW` (two Monday nights under way among them,
+player prices, paid ids to come, the season played out with and without late lines, and a Sunday whose slot has locked
+before its first kickoff (`sun_locked`, the 1 November 2026 bake at 17:30 UTC: the props run of that day at 17:49 was
+refused there, the audit's leg-Add check finding no schedule game for the slot's id, `<season>_<WW>_SUN`, and holding the
+locked slot's first Add, Day games before Night games since app v132, to the live toggle; the first case on a payload
+with the neutral-site flag, so the audit's tree carries `betting/tools/reference_models.json` and
+`betting/neutral_sites.json` beside `props/build` for TN)), and the page smoke on four with `SMOKE_NOW` (two Monday nights under way among them,
 when the smoke sets the page's clock back, one on a payload baked that Monday, its DraftKings lines then
 newer than a press there): a change to the audit, the smoke or
 the props parts comes with a run of it. **The props gate** (`.github/workflows/props-gate.yml`, its

@@ -2347,10 +2347,22 @@ setTimeout(async()=>{
             chk(!!b1&&b1.getAttribute('aria-pressed')==='true'&&b1.textContent==='Added'&&/^Remove .+, from the builder$/.test(b1.getAttribute('aria-label')||'')&&d.activeElement===b1,`${lab}: once added, the leg's Add does not read Added, pressed, named to remove it, with the focus on it`);
             /* the builder's own toggle: the same leg, the same price, as a tick on its game page gives; a leg of a
                set past its lock (2 hours before its kickoff, by the page's clock) goes in as the set locked it */
-            const gEl=b0.closest('[data-sp-game]'), tEl=b0.closest('[data-pb-tier]'), gS=gEl&&S.sched.find(g=>g.id===gEl.dataset.spGame);
-            if(gS&&tEl&&w.eval('Date.now()')>=kickAud(gS)-7200e3){ const t=(F('spShown')(gS).tiers||[]).find(x=>x&&x.id===tEl.dataset.pbTier), sl=t&&t.legs&&t.legs.find(l=>l.key===key&&String(l.k)===k&&l.side===side);
+            /* a set's unit is a schedule game or the Sunday slot (<season>_<WW>_SUN, app v118), which is no schedule game and
+               locks 2 hours before its FIRST kickoff: the slot's lock by the audit's own rule (slotNowAud) where it stands on the
+               same slot, else by the audit's kickoffs of the games the page's unit names. Until 1 November 2026 a slot's id found
+               no game here, so a locked slot's leg was held to the live toggle; from app v132, Day games before Night games, the
+               first Add on the tab is the slot's, and the props run of that day at 17:49 UTC, the slot locked at 16:00 and its
+               first kickoff at 18:00, was refused on the Bengals' moneyline its Safe locked with */
+            const gEl=b0.closest('[data-sp-game]'), tEl=b0.closest('[data-pb-tier]'), uid=gEl?gEl.dataset.spGame:'', isSlot=/^\d{4}_\d{2}_SUN$/.test(uid);
+            let gS=null, lockU=null;
+            if(isSlot){ const SLa=slotNowAud(); gS=F('spUnit')(uid)||null;
+              const ks=gS?(gS.games||[]).map(kickAud).filter(x=>x!=null):[];
+              lockU=SLa&&SLa.id===uid?SLa.lock:ks.length?Math.min(...ks)-7200e3:null;
+              chk(!!gS&&lockU!=null,`${lab}: the leg's set is the Sunday slot ${uid}, which the audit cannot read (no unit, or no kickoff of its games)`); }
+            else if(uid){ gS=S.sched.find(g=>g.id===uid)||null; lockU=gS?kickAud(gS)-7200e3:null; }
+            if(gS&&tEl&&lockU!=null&&w.eval('Date.now()')>=lockU){ const t=(F('spShown')(gS).tiers||[]).find(x=>x&&x.id===tEl.dataset.pbTier), sl=t&&t.legs&&t.legs.find(l=>l.key===key&&String(l.k)===k&&l.side===side);
               chk(!!sl&&['gid','pid','stat','k','side','main','p','price','src','label','name'].every(f=>JSON.stringify(L[f])===JSON.stringify(sl[f])),`${lab}: the Add on a leg of a locked set did not put it in the builder as the set locked it: ${JSON.stringify(L)} against ${JSON.stringify(sl)}`); }
-            else { const viaAdd=JSON.stringify(L); S.parlay={}; F('toggleLeg')(key,+k,S.sched.find(g=>g.id===key.split('|')[0]),side,main);
+            else if(!isSlot||(gS&&lockU!=null)){ const viaAdd=JSON.stringify(L); S.parlay={}; F('toggleLeg')(key,+k,S.sched.find(g=>g.id===key.split('|')[0]),side,main);
               chk(JSON.stringify(S.parlay[key])===viaAdd,`${lab}: the leg's Add did not put it in the builder as the builder's own toggle does: ${viaAdd} against ${JSON.stringify(S.parlay[key])}`); }
             F('renderParlay')(); const b2=d.querySelector(sel); if(b2){ b2.focus(); b2.click(); }
             const b3=d.querySelector(sel);
