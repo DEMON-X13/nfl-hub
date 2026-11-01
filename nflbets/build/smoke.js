@@ -2335,8 +2335,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
          the rule hides a game now, the tab's one question of which games it sets out (spOn) is stood in by every
          prime-time game for these checks (its own slot, put back whatever happens), the rule itself held above on
          the tab as it is. The Sunday slot only where its rule sets it out (it is held at every moment on made-up
-         games of its own, below) */
-      const slotN = () => U && U.up ? holdSet(lab, U, true) : 0;
+         games of its own, below). On a Sunday from 4pm Eastern (app v132) the page draws no Day games section whatever the
+         slot's phase, so the slot is held hidden then (no unit, no Add or Finish, no level a Finish finds): until the review
+         of 1 November 2026 it was held drawn there, and every check of a smoke run from 4pm to the slot's last kickoff
+         failed on a section the page rightly leaves out */
+      const slotN = () => U && U.up ? holdSet(lab, U, !dayOffOwn(d)) : 0;
       if (!hid.length || w.eval('typeof spOn') !== 'function') { for (const g of G) n += holdSet(lab, g, on.includes(g.id)); return n + slotN(); }
       w.__spOnHold = w.eval('spOn');
       try { w.eval('spOn=function(){ return spGames(); }; SP_SHOWN=null; renderSp()'); await wait(40);
@@ -4983,12 +4986,14 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         /* (app v118) the Elo picks are drawn in each unit of Suggested Parlays, no longer at its foot: the made-up games are
            made the tab's Sunday slot for the block (the page's spSlotUnit and spSlotNext stood in by a slot of exactly these
            five games, up and live whatever the hour, and spOn by no night game, so the tab draws this one unit), and the
-           cards below are held in it; each put back below */
+           cards below are held in it; each put back below. "Whatever the hour" takes spDayOff too: on a Sunday from 4pm
+           Eastern (app v132) the page draws no Day games section, so with it left as it was every check of the block failed
+           from 4pm to midnight Eastern (the Elo job's Sunday evening runs of 25 October 2026, 23 failures each) */
         const SLOT_E = `${seasonE}_${String(wkE).padStart(2, '0')}_SUN`;
-        { w.__eloSlot = { G: EG, wk: wkE, keep: w.eval('[spSlotUnit, spSlotNext, spOn]') };
+        { w.__eloSlot = { G: EG, wk: wkE, keep: w.eval('[spSlotUnit, spSlotNext, spOn, spDayOff]') };
           w.eval(`spSlotUnit=function(wk){ const X=window.__eloSlot; if(+wk!==+X.wk) return null; return {id:spSlotId(wk),slot:true,w:+wk,d:X.G[0].d,t:X.G[0].t,games:X.G,last:Math.max(...X.G.map(g=>kickoff(g).getTime()))}; };
-            spSlotNext=function(){ const u=spSlotUnit(window.__eloSlot.wk); return u?{...u,open:null,prev:null,up:true}:null; }; spOn=function(){ return []; }; SP_SHOWN=null;`);
-          undoSlot = () => w.eval('spSlotUnit=window.__eloSlot.keep[0]; spSlotNext=window.__eloSlot.keep[1]; spOn=window.__eloSlot.keep[2]; delete window.__eloSlot; SP_SHOWN=null; SP_CACHE=new Map()'); }
+            spSlotNext=function(){ const u=spSlotUnit(window.__eloSlot.wk); return u?{...u,open:null,prev:null,up:true}:null; }; spOn=function(){ return []; }; spDayOff=function(){ return false; }; SP_SHOWN=null;`);
+          undoSlot = () => w.eval('spSlotUnit=window.__eloSlot.keep[0]; spSlotNext=window.__eloSlot.keep[1]; spOn=window.__eloSlot.keep[2]; spDayOff=window.__eloSlot.keep[3]; delete window.__eloSlot; SP_SHOWN=null; SP_CACHE=new Map()'); }
         /* the Elo picks' levels, the smoke's own reading: Suggested Parlays' sizes (PB_TIERS), (app v138) floor 0 each */
         const LV = w.eval('PB_TIERS').map(t => [t[0], t[1], t[2], 0]);
         const pP = w.eval('parlayProb'), pD = w.eval('parlayDec'), pOrd = w.eval('pbOrder'), dec = w.eval('mlToDec'), idOf = l => l.key + '|' + l.side + '|' + l.k, foE = fairRule(w);
@@ -5467,7 +5472,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
               if (t.length) got[b.dataset.open] = t.length === 1 && t[0].parentNode.classList.contains('who') && t[0].previousSibling && t[0].previousSibling.nodeType === 3
                 ? t[0].textContent + '|' + t[0].dataset.peMmgrade + (t[0].title === titleOf(b.dataset.open) ? '' : ` titled "${t[0].title}", not "${titleOf(b.dataset.open)}"`) : 'misplaced or twice'; }
             const k = o => JSON.stringify(Object.entries(o).sort());
-            return Object.keys(exp).length > 0 && k(got) === k(exp) ? '' : `expected ${k(exp)}, drew ${k(got)}`; };
+            /* an empty expectation is held (nobody tagged) only where the game has no Solid or better mismatch at all: late on
+               a Sunday, with Sunday and Monday night's games alone to come, the first row can be under Solid (1 November 2026,
+               22:30 UTC), where before the review of that day the check failed on the week's data; a Solid one in the game that
+               the page does not draw still fails */
+            const noneSolid = !w.eloMismatches().some(r => r.game_id === rows[0].game_id && grade(Math.round(r.score * 10) / 10));
+            return (Object.keys(exp).length > 0 || noneSolid) && k(got) === k(exp) ? '' : `expected ${k(exp)}, drew ${k(got)}`; };
+          if (!w.eloMismatches().some(r => r.game_id === rows[0].game_id && Math.round(r.score * 10) / 10 >= 1)) console.log(`  (the game page's mismatch tags: no Solid or better mismatch in ${rows[0].game_id} now, held that nobody there is tagged)`);
           { const bad = tagCheck(); chk(!bad, 'the game page does not tag the players with a favourable mismatch beside their names: ' + bad); }
           w.eval('renderGame()'); await wait(40);
           { const bad = tagCheck(); chk(!bad, 'a redrawn game page does not tag its mismatches once: ' + bad); }
