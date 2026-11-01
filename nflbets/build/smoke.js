@@ -332,9 +332,14 @@ process.on('beforeExit', () => finish('the smoke stopped before it finished: its
    as it was on the Friday or Saturday of that week. The results and the grades come from the
    files, so they are checked as they are. Schedule times are US Eastern, read through the
    time zone database rather than a date the clocks change on. */
+/* the offset is looked up twice: first at the wall time read as UTC, then at the moment that gives, since the first
+   look is 4 or 5 hours early and on a day the clocks change it can land on the other side of the change (on 1 November
+   2026, 4:51 AM Eastern, already standard time, read as daylight time an hour off, which failed the scoreboard on
+   load's planted kickoff); in the hour a fall-back repeats, the first of the two is taken */
+const etOffAt = ms => { const tz = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(new Date(ms)).find(p => p.type === 'timeZoneName');
+  const m = tz && tz.value.match(/GMT([+-]\d+)/); return m ? +m[1] : -5; };
 const etKick = r => { const naive = Date.parse(`${r.d}T${r.t || '13:00'}:00Z`); if (!isFinite(naive)) return NaN;
-  const tz = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(new Date(naive)).find(p => p.type === 'timeZoneName');
-  const m = tz && tz.value.match(/GMT([+-]\d+)/); return naive - (m ? +m[1] : -5) * 3600e3; };
+  return naive - etOffAt(naive - etOffAt(naive) * 3600e3) * 3600e3; };
 const PAGE_WEEK = (() => { const sch = JSON.parse(PAYLOAD).sched || [], now = Date.now();
   const final = g => (g.hs != null && g.as != null && isFinite(g.hs) && isFinite(g.as)) || (isFinite(etKick(g)) && now >= etKick(g) + 4 * 3600e3);
   const ws = [...new Set(sch.map(g => +g.w))].sort((a, b) => a - b);
@@ -4635,8 +4640,12 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const PA = JSON.parse(PAYLOAD_TXT), X = (PA.sched || []).find(g => +g.w === PW);
     if (!X) chk(false, `the scoreboard on load: the payload has no game of the Props list's week ${PW} to plant`);
     else {
-      const k = etParts(pageNow - 3600e3); X.d = k.d; X.t = k.t; delete X.hs; delete X.as;
-      chk(Math.abs(etKick(X) - (pageNow - 3600e3)) < 61e3, `the scoreboard on load: the smoke's planted kickoff ${X.d} ${X.t} is not an hour before the page's clock`);
+      /* an hour before the page's clock, or an hour earlier still where that wall time is the repeated hour of a
+         fall-back (1 AM on the first Sunday of November happens twice, and a wall time cannot say which) */
+      let plantAt = pageNow - 3600e3;
+      for (let i = 0; i < 2 && Math.abs(etKick(etParts(plantAt)) - plantAt) >= 61e3; i++) plantAt -= 3600e3;
+      const k = etParts(plantAt); X.d = k.d; X.t = k.t; delete X.hs; delete X.as;
+      chk(Math.abs(etKick(X) - plantAt) < 61e3 && plantAt <= pageNow - 3600e3, `the scoreboard on load: the smoke's planted kickoff ${X.d} ${X.t} is not the moment it planted, an hour or more before the page's clock`);
       const stA = JSON.parse(JSON.stringify(state)), sX = stA.schedule.find(g => g.game_id === X.id);
       if (sX) { sX.gameday = X.d; sX.gametime = X.t; for (const f of ['result', 'home_score', 'away_score']) delete sX[f]; }
       const A = await run(stA, SITE + '#bets', wk => scoreboardOn(stA, wk, X.id), false, { pay: JSON.stringify(PA) }); landed(A, '#bets');

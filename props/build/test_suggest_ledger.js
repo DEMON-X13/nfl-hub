@@ -103,9 +103,13 @@ const iso = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 const H = 3600e3, DAY = 24 * H, LOCK = 2 * H;
 const pad = w => String(w).padStart(2, '0');
 /* a schedule row's kickoff: its Eastern date and time, through the time zone database */
+/* the offset looked up twice, the second time at the moment the first gives: the wall time read as UTC is 4 or 5 hours
+   early and, on a day the clocks change, can sit on the other side of the change (nflbets/build/smoke.js's etKick,
+   1 November 2026) */
+const etOffAt = ms => { const tz = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(new Date(ms)).find(p => p.type === 'timeZoneName');
+  const m = tz && tz.value.match(/GMT([+-]\d+)/); return m ? +m[1] : -5; };
 const etKick = g => { const naive = Date.parse(`${g.d}T${g.t || '13:00'}:00Z`);
-  const tz = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(new Date(naive)).find(p => p.type === 'timeZoneName');
-  const m = tz && tz.value.match(/GMT([+-]\d+)/); return naive - (m ? +m[1] : -5) * H; };
+  return naive - etOffAt(naive - etOffAt(naive) * H) * H; };
 /* prime time, this test's own copy: a Thursday, Sunday or Monday at or after 7 pm in New York */
 const NYF = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hourCycle: 'h23' });
 const primeAt = ms => { const p = Object.fromEntries(NYF.formatToParts(new Date(ms)).map(x => [x.type, x.value])); return ['Thu', 'Sun', 'Mon'].includes(p.weekday) && +p.hour >= 19; };
