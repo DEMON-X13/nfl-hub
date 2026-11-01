@@ -150,11 +150,13 @@ const etTimeL = ms => new Date(ms).toLocaleTimeString('en-US', { timeZone: 'Amer
    its first kickoff's day and the window of its kickoffs), with one line, word for word: live until its lock, then
    locked (the record's set, or this browser's own where the record has none: own), and from its first kickoff under
    way, when nothing in it can be added or finished. Every number and the games are the rule's; the problems, or none */
-const slotHeldL = (d, U, now, wk, over, season, own) => {
+/* offIn: the 4pm rule as the caller has the page under it (default worked out from now); a caller that stands the page's
+   spDayOff in as off passes false */
+const slotHeldL = (d, U, now, wk, over, season, own, offIn) => {
   /* (app v131) the Sunday slot is its own section again, Day games, after Night games, with its own record */
   /* (app v132) Record, Day games, Night games, each a details; Day games off on a Sunday from 4pm Eastern */
   const p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(now))) p[x.type] = x.value;
-  const off = p.weekday === 'Sun' && +p.hour >= 16;
+  const off = offIn != null ? offIn : p.weekday === 'Sun' && +p.hour >= 16;
   const bad = [], secs = [...d.querySelectorAll('#spSets > section.sp-sec')].map(s => s.dataset.spSec), sec = d.querySelector('#spSets section.sp-sec[data-sp-sec="slot"]');
   if (secs.join() !== (off ? 'all,night' : 'all,slot,night')) bad.push(`the sections are ${secs.join(', ') || 'none'}, not Record, Day games and Night games`);
   if (d.querySelector('#spSets section.sp-sec[data-sp-sec="night"] .sp-slot, #spSets section.sp-sec[data-sp-sec="night"] [data-sp-none="slot"]')) bad.push('the Night games section still draws something of the Sunday slot');
@@ -2647,9 +2649,15 @@ const ladderBoot = async (x, seeded, how) => {
               w.__spOther = g => g && g.slot && Array.isArray(g.games) && g.games.map(x => x.id).sort().join() === SLOT_E.ids ? w.JSON.parse(JSON.stringify({ gid: g.id, ...slotSet })) : null;
               const sid = U0.id, moments = [['the Thursday an hour before the night game', KICK - 3600e3], ['the Saturday at noon', etAtL('2100-01-02', '12:00')],
                 ['the Sunday at 8:00 am', etAtL('2100-01-03', '08:00')], ['the Sunday at 10:00 am', etAtL('2100-01-03', '10:00')], ['the Sunday at 5:00 pm', etAtL('2100-01-03', '17:00')]];
+              /* the 5:00 pm moment is past the 4pm rule (app v132), under which the page draws no Day games section, so the
+                 line saying none is left went unread (the review of 1 November 2026): the page's spDayOff is stood in as off
+                 there, as the audit's M15 does, and put back after */
               for (const [when, t] of moments) {
+                const offOff = when === 'the Sunday at 5:00 pm';
+                if (offOff) { w.__sltDayL = w.eval('spDayOff'); w.eval('spDayOff=function(){ return false; }'); }
+                try {
                 w.Date.now = () => t; w.eval('SP_SHOWN=null; renderParlay()'); await wait(30);
-                const s = slotNow(), bad = slotHeldL(d, s.U, s.now, s.wk, s.over, SEA, true);
+                const s = slotNow(), bad = slotHeldL(d, s.U, s.now, s.wk, s.over, SEA, true, offOff ? false : undefined);
                 const ph = !s.U ? 'none' : !s.U.up ? 'wait' : t < s.U.lock ? 'live' : t < s.U.first ? 'locked' : 'under';
                 phases.push(ph);
                 chk(!bad, `${how}: ${when}, the Sunday slot's part of Night games is not as its rule has it (${s.U ? s.U.id + ' ' + ph : 'none to come, week ' + s.wk}): ` + bad);
@@ -2684,6 +2692,7 @@ const ladderBoot = async (x, seeded, how) => {
                   chk(!!mf && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === 'Safe parlay · the Sunday slot' && d.querySelectorAll('#pcView .pc-legs > li').length === 2 && ML.every(l => txt(d.getElementById('pcView')).includes(l.name)) && !gameBtns(null),
                     `${how}: ${when}, Finish on the Sunday slot's model Safe does not open the card on it: ` + txt(d.querySelector('#pcView .pc-head')));
                   if (mf) d.getElementById('pcClose').click(); }
+                } finally { if (offOff) { w.eval('spDayOff=window.__sltDayL'); delete w.__sltDayL; } }
               }
             }
             chk(phases.join() === 'wait,live,locked,under,none', `${how}: the fixture's Sunday slot did not pass through each of its phases by the rule (${phases.join(', ') || 'no slot made'}): the check met fewer than it holds`);
