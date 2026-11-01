@@ -83,7 +83,7 @@ Searches to run:
 - "NFL week 8 picks BAL BUF"
 
 Baltimore Ravens, injuries:
-- T.J. Tampa (CB) Questionable, Knee: questionable
+- T.J. Tampa (CB) Questionable, Knee: The Ravens activated Tampa (knee) from injured reserve Saturday.
 - Olaivavega Ioane (G) Out, Knee - MCL: Ioane (knee) has been ruled out for Sunday's battle against Buffalo.
 - Adam Randall (RB) Injured Reserve, Neck: Randall (neck) is questionable for Sunday's game against the Bills.
 - Tyler Huntley (QB) Active: Huntley will be the backup quarterback against the Bills on Sunday after Lamar Jackson (ankle) was cleared to return from a three-game absence, Ryan Mink of the Ravens' official site reports.
@@ -141,7 +141,7 @@ Buffalo Bills, injuries:
 Buffalo Bills, ESPN headlines:
 
 ### Tennessee Titans at Cincinnati Bengals
-Sun, Nov 1, 1:00 PM ET, CBS, Paycor Stadium, Cincinnati. Line: CIN -12.5, O/U 46.5
+Sun, Nov 1, 1:00 PM ET, CBS, Paycor Stadium, Cincinnati. Line: CIN -13.5, O/U 46.5
 
 Searches to run:
 - "Tennessee Titans Cincinnati Bengals preview week 8"
@@ -151,6 +151,8 @@ Searches to run:
 - "NFL week 8 picks TEN CIN"
 
 Tennessee Titans, injuries:
+- Thomas Morstead (P) Active: The Titans elevated Morstead from the practice squad to the active roster Saturday, Jim Wyatt of the team's official site reports.
+- Dorian Mausi (LB) Injured Reserve, Foot: Mausi (foot) has been ruled out for Sunday's game against the Bengals, Jim Wyatt of the Titans' official site reports.
 - Xavier Restrepo (WR) Active: The Titans elevated Restrepo from their practice squad to their active roster Saturday, Jim Wyatt of the Titans' official site reports.
 - Carnell Tate (WR) Out, Shoulder: Tate (shoulder) will not play against the Bengals on Sunday but is expected to be back in action following the Titans' bye for Week 10 against the Jaguars on Sunday, Nov. 15, Paul Kuharsky of PaulKuharsky.com reports.
 - Tommy Townsend (P) Out, Knee: Townsend (knee) has been ruled out for Sunday's game against the Bengals, Jim Wyatt of the Titans' official site reports.
@@ -174,8 +176,6 @@ Tennessee Titans, injuries:
 - Joey Slye (PK) Active: Slye made his only field-goal attempt while going 3-for-3 on extra-point tries during Sunday's 27-24 loss to the Browns.
 - Tony Adams (S) Active: Adams (ankle) is active for Sunday's game against the Browns.
 - Timmy Horne (DT) Active: The Titans signed Horne from the practice squad to the active roster Saturday, Jim Wyatt of the team's official site reports.
-- Dorian Mausi (LB) Injured Reserve, Foot: The Titans opened Mausi's 21-day practice window Wednesday, Jim Wyatt of the team's official website reports.
-- Alontae Taylor (CB) Active
 
 Tennessee Titans, ESPN headlines:
 
@@ -248,7 +248,8 @@ Arizona Cardinals, injuries:
 Arizona Cardinals, ESPN headlines:
 
 Dallas Cowboys, injuries:
-- P.J. Locke (S) Questionable, Foot: questionable
+- James Mitchell (TE) Active: The Cowboys elevated Mitchell from the practice squad to the active roster Saturday.
+- P.J. Locke (S) Questionable, Foot: Locke (foot) was activated from injured reserve Saturday, but he's still listed as questionable for Sunday's game against the Cardinals.
 - Kenny Clark (DT) Questionable, Back: Clark (back) is questionable for Sunday's game against the Cardinals.
 - Quinnen Williams (DT) Active: Williams (hamstring) is set to play Sunday against Arizona, Tommy Yarrish of the Cowboys' official site reports.
 - Dee Winters (LB) Out, Calf: Winters (calf) has been ruled out for Sunday's game against the Cardinals, Tommy Yarrish of the Cowboys' official site reports.
@@ -272,7 +273,6 @@ Dallas Cowboys, injuries:
 - Cobie Durant (CB) Active: Durant (hamstring) does not have an injury designation for Monday's game against Philadelphia, Adam Caplan of SiriusXM NFL Radio reports.
 - Broderick Jones (OT) Active
 - Tyler Guyton (OT) Active
-- Juanyeh Thomas (S) Active: Thomas was signed to the Cowboys' active roster Tuesday.
 
 Dallas Cowboys, ESPN headlines:
 
@@ -355,8 +355,8 @@ Searches to run:
 - "NFL week 8 picks LV NYJ"
 
 Las Vegas Raiders, injuries:
+- Patrick Johnson (DE) Injured Reserve, Neck: The Raiders placed Johnson (neck) on injured reserve Saturday.
 - Jack Bech (WR) Active: The Raiders activated Bech (forearm) from injured reserve Saturday, and he does not carry an injury designation for Sunday's game against the Jets, Sam Warren of The Athletic reports.
-- Patrick Johnson (DE) Injured Reserve, Neck: Johnson (neck) has been ruled out for Sunday's game against the Jets, Sam Warren of The Athletic reports.
 - Ian Thomas (TE) Active: Thomas (shoulder) does not have an injury designation for Sunday's game against the Jets, Sam Warren of The Athletic reports.
 - Carter Runyon (TE) Injured Reserve, Foot: Runyon (foot) has been ruled out for Sunday's game against the Jets, Sam Warren of The Athletic reports.
 - Folorunso Fatukasi (DT) Active
@@ -423,8 +423,8 @@ Searches to run:
 - "NFL week 8 picks CLE PIT"
 
 Cleveland Browns, injuries:
+- Tytus Howard (OT) Active: Howard has cleared the league's concussion protocol and doesn't carry an injury designation into Sunday's game against the Steelers, Chris Easterling of the Akron Beacon Journal reports.
 - Carsen Ryan (TE) Active: The Browns elevated Ryan from their practice squad to their active roster Saturday.
-- Tytus Howard (OT) Active
 - Daniel Thomas (S) Questionable, Ankle: Thomas (ankle) is questionable for Sunday's game against the Steelers, Mary Kay Cabot of The Cleveland Plain Dealer reports.
 - Mike Hall Jr. (DT) Active: Hall (ankle) does not have an injury designation for Sunday's game against the Steelers, Mary Kay Cabot of The Cleveland Plain Dealer reports.
 - Myles Harden (CB) Questionable, Hamstring: Harden (hamstring) is listed as questionable for Sunday's game against the Steelers, Mary Kay Cabot of The Cleveland Plain Dealer reports.
@@ -481,7 +481,7 @@ Pittsburgh Steelers, injuries:
 Pittsburgh Steelers, ESPN headlines:
 
 ### Atlanta Falcons at Tampa Bay Buccaneers
-Sun, Nov 1, 1:00 PM ET, Fox, Raymond James Stadium, Tampa. Line: TB -2.5, O/U 43.5
+Sun, Nov 1, 1:00 PM ET, Fox, Raymond James Stadium, Tampa. Line: TB -1.5, O/U 43.5
 
 Searches to run:
 - "Atlanta Falcons Tampa Bay Buccaneers preview week 8"
@@ -491,9 +491,10 @@ Searches to run:
 - "NFL week 8 picks ATL TB"
 
 Atlanta Falcons, injuries:
+- Cameron Williams (OL) Injured Reserve, Ankle: Williams (ankle) will remain on injured reserve and has been ruled out for Sunday's game against the Buccaneers, Tori McElhany of the Falcons' official site reports.
 - Billy Bowman Jr. (CB) Out, Hamstring: Bowman (hamstring) has been ruled out for Sunday's game against the Buccaneers, Tori McElhaney of the Falcons' official site reports.
 - Divine Deablo (LB) Out, Forearm: Deablo (forearm) has been ruled out for Sunday's game against the Buccaneers, Tori McElhaney of the Falcons' official site reports.
-- Beaux Collins (WR) Injured Reserve, Hip: Collins (hip) has been ruled out for Sundays' game against the Buccaneers and will remain on injured reserve, Tori McElhaney of the Falcons' official site reports.
+- Beaux Collins (WR) Injured Reserve, Hip: Collins (hip) has been ruled out for Sunday's game against the Buccaneers and will remain on injured reserve, Tori McElhaney of the Falcons' official site reports.
 - Khalil Herbert (RB) Active: The Falcons elevated Herbert from the practice squad to the active roster Saturday, Tori McElhaney of the team's official site reports.
 - Anterio Thompson (DT) Out, Undisclosed: Thompson posted on social media this week that he was diagnosed with a genetic mutation on his spinal cord in early May and indicated that he was told he will "never play football again," Josh Kendall of The Athletic reports.
 - A.J. Terrell Jr. (CB) Active: Terrell (groin) does not carry an injury designation into Sunday's game against the Buccaneers, Will McFadden of the Falcons' official site reports.
@@ -515,7 +516,6 @@ Atlanta Falcons, injuries:
 - Jahan Dotson (WR) Active: Dotson caught one pass on three targets for six yards during Sundays' 29-20 win over San Francisco.
 - Nick Muse (TE) Active: Muse caught both of his targets for two yards and a touchdown in the Falcons' 29-20 win over the 49ers on Sunday.
 - Jack Strand (QB) Active
-- Andy Dalton (QB) Active
 
 Atlanta Falcons, ESPN headlines:
 
@@ -617,7 +617,7 @@ Jacksonville Jaguars, injuries:
 Jacksonville Jaguars, ESPN headlines:
 
 ### Los Angeles Chargers at Los Angeles Rams
-Sun, Nov 1, 4:05 PM ET, Fox, SoFi Stadium, Inglewood. Line: LAR -6.5, O/U 45.5
+Sun, Nov 1, 4:05 PM ET, Fox, SoFi Stadium, Inglewood. Line: LAR -6, O/U 45.5
 
 Searches to run:
 - "Los Angeles Chargers Los Angeles Rams preview week 8"
@@ -724,6 +724,7 @@ Kansas City Chiefs, injuries:
 Kansas City Chiefs, ESPN headlines:
 
 Denver Broncos, injuries:
+- Taylor Rapp (S) Active: The Broncos signed Rapp off the practice squad to the active roster Saturday, Parker Gabriel of The Denver Post reports.
 - Cody Schrader (RB) Active: The Broncos elevated Schrader from the practice squad to the active roster Saturday, Zac Stevens of TheDNVR.com reports.
 - RJ Harvey (RB) Injured Reserve, Knee: The Broncos placed Harvey (knee) on injured reserve Saturday, Ian Rapoport of NFL Network reports.
 - Zach Allen (DE) Questionable, Hamstring: Allen (hamstring) is questionable for Sunday's game against the Chiefs.
@@ -748,7 +749,6 @@ Denver Broncos, injuries:
 - Sam Ehlinger (QB) Active: Ehlinger (coach's decision) is inactive but will serve as the emergency third quarterback in Sunday's game against the Cardinals, Aric DiLalla of the Broncos' official site reports.
 - Tyler Badie (RB) Injured Reserve, Thumb: The Broncos placed Badie (thumb) on injured reserve Saturday, Aric DiLalla of the team's official site reports.
 - Jonah Elliss (LB) Injured Reserve, Ankle: The Broncos placed Elliss (ankle) on injured reserve Saturday, Aric DiLalla of the team's official site reports.
-- Jonathon Cooper (LB) Active: Cooper had his roster exemption removed by the Broncos on Saturday and is available for Sunday's road game against the Cardinals, Aric DiLalla of the Broncos' official site reports.
 
 Denver Broncos, ESPN headlines:
 
@@ -763,6 +763,7 @@ Searches to run:
 - "NFL week 8 picks NE MIA"
 
 New England Patriots, injuries:
+- Marcus Bryant (OT) Injured Reserve, Ankle: Bryant (ankle) has been ruled out for Sunday's game against the Dolphins, Mike Kadlick of CLNSMedia.com reports.
 - Ryan Miller (WR) Active: The Patriots elevated Miller from the practice squad to the active roster Saturday, Mike Reiss of ESPN.com reports.
 - Lan Larison (RB) Active: The Patriots signed Larison off the practice squad to the active roster Saturday, Mike Reiss of ESPN.com reports.
 - TreVeyon Henderson (RB) Out, Illness: Henderson (illness) has been downgraded from questionable to out for Sunday's game against the Dolphins, Ian Rapoport of ESPN and NFL Network reports.
@@ -787,7 +788,6 @@ New England Patriots, injuries:
 - Rhamondre Stevenson (RB) Active: Stevenson rushed six times for 22 yards and brought in all five targets for 93 yards and a touchdown in the Patriots' 30-24 loss to the Bears on Thursday.
 - Drake Maye (QB) Active: Maye completed 24 of 31 passes for 321 yards with two touchdowns and one interception while adding four rushes for 26 yards and another score in the Patriots' 30-24 loss to the Bears on Thursday.
 - Alijah Vera-Tucker (G) Injured Reserve, Hamstring: Vera-Tucker (hamstring) was placed on injured reserve by the Patriots on Thursday.
-- Craig Woodson (S) Active: Woodson (shoulder) is officially active for Thursday's game against the Bears.
 
 New England Patriots, ESPN headlines:
 
@@ -831,6 +831,7 @@ Searches to run:
 - "NFL week 8 picks PHI WAS"
 
 Philadelphia Eagles, injuries:
+- Jakorian Bennett (CB) Injured Reserve, Knee: Bennett (knee) has been ruled out for Sunday's game against the Commanders.
 - Elijah Mitchell (RB) Active: The Eagles elevated Mitchell from the practice squad to the active roster Saturday.
 - Michael Carter II (CB) Active: Carter (abdomen) does not have a game designation for Philadelphia's Week 8 matchup against the Commanders on Sunday.
 - Nolan Smith Jr. (LB) Active: Smith (concussion) does not carry an injury designation into Sunday's game against the Commanders.
@@ -855,7 +856,6 @@ Philadelphia Eagles, injuries:
 - Elijah Moore (WR) Active: Moore caught both of his targets for 16 yards during Monday's 38-21 loss to the Cowboys.
 - Eli Stowers (TE) Active: Stowers failed to haul in his lone target during Monday's 38-21 loss to Dallas.
 - Darius Cooper (WR) Active: Cooper caught one of three passes for 17 yards during the Eagles' 38-21 loss to the Cowboys on Monday.
-- Jake Majors (C) Active
 
 Philadelphia Eagles, ESPN headlines:
 
@@ -899,9 +899,10 @@ Searches to run:
 - "NFL week 8 picks CHI SEA"
 
 Chicago Bears, injuries:
+- Jack Sanborn (LB) Active: Sanborn (concussion) does not carry an injury designation into Monday's game against the Seahawks.
+- Malik Muhammad II (CB) Questionable, Toe: Muhammad (toe) is listed as questionable for Monday's game against the Seahawks.
 - T.J. Edwards (LB) Active: Edwards (hamstring) does not have an injury designation for Monday's tilt against the Seahawks.
 - D'Marco Jackson (LB) Questionable, Ankle: Jackson (ankle) is questionable to suit up Monday versus Seattle.
-- Jack Sanborn (LB) Active
 - Colston Loveland (TE) Active: Loveland (neck) does not carry an injury designation into Monday's game against the Seahawks.
 - Kyle Monangai (RB) Out, Thumb: Head coach Ben Johnson told reporters Saturday that Monangai (thumb/toe) will not play against the Seahawks on Monday, Courtney Cronin of ESPN.com reports.
 - Jeffery Simmons (DT) Active: Simmons was traded to the Bears on Thursday, along with a 2028 fifth-round pick, in exchange for first-round picks in 2027 and 2028, as well as a 2027 fourth-round pick, Adam Schefter of ESPN reports.
@@ -922,18 +923,17 @@ Chicago Bears, injuries:
 - D'Andre Swift (RB) Active: Swift rushed 22 times for 78 yards and a touchdown and brought in all four targets for 12 yards in the Bears' 30-24 win over the Patriots on Thursday.
 - Luther Burden III (WR) Active: Burden brought in all four targets for 130 yards and a touchdown and rushed once for seven yards in the Bears' 30-24 win over the Patriots on Thursday.
 - Caleb Williams (QB) Active: Williams completed 22 of 33 passes for 308 yards with two touchdowns and no interceptions while rushing five times for 18 yards in the Bears' 30-24 win over the Patriots on Thursday.
-- Malik Muhammad II (CB) Questionable, Toe: Muhammad (toe) is doubtful to return to Thursday night's contest against the Patriots.
 - Tyrique Stevenson Sr. (CB) Active: Stevenson (hip) is active for Thursday night's contest against New England.
 
 Chicago Bears, ESPN headlines:
 
 Seattle Seahawks, injuries:
-- Byron Murphy II (DT) Active: Murphy (back) does not have an injury designation against the Bears on Monday, John Boyle of the Seahawks' official site reports.
+- Charles Cross (OT) Out, Ankle: Cross (ankle) has been ruled out for Monday's game against the Bears, John Boyle of the Seahawks' official site reports.
+- Tyrice Knight (LB) Active: Knight (hip) doesn't have an injury designation for Monday's game against the Bears, John Boyle of the Seahawks' official site reports.
+- Byron Murphy II (DT) Active: Murphy (back) does not have an injury designation for Monday's game against the Bears, John Boyle of the Seahawks' official site reports.
 - Velus Jones Jr. (RB) Out, Hamstring: Jones (hamstring) has been ruled out for Monday's game against the Bears, John Boyle of the Seahawks' official site reports.
 - Drew Lock (QB) Questionable, Elbow: Lock (elbow) is listed as questionable for Monday's game against the Bears, Curtis Crabtree of Fox 13 Seattle reports.
-- Tyrice Knight (LB) Active
 - Uchenna Nwosu (LB) Doubtful, Ankle: doubtful
-- Charles Cross (OT) Out, Ankle: out
 - Rashid Shaheed (WR) Out, Knee: Shaheed (knee) has been ruled out for Monday's game against the Bears, Curtis Crabtree of FOX 13 Seattle reports.
 - Jadarian Price (RB) Injured Reserve, Chest: Price (chest) doesn't have a designation for Monday's game against the Bears, but he remains on injured reserve, John Boyle of the Seahawks' official site reports.
 - Zach Charbonnet (RB) Active: Charbonnet (knee) does not carry an injury designation into Monday's game against the Bears, John Boyle of the Seahawks' official site reports.
