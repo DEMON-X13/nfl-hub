@@ -777,8 +777,10 @@ const slotWaitOwn = (u, sched) => `Next up: week ${u.w}’s Sunday slot, ${u.gam
    line naming it and when its sets go up and no set; up, its unit (.sp-game.sp-slot) and no wait line; none to come,
    one line saying so and no set; whichever it is, after everything of the night games' (the section's last child), and
    no Sunday slot section of its own */
-const slotWaitHeld = (d, U, sched, wk, seasonOver) => { const sec = d.querySelector(SEC_SLOT);
-  if (dayOffOwn(d)) return sec ? 'Day games is drawn on a Sunday from 4pm Eastern' : null;
+/* dayOff: the 4pm rule as the caller has the page under it (default the smoke's own reading of the page's clock); a caller
+   that stands the page's spDayOff in as off passes false, so the section is held as drawn */
+const slotWaitHeld = (d, U, sched, wk, seasonOver, dayOff = dayOffOwn(d)) => { const sec = d.querySelector(SEC_SLOT);
+  if (dayOff) return sec ? 'Day games is drawn on a Sunday from 4pm Eastern' : null;
   if (!sec) return 'Suggested Parlays has no Day games section';
   if (d.querySelector(`${SEC_NIGHT} .sp-slot, ${SEC_NIGHT} [data-sp-none="slot"], ${SEC_NIGHT} [data-sp-next$="_SUN"]`)) return 'the Night games section still draws something of the Sunday slot';
   const els = [...d.querySelectorAll(SLOT_WAIT)], el = els[0], units = [...d.querySelectorAll(SLOT_UNIT)], nones = [...d.querySelectorAll(SLOT_NONE)], none = nones[0], bad = [];
@@ -3999,13 +4001,17 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           `${lab}: under way with no record and nothing kept, the page built a set of its own, or does not say the site's was not published: ${phaseLine(ID)} / ${drawnS(ID, 'model')}`); }
       w.eval('PB_REC=window.__sltRec; SP_KEEP=null');
       /* from its last kickoff: gone, the next week's slot's wait line in its place, and the browser's copy pruned at the
-         next write */
-      await view(U0.last + 60e3);
-      { const U = unitOf(U0.last + 60e3), hand = `Next up: week ${W2}’s Sunday slot, 2 games. Sets go up Fri 6:00 AM ET.`, sh = slotWaitHeld(d, U, SCHED, W1, false);
+         next write. The moment, 4:26 pm Eastern, is past the 4pm rule (app v132), under which the page draws no Day games
+         section, so slotWaitHeld returned at once and the wait line went unread (the review of 1 November 2026): the page's
+         spDayOff is stood in as off for it, as the audit's M15 does, and put back after */
+      w.__sltDay = w.eval('spDayOff'); w.eval('spDayOff=function(){ return false; }');
+      try { await view(U0.last + 60e3);
+      { const U = unitOf(U0.last + 60e3), hand = `Next up: week ${W2}’s Sunday slot, 2 games. Sets go up Fri 6:00 AM ET.`, sh = slotWaitHeld(d, U, SCHED, W1, false, false);
         w.eval('spKeepSave()'); const k3 = (() => { try { return JSON.parse(w.localStorage.getItem(KK)); } catch (e) { return null; } })();
         chk(!!U && U.id === `${SEAS}_${String(W2).padStart(2, '0')}_SUN` && U.games.map(g => g.id).join() === [T1, T2].map(g => g.id).join() && U.open === Date.parse('2099-01-09T11:00:00Z') && slotWaitOwn(U, SCHED) === hand
           && !sh && !elS(ID) && sToken() === `s=${U.id}:w` && !(k3 && k3.games && k3.games[ID]),
           `${lab}: from its last kickoff the slot is still on the tab, the next week's slot's wait line ("${hand}") is not in its place, or its kept copy was not pruned (${sToken()}): ` + (sh || JSON.stringify(k3 && Object.keys(k3.games || {})))); }
+      } finally { w.eval('spDayOff=window.__sltDay'); delete w.__sltDay; }
     } finally {
       w.Date = D0; Sx.sched = keep.sched;
       w.__sltKeep = keep; w.eval('pbGames=window.__sltKeep.pb[0]; pricedLegs=window.__sltKeep.pb[1]; PB_REC=window.__sltKeep.rec; PB_REC_DONE=window.__sltKeep.done; SP_KEEP=null');
