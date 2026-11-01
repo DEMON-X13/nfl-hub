@@ -15,7 +15,7 @@ a club with none (the lineups first published 10 October 2026) is said and left 
 the same clubs, the Deep Dive's frozen lineups (news/tools/out/weekN-lineups.json) on the same rule.
 """
 import io, json, os, re, subprocess, sys, unicodedata
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -45,14 +45,6 @@ def short(n):
     return f'{w[0][0]}.{" ".join(w[1:])}' if len(w) > 1 else w[0]
 
 
-def kickoff(r):
-    """games.csv's Eastern date and time as UTC (EDT through the first Sunday of November)"""
-    t = datetime.strptime(f'{r.gameday} {r.gametime}', '%Y-%m-%d %H:%M')
-    nov1 = datetime(t.year, 11, 1)
-    dst_end = nov1 + timedelta(days=(6 - nov1.weekday()) % 7, hours=2)
-    return (t + timedelta(hours=4 if t < dst_end else 5)).replace(tzinfo=timezone.utc)
-
-
 def main():
     week = int(sys.argv[1]) if len(sys.argv) > 1 else None
     if week is None:
@@ -63,7 +55,7 @@ def main():
     kick = {}
     for r in gw.itertuples(index=False):
         for t in (r.home_team, r.away_team):
-            kick[ab(t)] = (r.game_id, kickoff(r))
+            kick[ab(t)] = (r.game_id, build.kickoff(r.gameday, r.gametime))  # zoneinfo's, so January is EST
     dd = os.path.join(build.CACHE, 'grade')
     os.makedirs(dd, exist_ok=True)
     def nfl(path, name):
@@ -155,7 +147,7 @@ def main():
     out.append(f'- **Like for like** (quarterbacks, backs, receivers, tight ends and defenders; no line, no kicker): '
                f'snapshot {len(mse)} of {len(se)} without a snap ({pct(mse, len(se))}), Deep Dive {len(msd)} of {len(sd)} ({pct(msd, len(sd))}).')
     if none:
-        out.append(f'- No snapshot lineup was published before kickoff for: {", ".join(none)} (the snapshot's lineups were first published 10 October 2026).')
+        out.append(f'- No snapshot lineup was published before kickoff for: {", ".join(none)} (the snapshot\'s lineups were first published 10 October 2026).')
     out += ['', '## Game snapshot: named and did not play', '']
     out += [f'- {t}: {n} ({p})' for t, _, n, _, p in me] or ['- none']
     out += ['', '## Deep Dive, same clubs: named and did not play', '']
