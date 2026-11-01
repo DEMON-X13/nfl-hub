@@ -19,7 +19,7 @@
   "before": "no verdict before 285: until then the summary gives the running numbers and how many of the 285 are in, never a verdict or a word of passing"
  },
  "bar_registered": "2026-10-11T02:01:51Z",
- "run_at": "2026-11-01T16:18:45Z",
+ "run_at": "2026-11-01T20:46:28Z",
  "fits": {
   "2026": {
    "b0": 1.294144,
@@ -31,8 +31,8 @@
  "decision": null,
  "summary": {
   "calls": 71,
-  "to_come": 28,
-  "frozen_awaiting_final": 0,
+  "to_come": 20,
+  "frozen_awaiting_final": 8,
   "graded": 43,
   "pushes": 0,
   "graded_without_market_price": 0,
@@ -1377,8 +1377,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-01T16:18:45Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-01T20:46:28Z",
    "final": null
   },
   "2026_08_ATL_TB": {
@@ -1400,8 +1400,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-01T09:20:07Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-01T20:46:28Z",
    "final": null
   },
   "2026_08_BAL_BUF": {
@@ -1423,8 +1423,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-01T16:18:45Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-01T20:46:28Z",
    "final": null
   },
   "2026_08_CLE_PIT": {
@@ -1446,8 +1446,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-01T16:18:45Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-01T20:46:28Z",
    "final": null
   },
   "2026_08_IND_JAX": {
@@ -1469,8 +1469,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-01T16:18:45Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-01T20:46:28Z",
    "final": null
   },
   "2026_08_LV_NYJ": {
@@ -1492,8 +1492,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-01T16:18:45Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-01T20:46:28Z",
    "final": null
   },
   "2026_08_MIN_DET": {
@@ -1515,8 +1515,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-10-30T10:24:55Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-01T20:46:28Z",
    "final": null
   },
   "2026_08_TEN_CIN": {
@@ -1538,8 +1538,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-01T16:18:45Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-01T20:46:28Z",
    "final": null
   },
   "2026_08_LAC_LA": {
@@ -1549,18 +1549,18 @@
    "away": "LAC",
    "home": "LA",
    "kickoff": "2026-11-01T21:05:00Z",
-   "line": 45.5,
-   "over_odds": -112,
-   "under_odds": -108,
-   "p_model": 0.515757,
-   "p_market": 0.50433,
-   "mu": 46.0212,
+   "line": 46.5,
+   "over_odds": -105,
+   "under_odds": -115,
+   "p_model": 0.523307,
+   "p_market": 0.489166,
+   "mu": 47.2712,
    "sd": 13.1937,
    "model_total": 43.4151,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-11-01T16:18:45Z",
+   "called_at": "2026-11-01T20:46:28Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1573,17 +1573,17 @@
    "home": "DEN",
    "kickoff": "2026-11-01T21:25:00Z",
    "line": 41.5,
-   "over_odds": -102,
-   "under_odds": -118,
+   "over_odds": -112,
+   "under_odds": -108,
    "p_model": 0.512297,
-   "p_market": 0.482636,
+   "p_market": 0.50433,
    "mu": 41.9067,
    "sd": 13.1937,
    "model_total": 39.8731,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-11-01T16:18:45Z",
+   "called_at": "2026-11-01T20:46:28Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1596,17 +1596,17 @@
    "home": "MIA",
    "kickoff": "2026-11-01T21:25:00Z",
    "line": 41.5,
-   "over_odds": -112,
-   "under_odds": -108,
+   "over_odds": -108,
+   "under_odds": -112,
    "p_model": 0.491017,
-   "p_market": 0.50433,
+   "p_market": 0.49567,
    "mu": 41.2029,
    "sd": 13.1937,
    "model_total": 42.6884,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-11-01T16:18:45Z",
+   "called_at": "2026-11-01T20:46:28Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
