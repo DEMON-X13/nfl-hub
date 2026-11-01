@@ -455,13 +455,18 @@ function mini({ url = SITE, seed = null, odds = 'good', oddsOk = true } = {}) {
     w.close(); }
 
   /* ======================= another tab signs out ======================= */
+  /* the page's own saves (part2's save: a 300 ms timer, then the store's write) land a moment after its boot, so a window
+     held to writing nothing starts only once the page has stopped writing: no write for 500 ms, up to 6 s (the props gate's
+     runner of 1 November 2026 saw the boot's set props_2026_v1 land inside the window, on this change and on main alike) */
+  const quiet = async w => { for (let i = 0; i < 12; i++) { w.__wr = []; await wait(500); if (!w.__wr.length) return true; } return false; };
   { const B = await boot({ url: SITE + '#bets', oddsOk: true, seed: w => { w.localStorage.setItem(KEY, REC()); const P = w.Storage.prototype, s = P.setItem, r = P.removeItem;
       P.setItem = function (k, v) { if (w.__wr) w.__wr.push('set ' + k); return s.call(this, k, v); }; P.removeItem = function (k) { if (w.__wr) w.__wr.push('remove ' + k); return r.call(this, k); }; } });
     const { w, d } = B;
     chk(tabsOf(d) === EIGHT && w.location.hash === '#bets' && !d.getElementById('tab-bets').hidden, "the admin's #bets does not open the X Bet Log: " + w.location.hash);
+    chk(await quiet(w), 'the page did not stop writing to storage within 6 s of its boot: ' + w.__wr.join());
     w.__wr = []; w.dispatchEvent(new w.StorageEvent('storage', { key: 'props_press_v1' })); w.dispatchEvent(new w.StorageEvent('storage', { key: KEY })); await wait(30);
     chk(tabsOf(d) === EIGHT && w.HUB_ADMIN.on() === true && !w.__wr.length, 'another key moving, or the record still there, signed this tab out, or following wrote something');
-    w.localStorage.removeItem(KEY); w.__wr = [];
+    await quiet(w); w.localStorage.removeItem(KEY); w.__wr = [];
     w.dispatchEvent(new w.StorageEvent('storage', { key: KEY })); await until(() => tabsOf(d) === SIX, 1500); await wait(30);
     chk(w.HUB_ADMIN.on() === false && tabsOf(d) === SIX && d.documentElement.getAttribute('data-admin') == null && onProps(d) && d.getElementById('tab-bets').hidden && !w.__wr.length,
       "another tab's sign-out is not followed here (the X tabs gone, the X Bet Log landing on the Props tab, #slate), or following wrote something: " + tabsOf(d) + ' / ' + w.location.hash + ' / ' + w.__wr.join());
