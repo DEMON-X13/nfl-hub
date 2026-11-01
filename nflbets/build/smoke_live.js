@@ -353,7 +353,11 @@ const NOLADDER_SAY = n => `${n} ladder leg${n === 1 ? '' : 's'} removed.`;
 const ladderBoot = async (x, seeded, how) => {
   const keys = Object.keys(seeded), want = keys.filter(k => !ladderOwn(seeded[k]) || seeded[k].kept).sort(), gone = keys.length - want.length;
   const keysNow = () => { try { return x.w.eval('typeof S==="object"&&S?JSON.stringify(Object.keys(S.parlay||{}).sort()):null'); } catch (e) { return null; } };
-  let kept = null; try { kept = JSON.stringify(Object.keys((JSON.parse(x.w.localStorage.getItem(PROP_KEY)) || {}).parlay || {}).sort()); } catch (e) {}
+  /* the page saves on a 300 ms timer and then the store's own write (part2's save), so the builder the load rewrote reaches
+     the browser's storage a moment after the boot: it is read once it has, up to 3 s, never at once (the props gate's runner
+     of 1 November 2026 read the 8 legs still stored, the page's write not yet made, where the builder was already right) */
+  const storedKeys = () => { try { return JSON.stringify(Object.keys((JSON.parse(x.w.localStorage.getItem(PROP_KEY)) || {}).parlay || {}).sort()); } catch (e) { return null; } };
+  let kept = storedKeys(); for (let i = 0; i < 30 && kept !== JSON.stringify(want); i++) { await wait(100); kept = storedKeys(); }
   const got = keysNow(), said = [...x.d.querySelectorAll('#parlayBody [data-pb-noladder]')];
   chk(got === JSON.stringify(want) && kept === JSON.stringify(want)
     && (gone ? said.length === 1 && said[0].getAttribute('data-pb-noladder') === String(gone) && txt(said[0]) === NOLADDER_SAY(gone) : !said.length),
