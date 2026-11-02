@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. Since app v118 each entry holds the unit's Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe), taken, locked, replaced and graded with the model's levels; and slot holds each week's Sunday slot (every Sunday game before 7 pm Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary, slot_summary (each with its elo) and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-11-02T18:30:34Z",
+ "updated": "2026-11-02T21:39:02Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -1369,7 +1369,7 @@
    "home": "SEA",
    "kickoff": "2026-11-03T01:15:00Z",
    "lock": "2026-11-02T23:15:00Z",
-   "baked_at": "2026-11-02T18:29+00:00",
+   "baked_at": "2026-11-02T21:37+00:00",
    "pool": {"pref":0,"thin":38,"mkt":1,"far":0},
    "tiers": [
     {
@@ -1378,13 +1378,13 @@
      "n": 2,
      "floor": 0,
      "legs": [
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039021","team":"CHI","grp":"RB","stat":"receptions","k":1.5,"side":"under","main":true,"price":-200,"src":"dkline","name":"Roschon Johnson","label":"Under 1.5 receptions","p":0.581,"fair":0.6288,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0041558","team":"CHI","grp":"TE","stat":"receptions","k":1.5,"side":"under","main":true,"price":-188,"src":"dkline","name":"Sam Roush","label":"Under 1.5 receptions","p":0.9095,"fair":0.6161,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0041558","team":"CHI","grp":"TE","stat":"receptions","k":1.5,"side":"under","main":true,"price":-188,"src":"dkline","name":"Sam Roush","label":"Under 1.5 receptions","p":0.9103,"fair":0.6153,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"team:SEA","team":"SEA","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-170,"src":"real","name":"Seahawks","label":"To win","p":0.6231,"fair":0.6038,"fair_est":false,"thin":true,"market":false}
      ],
-     "p": 0.5278,
-     "fair": 0.391,
+     "p": 0.5672,
+     "fair": 0.3715,
      "fair_est": true,
-     "dec": 2.036,
+     "dec": 2.18,
      "likeliest": false,
      "thin": 2,
      "mkt": 0,
@@ -1396,14 +1396,14 @@
      "n": 3,
      "floor": 0.25,
      "legs": [
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0032464","team":"CHI","grp":"WR","stat":"receptions","k":2.5,"side":"under","main":true,"price":-178,"src":"dkline","name":"Kalif Raymond","label":"Under 2.5 receptions","p":0.6293,"fair":0.6035,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039021","team":"CHI","grp":"RB","stat":"receptions","k":1.5,"side":"under","main":true,"price":-200,"src":"dkline","name":"Roschon Johnson","label":"Under 1.5 receptions","p":0.581,"fair":0.6288,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0041558","team":"CHI","grp":"TE","stat":"receptions","k":1.5,"side":"under","main":true,"price":-188,"src":"dkline","name":"Sam Roush","label":"Under 1.5 receptions","p":0.9095,"fair":0.6161,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039918","team":"CHI","grp":"QB","stat":"passing_yards","k":229.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Caleb Williams","label":"Under 229.5 passing yards","p":0.5723,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0032464","team":"CHI","grp":"WR","stat":"receptions","k":2.5,"side":"under","main":true,"price":-177,"src":"dkline","name":"Kalif Raymond","label":"Under 2.5 receptions","p":0.6293,"fair":0.6034,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0041558","team":"CHI","grp":"TE","stat":"receptions","k":1.5,"side":"under","main":true,"price":-188,"src":"dkline","name":"Sam Roush","label":"Under 1.5 receptions","p":0.9103,"fair":0.6153,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.3373,
-     "fair": 0.2383,
+     "p": 0.3755,
+     "fair": 0.2317,
      "fair_est": true,
-     "dec": 3.209,
+     "dec": 3.386,
      "likeliest": true,
      "thin": 3,
      "mkt": 0,
@@ -1415,15 +1415,15 @@
      "n": 4,
      "floor": 0.12,
      "legs": [
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039918","team":"CHI","grp":"QB","stat":"passing_yards","k":228.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Caleb Williams","label":"Under 228.5 passing yards","p":0.5616,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040735","team":"CHI","grp":"WR","stat":"receiving_yards","k":52.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Luther Burden III","label":"Under 52.5 receiving yards","p":0.5339,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039919","team":"CHI","grp":"WR","stat":"receptions","k":3.5,"side":"under","main":true,"price":-129,"src":"dkline","name":"Rome Odunze","label":"Under 3.5 receptions","p":0.5948,"fair":0.5312,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0041558","team":"CHI","grp":"TE","stat":"receptions","k":1.5,"side":"under","main":true,"price":-188,"src":"dkline","name":"Sam Roush","label":"Under 1.5 receptions","p":0.9095,"fair":0.6161,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039918","team":"CHI","grp":"QB","stat":"passing_yards","k":229.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Caleb Williams","label":"Under 229.5 passing yards","p":0.5723,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0032464","team":"CHI","grp":"WR","stat":"receptions","k":2.5,"side":"under","main":true,"price":-177,"src":"dkline","name":"Kalif Raymond","label":"Under 2.5 receptions","p":0.6293,"fair":0.6034,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040735","team":"CHI","grp":"WR","stat":"receptions","k":4.5,"side":"under","main":true,"price":-121,"src":"dkline","name":"Luther Burden III","label":"Under 4.5 receptions","p":0.5855,"fair":0.5171,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039919","team":"CHI","grp":"WR","stat":"receiving_yards","k":40.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Rome Odunze","label":"Under 40.5 receiving yards","p":0.5165,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.2159,
-     "fair": 0.1239,
+     "p": 0.1542,
+     "fair": 0.1222,
      "fair_est": true,
-     "dec": 6.222,
+     "dec": 6.343,
      "likeliest": false,
      "thin": 4,
      "mkt": 0,
@@ -1435,16 +1435,16 @@
      "n": 5,
      "floor": 0.05,
      "legs": [
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039918","team":"CHI","grp":"QB","stat":"passing_yards","k":228.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Caleb Williams","label":"Under 228.5 passing yards","p":0.5616,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0038543","team":"SEA","grp":"WR","stat":"receiving_yards","k":98.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Jaxon Smith-Njigba","label":"Under 98.5 receiving yards","p":0.54,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040735","team":"CHI","grp":"WR","stat":"receiving_yards","k":52.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Luther Burden III","label":"Under 52.5 receiving yards","p":0.5339,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0034869","team":"SEA","grp":"QB","stat":"passing_yards","k":237.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Sam Darnold","label":"Under 237.5 passing yards","p":0.5349,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"team:SEA","team":"SEA","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-170,"src":"real","name":"Seahawks","label":"To win","p":0.6161,"fair":0.6038,"fair_est":false,"thin":true,"market":false}
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039918","team":"CHI","grp":"QB","stat":"passing_yards","k":229.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Caleb Williams","label":"Under 229.5 passing yards","p":0.5723,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040735","team":"CHI","grp":"WR","stat":"receiving_yards","k":53.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Luther Burden III","label":"Under 53.5 receiving yards","p":0.5472,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0034869","team":"SEA","grp":"QB","stat":"passing_yards","k":236.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Sam Darnold","label":"Under 236.5 passing yards","p":0.5278,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0041558","team":"CHI","grp":"TE","stat":"receiving_yards","k":9.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Sam Roush","label":"Under 9.5 receiving yards","p":0.7622,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040648","team":"SEA","grp":"WR","stat":"receiving_yards","k":22.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tory Horton","label":"Under 22.5 receiving yards","p":0.7137,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.0805,
-     "fair": 0.0624,
+     "p": 0.1313,
+     "fair": 0.0577,
      "fair_est": true,
-     "dec": 12.092,
+     "dec": 13.071,
      "likeliest": false,
      "thin": 5,
      "mkt": 0,
@@ -1458,13 +1458,13 @@
      "n": 2,
      "floor": 0,
      "legs": [
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040126","team":"CHI","grp":"TE","stat":"receiving_yards","k":42.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Colston Loveland","label":"Under 42.5 receiving yards","p":0.6081,"pe":0.6012,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0038543","team":"SEA","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-105,"src":"dkline","name":"Jaxon Smith-Njigba","label":"Scores a touchdown","p":0.3881,"pe":0.6382,"fair":0.4848,"fair_est":true,"thin":null,"market":null}
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040126","team":"CHI","grp":"TE","stat":"receiving_yards","k":44.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Colston Loveland","label":"Under 44.5 receiving yards","p":0.6419,"pe":0.6012,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0038543","team":"SEA","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-108,"src":"dkline","name":"Jaxon Smith-Njigba","label":"Scores a touchdown","p":0.3909,"pe":0.6445,"fair":0.4914,"fair_est":true,"thin":null,"market":null}
      ],
-     "p": 0.3787,
-     "fair": 0.2347,
+     "p": 0.3819,
+     "fair": 0.238,
      "fair_est": true,
-     "dec": 3.397,
+     "dec": 3.355,
      "likeliest": false,
      "thin": 0,
      "mkt": 0,
@@ -1476,14 +1476,14 @@
      "n": 3,
      "floor": 0,
      "legs": [
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040126","team":"CHI","grp":"TE","stat":"receiving_yards","k":42.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Colston Loveland","label":"Under 42.5 receiving yards","p":0.6081,"pe":0.6012,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0038543","team":"SEA","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-105,"src":"dkline","name":"Jaxon Smith-Njigba","label":"Scores a touchdown","p":0.3881,"pe":0.6382,"fair":0.4848,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040735","team":"CHI","grp":"WR","stat":"receiving_yards","k":52.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Luther Burden III","label":"Under 52.5 receiving yards","p":0.5339,"pe":0.5832,"fair":0.5,"fair_est":true,"thin":null,"market":null}
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040126","team":"CHI","grp":"TE","stat":"receiving_yards","k":44.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Colston Loveland","label":"Under 44.5 receiving yards","p":0.6419,"pe":0.6012,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0038543","team":"SEA","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-108,"src":"dkline","name":"Jaxon Smith-Njigba","label":"Scores a touchdown","p":0.3909,"pe":0.6445,"fair":0.4914,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040735","team":"CHI","grp":"WR","stat":"receiving_yards","k":53.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Luther Burden III","label":"Under 53.5 receiving yards","p":0.5472,"pe":0.5832,"fair":0.5,"fair_est":true,"thin":null,"market":null}
      ],
-     "p": 0.2154,
-     "fair": 0.1141,
+     "p": 0.2176,
+     "fair": 0.1157,
      "fair_est": true,
-     "dec": 6.622,
+     "dec": 6.528,
      "likeliest": false,
      "thin": 0,
      "mkt": 0,
@@ -1495,15 +1495,15 @@
      "n": 4,
      "floor": 0,
      "legs": [
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040126","team":"CHI","grp":"TE","stat":"receiving_yards","k":42.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Colston Loveland","label":"Under 42.5 receiving yards","p":0.6081,"pe":0.6012,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0038543","team":"SEA","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-105,"src":"dkline","name":"Jaxon Smith-Njigba","label":"Scores a touchdown","p":0.3881,"pe":0.6382,"fair":0.4848,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040735","team":"CHI","grp":"WR","stat":"receiving_yards","k":52.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Luther Burden III","label":"Under 52.5 receiving yards","p":0.5339,"pe":0.5832,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039165","team":"SEA","grp":"RB","stat":"rushing_yards","k":27.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Zach Charbonnet","label":"Under 27.5 rushing yards","p":0.2826,"pe":0.5723,"fair":0.5,"fair_est":true,"thin":null,"market":null}
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040126","team":"CHI","grp":"TE","stat":"receiving_yards","k":44.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Colston Loveland","label":"Under 44.5 receiving yards","p":0.6419,"pe":0.6012,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0038543","team":"SEA","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-108,"src":"dkline","name":"Jaxon Smith-Njigba","label":"Scores a touchdown","p":0.3909,"pe":0.6445,"fair":0.4914,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040735","team":"CHI","grp":"WR","stat":"receiving_yards","k":53.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Luther Burden III","label":"Under 53.5 receiving yards","p":0.5472,"pe":0.5832,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039165","team":"SEA","grp":"RB","stat":"rushing_yards","k":28.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Zach Charbonnet","label":"Under 28.5 rushing yards","p":0.293,"pe":0.5723,"fair":0.5,"fair_est":true,"thin":null,"market":null}
      ],
-     "p": 0.1246,
-     "fair": 0.0575,
+     "p": 0.1258,
+     "fair": 0.0583,
      "fair_est": true,
-     "dec": 12.691,
+     "dec": 12.497,
      "likeliest": false,
      "thin": 0,
      "mkt": 0,
@@ -1515,23 +1515,23 @@
      "n": 5,
      "floor": 0,
      "legs": [
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040126","team":"CHI","grp":"TE","stat":"receiving_yards","k":42.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Colston Loveland","label":"Under 42.5 receiving yards","p":0.6081,"pe":0.6012,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0038543","team":"SEA","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-105,"src":"dkline","name":"Jaxon Smith-Njigba","label":"Scores a touchdown","p":0.3881,"pe":0.6382,"fair":0.4848,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040735","team":"CHI","grp":"WR","stat":"receiving_yards","k":52.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Luther Burden III","label":"Under 52.5 receiving yards","p":0.5339,"pe":0.5832,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039919","team":"CHI","grp":"WR","stat":"receiving_yards","k":38.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Rome Odunze","label":"Under 38.5 receiving yards","p":0.4887,"pe":0.5493,"fair":0.5,"fair_est":true,"thin":null,"market":null},
-      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039165","team":"SEA","grp":"RB","stat":"rushing_yards","k":27.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Zach Charbonnet","label":"Under 27.5 rushing yards","p":0.2826,"pe":0.5723,"fair":0.5,"fair_est":true,"thin":null,"market":null}
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040126","team":"CHI","grp":"TE","stat":"receiving_yards","k":44.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Colston Loveland","label":"Under 44.5 receiving yards","p":0.6419,"pe":0.6012,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0038543","team":"SEA","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-108,"src":"dkline","name":"Jaxon Smith-Njigba","label":"Scores a touchdown","p":0.3909,"pe":0.6445,"fair":0.4914,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0040735","team":"CHI","grp":"WR","stat":"receiving_yards","k":53.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Luther Burden III","label":"Under 53.5 receiving yards","p":0.5472,"pe":0.5832,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039919","team":"CHI","grp":"WR","stat":"receiving_yards","k":40.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Rome Odunze","label":"Under 40.5 receiving yards","p":0.5165,"pe":0.5493,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_08_CHI_SEA","week":8,"pid":"00-0039165","team":"SEA","grp":"RB","stat":"rushing_yards","k":28.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Zach Charbonnet","label":"Under 28.5 rushing yards","p":0.293,"pe":0.5723,"fair":0.5,"fair_est":true,"thin":null,"market":null}
      ],
-     "p": 0.0636,
-     "fair": 0.027,
+     "p": 0.0643,
+     "fair": 0.0273,
      "fair_est": true,
-     "dec": 24.184,
+     "dec": 23.893,
      "likeliest": false,
      "thin": 0,
      "mkt": 0,
      "chance": "fair"
     }
    ],
-   "taken_at": "2026-11-02T18:30:34Z"
+   "taken_at": "2026-11-02T21:39:02Z"
   }
  },
  "slot_since": "2026-10-19",
