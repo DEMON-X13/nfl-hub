@@ -430,6 +430,50 @@ const RESULTS = {
   38,
   21
  ],
+ "wk8:BAL-BUF": [
+  10,
+  36
+ ],
+ "wk8:TEN-CIN": [
+  36,
+  43
+ ],
+ "wk8:ARI-DAL": [
+  33,
+  30
+ ],
+ "wk8:MIN-DET": [
+  15,
+  19
+ ],
+ "wk8:LV-NYJ": [
+  38,
+  33
+ ],
+ "wk8:CLE-PIT": [
+  6,
+  27
+ ],
+ "wk8:ATL-TB": [
+  0,
+  16
+ ],
+ "wk8:IND-JAX": [
+  7,
+  42
+ ],
+ "wk8:LAC-LAR": [
+  9,
+  24
+ ],
+ "wk8:KC-DEN": [
+  24,
+  28
+ ],
+ "wk8:NE-MIA": [
+  24,
+  19
+ ],
  "wk8:CAR-GB": [
   19,
   27
@@ -544,33 +588,31 @@ const LINES = {
  "wk7:KC-SEA": "SEA -3, O/U 43.5",
  "wk7:DAL-PHI": "DAL -4.5, O/U 43.5",
  "wk8:CAR-GB": "GB -3.5, O/U 47.5",
- "wk8:BAL-BUF": "BUF -3.5, O/U 54.5",
- "wk8:TEN-CIN": "CIN -12.5, O/U 45.5",
+ "wk8:BAL-BUF": "BUF -3, O/U 54.5",
+ "wk8:TEN-CIN": "CIN -13.5, O/U 45.5",
  "wk8:ARI-DAL": "DAL -7, O/U 54.5",
  "wk8:MIN-DET": "DET -3, O/U 46.5",
- "wk8:IND-JAX": "JAX -10, O/U 46.5",
+ "wk8:IND-JAX": "JAX -10, O/U 45.5",
  "wk8:LV-NYJ": "NYJ -1.5, O/U 46.5",
- "wk8:CLE-PIT": "PIT -3.5, O/U 39.5",
- "wk8:ATL-TB": "TB -2.5, O/U 43.5",
- "wk8:LAC-LAR": "LAR -6.5, O/U 45.5",
- "wk8:KC-DEN": "KC -1.5, O/U 41.5",
+ "wk8:CLE-PIT": "PIT -3.5, O/U 38.5",
+ "wk8:ATL-TB": "TB -2.5, O/U 42.5",
+ "wk8:LAC-LAR": "LAR -6.5, O/U 46.5",
+ "wk8:KC-DEN": "DEN -1.5, O/U 41.5",
  "wk8:NE-MIA": "NE -7, O/U 41.5",
- "wk8:PHI-WAS": "WAS -6.5, O/U 40.5",
+ "wk8:PHI-WAS": "WAS -6, O/U 40.5",
  "wk8:CHI-SEA": "SEA -3, O/U 46.5",
- "wk9:JAX-BAL": "BAL -3, O/U 48.5",
- "wk9:CIN-ATL": "CIN -3, O/U 49.5",
+ "wk9:JAX-BAL": "JAX -8.5, O/U 43.5",
+ "wk9:CIN-ATL": "CIN -3.5, O/U 51.5",
  "wk9:DEN-CAR": "DEN -2.5, O/U 44.5",
- "wk9:DAL-IND": "DAL -4.5, O/U 51.5",
- "wk9:NYJ-KC": "KC -9.5, O/U 43.5",
+ "wk9:DAL-IND": "DAL -5.5, O/U 52.5",
+ "wk9:NYJ-KC": "KC -10, O/U 45.5",
  "wk9:DET-MIA": "DET -7, O/U 48.5",
- "wk9:CLE-NO": "NO -2.5, O/U 43.5",
- "wk9:NYG-PHI": "NYG -1.5, O/U 40.5",
- "wk9:LAR-WAS": "LAR -5.5, O/U 48.5",
- "wk9:HOU-LAC": "HOU -3.5, O/U 42.5",
- "wk9:LV-SF": "SF -10, O/U 48.5",
- "wk9:GB-NE": "NE -3, O/U 47.5",
- "wk9:ARI-SEA": "SEA -10.5, O/U 44.5",
- "wk9:TB-CHI": "CHI -6, O/U 47.5",
- "wk9:BUF-MIN": "BUF -2.5, O/U 47.5"
+ "wk9:CLE-NO": "NO -3, O/U 43.5",
+ "wk9:HOU-LAC": "HOU -4.5, O/U 42.5",
+ "wk9:LV-SF": "SF -9.5, O/U 51.5",
+ "wk9:GB-NE": "NE -2.5, O/U 47.5",
+ "wk9:ARI-SEA": "SEA -11.5, O/U 45.5",
+ "wk9:TB-CHI": "CHI -6, O/U 46.5",
+ "wk9:BUF-MIN": "BUF -3, O/U 46.5"
 };
-const LINES_ASOF = "2026-11-01";
+const LINES_ASOF = "2026-11-02";
