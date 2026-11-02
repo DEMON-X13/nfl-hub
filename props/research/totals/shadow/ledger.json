@@ -19,7 +19,7 @@
   "before": "no verdict before 285: until then the summary gives the running numbers and how many of the 285 are in, never a verdict or a word of passing"
  },
  "bar_registered": "2026-10-11T02:01:51Z",
- "run_at": "2026-11-01T20:46:28Z",
+ "run_at": "2026-11-02T01:00:08Z",
  "fits": {
   "2026": {
    "b0": 1.294144,
@@ -31,30 +31,30 @@
  "decision": null,
  "summary": {
   "calls": 71,
-  "to_come": 20,
-  "frozen_awaiting_final": 8,
-  "graded": 43,
+  "to_come": 17,
+  "frozen_awaiting_final": 0,
+  "graded": 54,
   "pushes": 0,
   "graded_without_market_price": 0,
-  "compared": 43,
+  "compared": 54,
   "scores": {
    "model": {
-    "brier": 0.251875,
-    "logloss": 0.6969
+    "brier": 0.251772,
+    "logloss": 0.696694
    },
    "market": {
-    "brier": 0.247854,
-    "logloss": 0.688855
+    "brier": 0.248275,
+    "logloss": 0.689697
    },
-   "brier_diff": 0.004021,
+   "brier_diff": 0.003497,
    "brier_diff_ci90": [
-    -0.002607,
-    0.010628
+    -0.001905,
+    0.009027
    ],
-   "logloss_diff": 0.008045,
+   "logloss_diff": 0.006997,
    "logloss_diff_ci90": [
-    -0.005224,
-    0.021278
+    -0.00382,
+    0.018077
    ]
   },
   "picks": {
@@ -65,7 +65,7 @@
    "units": -2.0,
    "at_est_price": 0
   },
-  "standing": "43 of 285 graded games toward the verdict; the bar is judged at 285, not before"
+  "standing": "54 of 285 graded games toward the verdict; the bar is judged at 285, not before"
  },
  "calls": {
   "2026_05_PHI_JAX": {
@@ -1379,7 +1379,14 @@
    "called_at": "2026-11-01T16:18:45Z",
    "frozen": true,
    "frozen_at": "2026-11-01T20:46:28Z",
-   "final": null
+   "final": {
+    "home": 30,
+    "away": 33,
+    "total": 63,
+    "result": "over",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_ATL_TB": {
    "season": 2026,
@@ -1402,7 +1409,14 @@
    "called_at": "2026-11-01T09:20:07Z",
    "frozen": true,
    "frozen_at": "2026-11-01T20:46:28Z",
-   "final": null
+   "final": {
+    "home": 16,
+    "away": 0,
+    "total": 16,
+    "result": "under",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_BAL_BUF": {
    "season": 2026,
@@ -1425,7 +1439,14 @@
    "called_at": "2026-11-01T16:18:45Z",
    "frozen": true,
    "frozen_at": "2026-11-01T20:46:28Z",
-   "final": null
+   "final": {
+    "home": 36,
+    "away": 10,
+    "total": 46,
+    "result": "under",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_CLE_PIT": {
    "season": 2026,
@@ -1448,7 +1469,14 @@
    "called_at": "2026-11-01T16:18:45Z",
    "frozen": true,
    "frozen_at": "2026-11-01T20:46:28Z",
-   "final": null
+   "final": {
+    "home": 27,
+    "away": 6,
+    "total": 33,
+    "result": "under",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_IND_JAX": {
    "season": 2026,
@@ -1471,7 +1499,14 @@
    "called_at": "2026-11-01T16:18:45Z",
    "frozen": true,
    "frozen_at": "2026-11-01T20:46:28Z",
-   "final": null
+   "final": {
+    "home": 42,
+    "away": 7,
+    "total": 49,
+    "result": "over",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_LV_NYJ": {
    "season": 2026,
@@ -1494,7 +1529,14 @@
    "called_at": "2026-11-01T16:18:45Z",
    "frozen": true,
    "frozen_at": "2026-11-01T20:46:28Z",
-   "final": null
+   "final": {
+    "home": 33,
+    "away": 38,
+    "total": 71,
+    "result": "over",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_MIN_DET": {
    "season": 2026,
@@ -1517,7 +1559,14 @@
    "called_at": "2026-10-30T10:24:55Z",
    "frozen": true,
    "frozen_at": "2026-11-01T20:46:28Z",
-   "final": null
+   "final": {
+    "home": 19,
+    "away": 15,
+    "total": 34,
+    "result": "under",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_TEN_CIN": {
    "season": 2026,
@@ -1540,7 +1589,14 @@
    "called_at": "2026-11-01T16:18:45Z",
    "frozen": true,
    "frozen_at": "2026-11-01T20:46:28Z",
-   "final": null
+   "final": {
+    "home": 43,
+    "away": 36,
+    "total": 79,
+    "result": "over",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_LAC_LA": {
    "season": 2026,
@@ -1561,9 +1617,16 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-01T20:46:28Z",
-   "frozen": false,
-   "frozen_at": null,
-   "final": null
+   "frozen": true,
+   "frozen_at": "2026-11-02T01:00:08Z",
+   "final": {
+    "home": 24,
+    "away": 9,
+    "total": 33,
+    "result": "under",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_KC_DEN": {
    "season": 2026,
@@ -1584,9 +1647,16 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-01T20:46:28Z",
-   "frozen": false,
-   "frozen_at": null,
-   "final": null
+   "frozen": true,
+   "frozen_at": "2026-11-02T01:00:08Z",
+   "final": {
+    "home": 28,
+    "away": 24,
+    "total": 52,
+    "result": "over",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_NE_MIA": {
    "season": 2026,
@@ -1607,9 +1677,16 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-01T20:46:28Z",
-   "frozen": false,
-   "frozen_at": null,
-   "final": null
+   "frozen": true,
+   "frozen_at": "2026-11-02T01:00:08Z",
+   "final": {
+    "home": 19,
+    "away": 24,
+    "total": 43,
+    "result": "over",
+    "units": null,
+    "graded_at": "2026-11-02T01:00:08Z"
+   }
   },
   "2026_08_PHI_WAS": {
    "season": 2026,
@@ -1644,15 +1721,15 @@
    "line": 46.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.503884,
+   "p_model": 0.503684,
    "p_market": 0.5,
-   "mu": 46.6284,
+   "mu": 46.6218,
    "sd": 13.1937,
-   "model_total": 45.9862,
+   "model_total": 46.0127,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1664,18 +1741,18 @@
    "away": "JAX",
    "home": "BAL",
    "kickoff": "2026-11-06T01:15:00Z",
-   "line": 48.5,
+   "line": 43.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.509569,
+   "p_model": 0.476707,
    "p_market": 0.5,
-   "mu": 48.8165,
+   "mu": 42.7292,
    "sd": 13.1937,
-   "model_total": 47.234,
+   "model_total": 46.5832,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1690,15 +1767,15 @@
    "line": 49.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.494615,
+   "p_model": 0.49225,
    "p_market": 0.5,
-   "mu": 49.3219,
+   "mu": 49.2437,
    "sd": 13.1937,
-   "model_total": 50.2124,
+   "model_total": 50.5253,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1711,17 +1788,17 @@
    "home": "NO",
    "kickoff": "2026-11-08T18:00:00Z",
    "line": 43.5,
-   "over_odds": -102,
-   "under_odds": -118,
-   "p_model": 0.514737,
-   "p_market": 0.482636,
-   "mu": 43.9875,
+   "over_odds": -110,
+   "under_odds": -110,
+   "p_model": 0.516803,
+   "p_market": 0.5,
+   "mu": 44.0559,
    "sd": 13.1937,
-   "model_total": 41.5501,
+   "model_total": 41.2765,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1733,18 +1810,18 @@
    "away": "DAL",
    "home": "IND",
    "kickoff": "2026-11-08T18:00:00Z",
-   "line": 51.5,
+   "line": 52.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.474735,
+   "p_model": 0.479418,
    "p_market": 0.5,
-   "mu": 50.6639,
+   "mu": 51.819,
    "sd": 13.1937,
-   "model_total": 54.8444,
+   "model_total": 55.224,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1759,15 +1836,15 @@
    "line": 44.5,
    "over_odds": -115,
    "under_odds": -105,
-   "p_model": 0.498045,
+   "p_model": 0.491033,
    "p_market": 0.510834,
-   "mu": 44.4354,
+   "mu": 44.2034,
    "sd": 13.1937,
-   "model_total": 44.7586,
+   "model_total": 45.6863,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-31T01:45:52Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1779,18 +1856,18 @@
    "away": "DET",
    "home": "MIA",
    "kickoff": "2026-11-08T18:00:00Z",
-   "line": 48.5,
+   "line": 49.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.485977,
+   "p_model": 0.500348,
    "p_market": 0.5,
-   "mu": 48.0361,
+   "mu": 49.5115,
    "sd": 13.1937,
-   "model_total": 50.3555,
+   "model_total": 49.4539,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1805,15 +1882,15 @@
    "line": 48.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.49387,
+   "p_model": 0.498145,
    "p_market": 0.5,
-   "mu": 48.2973,
+   "mu": 48.4387,
    "sd": 13.1937,
-   "model_total": 49.3109,
+   "model_total": 48.7454,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1828,15 +1905,15 @@
    "line": 40.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.485047,
+   "p_model": 0.486294,
    "p_market": 0.5,
-   "mu": 40.0054,
+   "mu": 40.0466,
    "sd": 13.1937,
-   "model_total": 42.4785,
+   "model_total": 42.3134,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1848,18 +1925,18 @@
    "away": "NYJ",
    "home": "KC",
    "kickoff": "2026-11-08T18:00:00Z",
-   "line": 43.5,
+   "line": 46.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.517077,
+   "p_model": 0.525457,
    "p_market": 0.5,
-   "mu": 44.0649,
+   "mu": 47.3425,
    "sd": 13.1937,
-   "model_total": 41.2403,
+   "model_total": 43.1301,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1874,15 +1951,15 @@
    "line": 42.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.51561,
+   "p_model": 0.522299,
    "p_market": 0.5,
-   "mu": 43.0164,
+   "mu": 43.2379,
    "sd": 13.1937,
-   "model_total": 40.4345,
+   "model_total": 39.5485,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1894,18 +1971,18 @@
    "away": "LV",
    "home": "SF",
    "kickoff": "2026-11-08T21:05:00Z",
-   "line": 48.5,
-   "over_odds": -110,
-   "under_odds": -110,
-   "p_model": 0.493664,
-   "p_market": 0.5,
-   "mu": 48.2905,
+   "line": 50.5,
+   "over_odds": -115,
+   "under_odds": -105,
+   "p_model": 0.497629,
+   "p_market": 0.510834,
+   "mu": 50.4216,
    "sd": 13.1937,
-   "model_total": 49.3381,
+   "model_total": 50.8137,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1920,15 +1997,15 @@
    "line": 44.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.484557,
+   "p_model": 0.480528,
    "p_market": 0.5,
-   "mu": 43.9891,
+   "mu": 43.8558,
    "sd": 13.1937,
-   "model_total": 46.5435,
+   "model_total": 47.0769,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1943,15 +2020,15 @@
    "line": 47.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.544311,
+   "p_model": 0.543741,
    "p_market": 0.5,
-   "mu": 48.9685,
+   "mu": 48.9495,
    "sd": 13.1937,
-   "model_total": 41.6262,
+   "model_total": 41.7021,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1963,18 +2040,18 @@
    "away": "TB",
    "home": "CHI",
    "kickoff": "2026-11-09T01:20:00Z",
-   "line": 47.5,
+   "line": 46.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.501275,
+   "p_model": 0.505497,
    "p_market": 0.5,
-   "mu": 47.5422,
+   "mu": 46.6818,
    "sd": 13.1937,
-   "model_total": 47.3314,
+   "model_total": 45.7727,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
@@ -1986,18 +2063,18 @@
    "away": "BUF",
    "home": "MIN",
    "kickoff": "2026-11-10T01:15:00Z",
-   "line": 47.5,
+   "line": 46.5,
    "over_odds": -110,
    "under_odds": -110,
-   "p_model": 0.507208,
+   "p_model": 0.505893,
    "p_market": 0.5,
-   "mu": 47.7384,
+   "mu": 46.6949,
    "sd": 13.1937,
-   "model_total": 46.5464,
+   "model_total": 45.7205,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-30T10:24:55Z",
+   "called_at": "2026-11-02T01:00:08Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
