@@ -5,7 +5,7 @@ Generated 2026-11-03. Facts below are pulled; everything narrative still has to 
 ## Games
 
 ### Jacksonville Jaguars at Baltimore Ravens
-Thu, Nov 5, 8:15 PM ET, Prime Video, M&T Bank Stadium, Baltimore. Line: JAX -9.5, O/U 41.5
+Thu, Nov 5, 8:15 PM ET, Prime Video, M&T Bank Stadium, Baltimore. Line: JAX -10, O/U 40.5
 
 Searches to run:
 - "Jacksonville Jaguars Baltimore Ravens preview week 9"
@@ -44,6 +44,8 @@ Jacksonville Jaguars, injuries:
 Jacksonville Jaguars, ESPN headlines:
 
 Baltimore Ravens, injuries:
+- Joe Fagnano (QB) Questionable, Ankle: Ravens head coach Jesse Minter confirmed Tuesday that Fagnano (ankle) will start Thursday's game against the Jaguars, Jamison Hensley of ESPN reports.
+- Tyler Huntley (QB) Doubtful, Toe: Huntley (toe) wasn't spotted practicing Tuesday, Jamison Hensley of ESPN.com reports.
 - Olaivavega Ioane (G) Questionable, Knee - MCL: questionable
 - Ja'Kobi Lane (WR) Active: Lane caught his only target for 13 yards in Sunday's 36-10 loss to the Bills.
 - Rashod Bateman (WR) Active: Bateman caught one of three targets for 22 yards in Sunday's 36-10 loss to the Bills.
@@ -51,13 +53,11 @@ Baltimore Ravens, injuries:
 - Roquan Smith (LB) Questionable, Foot: Smith (foot) was estimated as a limited participant on Monday's practice report.
 - Tyler Loop (PK) Doubtful, Groin: Loop was estimated as a non-participant in Monday's walk-through practice due to a right groin injury.
 - Justice Hill (RB) Questionable, Groin: Hill (groin) was estimated as a limited participant on Monday's practice report.
-- Joe Fagnano (QB) Questionable, Ankle: Fagnano was limited at Monday's walkthrough due to an ankle injury.
 - Nate Wiggins (CB) Active
 - Roger Rosengarten (OT) Questionable, Ankle: questionable
 - John Simpson (G) Questionable, Back: questionable
 - John Jenkins (DT) Questionable, Knee: questionable
 - Trey Hendrickson (LB) Questionable, Finger: questionable
-- Tyler Huntley (QB) Doubtful, Toe: Head coach Jesse Minter said Monday that Huntley (toe) "probably" won't play Thursday versus the Jaguars, and the Ravens then will "see how it goes from a long-term standpoint."
 - Jake Moody (PK) Active: Head coach Jesse Minter said Monday that Moody is on track to be elevated from the practice squad to handle kicking duties for the Ravens in Thursday's game against the Jaguars,  Sam Cohn of The Baltimore Sun reports.
 - Aeneas Peebles (DT) Active
 - Emery Jones Jr. (OT) Active
@@ -345,7 +345,7 @@ Miami Dolphins, injuries:
 Miami Dolphins, ESPN headlines:
 
 ### Cleveland Browns at New Orleans Saints
-Sun, Nov 8, 1:00 PM ET, CBS, Caesars Superdome, New Orleans. Line: NO -1.5, O/U 43.5
+Sun, Nov 8, 1:00 PM ET, CBS, Caesars Superdome, New Orleans. Line: NO -1.5, O/U 42.5
 
 Searches to run:
 - "Cleveland Browns New Orleans Saints preview week 9"
@@ -588,6 +588,7 @@ Denver Broncos, injuries:
 Denver Broncos, ESPN headlines:
 
 Carolina Panthers, injuries:
+- Jonathon Brooks (RB) Injured Reserve, Abdomen: Brooks (core) was seen working off to the side during the Panthers' unofficial practice Tuesday, Joe Person of The Athletic reports.
 - Torricelli Simpkins III (G) Questionable, Ankle: questionable
 - Damien Lewis (G) Questionable, Knee: questionable
 - Bobby Brown III (DT) Questionable, Hand: questionable
@@ -595,10 +596,9 @@ Carolina Panthers, injuries:
 - Haynes King (QB) Active
 - AJ Dillon (RB) Active
 - Will Lee III (CB) Questionable, Hamstring: Lee (hamstring) is day to day but should have a chance to "test" his injury this week, Joe Person of The Athletic reports.
-- Jaelan Phillips (LB) Questionable, Hamstring: Phillips (hamstring) is considered day-to-day, Joe Person of The Athletic reported Monday.
+- Jaelan Phillips (LB) Questionable, Hamstring: Panthers head coach Dave Canales said Monday that Phillips (hamstring) is trending in the right direction and considered day-to-day heading into Sunday's game against the Broncos, Joe Person of The Athletic reports.
 - Darren Waller (TE) Active: Waller corralled one of two targets for 11 yards during last Thursday's 27-19 loss at Green Bay.
 - Xavier Legette (WR) Injured Reserve, Knee: Panthers head coach Dave Canales said Monday that Legette (knee) will "potentially" be designated for return from injured reserve this week, Joe Person of The Athletic reports.
-- Jonathon Brooks (RB) Injured Reserve, Abdomen: Panthers head coach Dave Canales said Monday that Brooks (core) will "potentially" be designated for return from injured reserve this week, Joe Person of The Athletic reports.
 - Brycen Tremayne (WR) Active: Tremayne finished with an 11-yard reception on his lone target in Thursday's 27-19 loss to the Packers.
 - John Metchie III (WR) Active: Metchie recorded three receptions for 14 yards on three targets in Thursday's 27-19 loss to the Packers.
 - David Moore (WR) Active: Moore didn't receive any playing time on offense and logged two snaps on special teams in Thursday's 27-19 loss to the Packers.
@@ -685,7 +685,7 @@ Los Angeles Chargers, injuries:
 Los Angeles Chargers, ESPN headlines:
 
 ### Green Bay Packers at New England Patriots
-Sun, Nov 8, 4:25 PM ET, Fox, Gillette Stadium, Foxborough. Line: NE -2.5, O/U 46.5
+Sun, Nov 8, 4:25 PM ET, Fox, Gillette Stadium, Foxborough. Line: NE -3, O/U 46.5
 
 Searches to run:
 - "Green Bay Packers New England Patriots preview week 9"
@@ -831,6 +831,7 @@ Searches to run:
 - "NFL week 9 picks ARI SEA"
 
 Arizona Cardinals, injuries:
+- Jeremiyah Love (RB) Out, Ankle: Love was diagnosed Tuesday with a right high-ankle sprain, which is expected to send him to injured reserve and keep him out for 4-to-5 weeks, Ian Rapoport of NFL Network reports.
 - Walter Nolen III (DT) Questionable, Ankle: questionable
 - Jon Gaines II (G) Questionable, Ankle: questionable
 - Chad Ryland (PK) Active: Ryland converted both of his field-goal attempts and three of four PATs in Sunday's 33-30 overtime win over the Cowboys.
@@ -838,7 +839,6 @@ Arizona Cardinals, injuries:
 - Carson Beck (QB) Active: Head coach Mike LaFleur said that Beck will serve as the Cardinals' No. 2 quarterback behind starter Gardner Minshew in Sunday's game against the Seahawks, Darren Urban of the team's official site reports.
 - Jacoby Brissett (QB) Active: Head coach Mike LaFleur said that Brissett will be removed from the starting role and serve as the Cardinals' No. 3 quarterback in Sunday's game in Seattle, Theo Mackie of The Arizona Republic reports.
 - Bam Knight (RB) Questionable, Concussion: Head coach Mike LaFleur revealed Monday that Knight is in the concussion protocol following Sunday's overtime win in Dallas, Josh Weinfuss of ESPN.com reports.
-- Jeremiyah Love (RB) Questionable, Ankle: Head coach Mike LaFleur said Monday that Love suffered a "new" ankle injury during Sunday's overtime win at Dallas, and that he'll have an update on the running back later this week, Josh Weinfuss of ESPN.com reports.
 - Gardner Minshew II (QB) Active: Head coach Mike LaFleur announced that Minshew will step in as the Cardinals' new starting quarterback beginning with Sunday's game at Seattle, Ian Rapoport of NFL Network reports.
 - Evan Hull (RB) Active
 - Eku Leota (LB) Active
@@ -860,10 +860,10 @@ Arizona Cardinals, injuries:
 Arizona Cardinals, ESPN headlines:
 
 Seattle Seahawks, injuries:
+- Rashid Shaheed (WR) Questionable, Knee: Seahawks head coach Mike Macdonald said Tuesday that Shaheed (knee) has a chance to play Sunday against the Cardinals, Brady Henderson of ESPN.com reports.
 - Tory Horton (WR) Active: Horton recorded three receptions for 26 yards on six targets in Monday's 34-17 loss to the Bears.
 - George Holani (RB) Active: Holani carried once for nine yards and failed to haul in his lone target in Monday's 34-17 loss to the Bears. He also returned six kickoffs for 144 yards.
 - Emanuel Wilson (RB) Active: Wilson played just seven snaps -- all on special teams -- in Monday's 34-17 loss to the Bears.
-- Rashid Shaheed (WR) Questionable, Knee: questionable
 - Velus Jones Jr. (RB) Questionable, Hamstring: questionable
 - Charles Cross (OT) Questionable, Ankle: questionable
 - Beau Stephens (G) Active
@@ -928,6 +928,7 @@ Tampa Bay Buccaneers, injuries:
 Tampa Bay Buccaneers, ESPN headlines:
 
 Chicago Bears, injuries:
+- Sam Roush (TE) Active: Roush went without a target while playing 37 of the Bears' 70 snaps on offense in Monday's 34-17 win over the Seahawks.
 - Roschon Johnson (RB) Active: Johnson carried five times for 17 yards and added an 11-yard reception on his lone target in Monday's 34-17 win over the Seahawks.
 - Kyle Monangai (RB) Questionable, Toe: questionable
 - Jordan van den Berg (DT) Active
@@ -952,7 +953,6 @@ Chicago Bears, injuries:
 - Coby Bryant (S) Injured Reserve, Knee: Coach Ben Johnson said Wednesday that Bryant (knee) will start running again in the "near future," Courtney Cronin of ESPN.com reports.
 - Zavier Scott (RB) Active: Chicago signed Scott from the practice squad to the active roster Tuesday.
 - Kyler Gordon (CB) Active: Gordon recorded five tackles (three solo), including 1.0 sacks, in Thursday's 30-24 win over the Patriots.
-- Dillon Thieneman (S) Active: Thieneman tallied eight tackles (three solo), including 0.5 sacks, in a 30-24 victory versus the Patriots on Thursday.
 
 Chicago Bears, ESPN headlines:
 

@@ -2497,7 +2497,7 @@
   },
   "ARI": {
    "kick": "2026-11-08T21:25Z",
-   "built_at": "2026-11-03T14:31:36.601Z",
+   "built_at": "2026-11-03T20:54:27.292Z",
    "units": {
     "qb": [
      {
@@ -2536,15 +2536,15 @@
     ],
     "rb": [
      {
-      "id": "00-0041027",
-      "n": "Jeremiyah Love",
-      "pos": "RB",
-      "q": "questionable: ankle"
-     },
-     {
       "id": "00-0037263",
       "n": "Tyler Allgeier",
       "pos": "RB"
+     },
+     {
+      "id": "00-0037157",
+      "n": "Bam Knight",
+      "pos": "RB",
+      "q": "questionable: concussion"
      }
     ],
     "rec": [
