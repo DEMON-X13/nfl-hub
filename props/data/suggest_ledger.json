@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. Since app v118 each entry holds the unit's Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe), taken, locked, replaced and graded with the model's levels; and slot holds each week's Sunday slot (every Sunday game before 7 pm Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary, slot_summary (each with its elo) and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-11-02T21:39:02Z",
+ "updated": "2026-11-03T14:01:53Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -201,24 +201,24 @@
  "prime_since": "2026-10-16",
  "prime_summary": {
   "tiers": {
-   "safe": {"label":"Safe","graded":7,"won":1,"lost":6,"push":0,"exp_fair":2.1382,"fair_n":7,"exp_model":2.6354,"units":-4.975},
-   "med": {"label":"Medium","graded":7,"won":1,"lost":6,"push":0,"exp_fair":1.1486,"fair_n":7,"exp_model":1.7573,"units":-3.861},
-   "aggr": {"label":"Aggressive","graded":7,"won":1,"lost":6,"push":0,"exp_fair":0.5502,"fair_n":7,"exp_model":1.0192,"units":-0.639},
-   "xtrm": {"label":"Extreme","graded":7,"won":0,"lost":7,"push":0,"exp_fair":0.2653,"fair_n":7,"exp_model":0.7143,"units":-7}
+   "safe": {"label":"Safe","graded":8,"won":1,"lost":7,"push":0,"exp_fair":2.5097,"fair_n":8,"exp_model":3.2026,"units":-5.975},
+   "med": {"label":"Medium","graded":8,"won":1,"lost":7,"push":0,"exp_fair":1.3803,"fair_n":8,"exp_model":2.1328,"units":-4.861},
+   "aggr": {"label":"Aggressive","graded":8,"won":1,"lost":7,"push":0,"exp_fair":0.6724,"fair_n":8,"exp_model":1.1734,"units":-1.639},
+   "xtrm": {"label":"Extreme","graded":8,"won":0,"lost":8,"push":0,"exp_fair":0.323,"fair_n":8,"exp_model":0.8456,"units":-8}
   },
   "pending": 0,
   "elo": {
    "tiers": {
-    "elo-safe": {"label":"Safe","graded":6,"won":3,"lost":3,"push":0,"exp_fair":1.7338,"fair_n":6,"exp_model":2.117,"units":2.544},
-    "elo-med": {"label":"Medium","graded":6,"won":0,"lost":6,"push":0,"exp_fair":0.9333,"fair_n":6,"exp_model":1.2046,"units":-6},
-    "elo-aggr": {"label":"Aggressive","graded":6,"won":0,"lost":6,"push":0,"exp_fair":0.4699,"fair_n":6,"exp_model":0.6563,"units":-6},
-    "elo-xtrm": {"label":"Extreme","graded":5,"won":0,"lost":5,"push":0,"exp_fair":0.1556,"fair_n":5,"exp_model":0.2546,"units":-5}
+    "elo-safe": {"label":"Safe","graded":7,"won":3,"lost":4,"push":0,"exp_fair":1.9718,"fair_n":7,"exp_model":2.4989,"units":1.544},
+    "elo-med": {"label":"Medium","graded":7,"won":0,"lost":7,"push":0,"exp_fair":1.049,"fair_n":7,"exp_model":1.4222,"units":-7},
+    "elo-aggr": {"label":"Aggressive","graded":7,"won":0,"lost":7,"push":0,"exp_fair":0.5282,"fair_n":7,"exp_model":0.7821,"units":-7},
+    "elo-xtrm": {"label":"Extreme","graded":6,"won":0,"lost":6,"push":0,"exp_fair":0.1829,"fair_n":6,"exp_model":0.3189,"units":-6}
    },
    "pending": 0
   },
-  "games": 8,
-  "entries": 8,
-  "graded_entries": 7,
+  "games": 11,
+  "entries": 11,
+  "graded_entries": 8,
   "updates": 0
  },
  "prime": {
@@ -1531,7 +1531,355 @@
      "chance": "fair"
     }
    ],
-   "taken_at": "2026-11-02T21:39:02Z"
+   "taken_at": "2026-11-02T21:39:02Z",
+   "grade": {
+    "safe": {"result":"lost","legs":["win","loss"],"payout":0},
+    "med": {"result":"lost","legs":["loss","win","win"],"payout":0},
+    "aggr": {"result":"lost","legs":["loss","win","loss","loss"],"payout":0},
+    "xtrm": {"result":"lost","legs":["loss","loss","win","win","loss"],"payout":0},
+    "elo-safe": {"result":"lost","legs":["loss","win"],"payout":0},
+    "elo-med": {"result":"lost","legs":["loss","win","loss"],"payout":0},
+    "elo-aggr": {"result":"lost","legs":["loss","win","loss","win"],"payout":0},
+    "elo-xtrm": {"result":"lost","legs":["loss","win","loss","loss","win"],"payout":0}
+   }
+  },
+  "2026|09|2026-11-06T01:15:00Z|2026_09_JAX_BAL": {
+   "season": 2026,
+   "week": 9,
+   "gid": "2026_09_JAX_BAL",
+   "away": "JAX",
+   "home": "BAL",
+   "kickoff": "2026-11-06T01:15:00Z",
+   "lock": "2026-11-05T23:15:00Z",
+   "baked_at": "2026-11-03T13:59+00:00",
+   "pool": {"pref":0,"thin":33,"mkt":1,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"team:JAX","team":"JAX","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-485,"src":"real","name":"Jaguars","label":"To win","p":0.7111,"fair":0.7958,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0041503","team":"JAX","grp":"TE","stat":"receptions","k":1.5,"side":"under","main":true,"price":-238,"src":"dkline","name":"Nate Boerkircher","label":"Under 1.5 receptions","p":0.6634,"fair":0.6641,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.4717,
+     "fair": 0.5285,
+     "fair_est": true,
+     "dec": 1.535,
+     "likeliest": false,
+     "thin": 2,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "legs": [
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0039893","team":"JAX","grp":"WR","stat":"receptions","k":1.5,"side":"under","main":true,"price":-192,"src":"dkline","name":"Brian Thomas Jr.","label":"Under 1.5 receptions","p":0.4699,"fair":0.6207,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"team:JAX","team":"JAX","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-485,"src":"real","name":"Jaguars","label":"To win","p":0.7111,"fair":0.7958,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0036971","team":"JAX","grp":"QB","stat":"passing_yards","k":237.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Trevor Lawrence","label":"Under 237.5 passing yards","p":0.5125,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.206,
+     "fair": 0.283,
+     "fair_est": true,
+     "dec": 2.783,
+     "likeliest": false,
+     "thin": 3,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "legs": [
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0041100","team":"JAX","grp":"WR","stat":"receiving_yards","k":14.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Josh Cameron","label":"Under 14.5 receiving yards","p":0.5407,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0041503","team":"JAX","grp":"TE","stat":"receptions","k":1.5,"side":"under","main":true,"price":-238,"src":"dkline","name":"Nate Boerkircher","label":"Under 1.5 receptions","p":0.6634,"fair":0.6641,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0038606","team":"JAX","grp":"WR","stat":"receptions","k":4.5,"side":"under","main":true,"price":-113,"src":"dkline","name":"Parker Washington","label":"Under 4.5 receptions","p":0.6993,"fair":0.5004,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0036971","team":"JAX","grp":"QB","stat":"passing_yards","k":237.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Trevor Lawrence","label":"Under 237.5 passing yards","p":0.5125,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.1803,
+     "fair": 0.1257,
+     "fair_est": true,
+     "dec": 6.114,
+     "likeliest": false,
+     "thin": 4,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "legs": [
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0039893","team":"JAX","grp":"WR","stat":"receptions","k":1.5,"side":"under","main":true,"price":-192,"src":"dkline","name":"Brian Thomas Jr.","label":"Under 1.5 receptions","p":0.4699,"fair":0.6207,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0034960","team":"JAX","grp":"WR","stat":"receptions","k":3.5,"side":"under","main":true,"price":-116,"src":"dkline","name":"Jakobi Meyers","label":"Under 3.5 receptions","p":0.4703,"fair":0.5075,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0038606","team":"JAX","grp":"WR","stat":"receiving_yards","k":62.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Parker Washington","label":"Under 62.5 receiving yards","p":0.6662,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"team:BAL","team":"BAL","grp":"TEAM","stat":"ats","k":9.5,"side":"over","main":false,"price":-112,"src":"real","name":"Ravens","label":"To cover +9.5","p":0.5585,"fair":0.5043,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0036971","team":"JAX","grp":"QB","stat":"passing_yards","k":237.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Trevor Lawrence","label":"Under 237.5 passing yards","p":0.5125,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.0637,
+     "fair": 0.0618,
+     "fair_est": true,
+     "dec": 12.035,
+     "likeliest": false,
+     "thin": 5,
+     "mkt": 0,
+     "chance": "fair"
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0039893","team":"JAX","grp":"WR","stat":"receptions","k":1.5,"side":"over","main":true,"price":149,"src":"dkline","name":"Brian Thomas Jr.","label":"Over 1.5 receptions","p":0.5301,"pe":0.4385,"fair":0.3793,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0032764","team":"BAL","grp":"RB","stat":"rushing_yards","k":70.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Derrick Henry","label":"Over 70.5 rushing yards","p":0.3801,"pe":0.5757,"fair":0.5,"fair_est":true,"thin":null,"market":null}
+     ],
+     "p": 0.2524,
+     "fair": 0.1897,
+     "fair_est": true,
+     "dec": 4.223,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0039893","team":"JAX","grp":"WR","stat":"receptions","k":1.5,"side":"over","main":true,"price":149,"src":"dkline","name":"Brian Thomas Jr.","label":"Over 1.5 receptions","p":0.5301,"pe":0.4385,"fair":0.3793,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0032764","team":"BAL","grp":"RB","stat":"rushing_yards","k":70.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Derrick Henry","label":"Over 70.5 rushing yards","p":0.3801,"pe":0.5757,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0036550","team":"BAL","grp":"WR","stat":"receptions","k":1.5,"side":"under","main":true,"price":-111,"src":"dkline","name":"Rashod Bateman","label":"Under 1.5 receptions","p":0.4341,"pe":0.548,"fair":0.4956,"fair_est":true,"thin":null,"market":null}
+     ],
+     "p": 0.1431,
+     "fair": 0.0989,
+     "fair_est": true,
+     "dec": 7.671,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0039893","team":"JAX","grp":"WR","stat":"receptions","k":1.5,"side":"over","main":true,"price":149,"src":"dkline","name":"Brian Thomas Jr.","label":"Over 1.5 receptions","p":0.5301,"pe":0.4385,"fair":0.3793,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0032764","team":"BAL","grp":"RB","stat":"rushing_yards","k":70.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Derrick Henry","label":"Over 70.5 rushing yards","p":0.3801,"pe":0.5757,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0038606","team":"JAX","grp":"WR","stat":"receptions","k":4.5,"side":"over","main":true,"price":-113,"src":"dkline","name":"Parker Washington","label":"Over 4.5 receptions","p":0.3007,"pe":0.5352,"fair":0.4996,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0036550","team":"BAL","grp":"WR","stat":"receptions","k":1.5,"side":"under","main":true,"price":-111,"src":"dkline","name":"Rashod Bateman","label":"Under 1.5 receptions","p":0.4341,"pe":0.548,"fair":0.4956,"fair_est":true,"thin":null,"market":null}
+     ],
+     "p": 0.0759,
+     "fair": 0.0489,
+     "fair_est": true,
+     "dec": 15.046,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0039893","team":"JAX","grp":"WR","stat":"receptions","k":1.5,"side":"over","main":true,"price":149,"src":"dkline","name":"Brian Thomas Jr.","label":"Over 1.5 receptions","p":0.5301,"pe":0.4385,"fair":0.3793,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0032764","team":"BAL","grp":"RB","stat":"rushing_yards","k":70.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Derrick Henry","label":"Over 70.5 rushing yards","p":0.3801,"pe":0.5757,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0034753","team":"BAL","grp":"TE","stat":"receptions","k":2.5,"side":"under","main":true,"price":-132,"src":"dkline","name":"Mark Andrews","label":"Under 2.5 receptions","p":0.3594,"pe":0.5725,"fair":0.5371,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0038606","team":"JAX","grp":"WR","stat":"receptions","k":4.5,"side":"over","main":true,"price":-113,"src":"dkline","name":"Parker Washington","label":"Over 4.5 receptions","p":0.3007,"pe":0.5352,"fair":0.4996,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_JAX_BAL","week":9,"pid":"00-0036550","team":"BAL","grp":"WR","stat":"receptions","k":1.5,"side":"under","main":true,"price":-111,"src":"dkline","name":"Rashod Bateman","label":"Under 1.5 receptions","p":0.4341,"pe":0.548,"fair":0.4956,"fair_est":true,"thin":null,"market":null}
+     ],
+     "p": 0.0436,
+     "fair": 0.0261,
+     "fair_est": true,
+     "dec": 26.588,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0,
+     "chance": "fair"
+    }
+   ],
+   "taken_at": "2026-11-03T14:01:53Z"
+  },
+  "2026|09|2026-11-09T01:20:00Z|2026_09_TB_CHI": {
+   "season": 2026,
+   "week": 9,
+   "gid": "2026_09_TB_CHI",
+   "away": "TB",
+   "home": "CHI",
+   "kickoff": "2026-11-09T01:20:00Z",
+   "lock": "2026-11-08T23:20:00Z",
+   "baked_at": "2026-11-03T13:59+00:00",
+   "pool": {"pref":0,"thin":2,"mkt":1,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_TB_CHI","week":9,"pid":"team:CHI","team":"CHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-270,"src":"real","name":"Bears","label":"To win","p":0.6659,"fair":0.7002,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_09_TB_CHI","week":9,"pid":"game","team":"TB","grp":"TEAM","stat":"total","k":46.5,"side":"under","main":true,"price":-112,"src":"real","name":"Buccaneers at Bears","label":"Under 46.5 points","p":0.5043,"fair":0.5043,"fair_est":false,"thin":false,"market":true}
+     ],
+     "p": 0.3358,
+     "fair": 0.3531,
+     "fair_est": false,
+     "dec": 2.324,
+     "likeliest": false,
+     "thin": 1,
+     "mkt": 1,
+     "chance": "fair"
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 2 legs in this game: no player lines yet (read Tue 8:59 AM ET)."
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 2 legs in this game: no player lines yet (read Tue 8:59 AM ET)."
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 2 legs in this game: no player lines yet (read Tue 8:59 AM ET)."
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "why": "No player lines in this game yet (read Tue 8:59 AM ET)."
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0,
+     "why": "No player lines in this game yet (read Tue 8:59 AM ET)."
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0,
+     "why": "No player lines in this game yet (read Tue 8:59 AM ET)."
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0,
+     "why": "No player lines in this game yet (read Tue 8:59 AM ET)."
+    }
+   ],
+   "taken_at": "2026-11-03T14:01:53Z"
+  },
+  "2026|09|2026-11-10T01:15:00Z|2026_09_BUF_MIN": {
+   "season": 2026,
+   "week": 9,
+   "gid": "2026_09_BUF_MIN",
+   "away": "BUF",
+   "home": "MIN",
+   "kickoff": "2026-11-10T01:15:00Z",
+   "lock": "2026-11-09T23:15:00Z",
+   "baked_at": "2026-11-03T13:59+00:00",
+   "pool": {"pref":0,"thin":2,"mkt":1,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_BUF_MIN","week":9,"pid":"team:BUF","team":"BUF","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-185,"src":"real","name":"Bills","label":"To win","p":0.5647,"fair":0.6225,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_09_BUF_MIN","week":9,"pid":"game","team":"BUF","grp":"TEAM","stat":"total","k":45.5,"side":"over","main":true,"price":-115,"src":"real","name":"Bills at Vikings","label":"Over 45.5 points","p":0.5108,"fair":0.5108,"fair_est":false,"thin":false,"market":true}
+     ],
+     "p": 0.2885,
+     "fair": 0.318,
+     "fair_est": false,
+     "dec": 2.581,
+     "likeliest": false,
+     "thin": 1,
+     "mkt": 1,
+     "chance": "fair"
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 2 legs in this game: no yards lines yet (read Tue 8:59 AM ET)."
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 2 legs in this game: no yards lines yet (read Tue 8:59 AM ET)."
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 2 legs in this game: no yards lines yet (read Tue 8:59 AM ET)."
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "why": "No yards lines in this game yet (read Tue 8:59 AM ET)."
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0,
+     "why": "No yards lines in this game yet (read Tue 8:59 AM ET)."
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0,
+     "why": "No yards lines in this game yet (read Tue 8:59 AM ET)."
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0,
+     "why": "No yards lines in this game yet (read Tue 8:59 AM ET)."
+    }
+   ],
+   "taken_at": "2026-11-03T14:01:53Z"
   }
  },
  "slot_since": "2026-10-19",
@@ -1552,8 +1900,8 @@
    },
    "pending": 0
   },
-  "games": 2,
-  "entries": 2,
+  "games": 3,
+  "entries": 3,
   "graded_entries": 2,
   "updates": 0
  },
@@ -1913,6 +2261,178 @@
     "elo-aggr": {"result":"lost","legs":["loss","loss","win","win"],"payout":0},
     "elo-xtrm": {"result":"lost","legs":["loss","loss","win","win","win"],"payout":0}
    }
+  },
+  "2026|09|2026-11-08T14:30:00Z|2026_09_SUN": {
+   "season": 2026,
+   "week": 9,
+   "gid": "2026_09_SUN",
+   "games": ["2026_09_CIN_ATL","2026_09_DEN_CAR","2026_09_DAL_IND","2026_09_NYJ_KC","2026_09_DET_MIA","2026_09_CLE_NO","2026_09_NYG_PHI","2026_09_LA_WAS","2026_09_HOU_LAC","2026_09_LV_SF","2026_09_GB_NE","2026_09_ARI_SEA"],
+   "kickoff": "2026-11-08T14:30:00Z",
+   "last": "2026-11-08T21:25:00Z",
+   "lock": "2026-11-08T12:30:00Z",
+   "baked_at": "2026-11-03T13:59+00:00",
+   "pool": {"pref":0,"thin":62,"mkt":12,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"team:CIN","team":"CIN","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-162,"src":"real","name":"Bengals","label":"To win","p":0.6208,"fair":0.5934,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036442","team":"CIN","grp":"QB","stat":"passing_tds","k":2.5,"side":"under","main":true,"price":-207,"src":"dkline","name":"Joe Burrow","label":"Under 2.5 passing tds","p":0.5013,"fair":0.6366,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.3112,
+     "fair": 0.3778,
+     "fair_est": true,
+     "dec": 2.149,
+     "likeliest": false,
+     "thin": 2,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "legs": [
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"team:CIN","team":"CIN","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-162,"src":"real","name":"Bengals","label":"To win","p":0.6208,"fair":0.5934,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0038542","team":"ATL","grp":"RB","stat":"any_td","k":1,"side":"over","main":false,"price":-142,"src":"dkline","name":"Bijan Robinson","label":"Scores a touchdown","p":0.3511,"fair":0.5553,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036442","team":"CIN","grp":"QB","stat":"passing_tds","k":2.5,"side":"under","main":true,"price":-207,"src":"dkline","name":"Joe Burrow","label":"Under 2.5 passing tds","p":0.5013,"fair":0.6366,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.1093,
+     "fair": 0.2098,
+     "fair_est": true,
+     "dec": 3.663,
+     "likeliest": true,
+     "thin": 3,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "legs": [
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0037238","team":"ATL","grp":"WR","stat":"receiving_yards","k":76.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Drake London","label":"Under 76.5 receiving yards","p":0.5865,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036442","team":"CIN","grp":"QB","stat":"passing_tds","k":2.5,"side":"under","main":true,"price":-207,"src":"dkline","name":"Joe Burrow","label":"Under 2.5 passing tds","p":0.5013,"fair":0.6366,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036970","team":"ATL","grp":"TE","stat":"receiving_yards","k":42.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Kyle Pitts","label":"Under 42.5 receiving yards","p":0.5887,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0039917","team":"ATL","grp":"QB","stat":"passing_yards","k":221.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Michael Penix Jr.","label":"Under 221.5 passing yards","p":0.5199,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.1283,
+     "fair": 0.1201,
+     "fair_est": true,
+     "dec": 6.483,
+     "likeliest": false,
+     "thin": 4,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "legs": [
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0037238","team":"ATL","grp":"WR","stat":"receiving_yards","k":76.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Drake London","label":"Under 76.5 receiving yards","p":0.5865,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036442","team":"CIN","grp":"QB","stat":"passing_tds","k":2.5,"side":"under","main":true,"price":-207,"src":"dkline","name":"Joe Burrow","label":"Under 2.5 passing tds","p":0.5013,"fair":0.6366,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036970","team":"ATL","grp":"TE","stat":"receiving_yards","k":42.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Kyle Pitts","label":"Under 42.5 receiving yards","p":0.5887,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0039917","team":"ATL","grp":"QB","stat":"passing_yards","k":221.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Michael Penix Jr.","label":"Under 221.5 passing yards","p":0.5199,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0034829","team":"CIN","grp":"TE","stat":"receiving_yards","k":28.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Mike Gesicki","label":"Under 28.5 receiving yards","p":0.5649,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+     ],
+     "p": 0.0753,
+     "fair": 0.0631,
+     "fair_est": true,
+     "dec": 11.86,
+     "likeliest": false,
+     "thin": 5,
+     "mkt": 0,
+     "chance": "fair"
+    }
+   ],
+   "elo": [
+    {
+     "id": "elo-safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0037238","team":"ATL","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":131,"src":"dkline","name":"Drake London","label":"Scores a touchdown","p":0.281,"pe":0.4979,"fair":0.4097,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036900","team":"CIN","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-104,"src":"dkline","name":"Ja'Marr Chase","label":"Scores a touchdown","p":0.4806,"pe":0.5697,"fair":0.4825,"fair_est":true,"thin":null,"market":null}
+     ],
+     "p": 0.2837,
+     "fair": 0.1977,
+     "fair_est": true,
+     "dec": 4.06,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "elo-med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0037238","team":"ATL","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":131,"src":"dkline","name":"Drake London","label":"Scores a touchdown","p":0.281,"pe":0.4979,"fair":0.4097,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036900","team":"CIN","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-104,"src":"dkline","name":"Ja'Marr Chase","label":"Scores a touchdown","p":0.4806,"pe":0.5697,"fair":0.4825,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0034829","team":"CIN","grp":"TE","stat":"receiving_yards","k":28.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Mike Gesicki","label":"Under 28.5 receiving yards","p":0.5649,"pe":0.585,"fair":0.5,"fair_est":true,"thin":null,"market":null}
+     ],
+     "p": 0.1611,
+     "fair": 0.094,
+     "fair_est": true,
+     "dec": 7.836,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "elo-aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0037238","team":"ATL","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":131,"src":"dkline","name":"Drake London","label":"Scores a touchdown","p":0.281,"pe":0.4979,"fair":0.4097,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036900","team":"CIN","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-104,"src":"dkline","name":"Ja'Marr Chase","label":"Scores a touchdown","p":0.4806,"pe":0.5697,"fair":0.4825,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0034829","team":"CIN","grp":"TE","stat":"receiving_yards","k":28.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Mike Gesicki","label":"Under 28.5 receiving yards","p":0.5649,"pe":0.585,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036410","team":"CIN","grp":"WR","stat":"receptions","k":5.5,"side":"over","main":true,"price":-109,"src":"dkline","name":"Tee Higgins","label":"Over 5.5 receptions","p":0.458,"pe":0.5706,"fair":0.4915,"fair_est":true,"thin":null,"market":null}
+     ],
+     "p": 0.0944,
+     "fair": 0.0477,
+     "fair_est": true,
+     "dec": 14.859,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0,
+     "chance": "fair"
+    },
+    {
+     "id": "elo-xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0038542","team":"ATL","grp":"RB","stat":"rushing_yards","k":93.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Bijan Robinson","label":"Over 93.5 rushing yards","p":0.3152,"pe":0.5518,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0037238","team":"ATL","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":131,"src":"dkline","name":"Drake London","label":"Scores a touchdown","p":0.281,"pe":0.4979,"fair":0.4097,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036900","team":"CIN","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-104,"src":"dkline","name":"Ja'Marr Chase","label":"Scores a touchdown","p":0.4806,"pe":0.5697,"fair":0.4825,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0034829","team":"CIN","grp":"TE","stat":"receiving_yards","k":28.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Mike Gesicki","label":"Under 28.5 receiving yards","p":0.5649,"pe":0.585,"fair":0.5,"fair_est":true,"thin":null,"market":null},
+      {"gid":"2026_09_CIN_ATL","week":9,"pid":"00-0036410","team":"CIN","grp":"WR","stat":"receptions","k":5.5,"side":"over","main":true,"price":-109,"src":"dkline","name":"Tee Higgins","label":"Over 5.5 receptions","p":0.458,"pe":0.5706,"fair":0.4915,"fair_est":true,"thin":null,"market":null}
+     ],
+     "p": 0.0533,
+     "fair": 0.0255,
+     "fair_est": true,
+     "dec": 26.509,
+     "likeliest": false,
+     "thin": 0,
+     "mkt": 0,
+     "chance": "fair"
+    }
+   ],
+   "taken_at": "2026-11-03T14:01:53Z"
   }
  }
 }
