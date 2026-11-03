@@ -112,14 +112,14 @@
   },
   "BAL": {
    "kick": "2026-11-06T01:15Z",
-   "built_at": "2026-11-03T14:31:36.601Z",
+   "built_at": "2026-11-03T18:40:12.956Z",
    "units": {
     "qb": [
      {
-      "id": "00-0035993",
-      "n": "Tyler Huntley",
+      "id": "00-0040981",
+      "n": "Joe Fagnano",
       "pos": "QB",
-      "q": "questionable: toe"
+      "q": "questionable: ankle"
      }
     ],
     "ol": [
