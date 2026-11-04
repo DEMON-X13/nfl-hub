@@ -108,6 +108,8 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-pl-def b{color:var(--ink)}
 .pe-pl td.pe-n b{font-family:var(--display);font-size:14px}
 .pe-pl tr.pe-weak td{opacity:.55}
+.pe-pl .pe-inline{font-size:12.5px;line-height:1.6;color:var(--ink-2);margin:10px 0 0}
+.pe-pl .pe-inline span{white-space:nowrap}
 @media(max-width:640px){ .pe-pl-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
 /* the Elo picks' cards on Suggested Parlays (in each unit since app v118; at the tab's foot, #pbElo, from app v111):
    each player's shield before his name */
@@ -229,7 +231,11 @@ function move(r){
    legs (avg, his average; proj; no_elo, the same leg fitted with no Elo terms; elo, the Elo part, proj less no_elo, in
    the stat's units; sd, the stat's spread at the projection; z, the Elo part in that sd; def_x and elo_x, the Elo
    part's split, the defence's multiplier against the league's average defence and his Elo's (given his average, the
-   rest), no_elo x def_x x elo_x = proj, so the two point the Elo part's way; vs, the table he faces, its Elo and rank), and `avg_fit.legs` each leg's fit and record: trusted where, called season by season on 2019-2025 by
+   rest), no_elo x def_x x elo_x = proj, so the two point the Elo part's way; vs, the table he faces, its Elo and rank;
+   since 4 November 2026, on a leg reading THE INPUTS, in_x {vol, game, q}, each kind's multiplier of the projection
+   against a typical starter's inputs, which no_elo has in it), each player's `in` (what the inputs read for him: his snap
+   shares, his shares of his club's targets, carries and air yards, its implied points and spread, the wind at kickoff and
+   where it came from), and `avg_fit.legs` each leg's fit (its terms, the inputs among them) and record: trusted where, called season by season on 2019-2025 by
    fits on the seasons before, its Elo part lowered the miss and its largest fifth landed on its side more than half the
    time. An untrusted leg is shown faded and leans no Elo pick. A file built before the block carries the matchup
    formula's projections alone (players' stats [recent form, projection, nudge], fit's sd and record's past: the rule
@@ -261,7 +267,8 @@ function muTrusted(g,st){
 function muLine(pid,st){
   const v=muEntry(pid), a=v&&v.stats&&v.stats[st]; if(!a) return null;
   if(muAvgOn()){ const sd=+a.sd;
-    return {form:+a.avg,proj:+a.proj,base:+a.no_elo,nudge:+a.elo,sd,z:isFinite(a.z)?+a.z:(sd>0?a.elo/sd:NaN),vs:a.vs&&typeof a.vs==='object'?a.vs:null,def_x:+a.def_x,elo_x:+a.elo_x,v}; }
+    return {form:+a.avg,proj:+a.proj,base:+a.no_elo,nudge:+a.elo,sd,z:isFinite(a.z)?+a.z:(sd>0?a.elo/sd:NaN),vs:a.vs&&typeof a.vs==='object'?a.vs:null,def_x:+a.def_x,elo_x:+a.elo_x,
+      in_x:a.in_x&&typeof a.in_x==='object'?a.in_x:null,v}; }
   if(!Array.isArray(a)) return null;
   const f=D.mu.fit&&D.mu.fit[v.group+'|'+st]; if(!f) return null;
   return {form:a[0],proj:a[1],nudge:a[2],sd:f.sd,z:a[2]/f.sd,vs:null,v}; }
@@ -306,9 +313,49 @@ const UNIT_NAME={DL:'Pass rush and run front (DL)',LB:'Linebackers',DB:'Secondar
    since 29 October 2026 the Elo-adjusted average's breakdown, his average, the projection with no Elo terms (Base), the
    defence's table he faces with its Elo and rank, the Elo part's split (the defence's multiplier and his Elo's, given his
    average: Base times the two is the projection), the projection and its Elo part (Proj less Base); on a file from
-   before the block the matchup formula's recent form, nudge and projection */
+   before the block the matchup formula's recent form, nudge and projection. Since 4 November 2026 (THE INPUTS in
+   elo/build.py, the owner's "Merge the inputs"), on a file whose legs read the inputs, before Base the inputs' own
+   multipliers (each leg's in_x: ×Vol his snap share and his share of his club's targets, carries or air yards, ×Game his
+   club's implied points and spread and on passing yards the wind, ×Q a filed Questionable; each against the typical
+   starter's, on the full projection's coefficients, a dash where the leg reads none), a column for each kind the
+   position's legs read; they are in Base (the twin reads the same inputs), so Base × Def × Elo is still the projection;
+   and under the table one line of what the inputs read for him (avg[pid].in), only the parts his position's legs read */
 const numTxt=(x,st)=>!isFinite(x)?'–':st==='any_td'?(+x).toFixed(2):Math.abs(x)>=10?(+x).toFixed(0):(+x).toFixed(1);
 const mulTxt=x=>isFinite(x)?(+x).toFixed(2):'–';
+/* an input term's kind, as elo/build.py's avg_in_split splits them: the game's (implied points, spread, wind), the
+   Questionable tag, else his volume (snap share and shares) */
+const IN_KIND=t=>t==='in:imp'||t==='in:spr'||t==='in:wind'?'game':t==='in:q'?'q':'vol';
+const IN_COL={vol:['×Vol',"His snap share and his share of his club's targets, carries or air yards, against a typical starter's: how far they move his projection (in Base)"],
+  game:['×Game',"His club's implied points and spread (and the wind, on passing yards), against a typical starter's: how far they move his projection (in Base)"],
+  q:['×Q',"Listed Questionable, against not listed: how far it moves his projection (in Base)"]};
+/* the input terms a position's legs read (avg_fit.legs' terms), none on a file from before the inputs */
+const muInTerms=g=>{ if(!muAvgOn()) return []; const L=D.mu.avg_fit.legs, out=new Set();
+  for(const [k,f] of Object.entries(L)) if(k.split('|')[0]===g&&f&&Array.isArray(f.terms)) for(const t of f.terms) if(typeof t==='string'&&t.startsWith('in:')) out.add(t);
+  return [...out]; };
+/* the kinds of input the window gives a column, in order: those the position's legs read */
+const muInKinds=g=>{ const k=new Set(muInTerms(g).map(IN_KIND)); return ['vol','game','q'].filter(x=>k.has(x)); };
+/* what the inputs read for him (avg[pid].in), only the parts his position's legs read, in a few words: his snap share
+   last appearance and his usual, his long share of his club's targets, carries and air yards, his club's implied points
+   and spread (as a line: minus when favoured), the wind at kickoff ("roof" under one, "no wind forecast" where none
+   was read, which the build reads as calm); '' where he has none */
+const pctIn=x=>Math.round(x*100)+'%';
+const okIn=x=>typeof x==='number'&&isFinite(x);
+function muInLine(v,g){
+  const I=v&&v.in; if(!I||typeof I!=='object') return '';
+  const T=new Set(muInTerms(g)), parts=[], put=(k,t,title)=>parts.push(`<span data-pe-in="${k}" title="${esc(title)}">${esc(t)}</span>`);
+  if((T.has('in:snap1r')||T.has('in:snapL'))&&(okIn(I.snap1)||okIn(I.snapL)))
+    put('snap',okIn(I.snap1)?`Snap share ${pctIn(I.snap1)} last game${okIn(I.snapL)?` (usual ${pctIn(I.snapL)})`:''}`:`Snap share usual ${pctIn(I.snapL)}`,
+      'His snap share in his last appearance, and his usual (recent appearances weighing more)');
+  for(const [s,w] of [['tgt','targets'],['car','carries'],['ay','air yards']])
+    if((T.has('in:shL_'+s)||T.has('in:shr_'+s))&&okIn(I['sh_'+s+'L']))
+      put(s,`${pctIn(I['sh_'+s+'L'])} of ${w}`,`His share of his club's ${w} (recent appearances weighing more)${okIn(I['sh_'+s+'S'])?`; lately ${pctIn(I['sh_'+s+'S'])}`:''}`);
+  if(T.has('in:imp')&&okIn(I.implied)) put('implied',`implied ${(+I.implied).toFixed(1)} pts`,"His club's implied points, from the game's total and spread");
+  if(T.has('in:spr')&&okIn(I.spread)){ const a=+Math.abs(+I.spread).toFixed(1); put('spread',`spread ${a===0?'0':(+I.spread>0?'−':'+')+a}`,"His club's point spread (minus when favoured)"); }
+  if(T.has('in:wind')){ const src=String(I.wind_src||'');
+    put('wind',src==='roof'?'roof':okIn(I.wind)?`wind ${Math.round(+I.wind)} mph`:'no wind forecast',
+      src==='roof'?'Under a roof: calm':okIn(I.wind)?`The wind at kickoff, ${src==='open-meteo'?"Open-Meteo's":"the National Weather Service's"} forecast`:`No forecast${src?` (${src})`:''}: read as calm`); }
+  return parts.join(' · ');
+}
 function playerModal(pid){
   const P=D.players, g=D.pos, r=(P.groups[g].top||[]).find(x=>x.id===pid); if(!r) return;
   let m=el('pePlModal');
@@ -326,13 +373,16 @@ function playerModal(pid){
   else if(ruledOut(pid)) mu=`<p class="pe-sub">Ruled out for week ${esc(M.week)}.</p>`;
   else {
     const R=defRanks(), rk=u=>R[u]&&R[u][v.opp]?`${ordinal(R[u][v.opp])} of ${R.n}`:'–';
-    let head, rows;
+    let head, rows, inLine='';
     if(avg){
-      head=`<th>Stat</th><th class="pe-n" title="His average">Avg</th><th class="pe-n" title="His projection with no Elo terms">Base</th><th class="pe-n" title="The defence's table he faces: its Elo and rank">Vs</th><th class="pe-n" title="This defence against the league's average one">×Def</th><th class="pe-n" title="His Elo, given his average">×Elo</th><th class="pe-n" title="Base × Def × Elo">Proj</th><th class="pe-n" title="The Elo part: Proj less Base">Elo</th>`;
+      inLine=muInLine(v,g);
+      const kinds=muInKinds(g);
+      head=`<th>Stat</th><th class="pe-n" title="His average">Avg</th>${kinds.map(k=>`<th class="pe-n" data-pe-inx="${k}" title="${esc(IN_COL[k][1])}">${IN_COL[k][0]}</th>`).join('')}<th class="pe-n" title="His projection with no Elo terms${kinds.length?', his inputs in it':''}">Base</th><th class="pe-n" title="The defence's table he faces: its Elo and rank">Vs</th><th class="pe-n" title="This defence against the league's average one">×Def</th><th class="pe-n" title="His Elo, given his average">×Elo</th><th class="pe-n" title="Base × Def × Elo">Proj</th><th class="pe-n" title="The Elo part: Proj less Base">Elo</th>`;
       rows=stats.map(st=>{ const x=muLine(pid,st); if(!x) return '';
         const t=eloLeanTxt(x.nudge,st), cls=/^[0.]+$/.test(t)?'flat':(x.nudge>0?'up':'dn'), q=x.vs;
         const vs=q&&VS_SHORT[q.table]?`<span title="${esc(`${v.opp} ${VS_NAME[q.table]} ${q.elo}, ${ordinal(q.rank)}`)}">${esc(VS_SHORT[q.table])} ${esc(q.elo)} (#${esc(q.rank)})</span>`:'–';
-        return `<tr class="${muTrusted(g,st)?'':'pe-weak'}" data-pe-stat="${esc(st)}"><td>${MU_LBL[st]||esc(st)}</td><td class="pe-n">${numTxt(x.form,st)}</td><td class="pe-n">${numTxt(x.base,st)}</td><td class="pe-n">${vs}</td>
+        const inx=kinds.map(k=>`<td class="pe-n">${x.in_x&&okIn(x.in_x[k])?mulTxt(x.in_x[k]):'–'}</td>`).join('');
+        return `<tr class="${muTrusted(g,st)?'':'pe-weak'}" data-pe-stat="${esc(st)}"><td>${MU_LBL[st]||esc(st)}</td><td class="pe-n">${numTxt(x.form,st)}</td>${inx}<td class="pe-n">${numTxt(x.base,st)}</td><td class="pe-n">${vs}</td>
           <td class="pe-n">${mulTxt(x.def_x)}</td><td class="pe-n">${mulTxt(x.elo_x)}</td><td class="pe-n"><b>${numTxt(x.proj,st)}</b></td>
           <td class="pe-n"><span class="pe-nud ${cls}" style="display:inline">${t}</span></td></tr>`; }).join('');
     } else {
@@ -345,7 +395,7 @@ function playerModal(pid){
     mu=`<h3>Week ${esc(M.week)}: ${tag(v.team,true)} <span class="muted" style="font-weight:500">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</h3>
       ${gameOn(v.game_id)?`<p class="pe-sub pe-begun"><b>This game has kicked off.</b></p>`:''}
       <div class="pe-pl-def">${['DL','LB','DB'].map(u=>`<span>${UNIT_NAME[u]}: <b>${rk(u)}</b></span>`).join('')}</div>
-      <table class="pe-t"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+      <table class="pe-t"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>${inLine?`<p class="pe-inline" data-pe-in>${inLine}</p>`:''}`;
   }
   el('pePlView').innerHTML=`<div class="card pe-pl"><h2>${shield(r.elo)}${esc(r.name)} <span class="pill">${esc(r.pos)} · ${esc(r.team)}</span>${qTag(r)}<span style="flex:1"></span><button class="btn quiet" id="pePlClose">Close</button></h2>
     <div class="pe-pl-tiles">
