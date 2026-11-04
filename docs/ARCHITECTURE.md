@@ -492,7 +492,11 @@ elo/
                                  the bar its stamp alone, no ELO Model record or walk-forward
                                  pill whatever the file's record holds (22 October 2026); clubs
                                  level on a matchup unit, to the hundredth, sharing its rank on
-                                 the Mismatches;
+                                 the old Mismatches; a player's window's three pills, his
+                                 opponent's Pass Rush, Run Defense and Pass Defense as the
+                                 tab's tables draw them (November 2026: the real files, two
+                                 clubs made level, a table taken out, a carried club, the
+                                 league table emptied);
                                  and the money the files feed (app v138): the Elo matchup
                                  chance on every matchup line (DraftKings' fair chance moved by
                                  the matchup's nudge: since 29 October 2026 the Elo-adjusted
@@ -731,8 +735,12 @@ nflbets/
                                  kept with their slip line, only DraftKings' markets offered,
                                  no ladder bet anywhere (app v127, and one kept in the
                                  builder taken out at boot), Suggested Parlays one section
-                                 under one record with no backtest chip (app v129), clubs
-                                 level on a unit sharing its rank, the ELO tab's bar its
+                                 under one record with no backtest chip (app v129), the
+                                 defences a player's window and the Starters
+                                 headers rank on the ELO tab's tables (THE
+                                 DEFENCES RANKED ON THE ELO TAB'S TABLES, in the
+                                 place of CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS
+                                 RANK), the ELO tab's bar its
                                  stamp alone, the X Bet Log with no Note column, the
                                  Mismatches on the score on a made-up game two days out at
                                  any hour (mmFixChecks: the card, the game's page tags, the
@@ -1010,8 +1018,10 @@ the prop model draws one (16 October 2026; `pkBoard.propsPlayers`, `openOnProps(
 -- `role="tablist"`, the arrow keys, Home and End, the choice kept while the page is open; the two
 teams' header under the tabs, directly over the table, since 14 October 2026 -- each
 with his season Elo, rank and shield as on the ELO Ratings tab and a Q from the report, the higher
-Elo of each pair marked, and each defensive group's header carrying both teams' units as the
-matchup formula ranks them among the league's, clubs level on a unit, to the hundredth, sharing its rank). One type scale (11, 13, 15, 18, 22 and 30px, custom
+Elo of each pair marked, and each defensive group's header carrying both teams' ranks in one of the ELO Ratings tab's
+own tables, named under the group's label (the defensive line on Pass Rush, the linebackers on Run Defense, the secondary
+on Pass Defense; the table's rank, clubs level on the Elo shown sharing it, the better marked), since November 2026 the
+owner's call "Switch to ELO tab tables", where until then it was the matchup formula's units among the league's). One type scale (11, 13, 15, 18, 22 and 30px, custom
 properties on `#gsModal`; a phone takes the top two to 20 and 26) and every control at least 44px tall;
 red text on the red tint (the Upset
 chip, the out badge and heading) is a darker red, `--gs-miss-ink` (5.3:1 there, against the page's
@@ -1037,7 +1047,8 @@ the window opens (so a folded card or a tab not shown is held like the rest); th
 files and its confidence pill to Vegas's band on them; the dissenters, the badges, the edge marks in every
 card, among the starters and on the verdict's Team Elo and Offense vs defense answers (the higher
 rating, the better rank of each offense and defense that meet, the side named with the edge), and the
-unit ranks in their headers; the bars, to the same numbers (each call's bar leaning toward its pick,
+defences' ranks in their headers (each club's defensive line on the ELO tab's Pass Rush table, its linebackers on Run
+Defense and its secondary on Pass Defense, since November 2026; `defHeadsBad`); the bars, to the same numbers (each call's bar leaning toward its pick,
 `gs-toh` home and `gs-toa` away, as far as its chance and in that team's colour; the split bar under
 the headline each side's Vegas chance wide); the game bar; the head (away team, middle, home team,
 the middle's score, kickoff and preview in that order, no "at" circle, the Away and Home labels),
@@ -1165,7 +1176,8 @@ wraps `renderSp`); each leg on a player with a Solid-or-better mismatch wearing 
 button, on the side it favours only (`epMm`, `epMmFor`, `epMmTag`). The Mismatches' words (`mmLine`, `mmTitle`,
 `mmAgainst`) name the matchup formula's units, "vs the LAC secondary and defensive line, 32nd by player Elo", never
 "pass defense ranked", which is the ELO Ratings tab's table's alone; clubs level on a unit share its rank there, in a
-player's window and in the Game snapshot's Starters headers and Mismatches (20 October 2026), level read to the hundredth
+player's window and in the Game snapshot's Starters headers and Mismatches (20 October 2026; the window and the headers on
+the ELO tab's tables since November 2026, below), level read to the hundredth
 since 22 October 2026 (`mmKey`, `Math.round(x*100)`, in `defRanks` and the Mismatches' `rankOf`; `snapshot.html`'s
 `defRank` the same, the owner's call: "in mismatches, make clubs tied on a defense unit share the same rank in the
 mismatches, plaer window, and game snapshot"), since a unit of two averaged can part clubs level on paper by a
@@ -1179,8 +1191,15 @@ tag, Mismatch, at the file's tag (`mmTagged`, `mmTagEl`; none where it is null);
 (`rowV2`, a Pts column), a game page's MISMATCH and an Elo pick's tag the same row. The old score above stands, untouched,
 for a file from before the score, between one pair of OLD-MISMATCHES marks in this file, `snapshot.html` and `glance.js`
 (`mismatchesOld`, `mmTaggedOld`, `mmTagElOld`, `bubbleOld`, `rowOld`; `mmCxOld`, `mmLiOld`; the bubble's old line);
-`build.js` refuses the old score's words outside the marks. The player window's DL, LB and DB rank line (`defRanks`) and
-the Game snapshot's Starters headers still rank the formula's units. `window.eloGlance` {trusted, labels, unit, title,
+`build.js` refuses the old score's words outside the marks. **Since November 2026** (the owner's call "Switch to ELO tab
+tables"; CLAUDE.md, **The defences on the ELO tab's tables**) the player window's rank line is three pills on the tab's
+own tables, the opponent's Pass Rush, Run Defense and Pass Defense where DL, LB and DB stood (`DEF_TABLES`, `defPill`, on
+`unitRow`, which `unitFaced` reads too: "Pass Rush: 1580 · 5th of 32", the table's name, the club's Elo and its rank as
+the table draws it, carried where so, a dash with no table or row), and the Game snapshot's Starters headers rank each
+club's defensive line, linebackers and secondary on the same three (`DEF_TABLE`, `defRow`, `defName` in `snapshot.html`,
+the table's name under the group's label); `defRanks`, `defRank` and both `UNIT_NAME`s are gone, and `league.defs` ranks
+nothing on the page outside the old Mismatches' marks (`build.js` refuses it, `defRanks(`, `defRank(` and "Pass rush and
+run front" there). `window.eloGlance` {trusted, labels, unit, title,
 pts, outWhy, entry} (`grade` and `against` until 4 November 2026, the old rows carrying their own since) is what the
 matchup bubble (`glance.js`) reads here: `unit(group, opp)` the tab's own table for a
 side of the ball (a quarterback the Overall Defense, a back the Run Defense, a receiver or tight end the Pass Defense),
