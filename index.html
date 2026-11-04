@@ -1524,7 +1524,7 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 .gs-mmsc small{font-size:var(--gs-t2);font-weight:700}
 /* (4 November 2026) the one tag on a row at the file's tag, the Props tab's blue pill (white on #2563EB to #1E4FA8,
    5.2:1 and up in either look) */
-#gsModal .gs-mmsc .gs-mmtag{display:inline-block;padding:2px 8px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;line-height:1.3;white-space:nowrap}
+#gsModal .gs-mmsc .gs-mmtag{display:inline-block;padding:2px 8px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-size:var(--gs-t1);font-weight:800;letter-spacing:.5px;text-transform:uppercase;line-height:1.3;white-space:nowrap}
 
 /* ---- one card in a little window of its own, over a game's page on the Props tab (Matchup, Mismatches
    and Team Stats, the owner's call of 20 October 2026): the same window, narrower, its one card unfolded ---- */
@@ -8146,7 +8146,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='c4eda15';
+const PAGE_HASH='ca1d163';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -11301,16 +11301,17 @@ if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
    keeps the old Mismatches, between the OLD-MISMATCHES marks below, as they were */
 const mmOn=()=>{ if(!muAvgOn()) return false; const F=D.mu.avg_fit.mismatch; return !!(F&&typeof F==='object'&&F.lead&&typeof F.lead==='object'); };
 const MMV2_LBL={rushing_yards:'rush yds',receiving_yards:'rec yds'};
-const mmSgn=x=>(x>=0?'+':'−')+Math.abs(x).toFixed(1);
+const mmSgn=x=>(x>=0?'+':'−')+Math.abs(x).toFixed(1), mmPtsSgn=n=>n>0?'+':'';
 const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]||'th');
 /* the clubs a table of this tab ranks (model.json's units), for "32nd of 32"; null where the file has none */
 const mmTableN=key=>{ const T=D.model&&D.model.units&&D.model.units[key]; return T&&typeof T==='object'?Object.keys(T).length:null; };
-/* a row's words: its size ("+7 pts"), its Elo part in yards ("+6.1 rec yds"), the defence ("vs LAC Pass Defense #32"),
+/* a row's words: its size ("+7 pts", a size that rounds to nothing unsigned, "0 pts", as the page shows every figure of
+   0: the review of 4 November 2026), its Elo part in yards ("+6.1 rec yds"), the defence ("vs LAC Pass Defense #32"),
    the projection ("58 rec yds"), and its title, the whole of it: "Mismatch this week: the matchup moves his rec yds from
    52.0 to 58.1 (+6.1 rec yds): the LAC Pass Defense (1448, 32nd of 32) ×1.04 and his Elo for his average ×1.08. On an
    even line that is +7 pts on the over." (the Game snapshot and the matchup bubble print these same words) */
 function mmSayV2(r){
-  const lb=MMV2_LBL[r.lead]||String(MU_LBL[r.lead]||r.lead).toLowerCase(), pts=`+${r.pts} pts`, yds=`${mmSgn(r.part)} ${lb}`;
+  const lb=MMV2_LBL[r.lead]||String(MU_LBL[r.lead]||r.lead).toLowerCase(), pts=`${mmPtsSgn(r.pts)}${r.pts} pts`, yds=`${mmSgn(r.part)} ${lb}`;
   const tb=r.vs?`${r.opp} ${VS_NAME[r.vs.table]}`:String(r.opp);
   const title=`${r.tag?'Mismatch this week: the':'The'} matchup moves his ${lb} from ${r.base.toFixed(1)} to ${r.proj.toFixed(1)} (${yds}): the ${tb}`
     +`${r.vs?` (${r.vs.elo}, ${ordinal(r.vs.rank)}${r.defN?' of '+r.defN:''})`:''}${r.defenders?' and defenders':''} ×${mulTxt(r.def_x)} and his Elo for his average ×${mulTxt(r.elo_x)}. `
@@ -11343,7 +11344,7 @@ const bubbleV2=(v,i,max)=>`<button class="pe-mm-b" data-mm-game="${esc(v.game_id
       <span class="pe-mm-n" title="Mismatch rank this week">${i+1}</span>${v.tag?`<span class="pe-mmtag" title="${esc(v.say.title)}">Mismatch</span>`:''}
       <div class="pe-mm-top">${seOf(v.pid)!=null?`<span class="pe-mm-sh" title="${esc(tierName(seOf(v.pid)))} · this season">${shield(seOf(v.pid))}</span>`:''}<span class="pe-mm-nm">${esc(mmName(v.pid))}<small>(${esc(v.group)})</small></span></div>
       <div class="pe-mm-vs">${tag(v.team,true)}<span>${v.home?'vs':'at'}</span>${tag(v.opp,true)}</div>
-      <div class="pe-mm-score" title="${esc(v.say.title)}"><b data-pe-mmpts="${v.pts}">+${v.pts} <small>pts</small></b><span class="pe-mm-bar"><i style="width:${Math.max(6,Math.round(100*v.shift/max))}%"></i></span></div>
+      <div class="pe-mm-score" title="${esc(v.say.title)}"><b data-pe-mmpts="${v.pts}">${mmPtsSgn(v.pts)}${v.pts} <small>pts</small></b><span class="pe-mm-bar"><i style="width:${Math.max(6,Math.round(100*v.shift/max))}%"></i></span></div>
       <div class="pe-mm-sub">${esc(v.say.vs)}.<br><b>${esc(v.say.proj)}</b> projected (${esc(v.say.part)} from the matchup).</div></button>`;
 const rowV2=(v,i)=>`<tr data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" style="cursor:pointer" title="${esc(v.say.title)}"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))} <span class="muted" style="font-weight:600">(${esc(v.group)})</span></td>
     <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${v.vs?`${ordinal(v.vs.rank)}${v.defN?' of '+v.defN:''}<small class="muted" style="display:block;font-size:11px">${esc(VS_NAME[v.vs.table])}</small>`:'–'}</td>

@@ -136,7 +136,10 @@
  *     fixtures: a quarterback with a big z and a shift past every row never listed, three rows level on the shift ranked
  *     by the Elo part in yards then the id, a ruled-out player and a kicked-off game leaving, the file's out list, a
  *     listed row under the tag drawn untagged, the file's tag null drawing no tag anywhere, and a lead leg untrusted or
- *     missing from the lead dropping its rows; and the old Mismatches below on a file from before the score (the week's,
+ *     missing from the lead dropping its rows; (the review of 4 November 2026) each bubble's score its size alone (a word
+ *     beside it, in an element of its own, read), a size that rounds to nothing drawn "0 pts", unsigned, and the Elo
+ *     picks' tag (eloDecorate, on a stand-in unit of Suggested Parlays) on a tagged row's player alone, on the side his
+ *     mismatch favours and in his own game, never on a listed row under the tag; and the old Mismatches below on a file from before the score (the week's,
  *     else the week's with the score taken out), so the page's fallback is held at any hour;
  *   - the old Mismatches bubbles' words (18 October 2026, a file from before the score): what an edge ranks is the
  *     matchup formula's units by their players' Elo ("vs the LAC secondary and defensive line, 32nd by player Elo"),
@@ -551,7 +554,7 @@ function page(MU, opts) {
   w.__clock = { now: 0 };
   w.eval(`var S={sched:${JSON.stringify(games.map((id, i) => ({ id, w: week, k: 1000 * (i + 1) })))},inactive:{},ui:{},parlay:{},saved:[],stake:10};
     function gameStarted(g){ return window.__clock.now>=g.k; }
-    function renderSlate(){}
+    function renderSlate(){}${opts && opts.sp ? '\n    function renderSp(){}' : ''}
     window.pkTierBadge=e=>'<svg class="tierbadge" data-elo="'+e+'"></svg>';
     window.pkEloTier=e=>[e>=1700?'Elite':e>=1600?'Diamond':e>=1500?'Gold':'Silver','', '#999'];
     window.pkTag=t=>'<span class="pk-ttag">'+t+'</span>';
@@ -580,6 +583,8 @@ function page(MU, opts) {
 const MM_LEAD_C = { RB: 'rushing_yards', WR: 'receiving_yards', TE: 'receiving_yards' }, MM_LB_C = { rushing_yards: 'rush yds', receiving_yards: 'rec yds' };
 const mmOnC = MU => avgOn(MU) && !!(MU.avg_fit.mismatch && typeof MU.avg_fit.mismatch === 'object' && MU.avg_fit.mismatch.lead && typeof MU.avg_fit.mismatch.lead === 'object');
 const sgnC = x => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(1);
+/* a size in whole points, signed but a size of nothing unsigned ("0 pts"), as the page shows every figure of 0 */
+const ptsC = shift => { const n = Math.round(100 * shift); return `${n > 0 ? '+' : ''}${n} pts`; };
 function mmOwnV2(MU, Mm, o) {
   const F = MU.avg_fit.mismatch, rows = [];
   for (const [pid, v] of Object.entries(MU.avg || {})) {
@@ -588,7 +593,7 @@ function mmOwnV2(MU, Mm, o) {
     const f = MU.avg_fit.legs[v.group + '|' + st], a = v.stats && v.stats[st];
     if (!f || f.trusted !== true || !a || !(m.shift > 0)) continue;
     if ((MU.out && MU.out[pid]) || (o.inactive && o.inactive[pid]) || o.kicked(v.game_id)) continue;
-    const lb = MM_LB_C[st], pts = `+${Math.round(100 * m.shift)} pts`, yds = `${sgnC(a.elo)} ${lb}`, q = a.vs && VS_NAME_OWN[a.vs.table] ? a.vs : null;
+    const lb = MM_LB_C[st], pts = ptsC(m.shift), yds = `${sgnC(a.elo)} ${lb}`, q = a.vs && VS_NAME_OWN[a.vs.table] ? a.vs : null;
     const U = q && Mm.units && Mm.units[q.table], n = U && typeof U === 'object' ? Object.keys(U).length : null;
     const dfn = Array.isArray(f.terms) && f.terms.some(t => t === 'DL' || t === 'LB' || t === 'DB'), tag = F.tag != null && m.tag === true;
     const tb = q ? `${v.opp} ${VS_NAME_OWN[q.table]}` : String(v.opp);
@@ -600,7 +605,10 @@ function mmOwnV2(MU, Mm, o) {
 }
 /* the old score's words, its grades and its units' rank, none of which a score's row may say, in its text or a title */
 const MM_OLD_C = /\bedges?\b|by player Elo|\b(?:Slight|Solid|Big|Huge)\b|standard deviation|\bSD\b/;
-const allText = el => !el ? '' : [txt(el), ...[el, ...el.querySelectorAll('[title]')].map(x => x.getAttribute && x.getAttribute('title') || '')].join(' | ');
+/* an element's text with every text node apart (the review of 4 November 2026: textContent runs neighbours together, so
+   "+15 pts" beside a "Huge" of its own read "+15 ptsHuge", where no word starts), and every title under it */
+const textApart = el => { const tw = el.ownerDocument.createTreeWalker(el, 4), a = []; for (let n = tw.nextNode(); n; n = tw.nextNode()) a.push(n.nodeValue); return a.join(' ').replace(/\s+/g, ' ').trim(); };
+const allText = el => !el ? '' : [textApart(el), ...[el, ...el.querySelectorAll('[title]')].map(x => x.getAttribute && x.getAttribute('title') || '')].join(' | ');
 /* a file with the score planted, the check's own (where the week's files are from before it): the lead legs its own copy
    trusts in the file, each lead block's shift Phi(z) - 0.5 of its own z to four places (erfC, above), the tag at 3.5
    points; and a file from before the score, the score taken out */
@@ -649,6 +657,8 @@ async function holdV2(w, d, MU, lab) {
     `${lab}: the Mismatches card's bubbles are not the first five of the list: ${bubbles.map(b => b.dataset.mmPid).join(', ')}`);
   const bad = bubbles.map((b, i) => { const r = own[i], sc = b.querySelector('.pe-mm-score'), bar = sc && sc.querySelector('.pe-mm-bar i'), tg = [...b.querySelectorAll('.pe-mmtag')], e = [];
     if (txt(sc && sc.querySelector('b')) !== r.pts) e.push(`size "${txt(sc && sc.querySelector('b'))}", not "${r.pts}"`);
+    /* the score is its size and nothing more (a grade word set beside the points, in an element of its own, is read) */
+    if (txt(sc) !== r.pts) e.push(`score "${txt(sc)}", not its size "${r.pts}" alone`);
     if (!sc || sc.title !== r.title) e.push(`title "${sc ? sc.title : ''}", not "${r.title}"`);
     if (txt(b.querySelector('.pe-mm-sub')) !== `${r.vs}.${r.proj} projected (${r.part} from the matchup).`) e.push(`lines "${txt(b.querySelector('.pe-mm-sub'))}"`);
     if (!bar || bar.style.width !== `${Math.max(6, Math.round(100 * r.shift / max))}%`) e.push(`bar ${bar ? bar.style.width : 'none'}`);
@@ -733,6 +743,43 @@ async function v2Mm(MU, lab) {
     plantRow(C, te, 0.5, true); cut(C);
     const { w, d } = page(C); await wait(60); const o = await holdV2(w, d, C, `${lab}, the tight end's lead leg ${how}`);
     chk(!o.some(r => r.group === 'TE') && !w.eloMismatches().some(v => v.group === 'TE'), `${lab}: a tight end is on the Mismatches with his lead leg ${how}`); }
+  /* (the review of 4 November 2026) a size that rounds to nothing, drawn unsigned as the page shows every figure of 0: three
+     rows alone in a copy (every other block's score taken out), one tagged, one under the tag and one of 0.4 points, each a
+     bubble on the card, the last "0 pts" in its score and its title */
+  { const C = JSON.parse(JSON.stringify(base)), [a, b, c] = elig; for (const v of Object.values(C.avg)) delete v.mm;
+    for (const pid of [a, b, c]) if (C.out) delete C.out[pid];
+    plantRow(C, a, 0.3, true); plantRow(C, b, 0.012, false); plantRow(C, c, 0.004, false);
+    const { w, d } = page(C); await wait(60); const o = await holdV2(w, d, C, `${lab}, a row whose size rounds to nothing`);
+    const z = o.find(r => r.pid === c), bz = d.querySelector(`#peMism .pe-mm-b[data-mm-pid="${c}"]`), sc = bz && bz.querySelector('.pe-mm-score');
+    chk(o.length === 3 && !!z && z.pts === '0 pts' && / that is 0 pts on the over\.$/.test(z.title) && !!sc && txt(sc) === '0 pts' && sc.title === z.title && !/\+0 pts/.test(allText(d.getElementById('peMism'))),
+      `${lab}: a row whose size rounds to nothing is not drawn "0 pts", unsigned: ${sc ? `"${txt(sc)}" ("${sc.title}")` : 'no bubble'}`); }
+  /* the Elo picks' tag (eloDecorate, which the tab runs after each draw of Suggested Parlays), on a stand-in unit of the
+     check's own (window.spUnit and spShown, its cards in #spPanel): by the check's own reading, a leg wears "Mismatch"
+     where his row of the list is tagged, in the leg's own game and on the side the mismatch favours (his over), after his
+     name, with the points and the row's title and no grade; none on his under, on a listed row under the tag, or on a
+     tagged row's player in another game; drawn twice, once */
+  { const C = JSON.parse(JSON.stringify(base)), [a, b, c] = elig, g0 = C.avg[a].game_id;
+    const g1 = Object.values(C.avg).map(v => v.game_id).find(x => x && x !== g0);
+    for (const pid of [a, b, c]) if (C.out) delete C.out[pid];
+    plantRow(C, a, 0.3, true); plantRow(C, b, 0.02, false); plantRow(C, c, 0.25, true);
+    C.avg[b].game_id = g0; if (g1) C.avg[c].game_id = g1;
+    const { w, d } = page(C, { sp: true }); await wait(60);
+    const own = mmOwnV2(C, M, { inactive: w.eval('S').inactive, kicked: gid => kickedC(w, gid) }), rowOf = pid => own.find(r => r.pid === pid) || null;
+    const legs = [[a, 'over'], [b, 'over'], [a, 'under'], [c, 'over']].map(([pid, side]) => ({ pid, gid: g0, side, stat: MM_LEAD_C[C.avg[pid].group], name: (P.players[pid] || {}).name || pid }));
+    const wear = l => { const r = rowOf(l.pid); return r && r.tag && r.gid === l.gid && l.side === 'over' && l.stat !== 'passing_interceptions' ? r : null; };
+    const tiers = [{ id: 'elo-safe', legs: legs.slice(0, 2) }, { id: 'elo-med', legs: legs.slice(2) }];
+    w.spUnit = id => ({ id }); w.spShown = () => ({ elo: tiers });
+    const panel = d.body.appendChild(Object.assign(d.createElement('div'), { id: 'spPanel' }));
+    panel.innerHTML = `<div class="sp-game" data-sp-game="U1">${tiers.map(t => `<div class="pb-tier" data-pb-tier="${t.id}"><ol class="pb-legs">${t.legs.map(l => `<li><span class="nm">${escC(l.name)}</span></li>`).join('')}</ol></div>`).join('')}</div>`;
+    w.renderSp(); w.renderSp();
+    const lis = [...panel.querySelectorAll('.pb-legs > li')];
+    const bad = lis.map((li, i) => { const l = legs[i], r = wear(l), t = [...li.querySelectorAll('.pe-mmtag')], nm = li.querySelector('.nm');
+      if (!r) return t.length ? `${l.name}'s ${l.side} wears "${txt(t[0])}", his row ${rowOf(l.pid) ? `${rowOf(l.pid).pts}${rowOf(l.pid).tag ? ' tagged' : ' untagged'} in ${rowOf(l.pid).gid}` : 'not listed'}` : '';
+      return t.length === 1 && txt(t[0]) === 'Mismatch' && t[0].dataset.peMmtag === String(Math.round(100 * r.shift)) && !t[0].hasAttribute('data-pe-mmgrade') && t[0].title === r.title
+        && !!nm && nm.firstChild && nm.firstChild.nodeType === 3 && nm.firstChild.nextSibling === t[0] ? '' : `${l.name}'s ${l.side}: ${t.map(x => `${txt(x)} ${x.dataset.peMmtag} "${x.title}"`).join(', ') || 'no tag'}, not Mismatch ${Math.round(100 * r.shift)} after his name`; }).filter(Boolean);
+    const cases = [!!wear(legs[0]), !!rowOf(b) && !rowOf(b).tag, !g1 || (!!rowOf(c) && rowOf(c).tag && rowOf(c).gid !== g0)];
+    chk(lis.length === legs.length && cases.every(Boolean) && !bad.length,
+      `${lab}: an Elo pick's leg does not wear its player's tag exactly where his row is tagged, in his own game and on his over: ${bad.join(' | ') || 'the fixture lacks a case: ' + cases.join(', ')}`); }
 }
 
 (async () => {
