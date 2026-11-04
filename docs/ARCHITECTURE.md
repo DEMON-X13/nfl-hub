@@ -444,19 +444,31 @@ elo/
                                  snap counts from 2013 and nflverse's players.csv (the averages'
                                  inputs, THE INPUTS, 4 November 2026, with the coming games'
                                  wind forecasts from api.weather.gov and Open-Meteo, each
-                                 request tried once, the step capped at 90 seconds, never
-                                 required: a forecast not had is calm), and nflverse's draft
-                                 picks fresh every run, and writes data/; exits 1 and writes
-                                 nothing when a required source cannot be had (the draft picks
-                                 and players.csv always, players.csv also when it places no
-                                 PFR id, a finished season's snap counts, and with the newest
-                                 schedule's draft from PRESEASON_CALLS days before its week 1)
+                                 request tried once, the step held to 90 seconds of wall
+                                 clock, never required: a forecast not had, any failure, is
+                                 calm), and nflverse's draft picks fresh every run, and
+                                 writes data/; exits 1 and writes nothing when a required
+                                 source cannot be had (the draft picks and players.csv
+                                 always, players.csv also when it places no PFR id, a
+                                 finished season's snap counts, the season in play's once
+                                 its first game is 72 hours old and then carrying every
+                                 regular-season game final for 72 (SNAP_DUE), and with the
+                                 newest schedule's draft from PRESEASON_CALLS days before its
+                                 week 1)
   test_parity.py                 the averages' inputs: the fit's path (tools/elo_avg_fit.py's
                                  add_inputs) and the run's (avg_coming_inputs) term for term,
                                  the rule on its own reading and the forecast's rules on a
-                                 stubbed netfetch, on fixtures of its own, which elo.yml runs
-                                 after check.py and before the commit (--cache, by hand: on
-                                 cache/'s real 2025 weeks 10-18 too)
+                                 stubbed netfetch (the requests' own addresses, every failure
+                                 calm and said in the site's words, the cap of wall clock), on
+                                 fixtures of its own, which elo.yml runs after check.py and
+                                 before the commit, as the props gate's job C does (--cache,
+                                 by hand: on cache/'s real 2025 weeks 10-18 too)
+  test_fetch.py                  build.py's downloads and the forecasts on a local server:
+                                 which files are required (the season in play's snap counts
+                                 once due, players.csv), past.lst, the draft picks, each
+                                 forecast failure calm and asked once, a slow and a trickled
+                                 answer given up at the cap; elo.yml runs it before the commit
+                                 and the props gate's job C on a pull request
   check.py                       the gate: data/ against the roster, the injury report, the
                                  schedule, the play-by-play (every team's stats and ratings
                                  replayed from it, last season replayed too for the carry, with
@@ -477,11 +489,14 @@ elo/
                                  (AVERAGES: since 4 November 2026 their inputs too, the snap
                                  counts, players.csv's PFR ids, the shares, the lines and the
                                  filed Questionable read by the gate, the wind held to the
-                                 forecast recorded, each block's `in` and each leg's `in_x`, its
-                                 own copies of the rule, the groups, the trusted set and the
-                                 share centres holding ELO_AVG and elo_avg_fit.py's SPEC; the
-                                 Mismatches' `mm`), plus the build's functions on fixtures; the
-                                 job runs it before committing
+                                 forecast recorded ('offline' only with --offline), each
+                                 block's `in` and each leg's `in_x` on the twin's own
+                                 coefficients, its own copies of the rule, the groups, the
+                                 trusted set, the share centres, every stadium's coordinates
+                                 and the two forecasts' addresses holding ELO_AVG, elo_avg_fit.py's
+                                 SPEC and the build's, the season in play's snap counts due on
+                                 its own rule; the Mismatches' `mm`), plus the build's
+                                 functions on fixtures; the job runs it before committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
                                  data/: the Mismatches on the averages' Elo part (mmOwnV2: the
                                  rows, their order and words, each bubble's score its size
@@ -517,7 +532,8 @@ elo/
                                  tab's tables draw them (November 2026: the real files, two
                                  clubs made level, a table taken out, a carried club, the
                                  league table emptied); a player's window's input columns
-                                 (×Vol, ×Game, ×Q before Base, each cell the leg's `in_x`)
+                                 (Typical, ×Vol, ×Game, ×Q before Base, each multiplier the
+                                 leg's `in_x`, Typical Base over them)
                                  and the line of what they read under the table on its own
                                  reading (inKindsC, inxC, inLineC), on the files, a fixture
                                  planted twice and the files with the inputs taken out (4
@@ -626,8 +642,10 @@ elo/
                                  shares, his long and short shares of his club's targets,
                                  carries and air yards, his club's implied points and spread,
                                  the wind at kickoff and `wind_src`), each input leg's `in_x`
-                                 {vol, game, q} (each kind's multiplier against the typical
-                                 starter's inputs, already in the twin) and in `avg_fit` each
+                                 {vol, game, q} (each kind's multiplier inside the twin against
+                                 the typical starter's inputs, on the twin's own coefficients,
+                                 so the twin over their product is the twin at a typical
+                                 starter's inputs) and in `avg_fit` each
                                  leg's `inputs` and `in_mean`, and `inputs`, the share centres
   data/calls.json                generated: the ledger of the ELO Model's calls as published
                                  before each kickoff (on the Joker's baseline from 19 October
@@ -1156,8 +1174,10 @@ rankings by position, a bell-curve histogram by tier shield over the table, each
 season line. A click on a player opens his window: his rating, then his matchup this week (since 29 October 2026 the
 Elo-adjusted average's breakdown, a row a leg: his average, Base (no Elo terms), the table he faces with its Elo and rank,
 the Elo part's split ×Def and ×Elo (Base times the two the projection), the projection and its Elo part, faded where
-untrusted; since 4 November 2026, on a file with the averages' inputs, ×Vol, ×Game and ×Q before Base, each the leg's
-`in_x` of that kind (Base, the twin, already reads them, so the projection is still Base × Def × Elo), and under the table
+untrusted; since 4 November 2026, on a file with the averages' inputs, Typical, ×Vol, ×Game and ×Q before Base, each
+multiplier the leg's `in_x` of that kind on the twin's own coefficients and Typical the twin at a typical starter's inputs
+(Base over them), so Typical × the multipliers is Base and Base × Def × Elo the projection, ×Elo then his Elo given his
+average and his inputs, and under the table
 one line of what they read for him, "Snap share 97% last game (usual 83%) · 35% of targets · 50% of air yards · implied
 27.0 pts · spread −12.5"; on a file from before the block the
 matchup formula's recent form, nudge and projection: CLAUDE.md, **Elo-adjusted averages**).
@@ -2895,7 +2915,7 @@ job stays on week 18; it does not cover the playoffs.
 | `props-gate.yml` | every pull request, a push to main that touches what the props job or the page runs, and on demand | sorts the change's paths (AUDIT, PAGE, neither: passes at once), and on a pull request touching the touchdown shadow's ledger holds it (`ledger_hold`: added once as `td_shadow.py init` writes it, never changed or removed, since the props job alone writes it); job A `weekly.py --no-odds` on today's nflverse files and today's read of ESPN (recorded, so the base replays the same answers: `--offline` over a copy, or `PROPS_ESPN_REPLAY` when it goes online), then the page smoke and `elo/check_tab.js` on its payload (40 minutes at most); job B each `test_audit_phases.py` case on a runner of its own; job C the unit tests (`UNITS`: `test_apply_espn.py`, `test_espn_read.js`, `test_lock_runs.py`, `test_espn_ids.py`, `test_dk_links.py`, `test_unmatched.py`, `test_who_played.py`, `test_fetch.py`, `test_audit_gate.py`, both `lib/test_netfetch`, `test_espn_archive.py`, `research/propmodel/test_td_shadow.py`, `nflbets/build/test_dkname.js`, `nflbets/build/smoke_admin.js`, `nflbets/build/smoke_live.js`; 50 minutes at most, with `NODE_OPTIONS=--max-old-space-size=6144` for smoke_live.js's heap, here and on the base); a failure is run again on the base's code and fails the `props-gate` check when the base passes or has nothing to compare with (`test_props_gate.py` holds the judgement); the verdict waits on all three. Spends nothing (no secret mapped; `ODDS_API_KEY` set empty), commits nothing |
 | `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js` and `joker/joker.py` (which may fail on its own without stopping the publish), the game-totals shadow `props/research/totals/shadow.py` with `shadow_check.py` (the same), the clearing of X's finished parlays (`liveparlays/tools/autoclear.py` after its test, the same), `smoke.js` (which builds the app; its few presentation checks warn, publish, and redden the run's last step, which runs only after a smoke with no failure); commits `betting/state.json`, `props/research/totals/shadow/ledger.json` and `liveparlays/parlays.json`; starts `elo.yml` when a final was graded, even if the smoke or the commit failed (the Elo job reads nflverse, not this state) |
 | `news.yml` | about 19 slots a week (UTC): five post-game runs, a mid-day refresh Mon/Tue/Fri, and eleven for the Deep Dive's lineups timed to the injury report (Tue and Wed afternoon, Wed evening and early Thu for Thursday games, Thu afternoon for Thursday night, Fri evening, Sat afternoon to early Sun four times for Sunday), each early enough to land before its kickoff at the 2.3-9.4 hour lateness GitHub shows this repo; and on a push to its tools, the game notes, `news/index.html` or `nflbets/build/deepdive.js` | `run-auto.js` (`pull-week.js`, which runs `context.js`; a required nflverse file that fails stops the run before the commit), `smoke.js` (the files against their sources, the twins, every game of the week drawn by `deepdive.js`, the lineups against the report they came from, the notes, the redirect, and `cases.js`; the lineup and notes checks warn, publish, and redden the run's last step, which runs only after a smoke with no failure); commits only what changed: `results.js`, `stats2026.js`, `stats.json`, `units2026.js`, `units.json` and `tools/out` (never a note) |
-| `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | restores the finished seasons' nflverse files (`actions/cache`, `elo/cache-past`, the set `elo/cache/past.lst` names), `elo/build.py` (refuses to write on a failed required download, `players.csv` among them since 4 November 2026; the coming games' wind forecasts, capped at 90 seconds, never refuse), `elo/check.py`, `elo/test_parity.py` (on its fixtures), `elo/check_tab.js`, commits `elo/data`; then the nflbets smoke (a page check: it reddens the run, never holds the ratings back); saves the finished seasons' files when their set changed |
+| `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | restores the finished seasons' nflverse files (`actions/cache`, `elo/cache-past`, the set `elo/cache/past.lst` names), `elo/build.py` (refuses to write on a failed required download, `players.csv` among them since 4 November 2026, and the season in play's snap counts once due; the coming games' wind forecasts, held to 90 seconds of wall clock, never refuse), `elo/check.py`, `elo/test_parity.py` and `elo/test_fetch.py` (on their fixtures), `elo/check_tab.js`, commits `elo/data`; then the nflbets smoke (a page check: it reddens the run, never holds the ratings back); saves the finished seasons' files when their set changed |
 
 Every workflow runs on `ubuntu-24.04`, pinned: `ubuntu-latest` becomes Ubuntu 26.04 on 19 October
 2026, to be tried on purpose in a dispatched branch run before the pin moves.
@@ -2928,7 +2948,11 @@ finished seasons' are kept between runs by `actions/cache` (CLAUDE.md, "Player E
   explains a changed number.
 - An Elo-adjusted average that reads the inputs moves without a final: a quarterback's passing yards with each run's
   wind forecast, and every input leg when the clubs file their statuses (Friday for Sunday's games). `elo/check.py`
-  cannot read a forecast again, so it holds the wind to the one `matchups.json` recorded.
+  cannot read a forecast again, so it holds the wind to the one `matchups.json` recorded, and refuses 'offline' there
+  unless run with `--offline` (after `build.py --offline` by hand).
+- The Elo job now refuses when the season in play's snap counts are missing once its first game is 72 hours old, or lack
+  a club of a regular-season game final for 72 hours (`SNAP_DUE`, `snap_gaps`): nflverse posts them within about a day,
+  so a red Elo run naming snap_counts is nflverse's lag or an outage; the last good files stay live until it is had.
 - A line read from ESPN is never a book price: nothing of a read (the published one or a press) goes into
   `PAY.mkt`, `PAY.prices`, the paid `PAY.dk` or `S.odds`, which `mainOf`, `legFair`, `fairVig` and the Track
   Record read as DraftKings' quoted prices. A player's price from a read is the page's estimate (`dkline`, est.).

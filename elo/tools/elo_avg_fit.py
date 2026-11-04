@@ -77,7 +77,8 @@ on offer the nested record is worse on a back's rushing yards, +0.079 [+0.005, +
 seasons on any leg), so nothing reads it. Wind was then kept only where it survived a forecast's error (the walk-forward
 again with the wind read with a game-level error of sd 5 mph: at least 6 of 8 seasons better than without it): a
 quarterback's passing yards alone (his passing TDs 5 of 8). The share terms are centred on each position's median log
-share over 2013-2015, seasons never fitted on (ELO_AVG['inputs']). Nested records 2018-2025, RMSE pooled [90% two-way
+share over its frame rows of 2012-2015 (every season to INPUT_CENTER_LAST, 2012 among them), seasons never fitted on
+(ELO_AVG['inputs']). Nested records 2018-2025, RMSE pooled [90% two-way
 cluster interval], seasons better of 8, measured on the ratings before the draft start: QB passing yards -0.872 [-1.218,
 -0.526] 8/8, passing TDs -0.0111 8/8, completions -0.0496 8/8, attempts -0.0486 8/8; RB rushing yards -0.426 [-0.609,
 -0.243] 8/8, rush + rec yards -0.477 7/8, any TD -0.0031 7/8; WR receptions -0.0467 8/8, receiving yards -0.545 [-0.656,
