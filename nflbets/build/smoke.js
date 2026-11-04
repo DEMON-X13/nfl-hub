@@ -187,6 +187,13 @@ const leanNoteOwn = (M, pid, st) => { const m = muLegOwn(M, pid, st); if (!m) re
    week with no starter questionable on one side of the games (a report not out yet, a lone Monday
    game) would leave the Game snapshot's Q with nothing to hold in that column, so the first starter
    of each lineup on that side is made questionable, in this copy only */
+/* (4 November 2026) and a file carrying the Elo-adjusted averages but not their score (avg_fit.mismatch and each lead
+   block's mm, elo/build.py's THE MISMATCH SCORE: every elo/data from 29 October 2026 until the Elo job's first run on it)
+   is given the smoke's own, in this copy only, so the page's Mismatches on the score are held at any hour whatever elo/data
+   the tree carries: the lead legs the smoke's own copy names (a back's rushing yards, a receiver's or tight end's
+   receiving yards) where the file trusts them, each such block's shift Phi(z) - 0.5 of its own z to four places (erf,
+   Abramowitz and Stegun 7.1.26), the tag at 3.5 points (the fit's); a file with no averages keeps the old Mismatches */
+let MM_SCORE_PLANTED = false;
 const ELO_MU = (() => {
   const raw = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'matchups.json'), 'utf8'), M = JSON.parse(raw);
   let planted = false;
@@ -202,9 +209,15 @@ const ELO_MU = (() => {
     const m = rated[pid] ? muLegOwn(M, pid, st) : null; if (!m) continue;
     if (!best[pid] || m.z > best[pid].z) best[pid] = { pid, st, z: m.z }; }
   const top = Object.values(best).sort((x, y) => y.z - x.z);
-  if (top.filter(x => x.z >= 0.12).length >= 6) return planted ? JSON.stringify(M) : raw;
-  for (const x of top.slice(0, 6)) muPlantOwn(M, x.pid, x.st, Math.max(x.z, 0.2));
-  return JSON.stringify(M);
+  if (top.filter(x => x.z >= 0.12).length < 6) { for (const x of top.slice(0, 6)) muPlantOwn(M, x.pid, x.st, Math.max(x.z, 0.2)); planted = true; }
+  if (muAvgOwn(M) && !(M.avg_fit.mismatch && typeof M.avg_fit.mismatch === 'object' && M.avg_fit.mismatch.lead)) {
+    const erf = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
+    const lead = {}; for (const [g, st] of Object.entries({ RB: 'rushing_yards', WR: 'receiving_yards', TE: 'receiving_yards' })) { const f = M.avg_fit.legs[g + '|' + st]; if (f && f.trusted === true) lead[g] = st; }
+    M.avg_fit.mismatch = { lead, tag: 0.035, chosen: 0.035, chosen_on: '2018-2021', record: {}, ladders: {} };
+    for (const v of Object.values(M.avg)) { delete v.mm; const st = lead[v.group], a = st && v.stats && v.stats[st];
+      if (a && isFinite(a.z)) { const sh = Math.round(0.5 * erf(a.z / Math.SQRT2) * 1e4) / 1e4; v.mm = { stat: st, shift: sh, tag: sh >= 0.035 }; } }
+    MM_SCORE_PLANTED = planted = true; }
+  return planted ? JSON.stringify(M) : raw;
 })();
 
 const fails = []; let checks = 0;
@@ -856,6 +869,122 @@ const urkOwn = (defs, t, val) => defs[t] ? 1 + Object.keys(defs).filter(x => lvl
 const mmRankOwn = (M, group, opp) => { const defs = {}; for (const v of Object.values(M.players || {})) if (v.opp_def) defs[v.opp] = v.opp_def;
   Object.assign(defs, (M.league && M.league.defs) || {}); const u = MM_UNITS_OWN[group], avg = d => u.reduce((a, k) => a + d[k], 0) / u.length;
   return defs[opp] ? { rank: urkOwn(defs, opp, avg), n: Object.keys(defs).length } : null; };
+/* (4 November 2026) the Mismatches on the averages' own Elo part (elo/build.py, THE MISMATCH SCORE), the smoke's own
+   reading of a matchups file M carrying the score (mmOnOwn): a back's, receiver's or tight end's lead leg alone (the
+   smoke's own copy, MM_LEAD_V2_OWN: a back's rushing yards, a receiver's or tight end's receiving yards; never a
+   quarterback, whose passing yards' Elo part never held up, nor a kicker) where the file's lead names that leg too and
+   avg_fit.legs trusts it; listed with a shift above nothing, his game not kicked off and he not out (o: the smoke's own
+   readings, mmCtxOwn); ranked by the shift, then the Elo part in yards, then the id; each row's words: its size ("+7
+   pts", the shift in whole points), its Elo part in yards ("+6.1 rec yds"), the defence ("vs LAC Pass Defense #32", the
+   block's vs: the ELO Ratings tab's table), the projection ("58 rec yds"), the tag on a tagged row alone (the file's tag
+   not null and the block's tag true) and the title, the whole of it ("Mismatch this week: the matchup moves his rec yds
+   from 52.0 to 58.1 (+6.1 rec yds): the LAC Pass Defense (1448, 32nd of 32) ×1.04 and his Elo for his average ×1.08. On
+   an even line that is +7 pts on the over."; "The matchup moves ..." untagged; "and defenders" after the table where the
+   leg's terms read the defenders' player Elo; the clubs counted in model.json's table, MOd). n is his place on the list */
+const MM_LEAD_V2_OWN = { RB: 'rushing_yards', WR: 'receiving_yards', TE: 'receiving_yards' }, MM_LB_V2_OWN = { rushing_yards: 'rush yds', receiving_yards: 'rec yds' };
+const mmOnOwn = M => muAvgOwn(M) && !!(M.avg_fit.mismatch && typeof M.avg_fit.mismatch === 'object' && M.avg_fit.mismatch.lead && typeof M.avg_fit.mismatch.lead === 'object');
+const sgnOwn = x => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(1);
+const mmListOwn = (M, MOd, o) => { const F = M.avg_fit.mismatch, rows = [];
+  for (const [pid, v] of Object.entries(M.avg || {})) {
+    const m = v && v.mm; if (!m || typeof m !== 'object') continue;
+    const st = MM_LEAD_V2_OWN[v.group]; if (!st || m.stat !== st || F.lead[v.group] !== st) continue;
+    const f = M.avg_fit.legs[v.group + '|' + st], a = v.stats && v.stats[st];
+    if (!f || f.trusted !== true || !a || !(m.shift > 0) || o.out(pid) || o.started(v.game_id)) continue;
+    const lb = MM_LB_V2_OWN[st], pts = `+${Math.round(100 * m.shift)} pts`, yds = `${sgnOwn(a.elo)} ${lb}`, q = a.vs && VS_NAME_OWN[a.vs.table] ? a.vs : null;
+    const U = q && MOd && MOd.units && MOd.units[q.table], n = U && typeof U === 'object' ? Object.keys(U).length : null;
+    const dfn = Array.isArray(f.terms) && f.terms.some(t => t === 'DL' || t === 'LB' || t === 'DB'), tag = F.tag != null && m.tag === true, tb = q ? `${v.opp} ${VS_NAME_OWN[q.table]}` : String(v.opp);
+    const title = `${tag ? 'Mismatch this week: the' : 'The'} matchup moves his ${lb} from ${(+a.no_elo).toFixed(1)} to ${(+a.proj).toFixed(1)} (${yds}): the ${tb}`
+      + `${q ? ` (${q.elo}, ${ordOwn(q.rank)}${n ? ' of ' + n : ''})` : ''}${dfn ? ' and defenders' : ''} ×${mulOwnS(a.def_x)} and his Elo for his average ×${mulOwnS(a.elo_x)}. On an even line that is ${pts} on the over.`;
+    rows.push({ pid, gid: v.game_id, group: v.group, team: v.team, opp: v.opp, shift: +m.shift, elo: +a.elo, tag, pts, yds, vs: q ? `vs ${tb} #${q.rank}` : `vs ${v.opp}`,
+      proj: `${Math.round(a.proj)} ${lb}`, part: sgnOwn(a.elo), title, facing: q ? `${ordOwn(q.rank)}${n ? ' of ' + n : ''}${VS_NAME_OWN[q.table]}` : '–' }); }
+  return rows.sort((x, y) => y.shift - x.shift || y.elo - x.elo || (x.pid < y.pid ? -1 : x.pid > y.pid ? 1 : 0)).map((r, i) => ({ ...r, n: i + 1 })); };
+/* who is out and which games have kicked off, the smoke's own: the page's inactive list (the week's report as the page
+   read it from the payload) or the file's out; a game kicked off at its Eastern kickoff by the page's clock */
+const mmCtxOwn = (w, M) => { const S = w.eval('S');
+  return { out: pid => !!((S.inactive && S.inactive[pid]) || (M.out && M.out[pid])),
+    started: gid => { const r = (S.sched || []).find(x => x.id === gid); return !!r && isFinite(etKick(r)) && w.Date.now() >= etKick(r); } }; };
+/* a bubble's lines, a card row's and the window's cells, as the smoke words a row */
+const mmSubOwn = r => `${r.vs}.${r.proj} projected (${r.part} from the matchup).`;
+/* the old score's words, its grades and its units' rank, which a row of the score may not say in its text or a title */
+const MM_OLD_V2 = /\bedges?\b|by player Elo|\b(?:Slight|Solid|Big|Huge)\b|standard deviation|\bSD\b/;
+const allTxtOwn = el => !el ? '' : [el.textContent || '', ...[el, ...el.querySelectorAll('[title]')].map(x => (x.getAttribute && x.getAttribute('title')) || '')].join(' | ');
+/* (4 November 2026) the Props tab's Mismatches card on a file carrying the score, held to the smoke's own list
+   (mmListOwn): the rows in its order, the card first under the Props bar with the week alone in its title, its five
+   bubbles each its row's size ("+7 pts"), bar (the shift over the week's largest), tag (on a tagged row alone, its title
+   the row's), lines ("vs LAC Pass Defense #32." then "58 rec yds projected (+6.1 from the matchup).") and title, no grade
+   colour and none of the old score's words; a redraw drawing it once; a bubble opening his game with his row open and
+   highlighted, where the game's page tags exactly the tagged rows of the game it draws (MISMATCH after the name, the
+   points on it, the row's title, no grade); a player the page rules out leaving and coming back; Show more the top thirty
+   with a Pts column; another week no card */
+async function mmCardV2(w, d, onWeek) {
+  const MU = (await w.eloFiles()).mu, MO = JSON.parse(ELO_M), card = d.getElementById('peMism'), list = () => mmListOwn(MU, MO, mmCtxOwn(w, MU));
+  if (!onWeek) { chk(!card, 'mismatches show on a week they are not for'); return; }
+  const own = list(), got = w.eloMismatches();
+  chk(got.map(v => v.pid).join() === own.map(r => r.pid).join() && got.every(v => v.v2 === true),
+    `the Mismatches are not the smoke's own list of the score: ${got.slice(0, 6).map(v => v.pid + (v.v2 ? '' : ' (old)')).join(', ')} against ${own.slice(0, 6).map(r => r.pid).join(', ')} (${got.length} and ${own.length})${MM_SCORE_PLANTED ? ', on the smoke\'s own score planted' : ''}`);
+  if (!own.length) { chk(!card, 'a week with no row of the score listed still draws the Mismatches card'); return; }
+  if (!card) { chk(false, `the week has ${own.length} rows of the score listed and the Props list draws no card for them`); return; }
+  const bubbles = [...card.querySelectorAll('.pe-mm-b')], max = own[0].shift;
+  chk(bubbles.length === Math.min(5, own.length) && bubbles.every((b, i) => b.dataset.mmPid === own[i].pid && b.dataset.mmGame === own[i].gid) && card === d.querySelector('#slateView .bar').nextElementSibling,
+    `the Mismatches bubbles are not the first five of the list, or the card is not first under the Props bar: ${bubbles.map(b => b.dataset.mmPid).join(', ')}`);
+  chk(txt(card.querySelector('h2 small')) === `week ${MU.week}` && !/weakest units|still to kick off|until a club files|starter can still change/.test(txt(card)),
+    'the Mismatches card\'s title is not the week alone, or the card explains: ' + txt(card.querySelector('h2')));
+  { const bad = bubbles.map((b, i) => { const r = own[i], sc = b.querySelector('.pe-mm-score'), bar = sc && sc.querySelector('.pe-mm-bar i'), tg = [...b.querySelectorAll('.pe-mmtag')], e = [];
+      if (txt(sc && sc.querySelector('b')) !== r.pts) e.push(`size "${txt(sc && sc.querySelector('b'))}", not "${r.pts}"`);
+      if (!sc || sc.title !== r.title) e.push(`title "${sc ? sc.title : ''}", not "${r.title}"`);
+      if (txt(b.querySelector('.pe-mm-sub')) !== mmSubOwn(r)) e.push(`lines "${txt(b.querySelector('.pe-mm-sub'))}", not "${mmSubOwn(r)}"`);
+      if (!bar || bar.style.width !== `${Math.max(6, Math.round(100 * r.shift / max))}%`) e.push(`bar ${bar ? bar.style.width : 'none'}`);
+      if (r.tag ? !(tg.length === 1 && txt(tg[0]) === 'Mismatch' && tg[0].title === r.title) : tg.length) e.push(`tag ${tg.map(txt).join('/') || 'none'} on a row ${r.tag ? '' : 'not '}tagged`);
+      if (/\bpe-g[1-4]\b/.test(b.innerHTML)) e.push('a grade colour');
+      return e.length ? `${r.pid}: ${e.join('; ')}` : ''; }).filter(Boolean);
+    chk(!bad.length && !MM_OLD_V2.test(allTxtOwn(card)), `a Mismatches bubble is not its row's own words, or says an edge, a grade or player Elo: ${bad.slice(0, 3).join(' | ') || (allTxtOwn(card).match(MM_OLD_V2) || [''])[0]}`); }
+  w.eval('renderSlate()'); await wait(40);
+  chk(d.querySelectorAll('#peMism').length === 1, 'redrawing the Props list doubled the mismatches');
+  /* a click on a bubble opens his game with his stats open, scrolled to and highlighted; the game's page tags its rows */
+  { const b0 = d.querySelector('#peMism .pe-mm-b'), pid = b0.dataset.mmPid; b0.click(); await wait(80);
+    const S = w.eval('S'), row = [...d.querySelectorAll('#gameView [data-open]')].find(x => x.dataset.open === pid);
+    chk(S.ui.game === own[0].gid && pid === own[0].pid && Object.keys(S.ui.open).join() === pid && !d.getElementById('gameModal').hidden, 'a mismatch did not open its game with the player open');
+    chk(!!row && row.getAttribute('aria-expanded') === 'true' && row.classList.contains('pe-hl') && !!row.nextElementSibling && row.nextElementSibling.classList.contains('plrbody') && row.nextElementSibling.classList.contains('pe-hl'),
+      'the player\'s stats are not open and highlighted in his game');
+    chk(d.querySelectorAll('#gameView .pe-hl').length === 2, 'more than the one player is highlighted');
+    const tagCheck = () => { const btns = [...d.querySelectorAll('#gameView button.plrbtn[data-open]')], drawn = new Set(btns.map(x => x.dataset.open));
+      const inGame = list().filter(r => r.gid === own[0].gid && r.tag), exp = {}; for (const r of inGame) if (drawn.has(r.pid)) exp[r.pid] = r;
+      const bad = [];
+      for (const x of btns) { const t = [...x.querySelectorAll('.pe-mmtag')], r = exp[x.dataset.open];
+        if (!r) { if (t.length) bad.push(`${x.dataset.open} tagged "${txt(t[0])}" with no tagged row`); continue; }
+        if (!(t.length === 1 && txt(t[0]) === 'Mismatch' && t[0].parentNode.classList.contains('who') && t[0].previousSibling && t[0].previousSibling.nodeType === 3
+          && t[0].dataset.peMmtag === String(Math.round(100 * r.shift)) && !t[0].hasAttribute('data-pe-mmgrade') && t[0].title === r.title))
+          bad.push(`${r.pid}: ${t.map(y => `${txt(y)} ${y.dataset.peMmtag} "${y.title}"`).join(', ') || 'no tag'}, not Mismatch ${Math.round(100 * r.shift)} "${r.title}"`); }
+      if (inGame.length && !Object.keys(exp).length) bad.push(`${inGame.length} tagged rows of ${own[0].gid}, none of them drawn on its page`);
+      return bad.join('; '); };
+    if (!list().some(r => r.gid === own[0].gid && r.tag)) console.log(`  (the game page's mismatch tags: no tagged row in ${own[0].gid} now, held that nobody there is tagged)`);
+    { const bad = tagCheck(); chk(!bad, 'the game page does not tag exactly the tagged rows of its game beside their names: ' + bad); }
+    w.eval('renderGame()'); await wait(40);
+    { const bad = tagCheck(); chk(!bad, 'a redrawn game page does not tag its mismatches once: ' + bad); }
+    w.eval('closeGame()'); await wait(60); }
+  /* a player the week's injury report has ruled out since the file was built is left off, and comes back once cleared */
+  { const S = w.eval('S'), top = own[0].pid, was = S.inactive[top];
+    S.inactive[top] = { week: +MU.week, status: 'Out' }; w.eval('renderSlate()'); await wait(40);
+    const after = w.eloMismatches(), nm = (JSON.parse(ELO_P).players[top] || {}).name || '\u0000';
+    chk(!after.some(r => r.pid === top) && !list().some(r => r.pid === top) && after.map(v => v.pid).join() === list().map(r => r.pid).join() && !txt(d.getElementById('peMism')).includes(nm), 'a player ruled Out is still on the mismatches');
+    chk(w.eloRuledOut(top) === true, 'the tab does not read the page\'s inactive list');
+    if (was) S.inactive[top] = was; else delete S.inactive[top]; w.eval('renderSlate()'); await wait(40);
+    chk(w.eloMismatches().map(v => v.pid).join() === own.map(r => r.pid).join(), 'the mismatches did not come back once the player was cleared'); }
+  /* Show more: the top thirty, a Pts column where the old score's Edge was, each row its own cells and title */
+  if (own.length > 5) { d.getElementById('peMmMore').click(); await wait(40);
+    const m = d.getElementById('peMmModal'), heads = m ? [...m.querySelectorAll('thead th')].map(txt) : [], trs = m ? [...m.querySelectorAll('tbody tr')] : [];
+    const bad = trs.map((tr, i) => { const r = own[i], c = tr.children; if (!r) return `row ${i + 1} past the list`;
+      return tr.dataset.mmPid === r.pid && tr.title === r.title && txt(c[3]) === r.facing && txt(c[4]) === r.pts + (r.tag ? 'Mismatch' : '') && txt(c[5]) === `${r.proj}${r.part} from the matchup` && !/\bpe-g[1-4]\b/.test(tr.innerHTML)
+        ? '' : `${r.pid}: ${[...c].slice(3).map(txt).join(' / ')}`; }).filter(Boolean);
+    chk(!!m && !m.hidden && heads.join('|') === '#|Player|Game|Facing|Pts|Projection' && trs.length === Math.min(30, own.length) && !bad.length && !m.querySelector('.pe-sub') && !MM_OLD_V2.test(allTxtOwn(m.querySelector('tbody'))),
+      `Show more is not the top ${Math.min(30, own.length)} of the list with a Pts column: ${heads.join('|')} ${bad.slice(0, 3).join(' | ')}`);
+    d.getElementById('peMmClose').click(); await wait(20); chk(m.hidden, 'the mismatches window does not close'); }
+  const opts = [...d.getElementById('weekSel').options].map(o => +o.value), other = opts.find(v => v !== +MU.week);
+  if (other) { d.getElementById('weekSel').value = String(other); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60);
+    chk(!d.getElementById('peMism'), 'mismatches show on a week they are not for');
+    d.getElementById('weekSel').value = String(MU.week); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60); }
+  console.log(`  the Mismatches on the score${MM_SCORE_PLANTED ? ' (the smoke\'s own, planted on a file from before it)' : ''}: ${own.length} listed, ${own.filter(r => r.tag).length} tagged, the top ${own.slice(0, 3).map(r => r.pid + ' ' + r.pts).join(', ')}`);
+}
 /* the old words, anywhere under root (its text and every title): a defense "ranked" by the formula's units under the
    ELO Ratings tab's table's name, lower case as the Mismatches wrote it (the tab's and the bubble's own "Pass Defense
    ranked" are the table's) */
@@ -4910,8 +5039,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const ok = Object.keys(v.stats || {}).filter(st => st !== 'passing_interceptions' && muLegOwn(MU, pid, st) && lv.stats && lv.stats[st]);
         return ok.find(st => st !== 'any_td') || ok[0] || null; };
       const pool = []; for (const [pid, v] of Object.entries(muEntriesOwn(MU))) { if (!eloP.players[pid] || w.eloRuledOut(pid)) continue; const st = stOf(pid, v); if (st) pool.push({ pid, st, grp: v.group }); }
-      /* the first at a position the Mismatches read, in the formula's players too (the mismatch is planted on his entry there) */
-      const i0 = pool.findIndex(c => MMG.includes(c.grp) && c.st !== 'any_td' && !!(liveMu && liveMu.players && liveMu.players[c.pid]));
+      /* the first at a position the Mismatches read, in the formula's players too (the mismatch is planted on his entry there);
+         (4 November 2026) on a file carrying the score, a back, receiver or tight end whose lead leg the file's lead names
+         and trusts, with the table he faces (the score's own mismatch is planted on his block) */
+      const mmV2 = mmOnOwn(liveMu), MO_MM = JSON.parse(ELO_M);
+      const leadOk = pid => { const v = liveMu.avg && liveMu.avg[pid], st = v && MM_LEAD_V2_OWN[v.group], a = st && v.stats && v.stats[st];
+        return !!a && !!a.vs && liveMu.avg_fit.mismatch.lead[v.group] === st && muTrustOwn(liveMu, v.group, st); };
+      const i0 = pool.findIndex(c => mmV2 ? (!!MM_LEAD_V2_OWN[c.grp] && c.st !== 'any_td' && leadOk(c.pid)) : (MMG.includes(c.grp) && c.st !== 'any_td' && !!(liveMu && liveMu.players && liveMu.players[c.pid])));
       const byGame = i0 < 0 ? [] : [pool[i0], ...pool.filter((c, i) => i !== i0)].slice(0, 6);
       const weak = Object.entries(muEntriesOwn(MU)).flatMap(([pid, v]) => Object.keys(v.stats || {}).filter(st => !trusted(v.group, st) && eloP.players[pid]).map(st => ({ pid, st })))[0];
       const wkE = w.eval('currentWeek()'), seasonE = +w.eval('SEASON'), atE = new Date(w.Date.now() + 2 * 86400e3).toISOString().slice(0, 10);
@@ -4941,7 +5075,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
            league's weakest by the matchup formula (the tab's matchups, put back below), so the tags and the words are
            held at any hour, not only in a week that has one in a game to come */
         const mmC = { pid: B[0].pid, st: B[0].st, gid: B[0].gid };
-        { const e0 = liveMu.players[mmC.pid], g0 = e0.group, defs = {};
+        /* (4 November 2026) on a file carrying the score: his block moved into the made-up game with a shift of 0.4472
+           (+45 points, past any the week has) at the tag; the words are then the file's for him, worked out by the
+           smoke's own reading (mmListOwn) */
+        if (mmV2) { const e0 = liveMu.avg[mmC.pid]; e0.game_id = mmC.gid; e0.mm = { stat: MM_LEAD_V2_OWN[e0.group], shift: 0.4472, tag: true }; mmC.group = e0.group; mmC.opp = e0.opp; }
+        else { const e0 = liveMu.players[mmC.pid], g0 = e0.group, defs = {};
           for (const v of Object.values(liveMu.players)) if (v.opp_def) defs[v.opp] = v.opp_def;
           Object.assign(defs, (liveMu.league && liveMu.league.defs) || {});
           const avg = d => MM_UNITS_OWN[g0].reduce((a, u) => a + d[u], 0) / MM_UNITS_OWN[g0].length, order = Object.keys(defs).sort((a, b) => avg(defs[b]) - avg(defs[a]));
@@ -5251,15 +5389,25 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
            a bet against him). (app v118) Put on the unit's Elo picks after the tab draws them (eloDecorate), and on no
            card of its model parlays */
         const mmSide = l => l.side === 'over' && l.stat !== 'passing_interceptions';
-        { const mm = {}; for (const v of (typeof w.eloMismatches === 'function' ? w.eloMismatches() : [])) if (gradeOf(v.score) !== 'Slight' && !mm[v.pid]) mm[v.pid] = v;
-          let nTag = 0; const bad = [];
+        /* (4 November 2026) on a file carrying the score: each leg on a player whose row of the smoke's own list (mmListOwn)
+           is tagged, in that game, on the side it favours, wears "Mismatch" after his name, the points on it
+           (data-pe-mmtag), the row's title and no grade (data-pe-mmgrade); no other leg wears one */
+        { const mm = {}; let nTag = 0; const bad = [];
+          if (mmV2) { for (const r of mmListOwn(liveMu, MO_MM, mmCtxOwn(w, liveMu))) if (r.tag && !mm[r.pid]) mm[r.pid] = { ...r, game_id: r.gid }; }
+          else for (const v of (typeof w.eloMismatches === 'function' ? w.eloMismatches() : [])) if (gradeOf(v.score) !== 'Slight' && !mm[v.pid]) mm[v.pid] = v;
           /* the smoke's own mismatch is on the Mismatches, in its made-up game, against the club it was set against */
-          { const v = mm[mmC.pid]; if (!v || String(v.game_id) !== String(mmC.gid) || v.opp !== mmC.opp || v.group !== mmC.group) bad.push(`the mismatch the smoke planted on ${mmC.pid} (${mmC.gid}, against ${mmC.opp}) is not on the Mismatches: ${v ? `${v.game_id} against ${v.opp}, ${v.score.toFixed(2)}` : 'none'}`); }
+          { const v = mm[mmC.pid]; if (!v || String(v.game_id) !== String(mmC.gid) || v.opp !== mmC.opp || v.group !== mmC.group) bad.push(`the mismatch the smoke planted on ${mmC.pid} (${mmC.gid}, against ${mmC.opp}) is not on the Mismatches: ${v ? `${v.game_id} against ${v.opp}, ${mmV2 ? v.pts : v.score.toFixed(2)}` : 'none'}`);
+            if (mmV2 && !w.eloMismatches().some(x => x.pid === mmC.pid && x.v2 && x.tag && String(x.game_id) === String(mmC.gid))) bad.push(`the page's Mismatches do not carry the score the smoke planted on ${mmC.pid}, tagged`); }
           for (const t of T) { const c = cardOf(t), lis = c ? [...c.querySelectorAll('.pb-legs > li')] : [];
             t.legs.forEach((l, i) => { const tags = lis[i] ? [...lis[i].querySelectorAll('.pe-mmtag')] : [], v = mm[l.pid] && String(mm[l.pid].game_id) === String(l.gid) ? mm[l.pid] : null;
               if (!v) { if (tags.length) bad.push(`${l.name} wears ${txt(tags[0])} with none this week in his game`); return; }
               if (!mmSide(l)) { if (tags.length) bad.push(`${l.name}'s ${l.side} wears ${txt(tags[0])}, a bet against the side his mismatch favours`); return; }
-              const g = gradeOf(v.score), tg = tags[0], nm = lis[i] && lis[i].querySelector('.nm'), name = nm && (typeof w.hubGlance === 'function' ? nm.querySelector(':scope > button.glance-name') : [...nm.childNodes].find(x => x.nodeType === 3 && x.textContent.trim()));
+              const tg = tags[0], nm = lis[i] && lis[i].querySelector('.nm'), name = nm && (typeof w.hubGlance === 'function' ? nm.querySelector(':scope > button.glance-name') : [...nm.childNodes].find(x => x.nodeType === 3 && x.textContent.trim()));
+              if (mmV2) {
+                if (tags.length !== 1 || txt(tg) !== 'Mismatch' || tg.hasAttribute('data-pe-mmgrade') || tg.dataset.peMmtag !== String(Math.round(100 * v.shift)) || !name || name.nextSibling !== tg || name.textContent !== l.name
+                  || tg.title !== v.title || w.getComputedStyle(tg).whiteSpace !== 'nowrap') bad.push(`${l.name}: ${tags.map(x => `${txt(x)} ${x.dataset.peMmtag}${x.hasAttribute('data-pe-mmgrade') ? ' graded ' + x.dataset.peMmgrade : ''}`).join(', ') || 'no tag'} for ${v.pts}${tg ? `, titled "${tg.title}", not "${v.title}"` : ''}`);
+                else nTag++; return; }
+              const g = gradeOf(v.score);
               if (tags.length !== 1 || txt(tg) !== `${g} mismatch` || tg.dataset.peMmgrade !== g || tg.dataset.peMmtag !== v.score.toFixed(1) || !name || name.nextSibling !== tg || name.textContent !== l.name
                 || tg.title !== mmTitleOwn(v, ...(v.pid === mmC.pid ? [mmC.rank, mmC.n] : [v.defRank, v.defN])) || w.getComputedStyle(tg).whiteSpace !== 'nowrap') bad.push(`${l.name}: ${tags.map(txt).join(', ') || 'no tag'} for ${g} (${v.score.toFixed(1)})${tg ? `, titled "${tg.title}"` : ''}`);
               else nTag++; }); }
@@ -5273,9 +5421,12 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           const wsel = d.getElementById('weekSel');
           if (wsel) liveMu.week = +wsel.value; w.eval('renderSlate()'); await wait(40);
           const mc = d.getElementById('peMism'), b = mc && [...mc.querySelectorAll('.pe-mm-b')].find(x => x.dataset.mmPid === mmC.pid), sub = b && b.querySelector('.pe-mm-sub');
-          const want = `vs the ${mmC.opp} ${MM_AGAINST_OWN[mmC.group]}, ${ordOwn(mmC.rank)} by player Elo.`;
+          if (mmV2) { const r = mmListOwn(liveMu, MO_MM, mmCtxOwn(w, liveMu)).find(x => x.pid === mmC.pid), sc = b && b.querySelector('.pe-mm-score'), tg = b && b.querySelector('.pe-mmtag');
+            chk(!!r && !!sub && txt(sub) === mmSubOwn(r) && !!sc && txt(sc.querySelector('b')) === r.pts && sc.title === r.title && !!tg && txt(tg) === 'Mismatch' && !MM_OLD_V2.test(allTxtOwn(mc)),
+              `the Props tab's Mismatches do not word the score the smoke planted as its row ("${r ? r.pts + ' / ' + mmSubOwn(r) : 'no row'}"), or say an edge, a grade or player Elo: ${sub ? txt(sub) : mc ? 'not on the card' : 'no card'} ${(allTxtOwn(mc).match(MM_OLD_V2) || [''])[0]}`); }
+          else { const want = `vs the ${mmC.opp} ${MM_AGAINST_OWN[mmC.group]}, ${ordOwn(mmC.rank)} by player Elo.`;
           chk(!!sub && txt(sub).startsWith(want) && mmSayOk(txt(sub), mmSayOwn(liveMu, mmC.pid, mmC.group)) && !mmOldWords(mc),
-            `the Props tab's Mismatches do not word the smoke's mismatch as the matchup formula's units ("${want}"), or still say a pass or run defense ranked: ${sub ? txt(sub) : mc ? 'not on the card' : 'no card'}${mmOldWords(mc) ? ' / ' + mmOldWords(mc) : ''}`);
+            `the Props tab's Mismatches do not word the smoke's mismatch as the matchup formula's units ("${want}"), or still say a pass or run defense ranked: ${sub ? txt(sub) : mc ? 'not on the card' : 'no card'}${mmOldWords(mc) ? ' / ' + mmOldWords(mc) : ''}`); }
           liveMu.week = keepWk; w.eval('renderSlate()'); await wait(40);
           [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'suggest').click(); await wait(80);
           w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40); }
@@ -5431,6 +5582,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     { const MU = JSON.parse(ELO_MU); [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
       w.eval('renderSlate()'); await wait(60);
       const onWeek = +d.getElementById('weekSel').value === +MU.week, card = d.getElementById('peMism');
+      /* (4 November 2026) on a file carrying the score (the tree's, else the smoke's own planted on it), its rows: mmCardV2;
+         on a file from before the averages, the old Mismatches as they were */
+      if (mmOnOwn(MU)) await mmCardV2(w, d, onWeek); else {
       /* a lean week, a Monday with one game say, can have no starter above his position's
          league average facing a unit below the league's: then there is no card, and no failure */
       const rows0 = onWeek ? w.eloMismatches() : [];
@@ -5516,7 +5670,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         if (other) { d.getElementById('weekSel').value = String(other); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60);
           chk(!d.getElementById('peMism'), 'mismatches show on a week they are not for');
           d.getElementById('weekSel').value = String(MU.week); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60); }
-      } else chk(!card, 'mismatches show on a week they are not for');
+      } else chk(!card, 'mismatches show on a week they are not for'); }
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
     /* Overall Offense and Overall Defense: two pills under the position row, each with the position
        tables of its side the file carries (Run Offense, Pass Offense and Pass Protection, and Run Defense,
@@ -7432,6 +7586,22 @@ async function snapshotChecks() {
       const kicked = R.w.eloGameOn(g.game_id) || win !== undefined || etKick({ d: g.gameday, t: g.gametime }) <= R.w.Date.now();
       if (+g.week !== +eloMu.week || String(g.game_id).slice(0, 4) !== String(eloMu.season)) chk(!li.length && /The matchups are for/.test(txt(q('#gsMism'))), `snapshot (${label}): a game outside the matchups' week shows mismatches or does not say why`);
       else if (kicked) chk(!li.length && txt(q('#gsMismB > .gs-msg')) === 'This game has kicked off.', `snapshot (${label}): a game under way or played shows mismatches, or does not say it has kicked off: '${txt(q('#gsMismB'))}'`);
+      /* (4 November 2026) on a file carrying the score: the smoke's own list's rows of this game, in its order, each its
+         place on the list, its size, its lines (the defence, then the projection and its Elo part), its title and the tag
+         on a tagged row alone, no meter and none of the old score's words; the verdict's Top mismatch line its first row's
+         size, the tag word on a tagged row alone, its Elo part in yards and the defence ("+7 pts Mismatch, +6.1 rec yds,
+         vs LAC Pass Defense #32"), and the count of the rest */
+      else if (mmOnOwn(eloMu)) { const mineO = mmListOwn(eloMu, eloM, mmCtxOwn(R.w, eloMu)).filter(r => r.gid === g.game_id), md0 = q('#gsMism');
+        const badL = li.map((x, i) => { const r = mineO[i]; if (!r) return `${x.dataset.pid}: past the list`;
+          return x.dataset.pid === r.pid && txt(x.querySelector('[data-gs-mm]')) === r.pts && txt(x.querySelector('.gs-mmn')) === '#' + r.n && txt(x.querySelector('.gs-mmsub')) === `${r.vs}. ${r.proj} projected (${r.part} from the matchup).`
+            && x.title === r.title && (r.tag ? txt(x.querySelector('.gs-mmtag')) === 'Mismatch' : !x.querySelector('.gs-mmtag')) && !x.querySelector('.gs-meter') ? '' : `${r.pid}: ${txt(x).slice(0, 160)} (want ${r.pts}, "${r.vs}. ${r.proj} ...")`; }).filter(Boolean);
+        chk(li.length === mineO.length && !badL.length && (mineO.length > 0 || txt(q('#gsMmNone')) === 'No mismatches in this game.') && !MM_OLD_V2.test(allTxtOwn(md0)),
+          `snapshot (${label}): the Mismatches are not the smoke's own rows of the score for this game, in its words: ${badL.slice(0, 2).join(' | ') || li.map(x => x.dataset.pid).join() + ' against ' + mineO.map(r => r.pid).join()} ${(allTxtOwn(md0).match(MM_OLD_V2) || [''])[0]}`);
+        const gc = q('#gsMatch [data-gs-gl="mism"] .gs-gc'), r0 = mineO[0];
+        chk(r0 ? txt(gc) === `${r0.pts}${r0.tag ? ' Mismatch' : ''}, ${r0.yds}, ${r0.vs}${mineO.length > 1 ? ` · all ${mineO.length} in Mismatches` : ''}` && !(gc && gc.querySelector('.gs-meter')) && !MM_OLD_V2.test(allTxtOwn(gc)) : true,
+          `snapshot (${label}): the verdict's Top mismatch line is not its first row's size, tag, yards and defence: '${txt(gc)}'`);
+        const bubbles = [...R.d.querySelectorAll('#peMism [data-mm-game]')].filter(b => b.dataset.mmGame === g.game_id).map(b => b.dataset.mmPid);
+        chk(bubbles.every(pid => li.some(x => x.dataset.pid === pid)), `snapshot (${label}): a Mismatches bubble on the Props tab for this game is not in the window`); }
       else { chk(li.map(x => x.dataset.pid).join() === mine.map(v => v.pid).join() && li.every((x, i) => txt(x.querySelector('[data-gs-mm]')) === mine[i].score.toFixed(1) && txt(x.querySelector('.gs-mmn')) === '#' + mine[i].n)
           && (mine.length > 0 || txt(q('#gsMmNone')) === 'No mismatches in this game.'),
           `snapshot (${label}): the Mismatches are not the Props tab's for this game: ${li.map(x => x.dataset.pid).join()} against ${mine.map(v => v.pid).join()}`);
@@ -7484,7 +7654,10 @@ async function snapshotChecks() {
         if (nq) put('qn:' + t, String(nq)); }
       { const kicked = R.w.eloGameOn(g.game_id) || win !== undefined || etKick({ d: g.gameday, t: g.gametime }) <= R.w.Date.now();
         const mine = R.w.eloMismatches().map((v, i) => ({ ...v, n: i + 1 })).filter(v => v.game_id === g.game_id);
-        if (+g.week === +eloMu.week && String(g.game_id).slice(0, 4) === String(eloMu.season) && !kicked && mine.length) {
+        if (+g.week === +eloMu.week && String(g.game_id).slice(0, 4) === String(eloMu.season) && !kicked && mmOnOwn(eloMu)) {
+          const mineO = mmListOwn(eloMu, eloM, mmCtxOwn(R.w, eloMu)).filter(r => r.gid === g.game_id);
+          if (mineO.length) { put('mm1:' + mineO[0].pid, (eloP.players[mineO[0].pid] || {}).name || mineO[0].pid); put('mm1pts', mineO[0].pts); } }
+        else if (+g.week === +eloMu.week && String(g.game_id).slice(0, 4) === String(eloMu.season) && !kicked && mine.length) {
           put('mm1:' + mine[0].pid, (eloP.players[mine[0].pid] || {}).name || mine[0].pid); put('mm1score', mine[0].score.toFixed(1)); } }
       const seen = new Set();
       for (const el of md.querySelectorAll('[data-gs-n]')) { const k = el.dataset.gsN; seen.add(k);
@@ -8971,7 +9144,9 @@ async function lightChecks() {
    the opponent, the kickoff in ET), the defense he faces (model.json's units table for his side of the ball, by the
    smoke's own map: a quarterback the opponent's Overall Defense, a back its Run Defense, a receiver or tight end its
    Pass Defense; named and ranked as the file has it, and the rank the ELO Ratings tab's own table draws for that club,
-   read off the tab), his mismatch's grade and edge where he has one with no rank of its own, each trusted stat's
+   read off the tab), his mismatch where he has one (since 4 November 2026 his row of the score, "Mismatch · +7 pts
+   (+6.1 rec yds)" with the word on a tagged row alone, titled with the row's words, whose table is the Faces line's at
+   its rank; on a file with no averages the old grade and edge, with no rank of its own), each trusted stat's
    recent form and projection, and no leg (since 24 October 2026); a team's or a game's leg its line, price, the book's
    fair chance and (app v138) what $1 is expected to return at it, no model's chance; a team's or a game's two records as Team Rankings counts them, the line as the Vegas call
    reads it, each club's Power Rating and rank, Overall Offense against Overall Defense each way, every model's pick and its
@@ -9178,17 +9353,25 @@ async function glanceChecks() {
           || (B.querySelector('[data-glance-faces]') || { dataset: {} }).dataset.glanceFaces !== fw.key)
           bad.push(`faces ${nOf('uclub')} ${nOf('unit')} ${nOf('urank')} of ${nOf('uof')}${nOf('ucarry') ? ' ' + nOf('ucarry') : ''}, not ${opp} ${fw.name} ${ordOwn(fw.rank)} of ${fw.n}${fw.carried ? ' carried from ' + fw.from : ''}`);
         if (!tb || tr == null || nOf('urank') !== ordOwn(tr) || nOf('unit') !== tb.name) bad.push(`faces ${opp} ${nOf('unit')} ${nOf('urank')}, where the ELO Ratings tab's own table draws ${tb ? `${tb.name}: ${opp} ${tr == null ? 'not ranked' : ordOwn(tr)}` : 'no such table'}`); }
-      /* one rank for one defense: the mismatch line ranks nothing, and the bubble says "ranked" once at most */
+      /* one rank for one defense: the mismatch line ranks nothing, and the bubble says "ranked" once at most; (4 November
+         2026) a row of the score names in its title the very table the Faces line ranks, at the same rank */
       const ml = B.querySelector('[data-glance-mm] dd');
-      if (ml && (/\b\d+(st|nd|rd|th)\b|ranked/i.test(txt(ml)) || /\b\d+(st|nd|rd|th)\b|ranked/i.test(ml.title || ''))) bad.push(`the mismatch line states a rank of its own: "${txt(ml)}" (${ml.title})`);
+      if (ml && mmOnOwn(MU)) { const mr = mmListOwn(MU, MO, mmCtxOwn(w, MU)).find(x => x.pid === pid && x.gid === gid);
+        if (/\b\d+(st|nd|rd|th)\b|ranked/i.test(txt(ml)) || (mr && fw && mr.vs !== `vs ${opp} ${fw.name} #${fw.rank}`)) bad.push(`the mismatch line states a rank of its own, or ranks another table than the Faces line: "${txt(ml)}" (${ml.title})`); }
+      else if (ml && (/\b\d+(st|nd|rd|th)\b|ranked/i.test(txt(ml)) || /\b\d+(st|nd|rd|th)\b|ranked/i.test(ml.title || ''))) bad.push(`the mismatch line states a rank of its own: "${txt(ml)}" (${ml.title})`);
       if ((txt(B).match(/ranked \d+(st|nd|rd|th)\b/g) || []).length > (fw ? 1 : 0)) bad.push(`the bubble ranks a defense more than once: "${txt(B).slice(0, 300)}"`); }
     /* his projections (the Elo-adjusted averages' entry where the file carries them, else the formula's) and his entry in
        the formula's players, which the Mismatches read: either in this game puts him in it; the table his projections' */
     const v = muEntryOwn(MU, pid), vm = MU.players && MU.players[pid], here = x => !!x && x.game_id === gid;
     if ((!here(v) && !here(vm)) || outOwn(pid)) { if (nOf('nomu') === null || B.querySelector('tr[data-glance-stat]') || nOf('mm') !== null) bad.push('a matchup drawn where the file has none for this game, or no line saying so'); }
     else {
-      const m = mmOwn(pid, gid);
-      if (m ? nOf('mm') !== m.grade || nOf('gap') !== m.score.toFixed(1) : nOf('mm') !== null) bad.push(`mismatch ${nOf('mm')} ${nOf('gap')}, not ${m ? m.grade + ' ' + m.score.toFixed(1) : 'none'}`);
+      /* (4 November 2026) on a file carrying the score, his row of the smoke's own list: "Mismatch · +7 pts (+6.1 rec yds)",
+         the word on a tagged row alone, titled with the row's words; none with no row */
+      if (mmOnOwn(MU)) { const mr = mmListOwn(MU, MO, mmCtxOwn(w, MU)).find(x => x.pid === pid && x.gid === gid), dd = B.querySelector('[data-glance-mm] dd');
+        if (mr ? nOf('mm') !== (mr.tag ? 'Mismatch' : null) || nOf('pts') !== `${mr.pts} (${mr.yds})` || !dd || dd.title !== mr.title || txt(dd) !== `${mr.tag ? 'Mismatch · ' : ''}${mr.pts} (${mr.yds})` || nOf('gap') !== null || MM_OLD_V2.test(allTxtOwn(dd))
+          : nOf('mm') !== null || nOf('pts') !== null || !!dd) bad.push(`mismatch "${dd ? txt(dd) : 'none'}" ("${dd ? dd.title : ''}"), not ${mr ? `"${mr.tag ? 'Mismatch · ' : ''}${mr.pts} (${mr.yds})" ("${mr.title}")` : 'none'}`); }
+      else { const m = mmOwn(pid, gid);
+      if (m ? nOf('mm') !== m.grade || nOf('gap') !== m.score.toFixed(1) : nOf('mm') !== null) bad.push(`mismatch ${nOf('mm')} ${nOf('gap')}, not ${m ? m.grade + ' ' + m.score.toFixed(1) : 'none'}`); }
       const order = here(v) ? (muAvgOwn(MU) ? Object.keys(MU.avg_fit.legs).filter(k => k.split('|')[0] === v.group).map(k => k.split('|')[1]) : (MU.stats && MU.stats[v.group] || Object.keys(v.stats || {}))) : [];
       const sts = order.filter(s => v.stats && v.stats[s] && trustOwn(v.group, s)), rows = [...B.querySelectorAll('tr[data-glance-stat]')], head = [...B.querySelectorAll('table.glance-t thead th')].map(txt);
       if (rows.map(x => x.dataset.glanceStat).join() !== sts.join()) bad.push(`trusted stats ${rows.map(x => x.dataset.glanceStat).join()}, not ${sts.join()}`);
@@ -9327,10 +9510,17 @@ async function glanceChecks() {
     S.sched.push(FAKE);
     /* and a line of each player the Mismatches grade at either end of each grade the smoke works out (the lowest edge
        and the highest), so every grade the week has, and its bounds, is read off a bubble whatever the rows above drew */
-    const graded = {}; for (const [id, x] of Object.entries(MU.players || {})) { if (!S.players[id] || !S.sched.some(y => y.id === x.game_id) || id === pid) continue;
+    const graded = {};
+    /* (4 November 2026) on a file carrying the score: the top row the smoke's own list tags and the lowest it lists
+       untagged (each put in the payload's schedule where it is), so both a tagged row's words and an untagged one's are
+       read off a bubble whatever the rows above drew */
+    if (mmOnOwn(MU)) { const L2 = mmListOwn(MU, MO, mmCtxOwn(w, MU)).filter(x => S.players[x.pid] && S.sched.some(y => y.id === x.gid) && x.pid !== pid);
+      const tg = L2.find(x => x.tag), un = L2.filter(x => !x.tag).pop();
+      for (const [k, x] of [['tagged', tg], ['untagged', un]]) if (x) graded[k] = { lo: { id: x.pid, x: MU.avg[x.pid], s: x.shift } }; graded.tagged && (graded.tagged.hi = graded.tagged.lo); graded.untagged && (graded.untagged.hi = graded.untagged.lo); }
+    else for (const [id, x] of Object.entries(MU.players || {})) { if (!S.players[id] || !S.sched.some(y => y.id === x.game_id) || id === pid) continue;
       const m = mmOwn(id, x.game_id); if (!m) continue; const G2 = graded[m.grade] = graded[m.grade] || {};
       if (!G2.lo || m.score < G2.lo.s) G2.lo = { id, x, s: m.score }; if (!G2.hi || m.score > G2.hi.s) G2.hi = { id, x, s: m.score }; }
-    const mmLegs = Object.values(graded).flatMap(G2 => G2.lo.id === G2.hi.id ? [G2.lo] : [G2.lo, G2.hi]).map(({ id, x }) => { const sp2 = S.players[id], st2 = Object.keys(x.stats || {})[0] || 'receiving_yards', k2 = x.stats && x.stats[st2] ? Math.round(x.stats[st2][1]) + 0.5 : 20.5, g2 = S.sched.find(y => y.id === x.game_id);
+    const mmLegs = Object.values(graded).flatMap(G2 => G2.lo.id === G2.hi.id ? [G2.lo] : [G2.lo, G2.hi]).map(({ id, x }) => { const sp2 = S.players[id], st2 = Object.keys(x.stats || {})[0] || 'receiving_yards', sv2 = x.stats && x.stats[st2], pj2 = Array.isArray(sv2) ? sv2[1] : sv2 && sv2.proj, k2 = isFinite(pj2) ? Math.round(pj2) + 0.5 : 20.5, g2 = S.sched.find(y => y.id === x.game_id);
       return { key: legKey(x.game_id, id, st2), gid: x.game_id, pid: id, stat: st2, k: k2, side: 'under', main: true, p: 0.52, price: 105, src: 'real', mu: k2,
         name: sp2.n, pos: sp2.pos, grp: sp2.grp, team: x.team, opp: x.opp, week: g2.w, label: `Under ${k2} ${st2}` }; });
     GRADES_SEEN = Object.keys(graded);
@@ -9958,12 +10148,13 @@ async function softChecks() {
    apart in floating point (worked out below, so an exact comparison would part them: held). On a made-up game of that
    week two days out, A at B (in the season's schedule, a copy), the two best-ranked receivers and backs are planted as
    expected starters, alternately facing A and B, rated four standard deviations above their position's average. Then,
-   on the page: each planted player's Mismatches bubble on the Props list words his rank as the smoke's own reading
-   (mmRankOwn, level to the hundredth), the receivers facing A and B the same rank; each one's window on the ELO
-   Ratings tab ranks the three units he faces the same way, the secondaries level; and the made-up game's Game snapshot
-   (the matchup bubble's way in) carries in its Starters headers each club's three units ranked so, the secondaries
-   level and unmarked, and in its Mismatches each planted player's line the same rank. Blocking: a rank the page
-   states ==================================================================================== */
+   on the page: each one's window on the ELO Ratings tab ranks the three units he faces as the smoke's own reading
+   (urkOwn, level to the hundredth), the secondaries level; and the made-up game's Game snapshot (the matchup bubble's
+   way in) carries in its Starters headers each club's three units ranked so, the secondaries level and unmarked.
+   Blocking: a rank the page states. (Until 4 November 2026 the section held the Mismatches the same way, each planted
+   player's bubble and his line in the snapshot's Mismatches; since, the Mismatches rank the averages' own Elo part and
+   name the ELO Ratings tab's table, its rank the file's, and the player window and the Starters headers alone read the
+   matchup formula's units.) ==================================================================================== */
 async function tieChecks() {
   const c0 = checks, f0 = fails.length, MU = JSON.parse(ELO_MU), Pl = JSON.parse(ELO_P);
   const defs = {}; for (const v of Object.values(MU.players || {})) if (v.opp_def) defs[v.opp] = { ...v.opp_def };
@@ -10014,19 +10205,6 @@ async function tieChecks() {
   const ws = d.getElementById('weekSel');
   if (ws && +ws.value !== PW && [...ws.options].some(o => +o.value === PW)) { ws.value = String(PW); ws.dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60); }
   w.eval('renderSlate()'); await wait(60);
-  const want = x => { const k = mmRankOwn(MT, x.group, x.opp); return k ? { rank: k.rank, n: k.n } : null; };
-  /* the Mismatches: each planted player's row the rank worked out here; his bubble (the five biggest) words it so */
-  { const rows = typeof w.eloMismatches === 'function' ? w.eloMismatches() : [], bad = [];
-    for (const x of plant) { const r = rows.find(v => v.pid === x.pid), k = want(x), i = rows.indexOf(r);
-      if (!r || !k) { bad.push(`${x.pid} (${x.group} facing ${x.opp}) is not on the Mismatches`); continue; }
-      if (r.defRank !== k.rank || r.defN !== k.n) bad.push(`${x.pid} facing ${x.opp}: ranked ${r.defRank} of ${r.defN}, the smoke's reading ${k.rank} of ${k.n}`);
-      if (i < 5) { const b = d.querySelector(`#peMism .pe-mm-b[data-mm-pid="${x.pid}"]`), sub = b && b.querySelector('.pe-mm-sub'), line = `vs the ${x.opp} ${MM_AGAINST_OWN[x.group]}, ${ordOwn(k.rank)} by player Elo.`;
-        if (!sub || !txt(sub).startsWith(line) || !mmSayOk(txt(sub), mmSayOwn(MT, x.pid, x.group))) bad.push(`${x.pid}'s bubble reads '${sub ? txt(sub) : 'nothing'}', not '${line}…${mmSayOwn(MT, x.pid, x.group)}'`); } }
-    const [wa, wb] = plant.filter(x => x.group === 'WR'), [ra, rb] = plant.filter(x => x.group === 'RB'), rk = x => (rows.find(v => v.pid === x.pid) || {}).defRank;
-    if (!(rk(wa) != null && rk(wa) === rk(wb))) bad.push(`the receivers facing ${A} and ${B}, level on the secondary, read ${rk(wa)} and ${rk(wb)}`);
-    if (!(rk(ra) != null && rk(ra) === rk(rb))) bad.push(`the backs facing ${A} and ${B}, level on the front and linebackers to the hundredth, read ${rk(ra)} and ${rk(rb)}`);
-    if (!plant.slice(0, 2).every(x => rows.indexOf(rows.find(v => v.pid === x.pid)) < 5 && rows.indexOf(rows.find(v => v.pid === x.pid)) >= 0)) bad.push('the planted receivers are not among the five bubbles');
-    chk(bad.length === 0, `tied ranks: the Mismatches do not rank ${A} and ${B} level on a unit alike: ${bad.slice(0, 6).join('; ')}`); }
   /* the player window on the ELO Ratings tab: the three units each planted player faces, ranked as the smoke reads them */
   { const bad = [], tabB = [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo'); if (tabB) { tabB.click(); await wait(80); }
     const got = {};
@@ -10040,8 +10218,7 @@ async function tieChecks() {
     const [wa, wb] = plant.filter(x => x.group === 'WR');
     if (got[wa.pid] && got[wb.pid] && got[wa.pid][2] !== got[wb.pid][2]) bad.push(`the secondaries of ${A} and ${B} read ${got[wa.pid][2]} and ${got[wb.pid][2]} in the two windows`);
     chk(bad.length === 0, `tied ranks: a player's window does not rank ${A} and ${B} level on a unit alike: ${bad.slice(0, 6).join('; ')}`); }
-  /* the made-up game's Game snapshot: its Starters headers (each club's three units, the secondaries level and unmarked)
-     and its Mismatches (each planted player's line) */
+  /* the made-up game's Game snapshot: its Starters headers (each club's three units, the secondaries level and unmarked) */
   { const bad = [], slate = [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate'); if (slate) { slate.click(); await wait(40); }
     const o = await snapOpen(R, G), md = o.md;
     if (!md) bad.push(`the made-up game ${GID} opens no Game snapshot`);
@@ -10050,8 +10227,6 @@ async function tieChecks() {
         if (!el || txt(el) !== `${ordOwn(r)} of ${clubs.length}`) bad.push(`${t}'s ${u} reads '${el ? txt(el) : 'nothing'}' in the Starters headers, the smoke's reading ${ordOwn(r)} of ${clubs.length}`); }
       const da = md.querySelector(`[data-gs-def="${A}:DB"]`), db = md.querySelector(`[data-gs-def="${B}:DB"]`);
       if (!da || !db || txt(da) !== txt(db) || da.classList.contains('gs-better') || db.classList.contains('gs-better')) bad.push(`the secondaries of ${A} and ${B} are not drawn level and unmarked: '${da ? txt(da) : ''}' and '${db ? txt(db) : ''}'`);
-      for (const x of plant) { const li = md.querySelector(`#gsMism li[data-pid="${x.pid}"] .gs-mmsub`), k = want(x), line = k ? `Against the ${x.opp} ${MM_AGAINST_OWN[x.group]}, ${ordOwn(k.rank)} of ${k.n} by player Elo.` : null;
-        if (!li || !line || !txt(li).startsWith(line) || !mmSayOk(txt(li), mmSayOwn(MT, x.pid, x.group))) bad.push(`${x.pid}'s line in the snapshot's Mismatches reads '${li ? txt(li) : 'nothing'}', not '${line}…${mmSayOwn(MT, x.pid, x.group)}'`); }
       w.gameSnapshotClose(false); await wait(20); }
     chk(bad.length === 0 && R.errs.length === 0, `tied ranks: the Game snapshot does not rank ${A} and ${B} level on a unit alike: ${bad.slice(0, 6).join('; ')} ${R.errs.join('; ')}`); }
   w.close();

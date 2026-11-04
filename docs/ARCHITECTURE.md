@@ -463,7 +463,12 @@ elo/
                                  chance and BETA as the last publish had them (RECORD), plus the
                                  build's functions on fixtures; the job runs it before committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
-                                 data/: kicked-off games leave the Mismatches, shields agree,
+                                 data/: the Mismatches on the averages' Elo part (mmOwnV2: the
+                                 rows, their order and words, Show more, a game page's tags,
+                                 and fixtures: no quarterback, the ties, the tag null, a lead
+                                 leg untrusted; the score planted where the files lack it) and
+                                 the old ones on a file from before it; kicked-off games leave
+                                 the Mismatches, shields agree,
                                  every ranked row has a trend line (week 1 too), a player kept
                                  out is priced by nothing but keeps his past weeks' ratings;
                                  Overall Offense and Overall Defense with the file's position
@@ -576,9 +581,11 @@ elo/
                                  no-Elo twin, Elo part `elo` and `z`, spread, the Elo part's
                                  split `def_x` and `elo_x` (twin x the two = projection) and
                                  the table he faces, `vs`), `avg_ref` and
-                                 `avg_fit` (ELO_AVG whole, each leg's `trusted`), which the
+                                 `avg_fit` (ELO_AVG whole, each leg's `trusted`, and
+                                 `mismatch`, the lead legs, the tag and its record), which the
                                  page's Elo picks, leans, player window, bubble and Mismatches'
-                                 projected line read
+                                 projected line read; since 4 November 2026 each lead block's
+                                 `mm`, {stat, shift, tag}, the Mismatches' score
   data/calls.json                generated: the ledger of the ELO Model's calls as published
                                  before each kickoff (on the Joker's baseline from 19 October
                                  2026, each with its `p_joker`, `p_elo` and `m`; the season's
@@ -957,8 +964,9 @@ the line naming their sources went on 14 October 2026, the owner's call), and fi
 apart as the baseline (how many of the three models agree with it, the ones that do not named with
 their dots, the ones with no call yet, how many of the four calls were right once played), the Team
 Elo gap with both ratings and ranks, which side ranks higher on offense against defense each way with
-the four ranks, who is out by name and how many starters are questionable, and the top mismatch with
-its edge on a four-step meter. Under it five cards (`CARDS`, in this order; the Sources card, with
+the four ranks, who is out by name and how many starters are questionable, and the top mismatch (since
+4 November 2026 "+7 pts Mismatch, +6.1 rec yds, vs LAC Pass Defense #32", the word on a tagged row
+alone; on a file from before the score its edge on a four-step meter). Under it five cards (`CARDS`, in this order; the Sources card, with
 each file's publish time and links to the full tabs, went on 14 October 2026, the owner's call, and
 the Stat breakdown, the season's eleven team stats from `stats.json` as bars, on 16 October 2026, the
 owner's call, "get rid of stat breakdown section", its bars back since app v124 as a game page's Team Stats
@@ -987,7 +995,9 @@ and its tag; no stats fold and no note under the card: what the ratings rest on 
 what the matchups rest on the label's);
 the side of every comparison with the edge wears one mark, `gs-better`; the
 Mismatches in the game (the Props tab's own rows, `window.eloMismatches`, ranked among the week's,
-each edge on the four-step meter with its legend); and Starters (the team's ranked players out
+each as its bubble there words it: since 4 November 2026 its size in points, the defence, the projection
+and the Mismatch tag on a tagged row, `mmLiV2`; on a file from before the score each edge on the
+four-step meter, `mmLiOld`, between the OLD-MISMATCHES marks); and Starters (the team's ranked players out
 first, each group's `sidelined`, the box red when someone is; then each team's expected starters,
 `lineups` in `matchups.json`, each name a button to his row on the game's page on the Props tab where
 the prop model draws one (16 October 2026; `pkBoard.propsPlayers`, `openOnProps(id, pid)`), side by side under each position on Offense, Defense and Kicker tabs
@@ -1121,7 +1131,8 @@ Allowed, Made or Value by its stats and gives its opponent's rank in the pair; a
 defense tables and no pair says, as it did, that the opponent's rank is Overall Offense's; a file
 without any draws the two pills alone.
 The same script puts the Mismatches card on the Props tab (games still to kick off only) and, on a game's page,
-a MISMATCH tag beside the name of each player with a Solid, Big or Huge mismatch that week (`mmTags`), a ranked player's shield and his
+a MISMATCH tag beside the name of each player with a Solid, Big or Huge mismatch that week (`mmTags`; since 4 November
+2026 each player whose row of the score is tagged, below), a ranked player's shield and his
 Elo matchup chance on each leg in the builder (since app v138 its nudge alone, "Elo +2.1"; since 29 October 2026 the
 Elo-adjusted average's Elo part with the defence it is set against, "Elo +0.5 · vs CAR Pass D #23"), until app v138 a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
@@ -1152,8 +1163,20 @@ player's window and in the Game snapshot's Starters headers and Mismatches (20 O
 since 22 October 2026 (`mmKey`, `Math.round(x*100)`, in `defRanks` and the Mismatches' `rankOf`; `snapshot.html`'s
 `defRank` the same, the owner's call: "in mismatches, make clubs tied on a defense unit share the same rank in the
 mismatches, plaer window, and game snapshot"), since a unit of two averaged can part clubs level on paper by a
-floating-point hair. `window.eloGlance` {trusted, labels, unit, grade,
-against, outWhy} is what the matchup bubble (`glance.js`) reads here: `unit(group, opp)` the tab's own table for a
+floating-point hair. **Since 4 November 2026** (elo/build.py's THE MISMATCH SCORE; CLAUDE.md, **The Mismatches on the
+averages' Elo part**) a matchups file carrying the score (`avg_fit.mismatch`, each lead block's `mm`: `mmOn`) draws the
+Mismatches from it (`mismatchesV2`): a back's, receiver's or tight end's lead leg, never a quarterback's, where the file's
+lead names and trusts it, a shift above nothing, his game to come and he not ruled out, ranked by the shift, the Elo part
+in yards and the id; each row's words (`mmSayV2`, carried on the row as `say` for the Game snapshot and the bubble): "+7
+pts", "+6.1 rec yds", "vs LAC Pass Defense #32" (the block's `vs`, the tab's own table), "58 rec yds" and the title; one
+tag, Mismatch, at the file's tag (`mmTagged`, `mmTagEl`; none where it is null); the bubble (`bubbleV2`), Show more's row
+(`rowV2`, a Pts column), a game page's MISMATCH and an Elo pick's tag the same row. The old score above stands, untouched,
+for a file from before the score, between one pair of OLD-MISMATCHES marks in this file, `snapshot.html` and `glance.js`
+(`mismatchesOld`, `mmTaggedOld`, `mmTagElOld`, `bubbleOld`, `rowOld`; `mmCxOld`, `mmLiOld`; the bubble's old line);
+`build.js` refuses the old score's words outside the marks. The player window's DL, LB and DB rank line (`defRanks`) and
+the Game snapshot's Starters headers still rank the formula's units. `window.eloGlance` {trusted, labels, unit, title,
+pts, outWhy, entry} (`grade` and `against` until 4 November 2026, the old rows carrying their own since) is what the
+matchup bubble (`glance.js`) reads here: `unit(group, opp)` the tab's own table for a
 side of the ball (a quarterback the Overall Defense, a back the Run Defense, a receiver or tight end the Pass Defense),
 ranked as the table draws it. The card's bar is its "rated" stamp alone (`#peStamp`): its two pills, the ELO Model's
 walk-forward on the Joker's baseline (`#peWalkRec`, "On the Joker: 2022–2025 65% walk-forward") and its season record
@@ -2560,6 +2583,12 @@ Mismatches and Team Stats**, has the whole of it).
   and the leg's own numbers. Its place is where the name was drawn (the builder, the Top lines, a
   level card in its set or in the Elo picks), which it keeps across a redraw. "This leg" in it
   is a row's line, never a bet the visitor made.
+- **mismatch / shift / Mismatch tag** -- (4 November 2026) a back's, receiver's or tight end's lead leg (rushing or
+  receiving yards) scored by the Elo-adjusted average's own Elo part as the chance shift it gives an even (50%) line on
+  his over, Φ(z) − 0.5 (`avg[pid].mm.shift`, shown as points, "+7 pts"), where `ELO_AVG` trusts the leg; the one tag,
+  Mismatch, at `avg_fit.mismatch.tag` (3.5 points, its rows above the listed rows under them in all 8 seasons of its
+  record; null if a season failed, and then nothing is tagged). No quarterback, no grades. Untested against DraftKings'
+  lines. Before it, the matchup formula's edge graded Slight, Solid, Big and Huge, kept for a file from before.
 - **Value pick / thin / market** -- (app v112) a leg `pbPool` puts on its preferred list, 3 points
   above the chance its price implies with market + form agreeing on a player's line (`thin:
   false`, not `market`): `pbIsValue()`, and the one mark a leg wears, Value (`pbValMark`). A thin
