@@ -29,8 +29,8 @@ all (it still gets --no-odds, which a base from before needs and this one ignore
              a payload from git history at its own moment.
   units      job C: the props job's own tests and the page's (UNITS: the ESPN read and its application, the
              runs against the locks, the ids, the names, who played, the downloads, the audit's verdict, the
-             archive of DraftKings' lines on ESPN, the admin link, the parlay card with Pull from DraftKings, and
-             the touchdown shadow), on fixtures of their own: seconds each,
+             archive of DraftKings' lines on ESPN, the admin link, the parlay card with Pull from DraftKings, the
+             touchdown shadow, and the Elo job's averages' inputs and downloads), on fixtures of their own: seconds each,
              but for the page's two smokes (smoke_admin.js about a minute, smoke_live.js about four) and the
              touchdown shadow's test (about 45 seconds).
 
@@ -109,7 +109,12 @@ UNITS = [('props/build/test_apply_espn.py', 'py'), ('props/build/test_espn_read.
          ('nflbets/build/smoke_admin.js', 'node'), ('nflbets/build/smoke_live.js', 'node'),
          # the touchdown shadow's rules, its check, its page reader on the payload pinned at 9dbe81f6 and its guard,
          # on a stand-in for the model (job C has no lightgbm): about 45 s, three minutes at most by its own stop
-         ('props/research/propmodel/test_td_shadow.py', 'py')]
+         ('props/research/propmodel/test_td_shadow.py', 'py'),
+         # the Elo job's averages' inputs (elo/build.py's THE INPUTS): the fit's path and the run's term for term with the
+         # forecasts' rules, and its downloads and forecasts on a local server, seconds each on fixtures of their own (no
+         # network, no elo/cache), so a pull request this gate covers holds them before it merges; an elo-only one is held
+         # by the Elo job's own run of both before its commit (elo.yml), which this gate never sees
+         ('elo/test_parity.py', 'py'), ('elo/test_fetch.py', 'py')]
 # a unit run only where its file is in the tree; every other one missing fails the gate (none is optional: the parlay
 # card's name rule's test landed with its change)
 UNITS_OPTIONAL = set()

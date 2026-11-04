@@ -550,7 +550,7 @@ of his volume and the game, none an Elo term, so each is in the no-Elo twin too 
 beyond them: snap (his offensive snap share in his previous appearance against his usual, half-life six appearances,
 and his usual less 0.7: in:snap1r, in:snapL), share (his share of his club's targets or carries over his appearances,
 half-lives six and 1.5, and a receiver's or tight end's share of its air yards on his yards: in:shL_*, in:shr_*,
-centred on the position's median over 2013-2015, ELO_AVG['inputs']), imp (his club's implied points from games.csv's
+centred on the position's median over the fit rows of 2012-2015, ELO_AVG['inputs']), imp (his club's implied points from games.csv's
 total and spread, log of total / 2 + its own spread / 2 over 22.5, clipped to 7-45), spr (its own spread over 7,
 positive when favoured), wind (the wind at kickoff over 10 mph, per 10 mph, capped at 40: games.csv's reading for a
 game played, for a game to come the forecast at kickoff, avg_weather, National Weather Service hourly in the US and
@@ -568,9 +568,12 @@ ten times what the whole Elo part adds. The volume freed by teammates listed Out
 nothing reads it. The inputs are worked out by one code path, avg_history and avg_inputs_rows, which the fit and
 avg_coming_inputs share (elo/test_parity.py holds the two to each other), from nflverse's weekly player stats (every
 player, for his club's totals), PFR's snap counts (snap_counts_<season>.csv from 2013, placed by their PFR ids through
-nflverse's players.csv; the season in play's read fresh and not required, posted a day or two after its games),
-games.csv's lines and the injury reports, all as load() reads them; players.csv is read fresh and required (a new way
-for the build to refuse), and the finished seasons' snap counts are kept with the other finished seasons' files
+nflverse's players.csv; the season in play's read fresh, posted a day or two after its games, and required once its
+first game kicked off SNAP_DUE hours ago, when it must also hold both clubs of every regular-season game final for
+SNAP_DUE hours: a file missing, failed or a week behind would put every snap share back a game, or to nothing, and move
+the trusted legs by up to 40%, so it refuses the build as a missing stats file does), games.csv's lines and the injury
+reports, all as load() reads them; players.csv is read fresh and required, and refused where it places no PFR id (a new
+way for the build to refuse), and the finished seasons' snap counts are kept with the other finished seasons' files
 (past.lst).
 
 It is fitted on EVERY game of an expected starter judged before kickoff (the club's charted QB1,
@@ -663,8 +666,9 @@ average defence; elo_x, his Elo's, the rest of the projection over its twin; the
 is the projection, so the two together point the Elo part's way, where a split against a 1500 player
 pointed the other way on 128 of the 430 trusted legs of week 8, the review of 29 October 2026), the
 table he faces with its Elo and rank, what the defence allowed where the leg reads it, and on a leg that reads THE
-INPUTS `in_x`, {vol, game, q}: each kind's multiplier of the projection against the typical starter's inputs (each
-term's mean over the leg's fit rows, `in_mean`; q against not listed), on the full projection's coefficients}, `in`,
+INPUTS `in_x`, {vol, game, q}: each kind's multiplier inside the no-Elo twin against the typical starter's inputs
+(each term's mean over the leg's fit rows, `in_mean`; q against not listed), on the twin's own coefficients, so the
+twin over the product of a leg's multipliers is the twin at a typical starter's inputs (avg_in_split)}, `in`,
 what THE INPUTS read for him {snap1, snapL (his last and usual snap shares), sh_tgtL, sh_tgtS, sh_carL, sh_carS,
 sh_ayL, sh_ayS (his long and short shares of his club's targets, carries and air yards), implied, spread (his club's,
 from games.csv's lines), wind, wind_src (the forecast at kickoff and where it came from)}, a value missing null, and on a
@@ -676,7 +680,10 @@ out again on its own reading of the raw files (the average, the allowance, the p
 tables, the inputs and their multipliers, the projection and its parts, the chance shift and the tag), holding the
 ratings and the opposing defenders, which it does not replay, to the players map and the league's, and the wind, which
 it cannot read again, to the forecast recorded (calm under a roof or past 6.5 days, else a number from the source its
-stadium's country takes, or calm with the reason a forecast was not had).
+stadium's country takes, or calm with the reason a forecast was not had; 'offline' only where it is told the build was,
+check.py --offline, never in the job), with its own copies of every stadium's coordinates and the two forecasts'
+addresses held against STADIUMS, NWS_POINTS and OPEN_METEO (so Open-Meteo is asked for mph, its default being km/h), and
+the season in play's snap counts held to SNAP_DUE on its own rule.
 
 THE RANKINGS are of this season alone. Beside the rating above, every player carries a second
 one that starts the season at 1500 and moves only on this season's games, by the same
@@ -840,7 +847,7 @@ test; no page draws them), each file written whole once everything is built:
     elo/data/calls.json     the ledger of calls as published before kickoff (THE CALLS)
 elo/check.py, elo/test_parity.py and elo/check_tab.js are the gate the job runs before it commits.
 """
-import argparse, bisect, datetime, json, math, os, sys, tempfile, time, zoneinfo
+import argparse, bisect, datetime, json, math, os, shutil, sys, tempfile, threading, time, zoneinfo
 import numpy as np
 import pandas as pd
 
@@ -871,6 +878,7 @@ JOKER_FROM = datetime.datetime(2026, 10, 19, 15, 20, tzinfo=datetime.timezone.ut
 TEAM_NOW = {'OAK': 'LV', 'SD': 'LAC', 'STL': 'LA'}
 ET = zoneinfo.ZoneInfo('America/New_York')     # games.csv gives kickoffs in US Eastern; DST from the zone, never a date
 UNDER_WAY = 36          # hours after a season's first kickoff by which nflverse has its player stats: from then on its files are required
+SNAP_DUE = 72           # hours after a kickoff by which nflverse's snap counts carry the game (posted within about a day): THE INPUTS
 CALL_LEAD = 15          # minutes: a call made closer to kickoff than this is not counted as published before it
 PRESEASON_CALLS = 14    # days: a new season's week 1 is called this close to its first kickoff
 RANK_TEAMS = 16         # a new season's rankings start once this many teams have a rated game
@@ -1065,6 +1073,25 @@ def under_way(games, season, now):
     return now >= first + datetime.timedelta(hours=UNDER_WAY)
 
 
+def snap_gaps(games, snaps, season, now):
+    """the regular-season games of `season` final SNAP_DUE hours ago whose snap counts lack a club (every club in today's
+    code): ['2026_08_KC_BUF (BUF)', ...]; [] where the file carries every one. A week the snap counts have not reached
+    would leave every player's last snap share a game behind (his snap1 his game before), on a green run"""
+    have = set()
+    if snaps is not None and len(snaps):
+        sn = snaps[snaps.season == season]
+        have = set(zip(sn.week.astype(int), sn.team.replace(TEAM_NOW)))
+    g = games[(games.season == season) & (games.game_type == 'REG') & games.home_score.notna() & games.away_score.notna()]
+    out = []
+    for r in g.itertuples(index=False):
+        if now < kickoff(r.gameday, r.gametime) + datetime.timedelta(hours=SNAP_DUE):
+            continue
+        miss = [t for t in (TEAM_NOW.get(r.away_team, r.away_team), TEAM_NOW.get(r.home_team, r.home_team)) if (int(r.week), t) not in have]
+        if miss:
+            out.append(f"{r.game_id} ({', '.join(miss)})")
+    return out
+
+
 def load(offline, now):
     """every source, as {name: frame}, with what was had and what was not in `sources`. A file
     the season under way needs, or any past season's, that cannot be had stops the build before
@@ -1081,6 +1108,9 @@ def load(offline, now):
     games = games[games.season >= FIRST].copy()
     sched = int(games.season.max())              # the newest schedule nflverse has posted
     live = under_way(games, sched, now)
+    # the season in play's snap counts (THE INPUTS) are required once its first game kicked off SNAP_DUE hours ago
+    g0 = games[games.season == sched]
+    snaps_due = bool(len(g0)) and now >= min(kickoff(d, t) for d, t in zip(g0.gameday, g0.gametime)) + datetime.timedelta(hours=SNAP_DUE)
     sources, missing, past = {}, [], []
     if os.path.exists(PAST_LIST):
         os.remove(PAST_LIST)                     # written again below only when every source load() reads was had
@@ -1133,13 +1163,19 @@ def load(offline, now):
             d = read(name, url, y, req, y == sched)
             if d is not None:
                 store[y] = d
-        # the averages' volume inputs (THE INPUTS): PFR's snap counts, from 2013; the season in play's is not required
-        # (nflverse posts it a day or two after the games, and before its first game has none)
+        # the averages' volume inputs (THE INPUTS): PFR's snap counts, from 2013; the season in play's is required once
+        # its first game kicked off SNAP_DUE hours ago (nflverse posts it a day or two after the games, and before its
+        # first game has none), and must then carry every regular-season game final for SNAP_DUE hours
         if y >= SNAP_FIRST:
-            d = read('snap_counts', SNAP_URL, y, y < sched, y == sched,
+            d = read('snap_counts', SNAP_URL, y, y < sched or snaps_due, y == sched,
                      usecols=['season', 'week', 'team', 'pfr_player_id', 'offense_snaps', 'offense_pct'])
             if d is not None:
                 snap_frames.append(d)
+            if y == sched and snaps_due and d is not None:
+                gaps = snap_gaps(games, d, sched, now)
+                if gaps:
+                    missing.append(f"snap_counts {y} (lacks {len(gaps)} regular-season game(s) final over {SNAP_DUE} hours ago: "
+                                   f"{', '.join(gaps[:4])}{' ...' if len(gaps) > 4 else ''})")
     # who can play now: the newest schedule's roster (before it is under way, last season's
     # stands in); and the season's play-by-play, for Overall Offense and Overall Defense
     roster = read('roster', ROSTER_URL, sched, live, True)
@@ -1901,7 +1937,7 @@ OPEN_METEO = ('https://api.open-meteo.com/v1/forecast?latitude={lat:.4f}&longitu
               '&wind_speed_unit=mph&timezone=UTC&forecast_days=7')
 WEATHER_DAYS = 6.5       # the NWS hourly forecast reaches about 6.5 days; Open-Meteo 7
 WEATHER_TIMEOUT = 15     # seconds a forecast request may take, tried once (netfetch's waits=()): a forecast is never worth a retry
-WEATHER_CAP = 90         # seconds the whole forecast step may take; a game still to read after it is calm, said so
+WEATHER_CAP = 90         # seconds the whole forecast step may take, wall clock; a game still to read after it is calm, said so
 # games.csv's stadium_id -> (latitude, longitude, roof): 'open' is read from a forecast, 'dome' and 'retractable' are calm
 # (a retractable roof closes in the wind and the cold: on 2016-2025 games.csv has no wind reading for any game under one)
 STADIUMS = {
@@ -2036,40 +2072,84 @@ def avg_wind_played(games):
     return dict(zip(games.game_id, np.where(calm, 0.0, games.wind.values.astype(float))))
 
 
+def avg_wx_get(url, dest, headers, deadline):
+    """one forecast request through netfetch, tried once (waits=(), so a forecast outage spends none of the downloads'
+    retry budget), held to a wall-clock deadline (time.monotonic()): netfetch's timeout bounds each read of the socket,
+    not the request, so a server that trickles its answer a byte at a time would outlast it; the request runs in a
+    thread of its own, and one still running at the deadline is given up (TimeoutError; the thread, a daemon, is left to
+    end with the process). Returns dest."""
+    left = deadline - time.monotonic()
+    if left <= 0:
+        raise TimeoutError('timed out')
+    box = {}
+
+    def run():
+        try:
+            box['ok'] = netfetch.download(url, dest, headers=headers, waits=(), timeout=max(0.5, min(WEATHER_TIMEOUT, left)),
+                                          log=lambda m: None)
+        except BaseException as e:             # handed to the caller, never printed by the thread
+            box['err'] = e
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(max(0.0, min(WEATHER_TIMEOUT, deadline - time.monotonic())))
+    if t.is_alive():
+        raise TimeoutError('timed out')
+    if 'err' in box:
+        raise box['err']
+    return box['ok']
+
+
+def avg_wx_why(e):
+    """a failed forecast's reason in a few words of the site's own, for wind_src ('forecast failed: ...'): never
+    netfetch's message, which names nflverse's host"""
+    if isinstance(e, netfetch.FetchError) and e.code:
+        return f'HTTP {e.code}'
+    if isinstance(e, TimeoutError) or 'timed out' in str(e).lower() or 'timeout' in str(e).lower():
+        return 'timed out'
+    if isinstance(e, json.JSONDecodeError):
+        return 'not JSON'
+    if isinstance(e, (netfetch.FetchError, OSError)):
+        return 'no answer'
+    return 'an answer of another shape'
+
+
 def avg_weather(rows, now, offline):
     """the wind forecast at kickoff for games to come (rows: game_id, stadium_id, roof, kick), {game_id: (mph or None,
     source)}: calm under a fixed or retractable roof; for an open stadium in the US the National Weather Service's hourly
     forecast (api.weather.gov, no key: the point's grid, then its hourly forecast), abroad Open-Meteo's (no key); a game
-    further off than WEATHER_DAYS, a stadium not in STADIUMS, offline, a failed request or the step past WEATHER_CAP
-    seconds: None (read as calm, said so). Each request is tried once (netfetch's waits=(), so a forecast outage spends
-    none of the downloads' retry budget), with WEATHER_TIMEOUT seconds or what is left of the cap."""
+    further off than WEATHER_DAYS, a stadium not in STADIUMS, offline, a failed request (any failure: no answer, an
+    error status, a body that is not JSON or JSON of another shape) or the step past WEATHER_CAP seconds: None (read as
+    calm, said so in the source, in the site's own few words, avg_wx_why). Each request is tried once with
+    WEATHER_TIMEOUT seconds, and the whole step is held to WEATHER_CAP seconds of wall clock (avg_wx_get), so neither a
+    forecast outage nor a server that answers a byte at a time can hold the build past the cap; nothing here ever raises
+    to the build."""
     out = {}
     t0 = time.monotonic()
-    get = lambda url, dest, h: netfetch.download(url, dest, headers=h, waits=(),
-                                                 timeout=max(1.0, min(WEATHER_TIMEOUT, WEATHER_CAP - (time.monotonic() - t0))))
-    for r in rows.itertuples(index=False):
-        st = STADIUMS.get(r.stadium_id)
-        if (isinstance(r.roof, str) and r.roof in ('dome', 'closed', 'open')) or (st and st[2] != 'open'):
-            out[r.game_id] = (0.0, 'roof')
-            continue
-        if st is None:
-            out[r.game_id] = (None, f'no coordinates for {r.stadium_id}')
-            continue
-        hours = (r.kick - now).total_seconds() / 3600
-        if offline or hours > 24 * WEATHER_DAYS or hours < -1:
-            out[r.game_id] = (None, 'offline' if offline else 'beyond the forecast')
-            continue
-        if time.monotonic() - t0 >= WEATHER_CAP:
-            out[r.game_id] = (None, f'forecast skipped: the step ran past {WEATHER_CAP} s')
-            continue
-        lat, lon, _ = st
-        us = -125 < lon < -66 and 24 < lat < 50
-        try:
-            with tempfile.TemporaryDirectory(prefix='elo_wx_') as tmp:
+    deadline = t0 + WEATHER_CAP
+    tmp = tempfile.mkdtemp(prefix='elo_wx_')
+    try:
+        for n, r in enumerate(rows.itertuples(index=False)):
+            st = STADIUMS.get(r.stadium_id)
+            if (isinstance(r.roof, str) and r.roof in ('dome', 'closed', 'open')) or (st and st[2] != 'open'):
+                out[r.game_id] = (0.0, 'roof')
+                continue
+            if st is None:
+                out[r.game_id] = (None, f'no coordinates for {r.stadium_id}')
+                continue
+            hours = (r.kick - now).total_seconds() / 3600
+            if offline or hours > 24 * WEATHER_DAYS or hours < -1:
+                out[r.game_id] = (None, 'offline' if offline else 'beyond the forecast')
+                continue
+            if time.monotonic() >= deadline:
+                out[r.game_id] = (None, f'forecast skipped: the step ran past {WEATHER_CAP} s')
+                continue
+            lat, lon, _ = st
+            us = -125 < lon < -66 and 24 < lat < 50
+            try:
                 if us:
-                    with open(get(NWS_POINTS.format(lat=lat, lon=lon), os.path.join(tmp, 'p.json'), WEATHER_UA)) as f:
+                    with open(avg_wx_get(NWS_POINTS.format(lat=lat, lon=lon), os.path.join(tmp, f'p{n}.json'), WEATHER_UA, deadline)) as f:
                         p = json.load(f)
-                    with open(get(p['properties']['forecastHourly'], os.path.join(tmp, 'h.json'), WEATHER_UA)) as f:
+                    with open(avg_wx_get(p['properties']['forecastHourly'], os.path.join(tmp, f'h{n}.json'), WEATHER_UA, deadline)) as f:
                         h = json.load(f)
                     v = None
                     for per in h['properties']['periods']:
@@ -2081,15 +2161,19 @@ def avg_weather(rows, now, offline):
                             break
                     out[r.game_id] = (v, 'nws' if v is not None else 'nws: no period at kickoff')
                 else:
-                    with open(get(OPEN_METEO.format(lat=lat, lon=lon), os.path.join(tmp, 'o.json'),
-                                  {'User-Agent': WEATHER_UA['User-Agent']})) as f:
+                    with open(avg_wx_get(OPEN_METEO.format(lat=lat, lon=lon), os.path.join(tmp, f'o{n}.json'),
+                                         {'User-Agent': WEATHER_UA['User-Agent']}, deadline)) as f:
                         j = json.load(f)
                     t = r.kick.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:00')
                     hh = j['hourly']
                     v = hh['wind_speed_10m'][hh['time'].index(t)] if t in hh['time'] else None
                     out[r.game_id] = (None if v is None else float(v), 'open-meteo' if v is not None else 'open-meteo: no hour at kickoff')
-        except (netfetch.FetchError, OSError, ValueError, KeyError, json.JSONDecodeError) as e:
-            out[r.game_id] = (None, f'forecast failed: {str(e)[:80]}')
+                if out[r.game_id][0] is not None and not (0 <= out[r.game_id][0] <= 150):
+                    raise ValueError(f'a wind of {out[r.game_id][0]} mph')
+            except Exception as e:             # any failure is calm, said so: a forecast never refuses the build
+                out[r.game_id] = (None, f'forecast failed: {avg_wx_why(e)}')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
     return out
 
 
@@ -2424,12 +2508,15 @@ def averages(log, coming, season, tables, rating, season_rating, defs, inputs=No
 
 
 def avg_in_split(leg, x):
-    """the inputs' multipliers of a leg's projection, against the typical starter's (each term's mean over the leg's fit
-    rows, leg['in_mean']; the Questionable tag against not listed), by kind: vol (snap share and share), game (implied
-    points, spread, wind) and q (the Questionable tag), each exp of its terms' coefficients times their distance from
-    that mean, on the full projection's coefficients (its no-Elo twin carries the same terms with coefficients a few
-    hundredths apart)"""
-    w = dict(zip(leg['terms'], leg['coef']))
+    """the inputs' multipliers inside a leg's no-Elo twin (Base on the page), against the typical starter's inputs (each
+    term's mean over the leg's fit rows, leg['in_mean']; the Questionable tag against not listed), by kind: vol (snap
+    share and share), game (implied points, spread, wind) and q (the Questionable tag), each exp of its terms' twin
+    coefficients times their distance from that mean. On the twin's coefficients, never the full projection's: the two
+    differ widely where the Elo terms and the inputs move together (a back's rushing yards: snapL -0.137 in the full fit,
+    +0.181 in the twin), so only the twin's are the factor Base applies, and the twin over the product of a leg's
+    multipliers is the twin at a typical starter's inputs (the review of 4 November 2026: on the full fit's, Jonathan
+    Taylor's rushing yards read x0.98 for his volume where Base moves him x1.07)"""
+    w = dict(zip(leg['no_elo']['terms'], leg['no_elo']['coef']))
     m = leg.get('in_mean', {})
     kind = lambda t: 'game' if t in ('in:imp', 'in:spr', 'in:wind') else 'q' if t == 'in:q' else 'vol'
     out = {}

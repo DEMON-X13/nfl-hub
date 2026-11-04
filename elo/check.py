@@ -1577,9 +1577,11 @@ def mm_block_bad(pid, b, A, z_own, ztol):
 # docstring) of the rule (the floors, the snap share's centre and half-life, the shares' half-lives short and long, the
 # implied points' clip and reference, the spread's and the wind's scales), of which inputs each leg reads (the nested
 # walk-forward's groups as its verification corrected them, elo_avg_fit.py's SPEC), of which shares a leg's share group
-# takes, of the legs whose Elo part is trusted, of each position's share centre (its median over 2013-2015), of the
-# raw values matchups.json shows, and of the stadiums under a fixed or retractable roof (always calm) and abroad (read
-# from Open-Meteo, the rest from the National Weather Service)
+# takes, of the legs whose Elo part is trusted, of each position's share centre (its median over its fit rows of
+# 2012-2015), of the raw values matchups.json shows, of the stadiums under a fixed or retractable roof (always calm)
+# and abroad (read from Open-Meteo, the rest from the National Weather Service), of every stadium's coordinates and of
+# the two forecasts' addresses (so a request asking Open-Meteo for km/h, or a stadium moved, is caught), and of the
+# hours after a kickoff by which the season in play's snap counts must carry the game
 IN_RULE_OWN = {'snap_floor': 0.05, 'snap_center': 0.7, 'snap_hl': 6, 'share_floor': 0.005, 'share_hl': (1.5, 6),
                'imp_clip': (7.0, 45.0), 'imp_ref': 22.5, 'spr_scale': 7.0, 'wind_clip': 40.0, 'wind_hinge': 10.0, 'wind_scale': 10.0}
 IN_SNAP_FIRST_OWN = 2013
@@ -1603,8 +1605,26 @@ IN_KIND_OWN = {'in:imp': 'game', 'in:spr': 'game', 'in:wind': 'game', 'in:q': 'q
 IN_WIND_DAYS_OWN = 6.5
 IN_ROOF_OWN = frozenset({'ATL97', 'DAL00', 'DET00', 'HOU00', 'IND00', 'LAX01', 'MIN01', 'NOR00', 'PHO00', 'VEG00', 'MAD01', 'BUF01'})
 IN_ABROAD_OWN = frozenset({'LON00', 'LON01', 'LON02', 'MUN01', 'GER00', 'FRA00', 'MEX00', 'MAD01', 'PAR00', 'RIO00', 'SAO00', 'MEL00', 'BUF01'})
-# a forecast not had: the game is calm and the source says why (the run offline is a hand build's, never the job's)
-IN_CALM_SRC = ('forecast failed', 'forecast skipped', 'nws: no period at kickoff', 'open-meteo: no hour at kickoff', 'no coordinates for', 'offline')
+IN_STADIUMS_OWN = {
+    'ATL97': (33.7554, -84.4008), 'BAL00': (39.2780, -76.6227), 'BOS00': (42.0909, -71.2643), 'BUF00': (42.7738, -78.7870),
+    'CAR00': (35.2258, -80.8528), 'CHI98': (41.8623, -87.6167), 'CIN00': (39.0955, -84.5161), 'CLE00': (41.5061, -81.6995),
+    'DAL00': (32.7473, -97.0945), 'DEN00': (39.7439, -105.0201), 'DET00': (42.3400, -83.0456), 'GNB00': (44.5013, -88.0622),
+    'HOU00': (29.6847, -95.4107), 'IND00': (39.7601, -86.1639), 'JAX00': (30.3239, -81.6373), 'KAN00': (39.0489, -94.4839),
+    'LAX01': (33.9535, -118.3392), 'MIA00': (25.9580, -80.2389), 'MIN01': (44.9737, -93.2577), 'NAS00': (36.1665, -86.7713),
+    'NOR00': (29.9511, -90.0812), 'NYC01': (40.8135, -74.0745), 'PHI00': (39.9008, -75.1675), 'PHO00': (33.5276, -112.2626),
+    'PIT00': (40.4468, -80.0158), 'SEA00': (47.5952, -122.3316), 'SFO01': (37.4030, -121.9700), 'TAM00': (27.9759, -82.5033),
+    'VEG00': (36.0909, -115.1833), 'WAS00': (38.9077, -76.8645), 'LON00': (51.5560, -0.2796), 'LON01': (51.4560, -0.3415),
+    'LON02': (51.6043, -0.0664), 'MUN01': (48.2188, 11.6247), 'GER00': (48.2188, 11.6247), 'FRA00': (50.0686, 8.6455),
+    'MEX00': (19.3029, -99.1505), 'MAD01': (40.4531, -3.6883), 'PAR00': (48.9245, 2.3602), 'RIO00': (-22.9122, -43.2302),
+    'SAO00': (-23.5453, -46.4742), 'MEL00': (-37.8200, 144.9834), 'BUF01': (43.6414, -79.3894)}
+IN_NWS_OWN = 'https://api.weather.gov/points/{lat:.4f},{lon:.4f}'
+IN_OM_OWN = ('https://api.open-meteo.com/v1/forecast?latitude={lat:.4f}&longitude={lon:.4f}&hourly=wind_speed_10m'
+             '&wind_speed_unit=mph&timezone=UTC&forecast_days=7')
+IN_SNAP_DUE_OWN = 72
+# a forecast not had: the game is calm and the source says why; 'offline' only where the gate is told the build was
+# offline (--offline: a hand build's, never the job's, so the job's gate refuses a build that skipped the forecasts)
+IN_CALM_SRC = ('forecast failed', 'forecast skipped', 'nws: no period at kickoff', 'open-meteo: no hour at kickoff', 'no coordinates for')
+OFFLINE = {'on': False}
 
 
 def in_terms_of_own(key):
@@ -1714,11 +1734,43 @@ def in_read_own(cache, season):
         chk(False, 'AVERAGES: players.csv (the snap counts\' PFR ids) is not in the cache: no snap share can be held against it')
         return None
     pl = pd.read_csv(pp, usecols=['gsis_id', 'pfr_id'], low_memory=False)
+    pfr = {p: g for g, p in zip(pl.gsis_id, pl.pfr_id) if isinstance(p, str) and isinstance(g, str)}
+    if not pfr:                            # read as an empty map, every snap share would be lost and held as lost
+        chk(False, f'AVERAGES: players.csv places no PFR id ({len(pl)} rows): no snap share can be held against it')
+        return None
     if not ok or not parts:
         return None
     return {'stats': pd.concat(parts, ignore_index=True),
             'snaps': pd.concat(snaps, ignore_index=True) if snaps else pd.DataFrame(columns=['season', 'week', 'team', 'pfr_player_id', 'offense_snaps', 'offense_pct']),
-            'pfr': {p: g for g, p in zip(pl.gsis_id, pl.pfr_id) if isinstance(p, str) and isinstance(g, str)}}
+            'pfr': pfr}
+
+
+def in_snaps_due_bad(games, snaps, season, built):
+    """the season in play's snap counts on the gate's own rule: once its first game kicked off IN_SNAP_DUE_OWN hours
+    before the build they must be had (snaps None: not in the cache) and carry both clubs (in today's code) of every
+    regular-season game with a final score that kicked off that long before it; returns what is wrong, [] when nothing
+    (before the season's first game is that old, nothing is asked)"""
+    g = games[games.season == season]
+    if not len(g):
+        return []
+    due = datetime.timedelta(hours=IN_SNAP_DUE_OWN)
+    kicks = [build.kickoff(d, t) for d, t in zip(g.gameday, g.gametime)]
+    if built < min(kicks) + due:
+        return []
+    if snaps is None:
+        return [f'snap_counts_{season}.csv, the season in play\'s, is not had though its first game kicked off over {IN_SNAP_DUE_OWN} hours ago']
+    have = set()
+    for w, t, sy in zip(snaps.week, snaps.team, snaps.season):
+        if int(sy) == season:
+            have.add((int(w), MOVED.get(t, t)))
+    out = []
+    for r, k in zip(g.itertuples(index=False), kicks):
+        if r.game_type != 'REG' or not (in_ok(r.home_score) and in_ok(r.away_score)) or built < k + due:
+            continue
+        miss = [t for t in (MOVED.get(r.away_team, r.away_team), MOVED.get(r.home_team, r.home_team)) if (int(r.week), t) not in have]
+        if miss:
+            out.append(f'{r.game_id} ({", ".join(miss)})')
+    return [f'snap_counts_{season}.csv lacks {len(out)} regular-season game(s) final over {IN_SNAP_DUE_OWN} hours ago: {", ".join(out[:4])}'] if out else []
 
 
 def in_hist_own(src, pids):
@@ -1795,17 +1847,19 @@ def in_values_own(rows, key, home, spread_line, total_line):
     return v
 
 
-def in_wind_own(gm, built, rec_w=None, rec_src=None, edge=60):
+def in_wind_own(gm, built, rec_w=None, rec_src=None, edge=60, offline=None):
     """the wind a game's terms read, on the gate's own rule, and what is wrong with the one recorded (rec_w, rec_src):
     a played game's is games.csv's (calm under a closed, open or fixed roof); a game to come is calm under any roof (the
     gate's own list, or games.csv's roof dome, closed or open), recorded (0, 'roof'); past 6.5 days from the build (within
     `edge` seconds of it either way), calm, 'beyond the forecast'; within, the recorded forecast, a number of 0 to 150 mph
     from the National Weather Service ('nws') in the US and Open-Meteo ('open-meteo') abroad, or calm with the reason a
-    forecast was not had (IN_CALM_SRC). Returns (wind or None, problem or None)"""
+    forecast was not had (IN_CALM_SRC; 'offline' too, anywhere off a roof, only where the gate is told the build was
+    offline: OFFLINE, or `offline`). Returns (wind or None, problem or None)"""
+    off = OFFLINE['on'] if offline is None else offline
     roof = gm.get('roof') if isinstance(gm.get('roof'), str) else ''
     if in_ok(gm.get('home_score')):
         return ((0.0 if roof in ('dome', 'closed', 'open') else float(gm['wind']) if in_ok(gm.get('wind')) else None), None)
-    calm = lambda: rec_w is None and isinstance(rec_src, str) and rec_src.startswith(IN_CALM_SRC)
+    calm = lambda: rec_w is None and isinstance(rec_src, str) and (rec_src.startswith(IN_CALM_SRC) or (off and rec_src == 'offline'))
     if gm.get('stadium_id') in IN_ROOF_OWN or roof in ('dome', 'closed', 'open'):
         ok = in_ok(rec_w) and rec_w == 0 and rec_src == 'roof'
         return 0.0, None if ok else f'under a roof but recorded {rec_w} ({rec_src})'
@@ -1813,7 +1867,7 @@ def in_wind_own(gm, built, rec_w=None, rec_src=None, edge=60):
     far = 3600 * 24 * IN_WIND_DAYS_OWN
     beyond = rec_w is None and rec_src == 'beyond the forecast'
     if secs > far + edge or secs < -3600 - edge:
-        ok = beyond or (rec_w is None and rec_src == 'offline')
+        ok = beyond or (off and rec_w is None and rec_src == 'offline')
         return None, None if ok else f'{secs / 86400:.2f} days from the build, past the forecast, but recorded {rec_w} ({rec_src})'
     if calm() or (beyond and abs(secs - far) <= edge):
         return None, None
@@ -1855,12 +1909,13 @@ def in_q_own(inj, season, week, pid):
 
 
 def in_x_own(leg, x):
-    """the inputs' multipliers of a leg's projection by kind (vol: the snap and share terms; game: implied points,
-    spread, wind; q: the Questionable tag), each exp of its terms' coefficients in the full projection times their
-    distance from the typical starter's value (in_mean; the tag against not listed, 0)"""
+    """the inputs' multipliers inside a leg's no-Elo twin by kind (vol: the snap and share terms; game: implied points,
+    spread, wind; q: the Questionable tag), each exp of its terms' coefficients in the twin (never the full projection's,
+    which differ widely where the Elo terms move with the inputs: the twin's are the factor the twin, Base, applies)
+    times their distance from the typical starter's value (in_mean; the tag against not listed, 0)"""
     m = leg.get('in_mean') or {}
     s = {}
-    for t, c in zip(leg['terms'], leg['coef']):
+    for t, c in zip(leg['no_elo']['terms'], leg['no_elo']['coef']):
         if t.startswith('in:'):
             k = IN_KIND_OWN.get(t, 'vol')
             s[k] = s.get(k, 0.0) + c * (x[t] - (0.0 if t == 'in:q' else m[t]))
@@ -2215,11 +2270,11 @@ def avg_checks(MU, P, M, games, cache, built):
                 if not isinstance(gx, dict) or sorted(gx) != sorted(wx):
                     bad.append(f'{pid} {col}: in_x {gx}, the gate\'s kinds {sorted(wx)}')
                 else:
-                    for k, v in wx.items():
+                    for k, v in wx.items():          # written to four places: one unit in the last, as every number
                         miss = abs(gx[k] - v) if in_ok(gx[k]) else float('inf')
-                        if not miss <= 5e-5 + 1e-9 * v:
+                        if not miss <= 1e-4 + 1e-9 * v:
                             bad.append(f'{pid} {col}: in_x {k} {gx[k]}, the gate\'s {v:.6f}')
-                        worst['in_x'] = max(worst.get('in_x', 0.0), miss / (5e-5 + 1e-9 * v) if miss < float('inf') else 9.0)
+                        worst['in_x'] = max(worst.get('in_x', 0.0), miss / (1e-4 + 1e-9 * v) if miss < float('inf') else 9.0)
             z_own[col] = (o['z'], 1e-4 + (1e-4 + 1e-6 * o['proj']) / o['sd'])
             # each number is written to four places (one unit in the last, as a hair either way rounds the other way);
             # the inputs differ from the build's by the units' raw ratings written to six (a millionth of the projection
@@ -2472,7 +2527,7 @@ def avg_week_fixture():
             wx = in_x_own(leg, x) if any(t.startswith('in:') for t in leg['terms']) else {}
             gx = got.get('in_x')
             if (not wx and gx is not None) or (wx and (not isinstance(gx, dict) or sorted(gx) != sorted(wx)
-                                                      or any(abs(gx[k] - v) > 5e-5 + 1e-9 * v for k, v in wx.items()))):
+                                                      or any(abs(gx[k] - v) > 1e-4 + 1e-9 * v for k, v in wx.items()))):
                 bad.append(f'{pid} {col}: in_x {gx}, the gate\'s {wx}')
             near = 1e-4 + 1e-6 * o['proj']
             if (abs(got['avg'] - a) > 1e-4 or any(abs(got[k] - o[k]) > near for k in ('proj', 'no_elo', 'elo'))
@@ -2595,6 +2650,13 @@ def in_const_checks():
     chk(roofed == set(IN_ROOF_OWN) and abroad == set(IN_ABROAD_OWN) - set(IN_ROOF_OWN),
         f'AVERAGES: the build\'s stadiums under a roof {sorted(roofed ^ set(IN_ROOF_OWN))} or abroad {sorted(abroad ^ (set(IN_ABROAD_OWN) - set(IN_ROOF_OWN)))} '
         f'differ from the gate\'s')
+    moved = sorted(k for k in set(build.STADIUMS) | set(IN_STADIUMS_OWN)
+                   if k not in build.STADIUMS or k not in IN_STADIUMS_OWN or tuple(build.STADIUMS[k][:2]) != IN_STADIUMS_OWN[k])
+    chk(not moved, f'AVERAGES: the build\'s stadium coordinates differ from the gate\'s at {moved[:6]}: a forecast would be read for another place')
+    chk(build.NWS_POINTS == IN_NWS_OWN and build.OPEN_METEO == IN_OM_OWN,
+        f'AVERAGES: the forecasts\' addresses are {build.NWS_POINTS!r} and {build.OPEN_METEO!r}, not the gate\'s {IN_NWS_OWN!r} and {IN_OM_OWN!r} '
+        f'(Open-Meteo answers in km/h unless asked for mph)')
+    chk(build.SNAP_DUE == IN_SNAP_DUE_OWN, f'AVERAGES: the build requires the season in play\'s snap counts {build.SNAP_DUE} hours after a kickoff, the gate {IN_SNAP_DUE_OWN}')
     fb = in_fit_bad(A, elo_avg_fit.SPEC)
     chk(not fb, f'AVERAGES: the inputs\' constants: {"; ".join(fb[:4])}{" ..." if len(fb) > 4 else ""} ({len(fb)})')
 
@@ -2642,16 +2704,22 @@ def in_fixture_checks():
     stat row (a share of 0), a snap row whose PFR id players.csv does not know (no snap share at all), a club's week of
     20 air yards or fewer (no air-yards share), negative air yards (clipped at 0), a row with no player id (in his club's
     totals), a season and club before (both averages run across them, the moved club in today's code), the away side's
-    spread (its negative) and a game with no lines (0), a roof (calm, no request), a forecast in reach from the National
-    Weather Service and one abroad from Open-Meteo, one failed (calm, said so), one past 6.5 days (calm, no request), a
-    Questionable filed (1) and one only last week with this week's practice report and no status (0); then the gate's own
-    wind rule judging made-up records of each branch, and the fit's played games' wind (avg_wind_played)"""
+    spread (its negative) and a game with no lines (0), implied points under 7 and over 45 (clipped), a roof (calm, no
+    request) and games.csv's roof closed at a stadium open to the sky (calm, no request), a forecast in reach from the
+    National Weather Service and one abroad from Open-Meteo, each asked at the gate's own address for the stadium's own
+    coordinates (Open-Meteo in mph), one failed (calm, said so), one past 6.5 days (calm, no request), a Questionable
+    filed (1) and one only last week with this week's practice report and no status (0); then the gate's own wind rule
+    judging made-up records of each branch (offline only where the gate is told so), the fit's played games' wind
+    (avg_wind_played: a retractable roof open calm too), and the season in play's snap counts due on the gate's rule
+    and the build's (snap_gaps) alike"""
     S = 2030
     now = datetime.datetime(S, 10, 16, 12, tzinfo=datetime.timezone.utc)
     kick = now + datetime.timedelta(days=2, hours=5)
     G = {'g1': (f'{S}_06_BBB_AAA', 'BUF00', 'outdoors', kick, -3.5, 44.5), 'g2': (f'{S}_06_DDD_CCC', 'DET00', 'dome', kick, 2.5, 50.0),
          'g3': (f'{S}_06_FFF_EEE', 'PIT00', 'outdoors', kick, 1.0, 41.0), 'g4': (f'{S}_06_HHH_GGG', 'LON02', np.nan, kick, -6.0, 47.5),
-         'g5': (f'{S}_06_JJJ_III', 'CHI98', 'outdoors', now + datetime.timedelta(days=8), np.nan, np.nan)}
+         'g5': (f'{S}_06_JJJ_III', 'CHI98', 'outdoors', now + datetime.timedelta(days=8), np.nan, np.nan),
+         'g6': (f'{S}_06_LLL_KKK', 'NOR00', 'dome', kick, 14.0, 20.0), 'g7': (f'{S}_06_NNN_MMM', 'MIN01', 'dome', kick, -2.0, 100.0),
+         'g8': (f'{S}_06_PPP_OOO', 'BUF00', 'closed', kick, 0.0, 40.0)}
     games = pd.DataFrame([{'game_id': g, 'season': S, 'week': 6, 'stadium_id': sid, 'roof': rf, 'kick': k, 'spread_line': sp,
                            'total_line': tl, 'home_score': np.nan, 'wind': np.nan} for g, sid, rf, k, sp, tl in G.values()])
     rows = []
@@ -2697,21 +2765,25 @@ def in_fixture_checks():
     parts = {'AAA': [('a-qb', 'QB'), ('a-rb', 'RB'), ('a-w1', 'WR'), ('a-w2', 'WR'), ('a-w3', 'WR'), ('a-te', 'TE'), ('a-k', 'K')],
              'BBB': [('b-qb', 'QB'), ('b-w1', 'WR')]}
     coming = [{'game_id': G['g1'][0], 'team': 'AAA', 'home': 1, 'parts': parts['AAA']}, {'game_id': G['g1'][0], 'team': 'BBB', 'home': 0, 'parts': parts['BBB']}]
-    for g, c in (('g2', 'c-qb'), ('g3', 'e-qb'), ('g4', 'g-qb'), ('g5', 'i-qb')):
+    for g, c in (('g2', 'c-qb'), ('g3', 'e-qb'), ('g4', 'g-qb'), ('g5', 'i-qb'), ('g6', 'k-qb'), ('g7', 'm-qb'), ('g8', 'o-qb')):
         coming.append({'game_id': G[g][0], 'team': c[0].upper() * 3, 'home': 1, 'parts': [(c, 'QB')]})
+    coming.append({'game_id': G['g6'][0], 'team': 'LLL', 'home': 0, 'parts': [('l-qb', 'QB')]})
     # the forecasts: the National Weather Service answers at Buffalo (18 mph at kickoff), fails at Pittsburgh; Open-Meteo
     # answers in London (9.5 mph); nothing else may be asked
     asked = []
     h = kick.replace(minute=0)
     per = lambda a, b, s_: {'startTime': a.isoformat(), 'endTime': b.isoformat(), 'windSpeed': s_}
 
+    at = lambda tpl, sid: tpl.format(lat=IN_STADIUMS_OWN[sid][0], lon=IN_STADIUMS_OWN[sid][1])
+    hourly = 'https://api.weather.gov/gridpoints/BUF/1,1/forecast/hourly'
+
     def stub(url, dest, **k):
         asked.append((url, k))
-        if '/points/' in url and url.startswith('https://api.weather.gov/points/42.77'):
-            body = {'properties': {'forecastHourly': 'https://api.weather.gov/gridpoints/BUF/1,1/forecast/hourly'}}
-        elif 'gridpoints/BUF' in url:
+        if url == at(IN_NWS_OWN, 'BUF00'):                     # only the gate's own address for each answers
+            body = {'properties': {'forecastHourly': hourly}}
+        elif url == hourly:
             body = {'properties': {'periods': [per(h - datetime.timedelta(hours=1), h, '40 mph'), per(h, h + datetime.timedelta(hours=1), '12 to 18 mph')]}}
-        elif 'open-meteo' in url:
+        elif url == at(IN_OM_OWN, 'LON02'):
             body = {'hourly': {'time': [kick.strftime('%Y-%m-%dT%H:00')], 'wind_speed_10m': [9.5]}}
         else:
             raise build.netfetch.FetchError('stubbed: no answer')
@@ -2765,6 +2837,12 @@ def in_fixture_checks():
              ('a failed forecast calm, said so', AV['e-qb']['in']['wind'] is None and str(AV['e-qb']['in']['wind_src']).startswith('forecast failed') and T('e-qb')['in:wind'] == 0),
              ('abroad, Open-Meteo\'s hour', AV['g-qb']['in']['wind'] == 9.5 and AV['g-qb']['in']['wind_src'] == 'open-meteo'),
              ('past 6.5 days calm', AV['i-qb']['in']['wind'] is None and AV['i-qb']['in']['wind_src'] == 'beyond the forecast'),
+             ('implied points under 7 clipped at 7, over 45 at 45, and a side between them read as it is',
+              abs(T('l-qb')['in:imp'] - math.log(7 / 22.5)) < 1e-12 and abs(T('m-qb')['in:imp'] - math.log(45 / 22.5)) < 1e-12
+              and abs(T('k-qb')['in:imp'] - math.log(17 / 22.5)) < 1e-12 and abs(T('l-qb')['in:spr'] + 2.0) < 1e-12),
+             ('games.csv\'s roof closed at a stadium open to the sky: calm, no request', AV['o-qb']['in']['wind'] == 0.0 and AV['o-qb']['in']['wind_src'] == 'roof'),
+             ('each request at the gate\'s own address for its stadium\'s coordinates (Open-Meteo in mph), and no other',
+              sorted(u for u, _ in asked) == sorted([at(IN_NWS_OWN, 'BUF00'), hourly, at(IN_NWS_OWN, 'PIT00'), at(IN_OM_OWN, 'LON02')])),
              ('no request for the roof or the far game, one try each', not any('41.86' in u or '42.34' in u for u, _ in asked)
               and len(asked) == 4 and all(k.get('waits') == () for _, k in asked))]
     bad += [f'{w}: not so' for w, ok in facts if not ok]
@@ -2772,23 +2850,54 @@ def in_fixture_checks():
     # the gate's wind rule on made-up records: each branch's right record passes and each wrong one is refused
     g = lambda sid, roof, days, **k: dict({'stadium_id': sid, 'roof': roof, 'kick': now + datetime.timedelta(days=days), 'home_score': np.nan, 'wind': np.nan}, **k)
     recs = [(g('DET00', 'dome', 2), 0.0, 'roof', True), (g('DET00', 'dome', 2), 8.0, 'nws', False), (g('IND00', np.nan, 2), None, 'offline', False),
+            (g('IND00', np.nan, 2), None, 'offline', False, True),
             (g('BUF00', 'outdoors', 8), None, 'beyond the forecast', True), (g('BUF00', 'outdoors', 8), 11.0, 'nws', False),
-            (g('BUF00', 'outdoors', 8), None, 'offline', True), (g('BUF00', 'outdoors', 2), 12.0, 'nws', True),
+            (g('BUF00', 'outdoors', 8), None, 'offline', False), (g('BUF00', 'outdoors', 8), None, 'offline', True, True),
+            (g('BUF00', 'outdoors', 2), None, 'offline', False), (g('BUF00', 'outdoors', 2), None, 'offline', True, True),
+            (g('BUF00', 'outdoors', 2), 12.0, 'nws', True),
             (g('BUF00', 'outdoors', 2), 12.0, 'open-meteo', False), (g('BUF00', 'outdoors', 2), None, 'forecast failed: HTTP 500', True),
             (g('BUF00', 'outdoors', 2), None, 'forecast skipped: the step ran past 90 s', True), (g('BUF00', 'outdoors', 2), None, 'roof', False),
             (g('BUF00', 'outdoors', 2), -3.0, 'nws', False), (g('BUF00', 'outdoors', 2), None, 'nws', False), (g('BUF00', 'outdoors', 2), 0.0, 'roof', False),
             (g('BUF00', 'outdoors', 2), None, 'beyond the forecast', False), (g('LON02', 'outdoors', 2), 9.0, 'open-meteo', True),
             (g('LON02', 'outdoors', 2), 9.0, 'nws', False), (g('BUF00', 'outdoors', 6.5, ), None, 'beyond the forecast', True),
             (g('BUF00', 'outdoors', 6.5), 7.0, 'nws', True)]
-    wrong = [(r['stadium_id'], r['roof'], w, s_) for r, w, s_, ok in recs if (in_wind_own(r, now, w, s_)[1] is None) != ok]
+    wrong = [(r['stadium_id'], r['roof'], w, s_, off) for r, w, s_, ok, *off in recs
+             if (in_wind_own(r, now, w, s_, offline=bool(off and off[0]))[1] is None) != ok]
     played = pd.DataFrame([{'game_id': 'p1', 'roof': 'closed', 'wind': 14.0}, {'game_id': 'p2', 'roof': 'outdoors', 'wind': 21.0},
-                           {'game_id': 'p3', 'roof': 'outdoors', 'wind': np.nan}, {'game_id': 'p4', 'roof': 'dome', 'wind': np.nan}])
+                           {'game_id': 'p3', 'roof': 'outdoors', 'wind': np.nan}, {'game_id': 'p4', 'roof': 'dome', 'wind': np.nan},
+                           {'game_id': 'p5', 'roof': 'open', 'wind': 18.0}])
     bw = build.avg_wind_played(played)
     for r in played.itertuples(index=False):
         o = in_wind_own({'roof': r.roof, 'wind': r.wind, 'home_score': 21.0, 'stadium_id': 'BUF00'}, now)[0]
         if not ((o is None and not in_ok(bw[r.game_id])) or (o is not None and bw[r.game_id] == o)):
             wrong.append(('played', r.game_id, bw[r.game_id], o))
+    if bw.get('p5') != 0.0:
+        wrong.append(('played under a retractable roof open', bw.get('p5')))
     chk(not wrong, f'AVERAGES: the gate\'s wind rule judges these made-up records the wrong way, or the fit\'s played wind is not its: {wrong[:4]}')
+    # the season in play's snap counts due: week 1 final five days before the build (due), week 2 two days before (not
+    # yet), a playoff game five days before (never held), a club in last season's code; the gate's rule and the build's
+    # (snap_gaps, which load() refuses on) on each copy
+    k5, k2 = now - datetime.timedelta(days=5), now - datetime.timedelta(days=2)
+    et = lambda k: k.astimezone(build.ET)
+    sg = pd.DataFrame([{'game_id': gid, 'season': S, 'week': wk, 'game_type': gt, 'gameday': et(k).strftime('%Y-%m-%d'),
+                        'gametime': et(k).strftime('%H:%M'), 'home_team': hm, 'away_team': aw, 'home_score': hs, 'away_score': 17.0}
+                       for gid, wk, gt, k, hm, aw, hs in (('w1a', 1, 'REG', k5, 'AAA', 'BBB', 20.0), ('w1b', 1, 'REG', k5, 'LV', 'CCC', 24.0),
+                                                          ('w2a', 2, 'REG', k2, 'AAA', 'CCC', 10.0), ('wc', 19, 'WC', k5, 'DDD', 'EEE', 31.0),
+                                                          ('w2b', 2, 'REG', k5, 'BBB', 'DDD', np.nan))])
+    full = pd.DataFrame([{'season': S, 'week': 1, 'team': t} for t in ('AAA', 'BBB', 'OAK', 'CCC')])
+    cases = [('every due game carried, a club in last season\'s code', full, now, True),
+             ('a club of a due game missing', full[full.team != 'OAK'], now, False),
+             ('a week not yet due missing, a playoff game and one with no score never held', full, now, True),
+             ('the file not had once due', None, now, False),
+             ('the file not had before the first game is due', None, k5 + datetime.timedelta(hours=IN_SNAP_DUE_OWN - 1), True),
+             ('last season\'s rows only', full.assign(season=S - 1), now, False)]
+    sw = []
+    for w, sn_, t_, ok in cases:
+        o_ = in_snaps_due_bad(sg, sn_, S, t_)
+        b_ = build.snap_gaps(sg, sn_, S, t_) if sn_ is not None else (['not had'] if t_ >= k5 + datetime.timedelta(hours=build.SNAP_DUE) else [])
+        if (not o_) != ok or (not b_) != ok:
+            sw.append(f'{w}: the gate {o_}, the build {b_}')
+    chk(not sw, f'AVERAGES: the season in play\'s snap counts due, on made-up games: {"; ".join(sw[:3])}')
 
 
 def main():
@@ -2798,7 +2907,10 @@ def main():
     ap.add_argument('--history', default=os.path.join(HERE, 'history'))
     ap.add_argument('--prev', help='the previously published players.json (default: the last commit\'s)')
     ap.add_argument('--joker-state', default=build.JOKER_STATE, help='the betting state the Joker\'s calls are read from')
+    ap.add_argument('--offline', action='store_true',
+                    help='the files come from an offline build (by hand): a forecast in reach recorded calm, "offline", passes')
     a = ap.parse_args()
+    OFFLINE['on'] = a.offline
 
     unit_checks()
     unit_team_checks()
@@ -3048,6 +3160,12 @@ def main():
     # ---- AVERAGES: the Elo-adjusted averages on the gate's own reading ----
     if MU:
         avg_checks(MU, P, M, games, a.cache, built)
+    # the season in play's snap counts (THE INPUTS), due on the gate's own rule: nflverse's newest schedule's
+    newest = int(games.season.max())
+    sp_ = os.path.join(a.cache, f'snap_counts_{newest}.csv')
+    sn_ = pd.read_csv(sp_, usecols=['season', 'week', 'team'], low_memory=False) if os.path.exists(sp_) else None
+    sb = in_snaps_due_bad(games, sn_, newest, built)
+    chk(not sb, f'AVERAGES: {"; ".join(sb)}: every snap share would stand a game behind, or on nothing')
 
     # ---- DRAFT: every player's first career rating, the draft start's on the gate's own reading ----
     dslots, dfirst = draft_checks(P, games, a.cache, season, roster_path)

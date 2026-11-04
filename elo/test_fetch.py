@@ -16,17 +16,21 @@ RANK_TEAMS clubs have a rated game in it, and not asked for at all once that man
 rankings, and the units, are then on the new season, which carries the one before it alone);
 none is asked for before FIRST (2012), whose season starts from 0. And THE INPUTS' sources: PFR's snap counts from
 SNAP_FIRST (2013), a finished season's required, listed in past.lst and read from the cache on a second run (what elo.yml
-keeps), a 404 on one refusing the run; the season to come's and, once it is under way, the season in play's not required
-("no file yet", asked once) and never listed, the season in play's asked for again on every run; nflverse's players.csv
+keeps), a 404 on one refusing the run; the season to come's not required ("no file yet", asked once), nor the season in
+play's in the first SNAP_DUE (72) hours after its first kickoff, and from then required (a 404 refusing the run, with
+nothing written), and refused where it lacks a club of a regular-season game final SNAP_DUE hours ago (read where it
+carries both, and where the game is final for less); never listed, and asked for again on every run; nflverse's players.csv
 (the snap counts' PFR ids) required (a 404, an empty file, one with no rows, one without its pfr_id column and one placing
 no PFR id each refuse the run with nothing written and no past.lst; two 500s and then the file are read), read fresh
 every run and never listed; and player stats without a volume column the inputs read refusing the run with its name.
 And the wind forecasts (avg_weather) on the local server: the National Weather Service's points and hourly answers in
 the US and Open-Meteo's abroad read, a dome asked nothing, each request asked once with a User-Agent naming the site and
 no address; a 500 or a 503 (which a download would try again), a 404 and an answer that is not JSON each calm with its
-source saying the forecast failed, asked once and spending none of netfetch's retry budget (waits=()); and an answer
-slower than the step's cap timed out within what is left of it, every game after calm and skipped, never asked, the step
-ending near the cap.
+source saying the forecast failed in the site's own words (never netfetch's, which names nflverse's host), asked once
+and spending none of netfetch's retry budget (waits=()); an answer slower than the step's cap timed out within what is
+left of it, every game after calm and skipped, never asked, the step ending near the cap; and an answer trickled a byte
+at a time (each read inside netfetch's socket timeout, so only a wall-clock deadline ends it) given up at the cap the
+same way.
 
 And draft_slots (THE DRAFT START): nflverse's draft_picks.csv, required and read fresh every run.
 Served, every drafted player's (season, pick) by gsis id, an id in two drafts at the later, a row
@@ -70,7 +74,7 @@ CSV = 'season,week,game_id,position,player_id,team,targets,carries,attempts,rece
 SNAPS = 'season,week,team,pfr_player_id,offense_snaps,offense_pct\n{y},1,A,AaaaAa00,60,1.0\n'
 PLAYERS = 'gsis_id,pfr_id,display_name\n00-1,AaaaAa00,A Quarterback\n'
 PBP = ','.join(B.PBP_COLS) + '\n' + ','.join(['{y}_01_A_B', 'B', 'A', 'B'] + ['0'] * (len(B.PBP_COLS) - 4)) + '\n'
-files, plan, hits, delay, heads = {}, {}, {}, {}, {}
+files, plan, hits, delay, heads, trickle = {}, {}, {}, {}, {}, {}
 
 
 class H(http.server.BaseHTTPRequestHandler):
@@ -83,6 +87,18 @@ class H(http.server.BaseHTTPRequestHandler):
         heads[name] = dict(self.headers)
         if name in delay:
             time.sleep(delay[name])                 # an answer slower than the forecast step's cap
+        if name in trickle:                         # an answer a byte at a time: every read inside the socket's timeout
+            try:
+                self.send_response(200)
+                self.send_header('Content-Length', '100000')
+                self.end_headers()
+                for _ in range(int(trickle[name] / 0.25)):
+                    self.wfile.write(b' ')
+                    self.wfile.flush()
+                    time.sleep(0.25)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
         seq = plan.get(name, [200])
         code = seq.pop(0) if len(seq) > 1 else seq[0]
         body = files.get(name) if code == 200 else b''
@@ -212,10 +228,31 @@ err, past, log, _ = run(now='2013-09-12T12:00:00+00:00', cache=cache)
 check(err is None and hits['snap_counts_2013.csv'] == n['snap_counts_2013.csv'] + 1,
       "the season in play's snap counts are read fresh: a second run on the same cache asks for them again")
 shutil.rmtree(cache)
+# 2013's first kickoff is 8 September 17:00 UTC: under way (UNDER_WAY, 36 hours) from the 10th 05:00, its snap counts due
+# (SNAP_DUE, 72 hours) from the 11th 17:00
+check(B.SNAP_DUE == 72 and B.UNDER_WAY == 36, f'the fixtures stand on SNAP_DUE 72 and UNDER_WAY 36 ({B.SNAP_DUE}, {B.UNDER_WAY})')
+world(live=True); del files['snap_counts_2013.csv']
+err, past, log, _ = run(now='2013-09-11T12:00:00+00:00')
+check(err is None and 'no snap_counts file for 2013 yet' in log and hits['snap_counts_2013.csv'] == 1 and 'snap_counts_2013.csv' not in (past or []),
+      f"the season in play's snap counts are not required in the first {B.SNAP_DUE} hours after its first kickoff: a 404 is \"no file yet\", asked once, never listed: {err!r}"[:200])
 world(live=True); del files['snap_counts_2013.csv']
 err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
-check(err is None and 'no snap_counts file for 2013 yet' in log and hits['snap_counts_2013.csv'] == 1 and 'snap_counts_2013.csv' not in (past or []),
-      f"the season in play's snap counts are not required: a 404 on them once it is under way is \"no file yet\", asked once, never listed: {err!r}"[:200])
+check(err is not None and 'snap_counts 2013' in err and past is None,
+      f"from then they are required: a 404 on them refuses the run, nothing written and no past.lst: {err!r}"[:200])
+world(live=True); plan['snap_counts_2013.csv'] = [500]
+err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
+check(err is not None and 'snap_counts 2013' in err and past is None, f"and so does a 500 every time: {err!r}"[:200])
+FINAL13 = GAMES.replace('2013,2013_01_A_B,REG,1,2013-09-08,13:00,B,A,,', '2013,2013_01_A_B,REG,1,2013-09-08,13:00,B,A,24,21')
+world(live=True); files['games.csv'] = FINAL13.encode()
+err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
+check(err is not None and 'snap_counts 2013' in err and 'lacks 1' in err and '2013_01_A_B (B)' in err and past is None,
+      f"a file that lacks a club of a regular-season game final over {B.SNAP_DUE} hours ago (B, the home side) refuses the run: {err!r}"[:240])
+world(live=True); files['games.csv'] = FINAL13.encode(); files['snap_counts_2013.csv'] = (SNAPS + '2013,1,B,BbbbBb00,58,0.97\n').format(y=2013).encode()
+err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
+check(err is None, f"one carrying both clubs is read: {err!r}"[:200])
+world(live=True); files['games.csv'] = FINAL13.encode()
+err, past, log, _ = run(now='2013-09-11T12:00:00+00:00')
+check(err is None, f"and a game final for less than {B.SNAP_DUE} hours is not held: {err!r}"[:200])
 
 world(three=True)
 err, past, log, _ = run(now='2014-08-01T12:00:00+00:00')
@@ -419,6 +456,17 @@ check(out['buf'][0] is None and out['buf'][1].startswith('forecast failed') and 
       and out['chi'][1].startswith('forecast skipped') and out['det'] == (0.0, 'roof') and OM not in hits and PTS['CHI98'] not in hits,
       f'an answer slower than the step\'s cap (2 s here) times out within what is left of it, and every game after is calm, said so, never asked: {out}')
 check(took < 2 + 1.5, f'the step ends near its cap ({took:.1f} s for a cap of 2 s and an answer of 4 s)')
+check(all('nflverse' not in str(v[1]) for v in out.values()), f'no forecast\'s reason names nflverse\'s host: {sorted({str(v[1]) for v in out.values()})}')
+B.WEATHER_CAP = 2
+wx_world(); trickle['hourly/BUF00'] = 5
+try:
+    out, took, spent = wx_run()
+finally:
+    B.WEATHER_CAP = cap
+check(out['buf'] == (None, 'forecast failed: timed out') and out['lon'][1].startswith('forecast skipped') and out['chi'][1].startswith('forecast skipped')
+      and out['det'] == (0.0, 'roof') and took < 2 + 1.5,
+      f'an answer trickled a byte every quarter second (each read inside the socket timeout) is given up at the step\'s cap of 2 s ({took:.1f} s), the rest skipped: {out}')
+trickle.clear(); time.sleep(3.5)                     # the server's trickle ends before it shuts down
 check(B.WEATHER_CAP == 90 and B.WEATHER_TIMEOUT == 15, f'the job\'s cap is 90 s and a request\'s timeout 15 s ({B.WEATHER_CAP}, {B.WEATHER_TIMEOUT})')
 
 print(f'{len(fails)} failures')

@@ -17,7 +17,7 @@ name: elo
 #     the London kickoffs (13:30 UTC in October) and the 1pm Eastern games (17:00 or 18:00 UTC).
 #     The daily Saturday run gives a third chance. A call is frozen at kickoff, so a run that
 #     lands after one changes nothing about that game's pick.
-# A run that fails its gate (the build, elo/check.py, elo/test_parity.py, elo/check_tab.js) commits nothing: the last good
+# A run that fails its gate (the build, elo/check.py, elo/test_parity.py, elo/test_fetch.py, elo/check_tab.js) commits nothing: the last good
 # files stay live. The Bets and Stats page smoke runs after the commit: it checks the page, not the Elo
 # data, so a failure there turns the run red without holding back the ratings (it held them back on a
 # tied final and on a top 25 with 24 quarterbacks, in October 2026, until each fix landed).
@@ -40,9 +40,10 @@ jobs:
     # pinned: ubuntu-latest moves to Ubuntu 26.04 on 19 October 2026; try ubuntu-26.04 on purpose, in a dispatched run on a branch, before moving this line
     runs-on: ubuntu-24.04
     # a normal run takes about five minutes; a stalled download fails the run here, not at GitHub's six hours. The
-    # averages' inputs (4 November 2026) add the wind forecasts, capped at 90 seconds a run (each request tried once
-    # within 15 seconds, so the step ends by about 91), and on the first run after them the finished seasons' snap counts
-    # (13 files, 28 MB), downloaded once and kept after: well inside 40 minutes, which stays
+    # averages' inputs (4 November 2026) add the wind forecasts, held to 90 seconds of wall clock a run (each request
+    # tried once and given up after 15 seconds of wall clock, a server trickling its answer too, so the step ends by
+    # about 91), and on the first run after them the finished seasons' snap counts (13 files, 28 MB), downloaded once and
+    # kept after: well inside 40 minutes, which stays
     timeout-minutes: 40
     steps:
       # the branch as it stands when the run starts, not the commit it was queued on: runs of one job wait
@@ -62,12 +63,13 @@ jobs:
       # season and which is not read after: in season about 256 MB, 56 of the 65 files a run reads) never
       # change, so they are kept between runs instead of asked for again five times a day: one failed
       # request among them refused the run of 13 October 2026. The season in play (its snap counts
-      # among them, not required: nflverse posts them a day or two after the games), games.csv, the
+      # among them, posted a day or two after the games and required once its first game kicked off 72
+      # hours ago, carrying every regular-season game final for 72: a new way for the run to refuse), games.csv, the
       # roster, nflverse's players.csv (required: a new way for the run to refuse) and the draft picks
       # are never kept: build.py deletes and downloads them every run. The coming games' wind forecasts
       # (api.weather.gov and api.open-meteo.com, no key, a User-Agent naming the site) are asked once a
-      # run, each request tried once, the step capped at 90 seconds; a forecast not had is calm, said in
-      # wind_src, never a refusal. build.py writes elo/cache/past.lst, the finished seasons' files it read, once
+      # run, each request tried once, the step held to 90 seconds of wall clock; a forecast not had (any
+      # failure) is calm, said in wind_src, never a refusal. build.py writes elo/cache/past.lst, the finished seasons' files it read, once
       # every source its load() reads was had (before the draft picks are read, which it never lists);
       # the steps after the gates keep exactly those, under a key that changes only when that set
       # does (a new season). A restore that misses only means a full download, as before. Bump v1 to
@@ -92,6 +94,12 @@ jobs:
         # on a stubbed netfetch. Its --cache run on the real 2025 weeks (about a minute) is for a change to the inputs'
         # code, by hand; the props gate never sees an elo-only change, so this job is where it always runs
         run: python elo/test_parity.py
+      - name: Check the downloads and the forecasts on a local server
+        # elo/test_fetch.py (about ten seconds, no network): every file load() reads required or not as the rule says (the
+        # season in play's snap counts once due, players.csv, refused where it places no PFR id), past.lst, the draft
+        # picks, and the forecasts (each failure calm, asked once, the step held to its cap of wall clock); the one hold on
+        # the build's refusals of a players.csv with no PFR id and of a request past the cap, so it gates the commit too
+        run: python elo/test_fetch.py
       - uses: actions/setup-node@v7
         with:
           node-version: 22

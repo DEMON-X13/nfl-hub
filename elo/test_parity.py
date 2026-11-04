@@ -15,16 +15,21 @@ The fixtures: a season of two clubs, AAA and BBB, six weeks, each with a quarter
 and a kicker. A receiver who missed a game (no row, no snap), one with snaps and no stat row (a share of 0), a week's
 snap counts missing for one (his last snap share carried), negative air yards (clipped at 0), a club's week whose air
 yards sum to 20 or less (no air-yards share), a snap row whose PFR id the players file does not know (dropped), a game
-with no lines (imp and spr 0), a played game's wind under a dome (calm), and a Questionable filed in week 5 beside a
-practice report with no status. Every term of every row: the fit's path equal to the run's (the wind apart, which the
+with no lines (imp and spr 0), implied points over 45 and under 7 (clipped), a played game's wind under a dome and
+under a retractable roof open (calm), and a Questionable filed in week 5 beside a practice report with no status. Every term of every row: the fit's path equal to the run's (the wind apart, which the
 run reads from a forecast), and each of snap1r, snapL, the shares long and short, imp, spr, wind and q equal to the
 test's own reading of the rule (EWM with adjust and missing values skipped, as written out here).
 
-And the forecast (avg_weather) on netfetch stubbed: a dome and a retractable roof calm with no request; a game past 6.5
-days and offline calm with none; an open stadium in the US read from the National Weather Service's hourly forecast
-(the points answer, then the hour holding the kickoff, the higher of "10 to 15 mph"), abroad from Open-Meteo's hour; a
-failed request calm and said so; every request tried once (waits=()) with a timeout of WEATHER_TIMEOUT seconds or what is
-left of WEATHER_CAP, and past the cap no request at all, each game left calm and said so."""
+And the forecast (avg_weather) on netfetch stubbed: a dome and a retractable roof calm with no request, and games.csv's
+roof dome, closed or open at a stadium open to the sky the same; a game past 6.5 days and offline calm with none; an
+open stadium in the US read from the National Weather Service's hourly forecast (the points answer at the test's own
+copy of the stadium's coordinates, then the hour holding the kickoff, the higher of "10 to 15 mph"), abroad from
+Open-Meteo's hour (asked at its coordinates for wind_speed_10m in mph, by the hour in UTC); a failed request calm and
+said so in the site's own words (an error status, no answer, a body that is not JSON, and JSON of another shape: a
+list, a null where an object stands, a period with no start, an hour list longer than its winds), never raising;
+every request tried once (waits=()) within WEATHER_TIMEOUT seconds, the whole step held to WEATHER_CAP seconds of wall
+clock even against a request that never returns (a server trickling its answer), each game after it calm and said so,
+and past the cap no request at all."""
 import datetime
 import math
 import os
@@ -75,9 +80,9 @@ GAMES = []
 for w in range(1, 7):
     home, away = ('AAA', 'BBB') if w % 2 else ('BBB', 'AAA')
     spread = {1: 3.0, 2: -6.5, 3: np.nan, 4: 10.0, 5: -2.5, 6: 7.0}[w]
-    total = {1: 44.5, 2: 51.0, 3: np.nan, 4: 38.0, 5: 47.5, 6: 41.0}[w]
-    roof = 'dome' if w == 4 else 'outdoors'
-    wind = {1: 22.0, 2: 5.0, 3: 13.0, 4: 30.0, 5: np.nan, 6: 41.0}[w]
+    total = {1: 44.5, 2: 10.0, 3: np.nan, 4: 38.0, 5: 100.0, 6: 41.0}[w]       # week 2 under 7 a side, week 5 over 45
+    roof = 'dome' if w == 4 else 'open' if w == 2 else 'outdoors'               # week 2 a retractable roof open
+    wind = {1: 22.0, 2: 25.0, 3: 13.0, 4: 30.0, 5: np.nan, 6: 41.0}[w]
     GAMES.append({'game_id': f'{SEASON}_{w:02d}_{away}_{home}', 'season': SEASON, 'week': w, 'game_type': 'REG',
                   'gameday': (datetime.date(2025, 9, 7) + datetime.timedelta(days=7 * (w - 1))).isoformat(),
                   'gametime': '13:00', 'home_team': home, 'away_team': away, 'spread_line': spread, 'total_line': total,
@@ -239,9 +244,13 @@ def fixtures():
               and x.loc[('B-W1', 5), 'in:q'] == 0 and x.loc[('B-RB', 6), 'in:q'] == 0,
               'Questionable filed is 1; a practice report with no status and a Doubtful are 0')
         check(x.loc[('A-QB', 3), 'in:imp'] == 0 and x.loc[('A-QB', 3), 'in:spr'] == 0, 'a game with no lines reads imp and spr 0')
-        check(x.loc[('A-QB', 4), 'in:wind'] == 0 and abs(x.loc[('A-QB', 2), 'in:wind'] - 0.0) < 1e-12
+        check(x.loc[('A-QB', 4), 'in:wind'] == 0 and x.loc[('A-QB', 2), 'in:wind'] == 0 and x.loc[('A-QB', 5), 'in:wind'] == 0
               and abs(x.loc[('A-QB', 6), 'in:wind'] - 3.0) < 1e-12 and abs(x.loc[('A-QB', 3), 'in:wind'] - 0.3) < 1e-12,
-              'the wind: under a dome calm, 5 mph 0, 13 mph 0.3, 41 mph capped at 40, 3.0')
+              'the wind: under a dome (30 mph) and a retractable roof open (25 mph) calm, none read 0, 13 mph 0.3, 41 mph capped at 40, 3.0')
+        lo, hi = math.log(7 / 22.5), math.log(45 / 22.5)
+        check(abs(x.loc[('B-QB', 2), 'in:imp'] - lo) < 1e-12 and abs(x.loc[('A-QB', 2), 'in:imp'] - math.log(8.25 / 22.5)) < 1e-12
+              and abs(x.loc[('A-QB', 5), 'in:imp'] - hi) < 1e-12 and abs(x.loc[('B-QB', 5), 'in:imp'] - hi) < 1e-12,
+              'implied points clipped to 7-45: 1.75 read as 7, 48.75 and 51.25 as 45, 8.25 as it is')
         check(x.loc[('A-K', 3), 'in:snapL'] == 0 and x.loc[('A-K', 3), 'in:snap1r'] == 0, 'a kicker, with no offensive snap, reads the snap terms 0')
         w = {k: v for k, v in run.items() if k[0] == 'A-QB'}
         check(all(v['wind_src'] in ('roof', 'offline') for v in w.values()) and all(v['wind'] is None or v['wind'] == 0 for v in w.values()),
@@ -253,33 +262,45 @@ def fixtures():
         shutil.rmtree(tmp)
 
 
+# the test's own copy of the stadiums it asks for, and of the two forecasts' addresses
+BUF00, LON02 = (42.7738, -78.7870), (51.6043, -0.0664)
+
+
 def weather():
     print('the forecast at kickoff (avg_weather), netfetch stubbed')
+    import json
+    import time
+    import urllib.parse
     now = datetime.datetime(2025, 11, 4, 12, tzinfo=datetime.timezone.utc)
     kick = now + datetime.timedelta(days=2, hours=3)
-    nws_points = '{"properties": {"forecastHourly": "https://api.weather.gov/gridpoints/X/1,1/forecast/hourly"}}'
+    hourly_url = 'https://api.weather.gov/gridpoints/X/1,1/forecast/hourly'
+    nws_points = json.dumps({'properties': {'forecastHourly': hourly_url}})
     per = lambda a, b, s: {'startTime': a.isoformat(), 'endTime': b.isoformat(), 'windSpeed': s}
     h = kick.replace(minute=0)
     nws_hourly = {'properties': {'periods': [per(h - datetime.timedelta(hours=1), h, '30 mph'), per(h, h + datetime.timedelta(hours=1), '10 to 15 mph'),
                                              per(h + datetime.timedelta(hours=1), h + datetime.timedelta(hours=2), '40 mph')]}}
     t = kick.strftime('%Y-%m-%dT%H:00')
     om = {'hourly': {'time': ['x', t, 'y'], 'wind_speed_10m': [1.0, 17.5, 2.0]}}
-    import json
     calls = []
     real = B.netfetch.download
-    mode = {'fail': False}
+    mode = {'fail': None, 'points': nws_points, 'hourly': json.dumps(nws_hourly), 'om': json.dumps(om), 'sleep': 0.0}
 
     def stub(url, dest, **k):
         calls.append((url, k))
-        if mode['fail']:
-            raise B.netfetch.FetchError('stubbed: no answer')
-        body = (nws_points if '/points/' in url else json.dumps(nws_hourly) if 'gridpoints' in url else json.dumps(om))
+        if mode['sleep']:
+            time.sleep(mode['sleep'])              # a request that never returns in time, whatever its timeout says
+        if mode['fail'] is not None:
+            raise mode['fail']
+        body = mode['points'] if '/points/' in url else mode['hourly'] if 'gridpoints' in url else mode['om']
         with open(dest, 'w') as f:
             f.write(body)
         return dest
     rows = pd.DataFrame([
         {'game_id': 'dome', 'stadium_id': 'DET00', 'roof': 'dome', 'kick': kick},
         {'game_id': 'retract', 'stadium_id': 'ATL97', 'roof': 'outdoors', 'kick': kick},
+        {'game_id': 'gdome', 'stadium_id': 'BUF00', 'roof': 'dome', 'kick': kick},
+        {'game_id': 'gclosed', 'stadium_id': 'BUF00', 'roof': 'closed', 'kick': kick},
+        {'game_id': 'gopen', 'stadium_id': 'BUF00', 'roof': 'open', 'kick': kick},
         {'game_id': 'far', 'stadium_id': 'BUF00', 'roof': 'outdoors', 'kick': now + datetime.timedelta(days=7)},
         {'game_id': 'buf', 'stadium_id': 'BUF00', 'roof': 'outdoors', 'kick': kick},
         {'game_id': 'lon', 'stadium_id': 'LON02', 'roof': 'outdoors', 'kick': kick},
@@ -289,6 +310,8 @@ def weather():
     try:
         out = B.avg_weather(rows, now, False)
         check(out['dome'] == (0.0, 'roof') and out['retract'] == (0.0, 'roof'), f"a dome and a retractable roof calm: {out['dome']}, {out['retract']}")
+        check(all(out[g] == (0.0, 'roof') for g in ('gdome', 'gclosed', 'gopen')),
+              f"games.csv's roof dome, closed or open at a stadium open to the sky calm: {[out[g] for g in ('gdome', 'gclosed', 'gopen')]}")
         check(out['far'][0] is None and out['far'][1] == 'beyond the forecast', f"a game past {B.WEATHER_DAYS} days calm, said so: {out['far']}")
         check(out['buf'] == (15.0, 'nws'), f'the NWS hour holding the kickoff, the higher of "10 to 15 mph": {out["buf"]}')
         check(out['lon'] == (17.5, 'open-meteo'), f"abroad, Open-Meteo's hour: {out['lon']}")
@@ -296,17 +319,43 @@ def weather():
         urls = [u for u, _ in calls]
         check(len(calls) == 3 and sum('/points/' in u for u in urls) == 1 and sum('open-meteo' in u for u in urls) == 1,
               f'requests for the two open stadiums within the forecast alone (NWS points and hourly, Open-Meteo): {len(calls)}')
+        check(urls[:2] == [f'https://api.weather.gov/points/{BUF00[0]:.4f},{BUF00[1]:.4f}', hourly_url],
+              f"the National Weather Service asked at Buffalo's own coordinates, then the hourly address its answer gives: {urls[:2]}")
+        q = urllib.parse.urlsplit(urls[2]) if len(urls) > 2 else None
+        qs = dict(urllib.parse.parse_qsl(q.query)) if q else {}
+        check(q is not None and (q.scheme, q.netloc, q.path) == ('https', 'api.open-meteo.com', '/v1/forecast')
+              and qs.get('latitude') == f'{LON02[0]:.4f}' and qs.get('longitude') == f'{LON02[1]:.4f}' and qs.get('hourly') == 'wind_speed_10m'
+              and qs.get('wind_speed_unit') == 'mph' and qs.get('timezone') == 'UTC',
+              f"Open-Meteo asked at London's own coordinates for the wind at 10 m in mph, by the hour in UTC (its default is km/h): {urls[2:]}")
         check(all(k.get('waits') == () for _, k in calls) and all(0 < k.get('timeout', 999) <= B.WEATHER_TIMEOUT for _, k in calls),
               f'every request tried once (waits=()) within {B.WEATHER_TIMEOUT} s: {[(k.get("waits"), k.get("timeout")) for _, k in calls]}')
         check(all('nfl-hub' in (k.get('headers') or {}).get('User-Agent', '') and '@' not in (k.get('headers') or {}).get('User-Agent', '')
                   for _, k in calls), 'a User-Agent naming the site, and no address in it')
-        del calls[:]
-        mode['fail'] = True
-        out = B.avg_weather(rows, now, False)
-        check(out['buf'][0] is None and out['buf'][1].startswith('forecast failed') and out['lon'][0] is None,
-              f'a failed request calm, said so, never retried: {out["buf"]} ({len(calls)} requests)')
-        check(len(calls) == 2, f'one try for each of the two games ({len(calls)})')
-        mode['fail'] = False
+        # every failure calm, said in the site's own words, never raised
+        fails_ = [('no answer', B.netfetch.FetchError("p.json: URLError, on 1 try over 0s (nflverse's host or the network; ...)"), {}, 'no answer'),
+                  ('an error status', B.netfetch.FetchError("p.json: HTTP Error 500: Internal Server Error (nflverse's host ...)", 500), {}, 'HTTP 500'),
+                  ('a timeout', B.netfetch.FetchError("p.json: TimeoutError: timed out, on 1 try over 15s (nflverse's host ...)"), {}, 'timed out'),
+                  ('a body that is not JSON', None, {'points': '<<not json', 'om': 'nope'}, 'not JSON'),
+                  ('the points answer a list', None, {'points': '[]', 'om': '[]'}, 'an answer of another shape'),
+                  ('properties null', None, {'points': '{"properties": null}', 'om': '{"hourly": null}'}, 'an answer of another shape'),
+                  ('periods null', None, {'hourly': '{"properties": {"periods": null}}', 'om': json.dumps({'hourly': {'time': [t], 'wind_speed_10m': []}})},
+                   'an answer of another shape'),
+                  ('a period with no start', None, {'hourly': json.dumps({'properties': {'periods': [{'startTime': None, 'endTime': None, 'windSpeed': '9 mph'}]}}),
+                                                    'om': json.dumps({'hourly': {'time': None, 'wind_speed_10m': [3.0]}})}, 'an answer of another shape')]
+        for what, err, bodies, why in fails_:
+            del calls[:]
+            mode.update(fail=err, points=nws_points, hourly=json.dumps(nws_hourly), om=json.dumps(om))
+            mode.update(bodies)
+            try:
+                out = B.avg_weather(rows, now, False)
+            except Exception as e:                  # noqa: BLE001 (the case is that nothing escapes)
+                check(False, f'{what}: the forecast raised {type(e).__name__}: {e}')
+                continue
+            check(out['buf'] == (None, f'forecast failed: {why}') and out['lon'] == (None, f'forecast failed: {why}')
+                  and out['dome'] == (0.0, 'roof') and len(calls) <= 3,
+                  f'{what}: calm, said "forecast failed: {why}", never retried, nothing raised: {out["buf"]}, {out["lon"]} ({len(calls)} requests)')
+            check("nflverse" not in out['buf'][1] + out['lon'][1], f"{what}: the reason names no nflverse host: {out['buf'][1]}")
+        mode.update(fail=None, points=nws_points, hourly=json.dumps(nws_hourly), om=json.dumps(om))
         del calls[:]
         out = B.avg_weather(rows, now, True)
         check(not calls and out['buf'] == (None, 'offline') and out['dome'] == (0.0, 'roof'), f'offline nothing asked for: {out["buf"]}')
@@ -318,6 +367,18 @@ def weather():
             B.WEATHER_CAP = cap
         check(not calls and out['buf'][0] is None and out['buf'][1].startswith('forecast skipped') and out['dome'] == (0.0, 'roof'),
               f'past the cap no request, each open game calm and said so: {out["buf"]}')
+        # a request that never returns in time (a server trickling its answer: netfetch's timeout holds each read, not
+        # the request): the step ends at its cap of wall clock, the game calm, every later one skipped
+        B.WEATHER_CAP, mode['sleep'] = 1.0, 4.0
+        try:
+            t0 = time.monotonic()
+            out = B.avg_weather(rows, now, False)
+            took = time.monotonic() - t0
+        finally:
+            B.WEATHER_CAP, mode['sleep'] = cap, 0.0
+        check(took < 2.0 and out['buf'] == (None, 'forecast failed: timed out') and out['lon'][1].startswith('forecast skipped')
+              and out['dome'] == (0.0, 'roof'),
+              f'a request that never returns: the step ends at its cap of 1 s of wall clock ({took:.2f} s), the game calm, the next skipped: {out["buf"]}, {out["lon"]}')
     finally:
         B.netfetch.download = real
 
