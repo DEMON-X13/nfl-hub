@@ -75,6 +75,31 @@ the Elo part was the sign of the outcome less the no-Elo projection more than ha
 |Elo part / sd|), both on the fully nested procedure and on the frozen variant: SPEC's `trusted`, frozen with the
 choices.
 
+THE MISMATCH SCORE (3 November 2026, the owner's "do all" to the Elo diagnosis's list: its items 1, 2 and 7). The
+Props tab's Mismatches ranked his career Elo's z among the week's starters less the z of the matchup formula's
+player-Elo unit he faces (the secondary, line, linebackers), graded Solid, Big and Huge at 1, 2 and 3. On every
+expected starter's game of 2018-2025 (each season on this tool's walk-forward, the frozen spec fitted on 2016 to the
+season before; measured on the ratings before the draft start) the player half alone ranked the realised gain over
+the no-Elo twin, (y - P0) / sd, better than the whole score in 7 of 8 seasons, the defence half next to nothing, and
+the averages' own Elo part, z = (P - P0) / sd, better than either: chosen on 2018-2021 (Spearman over the RB, WR and
+TE lead legs pooled, rushing yards and receiving yards, 0.150 [0.128, 0.171] against 0.091 for the old score, n
+8,875), confirmed once on 2022-2025 (0.180 [0.156, 0.200] against 0.104, n 9,695; 90% intervals resampling players
+whole), ahead of the old score in all 8 seasons pooled: a receiver's and a tight end's alone in 8 of 8, a back's alone
+in 6 of 8 (2018 -0.008, 2020 -0.020). Against his own average, (y - avg) / sd, the new score is level with the old
+score's player half (4 of 8 seasons), so a Mismatch mostly says his Elo rates him above his own average, the defence
+moving him about 3-9% either way. A quarterback's passing yards are left out (their Elo part is not trusted, and on
+the walk-forward it ranked the gain weakly: 0.020 [-0.014, 0.061] confirmed), so the Mismatches are a back's rushing
+yards and a receiver's or tight end's receiving yards, each kept only where SPEC trusts that leg's Elo part
+(`lead`). A row's size is the Elo part in the stat's units and as the chance shift of an even (50%) line, Phi(z) -
+0.5, the page's own reading of z (muP at a fair 50%; at a line set at his no-Elo projection the over lands 41-46%),
+which landed in full on the walk-forward (slopes of the over-rate on it 0.91, 1.05 and 1.27). Grade words: on those
+ratings no ladder of two or three thresholds chosen on 2018-2021 kept each grade above the one below in every season
+(two 7 of 8, three 3 of 8; on the draft start's, two 8 of 8 and three 6 of 8, which `ladders` records), so there is one
+tag, at the single threshold chosen on 2018-2021 (the largest smallest gap between the rows over it and the listed
+rows under it, 25 or more rows a cell), kept only where its rows beat the listed rows under it in every season of the
+record (`gap` > 0 in each), else none (`tag` null: the rows are ranked, none tagged): ELO_AVG's `mismatch`, {lead,
+tag, chosen, chosen_on, record, ladders}, the record and ladders on the rows of the legs in `lead` alone.
+
 What it does:
   1. the schedule (games.csv), and the last completed season (every game of it final, its Super Bowl among them):
      the fit is every season from 2016 to it, and nothing of a later season is read;
@@ -91,7 +116,8 @@ What it does:
      spread, and its walk-forward record: each season from 2018 projected by the same spec fitted on 2016 to the
      season before (the frozen choice scored on the seasons it was chosen on, so a little flattered), regular season:
      RMSE, the no-Elo twin's, and the sign of the Elo part on its largest fifth;
-  6. the constants as the build should carry them (ELO_AVG), and whether it does.
+  6. the mismatch score's tag and record from the lead legs' walk-forward rows (THE MISMATCH SCORE);
+  7. the constants as the build should carry them (ELO_AVG), and whether it does.
 """
 import argparse, bisect, math, os, sys, tempfile, types
 
@@ -115,6 +141,11 @@ OFF_TABLES = ['off', 'run_off', 'pass_off', 'pass_pro']
 OWN = {'pass_def': 'pass_off', 'run_def': 'run_off', 'def': 'off', 'pass_rush': 'pass_pro'}
 ELO_TERMS = ('E:', 'P', 'EP', 'DL', 'LB', 'DB')        # the Elo part's terms: the defence's level and his own Elo
 FORMULA = ['home', 'log_allowed', 'DL', 'LB', 'DB']    # (d)'s terms beside his club's offence table and the rank
+MM_LEAD = {'RB': 'rushing_yards', 'WR': 'receiving_yards', 'TE': 'receiving_yards'}   # the Mismatches' legs, each kept
+#                                      only where SPEC trusts it (mm_lead_used); never a quarterback's or a kicker's
+MM_CHOOSE = (2018, 2021)               # the seasons the tag is chosen on; the record runs REC_FIRST to the last
+MM_GRID = [1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 10, 12]   # candidate thresholds, points of chance shift
+MM_MIN = 25                            # rows a grade a season, at least, for a threshold to be chosen
 
 # Each leg's frozen choice. avg: (h, k, c); tables, scale; player: R (career), RS (season) or None (no player term);
 # weight: a free weight on log(average); variant: c, crk or d (above); trusted: its Elo part, by the nested
@@ -562,7 +593,7 @@ def fit_leg(frame, key, last):
     w0, mu0 = L.fit(L.terms0, tr)
     sp = spread(L.kind, L.y[tr], mu[tr])
     # the walk-forward record: each season from REC_FIRST by the spec fitted on FIT_FIRST to the season before
-    P, P0, Z = (np.full(len(L.d), np.nan) for _ in range(3))
+    P, P0, Z, SDv = (np.full(len(L.d), np.nan) for _ in range(4))
     wa = wb = None
     for s in range(REC_FIRST, last + 1):
         rows = np.where(L.fitm & (L.seas < s))[0]
@@ -570,7 +601,8 @@ def fit_leg(frame, key, last):
         wb, mb = L.fit(L.terms0, rows, wb)
         te = L.score & (L.seas == s)
         P[te], P0[te] = ma[te], mb[te]
-        Z[te] = (ma[te] - mb[te]) / sd_of(spread(L.kind, L.y[rows], ma[rows]), ma[te])
+        SDv[te] = sd_of(spread(L.kind, L.y[rows], ma[rows]), ma[te])
+        Z[te] = (ma[te] - mb[te]) / SDv[te]
     sc = np.where(L.score)[0]
     y, e, res, z = L.y[sc], P[sc] - P0[sc], L.y[sc] - P0[sc], Z[sc]
     top = np.abs(z) >= np.percentile(np.abs(z), 80)
@@ -587,8 +619,78 @@ def fit_leg(frame, key, last):
                      'rmse_no_elo': round(float(np.sqrt(np.mean(res ** 2))), 4),
                      'right_top': round(float(np.mean(np.sign(e[top]) == np.sign(res[top]))), 4)}
     info = {'rows': int(len(tr)), 'zeros': int(L.d.zero.values[tr].sum()), 'mean_y': float(L.y[tr].mean()),
-            'mean_mu': float(mu[tr].mean()), 'mean_avg': float(np.nanmean(L.avg[tr]))}
+            'mean_mu': float(mu[tr].mean()), 'mean_avg': float(np.nanmean(L.avg[tr])),
+            # the walk-forward rows the mismatch score is tested on: the Elo part and the realised gain, each in sd at P
+            'wf': pd.DataFrame({'season': L.seas[sc], 'z': z, 'gz': res / SDv[sc]})}
     return out, info
+
+
+def phi(z):
+    return 0.5 * (1 + math.erf(z / math.sqrt(2)))
+
+
+def mm_lead_used():
+    """the Mismatches' legs: MM_LEAD's, each only where SPEC trusts that leg's Elo part in this same fit"""
+    return {p: c for p, c in MM_LEAD.items() if SPEC[f'{p}|{c}']['trusted']}
+
+
+def mismatch_block(wf, last):
+    """THE MISMATCH SCORE from the lead legs' walk-forward rows ({leg: DataFrame(season, z, gz)}, gz the realised gain
+    over the no-Elo twin in sd), on the legs mm_lead_used keeps alone: the threshold chosen on MM_CHOOSE (a chance
+    shift, phi(z) - 0.5), its record each season, the tag (that threshold where its gap is above 0 in every season of
+    the record, else None) and the best ladders of two and three thresholds chosen the same way, with how many seasons
+    each kept in order"""
+    lead = mm_lead_used()
+    seasons = list(range(REC_FIRST, last + 1))
+    empty = {'lead': lead, 'tag': None, 'chosen': None, 'chosen_on': f'{MM_CHOOSE[0]}-{MM_CHOOSE[1]}', 'record': {}, 'ladders': {}}
+    wf = {k: w for k, w in wf.items() if lead.get(k.split('|')[0]) == k.split('|')[1]}
+    if not wf:
+        return empty
+    d = pd.concat([w.assign(leg=k) for k, w in wf.items()], ignore_index=True)
+    d = d[np.isfinite(d.z) & np.isfinite(d.gz)]
+    d['pts'] = [100 * (phi(z) - 0.5) for z in d.z]
+    L = d[d.z > 0]
+    pick = [s for s in seasons if MM_CHOOSE[0] <= s <= MM_CHOOSE[1]]
+
+    def gaps(ts, ss, minn):
+        g = np.digitize(L.pts.values, ts)
+        out = []
+        for s in ss:
+            m = L.season.values == s
+            means = []
+            for i in range(len(ts) + 1):
+                c = m & (g == i)
+                if c.sum() < minn:
+                    return None
+                means.append(float(L.gz.values[c].mean()))
+            out.append([means[i + 1] - means[i] for i in range(len(ts))])
+        return np.array(out)
+
+    best = {}
+    for nt in (1, 2, 3):
+        cand = [(float(G.min()), ts) for ts in __import__('itertools').combinations(MM_GRID, nt)
+                for G in [gaps(list(ts), pick, MM_MIN)] if G is not None]
+        cand.sort(key=lambda x: (-x[0], x[1]))
+        best[nt] = cand[0][1] if cand else None
+    if best[1] is None:
+        return empty
+    t = best[1][0]
+    rk = lambda v: pd.Series(v).rank().values
+    rec = {}
+    gap = lambda a, b: round(float(a.gz.mean() - b.gz.mean()), 4) if len(a) and len(b) else None   # None: a cell empty
+    for s in seasons:
+        x = d[d.season == s]
+        tg, un, no = x[x.pts >= t], x[(x.z > 0) & (x.pts < t)], x[x.pts < t]
+        rec[str(s)] = {'rho': round(float(np.corrcoef(rk(x.z.values), rk(x.gz.values))[0, 1]), 4) if len(x) > 1 else None,
+                       'tagged': int(len(tg)), 'under': int(len(un)), 'gap': gap(tg, un), 'gap_untagged': gap(tg, no)}
+    ladders = {}
+    for nt in (2, 3):
+        if best[nt] is not None:
+            G = gaps(list(best[nt]), seasons, 1)
+            ladders[str(nt)] = {'tags': list(best[nt]), 'ordered': None if G is None else int((G > 0).all(axis=1).sum())}
+    held = all(r['gap'] is not None and r['gap'] > 0 for r in rec.values())     # every season of the record
+    return {'lead': lead, 'tag': round(t / 100, 6) if held else None, 'chosen': round(t / 100, 6),
+            'chosen_on': f'{MM_CHOOSE[0]}-{MM_CHOOSE[1]}', 'record': rec, 'ladders': ladders}
 
 
 def main():
@@ -617,18 +719,31 @@ def main():
     want = {'fit': f'{FIT_FIRST}-{last}', 'record': f'{REC_FIRST}-{last}', 'starters': dict(TOP), 'min_games': MIN_GAMES,
             'regular': REGULAR, 'legs': {}}
     print(f'\n{"leg":26} {"variant":7} {"rows":>6} {"zeros":>5} {"mean":>8} {"proj":>8}   walk-forward {REC_FIRST}-{last}: rmse, no Elo, Elo part right on its top fifth   trusted')
+    wf = {}
     for key in SPEC:
         o, info = fit_leg(frame, key, last)
         want['legs'][key] = o
+        if key.split('|')[1] == mm_lead_used().get(key.split('|')[0]):
+            wf[key] = info['wf']
         r = o['record']
         print(f'{key:26} {o["variant"]:7} {info["rows"]:6d} {info["zeros"]:5d} {info["mean_y"]:8.3f} {info["mean_mu"]:8.3f}   '
               f'{r["rmse"]:9.4f} {r["rmse_no_elo"]:9.4f} {r["right_top"]:6.3f}   {o["trusted"]}', flush=True)
+    want['mismatch'] = mm = mismatch_block(wf, last)
+    sg = lambda v: 'none' if v is None else f'{v:+.3f}'
+    print(f"\nthe mismatch legs: {mm['lead']}; the tag: "
+          + (f"{mm['tag'] * 100:g} points of chance shift" if mm['tag'] is not None else
+             f"none (the threshold chosen, {mm['chosen'] * 100:g} points, did not hold every season)" if mm['chosen'] is not None
+             else 'none (no threshold could be chosen)')
+          + f" (chosen on {mm['chosen_on']}); by season "
+          + ', '.join(f"{s} rho {sg(r['rho'])} gap {sg(r['gap'])} ({r['tagged']}/{r['under']})" for s, r in mm['record'].items())
+          + '; ladders ' + ', '.join(f"{n}: {v['tags']} ordered {v['ordered']}/{len(mm['record'])}" for n, v in mm['ladders'].items()))
     print('\nELO_AVG = {')
-    print(''.join(f'    {k!r}: {v!r},\n' for k, v in want.items() if k != 'legs'), end='')
+    print(''.join(f'    {k!r}: {v!r},\n' for k, v in want.items() if k not in ('legs', 'mismatch')), end='')
     print("    'legs': {")
     for k, v in want['legs'].items():
         print(f'        {k!r}: {v!r},')
-    print('    },\n}')
+    print('    },')
+    print(f"    'mismatch': {want['mismatch']!r},\n}}")
     print('  the build carries these constants' if getattr(build, 'ELO_AVG', None) == want
           else '  THE BUILD DIFFERS: paste ELO_AVG above into elo/build.py')
 
