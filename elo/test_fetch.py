@@ -14,7 +14,10 @@ which Overall Offense and Overall Defense carry into the finished one, is read a
 season's file and required, before the new season is under way and after while fewer than
 RANK_TEAMS clubs have a rated game in it, and not asked for at all once that many have (the
 rankings, and the units, are then on the new season, which carries the one before it alone);
-none is asked for before FIRST (2012), whose season starts from 0.
+none is asked for before FIRST (2012), whose season starts from 0. And THE INPUTS' sources: PFR's snap counts from
+SNAP_FIRST (2013), a finished season's required and listed in past.lst, the season to come's not required ("no file
+yet") and never listed; nflverse's players.csv (the snap counts' PFR ids) required, read fresh every run and never
+listed; and player stats without a volume column the inputs read refusing the run with its name.
 
 And draft_slots (THE DRAFT START): nflverse's draft_picks.csv, required and read fresh every run.
 Served, every drafted player's (season, pick) by gsis id, an id in two drafts at the later, a row
@@ -52,7 +55,9 @@ GAMES3 = ('season,game_id,game_type,week,gameday,gametime,home_team,away_team,ho
           '2012,2012_01_A_B,REG,1,2012-09-09,13:00,B,A,20,17\n'
           '2013,2013_01_A_B,REG,1,2013-09-08,13:00,B,A,24,21\n'
           '2014,2014_01_A_B,REG,1,2014-09-07,13:00,B,A,,\n')
-CSV = 'season,week,game_id,position,player_id,team\n{y},1,{y}_01_A_B,QB,00-1,A\n'
+CSV = 'season,week,game_id,position,player_id,team,targets,carries,attempts,receiving_air_yards\n{y},1,{y}_01_A_B,QB,00-1,A,0,2,30,0\n'
+SNAPS = 'season,week,team,pfr_player_id,offense_snaps,offense_pct\n{y},1,A,AaaaAa00,60,1.0\n'
+PLAYERS = 'gsis_id,pfr_id,display_name\n00-1,AaaaAa00,A Quarterback\n'
 PBP = ','.join(B.PBP_COLS) + '\n' + ','.join(['{y}_01_A_B', 'B', 'A', 'B'] + ['0'] * (len(B.PBP_COLS) - 4)) + '\n'
 files, plan, hits = {}, {}, {}
 
@@ -82,6 +87,8 @@ B.GAMES_URL = base + 'games.csv'
 for k, stem in (('STATS_URL', 'stats_player_week'), ('ROSTER_URL', 'roster'), ('INJ_URL', 'injuries'), ('DC_URL', 'depth_charts')):
     setattr(B, k, base + stem + '_{y}.csv')
 B.PBP_URL = base + 'play_by_play_{y}.csv.gz'
+B.SNAP_URL = base + 'snap_counts_{y}.csv'
+B.PLAYERS_URL = base + 'players.csv'
 fails = []
 
 
@@ -94,11 +101,14 @@ def check(ok, what):
 def world(live=False, three=False):
     files.clear(); plan.clear(); hits.clear()
     files['games.csv'] = (GAMES3 if three else GAMES).encode()
+    files['players.csv'] = PLAYERS.encode()
     ys = (2012, 2013, 2014) if three else (2012, 2013)      # the last one the season to come
     for y in (ys if live else ys[:-1]):
         for stem in ('stats_player_week', 'depth_charts', 'injuries', 'roster'):
             files[f'{stem}_{y}.csv'] = CSV.format(y=y).encode()
         files[f'play_by_play_{y}.csv.gz'] = gzip.compress(PBP.format(y=y).encode())
+        if y >= B.SNAP_FIRST:                                # PFR's snap counts begin in 2013 (THE INPUTS)
+            files[f'snap_counts_{y}.csv'] = SNAPS.format(y=y).encode()
 
 
 def run(now='2013-08-01T12:00:00+00:00', cache=None):
@@ -125,6 +135,18 @@ check(past == ['depth_charts_2012.csv', 'injuries_2012.csv', 'stats_player_week_
 check('no depth_charts file for 2013 yet' in log, 'a 404 on the season to come is "no file yet", not a refusal')
 check(hits.get('depth_charts_2013.csv') == 1, 'and that 404 was asked for once, never tried again')
 check(hits.get('play_by_play_2011.csv.gz') is None, 'no play-by-play is asked for before FIRST (2012 starts from 0)')
+check(hits.get('snap_counts_2012.csv') is None and 'no snap_counts file for 2013 yet' in log and hits.get('snap_counts_2013.csv') == 1,
+      'the snap counts (THE INPUTS) begin at SNAP_FIRST, 2013; the season to come\'s 404 is "no file yet", not a refusal')
+check(hits.get('players.csv') == 1, 'players.csv (the snap counts\' PFR ids) is read')
+
+world(); del files['players.csv']
+err, past, log, _ = run()
+check(err is not None and 'players' in err and past is None,
+      f"players.csv is required: a 404 on it refuses the run, nothing written and no past.lst: {err!r}"[:200])
+world(); files['stats_player_week_2012.csv'] = CSV.format(y=2012).replace(',receiving_air_yards', '').replace(',0\n', '\n').encode()
+err, past, log, _ = run()
+check(err is not None and 'receiving_air_yards' in err and past is not None,
+      f"player stats without a volume column THE INPUTS read refuse the run with its name (past.lst is written before): {err!r}"[:200])
 
 world(); plan['depth_charts_2012.csv'] = [500, 500, 500, 200]
 err, past, log, _ = run()
@@ -144,8 +166,9 @@ world()
 err, past, log, cache = run()
 n = dict(hits)
 err, past, log, _ = run(cache=cache)
-check(err is None and hits.get('stats_player_week_2012.csv') == n['stats_player_week_2012.csv'] and hits['games.csv'] == n['games.csv'] + 1,
-      "a second run on the same cache reads the finished season from it and fetches games.csv again")
+check(err is None and hits.get('stats_player_week_2012.csv') == n['stats_player_week_2012.csv'] and hits['games.csv'] == n['games.csv'] + 1
+      and hits['players.csv'] == n['players.csv'] + 1,
+      "a second run on the same cache reads the finished season from it and fetches games.csv and players.csv again")
 
 with open(os.path.join(cache, 'depth_charts_2012.csv'), 'w') as f:
     f.write('"unterminated\n')
@@ -157,17 +180,21 @@ shutil.rmtree(cache)
 world(live=True)
 err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
 check(err is None and past == ['depth_charts_2012.csv', 'injuries_2012.csv', 'play_by_play_2012.csv.gz', 'stats_player_week_2012.csv'],
-      f"once the season is under way last season's play-by-play is a finished season's file too, and 2013's never are: {past}")
+      f"once the season is under way last season's play-by-play is a finished season's file too, and 2013's never are (its snap counts among them): {past}")
 
 world(three=True)
 err, past, log, _ = run(now='2014-08-01T12:00:00+00:00')
 check(err is None and past == ['depth_charts_2012.csv', 'depth_charts_2013.csv', 'injuries_2012.csv', 'injuries_2013.csv',
-                               'play_by_play_2012.csv.gz', 'stats_player_week_2012.csv', 'stats_player_week_2013.csv'],
-      f"before 2014 is under way 2012's play-by-play (carried into 2013, the season in play) is a finished season's file, and 2013's, read fresh, is not: {past}")
+                               'play_by_play_2012.csv.gz', 'snap_counts_2013.csv', 'stats_player_week_2012.csv', 'stats_player_week_2013.csv'],
+      f"before 2014 is under way 2012's play-by-play (carried into 2013, the season in play) is a finished season's file, and 2013's, read fresh, is not; 2013's snap counts are a finished season's: {past}")
+world(three=True); del files['snap_counts_2013.csv']
+err, past, log, _ = run(now='2014-08-01T12:00:00+00:00')
+check(err is not None and 'snap_counts 2013' in err and past is None,
+      f"a 404 on a finished season's snap counts refuses the run (it is required): {err!r}"[:200])
 world(three=True, live=True)
 err, past, log, _ = run(now='2014-09-12T12:00:00+00:00')
 check(err is None and past == ['depth_charts_2012.csv', 'depth_charts_2013.csv', 'injuries_2012.csv', 'injuries_2013.csv',
-                               'play_by_play_2012.csv.gz', 'play_by_play_2013.csv.gz', 'stats_player_week_2012.csv', 'stats_player_week_2013.csv'],
+                               'play_by_play_2012.csv.gz', 'play_by_play_2013.csv.gz', 'snap_counts_2013.csv', 'stats_player_week_2012.csv', 'stats_player_week_2013.csv'],
       f"once 2014 is under way both seasons' play-by-play are finished seasons' files (2013's is carried into 2014, 2012's into 2013 while it stays the rankings'): {past}")
 world(three=True); del files['play_by_play_2012.csv.gz']
 err, past, log, _ = run(now='2014-08-01T12:00:00+00:00')
@@ -177,8 +204,8 @@ check(err is not None and 'play_by_play 2012' in err and past is None,
 
 def clubs(n, y=2014):
     """a season's player stats with a quarterback's rated game for each of n clubs"""
-    rows = ''.join(f'{y},1,{y}_01_A_B,QB,00-{i},T{i},30\n' for i in range(n))
-    return ('season,week,game_id,position,player_id,team,attempts\n' + rows).encode()
+    rows = ''.join(f'{y},1,{y}_01_A_B,QB,00-{i},T{i},30,0,0,0\n' for i in range(n))
+    return ('season,week,game_id,position,player_id,team,attempts,targets,carries,receiving_air_yards\n' + rows).encode()
 
 
 world(three=True, live=True); files['stats_player_week_2014.csv'] = clubs(B.RANK_TEAMS - 1)

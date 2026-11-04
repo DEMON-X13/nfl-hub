@@ -59,6 +59,36 @@ alone and differently in the no-Elo twin, so a run-time lineup listing two tight
 Elo part by the split (a receiving yards Elo part of -1.1 sd on a 50% line). On c the two legs' Elo parts are
 trusted as on crk (nested walk-forward: catches -0.049 [-0.069, -0.030], 67.9%; yards -0.476 [-0.623, -0.329], 63.8%).
 
+THE INPUTS (the diagnosis's items 4, 5 and 6, research of 3-4 November 2026, verified by a second reading and
+corrected; the owner's "Merge the inputs" of 4 November 2026, told that the Elo part would then be trusted on 5 legs
+where it had been on 11), elo/build.py's avg_history and avg_inputs_rows, which this tool and the build share, so a
+coming game's inputs are worked out by the code the fit read: volume (snap: his offensive snap share in his previous
+appearance over his usual, half-life 6 appearances, and his usual less 0.7; share: his share of the club's targets or
+carries, half-lives 6 and 1.5 appearances, and a receiver's air-yards share on his yards), the game (imp: the club's
+implied points, log of total / 2 + its spread / 2 over 22.5; spr: its spread / 7; wind: games.csv's wind over 10 mph /
+10, any roof calm) and q (his filed Questionable on the game's report), none an Elo term (each in the no-Elo twin too).
+Each leg's groups (SPEC's `inputs`) were chosen in a nested walk-forward: every subset of the leg's candidate groups
+added to its frozen spec and walked forward 2017-2025; each season 2018-2025 projected by the subset the procedure took
+on the walk-forward seasons before it (the lowest RMSE, then each group kept only where dropping it loses in at least
+75% of those seasons and pooled); a leg takes inputs only where that nested record beat today's spec in at least 6 of
+the 8 seasons with the pooled 90% interval below zero (13 legs; the other 9 are as they were), and its groups are the
+procedure's on 2018-2025. The volume freed by teammates listed Out or Doubtful was a candidate and is refuted (with it
+on offer the nested record is worse on a back's rushing yards, +0.079 [+0.005, +0.153], and better in at most 3 of 8
+seasons on any leg), so nothing reads it. Wind was then kept only where it survived a forecast's error (the walk-forward
+again with the wind read with a game-level error of sd 5 mph: at least 6 of 8 seasons better than without it): a
+quarterback's passing yards alone (his passing TDs 5 of 8). The share terms are centred on each position's median log
+share over 2013-2015, seasons never fitted on (ELO_AVG['inputs']). Nested records 2018-2025, RMSE pooled [90% two-way
+cluster interval], seasons better of 8, measured on the ratings before the draft start: QB passing yards -0.872 [-1.218,
+-0.526] 8/8, passing TDs -0.0111 8/8, completions -0.0496 8/8, attempts -0.0486 8/8; RB rushing yards -0.426 [-0.609,
+-0.243] 8/8, rush + rec yards -0.477 7/8, any TD -0.0031 7/8; WR receptions -0.0467 8/8, receiving yards -0.545 [-0.656,
+-0.434] 8/8, any TD -0.0024 8/8; TE receptions -0.0694 8/8, receiving yards -0.652 8/8; K points -0.0248 7/8: 0.4-3.3%
+of RMSE, three to ten times what the whole Elo part adds. Beyond volume and the game the Elo part of six legs no longer
+beats its twin on the nested rule (a receiver's catches, yards and touchdowns, a tight end's catches and yards, a
+kicker's points: a tight end's yards fail its nested half, -0.0506 [-0.1054, +0.0042]), so SPEC's `trusted` holds five
+(a quarterback's interceptions, a back's rushing yards, carries and rush + rec yards, a tight end's touchdowns). The
+refit that carried these into ELO_AVG (4 November 2026) is on completed seasons alone, 2016-2025, mid-season at the
+owner's request, never on 2026; every choice above is the research's, frozen before it.
+
 THE ELO PART, which the Elo picks move DraftKings' fair chance by (the owner's honesty rule of app v138: never the
 projection's own P(over)): the projection less the same leg's projection refitted with its Elo terms dropped (E, P,
 E x P, and DL, LB, DB: the defence's level and his own Elo; the average, log_avg, home, allowed, his club's offence
@@ -98,7 +128,10 @@ ratings no ladder of two or three thresholds chosen on 2018-2021 kept each grade
 tag, at the single threshold chosen on 2018-2021 (the largest smallest gap between the rows over it and the listed
 rows under it, 25 or more rows a cell), kept only where its rows beat the listed rows under it in every season of the
 record (`gap` > 0 in each), else none (`tag` null: the rows are ranked, none tagged): ELO_AVG's `mismatch`, {lead,
-tag, chosen, chosen_on, record, ladders}, the record and ladders on the rows of the legs in `lead` alone.
+tag, chosen, chosen_on, record, ladders}, the record and ladders on the rows of the legs in `lead` alone. Since THE
+INPUTS (4 November 2026) SPEC trusts a back's rushing yards alone of the three, so `lead` is that leg and the
+Mismatches are backs; on its rows the threshold chosen is again 3.5 points and held in all 8 seasons (gaps +0.020 to
++0.237 sd; the research, on its own spec and the ratings before the draft start, had expected none to hold).
 
 What it does:
   1. the schedule (games.csv), and the last completed season (every game of it final, its Super Bowl among them):
@@ -130,6 +163,7 @@ import build  # noqa: E402
 
 SNAP_URL = 'https://github.com/nflverse/nflverse-data/releases/download/snap_counts/snap_counts_{y}.csv'
 PLAYERS_URL = 'https://github.com/nflverse/nflverse-data/releases/download/players/players.csv'
+INPUT_CENTER_LAST = 2015               # the share terms' centres: each position's median over seasons never fitted on
 FIT_FIRST, REC_FIRST = 2016, 2018      # the first season fitted on; the first season the walk-forward record projects
 TOP = {'QB': 1, 'RB': 1, 'WR': 3, 'TE': 1, 'K': 1}     # the expected starters: QB1, RB1, WR1-3, TE1, K1
 MIN_GAMES = 3                          # regular games behind him
@@ -150,16 +184,18 @@ MM_MIN = 25                            # rows a grade a season, at least, for a 
 # Each leg's frozen choice. avg: (h, k, c); tables, scale; player: R (career), RS (season) or None (no player term);
 # weight: a free weight on log(average); variant: c, crk or d (above); trusted: its Elo part, by the nested
 # walk-forward 2019-2025 (frozen variant / fully nested procedure: the RMSE difference full less no-Elo and the sign
-# right on its largest fifth; both must pass). Variant by RMSE 2018-2025 on the frozen spec, c / d (/ crk).
+# right on its largest fifth; both must pass). Variant by RMSE 2018-2025 on the frozen spec, c / d (/ crk). inputs: THE
+# INPUTS' groups the leg reads (build.avg_in_groups names their terms), none where the nested record kept none; trusted
+# is worked again on the spec with its inputs (above).
 SPEC = {
-    # c 77.591 d 77.310; Elo part level (-0.006 [-0.171, +0.159], 53.5%)
-    'QB|passing_yards': {'kind': 'yards', 'avg': (20, 1, 0.5), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'd', 'trusted': False},
-    # c 1.1365 d 1.1337; level (-0.0026 [-0.0059, +0.0007], 52.6%)
-    'QB|passing_tds': {'kind': 'count', 'avg': (6, 2, 1.0), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'd', 'trusted': False},
-    # c 6.2980 d 6.2809; level on the frozen variant (+0.0000 [-0.0135, +0.0136], 54.3%; the nested procedure better)
-    'QB|completions': {'kind': 'count', 'avg': (20, 4, 0.5), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': False, 'variant': 'd', 'trusted': False},
-    # c 8.9521 d 8.9438; level (+0.0084 [-0.0049, +0.0217], 49.6%)
-    'QB|attempts': {'kind': 'count', 'avg': (8, 8, 1.0), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'd', 'trusted': False},
+    # c 77.591 d 77.310; Elo part level (-0.006 [-0.171, +0.159], 53.5%); inputs imp+spr+wind -0.872 [-1.218, -0.526] 8/8
+    'QB|passing_yards': {'kind': 'yards', 'avg': (20, 1, 0.5), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'd', 'inputs': ['imp', 'spr', 'wind'], 'trusted': False},
+    # c 1.1365 d 1.1337; level (-0.0026 [-0.0059, +0.0007], 52.6%); inputs imp (no wind) -0.0111 [-0.0149, -0.0073] 8/8
+    'QB|passing_tds': {'kind': 'count', 'avg': (6, 2, 1.0), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'd', 'inputs': ['imp'], 'trusted': False},
+    # c 6.2980 d 6.2809; level on the frozen variant (+0.0000 [-0.0135, +0.0136], 54.3%; the nested procedure better); inputs imp+spr -0.0496 [-0.0807, -0.0186] 8/8
+    'QB|completions': {'kind': 'count', 'avg': (20, 4, 0.5), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': False, 'variant': 'd', 'inputs': ['imp', 'spr'], 'trusted': False},
+    # c 8.9521 d 8.9438; level (+0.0084 [-0.0049, +0.0217], 49.6%); inputs imp+spr -0.0486 [-0.0777, -0.0195] 8/8
+    'QB|attempts': {'kind': 'count', 'avg': (8, 8, 1.0), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'd', 'inputs': ['imp', 'spr'], 'trusted': False},
     # c 0.8598 d 0.8616; better (-0.0013 [-0.0022, -0.0005], 53.1%)
     'QB|passing_interceptions': {'kind': 'count', 'avg': (None, 8, 1.0), 'tables': ['pass_def'], 'scale': 'shown', 'player': None, 'weight': True, 'variant': 'c', 'trusted': True},
     # c 16.387 d 16.480; level (-0.013 [-0.079, +0.053], 49.3%)
@@ -168,34 +204,34 @@ SPEC = {
     'QB|carries': {'kind': 'count', 'avg': (12, 1, 1.0), 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'weight': False, 'variant': 'c', 'trusted': False},
     # c 0.4294 d 0.4302; worse (+0.0012 [+0.0003, +0.0021], 48.7%)
     'QB|any_td': {'kind': 'td', 'avg': (20, 8, 1.0), 'tables': ['run_def'], 'scale': 'shown', 'player': None, 'weight': False, 'variant': 'c', 'trusted': False},
-    # c 36.176 d 36.160; better (-0.145 [-0.278, -0.012], 57.9%)
-    'RB|rushing_yards': {'kind': 'yards', 'avg': (3, 0, 1.0), 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'weight': True, 'variant': 'd', 'trusted': True},
+    # c 36.176 d 36.160; better (-0.145 [-0.278, -0.012], 57.9%); inputs snap+share(carries)+spr -0.426 [-0.609, -0.243] 8/8, still trusted
+    'RB|rushing_yards': {'kind': 'yards', 'avg': (3, 0, 1.0), 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'weight': True, 'variant': 'd', 'inputs': ['snap', 'share', 'spr'], 'trusted': True},
     # c 5.6773 d 5.6755; better (-0.064 [-0.087, -0.041], 60.9%)
     'RB|carries': {'kind': 'count', 'avg': (2, 0, 1.0), 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'weight': True, 'variant': 'd', 'trusted': True},
     # c 1.8876 d 1.8820; level (+0.0004 [-0.0051, +0.0059], 53.7%)
     'RB|receptions': {'kind': 'count', 'avg': (6, 2, 1.0), 'tables': ['pass_def'], 'scale': 'shown', 'player': 'RS', 'weight': False, 'variant': 'd', 'trusted': False},
     # c 19.045 d 19.058; level (-0.032 [-0.100, +0.035], 57.3%)
     'RB|receiving_yards': {'kind': 'yards', 'avg': (40, 2, 0.5), 'tables': ['pass_def'], 'scale': 'shown', 'player': 'R', 'weight': False, 'variant': 'c', 'trusted': False},
-    # c 41.358 d 41.361; better (-0.487 [-0.685, -0.289], 60.2%)
-    'RB|scrim_yards': {'kind': 'yards', 'avg': (3, 0, 1.0), 'tables': ['run_def', 'pass_def'], 'scale': 'shown', 'player': 'R', 'weight': True, 'variant': 'c', 'trusted': True},
-    # c 0.7550 d 0.7536; level on the frozen variant (-0.0027 [-0.0058, +0.0005], 57.2%; the nested procedure better)
-    'RB|any_td': {'kind': 'td', 'avg': (4, 4, 1.0), 'tables': ['def'], 'scale': 'shown', 'player': 'R', 'weight': True, 'variant': 'd', 'trusted': False},
-    # c 2.3022 d 2.2814 crk 2.2796; better (-0.020 [-0.028, -0.013], 60.8%)
-    'WR|receptions': {'kind': 'count', 'avg': (12, 0, 0.5), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'crk', 'trusted': True},
-    # c 35.292 d 35.011 crk 35.000; better (-0.257 [-0.373, -0.141], 59.1%)
-    'WR|receiving_yards': {'kind': 'yards', 'avg': (20, 0, 0.5), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'crk', 'trusted': True},
-    # c 0.5411 d 0.5409; better (-0.0058 [-0.0073, -0.0043], 64.3%)
-    'WR|any_td': {'kind': 'td', 'avg': (6, 0, 0.5), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'd', 'trusted': True},
-    # c 2.1287 d 2.1333 (crk 2.1284: a tight end is c, above); better (-0.049 [-0.069, -0.030], 67.9%)
-    'TE|receptions': {'kind': 'count', 'avg': (8, 0, 0.5), 'tables': ['pass_def'], 'scale': 'shown', 'player': 'R', 'weight': True, 'variant': 'c', 'trusted': True},
-    # c 26.997 d 27.054 (crk 26.997: a tight end is c, above); better (-0.476 [-0.623, -0.329], 63.8%)
-    'TE|receiving_yards': {'kind': 'yards', 'avg': (6, 0, 1.0), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'c', 'trusted': True},
+    # c 41.358 d 41.361; better (-0.487 [-0.685, -0.289], 60.2%); inputs snap -0.477 [-0.742, -0.211] 7/8, still trusted
+    'RB|scrim_yards': {'kind': 'yards', 'avg': (3, 0, 1.0), 'tables': ['run_def', 'pass_def'], 'scale': 'shown', 'player': 'R', 'weight': True, 'variant': 'c', 'inputs': ['snap'], 'trusted': True},
+    # c 0.7550 d 0.7536; level on the frozen variant (-0.0027 [-0.0058, +0.0005], 57.2%; the nested procedure better); inputs snap+imp -0.0031 [-0.0052, -0.0009] 7/8
+    'RB|any_td': {'kind': 'td', 'avg': (4, 4, 1.0), 'tables': ['def'], 'scale': 'shown', 'player': 'R', 'weight': True, 'variant': 'd', 'inputs': ['snap', 'imp'], 'trusted': False},
+    # c 2.3022 d 2.2814 crk 2.2796; better (-0.020 [-0.028, -0.013], 60.8%); inputs snap+share+imp+spr+q -0.0467 [-0.0560, -0.0375] 8/8, its Elo part no longer trusted
+    'WR|receptions': {'kind': 'count', 'avg': (12, 0, 0.5), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'crk', 'inputs': ['snap', 'share', 'imp', 'spr', 'q'], 'trusted': False},
+    # c 35.292 d 35.011 crk 35.000; better (-0.257 [-0.373, -0.141], 59.1%); inputs share+imp+spr+q -0.545 [-0.656, -0.434] 8/8, no longer trusted
+    'WR|receiving_yards': {'kind': 'yards', 'avg': (20, 0, 0.5), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'crk', 'inputs': ['share', 'imp', 'spr', 'q'], 'trusted': False},
+    # c 0.5411 d 0.5409; better (-0.0058 [-0.0073, -0.0043], 64.3%); inputs snap+share+imp+spr -0.0024 [-0.0032, -0.0017] 8/8, no longer trusted
+    'WR|any_td': {'kind': 'td', 'avg': (6, 0, 0.5), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'd', 'inputs': ['snap', 'share', 'imp', 'spr'], 'trusted': False},
+    # c 2.1287 d 2.1333 (crk 2.1284: a tight end is c, above); better (-0.049 [-0.069, -0.030], 67.9%); inputs snap+share -0.0694 [-0.0873, -0.0516] 8/8, no longer trusted
+    'TE|receptions': {'kind': 'count', 'avg': (8, 0, 0.5), 'tables': ['pass_def'], 'scale': 'shown', 'player': 'R', 'weight': True, 'variant': 'c', 'inputs': ['snap', 'share'], 'trusted': False},
+    # c 26.997 d 27.054 (crk 26.997: a tight end is c, above); better (-0.476 [-0.623, -0.329], 63.8%); inputs snap+share -0.652 [-0.821, -0.482] 8/8, its nested trust half fails (-0.0506 [-0.1054, +0.0042])
+    'TE|receiving_yards': {'kind': 'yards', 'avg': (6, 0, 1.0), 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'c', 'inputs': ['snap', 'share'], 'trusted': False},
     # c 0.5094 d 0.5100; better (-0.0057 [-0.0077, -0.0037], 62.0%)
     'TE|any_td': {'kind': 'td', 'avg': (3, 0, 1.0), 'tables': ['def'], 'scale': 'raw', 'player': 'R', 'weight': True, 'variant': 'c', 'trusted': True},
     # c 1.2003 d 1.2019; level (+0.0000 [-0.0014, +0.0014], 52.7%)
     'K|fg_made': {'kind': 'count', 'avg': (12, 0, 0.5), 'tables': ['def'], 'scale': 'shown', 'player': 'RS', 'weight': True, 'variant': 'c', 'trusted': False},
-    # c 3.6202 d 3.6174; better (-0.0066 [-0.0130, -0.0002], 53.9%; the nested procedure 56.8%)
-    'K|kick_pts': {'kind': 'yards', 'avg': (None, 2, 0.5), 'tables': ['def'], 'scale': 'shown', 'player': None, 'weight': True, 'variant': 'd', 'trusted': True},
+    # c 3.6202 d 3.6174; better (-0.0066 [-0.0130, -0.0002], 53.9%; the nested procedure 56.8%); inputs spr -0.0248 [-0.0373, -0.0123] 7/8, no longer trusted
+    'K|kick_pts': {'kind': 'yards', 'avg': (None, 2, 0.5), 'tables': ['def'], 'scale': 'shown', 'player': None, 'weight': True, 'variant': 'd', 'inputs': ['spr'], 'trusted': False},
 }
 
 # the four edits to elo/build.py, applied in memory to its text, each asserted to land exactly once (the build itself
@@ -388,6 +424,53 @@ def make_frame(env, units, snaps, pfr):
     return d
 
 
+def add_inputs(frame, games_csv, last, offline, center=None):
+    """THE INPUTS on every row of the frame, by elo/build.py's own avg_history and avg_inputs_rows: every player's
+    volume rows (the weekly stats of every player, 2012 on), PFR's snap counts (2013 on) placed by nflverse's players
+    file, the injury reports' statuses, games.csv's lines and wind (avg_wind_played). Returns the frame with each term
+    (in:...) and the share terms' centres, {group: {'tgt', 'car', 'ay'}}, each position's median log share over the
+    seasons to INPUT_CENTER_LAST (or the centres handed in: elo/test_parity.py's, which compares the paths on them)."""
+    cols = ['player_id', 'season', 'week', 'team'] + list(build.AVG_VOL.values())
+    vol = pd.concat([pd.read_csv(build.fetch(build.STATS_URL.format(y=y), os.path.join(build.CACHE, f'stats_player_week_{y}.csv'), offline),
+                                 usecols=cols, low_memory=False) for y in range(build.FIRST, last + 1)], ignore_index=True)
+    snaps = pd.concat([pd.read_csv(build.fetch(SNAP_URL.format(y=y), os.path.join(build.CACHE, f'snap_counts_{y}.csv'), offline),
+                                   usecols=['season', 'week', 'team', 'pfr_player_id', 'offense_snaps', 'offense_pct'])
+                       for y in range(build.SNAP_FIRST, last + 1)], ignore_index=True)
+    pl = pd.read_csv(os.path.join(build.CACHE, 'players.csv'), usecols=['gsis_id', 'pfr_id'])
+    pfr = {p: g for g, p in zip(pl.gsis_id, pl.pfr_id) if isinstance(p, str) and isinstance(g, str)}
+    injuries = {y: pd.read_csv(build.fetch(build.INJ_URL.format(y=y), os.path.join(build.CACHE, f'injuries_{y}.csv'), offline),
+                               usecols=['season', 'week', 'team', 'gsis_id', 'report_status']) for y in range(build.FIRST, last + 1)}
+    g = games_csv[games_csv.season <= last].copy()
+    # nothing of a later season is read (the season in play is never fitted on)
+    for what, s_ in (('the player stats', vol.season), ('the snap counts', snaps.season), ('the frame', frame.season),
+                     ('the schedule', g.season), *((f'injuries_{y}', d.season) for y, d in injuries.items())):
+        if len(s_) and int(s_.max()) > last:
+            raise SystemExit(f'elo_avg_fit: {what} reach {int(s_.max())}, past the last completed season {last}')
+    H, by = build.avg_history(vol, snaps, pfr)
+    status = build.avg_injury_status(injuries)
+    for c in ('home_team', 'away_team'):
+        g[c] = g[c].replace(build.TEAM_NOW)
+    gi = g.set_index('game_id')
+    wind = build.avg_wind_played(g)
+    rows = pd.DataFrame({'pid': frame.pid.values, 'season': frame.season.values, 'week': frame.week.values,
+                         'team': frame.team.values, 'group': frame.group.values, 'home': frame.home.values,
+                         'spread_line': gi.spread_line.reindex(frame.game_id).values, 'total_line': gi.total_line.reindex(frame.game_id).values,
+                         'wind': [wind.get(x, np.nan) for x in frame.game_id]}, index=frame.index)
+    if center is None:
+        X = build.avg_inputs_rows(rows, H, by, status, {})
+        early = (frame.season <= INPUT_CENTER_LAST).values
+        center = {}
+        for grp in TOP:
+            m = early & (frame.group == grp).values
+            center[grp] = {v: round(float(np.median(X.loc[m & ~np.isnan(X[f'sh_{v}L'].values), f'in:shL_{v}'])), 6) for v in ('tgt', 'car', 'ay')}
+    X = build.avg_inputs_rows(rows, H, by, status, center)
+    f = frame.copy()
+    for c in X.columns:
+        if c.startswith('in:'):
+            f[c] = X[c].values
+    return f, center
+
+
 # ---- one leg: the rows, his average, the terms, the fits ----
 def position_frame(frame, pos):
     d = frame[frame.group == pos].sort_values(['season', 'ord', 'game_id', 'pid'], kind='mergesort').reset_index(drop=True)
@@ -528,6 +611,8 @@ def leg_terms(spec):
     rk = ['rk0'] + (['rk1'] if spec['_pos'] == 'WR' else []) if spec['variant'] in ('crk', 'd') and spec['_rk'] else []
     own = 'own:' + OWN[spec['tables'][0]]
     extra = (FORMULA + [own] + rk) if spec['variant'] == 'd' else rk
+    G = build.avg_in_groups(spec['_pos'], spec['_col'])
+    extra = extra + [x for g in spec.get('inputs', []) for x in G[g]]       # THE INPUTS: none an Elo term, so in the twin too
     full = t + extra
     return full, [x for x in full if not x.startswith(ELO_TERMS)]
 
@@ -535,7 +620,7 @@ def leg_terms(spec):
 class Leg:
     def __init__(self, frame, key, last):
         pos, col = key.split('|')
-        sp = dict(SPEC[key], _pos=pos, _rk=pos == 'WR' and col in ('receptions', 'receiving_yards'))     # a TE's: c, above
+        sp = dict(SPEC[key], _pos=pos, _col=col, _rk=pos == 'WR' and col in ('receptions', 'receiving_yards'))     # a TE's: c, above
         self.key, self.pos, self.col, self.spec, self.kind = key, pos, col, sp, sp['kind']
         d = position_frame(frame, pos)
         self.d, self.y, self.seas = d, d[col].values.astype(float), d.season.values
@@ -551,6 +636,8 @@ class Leg:
         self.terms, self.terms0 = leg_terms(sp)
 
     def column(self, t):
+        if t.startswith('in:'):
+            return self.d[t].values.astype(float), PEN
         d, sp = self.d, self.spec
         E = lambda x: d['u_' + x].values if sp['scale'] == 'raw' else (d['s_' + x].values - 1500) / 100
         if t == 'one':
@@ -611,6 +698,11 @@ def fit_leg(frame, key, last):
     out = {'kind': L.kind, 'avg': [sp_['avg'][0], sp_['avg'][1], sp_['avg'][2]], 'eps': float(f'{L.eps:.6g}'),
            'tables': list(sp_['tables']), 'scale': sp_['scale'], 'player': sp_['player'], 'variant': sp_['variant'],
            'terms': L.terms, 'coef': rnd(w), 'no_elo': {'terms': L.terms0, 'coef': rnd(w0)}}
+    if sp_.get('inputs'):
+        out['inputs'] = list(sp_['inputs'])
+        it = [t for t in L.terms if t.startswith('in:')]
+        Xi, _ = L.design(it)
+        out['in_mean'] = {t: round(float(Xi[tr, i].mean()), 6) for i, t in enumerate(it)}     # the typical starter's inputs
     if 'log_allowed' in L.terms:
         out['allowed_mean'] = round(L.allowed_mean, 6)
     out['spread'] = sp
@@ -716,8 +808,11 @@ def main():
     pfr = {g: p for g, p in zip(pl.gsis_id, pl.pfr_id) if isinstance(p, str)}
     frame = make_frame(env, units, snaps, pfr)
     print(f'the frame: {len(frame)} player-games, {int(frame.zero.sum())} of them an expected starter\'s zero game', flush=True)
+    games_csv = pd.read_csv(os.path.join(build.CACHE, 'games.csv'), low_memory=False)
+    frame, center = add_inputs(frame, games_csv, last, a.offline)
+    print('the inputs: snap shares, shares, the lines, the wind and the Questionable tag on every row', flush=True)
     want = {'fit': f'{FIT_FIRST}-{last}', 'record': f'{REC_FIRST}-{last}', 'starters': dict(TOP), 'min_games': MIN_GAMES,
-            'regular': REGULAR, 'legs': {}}
+            'regular': REGULAR, 'inputs': {'share_center': center}, 'legs': {}}
     print(f'\n{"leg":26} {"variant":7} {"rows":>6} {"zeros":>5} {"mean":>8} {"proj":>8}   walk-forward {REC_FIRST}-{last}: rmse, no Elo, Elo part right on its top fifth   trusted')
     wf = {}
     for key in SPEC:

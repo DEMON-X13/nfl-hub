@@ -440,11 +440,20 @@ elo/
                                  slot (THE DRAFT START, November 2026),
                                  explained in its docstring; downloads
                                  2012-now nflverse player stats and the play-by-play of the
-                                 season and the two before it into cache/ (gitignored), and
-                                 nflverse's draft picks fresh every run, and writes
-                                 data/; exits 1 and writes nothing when a required source
-                                 cannot be had (the draft picks always, and with the newest
-                                 schedule's draft from PRESEASON_CALLS days before its week 1)
+                                 season and the two before it into cache/ (gitignored), the
+                                 snap counts from 2013 and nflverse's players.csv (the averages'
+                                 inputs, THE INPUTS, 4 November 2026, with the coming games'
+                                 wind forecasts from api.weather.gov and Open-Meteo, never
+                                 required), and nflverse's draft picks fresh every run, and
+                                 writes data/; exits 1 and writes nothing when a required source
+                                 cannot be had (the draft picks and players.csv always, a
+                                 finished season's snap counts, and with the newest schedule's
+                                 draft from PRESEASON_CALLS days before its week 1)
+  test_parity.py                 the averages' inputs: the fit's path (tools/elo_avg_fit.py's
+                                 add_inputs) and the run's (avg_coming_inputs) term for term,
+                                 the rule on its own reading and the forecast's rules on a
+                                 stubbed netfetch, on fixtures of its own (--cache: on cache/'s
+                                 real 2025 files too)
   check.py                       the gate: data/ against the roster, the injury report, the
                                  schedule, the play-by-play (every team's stats and ratings
                                  replayed from it, last season replayed too for the carry, with
@@ -543,8 +552,12 @@ elo/
                                  finished season (his zero games put back from the snap counts),
                                  each leg's average, table, scale, shape and variant chosen on
                                  the walk-forward of 2018 on, its spread, its no-Elo twin and its
-                                 trust; run by hand only after a season ends (--offline on
-                                 elo/cache); says whether the build carries ELO_AVG
+                                 trust, and since 4 November 2026 the inputs each leg reads
+                                 (snap share, share, implied points, spread, wind, Questionable:
+                                 build.py's avg_history and avg_inputs_rows, shared with the
+                                 run); run by hand only on completed seasons (--offline on
+                                 elo/cache with the snap counts from 2013 and players.csv);
+                                 says whether the build carries ELO_AVG
   tools/seed_calls.py            recovers the calls published before the ledger began, from
                                  the commits that changed data/model.json (HEAD's history, or
                                  a ref given), into history/

@@ -1870,7 +1870,8 @@ python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offen
 python3 elo/tools/def_units_fit.py   # the same for the six position tables, Run, Pass and Pass Rush/Protection a side (their stats' constants and UNIT_TABLES); "the build carries these constants"
 python3 elo/tools/draft_start_fit.py  # only for a deliberate change to the draft start: each group's first-rating curve on the draft slot (DRAFT_START), chosen and fitted on players first rated 2013-2017 over their first two rated seasons (--offline on elo/cache with draft_picks.csv); "the build carries these constants"
 python3 elo/tools/joker_base_fit.py   # after a build: the ELO Model's calls on the Joker's baseline (JOKER_BASE), fitted on 2021-2025, walk-forward on 2022-2025; "the build carries these constants"
-python3 elo/tools/elo_avg_fit.py      # only after a season ends: the Elo-adjusted averages (ELO_AVG), fitted on every expected starter's game of 2016 to the last finished season, chosen on the walk-forward of 2018 on (--offline on elo/cache); "the build carries these constants"
+python3 elo/tools/elo_avg_fit.py      # only after a season ends: the Elo-adjusted averages (ELO_AVG), fitted on every expected starter's game of 2016 to the last finished season, chosen on the walk-forward of 2018 on (--offline on elo/cache with the snap counts from 2013 and players.csv); "the build carries these constants"
+python3 elo/test_parity.py            # the averages' inputs: the fit's path and the run's term for term, the rule on the test's own reading and the forecast's rules, on fixtures of its own (--cache: also on elo/cache's real 2025 files); "0 failures"
 ```
 
 **Elo-adjusted averages** (29 October 2026; `elo/build.py`'s ELO-ADJUSTED AVERAGES, whose docstring is the rule, and
@@ -2037,9 +2038,42 @@ game two days out by the page's clock, three rows of the smoke's own planted (at
 at any hour and in the off-season. `build.js` also stops on a size in `snapshot.html` off its type scale (`--gs-t1` to
 `--gs-t6`), where the Game snapshot's Mismatch pill had set 10.5px.
 
+**The inputs** (4 November 2026, the Elo diagnosis's items 4, 5 and 6; `elo/build.py`'s THE INPUTS and the docstring's
+paragraph of that name, and `elo/tools/elo_avg_fit.py`'s SPEC `inputs`; the owner's "Merge the inputs", asked plainly:
+"once those are in, a receiver's Elo no longer adds anything: the Elo picks would keep only RB rushing yards and TE
+touchdowns (often too few to fill a level), and the Mismatches would shrink to ... running backs"). On 13 legs the
+Elo-adjusted average also reads what was known before kickoff of his volume and the game, none an Elo term (each in the
+no-Elo twin too, so the Elo part is what the Elo adds beyond them): snap (his offensive snap share last appearance against
+his usual, and his usual), share (his share of his club's targets or carries, long and short, and a receiver's or tight
+end's of its air yards on his yards), imp and spr (his club's implied points and spread from games.csv's lines), wind (a
+quarterback's passing yards alone: games.csv's reading for a game played; for a game to come the forecast at kickoff, the
+National Weather Service's hourly forecast in the US, Open-Meteo's abroad, no key, a User-Agent naming the site, each
+request tried once with 15 seconds and the step capped at 90, calm under any roof, past 6.5 days or on a failed forecast,
+its source in `wind_src`) and q (his own filed Questionable, a receiver's catches and yards: 0 before the statuses are
+filed, so projections move on Friday for Sunday's games, Wednesday for Thursday's, Saturday for Monday's). Each leg's
+groups are the nested walk-forward's (2018-2025, at least 6 of 8 seasons better and the pooled interval below zero): every
+one of the 13 better than without them in 7 or 8 of 8 seasons, 0.4-3.3% of RMSE (a QB's passing yards −0.87 [−1.22,
+−0.53] yards, a receiver's yards −0.54, a tight end's −0.65), three to ten times what the whole Elo part adds; the volume
+freed by teammates listed Out or Doubtful was tested and refuted. **The Elo part is then trusted on 5 legs where it was on
+11** (a QB's interceptions, a back's rushing yards, carries and rush + rec yards, a tight end's touchdowns; a receiver's
+catches, yards and touchdowns, a tight end's catches and yards and a kicker's points no longer beat their twins on the
+nested rule), so the Elo picks take a back's rushing yards and a tight end's touchdown alone of DraftKings' kinds and often
+run short, and the Mismatches are backs alone (`avg_fit.mismatch.lead` the back's rushing yards; on that leg's rows the
+threshold chosen is again 3.5 points and held in all 8 seasons, +0.020 to +0.237 sd, so it stays the tag: the research had
+expected none to hold, on its own spec and the ratings before the draft start). ELO_AVG was refitted for it on 2016-2025
+alone, mid-season at the owner's ask (the rule refits it only on completed seasons, never on the season in play; every
+choice is the research's, frozen before), the nine legs without inputs byte for byte as they were. `matchups.json` carries
+`avg[pid].in` (snap1, snapL, sh_tgtL, sh_tgtS, sh_carL, sh_carS, sh_ayL, sh_ayS, implied, spread, wind, wind_src) and on each
+leg that reads inputs `in_x`, {vol, game, q}, each kind's multiplier of the projection against the typical starter's
+inputs (`in_mean`, the fit rows' mean; q against not listed); `avg_fit.inputs` the share terms' centres. The fit and the run
+read the inputs by one code path (`avg_history`, `avg_inputs_rows`), which `python3 elo/test_parity.py` holds term for term,
+with the rule on its own reading, the wind's rules and netfetch's waits=() and the cap on a stubbed forecast.
+
 The build refuses to write anything when a file the season under way needs (its player stats, depth
 charts, injury report, roster, play-by-play), nflverse's draft picks (`draft_picks.csv`, read fresh every run: **The
-draft start**, below) or any past season's cannot be downloaded (after `lib/netfetch.py`'s
+draft start**, below), nflverse's players file (`players.csv`, the snap counts' PFR ids, read fresh every run: **The
+inputs**, above), a finished season's snap counts (from 2013; the season in play's are not required) or any past season's
+cannot be downloaded (after `lib/netfetch.py`'s
 tries, under Conventions): it exits 1 and the last good files stay live. The finished seasons' files (2012 to
 last season's stats, depth charts and injury reports, last season's play-by-play once this one is under way,
 and the season before last's while the rankings are still on the finished season, which the units carry in
@@ -2047,11 +2081,12 @@ and which is not read once the rankings move: in season 43 of the 50 a run reads
 build writes `elo/cache/past.lst`, the files it read as a finished season's, once every source `load()` reads was had
 (before the draft picks are read, which are never listed), and
 the job saves exactly those under a key on their names (a new entry only when that set changes: a season finishing, the rankings moving to it; bump `v1`
-in it to throw them away), so a run asks nflverse for the season in play, games.csv, the roster and the draft
-picks alone, which it always downloads fresh. A kept copy that will not read is fetched again. A correction nflverse
+in it to throw them away; the finished seasons' snap counts are among them since 4 November 2026), so a run asks
+nflverse for the season in play, games.csv, the roster, players.csv and the draft picks alone, which it always downloads
+fresh. A kept copy that will not read is fetched again. A correction nflverse
 makes to a finished season's file later is not read until `v1` is bumped (and `elo/check.py` reads the same
 copies, so nothing flags it): bump it when nflverse says it republished past seasons. `python3 elo/test_fetch.py`
-holds the downloads, `past.lst` and the draft picks to their cases on a local server. Every club is read in today's code (`TEAM_NOW`: games.csv, the depth charts
+holds the downloads, `past.lst`, the snap counts, players.csv and the draft picks to their cases on a local server. Every club is read in today's code (`TEAM_NOW`: games.csv, the depth charts
 and the injury reports write OAK, SD and STL for the seasons before those moves, the player stats LV, LAC
 and LA); until 13 October 2026 the 263 games those clubs played in 2012-2019 were left out of the game
 model's fit and walk-forward, and the matchup formula read their home games as away games (the player

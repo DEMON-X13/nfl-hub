@@ -57,9 +57,11 @@ jobs:
       # which Overall Offense and Overall Defense carry in until the rankings move to the new season
       # and which is not read after: in season about 230 MB, 43 of the 50 files a run reads) never
       # change, so they are kept between runs instead of asked for again five
-      # times a day: one failed request among them refused the run of 13 October 2026. The season in
-      # play, games.csv, the roster and the draft picks are never kept: build.py deletes and downloads
-      # them every run. build.py writes elo/cache/past.lst, the finished seasons' files it read, once
+      # times a day: one failed request among them refused the run of 13 October 2026 (since 4 November
+      # 2026 the finished seasons' snap counts too, which the averages' inputs read). The season in
+      # play, games.csv, the roster, nflverse's players.csv and the draft picks are never kept: build.py
+      # deletes and downloads them every run. The coming games' wind forecasts (api.weather.gov and
+      # api.open-meteo.com, no key) are asked once a run, never retried, the step capped at 90 seconds. build.py writes elo/cache/past.lst, the finished seasons' files it read, once
       # every source its load() reads was had (before the draft picks are read, which it never lists);
       # the steps after the gates keep exactly those, under a key that changes only when that set
       # does (a new season). A restore that misses only means a full download, as before. Bump v1 to
