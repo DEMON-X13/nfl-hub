@@ -5,7 +5,7 @@ built on nothing but those ratings, and a matchup formula for each player's next
     python3 elo/build.py              # downloads what it lacks into elo/cache/, writes elo/data/
     python3 elo/build.py --offline    # use the cache only
     python3 elo/build.py --now 2026-10-11T16:00Z    # as if at that time (tests of the calendar)
-    python3 elo/check.py && node elo/check_tab.js   # the gate: the files against their sources
+    python3 elo/check.py && python3 elo/test_parity.py && node elo/check_tab.js   # the gate: the files against their sources
 
 WHY ELO FOR A PLAYER. Elo is a rating that moves on results against an opponent whose
 strength is also rated, so a good game against a good defence is worth more than the same
@@ -673,8 +673,10 @@ defence as it stands; and `avg_fit`, ELO_AVG whole (each leg's terms, coefficien
 trust and record, its inputs and their means, the share terms' centres, and `mismatch`, the lead legs, the tag and its
 record). elo/check.py works each one
 out again on its own reading of the raw files (the average, the allowance, the pecking order, the
-tables, the projection and its parts, the chance shift and the tag), holding the ratings and the
-opposing defenders, which it does not replay, to the players map and the league's.
+tables, the inputs and their multipliers, the projection and its parts, the chance shift and the tag), holding the
+ratings and the opposing defenders, which it does not replay, to the players map and the league's, and the wind, which
+it cannot read again, to the forecast recorded (calm under a roof or past 6.5 days, else a number from the source its
+stadium's country takes, or calm with the reason a forecast was not had).
 
 THE RANKINGS are of this season alone. Beside the rating above, every player carries a second
 one that starts the season at 1500 and moves only on this season's games, by the same
@@ -836,7 +838,7 @@ test; no page draws them), each file written whole once everything is built:
                             club's expected lineup and who is out of it and why, and every
                             expected starter's Elo-adjusted averages (`avg`, `avg_ref`, `avg_fit`)
     elo/data/calls.json     the ledger of calls as published before kickoff (THE CALLS)
-elo/check.py and elo/check_tab.js are the gate the job runs before it commits.
+elo/check.py, elo/test_parity.py and elo/check_tab.js are the gate the job runs before it commits.
 """
 import argparse, bisect, datetime, json, math, os, sys, tempfile, time, zoneinfo
 import numpy as np
@@ -1162,6 +1164,8 @@ def load(offline, now):
     try:
         pl = pd.read_csv(fetch(PLAYERS_URL, pdest, offline), usecols=['gsis_id', 'pfr_id'])
         pfr = {p: g for g, p in zip(pl.gsis_id, pl.pfr_id) if isinstance(p, str) and isinstance(g, str)}
+        if not pfr:                              # a file with no rows, or none placing a PFR id: every snap share lost
+            raise Missing(f'players.csv places no PFR id ({len(pl)} rows)')
         sources['players'] = {'ok': True, 'rows': int(len(pl))}
     except (Missing, ValueError, OSError) as e:
         missing.append(f'players ({e})')

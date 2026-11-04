@@ -8,6 +8,9 @@ rule says, on the test's own arithmetic (never the build's):
     python3 elo/test_parity.py --cache    # the same parity on elo/cache's real files (2025 weeks 10-18, every player
                                           # with a stat row at a position the averages project), where they are there
 
+The Elo job (.github/workflows/elo.yml) runs it on its fixtures after elo/check.py and before the commit, so a failure
+holds the files back; the --cache run (about a minute) is for a change to the inputs' code, by hand.
+
 The fixtures: a season of two clubs, AAA and BBB, six weeks, each with a quarterback, a back, two receivers, a tight end
 and a kicker. A receiver who missed a game (no row, no snap), one with snaps and no stat row (a share of 0), a week's
 snap counts missing for one (his last snap share carried), negative air yards (clipped at 0), a club's week whose air
