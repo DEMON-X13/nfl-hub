@@ -275,7 +275,7 @@ const projOwn = a => Array.isArray(a) ? a[1] : a && typeof a === 'object' ? a.pr
 function nudgeOwn(MU, pid, st) {
   if (avgOn(MU)) { const v = MU.avg[pid], a = v && v.stats && v.stats[st], f = v && MU.avg_fit.legs[v.group + '|' + st];
     if (!a || !f || f.trusted !== true || !(a.sd > 0) || !isFinite(a.elo) || !isFinite(a.z)) return null;
-    return { n: a.elo, z: a.z, v, vs: a.vs || null, dx: a.def_x, ex: a.elo_x }; }
+    return { n: a.elo, z: a.z, v, vs: a.vs || null, dx: a.def_x, ex: a.elo_x, inp: !!(a.in_x && typeof a.in_x === 'object') }; }
   const pl = MU && MU.players && MU.players[pid], a = pl && pl.stats && pl.stats[st]; if (!a) return null;
   const r = MU.record && MU.record[pl.group + '|' + st], q = r && r.past; if (!(q && q.rmse_elo < q.rmse_form && q.right_top >= 0.53)) return null;
   const f = MU.fit && MU.fit[pl.group + '|' + st]; if (!f || !(f.sd > 0)) return null;
@@ -286,7 +286,8 @@ function nudgeOwn(MU, pid, st) {
    October 2026, where the file names the table he faces (the Elo-adjusted averages' vs), that table in a few words and its
    rank on the ELO tab after it ("Elo +0.5 · vs CAR Pass D #23"), titled with its whole name, its Elo and its rank; on a
    file from before, the lean alone as before. '' on a leg with no trusted Elo part. The title gives the Elo part's split
-   (the review of 29 October 2026), his Elo given his average and the defence, the file's elo_x and def_x to a hundredth */
+   (the review of 29 October 2026), his Elo given his average and the defence, the file's elo_x and def_x to a hundredth;
+   on a leg reading THE INPUTS (an in_x on the stat) his Elo given his average and inputs (the review of 4 November 2026) */
 const mulOwn = x => isFinite(x) ? (+x).toFixed(2) : '–';
 const leanOwn = (v, stat) => { const sh = Math.abs(v).toFixed(stat === 'any_td' ? 2 : 1); return +sh === 0 ? sh : (v > 0 ? '+' : '−') + sh; };
 const VS_NAME_OWN = { def: 'Overall Defense', run_def: 'Run Defense', pass_def: 'Pass Defense' }, VS_SHORT_OWN = { def: 'Overall D', run_def: 'Run D', pass_def: 'Pass D' };
@@ -296,13 +297,15 @@ function noteOwn(MU, l) {
   const m = l && nudgeOwn(MU, l.pid, l.stat); if (!m) return '';
   const t = leanOwn(m.n, l.stat), q = m.vs;
   if (!q || !VS_SHORT_OWN[q.table] || q.rank == null || !m.v.opp) return `<small class="pe-lean" data-pe-lean="${m.n}" title="His Elo against the defenders he faces moves his projection ${t}">Elo ${t}</small>`;
-  return `<small class="pe-lean" data-pe-lean="${m.n}" title="${escC(`His Elo for his average (×${mulOwn(m.ex)}) and the ${m.v.opp} ${VS_NAME_OWN[q.table]} (${q.elo}, ${ordC(q.rank)}, ×${mulOwn(m.dx)}) move his projection ${t}`)}">Elo ${t} <span class="pe-lean-vs">· ${escC(`vs ${m.v.opp} ${VS_SHORT_OWN[q.table]} #${q.rank}`)}</span></small>`;
+  return `<small class="pe-lean" data-pe-lean="${m.n}" title="${escC(`His Elo for his average${m.inp ? ' and inputs' : ''} (×${mulOwn(m.ex)}) and the ${m.v.opp} ${VS_NAME_OWN[q.table]} (${q.elo}, ${ordC(q.rank)}, ×${mulOwn(m.dx)}) move his projection ${t}`)}">Elo ${t} <span class="pe-lean-vs">· ${escC(`vs ${m.v.opp} ${VS_SHORT_OWN[q.table]} #${q.rank}`)}</span></small>`;
 }
 /* (4 November 2026) THE INPUTS in a player's window, the check's own reading (elo/build.py's avg_in_split names the
    kinds; the page's muInKinds and muInLine are never read): a leg's input terms are the in: terms avg_fit.legs gives it;
    implied points, spread and wind are the game's kind, the Questionable tag its own, every other (snap share and shares)
    his volume; a position gets a column for each kind its legs read, ×Vol, ×Game, ×Q in that order, each cell the leg's
-   in_x of that kind to a hundredth ('–' where it has none: no in_x, not that kind, or not a number); and under the
+   in_x of that kind to a hundredth ('–' where it has none: no in_x, not that kind, or not a number), led by Typical, the
+   twin at a typical starter's inputs (no_elo over the product of the leg's in_x that are numbers, as the window draws
+   Base; '–' where it has none), so Typical × the multipliers is Base (the review of 4 November 2026); and under the
    table one line of what the inputs read for him (avg[pid].in), only the parts his position's legs read: "Snap share 82%
    last game (usual 77%)" (snap1 and snapL, either alone said so), "29% of targets", "65% of carries", "35% of air
    yards" (the long share, sh_*L), "implied 15.3 pts", "spread +10" (his club's spread as a line: minus when favoured, 0
@@ -310,9 +313,10 @@ function noteOwn(MU, l) {
    a value not a number leaving its part out */
 const IN_KIND_C = t => t === 'in:imp' || t === 'in:spr' || t === 'in:wind' ? 'game' : t === 'in:q' ? 'q' : 'vol';
 const IN_COL_C = { vol: '×Vol', game: '×Game', q: '×Q' };
-const IN_TITLE_C = { vol: "His snap share and his share of his club's targets, carries or air yards, against a typical starter's: how far they move his projection (in Base)",
-  game: "His club's implied points and spread (and the wind, on passing yards), against a typical starter's: how far they move his projection (in Base)",
-  q: 'Listed Questionable, against not listed: how far it moves his projection (in Base)' };
+const IN_TITLE_C = { vol: "His snap share and his share of his club's targets, carries or air yards, against a typical starter's: Typical × his inputs gives Base",
+  game: "His club's implied points and spread (and the wind, on passing yards), against a typical starter's: Typical × his inputs gives Base",
+  q: 'Listed Questionable, against not listed: Typical × his inputs gives Base' };
+const TYP_TITLE_C = "His projection with no Elo terms at a typical starter's inputs";
 const inTermsC = (MU, g) => { const out = [];
   for (const [k, f] of Object.entries((MU && MU.avg_fit && MU.avg_fit.legs) || {})) if (k.split('|')[0] === g && f && Array.isArray(f.terms))
     for (const t of f.terms) if (typeof t === 'string' && t.slice(0, 3) === 'in:' && !out.includes(t)) out.push(t);
@@ -320,6 +324,8 @@ const inTermsC = (MU, g) => { const out = [];
 const inKindsC = (MU, g) => ['vol', 'game', 'q'].filter(k => inTermsC(MU, g).some(t => IN_KIND_C(t) === k));
 const isNumC = x => typeof x === 'number' && Number.isFinite(x);
 const inxC = (a, k) => a && a.in_x && typeof a.in_x === 'object' && isNumC(a.in_x[k]) ? a.in_x[k].toFixed(2) : '–';
+/* the twin at a typical starter's inputs, NaN where the leg has no multiplier that is a number */
+const typC = a => { const v = a && a.in_x && typeof a.in_x === 'object' ? Object.values(a.in_x).filter(isNumC) : []; return v.length ? a.no_elo / v.reduce((x, y) => x * y, 1) : NaN; };
 function inLineC(MU, v, g) {
   const I = v && v.in, T = inTermsC(MU, g), out = [], keys = [], pc = x => `${Math.round(100 * x)}%`;
   if (!I || typeof I !== 'object') return { text: '', keys };
@@ -347,7 +353,7 @@ const IN_FIX_SETS_C = [
   { WR: { snap1: 0.05, snapL: null, sh_tgtL: null, sh_tgtS: null, sh_carL: null, sh_carS: null, sh_ayL: 0.004, sh_ayS: null, implied: 31.0, spread: 12.5, wind: 21.0, wind_src: 'nws' },
     RB: { snap1: 0.61, snapL: 0.655, sh_tgtL: 0.1, sh_tgtS: 0.1, sh_carL: null, sh_carS: null, sh_ayL: 0.0, sh_ayS: 0.0, implied: 7.0, spread: null, wind: 3.0, wind_src: 'nws' },
     QB: { snap1: 1.0, snapL: 1.0, sh_tgtL: 0.0, sh_tgtS: 0.0, sh_carL: 0.2, sh_carS: 0.2, sh_ayL: 0.0, sh_ayS: 0.0, implied: null, spread: -2.5, wind: 0.0, wind_src: 'roof' },
-    K: { snap1: null, snapL: null, sh_tgtL: 0.0, sh_tgtS: 0.0, sh_carL: 0.0, sh_carS: 0.0, sh_ayL: 0.0, sh_ayS: 0.0, implied: 22.0, spread: null, wind: 7.4, wind_src: 'nws' } } ];
+    K: { snap1: null, snapL: null, sh_tgtL: 0.0, sh_tgtS: 0.0, sh_carL: 0.0, sh_carS: 0.0, sh_ayL: 0.0, sh_ayS: 0.0, implied: 22.0, spread: null, wind: 0.0, wind_src: 'nws' } } ];
 /* a copy of a matchups file on the fixture: every leg's in: terms taken out, IN_FIX_C's put in, and the first ranked of
    each position planted as an expected starter on a made-up game with every leg of his position (in_x on IN_FIX_X_C's)
    and his inputs (none for the tight end); __fix names them */
@@ -679,7 +685,7 @@ function mmOwnV2(MU, Mm, o) {
     const dfn = Array.isArray(f.terms) && f.terms.some(t => t === 'DL' || t === 'LB' || t === 'DB'), tag = F.tag != null && m.tag === true;
     const tb = q ? `${v.opp} ${VS_NAME_OWN[q.table]}` : String(v.opp);
     const title = `${tag ? 'Mismatch this week: the' : 'The'} matchup moves his ${lb} from ${(+a.no_elo).toFixed(1)} to ${(+a.proj).toFixed(1)} (${yds}): the ${tb}`
-      + `${q ? ` (${q.elo}, ${ordC(q.rank)}${n ? ' of ' + n : ''})` : ''}${dfn ? ' and defenders' : ''} ×${mulOwn(a.def_x)} and his Elo for his average ×${mulOwn(a.elo_x)}. On an even line that is ${pts} on the over.`;
+      + `${q ? ` (${q.elo}, ${ordC(q.rank)}${n ? ' of ' + n : ''})` : ''}${dfn ? ' and defenders' : ''} ×${mulOwn(a.def_x)} and his Elo for his average${a.in_x && typeof a.in_x === 'object' ? ' and inputs' : ''} ×${mulOwn(a.elo_x)}. On an even line that is ${pts} on the over.`;
     rows.push({ pid, gid: v.game_id, group: v.group, shift: +m.shift, elo: +a.elo, tag, pts, vs: q ? `vs ${tb} #${q.rank}` : `vs ${v.opp}`,
       proj: `${Math.round(a.proj)} ${lb}`, part: sgnC(a.elo), title, facing: q ? `${ordC(q.rank)}${n ? ' of ' + n : ''}${VS_NAME_OWN[q.table]}` : '–' }); }
   return rows.sort((x, y) => y.shift - x.shift || y.elo - x.elo || (x.pid < y.pid ? -1 : x.pid > y.pid ? 1 : 0));
@@ -1123,8 +1129,11 @@ async function v2Mm(MU, lab) {
      (4 November 2026) THE INPUTS (elo/build.py, the owner's "Merge the inputs"): where the position's legs read them (an
      in: term in avg_fit.legs), a column for each kind they read, before Base, in the order ×Vol, ×Game, ×Q (inKindsC, the
      check's own reading of which term is which kind), each cell the leg's in_x of that kind to a hundredth or a dash where
-     it has none, Base titled with his inputs in it and Proj still "Base × Def × Elo" (the twin reads the same inputs, so
-     the projection is still Base times the two: the file's arithmetic is held below, `split`); and under the table one
+     it has none, led by Typical, the twin at a typical starter's inputs (no_elo over the leg's multipliers, typC; since
+     the review of 4 November 2026, when in_x moved onto the twin's own coefficients, so Typical × the multipliers is
+     Base), Base titled "Typical × his inputs", ×Elo his Elo given his average and his inputs, and Proj still "Base × Def ×
+     Elo" (the twin reads the same inputs, so the projection is still Base times the two: the file's arithmetic is held
+     below, `split`); and under the table one
      line of what the inputs read for him (avg[pid].in), only the parts his position's legs read, word for word on the
      check's own reading (inLineC). Held on every position's window on the files as they stand, on a fixture of the
      check's own (every part of the line and every way a cell is a dash, planted on a copy at any hour and in the
@@ -1140,15 +1149,16 @@ async function v2Mm(MU, lab) {
       const tr = [...d.querySelectorAll('#peBody tr.pe-plrow')].find(x => x.dataset.pePl === r.id); if (!tr) return [`${r.name} is not drawn in the ${g} rankings to open`];
       tr.click(); await wait(20);
       const v = MU.avg[r.id], view = d.getElementById('pePlView'), ths = [...view.querySelectorAll('thead th')], head = ths.map(txt).join('|'), rows = [...view.querySelectorAll('tbody tr')], want = legsOf(g).filter(st => v.stats[st]), bad = [];
-      const kinds = inKindsC(MU, g), HEAD = ['Stat', 'Avg', ...kinds.map(k => IN_COL_C[k]), 'Base', 'Vs', '×Def', '×Elo', 'Proj', 'Elo'].join('|');
+      const kinds = inKindsC(MU, g), HEAD = ['Stat', 'Avg', ...(kinds.length ? ['Typical', ...kinds.map(k => IN_COL_C[k])] : []), 'Base', 'Vs', '×Def', '×Elo', 'Proj', 'Elo'].join('|');
       if (head !== HEAD) bad.push(`its columns are ${head}, not ${HEAD}`);
       else { const ti = k => (ths[HEAD.split('|').indexOf(k)] || { getAttribute: () => null }).getAttribute('title');
-        const wantT = { Base: kinds.length ? 'His projection with no Elo terms, his inputs in it' : 'His projection with no Elo terms', Proj: 'Base × Def × Elo', Elo: 'The Elo part: Proj less Base' };
+        const wantT = { Base: kinds.length ? 'His projection with no Elo terms: Typical × his inputs' : 'His projection with no Elo terms', Proj: 'Base × Def × Elo', Elo: 'The Elo part: Proj less Base',
+          '×Elo': kinds.length ? 'His Elo, given his average and his inputs' : 'His Elo, given his average', ...(kinds.length ? { Typical: TYP_TITLE_C } : {}) };
         for (const [k, t] of Object.entries(wantT)) if (ti(k) !== t) bad.push(`its ${k} column is titled "${ti(k)}", not "${t}"`);
         for (const k of kinds) if (ti(IN_COL_C[k]) !== IN_TITLE_C[k]) bad.push(`its ${IN_COL_C[k]} column is titled "${ti(IN_COL_C[k])}", not "${IN_TITLE_C[k]}"`); }
       if (rows.map(x => x.dataset.peStat).join() !== want.join()) bad.push(`its rows are ${rows.map(x => x.dataset.peStat).join()}, not ${want.join()}`);
       else rows.forEach((x, i) => { const st = want[i], a = v.stats[st], q = a.vs, f = MU.avg_fit.legs[g + '|' + st], c = [...x.querySelectorAll('td')].map(txt);
-        const exp = [LBL[st] || st, numOwn(a.avg, st), ...kinds.map(k => inxC(a, k)), numOwn(a.no_elo, st), q && VS_SHORT_OWN[q.table] ? `${VS_SHORT_OWN[q.table]} ${q.elo} (#${q.rank})` : '–', mulOwn(a.def_x), mulOwn(a.elo_x), numOwn(a.proj, st), leanOwn(a.elo, st)];
+        const exp = [LBL[st] || st, numOwn(a.avg, st), ...(kinds.length ? [isNumC(typC(a)) ? numOwn(typC(a), st) : '–', ...kinds.map(k => inxC(a, k))] : []), numOwn(a.no_elo, st), q && VS_SHORT_OWN[q.table] ? `${VS_SHORT_OWN[q.table]} ${q.elo} (#${q.rank})` : '–', mulOwn(a.def_x), mulOwn(a.elo_x), numOwn(a.proj, st), leanOwn(a.elo, st)];
         if (c.join('|') !== exp.join('|') || x.classList.contains('pe-weak') === !!(f && f.trusted === true)) bad.push(`${st}: ${c.join(' | ')}${x.classList.contains('pe-weak') ? ' (faded)' : ''}, not ${exp.join(' | ')}${f && f.trusted === true ? '' : ' (faded)'}`); });
       const line = inLineC(MU, v, g), el = view.querySelectorAll('[data-pe-in]:not(span)'), got = el.length === 1 ? txt(el[0]) : null;
       if (line.text ? (el.length !== 1 || got !== line.text || [...el[0].querySelectorAll('span[data-pe-in]')].map(x => x.dataset.peIn).join() !== line.keys.join()) : el.length)
@@ -1720,7 +1730,7 @@ async function v2Mm(MU, lab) {
         } else {
           MUf.avg_fit.legs[grp + '|' + stat] = { trusted: !x.untrusted };
           const v = MUf.avg[pid] || (MUf.avg[pid] = { group: grp, game_id: gid, team, opp, home: gid.endsWith(team) ? 1 : 0, stats: {} });
-          v.stats[stat] = { avg: k, proj: k, no_elo: k - nudge, elo: nudge, sd: SD, z: nudge / SD, def_x: 1, elo_x: k / (k - nudge), vs: VS_FX(stat) };
+          v.stats[stat] = { avg: k, proj: k, no_elo: k - nudge, elo: nudge, sd: SD, z: nudge / SD, def_x: 1, elo_x: k / (k - nudge), vs: VS_FX(stat), ...(x.inx ? { in_x: x.inx } : {}) };
         }
         if (!x.unrated) Pf.players[pid] = { name: 'Fixture ' + pid.slice(3).toUpperCase(), group: grp, team, elo: 1600, se: 1600, rank: 3 }; }
       return { MUf, Pf, legs: legs.map(({ why, ...l }) => l), whys: legs.filter(l => l.why) };
@@ -1737,7 +1747,7 @@ async function v2Mm(MU, lab) {
         ['fx-qc', 'QB', 'FXF', 'FXE', GC, 'passing_tds', 'under', 1.5, -140, 0.62],
         ['fx-wb', 'WR', 'FXD', 'FXC', GB, 'receptions', 'over', 4.5, -130, 0.60],
         ['fx-wa', 'WR', 'FXA', 'FXB', GA, 'receiving_yards', 'over', 69.5, -110, 0.56],
-        ['fx-ta', 'TE', 'FXB', 'FXA', GA, 'any_td', 'over', 1, 150, 0.43],
+        ['fx-ta', 'TE', 'FXB', 'FXA', GA, 'any_td', 'over', 1, 150, 0.43, { inx: { vol: 1.12 } }],   // a leg reading THE INPUTS: its lean's title says so
         ['fx-rb', 'RB', 'FXC', 'FXD', GB, 'rushing_yards', 'over', 59.5, -120, 0.57, { oth: 100 }],
         ['fx-wc', 'WR', 'FXE', 'FXF', GC, 'receiving_yards', 'under', 52.5, 105, 0.50, { src: 'dkline', espn: { fair: 0.46, at: '2026-10-15T03:08Z', tested: true, listed: true } }],
         ['fx-tc', 'TE', 'FXE', 'FXF', GC, 'any_td', 'over', 1, 180, 0.37],
@@ -1794,7 +1804,8 @@ async function v2Mm(MU, lab) {
              averages' table and its rank on the ELO tab ("Elo +0.5 · vs CAR Pass D #23", titled with the table's whole
              name, its Elo and rank), noteOwn's own reading */
           const nTd = nudgeOwn(MUf, 'fx-ta', 'any_td').n, tdN = o && typeof o.legNote === 'function' ? o.legNote(by('fx-ta', 'any_td')) : null, z0 = o && typeof o.legNote === 'function' ? o.legNote(by('fx-z0', 'receptions')) : null;
-          { chk(tdN === noteOwn(MUf, by('fx-ta', 'any_td')) && /Elo [+−]\d\.\d\d <span class="pe-lean-vs">· vs FXA Overall D #21<\/span>/.test(tdN || '') && z0 === noteOwn(MUf, by('fx-z0', 'receptions')) && /Elo 0\.0 <span class="pe-lean-vs">· vs FXD Pass D #23</.test(z0 || ''),
+          { chk(tdN === noteOwn(MUf, by('fx-ta', 'any_td')) && /Elo [+−]\d\.\d\d <span class="pe-lean-vs">· vs FXA Overall D #21<\/span>/.test(tdN || '') && /title="His Elo for his average and inputs \(×/.test(tdN || '')
+              && z0 === noteOwn(MUf, by('fx-z0', 'receptions')) && /Elo 0\.0 <span class="pe-lean-vs">· vs FXD Pass D #23</.test(z0 || '') && /title="His Elo for his average \(×/.test(z0 || ''),
               `F1: an Elo lean is not said to its unit's precision, a figure shown as 0 unsigned, with the defence it is set against: the touchdown's ${tdN} (want ${noteOwn(MUf, by('fx-ta', 'any_td'))}, a nudge of ${nTd}), a nudge of 0 ${z0}`); }
           const wantNote = noteOwn(MUf, by('fx-qa', 'passing_yards'));
           const note = o && typeof o.legNote === 'function' ? o.legNote(by('fx-qa', 'passing_yards')) : null, none = o && typeof o.legNote === 'function' ? o.legNote(by('fx-wa', 'targets')) : null;

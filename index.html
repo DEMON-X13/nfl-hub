@@ -8149,7 +8149,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='d65f84d';
+const PAGE_HASH='5a97b69';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -10602,8 +10602,9 @@ function move(r){
    the stat's units; sd, the stat's spread at the projection; z, the Elo part in that sd; def_x and elo_x, the Elo
    part's split, the defence's multiplier against the league's average defence and his Elo's (given his average, the
    rest), no_elo x def_x x elo_x = proj, so the two point the Elo part's way; vs, the table he faces, its Elo and rank;
-   since 4 November 2026, on a leg reading THE INPUTS, in_x {vol, game, q}, each kind's multiplier of the projection
-   against a typical starter's inputs, which no_elo has in it), each player's `in` (what the inputs read for him: his snap
+   since 4 November 2026, on a leg reading THE INPUTS, in_x {vol, game, q}, each kind's multiplier inside no_elo against
+   a typical starter's inputs, on the twin's own coefficients, so no_elo over their product is the twin at a typical
+   starter's inputs), each player's `in` (what the inputs read for him: his snap
    shares, his shares of his club's targets, carries and air yards, its implied points and spread, the wind at kickoff and
    where it came from), and `avg_fit.legs` each leg's fit (its terms, the inputs among them) and record: trusted where, called season by season on 2019-2025 by
    fits on the seasons before, its Elo part lowered the miss and its largest fifth landed on its side more than half the
@@ -10686,20 +10687,27 @@ const defPill=(key,name,opp)=>{ const u=unitRow(key,opp), T=D.model&&D.model.uni
    defence's table he faces with its Elo and rank, the Elo part's split (the defence's multiplier and his Elo's, given his
    average: Base times the two is the projection), the projection and its Elo part (Proj less Base); on a file from
    before the block the matchup formula's recent form, nudge and projection. Since 4 November 2026 (THE INPUTS in
-   elo/build.py, the owner's "Merge the inputs"), on a file whose legs read the inputs, before Base the inputs' own
-   multipliers (each leg's in_x: ×Vol his snap share and his share of his club's targets, carries or air yards, ×Game his
-   club's implied points and spread and on passing yards the wind, ×Q a filed Questionable; each against the typical
-   starter's, on the full projection's coefficients, a dash where the leg reads none), a column for each kind the
-   position's legs read; they are in Base (the twin reads the same inputs), so Base × Def × Elo is still the projection;
-   and under the table one line of what the inputs read for him (avg[pid].in), only the parts his position's legs read */
+   elo/build.py, the owner's "Merge the inputs"), on a file whose legs read the inputs, before Base the twin at a typical
+   starter's inputs (Typical: Base over the leg's multipliers) and the inputs' own multipliers (each leg's in_x: ×Vol his
+   snap share and his share of his club's targets, carries or air yards, ×Game his club's implied points and spread and on
+   passing yards the wind, ×Q a filed Questionable; each against the typical starter's, on the twin's own coefficients, a
+   dash where the leg reads none, Typical a dash with them), a column for each kind the position's legs read: Typical ×
+   his inputs is Base and Base × Def × Elo is the projection, so every × column multiplies the figure before its run
+   (the review of 4 November 2026: set between Avg and Base with no Typical, the multipliers read as Avg's, which they are
+   not); and under the table one line of what the inputs read for him (avg[pid].in), only the parts his position's legs
+   read. On a leg reading the inputs his Elo's multiplier, the rest of the projection over Base after the defence's, is
+   his Elo given his average and his inputs (the full fit weighs the inputs a little apart from the twin), and its titles
+   say so */
 const numTxt=(x,st)=>!isFinite(x)?'–':st==='any_td'?(+x).toFixed(2):Math.abs(x)>=10?(+x).toFixed(0):(+x).toFixed(1);
 const mulTxt=x=>isFinite(x)?(+x).toFixed(2):'–';
 /* an input term's kind, as elo/build.py's avg_in_split splits them: the game's (implied points, spread, wind), the
    Questionable tag, else his volume (snap share and shares) */
 const IN_KIND=t=>t==='in:imp'||t==='in:spr'||t==='in:wind'?'game':t==='in:q'?'q':'vol';
-const IN_COL={vol:['×Vol',"His snap share and his share of his club's targets, carries or air yards, against a typical starter's: how far they move his projection (in Base)"],
-  game:['×Game',"His club's implied points and spread (and the wind, on passing yards), against a typical starter's: how far they move his projection (in Base)"],
-  q:['×Q',"Listed Questionable, against not listed: how far it moves his projection (in Base)"]};
+const IN_COL={vol:['×Vol',"His snap share and his share of his club's targets, carries or air yards, against a typical starter's: Typical × his inputs gives Base"],
+  game:['×Game',"His club's implied points and spread (and the wind, on passing yards), against a typical starter's: Typical × his inputs gives Base"],
+  q:['×Q',"Listed Questionable, against not listed: Typical × his inputs gives Base"]};
+/* the twin at a typical starter's inputs: Base over the leg's multipliers (those that are numbers), NaN where it has none */
+const muTypical=x=>{ const v=x&&x.in_x?Object.values(x.in_x).filter(okIn):[]; return v.length?x.base/v.reduce((a,b)=>a*b,1):NaN; };
 /* the input terms a position's legs read (avg_fit.legs' terms), none on a file from before the inputs */
 const muInTerms=g=>{ if(!muAvgOn()) return []; const L=D.mu.avg_fit.legs, out=new Set();
   for(const [k,f] of Object.entries(L)) if(k.split('|')[0]===g&&f&&Array.isArray(f.terms)) for(const t of f.terms) if(typeof t==='string'&&t.startsWith('in:')) out.add(t);
@@ -10748,11 +10756,11 @@ function playerModal(pid){
     if(avg){
       inLine=muInLine(v,g);
       const kinds=muInKinds(g);
-      head=`<th>Stat</th><th class="pe-n" title="His average">Avg</th>${kinds.map(k=>`<th class="pe-n" data-pe-inx="${k}" title="${esc(IN_COL[k][1])}">${IN_COL[k][0]}</th>`).join('')}<th class="pe-n" title="His projection with no Elo terms${kinds.length?', his inputs in it':''}">Base</th><th class="pe-n" title="The defence's table he faces: its Elo and rank">Vs</th><th class="pe-n" title="This defence against the league's average one">×Def</th><th class="pe-n" title="His Elo, given his average">×Elo</th><th class="pe-n" title="Base × Def × Elo">Proj</th><th class="pe-n" title="The Elo part: Proj less Base">Elo</th>`;
+      head=`<th>Stat</th><th class="pe-n" title="His average">Avg</th>${kinds.length?`<th class="pe-n" data-pe-inx="typ" title="His projection with no Elo terms at a typical starter's inputs">Typical</th>`:''}${kinds.map(k=>`<th class="pe-n" data-pe-inx="${k}" title="${esc(IN_COL[k][1])}">${IN_COL[k][0]}</th>`).join('')}<th class="pe-n" title="His projection with no Elo terms${kinds.length?': Typical × his inputs':''}">Base</th><th class="pe-n" title="The defence's table he faces: its Elo and rank">Vs</th><th class="pe-n" title="This defence against the league's average one">×Def</th><th class="pe-n" title="His Elo, given his average${kinds.length?' and his inputs':''}">×Elo</th><th class="pe-n" title="Base × Def × Elo">Proj</th><th class="pe-n" title="The Elo part: Proj less Base">Elo</th>`;
       rows=stats.map(st=>{ const x=muLine(pid,st); if(!x) return '';
         const t=eloLeanTxt(x.nudge,st), cls=/^[0.]+$/.test(t)?'flat':(x.nudge>0?'up':'dn'), q=x.vs;
         const vs=q&&VS_SHORT[q.table]?`<span title="${esc(`${v.opp} ${VS_NAME[q.table]} ${q.elo}, ${ordinal(q.rank)}`)}">${esc(VS_SHORT[q.table])} ${esc(q.elo)} (#${esc(q.rank)})</span>`:'–';
-        const inx=kinds.map(k=>`<td class="pe-n">${x.in_x&&okIn(x.in_x[k])?mulTxt(x.in_x[k]):'–'}</td>`).join('');
+        const inx=kinds.length?`<td class="pe-n">${numTxt(muTypical(x),st)}</td>`+kinds.map(k=>`<td class="pe-n">${x.in_x&&okIn(x.in_x[k])?mulTxt(x.in_x[k]):'–'}</td>`).join(''):'';
         return `<tr class="${muTrusted(g,st)?'':'pe-weak'}" data-pe-stat="${esc(st)}"><td>${MU_LBL[st]||esc(st)}</td><td class="pe-n">${numTxt(x.form,st)}</td>${inx}<td class="pe-n">${numTxt(x.base,st)}</td><td class="pe-n">${vs}</td>
           <td class="pe-n">${mulTxt(x.def_x)}</td><td class="pe-n">${mulTxt(x.elo_x)}</td><td class="pe-n"><b>${numTxt(x.proj,st)}</b></td>
           <td class="pe-n"><span class="pe-nud ${cls}" style="display:inline">${t}</span></td></tr>`; }).join('');
@@ -11097,7 +11105,7 @@ function eloLeanNote(l){
   const m=l&&l.pid&&l.stat?muNudge(l.pid,l.stat):null; if(!m||!isFinite(m.nudge)) return '';
   const v=m.nudge, t=eloLeanTxt(v,l.stat), vs=vsShort(m), q=m.vs;
   if(!vs) return `<small class="pe-lean" data-pe-lean="${v}" title="His Elo against the defenders he faces moves his projection ${t}">Elo ${t}</small>`;
-  return `<small class="pe-lean" data-pe-lean="${v}" title="${esc(`His Elo for his average (×${mulTxt(m.elo_x)}) and the ${m.v.opp} ${VS_NAME[q.table]} (${q.elo}, ${ordinal(q.rank)}, ×${mulTxt(m.def_x)}) move his projection ${t}`)}">Elo ${t} <span class="pe-lean-vs">· ${esc(vs)}</span></small>`;
+  return `<small class="pe-lean" data-pe-lean="${v}" title="${esc(`His Elo for his average${m.in_x?' and inputs':''} (×${mulTxt(m.elo_x)}) and the ${m.v.opp} ${VS_NAME[q.table]} (${q.elo}, ${ordinal(q.rank)}, ×${mulTxt(m.def_x)}) move his projection ${t}`)}">Elo ${t} <span class="pe-lean-vs">· ${esc(vs)}</span></small>`;
 }
 function decorateAlt(){
   if(!D.players||typeof S!=='object'||!S||!S.parlay) return;
@@ -11361,12 +11369,13 @@ const mmTableN=key=>{ const T=D.model&&D.model.units&&D.model.units[key]; return
    0: the review of 4 November 2026), its Elo part in yards ("+6.1 rec yds"), the defence ("vs LAC Pass Defense #32"),
    the projection ("58 rec yds"), and its title, the whole of it: "Mismatch this week: the matchup moves his rec yds from
    52.0 to 58.1 (+6.1 rec yds): the LAC Pass Defense (1448, 32nd of 32) ×1.04 and his Elo for his average ×1.08. On an
-   even line that is +7 pts on the over." (the Game snapshot and the matchup bubble print these same words) */
+   even line that is +7 pts on the over." (the Game snapshot and the matchup bubble print these same words); on a leg
+   reading THE INPUTS "his Elo for his average and inputs" */
 function mmSayV2(r){
   const lb=MMV2_LBL[r.lead]||String(MU_LBL[r.lead]||r.lead).toLowerCase(), pts=`${mmPtsSgn(r.pts)}${r.pts} pts`, yds=`${mmSgn(r.part)} ${lb}`;
   const tb=r.vs?`${r.opp} ${VS_NAME[r.vs.table]}`:String(r.opp);
   const title=`${r.tag?'Mismatch this week: the':'The'} matchup moves his ${lb} from ${r.base.toFixed(1)} to ${r.proj.toFixed(1)} (${yds}): the ${tb}`
-    +`${r.vs?` (${r.vs.elo}, ${ordinal(r.vs.rank)}${r.defN?' of '+r.defN:''})`:''}${r.defenders?' and defenders':''} ×${mulTxt(r.def_x)} and his Elo for his average ×${mulTxt(r.elo_x)}. `
+    +`${r.vs?` (${r.vs.elo}, ${ordinal(r.vs.rank)}${r.defN?' of '+r.defN:''})`:''}${r.defenders?' and defenders':''} ×${mulTxt(r.def_x)} and his Elo for his average${r.inputs?' and inputs':''} ×${mulTxt(r.elo_x)}. `
     +`On an even line that is ${pts} on the over.`;
   return {pts,yds,vs:r.vs?`vs ${tb} #${r.vs.rank}`:`vs ${r.opp}`,proj:`${Math.round(r.proj)} ${lb}`,part:mmSgn(r.part),title};
 }
@@ -11379,7 +11388,7 @@ function mismatchesV2(){
     const vs=a.vs&&typeof a.vs==='object'&&VS_NAME[a.vs.table]?a.vs:null, f=M.avg_fit.legs[v.group+'|'+st]||{};
     const r={v2:true,pid,group:v.group,game_id:v.game_id,team:v.team,opp:v.opp,home:v.home,lead:st,shift:+m.shift,pts:Math.round(100*m.shift),
       tag:F.tag!=null&&m.tag===true,part:+a.elo,proj:+a.proj,base:+a.no_elo,def_x:+a.def_x,elo_x:+a.elo_x,vs,defN:vs?mmTableN(vs.table):null,
-      defenders:Array.isArray(f.terms)&&f.terms.some(t=>t==='DL'||t==='LB'||t==='DB')};
+      defenders:Array.isArray(f.terms)&&f.terms.some(t=>t==='DL'||t==='LB'||t==='DB'),inputs:!!(a.in_x&&typeof a.in_x==='object')};
     r.say=mmSayV2(r); out.push(r); }
   return out.sort((x,y)=>y.shift-x.shift||y.part-x.part||(x.pid<y.pid?-1:x.pid>y.pid?1:0));
 }
