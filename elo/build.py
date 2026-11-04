@@ -2101,12 +2101,15 @@ def avg_wx_get(url, dest, headers, deadline):
 
 def avg_wx_why(e):
     """a failed forecast's reason in a few words of the site's own, for wind_src ('forecast failed: ...'): never
-    netfetch's message, which names nflverse's host"""
+    netfetch's message, which names nflverse's host. netfetch refuses a 200 whose body is an HTML page (the usual
+    body of an outage or a proxy's error) or empty before json.load sees it, with no status of its own: that is a body
+    that is not JSON too, said so, never 'no answer' (the second review of PR 3)"""
     if isinstance(e, netfetch.FetchError) and e.code:
         return f'HTTP {e.code}'
-    if isinstance(e, TimeoutError) or 'timed out' in str(e).lower() or 'timeout' in str(e).lower():
+    s = str(e).lower()
+    if isinstance(e, TimeoutError) or 'timed out' in s or 'timeout' in s:
         return 'timed out'
-    if isinstance(e, json.JSONDecodeError):
+    if isinstance(e, json.JSONDecodeError) or (isinstance(e, netfetch.FetchError) and ('an html page' in s or 'an empty or short answer' in s)):
         return 'not JSON'
     if isinstance(e, (netfetch.FetchError, OSError)):
         return 'no answer'

@@ -25,7 +25,8 @@ roof dome, closed or open at a stadium open to the sky the same; a game past 6.5
 open stadium in the US read from the National Weather Service's hourly forecast (the points answer at the test's own
 copy of the stadium's coordinates, then the hour holding the kickoff, the higher of "10 to 15 mph"), abroad from
 Open-Meteo's hour (asked at its coordinates for wind_speed_10m in mph, by the hour in UTC); a failed request calm and
-said so in the site's own words (an error status, no answer, a body that is not JSON, and JSON of another shape: a
+said so in the site's own words (an error status, no answer, a body that is not JSON, an HTML page or an empty body
+among them, which the real netfetch refuses itself on a file:// address, and JSON of another shape: a
 list, a null where an object stands, a period with no start, an hour list longer than its winds), never raising;
 every request tried once (waits=()) within WEATHER_TIMEOUT seconds, the whole step held to WEATHER_CAP seconds of wall
 clock even against a request that never returns (a server trickling its answer), each game after it calm and said so,
@@ -331,8 +332,27 @@ def weather():
               f'every request tried once (waits=()) within {B.WEATHER_TIMEOUT} s: {[(k.get("waits"), k.get("timeout")) for _, k in calls]}')
         check(all('nfl-hub' in (k.get('headers') or {}).get('User-Agent', '') and '@' not in (k.get('headers') or {}).get('User-Agent', '')
                   for _, k in calls), 'a User-Agent naming the site, and no address in it')
-        # every failure calm, said in the site's own words, never raised
-        fails_ = [('no answer', B.netfetch.FetchError("p.json: URLError, on 1 try over 0s (nflverse's host or the network; ...)"), {}, 'no answer'),
+        # every failure calm, said in the site's own words, never raised. A 200 whose body is an HTML page (an outage's or a
+        # proxy's) or empty netfetch refuses itself, with no status: the errors it raises are the real netfetch's, on a
+        # file:// address (no network), so a change to its words cannot leave the reason 'no answer' unseen
+        def real_err(body):
+            d = tempfile.mkdtemp(prefix='elo_wxerr_')
+            try:
+                src = os.path.join(d, 'body')
+                with open(src, 'wb') as f:
+                    f.write(body)
+                try:
+                    real('file://' + src, os.path.join(d, 'out.json'), waits=(), timeout=5, log=lambda *a: None)
+                except B.netfetch.FetchError as e:
+                    return e
+                return None
+            finally:
+                shutil.rmtree(d, ignore_errors=True)
+        html_err, empty_err = real_err(b'<html><body>busy</body></html>'), real_err(b'')
+        check(isinstance(html_err, B.netfetch.FetchError) and not html_err.code and isinstance(empty_err, B.netfetch.FetchError) and not empty_err.code,
+              f'netfetch refuses an HTML page and an empty body itself, with no status: {html_err!r}, {empty_err!r}')
+        fails_ = [('an HTML page answered 200', html_err, {}, 'not JSON'), ('an empty body answered 200', empty_err, {}, 'not JSON'),
+                  ('no answer', B.netfetch.FetchError("p.json: URLError, on 1 try over 0s (nflverse's host or the network; ...)"), {}, 'no answer'),
                   ('an error status', B.netfetch.FetchError("p.json: HTTP Error 500: Internal Server Error (nflverse's host ...)", 500), {}, 'HTTP 500'),
                   ('a timeout', B.netfetch.FetchError("p.json: TimeoutError: timed out, on 1 try over 15s (nflverse's host ...)"), {}, 'timed out'),
                   ('a body that is not JSON', None, {'points': '<<not json', 'om': 'nope'}, 'not JSON'),

@@ -25,8 +25,9 @@ no PFR id each refuse the run with nothing written and no past.lst; two 500s and
 every run and never listed; and player stats without a volume column the inputs read refusing the run with its name.
 And the wind forecasts (avg_weather) on the local server: the National Weather Service's points and hourly answers in
 the US and Open-Meteo's abroad read, a dome asked nothing, each request asked once with a User-Agent naming the site and
-no address; a 500 or a 503 (which a download would try again), a 404 and an answer that is not JSON each calm with its
-source saying the forecast failed in the site's own words (never netfetch's, which names nflverse's host), asked once
+no address; a 500 or a 503 (which a download would try again) and a 404 each calm with its source saying the forecast
+failed by its status, and a 200 whose body is not JSON (an HTML page, one with a doctype, an empty body, plain text) each
+calm with its source saying 'not JSON', in the site's own words (never netfetch's, which names nflverse's host), asked once
 and spending none of netfetch's retry budget (waits=()); an answer slower than the step's cap timed out within what is
 left of it, every game after calm and skipped, never asked, the step ending near the cap; and an answer trickled a byte
 at a time (each read inside netfetch's socket timeout, so only a wall-clock deadline ends it) given up at the cap the
@@ -435,16 +436,22 @@ check(all('nfl-hub' in (h.get('User-Agent') or '') and '@' not in (h.get('User-A
       f"every request names the site in its User-Agent, and no address: {sorted({h.get('User-Agent') for h in heads.values()})}")
 wx_world(); plan[PTS['BUF00']] = [500, 200]; plan[OM] = [503, 200]
 out, took, spent = wx_run()
-check(out['buf'][0] is None and out['buf'][1].startswith('forecast failed') and out['lon'][0] is None and out['lon'][1].startswith('forecast failed')
-      and out['chi'] == (16.0, 'nws'), f'a 500 or a 503 on a forecast is calm and says so, the next game read all the same: {out}')
+check(out['buf'] == (None, 'forecast failed: HTTP 500') and out['lon'] == (None, 'forecast failed: HTTP 503')
+      and out['chi'] == (16.0, 'nws'), f'a 500 or a 503 on a forecast is calm and says so by its status, the next game read all the same: {out}')
 check(hits[PTS['BUF00']] == 1 and hits[OM] == 1 and 'hourly/BUF00' not in hits and spent == 0,
       f"a forecast is tried once (waits=()), though netfetch tries a download's 5xx again, and spends none of its retry budget: {hits}, {spent}")
 wx_world(); del files['hourly/BUF00']
 out, took, spent = wx_run()
-check(out['buf'][0] is None and 'forecast failed' in out['buf'][1] and hits['hourly/BUF00'] == 1, f'a 404 on the hourly forecast: calm, asked once: {out["buf"]}')
-wx_world(); files['hourly/BUF00'] = b'<html>busy</html>'
-out, took, spent = wx_run()
-check(out['buf'][0] is None and 'forecast failed' in out['buf'][1] and hits['hourly/BUF00'] == 1, f'an answer that is not JSON: calm, asked once: {out["buf"]}')
+check(out['buf'] == (None, 'forecast failed: HTTP 404') and hits['hourly/BUF00'] == 1, f'a 404 on the hourly forecast: calm, said so, asked once: {out["buf"]}')
+# a body that is not JSON, in each way netfetch meets one: an HTML page (the usual body of an outage or a proxy's error)
+# and an empty body, which netfetch refuses itself with no status, and a plain-text body, which json.load refuses: each
+# 'not JSON', never 'no answer' (the second review of PR 3)
+for what, body in (('an HTML page', b'<html>busy</html>'), ('an HTML page with a doctype', b'  <!DOCTYPE html><title>502</title>'),
+                   ('an empty body', b''), ('a plain-text body', b'busy, try later')):
+    wx_world(); files['hourly/BUF00'] = body
+    out, took, spent = wx_run()
+    check(out['buf'] == (None, 'forecast failed: not JSON') and hits['hourly/BUF00'] == 1 and out['chi'] == (16.0, 'nws'),
+          f'{what} answered 200: calm, said "not JSON", asked once, the next game read all the same: {out["buf"]}')
 cap = B.WEATHER_CAP
 B.WEATHER_CAP = 2
 wx_world(); delay['hourly/BUF00'] = 4

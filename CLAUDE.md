@@ -2174,7 +2174,7 @@ after 15 seconds of wall clock, the whole step held to 90 seconds of wall clock 
 thread of its own and gives it up at the deadline, since netfetch's timeout holds each read of the socket and a server
 trickling its answer would outlast it), past which every game left is calm. A game under any roof (dome, closed, open
 or retractable, by `STADIUMS` or games.csv's roof), past 6.5 days or whose forecast failed in any way (no answer, an
-error status, a body that is not JSON or JSON of another shape) is calm, never a refusal, and `wind_src` says which
+error status, a body that is not JSON, an HTML page or an empty body among them, or JSON of another shape) is calm, never a refusal, and `wind_src` says which
 ('nws', 'open-meteo', 'roof', 'beyond the forecast', or why the forecast was not had in the site's own few words:
 'forecast failed: HTTP 500', 'timed out', 'no answer', 'not JSON', 'an answer of another shape', 'forecast skipped: the
 step ran past 90 s'). The step runs only where a leg reads the wind (week 9: 15 games in 4.6
@@ -2237,8 +2237,9 @@ player-games, 11 terms, 0 differences) is by hand, after a change to the inputs'
 the snap counts (from 2013; a finished season's required, listed and read from the cache; the season in play's fresh
 every run, required once due and refused a club short), players.csv (refused on a 404, empty, with no rows, without `pfr_id` or placing no PFR id;
 two 500s and then the file read; read fresh), a player stats file missing a volume column refused, and the forecasts on
-its local server (answered; a 500, a 503, a 404 and a body that is not JSON each calm, said and asked once, none of
-netfetch's budget spent; an answer slower than the cap timed out within it, every game after skipped).
+its local server (answered; a 500, a 503 and a 404 each calm and said by its status, and a 200 whose body is an HTML
+page, one with a doctype, empty or plain text each calm and said 'not JSON', each asked once, none of netfetch's budget
+spent; an answer slower than the cap timed out within it, every game after skipped).
 `elo/check_tab.js` (`inKindsC`, `inxC`, `inLineC`) and the nflbets smoke (`winBadOwn`, `inLineOwn`, and its section of
 its own, `inWinChecks`, at any hour) hold the window on their own readings, every column and its title, every cell and
 the line word for word with its parts, on the files, on fixtures of their own planted twice, and on the files with the
@@ -2291,7 +2292,12 @@ copies, each failing its hold: the catch narrowed back, no wall-clock deadline, 
 km/h, a stadium moved, implied unclipped, a played roof open read, games.csv's roof ignored at run time, `in_x` on the
 full fit, the snap counts never required or their coverage not held, players.csv read as an empty map (`elo/check.py`,
 `elo/test_parity.py`, `elo/test_fetch.py`); Typical on his average, no Typical, ×Elo, a lean's and a Mismatches row's
-words without the inputs, and a calm forecast drawn "roof" (`elo/check_tab.js`).
+words without the inputs, and a calm forecast drawn "roof" (`elo/check_tab.js`). The second review (the same day) found
+one thing more: a forecast answering 200 with an HTML page (an outage's or a proxy's usual body) or an empty body, which
+`lib/netfetch.py` refuses itself with no status, was published as 'forecast failed: no answer'; `avg_wx_why` says 'not
+JSON' for both, as for a body `json.load` refuses, held by `elo/test_fetch.py` through the real netfetch on its local
+server and by `elo/test_parity.py` on the real netfetch's own errors (a file:// address, no network), each failing with
+the old mapping (3 and 2 failures). Words only: the game was calm either way.
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
 charts, injury report, roster, play-by-play), nflverse's draft picks (`draft_picks.csv`, read fresh every run: **The
