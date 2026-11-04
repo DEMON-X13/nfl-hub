@@ -1868,6 +1868,7 @@ node elo/check_tab.js            # the ELO Ratings tab on the new files (jsdom f
 node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
 python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offense/Defense: refits its constants on 2012-2017 (the carry's share too); "the build carries these constants"
 python3 elo/tools/def_units_fit.py   # the same for the six position tables, Run, Pass and Pass Rush/Protection a side (their stats' constants and UNIT_TABLES); "the build carries these constants"
+python3 elo/tools/draft_start_fit.py  # only for a deliberate change to the draft start: each group's first-rating curve on the draft slot (DRAFT_START), chosen and fitted on players first rated 2013-2017 over their first two rated seasons (--offline on elo/cache with draft_picks.csv); "the build carries these constants"
 python3 elo/tools/joker_base_fit.py   # after a build: the ELO Model's calls on the Joker's baseline (JOKER_BASE), fitted on 2021-2025, walk-forward on 2022-2025; "the build carries these constants"
 python3 elo/tools/elo_avg_fit.py      # only after a season ends: the Elo-adjusted averages (ELO_AVG), fitted on every expected starter's game of 2016 to the last finished season, chosen on the walk-forward of 2018 on (--offline on elo/cache); "the build carries these constants"
 ```
@@ -1952,18 +1953,20 @@ and `test_suggest_ledger.js` failing a page that reads the formula on a file wit
 `test_audit_phases.py`, each on its own commit's `elo/data` from before the block, hold the fallback.
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
-charts, injury report, roster, play-by-play) or any past season's cannot be downloaded (after `lib/netfetch.py`'s
+charts, injury report, roster, play-by-play), nflverse's draft picks (`draft_picks.csv`, read fresh every run: **The
+draft start**, below) or any past season's cannot be downloaded (after `lib/netfetch.py`'s
 tries, under Conventions): it exits 1 and the last good files stay live. The finished seasons' files (2012 to
 last season's stats, depth charts and injury reports, last season's play-by-play once this one is under way,
 and the season before last's while the rankings are still on the finished season, which the units carry in
-and which is not read once the rankings move: in season 43 of the 49 a run reads) never change, so `elo.yml` keeps them between runs with `actions/cache`: the
-build writes `elo/cache/past.lst`, the files it read as a finished season's, once every source was had, and
+and which is not read once the rankings move: in season 43 of the 50 a run reads) never change, so `elo.yml` keeps them between runs with `actions/cache`: the
+build writes `elo/cache/past.lst`, the files it read as a finished season's, once every source `load()` reads was had
+(before the draft picks are read, which are never listed), and
 the job saves exactly those under a key on their names (a new entry only when that set changes: a season finishing, the rankings moving to it; bump `v1`
-in it to throw them away), so a run asks nflverse for the season in play, games.csv and the roster alone,
-which it always downloads fresh. A kept copy that will not read is fetched again. A correction nflverse
+in it to throw them away), so a run asks nflverse for the season in play, games.csv, the roster and the draft
+picks alone, which it always downloads fresh. A kept copy that will not read is fetched again. A correction nflverse
 makes to a finished season's file later is not read until `v1` is bumped (and `elo/check.py` reads the same
 copies, so nothing flags it): bump it when nflverse says it republished past seasons. `python3 elo/test_fetch.py`
-holds the downloads and `past.lst` to their cases on a local server. Every club is read in today's code (`TEAM_NOW`: games.csv, the depth charts
+holds the downloads, `past.lst` and the draft picks to their cases on a local server. Every club is read in today's code (`TEAM_NOW`: games.csv, the depth charts
 and the injury reports write OAK, SD and STL for the seasons before those moves, the player stats LV, LAC
 and LA); until 13 October 2026 the 263 games those clubs played in 2012-2019 were left out of the game
 model's fit and walk-forward, and the matchup formula read their home games as away games (the player
@@ -1985,11 +1988,73 @@ A game's score (THE SCORES in the build) is EPA for a quarterback, production fo
 tight end (yards from scrimmage, 20 a touchdown and 10 for a back, less 25 a fumble lost: EPA rated a
 club's lead back above his backup in only 44% of seasons, since the average carry loses expected
 points), points over expected for a kicker, and a weighted count of events for a defender (a
-lineman's QB hits count double); a quarterback's first career rating is 1450, not 1500. The October
+lineman's QB hits count double); a player's first career rating comes from his draft slot (**The draft start**, below,
+since November 2026: until then it was 1500, and a quarterback's 1450 from 2013 on). The October
 2026 evaluation of every position (each tested by full rebuilds against the same data, walk-forward
 held) kept the rest: quiet games skipped, the kickers' expectation, the defensive backs' and
 linebackers' scores, which still measure involvement more than coverage or role (open questions:
 an edge group across DL and LB, blocking credit for tight ends).
+
+**The draft start** (November 2026, `elo/build.py`'s THE DRAFT START, whose docstring is the rule, and
+`elo/tools/draft_start_fit.py` its fit; the owner's "do all" to the Elo diagnosis of 3 November, its item 8: "Start
+rookies from their draft slot instead of a flat 1500"). From 2013 on a player's first career rating is 1500 + a + b
+ln(min(max(pick, floor), 262)) on his group's curve (`DRAFT_START`), pick his overall pick in nflverse's
+`draft_picks.csv` by his gsis id (where the file gives none, or a placeholder in its place, through his Pro Football
+Reference id on the roster the build reads: Peter Woods, KC's pick 29 of 2026, whose id there is `WOO547869`, and Tyre
+West, pick 222, with none, would otherwise start as players never drafted, Woods at 1396 where his slot gives 1482); a
+player never drafted, or drafted after the season of his first game, takes pick 262,
+the last pick of the longest draft since the draft went to seven rounds (2003's and 2022's), so Brock Purdy starts as one
+never drafted; a kicker one level for every new kicker, 1482; 2012, the warm-up, keeps 1500 (an expected quarterback with
+no rating yet `QB_START`'s 1450). At pick 1, 32 and 100 and never drafted: a quarterback 1483, 1455, 1431, 1412; a back
+1711, 1557, 1473, 1401; a receiver 1532, 1477, 1431, 1393; a tight end 1529, 1529, 1455, 1392; a lineman 1560, 1479, 1434,
+1396; a linebacker 1531, 1531, 1448, 1378; a defensive back 1514, 1514, 1464, 1423. The game model fills an expected
+starter with no rating yet the same way, on the draft as it stood for that game's season. Why: at 1500 a new player was
+rated far above what he went on to do, the more so the later he was drafted (S - E over his first eight rated games
+-0.071 on 2,595 players first rated 2018-2025). Each group's curve and floor (1, 4, 8, 16 or 32: the curve flat above that
+pick) were chosen on players first rated 2013-2017 alone, one season left out at a time, by Elo's own w-weighted
+cross-entropy of S against E over their first two rated seasons; two refits reproduced every constant to three places. A
+forking path, said: the first eight games were the horizon first fitted, and failed the game model's walk-forward
+(+0.00099, 2 seasons of 8 better); two seasons were then chosen on 2013-2017 numbers alone. Scored once on 2018-2025: new
+players' first eight rated games' cross-entropy 2018 .6720 to .6572, 2019 .6659 to .6508, 2020 .6630 to .6469, 2021 .6627
+to .6457, 2022 .6698 to .6551, 2023 .6660 to .6493, 2024 .6679 to .6523, 2025 .6619 to .6445 (8 of 8; -0.0159 [-0.0171,
+-0.0147], n 2,595; their bias -0.071 to -0.030; backs, receivers, tight ends, linemen, linebackers and defensive backs each
+8 of 8, quarterbacks level, 3 of 8 on 104, kickers level, 4 of 8 on 57); a rookie's rating at his season's end against his
+next season's production (Spearman within the position, 848 rookies) 2018 +.126, 2019 +.024, 2020 +.162, 2021 +.052, 2022
++.152, 2023 +.176, 2024 +.073 (7 of 7; 0.315 to 0.424, +0.109 [+0.067, +0.152]); veterans' next season -0.0062 [-0.0120,
+-0.0003], 3 of 7 (every next-season game counted, +0.008, 5 of 7). The game model's walk-forward is level: 2018 -.0019,
+2019 +.0040, 2020 -.0034, 2021 +.0021, 2022 -.0015, 2023 +.0042, 2024 -.0032, 2025 +.00001 (4 of 8; +0.00006 [-0.0023,
++0.0023], n 2,219; games called right 1414 to 1404), and so are the calls on the Joker (`JOKER_BASE` refitted on the new
+ratings, BETA 0.2058 to 0.1973; 707-377 to 710-374 on 2022-2025, log loss +0.00014 [-0.0005, +0.0008], 2 of 4). So
+rookies' career ratings become honest, and the owner was told to expect no better game picks. Every number built on the
+career rating moves with it: the units sit about 15 points lower (the 2018-2025 mean faced 1536.6 to 1521.2), season
+ratings 7.1 lower on average (15.3 at most), a few top-25 ranks on the ELO Ratings tab by 1 or 2, every Elo part, lean and
+Elo pick, the matchup formula and the Mismatches, the matchup bubble, the Power Ratings' lineup part, `walk_forward` and
+the ELO Model's coming calls (51 of 2022-2025's 1,084 games turned from the Joker's pick, 37 of them right); a frozen call
+never: each call on the Joker carries the BETA it was made at, `beta`, one made before calls carried theirs is read on
+0.2058, the build's `JOKER_BETA_WAS`, and `elo/check.py`'s RECORD holds every frozen call's chance and `beta` to the last
+publish, so one made again on today's BETA fails whether or not its pick turns. `ELO_AVG` was refitted on the new ratings (2016-2025; its legs, terms and trusted
+flags unchanged, their records moving, a back's rushing yards 36.160 to 36.122). The file is downloaded fresh on every Elo
+run and is required (`draft_slots`: the build stops, writing nothing, when it cannot be had, will not read or has no rows,
+and when it has no draft of the newest schedule's season with player ids once that season's week 1 is within
+`PRESEASON_CALLS` days or under way; only its season, pick and gsis_id columns are read, never its career outcomes).
+nflverse posts a class within days of the April draft (2026's: 255 of 257 picks with a gsis id, Woods's a placeholder
+and West's missing, both placed through the roster); a rookie with no id the roster can place starts as one never drafted
+and is put right on the run after nflverse gives it, since the ratings replay from 2012. players.json gives every player
+his first rating, `start`, and his draft slot, `draft` ([season, overall pick], or null). The game model's lineups are
+`lineup_rating` and `lineup_strength` in the build. Held, blocking: `elo/check.py`'s DRAFT (every player's `start` and
+`draft` on the gate's own reading of draft_picks.csv, the roster for a row with no gsis id, and his first rated game in
+nflverse's player stats, by its own arithmetic on its own copy of every constant, `DRAFT_START_OWN`, which the build's
+`DRAFT_START` must equal; the build's `first_rating` and `draft_slots` on fixtures, a placeholder and a missing id among
+them), its LINEUPS (the build's `lineup_rating` and `lineup_strength` on fixtures, an unrated starter at his draft start
+and a 2012 quarterback at 1450, on its own copies of `DEPTH`, `REPLACEMENT` and `QB_START`; and each coming call's matchup
+`m` worked out again from matchups.json's lineups and model.json's weights, an unrated starter on his draft start, the
+defences' strengths and league.defs held to its reading too, a call with a starter rated but in neither map skipped and
+counted), its JOKER on the new BETA (its own copies of 0.1973 and 0.2058: a coming call stands on the first and carries
+it, every ledger call is the rule's on the BETA it carries) and its RECORD (a frozen call's chance and `beta` as the last
+publish had them); `elo/test_fetch.py` (the file required and read fresh, a 404, a 500 every time, a missing column, no
+rows and offline with no copy each refused, a placeholder and a missing id placed through the roster, the newest
+schedule's draft with its ids required from `PRESEASON_CALLS` days before its week 1); and the three fit tools' "the
+build carries these constants".
 
 The rankings are of this season alone: each player's second rating (`RS` in the build) starts
 the season at 1500 with placement games (K = max(32, 695/(games+4)): 174 shrinking toward 32, so that every game ends up counting the
@@ -2024,17 +2089,22 @@ Model's calls stand on the Joker** (the owner's test of 19 October 2026: "the el
 significantly so I want to do a test. I want it to apply the ELO matchups to still predict outcomes but I want it to use
 the model the Joker as a baseline to make its picks"; THE JOKER BASELINE in `elo/build.py`): a call is the Joker's chance
 for the game (`betting/state.json`'s `joker`, as the build finds it, held within 1% and 99%) moved by the Elo matchup,
-log-odds plus `JOKER_BASE`'s BETA (0.2058) times `m`, the game model's position-group lineup gaps by its weights with home
-field left out (the Joker's chance has it). BETA is `elo/tools/joker_base_fit.py`'s, fitted once on 2021-2025, where
-research study 4 has both models' walk-forward calls, the Joker's chance held as it is: walk forward on 2022-2025, 707-377
-(65.2%, log loss 0.6345) against the Joker alone 687-397 (63.4%, 0.6354) and the game model alone 698-386 (64.4%,
-0.6343), the matchup turning the Joker's pick round in 4.2% of games, right in 33 of 46. Not kept: the Joker's log-odds
-weighted too (a mix of the two, 711-373, 0.6283), which is not the Joker as the baseline. A game the Joker has not
-called is the game model's own, with no `base`. Each call keeps `p_elo` (the game model's own chance), `p_joker` and `m`
-beside it, in `next` and in the ledger, so the test can be read both ways; `record.joker_base` counts the published calls
+log-odds plus `JOKER_BASE`'s BETA (0.1973; 0.2058 until November 2026) times `m`, the game model's position-group lineup
+gaps by its weights with home field left out (the Joker's chance has it). BETA is `elo/tools/joker_base_fit.py`'s, fitted
+on 2021-2025, where research study 4 has both models' walk-forward calls, the Joker's chance held as it is, and refitted
+once on the same seasons when the draft start moved every rating (**The draft start**, above): walk forward on 2022-2025,
+710-374 (65.5%, log loss 0.6346) against the Joker alone 687-397 (63.4%, 0.6354) and the game model alone 691-393 (63.7%,
+0.6342), the matchup turning the Joker's pick round in 4.7% of games, right in 37 of 51 (on the ratings before the draft
+start 707-377, 0.6345, and right in 33 of 46). Not kept: the Joker's log-odds weighted too (a mix of the two, 707-377,
+0.6284), which is not the Joker as the baseline. A game the Joker has not called is the game model's own, with no
+`base`. Each call keeps `p_elo` (the game model's own chance), `p_joker`, `m` and, since November 2026, the BETA it was
+made at (`beta`) beside it, in `next` and in the ledger, so the test can be read both ways and a frozen call is read back
+on its own BETA (one with none on 0.2058, `JOKER_BETA_WAS`); `record.joker_base` counts the published calls
 on the Joker from `joker_base_from_week`, which the tab's bar drew apart from the Elo-alone calls before them, beside the
 baseline's walk-forward (its title the Joker's and the game model's alone), until 22 October 2026 (below). `elo/check.py`
-(JOKER) works the rule out on its own on every coming call and ledger entry against `betting/state.json`.
+(JOKER) works the rule out on its own on every coming call and ledger entry against `betting/state.json`, each on the BETA
+it carries (its own copies of 0.1973 and 0.2058: at today's, 108 of the ledger's 136 calls on the Joker would fail), and
+its RECORD holds a frozen call's chance and `beta` to the last publish, so none is made again on a BETA refitted since.
 The season's games played before the first build on the Joker (`JOKER_FROM`, 19 October 2026 15:20 UTC) were
 re-picked on it the same day, the owner's call ("i just dont see any changes in the ELO model pickem record and i wanted
 you to change it based on what it would have picked"): each called again once, after the game, on what was known before
