@@ -153,7 +153,13 @@
  *     matchup formula's units by their players' Elo ("vs the LAC secondary and defensive line, 32nd by player Elo"),
  *     never "a pass defense ranked", which on the page is the ELO Ratings tab's Pass Defense table; clubs level on a unit
  *     (to the hundredth) share its rank, held on a copy with one club's secondary a floating-point hair above another's,
- *     and clubs level on the Elo a team table shows share its # (22 October 2026), held on a copy so ranked. Since October 2026 the whole page's smoke
+ *     and clubs level on the Elo a team table shows share its # (22 October 2026), held on a copy so ranked;
+ *   - (November 2026, the owner's call "Switch to ELO tab tables") a player's window ranks his opponent's Pass Rush, Run
+ *     Defense and Pass Defense, three pills where the defensive line, the linebackers and the secondary stood, as the ELO
+ *     Ratings tab's own tables draw them (model.json's units, the check's own reading): on the real files, on a copy with
+ *     two clubs level on the Elo shown in Pass Defense (both windows one rank), on a copy with Run Defense taken out and
+ *     the opponent carried on Pass Rush with no Pass Defense row (a dash for each, the carried mark), and on a matchups
+ *     file whose league table is emptied (the same pills). Since October 2026 the whole page's smoke
  *     (nflbets/build/smoke.js) runs after the Elo job's commit, so this is the gate on the files
  *     reaching the code that touches a chance or a price.
  */
@@ -1060,7 +1066,7 @@ async function v2Mm(MU, lab) {
         if (tr) { tr.click(); await wait(20);
           chk(txt(d.querySelector('#pePlView .pe-begun')) === 'This game has kicked off.' && !d.querySelector('#pePlView .pe-note') && !eloGone(d.getElementById('pePlView')),
             `${r.name}'s window does not say "This game has kicked off." alone, or explains its stats: ${txt(d.querySelector('#pePlView .pe-begun'))} ${eloGone(d.getElementById('pePlView'))}`);
-          d.getElementById('pePlClose').click(); await wait(10); }
+          const cl = d.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } }
       } else notes.push('no ranked player in the first game with a mismatch: the window\'s kicked-off note is not checked');
       /* every game over: no card at all */
       w.__clock.now = 1e12; w.renderSlate(); await wait(20);
@@ -1094,12 +1100,12 @@ async function v2Mm(MU, lab) {
     const row = [...d.querySelectorAll('#peBody tr.pe-plrow')].find(tr => tr.dataset.pePl === top.id);
     if (row) { row.click(); await wait(20);
       chk(txt(d.querySelector('#pePlView .pe-sub')) === `Not expected to play: ${MU.out[top.id]}.`, 'his window does not give the build\'s reason, in a few words: ' + txt(d.getElementById('pePlView')).slice(0, 160));
-      d.getElementById('pePlClose').click(); await wait(10); }
+      { const cl = d.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } } }
     const say = async (r, want, what) => { const tr = r && [...d.querySelectorAll('#peBody tr.pe-plrow')].find(x => x.dataset.pePl === r.id);
       if (!tr) { notes.push(`no receiver shown to check the window's "${what}" line on`); return; }
       tr.click(); await wait(20);
       chk(txt(d.querySelector('#pePlView .pe-sub')) === want && !eloGone(d.getElementById('pePlView')), `${r.name}'s window does not say "${want}" alone: ` + txt(d.getElementById('pePlView')).slice(0, 200));
-      d.getElementById('pePlClose').click(); await wait(10); };
+      { const cl = d.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } } };
     if (inact) { w.eval('S').inactive[inact.id] = { week: +MU.week, status: 'Out' }; await say(inact, `Ruled out for week ${MU.week}.`, 'ruled out'); delete w.eval('S').inactive[inact.id]; }
     await say(gone, `No matchup for week ${MU.week}.`, 'no matchup');
   }
@@ -1150,7 +1156,7 @@ async function v2Mm(MU, lab) {
       else if (line.text && el[0].previousElementSibling !== view.querySelector('table.pe-t')) bad.push('its inputs\' line is not under the table');
       if (!txt(view.querySelector('h3')).includes(v.opp)) bad.push(`it does not name his opponent, ${v.opp}`);
       if (eloGone(view)) bad.push(eloGone(view));
-      d.getElementById('pePlClose').click(); await wait(10);
+      { const cl = d.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } }
       return bad; };
     const pickOn = (MU, w, g) => P.groups[g] && (P.groups[g].top || []).slice(0, 10).find(x => MU.avg[x.id] && !w.eloRuledOut(x.id) && !on(w, MU.avg[x.id].game_id));
     /* the files as they stand: every position's window that has a player to open */
@@ -1190,7 +1196,86 @@ async function v2Mm(MU, lab) {
       else { tr.click(); await wait(20);
         const view = dO.getElementById('pePlView'), head = [...view.querySelectorAll('thead th')].map(txt).join('|'), n = view.querySelectorAll('tbody tr').length, wantN = MUo.stats.WR.filter(st => MUo.players[r.id].stats[st]).length;
         chk(head === 'Stat|Recent form|Elo matchup|Projection' && n === wantN && !view.querySelector('[data-pe-in]'), `on a file from before the Elo-adjusted averages, ${r.name}'s window is not the matchup formula's as before: ${head}, ${n} rows of ${wantN}`);
-        dO.getElementById('pePlClose').click(); await wait(10); } } }
+        { const cl = dO.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } } } } }
+
+  /* ---- (November 2026, the owner's call "Switch to ELO tab tables") a player's window ranks his opponent's defence on the
+     ELO Ratings tab's own tables: three pills, Pass Rush, Run Defense and Pass Defense in that order (where the defensive
+     line, the linebackers and the secondary stood, ranked on the matchup formula's units by their defenders' player Elo,
+     matchups.json's league.defs, until then), each this check's own reading of model.json's units: the table's name as the
+     file names it, the club's Elo and its rank as the table draws it (the file's rank) out of the clubs it lists, "carried
+     from <season>" after it where the club is marked carried, a title naming the club, the table, its Elo and rank; a dash
+     before a team has a rating, on a file without the table or with no row for the club. On the real files (the first
+     receiver of the ten shown with a matchup, not ruled out), then on copies: two clubs made level on the Elo shown in Pass
+     Defense, his opponent and another that a second receiver is made to face, the table ranked again by its rule (one more
+     than the rated clubs above), both windows giving the one rank; and Run Defense taken out of the file whole, with his
+     opponent's Pass Rush marked carried and its Pass Defense row taken out, a dash for both and the carried mark ---- */
+  if (MU0) {
+    const DEF_C = [['pass_rush', 'Pass Rush'], ['run_def', 'Run Defense'], ['pass_def', 'Pass Defense']];
+    const ordC = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
+    const rowC = (Mo, k, t) => { const U = Mo && Mo.units; if (!U || !U.off || !U.def || !Object.values(U.off).some(v => v.games || v.carried)) return null;
+      const T = U[k], meta = U.tables && U.tables[k]; if (!T || typeof T !== 'object' || !meta || !meta.label) return null;
+      const v = T[t]; if (!v || v.rank == null) return null; const pr = U.params || {}, from = pr.carry && pr.carry_from != null ? pr.carry_from : null;
+      return { name: String(meta.label), elo: v.elo, rank: v.rank, n: Object.keys(T).length, carried: !!v.carried && from != null, from }; };
+    const wantC = (Mo, opp) => DEF_C.map(([k, nm]) => { const r = rowC(Mo, k, opp), meta = Mo && Mo.units && Mo.units.tables && Mo.units.tables[k];
+      return r ? [k, `${r.name}: ${r.elo} · ${ordC(r.rank)} of ${r.n}${r.carried ? ` carried from ${r.from}` : ''}`, `${r.elo} · ${ordC(r.rank)} of ${r.n}`, `${opp} ${r.name} on the ELO Ratings tab: Elo ${r.elo}, ${ordC(r.rank)} of ${r.n}${r.carried ? `, carried from ${r.from}` : ''}`]
+        : [k, `${meta && meta.label ? String(meta.label) : nm}: –`, '–', null]; });
+    /* the table ranked again by its rule: one more than the rated clubs (a game, or carried) above on the Elo shown; a
+       club with no rating after every rated one */
+    const rerank = T => { const rated = Object.values(T).filter(v => v.games || v.carried); let u = rated.length;
+      for (const [, v] of Object.entries(T).sort(([a], [b]) => a.localeCompare(b))) v.rank = (v.games || v.carried) ? 1 + rated.filter(x => x.elo > v.elo).length : ++u; };
+    const shown = (MUx, w) => P.groups.WR.top.slice(0, 10).filter(x => entryOwn(MUx, x.id) && !w.eloRuledOut(x.id));
+    const hold = async (Mo, MUx, ids, lab) => { const errors = [], { w, d } = page(MUx, { M: Mo, errors }); await wait(60); const out = {};
+      [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'WR').click(); await wait(20);
+      for (const id of ids) { const tr = [...d.querySelectorAll('#peBody tr.pe-plrow')].find(x => x.dataset.pePl === id), opp = (entryOwn(MUx, id) || {}).opp;
+        if (!tr) { chk(false, `${lab}: ${id} is not drawn in the rankings to open`); continue; }
+        tr.click(); await wait(20);
+        const sp = [...d.querySelectorAll('#pePlView .pe-pl-def > span')], want = wantC(Mo, opp), bad = [];
+        if (sp.length !== 3) bad.push(`${sp.length} pills`);
+        else sp.forEach((el, i) => { const [k, t, b, ti] = want[i]; if (el.dataset.peDef !== k || txt(el) !== t || txt(el.querySelector('b')) !== b || el.getAttribute('title') !== ti)
+          bad.push(`pill ${i + 1} (${el.dataset.peDef}) "${txt(el)}"${el.getAttribute('title') ? ` titled "${el.getAttribute('title')}"` : ''}, not ${k} "${t}"${ti ? ` titled "${ti}"` : ' untitled'}`); });
+        chk(!bad.length && !d.querySelector('#pePlView .pe-pl-def [data-pe-def]:not(span)'), `${lab}: ${P.players[id] ? P.players[id].name : id}'s window does not rank ${opp}'s Pass Rush, Run Defense and Pass Defense as the ELO Ratings tab's tables draw them: ${bad.slice(0, 3).join('; ')}`);
+        out[id] = { opp, got: sp.map(txt) };
+        const cl = d.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } }
+      chk(!errors.length, `${lab}: the page threw drawing a player's window: ${errors.slice(0, 2).join('; ')}`);
+      return out; };
+    const { w: w0 } = page(MU0); await wait(60); const two = shown(MU0, w0);
+    if (!two.length) notes.push('no receiver shown with a matchup this week: the window\'s defence tables are not checked');
+    else if (!rowC(M, 'pass_def', entryOwn(MU0, two[0].id).opp)) {
+      /* before a team has a rating, a file without the position tables or no Pass Defense row for his opponent: the real
+         files' window alone, each pill as this check reads it (a dash where it finds no row), with no copy to plant on */
+      await hold(M, MU0, [two[0].id], 'the real files');
+      notes.push('no team rating yet, or no Pass Defense row for the first receiver\'s opponent: the window\'s defence tables held on the real files alone (no level or carried copy)');
+    } else {
+      const r1 = two[0], X = entryOwn(MU0, r1.id).opp;
+      await hold(M, MU0, [r1.id], 'the real files');
+      /* two clubs level on Pass Defense: X and Y (the rated club, by a game or carried, ranked furthest from X), a second
+         receiver made to face Y */
+      const ML = JSON.parse(JSON.stringify(M)), TL = ML.units.pass_def, Y = Object.keys(TL).filter(t => t !== X && (TL[t].games || TL[t].carried)).sort((a, b) => Math.abs(TL[b].rank - TL[X].rank) - Math.abs(TL[a].rank - TL[X].rank) || a.localeCompare(b))[0];
+      const MUL = JSON.parse(JSON.stringify(MU0)), r2 = P.groups.WR.top.slice(0, 10).find(x => x.id !== r1.id && entryOwn(MUL, x.id) && !w0.eloRuledOut(x.id));
+      if (!Y || !r2) chk(false, `the window's defence tables: the level copy has nothing to stand on (${Y || 'no other rated club on Pass Defense'}, ${r2 ? r2.id : 'no second receiver'})`);
+      else { TL[Y].elo = TL[X].elo; rerank(TL);
+        const e2 = entryOwn(MUL, r2.id); e2.opp = Y; if (MUL.players && MUL.players[r2.id]) MUL.players[r2.id].opp = Y;
+        const above = Object.values(TL).filter(v => (v.games || v.carried) && v.elo > TL[X].elo).length;
+        const o = await hold(ML, MUL, [r1.id, r2.id], `${X} and ${Y} level on Pass Defense`);
+        chk(TL[X].rank === TL[Y].rank && TL[X].rank === above + 1 && o[r1.id] && o[r2.id] && o[r1.id].got[2] === o[r2.id].got[2] && o[r1.id].got[2].includes(`${ordC(above + 1)} of`),
+          `with ${X} and ${Y} level on Pass Defense at ${TL[X].elo}, the two windows read ${o[r1.id] ? o[r1.id].got[2] : '?'} and ${o[r2.id] ? o[r2.id].got[2] : '?'}, not the one rank ${ordC(above + 1)}`); }
+      /* Run Defense taken out whole; X carried on Pass Rush and with no Pass Defense row */
+      const MX = JSON.parse(JSON.stringify(M)); delete MX.units.run_def; if (MX.units.tables) delete MX.units.tables.run_def;
+      if (!MX.units.pass_rush || !MX.units.pass_rush[X]) chk(false, `the window's defence tables: the carried copy has nothing to stand on (no Pass Rush row for ${X})`);
+      else {
+        Object.assign(MX.units.pass_rush[X], { games: 0, carried: true }); delete MX.units.pass_def[X];
+        if (!MX.units.params || MX.units.params.carry == null || MX.units.params.carry_from == null) MX.units.params = Object.assign({}, MX.units.params, { carry: 0.42, carry_from: (+MX.units.season || 2026) - 1 });
+        const o = await hold(MX, MU0, [r1.id], 'Run Defense taken out');
+        const g = o[r1.id] ? o[r1.id].got : [], nPR = Object.keys(MX.units.pass_rush).length;
+        chk(g[1] === 'Run Defense: –' && g[2] === 'Pass Defense: –' && / carried from \d{4}$/.test(g[0] || '') && (g[0] || '').includes(` of ${nPR} carried from `),
+          `with Run Defense taken out and ${X} carried on Pass Rush with no Pass Defense row, the window reads ${g.join(' | ')}`); }
+      /* and no league.defs read: the same window on a matchups file whose league table is emptied and every block's units
+         moved draws the same three pills */
+      const MUz = JSON.parse(JSON.stringify(MU0)); if (MUz.league) MUz.league.defs = {}; for (const v of Object.values(MUz.players || {})) if (v.opp_def) v.opp_def = { DL: 1, LB: 1, DB: 1 };
+      await hold(M, MUz, [r1.id], 'the matchup formula\'s units emptied');
+      notes.push(`the window's defence tables held on the real files (${r1.id} facing ${X}), ${X} and ${Y} level on Pass Defense, and Run Defense taken out`);
+    }
+  }
 
   /* ---- Overall Offense and Overall Defense: the two pills, the table, the sort, the window ---- */
   const U0 = M.units;

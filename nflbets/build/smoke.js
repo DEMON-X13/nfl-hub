@@ -923,6 +923,49 @@ const urkOwn = (defs, t, val) => defs[t] ? 1 + Object.keys(defs).filter(x => lvl
 const mmRankOwn = (M, group, opp) => { const defs = {}; for (const v of Object.values(M.players || {})) if (v.opp_def) defs[v.opp] = v.opp_def;
   Object.assign(defs, (M.league && M.league.defs) || {}); const u = MM_UNITS_OWN[group], avg = d => u.reduce((a, k) => a + d[k], 0) / u.length;
   return defs[opp] ? { rank: urkOwn(defs, opp, avg), n: Object.keys(defs).length } : null; };
+/* (November 2026, the owner's call "Switch to ELO tab tables") the defence a player's window and the Game snapshot's
+   Starters headers rank, the smoke's own map: the defensive line on the ELO Ratings tab's Pass Rush table, the
+   linebackers on its Run Defense, the secondary on its Pass Defense (model.json's units), the window's pills in that
+   order. A club's row as the tab's table draws it (defRowOwn): the table's name as the file names it, the club's Elo, the
+   file's rank (clubs level on the Elo shown share it), out of the clubs the table lists, and carried where the club is
+   marked carried and the file names the season carried from; null before any team has a rating, on a file without the
+   table or with no row for the club, where the window shows a dash and the header an empty end. Never matchups.json's
+   league.defs, the matchup formula's units, which ranked both until then */
+const DEF_TABLE_OWN = { DL: ['pass_rush', 'Pass Rush'], LB: ['run_def', 'Run Defense'], DB: ['pass_def', 'Pass Defense'] }, DEF_ORDER_OWN = ['DL', 'LB', 'DB'];
+const defRowOwn = (MO, grp, t) => { const U = MO && MO.units, k = DEF_TABLE_OWN[grp][0];
+  if (!U || !U.off || !U.def || !Object.values(U.off).some(v => v.games || v.carried)) return null;
+  const T = U[k], meta = U.tables && U.tables[k]; if (!T || typeof T !== 'object' || !meta || !meta.label) return null;
+  const v = T[t]; if (!v || v.rank == null) return null;
+  const pr = U.params || {}, from = pr.carry && pr.carry_from != null ? pr.carry_from : null;
+  return { key: k, name: String(meta.label), elo: v.elo, rank: v.rank, n: Object.keys(T).length, carried: !!v.carried && from != null, from }; };
+const defNameOwn = (MO, grp) => { const k = DEF_TABLE_OWN[grp][0], m = MO && MO.units && MO.units.tables && MO.units.tables[k]; return m && m.label ? String(m.label) : DEF_TABLE_OWN[grp][1]; };
+const defTitleOwn = (r, t) => `${t} ${r.name} on the ELO Ratings tab: Elo ${r.elo}, ${ordOwn(r.rank)} of ${r.n}${r.carried ? `, carried from ${r.from}` : ''}`;
+/* a player's window's three pills against the smoke's reading for his opponent: each its table's key in order, its words
+   ("Pass Rush: 1580 · 5th of 32", "carried from 2025" after it where so, "Run Defense: –" with no row) and its title */
+const defPillsBad = (view, MO, opp) => { const sp = view ? [...view.querySelectorAll('.pe-pl-def > span')] : [], bad = [];
+  if (sp.length !== 3) return [`${sp.length} pills, not 3`];
+  DEF_ORDER_OWN.forEach((grp, i) => { const r = defRowOwn(MO, grp, opp), el = sp[i], k = DEF_TABLE_OWN[grp][0];
+    const want = r ? `${r.name}: ${r.elo} · ${ordOwn(r.rank)} of ${r.n}${r.carried ? ` carried from ${r.from}` : ''}` : `${defNameOwn(MO, grp)}: –`, wb = r ? `${r.elo} · ${ordOwn(r.rank)} of ${r.n}` : '–', wt = r ? defTitleOwn(r, opp) : null;
+    if (el.dataset.peDef !== k || txt(el) !== want || txt(el.querySelector('b')) !== wb || el.getAttribute('title') !== wt)
+      bad.push(`pill ${i + 1} (${el.dataset.peDef}) reads "${txt(el)}"${el.getAttribute('title') ? ` titled "${el.getAttribute('title')}"` : ''}, the smoke's reading ${k} "${want}"${wt ? ` titled "${wt}"` : ' untitled'}`); });
+  return bad; };
+/* a Game snapshot's Starters headers against the smoke's reading for the game's two clubs: each defensive group's header
+   names its table under the group's label (lower case) and at either end carries the club's rank in it as the table
+   draws it, titled with the club, the table, its Elo and rank (and carried), the better rank of the two marked and
+   neither on a tie or with a club missing; an end with no row is empty. Returns the problems and how many ends it held */
+const defHeadsBad = (md, MO, a, h) => { const bad = []; let ends = 0, heads = 0;
+  for (const tr of md ? md.querySelectorAll('#gsPos tr.gs-grp') : []) { const u = tr.dataset.gsGrp;
+    if (!DEF_TABLE_OWN[u]) { if (tr.querySelector('[data-gs-def], [data-gs-gsub]')) bad.push(`${u}'s header carries a defence's rank`); continue; }
+    heads++;
+    const sub = tr.querySelector('[data-gs-gsub]'); if (txt(sub) !== defNameOwn(MO, u).toLowerCase()) bad.push(`${u}'s header names '${txt(sub)}' under its label, not '${defNameOwn(MO, u).toLowerCase()}'`);
+    const ra = defRowOwn(MO, u, a), rh = defRowOwn(MO, u, h), best = ra && rh && ra.rank !== rh.rank ? (ra.rank < rh.rank ? a : h) : null;
+    for (const [t, r, side] of [[a, ra, 'gs-a'], [h, rh, 'gs-h']]) { const el = tr.querySelector(`[data-gs-def="${t}:${u}"]`), end = tr.querySelector(`.gs-ur.${side}`);
+      if (!r) { if (el || txt(end)) bad.push(`${t}'s ${u} end reads '${txt(end)}', where ${defNameOwn(MO, u)} has no row for it`); continue; }
+      ends++;
+      if (!el || !end || !end.contains(el) || txt(el) !== `${ordOwn(r.rank)} of ${r.n}` || txt(el.querySelector('b')) !== ordOwn(r.rank) || el.dataset.gsTable !== r.key || el.getAttribute('title') !== defTitleOwn(r, t))
+        bad.push(`${t}'s ${u} end reads '${el ? txt(el) : 'nothing'}' (${el ? el.dataset.gsTable : ''}${el && el.getAttribute('title') ? `, "${el.getAttribute('title')}"` : ''}), the smoke's reading ${r.key} '${ordOwn(r.rank)} of ${r.n}' ("${defTitleOwn(r, t)}")`);
+      else if (el.classList.contains('gs-better') !== (best === t)) bad.push(`${t}'s ${u} end is${best === t ? ' not' : ''} marked (${a} ${ra ? ra.rank : '–'}, ${h} ${rh ? rh.rank : '–'})`); } }
+  return { bad, ends, heads }; };
 /* (4 November 2026) the Mismatches on the averages' own Elo part (elo/build.py, THE MISMATCH SCORE), the smoke's own
    reading of a matchups file M carrying the score (mmOnOwn): a back's, receiver's or tight end's lead leg alone (the
    smoke's own copy, MM_LEAD_V2_OWN: a back's rushing yards, a receiver's or tight end's receiving yards; never a
@@ -5630,15 +5673,12 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           { const sts = legsOwn('WR', v), trusted = st => muTrustOwn(MU, 'WR', st);
             chk(statRows.every((tr, i) => tr.classList.contains('pe-weak') === !trusted(sts[i])), 'a stat is faded where it should not be, or the other way round');
             const rb = rowsBad(view, 'WR', v); chk(!rb.length, 'a receiver\'s window does not draw the Elo-adjusted average\'s breakdown, a row a leg: ' + rb.slice(0, 3).join('; ')); }
-          chk(view.querySelectorAll('.pe-pl-def span').length === 3 && /of \d+/.test(txt(view.querySelector('.pe-pl-def'))), 'the window does not rank the three units he faces');
-          /* each of the three ranked as the matchup formula ranks them, the smoke's own reading (mmRankOwn's map of the
-             clubs' units): clubs level on a unit share its rank, one more than the clubs above them, as on the Mismatches
-             and the Game snapshot's Starters headers (20 October 2026: ATL and NO level on the secondary read 24th and 23rd) */
-          { const defs = {}; for (const x of Object.values(MU.players || {})) if (x.opp_def) defs[x.opp] = x.opp_def;
-            Object.assign(defs, (MU.league && MU.league.defs) || {});
-            const ks = Object.keys(defs), want = ['DL', 'LB', 'DB'].map(u => defs[v.opp] ? `${ordOwn(urkOwn(defs, v.opp, d => d[u]))} of ${ks.length}` : '–');
-            const got = [...view.querySelectorAll('.pe-pl-def span b')].map(txt);
-            chk(got.join('|') === want.join('|'), `a player's window does not rank the units he faces as the matchup formula does, level clubs sharing a rank: ${got.join(', ')} against ${want.join(', ')}`); }
+          /* (November 2026, the owner's call "Switch to ELO tab tables") the three pills rank his opponent's Pass Rush, Run
+             Defense and Pass Defense as the ELO Ratings tab's own tables draw it (model.json's units, the smoke's own
+             reading, defPillsBad): the table's name, the club's Elo and rank of the clubs it lists, carried where so; until
+             then the matchup formula's units by their defenders' player Elo, matchups.json's league.defs */
+          { const pb = defPillsBad(view, JSON.parse(ELO_M), v.opp);
+            chk(!pb.length, `${eloP.players[pid].name}'s window does not rank ${v.opp}'s defence on the ELO Ratings tab's tables as they draw it: ${pb.slice(0, 3).join('; ')}`); }
           d.getElementById('pePlClose').click(); await wait(20);
           chk(!plOpen(), 'Close did not close the player window');
           withMu.querySelector('button.pe-plbtn').click(); await wait(20);
@@ -5654,10 +5694,12 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           if (!kr) console.log('  (a kicker\'s window: no kicker shown has an Elo-adjusted average this week; skipped)');
           else { kr.click(); await wait(20); const kv = muEntryOwn(MU, kr.dataset.pePl), rb = rowsBad(d.getElementById('pePlView'), 'K', kv);
             chk(plOpen() && !rb.length && legsOwn('K', kv).join() === 'fg_made,kick_pts', 'a kicker\'s window does not draw his Elo-adjusted averages, field goals made and kicking points: ' + rb.slice(0, 3).join('; '));
+            /* (November 2026) and his opponent's three defence tables, as every window with a matchup ranks them */
+            { const pb = defPillsBad(d.getElementById('pePlView'), JSON.parse(ELO_M), kv.opp); chk(!pb.length, `a kicker's window does not rank ${kv.opp}'s defence on the ELO Ratings tab's tables as they draw it: ${pb.slice(0, 3).join('; ')}`); }
             d.getElementById('pePlClose').click(); await wait(20); }
           [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'DL').click(); await wait(40);
           d.querySelector('#peBody tr.pe-plrow').click(); await wait(20);
-          chk(plOpen() && txt(d.querySelector('#pePlView .pe-sub')) === 'There is no matchup formula for defensive line.' && !d.querySelector('#pePlView tbody tr'),
+          chk(plOpen() && txt(d.querySelector('#pePlView .pe-sub')) === 'There is no matchup formula for defensive line.' && !d.querySelector('#pePlView tbody tr') && !d.querySelector('#pePlView .pe-pl-def'),
             'a defensive lineman\'s window does not say "There is no matchup formula for defensive line." alone: ' + txt(d.querySelector('#pePlView .pe-sub'))); }
         else { d.querySelector('#peBody tr.pe-plrow').click(); await wait(20);
           chk(plOpen() && txt(d.querySelector('#pePlView .pe-sub')) === 'There is no matchup formula for kickers.' && !/the projections cover/.test(txt(d.getElementById('pePlView'))) && !d.querySelector('#pePlView tbody tr'),
@@ -7396,8 +7438,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   await glanceChecks();
   /* ---- (app v135) the parlay sums the same to the bit, and Suggested Parlays opened without a freeze ---- */
   await softChecks();
-  /* ---- clubs level on a matchup unit share its rank: its own section, at the end of this file ---- */
-  await tieChecks();
+  /* ---- (November 2026) the defences a player's window and the Starters headers rank, on the ELO tab's tables: its own section, at the end of this file ---- */
+  await defTabChecks();
   /* ---- (the review of 4 November 2026) the Mismatches on the score on a made-up game, at any hour: its own section, at the end of this file ---- */
   await mmFixChecks();
   /* ---- (4 November 2026) the inputs in a player's window on a fixture of the smoke's own, at any hour: its own section, at the end of this file ---- */
@@ -7840,31 +7882,22 @@ async function snapshotChecks() {
       chk(bad.length === 0, `snapshot (${label}): a bar or an edge mark of the verdict is not the files': ${bad.slice(0, 5).join('; ')}${bad.length > 5 ? ` (${bad.length} in all)` : ''}`); }
 
     /* the starters' edge marks: the higher season Elo of a pair, both ranked, wears the mark and
-       nothing else on the row does; each defensive group's header carries both teams' unit as the
-       matchup formula ranks it (mu.league.defs, 1st the best), the better one marked */
-    { const bad = [], defs = (eloMu.league && eloMu.league.defs) || {}, nD = Object.keys(defs).length;
-      /* clubs level on a unit (to the hundredth) share its rank, one more than the clubs above them, as mmRankOwn ranks
-         the Mismatches */
-      const urk = (t, u) => urkOwn(defs, t, d => d[u]);
-      let marks = 0, units = 0;
+       nothing else on the row does; each defensive group's header carries both teams' rank in its ELO Ratings tab table
+       (the owner's call of November 2026, "Switch to ELO tab tables": the defensive line on Pass Rush, the linebackers
+       on Run Defense, the secondary on Pass Defense; model.json's units, the smoke's own reading, defHeadsBad), the
+       better one marked, where until then it was the matchup formula's units (matchups.json's league.defs) */
+    { const H = defHeadsBad(md, eloM, a, h), bad = [...H.bad], units = H.ends, anyRow = DEF_ORDER_OWN.some(u => defRowOwn(eloM, u, a) || defRowOwn(eloM, u, h));
+      let marks = 0;
       for (const tr of md.querySelectorAll('#gsPos tbody tr')) {
-        if (tr.classList.contains('gs-grp')) { const u = tr.dataset.gsGrp;
-          if (['DL', 'LB', 'DB'].includes(u) && nD) { const ra = urk(a, u), rh = urk(h, u), best = ra && rh && ra !== rh ? (ra < rh ? a : h) : null;
-            for (const [t, r] of [[a, ra], [h, rh]]) { const el = tr.querySelector(`[data-gs-def="${t}:${u}"]`);
-              if (!r) { if (el) bad.push(`${t} ${u} shows a unit rank the file has not`); continue; }
-              units++;
-              if (!el || txt(el) !== `${ordinal(r)} of ${nD}`) bad.push(`${t} ${u} unit reads '${txt(el)}', the file ${ordinal(r)} of ${nD}`);
-              else if (el.classList.contains('gs-better') !== (best === t)) bad.push(`${t} ${u} unit is${best === t ? ' not' : ''} marked`); } }
-          else if (tr.querySelector('[data-gs-def]')) bad.push(`${u} carries a unit rank`);
-          continue; }
+        if (tr.classList.contains('gs-grp')) continue;
         const [ca, ch] = ['gs-a', 'gs-h'].map(c => tr.querySelector(`td.${c} .gs-pl[data-pid]`));
         const se = el => { const e = el && eloP.players[el.dataset.pid]; return e && e.rank != null && e.se != null ? e.se : null; };
         const sa = se(ca), sh = se(ch), best = sa != null && sh != null && sa !== sh ? (sa > sh ? ca : ch) : null;
         for (const el of [ca, ch]) if (el) { const m = !!el.querySelector('.gs-better'); if (m) marks++;
           if (m !== (el === best)) bad.push(`${(eloP.players[el.dataset.pid] || {}).name || el.dataset.pid} is${el === best ? ' not' : ''} marked`);
           else if (m && !el.querySelector('.gs-pse.gs-better')) bad.push('a mark sits off a starter\'s Elo'); } }
-      chk(bad.length === 0 && (!md.querySelector('#gsPos .gs-pos') || marks > 0) && (!md.querySelector('#gsPos .gs-pos') || !nD || units > 0),
-        `snapshot (${label}): an edge mark or a unit rank among the starters is not the files' (${marks} marks, ${units} unit ranks): ${bad.slice(0, 5).join('; ')}`); }
+      chk(bad.length === 0 && (!md.querySelector('#gsPos .gs-pos') || marks > 0) && (!md.querySelector('#gsPos .gs-pos') || !anyRow || units > 0) && (!md.querySelector('#gsPos .gs-pos') || H.heads === 3),
+        `snapshot (${label}): an edge mark among the starters, or a defence's rank in the Starters headers, is not the files' (${marks} marks, ${units} ends, ${H.heads} defensive headers): ${bad.slice(0, 5).join('; ')}`); }
 
     /* the Starters tabs: every group in its own tab (Offense, Defense, Kicker), one panel shown, its
        tab selected and the only one in the Tab order; the panels not shown still hold their players,
@@ -8835,7 +8868,10 @@ async function newsChecks() {
       /* both possessions have an Elo now (the Overall Defense against each quarterback), so both say what the figures are */
       if (labs.length !== 2 || !labs.every(t => /^The figures are each side's Elo/.test(t))) bad.push(`the labels' titles do not say what the figures are: ${labs.map(t => t.slice(0, 40)).join(' | ')}`);
       { const un = [...m.querySelectorAll('#gsPos p.gs-note')].map(txt), wantU = `Not rated yet: ${a} 2 players, ${h} 1 player`;
-        if (un.length !== 1 || un[0] !== wantU) bad.push(`the starters no file places read ${JSON.stringify(un)}, not "${wantU}"`); } }
+        if (un.length !== 1 || un[0] !== wantU) bad.push(`the starters no file places read ${JSON.stringify(un)}, not "${wantU}"`); }
+      /* (November 2026) with no position tables, the Starters headers name the three tables by their own names and rank
+         nobody: every end empty, nothing thrown */
+      { const H = defHeadsBad(m, M6, a, h); if (H.bad.length || H.ends || H.heads !== 3) bad.push(`the Starters headers on a model.json with no position tables: ${H.ends} ends, ${H.heads} defensive headers, ${H.bad.slice(0, 2).join('; ')}`); } }
     chk(bad.length === 0 && N6.errs.length === 0, `news: the matchup rows' fallbacks (no position tables, an unranked quarterback) are not drawn as the files say: ${N6.errs.join('; ')} ${bad.slice(0, 6).join('; ')}`);
     N6.w.close(); }
 
@@ -10223,98 +10259,103 @@ async function softChecks() {
 }
 
 /* =====================================================================================
-   CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS RANK (the owner's call of 22 October 2026: "in mismatches, make clubs tied
-   on a defense unit share the same rank in the mismatches, plaer window, and game snapshot"), on fixtures of the
-   smoke's own at any hour and in the off-season. A copy of matchups.json for the Props list's own week, its league
-   table (league.defs, every club) given two clubs A and B, who do not meet that week, the league's weakest units:
-   their secondaries level (B's a floating-point hair over A's, 1e-9, as a value the file writes to the tenth can come
-   out of arithmetic), and their front and linebackers set so a back's unit, the two averaged, is level on paper and
-   apart in floating point (worked out below, so an exact comparison would part them: held). On a made-up game of that
-   week two days out, A at B (in the season's schedule, a copy), the two best-ranked receivers and backs are planted as
-   expected starters, alternately facing A and B, rated four standard deviations above their position's average. Then,
-   on the page: each one's window on the ELO Ratings tab ranks the three units he faces as the smoke's own reading
-   (urkOwn, level to the hundredth), the secondaries level; and the made-up game's Game snapshot (the matchup bubble's
-   way in) carries in its Starters headers each club's three units ranked so, the secondaries level and unmarked.
-   Blocking: a rank the page states. (Until 4 November 2026 the section held the Mismatches the same way, each planted
-   player's bubble and his line in the snapshot's Mismatches; since, the Mismatches rank the averages' own Elo part and
-   name the ELO Ratings tab's table, its rank the file's, and the player window and the Starters headers alone read the
-   matchup formula's units.) ==================================================================================== */
-async function tieChecks() {
-  const c0 = checks, f0 = fails.length, MU = JSON.parse(ELO_MU), Pl = JSON.parse(ELO_P);
-  const defs = {}; for (const v of Object.values(MU.players || {})) if (v.opp_def) defs[v.opp] = { ...v.opp_def };
-  for (const [t, x] of Object.entries((MU.league && MU.league.defs) || {})) defs[t] = { ...x };
+   THE DEFENCES RANKED ON THE ELO TAB'S TABLES (the owner's call of November 2026, "Switch to ELO tab tables"), on
+   fixtures of the smoke's own at any hour and in the off-season. A player's window on the ELO Ratings tab and the Game
+   snapshot's Starters headers rank a defence on the tab's own tables (model.json's units: the defensive line on Pass Rush,
+   the linebackers on Run Defense, the secondary on Pass Defense), where until then they ranked the matchup formula's units
+   by their defenders' player Elo (matchups.json's league.defs: the section that stood here until then, CLUBS LEVEL ON A
+   MATCHUP UNIT SHARE ITS RANK, held those ranks level to the hundredth; its Mismatches half went on 4 November 2026 and its
+   window and Starters halves with this change, so the section is gone and this one stands in its place). Two made-up
+   games two days out by the page's clock, A at B and C at E, four clubs of the season none of whom meet the other of
+   their pair in the Props list's week, in a copy of the season, with model.json's units replaced wholesale by the smoke's
+   own (every club rated, ranks worked out by the tables' rule: one more than the rated clubs above on the Elo shown):
+   Pass Rush with A carried from last season, B with no row (31 clubs) and C above E; Run Defense missing whole (no table
+   and no name in units.tables); Pass Defense with A and B level on the Elo shown (one rank between them, the next club one
+   place on per club above it) and E above C. Four starters, the two best-ranked receivers and backs, planted in a copy of
+   matchups.json facing A, B, C and E. Held on the smoke's own reading (defRowOwn, defPillsBad, defHeadsBad): each one's
+   window, its three pills, the dash for the missing table and the missing row, the carried mark, the level pair's one
+   rank; each game's Starters headers, the empty end for the missing table and the missing row, the carried title, the
+   level pair unmarked and the better rank marked on C at E (C's on Pass Rush, E's on Pass Defense, so a header reading
+   another group's table is caught). Blocking: a rank the page states ==================================================================================== */
+async function defTabChecks() {
+  const c0 = checks, f0 = fails.length, MU = JSON.parse(ELO_MU), Pl = JSON.parse(ELO_P), MO = JSON.parse(ELO_M);
   const PW = PAGE_WEEK, WW = String(PW).padStart(2, '0'), sch = STATE.schedule;
   const meet = (x, y) => sch.some(g => +g.week === PW && [g.away_team, g.home_team].sort().join() === [x, y].sort().join());
-  const clubs = Object.keys(defs).sort();
-  let A = null, B = null;
-  for (const x of clubs) { for (const y of clubs) if (x !== y && !meet(x, y)) { A = x; B = y; break; } if (A) break; }
+  const clubs = [...new Set(sch.flatMap(g => [g.away_team, g.home_team]))].filter(t => typeof t === 'string' && /^[A-Z]{2,3}$/.test(t)).sort();
+  let quad = null;
+  for (const A of clubs) { for (const B of clubs) { if (B === A || meet(A, B)) continue;
+    for (const C of clubs) { if ([A, B].includes(C)) continue; const E = clubs.find(x => ![A, B, C].includes(x) && !meet(C, x)); if (E) { quad = [A, B, C, E]; break; } } if (quad) break; } if (quad) break; }
   const wrs = ((Pl.groups.WR || {}).top || []).slice(0, 2), rbs = ((Pl.groups.RB || {}).top || []).slice(0, 2);
-  if (!A || clubs.length < 4 || wrs.length < 2 || rbs.length < 2 || !MU.stats || !MU.stats.WR || !MU.stats.RB) {
-    chk(false, `tied ranks: the fixture has nothing to stand on (${clubs.length} clubs in matchups.json's league, ${wrs.length} receivers and ${rbs.length} backs ranked)`); return; }
-  /* the league's weakest units, A's and B's: the secondaries level to the hundredth (B a hair over), the backs' unit (the
-     front and the linebackers averaged) level on paper, apart in floating point */
-  const lo = u => Math.floor(Math.min(...clubs.map(t => defs[t][u])) - 60);
-  const dbA = lo('DB'), base = Math.min(lo('DL'), lo('LB'));
-  let hair = null;
-  for (let i = 0; i < 10 && !hair; i++) for (let j = 0; j < 10 && !hair; j++) for (let k = 0; k < 10 && !hair; k++) for (let m = 0; m < 10 && !hair; m++) {
-    const a1 = Math.round((base + i / 10) * 10) / 10, a2 = Math.round((base + j / 10) * 10) / 10, b1 = Math.round((base + k / 10) * 10) / 10, b2 = Math.round((base + m / 10) * 10) / 10;
-    if (a1 === b1) continue; const x = (a1 + a2) / 2, y = (b1 + b2) / 2; if (x !== y && lvlOwn(x) === lvlOwn(y)) hair = [a1, a2, b1, b2]; }
-  if (!hair) hair = [base, base + 0.4, base + 0.1, base + 0.3];
-  defs[A] = { DL: hair[0], LB: hair[1], DB: dbA }; defs[B] = { DL: hair[2], LB: hair[3], DB: dbA + 1e-9 };
-  const avgRB = d => (d.DL + d.LB) / 2, exactRk = (t, f) => 1 + clubs.filter(x => f(defs[x]) > f(defs[t])).length;
-  chk(urkOwn(defs, A, d => d.DB) === urkOwn(defs, B, d => d.DB) && urkOwn(defs, A, avgRB) === urkOwn(defs, B, avgRB) && exactRk(A, avgRB) !== exactRk(B, avgRB) && exactRk(A, d => d.DB) !== exactRk(B, d => d.DB),
-    `tied ranks: the fixture does not tie ${A} and ${B} to the hundredth while parting them exactly (the secondaries ${dbA} and ${dbA}+1e-9; the backs' unit ${hair.join(', ')})`);
-  /* the made-up game, A at B, two days out by the page's clock, in a copy of the season */
+  const muOk = muAvgOwn(MU) || (MU.stats && MU.stats.WR && MU.stats.RB);
+  if (!quad || clubs.length < 8 || wrs.length < 2 || rbs.length < 2 || !muOk) {
+    chk(false, `the defences on the ELO tab's tables: the fixture has nothing to stand on (${clubs.length} clubs on the schedule, ${wrs.length} receivers and ${rbs.length} backs ranked, matchups ${muOk ? 'readable' : 'with no legs'})`); return; }
+  const [A, B, C, E] = quad;
+  /* model.json's units, the smoke's own: Overall's two (every club one game, so a team has a rating) and the three tables */
+  const others = clubs.filter(t => !quad.includes(t)), base = {};
+  others.forEach((t, i) => { base[t] = 1300 + 10 * i; });
+  const table = plant => { const T = {}; for (const t of clubs) { const e = t in plant ? plant[t] : base[t]; if (e == null) continue; T[t] = { elo: e, games: 1, carried: false }; }
+    for (const v of Object.values(T)) v.rank = 1 + Object.values(T).filter(x => x.elo > v.elo).length;
+    return T; };
+  const off = table({ [A]: 1500, [B]: 1500, [C]: 1500, [E]: 1500 }), def = table({ [A]: 1500, [B]: 1500, [C]: 1500, [E]: 1500 });
+  const prush = table({ [A]: 1505, [B]: null, [C]: 1625, [E]: 1445 }), pdef = table({ [A]: 1555, [B]: 1555, [C]: 1465, [E]: 1615 });
+  Object.assign(prush[A], { games: 0, carried: true });
+  const MF = JSON.parse(ELO_M); MF.units = { season: PROP_SEASON, off, def, pass_rush: prush, pass_def: pdef,
+    tables: { pass_rush: { label: 'Pass Rush', of: 'def' }, pass_def: { label: 'Pass Defense', of: 'def' } }, params: { carry: 0.42, carry_from: PROP_SEASON - 1 }, stats: [] };
+  /* the fixture reaches each case on the smoke's own reading, or the section says so and fails */
+  { const rA = defRowOwn(MF, 'DB', A), rB = defRowOwn(MF, 'DB', B), above = Object.values(pdef).filter(x => x.elo > 1555).length, next = Object.values(pdef).filter(x => x.elo < 1555).sort((x, y) => y.elo - x.elo)[0];
+    chk(!!rA && !!rB && rA.rank === rB.rank && rA.rank === above + 1 && !!next && next.rank === rA.rank + 2 && defRowOwn(MF, 'DL', A) && defRowOwn(MF, 'DL', A).carried && !defRowOwn(MF, 'DL', B)
+      && defRowOwn(MF, 'DL', A).n === 31 && !defRowOwn(MF, 'LB', A) && defRowOwn(MF, 'DL', C).rank < defRowOwn(MF, 'DL', E).rank && defRowOwn(MF, 'DB', E).rank < defRowOwn(MF, 'DB', C).rank
+      && defRowOwn(MF, 'DL', C).rank !== defRowOwn(MF, 'DB', C).rank,
+      `the defences on the ELO tab's tables: the fixture does not reach its cases (${A} and ${B} level on Pass Defense at ${rA && rA.rank} and ${rB && rB.rank}, ${A} carried on Pass Rush, ${B} with no row there, Run Defense missing, ${C} above ${E} on Pass Rush and below on Pass Defense)`); }
+  /* the two made-up games, two days out by the page's clock, in a copy of the season */
   const pageNow = Date.now() - PAGE_SHIFT_MS, et = ms => { const q = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(ms)).map(x => [x.type, x.value])); return `${q.year}-${q.month}-${q.day}`; };
   const st = JSON.parse(JSON.stringify(STATE)), proto = st.schedule.find(g => +g.week === PW) || st.schedule[0];
-  const GID = `${PROP_SEASON}_${WW}_${A}_${B}`, G = { ...JSON.parse(JSON.stringify(proto)), game_id: GID, season: PROP_SEASON, week: PW, game_type: 'REG', gameday: et(pageNow + 2 * 864e5), gametime: '13:00',
-    away_team: A, home_team: B, location: 'Home', stadium: 'Smoke Field' };
-  for (const k of ['result', 'home_score', 'away_score']) delete G[k];
-  st.schedule.push(G);
-  /* the planted starters: receivers and backs alternately facing A (on B's side, at home) and B (on A's side) */
-  const MT = JSON.parse(JSON.stringify(MU)); MT.season = PROP_SEASON; MT.week = PW; MT.league = { ...(MT.league || {}), defs: JSON.parse(JSON.stringify(defs)) }; MT.out = {};
-  const norm = g => (MT.league.norms && MT.league.norms[g]) || [1500, 50];
-  const plant = [...wrs.map((r, i) => [r, 'WR', i]), ...rbs.map((r, i) => [r, 'RB', i])].map(([r, g, i]) => { const opp = i % 2 ? B : A, team = opp === A ? B : A;
-    MT.players[r.id] = { group: g, game_id: GID, team, opp, home: team === B ? 1 : 0, elo: Math.round(norm(g)[0] + 4 * norm(g)[1]) - i, opp_def: { ...defs[opp] },
-      stats: Object.fromEntries(MT.stats[g].map((x, k) => [x, [40 + k, 45 + k, 3]])) };
-    /* (29 October 2026) and his projections in the Elo-adjusted averages, where the file carries them, in the same game
-       (the window reads them for his game and opponent) */
-    if (muAvgOwn(MT)) MT.avg[r.id] = { group: g, game_id: GID, team, opp, home: team === B ? 1 : 0,
+  const mk = (x, y) => { const G = { ...JSON.parse(JSON.stringify(proto)), game_id: `${PROP_SEASON}_${WW}_${x}_${y}`, season: PROP_SEASON, week: PW, game_type: 'REG', gameday: et(pageNow + 2 * 864e5), gametime: '13:00',
+    away_team: x, home_team: y, location: 'Home', stadium: 'Smoke Field' }; for (const k of ['result', 'home_score', 'away_score']) delete G[k]; st.schedule.push(G); return G; };
+  const G1 = mk(A, B), G2 = mk(C, E);
+  /* the planted starters, each facing one of the four (receivers A and B, backs C and E) */
+  const MT = JSON.parse(JSON.stringify(MU)); MT.season = PROP_SEASON; MT.week = PW; MT.out = {}; MT.players = MT.players || {};
+  const norm = g => (MT.league && MT.league.norms && MT.league.norms[g]) || [1500, 50];
+  const plant = [[wrs[0], 'WR', A, B, G1], [wrs[1], 'WR', B, A, G1], [rbs[0], 'RB', C, E, G2], [rbs[1], 'RB', E, C, G2]].map(([r, g, opp, team, G], i) => {
+    const home = team === G.home_team ? 1 : 0;
+    MT.players[r.id] = { group: g, game_id: G.game_id, team, opp, home, elo: Math.round(norm(g)[0] + 2 * norm(g)[1]) - i, opp_def: { DL: 1500, LB: 1500, DB: 1500 },
+      stats: Object.fromEntries(((MT.stats && MT.stats[g]) || []).map((x, k) => [x, [40 + k, 45 + k, 3]])) };
+    if (muAvgOwn(MT)) MT.avg[r.id] = { group: g, game_id: G.game_id, team, opp, home,
       stats: Object.fromEntries(Object.keys(MT.avg_fit.legs).filter(k => k.split('|')[0] === g).map((k, j) => [k.split('|')[1], { avg: 40 + j, proj: 45 + j, no_elo: 42 + j, elo: 3, sd: 10, z: 0.3, def_x: 1, elo_x: (45 + j) / (42 + j) }])) };
     return { pid: r.id, group: g, opp, name: (Pl.players[r.id] || {}).name || r.name }; });
-  const R = await run(st, SITE + '#slate', null, false, { elo: { mu: MT } });
+  const R = await run(st, SITE + '#slate', null, false, { elo: { mu: MT, model: MF } });
   const { w, d } = R; try { await w.eloFiles(); } catch (e) {}
   await wait(300);
   const S = w.eval('S'); if (S && S.inactive) for (const x of plant) delete S.inactive[x.pid];
-  const ws = d.getElementById('weekSel');
-  if (ws && +ws.value !== PW && [...ws.options].some(o => +o.value === PW)) { ws.value = String(PW); ws.dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60); }
-  w.eval('renderSlate()'); await wait(60);
-  /* the player window on the ELO Ratings tab: the three units each planted player faces, ranked as the smoke reads them */
-  { const bad = [], tabB = [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo'); if (tabB) { tabB.click(); await wait(80); }
-    const got = {};
+  /* each planted starter's window on the ELO Ratings tab: his opponent's three tables as the smoke reads them */
+  { const bad = [], got = {}, tabB = [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo'); if (tabB) { tabB.click(); await wait(80); }
     for (const x of plant) { const pos = d.querySelector(`#peBody .pe-pos button[data-pos="${x.group}"]`); if (pos) { pos.click(); await wait(40); }
       const tr = d.querySelector(`#peBody tr.pe-plrow[data-pe-pl="${x.pid}"]`); if (!tr) { bad.push(`${x.pid} has no row in the ${x.group} rankings`); continue; }
       tr.click(); await wait(40);
-      const spans = [...d.querySelectorAll('#pePlView .pe-pl-def span b')].map(txt), wantS = ['DL', 'LB', 'DB'].map(u => `${ordOwn(urkOwn(defs, x.opp, dd => dd[u]))} of ${clubs.length}`);
-      got[x.pid] = spans;
-      if (spans.join('|') !== wantS.join('|')) bad.push(`${x.pid}'s window (facing ${x.opp}) ranks ${spans.join(', ') || 'nothing'}, the smoke's reading ${wantS.join(', ')}`);
+      const view = d.getElementById('pePlView'); bad.push(...defPillsBad(view, MF, x.opp).map(b => `${x.name}'s window (facing ${x.opp}): ${b}`));
+      got[x.opp] = [...view.querySelectorAll('.pe-pl-def > span')].map(txt);
       const c = d.getElementById('pePlClose'); if (c) { c.click(); await wait(20); } }
-    const [wa, wb] = plant.filter(x => x.group === 'WR');
-    if (got[wa.pid] && got[wb.pid] && got[wa.pid][2] !== got[wb.pid][2]) bad.push(`the secondaries of ${A} and ${B} read ${got[wa.pid][2]} and ${got[wb.pid][2]} in the two windows`);
-    chk(bad.length === 0, `tied ranks: a player's window does not rank ${A} and ${B} level on a unit alike: ${bad.slice(0, 6).join('; ')}`); }
-  /* the made-up game's Game snapshot: its Starters headers (each club's three units, the secondaries level and unmarked) */
-  { const bad = [], slate = [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate'); if (slate) { slate.click(); await wait(40); }
-    const o = await snapOpen(R, G), md = o.md;
-    if (!md) bad.push(`the made-up game ${GID} opens no Game snapshot`);
-    else {
-      for (const t of [A, B]) for (const u of ['DL', 'LB', 'DB']) { const el = md.querySelector(`[data-gs-def="${t}:${u}"]`), r = urkOwn(defs, t, dd => dd[u]);
-        if (!el || txt(el) !== `${ordOwn(r)} of ${clubs.length}`) bad.push(`${t}'s ${u} reads '${el ? txt(el) : 'nothing'}' in the Starters headers, the smoke's reading ${ordOwn(r)} of ${clubs.length}`); }
-      const da = md.querySelector(`[data-gs-def="${A}:DB"]`), db = md.querySelector(`[data-gs-def="${B}:DB"]`);
-      if (!da || !db || txt(da) !== txt(db) || da.classList.contains('gs-better') || db.classList.contains('gs-better')) bad.push(`the secondaries of ${A} and ${B} are not drawn level and unmarked: '${da ? txt(da) : ''}' and '${db ? txt(db) : ''}'`);
+    /* the cases by name: the dash for the missing table and the missing row, the carried mark, the level pair's one rank */
+    if (got[A] && got[B]) { if (got[A][1] !== 'Run Defense: –' || got[B][0] !== 'Pass Rush: –') bad.push(`the dash is not drawn for the missing table and row: ${got[A][1]} | ${got[B][0]}`);
+      if (!/ carried from \d{4}$/.test(got[A][0])) bad.push(`${A}'s Pass Rush is not marked carried: ${got[A][0]}`);
+      if (got[A][2] !== got[B][2]) bad.push(`${A} and ${B}, level on Pass Defense, read '${got[A][2]}' and '${got[B][2]}'`); }
+    if (got[C] && !/ of 31$/.test(got[C][0])) bad.push(`${C}'s Pass Rush is not ranked of the 31 clubs its table lists: ${got[C][0]}`);
+    chk(bad.length === 0 && Object.keys(got).length === 4, `the defences on the ELO tab's tables: a player's window does not rank his opponent's Pass Rush, Run Defense and Pass Defense as the tables draw them: ${bad.slice(0, 6).join('; ')}`); }
+  /* each made-up game's Game snapshot: its Starters headers */
+  { const bad = [], seen = {}, slate = [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate'); if (slate) { slate.click(); await wait(40); }
+    for (const [G, x, y] of [[G1, A, B], [G2, C, E]]) { const o = await snapOpen(R, G), md = o.md;
+      if (!md) { bad.push(`the made-up game ${G.game_id} opens no Game snapshot`); continue; }
+      const H = defHeadsBad(md, MF, x, y); bad.push(...H.bad.map(b => `${G.game_id}: ${b}`)); seen[G.game_id] = H;
+      const end = (t, u) => md.querySelector(`[data-gs-def="${t}:${u}"]`), mk2 = (t, u) => !!end(t, u) && end(t, u).classList.contains('gs-better');
+      if (G === G1) { if (end(B, 'DL') || end(A, 'LB') || end(B, 'LB')) bad.push(`${G.game_id} draws an end for a missing row or table`);
+        if (!end(A, 'DL') || !/carried from \d{4}$/.test(end(A, 'DL').getAttribute('title') || '')) bad.push(`${A}'s Pass Rush end is not titled carried`);
+        if (!end(A, 'DB') || !end(B, 'DB') || txt(end(A, 'DB')) !== txt(end(B, 'DB')) || mk2(A, 'DB') || mk2(B, 'DB')) bad.push(`${A} and ${B}, level on Pass Defense, are not drawn level and unmarked`); }
+      else if (!mk2(C, 'DL') || mk2(E, 'DL') || !mk2(E, 'DB') || mk2(C, 'DB')) bad.push(`the better rank is not the one marked on ${G.game_id}: ${C} on Pass Rush, ${E} on Pass Defense`);
       w.gameSnapshotClose(false); await wait(20); }
-    chk(bad.length === 0 && R.errs.length === 0, `tied ranks: the Game snapshot does not rank ${A} and ${B} level on a unit alike: ${bad.slice(0, 6).join('; ')} ${R.errs.join('; ')}`); }
+    chk(bad.length === 0 && R.errs.length === 0 && seen[G1.game_id] && seen[G1.game_id].ends === 3 && seen[G2.game_id] && seen[G2.game_id].ends === 4,
+      `the defences on the ELO tab's tables: the Starters headers do not rank each club's defensive line, linebackers and secondary on Pass Rush, Run Defense and Pass Defense as the tables draw them (${seen[G1.game_id] ? seen[G1.game_id].ends : '?'} and ${seen[G2.game_id] ? seen[G2.game_id].ends : '?'} ends, want 3 and 4): ${bad.slice(0, 6).join('; ')} ${R.errs.join('; ')}`); }
   w.close();
-  console.log(`tied ranks: ${checks - c0} checks on a made-up game, ${GID}, its clubs level on the secondary and, to the hundredth, on the front and linebackers, ${fails.length - f0} failures`);
+  console.log(`the defences on the ELO tab's tables: ${checks - c0} checks on two made-up games, ${G1.game_id} and ${G2.game_id}, ${fails.length - f0} failures`);
 }
 
 /* =====================================================================================

@@ -1988,8 +1988,8 @@ untagged): the frozen scorecard, `mm.shift` and `mm.tag` at kickoff against the 
 defence named is the ELO Ratings tab's own table the leg is set against (item 2: the block's `vs`, "vs LAC Pass Defense
 #32"), its rank the tab's; a back's rushing yards' multiplier carries the defenders' player Elo too (its terms read DL, LB
 and DB), so his title says "Run Defense and defenders". The player window's DL, LB and DB rank line and the Game snapshot's
-Starters headers still rank the formula's player-Elo units (`league.defs`): nothing tested what a switch would tell a
-reader, and the owner is asked. Since **The inputs** (below, the same day) a receiver's and a tight end's
+Starters headers still ranked the formula's player-Elo units (`league.defs`) when this landed, and the owner was asked: he
+chose the ELO tab's tables the same week (**The defences on the ELO tab's tables**, below). Since **The inputs** (below, the same day) a receiver's and a tight end's
 receiving yards are no longer trusted, so the lead is a back's rushing yards alone and the Mismatches are backs alone; on
 that leg's rows the refit chose 3.5 points again and its rows beat the listed rows under them in every season (+0.020 to
 +0.237 sd, 8 of 8), so the tag stays. Wherever this paragraph or the two after it list a receiver or a tight end, or give
@@ -2036,7 +2036,8 @@ plants on an Elo pick's player and his tag there, the Game snapshot's rows and i
 `matchups.json` given the smoke's own score where the tree's has the averages and not the score, `MM_SCORE_PLANTED`, so it
 holds the new reading whatever `elo/data` the tree carries, and the old checks stand on a file with no averages, as
 `test_audit_phases.py`'s page cases are); the Mismatches half of CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS RANK is retired
-(the rows rank no player-Elo unit), its window and Starters halves kept. The review of 4 November 2026 found the smoke's
+(the rows rank no player-Elo unit), its window and Starters halves kept until **The defences on the ELO tab's tables**
+(below) retired them and the section with them. The review of 4 November 2026 found the smoke's
 readings stood on the rows of the matchups' week still to kick off, so on a Sunday afternoon, the Tuesday after, a page
 week past the matchups' and with `--season-over` they held nothing but the Elo picks' planted row, and that a grade word
 put back beside the points passed (the old-word test ran on `textContent`, which runs "+15 pts" and "Huge" together). So:
@@ -2048,6 +2049,44 @@ verdict line and marks (`mmSnapHold`, again with the tagged player ruled out) an
 game two days out by the page's clock, three rows of the smoke's own planted (at the tag, under it and of nothing, "0 pts"),
 at any hour and in the off-season. `build.js` also stops on a size in `snapshot.html` off its type scale (`--gs-t1` to
 `--gs-t6`), where the Game snapshot's Mismatch pill had set 10.5px.
+
+**The defences on the ELO tab's tables** (November 2026, the owner's call "Switch to ELO tab tables", asked once the
+Mismatches had dropped the matchup formula's units). A player's window on the ELO Ratings tab and the Game snapshot's
+Starters headers rank a defence on the tab's own team tables (model.json's `units`), where until then both ranked the
+matchup formula's units by their defenders' player Elo (`matchups.json`'s `league.defs`: "Pass rush and run front (DL)",
+"Linebackers" and "Secondary"). The defensive line is Pass Rush (`units.pass_rush`), the linebackers Run Defense
+(`units.run_def`) and the secondary Pass Defense (`units.pass_def`). The window's line under its heading is three pills in
+that order, standing where DL, LB and DB stood (`DEF_TABLES`, `defPill`, on `unitRow`, the matchup bubble's Faces reading
+made general: `unitFaced` is it on the position's table): "Pass Rush: 1580 · 5th of 32", each the table's name as the file
+names it, the club's shown Elo and its rank as the table draws it (the file's `rank`, clubs level on the Elo shown sharing
+it) out of the clubs the table lists, "carried from 2025" after it where the table marks the club carried, and a title
+naming the club, the table, its Elo and rank; a dash ("Run Defense: –", untitled) before a team has a rating, on a file
+without the table or with no row for the club, never a throw. Each Starters header of a defensive group (`DEF_TABLE`,
+`defRow`, `defName` in `snapshot.html`) carries at either end the club's rank in its group's table ("<b>5th</b> of 32",
+`data-gs-table` its key), titled with the club, the table, its Elo and rank (and carried), the better rank of the two
+marked `gs-better` and neither on a tie or with a club missing, and under the group's label the table's name in lower case
+("pass rush", "run defense", "pass defense"; the table's own name where the file has none); an end with no row is empty.
+`defRanks` and the old `UNIT_NAME` wording went from the tab, `defRank` and its `UNIT_NAME` from the snapshot; `mmKey`
+stays for the old Mismatches' own ranks between the OLD-MISMATCHES marks. `league.defs` stays in `matchups.json` (the build
+writes it and reads it for the formula's terms, and the old Mismatches' path between the marks ranks on it for a file from
+before the score) but ranks nothing on the page outside that path. `build.js` stops if, outside comments and the
+OLD-MISMATCHES marks, `tab_elo.html` or `snapshot.html` reads the formula's units in any spelling (`league.defs`,
+`league?.defs`, `league['defs']`, `matchups.json`'s `league` table by a property read or destructured, a `defs`
+destructured, or a player's own `opp_def` block, which the old ranks merged in), calls `defRanks` or `defRank`, or says "Pass
+rush and run front", or loses either map of the three. Held, blocking, each on its own reading of model.json's units:
+`elo/check_tab.js` the window's three pills on the real files (dashes there on a file without the tables or before a team
+has a rating, where it plants no copy), on a copy with two clubs made level on the Elo shown in Pass
+Defense (the table ranked again by its rule, a second receiver made to face the other club, both windows one rank), on a
+copy with Run Defense taken out whole and the opponent carried on Pass Rush with no Pass Defense row, and on a matchups
+file whose league table is emptied (the same pills: nothing read from it); the nflbets smoke (`defRowOwn`, `defPillsBad`,
+`defHeadsBad`) every player window it opens and every Game snapshot's Starters headers on the real files (each end's rank,
+its table, its title, the edge mark and the name under the label), the Deep Dive's copy with no position tables (every end
+empty, the tables' own names, nothing thrown), and THE DEFENCES RANKED ON THE ELO TAB'S TABLES (`defTabChecks`, a boot of
+its own, in the place of CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS RANK, which is gone): two made-up games two days out by
+the page's clock, A at B and C at E, with model.json's units replaced by the smoke's own (A carried and B with no row on
+Pass Rush, Run Defense missing whole, A and B level on Pass Defense, C above E on Pass Rush and below it on Pass Defense)
+and four starters planted facing them, each one's window and each game's headers held, at any hour, in the off-season and
+with `--season-over`.
 
 **The inputs** (4 November 2026, the Elo diagnosis's items 4, 5 and 6; `elo/build.py`'s THE INPUTS, whose docstring is
 the rule, and `elo/tools/elo_avg_fit.py`'s SPEC `inputs` its fit; the owner's call, asked plainly: "Adding volume (snap
@@ -2463,7 +2502,7 @@ averages instead, the Mismatches' edge staying the formula's: **Elo-adjusted ave
 Mismatches rank the averages' own Elo part, sized in points with one tag and no quarterback: **The Mismatches on the
 averages' Elo part**, above, which makes what follows of the Mismatches' edge, grades and units history but on a file from
 before it); a player's window on the tab
-shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield; what they rank is the matchup formula's units, the player ratings of the defenders he faces, and since 18 October 2026 their words say so, "vs the LAC secondary and defensive line, 32nd by player Elo" (`mmLine`, `mmTitle`, `mmAgainst`), as do a game page's MISMATCH title, the Game snapshot's Mismatches and an Elo pick's tag, since "pass defense ranked" on the page is the ELO Ratings tab's Pass Defense table alone, which can rank the same club far apart: LAC 32nd of the one for Patrick Mahomes in week 6, 4th of the other; clubs level on a unit share its rank, one more than the clubs above them, there, in a player's window and in the Game snapshot's Starters headers, since 20 October 2026, when ATL and NO, level at 1512.6 on the secondary, read 24th and 23rd on the Mismatches by the order the page first met them as opponents, and the other way round in the Starters headers, and the nflbets smoke failed every morning; and since 22 October 2026, the owner's call, "in mismatches, make clubs tied on a defense unit share the same rank in the mismatches, plaer window, and game snapshot", level is read to the hundredth, `mmKey` (`Math.round(x*100)`, in `defRanks` and the Mismatches' `rankOf`, and `snapshot.html`'s `defRank` the same), since `matchups.json` writes a unit to the tenth and a group of two units averages them, so two clubs level on paper can differ by a floating-point hair an exact comparison would part: `check_tab.js` holds it on a copy with one club's secondary a hair above another's, and the nflbets smoke's CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS RANK on fixtures of its own at any hour (a made-up game two days out between two clubs whose secondaries, and a back's unit of two averaged, are level on paper and a floating-point hair apart, each planted starter's Mismatches bubble, his window on the ELO Ratings tab and the game's Game snapshot, its Starters headers and Mismatches, ranking them by the smoke's own reading, `mmRankOwn`); on a game's page each player with a Solid, Big or Huge one wears MISMATCH beside his name in the Diamond shield's blue, `pe-mmtag`, each leg in the builder carries its Elo matchup chance, and the Elo picks
+shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield; what they rank is the matchup formula's units, the player ratings of the defenders he faces, and since 18 October 2026 their words say so, "vs the LAC secondary and defensive line, 32nd by player Elo" (`mmLine`, `mmTitle`, `mmAgainst`), as do a game page's MISMATCH title, the Game snapshot's Mismatches and an Elo pick's tag, since "pass defense ranked" on the page is the ELO Ratings tab's Pass Defense table alone, which can rank the same club far apart: LAC 32nd of the one for Patrick Mahomes in week 6, 4th of the other; clubs level on a unit share its rank, one more than the clubs above them, there, in a player's window and in the Game snapshot's Starters headers (until November 2026, when those two moved to the ELO tab's tables and the smoke's section below went: **The defences on the ELO tab's tables**), since 20 October 2026, when ATL and NO, level at 1512.6 on the secondary, read 24th and 23rd on the Mismatches by the order the page first met them as opponents, and the other way round in the Starters headers, and the nflbets smoke failed every morning; and since 22 October 2026, the owner's call, "in mismatches, make clubs tied on a defense unit share the same rank in the mismatches, plaer window, and game snapshot", level is read to the hundredth, `mmKey` (`Math.round(x*100)`, in the Mismatches' `rankOf`, and until November 2026 in the window's `defRanks` and `snapshot.html`'s `defRank` too, both gone since), since `matchups.json` writes a unit to the tenth and a group of two units averages them, so two clubs level on paper can differ by a floating-point hair an exact comparison would part: `check_tab.js` holds it on the Mismatches on a copy with one club's secondary a hair above another's; the nflbets smoke's CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS RANK held it on fixtures of its own at any hour (a made-up game two days out between two clubs whose secondaries, and a back's unit of two averaged, were level on paper and a floating-point hair apart, each planted starter's Mismatches bubble, his window on the ELO Ratings tab and the game's Game snapshot, its Starters headers and Mismatches, ranked by the smoke's own reading, `mmRankOwn`, which the smoke's checks of the old Mismatches still read) until its Mismatches half went with the averages' score (4 November 2026) and its window and Starters halves with the ELO tab's tables (November 2026), when the section went and THE DEFENCES RANKED ON THE ELO TAB'S TABLES took its place (**The defences on the ELO tab's tables**); on a game's page each player with a Solid, Big or Huge one wears MISMATCH beside his name in the Diamond shield's blue, `pe-mmtag`, each leg in the builder carries its Elo matchup chance, and the Elo picks
 (since app v118 each Suggested Parlays set's own, on that night game's or Sunday slot's games alone, whatever the Parlay Builder's ticks say, `window.eloUnit`, locked and recorded with the set: under "Bets and Stats: the loop", **Two sections, the Sunday slot and each set's own Elo picks**; from app v111 to v117 their own section at the foot of Suggested Parlays, `#pbElo`, on the Parlay Builder's ticked games and player sides, until then of the Parlay Builder's suggested parlays; their legs wear no Value mark, since they are chosen on the Elo matchup, not the edge: app v112) are built on it.
 From 18 October 2026 to app v138 (the owner's call of 17 October: "for the ELO picks suggestions, can we also add an aggressive
 and extreme versions. is it touchdowns only or did it just so happen to show that? would want to see the best
@@ -3938,7 +3977,7 @@ rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the ne
 
 ```
 node nflbets/build/build.js      # writes the page, the root's index.html
-node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 50 lines, their two parts (the player lines a mix of bet types), the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, the Mismatches on the averages' Elo part (its own score planted on a file from before it) in every place they are drawn, clubs level on a unit sharing its rank in a player's window and the Starters headers, the parlay sums the same to the bit, the search's beam the same as it stood and Suggested Parlays opened without a freeze a level a step, the Elo leans, Elo picks, player window and bubble on the Elo-adjusted averages (the formula's on a file from before them), the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
+node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, the Elo picks' four levels, the Parlay Builder (the builder first) and its Top 50 lines, their two parts (the player lines a mix of bet types), the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, the Mismatches on the averages' Elo part (its own score planted on a file from before it) in every place they are drawn, the defences a player's window and the Starters headers rank on the ELO tab's tables, the parlay sums the same to the bit, the search's beam the same as it stood and Suggested Parlays opened without a freeze a level a step, the Elo leans, Elo picks, player window and bubble on the Elo-adjusted averages (the formula's on a file from before them), the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on the admin's browser and a visitor's, and the parlay card (the builder's and a Suggested Parlays level's, its check of DraftKings' current lines as it opens, and the admin's Pull from DraftKings on a stubbed Odds API), each boot's seeded ladder legs taken out with the builder's line; must end "0 failures"
 node nflbets/build/smoke_admin.js # the admin link and the hidden X tabs (admin.js, HUB_ADMIN, the header, Sign out, a visitor's page, the key nowhere but The Odds API's requests); must end "0 failures"
@@ -4076,7 +4115,9 @@ shield, the higher marked, the defense's position, the tag; up to 760px the two 
 rest on is the boxes' title, what the matchups rest on the label's;
 Starters puts the ranked players out first, then Offense, Defense and Kicker tabs (the choice kept
 while the page is open) with the two teams' header under them, directly over the table (the owner's call, 14
-October 2026), each defensive unit's league rank at either end of its group's header. The
+October 2026), at either end of each defensive group's header the club's rank in its ELO tab table (Pass Rush, Run
+Defense or Pass Defense, named under the group's label; the matchup formula's units until November 2026: **The defences
+on the ELO tab's tables**, under Player Elo). The
 side of every comparison with the edge wears one mark (`gs-better`): the higher rating, Elo and
 chance, the better rank, the higher season Elo of each pair of starters and of each position matchup. One type scale (11, 13, 15,
 18, 22, 30px; a phone takes the top two to 20 and 26), every control at least 44px tall, and every
@@ -4094,7 +4135,7 @@ matchups' week or a team whose lineup is for another game is said in its card wh
 `smoke.js`'s last section (THE GAME SNAPSHOT) holds every number shown to its file (each number the
 verdict and the summaries add is marked `data-gs-n` and worked out there on its own, as are the edge
 marks in the cards and on the verdict's Team Elo and Offense vs defense answers, the side each names
-with the edge, the dissenters, the unit ranks in the Starters headers and the badges),
+with the edge, the dissenters, the defences' ranks in the Starters headers, on the ELO tab's tables since November 2026, and the badges),
 the at-a-glance bars to the same numbers (each call's bar leaning toward its own pick, as far as its
 chance and in that team's colour, and the Vegas split bar each side's chance wide), the
 headline to the files and its confidence pill to Vegas's band on them (to the board row's own until it went), the header's game bar, the head (the away

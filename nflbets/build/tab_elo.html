@@ -106,6 +106,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-pl-def{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .pe-pl-def span{font-size:12px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
 .pe-pl-def b{color:var(--ink)}
+.pe-pl-def small{font-size:11px;color:var(--muted)}
 .pe-pl td.pe-n b{font-family:var(--display);font-size:14px}
 .pe-pl tr.pe-weak td{opacity:.55}
 .pe-pl .pe-inline{font-size:12.5px;line-height:1.6;color:var(--ink-2);margin:10px 0 0}
@@ -295,19 +296,21 @@ window.eloGameOn=gameOn;
 /* a player's season shield, the same one his ranking and his builder badge wear (the season
    rating on the position's bell curve); null when he has no place this season */
 const seOf=pid=>{ const e=D.players&&D.players.players&&D.players.players[pid]; return e&&e.se!=null?e.se:null; };
-/* each defence's units ranked across the league (`league.defs`, all 32), 1st the best (the
-   highest rated), clubs level on a unit sharing its rank; a file without it falls back to the teams playing this week.
-   Level is read to the hundredth (mmKey): the file writes a unit to the tenth and a mix of two averages them, so two
-   clubs level on paper can differ by a floating-point hair, which would part them (22 October 2026) */
+/* the old Mismatches (between the OLD-MISMATCHES marks below) read a unit level to the hundredth (mmKey): matchups.json
+   writes a unit to the tenth and a mix of two averages them, so two clubs level on paper can differ by a floating-point
+   hair, which would part them (22 October 2026) */
 const mmKey=x=>Math.round(x*100);
-function defRanks(){
-  const byTeam={}; for(const v of Object.values((D.mu&&D.mu.players)||{})) if(v.opp_def) byTeam[v.opp]=v.opp_def;
-  if(D.mu&&D.mu.league&&D.mu.league.defs) Object.assign(byTeam,D.mu.league.defs);
-  const teams=Object.keys(byTeam), out={n:teams.length};
-  for(const u of ['DL','LB','DB']) out[u]=Object.fromEntries(teams.map(t=>[t,1+teams.filter(o=>mmKey(byTeam[o][u])>mmKey(byTeam[t][u])).length]));
-  return out;
-}
-const UNIT_NAME={DL:'Pass rush and run front (DL)',LB:'Linebackers',DB:'Secondary'};
+/* the defence a player's window ranks his opponent on: the ELO Ratings tab's own tables (the owner's call of November
+   2026, "Switch to ELO tab tables"), where until then it ranked the matchup formula's units by their defenders' player Elo
+   (matchups.json's league.defs: the defensive line, the linebackers, the secondary). The defensive line is Pass Rush, the
+   linebackers Run Defense and the secondary Pass Defense, in that order (DEF_TABLES; the Game snapshot's Starters headers
+   read the same three), each named as the tab names it, with the club's Elo and its rank as the table draws them (the
+   file's rank, clubs level on the Elo shown sharing it) out of the clubs the table lists, and carried where the table marks
+   it (unitRow, below); a dash before a team has a rating, on a file without the table or with no row for the club */
+const DEF_TABLES=[['pass_rush','Pass Rush'],['run_def','Run Defense'],['pass_def','Pass Defense']];
+const defPill=(key,name,opp)=>{ const u=unitRow(key,opp), T=D.model&&D.model.units&&D.model.units.tables&&D.model.units.tables[key];
+  if(!u) return `<span data-pe-def="${esc(key)}">${esc(T&&T.label?String(T.label):name)}: <b>–</b></span>`;
+  return `<span data-pe-def="${esc(key)}" title="${esc(`${opp} ${u.name} on the ELO Ratings tab: Elo ${u.elo}, ${ordinal(u.rank)} of ${u.n}${u.carried?`, carried from ${u.from}`:''}`)}">${esc(u.name)}: <b>${esc(u.elo)} · ${ordinal(u.rank)} of ${u.n}</b>${u.carried?` <small>carried from ${esc(u.from)}</small>`:''}</span>`; };
 /* a player's window, opened from his row in the rankings: his place this season, then the
    coming game, a row a leg (faded where its Elo part has not held up season by season, and not used for Elo picks):
    since 29 October 2026 the Elo-adjusted average's breakdown, his average, the projection with no Elo terms (Base), the
@@ -372,7 +375,6 @@ function playerModal(pid){
   else if(!v) mu=`<p class="pe-sub">No matchup for week ${esc(M.week)}.</p>`;
   else if(ruledOut(pid)) mu=`<p class="pe-sub">Ruled out for week ${esc(M.week)}.</p>`;
   else {
-    const R=defRanks(), rk=u=>R[u]&&R[u][v.opp]?`${ordinal(R[u][v.opp])} of ${R.n}`:'–';
     let head, rows, inLine='';
     if(avg){
       inLine=muInLine(v,g);
@@ -394,7 +396,7 @@ function playerModal(pid){
     }
     mu=`<h3>Week ${esc(M.week)}: ${tag(v.team,true)} <span class="muted" style="font-weight:500">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</h3>
       ${gameOn(v.game_id)?`<p class="pe-sub pe-begun"><b>This game has kicked off.</b></p>`:''}
-      <div class="pe-pl-def">${['DL','LB','DB'].map(u=>`<span>${UNIT_NAME[u]}: <b>${rk(u)}</b></span>`).join('')}</div>
+      <div class="pe-pl-def">${DEF_TABLES.map(([k,nm])=>defPill(k,nm,v.opp)).join('')}</div>
       <table class="pe-t"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>${inLine?`<p class="pe-inline" data-pe-in>${inLine}</p>`:''}`;
   }
   el('pePlView').innerHTML=`<div class="card pe-pl"><h2>${shield(r.elo)}${esc(r.name)} <span class="pill">${esc(r.pos)} · ${esc(r.team)}</span>${qTag(r)}<span style="flex:1"></span><button class="btn quiet" id="pePlClose">Close</button></h2>
@@ -1187,12 +1189,16 @@ window.eloFocusPlayer=mmFocus;
    18th. Since 4 November 2026 the Mismatches name the same table (a back's Run Defense, a receiver's or tight end's Pass
    Defense), its rank the tab's own */
 const FACE_TABLE={QB:'def',RB:'run_def',WR:'pass_def',TE:'pass_def'};
-function unitFaced(group,opp){
-  const key=FACE_TABLE[group]; if(!key||!opp||!unitsOn()||!unitKeys().includes(key)) return null;
+/* one club's row of one of the tab's team tables (key: 'def' or a position table's), as the table draws it, or null
+   (before a team has a rating, a file without the table, no row for the club); a player's window ranks the three
+   defence tables by it too (defPill) */
+function unitRow(key,opp){
+  if(!key||!opp||!unitsOn()||!unitKeys().includes(key)) return null;
   const U=D.model.units, T=U[key], v=T&&T[opp]; if(!v||v.rank==null) return null;
   const C=unitCarry();
   return {key,name:key==='def'?'Overall Defense':String(U.tables[key].label),team:opp,rank:v.rank,n:Object.keys(T).length,elo:v.elo,carried:!!(v.carried&&C),from:C?C.from:null};
 }
+const unitFaced=(group,opp)=>unitRow(FACE_TABLE[group],opp);
 /* (29 October 2026) and a player's projections as this tab reads them, one shape whichever file (muLine): his entry's
    group, game, club and opponent, whether they are the Elo-adjusted averages (avg), his position's legs in the file's
    order and each leg's [his average or recent form, projection, Elo part]; null where the file has none of his */
