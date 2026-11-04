@@ -47,8 +47,9 @@ two and three targets after a season of eight or nine, were both skipped before 
 his rating stood frozen at 2025's). Every season every rating is pulled a quarter of the way back to 1500, since
 rosters, schemes and ages change.
 
-A player's first rating is 1500, a quarterback's 1450 (QB_START) from 2013 on, and the game
-model fills an expected quarterback with no rating yet the same way. 1500 is the average
+Until November 2026 (THE DRAFT START, next) a player's first rating was 1500, a quarterback's 1450
+(QB_START) from 2013 on, and the game model filled an expected quarterback with no rating yet the
+same way. 1500 is the average
 starter's level, and a new quarterback is seldom that: on his first real start his result fell
 0.124 short of what 1500 expected (S - E, 156 starts) and over his first eight 0.048 (956), so a
 backup on a few snaps stood above any starter below the average (Curtis Painter, -0.75 EPA a play
@@ -57,6 +58,44 @@ club's quarterback above his backup at the season's end in 73.3% of the clear ca
 (69.8% at 1500) and 84.2% of the 70%-of-snaps ones (81.7%), and the game model's walk-forward
 2013-2025 goes from 0.6402 to 0.6387 in log loss (2114 and 2112 right of 3,333); next season's
 EPA is ranked as before (0.470 against 0.471).
+
+THE DRAFT START (November 2026, the owner's "do all" to the Elo diagnosis of 3 November, its item 8). Since then a
+player's first career rating comes from his draft slot (first_rating): 1500 + a + b ln(min(max(pick, floor), 262)) on
+his group's curve (DRAFT_START), pick his overall pick in nflverse's draft_picks.csv, found by his gsis id. A player
+never drafted, or drafted after the season of his first game, takes pick 262 (p_end), the last pick of the longest
+draft since the draft went to seven rounds in 1994 (2003's and 2022's), so Brock Purdy, 2022's last pick, starts as a
+player never drafted; a kicker takes one level for every new kicker (1482). 2012, the warm-up, keeps the old starts:
+1500, and an expected quarterback with no rating yet QB_START's 1450. The game model fills an expected starter with no
+rating yet the same way, on the draft as it stood for that game's season. The file is read fresh every run and is
+required (draft_slots): the build stops, writing nothing, when it cannot be had or read, and when it has no draft of
+the newest schedule's season with player ids once that season's week 1 is within PRESEASON_CALLS days (its calls have
+begun) or under way. players.json gives every player his first rating (`start`) and his draft slot (`draft`, [season,
+overall pick], or null), which elo/check.py holds to its own reading of the file. A pick 1-4 back starts at 1711, pick
+32 at 1557, one never drafted at 1401; a wide receiver 1532 (picks 1-8), 1477 and 1393; a quarterback 1483 (picks
+1-8), 1455 and 1412. Why: at 1500 a new player was rated far above what he went on to do, the more so the later he was
+drafted: on 2,595 players first rated 2018-2025, S - E over their first eight rated games averaged -0.071 (backs,
+receivers, tight ends and defenders: -0.128 for players never drafted, +0.059 for picks 1-10), the curve -0.030
+(-0.037 and -0.007). Each group's curve and floor (1, 4, 8, 16 or 32: the curve flat above that pick) were chosen on
+the players first rated 2013-2017 alone, leaving one season out at a time, by the w-weighted cross-entropy of S
+against E (Elo's own loss) over every rated game of a player's first two rated seasons; forms within 1e-4 of the best
+are level and the larger floor is taken, and one that does not beat the old start out of sample is not
+(elo/tools/draft_start_fit.py). Two seasons, not the first eight games: fitted on eight games the curve sat low for a
+player's second season (S - E +0.011 inside 2013-2017, his first season's games after the eighth +0.032), which moved
+young players below veterans, put the game model's walk-forward 2018-2025 0.0010 worse (2 seasons of 8 better) and
+ranked veterans' next season worse (-0.0115); on two seasons the game model's walk-forward 2013-2017 and the
+next-season ranking there both chose it over eight games, one season and three (three level with two: the shorter is
+taken). Tested once on 2018-2025: the cross-entropy over new players' first eight rated games 0.6663 to 0.6504
+(-0.0159, 90% -0.0171 to -0.0147; 8 seasons of 8), over their first two seasons -0.0076 (7 cohorts of 7), and on every
+game from a player's third season on -0.0006 (8 of 8); a rookie's rating at his season's end against his next season's
+score a game (Spearman within the position) 0.314 to 0.424 (+0.110, +0.059 to +0.148, 928 rookies; 7 seasons of 7),
+his rating going into week 6 against his score a game after it 0.157 to 0.284 (8 of 8); every player's next season
++0.004 (-0.003 to +0.010; 5 of 7), but veterans alone -0.006 (-0.011 to -0.001; 3 of 7). The game model's walk-forward
+2018-2025 is level: 0.6353 to 0.6354 (+0.00006, -0.0022 to +0.0023; 4 seasons of 8; 1414 right to 1404 of 2,219), the
+calls on the Joker 2022-2025 too (JOKER_BASE refitted on the new ratings: BETA 0.2058 to 0.1973; log loss +0.00014,
+-0.0005 to +0.0008; 707-377 to 710-374), and the Elo-adjusted averages (refitted) on a rookie's legs -0.0026 in each
+leg's variance (-0.0057 to +0.0008, 7,830 legs; 5 seasons of 8, a back's rushing yards 37.72 to 37.48 and a tight
+end's receiving yards 31.75 to 31.38), on every leg level. The units sit about 15 points lower than before
+(2018-2025), no longer fed every newcomer's shortfall.
 
 THE SCORES. For a QB the score is expected points added on the plays he touched (nflverse's
 passing_epa + rushing_epa + receiving_epa), which already prices yards, downs, turnovers and
@@ -644,23 +683,28 @@ The Joker's chance is the betting job's (betting/state.json's `joker`, every gam
 frozen there at kickoff) as it stands when this build runs. m is the game model's matchup alone:
 over the position groups, its weight (`coef`) times the expected lineups' Elo gap, home minus away,
 in hundreds, with home field left out, since the Joker's chance already carries the home edge and a
-neutral site. BETA (JOKER_BASE, 0.2058: a typical game's matchup moves the Joker's log-odds about
-0.17, some 4 points of chance) is elo/tools/joker_base_fit.py's, fitted once on 2021-2025, the
+neutral site. BETA (JOKER_BASE, 0.1973: a typical game's matchup moves the Joker's log-odds about
+0.16, some 4 points of chance) is elo/tools/joker_base_fit.py's, fitted on 2021-2025, the
 seasons both models were called walk-forward in research study 4 (models_compare,
 results/after_team_codes): the Joker's chance held as it is, only how far the matchup moves it
-fitted. Walk forward on 2022-2025, BETA fitted on the seasons before each: 707-377 (65.2%) and a log
-loss of 0.6345, against the Joker alone 687-397 (63.4%, 0.6354) and the game model alone 698-386
-(64.4%, 0.6343) on the same 1,084 games; the matchup turned the Joker's pick round in 46 of them
-(4.2%) and was right in 33. Tried and not kept: the Joker's log-odds given a weight of their own,
-711-373 and 0.6283, which is a mix of the two models, not the Joker as the baseline; a home-field
-term beside m, 704-380. A game the Joker has not called (its step failed, or a new season's week 1
-before the betting job has the schedule) is called by the game model alone, as before, with no
-`base`. Each call keeps the game model's own chance beside it (`p_elo`), and the Joker's (`p_joker`)
-where it stands on it, in `next` and in the ledger, so the test can be read both ways on the same
-games; the record counts the calls on the Joker apart (`record.joker_base`, and the first week one
-was published, `joker_base_from_week`). The game model itself is unchanged: it is still fitted,
-graded walk-forward (`walk_forward`) and read by the power ratings; only the call stands on the
-Joker. Never refit BETA on the season in play.
+fitted; refitted once, on the same seasons, when THE DRAFT START moved every rating (November 2026:
+0.2058 before). Walk forward on 2022-2025, BETA fitted on the seasons before each: 710-374 (65.5%)
+and a log loss of 0.6346, against the Joker alone 687-397 (63.4%, 0.6354) and the game model alone
+691-393 (63.7%, 0.6342) on the same 1,084 games; the matchup turned the Joker's pick round in 51 of
+them (4.7%) and was right in 37 (before the draft start 707-377 and 0.6345, the game model alone
+698-386, 46 turned and 33 right). Tried and not kept: the Joker's log-odds given a weight of their
+own, 707-377 and 0.6284, which is a mix of the two models, not the Joker as the baseline; a
+home-field term beside m, 703-381. Each call on the Joker carries the BETA it was made at (`beta`)
+and is read back on it, never on today's: a call made before calls carried theirs (19 October to
+November 2026) was made at 0.2058 (JOKER_BETA_WAS), and a frozen call keeps the chance it was
+published at whatever BETA is refitted since. A game the Joker has not called (its step failed, or a
+new season's week 1 before the betting job has the schedule) is called by the game model alone, as
+before, with no `base`. Each call keeps the game model's own chance beside it (`p_elo`), and the
+Joker's (`p_joker`) and BETA (`beta`) where it stands on it, in `next` and in the ledger, so the
+test can be read both ways on the same games; the record counts the calls on the Joker apart
+(`record.joker_base`, and the first week one was published, `joker_base_from_week`). The game model
+itself is unchanged: it is still fitted, graded walk-forward (`walk_forward`) and read by the power
+ratings; only the call stands on the Joker. Never refit BETA on the season in play.
 The season's games played before the first build on the Joker (JOKER_FROM) were re-picked on it (the owner's
 call of the same day: "i just dont see any changes in the ELO model pickem record and i wanted you to change it
 based on what it would have picked"): each such game the Joker has a call for, graded with a call on no base, is
@@ -736,10 +780,13 @@ FIRST = 2012
 # model, so elo/check.py knows a reshuffled table is the change and not a fault
 FORMULA = '2026-10-13'
 # THE JOKER BASELINE: a call is the Joker's chance moved by the Elo matchup, by elo/tools/joker_base_fit.py
-JOKER_BASE = {"beta": 0.2058, "fit": "2021-2025", "test": "2022-2025", "walk_forward": {"2022": {"games": 269, "beta": 0.2277, "right": 171, "logloss": 0.633, "joker": 166, "joker_logloss": 0.6332, "elo": 167, "elo_logloss": 0.6368}, "2023": {"games": 272, "beta": 0.1844, "right": 173, "logloss": 0.6702, "joker": 167, "joker_logloss": 0.6711, "elo": 166, "elo_logloss": 0.6537}, "2024": {"games": 272, "beta": 0.1667, "right": 190, "logloss": 0.6025, "joker": 185, "joker_logloss": 0.6124, "elo": 189, "elo_logloss": 0.5988}, "2025": {"games": 271, "beta": 0.2862, "right": 173, "logloss": 0.6323, "joker": 169, "joker_logloss": 0.6247, "elo": 176, "elo_logloss": 0.6481}}}
+JOKER_BASE = {"beta": 0.1973, "fit": "2021-2025", "test": "2022-2025", "walk_forward": {"2022": {"games": 269, "beta": 0.208, "right": 171, "logloss": 0.6324, "joker": 166, "joker_logloss": 0.6332, "elo": 163, "elo_logloss": 0.6348}, "2023": {"games": 272, "beta": 0.1826, "right": 171, "logloss": 0.6711, "joker": 167, "joker_logloss": 0.6711, "elo": 167, "elo_logloss": 0.6576}, "2024": {"games": 272, "beta": 0.1509, "right": 194, "logloss": 0.6029, "joker": 185, "joker_logloss": 0.6124, "elo": 193, "elo_logloss": 0.5964}, "2025": {"games": 271, "beta": 0.2751, "right": 174, "logloss": 0.6321, "joker": 169, "joker_logloss": 0.6247, "elo": 168, "elo_logloss": 0.6479}}}
 JOKER_STATE = os.path.join(os.path.dirname(HERE), 'betting', 'state.json')   # the betting job's published state: the Joker's calls
 JOKER_CLIP = 0.01       # the Joker's chance is held within 1% and 99% before it is moved
-CALL_KEEP = ('base', 'p_joker', 'p_elo', 'm')      # what a call keeps beside its pick and chance
+CALL_KEEP = ('base', 'p_joker', 'p_elo', 'm', 'beta')      # what a call keeps beside its pick and chance
+# the BETA every call on the Joker was made at before a call carried its own (`beta`, since THE DRAFT START refitted
+# JOKER_BASE in November 2026): a frozen call is read back on the BETA it was made at, never today's
+JOKER_BETA_WAS = 0.2058
 # the first build that called on the Joker's baseline: a game of the season that kicked off before it is
 # re-picked on it once, after the game, its first call kept in `was` (THE JOKER BASELINE)
 JOKER_FROM = datetime.datetime(2026, 10, 19, 15, 20, tzinfo=datetime.timezone.utc)
@@ -805,7 +852,19 @@ K_NEW, K_SET, K_UNIT, SETTLED = 56.0, 32.0, 120.0, 8
 K_PLACE_SUM, K_PLACE_N, SHOW_SD = 695.0, 4, 100.0
 REPLACEMENT = 1450.0
 PROV_GAMES = 3      # a ranked player with fewer real-role games than this is marked provisional (prov)
-QB_START = 1450.0   # a quarterback's first career rating (from the second season on): a new one is seldom an average starter
+QB_START = 1450.0   # an expected quarterback with no rating yet in 2012, the warm-up (THE DRAFT START); until November 2026 every new quarterback's first rating from 2013 on
+DRAFT_URL = 'https://github.com/nflverse/nflverse-data/releases/download/draft_picks/draft_picks.csv'
+# THE DRAFT START (see the docstring): a player's first career rating, 1500 + a + b ln(min(max(pick, floor), p_end)) for
+# each group's [a, b, floor], pick p_end for a player never drafted or drafted after his first season; a kicker's a level
+# of its own. elo/tools/draft_start_fit.py's
+# numbers, fitted on players first rated 2013-2017 over their first two rated seasons, never on the season in play.
+DRAFT_START = {
+    'fit': '2013-2017', 'horizon': 2, 'p_end': 262,
+    'curve': {'QB': [25.695, -20.456, 8], 'RB': [314.135, -74.164, 4], 'WR': [115.453, -39.982, 8],
+              'TE': [253.975, -64.973, 32], 'DL': [113.897, -39.063, 4], 'LB': [283.935, -72.924, 32],
+              'DB': [163.022, -43.111, 32]},
+    'level': {'K': -17.753},
+}
 TD_YARDS = {'RB': 10.0}    # a touchdown, in yards of production (PRODUCED); 20 where not named
 DL_HIT_EXTRA = 1.0  # a defensive lineman's QB hit counts double: this on top of every defender's one
 LEFT_EARLY = 0.35   # involvement under this share of a regular's recent median: the game is not rated
@@ -834,6 +893,52 @@ def fetch(url, dest, offline):
         return netfetch.download(url, dest)
     except netfetch.FetchError as e:
         raise Missing(str(e)) from e
+
+
+def draft_slots(offline, games, now):
+    """every drafted player's (draft season, overall pick), by gsis id, from nflverse's draft_picks.csv (read fresh every
+    run: a new class lands each spring; only its season, pick and gsis_id columns are read, the file's career outcomes
+    never). Required: a file that cannot be had, will not read or has no rows stops the build (SystemExit 1, the
+    published files stay), and so does one with no draft of the newest schedule's season with player ids once that
+    season is under way or its week 1 is within PRESEASON_CALLS days, whose rookies would otherwise start as players
+    never drafted."""
+    dest = os.path.join(CACHE, 'draft_picks.csv')
+    if not offline and os.path.exists(dest):
+        os.remove(dest)                          # a new class and its ids land after the draft: never trust a cached copy
+    try:
+        d = pd.read_csv(fetch(DRAFT_URL, dest, offline), usecols=['season', 'pick', 'gsis_id'], low_memory=False)
+        if not len(d):
+            raise Missing('draft_picks.csv has no rows')
+    except (Missing, pd.errors.ParserError, pd.errors.EmptyDataError, ValueError, OSError) as e:
+        raise SystemExit(f'elo: the draft (draft_picks.csv) could not be had ({e}); nothing written, the published files stay')
+    sched = int(games.season.max())
+    first = min(kickoff(r.gameday, r.gametime) for r in games[games.season == sched].itertuples(index=False))
+    have = d[(d.season == sched) & d.gsis_id.map(lambda v: isinstance(v, str))]
+    if first - now <= datetime.timedelta(days=PRESEASON_CALLS) and not len(have):
+        raise SystemExit(f'elo: draft_picks.csv has no {sched} draft with player ids, and {sched} is under way or its '
+                         f'week 1 is within {PRESEASON_CALLS} days; nothing written, the published files stay')
+    slots = {}
+    for g, y, p in zip(d.gsis_id, d.season, d.pick):
+        if isinstance(g, str) and y == y and p == p:
+            slots[g] = (int(y), int(p))          # an id listed twice (a player redrafted, the 1980s) keeps the later
+    return slots
+
+
+def first_rating(pid, group, season, slots, lineup=False):
+    """a player's first career rating, for his first game in `season` or (lineup) an expected starter with no rating yet
+    (THE DRAFT START): his group's curve at his draft slot, its end for one never drafted or drafted after `season`, a
+    kicker's level; in FIRST, the warm-up, 1500 (an expected quarterback QB_START, as before)"""
+    if season <= FIRST:
+        return QB_START if lineup and group == 'QB' else 1500.0
+    if group in DRAFT_START['level']:
+        return 1500.0 + DRAFT_START['level'][group]
+    c = DRAFT_START['curve'].get(group)
+    if c is None:
+        return 1500.0
+    a, b, floor = c
+    s = slots.get(pid)
+    pick = DRAFT_START['p_end'] if s is None or s[0] > season else min(max(s[1], floor), DRAFT_START['p_end'])
+    return 1500.0 + a + b * math.log(pick)
 
 
 def kickoff(gameday, gametime):
@@ -1597,28 +1702,28 @@ ELO_AVG = {
     'min_games': 3,
     'regular': 0.8,
     'legs': {
-        'QB|passing_yards': {'kind': 'yards', 'avg': [20, 1, 0.5], 'eps': 2.45346, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [1.251959, -0.062742, 0.019897, 0.082343, -0.235574, 0.031575, 0.276388, -0.024318, -0.022881, -0.01816, 0.081646], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [1.141637, -0.217216, 0.032016, 0.325604, 0.106041]}, 'allowed_mean': 240.635031, 'spread': {'dist': 'ratio', 'edges': [213.2859, 230.1251, 245.0347, 261.598], 'rsd': [0.3855, 0.3581, 0.3254, 0.3072, 0.2615]}, 'trusted': False, 'record': {'games': 3789, 'rmse': 77.3097, 'rmse_no_elo': 77.287, 'right_top': 0.5409}},
-        'QB|passing_tds': {'kind': 'count', 'avg': [6, 2, 1.0], 'eps': 0.0152247, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [0.172142, -0.134286, 0.108304, -0.047809, -0.529678, 0.101116, 0.033622, -0.085651, -0.058616, -0.160815, 0.210834], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [0.105905, -0.449408, 0.10359, 0.16784, 0.320251]}, 'allowed_mean': 1.521605, 'spread': {'dist': 'qp', 'phi': 0.8336}, 'trusted': False, 'record': {'games': 3789, 'rmse': 1.1337, 'rmse_no_elo': 1.1361, 'right_top': 0.5449}},
-        'QB|completions': {'kind': 'count', 'avg': [20, 4, 0.5], 'eps': 0.215188, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-0.040496, -0.055005, 0.043491, 0.071755, 0.02049, 0.287756, -0.003004, -0.004662, -0.035912, 0.019741], 'no_elo': {'terms': ['one', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-0.040081, 0.020845, 0.302989, 0.088458]}, 'allowed_mean': 21.566937, 'spread': {'dist': 'nb', 'r': 21.6568}, 'trusted': False, 'record': {'games': 3789, 'rmse': 6.2809, 'rmse_no_elo': 6.2809, 'right_top': 0.5317}},
-        'QB|attempts': {'kind': 'count', 'avg': [8, 8, 1.0], 'eps': 0.342774, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-1.282183, -0.017967, 0.028619, 0.051415, 0.349309, 0.000412, 0.17988, 0.008289, 0.004584, 0.021305, 0.037127], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-1.370467, 0.377815, 0.000231, 0.182925, 0.085411]}, 'allowed_mean': 33.459298, 'spread': {'dist': 'nb', 'r': 18.7851}, 'trusted': False, 'record': {'games': 3789, 'rmse': 8.9438, 'rmse_no_elo': 8.9375, 'right_top': 0.4987}},
+        'QB|passing_yards': {'kind': 'yards', 'avg': [20, 1, 0.5], 'eps': 2.45346, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [1.252159, -0.059575, 0.025383, 0.079263, -0.237278, 0.03165, 0.273244, -0.020893, -0.021763, -0.00233, 0.073948], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [1.141637, -0.217216, 0.032016, 0.325604, 0.106041]}, 'allowed_mean': 240.635031, 'spread': {'dist': 'ratio', 'edges': [213.1657, 230.1313, 244.8929, 261.3835], 'rsd': [0.385, 0.3594, 0.3258, 0.3054, 0.2622]}, 'trusted': False, 'record': {'games': 3789, 'rmse': 77.3414, 'rmse_no_elo': 77.287, 'right_top': 0.5343}},
+        'QB|passing_tds': {'kind': 'count', 'avg': [6, 2, 1.0], 'eps': 0.0152247, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [0.138887, -0.134419, 0.116207, -0.061847, -0.52829, 0.100824, 0.036338, -0.067389, -0.05162, -0.155256, 0.200988], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [0.105905, -0.449408, 0.10359, 0.16784, 0.320251]}, 'allowed_mean': 1.521605, 'spread': {'dist': 'qp', 'phi': 0.8335}, 'trusted': False, 'record': {'games': 3789, 'rmse': 1.1335, 'rmse_no_elo': 1.1361, 'right_top': 0.5409}},
+        'QB|completions': {'kind': 'count', 'avg': [20, 4, 0.5], 'eps': 0.215188, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-0.044026, -0.053763, 0.04788, 0.066247, 0.020598, 0.282692, 0.004367, -0.00186, -0.020865, 0.01477], 'no_elo': {'terms': ['one', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-0.040081, 0.020845, 0.302989, 0.088458]}, 'allowed_mean': 21.566937, 'spread': {'dist': 'nb', 'r': 21.656}, 'trusted': False, 'record': {'games': 3789, 'rmse': 6.283, 'rmse_no_elo': 6.2809, 'right_top': 0.5435}},
+        'QB|attempts': {'kind': 'count', 'avg': [8, 8, 1.0], 'eps': 0.342774, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-1.264589, -0.018585, 0.031748, 0.050305, 0.345809, 0.000553, 0.172724, 0.012543, 0.007216, 0.030876, 0.033806], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-1.370467, 0.377815, 0.000231, 0.182925, 0.085411]}, 'allowed_mean': 33.459298, 'spread': {'dist': 'nb', 'r': 18.7977}, 'trusted': False, 'record': {'games': 3789, 'rmse': 8.9446, 'rmse_no_elo': 8.9375, 'right_top': 0.5106}},
         'QB|passing_interceptions': {'kind': 'count', 'avg': [None, 8, 1.0], 'eps': 0.00834766, 'tables': ['pass_def'], 'scale': 'shown', 'player': None, 'variant': 'c', 'terms': ['one', 'E:pass_def', 'log_avg'], 'coef': [-0.174495, 0.057681, -0.402893], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-0.172616, -0.407186]}, 'spread': {'dist': 'nb', 'r': 10.5947}, 'trusted': True, 'record': {'games': 3789, 'rmse': 0.8598, 'rmse_no_elo': 0.8609, 'right_top': 0.5449}},
-        'QB|rushing_yards': {'kind': 'yards', 'avg': [40, 1, 0.5], 'eps': 0.131725, 'tables': ['run_def'], 'scale': 'raw', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:run_def', 'P', 'EP'], 'coef': [-0.024609, -0.225685, -0.038841, 0.06923], 'no_elo': {'terms': ['one'], 'coef': [-0.024046]}, 'spread': {'dist': 'ratio', 'edges': [5.3696, 9.6611, 15.749, 24.4328], 'rsd': [2.1522, 1.4326, 1.1469, 0.8886, 0.6921]}, 'trusted': False, 'record': {'games': 3789, 'rmse': 16.3866, 'rmse_no_elo': 16.396, 'right_top': 0.4947}},
-        'QB|carries': {'kind': 'count', 'avg': [12, 1, 1.0], 'eps': 0.0303278, 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:run_def', 'P', 'EP'], 'coef': [-0.018408, -0.017859, -0.0353, 0.00863], 'no_elo': {'terms': ['one'], 'coef': [-0.027768]}, 'spread': {'dist': 'nb', 'r': 9.441}, 'trusted': False, 'record': {'games': 3789, 'rmse': 2.3012, 'rmse_no_elo': 2.3025, 'right_top': 0.533}},
+        'QB|rushing_yards': {'kind': 'yards', 'avg': [40, 1, 0.5], 'eps': 0.131725, 'tables': ['run_def'], 'scale': 'raw', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:run_def', 'P', 'EP'], 'coef': [-0.028197, -0.220087, -0.03575, 0.068988], 'no_elo': {'terms': ['one'], 'coef': [-0.024046]}, 'spread': {'dist': 'ratio', 'edges': [5.3771, 9.6591, 15.748, 24.4514], 'rsd': [2.1487, 1.4326, 1.1492, 0.8884, 0.6927]}, 'trusted': False, 'record': {'games': 3789, 'rmse': 16.39, 'rmse_no_elo': 16.396, 'right_top': 0.4921}},
+        'QB|carries': {'kind': 'count', 'avg': [12, 1, 1.0], 'eps': 0.0303278, 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:run_def', 'P', 'EP'], 'coef': [-0.02135, -0.017409, -0.034922, 0.009855], 'no_elo': {'terms': ['one'], 'coef': [-0.027768]}, 'spread': {'dist': 'nb', 'r': 9.4385}, 'trusted': False, 'record': {'games': 3789, 'rmse': 2.3016, 'rmse_no_elo': 2.3025, 'right_top': 0.5264}},
         'QB|any_td': {'kind': 'td', 'avg': [20, 8, 1.0], 'eps': 0.0012406, 'tables': ['run_def'], 'scale': 'shown', 'player': None, 'variant': 'c', 'terms': ['one', 'E:run_def'], 'coef': [0.045365, -0.059759], 'no_elo': {'terms': ['one'], 'coef': [0.046103]}, 'spread': {'dist': 'poisson'}, 'trusted': False, 'record': {'games': 3789, 'rmse': 0.4294, 'rmse_no_elo': 0.4295, 'right_top': 0.5158}},
-        'RB|rushing_yards': {'kind': 'yards', 'avg': [3, 0, 1.0], 'eps': 0.607133, 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:run_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:run_off'], 'coef': [1.494641, -0.051335, 0.185265, 0.018414, -0.406183, 0.065008, 0.157215, -0.048876, -0.003166, -0.12317, -0.012492], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:run_off'], 'coef': [0.667304, -0.190923, 0.066555, 0.325671, 0.019556]}, 'allowed_mean': 61.212786, 'spread': {'dist': 'ratio', 'edges': [46.6874, 54.3819, 61.2079, 70.563], 'rsd': [0.7722, 0.6874, 0.6168, 0.551, 0.5137]}, 'trusted': True, 'record': {'games': 3911, 'rmse': 36.1598, 'rmse_no_elo': 36.4363, 'right_top': 0.5722}},
-        'RB|carries': {'kind': 'count', 'avg': [2, 0, 1.0], 'eps': 0.144535, 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:run_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:run_off'], 'coef': [0.740086, -0.016378, 0.159732, 0.008473, -0.33807, 0.040024, 0.232621, -0.020763, -0.000411, -0.076377, -0.038355], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:run_off'], 'coef': [0.257268, -0.135313, 0.040832, 0.285479, 0.048896]}, 'allowed_mean': 14.185254, 'spread': {'dist': 'nb', 'r': 8.103}, 'trusted': True, 'record': {'games': 3911, 'rmse': 5.6755, 'rmse_no_elo': 5.7442, 'right_top': 0.6105}},
-        'RB|receptions': {'kind': 'count', 'avg': [6, 2, 1.0], 'eps': 0.0258695, 'tables': ['pass_def'], 'scale': 'shown', 'player': 'RS', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-0.148807, -0.03, 0.074699, -0.000692, 0.068569, 0.254634, 0.030498, 0.001428, -0.056834, -0.003964], 'no_elo': {'terms': ['one', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-0.111297, 0.068513, 0.270612, 0.033391]}, 'allowed_mean': 2.73604, 'spread': {'dist': 'nb', 'r': 7.5771}, 'trusted': False, 'record': {'games': 3911, 'rmse': 1.882, 'rmse_no_elo': 1.8866, 'right_top': 0.5581}},
-        'RB|receiving_yards': {'kind': 'yards', 'avg': [40, 2, 0.5], 'eps': 0.206718, 'tables': ['pass_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:pass_def', 'P', 'EP'], 'coef': [-0.174422, -0.051121, 0.095802, -0.013548], 'no_elo': {'terms': ['one'], 'coef': [-0.114229]}, 'spread': {'dist': 'ratio', 'edges': [12.5427, 15.9242, 19.6631, 25.0991], 'rsd': [1.4854, 1.14, 1.0312, 0.9065, 0.7685]}, 'trusted': False, 'record': {'games': 3911, 'rmse': 19.0454, 'rmse_no_elo': 19.1102, 'right_top': 0.5798}},
-        'RB|scrim_yards': {'kind': 'yards', 'avg': [3, 0, 1.0], 'eps': 0.816294, 'tables': ['run_def', 'pass_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:run_def', 'E:pass_def', 'P', 'EP', 'log_avg'], 'coef': [1.917458, -0.044483, -0.039623, 0.209601, 0.013509, -0.478002], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [0.397432, -0.109779]}, 'spread': {'dist': 'ratio', 'edges': [62.7971, 71.6859, 80.5256, 92.9027], 'rsd': [0.6706, 0.5766, 0.5208, 0.5066, 0.4415]}, 'trusted': True, 'record': {'games': 3911, 'rmse': 41.3582, 'rmse_no_elo': 42.0296, 'right_top': 0.6284}},
-        'RB|any_td': {'kind': 'td', 'avg': [4, 4, 1.0], 'eps': 0.00512391, 'tables': ['def'], 'scale': 'shown', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:off'], 'coef': [-0.702624, -0.056338, 0.365136, -0.040536, -0.772685, 0.140737, 0.043108, -0.001139, -0.042026, -0.244696, 0.415102], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:off'], 'coef': [-0.341265, -0.424776, 0.144402, 0.166493, 0.427472]}, 'allowed_mean': 0.577228, 'spread': {'dist': 'poisson'}, 'trusted': False, 'record': {'games': 3911, 'rmse': 0.7536, 'rmse_no_elo': 0.7594, 'right_top': 0.5811}},
-        'WR|receptions': {'kind': 'count', 'avg': [12, 0, 0.5], 'eps': 0.0477782, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'crk', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'rk0', 'rk1'], 'coef': [0.009851, -0.120866, 0.253578, 0.046507, -0.353511, 0.309575, 0.216225], 'no_elo': {'terms': ['one', 'log_avg', 'rk0', 'rk1'], 'coef': [-0.531918, 0.00752, 0.400418, 0.255243]}, 'spread': {'dist': 'nb', 'r': 9.237}, 'trusted': True, 'record': {'games': 10884, 'rmse': 2.2796, 'rmse_no_elo': 2.3023, 'right_top': 0.6073}},
-        'WR|receiving_yards': {'kind': 'yards', 'avg': [20, 0, 0.5], 'eps': 0.623425, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'crk', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'rk0', 'rk1'], 'coef': [2.318657, -0.142201, 0.375358, 0.044041, -0.707875, 0.334254, 0.219916], 'no_elo': {'terms': ['one', 'log_avg', 'rk0', 'rk1'], 'coef': [0.003517, -0.130721, 0.437483, 0.252141]}, 'spread': {'dist': 'ratio', 'edges': [31.394, 39.4209, 49.1151, 61.6809], 'rsd': [1.026, 0.8904, 0.778, 0.6814, 0.5733]}, 'trusted': True, 'record': {'games': 10884, 'rmse': 35.0003, 'rmse_no_elo': 35.2956, 'right_top': 0.5921}},
-        'WR|any_td': {'kind': 'td', 'avg': [6, 0, 0.5], 'eps': 0.00377899, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-1.332681, -0.236989, 0.582557, -0.007023, -0.929081, 0.104763, 0.005451, -0.027491, -0.060391, -0.108317, 0.214138], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-1.021797, -0.789924, 0.104299, 0.085548, 0.396312]}, 'allowed_mean': 0.392135, 'spread': {'dist': 'poisson'}, 'trusted': True, 'record': {'games': 10884, 'rmse': 0.5409, 'rmse_no_elo': 0.5486, 'right_top': 0.6468}},
-        'TE|receptions': {'kind': 'count', 'avg': [8, 0, 0.5], 'eps': 0.0425993, 'tables': ['pass_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg'], 'coef': [-0.171633, -0.028282, 0.268669, -0.003816, -0.15519], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-0.850438, 0.387203]}, 'spread': {'dist': 'nb', 'r': 8.3935}, 'trusted': True, 'record': {'games': 3775, 'rmse': 2.1287, 'rmse_no_elo': 2.1595, 'right_top': 0.6278}},
-        'TE|receiving_yards': {'kind': 'yards', 'avg': [6, 0, 1.0], 'eps': 0.471366, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg'], 'coef': [1.124166, -0.259924, 0.350825, 0.017935, -0.407016], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-1.224902, 0.244953]}, 'spread': {'dist': 'ratio', 'edges': [23.9131, 29.5086, 35.0445, 43.609], 'rsd': [1.0195, 0.8867, 0.8143, 0.722, 0.6215]}, 'trusted': True, 'record': {'games': 3775, 'rmse': 26.9974, 'rmse_no_elo': 27.3226, 'right_top': 0.6053}},
-        'TE|any_td': {'kind': 'td', 'avg': [3, 0, 1.0], 'eps': 0.00352005, 'tables': ['def'], 'scale': 'raw', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:def', 'P', 'EP', 'log_avg'], 'coef': [-1.53624, -0.558342, 0.544633, 0.039456, -0.95522], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-1.116974, -0.831325]}, 'spread': {'dist': 'poisson'}, 'trusted': True, 'record': {'games': 3775, 'rmse': 0.5094, 'rmse_no_elo': 0.5154, 'right_top': 0.6384}},
+        'RB|rushing_yards': {'kind': 'yards', 'avg': [3, 0, 1.0], 'eps': 0.607133, 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:run_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:run_off'], 'coef': [1.511648, -0.048338, 0.171176, 0.01657, -0.411109, 0.064337, 0.156749, -0.061272, -0.012007, -0.125306, 0.004053], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:run_off'], 'coef': [0.667304, -0.190923, 0.066555, 0.325671, 0.019556]}, 'allowed_mean': 61.212786, 'spread': {'dist': 'ratio', 'edges': [46.594, 54.2802, 61.2811, 70.626], 'rsd': [0.7753, 0.6818, 0.6179, 0.5431, 0.5142]}, 'trusted': True, 'record': {'games': 3911, 'rmse': 36.1224, 'rmse_no_elo': 36.4363, 'right_top': 0.576}},
+        'RB|carries': {'kind': 'count', 'avg': [2, 0, 1.0], 'eps': 0.144535, 'tables': ['run_def'], 'scale': 'shown', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:run_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:run_off'], 'coef': [0.736807, -0.014183, 0.141109, 0.005678, -0.334724, 0.039595, 0.23519, -0.026958, -0.001497, -0.071951, -0.02114], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:run_off'], 'coef': [0.257268, -0.135313, 0.040832, 0.285479, 0.048896]}, 'allowed_mean': 14.185254, 'spread': {'dist': 'nb', 'r': 8.1332}, 'trusted': True, 'record': {'games': 3911, 'rmse': 5.6692, 'rmse_no_elo': 5.7442, 'right_top': 0.6232}},
+        'RB|receptions': {'kind': 'count', 'avg': [6, 2, 1.0], 'eps': 0.0258695, 'tables': ['pass_def'], 'scale': 'shown', 'player': 'RS', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-0.150215, -0.031827, 0.076793, -0.001838, 0.068728, 0.253261, 0.038329, 0.01027, -0.030581, -0.005487], 'no_elo': {'terms': ['one', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-0.111297, 0.068513, 0.270612, 0.033391]}, 'allowed_mean': 2.73604, 'spread': {'dist': 'nb', 'r': 7.5844}, 'trusted': False, 'record': {'games': 3911, 'rmse': 1.882, 'rmse_no_elo': 1.8866, 'right_top': 0.5556}},
+        'RB|receiving_yards': {'kind': 'yards', 'avg': [40, 2, 0.5], 'eps': 0.206718, 'tables': ['pass_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:pass_def', 'P', 'EP'], 'coef': [-0.175051, -0.052956, 0.104218, -0.011755], 'no_elo': {'terms': ['one'], 'coef': [-0.114229]}, 'spread': {'dist': 'ratio', 'edges': [12.4591, 15.8505, 19.6208, 25.1606], 'rsd': [1.5094, 1.1355, 1.0263, 0.9069, 0.7665]}, 'trusted': False, 'record': {'games': 3911, 'rmse': 19.0283, 'rmse_no_elo': 19.1102, 'right_top': 0.5837}},
+        'RB|scrim_yards': {'kind': 'yards', 'avg': [3, 0, 1.0], 'eps': 0.816294, 'tables': ['run_def', 'pass_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:run_def', 'E:pass_def', 'P', 'EP', 'log_avg'], 'coef': [2.025473, -0.044032, -0.0392, 0.20047, 0.012715, -0.498608], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [0.397432, -0.109779]}, 'spread': {'dist': 'ratio', 'edges': [62.6701, 71.5156, 80.5043, 92.7445], 'rsd': [0.6691, 0.5838, 0.5121, 0.4901, 0.4536]}, 'trusted': True, 'record': {'games': 3911, 'rmse': 41.2809, 'rmse_no_elo': 42.0296, 'right_top': 0.6232}},
+        'RB|any_td': {'kind': 'td', 'avg': [4, 4, 1.0], 'eps': 0.00512391, 'tables': ['def'], 'scale': 'shown', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:off'], 'coef': [-0.713965, -0.055305, 0.339793, -0.044881, -0.782274, 0.139797, 0.044744, -0.025188, -0.03281, -0.20606, 0.45167], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:off'], 'coef': [-0.341265, -0.424776, 0.144402, 0.166493, 0.427472]}, 'allowed_mean': 0.577228, 'spread': {'dist': 'poisson'}, 'trusted': False, 'record': {'games': 3911, 'rmse': 0.7532, 'rmse_no_elo': 0.7594, 'right_top': 0.5683}},
+        'WR|receptions': {'kind': 'count', 'avg': [12, 0, 0.5], 'eps': 0.0477782, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'crk', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'rk0', 'rk1'], 'coef': [0.007813, -0.113031, 0.223311, 0.049544, -0.324665, 0.310808, 0.215512], 'no_elo': {'terms': ['one', 'log_avg', 'rk0', 'rk1'], 'coef': [-0.531918, 0.00752, 0.400418, 0.255243]}, 'spread': {'dist': 'nb', 'r': 9.1985}, 'trusted': True, 'record': {'games': 10884, 'rmse': 2.2806, 'rmse_no_elo': 2.3023, 'right_top': 0.6082}},
+        'WR|receiving_yards': {'kind': 'yards', 'avg': [20, 0, 0.5], 'eps': 0.623425, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'crk', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'rk0', 'rk1'], 'coef': [2.114568, -0.134061, 0.31715, 0.048662, -0.642418, 0.338446, 0.218445], 'no_elo': {'terms': ['one', 'log_avg', 'rk0', 'rk1'], 'coef': [0.003517, -0.130721, 0.437483, 0.252141]}, 'spread': {'dist': 'ratio', 'edges': [31.4493, 39.519, 49.583, 61.9854], 'rsd': [1.0516, 0.8962, 0.7768, 0.6716, 0.5727]}, 'trusted': True, 'record': {'games': 10884, 'rmse': 35.0181, 'rmse_no_elo': 35.2956, 'right_top': 0.5875}},
+        'WR|any_td': {'kind': 'td', 'avg': [6, 0, 0.5], 'eps': 0.00377899, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'd', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:pass_off'], 'coef': [-1.262725, -0.24432, 0.532441, -0.007695, -0.928488, 0.104578, 0.002747, -0.009415, -0.061985, -0.082607, 0.233501], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:pass_off'], 'coef': [-1.021797, -0.789924, 0.104299, 0.085548, 0.396312]}, 'allowed_mean': 0.392135, 'spread': {'dist': 'poisson'}, 'trusted': True, 'record': {'games': 10884, 'rmse': 0.5412, 'rmse_no_elo': 0.5486, 'right_top': 0.6477}},
+        'TE|receptions': {'kind': 'count', 'avg': [8, 0, 0.5], 'eps': 0.0425993, 'tables': ['pass_def'], 'scale': 'shown', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg'], 'coef': [-0.148507, -0.028151, 0.257956, -0.004522, -0.146548], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-0.850438, 0.387203]}, 'spread': {'dist': 'nb', 'r': 8.3938}, 'trusted': True, 'record': {'games': 3775, 'rmse': 2.1288, 'rmse_no_elo': 2.1595, 'right_top': 0.6278}},
+        'TE|receiving_yards': {'kind': 'yards', 'avg': [6, 0, 1.0], 'eps': 0.471366, 'tables': ['pass_def'], 'scale': 'raw', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:pass_def', 'P', 'EP', 'log_avg'], 'coef': [1.112627, -0.250758, 0.334755, 0.007173, -0.391663], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-1.224902, 0.244953]}, 'spread': {'dist': 'ratio', 'edges': [23.7627, 29.5463, 35.2048, 43.6904], 'rsd': [1.0271, 0.8974, 0.8051, 0.7194, 0.6236]}, 'trusted': True, 'record': {'games': 3775, 'rmse': 27.0, 'rmse_no_elo': 27.3226, 'right_top': 0.5987}},
+        'TE|any_td': {'kind': 'td', 'avg': [3, 0, 1.0], 'eps': 0.00352005, 'tables': ['def'], 'scale': 'raw', 'player': 'R', 'variant': 'c', 'terms': ['one', 'E:def', 'P', 'EP', 'log_avg'], 'coef': [-1.462577, -0.547264, 0.529162, 0.025796, -0.952853], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [-1.116974, -0.831325]}, 'spread': {'dist': 'poisson'}, 'trusted': True, 'record': {'games': 3775, 'rmse': 0.5093, 'rmse_no_elo': 0.5154, 'right_top': 0.6411}},
         'K|fg_made': {'kind': 'count', 'avg': [12, 0, 0.5], 'eps': 0.0166694, 'tables': ['def'], 'scale': 'shown', 'player': 'RS', 'variant': 'c', 'terms': ['one', 'E:def', 'P', 'EP', 'log_avg'], 'coef': [0.409024, -0.026471, 0.041253, 0.003499, -0.825144], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [0.397738, -0.79034]}, 'spread': {'dist': 'qp', 'phi': 0.8811}, 'trusted': False, 'record': {'games': 3959, 'rmse': 1.2003, 'rmse_no_elo': 1.201, 'right_top': 0.5354}},
-        'K|kick_pts': {'kind': 'yards', 'avg': [None, 2, 0.5], 'eps': 0.073214, 'tables': ['def'], 'scale': 'shown', 'player': None, 'variant': 'd', 'terms': ['one', 'E:def', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:off'], 'coef': [1.215902, -0.031852, -0.623602, 0.049962, 0.0879, -0.039071, -0.023502, -0.067634, 0.14414], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:off'], 'coef': [1.192547, -0.623821, 0.050873, 0.239234, 0.135163]}, 'allowed_mean': 7.22818, 'spread': {'dist': 'ratio', 'edges': [6.6628, 7.0143, 7.3072, 7.6523], 'rsd': [0.5909, 0.5282, 0.5079, 0.486, 0.4341]}, 'trusted': True, 'record': {'games': 3959, 'rmse': 3.6174, 'rmse_no_elo': 3.622, 'right_top': 0.5328}},
+        'K|kick_pts': {'kind': 'yards', 'avg': [None, 2, 0.5], 'eps': 0.073214, 'tables': ['def'], 'scale': 'shown', 'player': None, 'variant': 'd', 'terms': ['one', 'E:def', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:off'], 'coef': [1.196189, -0.03032, -0.621502, 0.049691, 0.086449, -0.039157, -0.024063, -0.087851, 0.142665], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:off'], 'coef': [1.192547, -0.623821, 0.050873, 0.239234, 0.135163]}, 'allowed_mean': 7.22818, 'spread': {'dist': 'ratio', 'edges': [6.6598, 7.0114, 7.3051, 7.6594], 'rsd': [0.5928, 0.5249, 0.5098, 0.4818, 0.4386]}, 'trusted': True, 'record': {'games': 3959, 'rmse': 3.6158, 'rmse_no_elo': 3.622, 'right_top': 0.5253}},
     },
 }
 
@@ -1976,8 +2081,9 @@ def joker_published(path=None):
 def refix(c, p_joker, home, away, stamp):
     """a re-pick on the Joker done again on the Joker's call as published before kickoff (THE JOKER BASELINE's re-picks):
     only the Joker's chance changes, the matchup (m), the game model's own chance, the re-pick's time and source and the
-    first call (`was`) kept as they were, and the re-pick as it stood kept in `joker_fix` with when it was done again"""
-    p = round(on_joker(p_joker, c['m']), 4)
+    first call (`was`) kept as they were, and the re-pick as it stood kept in `joker_fix` with when it was done again; on
+    the BETA the re-pick was made at (its `beta`, else JOKER_BETA_WAS), since only the Joker's chance changes"""
+    p = round(on_joker(p_joker, c['m'], c.get('beta', JOKER_BETA_WAS)), 4)
     return {**c, 'pick': home if p >= 0.5 else away, 'p_home': p, 'p_joker': round(float(p_joker), 4),
             'joker_fix': {'pick': c['pick'], 'p_home': c['p_home'], 'p_joker': c['p_joker'], 'at': stamp}}
 
@@ -2001,7 +2107,7 @@ def make_call(w, hf, x, p_joker):
     p = on_joker(p_joker, m) if p_joker is not None else p_elo
     c = {'p_home': round(p, 4), 'p_elo': round(p_elo, 4), 'm': round(m, 4)}
     if p_joker is not None:
-        c.update(base='joker', p_joker=round(float(p_joker), 4))
+        c.update(base='joker', p_joker=round(float(p_joker), 4), beta=JOKER_BASE['beta'])     # the BETA it stands on
     return c
 
 
@@ -2018,6 +2124,8 @@ def main():
     games, stats, roster, charts, injuries, pbp, sources = load(a.offline, now)
     games = week_order(games)
     games['kick'] = [kickoff(d, t) for d, t in zip(games.gameday, games.gametime)]
+    slots = draft_slots(a.offline, games, now)
+    print(f'  the draft: {len(slots)} players with a draft slot, through {max(y for y, _ in slots.values())}')
     weekly, daily, outs = build_lineups(charts, injuries)
     print(f'  depth charts: {len(weekly)} weekly team-charts, {sum(len(v) for v in daily.values())} daily snapshots; {sum(len(v) for v in outs.values())} players ruled out across {len(outs)} weeks')
     # THE SEASON, from games.csv alone. sched is the newest schedule nflverse has posted; the
@@ -2064,6 +2172,7 @@ def main():
     recent = {}            # player_id -> involvement in his last five rated games
     skipped = 0            # games a regular left early, not rated
     season_start = {}      # (season, player) -> rating at the start of the season
+    start = {}             # player -> his first career rating (THE DRAFT START), for players.json
     peak = {}              # player -> (rating, season)
     game_feat = []         # per game: features from pre-game ratings
     # the season in play and the rankings' season alone (the same one but for a new season's
@@ -2079,10 +2188,10 @@ def main():
     by_game = {gid: d for gid, d in stats.groupby('game_id')}
     unit = lambda t, f: U.get((t, f), 1500.0)
 
-    def strength(pids_groups):
+    def strength(pids_groups, season):
         out = {}
         for g in GROUPS:
-            rs = sorted((R.get(p, QB_START if g == 'QB' else 1500.0) for p, gg in pids_groups if gg == g), reverse=True)
+            rs = sorted((R.get(p, first_rating(p, g, int(season), slots, lineup=True)) for p, gg in pids_groups if gg == g), reverse=True)
             wts = DEPTH[g]
             rs = (rs + [REPLACEMENT] * len(wts))[:len(wts)]
             out[g] = sum(r * w for r, w in zip(rs, wts)) / sum(wts)
@@ -2141,8 +2250,8 @@ def main():
                 continue
             eh, ch = expected(season, row.week, row.home_team, row.gameday, played.get((int(season), row.home_team)))
             ea, ca = expected(season, row.week, row.away_team, row.gameday, played.get((int(season), row.away_team)))
-            sh, sa = strength(eh), strength(ea)
-            ph, pa = strength(parts[row.home_team]), strength(parts[row.away_team])
+            sh, sa = strength(eh, season), strength(ea, season)
+            ph, pa = strength(parts[row.home_team], season), strength(parts[row.away_team], season)
             mu_lineups[(row.game_id, row.home_team)], mu_lineups[(row.game_id, row.away_team)] = eh, ea
             game_feat.append({'game_id': row.game_id, 'season': int(season), 'ord': int(ordw), 'week': int(row.week),
                               'home': row.home_team, 'away': row.away_team, 'charted': bool(ch and ca),
@@ -2161,8 +2270,8 @@ def main():
             for r in d.itertuples(index=False):
                 pid, g = r.player_id, r.group
                 if pid not in R:
-                    R[pid], N[pid] = (QB_START if g == 'QB' and season > FIRST else 1500.0), 0
-                    season_start[(season, pid)] = R[pid]
+                    R[pid], N[pid] = first_rating(pid, g, int(season), slots), 0
+                    season_start[(season, pid)] = start[pid] = R[pid]
                 info[pid] = {'name': r.player_display_name, 'pos': r.position, 'group': g, 'team': r.team}
                 # a regular who left early: his involvement collapsed against his own recent
                 # norm, so the game says nothing about how good he is and is not rated
@@ -2337,7 +2446,7 @@ def main():
             ea, _ = expected(call_season, row.week, row.away_team, row.gameday, fallback(row.away_team), gone_now)
             if not eh or not ea:
                 continue
-            sh, sa = strength(eh), strength(ea)
+            sh, sa = strength(eh, call_season), strength(ea, call_season)
             for team, other, parts, st_opp, home in ((row.home_team, row.away_team, eh, sa, 1), (row.away_team, row.home_team, ea, sh, 0)):
                 coming.append({'game_id': row.game_id, 'team': team, 'opp': other, 'home': home, 'parts': parts,
                                'opp_strength': st_opp, 'rating': {pid: R.get(pid, REPLACEMENT) for pid, _ in parts}})
@@ -2541,15 +2650,18 @@ def main():
                          'min_games': min((need_of(t) for t in team_games), default=1), 'top': rows[:25], 'sidelined': sidelined}
         # the players map: every player the models may price, on his career rating (elo, with s0
         # and h the season in play so far, so a rating can be read as it stood before any week:
-        # the Prop Record grades on those), his club, and his place in the rankings where he has
-        # one (se, rank)
+        # the Prop Record grades on those), his club, his place in the rankings where he has
+        # one (se, rank), and his first career rating with the draft slot it came from (start,
+        # draft: THE DRAFT START)
         for pid in sorted(set(career) | set(pool)):
             if pid not in R:
                 continue
             h = hist[pid]
             players[pid] = {'name': info[pid]['name'], 'group': g, 'team': info[pid]['team'], 'elo': round(R[pid]),
                             's0': round(season_start.get((last, pid), 1500.0)), 'h': [[o, round(r)] for o, r in h.get(last, [])],
-                            'se': show(RS[pid]) if pid in rank else None, 'rank': rank.get(pid)}
+                            'se': show(RS[pid]) if pid in rank else None, 'rank': rank.get(pid),
+                            # THE DRAFT START: his first career rating and the draft slot it was read from
+                            'start': round(start[pid], 1), 'draft': list(slots[pid]) if pid in slots else None}
         kept_out.update(p for p in set(rated) | {p for p in R if info[p]['group'] == g and latest_season[p] >= active_cut and N[p] >= 3}
                         if why_out(p))
     # a player the roster or the report keeps out (or one who has left his club) is not in the
@@ -2625,7 +2737,7 @@ def main():
         tops = {g: [r for parts in league.values()
                     for r in sorted((R.get(p, REPLACEMENT) for p, gg in parts if gg == g), reverse=True)[:len(DEPTH[g])]]
                 for g in MU_STATS}
-        mu['league'] = {'defs': {t: {u: round(v, 1) for u, v in strength(parts).items() if u in MU_DEF}   # a tenth: whole points tie a third of the league
+        mu['league'] = {'defs': {t: {u: round(v, 1) for u, v in strength(parts, call_season).items() if u in MU_DEF}   # a tenth: whole points tie a third of the league
                                  for t, parts in sorted(league.items())},
                         'norms': {g: [round(float(np.mean(v)), 1), round(float(np.std(v, ddof=1)), 1)]
                                   for g, v in tops.items() if len(v) > 1}}
@@ -2642,7 +2754,7 @@ def main():
         # ELO-ADJUSTED AVERAGES: every coming game's expected starters on the ratings and the ELO tab's tables as they
         # stand, beside the matchup formula's projections (which the Mismatches and the game model's uses keep)
         av, ref = averages(mu_log, coming, call_season, avg_tables(units, games, call_season, pbp), R,
-                           RSd.get(call_season, {}), {t: strength(parts) for t, parts in league.items()})
+                           RSd.get(call_season, {}), {t: strength(parts, call_season) for t, parts in league.items()})
         mu['avg'], mu['avg_ref'], mu['avg_fit'] = av, ref, ELO_AVG
         nl = sum(len(v['stats']) for v in av.values())
         print(f"  elo-adjusted averages: {len(av)} expected starters, {nl} legs "

@@ -50,7 +50,12 @@ all pass. What each one would have caught is said beside it.
              entry on the Joker keeps its Joker chance, matchup and game model's chance and its
              chance is the rule's on them; a graded call carries the ledger's `base`; the record's
              `joker_base` counts the graded published calls on the Joker, and model.json carries
-             the build's JOKER_BASE. On fixtures (the build's on_joker and make_call): a matchup of
+             the build's JOKER_BASE. BETA is the gate's own copy (0.1973 since THE DRAFT START refitted it
+             in November 2026): a coming call stands on it and carries it (`beta`), and a frozen call is
+             read back on the BETA it was made at, its own `beta`, or 0.2058 (the build's JOKER_BETA_WAS,
+             the gate's own copy too) for one made before a call carried its own (19 October to November
+             2026), never on today's (at today's, 108 of the ledger's 136 calls on the Joker fail the
+             rule). On fixtures (the build's on_joker and make_call): a matchup of
              0 leaves the Joker's chance as it is, one for the home side raises it and one against
              lowers it, the Joker's 0% and 100% are held within 1% and 99%, and with no Joker call
              the call is the game model's own. (A call that silently fell back to Elo alone where
@@ -69,8 +74,9 @@ all pass. What each one would have caught is said beside it.
              marks published (while the state has the game), and the re-pick it replaced is whole and the rule's on another Joker
              chance; RECORD lets that one change through (only the chance, the pick and the Joker's
              chance, onto the state's) and holds it as it stands after. On fixtures, refix turns LA at
-             DEN's re-pick round on the Joker's published 50.93% and keeps the rest, and
-             joker_published reads only the calls marked published.
+             DEN's re-pick round on the Joker's published 50.93% and keeps the rest (on 0.2058, the BETA
+             it was made at; one carrying 0.1973 on that), and joker_published reads only the calls marked
+             published.
   SOURCES    the season's injury report, roster and play-by-play are present, and the play-by-play
              of the season before the units' (which they carry in); no group is empty.
   GAMES      the game model's walk-forward counts, for every finished season, every final games.csv
@@ -182,6 +188,20 @@ all pass. What each one would have caught is said beside it.
              better defence moves the projection by exactly its coefficient. (A projection read off the wrong
              club's table, a regular's norm turned round, an average that counted a quiet game, a twin with the
              Elo terms in, or a leg left out would publish green.)
+  DRAFT      every player of the players map carries his first career rating (`start`) and his draft
+             slot (`draft`, THE DRAFT START, November 2026), each the gate's own working: draft_picks.csv
+             read here (an id in two drafts at the later, a row with no id none), his first rated game
+             read here from nflverse's player stats (his earliest row with some involvement, by the
+             gate's own copy of each group's positions and involvement, in a game with a final, the
+             playoffs after week 18: its season and group), and its own arithmetic on DRAFT_START's
+             numbers (1500 + a + b ln of the pick held between the group's floor and 262, 262 for one
+             never drafted or drafted after that season, a kicker's level, 2012 at 1500). On fixtures,
+             the build's first_rating is the gate's on every branch (a top pick, a later one, drafted
+             after his first season, never drafted, a pick past 262, a kicker, the warm-up and its
+             expected quarterback at QB_START) and draft_slots reads a file as the gate does. (A start
+             read off another player's slot, a curve with its floor or its end dropped, a rookie of the
+             season started before his draft, or a players map that left the fields out, would publish
+             green.)
   UNITS      the build's own functions on fixtures: two equal teams at a neutral site are 50/50;
              a fullback listed first does not take the second running back's place; a club on its
              bye keeps its roster; a player out last week and not practising stays out.
@@ -198,6 +218,10 @@ import build  # noqa: E402
 
 fails, notes = [], []
 checks = 0
+# THE JOKER BASELINE's BETA, the gate's own copies (a deliberate refit edits both and says why in the build's docstring):
+# the one every call is made at now (JOKER_BASE, refitted on THE DRAFT START in November 2026) and the one every call on
+# the Joker was made at before a call carried its own `beta` (19 October to November 2026, the build's JOKER_BETA_WAS)
+JOKER_BETA_OWN, JOKER_BETA_WAS_OWN = 0.1973, 0.2058
 
 
 def unit_ranks_bad(T, rated):
@@ -269,8 +293,10 @@ def unit_checks():
     chk(alone.get('base') is None and alone['p_home'] == alone['p_elo'] == round(1 / (1 + math.exp(-(0.25 + mj))), 4),
         f'JOKER: with no Joker call the call is not the game model\'s own: {alone}')
     chk(on.get('base') == 'joker' and on['p_joker'] == 0.4 and on['p_elo'] == alone['p_elo'] and abs(on['m'] - mj) < 1e-4
-        and on['p_home'] == round(1 / (1 + math.exp(-(math.log(0.4 / 0.6) + build.JOKER_BASE['beta'] * mj))), 4),
-        f'JOKER: a call on the Joker\'s 40% is not the rule\'s: {on}')
+        and on['p_home'] == round(1 / (1 + math.exp(-(math.log(0.4 / 0.6) + JOKER_BETA_OWN * mj))), 4),
+        f'JOKER: a call on the Joker\'s 40% is not the rule\'s on BETA {JOKER_BETA_OWN}: {on}')
+    chk(on.get('beta') == JOKER_BETA_OWN and 'beta' not in alone,
+        f'JOKER: a call on the Joker does not carry the BETA it stands on ({on.get("beta")}), or one on no base does ({alone.get("beta")})')
     # a re-pick done again on the Joker's call as published before kickoff (refix): LA at DEN's re-pick stood on the
     # Joker's 51.78%, which moved after kickoff from the 50.93% published before it; on 50.93% and the same matchup it
     # turns round to LA, everything but the chance, the pick and the Joker's chance kept, the old re-pick in joker_fix
@@ -283,6 +309,12 @@ def unit_checks():
         f'JOKER: a re-pick done again on the Joker\'s published call is not the rule\'s: {fx}')
     fx2 = build.refix({**rp, 'pick': 'IND', 'p_home': 0.3304, 'p_joker': 0.3325, 'm': -0.0463}, 0.4265, 'WAS', 'IND', 'x')
     chk(fx2['pick'] == 'IND' and fx2['p_home'] == 0.4242, f'JOKER: IND at WAS\'s re-pick on 42.65% is not IND at 42.42%: {fx2}')
+    # those two re-picks were made before a call carried its BETA, so they are done again on the one they were made at
+    # (JOKER_BETA_WAS, above: 0.4992 and 0.4242 on 0.2058); a re-pick that carries its own is done again on that one
+    chk('beta' not in fx and 'beta' not in fx2, f'JOKER: a re-pick done again took a BETA it was not made at: {fx.get("beta")}')
+    fx3 = build.refix({**rp, 'beta': JOKER_BETA_OWN}, 0.5093, 'DEN', 'LA', 'x')
+    chk(fx3.get('beta') == JOKER_BETA_OWN and fx3['p_home'] == round(1 / (1 + math.exp(-(math.log(0.5093 / 0.4907) - JOKER_BETA_OWN * 0.1972))), 4),
+        f'JOKER: a re-pick made on BETA {JOKER_BETA_OWN} is not done again on it: {fx3}')
     import tempfile
     with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as tf:
         json.dump({'joker': {'g1': {'pick': 'A', 'pHome': 0.4, 'src': 'published'}, 'g2': {'pick': 'B', 'pHome': 0.6},
@@ -1057,6 +1089,146 @@ def power_fixture_checks():
     chk(ok and all(abs(X[t]['r'] - R[t]) < 1e-4 for t in clubs), 'POWER: the gate\'s iteration and the build\'s solve disagree on an invented season')
 
 
+# ---- DRAFT: each player's first career rating (THE DRAFT START) on the gate's own reading ----
+# the gate's own copies (a deliberate change edits both and says why in the build's docstring): the positions that
+# make each rated group (the build's GROUP), what a game's involvement is for each (a row with none is no game the
+# build rates, so it never starts a rating), the playoff rounds' places after week 18, and the warm-up season, whose
+# new players all start at 1500
+DRAFT_POS = {'QB': 'QB', 'RB': 'RB', 'FB': 'RB', 'WR': 'WR', 'TE': 'TE', 'K': 'K',
+             'DE': 'DL', 'DT': 'DL', 'NT': 'DL', 'DL': 'DL', 'LB': 'LB', 'OLB': 'LB', 'ILB': 'LB', 'MLB': 'LB',
+             'CB': 'DB', 'DB': 'DB', 'S': 'DB', 'SAF': 'DB', 'FS': 'DB', 'SS': 'DB'}
+DRAFT_VOL = {'QB': ('attempts', 'carries', 'sacks_suffered'), 'RB': ('carries', 'targets'), 'WR': ('targets', 'carries'),
+             'TE': ('targets', 'carries'), 'K': ('fg_att', 'pat_att'),
+             **{g: ('def_tackles_solo', 'def_tackle_assists', 'def_pass_defended', 'def_sacks', 'def_qb_hits') for g in ('DL', 'LB', 'DB')}}
+DRAFT_WARMUP = 2012
+
+
+def draft_read_own(path):
+    """draft_picks.csv as the gate reads it: {gsis id: (draft season, overall pick)}, an id listed in two drafts at
+    the later of them"""
+    d = pd.read_csv(path, usecols=['season', 'pick', 'gsis_id'], low_memory=False)
+    d = d[d.gsis_id.map(lambda v: isinstance(v, str)) & d.season.notna() & d.pick.notna()]
+    d = d.sort_values('season', kind='mergesort').drop_duplicates('gsis_id', keep='last')
+    return {g: (int(y), int(p)) for g, y, p in zip(d.gsis_id, d.season, d.pick)}
+
+
+def draft_r0_own(spec, group, season, slot):
+    """the gate's own arithmetic of a first career rating on DRAFT_START's numbers: 1500 + a + b ln(the pick held
+    between the group's floor and the curve's end), the end for a player never drafted or drafted after `season`;
+    a level group one number; the warm-up 1500"""
+    if season <= DRAFT_WARMUP:
+        return 1500.0
+    if group in spec['level']:
+        return 1500.0 + spec['level'][group]
+    a, b, floor = spec['curve'][group]
+    end = spec['p_end']
+    pick = end if slot is None or slot[0] > season else min(end, max(floor, slot[1]))
+    return 1500.0 + a + b * math.log(pick)
+
+
+def draft_first_own(cache, games, upto):
+    """every player's first rated game on the gate's own reading of nflverse's player stats: (season, group) of his
+    earliest row with some involvement in a game games.csv has a final for, in the order the season is played (the
+    playoffs after week 18); a row on a position no group rates is none of his"""
+    fin = games[games.home_score.notna() & (games.season >= DRAFT_WARMUP)]
+    at = {gid: (int(s), avg_ord(t, w)) for gid, s, w, t in zip(fin.game_id, fin.season, fin.week, fin.game_type)}
+    cols = sorted({c for v in DRAFT_VOL.values() for c in v})
+    parts = []
+    for y in range(DRAFT_WARMUP, upto + 1):
+        path = os.path.join(cache, f'stats_player_week_{y}.csv')
+        if not os.path.exists(path):
+            continue                       # AVERAGES says it, and the season to come before it is under way has none
+        have = set(pd.read_csv(path, nrows=0).columns)
+        d = pd.read_csv(path, usecols=[c for c in ['player_id', 'position', 'game_id'] + cols if c in have], low_memory=False)
+        d['group'] = d.position.map(DRAFT_POS)
+        d = d[d.group.notna() & d.game_id.isin(at)].copy()
+        vol = np.zeros(len(d))
+        for g, cs in DRAFT_VOL.items():
+            m = (d.group == g).values
+            vol[m] = sum(pd.to_numeric(d[c], errors='coerce').fillna(0.0).values[m] if c in d else 0.0 for c in cs)
+        d = d[vol > 0]
+        parts.append(d[['player_id', 'game_id', 'group']])
+    d = pd.concat(parts, ignore_index=True)
+    d['season'] = [at[g][0] for g in d.game_id]
+    d['ord'] = [at[g][1] for g in d.game_id]
+    d = d.sort_values(['season', 'ord'], kind='mergesort').drop_duplicates('player_id', keep='first')
+    return {p: (int(s), g) for p, s, g in zip(d.player_id, d.season, d.group)}
+
+
+def draft_checks(P, games, cache, season):
+    """DRAFT: every player of the players map carries his first career rating and his draft slot, each the gate's own
+    working of DRAFT_START on its own reading of draft_picks.csv and of his first rated game"""
+    spec = build.DRAFT_START
+    groups = set(spec['curve']) | set(spec['level'])
+    chk(spec.get('p_end') == 262 and set(spec['curve']).isdisjoint(spec['level']) and groups == set(build.GROUPS)
+        and all(len(c) == 3 and c[2] in (1, 4, 8, 16, 32) for c in spec['curve'].values()),
+        f'DRAFT: DRAFT_START is not a curve or a level for every group with the curve\'s end at pick 262: {spec}')
+    path = os.path.join(cache, 'draft_picks.csv')
+    if not os.path.exists(path):
+        chk(False, 'DRAFT: draft_picks.csv is not in the cache, so no first rating can be held against it')
+        return
+    slots = draft_read_own(path)
+    first = draft_first_own(cache, games, season)
+    bad, nodraft, nofirst = [], [], []
+    for pid, v in P['players'].items():
+        want = slots.get(pid)
+        if v.get('draft') != (list(want) if want else None):
+            nodraft.append(f'{v.get("name")} ({pid}) {v.get("draft")} where the file has {want}')
+        f = first.get(pid)
+        if f is None:
+            nofirst.append(pid)
+            continue
+        r0 = draft_r0_own(spec, f[1], f[0], want)
+        if not isinstance(v.get('start'), (int, float)) or abs(v['start'] - r0) > 0.051:
+            bad.append(f'{v.get("name")} ({pid}, {f[1]} first rated {f[0]}, drafted {want}) starts at {v.get("start")}, the rule {r0:.1f}')
+    n = len(P['players'])
+    chk(not nodraft, f'DRAFT: {len(nodraft)} of {n} players carry another draft slot than draft_picks.csv: {"; ".join(nodraft[:3])}')
+    chk(not nofirst, f'DRAFT: {len(nofirst)} of {n} players have no rated game in the player stats: {nofirst[:5]}')
+    chk(not bad, f'DRAFT: {len(bad)} of {n} players\' first ratings are not the draft start\'s: {"; ".join(bad[:3])}')
+    by = {}
+    for pid, v in P['players'].items():
+        f = first.get(pid)
+        if f and f[0] > DRAFT_WARMUP and isinstance(v.get('start'), (int, float)):
+            by.setdefault(f[1], []).append(v['start'])
+    notes.append('the draft start: ' + ', '.join(f'{g} {len(by[g])} from {min(by[g]):.0f} to {max(by[g]):.0f}' for g in build.GROUPS if by.get(g)))
+
+
+def draft_fixture_checks():
+    """THE DRAFT START on fixtures: the build's first_rating and draft_slots against the gate's own working"""
+    spec = build.DRAFT_START
+    slots = {'b1': (2020, 1), 'b40': (2020, 40), 'late': (2021, 12), 'qb9': (2019, 9), 'old': (1985, 336), 'k': (2018, 70)}
+    cases = [('b1', 'RB', 2020), ('b40', 'RB', 2020), ('late', 'WR', 2020), ('none', 'DB', 2022), ('qb9', 'QB', 2019),
+             ('old', 'LB', 2013), ('k', 'K', 2018), ('b1', 'RB', 2012), ('qb9', 'QB', 2012), ('b40', 'TE', 2020)]
+    for pid, g, y in cases:
+        got, want = build.first_rating(pid, g, y, slots), draft_r0_own(spec, g, y, slots.get(pid))
+        chk(abs(got - want) < 1e-9, f'DRAFT: first_rating({pid}, {g}, {y}) is {got:.3f}, the gate\'s {want:.3f}')
+    chk(abs(build.first_rating('late', 'WR', 2020, slots) - build.first_rating('none', 'WR', 2020, slots)) < 1e-9,
+        'DRAFT: a player drafted after the season of his first game does not start as one never drafted')
+    chk(build.first_rating('b1', 'RB', 2020, slots) > build.first_rating('b40', 'RB', 2020, slots) > build.first_rating('none', 'RB', 2020, slots),
+        'DRAFT: a back\'s first rating does not fall with his pick')
+    chk(build.first_rating('qb9', 'QB', 2012, slots, lineup=True) == build.QB_START and build.first_rating('qb9', 'QB', 2012, slots) == 1500.0,
+        'DRAFT: the warm-up does not keep the old starts (1500; an expected quarterback QB_START)')
+    import tempfile
+    tmp = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(tmp, 'draft_picks.csv'), 'w') as f:
+            f.write('season,round,pick,team,gsis_id,pfr_player_name,w_av\n1986,1,1,TB,JAC1,Bo,1\n1987,7,183,LV,JAC1,Bo,2\n'
+                    '2020,1,5,MIA,00-1,A,3\n2020,1,6,LAC,,B,4\n2030,1,1,X,00-9,C,0\n')
+        g = pd.DataFrame({'season': [2030], 'gameday': ['2030-09-08'], 'gametime': ['13:00']})
+        keep = build.CACHE
+        build.CACHE = tmp
+        try:
+            got = build.draft_slots(True, g, datetime.datetime(2030, 9, 1, tzinfo=datetime.timezone.utc))
+        finally:
+            build.CACHE = keep
+        want = draft_read_own(os.path.join(tmp, 'draft_picks.csv'))
+        chk(got == want == {'JAC1': (1987, 183), '00-1': (2020, 5), '00-9': (2030, 1)},
+            f'DRAFT: draft_slots read {got}, the gate {want}: an id in two drafts at the later, a row with no id none')
+    finally:
+        import shutil
+        shutil.rmtree(tmp)
+
+
 # ---- AVERAGES: matchups.json's Elo-adjusted averages (ELO-ADJUSTED AVERAGES) on the gate's own reading ----
 # the gate's own copies (a deliberate change edits both and says why in the build's docstring): the positions that
 # make each group, what a game's involvement is for each, a regular's norm (the build's VOLUME; the share is ELO_AVG's
@@ -1601,6 +1773,7 @@ def main():
     unit_team_checks()
     power_fixture_checks()
     avg_fixture_checks()
+    draft_fixture_checks()
     P = load_json(os.path.join(a.data, 'players.json'))
     M = load_json(os.path.join(a.data, 'model.json'))
     MU = load_json(os.path.join(a.data, 'matchups.json')) if os.path.exists(os.path.join(a.data, 'matchups.json')) else {}
@@ -1651,11 +1824,15 @@ def main():
     # ---- JOKER: the calls on the Joker's baseline (THE JOKER BASELINE) ----
     joker = build.joker_calls(a.joker_state)
     jpub = build.joker_published(a.joker_state)
-    beta = build.JOKER_BASE['beta']
     jb = M.get('joker_base') or {}
     chk(all(jb.get(k) == v for k, v in build.JOKER_BASE.items()), 'JOKER: model.json does not carry the build\'s JOKER_BASE')
+    chk(build.JOKER_BASE['beta'] == JOKER_BETA_OWN and build.JOKER_BETA_WAS == JOKER_BETA_WAS_OWN,
+        f'JOKER: the build calls on BETA {build.JOKER_BASE["beta"]} and reads a call that carries none on {build.JOKER_BETA_WAS}, '
+        f'the gate\'s {JOKER_BETA_OWN} and {JOKER_BETA_WAS_OWN}')
     sigm = lambda z: 1 / (1 + math.exp(-z))
-    own = lambda pj, m: sigm(math.log(min(0.99, max(0.01, pj)) / (1 - min(0.99, max(0.01, pj)))) + beta * m)
+    own = lambda pj, m, b=JOKER_BETA_OWN: sigm(math.log(min(0.99, max(0.01, pj)) / (1 - min(0.99, max(0.01, pj)))) + b * m)
+    # a frozen call is read back on the BETA it was made at: its own `beta`, or the one before calls carried theirs
+    beta_of = lambda e: e.get('beta', JOKER_BETA_WAS_OWN)
     hf_of = {gid: 0.0 if loc == 'Neutral' else 1.0 for gid, loc in zip(games.game_id, games.location)}
     side = {gid: (h, w) for gid, h, w in zip(games.game_id, games.home_team, games.away_team)}
     home_w = float((M.get('coef') or {}).get('home', 0))
@@ -1675,13 +1852,17 @@ def main():
                 bad.append(f'{gid}: the Joker has not called it, yet it is not the game model\'s own chance')
         elif c.get('base') != 'joker' or c.get('p_joker') != round(pj, 4):
             bad.append(f'{gid}: the Joker has it at {pj}, but the call stands on {c.get("base")} {c.get("p_joker")}')
+        elif c.get('beta') != JOKER_BETA_OWN:
+            bad.append(f'{gid}: called afresh on BETA {c.get("beta")}, not {JOKER_BETA_OWN}')
         elif abs(own(pj, c['m']) - c['p_home']) > 2e-4:
             bad.append(f'{gid}: {c["p_home"]} is not the Joker\'s {pj} moved by the matchup {c["m"]} ({own(pj, c["m"]):.4f})')
         if c['pick'] != side[gid][0 if c['p_home'] >= 0.5 else 1]:
             bad.append(f'{gid}: picks {c["pick"]} on a home chance of {c["p_home"]}')
     for gid, e in ((L or {}).get('calls') or {}).items():
-        if e.get('base') == 'joker' and (not all(isinstance(e.get(k), (int, float)) for k in ('p_joker', 'p_elo', 'm'))
-                                         or abs(own(e['p_joker'], e['m']) - e['p_home']) > 2e-4):
+        if e.get('base') == 'joker' and beta_of(e) not in (JOKER_BETA_OWN, JOKER_BETA_WAS_OWN):
+            bad.append(f'the ledger\'s {gid} is on the Joker at a BETA the build never carried: {beta_of(e)}')
+        elif e.get('base') == 'joker' and (not all(isinstance(e.get(k), (int, float)) for k in ('p_joker', 'p_elo', 'm'))
+                                           or abs(own(e['p_joker'], e['m'], beta_of(e)) - e['p_home']) > 2e-4):
             bad.append(f'the ledger\'s {gid} is on the Joker but is not the rule\'s on its own numbers: {e}')
     kick_j = dict(zip(games.game_id, games.kick))
     # the re-picks: only a game that kicked off before the first build on the Joker, on the Joker's call as frozen
@@ -1706,7 +1887,7 @@ def main():
                 # held only while the state still has the game (a new season's state carries none of last season's calls,
                 # and the ledger keeps last season's entries a season more), as the rule above holds p_joker
                 bad.append(f'{gid}\'s re-pick was done again, but the Joker\'s call it stands on is not one restored as published')
-            elif fx['p_joker'] == e.get('p_joker') or abs(own(fx['p_joker'], e['m']) - fx['p_home']) > 2e-4:
+            elif fx['p_joker'] == e.get('p_joker') or abs(own(fx['p_joker'], e['m'], beta_of(fx)) - fx['p_home']) > 2e-4:
                 bad.append(f'{gid}\'s re-pick done again replaced {fx}, which is not the rule\'s on another Joker chance')
     for gid, e in ((L or {}).get('calls') or {}).items():
         if e.get('joker_fix') is not None and not e.get('was'):
@@ -1836,6 +2017,9 @@ def main():
     # ---- AVERAGES: the Elo-adjusted averages on the gate's own reading ----
     if MU:
         avg_checks(MU, P, M, games, a.cache, built)
+
+    # ---- DRAFT: every player's first career rating, the draft start's on the gate's own reading ----
+    draft_checks(P, games, a.cache, season)
 
     # ---- CARRY ----
     prev = published('players.json', a.prev)

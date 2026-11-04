@@ -436,12 +436,15 @@ elo/
                                  before, THE CARRY), and Run Defense, Pass Defense and Pass
                                  Rush and their offense sides, Run Offense, Pass Offense and
                                  Pass Protection (the same Elo on two stats each, 16 October
-                                 2026),
+                                 2026), and each player's first career rating from his draft
+                                 slot (THE DRAFT START, November 2026),
                                  explained in its docstring; downloads
                                  2012-now nflverse player stats and the play-by-play of the
-                                 season and the two before it into cache/ (gitignored) and writes
+                                 season and the two before it into cache/ (gitignored), and
+                                 nflverse's draft picks fresh every run, and writes
                                  data/; exits 1 and writes nothing when a required source
-                                 cannot be had
+                                 cannot be had (the draft picks always, and with the newest
+                                 schedule's draft from PRESEASON_CALLS days before its week 1)
   check.py                       the gate: data/ against the roster, the injury report, the
                                  schedule, the play-by-play (every team's stats and ratings
                                  replayed from it, last season replayed too for the carry, with
@@ -450,8 +453,11 @@ elo/
                                  Team Rankings (`teams`) solved again from games.csv by its
                                  own iteration, each unit table's rank its rank on the Elo
                                  shown, clubs level on it sharing one (unit_ranks_bad, since
-                                 22 October 2026), plus the build's functions on fixtures; the
-                                 job runs it before committing
+                                 22 October 2026), every player's first career rating and draft
+                                 slot (`start`, `draft`) on its own reading of draft_picks.csv
+                                 and of his first rated game (DRAFT), the calls on the Joker each
+                                 on the BETA it was made at (JOKER), plus the build's functions
+                                 on fixtures; the job runs it before committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
                                  data/: kicked-off games leave the Mismatches, shields agree,
                                  every ranked row has a trend line (week 1 too), a player kept
@@ -507,6 +513,13 @@ elo/
   tools/deepdive_vs_units.py     the Deep Dive's rows against the Overall Offense and Defense
                                  units (and the units with the carry), the same team-games,
                                  2018-2025, by stretch of the season; a test, run by hand
+  tools/draft_start_fit.py       the draft start (November 2026, the owner's "do all" to the
+                                 Elo diagnosis, item 8): each group's first-rating curve on the
+                                 draft slot (DRAFT_START), chosen and fitted on players first
+                                 rated 2013-2017 over their first two rated seasons, by Elo's
+                                 own cross-entropy, one season left out at a time; run by hand
+                                 (--offline on elo/cache with draft_picks.csv); says whether the
+                                 build carries it
   tools/joker_base_fit.py        the ELO Model's calls on the Joker's baseline (19 October 2026,
                                  the owner's test): how far the Elo matchup moves the Joker's
                                  chance (JOKER_BASE's BETA), fitted on 2021-2025 on study 4's
@@ -527,7 +540,9 @@ elo/
   data/players.json              generated: the rankings by position (this season's rating,
                                  the bell curve, who is sidelined and why, a Q for questionable)
                                  and every player the models may price, on his career rating
-                                 with the season's path and his club; `past`, beside the map,
+                                 with the season's path and his club, his first career rating
+                                 and the draft slot it came from (`start`, `draft`: THE DRAFT
+                                 START, November 2026); `past`, beside the map,
                                  the season's path of each player kept out of it (out, or gone
                                  from his club), for the Prop Record's weeks he played
   data/model.json                generated: the fitted position weights (`coef`), the
@@ -535,7 +550,8 @@ elo/
                                  this season's graded calls, frozen at kickoff, and the coming
                                  week's (the Pick'em Record's ELO Model: since 19 October 2026
                                  the Joker's chance moved by the Elo matchup, `base` joker, with
-                                 `p_elo`, `p_joker` and `m` beside it; `joker_base`, its
+                                 `p_elo`, `p_joker` and `m` beside it, and since November 2026
+                                 the BETA it was made at, `beta`; `joker_base`, its
                                  constant and walk-forward; `record.joker_base`), `teams`, the team
                                  ratings of this season's results, every game re-scored against
                                  what its opponent has turned out to be (Power Ratings), `units` (Overall
