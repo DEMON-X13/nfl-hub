@@ -455,9 +455,13 @@ elo/
                                  shown, clubs level on it sharing one (unit_ranks_bad, since
                                  22 October 2026), every player's first career rating and draft
                                  slot (`start`, `draft`) on its own reading of draft_picks.csv
-                                 and of his first rated game (DRAFT), the calls on the Joker each
-                                 on the BETA it was made at (JOKER), plus the build's functions
-                                 on fixtures; the job runs it before committing
+                                 (the roster placing a row with no gsis id) and of his first
+                                 rated game, on its own copy of DRAFT_START (DRAFT), each coming
+                                 call's matchup worked out again from the expected lineups, an
+                                 unrated starter on his draft start (LINEUPS), the calls on the
+                                 Joker each on the BETA it carries (JOKER) and a frozen call's
+                                 chance and BETA as the last publish had them (RECORD), plus the
+                                 build's functions on fixtures; the job runs it before committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
                                  data/: kicked-off games leave the Mismatches, shields agree,
                                  every ranked row has a trend line (week 1 too), a player kept

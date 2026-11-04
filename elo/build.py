@@ -61,7 +61,8 @@ EPA is ranked as before (0.470 against 0.471).
 
 THE DRAFT START (November 2026, the owner's "do all" to the Elo diagnosis of 3 November, its item 8). Since then a
 player's first career rating comes from his draft slot (first_rating): 1500 + a + b ln(min(max(pick, floor), 262)) on
-his group's curve (DRAFT_START), pick his overall pick in nflverse's draft_picks.csv, found by his gsis id. A player
+his group's curve (DRAFT_START), pick his overall pick in nflverse's draft_picks.csv, found by his gsis id (where the
+file gives none, or a placeholder in its place, through his Pro Football Reference id on the roster). A player
 never drafted, or drafted after the season of his first game, takes pick 262 (p_end), the last pick of the longest
 draft since the draft went to seven rounds in 1994 (2003's and 2022's), so Brock Purdy, 2022's last pick, starts as a
 player never drafted; a kicker takes one level for every new kicker (1482). 2012, the warm-up, keeps the old starts:
@@ -87,15 +88,14 @@ next-season ranking there both chose it over eight games, one season and three (
 taken). Tested once on 2018-2025: the cross-entropy over new players' first eight rated games 0.6663 to 0.6504
 (-0.0159, 90% -0.0171 to -0.0147; 8 seasons of 8), over their first two seasons -0.0076 (7 cohorts of 7), and on every
 game from a player's third season on -0.0006 (8 of 8); a rookie's rating at his season's end against his next season's
-score a game (Spearman within the position) 0.314 to 0.424 (+0.110, +0.059 to +0.148, 928 rookies; 7 seasons of 7),
-his rating going into week 6 against his score a game after it 0.157 to 0.284 (8 of 8); every player's next season
-+0.004 (-0.003 to +0.010; 5 of 7), but veterans alone -0.006 (-0.011 to -0.001; 3 of 7). The game model's walk-forward
-2018-2025 is level: 0.6353 to 0.6354 (+0.00006, -0.0022 to +0.0023; 4 seasons of 8; 1414 right to 1404 of 2,219), the
-calls on the Joker 2022-2025 too (JOKER_BASE refitted on the new ratings: BETA 0.2058 to 0.1973; log loss +0.00014,
--0.0005 to +0.0008; 707-377 to 710-374), and the Elo-adjusted averages (refitted) on a rookie's legs -0.0026 in each
-leg's variance (-0.0057 to +0.0008, 7,830 legs; 5 seasons of 8, a back's rushing yards 37.72 to 37.48 and a tight
-end's receiving yards 31.75 to 31.38), on every leg level. The units sit about 15 points lower than before
-(2018-2025), no longer fed every newcomer's shortfall.
+production (Spearman within the position) 0.315 to 0.424 (+0.109, 90% +0.067 to +0.152, 848 rookies; 7 seasons of 7);
+veterans' next season -0.0062 (-0.0120 to -0.0003, 4,592 veterans; 3 of 7), +0.008 with every next-season game counted
+(5 of 7). The game model's walk-forward 2018-2025 is level: 0.6353 to 0.6354 (+0.00006, -0.0023 to +0.0023; 4 seasons
+of 8; 1414 right to 1404 of 2,219), the calls on the Joker 2022-2025 too (JOKER_BASE refitted on the new ratings: BETA
+0.2058 to 0.1973; log loss +0.00014, -0.0005 to +0.0008; 707-377 to 710-374), and the Elo-adjusted averages
+(refitted) on a rookie's legs -0.0026 in each leg's variance (-0.0057 to +0.0008, 7,830 legs; 5 seasons of 8, a back's
+rushing yards 37.72 to 37.48 and a tight end's receiving yards 31.75 to 31.38), on every leg level. The units sit about
+15 points lower than before (2018-2025), no longer fed every newcomer's shortfall.
 
 THE SCORES. For a QB the score is expected points added on the plays he touched (nflverse's
 passing_epa + rushing_epa + receiving_epa), which already prices yards, downs, turnovers and
@@ -895,30 +895,41 @@ def fetch(url, dest, offline):
         raise Missing(str(e)) from e
 
 
-def draft_slots(offline, games, now):
+def is_gsis(v):
+    """an nflverse gsis id (00-00 and five digits), the id every player of the build is known by"""
+    return isinstance(v, str) and len(v) == 10 and v.startswith('00-00') and v[5:].isdigit()
+
+
+def draft_slots(offline, games, now, roster=None):
     """every drafted player's (draft season, overall pick), by gsis id, from nflverse's draft_picks.csv (read fresh every
-    run: a new class lands each spring; only its season, pick and gsis_id columns are read, the file's career outcomes
-    never). Required: a file that cannot be had, will not read or has no rows stops the build (SystemExit 1, the
-    published files stay), and so does one with no draft of the newest schedule's season with player ids once that
-    season is under way or its week 1 is within PRESEASON_CALLS days, whose rookies would otherwise start as players
-    never drafted."""
+    run: a new class lands each spring; only its season, pick, gsis_id and pfr_player_id columns are read, the file's
+    career outcomes never). A row whose gsis_id is no gsis id (none, or a placeholder such as Peter Woods's WOO547869,
+    2026's pick 29) is placed through its Pro Football Reference id on the roster the build reads (`pfr_id` to
+    `gsis_id`), else kept as it is, an id no player carries. Required: a file that cannot be had, will not read or has no
+    rows stops the build (SystemExit 1, the published files stay), and so does one with no draft of the newest schedule's
+    season with player ids once that season is under way or its week 1 is within PRESEASON_CALLS days, whose rookies
+    would otherwise start as players never drafted."""
     dest = os.path.join(CACHE, 'draft_picks.csv')
     if not offline and os.path.exists(dest):
         os.remove(dest)                          # a new class and its ids land after the draft: never trust a cached copy
     try:
-        d = pd.read_csv(fetch(DRAFT_URL, dest, offline), usecols=['season', 'pick', 'gsis_id'], low_memory=False)
+        d = pd.read_csv(fetch(DRAFT_URL, dest, offline), usecols=['season', 'pick', 'gsis_id', 'pfr_player_id'], low_memory=False)
         if not len(d):
             raise Missing('draft_picks.csv has no rows')
     except (Missing, pd.errors.ParserError, pd.errors.EmptyDataError, ValueError, OSError) as e:
         raise SystemExit(f'elo: the draft (draft_picks.csv) could not be had ({e}); nothing written, the published files stay')
+    pfr = {}
+    if roster is not None and {'pfr_id', 'gsis_id'} <= set(roster.columns):
+        pfr = {f: g for f, g in zip(roster.pfr_id, roster.gsis_id) if isinstance(f, str) and is_gsis(g)}
+    ids = [g if is_gsis(g) or not (isinstance(f, str) and f in pfr) else pfr[f] for g, f in zip(d.gsis_id, d.pfr_player_id)]
     sched = int(games.season.max())
     first = min(kickoff(r.gameday, r.gametime) for r in games[games.season == sched].itertuples(index=False))
-    have = d[(d.season == sched) & d.gsis_id.map(lambda v: isinstance(v, str))]
-    if first - now <= datetime.timedelta(days=PRESEASON_CALLS) and not len(have):
+    if first - now <= datetime.timedelta(days=PRESEASON_CALLS) and not any(
+            y == sched and isinstance(g, str) for g, y in zip(ids, d.season)):
         raise SystemExit(f'elo: draft_picks.csv has no {sched} draft with player ids, and {sched} is under way or its '
                          f'week 1 is within {PRESEASON_CALLS} days; nothing written, the published files stay')
     slots = {}
-    for g, y, p in zip(d.gsis_id, d.season, d.pick):
+    for g, y, p in zip(ids, d.season, d.pick):
         if isinstance(g, str) and y == y and p == p:
             slots[g] = (int(y), int(p))          # an id listed twice (a player redrafted, the 1980s) keeps the later
     return slots
@@ -939,6 +950,25 @@ def first_rating(pid, group, season, slots, lineup=False):
     s = slots.get(pid)
     pick = DRAFT_START['p_end'] if s is None or s[0] > season else min(max(s[1], floor), DRAFT_START['p_end'])
     return 1500.0 + a + b * math.log(pick)
+
+
+def lineup_rating(pid, group, season, R, slots):
+    """an expected starter's career rating for the game model: his rating where he has one, else his first rating as
+    THE DRAFT START gives it for a game of `season` (first_rating, lineup: 2012's expected quarterback QB_START)"""
+    r = R.get(pid)
+    return r if r is not None else first_rating(pid, group, int(season), slots, lineup=True)
+
+
+def lineup_strength(pids_groups, season, R, slots):
+    """each group's strength in a lineup: its players' ratings (lineup_rating) best first, padded to its DEPTH with
+    REPLACEMENT, weighted by DEPTH"""
+    out = {}
+    for g in GROUPS:
+        rs = sorted((lineup_rating(p, g, season, R, slots) for p, gg in pids_groups if gg == g), reverse=True)
+        wts = DEPTH[g]
+        rs = (rs + [REPLACEMENT] * len(wts))[:len(wts)]
+        out[g] = sum(r * w for r, w in zip(rs, wts)) / sum(wts)
+    return out
 
 
 def kickoff(gameday, gametime):
@@ -977,7 +1007,7 @@ def load(offline, now):
     live = under_way(games, sched, now)
     sources, missing, past = {}, [], []
     if os.path.exists(PAST_LIST):
-        os.remove(PAST_LIST)                     # written again below only when every source was had
+        os.remove(PAST_LIST)                     # written again below only when every source load() reads was had
 
     def read(name, url, y, required, fresh, ext='csv', usecols=None):
         dest = os.path.join(CACHE, f'{name}_{y}.{ext}')
@@ -1047,8 +1077,9 @@ def load(offline, now):
         raise SystemExit('elo: required sources could not be had, so nothing is written and the published '
                          'files stay:\n  ' + '\n  '.join(missing))
     # the finished seasons' files, which never change: the job keeps exactly these between runs
-    # (actions/cache in elo.yml), so a run asks nflverse for the season in play, games.csv and the
-    # roster alone. A file read fresh (the season in play, the roster, games.csv) is never listed.
+    # (actions/cache in elo.yml), so a run asks nflverse for the season in play, games.csv, the
+    # roster and the draft picks alone. A file read fresh (the season in play, the roster, games.csv,
+    # and draft_picks.csv, which draft_slots reads after this list is written) is never listed.
     with open(PAST_LIST, 'w') as f:
         f.write(''.join(n + '\n' for n in sorted(past)))
     stats = pd.concat(frames, ignore_index=True)
@@ -2124,7 +2155,7 @@ def main():
     games, stats, roster, charts, injuries, pbp, sources = load(a.offline, now)
     games = week_order(games)
     games['kick'] = [kickoff(d, t) for d, t in zip(games.gameday, games.gametime)]
-    slots = draft_slots(a.offline, games, now)
+    slots = draft_slots(a.offline, games, now, roster)
     print(f'  the draft: {len(slots)} players with a draft slot, through {max(y for y, _ in slots.values())}')
     weekly, daily, outs = build_lineups(charts, injuries)
     print(f'  depth charts: {len(weekly)} weekly team-charts, {sum(len(v) for v in daily.values())} daily snapshots; {sum(len(v) for v in outs.values())} players ruled out across {len(outs)} weeks')
@@ -2189,13 +2220,7 @@ def main():
     unit = lambda t, f: U.get((t, f), 1500.0)
 
     def strength(pids_groups, season):
-        out = {}
-        for g in GROUPS:
-            rs = sorted((R.get(p, first_rating(p, g, int(season), slots, lineup=True)) for p, gg in pids_groups if gg == g), reverse=True)
-            wts = DEPTH[g]
-            rs = (rs + [REPLACEMENT] * len(wts))[:len(wts)]
-            out[g] = sum(r * w for r, w in zip(rs, wts)) / sum(wts)
-        return out
+        return lineup_strength(pids_groups, season, R, slots)
 
     def involvement(pid):
         rv = recent.get(pid)
