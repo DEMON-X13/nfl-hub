@@ -33,7 +33,7 @@
                        Vegas, the ones that do not named, and once played how many calls were
                        right), the Team Elo gap, which side ranks higher on offense against
                        defense each way, who is out and how many starters are questionable, and
-                       the top mismatch
+                       the top mismatch ("+7 pts Mismatch, +6.1 rec yds, vs LAC Pass Defense #32")
        then a card each, folded (on a wide screen Model Picks and Team strength open, the rest
        folded; on a phone all folded; Open all and Close all), each a click to open. Model Picks,
        Team strength and Offense vs defense have no summary in their title and no note under them
@@ -66,8 +66,11 @@
                        What the ratings and the
                        Deep Dive rest on is said on hover (the boxes' title, deepdive.js basis as the
                        matchups' label's title, each side's title and the tag's, which gives the edge)
-         mismatches    the Props tab's Mismatches (window.eloMismatches) in this game, each with
-                       its edge on a four-step meter
+         mismatches    the Props tab's Mismatches (window.eloMismatches) in this game, each as its
+                       bubble there words it (since 4 November 2026 its size in points, "+7 pts",
+                       the defence it faces, its projection and the Mismatch tag on a tagged row; a
+                       row of the old Mismatches, on a file from before the score, its edge on a
+                       four-step meter)
          starters      the ranked players out first, then the Offense, Defense and Kicker tabs, the
                        two teams' header under them, and each team's expected starters
                        (matchups.json `lineups`) on those tabs, each name a button to his own row on
@@ -436,6 +439,9 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 .gs-mmsc .gs-mmv{display:inline-flex;align-items:center;gap:8px}
 .gs-mmsc b{font-family:var(--display);font-size:var(--gs-t4);line-height:1;color:var(--ink)}
 .gs-mmsc small{font-size:var(--gs-t2);font-weight:700}
+/* (4 November 2026) the one tag on a row at the file's tag, the Props tab's blue pill (white on #2563EB to #1E4FA8,
+   5.2:1 and up in either look) */
+#gsModal .gs-mmsc .gs-mmtag{display:inline-block;padding:2px 8px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;line-height:1.3;white-space:nowrap}
 
 /* ---- one card in a little window of its own, over a game's page on the Props tab (Matchup, Mismatches
    and Team Stats, the owner's call of 20 October 2026): the same window, narrower, its one card unfolded ---- */
@@ -780,10 +786,32 @@ function unitsOf(F){
 /* which side of one possession ranks higher: the offense or the defense (1st the best on each) */
 const possession=(U,o,d)=>{ const vo=U.off[o], vd=U.def[d]; if(!vo||!vd) return null;
   return {vo,vd,edge:vo.rank<vd.rank?'off':vd.rank<vo.rank?'def':null,team:vo.rank<vd.rank?o:vd.rank<vo.rank?d:null}; };
-/* the Props tab's Mismatches in this game (window.eloMismatches: the same rows), or why none */
+/* the Props tab's Mismatches in this game (window.eloMismatches: the same rows), or why none. Since 4 November 2026 a
+   row of the score (v2) carries its own words (say: its size, its Elo part in yards, the defence, the projection and its
+   title, the Props tab's bubble's own), and is drawn with them; a row of the old Mismatches, on a file from before the
+   score, as it was, between the OLD-MISMATCHES marks */
+/* OLD-MISMATCHES { the old Mismatches' grade, its four-step meter, the verdict's line and a card row, as they were */
 const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
 const mmGrade=s=>{ const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4',4]:x>=2?['Big','pe-g3',3]:x>=1?['Solid','pe-g2',2]:['Slight','pe-g1',1]; };
 const meter=(lv,cls)=>`<span class="gs-meter gs-l${lv}${cls?' '+cls:''}" aria-hidden="true"><i></i><i></i><i></i><i></i></span>`;
+const mmCxOld=(v0,n)=>{ const [gw,gc,lv]=mmGrade(v0.score);
+  return `${meter(lv,gc)}${N('mm1score',v0.score.toFixed(1))} ${gw} edge, against the ${esc(v0.opp)} ${esc(v0.against||'defense')}, ${ordinal(v0.defRank)} by player Elo${n>1?` · all ${n} in Mismatches`:''}`; };
+const mmLiOld=(F,v)=>{ const [gw,gc,lv]=mmGrade(v.score), se=plSe(F,v.pid);
+    return `<li data-pid="${esc(v.pid)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
+      <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small><span class="gs-mmvs">${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span></span>
+      <span class="gs-mmsub">Against the ${esc(v.opp)} ${esc(v.against||'defense')}, ${ordinal(v.defRank)} of ${v.defN} by player Elo.${v.proj!=null?` <b>${Math.round(v.proj)} ${MM_LBL[v.lead]||''}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}.`:''}</span></div>
+      <div class="gs-mmsc"><span class="gs-mmv">${meter(lv,gc)}<b class="${gc}" data-gs-mm>${v.score.toFixed(1)}</b></span><small class="${gc}">${gw}</small></div></li>`; };
+const mmSumOld=v0=>N('mm1score',v0.score.toFixed(1));
+/* } OLD-MISMATCHES */
+/* a score's row in the verdict ("+7 pts Mismatch, +6.1 rec yds, vs LAC Pass Defense #32", the word on a tagged row
+   alone), as a card's row (the Props tab's bubble's: its size, the tag, the defence and the projection, its title the
+   row's), and in the card's summary */
+const mmCxV2=(v0,n)=>`${N('mm1pts',v0.say.pts)}${v0.tag?' Mismatch':''}, ${esc(v0.say.yds)}, ${esc(v0.say.vs)}${n>1?` · all ${n} in Mismatches`:''}`;
+const mmLiV2=(F,v)=>{ const se=plSe(F,v.pid);
+    return `<li data-pid="${esc(v.pid)}" title="${esc(v.say.title)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
+      <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small><span class="gs-mmvs">${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span></span>
+      <span class="gs-mmsub">${esc(v.say.vs)}. <b>${esc(v.say.proj)}</b> projected (${esc(v.say.part)} from the matchup).</span></div>
+      <div class="gs-mmsc"><b data-gs-mm>${esc(v.say.pts)}</b>${v.tag?'<small class="gs-mmtag">Mismatch</small>':''}</div></li>`; };
 /* with no list: why (the card), short (its summary), and the verdict's answer */
 function mmOf(P,g,F){
   if(!F) return {why:'Loading the matchups…',short:'loading…',v:'loading…'};
@@ -941,9 +969,9 @@ function matchup(P,g,F){
     ${line('mism','Top mismatch','gsMism',()=>{ const R=mmOf(P,g,F);
       if(!R.mine) return [`<span class="gs-load">${esc(R.v)}</span>`,''];
       if(!R.mine.length) return ['<span class="gs-load">None in this game</span>',''];
-      const v0=R.mine[0], [gw,gc,lv]=mmGrade(v0.score), se=plSe(F,v0.pid);
+      const v0=R.mine[0], se=plSe(F,v0.pid);
       const v=`<span class="gs-mm1">${se!=null?shield(se):''} <span data-gs-n="mm1:${esc(v0.pid)}">${esc(plName(F,v0.pid))}</span> <small>${esc(v0.group)} · ${esc(v0.team)}</small></span>`;
-      const cx=`${meter(lv,gc)}${N('mm1score',v0.score.toFixed(1))} ${gw} edge, against the ${esc(v0.opp)} ${esc(v0.against||'defense')}, ${ordinal(v0.defRank)} by player Elo${R.mine.length>1?` · all ${R.mine.length} in Mismatches`:''}`;
+      const cx=v0.v2?mmCxV2(v0,R.mine.length):mmCxOld(v0,R.mine.length);
       return [v,cx]; })}
   </div>`;
   let prev=''; try{ prev=preview(P,g,F,st); }catch(e){ prev=''; }
@@ -1168,13 +1196,9 @@ function mmParts(P,g,F){
   const R=mmOf(P,g,F);
   if(!R.mine) return {sum:esc(R.short),body:`<p class="gs-msg">${R.why}</p>`};
   if(!R.mine.length) return {sum:'none in this game',body:'<p class="gs-msg" id="gsMmNone">No mismatches in this game.</p>'};
-  const li=R.mine.map(v=>{ const [gw,gc,lv]=mmGrade(v.score), se=plSe(F,v.pid);
-    return `<li data-pid="${esc(v.pid)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
-      <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small><span class="gs-mmvs">${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span></span>
-      <span class="gs-mmsub">Against the ${esc(v.opp)} ${esc(v.against||'defense')}, ${ordinal(v.defRank)} of ${v.defN} by player Elo.${v.proj!=null?` <b>${Math.round(v.proj)} ${MM_LBL[v.lead]||''}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}.`:''}</span></div>
-      <div class="gs-mmsc"><span class="gs-mmv">${meter(lv,gc)}<b class="${gc}" data-gs-mm>${v.score.toFixed(1)}</b></span><small class="${gc}">${gw}</small></div></li>`; }).join('');
+  const li=R.mine.map(v=>v.v2?mmLiV2(F,v):mmLiOld(F,v)).join('');
   const v0=R.mine[0];
-  const sum=`best ${esc(plName(F,v0.pid))} ${N('mm1score',v0.score.toFixed(1))}`;
+  const sum=`best ${esc(plName(F,v0.pid))} ${v0.v2?N('mm1pts',v0.say.pts):mmSumOld(v0)}`;
   /* the list alone: no scale legend and no note under it (the owner's call of 22 October 2026: no descriptions) */
   return {sum,body:`<ul class="gs-mm">${li}</ul>`,
     badge:`<span class="gs-badge" data-gs-badge="mism">${R.mine.length} in this game</span>`};
