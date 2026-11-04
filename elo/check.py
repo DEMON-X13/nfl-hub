@@ -1449,6 +1449,11 @@ AVG_RANKED = {'WR': 2, 'TE': 1}
 # the record's first season (a non-null tag holds in every season of the record, from it to ELO_AVG's last fitted)
 MM_LEAD_OWN = {'RB': 'rushing_yards', 'WR': 'receiving_yards', 'TE': 'receiving_yards'}
 MM_REC_FIRST = 2018
+# and of how the threshold is chosen (elo_avg_fit.py's MM_CHOOSE and MM_GRID): on 2018-2021 alone, from these points of
+# chance shift; the gate cannot replay the choice (the walk-forward rows are the fit's), so it holds what it can of it:
+# the seasons named, the threshold one of the grid's, and a record whose every season counts rows on both sides of it
+MM_CHOOSE_OWN = '2018-2021'
+MM_GRID_OWN = [1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 10, 12]
 
 
 def mm_lead_own(A):
@@ -1464,8 +1469,10 @@ def mm_shift_own(z):
 def mm_fit_bad(A):
     """ELO_AVG's `mismatch` against the gate's own rules: its lead legs the gate's (trusted, no quarterback or kicker),
     its record every season from MM_REC_FIRST to the last fitted, a non-null tag the threshold chosen and above the
-    listed rows under it (`gap` > 0) in every one of them, a null tag only where some season's gap is not; returns
-    what is wrong, [] when nothing"""
+    listed rows under it (`gap` > 0) in every one of them, a null tag only where some season's gap is not; and of the
+    choice what the gate can hold without the fit's rows (the review of 4 November 2026): chosen on MM_CHOOSE_OWN, the
+    threshold one of MM_GRID_OWN's points, and each season of a carried tag's record counting rows tagged and under it
+    (whole numbers above 0); returns what is wrong, [] when nothing"""
     mm, bad = A.get('mismatch'), []
     if not isinstance(mm, dict):
         return ['ELO_AVG carries no mismatch block']
@@ -1482,9 +1489,17 @@ def mm_fit_bad(A):
     rec, tag, ch = mm.get('record') or {}, mm.get('tag'), mm.get('chosen')
     want = [str(y) for y in range(MM_REC_FIRST, last + 1)] if last else []
     num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and v == v
+    if mm.get('chosen_on') != MM_CHOOSE_OWN:
+        bad.append(f'the threshold is chosen on {mm.get("chosen_on")}, not {MM_CHOOSE_OWN}')
+    if ch is not None and not (num(ch) and any(abs(100 * ch - g) < 1e-9 for g in MM_GRID_OWN)):
+        bad.append(f'the threshold chosen, {ch}, is not one of the grid\'s points of chance shift {MM_GRID_OWN}')
     if tag is not None:
         if not num(tag) or not 0 < tag < 0.5 or tag != ch:
             bad.append(f'the tag {tag} is not the chosen threshold {ch}, a chance shift between 0 and 0.5')
+        cnt = lambda v: isinstance(v, int) and not isinstance(v, bool) and v > 0
+        few = [y for y, r in rec.items() if not (isinstance(r, dict) and cnt(r.get('tagged')) and cnt(r.get('under')))]
+        if few:
+            bad.append(f'the tag\'s record counts no rows tagged or under it (whole numbers above 0) in {few}')
         if list(rec) != want:
             bad.append(f'the tag\'s record is of seasons {list(rec)}, not {want[0] if want else "?"}-{last}')
         low = [y for y, r in rec.items() if not (isinstance(r, dict) and num(r.get('gap')) and r['gap'] > 0)]
@@ -2084,6 +2099,13 @@ def avg_week_fixture():
              ('a tag with a season below 0', low, False, A), ('a tag missing a season', short, False, A),
              ('a null tag that held every season', dict(good, tag=None), False, A),
              ('a tag off the threshold chosen', dict(good, tag=0.05), False, A),
+             ('a tag and threshold off the grid', dict(good, tag=0.045, chosen=0.045), False, A),
+             ('a threshold chosen on the whole record', dict(good, chosen_on='2018-2025'), False, A),
+             ('a null tag chosen on the whole record', dict(low, tag=None, chosen_on='2018-2025'), False, A),
+             ('a null tag off the grid', dict(low, tag=None, chosen=0.045), False, A),
+             ('a season counting no row tagged', dict(good, record=dict(good['record'], **{str(MM_REC_FIRST + 1): dict(good['record'][str(MM_REC_FIRST + 1)], tagged=0)})), False, A),
+             ('a season counting rows under it as a fraction', dict(good, record=dict(good['record'], **{str(MM_REC_FIRST + 3): dict(good['record'][str(MM_REC_FIRST + 3)], under=600.5)})), False, A),
+             ('a threshold of 6 points on the grid', dict(good, tag=0.06, chosen=0.06), True, A),
              ('a quarterback lead', dict(good, lead=dict(good['lead'], QB='passing_yards')), False, A),
              ('a kicker lead', dict(good, lead=dict(good['lead'], K='kick_pts')), False, A)]
     U = json.loads(json.dumps(A))

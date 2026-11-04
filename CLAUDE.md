@@ -1984,7 +1984,8 @@ Starters headers still rank the formula's player-Elo units (`league.defs`): noth
 reader, and the owner is asked.
 
 On the page (`nflbets/build/tab_elo.html`: `mmOn`, `mismatchesV2`, `mmSayV2`, `bubbleV2`, `rowV2`, `mmTagged`,
-`mmTagEl`): a bubble's size "+7 pts" (the shift in whole points) where the edge stood, its bar the shift over the week's
+`mmTagEl`): a bubble's size "+7 pts" (the shift in whole points; a listed row whose shift rounds to nothing "0 pts",
+unsigned, as the page shows every figure of 0, the review of 4 November 2026) where the edge stood, its bar the shift over the week's
 largest, "vs LAC Pass Defense #32." then "58 rec yds projected (+6.1 from the matchup).", the Mismatch tag on a tagged row
 alone (the game page's blue pill, on the bubble's top edge across from its rank), no grade colour, and its title the whole
 of it: "Mismatch this week: the matchup moves his rec yds from 52.0 to 58.1 (+6.1 rec yds): the LAC Pass Defense (1448,
@@ -2005,20 +2006,36 @@ them (comments aside) a grade word before "mismatch", "by player Elo", a graded 
 because a file from before must still draw as before, and they can go once no file of that shape reaches the page.
 
 Held, blocking, each on its own reading: `elo/check.py`'s AVERAGES (`mm` on exactly the trusted lead blocks, its shift
-Φ(z) − 0.5 of the gate's own z, the tag, the record and its 8 of 8); `elo/check_tab.js` (`mmOwnV2`: the rows, their order
+Φ(z) − 0.5 of the gate's own z, the tag, the record and its 8 of 8, and since the review of 4 November 2026 what it can hold
+of the choice without the fit's rows: chosen on 2018-2021, the threshold one of the fit's grid of points, and each season
+of a carried tag's record counting rows tagged and under it, `MM_CHOOSE_OWN` and `MM_GRID_OWN`); `elo/check_tab.js` (`mmOwnV2`: the rows, their order
 and every word of the bubbles, Show more and a stand-in game page's tags, on the week's files where they carry the score,
 else on them with the score planted by the check's own reading, `plantMmC`; on fixtures, a quarterback with a big z and a
 shift past every row never listed, three rows level on the shift ranked by the Elo part in yards then the id, a player
 ruled out on the page or by the file's out list and a kicked-off game leaving, a listed row under the tag drawn untagged,
-the file's tag null drawing no tag anywhere, a lead leg untrusted or missing from the lead dropping its rows; and the old
-Mismatches' checks on a file from before, the week's or the week's with the score taken out, `stripMmC`); the nflbets smoke
+the file's tag null drawing no tag anywhere, a lead leg untrusted or missing from the lead dropping its rows, a row of 0.4
+points drawn "0 pts", and the Elo picks' tag through `eloDecorate` on a stand-in unit of its own, on a tagged row's player's
+over in his own game alone, none on his under, a listed row under the tag or a tagged row in another game; each bubble's
+score its size alone; and the old Mismatches' checks on a file from before, the week's or the week's with the score taken
+out, `stripMmC`); the nflbets smoke
 (`mmListOwn`, `mmCtxOwn`, `mmCardV2`: the card, its bubbles, Show more, a game page's tags, a ruled-out player, the score it
 plants on an Elo pick's player and his tag there, the Game snapshot's rows and its verdict line and summary
 (`data-gs-n` `mm1pts`), and the matchup bubble's line on a tagged and an untagged row; it serves the page a copy of
 `matchups.json` given the smoke's own score where the tree's has the averages and not the score, `MM_SCORE_PLANTED`, so it
-holds the new reading at any hour whatever `elo/data` the tree carries, and the old checks stand on a file with no averages,
-as `test_audit_phases.py`'s page cases are); the Mismatches half of CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS RANK is retired
-(the rows rank no player-Elo unit), its window and Starters halves kept.
+holds the new reading whatever `elo/data` the tree carries, and the old checks stand on a file with no averages, as
+`test_audit_phases.py`'s page cases are); the Mismatches half of CLUBS LEVEL ON A MATCHUP UNIT SHARE ITS RANK is retired
+(the rows rank no player-Elo unit), its window and Starters halves kept. The review of 4 November 2026 found the smoke's
+readings stood on the rows of the matchups' week still to kick off, so on a Sunday afternoon, the Tuesday after, a page
+week past the matchups' and with `--season-over` they held nothing but the Elo picks' planted row, and that a grade word
+put back beside the points passed (the old-word test ran on `textContent`, which runs "+15 pts" and "Huge" together). So:
+each bubble's score and each Game snapshot row's are held word for word (`.pe-mm-score` its size alone, `.gs-mmsc` its size
+and the tag), the old words are read on text with its nodes apart (`textApartOwn`), the Elo picks' made-up game carries a
+row under the tag beside the tagged one and holds that his leg wears none, and THE MISMATCHES ON THE SCORE ON A MADE-UP GAME
+(`mmFixChecks`, a boot of its own) holds the card, its bubbles and the game's page tags (`mmCardV2`), the Game snapshot's rows,
+verdict line and marks (`mmSnapHold`, again with the tagged player ruled out) and each player's matchup bubble on a made-up
+game two days out by the page's clock, three rows of the smoke's own planted (at the tag, under it and of nothing, "0 pts"),
+at any hour and in the off-season. `build.js` also stops on a size in `snapshot.html` off its type scale (`--gs-t1` to
+`--gs-t6`), where the Game snapshot's Mismatch pill had set 10.5px.
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
 charts, injury report, roster, play-by-play), nflverse's draft picks (`draft_picks.csv`, read fresh every run: **The

@@ -464,9 +464,12 @@ elo/
                                  build's functions on fixtures; the job runs it before committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
                                  data/: the Mismatches on the averages' Elo part (mmOwnV2: the
-                                 rows, their order and words, Show more, a game page's tags,
-                                 and fixtures: no quarterback, the ties, the tag null, a lead
-                                 leg untrusted; the score planted where the files lack it) and
+                                 rows, their order and words, each bubble's score its size
+                                 alone, Show more, a game page's tags, and fixtures: no
+                                 quarterback, the ties, the tag null, a lead leg untrusted, a
+                                 size of nothing drawn "0 pts", the Elo picks' tag through
+                                 eloDecorate on a stand-in unit; the score planted where the
+                                 files lack it) and
                                  the old ones on a file from before it; kicked-off games leave
                                  the Mismatches, shields agree,
                                  every ranked row has a trend line (week 1 too), a player kept
@@ -730,7 +733,10 @@ nflbets/
                                  builder taken out at boot), Suggested Parlays one section
                                  under one record with no backtest chip (app v129), clubs
                                  level on a unit sharing its rank, the ELO tab's bar its
-                                 stamp alone, the X Bet Log with no Note column,
+                                 stamp alone, the X Bet Log with no Note column, the
+                                 Mismatches on the score on a made-up game two days out at
+                                 any hour (mmFixChecks: the card, the game's page tags, the
+                                 Game snapshot's rows and verdict, each matchup bubble),
                                  held to their rules, the old addresses' redirects to the
                                  root, the light look and its switch (LIGHT MODE), the Props
                                  tab first and the board's old addresses landing on it, the

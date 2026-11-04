@@ -490,6 +490,11 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
   const SNAP_CSS = (snap.match(/<style>([\s\S]*?)<\/style>/) || [])[1], SNAP_JS = (snap.match(/<script>([\s\S]*?)<\/script>/) || [])[1];
   if (!SNAP_CSS || !SNAP_JS) throw new Error('nflbets/build/snapshot.html has no <style> or <script> block');
   if (/(^|\n)(body|header|main|:root|\.card|\.btn|\.modal|\.modal-panel|table|th|td)\{/.test(SNAP_CSS)) throw new Error('a page-level rule in the snapshot styles');
+  /* one type scale (the window's --gs-t1 to --gs-t6, 11 to 30px): every size the window sets, in its styles and its markup, is
+     one of those six, or a font that inherits (the review of 4 November 2026: the Mismatch pill set 10.5px) */
+  { const off = [...snap.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/font(-size)?\s*:\s*([^;}"'`]*)/g)].map(m => m[0].trim())
+      .filter(d => /^font-size/.test(d) ? !/^font-size\s*:\s*var\(--gs-t[1-6]\)$/.test(d) : !/^font\s*:\s*inherit$/.test(d) && !/var\(--gs-t[1-6]\)/.test(d));
+    if (off.length) throw new Error('nflbets/build/snapshot.html sets a size off its type scale (var(--gs-t1) to var(--gs-t6)): ' + off.slice(0, 3).join('; ')); }
   /* the Deep Dive's classes (dd, dtag) are not prefixed gs-: their rules stay inside the window */
   for (const rule of SNAP_CSS.replace(/\/\*[\s\S]*?\*\//g, '').match(/[^{}]+\{/g) || [])
     if (/(^|[\s,>+~])\.(dd|dtag)/.test(rule) && rule.split(',').some(sel => /\.(dd|dtag)/.test(sel) && !/#gsModal\b/.test(sel)))
