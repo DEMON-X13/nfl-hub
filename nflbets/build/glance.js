@@ -27,8 +27,10 @@
    the game (the opponent, home or away, the kickoff in ET), the defense he faces as the ELO Ratings tab's own table
    for his leg's side of the ball names and ranks it (model.json's units: a quarterback the opponent's Overall Defense, a
    back its Run Defense, a receiver or tight end its Pass Defense, as the Game snapshot's position matchups set them:
-   window.eloGlance.unit), his mismatch's grade and edge where the Props tab's Mismatches have one (matchups.json,
-   window.eloMismatches; no rank of its own), the stats where the Elo part of the matchup has held up (muTrusted)
+   window.eloGlance.unit), his mismatch where the Props tab's Mismatches have one (matchups.json, window.eloMismatches:
+   since 4 November 2026 "Mismatch · +7 pts (+6.1 rec yds)", the word on a row at the file's tag alone, titled with the
+   row's words, window.eloGlance's title and pts; a row of the old Mismatches, on a file from before the score, its grade
+   and edge as before, with no rank of its own), the stats where the Elo part of the matchup has held up (muTrusted)
    with his average and the projection the Elo picks read (since 29 October 2026 the Elo-adjusted averages, read through
    window.eloGlance.entry; on a file from before them the matchup formula's recent form and projection), then his card (the props parts' playerCard: his projection for the
    game and his season week by week, app v134) and Open prop leg. His season Elo, shield and tier sit beside his name in
@@ -190,11 +192,17 @@ function playerHtml(){
   else if(!here(v)&&!here(vm)) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">${v||vm?`the matchups file has him in another game (week ${esc(mu.week)})`:`none in the matchups file for week ${esc(mu.week)}`}</dd></div>`);
   else if(ruled) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">not expected to play</dd></div>`);
   else {
-    /* the Props tab's Mismatches: its grade and edge, on the matchup formula's player ratings of the units he faces
-       (its title says which); no rank of its own, so the bubble never ranks one defense twice */
+    /* the Props tab's Mismatches: (4 November 2026) a score's row as its bubble words it, its size in points and its
+       Elo part in yards, the word Mismatch on a tagged row alone, titled with the row's words (window.eloGlance's title
+       and pts; the defence it names is the Faces line's table, so the bubble ranks no defense twice) */
     let mm=null; try{ mm=typeof window.eloMismatches==='function'?(window.eloMismatches()||[]).find(x=>x.pid===pid&&x.game_id===gid):null; }catch(e){ mm=null; }
-    if(mm&&GL&&GL.grade){ const ag=GL.against?GL.against(mm.group):null;
-      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="The Props tab's Mismatches: his Elo above his position's average plus how far the ${esc(mm.opp)} ${esc(ag||'defense')} stand${ag&&/ and /.test(ag)?'':'s'} below the league's, on the matchup formula's player ratings, in standard deviations">${N('mm',GL.grade(mm.score)[0])} · edge ${N('gap',mm.score.toFixed(1))} <span class="glance-q">SD</span></dd></div>`); }
+    if(mm&&mm.v2&&GL&&GL.title&&GL.pts)
+      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="${esc(GL.title(mm))}">${mm.tag?`${N('mm','Mismatch')} · `:''}${N('pts',GL.pts(mm))}</dd></div>`);
+    /* OLD-MISMATCHES { a row of the old Mismatches (a file from before the score): its grade and edge, on the matchup
+       formula's player ratings of the units he faces (its title says which); no rank of its own */
+    else if(mm&&!mm.v2&&mm.grade){ const ag=mm.against||null;
+      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="The Props tab's Mismatches: his Elo above his position's average plus how far the ${esc(mm.opp)} ${esc(ag||'defense')} stand${ag&&/ and /.test(ag)?'':'s'} below the league's, on the matchup formula's player ratings, in standard deviations">${N('mm',mm.grade)} · edge ${N('gap',mm.score.toFixed(1))} <span class="glance-q">SD</span></dd></div>`); }
+    /* } OLD-MISMATCHES */
     const pv=here(v)?v:null, st=pv?(pv.order||mu.stats&&mu.stats[pv.group]||Object.keys(pv.stats||{})).filter(s=>pv.stats&&pv.stats[s]&&GL&&GL.trusted(pv.group,s)):[];
     table=st.length?`<table class="glance-t" aria-label="His trusted stats: ${pv.avg?'his average':'recent form'} and the Elo matchup's projection"><thead><tr><th scope="col">Stat</th><th scope="col" class="glance-n">${pv.avg?'Avg':'Form'}</th><th scope="col" class="glance-n">Projected</th></tr></thead><tbody>${st.map(s=>{ const a=pv.stats[s];
         return `<tr data-glance-stat="${esc(s)}"${L&&L.stat===s?' class="glance-on"':''}><th scope="row">${esc((GL.labels&&GL.labels[s])||s)}</th><td class="glance-n" data-glance-n="form">${esc(dec(a[0]))}</td><td class="glance-n"><span aria-hidden="true">→ </span><b data-glance-n="proj">${esc(dec(a[1]))}</b></td></tr>`; }).join('')}</tbody></table>`

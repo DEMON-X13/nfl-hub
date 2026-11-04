@@ -922,6 +922,12 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-mm-bar i{display:block;height:100%;border-radius:999px;background:var(--pick)}
 .pe-mm-sub{font-size:12px;color:var(--ink-2);line-height:1.4}
 .pe-mm-sub b{color:var(--ink-2);font-weight:600}
+/* (4 November 2026) a mismatch's size in points ("+7 pts", "pts" smaller), and the one tag on a row at the file's tag: the
+   game page's blue pill, on the bubble's top edge across from its rank, and in the window's Pts column */
+.pe-mm-score b small{font-family:var(--body);font-size:12px;font-weight:600;color:var(--ink-2)}
+.pe-mm .pe-mmtag,.pe-mm-t .pe-mmtag{display:inline-block;padding:3px 9px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-family:var(--body);font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;line-height:1.3;white-space:nowrap;box-shadow:0 0 0 1px rgba(59,130,246,.35),0 2px 6px rgba(37,99,235,.35)}
+.pe-mm-b .pe-mmtag{position:absolute;top:-10px;right:10px}
+.pe-mm-t .pe-pts b{font-family:var(--display);font-size:15px} .pe-mm-t .pe-pts .pe-mmtag{display:table;margin:4px auto 0;font-size:10px;padding:2px 8px}
 .pe-mm-more{margin-top:12px;display:flex;justify-content:center}
 /* the player a mismatch opened, in his game: ringed in the pick colour, with a short pulse */
 .plrbtn.pe-hl{border-color:var(--pick);background:var(--pick-soft);box-shadow:0 0 0 2px var(--pick);animation:pe-hl 1.6s ease-out 2}
@@ -955,6 +961,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-pl-def{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .pe-pl-def span{font-size:12px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
 .pe-pl-def b{color:var(--ink)}
+.pe-pl-def small{font-size:11px;color:var(--muted)}
 .pe-pl td.pe-n b{font-family:var(--display);font-size:14px}
 .pe-pl tr.pe-weak td{opacity:.55}
 @media(max-width:640px){ .pe-pl-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
@@ -1516,6 +1523,9 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 .gs-mmsc .gs-mmv{display:inline-flex;align-items:center;gap:8px}
 .gs-mmsc b{font-family:var(--display);font-size:var(--gs-t4);line-height:1;color:var(--ink)}
 .gs-mmsc small{font-size:var(--gs-t2);font-weight:700}
+/* (4 November 2026) the one tag on a row at the file's tag, the Props tab's blue pill (white on #2563EB to #1E4FA8,
+   5.2:1 and up in either look) */
+#gsModal .gs-mmsc .gs-mmtag{display:inline-block;padding:2px 8px;border-radius:999px;background:linear-gradient(135deg,#2563EB,#1E4FA8);color:#fff!important;font-size:var(--gs-t1);font-weight:800;letter-spacing:.5px;text-transform:uppercase;line-height:1.3;white-space:nowrap}
 
 /* ---- one card in a little window of its own, over a game's page on the Props tab (Matchup, Mismatches
    and Team Stats, the owner's call of 20 October 2026): the same window, narrower, its one card unfolded ---- */
@@ -8137,7 +8147,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='b52988a';
+const PAGE_HASH='6956059';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -10595,7 +10605,9 @@ function move(r){
    formula's projections alone (players' stats [recent form, projection, nudge], fit's sd and record's past: the rule
    until 29 October 2026, his recent average, home, what the defence allowed, his Elo and the opposing DL, LB and DB,
    trusted where the nudge lowered the error and its biggest fifth landed 53% of the time or better) and is read as before,
-   so an older elo/data never breaks the page. The Mismatches' edge stays the formula's (its players and units). */
+   so an older elo/data never breaks the page. Since 4 November 2026 the Mismatches rank the block's own Elo part on a
+   player's lead leg where the file carries its score (`avg[pid].mm`, `avg_fit.mismatch`: THE MISMATCH SCORE in
+   elo/build.py, mmOn below), and the formula's edge (its players and units) only on a file from before it. */
 const MU_LBL={passing_yards:'Pass yds',passing_tds:'Pass TD',attempts:'Att',completions:'Comp',passing_interceptions:'INT',
   rushing_yards:'Rush yds',carries:'Carries',receptions:'Rec',receiving_yards:'Rec yds',targets:'Tgt',scrim_yards:'Rush+rec',any_td:'TDs',
   fg_made:'FG made',kick_pts:'Kick pts'};
@@ -10646,19 +10658,21 @@ window.eloGameOn=gameOn;
 /* a player's season shield, the same one his ranking and his builder badge wear (the season
    rating on the position's bell curve); null when he has no place this season */
 const seOf=pid=>{ const e=D.players&&D.players.players&&D.players.players[pid]; return e&&e.se!=null?e.se:null; };
-/* each defence's units ranked across the league (`league.defs`, all 32), 1st the best (the
-   highest rated), clubs level on a unit sharing its rank; a file without it falls back to the teams playing this week.
-   Level is read to the hundredth (mmKey): the file writes a unit to the tenth and a mix of two averages them, so two
-   clubs level on paper can differ by a floating-point hair, which would part them (22 October 2026) */
+/* the old Mismatches (between the OLD-MISMATCHES marks below) read a unit level to the hundredth (mmKey): matchups.json
+   writes a unit to the tenth and a mix of two averages them, so two clubs level on paper can differ by a floating-point
+   hair, which would part them (22 October 2026) */
 const mmKey=x=>Math.round(x*100);
-function defRanks(){
-  const byTeam={}; for(const v of Object.values((D.mu&&D.mu.players)||{})) if(v.opp_def) byTeam[v.opp]=v.opp_def;
-  if(D.mu&&D.mu.league&&D.mu.league.defs) Object.assign(byTeam,D.mu.league.defs);
-  const teams=Object.keys(byTeam), out={n:teams.length};
-  for(const u of ['DL','LB','DB']) out[u]=Object.fromEntries(teams.map(t=>[t,1+teams.filter(o=>mmKey(byTeam[o][u])>mmKey(byTeam[t][u])).length]));
-  return out;
-}
-const UNIT_NAME={DL:'Pass rush and run front (DL)',LB:'Linebackers',DB:'Secondary'};
+/* the defence a player's window ranks his opponent on: the ELO Ratings tab's own tables (the owner's call of November
+   2026, "Switch to ELO tab tables"), where until then it ranked the matchup formula's units by their defenders' player Elo
+   (matchups.json's league.defs: the defensive line, the linebackers, the secondary). The defensive line is Pass Rush, the
+   linebackers Run Defense and the secondary Pass Defense, in that order (DEF_TABLES; the Game snapshot's Starters headers
+   read the same three), each named as the tab names it, with the club's Elo and its rank as the table draws them (the
+   file's rank, clubs level on the Elo shown sharing it) out of the clubs the table lists, and carried where the table marks
+   it (unitRow, below); a dash before a team has a rating, on a file without the table or with no row for the club */
+const DEF_TABLES=[['pass_rush','Pass Rush'],['run_def','Run Defense'],['pass_def','Pass Defense']];
+const defPill=(key,name,opp)=>{ const u=unitRow(key,opp), T=D.model&&D.model.units&&D.model.units.tables&&D.model.units.tables[key];
+  if(!u) return `<span data-pe-def="${esc(key)}">${esc(T&&T.label?String(T.label):name)}: <b>–</b></span>`;
+  return `<span data-pe-def="${esc(key)}" title="${esc(`${opp} ${u.name} on the ELO Ratings tab: Elo ${u.elo}, ${ordinal(u.rank)} of ${u.n}${u.carried?`, carried from ${u.from}`:''}`)}">${esc(u.name)}: <b>${esc(u.elo)} · ${ordinal(u.rank)} of ${u.n}</b>${u.carried?` <small>carried from ${esc(u.from)}</small>`:''}</span>`; };
 /* a player's window, opened from his row in the rankings: his place this season, then the
    coming game, a row a leg (faded where its Elo part has not held up season by season, and not used for Elo picks):
    since 29 October 2026 the Elo-adjusted average's breakdown, his average, the projection with no Elo terms (Base), the
@@ -10683,7 +10697,6 @@ function playerModal(pid){
   else if(!v) mu=`<p class="pe-sub">No matchup for week ${esc(M.week)}.</p>`;
   else if(ruledOut(pid)) mu=`<p class="pe-sub">Ruled out for week ${esc(M.week)}.</p>`;
   else {
-    const R=defRanks(), rk=u=>R[u]&&R[u][v.opp]?`${ordinal(R[u][v.opp])} of ${R.n}`:'–';
     let head, rows;
     if(avg){
       head=`<th>Stat</th><th class="pe-n" title="His average">Avg</th><th class="pe-n" title="His projection with no Elo terms">Base</th><th class="pe-n" title="The defence's table he faces: its Elo and rank">Vs</th><th class="pe-n" title="This defence against the league's average one">×Def</th><th class="pe-n" title="His Elo, given his average">×Elo</th><th class="pe-n" title="Base × Def × Elo">Proj</th><th class="pe-n" title="The Elo part: Proj less Base">Elo</th>`;
@@ -10702,7 +10715,7 @@ function playerModal(pid){
     }
     mu=`<h3>Week ${esc(M.week)}: ${tag(v.team,true)} <span class="muted" style="font-weight:500">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</h3>
       ${gameOn(v.game_id)?`<p class="pe-sub pe-begun"><b>This game has kicked off.</b></p>`:''}
-      <div class="pe-pl-def">${['DL','LB','DB'].map(u=>`<span>${UNIT_NAME[u]}: <b>${rk(u)}</b></span>`).join('')}</div>
+      <div class="pe-pl-def">${DEF_TABLES.map(([k,nm])=>defPill(k,nm,v.opp)).join('')}</div>
       <table class="pe-t"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
   }
   el('pePlView').innerHTML=`<div class="card pe-pl"><h2>${shield(r.elo)}${esc(r.name)} <span class="pill">${esc(r.pos)} · ${esc(r.team)}</span>${qTag(r)}<span style="flex:1"></span><button class="btn quiet" id="pePlClose">Close</button></h2>
@@ -10983,21 +10996,19 @@ function decorate(){
   mmTags();
   decorateAlt();
 }
-/* on a game's page, a player with a favourable mismatch this week (Solid and up, as the Mismatches
-   card grades it: his game still to kick off, not ruled out) wears MISMATCH beside his name, the
-   grade and edge in its title (the owner, 14 October 2026). A row is looked at once a draw; the game page redraws it whole. */
+/* on a game's page, a player with a mismatch this week at the file's tag (his game still to kick off, not ruled out:
+   since 4 November 2026 a row of the Mismatches tagged Mismatch, none where the file's tag is null; on a file from before
+   the score, Solid and up as its card grades it) wears MISMATCH beside his name, the row's words in its title (the owner,
+   14 October 2026). A row is looked at once a draw; the game page redraws it whole. */
 function mmTags(){
   const view=document.getElementById('gameView'); if(!view||!D.mu||typeof S!=='object'||!S||!S.ui) return;
   const rows=[...view.querySelectorAll('button.plrbtn[data-open]')].filter(b=>!b.dataset.peMm); if(!rows.length) return;
   const gid=String(S.ui.game), by={};
-  for(const v of mismatches()) if(String(v.game_id)===gid&&mmGrade(v.score)[0]!=='Slight') by[v.pid]=v;
+  for(const v of mismatches()) if(String(v.game_id)===gid&&mmTagged(v)) by[v.pid]=v;
   for(const btn of rows){ btn.dataset.peMm='1';
     const v=by[btn.dataset.open], who=btn.querySelector('.who'); if(!v||!who) continue;
     const name=[...who.childNodes].find(n=>n.nodeType===3&&n.textContent.trim()); if(!name) continue;
-    const g=mmGrade(v.score)[0], t=document.createElement('span');
-    t.className='pe-mmtag'; t.dataset.peMmtag=v.score.toFixed(1); t.dataset.peMmgrade=g;
-    t.title=mmTitle(v);
-    t.textContent='Mismatch'; name.after(t);
+    name.after(mmTagEl(v,false));
   }
 }
 window.eloOf=pid=>(D.players&&D.players.players&&D.players.players[pid])||null;
@@ -11204,20 +11215,15 @@ function eloPicks(o){
 /* how a level was chosen, as its card says it, and the pill's title */
 const EP_RULE='strongest Elo leans', EP_RULE_TITLE='The players whose Elo matchup leans furthest their way, that go together on one DraftKings slip';
 const epRuleOf=()=>EP_RULE;
-/* each player's mismatch this week where the Props tab's Mismatches has one, Solid and up, as a game's page tags it */
-function epMm(){ const by={}; try{ for(const v of mismatches()) if(mmGrade(v.score)[0]!=='Slight'&&!by[v.pid]) by[v.pid]=v; }catch(e){} return by; }
+/* each player's mismatch this week where the Props tab's Mismatches tags one, as a game's page tags it (mmTagged) */
+function epMm(){ const by={}; try{ for(const v of mismatches()) if(mmTagged(v)&&!by[v.pid]) by[v.pid]=v; }catch(e){} return by; }
 /* the side a mismatch favours: every one is a player standing above his position's average against a unit below the
    league's (mismatches() keeps only those), so it reads for his over, a ladder rung of his and his touchdown, and
    never for an under on him, a bet against him whatever the matchup formula's own nudge says (18 October 2026:
    Matthew Golden's Under 65.5 receiving yards wore "Solid mismatch"); nor for more interceptions, which he would
    rather not throw */
 const epMmFor=l=>!!l&&l.side==='over'&&l.stat!=='passing_interceptions';
-function epMmTag(v){
-  const g=mmGrade(v.score)[0], t=document.createElement('span');
-  t.className='pe-mmtag'; t.dataset.peMmtag=v.score.toFixed(1); t.dataset.peMmgrade=g;
-  t.title=mmTitle(v);
-  t.textContent=g+' mismatch'; return t;
-}
+function epMmTag(v){ return mmTagEl(v,true); }
 /* (app v118) the Elo picks of one unit of Suggested Parlays, a night game or the Sunday slot: the four levels on that
    unit's games alone, whatever the Parlay Builder's ticks say (the owner's call of 19 October 2026: "I would like it to
    have ELO picks for the slot of Sunday games"), each an empty level with no legs (as a set's own) where it cannot be
@@ -11281,7 +11287,73 @@ if(typeof renderSp==='function'){ const drawSp=renderSp;
     try{ const r=drawSp.apply(this,arguments); try{ eloDecorate(); }catch(e){} return r; } finally{ EP_DRAW=was; } }; }
 if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
   renderParlay=function(){ const r=drawParlay.apply(this,arguments); decorate(); return r; }; }
-/* ---- mismatches: where a player's Elo meets a weak unit ----
+/* ---- mismatches: where a player's Elo meets the defence he faces ----
+   (4 November 2026, the owner's "do all" to the Elo diagnosis's list, its items 1, 2 and 7; THE MISMATCH SCORE in
+   elo/build.py) On a matchups file carrying the Elo-adjusted averages and their score (avg_fit.mismatch: mmOn), each back,
+   receiver and tight end expected to start this week is scored on his lead leg (a back's rushing yards, a receiver's or
+   tight end's receiving yards: avg_fit.mismatch.lead, and only where avg_fit.legs trusts that leg's Elo part) by the
+   build's `mm` on his block: shift, the chance his Elo part moves an even (50%) line on his over, Phi(z) - 0.5, shown as
+   points ("+7 pts"), and tag, whether it is at the file's one tag or over (no row is tagged where the file's tag is null).
+   Listed: a shift above nothing, his game still to kick off, he not ruled out; ranked by the shift, then the Elo part in
+   the stat's units, then his id. No quarterback: his passing yards' Elo part never held up. No grade words, one tag,
+   Mismatch. The defence is the ELO Ratings tab's table his leg is set against, its Elo and rank as the tab draws them (the
+   block's vs: "vs LAC Pass Defense #32"); a back's multiplier carries the defenders' player Elo too, where his leg's terms
+   read them ("Run Defense and defenders"). The top five sit over the Props game list as bubbles, Show more opens the top
+   thirty, and the long words are each row's title. Only on the week the matchups are for. A file from before the score
+   keeps the old Mismatches, between the OLD-MISMATCHES marks below, as they were */
+const mmOn=()=>{ if(!muAvgOn()) return false; const F=D.mu.avg_fit.mismatch; return !!(F&&typeof F==='object'&&F.lead&&typeof F.lead==='object'); };
+const MMV2_LBL={rushing_yards:'rush yds',receiving_yards:'rec yds'};
+const mmSgn=x=>(x>=0?'+':'−')+Math.abs(x).toFixed(1), mmPtsSgn=n=>n>0?'+':'';
+const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]||'th');
+/* the clubs a table of this tab ranks (model.json's units), for "32nd of 32"; null where the file has none */
+const mmTableN=key=>{ const T=D.model&&D.model.units&&D.model.units[key]; return T&&typeof T==='object'?Object.keys(T).length:null; };
+/* a row's words: its size ("+7 pts", a size that rounds to nothing unsigned, "0 pts", as the page shows every figure of
+   0: the review of 4 November 2026), its Elo part in yards ("+6.1 rec yds"), the defence ("vs LAC Pass Defense #32"),
+   the projection ("58 rec yds"), and its title, the whole of it: "Mismatch this week: the matchup moves his rec yds from
+   52.0 to 58.1 (+6.1 rec yds): the LAC Pass Defense (1448, 32nd of 32) ×1.04 and his Elo for his average ×1.08. On an
+   even line that is +7 pts on the over." (the Game snapshot and the matchup bubble print these same words) */
+function mmSayV2(r){
+  const lb=MMV2_LBL[r.lead]||String(MU_LBL[r.lead]||r.lead).toLowerCase(), pts=`${mmPtsSgn(r.pts)}${r.pts} pts`, yds=`${mmSgn(r.part)} ${lb}`;
+  const tb=r.vs?`${r.opp} ${VS_NAME[r.vs.table]}`:String(r.opp);
+  const title=`${r.tag?'Mismatch this week: the':'The'} matchup moves his ${lb} from ${r.base.toFixed(1)} to ${r.proj.toFixed(1)} (${yds}): the ${tb}`
+    +`${r.vs?` (${r.vs.elo}, ${ordinal(r.vs.rank)}${r.defN?' of '+r.defN:''})`:''}${r.defenders?' and defenders':''} ×${mulTxt(r.def_x)} and his Elo for his average ×${mulTxt(r.elo_x)}. `
+    +`On an even line that is ${pts} on the over.`;
+  return {pts,yds,vs:r.vs?`vs ${tb} #${r.vs.rank}`:`vs ${r.opp}`,proj:`${Math.round(r.proj)} ${lb}`,part:mmSgn(r.part),title};
+}
+function mismatchesV2(){
+  const M=D.mu, F=M.avg_fit.mismatch, out=[];
+  for(const [pid,v] of Object.entries(M.avg)){
+    const m=v&&v.mm; if(!m||typeof m!=='object') continue;
+    const st=m.stat, a=v.stats&&v.stats[st];
+    if(!a||F.lead[v.group]!==st||!muTrusted(v.group,st)||!(+m.shift>0)||ruledOut(pid)||gameOn(v.game_id)) continue;
+    const vs=a.vs&&typeof a.vs==='object'&&VS_NAME[a.vs.table]?a.vs:null, f=M.avg_fit.legs[v.group+'|'+st]||{};
+    const r={v2:true,pid,group:v.group,game_id:v.game_id,team:v.team,opp:v.opp,home:v.home,lead:st,shift:+m.shift,pts:Math.round(100*m.shift),
+      tag:F.tag!=null&&m.tag===true,part:+a.elo,proj:+a.proj,base:+a.no_elo,def_x:+a.def_x,elo_x:+a.elo_x,vs,defN:vs?mmTableN(vs.table):null,
+      defenders:Array.isArray(f.terms)&&f.terms.some(t=>t==='DL'||t==='LB'||t==='DB')};
+    r.say=mmSayV2(r); out.push(r); }
+  return out.sort((x,y)=>y.shift-x.shift||y.part-x.part||(x.pid<y.pid?-1:x.pid>y.pid?1:0));
+}
+/* this week's Mismatches: the score's where the file carries it, else the old ones */
+function mismatches(){ if(!D.mu) return []; return mmOn()?mismatchesV2():mismatchesOld(); }
+/* a row the game's page and the Elo picks tag, and its tag: Mismatch, the points on it (data-pe-mmtag), the row's
+   words its title; elo, an Elo pick's (the same on the score's rows) */
+const mmTagged=v=>v.v2?v.tag===true:mmTaggedOld(v);
+function mmTagEl(v,elo){ if(!v.v2) return mmTagElOld(v,elo);
+  const t=document.createElement('span'); t.className='pe-mmtag'; t.dataset.peMmtag=String(v.pts); t.title=v.say.title; t.textContent='Mismatch'; return t; }
+/* the bubble and the window's row of a score's row: its size, the bar (the shift over the week's largest), the tag on a
+   tagged row, the defence and the projection; the row's words its title */
+const bubbleV2=(v,i,max)=>`<button class="pe-mm-b" data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" title="Open ${esc(mmName(v.pid))}'s stats in ${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}">
+      <span class="pe-mm-n" title="Mismatch rank this week">${i+1}</span>${v.tag?`<span class="pe-mmtag" title="${esc(v.say.title)}">Mismatch</span>`:''}
+      <div class="pe-mm-top">${seOf(v.pid)!=null?`<span class="pe-mm-sh" title="${esc(tierName(seOf(v.pid)))} · this season">${shield(seOf(v.pid))}</span>`:''}<span class="pe-mm-nm">${esc(mmName(v.pid))}<small>(${esc(v.group)})</small></span></div>
+      <div class="pe-mm-vs">${tag(v.team,true)}<span>${v.home?'vs':'at'}</span>${tag(v.opp,true)}</div>
+      <div class="pe-mm-score" title="${esc(v.say.title)}"><b data-pe-mmpts="${v.pts}">${mmPtsSgn(v.pts)}${v.pts} <small>pts</small></b><span class="pe-mm-bar"><i style="width:${Math.max(6,Math.round(100*v.shift/max))}%"></i></span></div>
+      <div class="pe-mm-sub">${esc(v.say.vs)}.<br><b>${esc(v.say.proj)}</b> projected (${esc(v.say.part)} from the matchup).</div></button>`;
+const rowV2=(v,i)=>`<tr data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" style="cursor:pointer" title="${esc(v.say.title)}"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))} <span class="muted" style="font-weight:600">(${esc(v.group)})</span></td>
+    <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${v.vs?`${ordinal(v.vs.rank)}${v.defN?' of '+v.defN:''}<small class="muted" style="display:block;font-size:11px">${esc(VS_NAME[v.vs.table])}</small>`:'–'}</td>
+    <td class="pe-c pe-pts"><b>${esc(v.say.pts)}</b>${v.tag?'<span class="pe-mmtag">Mismatch</span>':''}</td><td class="pe-n">${esc(v.say.proj)}<small class="muted" style="display:block;font-size:11px">${esc(v.say.part)} from the matchup</small></td></tr>`;
+const MM_HEAD_V2=`<th class="pe-n">#</th><th>Player</th><th class="pe-c">Game</th><th class="pe-c">Facing</th><th class="pe-c" title="What his Elo part adds to the chance an even (50%) line on his lead stat lands over, in points">Pts</th><th class="pe-n">Projection</th>`;
+/* OLD-MISMATCHES { a matchups file from before THE MISMATCH SCORE (no avg_fit.mismatch) keeps the Mismatches as they
+   were until 4 November 2026, untouched: build.js refuses their grade words and their units' words outside these marks.
    Each expected starter this week (matchups.json) scored as how far his Elo stands above
    his position's (in standard deviations, among every team's starters) plus how far the unit
    he faces stands below the league's (among all 32 defences, `league` in matchups.json; the
@@ -11299,7 +11371,7 @@ const MM_UNIT={QB:{units:['DB','DL']},WR:{units:['DB']},TE:{units:['DB']},RB:{un
 /* how big an edge is, in words and a colour: 3 and up huge, 2 big, 1 solid, less slight */
 const mmGrade=s=>{const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4']:x>=2?['Big','pe-g3']:x>=1?['Solid','pe-g2']:['Slight','pe-g1'];};
 const MM_LEAD={QB:'passing_yards',RB:'rushing_yards',WR:'receiving_yards',TE:'receiving_yards'};
-function mismatches(){
+function mismatchesOld(){
   const M=D.mu; if(!M||!M.players) return [];
   /* this week's games still to kick off: a game under way or played is no edge to look for */
   const P=Object.entries(M.players).map(([pid,v])=>({pid,...v})).filter(v=>MM_UNIT[v.group]&&!ruledOut(v.pid)&&!gameOn(v.game_id));
@@ -11321,11 +11393,10 @@ function mismatches(){
     rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t,x])=>[t,1+vals.filter(([,y])=>mmKey(y)>mmKey(x)).length]))}; }
   return P.filter(v=>pz[v.group]).map(v=>{ const d=unitOf(v), a=pz[v.group](v.elo), b=dz[v.group](d);
       const lead=MM_LEAD[v.group], x=muLine(v.pid,lead), ok=!!x&&isFinite(x.proj), tr=ok&&muTrusted(x.v.group,lead);
-      return {...v,unit:Math.round(d),against:mmAgainst(v.group),defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:ok?x.proj:null,nudge:tr&&isFinite(x.nudge)?x.nudge:null}; })
+      return {...v,unit:Math.round(d),against:mmAgainst(v.group),grade:mmGrade(a-b)[0],defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:ok?x.proj:null,nudge:tr&&isFinite(x.nudge)?x.nudge:null}; })
     .filter(v=>v.zp>0&&v.zd<0).sort((x,y)=>y.score-x.score);
 }
 const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
-const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]||'th');
 /* the plain words. What a mismatch ranks is the matchup formula's units, the averages of the player ratings of the
    defenders he faces (the secondary for a receiver or tight end, the secondary and the line for a quarterback, the
    line and the linebackers for a back), never the ELO Ratings tab's Pass Defense or Run Defense table, which rate a
@@ -11335,6 +11406,28 @@ const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)
 const mmLine=v=>`vs the ${esc(v.opp)} ${esc(v.against)}, ${ordinal(v.defRank)} by player Elo`;
 const mmTitle=v=>`${mmGrade(v.score)[0]} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs the ${v.opp} ${v.against}, ranked ${ordinal(v.defRank)} of ${v.defN} on the matchup formula's player ratings`;
 const mmProj=v=>v.proj==null?'':`<b>${Math.round(v.proj)} ${MM_LBL[v.lead]}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}`;
+/* what the Mismatches' edge sets a player against: the matchups file's player ratings of the opponent's units */
+const MM_WORDS={DB:'secondary',DL:'defensive line',LB:'linebackers'};
+const mmAgainst=g=>MM_UNIT[g]?MM_UNIT[g].units.map(u=>MM_WORDS[u]||u).join(' and '):null;
+/* the game page tags Solid and up; an Elo pick's tag says the grade */
+const mmTaggedOld=v=>mmGrade(v.score)[0]!=='Slight';
+function mmTagElOld(v,elo){
+  const g=mmGrade(v.score)[0], t=document.createElement('span');
+  t.className='pe-mmtag'; t.dataset.peMmtag=v.score.toFixed(1); t.dataset.peMmgrade=g;
+  t.title=mmTitle(v);
+  t.textContent=elo?g+' mismatch':'Mismatch'; return t;
+}
+const bubbleOld=(v,i,max)=>`<button class="pe-mm-b" data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" title="Open ${esc(mmName(v.pid))}'s stats in ${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}">
+      <span class="pe-mm-n" title="Mismatch rank this week">${i+1}</span>
+      <div class="pe-mm-top">${seOf(v.pid)!=null?`<span class="pe-mm-sh" title="${esc(tierName(seOf(v.pid)))} · this season">${shield(seOf(v.pid))}</span>`:''}<span class="pe-mm-nm">${esc(mmName(v.pid))}<small>(${esc(v.group)})</small></span></div>
+      <div class="pe-mm-vs">${tag(v.team,true)}<span>${v.home?'vs':'at'}</span>${tag(v.opp,true)}</div>
+      <div class="pe-mm-score"><b class="${mmGrade(v.score)[1]}" title="${mmGrade(v.score)[0]} edge">${v.score.toFixed(1)}</b><span class="pe-mm-bar"><i style="width:${Math.max(6,Math.round(100*v.score/max))}%"></i></span></div>
+      <div class="pe-mm-sub">${mmLine(v)}.${mmProj(v)?`<br>${mmProj(v)}.`:''}</div></button>`;
+const rowOld=(v,i)=>`<tr data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" style="cursor:pointer"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))} <span class="muted" style="font-weight:600">(${esc(v.group)})</span></td>
+    <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.against)}</small></td>
+    <td class="pe-c pe-edge ${mmGrade(v.score)[1]}"><b>${v.score.toFixed(1)}</b><small>${mmGrade(v.score)[0]}</small></td><td class="pe-n">${v.proj==null?'–':Math.round(v.proj)+' '+MM_LBL[v.lead]}${v.nudge?`<small class="muted" style="display:block;font-size:11px">${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup</small>`:''}</td></tr>`;
+const MM_HEAD_OLD=`<th class="pe-n">#</th><th>Player</th><th class="pe-c">Game</th><th class="pe-c">Facing</th><th class="pe-c" title="How lopsided the matchup is: the player's standing at his position plus the defence's weakness, in standard deviations">Edge</th><th class="pe-n">Projection</th>`;
+/* } OLD-MISMATCHES */
 function mmName(pid){ return (D.players&&D.players.players&&D.players.players[pid]&&D.players.players[pid].name)||pid; }
 /* a click on a player opens his game with his stats already open, scrolled to and highlighted */
 function mmOpen(gid,pid){ if(typeof S!=='object'||!S||!S.ui||typeof renderGame!=='function') return;
@@ -11353,13 +11446,8 @@ function mismatchCard(){
   const sel=document.getElementById('weekSel'), wk=sel?+sel.value:null;
   if(!D.mu||!D.players||!wk||+D.mu.week!==wk) return;
   const rows=mismatches(); if(!rows.length) return;
-  const max=rows[0].score||1;
-  const bubble=(v,i)=>`<button class="pe-mm-b" data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" title="Open ${esc(mmName(v.pid))}'s stats in ${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}">
-      <span class="pe-mm-n" title="Mismatch rank this week">${i+1}</span>
-      <div class="pe-mm-top">${seOf(v.pid)!=null?`<span class="pe-mm-sh" title="${esc(tierName(seOf(v.pid)))} · this season">${shield(seOf(v.pid))}</span>`:''}<span class="pe-mm-nm">${esc(mmName(v.pid))}<small>(${esc(v.group)})</small></span></div>
-      <div class="pe-mm-vs">${tag(v.team,true)}<span>${v.home?'vs':'at'}</span>${tag(v.opp,true)}</div>
-      <div class="pe-mm-score"><b class="${mmGrade(v.score)[1]}" title="${mmGrade(v.score)[0]} edge">${v.score.toFixed(1)}</b><span class="pe-mm-bar"><i style="width:${Math.max(6,Math.round(100*v.score/max))}%"></i></span></div>
-      <div class="pe-mm-sub">${mmLine(v)}.${mmProj(v)?`<br>${mmProj(v)}.`:''}</div></button>`;
+  const max=(rows[0].v2?rows[0].shift:rows[0].score)||1;
+  const bubble=(v,i)=>v.v2?bubbleV2(v,i,max):bubbleOld(v,i,max);
   /* until a club files its game statuses, who starts is the build's reading of the practice
      reports (a player out last week who has not practised since is counted out): the count alone
      says so (22 October 2026, the owner's call: no descriptions; the card's tagline went with it) */
@@ -11380,11 +11468,9 @@ function mismatchModal(rows){
     (document.getElementById('tab-slate')||document.body).appendChild(m);
     m.addEventListener('click',e=>{ if(e.target===m) mmClose(); });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) mmClose(); }); }
-  const body=rows.map((v,i)=>`<tr data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" style="cursor:pointer"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))} <span class="muted" style="font-weight:600">(${esc(v.group)})</span></td>
-    <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.against)}</small></td>
-    <td class="pe-c pe-edge ${mmGrade(v.score)[1]}"><b>${v.score.toFixed(1)}</b><small>${mmGrade(v.score)[0]}</small></td><td class="pe-n">${v.proj==null?'–':Math.round(v.proj)+' '+MM_LBL[v.lead]}${v.nudge?`<small class="muted" style="display:block;font-size:11px">${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup</small>`:''}</td></tr>`).join('');
+  const v2=!!(rows[0]&&rows[0].v2), body=rows.map((v,i)=>v.v2?rowV2(v,i):rowOld(v,i)).join('');
   document.getElementById('peMmView').innerHTML=`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">Mismatches, week ${esc(D.mu.week)} <span class="pill">top ${rows.length}</span><span style="flex:1"></span><button class="btn quiet" id="peMmClose">Close</button></h2>
-    <div style="overflow-x:auto"><table class="pe-t pe-mm-t"><thead><tr><th class="pe-n">#</th><th>Player</th><th class="pe-c">Game</th><th class="pe-c">Facing</th><th class="pe-c" title="How lopsided the matchup is: the player's standing at his position plus the defence's weakness, in standard deviations">Edge</th><th class="pe-n">Projection</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+    <div style="overflow-x:auto"><table class="pe-t pe-mm-t"><thead><tr>${v2?MM_HEAD_V2:MM_HEAD_OLD}</tr></thead><tbody>${body}</tbody></table></div></div>`;
   document.getElementById('peMmClose').addEventListener('click',mmClose);
   m.querySelectorAll('tr[data-mm-game]').forEach(r=>r.addEventListener('click',()=>{ mmClose(); mmOpen(r.dataset.mmGame,r.dataset.mmPid); }));
   m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
@@ -11406,8 +11492,9 @@ window.eloMismatches=mismatches;
    snapshot's Starters names (pkBoard's openOnProps) */
 window.eloFocusPlayer=mmFocus;
 /* the hub's matchup bubble (glance.js, 17 October 2026) reads a player's matchup as this tab does: the stats where
-   the Elo part has held up (muTrusted) and their labels, the defense he faces, a mismatch's grade and what the
-   Mismatches set him against, and why the matchups file has him out.
+   the Elo part has held up (muTrusted) and their labels, the defense he faces, a mismatch's words (since 4 November
+   2026 a score's row's title and its size, "+7 pts (+6.1 rec yds)"; a row of the old Mismatches carries its grade and
+   what it was set against itself), and why the matchups file has him out.
    The defense he faces is one of this tab's own unit tables (model.json's units), the one the Game snapshot's
    position matchups set against his side of the ball (deepdive.js ELO): a quarterback against the opponent's
    Overall Defense (units.def; the owner's call of 16 October 2026, "QB needs to be vs team defense overall"), a back
@@ -11418,24 +11505,27 @@ window.eloFocusPlayer=mmFocus;
    unit pill: unitsOn) or on a file without that table (unitKeys). Until 18 October 2026 this ranked the Mismatches'
    player-Elo unit averages (matchups.json) and called them "pass defense" and "run defense", which put Green Bay's
    pass defense 14th for Dak Prescott and 3rd for George Pickens in the same game while the Pass Defense table drew it
-   18th: the Mismatches' edge stays the matchup formula's, and its words say so (mmAgainst), with no rank of its own */
+   18th. Since 4 November 2026 the Mismatches name the same table (a back's Run Defense, a receiver's or tight end's Pass
+   Defense), its rank the tab's own */
 const FACE_TABLE={QB:'def',RB:'run_def',WR:'pass_def',TE:'pass_def'};
-function unitFaced(group,opp){
-  const key=FACE_TABLE[group]; if(!key||!opp||!unitsOn()||!unitKeys().includes(key)) return null;
+/* one club's row of one of the tab's team tables (key: 'def' or a position table's), as the table draws it, or null
+   (before a team has a rating, a file without the table, no row for the club); a player's window ranks the three
+   defence tables by it too (defPill) */
+function unitRow(key,opp){
+  if(!key||!opp||!unitsOn()||!unitKeys().includes(key)) return null;
   const U=D.model.units, T=U[key], v=T&&T[opp]; if(!v||v.rank==null) return null;
   const C=unitCarry();
   return {key,name:key==='def'?'Overall Defense':String(U.tables[key].label),team:opp,rank:v.rank,n:Object.keys(T).length,elo:v.elo,carried:!!(v.carried&&C),from:C?C.from:null};
 }
-/* what the Mismatches' edge sets a player against: the matchups file's player ratings of the opponent's units */
-const MM_WORDS={DB:'secondary',DL:'defensive line',LB:'linebackers'};
-const mmAgainst=g=>MM_UNIT[g]?MM_UNIT[g].units.map(u=>MM_WORDS[u]||u).join(' and '):null;
+const unitFaced=(group,opp)=>unitRow(FACE_TABLE[group],opp);
 /* (29 October 2026) and a player's projections as this tab reads them, one shape whichever file (muLine): his entry's
    group, game, club and opponent, whether they are the Elo-adjusted averages (avg), his position's legs in the file's
    order and each leg's [his average or recent form, projection, Elo part]; null where the file has none of his */
 function muGlance(pid){ const v=muEntry(pid); if(!v) return null; const order=muStats(v.group)||Object.keys(v.stats||{}), stats={};
   for(const st of order){ const x=muLine(pid,st); if(x&&isFinite(x.form)&&isFinite(x.proj)) stats[st]=[x.form,x.proj,x.nudge]; }
   return {group:v.group,game_id:v.game_id,team:v.team,opp:v.opp,avg:muAvgOn(),order,stats}; }
-window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,against:mmAgainst,outWhy,entry:muGlance};
+const mmGlTitle=v=>v&&v.v2?v.say.title:'', mmGlPts=v=>v&&v.v2?`${v.say.pts} (${v.say.yds})`:'';
+window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,title:mmGlTitle,pts:mmGlPts,outWhy,entry:muGlance};
 if(typeof renderSlate==='function'){ const drawSlate=renderSlate;
   renderSlate=function(){ const r=drawSlate.apply(this,arguments); try{ mismatchCard(); }catch(e){} return r; }; }
 if(typeof renderGame==='function'){ const drawGame=renderGame;
@@ -11908,10 +11998,32 @@ function unitsOf(F){
 /* which side of one possession ranks higher: the offense or the defense (1st the best on each) */
 const possession=(U,o,d)=>{ const vo=U.off[o], vd=U.def[d]; if(!vo||!vd) return null;
   return {vo,vd,edge:vo.rank<vd.rank?'off':vd.rank<vo.rank?'def':null,team:vo.rank<vd.rank?o:vd.rank<vo.rank?d:null}; };
-/* the Props tab's Mismatches in this game (window.eloMismatches: the same rows), or why none */
+/* the Props tab's Mismatches in this game (window.eloMismatches: the same rows), or why none. Since 4 November 2026 a
+   row of the score (v2) carries its own words (say: its size, its Elo part in yards, the defence, the projection and its
+   title, the Props tab's bubble's own), and is drawn with them; a row of the old Mismatches, on a file from before the
+   score, as it was, between the OLD-MISMATCHES marks */
+/* OLD-MISMATCHES { the old Mismatches' grade, its four-step meter, the verdict's line and a card row, as they were */
 const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
 const mmGrade=s=>{ const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4',4]:x>=2?['Big','pe-g3',3]:x>=1?['Solid','pe-g2',2]:['Slight','pe-g1',1]; };
 const meter=(lv,cls)=>`<span class="gs-meter gs-l${lv}${cls?' '+cls:''}" aria-hidden="true"><i></i><i></i><i></i><i></i></span>`;
+const mmCxOld=(v0,n)=>{ const [gw,gc,lv]=mmGrade(v0.score);
+  return `${meter(lv,gc)}${N('mm1score',v0.score.toFixed(1))} ${gw} edge, against the ${esc(v0.opp)} ${esc(v0.against||'defense')}, ${ordinal(v0.defRank)} by player Elo${n>1?` · all ${n} in Mismatches`:''}`; };
+const mmLiOld=(F,v)=>{ const [gw,gc,lv]=mmGrade(v.score), se=plSe(F,v.pid);
+    return `<li data-pid="${esc(v.pid)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
+      <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small><span class="gs-mmvs">${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span></span>
+      <span class="gs-mmsub">Against the ${esc(v.opp)} ${esc(v.against||'defense')}, ${ordinal(v.defRank)} of ${v.defN} by player Elo.${v.proj!=null?` <b>${Math.round(v.proj)} ${MM_LBL[v.lead]||''}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}.`:''}</span></div>
+      <div class="gs-mmsc"><span class="gs-mmv">${meter(lv,gc)}<b class="${gc}" data-gs-mm>${v.score.toFixed(1)}</b></span><small class="${gc}">${gw}</small></div></li>`; };
+const mmSumOld=v0=>N('mm1score',v0.score.toFixed(1));
+/* } OLD-MISMATCHES */
+/* a score's row in the verdict ("+7 pts Mismatch, +6.1 rec yds, vs LAC Pass Defense #32", the word on a tagged row
+   alone), as a card's row (the Props tab's bubble's: its size, the tag, the defence and the projection, its title the
+   row's), and in the card's summary */
+const mmCxV2=(v0,n)=>`${N('mm1pts',v0.say.pts)}${v0.tag?' Mismatch':''}, ${esc(v0.say.yds)}, ${esc(v0.say.vs)}${n>1?` · all ${n} in Mismatches`:''}`;
+const mmLiV2=(F,v)=>{ const se=plSe(F,v.pid);
+    return `<li data-pid="${esc(v.pid)}" title="${esc(v.say.title)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
+      <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small><span class="gs-mmvs">${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span></span>
+      <span class="gs-mmsub">${esc(v.say.vs)}. <b>${esc(v.say.proj)}</b> projected (${esc(v.say.part)} from the matchup).</span></div>
+      <div class="gs-mmsc"><b data-gs-mm>${esc(v.say.pts)}</b>${v.tag?'<small class="gs-mmtag">Mismatch</small>':''}</div></li>`; };
 /* with no list: why (the card), short (its summary), and the verdict's answer */
 function mmOf(P,g,F){
   if(!F) return {why:'Loading the matchups…',short:'loading…',v:'loading…'};
@@ -11934,12 +12046,20 @@ const sidelinedOf=(Pl,t)=>Object.keys(Pl.groups).flatMap(gr=>(Pl.groups[gr].side
 const qCount=(mu,t)=>{ const lu=mu&&mu.lineups&&mu.lineups[t]; return lu?(lu.players||[]).filter(pid=>mu.q&&mu.q[pid]).length:0; };
 const plName=(F,pid)=>(F.players&&F.players.players&&F.players.players[pid]&&F.players.players[pid].name)||pid;
 const plSe=(F,pid)=>{ const e=F.players&&F.players.players&&F.players.players[pid]; return e&&e.se!=null?e.se:null; };
-/* each defence's units ranked among the league's, 1st the best (the matchup formula's units) */
-const UNIT_NAME={DL:'Pass rush and run front',LB:'Linebackers',DB:'Secondary'};
-/* a club's unit among the league's (mu.league.defs), 1st the best; clubs level on it share a rank, as the ELO tab's
-   Mismatches and a player's window rank them */
-/* clubs level on a unit share its rank, level read to the hundredth as the ELO tab's Mismatches read it (mmKey) */
-const defRank=(mu,t,u)=>{ const defs=mu&&mu.league&&mu.league.defs||{}; if(!defs[t]) return null; const k=x=>Math.round(x*100); return 1+Object.keys(defs).filter(x=>k(defs[x][u])>k(defs[t][u])).length; };
+/* each defensive group's header ranks the two clubs on one of the ELO Ratings tab's own tables (the owner's call of
+   November 2026, "Switch to ELO tab tables"; until then the matchup formula's units by their defenders' player Elo,
+   matchups.json's league.defs, which nothing here reads any more): the defensive line on Pass Rush, the linebackers on
+   Run Defense, the secondary on Pass Defense, as a player's window on the tab ranks them */
+const DEF_TABLE={DL:['pass_rush','Pass Rush'],LB:['run_def','Run Defense'],DB:['pass_def','Pass Defense']};
+/* a club's row of its group's table as the tab's table draws it: its Elo, the file's rank (clubs level on the Elo shown
+   share it), out of the clubs the table lists, carried where the table marks it; null before a team has a rating, on a
+   file without the table or with no row for the club */
+const defRow=(F,grp,t)=>{ const X=unitsOf(F), k=DEF_TABLE[grp]&&DEF_TABLE[grp][0]; if(!X||!X.on||!k) return null;
+  const U=X.U, T=U[k], meta=U.tables&&U.tables[k]; if(!T||typeof T!=='object'||!meta||!meta.label) return null;
+  const v=T[t]; if(!v||v.rank==null) return null;
+  return {key:k,name:String(meta.label),elo:v.elo,rank:v.rank,n:Object.keys(T).length,carried:!!(v.carried&&X.C),from:X.C?X.C.from:null}; };
+/* the table's name as the tab names it (the file's), else the group's own */
+const defName=(F,grp)=>{ const X=unitsOf(F), k=DEF_TABLE[grp][0], m=X&&X.U.tables&&X.U.tables[k]; return m&&m.label?String(m.label):DEF_TABLE[grp][1]; };
 
 /* ---- the preview: the week's note on the game, or an automatic line until it is written ---- */
 /* a note's text as the page shows it: escaped first, then each player it marks, **Pat Surtain II** (one
@@ -12069,9 +12189,9 @@ function matchup(P,g,F){
     ${line('mism','Top mismatch','gsMism',()=>{ const R=mmOf(P,g,F);
       if(!R.mine) return [`<span class="gs-load">${esc(R.v)}</span>`,''];
       if(!R.mine.length) return ['<span class="gs-load">None in this game</span>',''];
-      const v0=R.mine[0], [gw,gc,lv]=mmGrade(v0.score), se=plSe(F,v0.pid);
+      const v0=R.mine[0], se=plSe(F,v0.pid);
       const v=`<span class="gs-mm1">${se!=null?shield(se):''} <span data-gs-n="mm1:${esc(v0.pid)}">${esc(plName(F,v0.pid))}</span> <small>${esc(v0.group)} · ${esc(v0.team)}</small></span>`;
-      const cx=`${meter(lv,gc)}${N('mm1score',v0.score.toFixed(1))} ${gw} edge, against the ${esc(v0.opp)} ${esc(v0.against||'defense')}, ${ordinal(v0.defRank)} by player Elo${R.mine.length>1?` · all ${R.mine.length} in Mismatches`:''}`;
+      const cx=v0.v2?mmCxV2(v0,R.mine.length):mmCxOld(v0,R.mine.length);
       return [v,cx]; })}
   </div>`;
   let prev=''; try{ prev=preview(P,g,F,st); }catch(e){ prev=''; }
@@ -12210,7 +12330,7 @@ function unitsSec(P,g,F){ return fold('gsUnits','Offense vs defense','',unitsBod
 
 /* ---- position by position: each team's expected starters, as the ELO Ratings tab rates them ---- */
 const PTABS=[['off','Offense'],['def','Defense'],['k','Kicker']];
-const ptabOf=grp=>grp==='K'?'k':UNIT_NAME[grp]?'def':'off';
+const ptabOf=grp=>grp==='K'?'k':DEF_TABLE[grp]?'def':'off';
 function positions(P,g,F){
   const T0='Starters';
   if(!F) return fold('gsPos',T0,'loading…','<p class="gs-msg">Loading the ratings…</p>');
@@ -12255,16 +12375,15 @@ function positions(P,g,F){
       :`<small class="gs-pmeta">not ranked this season · career <span class="gs-pcar">${e.elo}</span></small>`;
     return `<span class="gs-pl${o?' gs-off':''}" data-pid="${esc(x.pid)}" data-team="${esc(t)}" data-grp="${esc(e.group)}"><span class="gs-pn">${rk?shield(e.se):''}${nameBox(x.pid,e.name)}</span>
       <span class="gs-pst">${stat}</span>${o?`<small class="gs-outw">${esc(o)}</small>`:''}</span>`; };
-  /* each defensive group's unit, ranked among the league's, at either end of its header */
-  const nDefs=Object.keys(mu.league&&mu.league.defs||{}).length;
-  const unitEnd=(t,u,cls,b)=>{ const r=defRank(mu,t,u); return r?`<span class="gs-ur ${cls}">${V(`<b>${ordinal(r)}</b> of ${nDefs}`,b,` data-gs-def="${esc(t)}:${u}" title="${esc(t)} ${esc(UNIT_NAME[u].toLowerCase())}, ranked among the league's"`)}</span>`:`<span class="gs-ur ${cls}"></span>`; };
+  /* each defensive group's club rank in its table (defRow) at either end of its header, the better of the two marked */
+  const unitEnd=(t,grp,r,cls,b)=>r?`<span class="gs-ur ${cls}">${V(`<b>${ordinal(r.rank)}</b> of ${r.n}`,b,` data-gs-def="${esc(t)}:${grp}" data-gs-table="${esc(r.key)}" title="${esc(`${t} ${r.name} on the ELO Ratings tab: Elo ${r.elo}, ${ordinal(r.rank)} of ${r.n}${r.carried?`, carried from ${r.from}`:''}`)}"`)}</span>`:`<span class="gs-ur ${cls}"></span>`;
   const panels={off:'',def:'',k:''};
   for(const grp of groups){
     const xa=LA&&LA.by[grp]||[], xh=LH&&LH.by[grp]||[], n=Math.max(xa.length,xh.length);
-    if(!n&&!UNIT_NAME[grp]) continue;
-    const un=UNIT_NAME[grp], ra=un&&nDefs?defRank(mu,a,grp):null, rh=un&&nDefs?defRank(mu,h,grp):null, ub=ra&&rh&&ra!==rh?(ra<rh?a:h):null;
-    const sub=un&&un.toLowerCase()!==Pl.groups[grp].label.toLowerCase()?`<small>${esc(un.toLowerCase())}</small>`:'';
-    let rows=`<tr class="gs-grp" data-gs-grp="${esc(grp)}"><td colspan="2"><span class="gs-grpin">${un&&nDefs?unitEnd(a,grp,'gs-a',ub===a):'<span></span>'}<span class="gs-glab"><span data-gs-glab>${esc(Pl.groups[grp].label)}</span>${sub}</span>${un&&nDefs?unitEnd(h,grp,'gs-h',ub===h):'<span></span>'}</span></td></tr>`;
+    if(!n&&!DEF_TABLE[grp]) continue;
+    const un=DEF_TABLE[grp], ra=un?defRow(F,grp,a):null, rh=un?defRow(F,grp,h):null, ub=ra&&rh&&ra.rank!==rh.rank?(ra.rank<rh.rank?a:h):null;
+    const sub=un?`<small data-gs-gsub>${esc(defName(F,grp).toLowerCase())}</small>`:'';
+    let rows=`<tr class="gs-grp" data-gs-grp="${esc(grp)}"><td colspan="2"><span class="gs-grpin">${un?unitEnd(a,grp,ra,'gs-a',ub===a):'<span></span>'}<span class="gs-glab"><span data-gs-glab>${esc(Pl.groups[grp].label)}</span>${sub}</span>${un?unitEnd(h,grp,rh,'gs-h',ub===h):'<span></span>'}</span></td></tr>`;
     for(let i=0;i<n;i++){ const pa=xa[i], ph=xh[i];
       const lead=ranked(pa)&&ranked(ph)&&pa.e.se!==ph.e.se?(pa.e.se>ph.e.se?'a':'h'):null;
       rows+=`<tr><td class="gs-a">${cell(pa,a,lead==='a')}</td><td class="gs-h">${cell(ph,h,lead==='h')}</td></tr>`; }
@@ -12296,13 +12415,9 @@ function mmParts(P,g,F){
   const R=mmOf(P,g,F);
   if(!R.mine) return {sum:esc(R.short),body:`<p class="gs-msg">${R.why}</p>`};
   if(!R.mine.length) return {sum:'none in this game',body:'<p class="gs-msg" id="gsMmNone">No mismatches in this game.</p>'};
-  const li=R.mine.map(v=>{ const [gw,gc,lv]=mmGrade(v.score), se=plSe(F,v.pid);
-    return `<li data-pid="${esc(v.pid)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
-      <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small><span class="gs-mmvs">${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span></span>
-      <span class="gs-mmsub">Against the ${esc(v.opp)} ${esc(v.against||'defense')}, ${ordinal(v.defRank)} of ${v.defN} by player Elo.${v.proj!=null?` <b>${Math.round(v.proj)} ${MM_LBL[v.lead]||''}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}.`:''}</span></div>
-      <div class="gs-mmsc"><span class="gs-mmv">${meter(lv,gc)}<b class="${gc}" data-gs-mm>${v.score.toFixed(1)}</b></span><small class="${gc}">${gw}</small></div></li>`; }).join('');
+  const li=R.mine.map(v=>v.v2?mmLiV2(F,v):mmLiOld(F,v)).join('');
   const v0=R.mine[0];
-  const sum=`best ${esc(plName(F,v0.pid))} ${N('mm1score',v0.score.toFixed(1))}`;
+  const sum=`best ${esc(plName(F,v0.pid))} ${v0.v2?N('mm1pts',v0.say.pts):mmSumOld(v0)}`;
   /* the list alone: no scale legend and no note under it (the owner's call of 22 October 2026: no descriptions) */
   return {sum,body:`<ul class="gs-mm">${li}</ul>`,
     badge:`<span class="gs-badge" data-gs-badge="mism">${R.mine.length} in this game</span>`};
@@ -12650,8 +12765,10 @@ document.addEventListener('app-ready',()=>{ if(cur) redraw(); });
    the game (the opponent, home or away, the kickoff in ET), the defense he faces as the ELO Ratings tab's own table
    for his leg's side of the ball names and ranks it (model.json's units: a quarterback the opponent's Overall Defense, a
    back its Run Defense, a receiver or tight end its Pass Defense, as the Game snapshot's position matchups set them:
-   window.eloGlance.unit), his mismatch's grade and edge where the Props tab's Mismatches have one (matchups.json,
-   window.eloMismatches; no rank of its own), the stats where the Elo part of the matchup has held up (muTrusted)
+   window.eloGlance.unit), his mismatch where the Props tab's Mismatches have one (matchups.json, window.eloMismatches:
+   since 4 November 2026 "Mismatch · +7 pts (+6.1 rec yds)", the word on a row at the file's tag alone, titled with the
+   row's words, window.eloGlance's title and pts; a row of the old Mismatches, on a file from before the score, its grade
+   and edge as before, with no rank of its own), the stats where the Elo part of the matchup has held up (muTrusted)
    with his average and the projection the Elo picks read (since 29 October 2026 the Elo-adjusted averages, read through
    window.eloGlance.entry; on a file from before them the matchup formula's recent form and projection), then his card (the props parts' playerCard: his projection for the
    game and his season week by week, app v134) and Open prop leg. His season Elo, shield and tier sit beside his name in
@@ -12813,11 +12930,17 @@ function playerHtml(){
   else if(!here(v)&&!here(vm)) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">${v||vm?`the matchups file has him in another game (week ${esc(mu.week)})`:`none in the matchups file for week ${esc(mu.week)}`}</dd></div>`);
   else if(ruled) lines.push(`<div><dt>Matchup</dt><dd class="glance-q" data-glance-n="nomu">not expected to play</dd></div>`);
   else {
-    /* the Props tab's Mismatches: its grade and edge, on the matchup formula's player ratings of the units he faces
-       (its title says which); no rank of its own, so the bubble never ranks one defense twice */
+    /* the Props tab's Mismatches: (4 November 2026) a score's row as its bubble words it, its size in points and its
+       Elo part in yards, the word Mismatch on a tagged row alone, titled with the row's words (window.eloGlance's title
+       and pts; the defence it names is the Faces line's table, so the bubble ranks no defense twice) */
     let mm=null; try{ mm=typeof window.eloMismatches==='function'?(window.eloMismatches()||[]).find(x=>x.pid===pid&&x.game_id===gid):null; }catch(e){ mm=null; }
-    if(mm&&GL&&GL.grade){ const ag=GL.against?GL.against(mm.group):null;
-      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="The Props tab's Mismatches: his Elo above his position's average plus how far the ${esc(mm.opp)} ${esc(ag||'defense')} stand${ag&&/ and /.test(ag)?'':'s'} below the league's, on the matchup formula's player ratings, in standard deviations">${N('mm',GL.grade(mm.score)[0])} · edge ${N('gap',mm.score.toFixed(1))} <span class="glance-q">SD</span></dd></div>`); }
+    if(mm&&mm.v2&&GL&&GL.title&&GL.pts)
+      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="${esc(GL.title(mm))}">${mm.tag?`${N('mm','Mismatch')} · `:''}${N('pts',GL.pts(mm))}</dd></div>`);
+    /* OLD-MISMATCHES { a row of the old Mismatches (a file from before the score): its grade and edge, on the matchup
+       formula's player ratings of the units he faces (its title says which); no rank of its own */
+    else if(mm&&!mm.v2&&mm.grade){ const ag=mm.against||null;
+      lines.push(`<div data-glance-mm><dt>Mismatch</dt><dd title="The Props tab's Mismatches: his Elo above his position's average plus how far the ${esc(mm.opp)} ${esc(ag||'defense')} stand${ag&&/ and /.test(ag)?'':'s'} below the league's, on the matchup formula's player ratings, in standard deviations">${N('mm',mm.grade)} · edge ${N('gap',mm.score.toFixed(1))} <span class="glance-q">SD</span></dd></div>`); }
+    /* } OLD-MISMATCHES */
     const pv=here(v)?v:null, st=pv?(pv.order||mu.stats&&mu.stats[pv.group]||Object.keys(pv.stats||{})).filter(s=>pv.stats&&pv.stats[s]&&GL&&GL.trusted(pv.group,s)):[];
     table=st.length?`<table class="glance-t" aria-label="His trusted stats: ${pv.avg?'his average':'recent form'} and the Elo matchup's projection"><thead><tr><th scope="col">Stat</th><th scope="col" class="glance-n">${pv.avg?'Avg':'Form'}</th><th scope="col" class="glance-n">Projected</th></tr></thead><tbody>${st.map(s=>{ const a=pv.stats[s];
         return `<tr data-glance-stat="${esc(s)}"${L&&L.stat===s?' class="glance-on"':''}><th scope="row">${esc((GL.labels&&GL.labels[s])||s)}</th><td class="glance-n" data-glance-n="form">${esc(dec(a[0]))}</td><td class="glance-n"><span aria-hidden="true">→ </span><b data-glance-n="proj">${esc(dec(a[1]))}</b></td></tr>`; }).join('')}</tbody></table>`

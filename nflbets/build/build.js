@@ -490,6 +490,11 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
   const SNAP_CSS = (snap.match(/<style>([\s\S]*?)<\/style>/) || [])[1], SNAP_JS = (snap.match(/<script>([\s\S]*?)<\/script>/) || [])[1];
   if (!SNAP_CSS || !SNAP_JS) throw new Error('nflbets/build/snapshot.html has no <style> or <script> block');
   if (/(^|\n)(body|header|main|:root|\.card|\.btn|\.modal|\.modal-panel|table|th|td)\{/.test(SNAP_CSS)) throw new Error('a page-level rule in the snapshot styles');
+  /* one type scale (the window's --gs-t1 to --gs-t6, 11 to 30px): every size the window sets, in its styles and its markup, is
+     one of those six, or a font that inherits (the review of 4 November 2026: the Mismatch pill set 10.5px) */
+  { const off = [...snap.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/font(-size)?\s*:\s*([^;}"'`]*)/g)].map(m => m[0].trim())
+      .filter(d => /^font-size/.test(d) ? !/^font-size\s*:\s*var\(--gs-t[1-6]\)$/.test(d) : !/^font\s*:\s*inherit$/.test(d) && !/var\(--gs-t[1-6]\)/.test(d));
+    if (off.length) throw new Error('nflbets/build/snapshot.html sets a size off its type scale (var(--gs-t1) to var(--gs-t6)): ' + off.slice(0, 3).join('; ')); }
   /* the Deep Dive's classes (dd, dtag) are not prefixed gs-: their rules stay inside the window */
   for (const rule of SNAP_CSS.replace(/\/\*[\s\S]*?\*\//g, '').match(/[^{}]+\{/g) || [])
     if (/(^|[\s,>+~])\.(dd|dtag)/.test(rule) && rule.split(',').some(sel => /\.(dd|dtag)/.test(sel) && !/#gsModal\b/.test(sel)))
@@ -555,11 +560,53 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
   for (const gone of ['fetch(', 'XMLHttpRequest', 'sendBeacon', 'localStorage', 'sessionStorage', 'indexedDB', 'window.storage', 'save('])
     if (GL.includes(gone)) throw new Error('nflbets/build/glance.js has ' + gone + ': the bubble reads what the page already has and keeps nothing');
   if (!/\nwindow\.gsReadings=\{recordOf,lineOf,callsOf,chanceOf,teamsOf,unitsOf\};\n/.test(rd('nflbets', 'build', 'snapshot.html'))) throw new Error('the Game snapshot no longer hands the matchup bubble its readings (window.gsReadings)');
-  if (!ELO_JS.includes('window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,grade:mmGrade,against:mmAgainst,outWhy,entry:muGlance};')) throw new Error('the Player Elo tab no longer hands the matchup bubble its readings (window.eloGlance)');
+  if (!ELO_JS.includes('window.eloGlance={trusted:muTrusted,labels:MU_LBL,unit:unitFaced,title:mmGlTitle,pts:mmGlPts,outWhy,entry:muGlance};')) throw new Error('the Player Elo tab no longer hands the matchup bubble its readings (window.eloGlance)');
   for (const need of ['function glanceName(', "typeof window.hubGlance!=='function'", '${glanceName(l)}<small>', '${glanceName(l,prices[i])}'])
     if (!part3.includes(need)) throw new Error("the props parts no longer draw a leg's name as the matchup bubble's button (" + need + ')');
   out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>\n' + GL + '</script>\n</body>\n</html>\n', "the matchup bubble's script");
   if (out.split('window.hubGlance=function').length !== 2) throw new Error('the matchup bubble is not in the page exactly once'); }
+/* the Mismatches on the averages' own Elo part (4 November 2026, THE MISMATCH SCORE in elo/build.py): a back's, receiver's
+   or tight end's lead leg sized in points ("+7 pts"), one tag, Mismatch, at the file's tag, and the ELO Ratings tab's own
+   table for the defence ("vs LAC Pass Defense #32"). A matchups file from before the score keeps the old Mismatches (the
+   formula's edge, graded Slight, Solid, Big and Huge, against the units "by player Elo"), whose code in the tab, the Game
+   snapshot and the matchup bubble stands between an OLD-MISMATCHES mark of each, once a file; outside those marks
+   (comments aside) none of the old words or their grade may come back: no grade word before "mismatch", no "by player
+   Elo", no grade on a tag (data-pe-mmgrade), no mmGrade; the new path's words say no "edge" and no standard deviations;
+   and the new path itself stays outside the marks, so they cannot be stretched over it */
+{ const OLD_MM = /\/\* OLD-MISMATCHES \{[\s\S]*?\/\* \} OLD-MISMATCHES \*\//g, bareMm = t => t.replace(OLD_MM, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const MM_FILES = { 'tab_elo.html': [ELO_JS, ['function mismatchesV2(', 'function mmSayV2(', 'const mmTagged=', 'function mmTagEl(', 'const bubbleV2=', 'const rowV2=', 'function mismatches(){ if(!D.mu) return []; return mmOn()?mismatchesV2():mismatchesOld(); }'],
+      ["const mmOn=", "/* OLD-MISMATCHES {"]],
+    'snapshot.html': [rd('nflbets', 'build', 'snapshot.html'), ['const mmCxV2=', 'const mmLiV2=', 'v0.v2?mmCxV2(v0,R.mine.length):mmCxOld(v0,R.mine.length)', 'R.mine.map(v=>v.v2?mmLiV2(F,v):mmLiOld(F,v))'],
+      ['const mmCxV2=', '/* with no list: why']],
+    'glance.js': [rd('nflbets', 'build', 'glance.js'), ['if(mm&&mm.v2&&GL&&GL.title&&GL.pts)', "${mm.tag?`${N('mm','Mismatch')} · `:''}${N('pts',GL.pts(mm))}"],
+      ['if(mm&&mm.v2&&GL&&GL.title&&GL.pts)', '/* OLD-MISMATCHES {']] };
+  for (const [f, [src, need, [from, to]]] of Object.entries(MM_FILES)) {
+    const marks = (src.match(OLD_MM) || []).length;
+    if (marks !== 1 || src.split('OLD-MISMATCHES {').length !== 2 || src.split('} OLD-MISMATCHES').length !== 2) throw new Error(`nflbets/build/${f} does not keep the old Mismatches between exactly one pair of OLD-MISMATCHES marks (${marks})`);
+    const bare = bareMm(src);
+    for (const n of need) if (!src.replace(OLD_MM, '').includes(n)) throw new Error(`nflbets/build/${f} no longer draws the Mismatches on the averages' Elo part outside its OLD-MISMATCHES marks (${n})`);
+    for (const [re, what] of [[/\b(?:Slight|Solid|Big|Huge)\b[^\n`'"]{0,4}mismatch/i, 'a grade word before "mismatch"'], [/by player Elo/i, '"by player Elo"'], [/peMmgrade|pe-mmgrade/, 'a grade on a mismatch tag (data-pe-mmgrade)'], [/\bmmGrade\b/, 'mmGrade']]) {
+      const m = re.exec(bare); if (m) throw new Error(`nflbets/build/${f} draws the old Mismatches' words outside its OLD-MISMATCHES marks: ${what} ("${m[0]}"), which went on 4 November 2026 with the score on the averages' Elo part`); }
+    const a = src.indexOf(from), b = src.indexOf(to, a + 1), part = a >= 0 && b > a ? src.slice(a, b).replace(/\/\*[\s\S]*?\*\//g, '') : null;
+    if (part === null) throw new Error(`nflbets/build/${f}: the Mismatches' new words are not where the build looks for them (${from} ... ${to})`);
+    if (/\bedges?\b|standard deviation|\bSD\b|player Elo/i.test(part)) throw new Error(`nflbets/build/${f}: the Mismatches on the averages' Elo part say "edge", standard deviations or player Elo, the old score's words: ${(part.match(/[^\n]*(\bedges?\b|standard deviation|\bSD\b|player Elo)[^\n]*/i) || [''])[0].trim().slice(0, 160)}`); } }
+/* a defence ranked on the ELO Ratings tab's own tables (the owner's call of November 2026, "Switch to ELO tab tables"): a
+   player's window on the tab gives his opponent's Pass Rush, Run Defense and Pass Defense, and the Game snapshot's Starters
+   headers rank each club's defensive line on Pass Rush, its linebackers on Run Defense and its secondary on Pass Defense
+   (model.json's units), where until then both ranked the matchup formula's units by their defenders' player Elo
+   (matchups.json's league.defs). Outside comments and the OLD-MISMATCHES marks neither file may read the formula's units
+   again in any spelling (league.defs, league?.defs or league['defs']; the league table itself, matchups.json's league, by
+   a property read or destructured; a defs destructured; or a player's own opp_def block, which the old ranks merged in),
+   nor draw the old words ("Pass rush and run front"), nor rank on defRanks or defRank, and each keeps its map of the three */
+{ const OLD_MM = /\/\* OLD-MISMATCHES \{[\s\S]*?\/\* \} OLD-MISMATCHES \*\//g, bare = t => t.replace(OLD_MM, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '');
+  const DEF_SRC = { 'tab_elo.html': [eloTab, ["const DEF_TABLES=[['pass_rush','Pass Rush'],['run_def','Run Defense'],['pass_def','Pass Defense']];", "${DEF_TABLES.map(([k,nm])=>defPill(k,nm,v.opp)).join('')}", 'function unitRow(key,opp){']],
+    'snapshot.html': [rd('nflbets', 'build', 'snapshot.html'), ["const DEF_TABLE={DL:['pass_rush','Pass Rush'],LB:['run_def','Run Defense'],DB:['pass_def','Pass Defense']};", 'ra=un?defRow(F,grp,a):null, rh=un?defRow(F,grp,h):null']] };
+  for (const [f, [src, need]] of Object.entries(DEF_SRC)) { const b = bare(src);
+    for (const [re, what] of [[/\bleague\s*(?:\?\.\s*|\.\s*)(?:defs\b|\[\s*['"`]defs['"`]\s*\])|\bleague\s*\[\s*['"`]defs['"`]\s*\]/, 'league.defs'],
+      [/(?:\?\.|\.)\s*league\b|\[\s*['"`]league['"`]\s*\]|[{,]\s*league\s*[:,}=]/, "matchups.json's league table"], [/[{,]\s*defs\s*[:,}=]/, 'a defs destructured'],
+      [/\bopp_def\b/, "a player's opp_def block"], [/pass rush and run front/i, 'the old words "Pass rush and run front"'], [/\bdefRanks?\s*\(/, 'defRanks or defRank']]) {
+      const m = re.exec(b); if (m) throw new Error(`nflbets/build/${f} ranks a defence on the matchup formula's units again outside its OLD-MISMATCHES marks: ${what} ("${b.slice(Math.max(0, m.index - 40), m.index + 40).replace(/\s+/g, ' ').trim()}"), where since the owner's call of November 2026 a player's window and the Starters headers rank on the ELO Ratings tab's tables`); }
+    for (const n of need) if (!b.includes(n)) throw new Error(`nflbets/build/${f} no longer ranks a defence on the ELO Ratings tab's tables as it should (${n})`); } }
 if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out)) throw new Error('the page still carries the Season Tracker tab');
 /* the hub look (theme.css, the NBA Hub's and the NHL Hub's colours and type with the NFL's gold): laid
    over every other style, last, so it wins by order, with the hubs' two fonts, and handed to the
