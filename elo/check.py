@@ -188,9 +188,18 @@ all pass. What each one would have caught is said beside it.
              average multiplies by 1); the gate's own log reads a coming season's missing file only once that
              season is under way; and on a made-up week the build covers exactly the starters it should, ranks a club's receivers
              on targets, reads the opponent's tables, his own club's offence and the opposing defenders, and a
-             better defence moves the projection by exactly its coefficient. (A projection read off the wrong
-             club's table, a regular's norm turned round, an average that counted a quiet game, a twin with the
-             Elo terms in, or a leg left out would publish green.)
+             better defence moves the projection by exactly its coefficient. THE MISMATCH SCORE (November 2026):
+             `mm` on exactly the lead blocks (the gate's own copy of the lead legs, a back's rushing yards and a
+             receiver's or tight end's receiving yards, each where ELO_AVG trusts it; none on a quarterback or a
+             kicker), {stat, shift, tag}, the stat the lead leg, the shift Phi(z) - 0.5 of the gate's own z for
+             it to four places, the tag the shift at ELO_AVG's tag or over (false wherever the tag is null);
+             avg_fit.mismatch ELO_AVG's; ELO_AVG's lead legs the gate's, its record every season from 2018 to the
+             last fitted, a non-null tag the threshold chosen with its gap above 0 in each of them and a null tag
+             only where one is not; on the made-up week the same with the tag at the largest shift, null, and a
+             lead leg untrusted, and the gate's own rules refusing made-up blocks that break each. (A projection
+             read off the wrong club's table, a regular's norm turned round, an average that counted a quiet game,
+             a twin with the Elo terms in, a leg left out, a shift off its z, a tag on a null threshold or a
+             quarterback's Mismatch would publish green.)
   DRAFT      every player of the players map carries his first career rating (`start`) and his draft
              slot (`draft`, THE DRAFT START, November 2026), each the gate's own working: draft_picks.csv
              read here (an id in two drafts at the later, a row with no id none), his first rated game
@@ -1435,6 +1444,85 @@ AVG_NORM = {'QB': 25, 'RB': 12, 'WR': 6, 'TE': 4}
 AVG_ORD = {'WC': 100, 'DIV': 101, 'CON': 102, 'SB': 103}
 AVG_TGT_HL, AVG_ALLOWED_HL = 4, 6
 AVG_RANKED = {'WR': 2, 'TE': 1}
+# THE MISMATCH SCORE: the gate's own copy of the lead legs (a back's rushing yards, a receiver's and a tight end's
+# receiving yards; never a quarterback or a kicker), each kept only where ELO_AVG trusts that leg's Elo part, and of
+# the record's first season (a non-null tag holds in every season of the record, from it to ELO_AVG's last fitted)
+MM_LEAD_OWN = {'RB': 'rushing_yards', 'WR': 'receiving_yards', 'TE': 'receiving_yards'}
+MM_REC_FIRST = 2018
+
+
+def mm_lead_own(A):
+    """the Mismatches' legs on the gate's own reading: its copy of the lead legs, each where ELO_AVG trusts it"""
+    return {p: c for p, c in MM_LEAD_OWN.items() if (A['legs'].get(f'{p}|{c}') or {}).get('trusted') is True}
+
+
+def mm_shift_own(z):
+    """the chance shift of an even (50%) line at z: Phi(z) - 0.5"""
+    return 0.5 * math.erf(z / math.sqrt(2))
+
+
+def mm_fit_bad(A):
+    """ELO_AVG's `mismatch` against the gate's own rules: its lead legs the gate's (trusted, no quarterback or kicker),
+    its record every season from MM_REC_FIRST to the last fitted, a non-null tag the threshold chosen and above the
+    listed rows under it (`gap` > 0) in every one of them, a null tag only where some season's gap is not; returns
+    what is wrong, [] when nothing"""
+    mm, bad = A.get('mismatch'), []
+    if not isinstance(mm, dict):
+        return ['ELO_AVG carries no mismatch block']
+    if set(mm) != {'lead', 'tag', 'chosen', 'chosen_on', 'record', 'ladders'}:
+        bad.append(f'the mismatch block\'s fields are {sorted(mm)}')
+    lead = mm.get('lead')
+    if lead != mm_lead_own(A):
+        bad.append(f'the lead legs are {lead}, the gate\'s own trusted ones {mm_lead_own(A)}')
+    if isinstance(lead, dict) and ({'QB', 'K'} & set(lead)):
+        bad.append(f'the lead legs take a quarterback or a kicker: {lead}')
+    if isinstance(lead, dict) and any(not (A['legs'].get(f'{p}|{c}') or {}).get('trusted') for p, c in lead.items()):
+        bad.append(f'a lead leg is not trusted: {lead}')
+    last = int(str(A.get('record', '')).split('-')[-1]) if re.fullmatch(r'\d{4}-\d{4}', str(A.get('record', ''))) else None
+    rec, tag, ch = mm.get('record') or {}, mm.get('tag'), mm.get('chosen')
+    want = [str(y) for y in range(MM_REC_FIRST, last + 1)] if last else []
+    num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and v == v
+    if tag is not None:
+        if not num(tag) or not 0 < tag < 0.5 or tag != ch:
+            bad.append(f'the tag {tag} is not the chosen threshold {ch}, a chance shift between 0 and 0.5')
+        if list(rec) != want:
+            bad.append(f'the tag\'s record is of seasons {list(rec)}, not {want[0] if want else "?"}-{last}')
+        low = [y for y, r in rec.items() if not (isinstance(r, dict) and num(r.get('gap')) and r['gap'] > 0)]
+        if low:
+            bad.append(f'the tag stands though its gap is not above 0 in {low}')
+    elif ch is not None:
+        if list(rec) == want and all(isinstance(r, dict) and num(r.get('gap')) and r['gap'] > 0 for r in rec.values()):
+            bad.append(f'the tag is null though the chosen threshold {ch} held in every season of the record')
+    return bad
+
+
+def mm_block_bad(pid, b, A, z_own, ztol):
+    """one player's `mm` against the gate's own reading: on exactly the lead blocks (his group a lead leg's, that leg
+    among his stats), {stat, shift, tag}, the stat the lead leg, the shift Phi(z) - 0.5 of the gate's own z for it, to
+    four places, and the tag the shift at the tag or over (false wherever the tag is null); returns what is wrong"""
+    lead, mm = mm_lead_own(A), b.get('mm')
+    T = (A.get('mismatch') or {}).get('tag')
+    col = lead.get(b.get('group'))
+    if col is None or col not in (b.get('stats') or {}):
+        return [f'{pid} ({b.get("group")}) carries a mismatch score off the lead legs: {mm}'] if mm is not None else []
+    if not isinstance(mm, dict) or set(mm) != {'stat', 'shift', 'tag'}:
+        return [f'{pid} ({b.get("group")}) carries no mismatch score of {{stat, shift, tag}} alone on his lead leg: {mm}']
+    bad = []
+    if mm['stat'] != col:
+        bad.append(f'{pid}\'s mismatch is on {mm["stat"]}, his lead leg is {col}')
+    sh = mm['shift']
+    if not isinstance(sh, (int, float)) or isinstance(sh, bool) or round(sh, 4) != sh:
+        return bad + [f'{pid}\'s mismatch shift {sh} is not a chance shift to four places']
+    own = mm_shift_own(z_own)
+    tol = 5e-5 + 0.3990 * ztol + 1e-12        # written to four places, on a z within ztol of the gate's
+    if abs(sh - own) > tol:
+        bad.append(f'{pid}\'s mismatch shift {sh}, the gate\'s Phi(z) - 0.5 {own:.6f} on z {z_own:.6f}')
+    want_tag = T is not None and sh >= T
+    if mm['tag'] is not want_tag:
+        bad.append(f'{pid}\'s mismatch tag {mm["tag"]} on a shift of {sh} against the tag {T}')
+    if T is not None and abs(own - T) > tol and mm['tag'] is not (own >= T):
+        bad.append(f'{pid}\'s mismatch tag {mm["tag"]}, the gate\'s shift {own:.6f} against the tag {T}')
+    return bad
 AVG_NUM = ['completions', 'attempts', 'passing_yards', 'passing_tds', 'passing_interceptions', 'sacks_suffered', 'carries',
            'rushing_yards', 'rushing_tds', 'receptions', 'targets', 'receiving_yards', 'receiving_tds', 'fg_made', 'fg_att',
            'pat_made', 'pat_att']
@@ -1565,6 +1653,10 @@ def avg_checks(MU, P, M, games, cache, built):
     """matchups.json's `avg`, `avg_ref` and `avg_fit` against the gate's own reading (AVERAGES)"""
     A = build.ELO_AVG
     chk(MU.get('avg_fit') == json.loads(json.dumps(A)), 'AVERAGES: matchups.json does not carry the build\'s ELO_AVG as avg_fit')
+    chk((MU.get('avg_fit') or {}).get('mismatch') == json.loads(json.dumps(A.get('mismatch'))),
+        'AVERAGES: matchups.json\'s avg_fit.mismatch is not the build\'s ELO_AVG[\'mismatch\']')
+    fb = mm_fit_bad(A)
+    chk(not fb, f'AVERAGES: the mismatch score\'s constants: {"; ".join(fb[:4])}')
     AV, REF = MU.get('avg'), MU.get('avg_ref')
     chk(isinstance(AV, dict) and isinstance(REF, dict), 'AVERAGES: matchups.json has no Elo-adjusted averages (avg, avg_ref)')
     if not isinstance(AV, dict) or not isinstance(REF, dict):
@@ -1627,7 +1719,7 @@ def avg_checks(MU, P, M, games, cache, built):
     pl = P.get('players') or {}
     top = {x['id']: x for grp in (P.get('groups') or {}).values() for x in grp.get('top', [])}
     prior, allowed, tgt = {}, {}, {}
-    worst = {}
+    worst, mm_seen = {}, []
     for pid, b in AV.items():
         w = want.get(pid)
         if w is None:
@@ -1670,6 +1762,7 @@ def avg_checks(MU, P, M, games, cache, built):
             if b.get('rank_on_targets') != r + 1:
                 bad.append(f'{pid} is {b.get("rank_on_targets")} on targets among {w["mates"]}, the gate has him {r + 1}')
         hr = mine[(mine.group == gp) & mine.reg]
+        z_own = {}
         for col, leg in legs:
             st = b['stats'][col]
             if (gp, col) not in prior:
@@ -1700,6 +1793,7 @@ def avg_checks(MU, P, M, games, cache, built):
                 x['log_allowed'] = math.log(max(a, 1e-3))
             rf = {**{'E:' + t: ref[leg['scale']][t] for t in leg['tables']}, **ref['defs']}
             o = avg_leg_own(leg, av, x, rf)
+            z_own[col] = (o['z'], 1e-4 + (1e-4 + 1e-6 * o['proj']) / o['sd'])
             # each number is written to four places (one unit in the last, as a hair either way rounds the other way);
             # the inputs differ from the build's by the units' raw ratings written to six (a millionth of the projection
             # at most), and the multipliers' league by its defenders written to a tenth (avg_ref)
@@ -1722,7 +1816,15 @@ def avg_checks(MU, P, M, games, cache, built):
             e0 = (b.get('defs') or {}).get(leg['tables'][0]) or {}
             if st.get('vs') != {'table': leg['tables'][0], 'elo': e0.get('elo'), 'rank': e0.get('rank')}:
                 bad.append(f'{pid} {col}: faces {st.get("vs")}, not {b["opp"]}\'s {leg["tables"][0]}')
+        # THE MISMATCH SCORE: on exactly the lead blocks, the shift of the gate's own z, the tag on it
+        lc = mm_lead_own(A).get(gp)
+        zc, zt = z_own.get(lc, (0.0, 0.0))
+        bad += mm_block_bad(pid, b, A, zc, zt)
+        mm_seen.append(b.get('mm'))
     chk(not bad, f'AVERAGES: {"; ".join(bad[:4])}{" ..." if len(bad) > 4 else ""} ({len(bad)})')
+    mm_rows = [m for m in mm_seen if isinstance(m, dict)]
+    notes.append(f'mismatch scores: {len(mm_rows)} lead blocks held on the gate\'s own z ({sum(1 for m in mm_rows if m.get("shift", 0) > 0)} '
+                 f'with a shift above 0, {sum(1 for m in mm_rows if m.get("tag") is True)} at the tag of {(A.get("mismatch") or {}).get("tag")})')
     n_legs = sum(len(b.get('stats') or {}) for b in AV.values())
     notes.append(f'averages: {len(AV)} expected starters, {n_legs} legs held on the gate\'s own reading (the largest miss '
                  f'{max(worst.values(), default=0):.2f} of its tolerance: ' + ', '.join(f'{k} {v:.2f}' for k, v in worst.items())
@@ -1880,6 +1982,7 @@ def avg_week_fixture():
     tg = lambda p: ewm_last_own([r['targets'] for r in log if r['pid'] == p and r['group'] != 'K'], AVG_TGT_HL) if any(r['pid'] == p for r in log) else 0.0
     rmean = {sc: {n: float(np.mean([v['raw'] if sc == 'raw' else (v['shown'] - 1500) / 100 for v in T[n].values()])) for n in T} for sc in ('raw', 'shown')}
     dmean = {u: float(np.mean([(v[u] - 1500) / 100 for v in defs.values()])) for u in ('DL', 'LB', 'DB')}
+    fz = {}
     for pid, b in av.items():
         gp, opp, team = b['group'], b['opp'], b['team']
         mine = [r for r in log if r['pid'] == pid and r['group'] == gp and regular(r)]
@@ -1912,6 +2015,7 @@ def avg_week_fixture():
                 al = ewm_last_own([float(np.mean(vs[k])) for k in sorted(vs)], AVG_ALLOWED_HL) / leg['allowed_mean'] if vs else 1.0
                 x['log_allowed'] = math.log(max(al, 1e-3))
             o = avg_leg_own(leg, a, x, {**{'E:' + t: rmean[leg['scale']][t] for t in leg['tables']}, **dmean})
+            fz[(pid, col)] = (o['z'], 1e-4 + (1e-4 + 1e-6 * o['proj']) / o['sd'])
             got = b['stats'].get(col)
             if got is None:
                 bad.append(f'{pid} has no {col}, a leg of his position')
@@ -1929,6 +2033,64 @@ def avg_week_fixture():
     if wa != want_a:
         bad.append(f'w1 anytime TD allowed {wa} where BBB has allowed a receiver a TD a game ({want_a})')
     chk(not bad, f'AVERAGES: on a made-up week: {bad[:3]}')
+    # THE MISMATCH SCORE on the made-up week: `mm` on exactly the lead blocks (the back's rushing yards, the receivers'
+    # and the tight end's receiving yards; none on a quarterback or a kicker), its shift Phi(z) - 0.5 of the gate's own
+    # z, its tag on it; then with the tag at the largest shift (that block alone tagged), the tag null (none tagged,
+    # the shifts as they were) and the tight end's leg untrusted (his block carries none), the build's ELO_AVG put back
+    def mm_week(A_):
+        bad_, lead = [], mm_lead_own(A_)
+        for pid, b in av_.items():
+            lc = lead.get(b['group'])
+            bad_ += mm_block_bad(pid, b, A_, *fz.get((pid, lc), (0.0, 0.0)))
+        return bad_
+    av_ = av
+    bad = mm_week(A)
+    own_lead = sorted(p for p, b in av.items() if mm_lead_own(A).get(b['group']))
+    if sorted(p for p, b in av.items() if 'mm' in b) != own_lead or not own_lead:
+        bad.append(f'the mismatch scores are on {sorted(p for p, b in av.items() if "mm" in b)}, the lead blocks are {own_lead}')
+    orig = build.ELO_AVG
+    try:
+        shifts = {p: av[p]['mm']['shift'] for p in own_lead if 'mm' in av[p]}
+        top = max(shifts.values()) if shifts else 0.0
+        for what, edit in (('the tag at the largest shift', lambda X: X['mismatch'].update(tag=top, chosen=top)),
+                           ('the tag null', lambda X: X['mismatch'].update(tag=None)),
+                           ('the tight end\'s leg untrusted', lambda X: (X['legs']['TE|receiving_yards'].update(trusted=False),
+                                                                          X['mismatch']['lead'].pop('TE', None)))):
+            X = json.loads(json.dumps(orig))
+            edit(X)
+            build.ELO_AVG = X
+            av_, _ = build.averages(log, coming, S, tables(), rating, srating, defs)
+            got = mm_week(X)
+            bad += [f'{what}: {g}' for g in got]
+            if what == 'the tag at the largest shift' and sorted(p for p, b in av_.items() if (b.get('mm') or {}).get('tag')) != \
+                    sorted(p for p, v in shifts.items() if v >= top):
+                bad.append(f'{what}: tagged {sorted(p for p, b in av_.items() if (b.get("mm") or {}).get("tag"))}')
+            if what == 'the tag null' and (any((b.get('mm') or {}).get('tag') for b in av_.values())
+                                           or {p: (av_[p].get('mm') or {}).get('shift') for p in shifts} != shifts):
+                bad.append(f'{what}: a block is tagged, or a shift moved')
+            if what.startswith('the tight end') and 'mm' in av_['t1']:
+                bad.append(f'{what}: t1 still carries {av_["t1"]["mm"]}')
+    finally:
+        build.ELO_AVG = orig
+    chk(not bad, f'AVERAGES: the mismatch score on a made-up week: {bad[:3]}')
+    # the mismatch score's constants: the gate's own rules refuse each made-up block that breaks one, and pass the build's
+    good = {'lead': mm_lead_own(A), 'tag': 0.04, 'chosen': 0.04, 'chosen_on': '2018-2021', 'ladders': {},
+            'record': {str(y): {'rho': 0.15, 'tagged': 300, 'under': 600, 'gap': 0.1, 'gap_untagged': 0.2}
+                       for y in range(MM_REC_FIRST, int(A['record'].split('-')[1]) + 1)}}
+    low = dict(good, record=dict(good['record'], **{str(MM_REC_FIRST + 2): dict(good['record'][str(MM_REC_FIRST + 2)], gap=-0.01)}))
+    short = dict(good, record={y: r for y, r in good['record'].items() if y != str(MM_REC_FIRST)})
+    cases = [('the build\'s', A.get('mismatch'), True, A), ('a made-up good block', good, True, A),
+             ('a null tag with a season below 0', dict(low, tag=None), True, A),
+             ('a tag with a season below 0', low, False, A), ('a tag missing a season', short, False, A),
+             ('a null tag that held every season', dict(good, tag=None), False, A),
+             ('a tag off the threshold chosen', dict(good, tag=0.05), False, A),
+             ('a quarterback lead', dict(good, lead=dict(good['lead'], QB='passing_yards')), False, A),
+             ('a kicker lead', dict(good, lead=dict(good['lead'], K='kick_pts')), False, A)]
+    U = json.loads(json.dumps(A))
+    U['legs']['TE|receiving_yards']['trusted'] = False
+    cases.append(('a lead leg ELO_AVG does not trust', dict(good, lead=dict(MM_LEAD_OWN)), False, U))
+    wrong = [w for w, blk, ok, AA in cases if (not mm_fit_bad(dict(AA, mismatch=blk))) != ok]
+    chk(not wrong, f'AVERAGES: the gate\'s mismatch rules judge these made-up blocks the wrong way: {wrong}')
     # a game with nothing on the sheet (as the build never logs one, but were it there) moves nothing
     quiet = dict(log[0], pid='w1', group='WR', ord=99, game_id=f'{S}_99_AAA_CCC', vol=0.0, **{c: 0.0 for c in cols})
     av_q, _ = build.averages(log + [quiet], coming, S, tables(), rating, srating, defs)

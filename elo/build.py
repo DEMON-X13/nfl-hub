@@ -584,6 +584,35 @@ ELO_AVG's `record` is each leg's walk-forward 2018-2025 RMSE with and without it
 sign right on the largest fifth (the frozen choice scored on the seasons it was chosen on, so a
 little flattered).
 
+THE MISMATCH SCORE (3 November 2026, the owner's "do all" to the Elo diagnosis's list: its items 1, 2 and 7). The
+Props tab's Mismatches rank the Elo-adjusted average's own Elo part on a player's lead leg, never the old score (his
+career Elo's z among the week's starters less the z of the matchup formula's player-Elo unit he faces, graded Solid,
+Big and Huge at 1, 2 and 3): a back's rushing yards and a receiver's or tight end's receiving yards, each only where
+ELO_AVG trusts that leg's Elo part (ELO_AVG['mismatch']['lead']; never a quarterback, whose passing yards' Elo part is
+not trusted and ranked the gain weakly, 0.020 [-0.014, 0.061] confirmed, nor a kicker), each as the chance shift of
+an even (50%) line, Phi(z) - 0.5 (the page's own reading of z, muP at a fair 50%; at a line set at his no-Elo
+projection the over lands 41-46%), with one tag, Mismatch, at ELO_AVG['mismatch']['tag'], and no grade words. On
+every expected starter's game of 2018-2025, each season on fits of the seasons before it (elo/tools/elo_avg_fit.py's
+walk-forward, the spec frozen on 2018-2025 so a little flattered; measured on the ratings before the draft start),
+the Elo part ranked the realised gain over the no-Elo twin, (y - P0) / sd, better than the old score in all 8 seasons
+pooled over the three lead legs (Spearman, chosen on 2018-2021: 0.150 [0.128, 0.171] against 0.091, n 8,875;
+confirmed once on 2022-2025: 0.180 [0.156, 0.200] against 0.104, n 9,695): a receiver's and a tight end's alone in 8
+of 8, a back's alone in 6 of 8. The old score's player half alone beat the whole of it in 7 of 8, and its defence
+half, the formula's player-Elo units, carried next to nothing (0.018 and 0.008, intervals across 0) where the ELO
+tab's tables carried a little in every season (0.053 and 0.042). Against his own average, (y - avg) / sd, the new
+score is level with the old player half (4 of 8): a Mismatch mostly says his Elo rates him above his own average,
+the defence moving him about 3-9% either way. The size lands in full: the realised gain on the stated part, slope
+0.93, 0.91 and 1.08 in yards, and the over-rate at the no-Elo projection on the stated shift 0.91 [0.66, 1.15], 1.05
+[0.84, 1.21] and 1.27 [0.89, 1.67] (rushing, receiving WR, receiving TE). On those ratings no ladder of two or three
+thresholds chosen on 2018-2021 kept each grade above the one below in every season (two: 7 of 8; three: 3 of 8; on
+the draft start's, two 8 of 8 and three 6 of 8, ELO_AVG['mismatch']['ladders']), so there are no grade words but one
+tag, the single threshold chosen there (3.5 points on the draft start's ratings), kept only where its rows beat the
+listed rows under it in every season of the record (ELO_AVG['mismatch']['record']: +0.11 to +0.21 sd a season, 8 of
+8), else null, and then no row is tagged. This is the Elo system's own record:
+2018-2025 has no DraftKings prop lines, so it says nothing of beating the line. Each lead block carries `mm`, {stat,
+shift, tag}: the lead leg, phi(z) - 0.5 to four places on the z written, and whether that is at the tag or over
+(false wherever the tag is null).
+
 Every run applies them, as the rankings move, to the coming week's expected starters on everything
 as it stands: his games through the latest final, the tables re-rated after every final (a club yet
 to play on its carried rating), his ratings, the defenders the game model expects. matchups.json
@@ -596,11 +625,13 @@ Elo part's split (def_x, the defence's multiplier, his projection over the same 
 average defence; elo_x, his Elo's, the rest of the projection over its twin; the twin times the two
 is the projection, so the two together point the Elo part's way, where a split against a 1500 player
 pointed the other way on 128 of the 430 trusted legs of week 8, the review of 29 October 2026), the
-table he faces with its Elo and rank, and what the defence allowed where the leg reads it}}; `avg_ref`, the league's average
+table he faces with its Elo and rank, and what the defence allowed where the leg reads it}, and on a
+lead leg's block `mm`, {stat, shift, tag} (THE MISMATCH SCORE)}; `avg_ref`, the league's average
 defence as it stands; and `avg_fit`, ELO_AVG whole (each leg's terms, coefficients, twin, spread,
-trust and record). elo/check.py works each one out again on its own reading of the raw files (the
-average, the allowance, the pecking order, the tables, the projection and its parts), holding the
-ratings and the opposing defenders, which it does not replay, to the players map and the league's.
+trust and record, and `mismatch`, the lead legs, the tag and its record). elo/check.py works each one
+out again on its own reading of the raw files (the average, the allowance, the pecking order, the
+tables, the projection and its parts, the chance shift and the tag), holding the ratings and the
+opposing defenders, which it does not replay, to the players map and the league's.
 
 THE RANKINGS are of this season alone. Beside the rating above, every player carries a second
 one that starts the season at 1500 and moves only on this season's games, by the same
@@ -1756,6 +1787,7 @@ ELO_AVG = {
         'K|fg_made': {'kind': 'count', 'avg': [12, 0, 0.5], 'eps': 0.0166694, 'tables': ['def'], 'scale': 'shown', 'player': 'RS', 'variant': 'c', 'terms': ['one', 'E:def', 'P', 'EP', 'log_avg'], 'coef': [0.409024, -0.026471, 0.041253, 0.003499, -0.825144], 'no_elo': {'terms': ['one', 'log_avg'], 'coef': [0.397738, -0.79034]}, 'spread': {'dist': 'qp', 'phi': 0.8811}, 'trusted': False, 'record': {'games': 3959, 'rmse': 1.2003, 'rmse_no_elo': 1.201, 'right_top': 0.5354}},
         'K|kick_pts': {'kind': 'yards', 'avg': [None, 2, 0.5], 'eps': 0.073214, 'tables': ['def'], 'scale': 'shown', 'player': None, 'variant': 'd', 'terms': ['one', 'E:def', 'log_avg', 'home', 'log_allowed', 'DL', 'LB', 'DB', 'own:off'], 'coef': [1.196189, -0.03032, -0.621502, 0.049691, 0.086449, -0.039157, -0.024063, -0.087851, 0.142665], 'no_elo': {'terms': ['one', 'log_avg', 'home', 'log_allowed', 'own:off'], 'coef': [1.192547, -0.623821, 0.050873, 0.239234, 0.135163]}, 'allowed_mean': 7.22818, 'spread': {'dist': 'ratio', 'edges': [6.6598, 7.0114, 7.3051, 7.6594], 'rsd': [0.5928, 0.5249, 0.5098, 0.4818, 0.4386]}, 'trusted': True, 'record': {'games': 3959, 'rmse': 3.6158, 'rmse_no_elo': 3.622, 'right_top': 0.5253}},
     },
+    'mismatch': {'lead': {'RB': 'rushing_yards', 'WR': 'receiving_yards', 'TE': 'receiving_yards'}, 'tag': 0.035, 'chosen': 0.035, 'chosen_on': '2018-2021', 'record': {'2018': {'rho': 0.1704, 'tagged': 388, 'under': 874, 'gap': 0.111, 'gap_untagged': 0.2512}, '2019': {'rho': 0.1227, 'tagged': 452, 'under': 649, 'gap': 0.148, 'gap_untagged': 0.2232}, '2020': {'rho': 0.1607, 'tagged': 366, 'under': 629, 'gap': 0.1546, 'gap_untagged': 0.2824}, '2021': {'rho': 0.142, 'tagged': 481, 'under': 663, 'gap': 0.1393, 'gap_untagged': 0.2492}, '2022': {'rho': 0.176, 'tagged': 497, 'under': 650, 'gap': 0.2113, 'gap_untagged': 0.3317}, '2023': {'rho': 0.1441, 'tagged': 637, 'under': 718, 'gap': 0.1406, 'gap_untagged': 0.2211}, '2024': {'rho': 0.1677, 'tagged': 656, 'under': 771, 'gap': 0.1793, 'gap_untagged': 0.265}, '2025': {'rho': 0.1905, 'tagged': 706, 'under': 680, 'gap': 0.1692, 'gap_untagged': 0.303}}, 'ladders': {'2': {'tags': [1.5, 6], 'ordered': 8}, '3': {'tags': [1.5, 3, 5], 'ordered': 6}}},
 }
 
 
@@ -2068,6 +2100,11 @@ def averages(log, coming, season, tables, rating, season_rating, defs):
                       'def_x': round(dx, 4), 'elo_x': round(proj / (proj0 * dx), 4),
                       'vs': {'table': leg['tables'][0], 'elo': first['elo'], 'rank': first['rank']}, **st}
                 blk['stats'][col] = st
+            mm = A.get('mismatch')
+            lead = mm and mm['lead'].get(g)
+            if lead and lead in blk['stats']:          # THE MISMATCH SCORE: the lead leg's chance shift on an even line
+                sh = round(0.5 * math.erf(blk['stats'][lead]['z'] / math.sqrt(2)), 4) + 0.0     # phi(z) - 0.5, on the z written
+                blk['mm'] = {'stat': lead, 'shift': sh, 'tag': bool(mm['tag'] is not None and sh >= mm['tag'])}
             out[pid] = blk
     rd = lambda v: {k: round(x, 6) + 0.0 for k, x in v.items()}
     return out, {'raw': rd(ref['raw']), 'shown': rd(ref['shown']), 'defs': rd(ref['defs'])}
