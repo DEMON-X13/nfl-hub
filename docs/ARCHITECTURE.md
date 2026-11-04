@@ -1178,8 +1178,8 @@ button, on the side it favours only (`epMm`, `epMmFor`, `epMmTag`). The Mismatch
 "pass defense ranked", which is the ELO Ratings tab's table's alone; clubs level on a unit share its rank there, in a
 player's window and in the Game snapshot's Starters headers and Mismatches (20 October 2026; the window and the headers on
 the ELO tab's tables since November 2026, below), level read to the hundredth
-since 22 October 2026 (`mmKey`, `Math.round(x*100)`, in `defRanks` and the Mismatches' `rankOf`; `snapshot.html`'s
-`defRank` the same, the owner's call: "in mismatches, make clubs tied on a defense unit share the same rank in the
+since 22 October 2026 (`mmKey`, `Math.round(x*100)`, in the Mismatches' `rankOf`, and until November 2026 in `defRanks`
+and `snapshot.html`'s `defRank`, both gone since; the owner's call: "in mismatches, make clubs tied on a defense unit share the same rank in the
 mismatches, plaer window, and game snapshot"), since a unit of two averaged can part clubs level on paper by a
 floating-point hair. **Since 4 November 2026** (elo/build.py's THE MISMATCH SCORE; CLAUDE.md, **The Mismatches on the
 averages' Elo part**) a matchups file carrying the score (`avg_fit.mismatch`, each lead block's `mm`: `mmOn`) draws the
@@ -1198,8 +1198,9 @@ own tables, the opponent's Pass Rush, Run Defense and Pass Defense where DL, LB 
 the table draws it, carried where so, a dash with no table or row), and the Game snapshot's Starters headers rank each
 club's defensive line, linebackers and secondary on the same three (`DEF_TABLE`, `defRow`, `defName` in `snapshot.html`,
 the table's name under the group's label); `defRanks`, `defRank` and both `UNIT_NAME`s are gone, and `league.defs` ranks
-nothing on the page outside the old Mismatches' marks (`build.js` refuses it, `defRanks(`, `defRank(` and "Pass rush and
-run front" there). `window.eloGlance` {trusted, labels, unit, title,
+nothing on the page outside the old Mismatches' marks (`build.js` refuses there any read of the formula's units, by
+`league.defs`, `league?.defs`, `league['defs']`, the `league` table read or destructured, a `defs` destructured or a
+player's `opp_def`, and `defRanks(`, `defRank(` and "Pass rush and run front"). `window.eloGlance` {trusted, labels, unit, title,
 pts, outWhy, entry} (`grade` and `against` until 4 November 2026, the old rows carrying their own since) is what the
 matchup bubble (`glance.js`) reads here: `unit(group, opp)` the tab's own table for a
 side of the ball (a quarterback the Overall Defense, a back the Run Defense, a receiver or tight end the Pass Defense),

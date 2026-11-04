@@ -1169,7 +1169,7 @@ function positions(P,g,F){
     return `<span class="gs-pl${o?' gs-off':''}" data-pid="${esc(x.pid)}" data-team="${esc(t)}" data-grp="${esc(e.group)}"><span class="gs-pn">${rk?shield(e.se):''}${nameBox(x.pid,e.name)}</span>
       <span class="gs-pst">${stat}</span>${o?`<small class="gs-outw">${esc(o)}</small>`:''}</span>`; };
   /* each defensive group's club rank in its table (defRow) at either end of its header, the better of the two marked */
-  const unitEnd=(t,grp,r,cls,b)=>r?`<span class="gs-ur ${cls}">${V(`<b>${ordinal(r.rank)}</b> of ${r.n}`,b,` data-gs-def="${esc(t)}:${grp}" data-gs-table="${esc(r.key)}" title="${esc(`${t} ${r.name} on the ELO Ratings tab: ${r.elo}, ${ordinal(r.rank)} of ${r.n}${r.carried?`, carried from ${r.from}`:''}`)}"`)}</span>`:`<span class="gs-ur ${cls}"></span>`;
+  const unitEnd=(t,grp,r,cls,b)=>r?`<span class="gs-ur ${cls}">${V(`<b>${ordinal(r.rank)}</b> of ${r.n}`,b,` data-gs-def="${esc(t)}:${grp}" data-gs-table="${esc(r.key)}" title="${esc(`${t} ${r.name} on the ELO Ratings tab: Elo ${r.elo}, ${ordinal(r.rank)} of ${r.n}${r.carried?`, carried from ${r.from}`:''}`)}"`)}</span>`:`<span class="gs-ur ${cls}"></span>`;
   const panels={off:'',def:'',k:''};
   for(const grp of groups){
     const xa=LA&&LA.by[grp]||[], xh=LH&&LH.by[grp]||[], n=Math.max(xa.length,xh.length);

@@ -594,13 +594,17 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
    player's window on the tab gives his opponent's Pass Rush, Run Defense and Pass Defense, and the Game snapshot's Starters
    headers rank each club's defensive line on Pass Rush, its linebackers on Run Defense and its secondary on Pass Defense
    (model.json's units), where until then both ranked the matchup formula's units by their defenders' player Elo
-   (matchups.json's league.defs). Outside comments and the OLD-MISMATCHES marks neither file may read league.defs again,
+   (matchups.json's league.defs). Outside comments and the OLD-MISMATCHES marks neither file may read the formula's units
+   again in any spelling (league.defs, league?.defs or league['defs']; the league table itself, matchups.json's league, by
+   a property read or destructured; a defs destructured; or a player's own opp_def block, which the old ranks merged in),
    nor draw the old words ("Pass rush and run front"), nor rank on defRanks or defRank, and each keeps its map of the three */
 { const OLD_MM = /\/\* OLD-MISMATCHES \{[\s\S]*?\/\* \} OLD-MISMATCHES \*\//g, bare = t => t.replace(OLD_MM, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '');
   const DEF_SRC = { 'tab_elo.html': [eloTab, ["const DEF_TABLES=[['pass_rush','Pass Rush'],['run_def','Run Defense'],['pass_def','Pass Defense']];", "${DEF_TABLES.map(([k,nm])=>defPill(k,nm,v.opp)).join('')}", 'function unitRow(key,opp){']],
     'snapshot.html': [rd('nflbets', 'build', 'snapshot.html'), ["const DEF_TABLE={DL:['pass_rush','Pass Rush'],LB:['run_def','Run Defense'],DB:['pass_def','Pass Defense']};", 'ra=un?defRow(F,grp,a):null, rh=un?defRow(F,grp,h):null']] };
   for (const [f, [src, need]] of Object.entries(DEF_SRC)) { const b = bare(src);
-    for (const [re, what] of [[/\bleague\s*(?:\.\s*defs\b|\[\s*['"`]defs['"`]\s*\])/, 'league.defs'], [/pass rush and run front/i, 'the old words "Pass rush and run front"'], [/\bdefRanks?\s*\(/, 'defRanks or defRank']]) {
+    for (const [re, what] of [[/\bleague\s*(?:\?\.\s*|\.\s*)(?:defs\b|\[\s*['"`]defs['"`]\s*\])|\bleague\s*\[\s*['"`]defs['"`]\s*\]/, 'league.defs'],
+      [/(?:\?\.|\.)\s*league\b|\[\s*['"`]league['"`]\s*\]|[{,]\s*league\s*[:,}=]/, "matchups.json's league table"], [/[{,]\s*defs\s*[:,}=]/, 'a defs destructured'],
+      [/\bopp_def\b/, "a player's opp_def block"], [/pass rush and run front/i, 'the old words "Pass rush and run front"'], [/\bdefRanks?\s*\(/, 'defRanks or defRank']]) {
       const m = re.exec(b); if (m) throw new Error(`nflbets/build/${f} ranks a defence on the matchup formula's units again outside its OLD-MISMATCHES marks: ${what} ("${b.slice(Math.max(0, m.index - 40), m.index + 40).replace(/\s+/g, ' ').trim()}"), where since the owner's call of November 2026 a player's window and the Starters headers rank on the ELO Ratings tab's tables`); }
     for (const n of need) if (!b.includes(n)) throw new Error(`nflbets/build/${f} no longer ranks a defence on the ELO Ratings tab's tables as it should (${n})`); } }
 if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out)) throw new Error('the page still carries the Season Tracker tab');

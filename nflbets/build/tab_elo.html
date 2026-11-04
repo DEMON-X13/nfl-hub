@@ -303,7 +303,7 @@ const mmKey=x=>Math.round(x*100);
 const DEF_TABLES=[['pass_rush','Pass Rush'],['run_def','Run Defense'],['pass_def','Pass Defense']];
 const defPill=(key,name,opp)=>{ const u=unitRow(key,opp), T=D.model&&D.model.units&&D.model.units.tables&&D.model.units.tables[key];
   if(!u) return `<span data-pe-def="${esc(key)}">${esc(T&&T.label?String(T.label):name)}: <b>–</b></span>`;
-  return `<span data-pe-def="${esc(key)}" title="${esc(`${opp} ${u.name} on the ELO Ratings tab: ${u.elo}, ${ordinal(u.rank)} of ${u.n}${u.carried?`, carried from ${u.from}`:''}`)}">${esc(u.name)}: <b>${esc(u.elo)} · ${ordinal(u.rank)} of ${u.n}</b>${u.carried?` <small>carried from ${esc(u.from)}</small>`:''}</span>`; };
+  return `<span data-pe-def="${esc(key)}" title="${esc(`${opp} ${u.name} on the ELO Ratings tab: Elo ${u.elo}, ${ordinal(u.rank)} of ${u.n}${u.carried?`, carried from ${u.from}`:''}`)}">${esc(u.name)}: <b>${esc(u.elo)} · ${ordinal(u.rank)} of ${u.n}</b>${u.carried?` <small>carried from ${esc(u.from)}</small>`:''}</span>`; };
 /* a player's window, opened from his row in the rankings: his place this season, then the
    coming game, a row a leg (faded where its Elo part has not held up season by season, and not used for Elo picks):
    since 29 October 2026 the Elo-adjusted average's breakdown, his average, the projection with no Elo terms (Base), the

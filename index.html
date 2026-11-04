@@ -8147,7 +8147,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='5a26f58';
+const PAGE_HASH='6956059';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -10672,7 +10672,7 @@ const mmKey=x=>Math.round(x*100);
 const DEF_TABLES=[['pass_rush','Pass Rush'],['run_def','Run Defense'],['pass_def','Pass Defense']];
 const defPill=(key,name,opp)=>{ const u=unitRow(key,opp), T=D.model&&D.model.units&&D.model.units.tables&&D.model.units.tables[key];
   if(!u) return `<span data-pe-def="${esc(key)}">${esc(T&&T.label?String(T.label):name)}: <b>–</b></span>`;
-  return `<span data-pe-def="${esc(key)}" title="${esc(`${opp} ${u.name} on the ELO Ratings tab: ${u.elo}, ${ordinal(u.rank)} of ${u.n}${u.carried?`, carried from ${u.from}`:''}`)}">${esc(u.name)}: <b>${esc(u.elo)} · ${ordinal(u.rank)} of ${u.n}</b>${u.carried?` <small>carried from ${esc(u.from)}</small>`:''}</span>`; };
+  return `<span data-pe-def="${esc(key)}" title="${esc(`${opp} ${u.name} on the ELO Ratings tab: Elo ${u.elo}, ${ordinal(u.rank)} of ${u.n}${u.carried?`, carried from ${u.from}`:''}`)}">${esc(u.name)}: <b>${esc(u.elo)} · ${ordinal(u.rank)} of ${u.n}</b>${u.carried?` <small>carried from ${esc(u.from)}</small>`:''}</span>`; };
 /* a player's window, opened from his row in the rankings: his place this season, then the
    coming game, a row a leg (faded where its Elo part has not held up season by season, and not used for Elo picks):
    since 29 October 2026 the Elo-adjusted average's breakdown, his average, the projection with no Elo terms (Base), the
@@ -12376,7 +12376,7 @@ function positions(P,g,F){
     return `<span class="gs-pl${o?' gs-off':''}" data-pid="${esc(x.pid)}" data-team="${esc(t)}" data-grp="${esc(e.group)}"><span class="gs-pn">${rk?shield(e.se):''}${nameBox(x.pid,e.name)}</span>
       <span class="gs-pst">${stat}</span>${o?`<small class="gs-outw">${esc(o)}</small>`:''}</span>`; };
   /* each defensive group's club rank in its table (defRow) at either end of its header, the better of the two marked */
-  const unitEnd=(t,grp,r,cls,b)=>r?`<span class="gs-ur ${cls}">${V(`<b>${ordinal(r.rank)}</b> of ${r.n}`,b,` data-gs-def="${esc(t)}:${grp}" data-gs-table="${esc(r.key)}" title="${esc(`${t} ${r.name} on the ELO Ratings tab: ${r.elo}, ${ordinal(r.rank)} of ${r.n}${r.carried?`, carried from ${r.from}`:''}`)}"`)}</span>`:`<span class="gs-ur ${cls}"></span>`;
+  const unitEnd=(t,grp,r,cls,b)=>r?`<span class="gs-ur ${cls}">${V(`<b>${ordinal(r.rank)}</b> of ${r.n}`,b,` data-gs-def="${esc(t)}:${grp}" data-gs-table="${esc(r.key)}" title="${esc(`${t} ${r.name} on the ELO Ratings tab: Elo ${r.elo}, ${ordinal(r.rank)} of ${r.n}${r.carried?`, carried from ${r.from}`:''}`)}"`)}</span>`:`<span class="gs-ur ${cls}"></span>`;
   const panels={off:'',def:'',k:''};
   for(const grp of groups){
     const xa=LA&&LA.by[grp]||[], xh=LH&&LH.by[grp]||[], n=Math.max(xa.length,xh.length);

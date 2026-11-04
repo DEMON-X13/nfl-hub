@@ -885,7 +885,7 @@ const defRowOwn = (MO, grp, t) => { const U = MO && MO.units, k = DEF_TABLE_OWN[
   const pr = U.params || {}, from = pr.carry && pr.carry_from != null ? pr.carry_from : null;
   return { key: k, name: String(meta.label), elo: v.elo, rank: v.rank, n: Object.keys(T).length, carried: !!v.carried && from != null, from }; };
 const defNameOwn = (MO, grp) => { const k = DEF_TABLE_OWN[grp][0], m = MO && MO.units && MO.units.tables && MO.units.tables[k]; return m && m.label ? String(m.label) : DEF_TABLE_OWN[grp][1]; };
-const defTitleOwn = (r, t) => `${t} ${r.name} on the ELO Ratings tab: ${r.elo}, ${ordOwn(r.rank)} of ${r.n}${r.carried ? `, carried from ${r.from}` : ''}`;
+const defTitleOwn = (r, t) => `${t} ${r.name} on the ELO Ratings tab: Elo ${r.elo}, ${ordOwn(r.rank)} of ${r.n}${r.carried ? `, carried from ${r.from}` : ''}`;
 /* a player's window's three pills against the smoke's reading for his opponent: each its table's key in order, its words
    ("Pass Rush: 1580 · 5th of 32", "carried from 2025" after it where so, "Run Defense: –" with no row) and its title */
 const defPillsBad = (view, MO, opp) => { const sp = view ? [...view.querySelectorAll('.pe-pl-def > span')] : [], bad = [];

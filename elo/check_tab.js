@@ -991,7 +991,7 @@ async function v2Mm(MU, lab) {
         if (tr) { tr.click(); await wait(20);
           chk(txt(d.querySelector('#pePlView .pe-begun')) === 'This game has kicked off.' && !d.querySelector('#pePlView .pe-note') && !eloGone(d.getElementById('pePlView')),
             `${r.name}'s window does not say "This game has kicked off." alone, or explains its stats: ${txt(d.querySelector('#pePlView .pe-begun'))} ${eloGone(d.getElementById('pePlView'))}`);
-          d.getElementById('pePlClose').click(); await wait(10); }
+          const cl = d.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } }
       } else notes.push('no ranked player in the first game with a mismatch: the window\'s kicked-off note is not checked');
       /* every game over: no card at all */
       w.__clock.now = 1e12; w.renderSlate(); await wait(20);
@@ -1025,12 +1025,12 @@ async function v2Mm(MU, lab) {
     const row = [...d.querySelectorAll('#peBody tr.pe-plrow')].find(tr => tr.dataset.pePl === top.id);
     if (row) { row.click(); await wait(20);
       chk(txt(d.querySelector('#pePlView .pe-sub')) === `Not expected to play: ${MU.out[top.id]}.`, 'his window does not give the build\'s reason, in a few words: ' + txt(d.getElementById('pePlView')).slice(0, 160));
-      d.getElementById('pePlClose').click(); await wait(10); }
+      { const cl = d.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } } }
     const say = async (r, want, what) => { const tr = r && [...d.querySelectorAll('#peBody tr.pe-plrow')].find(x => x.dataset.pePl === r.id);
       if (!tr) { notes.push(`no receiver shown to check the window's "${what}" line on`); return; }
       tr.click(); await wait(20);
       chk(txt(d.querySelector('#pePlView .pe-sub')) === want && !eloGone(d.getElementById('pePlView')), `${r.name}'s window does not say "${want}" alone: ` + txt(d.getElementById('pePlView')).slice(0, 200));
-      d.getElementById('pePlClose').click(); await wait(10); };
+      { const cl = d.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } } };
     if (inact) { w.eval('S').inactive[inact.id] = { week: +MU.week, status: 'Out' }; await say(inact, `Ruled out for week ${MU.week}.`, 'ruled out'); delete w.eval('S').inactive[inact.id]; }
     await say(gone, `No matchup for week ${MU.week}.`, 'no matchup');
   }
@@ -1065,7 +1065,7 @@ async function v2Mm(MU, lab) {
         if (c.join('|') !== exp.join('|') || x.classList.contains('pe-weak') === !!(f && f.trusted === true)) bad.push(`${st}: ${c.join(' | ')}${x.classList.contains('pe-weak') ? ' (faded)' : ''}, not ${exp.join(' | ')}${f && f.trusted === true ? '' : ' (faded)'}`); });
       if (!txt(view.querySelector('h3')).includes(v.opp)) bad.push(`it does not name his opponent, ${v.opp}`);
       chk(!bad.length && !eloGone(view), `${r.name}'s window does not draw the Elo-adjusted average's breakdown, a row a leg: ${bad.slice(0, 3).join('; ') || eloGone(view)}`);
-      d.getElementById('pePlClose').click(); await wait(10); };
+      { const cl = d.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } } };
     await held('WR', 'receiver'); await held('K', 'kicker');
     { const MUo = JSON.parse(JSON.stringify(MU0)); delete MUo.avg; delete MUo.avg_ref; delete MUo.avg_fit;
       const { w: wo, d: dO } = page(MUo); await wait(60);
@@ -1075,7 +1075,7 @@ async function v2Mm(MU, lab) {
       else { tr.click(); await wait(20);
         const view = dO.getElementById('pePlView'), head = [...view.querySelectorAll('thead th')].map(txt).join('|'), n = view.querySelectorAll('tbody tr').length, wantN = MUo.stats.WR.filter(st => MUo.players[r.id].stats[st]).length;
         chk(head === 'Stat|Recent form|Elo matchup|Projection' && n === wantN, `on a file from before the Elo-adjusted averages, ${r.name}'s window is not the matchup formula's as before: ${head}, ${n} rows of ${wantN}`);
-        dO.getElementById('pePlClose').click(); await wait(10); } } }
+        { const cl = dO.getElementById('pePlClose'); if (cl) { cl.click(); await wait(10); } } } } }
 
   /* ---- (November 2026, the owner's call "Switch to ELO tab tables") a player's window ranks his opponent's defence on the
      ELO Ratings tab's own tables: three pills, Pass Rush, Run Defense and Pass Defense in that order (where the defensive
@@ -1096,7 +1096,7 @@ async function v2Mm(MU, lab) {
       const v = T[t]; if (!v || v.rank == null) return null; const pr = U.params || {}, from = pr.carry && pr.carry_from != null ? pr.carry_from : null;
       return { name: String(meta.label), elo: v.elo, rank: v.rank, n: Object.keys(T).length, carried: !!v.carried && from != null, from }; };
     const wantC = (Mo, opp) => DEF_C.map(([k, nm]) => { const r = rowC(Mo, k, opp), meta = Mo && Mo.units && Mo.units.tables && Mo.units.tables[k];
-      return r ? [k, `${r.name}: ${r.elo} · ${ordC(r.rank)} of ${r.n}${r.carried ? ` carried from ${r.from}` : ''}`, `${r.elo} · ${ordC(r.rank)} of ${r.n}`, `${opp} ${r.name} on the ELO Ratings tab: ${r.elo}, ${ordC(r.rank)} of ${r.n}${r.carried ? `, carried from ${r.from}` : ''}`]
+      return r ? [k, `${r.name}: ${r.elo} · ${ordC(r.rank)} of ${r.n}${r.carried ? ` carried from ${r.from}` : ''}`, `${r.elo} · ${ordC(r.rank)} of ${r.n}`, `${opp} ${r.name} on the ELO Ratings tab: Elo ${r.elo}, ${ordC(r.rank)} of ${r.n}${r.carried ? `, carried from ${r.from}` : ''}`]
         : [k, `${meta && meta.label ? String(meta.label) : nm}: –`, '–', null]; });
     /* the table ranked again by its rule: one more than the rated clubs (a game, or carried) above on the Elo shown; a
        club with no rating after every rated one */
@@ -1119,28 +1119,35 @@ async function v2Mm(MU, lab) {
       return out; };
     const { w: w0 } = page(MU0); await wait(60); const two = shown(MU0, w0);
     if (!two.length) notes.push('no receiver shown with a matchup this week: the window\'s defence tables are not checked');
-    else if (!rowC(M, 'pass_def', entryOwn(MU0, two[0].id).opp)) notes.push('no team rating yet, or no Pass Defense row for the first receiver\'s opponent: the window\'s defence tables held on the real files alone');
-    else {
+    else if (!rowC(M, 'pass_def', entryOwn(MU0, two[0].id).opp)) {
+      /* before a team has a rating, a file without the position tables or no Pass Defense row for his opponent: the real
+         files' window alone, each pill as this check reads it (a dash where it finds no row), with no copy to plant on */
+      await hold(M, MU0, [two[0].id], 'the real files');
+      notes.push('no team rating yet, or no Pass Defense row for the first receiver\'s opponent: the window\'s defence tables held on the real files alone (no level or carried copy)');
+    } else {
       const r1 = two[0], X = entryOwn(MU0, r1.id).opp;
       await hold(M, MU0, [r1.id], 'the real files');
-      /* two clubs level on Pass Defense: X and Y (the club ranked furthest from X), a second receiver made to face Y */
-      const ML = JSON.parse(JSON.stringify(M)), TL = ML.units.pass_def, Y = Object.keys(TL).filter(t => t !== X && TL[t].games).sort((a, b) => Math.abs(TL[b].rank - TL[X].rank) - Math.abs(TL[a].rank - TL[X].rank) || a.localeCompare(b))[0];
-      TL[Y].elo = TL[X].elo; rerank(TL);
+      /* two clubs level on Pass Defense: X and Y (the rated club, by a game or carried, ranked furthest from X), a second
+         receiver made to face Y */
+      const ML = JSON.parse(JSON.stringify(M)), TL = ML.units.pass_def, Y = Object.keys(TL).filter(t => t !== X && (TL[t].games || TL[t].carried)).sort((a, b) => Math.abs(TL[b].rank - TL[X].rank) - Math.abs(TL[a].rank - TL[X].rank) || a.localeCompare(b))[0];
       const MUL = JSON.parse(JSON.stringify(MU0)), r2 = P.groups.WR.top.slice(0, 10).find(x => x.id !== r1.id && entryOwn(MUL, x.id) && !w0.eloRuledOut(x.id));
-      if (!Y || !r2) chk(false, `the window's defence tables: the level copy has nothing to stand on (${Y || 'no other club'}, ${r2 ? r2.id : 'no second receiver'})`);
-      else { const e2 = entryOwn(MUL, r2.id); e2.opp = Y; if (MUL.players && MUL.players[r2.id]) MUL.players[r2.id].opp = Y;
+      if (!Y || !r2) chk(false, `the window's defence tables: the level copy has nothing to stand on (${Y || 'no other rated club on Pass Defense'}, ${r2 ? r2.id : 'no second receiver'})`);
+      else { TL[Y].elo = TL[X].elo; rerank(TL);
+        const e2 = entryOwn(MUL, r2.id); e2.opp = Y; if (MUL.players && MUL.players[r2.id]) MUL.players[r2.id].opp = Y;
         const above = Object.values(TL).filter(v => (v.games || v.carried) && v.elo > TL[X].elo).length;
         const o = await hold(ML, MUL, [r1.id, r2.id], `${X} and ${Y} level on Pass Defense`);
         chk(TL[X].rank === TL[Y].rank && TL[X].rank === above + 1 && o[r1.id] && o[r2.id] && o[r1.id].got[2] === o[r2.id].got[2] && o[r1.id].got[2].includes(`${ordC(above + 1)} of`),
           `with ${X} and ${Y} level on Pass Defense at ${TL[X].elo}, the two windows read ${o[r1.id] ? o[r1.id].got[2] : '?'} and ${o[r2.id] ? o[r2.id].got[2] : '?'}, not the one rank ${ordC(above + 1)}`); }
       /* Run Defense taken out whole; X carried on Pass Rush and with no Pass Defense row */
       const MX = JSON.parse(JSON.stringify(M)); delete MX.units.run_def; if (MX.units.tables) delete MX.units.tables.run_def;
-      Object.assign(MX.units.pass_rush[X], { games: 0, carried: true }); delete MX.units.pass_def[X];
-      if (!MX.units.params || MX.units.params.carry == null || MX.units.params.carry_from == null) MX.units.params = Object.assign({}, MX.units.params, { carry: 0.42, carry_from: (+MX.units.season || 2026) - 1 });
-      const o = await hold(MX, MU0, [r1.id], 'Run Defense taken out');
-      const g = o[r1.id] ? o[r1.id].got : [];
-      chk(g[1] === 'Run Defense: –' && g[2] === 'Pass Defense: –' && / carried from \d{4}$/.test(g[0] || '') && / of 32 /.test(g[0] + ' '),
-        `with Run Defense taken out and ${X} carried on Pass Rush with no Pass Defense row, the window reads ${g.join(' | ')}`);
+      if (!MX.units.pass_rush || !MX.units.pass_rush[X]) chk(false, `the window's defence tables: the carried copy has nothing to stand on (no Pass Rush row for ${X})`);
+      else {
+        Object.assign(MX.units.pass_rush[X], { games: 0, carried: true }); delete MX.units.pass_def[X];
+        if (!MX.units.params || MX.units.params.carry == null || MX.units.params.carry_from == null) MX.units.params = Object.assign({}, MX.units.params, { carry: 0.42, carry_from: (+MX.units.season || 2026) - 1 });
+        const o = await hold(MX, MU0, [r1.id], 'Run Defense taken out');
+        const g = o[r1.id] ? o[r1.id].got : [], nPR = Object.keys(MX.units.pass_rush).length;
+        chk(g[1] === 'Run Defense: –' && g[2] === 'Pass Defense: –' && / carried from \d{4}$/.test(g[0] || '') && (g[0] || '').includes(` of ${nPR} carried from `),
+          `with Run Defense taken out and ${X} carried on Pass Rush with no Pass Defense row, the window reads ${g.join(' | ')}`); }
       /* and no league.defs read: the same window on a matchups file whose league table is emptied and every block's units
          moved draws the same three pills */
       const MUz = JSON.parse(JSON.stringify(MU0)); if (MUz.league) MUz.league.defs = {}; for (const v of Object.values(MUz.players || {})) if (v.opp_def) v.opp_def = { DL: 1, LB: 1, DB: 1 };
