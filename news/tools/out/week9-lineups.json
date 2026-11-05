@@ -211,7 +211,7 @@
   },
   "CIN": {
    "kick": "2026-11-08T14:30Z",
-   "built_at": "2026-11-05T10:44:28.299Z",
+   "built_at": "2026-11-05T21:15:09.807Z",
    "units": {
     "qb": [
      {
@@ -308,8 +308,7 @@
      {
       "id": "00-0038549",
       "n": "DJ Turner II",
-      "pos": "CB",
-      "q": "questionable: heel, not practising"
+      "pos": "CB"
      }
     ]
    }
@@ -839,7 +838,7 @@
   },
   "NYJ": {
    "kick": "2026-11-08T18:00Z",
-   "built_at": "2026-11-05T10:44:28.299Z",
+   "built_at": "2026-11-05T21:15:09.807Z",
    "units": {
     "qb": [
      {
@@ -903,16 +902,14 @@
      {
       "id": "00-0040736",
       "n": "Mason Taylor",
-      "pos": "TE",
-      "q": "questionable: back"
+      "pos": "TE"
      }
     ],
     "front": [
      {
       "id": "00-0041026",
       "n": "David Bailey",
-      "pos": "OLB",
-      "q": "questionable: groin"
+      "pos": "OLB"
      },
      {
       "id": "00-0037083",
@@ -1481,7 +1478,7 @@
   },
   "NYG": {
    "kick": "2026-11-08T18:00Z",
-   "built_at": "2026-11-05T10:44:28.299Z",
+   "built_at": "2026-11-05T21:15:09.807Z",
    "units": {
     "qb": [
      {
@@ -1536,7 +1533,8 @@
      {
       "id": "00-0039337",
       "n": "Malik Nabers",
-      "pos": "WR"
+      "pos": "WR",
+      "q": "questionable: undisclosed"
      },
      {
       "id": "00-0037838",
@@ -2316,7 +2314,7 @@
   },
   "GB": {
    "kick": "2026-11-08T21:25Z",
-   "built_at": "2026-11-05T10:44:28.299Z",
+   "built_at": "2026-11-05T21:15:09.807Z",
    "units": {
     "qb": [
      {
@@ -2415,7 +2413,7 @@
       "id": "00-0035133",
       "n": "Keisean Nixon",
       "pos": "CB",
-      "q": "questionable: groin"
+      "q": "questionable: groin, not practising"
      }
     ]
    }
@@ -2743,7 +2741,7 @@
   },
   "TB": {
    "kick": "2026-11-09T01:20Z",
-   "built_at": "2026-11-05T10:44:28.299Z",
+   "built_at": "2026-11-05T21:15:09.807Z",
    "units": {
     "qb": [
      {
@@ -2756,7 +2754,8 @@
      {
       "id": "00-0036406",
       "n": "Tristan Wirfs",
-      "pos": "T"
+      "pos": "T",
+      "q": "questionable: toe"
      },
      {
       "id": "00-0036132",
@@ -2788,11 +2787,15 @@
      {
       "id": "00-0036919",
       "n": "Kenny Gainwell",
-      "pos": "RB",
-      "q": "questionable: hip"
+      "pos": "RB"
      }
     ],
     "rec": [
+     {
+      "id": "00-0040129",
+      "n": "Emeka Egbuka",
+      "pos": "WR"
+     },
      {
       "id": "00-0033921",
       "n": "Chris Godwin Jr.",
@@ -2802,11 +2805,6 @@
       "id": "00-0038129",
       "n": "Cade Otton",
       "pos": "TE"
-     },
-     {
-      "id": "00-0041048",
-      "n": "Ted Hurst III",
-      "pos": "WR"
      }
     ],
     "front": [
