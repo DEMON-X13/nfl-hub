@@ -183,7 +183,8 @@ for rel, kind in G.UNITS:
 need = {'props/build/test_apply_espn.py', 'props/build/test_espn_read.js', 'props/build/test_lock_runs.py', 'props/build/test_espn_ids.py',
         'props/build/test_dk_links.py', 'props/build/test_unmatched.py', 'props/build/test_who_played.py', 'props/build/test_fetch.py',
         'props/build/test_audit_gate.py', 'lib/test_netfetch.py', 'lib/test_netfetch.js', 'nflbets/build/test_dkname.js', 'nflbets/build/smoke_admin.js',
-        'nflbets/build/smoke_live.js', 'props/build/test_espn_archive.py', 'props/research/propmodel/test_td_shadow.py'}
+        'nflbets/build/smoke_live.js', 'props/build/test_espn_archive.py', 'props/research/propmodel/test_td_shadow.py',
+        'elo/test_parity.py', 'elo/test_fetch.py'}
 case(need <= {r for r, _ in G.UNITS}, f'unit tests left out of job C: {sorted(need - {r for r, _ in G.UNITS})}')
 # smoke_live.js (the parlay card's Pull from DraftKings, and X Parlays) runs in job C as node, and a change to the card
 # alone (nflbets/build/card.html, PAGE) is one job C runs on, so a regression in the paid-call path cannot merge unchecked

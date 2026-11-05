@@ -14,7 +14,24 @@ which Overall Offense and Overall Defense carry into the finished one, is read a
 season's file and required, before the new season is under way and after while fewer than
 RANK_TEAMS clubs have a rated game in it, and not asked for at all once that many have (the
 rankings, and the units, are then on the new season, which carries the one before it alone);
-none is asked for before FIRST (2012), whose season starts from 0.
+none is asked for before FIRST (2012), whose season starts from 0. And THE INPUTS' sources: PFR's snap counts from
+SNAP_FIRST (2013), a finished season's required, listed in past.lst and read from the cache on a second run (what elo.yml
+keeps), a 404 on one refusing the run; the season to come's not required ("no file yet", asked once), nor the season in
+play's in the first SNAP_DUE (72) hours after its first kickoff, and from then required (a 404 refusing the run, with
+nothing written), and refused where it lacks a club of a regular-season game final SNAP_DUE hours ago (read where it
+carries both, and where the game is final for less); never listed, and asked for again on every run; nflverse's players.csv
+(the snap counts' PFR ids) required (a 404, an empty file, one with no rows, one without its pfr_id column and one placing
+no PFR id each refuse the run with nothing written and no past.lst; two 500s and then the file are read), read fresh
+every run and never listed; and player stats without a volume column the inputs read refusing the run with its name.
+And the wind forecasts (avg_weather) on the local server: the National Weather Service's points and hourly answers in
+the US and Open-Meteo's abroad read, a dome asked nothing, each request asked once with a User-Agent naming the site and
+no address; a 500 or a 503 (which a download would try again) and a 404 each calm with its source saying the forecast
+failed by its status, and a 200 whose body is not JSON (an HTML page, one with a doctype, an empty body, plain text) each
+calm with its source saying 'not JSON', in the site's own words (never netfetch's, which names nflverse's host), asked once
+and spending none of netfetch's retry budget (waits=()); an answer slower than the step's cap timed out within what is
+left of it, every game after calm and skipped, never asked, the step ending near the cap; and an answer trickled a byte
+at a time (each read inside netfetch's socket timeout, so only a wall-clock deadline ends it) given up at the cap the
+same way.
 
 And draft_slots (THE DRAFT START): nflverse's draft_picks.csv, required and read fresh every run.
 Served, every drafted player's (season, pick) by gsis id, an id in two drafts at the later, a row
@@ -31,11 +48,13 @@ import contextlib
 import gzip
 import http.server
 import io
+import json
 import os
 import shutil
 import sys
 import tempfile
 import threading
+import time
 import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -52,9 +71,11 @@ GAMES3 = ('season,game_id,game_type,week,gameday,gametime,home_team,away_team,ho
           '2012,2012_01_A_B,REG,1,2012-09-09,13:00,B,A,20,17\n'
           '2013,2013_01_A_B,REG,1,2013-09-08,13:00,B,A,24,21\n'
           '2014,2014_01_A_B,REG,1,2014-09-07,13:00,B,A,,\n')
-CSV = 'season,week,game_id,position,player_id,team\n{y},1,{y}_01_A_B,QB,00-1,A\n'
+CSV = 'season,week,game_id,position,player_id,team,targets,carries,attempts,receiving_air_yards\n{y},1,{y}_01_A_B,QB,00-1,A,0,2,30,0\n'
+SNAPS = 'season,week,team,pfr_player_id,offense_snaps,offense_pct\n{y},1,A,AaaaAa00,60,1.0\n'
+PLAYERS = 'gsis_id,pfr_id,display_name\n00-1,AaaaAa00,A Quarterback\n'
 PBP = ','.join(B.PBP_COLS) + '\n' + ','.join(['{y}_01_A_B', 'B', 'A', 'B'] + ['0'] * (len(B.PBP_COLS) - 4)) + '\n'
-files, plan, hits = {}, {}, {}
+files, plan, hits, delay, heads, trickle = {}, {}, {}, {}, {}, {}
 
 
 class H(http.server.BaseHTTPRequestHandler):
@@ -64,15 +85,33 @@ class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         name = self.path.strip('/')
         hits[name] = hits.get(name, 0) + 1
+        heads[name] = dict(self.headers)
+        if name in delay:
+            time.sleep(delay[name])                 # an answer slower than the forecast step's cap
+        if name in trickle:                         # an answer a byte at a time: every read inside the socket's timeout
+            try:
+                self.send_response(200)
+                self.send_header('Content-Length', '100000')
+                self.end_headers()
+                for _ in range(int(trickle[name] / 0.25)):
+                    self.wfile.write(b' ')
+                    self.wfile.flush()
+                    time.sleep(0.25)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
         seq = plan.get(name, [200])
         code = seq.pop(0) if len(seq) > 1 else seq[0]
         body = files.get(name) if code == 200 else b''
         if body is None:
             code, body = 404, b''
-        self.send_response(code)
-        self.send_header('Content-Length', str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(code)
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass                                    # the client gave up on a slow answer
 
 
 srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), H)
@@ -82,6 +121,8 @@ B.GAMES_URL = base + 'games.csv'
 for k, stem in (('STATS_URL', 'stats_player_week'), ('ROSTER_URL', 'roster'), ('INJ_URL', 'injuries'), ('DC_URL', 'depth_charts')):
     setattr(B, k, base + stem + '_{y}.csv')
 B.PBP_URL = base + 'play_by_play_{y}.csv.gz'
+B.SNAP_URL = base + 'snap_counts_{y}.csv'
+B.PLAYERS_URL = base + 'players.csv'
 fails = []
 
 
@@ -94,11 +135,14 @@ def check(ok, what):
 def world(live=False, three=False):
     files.clear(); plan.clear(); hits.clear()
     files['games.csv'] = (GAMES3 if three else GAMES).encode()
+    files['players.csv'] = PLAYERS.encode()
     ys = (2012, 2013, 2014) if three else (2012, 2013)      # the last one the season to come
     for y in (ys if live else ys[:-1]):
         for stem in ('stats_player_week', 'depth_charts', 'injuries', 'roster'):
             files[f'{stem}_{y}.csv'] = CSV.format(y=y).encode()
         files[f'play_by_play_{y}.csv.gz'] = gzip.compress(PBP.format(y=y).encode())
+        if y >= B.SNAP_FIRST:                                # PFR's snap counts begin in 2013 (THE INPUTS)
+            files[f'snap_counts_{y}.csv'] = SNAPS.format(y=y).encode()
 
 
 def run(now='2013-08-01T12:00:00+00:00', cache=None):
@@ -125,6 +169,27 @@ check(past == ['depth_charts_2012.csv', 'injuries_2012.csv', 'stats_player_week_
 check('no depth_charts file for 2013 yet' in log, 'a 404 on the season to come is "no file yet", not a refusal')
 check(hits.get('depth_charts_2013.csv') == 1, 'and that 404 was asked for once, never tried again')
 check(hits.get('play_by_play_2011.csv.gz') is None, 'no play-by-play is asked for before FIRST (2012 starts from 0)')
+check(hits.get('snap_counts_2012.csv') is None and 'no snap_counts file for 2013 yet' in log and hits.get('snap_counts_2013.csv') == 1,
+      'the snap counts (THE INPUTS) begin at SNAP_FIRST, 2013; the season to come\'s 404 is "no file yet", not a refusal')
+check(hits.get('players.csv') == 1, 'players.csv (the snap counts\' PFR ids) is read')
+
+world(); del files['players.csv']
+err, past, log, _ = run()
+check(err is not None and 'players' in err and past is None,
+      f"players.csv is required: a 404 on it refuses the run, nothing written and no past.lst: {err!r}"[:200])
+for what, body in (('with no rows', 'gsis_id,pfr_id,display_name\n'), ('empty', ''), ('without its pfr_id column', 'gsis_id,display_name\n00-1,A Quarterback\n'),
+                   ('placing no PFR id', 'gsis_id,pfr_id,display_name\n00-1,,A Quarterback\n')):
+    world(); files['players.csv'] = body.encode()
+    err, past, log, _ = run()
+    check(err is not None and 'players' in err and past is None,
+          f"players.csv {what} refuses the run, nothing written and no past.lst: {err!r}"[:200])
+world(); plan['players.csv'] = [500, 500, 200]
+err, past, log, _ = run()
+check(err is None and hits['players.csv'] == 3, "two 500s on players.csv and then the file: read (lib/netfetch.py's tries), the run goes on")
+world(); files['stats_player_week_2012.csv'] = CSV.format(y=2012).replace(',receiving_air_yards', '').replace(',0\n', '\n').encode()
+err, past, log, _ = run()
+check(err is not None and 'receiving_air_yards' in err and past is not None,
+      f"player stats without a volume column THE INPUTS read refuse the run with its name (past.lst is written before): {err!r}"[:200])
 
 world(); plan['depth_charts_2012.csv'] = [500, 500, 500, 200]
 err, past, log, _ = run()
@@ -144,8 +209,9 @@ world()
 err, past, log, cache = run()
 n = dict(hits)
 err, past, log, _ = run(cache=cache)
-check(err is None and hits.get('stats_player_week_2012.csv') == n['stats_player_week_2012.csv'] and hits['games.csv'] == n['games.csv'] + 1,
-      "a second run on the same cache reads the finished season from it and fetches games.csv again")
+check(err is None and hits.get('stats_player_week_2012.csv') == n['stats_player_week_2012.csv'] and hits['games.csv'] == n['games.csv'] + 1
+      and hits['players.csv'] == n['players.csv'] + 1,
+      "a second run on the same cache reads the finished season from it and fetches games.csv and players.csv again")
 
 with open(os.path.join(cache, 'depth_charts_2012.csv'), 'w') as f:
     f.write('"unterminated\n')
@@ -155,19 +221,60 @@ check(err is None and 'did not read' in log and hits['depth_charts_2012.csv'] ==
 shutil.rmtree(cache)
 
 world(live=True)
-err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
+err, past, log, cache = run(now='2013-09-12T12:00:00+00:00')
 check(err is None and past == ['depth_charts_2012.csv', 'injuries_2012.csv', 'play_by_play_2012.csv.gz', 'stats_player_week_2012.csv'],
-      f"once the season is under way last season's play-by-play is a finished season's file too, and 2013's never are: {past}")
+      f"once the season is under way last season's play-by-play is a finished season's file too, and 2013's never are (its snap counts among them): {past}")
+n = dict(hits)
+err, past, log, _ = run(now='2013-09-12T12:00:00+00:00', cache=cache)
+check(err is None and hits['snap_counts_2013.csv'] == n['snap_counts_2013.csv'] + 1,
+      "the season in play's snap counts are read fresh: a second run on the same cache asks for them again")
+shutil.rmtree(cache)
+# 2013's first kickoff is 8 September 17:00 UTC: under way (UNDER_WAY, 36 hours) from the 10th 05:00, its snap counts due
+# (SNAP_DUE, 72 hours) from the 11th 17:00
+check(B.SNAP_DUE == 72 and B.UNDER_WAY == 36, f'the fixtures stand on SNAP_DUE 72 and UNDER_WAY 36 ({B.SNAP_DUE}, {B.UNDER_WAY})')
+world(live=True); del files['snap_counts_2013.csv']
+err, past, log, _ = run(now='2013-09-11T12:00:00+00:00')
+check(err is None and 'no snap_counts file for 2013 yet' in log and hits['snap_counts_2013.csv'] == 1 and 'snap_counts_2013.csv' not in (past or []),
+      f"the season in play's snap counts are not required in the first {B.SNAP_DUE} hours after its first kickoff: a 404 is \"no file yet\", asked once, never listed: {err!r}"[:200])
+world(live=True); del files['snap_counts_2013.csv']
+err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
+check(err is not None and 'snap_counts 2013' in err and past is None,
+      f"from then they are required: a 404 on them refuses the run, nothing written and no past.lst: {err!r}"[:200])
+world(live=True); plan['snap_counts_2013.csv'] = [500]
+err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
+check(err is not None and 'snap_counts 2013' in err and past is None, f"and so does a 500 every time: {err!r}"[:200])
+FINAL13 = GAMES.replace('2013,2013_01_A_B,REG,1,2013-09-08,13:00,B,A,,', '2013,2013_01_A_B,REG,1,2013-09-08,13:00,B,A,24,21')
+world(live=True); files['games.csv'] = FINAL13.encode()
+err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
+check(err is not None and 'snap_counts 2013' in err and 'lacks 1' in err and '2013_01_A_B (B)' in err and past is None,
+      f"a file that lacks a club of a regular-season game final over {B.SNAP_DUE} hours ago (B, the home side) refuses the run: {err!r}"[:240])
+world(live=True); files['games.csv'] = FINAL13.encode(); files['snap_counts_2013.csv'] = (SNAPS + '2013,1,B,BbbbBb00,58,0.97\n').format(y=2013).encode()
+err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
+check(err is None, f"one carrying both clubs is read: {err!r}"[:200])
+world(live=True); files['games.csv'] = FINAL13.encode()
+err, past, log, _ = run(now='2013-09-11T12:00:00+00:00')
+check(err is None, f"and a game final for less than {B.SNAP_DUE} hours is not held: {err!r}"[:200])
 
 world(three=True)
 err, past, log, _ = run(now='2014-08-01T12:00:00+00:00')
 check(err is None and past == ['depth_charts_2012.csv', 'depth_charts_2013.csv', 'injuries_2012.csv', 'injuries_2013.csv',
-                               'play_by_play_2012.csv.gz', 'stats_player_week_2012.csv', 'stats_player_week_2013.csv'],
-      f"before 2014 is under way 2012's play-by-play (carried into 2013, the season in play) is a finished season's file, and 2013's, read fresh, is not: {past}")
+                               'play_by_play_2012.csv.gz', 'snap_counts_2013.csv', 'stats_player_week_2012.csv', 'stats_player_week_2013.csv'],
+      f"before 2014 is under way 2012's play-by-play (carried into 2013, the season in play) is a finished season's file, and 2013's, read fresh, is not; 2013's snap counts are a finished season's: {past}")
+world(three=True)
+err, past, log, cache = run(now='2014-08-01T12:00:00+00:00')
+n = dict(hits)
+err, past, log, _ = run(now='2014-08-01T12:00:00+00:00', cache=cache)
+check(err is None and hits.get('snap_counts_2013.csv') == n['snap_counts_2013.csv'] and 'snap_counts_2013.csv' in (past or []),
+      "a finished season's snap counts are kept: a second run on the same cache reads them from it (what elo.yml keeps through past.lst)")
+shutil.rmtree(cache)
+world(three=True); del files['snap_counts_2013.csv']
+err, past, log, _ = run(now='2014-08-01T12:00:00+00:00')
+check(err is not None and 'snap_counts 2013' in err and past is None,
+      f"a 404 on a finished season's snap counts refuses the run (it is required): {err!r}"[:200])
 world(three=True, live=True)
 err, past, log, _ = run(now='2014-09-12T12:00:00+00:00')
 check(err is None and past == ['depth_charts_2012.csv', 'depth_charts_2013.csv', 'injuries_2012.csv', 'injuries_2013.csv',
-                               'play_by_play_2012.csv.gz', 'play_by_play_2013.csv.gz', 'stats_player_week_2012.csv', 'stats_player_week_2013.csv'],
+                               'play_by_play_2012.csv.gz', 'play_by_play_2013.csv.gz', 'snap_counts_2013.csv', 'stats_player_week_2012.csv', 'stats_player_week_2013.csv'],
       f"once 2014 is under way both seasons' play-by-play are finished seasons' files (2013's is carried into 2014, 2012's into 2013 while it stays the rankings'): {past}")
 world(three=True); del files['play_by_play_2012.csv.gz']
 err, past, log, _ = run(now='2014-08-01T12:00:00+00:00')
@@ -177,8 +284,8 @@ check(err is not None and 'play_by_play 2012' in err and past is None,
 
 def clubs(n, y=2014):
     """a season's player stats with a quarterback's rated game for each of n clubs"""
-    rows = ''.join(f'{y},1,{y}_01_A_B,QB,00-{i},T{i},30\n' for i in range(n))
-    return ('season,week,game_id,position,player_id,team,attempts\n' + rows).encode()
+    rows = ''.join(f'{y},1,{y}_01_A_B,QB,00-{i},T{i},30,0,0,0\n' for i in range(n))
+    return ('season,week,game_id,position,player_id,team,attempts,targets,carries,receiving_air_yards\n' + rows).encode()
 
 
 world(three=True, live=True); files['stats_player_week_2014.csv'] = clubs(B.RANK_TEAMS - 1)
@@ -287,6 +394,87 @@ for now, when, refused in (('2013-08-01T12:00:00+00:00', "38 days before 2013's 
     slots, err, _ = draft_run(DRAFT_HEAD + DRAFT_2012 + DRAFT_2013, now=now)
     check(err is None and slots.get('00-2') == (2013, 1), f"2013's draft with its ids {when}: read ({err!r})"[:200])
 check(B.PRESEASON_CALLS == 14, f'the fixtures stand 13 days inside and 38 outside PRESEASON_CALLS ({B.PRESEASON_CALLS})')
+
+print('elo/build.py the wind forecasts (THE INPUTS: avg_weather)')
+B.NWS_POINTS = base + 'points/{lat:.4f},{lon:.4f}'
+B.OPEN_METEO = base + 'om/{lat:.4f},{lon:.4f}'
+NOW = datetime.datetime(2025, 11, 4, 12, tzinfo=datetime.timezone.utc)
+KICK = NOW + datetime.timedelta(days=2, hours=5)
+WX = B.pd.DataFrame([{'game_id': 'buf', 'stadium_id': 'BUF00', 'roof': 'outdoors', 'kick': KICK},
+                     {'game_id': 'lon', 'stadium_id': 'LON02', 'roof': 'outdoors', 'kick': KICK},
+                     {'game_id': 'det', 'stadium_id': 'DET00', 'roof': 'dome', 'kick': KICK},
+                     {'game_id': 'chi', 'stadium_id': 'CHI98', 'roof': 'outdoors', 'kick': KICK}])
+PTS = {sid: 'points/' + '{:.4f},{:.4f}'.format(*B.STADIUMS[sid][:2]) for sid in ('BUF00', 'CHI98')}
+OM = 'om/' + '{:.4f},{:.4f}'.format(*B.STADIUMS['LON02'][:2])
+
+
+def wx_world():
+    files.clear(); plan.clear(); hits.clear(); delay.clear(); heads.clear()
+    h0 = KICK.replace(minute=0)
+    per = lambda a, b, s: {'startTime': a.isoformat(), 'endTime': b.isoformat(), 'windSpeed': s}
+    for sid, name in PTS.items():
+        files[name] = json.dumps({'properties': {'forecastHourly': base + 'hourly/' + sid}}).encode()
+        files['hourly/' + sid] = json.dumps({'properties': {'periods': [per(h0, h0 + datetime.timedelta(hours=1), '11 to 16 mph')]}}).encode()
+    files[OM] = json.dumps({'hourly': {'time': [KICK.strftime('%Y-%m-%dT%H:00')], 'wind_speed_10m': [8.5]}}).encode()
+
+
+def wx_run():
+    left = N._budget['left']
+    t0 = time.monotonic()
+    with contextlib.redirect_stdout(io.StringIO()):
+        out = B.avg_weather(WX, NOW, False)
+    return out, time.monotonic() - t0, left - N._budget['left']
+
+
+wx_world()
+out, took, spent = wx_run()
+check(out['buf'] == (16.0, 'nws') and out['chi'] == (16.0, 'nws') and out['lon'] == (8.5, 'open-meteo') and out['det'] == (0.0, 'roof'),
+      f"served: the National Weather Service's hour at kickoff in the US, Open-Meteo's abroad, a dome calm with no request: {out}")
+check(all(hits.get(n) == 1 for n in list(PTS.values()) + ['hourly/BUF00', 'hourly/CHI98', OM]) and len(hits) == 5,
+      f'each request asked once, nothing for the dome: {hits}')
+check(all('nfl-hub' in (h.get('User-Agent') or '') and '@' not in (h.get('User-Agent') or '') for h in heads.values()),
+      f"every request names the site in its User-Agent, and no address: {sorted({h.get('User-Agent') for h in heads.values()})}")
+wx_world(); plan[PTS['BUF00']] = [500, 200]; plan[OM] = [503, 200]
+out, took, spent = wx_run()
+check(out['buf'] == (None, 'forecast failed: HTTP 500') and out['lon'] == (None, 'forecast failed: HTTP 503')
+      and out['chi'] == (16.0, 'nws'), f'a 500 or a 503 on a forecast is calm and says so by its status, the next game read all the same: {out}')
+check(hits[PTS['BUF00']] == 1 and hits[OM] == 1 and 'hourly/BUF00' not in hits and spent == 0,
+      f"a forecast is tried once (waits=()), though netfetch tries a download's 5xx again, and spends none of its retry budget: {hits}, {spent}")
+wx_world(); del files['hourly/BUF00']
+out, took, spent = wx_run()
+check(out['buf'] == (None, 'forecast failed: HTTP 404') and hits['hourly/BUF00'] == 1, f'a 404 on the hourly forecast: calm, said so, asked once: {out["buf"]}')
+# a body that is not JSON, in each way netfetch meets one: an HTML page (the usual body of an outage or a proxy's error)
+# and an empty body, which netfetch refuses itself with no status, and a plain-text body, which json.load refuses: each
+# 'not JSON', never 'no answer' (the second review of PR 3)
+for what, body in (('an HTML page', b'<html>busy</html>'), ('an HTML page with a doctype', b'  <!DOCTYPE html><title>502</title>'),
+                   ('an empty body', b''), ('a plain-text body', b'busy, try later')):
+    wx_world(); files['hourly/BUF00'] = body
+    out, took, spent = wx_run()
+    check(out['buf'] == (None, 'forecast failed: not JSON') and hits['hourly/BUF00'] == 1 and out['chi'] == (16.0, 'nws'),
+          f'{what} answered 200: calm, said "not JSON", asked once, the next game read all the same: {out["buf"]}')
+cap = B.WEATHER_CAP
+B.WEATHER_CAP = 2
+wx_world(); delay['hourly/BUF00'] = 4
+try:
+    out, took, spent = wx_run()
+finally:
+    B.WEATHER_CAP = cap
+check(out['buf'][0] is None and out['buf'][1].startswith('forecast failed') and out['lon'][1].startswith('forecast skipped')
+      and out['chi'][1].startswith('forecast skipped') and out['det'] == (0.0, 'roof') and OM not in hits and PTS['CHI98'] not in hits,
+      f'an answer slower than the step\'s cap (2 s here) times out within what is left of it, and every game after is calm, said so, never asked: {out}')
+check(took < 2 + 1.5, f'the step ends near its cap ({took:.1f} s for a cap of 2 s and an answer of 4 s)')
+check(all('nflverse' not in str(v[1]) for v in out.values()), f'no forecast\'s reason names nflverse\'s host: {sorted({str(v[1]) for v in out.values()})}')
+B.WEATHER_CAP = 2
+wx_world(); trickle['hourly/BUF00'] = 5
+try:
+    out, took, spent = wx_run()
+finally:
+    B.WEATHER_CAP = cap
+check(out['buf'] == (None, 'forecast failed: timed out') and out['lon'][1].startswith('forecast skipped') and out['chi'][1].startswith('forecast skipped')
+      and out['det'] == (0.0, 'roof') and took < 2 + 1.5,
+      f'an answer trickled a byte every quarter second (each read inside the socket timeout) is given up at the step\'s cap of 2 s ({took:.1f} s), the rest skipped: {out}')
+trickle.clear(); time.sleep(3.5)                     # the server's trickle ends before it shuts down
+check(B.WEATHER_CAP == 90 and B.WEATHER_TIMEOUT == 15, f'the job\'s cap is 90 s and a request\'s timeout 15 s ({B.WEATHER_CAP}, {B.WEATHER_TIMEOUT})')
 
 print(f'{len(fails)} failures')
 srv.shutdown()

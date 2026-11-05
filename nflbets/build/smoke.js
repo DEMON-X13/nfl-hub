@@ -173,13 +173,77 @@ const leanTxtOwn = (v, stat) => { const sh = Math.abs(v).toFixed(stat === 'any_t
 const VS_NAME_OWN = { def: 'Overall Defense', run_def: 'Run Defense', pass_def: 'Pass Defense' }, VS_SHORT_OWN = { def: 'Overall D', run_def: 'Run D', pass_def: 'Pass D' };
 const ordS = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
 /* (the review of 29 October 2026) the title gives the Elo part's split, his Elo given his average and the defence, the
-   file's elo_x and def_x to a hundredth, whose product points the part's way */
+   file's elo_x and def_x to a hundredth, whose product points the part's way; on a leg reading THE INPUTS (an in_x on the
+   stat) his Elo given his average and inputs (the review of 4 November 2026) */
 const mulOwnS = x => isFinite(x) ? (+x).toFixed(2) : '–';
 const leanNoteOwn = (M, pid, st) => { const m = muLegOwn(M, pid, st); if (!m) return null;
   const t = leanTxtOwn(m.n, st), q = m.vs, vs = q && VS_SHORT_OWN[q.table] && q.rank != null && m.v.opp ? `vs ${m.v.opp} ${VS_SHORT_OWN[q.table]} #${q.rank}` : '';
   const a = m.v.stats[st];
   return { n: m.n, t: `Elo ${t}${vs ? ' · ' + vs : ''}`, vs,
-    title: vs ? `His Elo for his average (×${mulOwnS(a.elo_x)}) and the ${m.v.opp} ${VS_NAME_OWN[q.table]} (${q.elo}, ${ordS(q.rank)}, ×${mulOwnS(a.def_x)}) move his projection ${t}` : `His Elo against the defenders he faces moves his projection ${t}` }; };
+    title: vs ? `His Elo for his average${a.in_x && typeof a.in_x === 'object' ? ' and inputs' : ''} (×${mulOwnS(a.elo_x)}) and the ${m.v.opp} ${VS_NAME_OWN[q.table]} (${q.elo}, ${ordS(q.rank)}, ×${mulOwnS(a.def_x)}) move his projection ${t}` : `His Elo against the defenders he faces moves his projection ${t}` }; };
+/* (4 November 2026) a player's window on the Elo-adjusted averages, the smoke's own reading of a matchups file M (the page's
+   playerModal, muInKinds and muInLine are never read): a row a leg of his position in the file's order, his average, then
+   THE INPUTS (elo/build.py, the owner's "Merge the inputs") where the position's legs read them (an in: term in
+   avg_fit.legs): a column for each kind they read, ×Vol (his snap share and shares), ×Game (implied points, spread, wind)
+   and ×Q (a filed Questionable), in that order, each cell the leg's in_x of that kind to a hundredth or a dash where it
+   has none, led by Typical (since the review of 4 November 2026, when in_x moved onto the twin's own coefficients: the
+   twin at a typical starter's inputs, no_elo over the leg's multipliers that are numbers, a dash where it has none, so
+   Typical × the multipliers is Base); then Base (the projection with no Elo terms, titled "Typical × his inputs" where he
+   has columns of them), the table he faces, the Elo part's split (×Elo his Elo given his average, and his inputs where he
+   has columns of them), the projection (titled Base × Def × Elo: the twin reads the same inputs) and its
+   Elo part; and under the table one line of what the inputs read for him (avg[pid].in), only the parts his position's
+   legs read, word for word ("Snap share 82% last game (usual 77%) · 29% of targets · 35% of air yards · implied 15.3 pts
+   · spread +10"; a spread as his club's line, minus when favoured; "wind 3 mph", "roof" or "no wind forecast" on a leg
+   reading the wind; whole percents; a value not a number leaving its part out). [] or what is wrong */
+const LBL_OWN = { passing_yards: 'Pass yds', passing_tds: 'Pass TD', attempts: 'Att', completions: 'Comp', passing_interceptions: 'INT', rushing_yards: 'Rush yds', carries: 'Carries',
+  receptions: 'Rec', receiving_yards: 'Rec yds', targets: 'Tgt', scrim_yards: 'Rush+rec', any_td: 'TDs', fg_made: 'FG made', kick_pts: 'Kick pts' };
+const numWinOwn = (x, st) => st === 'any_td' ? x.toFixed(2) : Math.abs(x) >= 10 ? x.toFixed(0) : x.toFixed(1);
+const IN_KIND_OWN = t => t === 'in:imp' || t === 'in:spr' || t === 'in:wind' ? 'game' : t === 'in:q' ? 'q' : 'vol';
+const IN_COL_OWN = { vol: '×Vol', game: '×Game', q: '×Q' };
+const IN_TITLE_OWN = { vol: "His snap share and his share of his club's targets, carries or air yards, against a typical starter's: Typical × his inputs gives Base",
+  game: "His club's implied points and spread (and the wind, on passing yards), against a typical starter's: Typical × his inputs gives Base",
+  q: 'Listed Questionable, against not listed: Typical × his inputs gives Base' };
+const TYP_TITLE_OWN = "His projection with no Elo terms at a typical starter's inputs";
+const typOwn = a => { const v = a && a.in_x && typeof a.in_x === 'object' ? Object.values(a.in_x).filter(x => typeof x === 'number' && Number.isFinite(x)) : [];
+  return v.length ? a.no_elo / v.reduce((x, y) => x * y, 1) : NaN; };
+const inTermsOwn = (M, g) => { const out = [];
+  if (muAvgOwn(M)) for (const [k, f] of Object.entries(M.avg_fit.legs)) if (k.split('|')[0] === g && f && Array.isArray(f.terms))
+    for (const t of f.terms) if (typeof t === 'string' && t.slice(0, 3) === 'in:' && !out.includes(t)) out.push(t);
+  return out; };
+const inKindsOwn = (M, g) => ['vol', 'game', 'q'].filter(k => inTermsOwn(M, g).some(t => IN_KIND_OWN(t) === k));
+const isNumOwn = x => typeof x === 'number' && Number.isFinite(x);
+const inLineOwn = (M, v, g) => { const I = v && v.in, T = inTermsOwn(M, g), out = [], keys = [], pc = x => `${Math.round(100 * x)}%`;
+  if (!I || typeof I !== 'object') return { text: '', keys };
+  const put = (k, t) => { keys.push(k); out.push(t); };
+  if ((T.includes('in:snap1r') || T.includes('in:snapL')) && (isNumOwn(I.snap1) || isNumOwn(I.snapL)))
+    put('snap', isNumOwn(I.snap1) ? 'Snap share ' + pc(I.snap1) + ' last game' + (isNumOwn(I.snapL) ? ' (usual ' + pc(I.snapL) + ')' : '') : 'Snap share usual ' + pc(I.snapL));
+  for (const [k, word] of [['tgt', 'targets'], ['car', 'carries'], ['ay', 'air yards']])
+    if ((T.includes('in:shL_' + k) || T.includes('in:shr_' + k)) && isNumOwn(I['sh_' + k + 'L'])) put(k, pc(I['sh_' + k + 'L']) + ' of ' + word);
+  if (T.includes('in:imp') && isNumOwn(I.implied)) put('implied', 'implied ' + I.implied.toFixed(1) + ' pts');
+  if (T.includes('in:spr') && isNumOwn(I.spread)) { const m = Number(Math.abs(I.spread).toFixed(1)); put('spread', 'spread ' + (m === 0 ? '0' : (I.spread > 0 ? '−' : '+') + m)); }
+  if (T.includes('in:wind')) put('wind', I.wind_src === 'roof' ? 'roof' : isNumOwn(I.wind) ? `wind ${Math.round(I.wind)} mph` : 'no wind forecast');
+  return { text: out.join(' · '), keys }; };
+const winBadOwn = (M, view, g, v) => { if (!muAvgOwn(M)) return [];
+  const sts = Object.keys(M.avg_fit.legs).filter(k => k.split('|')[0] === g).map(k => k.split('|')[1]).filter(st => v.stats && v.stats[st]);
+  const ths = [...view.querySelectorAll('thead th')], rows = [...view.querySelectorAll('tbody tr')], head = ths.map(txt).join('|'), bad = [], kinds = inKindsOwn(M, g);
+  const HEAD = ['Stat', 'Avg', ...(kinds.length ? ['Typical', ...kinds.map(k => IN_COL_OWN[k])] : []), 'Base', 'Vs', '×Def', '×Elo', 'Proj', 'Elo'];
+  if (head !== HEAD.join('|')) bad.push('columns ' + head + ', not ' + HEAD.join('|'));
+  else { const ti = k => ths[HEAD.indexOf(k)].getAttribute('title');
+    const wantT = { Base: kinds.length ? 'His projection with no Elo terms: Typical × his inputs' : 'His projection with no Elo terms', Proj: 'Base × Def × Elo', Elo: 'The Elo part: Proj less Base',
+      '×Elo': kinds.length ? 'His Elo, given his average and his inputs' : 'His Elo, given his average' };
+    if (kinds.length) wantT.Typical = TYP_TITLE_OWN;
+    for (const k of kinds) wantT[IN_COL_OWN[k]] = IN_TITLE_OWN[k];
+    for (const [k, t] of Object.entries(wantT)) if (ti(k) !== t) bad.push(`the ${k} column titled "${ti(k)}", not "${t}"`); }
+  if (rows.map(x => x.dataset.peStat).join() !== sts.join()) bad.push(`rows ${rows.map(x => x.dataset.peStat).join()}, not ${sts.join()}`);
+  else rows.forEach((x, i) => { const st = sts[i], a = v.stats[st], q = a.vs, c = [...x.querySelectorAll('td')].map(txt);
+    const exp = [LBL_OWN[st] || st, numWinOwn(a.avg, st), ...(kinds.length ? [isNumOwn(typOwn(a)) ? numWinOwn(typOwn(a), st) : '–',
+      ...kinds.map(k => a.in_x && typeof a.in_x === 'object' && isNumOwn(a.in_x[k]) ? a.in_x[k].toFixed(2) : '–')] : []), numWinOwn(a.no_elo, st),
+      q && VS_SHORT_OWN[q.table] ? `${VS_SHORT_OWN[q.table]} ${q.elo} (#${q.rank})` : '–', mulOwnS(a.def_x), mulOwnS(a.elo_x), numWinOwn(a.proj, st), leanTxtOwn(a.elo, st)];
+    if (c.join('|') !== exp.join('|')) bad.push(`${st}: ${c.join(' | ')}, not ${exp.join(' | ')}`); });
+  const line = inLineOwn(M, v, g), el = view.querySelectorAll('[data-pe-in]:not(span)'), keys = el.length === 1 ? [...el[0].querySelectorAll('span[data-pe-in]')].map(x => x.dataset.peIn).join() : '';
+  if (line.text ? !(el.length === 1 && txt(el[0]) === line.text && keys === line.keys.join() && el[0].previousElementSibling === view.querySelector('table.pe-t')) : el.length)
+    bad.push(`the inputs' line ${el.length === 1 ? JSON.stringify(txt(el[0])) + ' (' + keys + ')' : el.length + ' lines'}, not ${JSON.stringify(line.text || null)} (${line.keys.join()}) under the table`);
+  return bad; };
 /* the matchups as published, except in a thin week (a lone Monday game has one or two players
    whose nudge clears the Elo picks' bar): then six rated players' strongest trusted nudges are
    raised to clear it, in this copy only, so the Elo picks checks (six candidates, for the four
@@ -938,7 +1002,7 @@ const mmListOwn = (M, MOd, o) => { const F = M.avg_fit.mismatch, rows = [];
     const U = q && MOd && MOd.units && MOd.units[q.table], n = U && typeof U === 'object' ? Object.keys(U).length : null;
     const dfn = Array.isArray(f.terms) && f.terms.some(t => t === 'DL' || t === 'LB' || t === 'DB'), tag = F.tag != null && m.tag === true, tb = q ? `${v.opp} ${VS_NAME_OWN[q.table]}` : String(v.opp);
     const title = `${tag ? 'Mismatch this week: the' : 'The'} matchup moves his ${lb} from ${(+a.no_elo).toFixed(1)} to ${(+a.proj).toFixed(1)} (${yds}): the ${tb}`
-      + `${q ? ` (${q.elo}, ${ordOwn(q.rank)}${n ? ' of ' + n : ''})` : ''}${dfn ? ' and defenders' : ''} ×${mulOwnS(a.def_x)} and his Elo for his average ×${mulOwnS(a.elo_x)}. On an even line that is ${pts} on the over.`;
+      + `${q ? ` (${q.elo}, ${ordOwn(q.rank)}${n ? ' of ' + n : ''})` : ''}${dfn ? ' and defenders' : ''} ×${mulOwnS(a.def_x)} and his Elo for his average${a.in_x && typeof a.in_x === 'object' ? ' and inputs' : ''} ×${mulOwnS(a.elo_x)}. On an even line that is ${pts} on the over.`;
     rows.push({ pid, gid: v.game_id, group: v.group, team: v.team, opp: v.opp, shift: +m.shift, elo: +a.elo, tag, pts, yds, vs: q ? `vs ${tb} #${q.rank}` : `vs ${v.opp}`,
       proj: `${Math.round(a.proj)} ${lb}`, part: sgnOwn(a.elo), title, facing: q ? `${ordOwn(q.rank)}${n ? ' of ' + n : ''}${VS_NAME_OWN[q.table]}` : '–' }); }
   return rows.sort((x, y) => y.shift - x.shift || y.elo - x.elo || (x.pid < y.pid ? -1 : x.pid > y.pid ? 1 : 0)).map((r, i) => ({ ...r, n: i + 1 })); };
@@ -5607,17 +5671,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
            split, the defence's multiplier and his Elo's, the projection and its Elo part, the smoke's own reading; since the
            review of 29 October 2026 the split from the twin, so it points the Elo part's way), else the matchup formula's */
         const legsOwn = (g, v) => (muAvgOwn(MU) ? Object.keys(MU.avg_fit.legs).filter(k => k.split('|')[0] === g).map(k => k.split('|')[1]) : (MU.stats[g] || [])).filter(st => v.stats && v.stats[st]);
-        const numOwnW = (x, st) => st === 'any_td' ? x.toFixed(2) : Math.abs(x) >= 10 ? x.toFixed(0) : x.toFixed(1);
-        const LBL_W = { passing_yards: 'Pass yds', passing_tds: 'Pass TD', attempts: 'Att', completions: 'Comp', passing_interceptions: 'INT', rushing_yards: 'Rush yds', carries: 'Carries',
-          receptions: 'Rec', receiving_yards: 'Rec yds', targets: 'Tgt', scrim_yards: 'Rush+rec', any_td: 'TDs', fg_made: 'FG made', kick_pts: 'Kick pts' };
-        const rowsBad = (view, g, v) => { if (!muAvgOwn(MU)) return [];
-          const sts = legsOwn(g, v), rows = [...view.querySelectorAll('tbody tr')], head = [...view.querySelectorAll('thead th')].map(txt).join('|'), bad = [];
-          if (head !== 'Stat|Avg|Base|Vs|×Def|×Elo|Proj|Elo') bad.push('columns ' + head);
-          if (rows.map(x => x.dataset.peStat).join() !== sts.join()) bad.push(`rows ${rows.map(x => x.dataset.peStat).join()}, not ${sts.join()}`);
-          else rows.forEach((x, i) => { const st = sts[i], a = v.stats[st], q = a.vs, c = [...x.querySelectorAll('td')].map(txt);
-            const exp = [LBL_W[st] || st, numOwnW(a.avg, st), numOwnW(a.no_elo, st), q && VS_SHORT_OWN[q.table] ? `${VS_SHORT_OWN[q.table]} ${q.elo} (#${q.rank})` : '–', mulOwnS(a.def_x), mulOwnS(a.elo_x), numOwnW(a.proj, st), leanTxtOwn(a.elo, st)];
-            if (c.join('|') !== exp.join('|')) bad.push(`${st}: ${c.join(' | ')}, not ${exp.join(' | ')}`); });
-          return bad; };
+        /* (4 November 2026) since THE INPUTS, the columns of the inputs the position's legs read and the line under the table
+           too (winBadOwn, above) */
+        const rowsBad = (view, g, v) => winBadOwn(MU, view, g, v);
         const withMu = rowsWR.find(tr => muEntryOwn(MU, tr.dataset.pePl) && !w.eloRuledOut(tr.dataset.pePl));
         if (withMu) { withMu.click(); await wait(40);
           const view = d.getElementById('pePlView'), pid = withMu.dataset.pePl, v = muEntryOwn(MU, pid);
@@ -7396,6 +7452,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   await defTabChecks();
   /* ---- (the review of 4 November 2026) the Mismatches on the score on a made-up game, at any hour: its own section, at the end of this file ---- */
   await mmFixChecks();
+  /* ---- (4 November 2026) the inputs in a player's window on a fixture of the smoke's own, at any hour: its own section, at the end of this file ---- */
+  await inWinChecks();
   /* ---- the light look and its switch: its own section, at the end of this file ---- */
   await lightChecks();
 
@@ -10311,6 +10369,84 @@ async function defTabChecks() {
 }
 
 /* =====================================================================================
+   THE INPUTS IN A PLAYER'S WINDOW (4 November 2026, THE INPUTS in elo/build.py, the owner's "Merge the inputs"), on a
+   fixture of the smoke's own at any hour and in the off-season: a copy of matchups.json whose legs read the input terms
+   IN_FIX_OWN gives them and no other (whatever the file's own legs read), with the first ranked receiver, back,
+   quarterback, tight end and kicker planted as expected starters on a made-up game no clock reaches (every leg of his
+   position, in_x on IN_FIX_X_OWN's legs: a leg with none, one without the kind, a value null) and his inputs planted
+   (none for the tight end: the columns, no line). Each one's window on the ELO Ratings tab is held to the smoke's own
+   reading of the copy it planted (winBadOwn on that copy, never the page's loaded one, so a page that rewrote the file
+   as it read it is caught: the review of 4 November 2026; the columns of the kinds his position's legs read, Typical and
+   the multipliers before Base, each cell and title, and the line under the table word for word); then the same five with
+   the second planting put on the page's own file and the smoke's copy alike (a spread
+   either way and level, a wind read, under a roof and with no forecast, a snap share with no last appearance, a part
+   whose value is missing); then the inputs taken out of the page's own file (every in: term, in_x and in), the receiver's
+   and the kicker's windows as before the inputs, with no line. Blocking: numbers and words the page states. A matchups
+   file with no Elo-adjusted averages draws the matchup formula's window, held above: said and skipped
+   ==================================================================================== */
+const IN_FIX_OWN = { 'WR|receptions': ['in:snap1r', 'in:snapL', 'in:shL_tgt', 'in:shr_tgt', 'in:imp', 'in:spr', 'in:q'], 'WR|receiving_yards': ['in:shL_tgt', 'in:shL_ay', 'in:imp', 'in:spr', 'in:q'],
+  'RB|rushing_yards': ['in:snapL', 'in:shL_car', 'in:imp', 'in:spr'], 'QB|passing_yards': ['in:imp', 'in:spr', 'in:wind'], 'TE|receptions': ['in:snap1r', 'in:shL_tgt'], 'K|kick_pts': ['in:spr', 'in:wind'] };
+const IN_FIX_X_OWN = { 'WR|receptions': { vol: 1.3103, game: 0.8999, q: 0.9348 }, 'WR|receiving_yards': { vol: 1.3519, game: 0.8542 }, 'RB|rushing_yards': { vol: 1.0813, game: 0.9439 },
+  'QB|passing_yards': { game: null }, 'TE|receptions': { vol: 1.1211 }, 'K|kick_pts': { game: 1.115 } };
+const IN_SETS_OWN = [
+  { WR: { snap1: 0.82, snapL: 0.7737, sh_tgtL: 0.293, sh_tgtS: 0.2752, sh_carL: 0.0145, sh_carS: 0.0103, sh_ayL: 0.3504, sh_ayS: 0.3361, implied: 15.25, spread: -10.0, wind: 3.0, wind_src: 'nws' },
+    RB: { snap1: null, snapL: 0.5049, sh_tgtL: 0.0553, sh_tgtS: 0.0625, sh_carL: 0.6454, sh_carS: 0.6451, sh_ayL: 0.0041, sh_ayS: 0.0039, implied: null, spread: 3.5, wind: 0.0, wind_src: 'roof' },
+    QB: { snap1: 1.0, snapL: 0.99, sh_tgtL: 0.0, sh_tgtS: 0.0, sh_carL: 0.1378, sh_carS: 0.0944, sh_ayL: 0.0, sh_ayS: 0.0, implied: 24.46, spread: 0.0, wind: 12.6, wind_src: 'open-meteo' },
+    K: { snap1: null, snapL: null, sh_tgtL: 0.0, sh_tgtS: 0.0, sh_carL: 0.0, sh_carS: 0.0, sh_ayL: 0.0, sh_ayS: 0.0, implied: 19.75, spread: -6.0, wind: null, wind_src: 'beyond the forecast' } },
+  { WR: { snap1: 0.05, snapL: null, sh_tgtL: null, sh_tgtS: null, sh_carL: null, sh_carS: null, sh_ayL: 0.004, sh_ayS: null, implied: 31.0, spread: 12.5, wind: 21.0, wind_src: 'nws' },
+    RB: { snap1: 0.61, snapL: 0.655, sh_tgtL: 0.1, sh_tgtS: 0.1, sh_carL: null, sh_carS: null, sh_ayL: 0.0, sh_ayS: 0.0, implied: 7.0, spread: null, wind: 3.0, wind_src: 'nws' },
+    QB: { snap1: 1.0, snapL: 1.0, sh_tgtL: 0.0, sh_tgtS: 0.0, sh_carL: 0.2, sh_carS: 0.2, sh_ayL: 0.0, sh_ayS: 0.0, implied: null, spread: -2.5, wind: 0.0, wind_src: 'roof' },
+    K: { snap1: null, snapL: null, sh_tgtL: 0.0, sh_tgtS: 0.0, sh_carL: 0.0, sh_carS: 0.0, sh_ayL: 0.0, sh_ayS: 0.0, implied: 22.0, spread: null, wind: 0.0, wind_src: 'nws' } } ];
+async function inWinChecks() {
+  const c0 = checks, f0 = fails.length, MU = JSON.parse(ELO_MU), Pl = JSON.parse(ELO_P);
+  if (!muAvgOwn(MU)) { console.log('the inputs in a player\'s window: the matchups file carries no Elo-adjusted averages, so the window is the matchup formula\'s (held above): skipped'); return; }
+  const MT = JSON.parse(JSON.stringify(MU)); MT.out = {};
+  for (const [k, f] of Object.entries(MT.avg_fit.legs)) if (f) f.terms = (Array.isArray(f.terms) ? f.terms : ['one']).filter(t => !String(t).startsWith('in:')).concat(IN_FIX_OWN[k] || []);
+  for (const v of Object.values(MT.avg)) { delete v.in; for (const a of Object.values(v.stats || {})) delete a.in_x; }
+  const POS = ['WR', 'RB', 'QB', 'TE', 'K'], plant = {};
+  POS.forEach((g, gi) => { const r = ((Pl.groups[g] || {}).top || [])[0]; if (!r) return; plant[g] = r;
+    const legs = Object.keys(MT.avg_fit.legs).filter(k => k.split('|')[0] === g), tb = { QB: 'pass_def', RB: 'run_def', WR: 'pass_def', TE: 'pass_def', K: 'def' }[g];
+    MT.avg[r.id] = { group: g, game_id: `2099_99_FX${gi}_FY${gi}`, team: r.team || 'AAA', opp: 'FY' + gi, home: 1, slot: 1, games: 9, R: 1600, RS: 1550, defs: {}, own: {}, D: {},
+      stats: Object.fromEntries(legs.map((k, j) => { const base = 10 + 7 * j, dx = 1.02 + j / 100, ex = 0.97 + j / 200, proj = base * dx * ex;
+        const st = { avg: base + 1.5, proj, no_elo: base, elo: proj - base, sd: 4 + j, z: (proj - base) / (4 + j), def_x: dx, elo_x: ex, vs: { table: tb, elo: 1490 + j, rank: 7 + j } };
+        if (IN_FIX_X_OWN[k]) st.in_x = IN_FIX_X_OWN[k];
+        return [k.split('|')[1], st]; })) };
+    if (IN_SETS_OWN[0][g]) MT.avg[r.id].in = IN_SETS_OWN[0][g]; });
+  if (POS.some(g => !plant[g])) { chk(false, `the inputs in a player's window: no ranked ${POS.filter(g => !plant[g]).join(', ')} in players.json to plant`); return; }
+  const R = await run(STATE, SITE + '#slate', null, false, { elo: { mu: MT } });
+  const { w, d } = R, lines = [];
+  try {
+    try { w.eval('if(typeof pbWatch==="function"&&pbWatch.on){ clearInterval(pbWatch.on); }'); } catch (e) {}
+    try { await w.eloFiles(); } catch (e) {}
+    await wait(300);
+    const liveMu = (await w.eloFiles()).mu, S = w.eval('S');
+    if (S && S.inactive) for (const r of Object.values(plant)) delete S.inactive[r.id];
+    const tabB = [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo'); if (tabB) { tabB.click(); await wait(80); }
+    const held = async (g, r, lab) => { const pos = d.querySelector(`#peBody .pe-pos button[data-pos="${g}"]`); if (pos) { pos.click(); await wait(40); }
+      const tr = d.querySelector(`#peBody tr.pe-plrow[data-pe-pl="${r.id}"]`); if (!tr) { chk(false, `the inputs in a player's window (${lab}): ${r.id} has no row in the ${g} rankings`); return null; }
+      tr.click(); await wait(40);
+      const view = d.getElementById('pePlView'), m = d.getElementById('pePlModal'), bad = m && !m.hidden ? winBadOwn(MT, view, g, MT.avg[r.id]) : ['the window did not open'];
+      const ln = view.querySelector('[data-pe-in]:not(span)'); if (ln) lines.push(txt(ln));
+      chk(!bad.length, `the inputs in a player's window (${lab}): ${r.name}'s (${g}) is not the smoke's own reading: ${bad.slice(0, 3).join('; ')}`);
+      const head = [...view.querySelectorAll('thead th')].map(txt).join('|'), c = d.getElementById('pePlClose'); if (c) { c.click(); await wait(20); }
+      return head; };
+    for (const g of POS) await held(g, plant[g], 'the first planting');
+    /* the second planting put on the page's own file and on the smoke's copy alike (the expectation is the copy's) */
+    for (const g of POS) { const v = liveMu.avg[plant[g].id], o = MT.avg[plant[g].id];
+      if (IN_SETS_OWN[1][g]) { v.in = w.JSON.parse(JSON.stringify(IN_SETS_OWN[1][g])); o.in = JSON.parse(JSON.stringify(IN_SETS_OWN[1][g])); } else { delete v.in; delete o.in; } }
+    for (const g of POS) await held(g, plant[g], 'the second planting');
+    /* the inputs taken out of the page's own file: the window from before them, no line */
+    for (const X of [liveMu, MT]) {
+      for (const f of Object.values(X.avg_fit.legs)) if (f && Array.isArray(f.terms)) f.terms = f.terms.filter(t => !String(t).startsWith('in:'));
+      for (const v of Object.values(X.avg)) { delete v.in; for (const a of Object.values(v.stats || {})) delete a.in_x; } }
+    for (const g of ['WR', 'K']) { const head = await held(g, plant[g], 'the inputs taken out');
+      chk(head === 'Stat|Avg|Base|Vs|×Def|×Elo|Proj|Elo', `the inputs in a player's window: with the inputs taken out of the file, ${plant[g].name}'s window (${g}) is not the window from before them: ${head}`); }
+    chk(R.errs.length === 0 && !R.timedOut, `the inputs in a player's window: the page threw or never said app-ready: ${R.errs.slice(0, 3).join('; ')}`);
+  } finally { w.close(); }
+  console.log(`the inputs in a player's window: ${checks - c0} checks on five planted starters, twice, then the inputs taken out, ${fails.length - f0} failures; lines ${lines.map(x => JSON.stringify(x)).join(', ')}`);
+}
+
+/* =====================================================================================
    THE MISMATCHES ON THE SCORE ON A MADE-UP GAME (the review of 4 November 2026), on fixtures of the smoke's own at any
    hour and in the off-season. Every other reading of the score above stands on the rows of the matchups' week still to
    kick off (the Props card and a game's page, the Game snapshot's game to come, the matchup bubble's real rows), so on a
@@ -10409,7 +10545,51 @@ async function mmFixChecks() {
         const cl = box && box.querySelector('[data-glance-close]'); if (cl) { cl.click(); await wait(10); } }
       host.remove();
       chk(!bad.length, `the Mismatches on a made-up game: a matchup bubble's Mismatch line is not its row's words: ${bad.join(' | ')}`); }
+    /* (4 November 2026) the file's tag null and its lead a back's rushing yards alone, as THE INPUTS can leave it (on their
+       first build the lead was a back's rushing yards alone; a tag kept only where it beats the rows under it every season
+       can go null on a refit): the made-up game's backs planted with a score over the old tag and the block's tag true,
+       the receivers' and tight ends' rows above left as they were. The list is the backs' rows alone, none tagged, and no
+       tag is drawn anywhere: the Props card (mmCardV2, the game's page from its first bubble among it), the game's page,
+       the Game snapshot (mmSnapHold) and each back's matchup bubble ("+30 pts (+6.2 rush yds)", no "Mismatch") */
+    { const rbs = drawn.filter(pid => S.players[pid] && S.players[pid].grp === 'RB').slice(0, 2), bad = [];
+      if (!rbs.length) chk(false, `the Mismatches on a made-up game, the tag null: ${GID}'s page draws no back to plant the score on`);
+      else {
+        liveMu.avg_fit.mismatch.lead = w.JSON.parse('{"RB":"rushing_yards"}'); liveMu.avg_fit.mismatch.tag = null;
+        rbs.forEach((pid, i) => { const sp = S.players[pid], opp = sp.team === A ? B : A, U = MO.units && MO.units.run_def && MO.units.run_def[opp];
+          const vs = U && U.rank != null && U.elo != null ? { table: 'run_def', elo: U.elo, rank: U.rank } : undefined;
+          liveMu.avg[pid] = w.JSON.parse(JSON.stringify({ group: 'RB', game_id: GID, team: sp.team, opp, home: sp.team === B ? 1 : 0,
+            stats: { rushing_yards: { avg: 61.3 + i, proj: 67.6 + i, no_elo: 61.4 + i, elo: 6.2, sd: 30, z: 0.207, def_x: 1.02, elo_x: 1.08, ...(vs ? { vs } : {}) } },
+            mm: { stat: 'rushing_yards', shift: [0.3, 0.05][i], tag: true } }));
+          if (S.inactive) delete S.inactive[pid]; });
+        /* (the back among the three rows planted above keeps his row: his block's stat is the lead's) */
+        const Ln = own(), others = pick.filter(pid => S.players[pid] && S.players[pid].grp !== 'RB');
+        chk(rbs.every(pid => Ln.some(r => r.pid === pid)) && Ln.every(r => r.group === 'RB' && !r.tag) && !Ln.some(r => others.includes(r.pid))
+          && w.eloMismatches().map(v => v.pid).join() === Ln.map(r => r.pid).join() && w.eloMismatches().every(v => !v.tag),
+          `the Mismatches on a made-up game, the tag null and the lead a back's rushing yards alone: the list is not the backs' rows alone, untagged: ${w.eloMismatches().map(v => v.pid + (v.tag ? ' tagged' : '')).join(', ')} (the smoke's ${Ln.map(r => r.pid).join(', ')})`);
+        [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
+        w.eval('renderSlate()'); await wait(60);
+        const ws2 = d.getElementById('weekSel');
+        await mmCardV2(w, d, !!ws2 && +ws2.value === PW);
+        w.eval(`S.ui.game=${JSON.stringify(GID)}; S.ui.open={}; renderGame()`); await wait(80);
+        if (d.querySelectorAll('.pe-mmtag').length) bad.push(`${d.querySelectorAll('.pe-mmtag').length} mismatch tags drawn with the Props card and ${GID}'s page`);
+        w.eval('closeGame()'); await wait(40);
+        { const o = await snapOpen(R, G); if (!o.md) bad.push(`${GID} opens no Game snapshot`); else { mmSnapHold(o.md, own().filter(r => r.gid === GID), 'a made-up game, the tag null', name);
+            if (o.md.querySelector('.pe-mmtag')) bad.push('the Game snapshot draws a tag');
+            w.gameSnapshotClose(false); await wait(20); } }
+        { const legKey = w.eval('legKey'), host = d.createElement('div'); host.id = 'mmFixNull'; host.className = 'card'; d.body.appendChild(host);
+          const legs = rbs.map(pid => { const sp = S.players[pid]; return { key: legKey(GID, pid, 'rushing_yards'), gid: GID, pid, stat: 'rushing_yards', k: 60.5, side: 'over', main: true, p: 0.55, price: -110, src: 'real', mu: 64,
+            name: sp.n, pos: sp.pos, grp: 'RB', team: sp.team, opp: sp.team === A ? B : A, week: PW, label: 'Over 60.5 rushing_yards' }; });
+          host.innerHTML = w.pbTierCard({ id: 'mmfixn', label: 'Fixture', legs, corr: 0.05, dec: 3, fair: null, floor: null }, { quiet: true, kind: 'sp', fid: 'mmfixn' });
+          const Lx = own();
+          for (const [i, li] of [...host.querySelectorAll('.pb-legs li')].entries()) { const b = li.querySelector('[data-glance]'), r = Lx.find(x => x.pid === legs[i].pid);
+            if (!b || !r) { bad.push(`${legs[i].pid}: ${b ? 'no row of the smoke\'s' : 'no bubble button on his name'}`); continue; }
+            b.click(); await wait(30);
+            const box = d.getElementById('glanceBox'), dd = box && !box.hidden ? box.querySelector('[data-glance-mm] dd') : null, want = `${r.pts} (${r.yds})`;
+            if (!dd || txt(dd) !== want || box.querySelector('[data-glance-n="mm"]')) bad.push(`${r.pid}'s bubble: "${dd ? txt(dd) : 'no Mismatch line'}", not "${want}" with no tag`);
+            const cl = box && box.querySelector('[data-glance-close]'); if (cl) { cl.click(); await wait(10); } }
+          host.remove(); }
+        chk(!bad.length, `the Mismatches on a made-up game, the tag null and the lead a back's rushing yards alone: ${bad.slice(0, 4).join(' | ')}`); } }
     chk(R.errs.length === 0 && !R.timedOut, `the Mismatches on a made-up game: the page threw or never said app-ready: ${R.errs.slice(0, 3).join('; ')}`);
   } finally { w.close(); }
-  console.log(`the Mismatches on a made-up game: ${checks - c0} checks on ${GID}, two days out, three rows of the score planted (at the tag, under it, of nothing), ${fails.length - f0} failures`);
+  console.log(`the Mismatches on a made-up game: ${checks - c0} checks on ${GID}, two days out, three rows of the score planted (at the tag, under it, of nothing), then the tag null and the lead a back's rushing yards alone, ${fails.length - f0} failures`);
 }

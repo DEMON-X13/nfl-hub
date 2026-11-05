@@ -301,7 +301,9 @@ own (the smoke cases alone when only PAGE changed); job C (since 20 October 2026
 `test_espn_read.js`, `test_lock_runs.py`, `test_espn_ids.py`, `test_dk_links.py`, `test_unmatched.py`, `test_who_played.py`,
 `test_fetch.py`, `test_audit_gate.py`, `lib/test_netfetch.py` and `.js`, `test_espn_archive.py` (since 27 October 2026,
 **The archive of DraftKings' lines**), `props/research/propmodel/test_td_shadow.py` (since 31 October 2026, **The
-touchdown shadow**: about 45 seconds, stopping itself at 3 minutes), `nflbets/build/test_dkname.js`,
+touchdown shadow**: about 45 seconds, stopping itself at 3 minutes), `elo/test_parity.py` and `elo/test_fetch.py`
+(since 4 November 2026, **The inputs' review**, under Player Elo: seconds each, under `props/requirements.txt`'s pins),
+`nflbets/build/test_dkname.js`,
 `nflbets/build/smoke_admin.js` and, since the review of 21 October 2026, `nflbets/build/smoke_live.js` (about four minutes,
 the one place the parlay card's Pull from DraftKings and its money rules are held; job C's `timeout-minutes` went from 20 to
 45 with it, room for both page smokes running to their own caps here and again on the base, which `test_props_gate.py`
@@ -1863,14 +1865,16 @@ play-by-play, so it runs after it and needs the network.
 ```
 pip install -r elo/requirements.txt   # pinned: the walk-forward must not move with a library upgrade
 python3 elo/build.py             # downloads nflverse player stats 2012-now into elo/cache/, writes elo/data/
-python3 elo/check.py             # the gate: the files against the roster, injury report, schedule and published calls; "0 failures"
+python3 elo/check.py             # the gate: the files against the roster, injury report, schedule and published calls; "0 failures" (--offline after a build.py --offline by hand, whose forecasts read 'offline')
 node elo/check_tab.js            # the ELO Ratings tab on the new files (jsdom from props/build); "0 failures"
 node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
 python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offense/Defense: refits its constants on 2012-2017 (the carry's share too); "the build carries these constants"
 python3 elo/tools/def_units_fit.py   # the same for the six position tables, Run, Pass and Pass Rush/Protection a side (their stats' constants and UNIT_TABLES); "the build carries these constants"
 python3 elo/tools/draft_start_fit.py  # only for a deliberate change to the draft start: each group's first-rating curve on the draft slot (DRAFT_START), chosen and fitted on players first rated 2013-2017 over their first two rated seasons (--offline on elo/cache with draft_picks.csv); "the build carries these constants"
 python3 elo/tools/joker_base_fit.py   # after a build: the ELO Model's calls on the Joker's baseline (JOKER_BASE), fitted on 2021-2025, walk-forward on 2022-2025; "the build carries these constants"
-python3 elo/tools/elo_avg_fit.py      # only after a season ends: the Elo-adjusted averages (ELO_AVG), fitted on every expected starter's game of 2016 to the last finished season, chosen on the walk-forward of 2018 on (--offline on elo/cache); "the build carries these constants"
+python3 elo/tools/elo_avg_fit.py      # only after a season ends (once mid-season, 4 November 2026, on completed seasons alone at the owner's ask: The inputs): the Elo-adjusted averages (ELO_AVG), fitted on every expected starter's game of 2016 to the last finished season, chosen on the walk-forward of 2018 on (--offline on elo/cache with the snap counts from 2013 and players.csv); "the build carries these constants"
+python3 elo/test_parity.py            # the averages' inputs: the fit's path and the run's term for term, the rule on the test's own reading and the forecast's rules, on fixtures of its own, which the Elo job runs after check.py and the props gate's job C on a pull request (--cache, by hand after a change to the inputs' code: also on elo/cache's real 2025 files); "0 failures"
+python3 elo/test_fetch.py             # the build's downloads and the forecasts on a local server (seconds, no network): which files are required, past.lst, the draft picks, each forecast failure calm and the cap of wall clock; the Elo job runs it before its commit and job C on a pull request; "0 failures"
 ```
 
 **Elo-adjusted averages** (29 October 2026; `elo/build.py`'s ELO-ADJUSTED AVERAGES, whose docstring is the rule, and
@@ -1918,9 +1922,11 @@ with its Elo terms at 0 or at their means: on the nested walk-forward that moved
 a high average is worth less, which the line, knowing his average, does not price; so Jaylen Warren's rushing yards at CLE,
 an average of 79.3 his Elo does not match, lean under, −6.7, ×0.93 for his Elo given his average and ×0.98 for the CLE Run
 Defense, where the split it replaced read ×1.15 for his Elo against a 1500 player beside the same −6.7: the review of 29
-October 2026) (`trusted`, 11 of 22: a quarterback's interceptions; a back's
+October 2026) (`trusted`, 11 of 22 until 4 November 2026: a quarterback's interceptions; a back's
 rushing yards, carries and rush + rec yards; a receiver's catches, yards and touchdowns; a tight end's catches, yards and
-touchdowns; a kicker's points; DraftKings' lines reach a back's rushing yards and the receivers' and tight ends' six), so a
+touchdowns; a kicker's points; DraftKings' lines reach a back's rushing yards and the receivers' and tight ends' six;
+since **The inputs**, below, 5 of 22, a receiver's three legs, a tight end's catches and yards and a kicker's points no
+longer trusted, so DraftKings' lines reach a back's rushing yards and a tight end's touchdown alone), so a
 leg the Elo adds nothing to (a quarterback's rushing yards, a kicker's field goals made) leans nothing. On the page
 (`nflbets/build/tab_elo.html`: `muAvgOn`, `muEntry`, `muLine`, `muNudge`, `muTrusted`) it is the one projection the Elo
 picks, a builder leg's lean and an Elo pick's leg note ("Elo +0.5 · vs CAR Pass D #23", titled with the table's whole
@@ -1928,7 +1934,8 @@ name, its Elo and its rank and the part's split, "His Elo for his average (×1.1
 ×1.01) move his projection +0.5": `eloLeanNote`, `vsShort`), a player's window on the ELO tab (a row a leg: his average,
 Base, his projection with no Elo terms, the table he faces with its Elo and rank, "Pass D 1448 (#23)", ×Def and ×Elo, the
 part's split, Base times the two the projection, the projection and its Elo part, Proj less Base, faded where untrusted; a kicker's two legs, where the window said there was no matchup formula
-for kickers), the matchup bubble's trusted stats (his average and the projection, `window.eloGlance.entry`, headed Avg)
+for kickers; since **The inputs**, below, on a file with them, Typical, ×Vol, ×Game and ×Q before Base (Typical × the
+multipliers is Base), and a line of what they read for him under the table), the matchup bubble's trusted stats (his average and the projection, `window.eloGlance.entry`, headed Avg)
 and the Mismatches' projected line read (its Elo part, "+3.3 from the matchup", only on a trusted leg: a quarterback's
 passing yards, trusted on the formula, are not on the averages); the Mismatches' edge, units and words stayed the formula's
 (its `players`) until 4 November 2026, when they moved onto the block's own Elo part (**The Mismatches on the averages'
@@ -1951,7 +1958,11 @@ without its defence or ranked by its Elo, the window's average, multiplier or fa
 off the block alone; the nflbets smoke failing the note without its defence (11 failures, Christian Watson's Over 4.5
 receptions in CAR at GB's Elo Safe among them) and the window's player multiplier wrong (a receiver's and a kicker's);
 and `test_suggest_ledger.js` failing a page that reads the formula on a file with the block. The four page smoke cases of
-`test_audit_phases.py`, each on its own commit's `elo/data` from before the block, hold the fallback.
+`test_audit_phases.py`, each on its own commit's `elo/data` from before the block, hold the fallback. Wherever this
+paragraph, or another written before **The inputs** (below), has a receiver's or a tight end's catches or yards lean,
+carry an Elo note (Christian Watson's "Elo +0.5 · vs CAR Pass D #23" among them) or stand in an Elo pick or on the
+Mismatches, or counts 11 trusted legs, that is history from 4 November 2026: since the inputs only a quarterback's
+interceptions, a back's rushing yards, carries and rush + rec yards and a tight end's touchdowns carry a trusted Elo part.
 
 **The Mismatches on the averages' Elo part** (4 November 2026, the owner's "do all" to the Elo diagnosis's list, its items
 1, 2 and 7; `elo/build.py`'s THE MISMATCH SCORE, whose docstring is the rule, and `elo/tools/elo_avg_fit.py`'s
@@ -1981,7 +1992,11 @@ defence named is the ELO Ratings tab's own table the leg is set against (item 2:
 #32"), its rank the tab's; a back's rushing yards' multiplier carries the defenders' player Elo too (its terms read DL, LB
 and DB), so his title says "Run Defense and defenders". The player window's DL, LB and DB rank line and the Game snapshot's
 Starters headers still ranked the formula's player-Elo units (`league.defs`) when this landed, and the owner was asked: he
-chose the ELO tab's tables the same week (**The defences on the ELO tab's tables**, below).
+chose the ELO tab's tables the same week (**The defences on the ELO tab's tables**, below). Since **The inputs** (below, the same day) a receiver's and a tight end's
+receiving yards are no longer trusted, so the lead is a back's rushing yards alone and the Mismatches are backs alone; on
+that leg's rows the refit chose 3.5 points again and its rows beat the listed rows under them in every season (+0.020 to
++0.237 sd, 8 of 8), so the tag stays. Wherever this paragraph or the two after it list a receiver or a tight end, or give
+the tag's record above, that is history from the inputs.
 
 On the page (`nflbets/build/tab_elo.html`: `mmOn`, `mismatchesV2`, `mmSayV2`, `bubbleV2`, `rowV2`, `mmTagged`,
 `mmTagEl`): a bubble's size "+7 pts" (the shift in whole points; a listed row whose shift rounds to nothing "0 pts",
@@ -2076,9 +2091,219 @@ Pass Rush, Run Defense missing whole, A and B level on Pass Defense, C above E o
 and four starters planted facing them, each one's window and each game's headers held, at any hour, in the off-season and
 with `--season-over`.
 
+**The inputs** (4 November 2026, the Elo diagnosis's items 4, 5 and 6; `elo/build.py`'s THE INPUTS, whose docstring is
+the rule, and `elo/tools/elo_avg_fit.py`'s SPEC `inputs` its fit; the owner's call, asked plainly: "Adding volume (snap
+share, target and carry share), the game's implied points and spread, wind for QB passing yards and a Questionable
+discount makes the projections 0.4-3.3% more accurate on 13 legs, every season. But once those are in, a receiver's Elo
+no longer adds anything: the Elo picks would keep only RB rushing yards and TE touchdowns (often too few to fill a
+level), and the Mismatches would shrink to an untagged list of running backs. Merge it, or keep the Elo picks and
+Mismatches as they are?", and his answer, "Merge the inputs"). On 13 legs the Elo-adjusted average also reads what was
+known before kickoff of his volume and his game, none of it an Elo term, so each input is in the no-Elo twin too and the
+Elo part stays what the Elo adds beyond them. Snap: his offensive snap share in his last appearance against his usual
+(`in:snap1r`, the log of the two, each floored at 5%) and his usual less 0.7 (`in:snapL`), his usual the average of his
+appearances at a half-life of six across seasons and clubs, from PFR's snap counts. Share: his share of his club's
+targets or carries over his appearances, long (a half-life of six, centred on the position's median over its fit rows of 2012-2015,
+`ELO_AVG['inputs']`'s `share_center`) and short against long (a half-life of 1.5), and on a receiver's or tight end's
+yards his share of its air yards (his air yards clipped at 0, over the club's unclipped sum where that is above 20), a
+snap with no stat row counting 0. Imp and spr: his club's implied points, the log of half the total plus half its own
+spread (clipped to 7-45) over 22.5, and its own spread over 7, positive when favoured, from games.csv's lines (the away
+side's spread the line's negative). Wind: the wind at kickoff over 10 mph, per 10 mph, capped at 40, on a quarterback's
+passing yards alone (games.csv's reading for a game played, the forecast for a game to come, below). Q: his own
+Questionable as his club filed it for the game, 0 before the statuses are filed (a practice report or last week's status
+never counts), so a projection moves when they are, on Friday for Sunday's games, Wednesday for Thursday's and Saturday
+for Monday's. The groups each leg reads are the nested walk-forward's (2018-2025: better in at least 6 of 8 seasons and
+the pooled interval below zero) as the research's verification corrected them: a quarterback's passing yards imp, spr
+and wind, his passing TDs imp alone, his completions and attempts imp and spr; a back's rushing yards snap, his carry
+share and spr, his rush + rec yards snap alone, his touchdowns snap and imp; a wide receiver's catches snap, his target
+share, imp, spr and q, his yards his target share, his long air-yard share, imp, spr and q, his touchdowns snap, his
+target share, imp and spr; a tight end's catches snap and his target share, his yards snap, his target share and his
+long air-yard share; a kicker's points spr; the other nine legs (a quarterback's interceptions, rushing yards, carries
+and touchdown, a back's carries, catches and receiving yards, a tight end's touchdown, a kicker's field goals made)
+none, and those come out of the refit byte for byte as they were. The evidence, each leg's RMSE on the nested
+walk-forward against its spec without them, pooled, with a 90% two-way cluster interval where given, and the seasons of
+8 it was better in: a quarterback's passing yards −0.872 [−1.218, −0.526] (8), passing TDs −0.0111 (8), completions
+−0.0496 (8), attempts −0.0486 (8); a back's rushing yards −0.426 [−0.609, −0.243] (8), rush + rec yards −0.477 (7),
+touchdowns −0.0031 (7); a receiver's catches −0.0467 (8), yards −0.545 [−0.656, −0.434] (8), touchdowns −0.0024 (8); a
+tight end's catches −0.0694 (8), yards −0.652 [−0.821, −0.482] (8); a kicker's points −0.0248 (7): 0.4% to 3.3% of RMSE,
+three to ten times what the whole Elo part adds. On the refit a filed Questionable takes a receiver's yards ×0.88 and
+his catches ×0.93, and the wind a quarterback's passing yards ×0.90 for each 10 mph over 10. Not taken, each tested: the
+volume freed by teammates listed Out or Doubtful (refuted: with it on offer a back's rushing yards were worse, +0.079
+[+0.005, +0.153], better in 2 of 8, and no leg better in more than 3), the wind on a quarterback's passing TDs (5 of 8
+under a forecast's error) and an early exit as a wider spread. Expect better numbers, not an edge: none of it is tested
+against DraftKings' lines, and the free-data props model's 510 inputs drew level with them on yards (**The free-data
+props model**, under Props).
+
+**What the owner accepted with them.** Beyond his volume and his game a receiver's Elo no longer adds anything, so the
+Elo part is trusted on 5 legs where it was on 11: a quarterback's interceptions, a back's rushing yards, carries and
+rush + rec yards, and a tight end's touchdowns, each beating its twin on the refit (RMSE 0.8598 against 0.8609, 35.657
+against 35.732, 5.669 against 5.744, 40.824 against 41.270, 0.5093 against 0.5154) and right on its largest fifth 0.545,
+0.535, 0.623, 0.614 and 0.641 of the time; a receiver's catches, yards and touchdowns, a tight end's catches and yards
+and a kicker's points no longer pass the nested rule (a tight end's yards fail its nested half, −0.0506 [−0.1054,
++0.0042]). On week 9's files 150 of the 789 legs carry a trusted Elo part, none a receiver's, where the files built the
+day before had 459. Of the five, the Elo picks, which take only DraftKings' tested kinds, can reach two, a back's
+rushing yards and a tight end's touchdown (a back's carries and rush + rec yards and a quarterback's interceptions are
+kinds no suggestion takes), so a level often runs short or empty, as the owner was told (he had complained of empty Elo
+picks on 19 October 2026); a builder leg's Elo lean, an Elo pick's note and the matchup bubble's trusted stats follow
+the same five. The Mismatches are backs alone: `avg_fit.mismatch.lead` is a back's rushing yards, a receiver's and a
+tight end's receiving yards being untrusted. The owner was told they would be untagged too, but on that leg's rows the
+refit chose 3.5 points again on 2018-2021 and its rows beat the listed rows under them in every season, +0.020, +0.056,
++0.140, +0.179, +0.237, +0.025, +0.074 and +0.119 sd in 2018-2025 (8 of 8: `avg_fit.mismatch.record`), so by PR 2's rule
+the tag stays (on week 9's files 30 lead blocks, 14 backs listed, 5 tagged); the research, on its own spec and the
+ratings before the draft start, had found no tag that held. `ELO_AVG` was refitted for the inputs by `elo_avg_fit.py
+--offline` on 2016-2025 alone, mid-season at the owner's ask: the rule refits it only on completed seasons, never on the
+season in play, and this refit keeps that (the fit refuses a row past the last completed season, and every choice is the
+research's, frozen before it). Each input leg's no-Elo twin and `in_mean` equal the research's corrected figures to the
+sixth place; the full fits moved a little with the draft start's career ratings, which are collinear with the snap terms
+(a back's rushing yards `in:snapL` −0.037 to −0.137, his rush + rec yards 0.538 to 0.458; no sign of a term over 0.02
+turned).
+
+**The inputs at run time.** `load()` reads PFR's snap counts (`snap_counts_<season>.csv`, from 2013: a finished season's
+required, listed in `past.lst` and kept by `elo.yml`'s cache; the season in play's read fresh every run, nflverse posting
+them a day or two after the games, and required once the season's first game kicked off 72 hours ago, `SNAP_DUE`, when
+they must also carry both clubs of every regular-season game final for 72 hours, `snap_gaps`: a file missing, failed or
+a week behind refuses the run as a missing stats file does, since it would put every snap share a game back or lose it
+and move the trusted legs by up to 40%, the review below) and nflverse's `players.csv` for their PFR ids (read fresh
+every run and required: a new way for the Elo job to refuse, and refused too when it places no PFR id, no rows or none
+with one, which would otherwise drop every snap share in silence), and stops, naming the column, on a player stats file
+without a volume column the inputs read. The wind for a game to come is the forecast at kickoff (`avg_weather`), the Elo
+job's first requests to a host other than nflverse's: for each coming game in an open stadium within 6.5 days, the
+National Weather Service's hourly forecast in the US (`api.weather.gov`, two requests a game) and Open-Meteo's abroad
+(`api.open-meteo.com`, asked for mph, its default being km/h), no key, a User-Agent naming the site and no address, each
+request through `lib/netfetch.py` tried once (`waits=()`, so an outage spends none of its ten-minute budget) and given up
+after 15 seconds of wall clock, the whole step held to 90 seconds of wall clock (`avg_wx_get` runs each request in a
+thread of its own and gives it up at the deadline, since netfetch's timeout holds each read of the socket and a server
+trickling its answer would outlast it), past which every game left is calm. A game under any roof (dome, closed, open
+or retractable, by `STADIUMS` or games.csv's roof), past 6.5 days or whose forecast failed in any way (no answer, an
+error status, a body that is not JSON, an HTML page or an empty body among them, or JSON of another shape) is calm, never a refusal, and `wind_src` says which
+('nws', 'open-meteo', 'roof', 'beyond the forecast', or why the forecast was not had in the site's own few words:
+'forecast failed: HTTP 500', 'timed out', 'no answer', 'not JSON', 'an answer of another shape', 'forecast skipped: the
+step ran past 90 s'). The step runs only where a leg reads the wind (week 9: 15 games in 4.6
+seconds, 10 from the NWS on 20 requests, 5 under a roof). So a quarterback's passing yards move with each forecast from
+run to run, and every input leg moves when the statuses are filed. `matchups.json` carries `avg[pid].in` (snap1 and
+snapL, his last and usual snap shares; sh_tgtL, sh_tgtS, sh_carL, sh_carS, sh_ayL and sh_ayS, his long and short shares
+of his club's targets, carries and air yards; implied and spread, his club's; wind and wind_src; a value missing null),
+on each leg that reads inputs `in_x`, {vol, game, q}, each kind's multiplier inside the no-Elo twin against the typical
+starter's inputs (each term's mean over the leg's fit rows, `in_mean`; q against not listed), on the twin's own
+coefficients (`avg_in_split`), so the twin over the product of a leg's multipliers is the twin at a typical starter's
+inputs (the full fit's input coefficients differ widely where the Elo terms move with the inputs, a back's rushing yards'
+`in:snapL` −0.137 against the twin's +0.181), and in `avg_fit` each leg's `inputs` and `in_mean`, and `inputs`,
+the share centres: 378 KB on week 9 where it was 321. The fit and the run read the inputs by one code path
+(`avg_history`, `avg_inputs_rows`, `avg_injury_status`).
+
+On the page the player window on the ELO Ratings tab (`tab_elo.html`), on a file whose legs read inputs, gets a column
+for each kind of input his position's legs read, in the order ×Vol (his snap share and his shares), ×Game (his club's
+implied points and spread, and on a quarterback's passing yards the wind) and ×Q (a filed Questionable), led by
+Typical, before Base: each multiplier the leg's `in_x` of that kind to a hundredth, a dash where the leg reads none (a
+receiver gets all three, a back ×Vol and ×Game, a quarterback and a kicker ×Game, a tight end ×Vol), and Typical the twin
+at a typical starter's inputs, Base over the leg's multipliers (`muTypical`; a dash with them), so Typical × his inputs
+is Base and Base × Def × Elo the projection: every × column multiplies the figure before its run. They sit before Base,
+not beside ×Def and ×Elo, because Base, the no-Elo twin, already reads them; Base is titled "His projection with no Elo
+terms: Typical × his inputs", Typical "His projection with no Elo terms at a typical starter's inputs", each multiplier
+"... against a typical starter's: Typical × his inputs gives Base", Proj keeps "Base × Def × Elo", and ×Elo, the rest of
+the projection over Base after the defence's, which on an input leg carries the full fit's weighing of the inputs apart
+from the twin's, is "His Elo, given his average and his inputs" (an Elo lean's title and a Mismatches row's words, which
+the Game snapshot and the matchup bubble print, say "his Elo for his average and inputs" on such a leg). Under the
+table, one line of what the inputs read for him (`avg[pid].in`),
+only the parts his position's legs read: a receiver's "Snap share 97% last game (usual 83%) · 35% of targets · 50% of
+air yards · implied 27.0 pts · spread −12.5", a quarterback's "implied 24.5 pts · spread −3.5 · roof" (the spread his
+club's line, minus when favoured; "wind 12 mph", "roof", or "no wind forecast" where none was read), the sources and the
+short shares in its parts' titles. A file without the inputs, or a position whose legs read none, draws the window as
+before. Nothing else on the page changed: the leans, the Elo picks, the matchup bubble and the Mismatches follow
+`trusted` and the file's lead and tag with their existing words, thinner, but the inputs' "and inputs". `build.js` stops
+unless the window reads `in_x` into the columns before Base, led by Typical worked from Base, and draws the line under
+its table, and refuses a Proj titled with more than Base × Def × Elo.
+
+Held, blocking, each on its own reading. `elo/check.py`'s AVERAGES works every input out again from the raw files, never
+through the build (the player stats of every position, the snap counts from 2013, a finished season's required, and
+players.csv's PFR ids, read by the gate: each player's appearances before the game, his last and usual snap share, his
+long and short shares, his side's implied points and spread, the Questionable from the club's filed status alone) and
+holds the wind, which it cannot read again, to the forecast recorded (one per game; calm and 'roof' under any roof, by
+its own list of stadiums or games.csv's roof; calm past 6.5 days; else a number from the source his stadium's country
+takes, or calm with the reason): each block's `in` to four places, each leg's projection, twin, Elo part and split on
+its own terms, each input leg's `in_x` against `in_mean`, and no `in_x` on another leg. Its own copies of the rule, the
+groups per leg, the share terms, the trusted set, the share centres and the stadiums under a roof and abroad
+(`IN_RULE_OWN`, `IN_GROUPS_OWN`, `IN_SHARE_OWN`, `TRUSTED_OWN`, `SHARE_CENTER_OWN`, `IN_ROOF_OWN`, `IN_ABROAD_OWN`) hold
+the build's constants, `ELO_AVG`'s legs and `elo_avg_fit.py`'s SPEC, so an edited SPEC fails before any refit, and a
+made-up world runs the build's `avg_coming_inputs` with netfetch stubbed through every branch (a stat row with no snap
+row, a snap with no stat row, a snap row players.csv does not place, a club's week of 20 air yards or fewer, negative
+air yards, a row with no player id, last season at another club, an away side's spread, a game with no lines, a roof,
+the NWS, Open-Meteo, a failed forecast, one past 6.5 days, a Questionable filed and one filed only last week). `python3
+elo/test_parity.py` holds the fit's path (`elo_avg_fit.py`'s `add_inputs`) and the run's (`avg_coming_inputs`) term for
+term, every term to the test's own reading of the rule, and the forecast's rules (a roof, 6.5 days, the NWS hour and its
+range, Open-Meteo, a failure, `waits=()`, the timeout, the cap, a User-Agent with no email address) on a stubbed
+netfetch, on fixtures of its own in seconds; `elo.yml` runs it after `elo/check.py` and before the commit, since the
+props gate never sees an elo-only change, and the props gate's job C on every pull request it covers, and its `--cache` run (about a minute: the real 2025 weeks 10-18, 3,315
+player-games, 11 terms, 0 differences) is by hand, after a change to the inputs' code. `python3 elo/test_fetch.py` holds
+the snap counts (from 2013; a finished season's required, listed and read from the cache; the season in play's fresh
+every run, required once due and refused a club short), players.csv (refused on a 404, empty, with no rows, without `pfr_id` or placing no PFR id;
+two 500s and then the file read; read fresh), a player stats file missing a volume column refused, and the forecasts on
+its local server (answered; a 500, a 503 and a 404 each calm and said by its status, and a 200 whose body is an HTML
+page, one with a doctype, empty or plain text each calm and said 'not JSON', each asked once, none of netfetch's budget
+spent; an answer slower than the cap timed out within it, every game after skipped).
+`elo/check_tab.js` (`inKindsC`, `inxC`, `inLineC`) and the nflbets smoke (`winBadOwn`, `inLineOwn`, and its section of
+its own, `inWinChecks`, at any hour) hold the window on their own readings, every column and its title, every cell and
+the line word for word with its parts, on the files, on fixtures of their own planted twice, and on the files with the
+inputs taken out (the window as before); the smoke's made-up Mismatches game also holds the file's tag null with a
+back's rushing yards its one lead (the list backs alone and untagged, and no tag on the Props card, the game's page, the
+Game snapshot or a back's matchup bubble). Bite-tested on scratch copies: `elo/check.py` failing a share's long
+half-life at 5, the away side's spread sign turned, the wind read under a roof, the Questionable counted from last week,
+`in_x`'s tag against its mean, a share centre edited, a receiver's yards trusted, a group added to a tight end's catches
+in `ELO_AVG` or to a receiver's touchdowns in SPEC, and a tight end's yards trusted in SPEC; `elo/test_parity.py` the
+run's path without the share centres (180 differences), the snap half-life at 5 (80), the air yards unclipped (8), the
+Questionable rule taking Doubtful too and the forecast retried; `elo/test_fetch.py` players.csv made optional (5
+failures); `check_tab.js` and the smoke the ×Vol cell read from the game's `in_x`, the line's share the short one, Proj
+drawn as Base times every multiplier, the columns drawn on a file without the inputs, and a tag drawn under a null tag;
+`build.js` a Proj titled with the inputs.
+
+**The inputs' review** (4 November 2026, before PR 3 merged). PR 3 had been built on PR 2's head before PR 2's review;
+main, with PR 2 as it shipped (#352: the window's defences on the ELO tab's tables) and the jobs' runs since, was merged
+into its branch, keeping history, the window's three defence pills beside the input columns. Then, each found by a
+reviewer and reproduced: (1) a forecast that answered 200 with JSON of another shape (a null where an object stands, a
+list, a period with no start, an hour list longer than its winds) raised out of `avg_weather` and refused the Elo job;
+every failure is now calm per game, said in `wind_src` in the site's words, never netfetch's message, which blamed
+nflverse's host. (2) The 90-second cap bounded only a server that never answered: one trickling its answer a byte at a
+time held the step to the job's 40 minutes; `avg_wx_get` gives each request up at the step's wall-clock deadline. (3)
+`in_x` was worked on the full fit's coefficients while the window drew it inside Base, the twin (Jonathan Taylor's
+rushing yards read ×0.98 for his volume where Base moves him ×1.07; 14 of 798 cells pointed the other way); it is the
+twin's now, and the window leads the multipliers with Typical, since set between Avg and Base with nothing to multiply
+they read as Avg's (Avg × the multipliers missed Base by a median 22% on 519 rows). (4) The season in play's snap counts
+were never required, so a mid-season 404 or a file a week behind published every snap share a game back or lost on a
+green run (40 of 150 trusted legs moved over 5%, 12 Elo parts turned); they are required once due, as above, and
+`elo/check.py` holds the same on its own rule (`in_snaps_due_bad`, `IN_SNAP_DUE_OWN`) and refuses a players.csv that
+places no PFR id, which it had read as an empty map. (5) No check held the forecast requests: `elo/check.py` keeps its
+own copies of every stadium's coordinates and the two forecasts' addresses (`IN_STADIUMS_OWN`, `IN_NWS_OWN`,
+`IN_OM_OWN`), held to the build's, its made-up world answers only at those addresses, and `elo/test_parity.py` holds
+the requests' own query (London's coordinates, `wind_speed_10m` in mph, by the hour in UTC); before, Open-Meteo asked in
+km/h, or Green Bay's forecast read at Miami's coordinates, published green. (6) The gate took 'offline' as a forecast's
+source anywhere: it now takes it only from `elo/check.py --offline`, a hand build's, so the job's gate refuses a build
+that skipped the forecasts (a forecast that failed in an outage stays calm and passes, as the owner's rule wants, the
+note counting the sources). (7) `elo/test_fetch.py` ran in no workflow, though it was the one hold on the players.csv
+refusal and the cap: `elo.yml` runs it before the commit, and it and `elo/test_parity.py` are units of the props gate's
+job C, under `props/requirements.txt`'s pins (0 failures there), so a pull request the gate covers holds them before it
+merges. (8) Fixtures added where a reviewer's mutant survived: implied points over 45 and under 7, a played game under
+a retractable roof open with a wind reading, games.csv's roof at a stadium open to the sky at run time, an open-air
+forecast of 0 mph ("wind 0 mph", never "roof"), and the smoke's window section holding the copy it planted, never the
+page's loaded one. `in_x` is held to one unit in its fourth place, as every other number. Rejected or left: the faded
+(untrusted) rows of a window in the dark look are about 4.3:1, as every faded cell has been since the light look's sweep
+left them so the dark look would not move (the page agent's "4.5:1 or better" was wrong for them), and now cover most of
+a window (every receiver's): the look is left as it was. And the tag: the owner was told the Mismatches would be an
+untagged list of backs, the refit kept 3.5 points (above), and that is his to call again. Bite-tested on scratch
+copies, each failing its hold: the catch narrowed back, no wall-clock deadline, netfetch's words kept, Open-Meteo in
+km/h, a stadium moved, implied unclipped, a played roof open read, games.csv's roof ignored at run time, `in_x` on the
+full fit, the snap counts never required or their coverage not held, players.csv read as an empty map (`elo/check.py`,
+`elo/test_parity.py`, `elo/test_fetch.py`); Typical on his average, no Typical, ×Elo, a lean's and a Mismatches row's
+words without the inputs, and a calm forecast drawn "roof" (`elo/check_tab.js`). The second review (the same day) found
+one thing more: a forecast answering 200 with an HTML page (an outage's or a proxy's usual body) or an empty body, which
+`lib/netfetch.py` refuses itself with no status, was published as 'forecast failed: no answer'; `avg_wx_why` says 'not
+JSON' for both, as for a body `json.load` refuses, held by `elo/test_fetch.py` through the real netfetch on its local
+server and by `elo/test_parity.py` on the real netfetch's own errors (a file:// address, no network), each failing with
+the old mapping (3 and 2 failures). Words only: the game was calm either way.
+
 The build refuses to write anything when a file the season under way needs (its player stats, depth
 charts, injury report, roster, play-by-play), nflverse's draft picks (`draft_picks.csv`, read fresh every run: **The
-draft start**, below) or any past season's cannot be downloaded (after `lib/netfetch.py`'s
+draft start**, below), nflverse's players file (`players.csv`, the snap counts' PFR ids, read fresh every run, and refused too
+when it places no PFR id: **The inputs**, above), a finished season's snap counts (from 2013; the season in play's once its first game kicked off 72 hours ago, and then carrying both clubs of every regular-season game final for 72) or any past season's
+cannot be downloaded (after `lib/netfetch.py`'s
 tries, under Conventions): it exits 1 and the last good files stay live. The finished seasons' files (2012 to
 last season's stats, depth charts and injury reports, last season's play-by-play once this one is under way,
 and the season before last's while the rankings are still on the finished season, which the units carry in
@@ -2086,11 +2311,12 @@ and which is not read once the rankings move: in season 43 of the 50 a run reads
 build writes `elo/cache/past.lst`, the files it read as a finished season's, once every source `load()` reads was had
 (before the draft picks are read, which are never listed), and
 the job saves exactly those under a key on their names (a new entry only when that set changes: a season finishing, the rankings moving to it; bump `v1`
-in it to throw them away), so a run asks nflverse for the season in play, games.csv, the roster and the draft
-picks alone, which it always downloads fresh. A kept copy that will not read is fetched again. A correction nflverse
+in it to throw them away; the finished seasons' snap counts are among them since 4 November 2026), so a run asks
+nflverse for the season in play, games.csv, the roster, players.csv and the draft picks alone, which it always downloads
+fresh. A kept copy that will not read is fetched again. A correction nflverse
 makes to a finished season's file later is not read until `v1` is bumped (and `elo/check.py` reads the same
 copies, so nothing flags it): bump it when nflverse says it republished past seasons. `python3 elo/test_fetch.py`
-holds the downloads, `past.lst` and the draft picks to their cases on a local server. Every club is read in today's code (`TEAM_NOW`: games.csv, the depth charts
+holds the downloads, `past.lst`, the snap counts, players.csv and the draft picks to their cases on a local server. Every club is read in today's code (`TEAM_NOW`: games.csv, the depth charts
 and the injury reports write OAK, SD and STL for the seasons before those moves, the player stats LV, LAC
 and LA); until 13 October 2026 the 263 games those clubs played in 2012-2019 were left out of the game
 model's fit and walk-forward, and the matchup formula read their home games as away games (the player
@@ -2157,7 +2383,8 @@ the ELO Model's coming calls (51 of 2022-2025's 1,084 games turned from the Joke
 never: each call on the Joker carries the BETA it was made at, `beta`, one made before calls carried theirs is read on
 0.2058, the build's `JOKER_BETA_WAS`, and `elo/check.py`'s RECORD holds every frozen call's chance and `beta` to the last
 publish, so one made again on today's BETA fails whether or not its pick turns. `ELO_AVG` was refitted on the new ratings (2016-2025; its legs, terms and trusted
-flags unchanged, their records moving, a back's rushing yards 36.160 to 36.122). The file is downloaded fresh on every Elo
+flags unchanged, their records moving, a back's rushing yards 36.160 to 36.122; refitted again, terms and trust changed,
+by **The inputs**, above). The file is downloaded fresh on every Elo
 run and is required (`draft_slots`: the build stops, writing nothing, when it cannot be had, will not read or has no rows,
 and when it has no draft of the newest schedule's season with player ids once that season's week 1 is within
 `PRESEASON_CALLS` days or under way; only its season, pick and gsis_id columns are read, never its career outcomes).
@@ -2405,7 +2632,10 @@ with its spread and moneylines apart and a table with two clubs made level, and 
 follow. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record, every model's every week drawn alike), which the build puts in front of the app's script and `renderRecord()` calls last. Friends stand beside the models there (see "Friends' picks" below).  The X Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total, with no Note column since 22 October 2026 (the owner's call: "in x bet log please remove the note column section"; a week's `note` stays in the file, unshown, and the nflbets smoke holds the column gone and a note's markup drawn nowhere); the weeks and the deposit are X's, from `liveparlays/xbets.json` (see "X's parlays and the X Bet Log" below), read only, on the site owner's devices alone since 20 October 2026 (the admin link; on a visitor's page `XBETS.enabled()` is false, the frame is not read only and keeps the browser's own log, which no tab of the hub shows) (with no deposit in the file it is X's profit against break even, no balance), and the chosen view is each viewer's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates daily, queued at 12:40 UTC, plus Saturday 20:40 and Sunday 03:40 UTC
 for Sunday's calls on Friday's final report (GitHub starts this repo's scheduled runs 4-9 hours late, so a slot is queued
 early enough to land before the London and 1pm kickoffs; Tuesday's run takes in Monday night; the rest move only who is
-expected to play), runs `elo/check.py` and `elo/check_tab.js`, the gate on the Elo data, commits `elo/data`, and then
+expected to play), runs `elo/check.py`, `elo/test_parity.py` (since 4 November 2026: the averages' inputs read alike by
+the fit and the run, on its fixtures, in seconds; **The inputs**), `elo/test_fetch.py` (the downloads and the forecasts
+on a local server, since **The inputs' review**) and `elo/check_tab.js`, the gate on the Elo data, commits
+`elo/data`, and then
 runs the nflbets smoke (skipped between the Super Bowl and the fortnight before week 1, when there is no game to call and
 the smoke's Elo-picks checks have nothing to read): a page check, after the commit, so a page case the smoke has never
 seen (a tied final, a top 25 of 24 quarterbacks, in October 2026) turns the run red without holding back the ratings.
@@ -4574,7 +4804,11 @@ may quietly outrank what the job published:
   `download`, the news job's `lib.js` and `pull-week.js`, since 20 October 2026 the props job's ESPN read,
   `espn_read.js`, with its own headers, a 403 tried again with none, and a 150-second deadline, and since 31 October
   2026 the touchdown shadow's downloads, the 2026 play-by-play and weekly roster and any missing history file, through
-  the registered `fetch.py`), after a burst of 500s on one nflverse
+  the registered `fetch.py`, and since 4 November 2026 the Elo job's wind forecasts, the National Weather Service's and
+  Open-Meteo's, each request tried once, `waits=()`, and held to wall-clock deadlines, 15 seconds a request and 90 the
+  step, so an outage spends none of the budget below and a forecast not had is calm, never a refusal: **The inputs**,
+  under Player Elo), after a
+  burst of 500s on one nflverse
   file refused the Elo job on 13 October 2026 (three tries over 15 seconds; a re-run passed): a 5xx,
   408, 425 or 429, a timeout, a reset, a transfer cut short or an empty or HTML body is tried again on
   waits of 5, 15, 30 and 60 seconds (five tries), every wait out of one ten-minute budget a process; a

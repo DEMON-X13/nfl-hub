@@ -164,6 +164,17 @@ for (const need of ['<tr class="legrow"><td class="plr">', 'data-drop="${l.key}"
   if (!part3.includes(need)) throw new Error('the builder leg markup moved (' + need + '); the Elo badge on each leg relies on it');
 for (const need of ["'elo/data/players.json'", "'elo/data/model.json'", 'window.pkTag', 'window.pkTierBadge', 'window.pkTierDefs'])
   if (!ELO_JS.includes(need)) throw new Error('tab_elo.html no longer has ' + need);
+/* (4 November 2026) THE INPUTS (elo/build.py): a player's window reads each leg's in_x into a column of each kind its
+   position's legs read, before Base, led by Typical (Base over the leg's multipliers: in_x is on the twin's own
+   coefficients, so Typical × the multipliers is Base; the review of 4 November 2026, where set between Avg and Base with
+   nothing to multiply they read as Avg's), and draws what the inputs read for him (avg[pid].in) in one line under its
+   table; Base, the no-Elo twin, has the inputs in it, so the projection is still Base × Def × Elo, and a window setting
+   the inputs after Base, dropping Typical, or titling Proj with them, would state a product the file's projection is not */
+if (!ELO_JS.includes("in_x:a.in_x&&typeof a.in_x==='object'?a.in_x:null") || !ELO_JS.includes('function muInLine(v,g)') || !ELO_JS.includes('<p class="pe-inline" data-pe-in>${inLine}</p>')
+  || !ELO_JS.includes('${inx}<td class="pe-n">${numTxt(x.base,st)}</td>') || !ELO_JS.includes('title="Base × Def × Elo">Proj</th>') || /×Vol[^`\n]*Proj|title="Base × Def × Elo ×/.test(ELO_JS)
+  || !ELO_JS.includes("return v.length?x.base/v.reduce((a,b)=>a*b,1):NaN;") || !ELO_JS.includes('const inx=kinds.length?`<td class="pe-n">${numTxt(muTypical(x),st)}</td>`+kinds.map(')
+  || !ELO_JS.includes('data-pe-inx="typ"') || !ELO_JS.includes("His projection with no Elo terms${kinds.length?': Typical × his inputs':''}"))
+  throw new Error("tab_elo.html's player window no longer reads each leg's in_x into columns before Base, led by Typical, with the inputs' line under its table, or states its projection as more than Base × Def × Elo");
 for (const f of ['players.json', 'model.json']) if (!fs.existsSync(path.join(ROOT, 'elo', 'data', f)))
   throw new Error('elo/data/' + f + ' is missing: run python3 elo/build.py first');
 if (/(^|\n)(body|header|main|:root|\.card|\.bar|table)\{/.test(ELO_CSS)) throw new Error('a page-level rule in the Elo tab styles');

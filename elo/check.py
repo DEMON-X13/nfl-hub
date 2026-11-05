@@ -199,7 +199,38 @@ all pass. What each one would have caught is said beside it.
              lead leg untrusted, and the gate's own rules refusing made-up blocks that break each. (A projection
              read off the wrong club's table, a regular's norm turned round, an average that counted a quiet game,
              a twin with the Elo terms in, a leg left out, a shift off its z, a tag on a null threshold or a
-             quarterback's Mismatch would publish green.)
+             quarterback's Mismatch would publish green.) THE INPUTS (4 November 2026): every projected player
+             carries `in`, exactly snap1, snapL, the six shares (sh_tgtL/S, sh_carL/S, sh_ayL/S), implied, spread,
+             wind and wind_src, each number to four places the gate's own reading: nflverse's player stats of every
+             position, PFR's snap counts from 2013 (a finished season's required) and players.csv's PFR ids, read
+             here, never through the build; his appearances before the game (a stat row, or an offensive snap placed
+             by its PFR id), his last snap share and its half-life-6 average across seasons and clubs, his share of
+             his club's targets, carries and air yards each appearance (his over every row of his club's, the moved
+             clubs in today's code; a snap with no stat row 0; air yards clipped at 0 over the club's unclipped sum,
+             only where that is above 20) at half-lives 6 and 1.5, every missing value skipped; his side's implied
+             points and spread from games.csv (the away side's spread the line's negative); the wind held to the
+             forecast recorded, one per game (calm and 'roof' under any roof, the gate's own list of stadiums or
+             games.csv's roof; past 6.5 days from the build calm, 'beyond the forecast'; within, a number of 0 to 150
+             mph from the National Weather Service in the US or Open-Meteo abroad, or calm with the reason a forecast
+             was not had); the Questionable tag his club's filed status for that week (a practice report with no
+             status yet, or last week's, none). From those, on the gate's own copy of the rule (IN_RULE_OWN) and the
+             share centres (SHARE_CENTER_OWN), every input term each leg reads (its own copy of the groups per leg,
+             IN_GROUPS_OWN), so the projection, its twin, the Elo part and its split above stand on them; and each
+             input leg's in_x {vol, game, q} (exp of its terms' coefficients times their distance from in_mean, the
+             tag against 0) to four places, none on another leg. Its constants against its own copies: the build's
+             rule and first snap season, its stadiums under a roof and abroad, ELO_AVG's share centres and each leg's
+             input terms in its projection and its twin alike, groups, in_mean and trust (TRUSTED_OWN: a QB's
+             interceptions, a back's rushing yards, carries and rush + rec yards, a tight end's touchdowns), and
+             elo/tools/elo_avg_fit.py's SPEC the same, with made-up ELO_AVGs and SPECs breaking each refused. On a
+             made-up world (the build's avg_coming_inputs, its forecasts on a stubbed netfetch) the gate's own reading
+             of every branch: a stat row with no snap row, a snap with no stat row, a snap row players.csv does not
+             place, a club's week of 20 air yards or fewer, negative air yards, a row with no player id, a season and
+             club before, an away side's spread, a game with no lines, a roof, a forecast in the US, one abroad, one
+             failed and one past 6.5 days, a Questionable filed and one only last week; the gate's wind rule judging
+             made-up records of each branch, and the fit's played games' wind its rule. (A share's half-life wrong, an
+             away spread's sign turned, the wind read under a roof, a Questionable counted before the statuses are
+             filed, a share centre edited, an input group added, a trust flag flipped or an in_x off its product would
+             publish green.)
   DRAFT      every player of the players map carries his first career rating (`start`) and his draft
              slot (`draft`, THE DRAFT START, November 2026), each the gate's own working: draft_picks.csv
              read here (an id in two drafts at the later, a row with no id none), his first rated game
@@ -235,7 +266,7 @@ all pass. What each one would have caught is said beside it.
              a fullback listed first does not take the second running back's place; a club on its
              bye keeps its roster; a player out last week and not practising stays out.
 """
-import argparse, datetime, functools, json, math, os, re, subprocess, sys
+import argparse, contextlib, datetime, functools, io, json, math, os, re, subprocess, sys
 
 import numpy as np
 import pandas as pd
@@ -243,7 +274,9 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(HERE, 'tools'))
 import build  # noqa: E402
+import elo_avg_fit  # noqa: E402  (its SPEC alone: which inputs each leg reads and which Elo parts are trusted)
 
 fails, notes = [], []
 checks = 0
@@ -1538,6 +1571,405 @@ def mm_block_bad(pid, b, A, z_own, ztol):
     if T is not None and abs(own - T) > tol and mm['tag'] is not (own >= T):
         bad.append(f'{pid}\'s mismatch tag {mm["tag"]}, the gate\'s shift {own:.6f} against the tag {T}')
     return bad
+
+
+# THE INPUTS (4 November 2026): the gate's own copies (a deliberate change edits both and says why in the build's
+# docstring) of the rule (the floors, the snap share's centre and half-life, the shares' half-lives short and long, the
+# implied points' clip and reference, the spread's and the wind's scales), of which inputs each leg reads (the nested
+# walk-forward's groups as its verification corrected them, elo_avg_fit.py's SPEC), of which shares a leg's share group
+# takes, of the legs whose Elo part is trusted, of each position's share centre (its median over its fit rows of
+# 2012-2015), of the raw values matchups.json shows, of the stadiums under a fixed or retractable roof (always calm)
+# and abroad (read from Open-Meteo, the rest from the National Weather Service), of every stadium's coordinates and of
+# the two forecasts' addresses (so a request asking Open-Meteo for km/h, or a stadium moved, is caught), and of the
+# hours after a kickoff by which the season in play's snap counts must carry the game
+IN_RULE_OWN = {'snap_floor': 0.05, 'snap_center': 0.7, 'snap_hl': 6, 'share_floor': 0.005, 'share_hl': (1.5, 6),
+               'imp_clip': (7.0, 45.0), 'imp_ref': 22.5, 'spr_scale': 7.0, 'wind_clip': 40.0, 'wind_hinge': 10.0, 'wind_scale': 10.0}
+IN_SNAP_FIRST_OWN = 2013
+IN_GROUPS_OWN = {
+    'QB|passing_yards': ('imp', 'spr', 'wind'), 'QB|passing_tds': ('imp',), 'QB|completions': ('imp', 'spr'),
+    'QB|attempts': ('imp', 'spr'), 'RB|rushing_yards': ('snap', 'share', 'spr'), 'RB|scrim_yards': ('snap',),
+    'RB|any_td': ('snap', 'imp'), 'WR|receptions': ('snap', 'share', 'imp', 'spr', 'q'),
+    'WR|receiving_yards': ('share', 'imp', 'spr', 'q'), 'WR|any_td': ('snap', 'share', 'imp', 'spr'),
+    'TE|receptions': ('snap', 'share'), 'TE|receiving_yards': ('snap', 'share'), 'K|kick_pts': ('spr',)}
+IN_SHARE_OWN = {'RB|rushing_yards': ('car',), 'WR|receptions': ('tgt',), 'WR|receiving_yards': ('tgt', 'ay'),
+                'WR|any_td': ('tgt',), 'TE|receptions': ('tgt',), 'TE|receiving_yards': ('tgt', 'ay')}
+TRUSTED_OWN = frozenset({'QB|passing_interceptions', 'RB|rushing_yards', 'RB|carries', 'RB|scrim_yards', 'TE|any_td'})
+SHARE_CENTER_OWN = {'QB': {'tgt': -5.298317, 'car': -2.442717, 'ay': -5.298317},
+                    'RB': {'tgt': -2.967054, 'car': -1.432783, 'ay': -4.952606},
+                    'WR': {'tgt': -1.911621, 'car': -5.298317, 'ay': -1.653376},
+                    'TE': {'tgt': -2.341441, 'car': -5.298317, 'ay': -2.428973},
+                    'K': {'tgt': -5.298317, 'car': -5.298317, 'ay': -5.298317}}
+IN_KEYS_OWN = ('snap1', 'snapL', 'sh_tgtL', 'sh_tgtS', 'sh_carL', 'sh_carS', 'sh_ayL', 'sh_ayS', 'implied', 'spread', 'wind', 'wind_src')
+IN_VOL_OWN = {'tgt': 'targets', 'car': 'carries', 'ay': 'receiving_air_yards'}
+IN_KIND_OWN = {'in:imp': 'game', 'in:spr': 'game', 'in:wind': 'game', 'in:q': 'q'}       # every other input term: vol
+IN_WIND_DAYS_OWN = 6.5
+IN_ROOF_OWN = frozenset({'ATL97', 'DAL00', 'DET00', 'HOU00', 'IND00', 'LAX01', 'MIN01', 'NOR00', 'PHO00', 'VEG00', 'MAD01', 'BUF01'})
+IN_ABROAD_OWN = frozenset({'LON00', 'LON01', 'LON02', 'MUN01', 'GER00', 'FRA00', 'MEX00', 'MAD01', 'PAR00', 'RIO00', 'SAO00', 'MEL00', 'BUF01'})
+IN_STADIUMS_OWN = {
+    'ATL97': (33.7554, -84.4008), 'BAL00': (39.2780, -76.6227), 'BOS00': (42.0909, -71.2643), 'BUF00': (42.7738, -78.7870),
+    'CAR00': (35.2258, -80.8528), 'CHI98': (41.8623, -87.6167), 'CIN00': (39.0955, -84.5161), 'CLE00': (41.5061, -81.6995),
+    'DAL00': (32.7473, -97.0945), 'DEN00': (39.7439, -105.0201), 'DET00': (42.3400, -83.0456), 'GNB00': (44.5013, -88.0622),
+    'HOU00': (29.6847, -95.4107), 'IND00': (39.7601, -86.1639), 'JAX00': (30.3239, -81.6373), 'KAN00': (39.0489, -94.4839),
+    'LAX01': (33.9535, -118.3392), 'MIA00': (25.9580, -80.2389), 'MIN01': (44.9737, -93.2577), 'NAS00': (36.1665, -86.7713),
+    'NOR00': (29.9511, -90.0812), 'NYC01': (40.8135, -74.0745), 'PHI00': (39.9008, -75.1675), 'PHO00': (33.5276, -112.2626),
+    'PIT00': (40.4468, -80.0158), 'SEA00': (47.5952, -122.3316), 'SFO01': (37.4030, -121.9700), 'TAM00': (27.9759, -82.5033),
+    'VEG00': (36.0909, -115.1833), 'WAS00': (38.9077, -76.8645), 'LON00': (51.5560, -0.2796), 'LON01': (51.4560, -0.3415),
+    'LON02': (51.6043, -0.0664), 'MUN01': (48.2188, 11.6247), 'GER00': (48.2188, 11.6247), 'FRA00': (50.0686, 8.6455),
+    'MEX00': (19.3029, -99.1505), 'MAD01': (40.4531, -3.6883), 'PAR00': (48.9245, 2.3602), 'RIO00': (-22.9122, -43.2302),
+    'SAO00': (-23.5453, -46.4742), 'MEL00': (-37.8200, 144.9834), 'BUF01': (43.6414, -79.3894)}
+IN_NWS_OWN = 'https://api.weather.gov/points/{lat:.4f},{lon:.4f}'
+IN_OM_OWN = ('https://api.open-meteo.com/v1/forecast?latitude={lat:.4f}&longitude={lon:.4f}&hourly=wind_speed_10m'
+             '&wind_speed_unit=mph&timezone=UTC&forecast_days=7')
+IN_SNAP_DUE_OWN = 72
+# a forecast not had: the game is calm and the source says why; 'offline' only where the gate is told the build was
+# offline (--offline: a hand build's, never the job's, so the job's gate refuses a build that skipped the forecasts)
+IN_CALM_SRC = ('forecast failed', 'forecast skipped', 'nws: no period at kickoff', 'open-meteo: no hour at kickoff', 'no coordinates for')
+OFFLINE = {'on': False}
+
+
+def in_terms_of_own(key):
+    """the input terms a leg carries on the gate's own copy, in the fit's order (each group's terms in the leg's order)"""
+    out = []
+    for g in IN_GROUPS_OWN.get(key, ()):
+        if g == 'snap':
+            out += ['in:snap1r', 'in:snapL']
+        elif g == 'share':
+            v = IN_SHARE_OWN[key]
+            out += [f'in:shL_{v[0]}', f'in:shr_{v[0]}'] + [f'in:shL_{u}' for u in v[1:]]
+        else:
+            out.append('in:' + g)
+    return out
+
+
+def in_fit_bad(A, spec=None):
+    """ELO_AVG's inputs and trust against the gate's own copies, and the fit's SPEC (spec, elo_avg_fit.SPEC) the same:
+    the share centres, each leg's input terms in its projection and in its no-Elo twin alike (none is an Elo term), its
+    groups (`inputs`), the typical starter's value of each of its terms (`in_mean`, those terms alone), none on a leg
+    without inputs, and `trusted` exactly on the gate's legs; returns what is wrong, [] when nothing"""
+    bad = []
+    num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and v == v and abs(v) < 1e6
+    inp = A.get('inputs')
+    sc = (inp or {}).get('share_center') if isinstance(inp, dict) else None
+    same_c = (isinstance(sc, dict) and set(sc) == set(SHARE_CENTER_OWN)
+              and all(isinstance(sc[g], dict) and set(sc[g]) == set(v) and all(num(sc[g][u]) and abs(sc[g][u] - x) < 1e-12 for u, x in v.items())
+                      for g, v in SHARE_CENTER_OWN.items()))
+    if not isinstance(inp, dict) or set(inp) != {'share_center'} or not same_c:
+        bad.append(f'ELO_AVG[\'inputs\'] is {inp}, not the gate\'s share centres')
+    legs = A.get('legs') or {}
+    for key in sorted(set(legs) | set(IN_GROUPS_OWN)):
+        leg = legs.get(key)
+        if leg is None:
+            bad.append(f'{key} reads inputs on the gate\'s copy but is no leg of ELO_AVG')
+            continue
+        want = in_terms_of_own(key)
+        got = [t for t in leg.get('terms', []) if t.startswith('in:')]
+        got0 = [t for t in (leg.get('no_elo') or {}).get('terms', []) if t.startswith('in:')]
+        if got != want or got0 != want:
+            bad.append(f'{key} reads the inputs {got} (its twin {got0}), the gate\'s {want}')
+        if len(leg.get('terms', [])) != len(leg.get('coef', [])) or len((leg.get('no_elo') or {}).get('terms', [])) != len((leg.get('no_elo') or {}).get('coef', [])):
+            bad.append(f'{key}\'s terms and coefficients are not one to one')
+        if want:
+            if leg.get('inputs') != list(IN_GROUPS_OWN[key]):
+                bad.append(f'{key}\'s groups are {leg.get("inputs")}, the gate\'s {list(IN_GROUPS_OWN[key])}')
+            im = leg.get('in_mean')
+            if not isinstance(im, dict) or sorted(im) != sorted(want) or not all(num(v) for v in im.values()):
+                bad.append(f'{key}\'s in_mean is {im}, not a number for each of its terms {want}')
+        elif 'inputs' in leg or 'in_mean' in leg:
+            bad.append(f'{key} reads no inputs on the gate\'s copy but carries {leg.get("inputs")} {leg.get("in_mean")}')
+        if leg.get('trusted') is not (key in TRUSTED_OWN):
+            bad.append(f'{key} is trusted {leg.get("trusted")}, on the gate\'s copy {key in TRUSTED_OWN}')
+    if spec is not None:
+        for key in sorted(set(spec) | set(legs)):
+            s = spec.get(key)
+            if not isinstance(s, dict):
+                bad.append(f'the fit\'s SPEC has no {key}')
+                continue
+            if list(s.get('inputs') or []) != list(IN_GROUPS_OWN.get(key, ())):
+                bad.append(f'the fit\'s SPEC reads {s.get("inputs")} on {key}, the gate\'s {list(IN_GROUPS_OWN.get(key, ()))}')
+            if s.get('trusted') is not (key in TRUSTED_OWN):
+                bad.append(f'the fit\'s SPEC trusts {key} {s.get("trusted")}, on the gate\'s copy {key in TRUSTED_OWN}')
+    return bad
+
+
+def in_ok(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and v == v
+
+
+def in_ewm_own(vals, hl):
+    """the half-life average through the last value, every missing value skipped (each weight 0.5 ** (later values / hl))"""
+    v = [float(x) for x in vals if in_ok(x)]
+    if not v:
+        return float('nan')
+    w = [0.5 ** ((len(v) - 1 - i) / hl) for i in range(len(v))]
+    return sum(a * b for a, b in zip(w, v)) / sum(w)
+
+
+def in_read_own(cache, season):
+    """THE INPUTS' sources read here, never through the build: every player's weekly stat rows from FIRST to `season`
+    (his club, targets, carries and air yards; the clubs' totals take every row, one with no player id too), PFR's snap
+    counts from 2013 (a finished season's required, the season in play's where nflverse has posted it) and players.csv's
+    PFR ids (required); None where a required file is not in the cache, said"""
+    want = ['player_id', 'season', 'week', 'team'] + list(IN_VOL_OWN.values())
+    parts, snaps, ok = [], [], True
+    for y in range(build.FIRST, season + 1):
+        p = os.path.join(cache, f'stats_player_week_{y}.csv')
+        if not os.path.exists(p):
+            continue                       # the gate's own log says so (avg_log), and the season to come may have none
+        have = set(pd.read_csv(p, nrows=0).columns)
+        lack = [c for c in want if c not in have]
+        if lack:
+            chk(False, f'AVERAGES: stats_player_week_{y}.csv has no {", ".join(lack)}: the inputs\' shares cannot be held')
+            ok = False
+            continue
+        parts.append(pd.read_csv(p, usecols=want, low_memory=False))
+    for y in range(IN_SNAP_FIRST_OWN, season + 1):
+        p = os.path.join(cache, f'snap_counts_{y}.csv')
+        if os.path.exists(p):
+            snaps.append(pd.read_csv(p, usecols=['season', 'week', 'team', 'pfr_player_id', 'offense_snaps', 'offense_pct'], low_memory=False))
+        elif y < season:
+            chk(False, f'AVERAGES: snap_counts_{y}.csv, a finished season\'s, is not in the cache: no snap share can be held against it')
+            ok = False
+    pp = os.path.join(cache, 'players.csv')
+    if not os.path.exists(pp):
+        chk(False, 'AVERAGES: players.csv (the snap counts\' PFR ids) is not in the cache: no snap share can be held against it')
+        return None
+    pl = pd.read_csv(pp, usecols=['gsis_id', 'pfr_id'], low_memory=False)
+    pfr = {p: g for g, p in zip(pl.gsis_id, pl.pfr_id) if isinstance(p, str) and isinstance(g, str)}
+    if not pfr:                            # read as an empty map, every snap share would be lost and held as lost
+        chk(False, f'AVERAGES: players.csv places no PFR id ({len(pl)} rows): no snap share can be held against it')
+        return None
+    if not ok or not parts:
+        return None
+    return {'stats': pd.concat(parts, ignore_index=True),
+            'snaps': pd.concat(snaps, ignore_index=True) if snaps else pd.DataFrame(columns=['season', 'week', 'team', 'pfr_player_id', 'offense_snaps', 'offense_pct']),
+            'pfr': pfr}
+
+
+def in_snaps_due_bad(games, snaps, season, built):
+    """the season in play's snap counts on the gate's own rule: once its first game kicked off IN_SNAP_DUE_OWN hours
+    before the build they must be had (snaps None: not in the cache) and carry both clubs (in today's code) of every
+    regular-season game with a final score that kicked off that long before it; returns what is wrong, [] when nothing
+    (before the season's first game is that old, nothing is asked)"""
+    g = games[games.season == season]
+    if not len(g):
+        return []
+    due = datetime.timedelta(hours=IN_SNAP_DUE_OWN)
+    kicks = [build.kickoff(d, t) for d, t in zip(g.gameday, g.gametime)]
+    if built < min(kicks) + due:
+        return []
+    if snaps is None:
+        return [f'snap_counts_{season}.csv, the season in play\'s, is not had though its first game kicked off over {IN_SNAP_DUE_OWN} hours ago']
+    have = set()
+    for w, t, sy in zip(snaps.week, snaps.team, snaps.season):
+        if int(sy) == season:
+            have.add((int(w), MOVED.get(t, t)))
+    out = []
+    for r, k in zip(g.itertuples(index=False), kicks):
+        if r.game_type != 'REG' or not (in_ok(r.home_score) and in_ok(r.away_score)) or built < k + due:
+            continue
+        miss = [t for t in (MOVED.get(r.away_team, r.away_team), MOVED.get(r.home_team, r.home_team)) if (int(r.week), t) not in have]
+        if miss:
+            out.append(f'{r.game_id} ({", ".join(miss)})')
+    return [f'snap_counts_{season}.csv lacks {len(out)} regular-season game(s) final over {IN_SNAP_DUE_OWN} hours ago: {", ".join(out[:4])}'] if out else []
+
+
+def in_hist_own(src, pids):
+    """each asked player's appearances in order, on the gate's own reading: a game with a stat row (any position) or
+    an offensive snap (a snap counts row with offense_snaps above 0, placed by its PFR id through players.csv), keyed
+    season * 100 + week; each with his snap share (the larger of his rows that week; none without a snap row) and his
+    share of his club's targets, carries and air yards that week (his over every row of his club's, 0 with a snap and
+    no stat row; air yards his clipped at 0 over the club's unclipped sum, only where that sum is above 20; none where
+    the club's sum is 0); his club the stat row's, else the snap row's (the moved clubs in today's code).
+    {pid: [(key, snap, {tgt, car, ay})]}"""
+    cols = list(IN_VOL_OWN.values())
+    st = src['stats'].copy()
+    st['team'] = st.team.replace(MOVED)
+    for c in cols:
+        st[c] = pd.to_numeric(st[c], errors='coerce').fillna(0.0).astype(float)
+    g = st.groupby(['season', 'week', 'team'])[cols].sum()
+    tot = {(int(s), int(w), t): v for (s, w, t), v in zip(g.index, g.values.tolist())}
+    want = set(pids)
+    app = {}
+    for r in st[st.player_id.isin(list(want))].itertuples(index=False):
+        app.setdefault(r.player_id, {})[(int(r.season), int(r.week))] = {'team': r.team, 'snap': float('nan'),
+                                                                          'x': [float(getattr(r, c)) for c in cols]}
+    back = {p: g for p, g in src['pfr'].items() if g in want}
+    sn = src['snaps']
+    sn = sn[sn.pfr_player_id.isin(list(back)) & (pd.to_numeric(sn.offense_snaps, errors='coerce') > 0)]
+    seen = {}
+    for r in sn.itertuples(index=False):
+        k = (back[r.pfr_player_id], int(r.season), int(r.week))
+        pct = float(r.offense_pct)
+        if k not in seen:
+            seen[k] = [pct, MOVED.get(r.team, r.team)]
+        else:
+            seen[k][0] = max(seen[k][0], pct)        # two rows of one player's week: the larger share, the first club
+    for (pid, s, w), (pct, team) in seen.items():
+        e = app.setdefault(pid, {}).get((s, w))
+        if e is None:
+            app[pid][(s, w)] = {'team': team, 'snap': pct, 'x': [0.0, 0.0, 0.0]}
+        else:
+            e['snap'] = pct
+    out = {}
+    for pid, by in app.items():
+        rows = []
+        for (s, w) in sorted(by):
+            e = by[(s, w)]
+            T = tot.get((s, w, e['team']))
+            sh = {}
+            for i, k in enumerate(IN_VOL_OWN):
+                den = T[i] if T is not None else float('nan')
+                if k == 'ay':
+                    sh[k] = max(e['x'][i], 0.0) / max(den, 1.0) if den == den and den > 20 else float('nan')
+                else:
+                    sh[k] = e['x'][i] / max(den, 1.0) if den == den and den > 0 else float('nan')
+            rows.append((s * 100 + w, e['snap'], sh))
+        out[pid] = rows
+    return out
+
+
+def in_values_own(rows, key, home, spread_line, total_line):
+    """his inputs' raw values going into a game keyed `key` (his appearances before it) and the game's lines: his last
+    snap share, its half-life-6 average, each share's half-life-6 and 1.5 averages, and his side's implied points and
+    spread (the home side's spread_line, the away side's its negative: positive when his side is favoured)"""
+    R = IN_RULE_OWN
+    before = [r for r in rows if r[0] < key]
+    snaps = [r[1] for r in before if in_ok(r[1])]
+    v = {'snap1': snaps[-1] if snaps else float('nan'), 'snapL': in_ewm_own(snaps, R['snap_hl'])}
+    hs, hl = R['share_hl']
+    for k in IN_VOL_OWN:
+        vals = [r[2][k] for r in before]
+        v[f'sh_{k}L'], v[f'sh_{k}S'] = in_ewm_own(vals, hl), in_ewm_own(vals, hs)
+    sp = float(spread_line) if in_ok(spread_line) else float('nan')
+    tl = float(total_line) if in_ok(total_line) else float('nan')
+    s = sp if home else -sp
+    v['spread'], v['implied'] = s, tl / 2 + s / 2
+    return v
+
+
+def in_wind_own(gm, built, rec_w=None, rec_src=None, edge=60, offline=None):
+    """the wind a game's terms read, on the gate's own rule, and what is wrong with the one recorded (rec_w, rec_src):
+    a played game's is games.csv's (calm under a closed, open or fixed roof); a game to come is calm under any roof (the
+    gate's own list, or games.csv's roof dome, closed or open), recorded (0, 'roof'); past 6.5 days from the build (within
+    `edge` seconds of it either way), calm, 'beyond the forecast'; within, the recorded forecast, a number of 0 to 150 mph
+    from the National Weather Service ('nws') in the US and Open-Meteo ('open-meteo') abroad, or calm with the reason a
+    forecast was not had (IN_CALM_SRC; 'offline' too, anywhere off a roof, only where the gate is told the build was
+    offline: OFFLINE, or `offline`). Returns (wind or None, problem or None)"""
+    off = OFFLINE['on'] if offline is None else offline
+    roof = gm.get('roof') if isinstance(gm.get('roof'), str) else ''
+    if in_ok(gm.get('home_score')):
+        return ((0.0 if roof in ('dome', 'closed', 'open') else float(gm['wind']) if in_ok(gm.get('wind')) else None), None)
+    calm = lambda: rec_w is None and isinstance(rec_src, str) and (rec_src.startswith(IN_CALM_SRC) or (off and rec_src == 'offline'))
+    if gm.get('stadium_id') in IN_ROOF_OWN or roof in ('dome', 'closed', 'open'):
+        ok = in_ok(rec_w) and rec_w == 0 and rec_src == 'roof'
+        return 0.0, None if ok else f'under a roof but recorded {rec_w} ({rec_src})'
+    secs = (gm['kick'] - built).total_seconds()
+    far = 3600 * 24 * IN_WIND_DAYS_OWN
+    beyond = rec_w is None and rec_src == 'beyond the forecast'
+    if secs > far + edge or secs < -3600 - edge:
+        ok = beyond or (off and rec_w is None and rec_src == 'offline')
+        return None, None if ok else f'{secs / 86400:.2f} days from the build, past the forecast, but recorded {rec_w} ({rec_src})'
+    if calm() or (beyond and abs(secs - far) <= edge):
+        return None, None
+    want = 'open-meteo' if gm.get('stadium_id') in IN_ABROAD_OWN else 'nws'
+    if rec_src == want and in_ok(rec_w) and 0 <= rec_w <= 150:
+        return float(rec_w), None
+    return None, f'a forecast in reach at {gm.get("stadium_id")} recorded {rec_w} ({rec_src}), not a number from {want} or calm with its reason'
+
+
+def in_terms_own(v, wind, q, group, center=SHARE_CENTER_OWN):
+    """the input terms from his raw values (in_values_own), the wind read and his Questionable (0 or 1), on the gate's
+    own copy of the rule and the share centres; a value missing gives its term's neutral 0"""
+    R = IN_RULE_OWN
+    fs, fl = R['snap_floor'], R['share_floor']
+    t = {'in:snap1r': math.log(max(v['snap1'], fs) / max(v['snapL'], fs)) if in_ok(v['snap1']) and in_ok(v['snapL']) else 0.0,
+         'in:snapL': v['snapL'] - R['snap_center'] if in_ok(v['snapL']) else 0.0}
+    for k in IN_VOL_OWN:
+        L, S = v[f'sh_{k}L'], v[f'sh_{k}S']
+        t[f'in:shL_{k}'] = math.log(max(L, fl)) - center[group][k] if in_ok(L) else 0.0
+        t[f'in:shr_{k}'] = math.log(max(S, fl) / max(L, fl)) if in_ok(L) and in_ok(S) else 0.0
+    lo, hi = R['imp_clip']
+    t['in:imp'] = math.log(min(max(v['implied'], lo), hi) / R['imp_ref']) if in_ok(v['implied']) else 0.0
+    t['in:spr'] = v['spread'] / R['spr_scale'] if in_ok(v['spread']) else 0.0
+    w = wind if in_ok(wind) else 0.0
+    t['in:wind'] = max(0.0, min(w, R['wind_clip']) - R['wind_hinge']) / R['wind_scale']
+    t['in:q'] = float(q)
+    return t
+
+
+def in_q_own(inj, season, week, pid):
+    """1 where his club filed him Questionable for that week (its last filed status of his, `report_status`), else 0: a
+    practice report with no status yet, or last week's status, is no status"""
+    if inj is None or not len(inj):
+        return 0
+    d = inj[(inj.gsis_id == pid) & (pd.to_numeric(inj.week, errors='coerce') == week) & inj.report_status.notna()]
+    if 'season' in d.columns:
+        d = d[pd.to_numeric(d.season, errors='coerce').fillna(season) == season]
+    return int(len(d) > 0 and d.report_status.iloc[-1] == 'Questionable')
+
+
+def in_x_own(leg, x):
+    """the inputs' multipliers inside a leg's no-Elo twin by kind (vol: the snap and share terms; game: implied points,
+    spread, wind; q: the Questionable tag), each exp of its terms' coefficients in the twin (never the full projection's,
+    which differ widely where the Elo terms move with the inputs: the twin's are the factor the twin, Base, applies)
+    times their distance from the typical starter's value (in_mean; the tag against not listed, 0)"""
+    m = leg.get('in_mean') or {}
+    s = {}
+    for t, c in zip(leg['no_elo']['terms'], leg['no_elo']['coef']):
+        if t.startswith('in:'):
+            k = IN_KIND_OWN.get(t, 'vol')
+            s[k] = s.get(k, 0.0) + c * (x[t] - (0.0 if t == 'in:q' else m[t]))
+    return {k: math.exp(v) for k, v in s.items()}
+
+
+def in_block_bad(pid, rec, own, rnd=5e-5):
+    """his matchups.json `in` against the gate's own raw values: exactly IN_KEYS_OWN, each number to four places (None
+    where the gate has none), the wind and its source those in_wind_own accepted"""
+    if not isinstance(rec, dict):
+        return [f'{pid} carries no inputs (`in`)']
+    if sorted(rec) != sorted(IN_KEYS_OWN):
+        return [f'{pid}\'s inputs carry {sorted(rec)}, not {sorted(IN_KEYS_OWN)}']
+    bad = []
+    for k in IN_KEYS_OWN:
+        if k == 'wind_src':
+            continue
+        g, o = rec[k], own[k]
+        if not in_ok(o):
+            if g is not None:
+                bad.append(f'{pid}\'s {k} {g}, the gate has none')
+        elif not in_ok(g) or abs(g - o) > rnd + 1e-9 * abs(o):
+            bad.append(f'{pid}\'s {k} {g}, the gate\'s {o:.6f}')
+    return bad
+
+
+def in_week_own(AV, want, games, cache, season, built, src=None, inj=None):
+    """THE INPUTS of every projected player of the coming week on the gate's own reading: his raw values from the stat
+    rows, snap counts and players.csv read here (src, else in_read_own), his game's lines from games.csv, its wind held
+    to the forecast recorded (in_wind_own; one wind for every player of a game) and his Questionable from the filed
+    report (inj, else injuries_<season>.csv read here). Returns ({pid: (raw values, terms)} or None, problems)"""
+    src = src if src is not None else in_read_own(cache, season)
+    if src is None:
+        return None, ['the inputs\' sources are not all in the cache, so no input can be held']
+    pids = [p for p in AV if p in want]
+    hist = in_hist_own(src, pids)
+    gi = games.set_index('game_id')
+    if inj is None:
+        ip = os.path.join(cache, f'injuries_{season}.csv')
+        inj = pd.read_csv(ip, low_memory=False) if os.path.exists(ip) else None
+    out, per_game, bad = {}, {}, []
+    for pid in pids:
+        w, b = want[pid], AV[pid]
+        gm = gi.loc[w['game_id']]
+        rec = b.get('in') if isinstance(b.get('in'), dict) else {}
+        v = in_values_own(hist.get(pid, []), int(gm.season) * 100 + int(gm.week), bool(w['home']), gm.spread_line, gm.total_line)
+        wind, prob = in_wind_own(gm, built, rec.get('wind'), rec.get('wind_src'))
+        if prob and rec:                           # a block with no inputs at all is said once, by in_block_bad
+            bad.append(f'{w["game_id"]} ({pid}): {prob}')
+        v['wind'] = wind
+        out[pid] = (v, in_terms_own(v, wind, in_q_own(inj, season, int(gm.week), pid), w['group']))
+        per_game.setdefault(w['game_id'], set()).add((rec.get('wind'), rec.get('wind_src')))
+    bad += [f'{gid}\'s players carry different winds {sorted(map(str, s))}' for gid, s in per_game.items() if len(s) > 1]
+    return out, bad
 AVG_NUM = ['completions', 'attempts', 'passing_yards', 'passing_tds', 'passing_interceptions', 'sacks_suffered', 'carries',
            'rushing_yards', 'rushing_tds', 'receptions', 'targets', 'receiving_yards', 'receiving_tds', 'fg_made', 'fg_att',
            'pat_made', 'pat_att']
@@ -1731,6 +2163,12 @@ def avg_checks(MU, P, M, games, cache, built):
     rbad = [f'{s} {n} {REF.get(s, {}).get(n)} for {v:.6f}' for s in ('raw', 'shown', 'defs') for n, v in ref[s].items()
             if not isinstance(REF.get(s, {}).get(n), (int, float)) or abs(REF[s][n] - v) > (1e-3 if s == 'defs' else 1e-5)]
     chk(not rbad, f'AVERAGES: avg_ref is not the league\'s average defence as it stands: {rbad[:4]}')
+    # THE INPUTS on the gate's own reading (in_week_own), wherever its own copy has a leg read them
+    INP, ibad = (None, [])
+    if any(in_terms_of_own(k) for k in A['legs']):
+        INP, ibad = in_week_own(AV, want, games, cache, season, built)
+        chk(not ibad, f'AVERAGES: the inputs: {"; ".join(ibad[:4])}{" ..." if len(ibad) > 4 else ""} ({len(ibad)})')
+    in_seen = {'blocks': 0, 'legs': 0, 'src': {}}
     pl = P.get('players') or {}
     top = {x['id']: x for grp in (P.get('groups') or {}).values() for x in grp.get('top', [])}
     prior, allowed, tgt = {}, {}, {}
@@ -1778,6 +2216,16 @@ def avg_checks(MU, P, M, games, cache, built):
                 bad.append(f'{pid} is {b.get("rank_on_targets")} on targets among {w["mates"]}, the gate has him {r + 1}')
         hr = mine[(mine.group == gp) & mine.reg]
         z_own = {}
+        own_in = (INP or {}).get(pid)
+        if INP is not None:
+            # his raw inputs to four places, the wind and its source those the gate accepted
+            bad += in_block_bad(pid, b.get('in'), own_in[0])
+            in_seen['blocks'] += 1
+            src_ = (b.get('in') or {}).get('wind_src')
+            in_seen['src'][str(src_).split(':')[0]] = in_seen['src'].get(str(src_).split(':')[0], 0) + 1
+        elif any(in_terms_of_own(f'{gp}|{c}') for c, _ in legs):
+            bad.append(f'{pid}: his inputs cannot be worked out on the gate\'s own reading')
+            continue
         for col, leg in legs:
             st = b['stats'][col]
             if (gp, col) not in prior:
@@ -1806,8 +2254,27 @@ def avg_checks(MU, P, M, games, cache, built):
                 if not isinstance(st.get('allowed'), (int, float)) or abs(st['allowed'] - a) > 2e-6 * max(1.0, a):
                     bad.append(f'{pid} {col}: {b["opp"]} allowed {st.get("allowed")}, the gate {a:.6f}')
                 x['log_allowed'] = math.log(max(a, 1e-3))
+            for t in leg['terms']:
+                if t.startswith('in:'):
+                    x[t] = own_in[1][t]
             rf = {**{'E:' + t: ref[leg['scale']][t] for t in leg['tables']}, **ref['defs']}
             o = avg_leg_own(leg, av, x, rf)
+            # the inputs' multipliers against the typical starter's, by kind, on a leg that reads inputs and no other
+            wx = in_x_own(leg, x) if any(t.startswith('in:') for t in leg['terms']) else {}
+            gx = st.get('in_x')
+            if not wx:
+                if 'in_x' in st:
+                    bad.append(f'{pid} {col}: in_x {gx} on a leg that reads no inputs')
+            else:
+                in_seen['legs'] += 1
+                if not isinstance(gx, dict) or sorted(gx) != sorted(wx):
+                    bad.append(f'{pid} {col}: in_x {gx}, the gate\'s kinds {sorted(wx)}')
+                else:
+                    for k, v in wx.items():          # written to four places: one unit in the last, as every number
+                        miss = abs(gx[k] - v) if in_ok(gx[k]) else float('inf')
+                        if not miss <= 1e-4 + 1e-9 * v:
+                            bad.append(f'{pid} {col}: in_x {k} {gx[k]}, the gate\'s {v:.6f}')
+                        worst['in_x'] = max(worst.get('in_x', 0.0), miss / (1e-4 + 1e-9 * v) if miss < float('inf') else 9.0)
             z_own[col] = (o['z'], 1e-4 + (1e-4 + 1e-6 * o['proj']) / o['sd'])
             # each number is written to four places (one unit in the last, as a hair either way rounds the other way);
             # the inputs differ from the build's by the units' raw ratings written to six (a millionth of the projection
@@ -1840,6 +2307,9 @@ def avg_checks(MU, P, M, games, cache, built):
     mm_rows = [m for m in mm_seen if isinstance(m, dict)]
     notes.append(f'mismatch scores: {len(mm_rows)} lead blocks held on the gate\'s own z ({sum(1 for m in mm_rows if m.get("shift", 0) > 0)} '
                  f'with a shift above 0, {sum(1 for m in mm_rows if m.get("tag") is True)} at the tag of {(A.get("mismatch") or {}).get("tag")})')
+    if INP is not None:
+        notes.append(f'inputs: {in_seen["blocks"]} blocks and {in_seen["legs"]} legs\' multipliers held on the gate\'s own reading '
+                     f'(the wind\'s sources: {", ".join(f"{n} {k}" for k, n in sorted(in_seen["src"].items()))})')
     n_legs = sum(len(b.get('stats') or {}) for b in AV.values())
     notes.append(f'averages: {len(AV)} expected starters, {n_legs} legs held on the gate\'s own reading (the largest miss '
                  f'{max(worst.values(), default=0):.2f} of its tolerance: ' + ', '.join(f'{k} {v:.2f}' for k, v in worst.items())
@@ -1882,7 +2352,13 @@ def avg_fixture_checks():
         for t in leg['terms']:
             if t.startswith('own:'):
                 x[t] = 0.05
+        # THE INPUTS: invented values of the leg's input terms (the Questionable tag on), and the inputs' multipliers
+        for i, t in enumerate(t for t in leg['terms'] if t.startswith('in:')):
+            x[t] = 1.0 if t == 'in:q' else 0.17 - 0.09 * i
         ref = {**{'E:' + t: 0.11 for t in leg['tables']}, 'DL': 0.13, 'LB': 0.31, 'DB': 0.25}
+        ix, ox = build.avg_in_split(leg, x), in_x_own(leg, x)
+        if sorted(ix) != sorted(ox) or any(abs(ix[k] - ox[k]) > 5e-5 + 1e-9 * ox[k] for k in ox):
+            bad.append(f'{key} in_x {ix} for {ox}')
         for avg in (4.0, leg['eps'] / 2, None):
             proj, proj0, part, sd, z = build.avg_project(leg, avg, x)
             dx = build.avg_split(leg, x, ref)
@@ -1897,6 +2373,8 @@ def avg_fixture_checks():
     chk(not bad, f'AVERAGES: the build\'s leg is not the gate\'s on invented inputs: {bad[:3]}')
     avg_log_fixture()
     avg_week_fixture()
+    in_const_checks()
+    in_fixture_checks()
 
 
 def avg_log_fixture():
@@ -1973,7 +2451,15 @@ def avg_week_fixture():
     rating = {p: 1500.0 + 13 * i for i, p in enumerate(['q1', 'q2', 'r1', 'w1', 'w2', 'w3', 'w4', 't1', 'k1'])}
     srating = {p: v + 40 for p, v in rating.items()}
     defs = {'AAA': st_a, 'BBB': st_b}
-    av, ref = build.averages(log, coming, S, tables(), rating, srating, defs)
+    # THE INPUTS handed in for some of the week's players (made-up terms and raw values; the rest read every term 0):
+    # each carries them as `in`, and every leg reading inputs its multipliers as in_x
+    gid = f'{S}_08_BBB_AAA'
+    raw = {'snap1': 0.81, 'snapL': 0.7712, 'sh_tgtL': 0.2211, 'sh_tgtS': 0.2533, 'sh_carL': 0.0123, 'sh_carS': None, 'sh_ayL': 0.30001,
+           'sh_ayS': 0.31, 'implied': 24.25, 'spread': 3.5, 'wind': 17.0, 'wind_src': 'nws'}
+    terms = lambda k: {'in:snap1r': 0.05 * k, 'in:snapL': -0.04 * k, 'in:shL_tgt': 0.31 - 0.1 * k, 'in:shr_tgt': 0.07, 'in:shL_car': -0.2 * k,
+                       'in:shr_car': 0.03, 'in:shL_ay': 0.12, 'in:shr_ay': -0.05, 'in:imp': 0.075 * k, 'in:spr': 0.5, 'in:wind': 0.7, 'in:q': float(k == 2)}
+    WIN = {(p, gid): dict(terms(k), **raw) for k, p in enumerate(['q1', 'r1', 'w1', 't1', 'k1'])}
+    av, ref = build.averages(log, coming, S, tables(), rating, srating, defs, inputs=WIN)
     chk(sorted(av) == ['k1', 'q1', 'q2', 'r1', 't1', 'w1', 'w2'],
         f'AVERAGES: on a made-up week the build projects {sorted(av)}, not the starters with {A["min_games"]} regular games (q1, q2, r1, w1, w2, t1, k1)')
     if sorted(av) != ['k1', 'q1', 'q2', 'r1', 't1', 'w1', 'w2']:
@@ -2029,16 +2515,29 @@ def avg_week_fixture():
                         vs.setdefault((r['season'], r['ord']), []).append(stat(r, col))
                 al = ewm_last_own([float(np.mean(vs[k])) for k in sorted(vs)], AVG_ALLOWED_HL) / leg['allowed_mean'] if vs else 1.0
                 x['log_allowed'] = math.log(max(al, 1e-3))
+            for t in leg['terms']:
+                if t.startswith('in:'):
+                    x[t] = WIN.get((pid, gid), {}).get(t, 0.0)
             o = avg_leg_own(leg, a, x, {**{'E:' + t: rmean[leg['scale']][t] for t in leg['tables']}, **dmean})
             fz[(pid, col)] = (o['z'], 1e-4 + (1e-4 + 1e-6 * o['proj']) / o['sd'])
             got = b['stats'].get(col)
             if got is None:
                 bad.append(f'{pid} has no {col}, a leg of his position')
                 continue
+            wx = in_x_own(leg, x) if any(t.startswith('in:') for t in leg['terms']) else {}
+            gx = got.get('in_x')
+            if (not wx and gx is not None) or (wx and (not isinstance(gx, dict) or sorted(gx) != sorted(wx)
+                                                      or any(abs(gx[k] - v) > 1e-4 + 1e-9 * v for k, v in wx.items()))):
+                bad.append(f'{pid} {col}: in_x {gx}, the gate\'s {wx}')
             near = 1e-4 + 1e-6 * o['proj']
             if (abs(got['avg'] - a) > 1e-4 or any(abs(got[k] - o[k]) > near for k in ('proj', 'no_elo', 'elo'))
                     or abs(got['z'] - o['z']) > 1e-4 + near / o['sd'] or any(abs(got[k] - o[k]) > 1e-4 for k in ('def_x', 'elo_x'))):
                 bad.append(f'{pid} {col}: {got} for avg {a:.4f}, proj {o["proj"]:.4f}, twin {o["no_elo"]:.4f}, z {o["z"]:.4f}')
+    # each player handed inputs carries their raw values to four places (none missing as None), and no other carries any
+    for pid, b in av.items():
+        want_in = {k: (None if v is None else round(v, 4) if isinstance(v, float) else v) for k, v in raw.items()} if (pid, gid) in WIN else None
+        if b.get('in') != want_in:
+            bad.append(f'{pid} carries the inputs {b.get("in")}, not {want_in}')
     # BBB has allowed a receiver a touchdown a game and no quarterback anything: the allowances over the fit's mean
     qa = (av['q1']['stats'].get('passing_yards') or {}).get('allowed')
     if qa != 1.0:
@@ -2074,7 +2573,7 @@ def avg_week_fixture():
             X = json.loads(json.dumps(orig))
             edit(X)
             build.ELO_AVG = X
-            av_, _ = build.averages(log, coming, S, tables(), rating, srating, defs)
+            av_, _ = build.averages(log, coming, S, tables(), rating, srating, defs, inputs=WIN)
             got = mm_week(X)
             bad += [f'{what}: {g}' for g in got]
             if what == 'the tag at the largest shift' and sorted(p for p, b in av_.items() if (b.get('mm') or {}).get('tag')) != \
@@ -2115,11 +2614,11 @@ def avg_week_fixture():
     chk(not wrong, f'AVERAGES: the gate\'s mismatch rules judge these made-up blocks the wrong way: {wrong}')
     # a game with nothing on the sheet (as the build never logs one, but were it there) moves nothing
     quiet = dict(log[0], pid='w1', group='WR', ord=99, game_id=f'{S}_99_AAA_CCC', vol=0.0, **{c: 0.0 for c in cols})
-    av_q, _ = build.averages(log + [quiet], coming, S, tables(), rating, srating, defs)
+    av_q, _ = build.averages(log + [quiet], coming, S, tables(), rating, srating, defs, inputs=WIN)
     chk(av_q == av, 'AVERAGES: a game with nothing on the sheet moves a made-up week\'s averages')
     # a better pass defence (BBB's raw up half a standard deviation of its stats): every AAA leg facing it moves by its
     # coefficient on the defence and the interaction at his own Elo, and nothing else moves
-    av_b, _ = build.averages(log, coming, S, tables(0.5), rating, srating, defs)
+    av_b, _ = build.averages(log, coming, S, tables(0.5), rating, srating, defs, inputs=WIN)
     Tb = tables(0.5)
     bad = []
     for pid in ('q1', 'w1', 'w2', 't1'):
@@ -2138,6 +2637,269 @@ def avg_week_fixture():
     chk(not bad, f'AVERAGES: a better defence does not move the made-up week by its coefficient: {bad[:3]}')
 
 
+def in_const_checks():
+    """THE INPUTS' constants against the gate's own copies: the build's rule (AVG_IN) and first snap season, its stadiums
+    under a roof and abroad, ELO_AVG's share centres, each leg's input terms, groups, typical values and trust, and the
+    fit's SPEC; then the gate's own rules refusing made-up ELO_AVGs and SPECs that break each"""
+    A = build.ELO_AVG
+    norm = lambda d: {k: (list(v) if isinstance(v, tuple) else v) for k, v in d.items()}
+    chk(norm(build.AVG_IN) == norm(IN_RULE_OWN) and build.SNAP_FIRST == IN_SNAP_FIRST_OWN,
+        f'AVERAGES: the build\'s rule for the inputs {build.AVG_IN} (snap counts from {build.SNAP_FIRST}) is not the gate\'s {IN_RULE_OWN} (from {IN_SNAP_FIRST_OWN})')
+    roofed = {k for k, v in build.STADIUMS.items() if v[2] != 'open'}
+    abroad = {k for k, v in build.STADIUMS.items() if v[2] == 'open' and not (-125 < v[1] < -66 and 24 < v[0] < 50)}
+    chk(roofed == set(IN_ROOF_OWN) and abroad == set(IN_ABROAD_OWN) - set(IN_ROOF_OWN),
+        f'AVERAGES: the build\'s stadiums under a roof {sorted(roofed ^ set(IN_ROOF_OWN))} or abroad {sorted(abroad ^ (set(IN_ABROAD_OWN) - set(IN_ROOF_OWN)))} '
+        f'differ from the gate\'s')
+    moved = sorted(k for k in set(build.STADIUMS) | set(IN_STADIUMS_OWN)
+                   if k not in build.STADIUMS or k not in IN_STADIUMS_OWN or tuple(build.STADIUMS[k][:2]) != IN_STADIUMS_OWN[k])
+    chk(not moved, f'AVERAGES: the build\'s stadium coordinates differ from the gate\'s at {moved[:6]}: a forecast would be read for another place')
+    chk(build.NWS_POINTS == IN_NWS_OWN and build.OPEN_METEO == IN_OM_OWN,
+        f'AVERAGES: the forecasts\' addresses are {build.NWS_POINTS!r} and {build.OPEN_METEO!r}, not the gate\'s {IN_NWS_OWN!r} and {IN_OM_OWN!r} '
+        f'(Open-Meteo answers in km/h unless asked for mph)')
+    chk(build.SNAP_DUE == IN_SNAP_DUE_OWN, f'AVERAGES: the build requires the season in play\'s snap counts {build.SNAP_DUE} hours after a kickoff, the gate {IN_SNAP_DUE_OWN}')
+    fb = in_fit_bad(A, elo_avg_fit.SPEC)
+    chk(not fb, f'AVERAGES: the inputs\' constants: {"; ".join(fb[:4])}{" ..." if len(fb) > 4 else ""} ({len(fb)})')
+
+    def edited(fn):
+        X = json.loads(json.dumps(A))
+        fn(X)
+        return X
+
+    def add_group(X, key, g, term):
+        leg = X['legs'][key]
+        leg['inputs'] = list(leg.get('inputs') or []) + [g]
+        leg['terms'].append(term)
+        leg['coef'].append(-0.05)
+        leg['no_elo']['terms'].append(term)
+        leg['no_elo']['coef'].append(-0.05)
+        leg.setdefault('in_mean', {})[term] = 0.0
+
+    def drop_twin(X, key, term):
+        n = X['legs'][key]['no_elo']
+        i = n['terms'].index(term)
+        del n['terms'][i], n['coef'][i]
+    cases = [('the build\'s', A, None, True),
+             ('a share centre edited', edited(lambda X: X['inputs']['share_center']['WR'].update(tgt=-1.8)), None, False),
+             ('an input group added to a leg', edited(lambda X: add_group(X, 'WR|any_td', 'q', 'in:q')), None, False),
+             ('inputs on a leg that reads none', edited(lambda X: add_group(X, 'QB|carries', 'imp', 'in:imp')), None, False),
+             ('a trusted flag flipped on', edited(lambda X: X['legs']['WR|receptions'].update(trusted=True)), None, False),
+             ('a trusted flag flipped off', edited(lambda X: X['legs']['RB|carries'].update(trusted=False)), None, False),
+             ('an input in the projection and not its twin', edited(lambda X: drop_twin(X, 'RB|scrim_yards', 'in:snapL')), None, False),
+             ('in_mean missing a term', edited(lambda X: X['legs']['K|kick_pts'].update(in_mean={})), None, False),
+             ('the groups out of order', edited(lambda X: X['legs']['QB|passing_yards'].update(inputs=['spr', 'imp', 'wind'])), None, False)]
+    S0 = elo_avg_fit.SPEC
+    spec_add = {k: dict(v) for k, v in S0.items()}
+    spec_add['WR|any_td']['inputs'] = list(spec_add['WR|any_td']['inputs']) + ['q']
+    spec_trust = {k: dict(v) for k, v in S0.items()}
+    spec_trust['TE|receiving_yards']['trusted'] = True
+    cases += [('the fit\'s SPEC', A, S0, True), ('a SPEC with an input group added', A, spec_add, False),
+              ('a SPEC trusting a tight end\'s yards', A, spec_trust, False)]
+    wrong = [w for w, X, sp, ok in cases if (not in_fit_bad(X, sp)) != ok]
+    chk(not wrong, f'AVERAGES: the gate\'s rules for the inputs\' constants judge these made-up ones the wrong way: {wrong}')
+
+
+def in_fixture_checks():
+    """THE INPUTS on a made-up world (avg_coming_inputs, the build's run path, netfetch stubbed for the forecasts) against
+    the gate's own reading, every branch: a stat row with no snap row (his last snap share carried), a snap with no
+    stat row (a share of 0), a snap row whose PFR id players.csv does not know (no snap share at all), a club's week of
+    20 air yards or fewer (no air-yards share), negative air yards (clipped at 0), a row with no player id (in his club's
+    totals), a season and club before (both averages run across them, the moved club in today's code), the away side's
+    spread (its negative) and a game with no lines (0), implied points under 7 and over 45 (clipped), a roof (calm, no
+    request) and games.csv's roof closed at a stadium open to the sky (calm, no request), a forecast in reach from the
+    National Weather Service and one abroad from Open-Meteo, each asked at the gate's own address for the stadium's own
+    coordinates (Open-Meteo in mph), one failed (calm, said so), one past 6.5 days (calm, no request), a Questionable
+    filed (1) and one only last week with this week's practice report and no status (0); then the gate's own wind rule
+    judging made-up records of each branch (offline only where the gate is told so), the fit's played games' wind
+    (avg_wind_played: a retractable roof open calm too), and the season in play's snap counts due on the gate's rule
+    and the build's (snap_gaps) alike"""
+    S = 2030
+    now = datetime.datetime(S, 10, 16, 12, tzinfo=datetime.timezone.utc)
+    kick = now + datetime.timedelta(days=2, hours=5)
+    G = {'g1': (f'{S}_06_BBB_AAA', 'BUF00', 'outdoors', kick, -3.5, 44.5), 'g2': (f'{S}_06_DDD_CCC', 'DET00', 'dome', kick, 2.5, 50.0),
+         'g3': (f'{S}_06_FFF_EEE', 'PIT00', 'outdoors', kick, 1.0, 41.0), 'g4': (f'{S}_06_HHH_GGG', 'LON02', np.nan, kick, -6.0, 47.5),
+         'g5': (f'{S}_06_JJJ_III', 'CHI98', 'outdoors', now + datetime.timedelta(days=8), np.nan, np.nan),
+         'g6': (f'{S}_06_LLL_KKK', 'NOR00', 'dome', kick, 14.0, 20.0), 'g7': (f'{S}_06_NNN_MMM', 'MIN01', 'dome', kick, -2.0, 100.0),
+         'g8': (f'{S}_06_PPP_OOO', 'BUF00', 'closed', kick, 0.0, 40.0)}
+    games = pd.DataFrame([{'game_id': g, 'season': S, 'week': 6, 'stadium_id': sid, 'roof': rf, 'kick': k, 'spread_line': sp,
+                           'total_line': tl, 'home_score': np.nan, 'wind': np.nan} for g, sid, rf, k, sp, tl in G.values()])
+    rows = []
+
+    def stat(pid, team, w, tgt=0, car=0, att=0, ay=0.0, s=S):
+        rows.append({'player_id': pid, 'season': s, 'week': w, 'team': team, 'targets': tgt, 'carries': car, 'attempts': att,
+                     'receiving_air_yards': ay})
+    for w in range(1, 6):
+        stat('a-qb', 'AAA', w, car=3, att=30 + w)
+        stat('a-rb', 'AAA', w, tgt=3, car=12 + w, ay=-4.0 if w == 2 else 2.0 if w == 3 else 5.0)
+        stat('a-w1', 'AAA', w, tgt=6 + w % 3, ay=5.0 if w == 3 else 40.0 + 5 * w)
+        if w in (1, 2, 4):
+            stat('a-w2', 'AAA', w, tgt=4, ay=30.0)
+        stat('a-w3', 'AAA', w, tgt=3, ay=4.0 if w == 3 else 20.0)
+        stat('a-te', 'AAA', w, tgt=4, ay=3.0 if w == 3 else 25.0)
+        stat('a-k', 'AAA', w)
+        stat('b-qb', 'BBB', w, car=2, att=35)
+        stat('b-w1', 'BBB', w, tgt=7, ay=55.0)
+    stat('a-lb', 'AAA', 2, tgt=1, ay=6.0)                    # a defender's target: his club's totals count it
+    stat(None, 'AAA', 1, tgt=2, ay=9.0)                      # a row with no player id: in his club's totals too
+    stat('a-w1', 'CCC', 17, tgt=9, ay=70.0, s=S - 1)         # last season, another club
+    stat('c-w9', 'CCC', 17, tgt=3, ay=10.0, s=S - 1)
+    stat('x-lv', 'LV', 17, tgt=8, car=20, ay=60.0, s=S - 1)   # b-qb's club last season, in today's code
+    stats = pd.DataFrame(rows)
+    PFR = {'a-qb': 'Pqb', 'a-rb': 'Prb', 'a-w1': 'Pw1', 'a-w2': 'Pw2', 'a-te': 'Pte', 'a-k': 'Pk', 'b-qb': 'Pbq', 'b-w1': 'Pbw'}
+    sn = []
+    for w in range(1, 6):
+        for pid, pct in (('a-qb', 1.0), ('a-rb', 0.55 + 0.03 * w), ('a-w1', 0.9 - 0.05 * w), ('a-w2', 0.4 + 0.1 * (w % 2)),
+                         ('a-te', 0.7), ('b-qb', 0.98), ('b-w1', 0.85), ('a-w3', 0.6)):
+            if pid == 'a-w1' and w == 5:
+                continue                                        # a stat row and no snap row: his last snap share carried
+            sn.append({'season': S, 'week': w, 'team': pid[0].upper() * 3, 'pfr_player_id': PFR.get(pid, 'Unknown-' + pid),
+                       'offense_snaps': int(65 * pct), 'offense_pct': pct})
+        sn.append({'season': S, 'week': w, 'team': 'AAA', 'pfr_player_id': 'Pk', 'offense_snaps': 0, 'offense_pct': 0.0})   # a kicker: no offensive snap
+    sn.append({'season': S - 1, 'week': 17, 'team': 'CCC', 'pfr_player_id': 'Pw1', 'offense_snaps': 50, 'offense_pct': 0.77})
+    sn.append({'season': S - 1, 'week': 17, 'team': 'OAK', 'pfr_player_id': 'Pbq', 'offense_snaps': 3, 'offense_pct': 0.05})   # a snap, no stat row, a moved club
+    snaps = pd.DataFrame(sn)
+    pfr = {v: k for k, v in PFR.items()}
+    INJ = pd.DataFrame([{'season': S, 'week': 6, 'gsis_id': 'a-w3', 'report_status': 'Questionable', 'practice_status': 'Limited'},
+                        {'season': S, 'week': 5, 'gsis_id': 'b-w1', 'report_status': 'Questionable', 'practice_status': 'Limited'},
+                        {'season': S, 'week': 6, 'gsis_id': 'b-w1', 'report_status': None, 'practice_status': 'Did Not Participate'},
+                        {'season': S, 'week': 6, 'gsis_id': 'a-w1', 'report_status': None, 'practice_status': 'Full'}])
+    parts = {'AAA': [('a-qb', 'QB'), ('a-rb', 'RB'), ('a-w1', 'WR'), ('a-w2', 'WR'), ('a-w3', 'WR'), ('a-te', 'TE'), ('a-k', 'K')],
+             'BBB': [('b-qb', 'QB'), ('b-w1', 'WR')]}
+    coming = [{'game_id': G['g1'][0], 'team': 'AAA', 'home': 1, 'parts': parts['AAA']}, {'game_id': G['g1'][0], 'team': 'BBB', 'home': 0, 'parts': parts['BBB']}]
+    for g, c in (('g2', 'c-qb'), ('g3', 'e-qb'), ('g4', 'g-qb'), ('g5', 'i-qb'), ('g6', 'k-qb'), ('g7', 'm-qb'), ('g8', 'o-qb')):
+        coming.append({'game_id': G[g][0], 'team': c[0].upper() * 3, 'home': 1, 'parts': [(c, 'QB')]})
+    coming.append({'game_id': G['g6'][0], 'team': 'LLL', 'home': 0, 'parts': [('l-qb', 'QB')]})
+    # the forecasts: the National Weather Service answers at Buffalo (18 mph at kickoff), fails at Pittsburgh; Open-Meteo
+    # answers in London (9.5 mph); nothing else may be asked
+    asked = []
+    h = kick.replace(minute=0)
+    per = lambda a, b, s_: {'startTime': a.isoformat(), 'endTime': b.isoformat(), 'windSpeed': s_}
+
+    at = lambda tpl, sid: tpl.format(lat=IN_STADIUMS_OWN[sid][0], lon=IN_STADIUMS_OWN[sid][1])
+    hourly = 'https://api.weather.gov/gridpoints/BUF/1,1/forecast/hourly'
+
+    def stub(url, dest, **k):
+        asked.append((url, k))
+        if url == at(IN_NWS_OWN, 'BUF00'):                     # only the gate's own address for each answers
+            body = {'properties': {'forecastHourly': hourly}}
+        elif url == hourly:
+            body = {'properties': {'periods': [per(h - datetime.timedelta(hours=1), h, '40 mph'), per(h, h + datetime.timedelta(hours=1), '12 to 18 mph')]}}
+        elif url == at(IN_OM_OWN, 'LON02'):
+            body = {'hourly': {'time': [kick.strftime('%Y-%m-%dT%H:00')], 'wind_speed_10m': [9.5]}}
+        else:
+            raise build.netfetch.FetchError('stubbed: no answer')
+        with open(dest, 'w') as f:
+            json.dump(body, f)
+        return dest
+    real = build.netfetch.download
+    build.netfetch.download = stub
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            run = build.avg_coming_inputs(coming, games, {'vol': stats, 'snaps': snaps, 'pfr': pfr}, {S: INJ}, now, False)
+    finally:
+        build.netfetch.download = real
+    src = {'stats': stats, 'snaps': snaps, 'pfr': pfr}
+    AV = {p: {'in': {k: run[(p, c['game_id'])].get(k) for k in IN_KEYS_OWN}} for c in coming for p, _ in c['parts'] if (p, c['game_id']) in run}
+    want = {p: {'game_id': c['game_id'], 'home': c['home'], 'group': g} for c in coming for p, g in c['parts']}
+    gm = games.copy()
+    own, wbad = in_week_own(AV, want, gm, None, S, now, src=src, inj=INJ)
+    bad = list(wbad)
+    if sorted(AV) != sorted(want):
+        bad.append(f'the run gave inputs for {sorted(AV)}, not every starter {sorted(want)}')
+    for p in AV:
+        v, t = own[p]
+        r = run[(p, want[p]['game_id'])]
+        for k in t:
+            if abs(r[k] - t[k]) > 1e-9:
+                bad.append(f'{p} {k}: the build\'s {r[k]}, the gate\'s {t[k]}')
+        bad += in_block_bad(p, AV[p]['in'], v, rnd=1e-9)
+    # the branches by hand
+    T = lambda p: own[p][1]
+    V = lambda p: own[p][0]
+    hist = in_hist_own(src, list(want))
+    hw = {p: {k: (sn_, sh) for k, sn_, sh in hist.get(p, [])} for p in want}
+    facts = [('the away side\'s spread is its negative', V('b-qb')['spread'] == 3.5 and V('b-qb')['implied'] == 44.5 / 2 + 3.5 / 2
+              and V('a-qb')['spread'] == -3.5 and abs(T('b-qb')['in:spr'] - 0.5) < 1e-12),
+             ('a game with no lines reads imp and spr 0', T('i-qb')['in:imp'] == 0 and T('i-qb')['in:spr'] == 0),
+             ('a stat row with no snap row carries his last snap share', V('a-w1')['snap1'] == 0.9 - 0.05 * 4),
+             ('his snap share averages over last season\'s other club too', abs(V('a-w1')['snapL'] - in_ewm_own([0.77] + [0.9 - 0.05 * w for w in range(1, 5)], 6)) < 1e-12),
+             ('a snap with no stat row is a share of 0', hw['a-w2'][S * 100 + 3][1]['tgt'] == 0 and hw['a-w2'][S * 100 + 5][1]['tgt'] == 0),
+             ('a snap row players.csv does not place gives no snap share', not in_ok(V('a-w3')['snap1']) and T('a-w3')['in:snap1r'] == 0 and T('a-w3')['in:snapL'] == 0),
+             ('a club\'s week of 20 air yards or fewer gives no air-yards share', not in_ok(hw['a-w1'][S * 100 + 3][1]['ay']) and in_ok(hw['a-w1'][S * 100 + 2][1]['ay'])),
+             ('negative air yards are clipped at 0', hw['a-rb'][S * 100 + 2][1]['ay'] == 0),
+             ('a defender\'s and an unnamed row count in the club\'s totals', abs(hw['a-w1'][S * 100 + 1][1]['tgt'] - 7 / (7 + 3 + 4 + 3 + 4 + 2)) < 1e-12),
+             ('a snap with no stat row at a moved club', hw['b-qb'][(S - 1) * 100 + 17] == (0.05, {'tgt': 0.0, 'car': 0.0, 'ay': 0.0})),
+             ('a kicker has no snap share', not in_ok(V('a-k')['snapL'])),
+             ('a Questionable filed is 1', T('a-w3')['in:q'] == 1),
+             ('one filed only last week, with a practice report and no status this week, is 0', T('b-w1')['in:q'] == 0 and T('a-w1')['in:q'] == 0),
+             ('the National Weather Service\'s hour at kickoff, the higher of "12 to 18 mph"', AV['a-qb']['in']['wind'] == 18.0
+              and AV['a-qb']['in']['wind_src'] == 'nws' and abs(T('a-qb')['in:wind'] - 0.8) < 1e-12),
+             ('under a roof calm', AV['c-qb']['in']['wind'] == 0.0 and AV['c-qb']['in']['wind_src'] == 'roof' and T('c-qb')['in:wind'] == 0),
+             ('a failed forecast calm, said so', AV['e-qb']['in']['wind'] is None and str(AV['e-qb']['in']['wind_src']).startswith('forecast failed') and T('e-qb')['in:wind'] == 0),
+             ('abroad, Open-Meteo\'s hour', AV['g-qb']['in']['wind'] == 9.5 and AV['g-qb']['in']['wind_src'] == 'open-meteo'),
+             ('past 6.5 days calm', AV['i-qb']['in']['wind'] is None and AV['i-qb']['in']['wind_src'] == 'beyond the forecast'),
+             ('implied points under 7 clipped at 7, over 45 at 45, and a side between them read as it is',
+              abs(T('l-qb')['in:imp'] - math.log(7 / 22.5)) < 1e-12 and abs(T('m-qb')['in:imp'] - math.log(45 / 22.5)) < 1e-12
+              and abs(T('k-qb')['in:imp'] - math.log(17 / 22.5)) < 1e-12 and abs(T('l-qb')['in:spr'] + 2.0) < 1e-12),
+             ('games.csv\'s roof closed at a stadium open to the sky: calm, no request', AV['o-qb']['in']['wind'] == 0.0 and AV['o-qb']['in']['wind_src'] == 'roof'),
+             ('each request at the gate\'s own address for its stadium\'s coordinates (Open-Meteo in mph), and no other',
+              sorted(u for u, _ in asked) == sorted([at(IN_NWS_OWN, 'BUF00'), hourly, at(IN_NWS_OWN, 'PIT00'), at(IN_OM_OWN, 'LON02')])),
+             ('no request for the roof or the far game, one try each', not any('41.86' in u or '42.34' in u for u, _ in asked)
+              and len(asked) == 4 and all(k.get('waits') == () for _, k in asked))]
+    bad += [f'{w}: not so' for w, ok in facts if not ok]
+    chk(not bad, f'AVERAGES: the inputs on a made-up world against the gate\'s own reading: {"; ".join(bad[:4])}{" ..." if len(bad) > 4 else ""} ({len(bad)})')
+    # the gate's wind rule on made-up records: each branch's right record passes and each wrong one is refused
+    g = lambda sid, roof, days, **k: dict({'stadium_id': sid, 'roof': roof, 'kick': now + datetime.timedelta(days=days), 'home_score': np.nan, 'wind': np.nan}, **k)
+    recs = [(g('DET00', 'dome', 2), 0.0, 'roof', True), (g('DET00', 'dome', 2), 8.0, 'nws', False), (g('IND00', np.nan, 2), None, 'offline', False),
+            (g('IND00', np.nan, 2), None, 'offline', False, True),
+            (g('BUF00', 'outdoors', 8), None, 'beyond the forecast', True), (g('BUF00', 'outdoors', 8), 11.0, 'nws', False),
+            (g('BUF00', 'outdoors', 8), None, 'offline', False), (g('BUF00', 'outdoors', 8), None, 'offline', True, True),
+            (g('BUF00', 'outdoors', 2), None, 'offline', False), (g('BUF00', 'outdoors', 2), None, 'offline', True, True),
+            (g('BUF00', 'outdoors', 2), 12.0, 'nws', True),
+            (g('BUF00', 'outdoors', 2), 12.0, 'open-meteo', False), (g('BUF00', 'outdoors', 2), None, 'forecast failed: HTTP 500', True),
+            (g('BUF00', 'outdoors', 2), None, 'forecast skipped: the step ran past 90 s', True), (g('BUF00', 'outdoors', 2), None, 'roof', False),
+            (g('BUF00', 'outdoors', 2), -3.0, 'nws', False), (g('BUF00', 'outdoors', 2), None, 'nws', False), (g('BUF00', 'outdoors', 2), 0.0, 'roof', False),
+            (g('BUF00', 'outdoors', 2), None, 'beyond the forecast', False), (g('LON02', 'outdoors', 2), 9.0, 'open-meteo', True),
+            (g('LON02', 'outdoors', 2), 9.0, 'nws', False), (g('BUF00', 'outdoors', 6.5, ), None, 'beyond the forecast', True),
+            (g('BUF00', 'outdoors', 6.5), 7.0, 'nws', True)]
+    wrong = [(r['stadium_id'], r['roof'], w, s_, off) for r, w, s_, ok, *off in recs
+             if (in_wind_own(r, now, w, s_, offline=bool(off and off[0]))[1] is None) != ok]
+    played = pd.DataFrame([{'game_id': 'p1', 'roof': 'closed', 'wind': 14.0}, {'game_id': 'p2', 'roof': 'outdoors', 'wind': 21.0},
+                           {'game_id': 'p3', 'roof': 'outdoors', 'wind': np.nan}, {'game_id': 'p4', 'roof': 'dome', 'wind': np.nan},
+                           {'game_id': 'p5', 'roof': 'open', 'wind': 18.0}])
+    bw = build.avg_wind_played(played)
+    for r in played.itertuples(index=False):
+        o = in_wind_own({'roof': r.roof, 'wind': r.wind, 'home_score': 21.0, 'stadium_id': 'BUF00'}, now)[0]
+        if not ((o is None and not in_ok(bw[r.game_id])) or (o is not None and bw[r.game_id] == o)):
+            wrong.append(('played', r.game_id, bw[r.game_id], o))
+    if bw.get('p5') != 0.0:
+        wrong.append(('played under a retractable roof open', bw.get('p5')))
+    chk(not wrong, f'AVERAGES: the gate\'s wind rule judges these made-up records the wrong way, or the fit\'s played wind is not its: {wrong[:4]}')
+    # the season in play's snap counts due: week 1 final five days before the build (due), week 2 two days before (not
+    # yet), a playoff game five days before (never held), a club in last season's code; the gate's rule and the build's
+    # (snap_gaps, which load() refuses on) on each copy
+    k5, k2 = now - datetime.timedelta(days=5), now - datetime.timedelta(days=2)
+    et = lambda k: k.astimezone(build.ET)
+    sg = pd.DataFrame([{'game_id': gid, 'season': S, 'week': wk, 'game_type': gt, 'gameday': et(k).strftime('%Y-%m-%d'),
+                        'gametime': et(k).strftime('%H:%M'), 'home_team': hm, 'away_team': aw, 'home_score': hs, 'away_score': 17.0}
+                       for gid, wk, gt, k, hm, aw, hs in (('w1a', 1, 'REG', k5, 'AAA', 'BBB', 20.0), ('w1b', 1, 'REG', k5, 'LV', 'CCC', 24.0),
+                                                          ('w2a', 2, 'REG', k2, 'AAA', 'CCC', 10.0), ('wc', 19, 'WC', k5, 'DDD', 'EEE', 31.0),
+                                                          ('w2b', 2, 'REG', k5, 'BBB', 'DDD', np.nan))])
+    full = pd.DataFrame([{'season': S, 'week': 1, 'team': t} for t in ('AAA', 'BBB', 'OAK', 'CCC')])
+    cases = [('every due game carried, a club in last season\'s code', full, now, True),
+             ('a club of a due game missing', full[full.team != 'OAK'], now, False),
+             ('a week not yet due missing, a playoff game and one with no score never held', full, now, True),
+             ('the file not had once due', None, now, False),
+             ('the file not had before the first game is due', None, k5 + datetime.timedelta(hours=IN_SNAP_DUE_OWN - 1), True),
+             ('last season\'s rows only', full.assign(season=S - 1), now, False)]
+    sw = []
+    for w, sn_, t_, ok in cases:
+        o_ = in_snaps_due_bad(sg, sn_, S, t_)
+        b_ = build.snap_gaps(sg, sn_, S, t_) if sn_ is not None else (['not had'] if t_ >= k5 + datetime.timedelta(hours=build.SNAP_DUE) else [])
+        if (not o_) != ok or (not b_) != ok:
+            sw.append(f'{w}: the gate {o_}, the build {b_}')
+    chk(not sw, f'AVERAGES: the season in play\'s snap counts due, on made-up games: {"; ".join(sw[:3])}')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--data', default=os.path.join(HERE, 'data'))
@@ -2145,7 +2907,10 @@ def main():
     ap.add_argument('--history', default=os.path.join(HERE, 'history'))
     ap.add_argument('--prev', help='the previously published players.json (default: the last commit\'s)')
     ap.add_argument('--joker-state', default=build.JOKER_STATE, help='the betting state the Joker\'s calls are read from')
+    ap.add_argument('--offline', action='store_true',
+                    help='the files come from an offline build (by hand): a forecast in reach recorded calm, "offline", passes')
     a = ap.parse_args()
+    OFFLINE['on'] = a.offline
 
     unit_checks()
     unit_team_checks()
@@ -2395,6 +3160,12 @@ def main():
     # ---- AVERAGES: the Elo-adjusted averages on the gate's own reading ----
     if MU:
         avg_checks(MU, P, M, games, a.cache, built)
+    # the season in play's snap counts (THE INPUTS), due on the gate's own rule: nflverse's newest schedule's
+    newest = int(games.season.max())
+    sp_ = os.path.join(a.cache, f'snap_counts_{newest}.csv')
+    sn_ = pd.read_csv(sp_, usecols=['season', 'week', 'team'], low_memory=False) if os.path.exists(sp_) else None
+    sb = in_snaps_due_bad(games, sn_, newest, built)
+    chk(not sb, f'AVERAGES: {"; ".join(sb)}: every snap share would stand a game behind, or on nothing')
 
     # ---- DRAFT: every player's first career rating, the draft start's on the gate's own reading ----
     dslots, dfirst = draft_checks(P, games, a.cache, season, roster_path)
