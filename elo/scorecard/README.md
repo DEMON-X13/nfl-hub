@@ -25,7 +25,7 @@ One step of the Elo job (`.github/workflows/elo.yml`), after the Elo files are c
    season's player stats and snap counts, players.csv) and `props/data/espn_lines_<season>.json`.
 3. `scorecard.py check --ledger <temp> --against HEAD`.
 4. Only if both pass, the new ledger replaces `elo/scorecard/ledger.json` in a commit of its own ("elo: mismatch
-   scorecard ..."). A run that changes nothing writes nothing.
+   scorecard ..."). A run that changes nothing commits nothing.
 
 The off switch is the repository variable `ELO_SCORECARD`: `gh variable set ELO_SCORECARD --body off` stops it,
 `gh variable delete ELO_SCORECARD` resumes it. Games missed meanwhile get no row.
