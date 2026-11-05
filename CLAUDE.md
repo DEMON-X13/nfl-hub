@@ -3776,19 +3776,20 @@ the next write leaves them out.
 
 The record. `suggest_ledger.js` takes no Elo picks: an entry it takes carries no `elo`, and an entry not yet locked that
 carries them (taken by an older page) is rewritten without them by the first run before its lock, as any set that has
-changed is; on the ledger of 5 November 2026 that was week 9's four, Thursday's JAX at BAL, Sunday night's TB at CHI,
-Monday's BUF at MIN and the week's Sunday slot, their model levels byte for byte what app v141 had written (one that
-locks before a run on the new page reaches it keeps its Elo picks as history). An entry locked with them keeps its `elo`
-byte for byte: its Elo levels are graded as before and counted in `prime_summary.elo` and `slot_summary.elo`, which the
-page never reads, and one holding a player ruled out is no longer built again (`replaceRuledOut` walks `tiers` alone).
-`ready()` no longer waits for or refuses on the ELO tab's files, and no longer asks the page for `spEloSet`. The guard
-refuses everything it refused before, and since this change also an entry this run takes carrying `elo` ("taken by this
-run with Elo picks, which the record no longer takes (app v142)") and an Elo pick this run replaces ("an Elo pick
-replaced by this run, which the record no longer does (app v142)"), both judged only against the file the run started
-from. The Elo picks' history (the record's from app v118 to app v141, the backtest's weeks 3 to 6) stays in
-`props/data/suggest_ledger.json` and `suggest_backtest.json` as data, drawn nowhere. `suggest_backtest.js` and its file
-are untouched: a by-hand run of it now refuses at once (its `ready()` asks the page for `spEloSet`), and it has nothing
-left to build (every unit of weeks 3 to 6 is in, none pending); its `--check`, which reads no page, stands.
+changed is; on a copy of the ledger of 5 November 2026 at 23:37 UTC that was week 9's three still to lock, Sunday
+night's TB at CHI, Monday's BUF at MIN and the week's Sunday slot, their model levels byte for byte what app v141 had
+written, the guard content; Thursday's JAX at BAL had locked at 23:15 with its Elo picks, and a set that locks before a
+run on the new page reaches it keeps them as history. An entry locked with them keeps its `elo` byte for byte: its Elo
+levels are graded as before and counted in `prime_summary.elo` and `slot_summary.elo`, which the page never reads, and
+one holding a player ruled out is no longer built again (`replaceRuledOut` walks `tiers` alone). `ready()` no longer
+waits for or refuses on the ELO tab's files, and no longer asks the page for `spEloSet`. The guard refuses everything it
+refused before, and since this change also an entry this run takes carrying `elo` ("taken by this run with Elo picks,
+which the record no longer takes (app v142)") and an Elo pick this run replaces ("an Elo pick replaced by this run,
+which the record no longer does (app v142)"), both judged only against the file the run started from. The Elo picks'
+history (the record's from app v118 to app v141, the backtest's weeks 3 to 6) stays in `props/data/suggest_ledger.json`
+and `suggest_backtest.json` as data, drawn nowhere. `suggest_backtest.js` and its file are untouched: a by-hand run of
+it now refuses at once (its `ready()` asks the page for `spEloSet`), and it has nothing left to build (every unit of
+weeks 3 to 6 is in, none pending); its `--check`, which reads no page, stands.
 
 The tag. On every model level card of Suggested Parlays (the night games and the Sunday slot; live, locked from the
 record, this browser's own locked set, and under way), a player's leg wears the Mismatches' own tag right after his
