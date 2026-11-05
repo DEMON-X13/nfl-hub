@@ -95,6 +95,10 @@ at the next refresh:
   canonical edit once merged, since it holds a run's ledger to the last commit's); research data nothing on the site
   reads: under "Props: the loop", **The touchdown shadow**)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
+- `elo/scorecard/ledger.json` (by `elo/scorecard/scorecard.py run` in the Elo job, after its commit, and committed only once
+  `scorecard.py check` holds it to the last commit's: the Mismatches frozen at kickoff and graded against DraftKings' close,
+  under a bar `init` wrote before the first call, so a hand edit rewrites the record; research data nothing on the site
+  reads: under "Player Elo: the loop", **The Mismatch scorecard**)
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
 source, shipped in from `nfl-model-lab`, not generated here.
@@ -1875,6 +1879,8 @@ python3 elo/tools/joker_base_fit.py   # after a build: the ELO Model's calls on 
 python3 elo/tools/elo_avg_fit.py      # only after a season ends (once mid-season, 4 November 2026, on completed seasons alone at the owner's ask: The inputs): the Elo-adjusted averages (ELO_AVG), fitted on every expected starter's game of 2016 to the last finished season, chosen on the walk-forward of 2018 on (--offline on elo/cache with the snap counts from 2013 and players.csv); "the build carries these constants"
 python3 elo/test_parity.py            # the averages' inputs: the fit's path and the run's term for term, the rule on the test's own reading and the forecast's rules, on fixtures of its own, which the Elo job runs after check.py and the props gate's job C on a pull request (--cache, by hand after a change to the inputs' code: also on elo/cache's real 2025 files); "0 failures"
 python3 elo/test_fetch.py             # the build's downloads and the forecasts on a local server (seconds, no network): which files are required, past.lst, the draft picks, each forecast failure calm and the cap of wall clock; the Elo job runs it before its commit and job C on a pull request; "0 failures"
+python3 elo/scorecard/test_scorecard.py   # the Mismatch scorecard's test (seconds, its own fixtures); the Elo job runs it before the scorecard's step; "0 failures"
+python3 elo/scorecard/scorecard.py summary   # the scorecard's running record (The Mismatch scorecard, below)
 ```
 
 **Elo-adjusted averages** (29 October 2026; `elo/build.py`'s ELO-ADJUSTED AVERAGES, whose docstring is the rule, and
@@ -1987,7 +1993,8 @@ confirmed once on 2022-2025 (0.180 [0.156, 0.200] against 0.104), 8 of 8 seasons
 of 8, backs alone 6 of 8. Against his own average it is level with the old score's player half (4 of 8): a Mismatch mostly
 says his Elo rates him above his own average, the defence moving him about 3-9% either way. **None of it is tested against
 DraftKings' lines** (2018-2025 has none; in 2026 the old tags went over the close 45.5% of the time against 47.0%
-untagged): the frozen scorecard, `mm.shift` and `mm.tag` at kickoff against the archive's closing lines, will be. The
+untagged): the frozen scorecard, `mm.shift` and `mm.tag` at kickoff against the archive's closing lines, is (**The Mismatch
+scorecard**, below). The
 defence named is the ELO Ratings tab's own table the leg is set against (item 2: the block's `vs`, "vs LAC Pass Defense
 #32"), its rank the tab's; a back's rushing yards' multiplier carries the defenders' player Elo too (its terms read DL, LB
 and DB), so his title says "Run Defense and defenders". The player window's DL, LB and DB rank line and the Game snapshot's
@@ -2052,6 +2059,24 @@ verdict line and marks (`mmSnapHold`, again with the tagged player ruled out) an
 game two days out by the page's clock, three rows of the smoke's own planted (at the tag, under it and of nothing, "0 pts"),
 at any hour and in the off-season. `build.js` also stops on a size in `snapshot.html` off its type scale (`--gs-t1` to
 `--gs-t6`), where the Game snapshot's Mismatch pill had set 10.5px.
+
+**The Mismatch scorecard** (5 November 2026, item 3 of the Elo diagnosis; `elo/scorecard/`, its README.md first, which holds
+the bar word for word). Research only: no page, audit or smoke reads it, and nothing is fitted, tuned or chosen on it. It is
+one step of the Elo job, after its commit and the page smoke, on main only, continue-on-error with a 3-minute cap:
+`test_scorecard.py`, then `scorecard.py run` writes the new ledger aside, `scorecard.py check` holds it to the last commit's
+(`git show HEAD:`), and only then is it committed alone ("elo: mismatch scorecard ..."). Every lead block (`avg[pid].mm`) of
+a regular-season game is a row, tagged or not and whatever its shift: rewritten while its game is to come, dropped if the
+newest publish before kickoff no longer carries it, frozen at kickoff (`shift`, `tag`, `proj`, `no_elo`, `sd` and the
+publish's `built_at`). From kickoff + 72 hours each row is graded once over or under DraftKings' closing main line in
+`props/data/espn_lines_<season>.json` against the player's stat in the build's `elo/cache` (no stat row: 0 where PFR's snap
+counts show a snap, void where they carry his club's game without him), the open line kept beside it as information. Void
+if games.csv moves the game more than 24 hours, or if it is still not gradable 14 days after kickoff. The bar: decided once
+the season's rows are all graded or voided; under 30 graded tagged rows UNDECIDED; PASS only if D (the tagged over-rate less
+the untagged) and S (Spearman of the shift with the actual less the close) both have 90% game-bootstrap intervals wholly
+above 0; FAIL if D's lies wholly below 0; otherwise NO EDGE SHOWN. A PASS only makes the Mismatches a candidate for a change
+of their own. Expect no edge: the rebuilt Mismatches are honest, not built to beat DraftKings. `test_scorecard.py` pins the
+bar's SHA-256. The off switch is the repository variable `ELO_SCORECARD` (`gh variable set ELO_SCORECARD --body off`; `gh
+variable delete ELO_SCORECARD` resumes it).
 
 **The defences on the ELO tab's tables** (November 2026, the owner's call "Switch to ELO tab tables", asked once the
 Mismatches had dropped the matchup formula's units). A player's window on the ELO Ratings tab and the Game snapshot's

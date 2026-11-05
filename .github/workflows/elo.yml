@@ -21,6 +21,9 @@ name: elo
 # files stay live. The Bets and Stats page smoke runs after the commit: it checks the page, not the Elo
 # data, so a failure there turns the run red without holding back the ratings (it held them back on a
 # tied final and on a top 25 with 24 quarterbacks, in October 2026, until each fix landed).
+# After them, on main only, the Mismatch scorecard (elo/scorecard/README.md, research read by no page) freezes the
+# published Mismatches at kickoff and grades them against DraftKings' closing lines, in a commit of its own; its step
+# is continue-on-error with a 3-minute cap, so it never holds back, slows or reddens the ratings.
 on:
   schedule:
     - cron: "40 12 * * *"    # daily, queued 12:40 UTC (08:40 EDT / 07:40 EST); lands 4-9h later
@@ -43,7 +46,7 @@ jobs:
     # averages' inputs (4 November 2026) add the wind forecasts, held to 90 seconds of wall clock a run (each request
     # tried once and given up after 15 seconds of wall clock, a server trickling its answer too, so the step ends by
     # about 91), and on the first run after them the finished seasons' snap counts (13 files, 28 MB), downloaded once and
-    # kept after: well inside 40 minutes, which stays
+    # kept after: well inside 40 minutes, which stays (the Mismatch scorecard's step, 5 November 2026, adds 3 at most)
     timeout-minutes: 40
     steps:
       # the branch as it stands when the run starts, not the commit it was queued on: runs of one job wait
@@ -114,6 +117,7 @@ jobs:
         # skipped (the two checks above are the gate either way)
         run: echo "calls=$(python -c "import json; print(len(json.load(open('elo/data/model.json'))['next']['games']))")" >> "$GITHUB_OUTPUT"
       - name: Commit if anything changed
+        id: commit
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
@@ -137,6 +141,39 @@ jobs:
         # live, and is fixed in the page or the smoke
         if: steps.season.outputs.calls != '0'
         run: node nflbets/build/smoke.js
+      # THE MISMATCH SCORECARD (elo/scorecard/README.md): research only, read by no page. Once the Elo files are pushed
+      # (whatever the page smoke said), on main only: its test, then scorecard.py run writes the new ledger aside from the
+      # published matchups, the build's elo/cache and props/data/espn_lines_<season>.json (it downloads nothing), and
+      # scorecard.py check holds it to the last commit's; only then is it moved into place and committed alone. A refusal
+      # leaves the committed ledger as it was. continue-on-error with its own cap, so it never fails the run or holds back
+      # the publish, which has already landed. Off switch: the repository variable ELO_SCORECARD=off (`gh variable set
+      # ELO_SCORECARD --body off`; `gh variable delete ELO_SCORECARD` resumes it).
+      - name: "Mismatch scorecard: freeze, grade and commit its ledger (research only, never shown)"
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.commit.outcome == 'success' && vars.ELO_SCORECARD != 'off' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          L=elo/scorecard/ledger.json; T="$RUNNER_TEMP/scorecard"; mkdir -p "$T"
+          if ! python elo/scorecard/test_scorecard.py > "$T/test.log" 2>&1; then
+            tail -30 "$T/test.log"; echo "REFUSED: the scorecard's test failed: the ledger stays as committed"; exit 1
+          fi
+          tail -1 "$T/test.log"
+          python elo/scorecard/scorecard.py run --out "$T/ledger.json"
+          if ! python elo/scorecard/scorecard.py check --ledger "$T/ledger.json" --against HEAD; then
+            echo "REFUSED: the check failed: the ledger stays as committed"; exit 1
+          fi
+          cp "$T/ledger.json" "$L.part" && mv "$L.part" "$L"
+          git config user.name "nfl-hub bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add "$L"
+          if git diff --cached --quiet; then echo "the scorecard's ledger did not change"; exit 0; fi
+          git commit -m "elo: mismatch scorecard $(date -u +'%Y-%m-%d %H:%M UTC')"
+          for i in 1 2 3; do
+            if git pull --rebase --autostash && git push; then exit 0; fi
+            git rebase --abort 2>/dev/null || true   # a failed rebase left in place fails every retry
+            echo "push raced another job, retrying ($i)"; sleep 10
+          done
+          echo "the scorecard's commit lost its push three times: the next run starts from the last committed ledger"; exit 1
       - name: Stage the finished seasons' files to keep
         id: past
         if: always()
