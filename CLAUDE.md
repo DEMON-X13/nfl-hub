@@ -97,8 +97,9 @@ at the next refresh:
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
 - `elo/scorecard/ledger.json` (by `elo/scorecard/scorecard.py run` in the Elo job, after its commit, and committed only once
   `scorecard.py check` holds it to the last commit's: the Mismatches frozen at kickoff and graded against DraftKings' close,
-  under a bar `init` wrote before the first call, so a hand edit rewrites the record; research data nothing on the site
-  reads: under "Player Elo: the loop", **The Mismatch scorecard**)
+  under a bar `init` wrote before the first call, so a hand edit rewrites the record, and the props gate's `ledger_hold`
+  fails a pull request that changes or removes it; research data nothing on the site reads: under "Player Elo: the loop",
+  **The Mismatch scorecard**)
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
 source, shipped in from `nfl-model-lab`, not generated here.
@@ -292,7 +293,9 @@ nothing is committed). Its first job sorts the changed paths into AUDIT (what th
 runs, `lib/`, `props.yml`, the gate, and since 31 October 2026 the touchdown shadow's code and test and every file
 PREREGISTRATION.md section 3 registers, `TD_SHADOW` in `props_gate.py`, but never its ledger, which the props job alone
 writes: a pull request that changes or removes it fails this first job outright, `ledger_hold`, and one may only add it
-as `td_shadow.py init` writes the bar's registration, `td_shadow_check.py --registration`) and PAGE (`nflbets/`, the page itself at the root, `index.html`, and the old addresses' redirects to it,
+as `td_shadow.py init` writes the bar's registration, `td_shadow_check.py --registration`; since 5 November 2026 the same
+for the Mismatch scorecard's ledger, `elo/scorecard/ledger.json`, which the Elo job alone writes, `scorecard.py check
+--registration`) and PAGE (`nflbets/`, the page itself at the root, `index.html`, and the old addresses' redirects to it,
 `pickems/`, `live/`, `liveparlays/` and `news/index.html`, since 17 October 2026, the betting app, `betting/neutral_sites.json`
 and `betting/tools`' build parts, the props parts, `liveparlays/build/`), a renamed file by its old path
 too; with neither it passes at once, and a push or a dispatch runs everything. Job A runs `weekly.py
@@ -2061,22 +2064,25 @@ at any hour and in the off-season. `build.js` also stops on a size in `snapshot.
 `--gs-t6`), where the Game snapshot's Mismatch pill had set 10.5px.
 
 **The Mismatch scorecard** (5 November 2026, item 3 of the Elo diagnosis; `elo/scorecard/`, its README.md first, which holds
-the bar word for word). Research only: no page, audit or smoke reads it, and nothing is fitted, tuned or chosen on it. It is
-one step of the Elo job, after its commit and the page smoke, on main only, continue-on-error with a 3-minute cap:
-`test_scorecard.py`, then `scorecard.py run` writes the new ledger aside, `scorecard.py check` holds it to the last commit's
-(`git show HEAD:`), and only then is it committed alone ("elo: mismatch scorecard ..."). Every lead block (`avg[pid].mm`) of
-a regular-season game is a row, tagged or not and whatever its shift: rewritten while its game is to come, dropped if the
-newest publish before kickoff no longer carries it, frozen at kickoff (`shift`, `tag`, `proj`, `no_elo`, `sd` and the
-publish's `built_at`). From kickoff + 72 hours each row is graded once over or under DraftKings' closing main line in
-`props/data/espn_lines_<season>.json` against the player's stat in the build's `elo/cache` (no stat row: 0 where PFR's snap
-counts show a snap, void where they carry his club's game without him), the open line kept beside it as information. Void
-if games.csv moves the game more than 24 hours, or if it is still not gradable 14 days after kickoff. The bar: decided once
-the season's rows are all graded or voided; under 30 graded tagged rows UNDECIDED; PASS only if D (the tagged over-rate less
-the untagged) and S (Spearman of the shift with the actual less the close) both have 90% game-bootstrap intervals wholly
-above 0; FAIL if D's lies wholly below 0; otherwise NO EDGE SHOWN. A PASS only makes the Mismatches a candidate for a change
-of their own. Expect no edge: the rebuilt Mismatches are honest, not built to beat DraftKings. `test_scorecard.py` pins the
-bar's SHA-256. The off switch is the repository variable `ELO_SCORECARD` (`gh variable set ELO_SCORECARD --body off`; `gh
-variable delete ELO_SCORECARD` resumes it).
+the bar word for word). Research only: no page, audit or smoke reads it, and nothing is fitted, tuned or chosen on it. Two
+steps of the Elo job, on main only, each continue-on-error with its own cap: right after its commit (so the clock is the
+publish's) `test_scorecard.py`, then `scorecard.py run` writes the new ledger aside and `scorecard.py check` holds it to
+the last commit's (`git show HEAD:`); after the page smoke it is committed alone ("elo: mismatch scorecard ..."). Every
+lead block (`avg[pid].mm`) of a regular-season game of the ledger's season is a row, tagged or not and whatever its shift:
+rewritten while its game is to come, dropped if the newest publish before kickoff no longer carries it (but not by a
+publish within 15 minutes of the kickoff, which `elo/build.py` never lets carry the game: `CALL_LEAD`), frozen at kickoff
+(`shift`, `tag`, `proj`, `no_elo`, `sd` and the publish's `built_at`). From kickoff + 72 hours each row is graded once over
+or under DraftKings' closing main line in `props/data/espn_lines_<season>.json` (not one listed `gone`) against the
+player's stat in the build's `elo/cache` (no stat row: 0 where PFR's snap counts show a snap, void where they carry his
+club's game without him), the open line kept beside it as information. Void if games.csv moves the game more than 24
+hours, or if it is still not gradable 14 days after kickoff. The bar: decided once the season's rows are all graded or
+voided; under 30 graded tagged rows UNDECIDED; PASS only if D (the tagged over-rate less the untagged) and S (Spearman of
+the shift with the actual less the close) both have 90% game-bootstrap intervals wholly above 0; FAIL if D's lies wholly
+below 0; otherwise NO EDGE SHOWN. A PASS only makes the Mismatches a candidate for a change of their own. Expect no edge:
+the rebuilt Mismatches are honest, not built to beat DraftKings. `test_scorecard.py` pins the bar's SHA-256 and its
+registration time, `init --force` refuses a ledger with a run or a call, and the props gate's `ledger_hold` fails a pull
+request that changes or removes the ledger. The off switch is the repository variable `ELO_SCORECARD` (`gh variable set
+ELO_SCORECARD --body off`; `gh variable delete ELO_SCORECARD` resumes it).
 
 **The defences on the ELO tab's tables** (November 2026, the owner's call "Switch to ELO tab tables", asked once the
 Mismatches had dropped the matchup formula's units). A player's window on the ELO Ratings tab and the Game snapshot's

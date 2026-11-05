@@ -1,39 +1,57 @@
 """THE MISMATCH SCORECARD: the Props tab's Mismatches against DraftKings' closing line, frozen at kickoff and graded
 after the game. Research only: no page, audit or smoke reads it, and nothing is fitted, tuned or chosen on it. The bar
 it is judged by (BAR, below, in README.md word for word) was registered by `init` before the first call and is never
-changed: check refuses a ledger whose bar, its SHA-256 or its registration time moved.
+changed: check refuses a ledger whose bar, its SHA-256 or its registration time moved from the last commit's, and the
+props gate (.github/scripts/props_gate.py, ledger_hold) refuses a pull request that changes or removes the committed
+ledger (one may only add it, as init writes it: check --registration), since check alone cannot see a hand edit once
+it is the last commit's.
 
     python3 elo/scorecard/scorecard.py init                       # once: elo/scorecard/ledger.json, the bar and no call
     python3 elo/scorecard/scorecard.py run --out <path>           # the Elo job, after its commit: record, freeze, grade
     python3 elo/scorecard/scorecard.py check --ledger <path>      # the new ledger against the last commit's (git show HEAD:)
+    python3 elo/scorecard/scorecard.py check --registration <path>   # only: is it the bar's registration as init writes it
     python3 elo/scorecard/scorecard.py summary                    # print the committed ledger's summary
 
 A row is one lead block of the published matchups (elo/data/matchups.json, avg[pid].mm: the lead leg's stat, its
 chance shift on an even line and whether it is tagged), keyed '<game id>|<player id>', for a regular-season game:
 {season, week, gid, pid, name, pos, club, kickoff, stat, shift, tag, proj, no_elo, sd, published, written_at, grade}.
 
-  record   every lead block of a game still to come at the run's clock (kickoff strictly later, games.csv's) is written,
-           shift <= 0 and untagged among them (the bar sets tagged against untagged rows of the same publishes); a row
-           whose numbers have not moved is kept as it was (its published and written_at the publish that first carried
-           them), one whose numbers moved is written again (published: the matchups file's built_at, else model.json's)
-  drop     a row of a game still to come that the newest publish no longer carries is dropped: the last publish before
-           kickoff is what a visitor saw
+  record   every lead block of a game of the ledger's season still to come at the run's clock (kickoff strictly later,
+           games.csv's) is written, shift <= 0 and untagged among them (the bar sets tagged against untagged rows of the
+           same publishes); a row whose numbers have not moved is kept as it was (its published and written_at the
+           publish that first carried them), one whose numbers moved is written again (published: the matchups file's
+           built_at, else model.json's). A block of a game kicking off within LEAD of the publish's built_at is not
+           taken: elo/build.py never publishes one (CALL_LEAD), so it was not published before kickoff by its rule
+  drop     a row of a game still to come that the newest publish no longer carries is dropped (the last publish before
+           kickoff is what a visitor saw), but only where that publish could have carried it: a game kicking off within
+           LEAD of its built_at (plus the minute built_at is cut to) is left out of every publish by elo/build.py, so its
+           rows keep the last publish that did carry it
   freeze   from the first run at or after kickoff (the row's own, or games.csv's if earlier) a row is never written again
            or removed; a game first seen after its kickoff gets no row
-  void     games.csv moves a frozen game's kickoff more than 24 hours: 'moved'; a game off the schedule 14 days after
-           the row's kickoff: 'off schedule'
+  void     games.csv moves a frozen game's kickoff more than 24 hours: 'moved', written once the row's own kickoff has
+           passed (a game moved earlier waits for it); a game off the schedule 14 days after the row's kickoff: 'off
+           schedule'
   grade    once, by the first run at or after kickoff + 72 hours where the archive (props/data/espn_lines_<season>.json,
            the props job's) has the game final with a close for the player on the stat, and the season's nflverse player
            stats (elo/cache/stats_player_week_<season>.csv, the build's download) carry the game. actual: his stat row
            in that game; with none, 0 where PFR's snap counts (elo/cache/snap_counts_<season>.csv, his PFR id from
            elo/cache/players.csv) show him with a snap, void 'did not play' where they carry his club's game without
            him, and otherwise he waits. over if actual > close, under if <, push if equal (left out of the bar); the
-           open line and over or under against it are kept beside it, information only. Still not gradable 14 days
-           after kickoff: void 'no close', 'no stats' or 'not told'. A grade once written is never changed. A run
-           missing the stats or the archive grades nothing (and voids nothing for want of them) and says so.
+           open line and over or under against it are kept beside it, information only. A line the archive lists in
+           the game's `gone` (DraftKings withdrew it before the last read) is no close. A stat nflverse writes in parts
+           is their sum as elo/build.py adds it (DERIVED). Still not gradable 14 days after kickoff: void 'no close',
+           'no stats' or 'not told'. A grade once written is never changed. A run missing the stats or the archive
+           grades nothing (and voids nothing for want of them) and says so, so the decision then waits past the bar's
+           14 days for the files.
   summary  recomputed from the rows on every run, per season: the rows graded, the tagged and untagged over-rates with
            their counts, D and S with their 90% intervals (10,000 resamples of games, numpy default_rng(2026)), 'running'
            until decided, then the verdict by the bar, on the four-place numbers the ledger states.
+  check    refuses a new ledger (exit 1, each reason said) whose bar, its SHA-256, its registration time, its season or
+           how differ from the last commit's; that is not the canonical dump, or whose last commit's copy is not (a hand
+           edit); whose run or rows predate the registration; whose frozen row changed or went; whose grade changed once
+           written; with a row added or rewritten at or after its kickoff, from a publish within LEAD of its kickoff or
+           of another season; with a grade that does not follow its actual; or whose summary does not follow from the
+           rows (on games.csv's last regular-season kickoff, else the committed summary's)
 
 Nothing here downloads: it reads the files the Elo job's build already has in elo/cache, and the archive in the repo.
 """
@@ -48,7 +66,10 @@ import subprocess
 import sys
 import zoneinfo
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:            # check --registration (the props gate's hold, on a runner with no numpy) needs no numbers
+    np = None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -93,7 +114,13 @@ CONTENT = ('season', 'week', 'gid', 'pid', 'name', 'pos', 'club', 'kickoff', 'st
 ROW_KEYS = CONTENT + ('published', 'written_at', 'grade')
 RESULTS = ('over', 'under', 'push', 'void')
 VOIDS = ('moved', 'no close', 'no stats', 'did not play', 'not told', 'off schedule')
-SUM_STATS = {'scrim_yards': ('rushing_yards', 'receiving_yards')}   # a page stat nflverse writes as two columns
+# a stat nflverse writes in parts: elo/build.py's own sums (its d['scrim_yards'], d['any_td'] and d['kick_pts'] lines),
+# which test_scorecard.py holds to build.py's source
+DERIVED = {'scrim_yards': {'rushing_yards': 1, 'receiving_yards': 1},
+           'any_td': {'rushing_tds': 1, 'receiving_tds': 1},
+           'kick_pts': {'fg_made': 3, 'pat_made': 1}}
+LEAD = datetime.timedelta(minutes=15)    # elo/build.py's CALL_LEAD: it publishes no game kicking off sooner than this
+TRUNC = datetime.timedelta(minutes=1)    # built_at is the build's clock cut to the minute
 
 
 # ---------------------------------------------------------------- times
@@ -141,6 +168,10 @@ def schedule(path):
 def last_regular(sched, season):
     ks = [g['kick'] for g in sched.values() if g['season'] == season and g['type'] == 'REG']
     return iso(max(ks)) if ks else None
+
+
+def last_regs(sched, calls):
+    return {s: last_regular(sched, s) for s in {r['season'] for r in calls.values()}}
 
 
 class Sources:
@@ -219,13 +250,23 @@ def num(v, nd=4):
     return None if v is None else round(float(v), nd) + 0.0
 
 
-def record(calls, m, names, sched, now, published, notes):
-    """rows written or rewritten for the games still to come, and the ones the newest publish dropped taken out"""
+def pub_time(published):
+    try:
+        return when(published) if published else None
+    except (TypeError, ValueError):
+        return None
+
+
+def record(calls, m, names, sched, now, published, notes, season):
+    """rows written or rewritten for the games of the season still to come, and the ones the newest publish dropped
+    taken out (only where that publish could have carried them)"""
     blocks = lead_blocks(m)
     if blocks is None:
         notes.append('the matchups file carries no averages: nothing recorded or dropped this run')
         return dict(calls), {'new': 0, 'rewritten': 0, 'dropped': 0}
-    out, seen, n = dict(calls), set(), {'new': 0, 'rewritten': 0, 'dropped': 0, 'post': 0, 'unknown': 0}
+    pub = pub_time(published)
+    out, seen = dict(calls), set()
+    n = {'new': 0, 'rewritten': 0, 'dropped': 0, 'post': 0, 'unknown': 0, 'other': 0, 'late': 0, 'kept': 0}
     for pid, b in sorted(blocks.items()):
         gid = b.get('game_id')
         s = sched.get(gid)
@@ -235,10 +276,16 @@ def record(calls, m, names, sched, now, published, notes):
         if s['type'] != 'REG':
             n['post'] += 1
             continue
+        if s['season'] != season:
+            n['other'] += 1
+            continue
         key = f'{gid}|{pid}'
         old = calls.get(key)
         if s['kick'] <= now or (old is not None and frozen(old, sched, now)):
             continue                                   # under way or played: no new row, and a frozen one stays
+        if pub is not None and s['kick'] <= pub + LEAD:
+            n['late'] += 1                             # not published before kickoff by elo/build.py's own rule
+            continue
         seen.add(key)
         mm = b['mm']
         st = (b.get('stats') or {}).get(mm.get('stat')) or {}
@@ -252,9 +299,24 @@ def record(calls, m, names, sched, now, published, notes):
         out[key] = row
         n['rewritten' if old is not None else 'new'] += 1
     for key, row in calls.items():
-        if key not in seen and not frozen(row, sched, now) and key in out:
-            del out[key]                               # the newest publish before kickoff no longer carries it
-            n['dropped'] += 1
+        if key in seen or key not in out or frozen(row, sched, now):
+            continue
+        s = sched.get(row['gid'])
+        kick = s['kick'] if s is not None else when(row['kickoff'])
+        if pub is not None and kick < pub + LEAD + TRUNC:
+            n['kept'] += 1                             # no publish this close to kickoff carries it: the last one stands
+            continue
+        del out[key]                                   # the newest publish before kickoff no longer carries it
+        n['dropped'] += 1
+    if n['kept']:
+        notes.append(f"{n['kept']} row(s) of games within {int(LEAD.total_seconds() // 60)} minutes of this publish's "
+                     "built_at, which no publish carries that close: kept as the last publish that carried them")
+    if n['late']:
+        notes.append(f"{n['late']} lead block(s) of games kicking off within {int(LEAD.total_seconds() // 60)} minutes "
+                     "of the publish: not published before kickoff by elo/build.py's rule, not recorded")
+    if n['other']:
+        notes.append(f"{n['other']} lead block(s) of another season than the ledger's {season}: not recorded (another "
+                     "season needs a ledger and a bar registered of its own)")
     if n['unknown']:
         notes.append(f"{n['unknown']} lead block(s) of a game games.csv does not have: not recorded")
     if n['post']:
@@ -264,10 +326,10 @@ def record(calls, m, names, sched, now, published, notes):
 
 def stat_value(row, stat):
     """his stat from the nflverse row (a missing number in a row he has is 0), or None where no column carries it"""
-    cols = SUM_STATS.get(stat, (stat,))
-    if any(c not in row for c in cols):
+    parts = DERIVED.get(stat, {stat: 1})
+    if any(c not in row for c in parts):
         return None
-    return float(sum(float(row[c]) if row[c] not in ('', 'NA', None) else 0.0 for c in cols))
+    return float(sum(w * (float(row[c]) if row[c] not in ('', 'NA', None) else 0.0) for c, w in parts.items()))
 
 
 def side(actual, line):
@@ -289,7 +351,8 @@ def grade(calls, sched, now, sources, notes):
         s = sched.get(row['gid'])
         g = None
         if s is not None and abs(s['kick'] - k0) > MOVED:
-            g = {'result': 'void', 'why': 'moved', 'kickoff_now': iso(s['kick'])}
+            if now >= k0:                              # a game moved earlier waits for the row's own kickoff
+                g = {'result': 'void', 'why': 'moved', 'kickoff_now': iso(s['kick'])}
         elif s is None:
             if now >= k0 + VOID_AFTER:
                 g = {'result': 'void', 'why': 'off schedule'}
@@ -316,7 +379,9 @@ def grade_one(row, s, now, src):
     game = src.archive.get(gid)
     line = None
     if isinstance(game, dict) and game.get('final'):
-        line = ((game.get('lines') or {}).get(pid) or {}).get(stat)
+        gone = {tuple(x) for x in game.get('gone') or [] if isinstance(x, list) and len(x) == 2}
+        if (pid, stat) not in gone:                    # a line DraftKings withdrew is no closing line
+            line = ((game.get('lines') or {}).get(pid) or {}).get(stat)
     close = line[1] if isinstance(line, list) and len(line) >= 2 else None
     if close is None:
         return {'result': 'void', 'why': 'no close'} if late else None
@@ -494,9 +559,17 @@ def fresh(season, now):
 
 
 def cmd_init(a):
-    if os.path.exists(a.ledger) and not a.force:
-        print(f'{a.ledger} exists: the bar is registered once (init --force only before the first call)')
-        return 1
+    if os.path.exists(a.ledger):
+        if not a.force:
+            print(f'{a.ledger} exists: the bar is registered once (init --force only before the first call)')
+            return 1
+        try:
+            led = read_json(a.ledger)
+        except (OSError, ValueError):
+            led = {}
+        if isinstance(led, dict) and (led.get('calls') or led.get('run_at') or led.get('summary')):
+            print(f'REFUSED: {a.ledger} has a run or a call: init --force only before the first call')
+            return 1
     now = when(a.now) if a.now else datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
     season = a.season or int(read_json(os.path.join(a.data, 'matchups.json'))['season'])
     write(fresh(season, now), a.ledger)
@@ -529,7 +602,7 @@ def cmd_run(a):
         except (OSError, ValueError):
             published = None
     old_calls = led.get('calls') or {}
-    calls, n_rec = record(old_calls, m, names, sched, now, published, notes)
+    calls, n_rec = record(old_calls, m, names, sched, now, published, notes, led.get('season'))
     calls = {k: dict(v) for k, v in calls.items()}
     cache = {}
 
@@ -539,7 +612,7 @@ def cmd_run(a):
         return cache[season]
 
     n_gr = grade(calls, sched, now, sources, notes)
-    last_reg = {s: last_regular(sched, s) for s in {r['season'] for r in calls.values()}}
+    last_reg = last_regs(sched, calls)
     summary = summarize(calls, iso(now), last_reg, led.get('summary'))
     new = dict(led)
     if calls == old_calls and summary == (led.get('summary') or {}):
@@ -570,9 +643,15 @@ def line(v):
 
 # ---------------------------------------------------------------- the check
 
-def problems(new, old):
-    """every reason the new ledger cannot follow the committed one"""
+def problems(new, old, last_reg=None, text=None, old_text=None):
+    """every reason the new ledger cannot follow the committed one. last_reg {season: the last regular-season kickoff}
+    is games.csv's (the run's own reading), else the committed summary's is taken; text and old_text, where given, are
+    the two files as written, each held to the canonical dump"""
     bad = []
+    if text is not None and text != dumps(new):
+        bad.append('the new ledger is not the canonical dump scorecard.py writes')
+    if old_text is not None and old_text != dumps(old):
+        bad.append('the committed ledger is not the canonical dump scorecard.py writes (a hand edit?)')
     if new.get('v') != 1 or new.get('v') != old.get('v'):
         bad.append(f"v is {new.get('v')!r}, the committed ledger's {old.get('v')!r}")
     if new.get('season') != old.get('season'):
@@ -595,8 +674,11 @@ def problems(new, old):
         return bad
     try:
         run = when(new['run_at'])
-    except (TypeError, ValueError):
-        return bad + [f"run_at {new.get('run_at')!r} is not a time"]
+        reg = when(new.get('bar_registered'))
+    except (TypeError, ValueError, AttributeError):
+        return bad + [f"run_at {new.get('run_at')!r} or bar_registered {new.get('bar_registered')!r} is not a time"]
+    if run < reg:
+        bad.append(f"run_at {new['run_at']} is before the bar was registered ({new['bar_registered']})")
     if old.get('run_at') and run <= when(old['run_at']):
         if new != old:
             bad.append(f"run_at {new['run_at']} is not later than the committed {old['run_at']}, and the ledger moved")
@@ -606,7 +688,15 @@ def problems(new, old):
             continue
         if key != f"{r['gid']}|{r['pid']}":
             bad.append(f'{key}: keyed off its own game and player')
-        k = when(r['kickoff'])
+        if r['season'] != new.get('season'):
+            bad.append(f"{key}: a row of season {r['season']!r} in the ledger of {new.get('season')!r}")
+        try:
+            k = when(r['kickoff'])
+            if when(r['written_at']) < reg:
+                bad.append(f'{key}: written at {r["written_at"]}, before the bar was registered')
+        except (TypeError, ValueError, AttributeError):
+            bad.append(f'{key}: its kickoff or written_at is not a time')
+            continue
         o = oc.get(key)
         g = r.get('grade')
         if o is None or any(o.get(f) != r.get(f) for f in CONTENT + ('published', 'written_at')):
@@ -614,6 +704,10 @@ def problems(new, old):
                 bad.append(f'{key}: a frozen row (kickoff {o["kickoff"]}) changed')
             elif k <= run:
                 bad.append(f'{key}: added or rewritten by the run of {new["run_at"]}, at or after its kickoff {r["kickoff"]}')
+            pub = pub_time(r.get('published'))
+            if pub is not None and k <= pub + LEAD:
+                bad.append(f'{key}: taken from a publish built {r["published"]}, within {int(LEAD.total_seconds() // 60)} '
+                           f'minutes of its kickoff {r["kickoff"]}')
             if r['written_at'] != new['run_at']:
                 bad.append(f'{key}: added or rewritten with written_at {r["written_at"]}, not the run\'s {new["run_at"]}')
         if o is not None and o.get('grade') is not None and o.get('grade') != g:
@@ -634,8 +728,10 @@ def problems(new, old):
     for key, o in oc.items():
         if key not in nc and when(o['kickoff']) <= run:
             bad.append(f'{key}: a frozen row removed')
-    want = summarize(nc, new['run_at'], {int(s): v.get('last_regular_kickoff') for s, v in (new.get('summary') or {}).items()},
-                     old.get('summary'))
+    if last_reg is None:                               # no games.csv: the committed summary's, else the new one's
+        last_reg = {int(s): v.get('last_regular_kickoff') for s, v in (new.get('summary') or {}).items()}
+        last_reg.update({int(s): v.get('last_regular_kickoff') for s, v in (old.get('summary') or {}).items()})
+    want = summarize(nc, new['run_at'], last_reg, old.get('summary'))
     if json.loads(json.dumps(want)) != new.get('summary'):
         bad.append('the summary does not follow from the rows')
     for s, v in (old.get('summary') or {}).items():
@@ -646,21 +742,78 @@ def problems(new, old):
     return bad
 
 
+def registration_bad(text):
+    """why a ledger's text is not the bar's registration exactly as init writes it: the canonical dump of the version,
+    a season, HOW, BAR and its SHA-256, a registration time, and no run, call or summary (the props gate's ledger_hold
+    runs this on a pull request that adds the ledger)"""
+    try:
+        led = json.loads(text)
+    except ValueError as e:
+        return [f'not JSON ({str(e)[:80]})']
+    if not isinstance(led, dict):
+        return ['not a ledger']
+    bad = []
+    want = ('v', 'season', 'how', 'bar', 'bar_sha256', 'bar_registered', 'run_at', 'calls', 'summary')
+    if set(led) != set(want):
+        return [f'its keys are {sorted(led)}, not {sorted(want)}']
+    if led['v'] != 1:
+        bad.append(f"v is {led['v']!r}")
+    if not isinstance(led['season'], int) or isinstance(led['season'], bool):
+        bad.append(f"season {led['season']!r} is not a year")
+    if led['how'] != HOW:
+        bad.append('its how is not scorecard.HOW')
+    if led['bar'] != BAR or led['bar_sha256'] != BAR_SHA256:
+        bad.append('its bar or bar_sha256 is not the registered bar (scorecard.BAR)')
+    try:
+        if iso(when(led['bar_registered'])) != led['bar_registered']:
+            raise ValueError
+    except (TypeError, ValueError, AttributeError):
+        bad.append(f"bar_registered {led['bar_registered']!r} is not a UTC time as init writes it")
+    for k, v in (('run_at', None), ('calls', {}), ('summary', {})):
+        if led[k] != v:
+            bad.append(f'its {k} is not {json.dumps(v)}: a registration has no run, call or summary')
+    if not bad and text != dumps(led):
+        bad.append('it is not the canonical dump init writes')
+    return bad
+
+
 def committed(rev):
     out = subprocess.run(['git', 'show', f'{rev}:{LEDGER_GIT}'], cwd=ROOT, capture_output=True, text=True)
     if out.returncode:
         raise ValueError(f'git show {rev}:{LEDGER_GIT}: {out.stderr.strip()[:200]}')
-    return json.loads(out.stdout)
+    return out.stdout
+
+
+def read_text(path):
+    with open(path, encoding='utf-8', newline='') as f:
+        return f.read()
 
 
 def cmd_check(a):
+    if a.registration:
+        try:
+            bad = registration_bad(read_text(a.registration))
+        except OSError as e:
+            bad = [str(e)]
+        for b in bad:
+            print('REFUSED: ' + b)
+        if not bad:
+            print(f'ok: {a.registration} is the bar\'s registration as init writes it')
+        return 1 if bad else 0
     try:
-        new = read_json(a.ledger)
-        old = read_json(a.committed) if a.committed else committed(a.against)
+        text = read_text(a.ledger)
+        new = json.loads(text)
+        old_text = read_text(a.committed) if a.committed else committed(a.against)
+        old = json.loads(old_text)
     except (OSError, ValueError) as e:
         print(f'REFUSED: {e}')
         return 1
-    bad = problems(new, old)
+    last_reg, gp = None, os.path.join(a.cache, 'games.csv')
+    if os.path.exists(gp):
+        last_reg = last_regs(schedule(gp), new.get('calls') or {})
+    else:
+        print(f'note: no {gp}: the season\'s last regular-season kickoff is the committed summary\'s')
+    bad = problems(new, old, last_reg, text, old_text)
     for b in bad:
         print('REFUSED: ' + b)
     if bad:
@@ -696,6 +849,8 @@ def main(argv=None):
         if name == 'check':
             q.add_argument('--against', default='HEAD', help='the git revision holding the committed ledger')
             q.add_argument('--committed', help='the committed ledger as a file, in place of git')
+            q.add_argument('--cache', default=os.path.join(ROOT, 'elo', 'cache'), help='games.csv, for the last kickoff')
+            q.add_argument('--registration', help='only: is this file the bar\'s registration as init writes it')
     a = p.parse_args(argv)
     if a.cmd == 'run' and os.path.abspath(a.out) == os.path.abspath(a.ledger):
         print('REFUSED: run writes the new ledger aside (--out), never in place')

@@ -9,7 +9,8 @@ name: Props gate
 # (`gh pr checks <n> --watch`); a failure that also fails on the base is reported and does not hold it.
 on:
   # every pull request, with no paths: the first job sorts them (and holds the touchdown shadow's ledger, which the props
-  # job alone writes: props_gate.py's ledger_hold fails a pull request that changes or removes it)
+  # job alone writes, and the Mismatch scorecard's, which the Elo job alone writes: props_gate.py's ledger_hold fails a
+  # pull request that changes or removes either)
   pull_request:
   push:
     branches: [main]
@@ -95,8 +96,8 @@ jobs:
       - id: classify
         # AUDIT: what the props job runs; PAGE: what the Bets and Stats page is built from. Neither: the
         # gate passes here. A push to main or a dispatch runs everything, on the commit before it as base. On a pull
-        # request that touches the touchdown shadow's ledger, ledger_hold: added once as td_shadow.py init writes it,
-        # or this step fails
+        # request that touches the touchdown shadow's ledger or the Mismatch scorecard's, ledger_hold: added once as its
+        # init writes it (td_shadow.py init, scorecard.py init), or this step fails
         run: python3 .github/scripts/props_gate.py classify --event "${{ github.event_name }}" --before "${{ github.event.before }}"
 
   bake:

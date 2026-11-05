@@ -365,6 +365,56 @@ with tempfile.TemporaryDirectory() as d:
         case((not got) if want else (len(got) == 1 and say in got[0]),
              f'ledger_hold from {a} to {b} is {got}, not {"[]" if want else "one refusal saying " + repr(say)}')
 
+# the Mismatch scorecard's ledger, held the same way (the review of 5 November 2026: scorecard.py check holds a run's
+# ledger only to the last commit's, so a re-registration (init --force), a changed grade or a frozen row edited and
+# merged by a pull request became its baseline). It is no code either, and classify holds it on every pull request
+case(set(G.HELD) == {G.TD_LEDGER, G.SC_LEDGER}, f'the held ledgers are {sorted(G.HELD)}')
+case(G.parts([G.SC_LEDGER]) == ([], []), f'{G.SC_LEDGER} is sorted as code the props job or the page runs: {G.parts([G.SC_LEDGER])}')
+with tempfile.TemporaryDirectory() as d:
+    gitc = lambda *a: subprocess.run(['git', '-C', d, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', *a],   # noqa: E731
+                                     capture_output=True, text=True, check=True).stdout.strip()
+    gitc('init', '-q')
+    open(os.path.join(d, 'README'), 'w').write('x\n')
+    gitc('add', 'README')
+    gitc('commit', '-q', '-m', 'base')
+    shas = {'base': gitc('rev-parse', 'HEAD')}
+    reg = os.path.join(d, 'reg.json')
+    r = subprocess.run([sys.executable, '-I', '-B', os.path.join(ROOT, *G.SC_CHECK.split('/')), 'init', '--ledger', reg,
+                        '--now', '2026-11-05T01:22:26Z', '--season', '2026'], capture_output=True, text=True)
+    case(r.returncode == 0 and os.path.exists(reg), f'scorecard.py init does not write a registration to hold: {r.stdout}{r.stderr}')
+    text = open(reg, encoding='utf-8').read() if os.path.exists(reg) else '{}'
+    led = os.path.join(d, *G.SC_LEDGER.split('/'))
+
+    def commit(name, body, parent='base', path=G.SC_LEDGER):
+        gitc('checkout', '-q', shas[parent])
+        f = os.path.join(d, *path.split('/'))
+        if body is None:
+            gitc('rm', '-q', path)
+        else:
+            os.makedirs(os.path.dirname(f), exist_ok=True)
+            open(f, 'w', encoding='utf-8', newline='\n').write(body)
+            gitc('add', path)
+        gitc('commit', '-q', '-m', name)
+        shas[name] = gitc('rev-parse', 'HEAD')
+    commit('registered', text)
+    commit('reinit', text.replace('2026-11-05T01:22:26Z', '2026-11-06T09:00:00Z'), parent='registered')
+    commit('graded', text.replace('"run_at":null', '"run_at":"2026-11-08T12:00:00Z"', 1), parent='registered')
+    commit('removed', None, parent='registered')
+    commit('noncanonical', text.replace('"v":1', '"v": 1', 1))
+    commit('with_run_at', text.replace('"run_at":null', '"run_at":"2026-11-08T12:00:00Z"', 1))
+    commit('with_call', text.replace('"calls":{}', '"calls":{"k":{}}', 1))
+    commit('both', '{}', parent='graded', path=G.TD_LEDGER)
+    for want, a, b, say in ((True, 'base', 'registered', ''), (True, 'registered', 'registered', ''),
+                            (False, 'registered', 'reinit', 'is changed'), (False, 'registered', 'graded', 'is changed'),
+                            (False, 'registered', 'removed', 'is removed'), (False, 'base', 'noncanonical', 'canonical'),
+                            (False, 'base', 'with_run_at', 'run_at'), (False, 'base', 'with_call', 'calls')):
+        got = G.ledger_hold(shas[a], shas[b], cwd=d)
+        case((not got) if want else (len(got) == 1 and say in got[0] and G.SC_LEDGER in got[0]),
+             f'ledger_hold of the scorecard from {a} to {b} is {got}, not {"[]" if want else "one refusal saying " + repr(say)}')
+    got = G.ledger_hold(shas['registered'], shas['both'], cwd=d)
+    case(len(got) == 2 and any(G.SC_LEDGER in x for x in got) and any(G.TD_LEDGER in x for x in got),
+         f'a pull request touching both held ledgers is refused for each: {got}')
+
 PUBLISH_CAP = 45      # props.yml's whole cap before the shadow: its publish steps' caps (download, bake, read, audit,
                       # record, commit and the issue it closes) may add to no more, so a stalled publish holds the props
                       # concurrency group no longer than it did then

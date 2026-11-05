@@ -6,7 +6,8 @@ ledger's bar pinned. The Elo job runs it before scorecard.py run; it must end "0
 
     python3 elo/scorecard/test_scorecard.py
 
-BAR_PIN is the bar's SHA-256: a change that moves the bar must edit this line too, which is the point.
+BAR_PIN is the bar's SHA-256 and BAR_REGISTERED_PIN the committed ledger's registration time: a change that moves the bar
+or registers it again must edit these lines too, which is the point.
 """
 import contextlib
 import copy
@@ -28,6 +29,7 @@ sys.path.insert(0, HERE)
 import scorecard as sc  # noqa: E402
 
 BAR_PIN = '552609258e58c303d2bac2c3441c41adeddcfb53e9578a43b4643180be51411d'
+BAR_REGISTERED_PIN = '2026-11-05T01:22:26Z'
 
 fails = []
 
@@ -67,7 +69,8 @@ G1, G2, G3, G18, GWC = (g['game_id'] for g in GAMES)
 P = {'A1': ('00-0000001', 'Al Back', 'AAA', G1), 'B1': ('00-0000002', 'Bo Back', 'BBB', G1),
      'C1': ('00-0000003', 'Cy Back', 'CCC', G2), 'D1': ('00-0000004', 'Di Back', 'DDD', G2),
      'E1': ('00-0000005', 'Ed Back', 'EEE', G3), 'F1': ('00-0000006', 'Fa Back', 'FFF', G3),
-     'W1': ('00-0000007', 'Wi Back', 'BBB', GWC), 'X9': ('00-0000009', 'Xo Back', 'ZZZ', '2026_01_YYY_ZZZ')}
+     'W1': ('00-0000007', 'Wi Back', 'BBB', GWC), 'X9': ('00-0000009', 'Xo Back', 'ZZZ', '2026_01_YYY_ZZZ'),
+     'K1': ('00-0000010', 'Ki Cker', 'AAA', G1), 'N1': ('00-0000011', 'Ne Xt', 'AAA', '2027_01_AAA_BBB')}
 QB = ('00-0000008', 'Qu Arter', 'AAA', G1)
 
 
@@ -129,12 +132,15 @@ class Env:
                 w.writerow([g, p])
 
     def stats(self, rows):
-        """rows: (game id, player key, team, week, rushing yards)"""
+        """rows: (game id, player key, team, week, rushing yards[, {another column: its value}])"""
+        more = ('rushing_tds', 'receiving_tds', 'fg_made', 'pat_made')
         with open(os.path.join(self.cache, 'stats_player_week_2026.csv'), 'w', newline='') as f:
             w = csv.writer(f)
-            w.writerow(['player_id', 'season', 'week', 'season_type', 'game_id', 'team', 'rushing_yards', 'receiving_yards'])
-            for gid, key, team, week, yds in rows:
-                w.writerow([P[key][0] if key in P else key, 2026, week, 'REG', gid, team, yds, 0])
+            w.writerow(['player_id', 'season', 'week', 'season_type', 'game_id', 'team', 'rushing_yards', 'receiving_yards', *more])
+            for gid, key, team, week, yds, *x in rows:
+                x = x[0] if x else {}
+                w.writerow([P[key][0] if key in P else key, 2026, week, 'REG', gid, team, yds, x.get('receiving_yards', 0),
+                            *(x.get(c, 0) for c in more)])
 
     def snaps(self, rows):
         """rows: (game id, PFR id, team, offense snaps)"""
@@ -144,27 +150,35 @@ class Env:
             for gid, pfr, team, n in rows:
                 w.writerow([gid, 2026, 1, pfr, team, n, 0, 0])
 
-    def archive(self, games):
-        """games: {gid: (final, {player key: (open, close)})}"""
+    def archive(self, games, gone=None):
+        """games: {gid: (final, {player key: (open, close[, stat])})}; gone: {gid: [(player key, stat)]}"""
         out = {'v': 1, 'season': 2026, 'games': {}}
         for gid, (final, lines) in games.items():
-            out['games'][gid] = {'w': 1, 'final': final, 'lines': {P[k][0]: {'rushing_yards': [o, c, 'x']} for k, (o, c) in lines.items()}}
+            out['games'][gid] = {'w': 1, 'final': final, 'gone': [[P[k][0], st] for k, st in (gone or {}).get(gid, [])],
+                                 'lines': {P[k][0]: {(v[2] if len(v) > 2 else 'rushing_yards'): [v[0], v[1], 'x']}
+                                           for k, v in lines.items()}}
         with open(os.path.join(self.arch, 'espn_lines_2026.json'), 'w') as f:
             json.dump(out, f)
 
     def run(self, now, hold=True):
-        """scorecard.py run as the job runs it: written aside, checked against the ledger before, then moved in"""
-        before = sc.read_json(self.ledger)
+        """scorecard.py run as the job runs it: written aside, checked against the ledger before (as check reads them:
+        both files' text, games.csv's last regular-season kickoff), then moved in"""
+        before_text = sc.read_text(self.ledger)
+        before = json.loads(before_text)
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             rc = sc.main(['run', '--ledger', self.ledger, '--out', self.out, '--data', self.data, '--cache', self.cache,
                           '--archive', self.arch, '--now', now])
-        new = sc.read_json(self.out)
-        bad = sc.problems(new, before)
+        text = sc.read_text(self.out)
+        new = json.loads(text)
+        bad = sc.problems(new, before, self.last_reg(new), text, before_text)
         if hold:
             check(rc == 0 and not bad, f'the run at {now} passes check' + (f': {bad}' if bad else ''))
         shutil.copy(self.out, self.ledger)
         return new, buf.getvalue()
+
+    def last_reg(self, led):
+        return sc.last_regs(sc.schedule(os.path.join(self.cache, 'games.csv')), led.get('calls') or {})
 
 
 def row(led, key, gid=None):
@@ -232,6 +246,67 @@ def freeze_rules(tmp):
     return e
 
 
+def lead_rules(tmp):
+    print("the publish's clock: elo/build.py publishes no game kicking off within CALL_LEAD (15 minutes) of its build")
+    src = open(os.path.join(sc.ROOT, 'elo', 'build.py'), encoding='utf-8').read()
+    import re
+    m = re.search(r'(?m)^CALL_LEAD = (\d+)\b', src)
+    check(m is not None and datetime.timedelta(minutes=int(m.group(1))) == sc.LEAD,
+          f"scorecard.LEAD is elo/build.py's CALL_LEAD ({m.group(1) if m else None} minutes)")
+    check('lead = now + datetime.timedelta(minutes=CALL_LEAD)' in src and '(games.kick > lead)' in src,
+          "elo/build.py still leaves out of its publish every game kicking off within CALL_LEAD of its clock")
+    e = Env(os.path.join(tmp, 'lead'))
+    e.matchups(dict([block('A1', 0.05, True), block('B1', -0.02, False), block('C1', 0.04, True)]), '2026-09-12T12:00+00:00')
+    e.run('2026-09-12T12:10:00Z')
+    # a publish built at 16:45 (15 minutes before G1's 17:00 kickoff, its clock 16:45:xx) carries no G1 block; the step
+    # runs at 16:49, before the kickoff: G1's rows stay as the publish before left them, C1 (G2) still follows
+    e.matchups(dict([block('C1', 0.06, True)]), '2026-09-13T16:45+00:00')
+    led, out = e.run('2026-09-13T16:49:00Z')
+    check(row(led, 'A1') is not None and row(led, 'B1') is not None and row(led, 'A1')['published'] == '2026-09-12T12:00+00:00'
+          and 'kept as the last publish' in out, 'a game the publish could not carry (within 15 minutes of its build): its rows are kept')
+    check(row(led, 'C1')['shift'] == 0.06, '... while a game it could carry still follows it')
+    # and kept frozen from the kickoff: the rows of the publish before it are the ones graded
+    led, _ = e.run(K1)
+    check(row(led, 'A1')['shift'] == 0.05 and row(led, 'B1') is not None, '... and frozen at the kickoff as that earlier publish had them')
+    # a publish built at 16:44 (its clock 16:44:xx, so 17:00 was more than 15 minutes off) without A1: the build could
+    # carry G1, so A1's row is dropped
+    e2 = Env(os.path.join(tmp, 'lead2'))
+    e2.matchups(dict([block('A1', 0.05, True), block('B1', -0.02, False)]), '2026-09-12T12:00+00:00')
+    e2.run('2026-09-12T12:10:00Z')
+    e2.matchups(dict([block('B1', -0.02, False)]), '2026-09-13T16:44+00:00')
+    led, _ = e2.run('2026-09-13T16:48:00Z')
+    check(row(led, 'A1') is None and row(led, 'B1') is not None, 'a block left out of a publish that could carry its game: dropped')
+    # a block of a game within 15 minutes of its publish (elo/build.py never writes one): not taken
+    e2.matchups(dict([block('B1', 0.09, True)]), '2026-09-13T16:50+00:00')
+    led, out = e2.run('2026-09-13T16:52:00Z')
+    check(row(led, 'B1')['shift'] == -0.02 and 'not published before kickoff' in out,
+          "a block of a game kicking off within 15 minutes of its publish is not recorded (elo/build.py's rule)")
+    # check refuses such a row
+    n = copy.deepcopy(led)
+    kb = f'{G1}|{P["B1"][0]}'
+    n['run_at'] = '2026-09-13T16:53:00Z'
+    n['calls'][kb].update(shift=0.09, tag=True, published='2026-09-13T16:50+00:00', written_at=n['run_at'])
+    n['summary'] = sc.summarize(n['calls'], n['run_at'], e2.last_reg(n), led['summary'])
+    bad = sc.problems(n, led, e2.last_reg(n))
+    check(any('within 15 minutes of its kickoff' in b for b in bad), f'check refuses a row taken from a publish within 15 minutes of its kickoff ({bad[:1]})')
+
+    print("the ledger's season alone")
+    e3 = Env(os.path.join(tmp, 'season'))
+    nxt = dict(GAMES[0], game_id='2027_01_AAA_BBB', season=2027, gameday='2027-09-12')
+    e3.games(GAMES + [nxt])
+    e3.matchups(dict([block('A1', 0.05, True), block('N1', 0.06, True)]), '2026-09-12T12:00+00:00')
+    led, out = e3.run('2026-09-12T12:10:00Z')
+    check(row(led, 'A1') is not None and row(led, 'N1') is None and 'another season' in out,
+          "a block of another season than the ledger's is not recorded, and the run says so")
+    n = copy.deepcopy(led)
+    r = dict(n['calls'][f'{G1}|{P["A1"][0]}'], season=2027)
+    n['calls'][f'{G1}|{P["A1"][0]}'] = r
+    n['run_at'] = '2026-09-12T13:00:00Z'
+    r['written_at'] = n['run_at']
+    n['summary'] = sc.summarize(n['calls'], n['run_at'], {2027: None}, {})
+    check(any('season 2027' in b for b in sc.problems(n, led)), "check refuses a row of another season than the ledger's")
+
+
 def move_rules(tmp):
     print('a game moved after its rows froze')
     for hours, void in ((25, True), (23, False)):
@@ -257,6 +332,35 @@ def move_rules(tmp):
             led, _ = e.run(sc.iso(k + datetime.timedelta(hours=72)))
             g = row(led, 'E1')['grade']
             check(g is not None and g['result'] == 'over' and g['close'] == 61.5, 'moved 23 hours: graded as any other row')
+    # the bar's 24 hours, to the minute: exactly 24 hours later is no void, a minute more is
+    for mins, void in ((24 * 60, False), (24 * 60 + 1, True)):
+        e = Env(os.path.join(tmp, f'moved_m{mins}'))
+        e.matchups(dict([block('E1', 0.05, True)]), '2026-09-12T12:00+00:00')
+        e.run('2026-09-12T12:10:00Z')
+        moved = [dict(g) for g in GAMES]
+        et = (T(K3) + datetime.timedelta(minutes=mins)).astimezone(sc.ET)
+        moved[2].update({'gameday': et.strftime('%Y-%m-%d'), 'gametime': et.strftime('%H:%M')})
+        e.games(moved)
+        led, _ = e.run(plus(K3, hours=1))
+        g = row(led, 'E1')['grade']
+        check((g is not None and g['why'] == 'moved') if void else g is None,
+              f"moved {mins // 60}h{mins % 60:02d}m later: {'void (moved)' if void else 'not void'}")
+    # moved more than 24 hours EARLIER, seen only after the new kickoff: frozen from it, voided once the row's own kickoff
+    # has passed, every run passing check (a void dated before the row's kickoff would be refused as graded before it)
+    e = Env(os.path.join(tmp, 'moved_early'))
+    e.matchups(dict([block('E1', 0.05, True), block('F1', -0.01, False)]), '2026-09-12T12:00+00:00')
+    e.run('2026-09-12T12:10:00Z')
+    moved = [dict(g) for g in GAMES]
+    k = T(K3) - datetime.timedelta(hours=25)
+    et = k.astimezone(sc.ET)
+    moved[2].update({'gameday': et.strftime('%Y-%m-%d'), 'gametime': et.strftime('%H:%M')})
+    e.games(moved)
+    led, _ = e.run(sc.iso(k + datetime.timedelta(hours=1)))
+    r = row(led, 'E1')
+    check(r is not None and r['grade'] is None and r['kickoff'] == K3, 'moved 25 hours earlier, seen after the new kickoff: frozen, not yet void')
+    led, _ = e.run(plus(K3, minutes=1))
+    g = row(led, 'E1')['grade']
+    check(g is not None and g['why'] == 'moved' and g['kickoff_now'] == sc.iso(k), '... void (moved) once the row\'s own kickoff has passed')
 
 
 def grade_rules(tmp):
@@ -289,6 +393,32 @@ def grade_rules(tmp):
     e.stats([(G1, 'A1', 'AAA', 1, 10), (G1, 'B1', 'BBB', 1, 90), (G2, 'C1', 'CCC', 1, 99)])
     led2, _ = e.run(plus(K2, days=20))
     check(all(row(led2, k)['grade'] == row(led, k)['grade'] for k in ('A1', 'B1', 'C1', 'D1')), 'a grade once written is never changed')
+
+    print('a stat nflverse writes in parts, and a line DraftKings withdrew')
+    src = open(os.path.join(sc.ROOT, 'elo', 'build.py'), encoding='utf-8').read()
+    for line in ("d['scrim_yards'] = d.rushing_yards + d.receiving_yards", "d['any_td'] = d.rushing_tds + d.receiving_tds",
+                 "d['kick_pts'] = 3 * d.fg_made + d.pat_made"):
+        check(line in src, f'elo/build.py still adds {line.split(" = ")[0]} so (scorecard.DERIVED)')
+    check(sc.DERIVED == {'scrim_yards': {'rushing_yards': 1, 'receiving_yards': 1}, 'any_td': {'rushing_tds': 1, 'receiving_tds': 1},
+                         'kick_pts': {'fg_made': 3, 'pat_made': 1}}, "scorecard.DERIVED is elo/build.py's sums")
+    r0 = {'rushing_yards': '40', 'receiving_yards': '22', 'rushing_tds': '1', 'receiving_tds': 'NA', 'fg_made': '3', 'pat_made': '2'}
+    check((sc.stat_value(r0, 'scrim_yards'), sc.stat_value(r0, 'any_td'), sc.stat_value(r0, 'kick_pts'), sc.stat_value(r0, 'targets'))
+          == (62.0, 1.0, 11.0, None), 'scrim_yards, any_td and kick_pts are their parts\' sums; a column nflverse has not is None')
+    ek = Env(os.path.join(tmp, 'kick'))
+    pk, bk = block('K1', 0.04, True, group='K')
+    bk['stats'] = {'kick_pts': {'avg': 8.0, 'proj': 8.4, 'no_elo': 8.1, 'elo': 0.3, 'sd': 3.0, 'z': 0.1}}
+    bk['mm'] = {'stat': 'kick_pts', 'shift': 0.04, 'tag': True}
+    ek.matchups(dict([(pk, bk), block('B1', -0.02, False)]), '2026-09-12T12:00+00:00')
+    ek.run('2026-09-12T12:10:00Z')
+    ek.archive({G1: (True, {'K1': (8.5, 8.5, 'kick_pts'), 'B1': (44.5, 45.5)})}, gone={G1: [('B1', 'rushing_yards')]})
+    ek.stats([(G1, 'K1', 'AAA', 1, 0, {'fg_made': 3, 'pat_made': 3}), (G1, 'B1', 'BBB', 1, 70)])
+    led, _ = ek.run(plus(K1, hours=72))
+    g = row(led, 'K1')['grade']
+    check(g is not None and g['result'] == 'over' and g['actual'] == 12.0 and g['close'] == 8.5,
+          f"a kicker's points graded on 3 x field goals made + extra points made ({g})")
+    check(row(led, 'B1')['grade'] is None, 'a line the archive lists in gone is no close: the row waits')
+    led, _ = ek.run(plus(K1, days=14))
+    check(row(led, 'B1')['grade']['why'] == 'no close', '... and is void at 14 days (no close)')
 
     print('waiting, then voided at 14 days')
     e = Env(os.path.join(tmp, 'late'))
@@ -378,16 +508,68 @@ def refusals(tmp):
         'graded over on actual')
     refused('a run_at earlier than the committed one', lambda n: n.update(run_at=plus(K1, hours=1)), 'not later than')
 
+    refused('a run_at before the bar was registered', lambda n: n.update(bar_registered='2026-09-20T00:00:00Z'), 'is before the bar was registered')
+
+    def written_early(n):
+        n['calls'][kc]['written_at'] = '2026-08-30T00:00:00Z'
+    refused('a row written before the bar was registered', written_early, 'written at 2026-08-30T00:00:00Z, before the bar')
+    text = sc.dumps(base)
+    check(sc.problems(base, old, None, text, sc.dumps(old)) == [], 'the canonical dumps of both pass')
+    bad = sc.problems(base, old, None, text.replace('"v":1', '"v": 1', 1), sc.dumps(old))
+    check(any('new ledger is not the canonical' in b for b in bad), 'a new ledger not in the canonical dump is refused')
+    bad = sc.problems(base, old, None, text, sc.dumps(old).replace('"v":1', '"v": 1', 1))
+    check(any('committed ledger is not the canonical' in b for b in bad), 'a committed ledger not in the canonical dump (a hand edit) is refused')
+    # the season decided early on a last regular-season kickoff of its own: refused on games.csv's
+    forged = copy.deepcopy(base)
+    for r in forged['calls'].values():
+        if r['grade'] is None:
+            r['grade'] = {'result': 'void', 'why': 'not told', 'at': forged['run_at']}
+    forged['summary'] = sc.summarize(forged['calls'], forged['run_at'], {2026: plus(K1, hours=1)}, old['summary'])
+    check(forged['summary']['2026']['state'] == 'decided', '(the forged ledger claims a decision)')
+    bad = sc.problems(forged, old, e.last_reg(forged))
+    check(any('summary does not follow' in b for b in bad), 'a decision on a last regular-season kickoff the ledger states, not games.csv\'s: refused')
+    bad = sc.problems(forged, old)
+    check(any('summary does not follow' in b for b in bad), '... and without games.csv, on the committed summary\'s')
+
+    print('check --registration, and init --force')
+    regp = os.path.join(tmp, 'reg.json')
+    with contextlib.redirect_stdout(io.StringIO()):
+        sc.main(['init', '--ledger', regp, '--now', '2026-09-01T00:00:00Z', '--season', '2026'])
+    rtext = sc.read_text(regp)
+    check(sc.registration_bad(rtext) == [], 'init\'s ledger is the bar\'s registration')
+    for what, t, say in (('with a run_at', rtext.replace('"run_at":null', '"run_at":"2026-09-02T00:00:00Z"'), 'run_at'),
+                         ('with a call', rtext.replace('"calls":{}', '"calls":{"k":{}}'), 'calls'),
+                         ('with a summary', rtext.replace('"summary":{}', '"summary":{"2026":{}}'), 'summary'),
+                         ('not canonical', rtext.replace('"v":1', '"v": 1'), 'canonical'),
+                         ('another bar', rtext.replace('30 graded', '20 graded'), 'bar'),
+                         ('another how', rtext.replace('Research only', 'Research'), 'how'),
+                         ('a registration time not as init writes it', rtext.replace('2026-09-01T00:00:00Z', '2026-09-01T00:00Z'),
+                          'bar_registered'),
+                         ('not JSON', rtext[:-3], 'not JSON')):
+        b = sc.registration_bad(t)
+        check(any(say in x for x in b), f'check --registration refuses a ledger {what} ({b[:1]})')
+    p = subprocess.run([sys.executable, os.path.join(HERE, 'scorecard.py'), 'check', '--registration', regp], capture_output=True, text=True)
+    check(p.returncode == 0 and 'registration' in p.stdout, 'scorecard.py check --registration passes init\'s ledger')
+    with contextlib.redirect_stdout(io.StringIO()):
+        rc = sc.main(['init', '--ledger', regp, '--force', '--now', '2026-09-02T00:00:00Z', '--season', '2026'])
+    check(rc == 0 and sc.read_json(regp)['bar_registered'] == '2026-09-02T00:00:00Z', 'init --force before the first call registers again')
+    before = sc.read_text(e.ledger)
+    with contextlib.redirect_stdout(io.StringIO()):
+        rc = sc.main(['init', '--ledger', e.ledger, '--force', '--now', '2026-09-20T00:00:00Z', '--season', '2026'])
+    check(rc == 1 and sc.read_text(e.ledger) == before, 'init --force on a ledger with a run or a call is refused, the ledger untouched')
+
     print('check through git: scorecard.py check --against HEAD on a scratch repo')
     repo = os.path.join(tmp, 'repo')
     os.makedirs(os.path.join(repo, 'elo', 'scorecard'))
     shutil.copy(os.path.join(HERE, 'scorecard.py'), os.path.join(repo, 'elo', 'scorecard', 'scorecard.py'))
     with open(os.path.join(repo, 'elo', 'scorecard', 'ledger.json'), 'w') as f:
         f.write(sc.dumps(old))
-    git = lambda *a: subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', *a], cwd=repo, capture_output=True, text=True)
+    git = lambda *a: subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', *a],
+                                    cwd=repo, capture_output=True, text=True)
     git('init', '-q')
     git('add', '.')
-    git('commit', '-qm', 'ledger')
+    gc = git('commit', '-qm', 'ledger')
+    check(gc.returncode == 0, f'the scratch repo\'s commit is made ({gc.stderr.strip()[:120]})')
     good, badf = os.path.join(tmp, 'good.json'), os.path.join(tmp, 'bad.json')
     with open(good, 'w') as f:
         f.write(sc.dumps(base))
@@ -486,6 +668,53 @@ def decision():
             check(s['D']['hi'] < 0, '  ... D wholly below 0')
         if what.endswith('S not'):
             check(s['D']['lo'] > 0 and s['S']['lo'] <= 0, '  ... D wholly above 0 and S\'s interval reaching 0')
+    # the floor of 30 graded tagged rows, exactly: one tagged row (over, far, the highest shifts) and one untagged (under)
+    # a game, so D is 1 and S is 1 in every resample; 29 games is UNDECIDED, 30 PASS
+    def clean(n):
+        out = {}
+        for g in range(n):
+            gid = f'2026_{1 + g // 16:02d}_F{g:03d}'
+            for j, tag in enumerate((True, False)):
+                pid = f'00-{g:04d}{j:03d}'
+                shift = round(0.05 + g * 0.0001, 4) if tag else round(-0.05 - g * 0.0001, 4)
+                actual = 80.0 + g if tag else 20.0 - g
+                out[f'{gid}|{pid}'] = {'season': 2026, 'week': 1, 'gid': gid, 'pid': pid, 'name': None, 'pos': 'RB', 'club': 'X',
+                                       'kickoff': '2026-09-13T17:00:00Z', 'stat': 'rushing_yards', 'shift': shift, 'tag': tag,
+                                       'proj': 1.0, 'no_elo': 1.0, 'sd': 1.0, 'published': 'x', 'written_at': 'x',
+                                       'grade': {'result': 'over' if tag else 'under', 'close': 50.5, 'open': 50.5,
+                                                 'vs_open': 'over' if tag else 'under', 'actual': actual, 'how': 'stat', 'at': 'x'}}
+        return out
+    for n, want in ((29, 'UNDECIDED'), (30, 'PASS')):
+        s = sc.summarize(clean(n), after, LR, {})['2026']
+        check(s['tagged']['n'] == n and s['D']['lo'] > 0 and s['S']['lo'] > 0 and s['verdict'] == want,
+              f"{n} graded tagged rows with both intervals above 0: {s['verdict']} (want {want})")
+    # S is on the actual less the CLOSE, never the open: the PASS case with every open line set so the actual less the
+    # open is the actual less the close turned round still passes
+    flip = copy.deepcopy(cases[1][1])
+    for r in flip.values():
+        g = r['grade']
+        g['open'] = round(2 * g['actual'] - g['close'], 1)
+        g['vs_open'] = sc.side(g['actual'], g['open'])
+    s = sc.summarize(flip, after, LR, {})['2026']
+    check(s['verdict'] == 'PASS' and s['S']['lo'] > 0, f"S and D read the close, not the open (open turned round: {s['verdict']})")
+    # S wholly below 0 with D's interval across 0: NO EDGE SHOWN (FAIL is D's alone)
+    rng = random.Random(21)
+    neg = {}
+    for g in range(120):
+        gid = f'2026_{1 + g // 16:02d}_N{g:03d}'
+        for j in range(3):
+            pid = f'00-{g:04d}{j:03d}'
+            shift = round(rng.uniform(-0.08, 0.09), 4)
+            dev = round(-(shift - 0.005) * 500 + rng.uniform(-3, 3), 1) or 0.1
+            neg[f'{gid}|{pid}'] = {'season': 2026, 'week': 1, 'gid': gid, 'pid': pid, 'name': None, 'pos': 'RB', 'club': 'X',
+                                   'kickoff': '2026-09-13T17:00:00Z', 'stat': 'rushing_yards', 'shift': shift,
+                                   'tag': rng.random() < 0.35, 'proj': 1.0, 'no_elo': 1.0, 'sd': 1.0, 'published': 'x',
+                                   'written_at': 'x', 'grade': {'result': 'over' if dev > 0 else 'under', 'close': 50.5,
+                                                                'open': 50.5, 'vs_open': 'over' if dev > 0 else 'under',
+                                                                'actual': 50.5 + dev, 'how': 'stat', 'at': 'x'}}
+    s = sc.summarize(neg, after, LR, {})['2026']
+    check(s['S']['hi'] < 0 and s['D']['lo'] < 0 < s['D']['hi'] and s['verdict'] == 'NO EDGE SHOWN',
+          f"S wholly below 0, D across 0: {s['verdict']} (S [{s['S']['lo']}, {s['S']['hi']}], D [{s['D']['lo']}, {s['D']['hi']}])")
     calls = cases[1][1]
     s = sc.summarize(calls, '2027-01-09T00:00:00Z', LR, {})['2026']
     check(s['state'] == 'running' and 'verdict' not in s, 'before the season\'s last regular-season kickoff: running, no verdict')
@@ -551,6 +780,11 @@ def pinned():
     check(hashlib.sha256(sc.BAR.encode('utf-8')).hexdigest() == BAR_PIN == sc.BAR_SHA256, 'scorecard.BAR is the pinned bar')
     led = sc.read_json(sc.LEDGER)
     check(led.get('bar') == sc.BAR and led.get('bar_sha256') == BAR_PIN, 'the committed ledger carries the pinned bar')
+    check(led.get('bar_registered') == BAR_REGISTERED_PIN, f"the committed ledger's bar was registered at the pinned time ({led.get('bar_registered')})")
+    for c in led.get('calls', {}).values():
+        if sc.when(c['written_at']) < sc.when(BAR_REGISTERED_PIN):
+            check(False, f"a row written before the pinned registration: {c['gid']}|{c['pid']}")
+            break
     readme = open(os.path.join(HERE, 'README.md'), encoding='utf-8').read()
     check(sc.BAR in readme, 'README.md carries the bar word for word')
 
@@ -559,6 +793,7 @@ def main():
     tmp = tempfile.mkdtemp(prefix='scorecard_')
     try:
         freeze_rules(tmp)
+        lead_rules(tmp)
         move_rules(tmp)
         grade_rules(tmp)
         refusals(tmp)
