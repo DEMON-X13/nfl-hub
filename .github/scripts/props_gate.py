@@ -17,9 +17,10 @@ all (it still gets --no-odds, which a base from before needs and this one ignore
              betting/neutral_sites.json and the build's parts of betting/tools, the props parts,
              liveparlays/build/). Neither: nothing the props job or the page runs changed, and the
              gate passes at once. On a push to main or a dispatch, everything runs. And on a pull request
-             that touches the touchdown shadow's ledger, ledger_hold: the props job alone writes it, so a
-             pull request may only add it, as `td_shadow.py init` writes the bar's registration; one that
-             changes or removes it fails here (this job, every job after it skipped).
+             that touches the touchdown shadow's ledger or the Mismatch scorecard's, ledger_hold: the props job
+             alone writes the first and the Elo job the second, so a pull request may only add one, as its
+             init writes the bar's registration; one that changes or removes it fails here (this job, every job
+             after it skipped).
   bake       job A: `weekly.py --no-odds` on this code (today's nflverse files, today's read of DraftKings' lines
              on ESPN, which espn_read.js records in props/raw/espn/, the audit with PROPS_AUDIT_RAW as weekly.py
              sets it), judged on its exit code; then the page smoke on the payload it baked (SMOKE_PAYLOAD) and
@@ -73,6 +74,18 @@ TD_SHADOW = ['props/research/propmodel/td_shadow*', 'props/research/propmodel/te
 # registration), and never change or remove it after: ledger_hold, which classify runs on every pull request
 TD_LEDGER = 'props/research/propmodel/shadow/td_ledger.json'
 TD_CHECK = 'props/research/propmodel/td_shadow_check.py'
+# The Mismatch scorecard's ledger (elo/scorecard/README.md, 5 November 2026) is held the same way, for the same reason:
+# the Elo job alone writes it, committed straight to main, and scorecard.py check holds each run's ledger only to the
+# last commit's (the review of 5 November 2026 merged a re-registration and a changed grade unseen on a scratch repo)
+SC_LEDGER = 'elo/scorecard/ledger.json'
+SC_CHECK = 'elo/scorecard/scorecard.py'
+# each held ledger: the checker's command for "is this file the bar's registration as init writes it", who writes it
+HELD = {TD_LEDGER: ([TD_CHECK, '--registration'], 'td_shadow.py init',
+                    "the props job alone writes it (td_shadow.py run, held by td_shadow_check.py to the last commit's, "
+                    'committed straight to main)'),
+        SC_LEDGER: ([SC_CHECK, 'check', '--registration'], 'scorecard.py init',
+                    "the Elo job alone writes it (scorecard.py run, held by scorecard.py check to the last commit's, "
+                    'committed straight to main)')}
 # '/**' is everything under a folder; otherwise a glob within one folder ('*' never crosses a '/')
 AUDIT = ['props/build/**', 'props/data/*.py', 'props/data/*.json', 'props/research/features.py',
          'props/research/qb_td.py', 'props/raw/feat.pkl', 'props/raw/fake_wk1.csv', 'props/requirements.txt',
@@ -176,33 +189,38 @@ def summary(s):
 
 
 def ledger_hold(base, head='HEAD', cwd=ROOT, root=ROOT):
-    """[] or why a pull request's change to the touchdown shadow's ledger (TD_LEDGER) is refused: removed, or changed
-    in any byte, or added as anything but the bar's registration as `td_shadow.py init` writes it (td_shadow_check.py
-    --registration, the head's own, run on the head's ledger). git runs in cwd, the checker from root"""
-    def show(rev):
-        r = subprocess.run(['git', '-C', cwd, 'show', f'{rev}:{TD_LEDGER}'], capture_output=True)
-        return r.stdout if r.returncode == 0 else None
-    old, new = show(base), show(head)
-    if old == new:
-        return []
-    why = ('the props job alone writes it (td_shadow.py run, held by td_shadow_check.py to the last commit\'s, '
-           'committed straight to main); take it out of this pull request: git checkout origin/main -- ' + TD_LEDGER)
-    if new is None:
-        return [f'{TD_LEDGER} is removed: {why}']
-    if old is not None:
-        return [f'{TD_LEDGER} is changed: {why}']
-    fd, p = tempfile.mkstemp(suffix='.json')
-    try:
-        with os.fdopen(fd, 'wb') as f:
-            f.write(new)
-        r = subprocess.run([sys.executable, '-I', '-B', os.path.join(root, TD_CHECK), '--registration', p],
-                           capture_output=True, text=True, timeout=300, cwd=root)
-    finally:
-        os.remove(p)
-    if r.returncode == 0:
-        return []
-    said = '; '.join(l[len('FAIL: '):] for l in r.stdout.splitlines() if l.startswith('FAIL: ')) or (r.stdout + r.stderr).strip()[-300:]
-    return [f'{TD_LEDGER} is added, but not as `td_shadow.py init` writes the bar\'s registration ({said})']
+    """[] or why a pull request's change to a held ledger (HELD: the touchdown shadow's, the Mismatch scorecard's) is
+    refused: removed, or changed in any byte, or added as anything but the bar's registration as its init writes it
+    (its checker's --registration, the head's own, run on the head's ledger). git runs in cwd, the checker from root"""
+    out = []
+    for path, (cmd, init, writer) in HELD.items():
+        def show(rev):
+            r = subprocess.run(['git', '-C', cwd, 'show', f'{rev}:{path}'], capture_output=True)
+            return r.stdout if r.returncode == 0 else None
+        old, new = show(base), show(head)
+        if old == new:
+            continue
+        why = f'{writer}; take it out of this pull request: git checkout origin/main -- {path}'
+        if new is None:
+            out.append(f'{path} is removed: {why}')
+            continue
+        if old is not None:
+            out.append(f'{path} is changed: {why}')
+            continue
+        fd, p = tempfile.mkstemp(suffix='.json')
+        try:
+            with os.fdopen(fd, 'wb') as f:
+                f.write(new)
+            r = subprocess.run([sys.executable, '-I', '-B', os.path.join(root, cmd[0]), *cmd[1:], p],
+                               capture_output=True, text=True, timeout=300, cwd=root)
+        finally:
+            os.remove(p)
+        if r.returncode == 0:
+            continue
+        said = '; '.join(l.split(': ', 1)[1] for l in r.stdout.splitlines() if l.startswith(('FAIL: ', 'REFUSED: '))) \
+            or (r.stdout + r.stderr).strip()[-300:]
+        out.append(f"{path} is added, but not as `{init}` writes the bar's registration ({said})")
+    return out
 
 
 def plan(changed, everything=False):
@@ -226,11 +244,11 @@ def classify(args):
     for name, got in (('AUDIT', audit), ('PAGE', page)):
         print(f'  {name}: ' + (', '.join(got[:12]) + (f' and {len(got) - 12} more' if len(got) > 12 else '') if got else 'none'))
     if everything: print(f'  a {ev}: everything runs')
-    hold = ledger_hold(base) if ev == 'pull_request' and TD_LEDGER in changed else []
+    hold = ledger_hold(base) if ev == 'pull_request' and any(h in changed for h in HELD) else []
     if hold:
         for x in hold:
             print(f'::error::{x}')
-            summary(f"The touchdown shadow's ledger: {x}")
+            summary(f"A held ledger: {x}")
     elif not (a or p):
         print('nothing the props job or the page runs changed: the props gate passes')
         summary('Nothing the props job or the page runs changed: the props gate passes.')
