@@ -620,7 +620,7 @@ const LINES = {
  "wk9:LAR-WAS": "LAR -5.5, O/U 47.5",
  "wk9:HOU-LAC": "HOU -4.5, O/U 40.5",
  "wk9:LV-SF": "SF -10, O/U 52.5",
- "wk9:GB-NE": "NE -3, O/U 45.5",
+ "wk9:GB-NE": "NE -3.5, O/U 45.5",
  "wk9:ARI-SEA": "SEA -8.5, O/U 39.5",
  "wk9:TB-CHI": "CHI -6, O/U 47.5",
  "wk9:BUF-MIN": "BUF -3.5, O/U 45.5",
