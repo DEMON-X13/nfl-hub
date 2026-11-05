@@ -434,7 +434,7 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pb-elo .pb-tiers{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:1100px){ .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-nums{display:flex;flex-wrap:wrap} }
 /* (app v132) Extreme off Suggested Parlays: its cards hidden, three levels to a row on a wide screen */
-#spSets .pb-tier.xtrm,#spSets .pb-tier.elo-xtrm{display:none}
+#spSets .pb-tier.xtrm{display:none}
 @media(min-width:1101px){ #spSets .pb-tiers{grid-template-columns:repeat(3,minmax(0,1fr))} }
 @media(max-width:640px){ .card.pb{padding:16px 14px} .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:minmax(0,1fr)} .pb-lbl{min-width:0;flex-basis:100%} .pb-ctl{padding:12px} .pb-glist{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-seg{display:flex;width:100%} .pb-seg button{flex:1 1 auto;padding:8px 10px}
   .pb-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%} .pb-chip{border-radius:12px;padding:7px 10px;line-height:1.25} .pb-chip small{display:block} .pb-chip span{min-width:0} }
@@ -448,15 +448,12 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .sp-game{margin:18px 0 0;padding:14px 0 0;border-top:1px solid var(--line)}
 .sp-hd{display:flex;align-items:baseline;gap:6px 10px;flex-wrap:wrap;margin:0 0 6px}
 .sp-hd h3,.sp-hd h4{margin:0;font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px;min-width:0;overflow-wrap:anywhere}
-/* app v118: two sections, Night games and the Sunday slot, each headed by its record (a row for the model's parlays and
-   one for the Elo picks); each unit's model parlays, then its Elo picks */
+/* app v118: two sections, Night games and the Sunday slot, each headed by its record; (app v142) the record one row, the
+   parlays', and each unit its parlays alone, with no sub-heading (the Elo picks went) */
 .sp-sec{margin:20px 0 0;padding:16px 0 0;border-top:2px solid var(--line-2)}
 .gsearch{margin:0 0 12px}.gsearch input{width:100%;box-sizing:border-box;min-height:44px;padding:8px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel);color:var(--ink);font:inherit;font-size:15px}
 .pcard .pc-h{margin:12px 0 4px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}.pcard .pc-proj{width:100%;border-collapse:collapse;font-size:12.5px}.pcard .pc-proj td,.pcard .pc-proj th{padding:4px 6px;border-top:1px solid var(--line);text-align:left}.pcard .pc-proj .num{text-align:right}.pcard .wkstats{overflow-x:auto}.pcard .wkstats table{font-size:12px;min-width:100%}
 .sp-sech{margin:0;font-family:var(--display);font-size:19px;font-weight:800;letter-spacing:-.3px}
-.sp-sub{margin:14px 0 8px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
-.sp-reck{flex:0 0 auto;min-width:112px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
-@media(max-width:640px){ .sp-reck{flex-basis:100%;min-width:0} }
 .sp-hd small{font-size:12px;color:var(--muted)}
 .sp-lock{margin:0 0 12px;font-size:12.5px;line-height:1.5;color:var(--ink-2)}
 .sp-lockmark{display:inline-block;margin-right:6px;padding:1px 8px;border:1px solid var(--gold);border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);vertical-align:1px}

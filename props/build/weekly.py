@@ -818,7 +818,7 @@ def suggestions_record(offline=False):
     retired all-games panel's frozen entries, in data/suggest_ledger.json, which the workflow commits with the rest of props/data. Only after a
     clean audit, and never a reason to refuse the run or turn it red: the payload is what the site
     needs, the record is a record of it. When the script refuses (its guard found a frozen entry moved,
-    the page or the Elo files would not load) it has already put the last good ledger back; that is
+    the page would not load) it has already put the last good ledger back; that is
     said in the report, and a file left unreadable by a run that died mid-write is put back here.
 
     A leg on a player with no stat line is graded as the page grades it, by the payload's snaps (the

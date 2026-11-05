@@ -317,27 +317,48 @@ for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
   if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html still has ' + gone + ': the builder finishes a parlay on every device');
 for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function spTier(', 'function gameStarted', 'function marketLine'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
-/* the Elo picks' four levels (17 October 2026): Suggested Parlays' own sizes (PB_TIERS, which the tab reads from the
-   page; since app v138 each level the strongest Elo leans that go together on one DraftKings slip: a pair DraftKings
-   refuses, dkClash, or two legs that move against each other by more than EP.opp, epOpposed on the props parts' legRho,
-   passed over), each
-   named elo-<level> (elo-safe, elo-med, elo-aggr, elo-xtrm); since app v118 each unit's own (a night game's, the Sunday
-   slot's: window.eloUnit),
-   drawn in the unit by the props parts with the ELO tab's card options (window.eloCardOpt), its Finish
-   "sp|<unit>:elo-<level>", which the card finds by window.spTier as it finds the unit's other levels */
-{ const elo = rd('nflbets', 'build', 'tab_elo.html');
-  if (!elo.includes('window.eloUnit=(gids,o)=>') || !elo.includes('window.eloCardOpt=') || !elo.includes('window.eloPicks=eloPicks;')
-    || !elo.includes("id:'elo-'+id") || !elo.includes("typeof PB_TIERS!=='undefined'&&Array.isArray(PB_TIERS)?PB_TIERS:null") || elo.includes("getElementById('pbElo')"))
-    throw new Error("the Elo picks' levels, their ids, window.eloUnit or window.eloCardOpt moved; Suggested Parlays draws each unit's Elo picks with them");
-  /* its bar a named constant, EP.opp, -0.05 (27 October 2026, before app v138 merged: at 0 week 7's KC at SEA lost three
-     levels to pairs of -0.034 to -0.102) */
-  if (!elo.includes("const epOpposed=(a,b)=>typeof legRho==='function'&&epSide(a)*epSide(b)*legRho(a,b)<EP.opp;") || !elo.includes('const EP={lo:-200,hi:300,min:0.30,opp:-0.05};')
-    || !/function epTake\(all\)\{[^}]*epOpposed\(t,l\)/.test(elo) || !part2.includes('function legRho(a,b){'))
-    throw new Error("the Elo picks' walk no longer passes over two legs that move against each other by more than EP.opp (-0.05) on the props parts' legRho (epOpposed in epTake)");
-  if (!part3.includes('const PB_TIERS=[') || !part3.includes("window.eloCardOpt(t)") || !part3.includes('add:`data-sp-add="${g.id}:${t.id}"`'))
-    throw new Error("Suggested Parlays' levels (PB_TIERS) or its drawing of a unit's Elo picks moved; the Elo picks are built on them");
-  if (!CARD_JS.includes("const elo=!!t.elo;") || !CARD_JS.includes("t=kind==='sp'?(typeof window.spTier==='function'?window.spTier(id):null):null;"))
-    throw new Error("the parlay card no longer finds an Elo pick's level by window.spTier"); }
+/* (app v142, the owner's call of 5 November 2026: "instead of having the ELO picks in suggested parlays, i suggest we
+   scrap that. and then if a player has a big mismatch on the positive side, we give them a mismatch button to go next to
+   their name in the normal suggested parlays") No Elo picks on Suggested Parlays: outside comments, none of the props
+   parts, the ELO tab, the parlay card, the matchup bubble or the theme carries the Elo picks' engine or markup again (a
+   unit's Elo cards, data-sp-kind="elo", their sub-heading, their loading, error and own lines, window.eloUnit, spEloSet,
+   eloCardOpt, eloPicks, the walk's epTake and epOpposed, SP_KIND's Elo kind), and the parts and the card say "Elo picks"
+   nowhere a visitor reads. A unit draws its parlays alone, right under its line (the model's grid, which the card's
+   Finish and the focus code read), and each level's Add and Finish as before. And the Mismatch tag on the model's cards
+   stays wired: the ELO tab's wrap of renderSp calls spMmDecorate, which reads each card's level as the unit shows it,
+   tags a leg on a player its Mismatches tag (mmByPlayer, mmTagged), in that same game, on a leg that bets his way
+   (mmFavours: an over, never an under, interceptions, a team bet or a total), once a leg, with the Mismatches' own tag
+   (mmTagEl, the graded words on an old file), under its own style */
+{ const strip = x => x.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '');
+  const SRC = { 'props/build/part1.html': part1, 'props/build/part2.js': part2, 'props/build/part3.js': part3,
+    'nflbets/build/tab_elo.html': eloTab, 'nflbets/build/card.html': cardSrc, 'nflbets/build/glance.js': rd('nflbets', 'build', 'glance.js'),
+    'nflbets/build/theme.css': rd('nflbets', 'build', 'theme.css') };
+  const GONE_V142 = [['data-sp-kind="elo"', /data-sp-kind="elo"/], ['eloUnit', /\beloUnit\b/], ['spEloSet', /\bspEloSet\b/], ['spEloOn', /\bspEloOn\b/],
+    ['eloCardOpt', /\beloCardOpt\b/], ['eloPicks', /\beloPicks\b/], ['epTake', /\bepTake\b/], ['epOpposed', /\bepOpposed\b/], ['spIsElo', /\bspIsElo\b/],
+    ['data-sp-elo-', /data-sp-elo-/], ['eloown', /\beloown\b/], ['.pb-tier.elo-', /\.pb-tier\.elo-/], ['eloDecorate', /\beloDecorate\b/]];
+  const WORDS = ['props/build/part1.html', 'props/build/part2.js', 'props/build/part3.js', 'nflbets/build/card.html'];
+  for (const [file, src] of Object.entries(SRC)) {
+    const bare = strip(src), list = [...GONE_V142, ...(WORDS.includes(file) ? [['"Elo picks"', /\bElo picks?\b/]] : []),
+      ...(file.endsWith('part3.js') ? [["SP_KIND's Elo kind", /elo:\{field:'elo'/], ["a unit's sub-heading (h5.sp-sub)", /<h5 class="sp-sub"/]] : [])];
+    for (const [what, re] of list) { const m = bare.match(re);
+      if (m) throw new Error(`${file} carries ${what} outside a comment: the Elo picks left Suggested Parlays in app v142 (the owner's call of 5 November 2026): ...${bare.slice(Math.max(0, m.index - 60), m.index + 40).replace(/\s+/g, ' ')}...`); } }
+  for (const need of ['<div class="pb-tiers" data-sp-kind="model">', 'add:`data-sp-add="${g.id}:${t.id}"`'])
+    if (!part3.includes(need)) throw new Error("Suggested Parlays no longer draws a unit's parlays in the model's grid with each level's Add (" + need + ')');
+  if (!CARD_JS.includes("t=kind==='sp'?(typeof window.spTier==='function'?window.spTier(id):null):null;"))
+    throw new Error("the parlay card no longer finds a Suggested Parlays level by window.spTier");
+  const eb = strip(ELO_JS), a = eb.indexOf('function spMmDecorate(){'), b = a < 0 ? -1 : eb.indexOf('\n}', a);
+  const body = a >= 0 && b > a ? eb.slice(a, b) : null, line = (eb.match(/function mmByPlayer\(\)\{[^\n]*/) || [''])[0];
+  const css = ELO_CSS.replace(/\/\*[\s\S]*?\*\//g, ''), ci = css.indexOf('.sp-game .pb-tiers[data-sp-kind="model"] .pb-legs .nm .pe-mmtag{'), rule = ci < 0 ? '' : css.slice(ci, css.indexOf('}', ci));
+  const wired = [
+    ['function spMmDecorate(){', body !== null],
+    ...['.sp-game .pb-tiers[data-sp-kind="model"] > .pb-tier[data-pb-tier]', 'mmByPlayer()', 'v.tiers', 'String(m.game_id)!==String(l.gid)', 'mmFavours(l)', 'mmTagEl(m,true)', "li.querySelector('.pe-mmtag')"]
+      .map(n => [n, body !== null && body.includes(n)]),
+    ['renderSp=function(){ ... spMmDecorate() }', /renderSp=function\(\)\{[^}]*spMmDecorate\(\)/.test(eb)],
+    ['mmFavours: an over, never interceptions, a team bet or a total', eb.includes("const mmFavours=l=>!!l&&l.side==='over'&&l.stat!=='passing_interceptions'&&l.stat!=='ml'&&l.stat!=='ats'&&l.stat!=='total';")],
+    ['function mmByPlayer(){ ... mmTagged(v) ... }', line.includes('mmTagged(v)')],
+    ['the tag\'s style on the model\'s cards, white-space:nowrap', rule.includes('white-space:nowrap')]];
+  for (const [need, ok] of wired) if (!ok)
+    throw new Error("the Mismatch tag on Suggested Parlays' cards (spMmDecorate, wrapping renderSp; app v142) is no longer wired: " + need); }
 /* X Parlays: X's parlays from the file, the whole of its tab, read only, on the admin's browser alone; a
    quiet line under the heading says when the file last changed them */
 const LIVE_SECTION = `<div class="card" id="lpCard">
@@ -443,7 +464,7 @@ for (const [t] of TABS) if (t !== 'elo' && !t.match(/^(slate|suggest|parlay)$/) 
 html = sub1(html, '<section id="tab-slate">', FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate">', 'the Games section');
 /* the Parlay Builder keeps the prop model's own section and its address, #parlay: the builder over its Top 50
    lines and the choices they are built from (app v116; Suggested Parlays, #suggest, is the prop model's own
-   section before it, each prime-time game's parlays and the Elo picks). X Parlays is a section of its own after
+   section before it, each prime-time game's parlays). X Parlays is a section of its own after
    it, #xparlays, the site owner's alone (data-admin-only, above). The parlay card's window sits at the end of
    the page, outside every tab, over everything. */
 html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>\n  <div id="pbPanel"></div>\n</section>',

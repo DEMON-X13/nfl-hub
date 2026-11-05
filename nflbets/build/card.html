@@ -44,8 +44,8 @@
 
      Nothing is saved: not to the prop model's saved list, not to X's parlays, not to any key of
      this page. The builder keeps its legs, so the parlay can be changed and finished again; Start
-     over clears it. A suggested parlay (a tier of the Parlay Builder's suggestions, or one of its
-     Elo picks) is finished the same way, from its own Finish button, on the amount in the panel's
+     over clears it. A suggested parlay (a level of Suggested Parlays; until app v142 one of its
+     Elo picks too) is finished the same way, from its own Finish button, on the amount in the panel's
      Bet amount box, which is the builder's own stake (pbStake()) and the one its tier pays on.
 
      The builder's numbers are the builder's own: build.js lifts its pricing block out of
@@ -512,8 +512,8 @@ window.PARLAY_CARD=(function(){
       fair:q.fair,stake:q.stake});
   }
   /* from a level of Suggested Parlays (kind sp, id "<unit>:<level>": window.spTier, the level as the tab shows it,
-     live or locked, of a night game or the Sunday slot; since app v118 an Elo pick is one of a unit's levels too, id
-     "<unit>:elo-<level>", marked elo; an empty level has no legs and opens nothing), on the amount its tier pays on: the
+     live or locked, of a night game or the Sunday slot; from app v118 to app v141 an Elo pick was one of a unit's levels
+     too, id "<unit>:elo-<level>", which spTier no longer finds; an empty level has no legs and opens nothing), on the amount its tier pays on: the
      Bet amount box, which is the builder's own stake (pbStake) */
   function fromTier(kind,id){
     let t=null;
@@ -535,8 +535,7 @@ window.PARLAY_CARD=(function(){
       try{ fair=typeof parlayFair==='function'?parlayFair(legs):t.fair; }catch(e){ fair=t.fair; } }
     /* a tier with a leg priced from DraftKings' line read on ESPN is priced on that estimate, and says
        so as the builder does */
-    const elo=!!t.elo;
-    return card({source:elo?'elo':kind,from:{kind,id},kicker:(elo?t.label+' Elo pick':t.label+' parlay')+(t.game?' \u00b7 '+t.game:''),legs,dec,priceNote:legs.some(l=>l.src&&l.src!=='real')?'estimated price':'book price',
+    return card({source:kind,from:{kind,id},kicker:t.label+' parlay'+(t.game?' \u00b7 '+t.game:''),legs,dec,priceNote:legs.some(l=>l.src&&l.src!=='real')?'estimated price':'book price',
       fair,stake:pbStake()});
   }
 
@@ -1537,7 +1536,7 @@ window.PARLAY_CARD=(function(){
     nb.addEventListener('click',()=>{ const m=fromBuilder(); if(m) open(m,nb); });
     return true;
   }
-  /* a suggested tier's Finish (data-pc-finish="sp|2026_06_SEA_DEN:med", "sp|2026_07_SUN:elo-med"): the tab draws the button
+  /* a suggested tier's Finish (data-pc-finish="sp|2026_06_SEA_DEN:med", "sp|2026_07_SUN:aggr"): the tab draws the button
      wherever this card is on the page, and one listener opens the card for whichever is pressed */
   function finishFrom(btn){
     /* a game kicked off since the panel was drawn: redraw it rather than open a parlay nobody saw */

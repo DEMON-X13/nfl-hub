@@ -2831,9 +2831,10 @@ function pbDataSig(){ return [PAY.baked_at||PAY.build||'',S.sched.length,Object.
    game's lock (2 hours before kickoff), frozen there and graded after the game as a book settles it. Keyed
    season|WW|kickoff|game id, each entry {season, week, gid, away, home, kickoff, lock, baked_at, taken_at,
    pool, tiers, elo, grade, updates}; its tiers are the four levels in spTierOut's shape, a level the job built again
-   for a player ruled out after the lock carrying `updated` {pid, name, reason, at}. Since app v118 an entry carries
-   the unit's Elo picks too (`elo`, the four levels elo-safe to elo-xtrm, graded beside the model's in `grade`), and
-   the `slot` map holds the Sunday slot's (spSlotUnit: every Sunday game before 7 pm Eastern, one set), keyed
+   for a player ruled out after the lock carrying `updated` {pid, name, reason, at}. From app v118 to app v141 an
+   entry carried the unit's Elo picks too (`elo`, the four levels elo-safe to elo-xtrm, graded beside the model's in
+   `grade`); since app v142 none is taken, and an entry locked with them keeps them as data, graded, which the page never
+   reads. The `slot` map holds the Sunday slot's (spSlotUnit: every Sunday game before 7 pm Eastern, one set), keyed
    season|WW|first kickoff|<season>_<WW>_SUN, with its `games`. Its `entries` map, the all-games panel's record from
    12 October 2026, stays in the file, graded, and is drawn nowhere.
    suggest_backtest.json (app v118, the owner's call of 19 October 2026: "can we retroactively look back and find what
@@ -2868,11 +2869,12 @@ async function pbRecLoad(again){
   try{ renderSp(); }catch(e){ console.error(e); }
 }
 window.pbRecLoad=pbRecLoad;
-/* the sections of Suggested Parlays and the maps of the record each counts, and the two kinds of level each unit
-   has: the model's parlays (tiers) and the Elo picks (elo). From app v118 to v128 two sections, Night games (the record's
-   prime map) and the Sunday slot (its slot map), each with its own record (the owner's call of 19 October 2026); since
-   app v129 one, Night games, its sets the night games' and then the Sunday slot's, its record both maps (the owner's
-   call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a part of 'Night Games'").
+/* the sections of Suggested Parlays and the maps of the record each counts, and the kind of level each unit
+   has: the model's parlays (tiers; until app v142 the Elo picks, elo, too). From app v118 to v128 two sections, Night
+   games (the record's prime map) and the Sunday slot (its slot map), each with its own record (the owner's call of 19
+   October 2026); since app v129 one, Night games, its sets the night games' and then the Sunday slot's, its record
+   both maps (the owner's call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a part
+   of 'Night Games'").
    slot is kept for a caller that asks for the slot's map by name, and drawn nowhere */
 /* (app v131) two sections again: Night games on the prime map, Day games (the Sunday slot) on the slot map */
 const SP_SEC={night:{maps:['prime'],name:'Night games'},slot:{maps:['slot'],name:'Day games'},all:{maps:['prime','slot'],name:'Record'}};
@@ -2881,17 +2883,18 @@ const SP_SHOW=['safe','med','aggr'];
 /* (app v132) Day games off on a Sunday from 4pm Eastern */
 function spDayOff(now){ const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',hourCycle:'h23'}).formatToParts(new Date(now==null?Date.now():now)).map(x=>[x.type,x.value]));
   return p.weekday==='Sun'&&+p.hour>=16; }
-/* (app v138) the model's levels are named Parlays: the model no longer picks them */
-const SP_KIND={model:{field:'tiers',pre:'',name:'Parlays'},elo:{field:'elo',pre:'elo-',name:'Elo picks'}};
+/* (app v138) the model's levels are named Parlays: the model no longer picks them. (app v142) one kind: the Elo picks
+   (field elo, ids elo-<level>) left the tab, their record kept in the file and drawn nowhere */
+const SP_KIND={model:{field:'tiers',pre:'',name:'Parlays'}};
 /* the record of one section's one kind, a level at a time: each season's unit and level once, the job's entry where
    it holds one (the last key that does: a kickoff the league moved makes a new key), else the backtest's, from the
    entries' own grades: won or lost (a push, every leg a push or a void, the stake back, is counted apart; a parlay a
    push shortened counts at what it was graded to pay), the wins expected by the book's fair chance and by the
-   level's own chance (the model's, or the Elo's for an Elo pick: the chances the set showed), units on $1, and how
+   level's own chance (the model's, the chance the set showed; until app v142 an Elo pick's the Elo's), units on $1, and how
    many of them came from the backtest (bt) and from which weeks (L the record, B the backtest). A unit the job's record
    holds levels of this kind for is the record's whole (its levels as it took them, a level with no parlay or not yet
-   graded included): the backtest counts only for a unit the record has none of, as week 6's Sunday night game's Elo
-   picks, which the record took before app v118 gave it any */
+   graded included): the backtest counts only for a unit the record has none of (until app v142 it filled week 6's Sunday
+   night game's Elo picks so, which the record took before app v118 gave it any) */
 function spRecSum(L,sec,kind,B){
   sec=SP_SEC[sec]?sec:'all'; kind=SP_KIND[kind]?kind:'model';
   const maps=SP_SEC[sec].maps, {field,pre}=SP_KIND[kind];
@@ -2914,20 +2917,19 @@ function spRecSum(L,sec,kind,B){
     s.units+=(g.result==='won'&&isFinite(+g.payout)?+g.payout:0)-1; }
   return {tiers:out,pending,games:units.size,btWeeks:[...wk].sort((a,b)=>a-b)};
 }
-/* a section's record at its head: a row for the model's parlays and one for the Elo picks, a pill a level (won-lost,
-   units on $1) and what is pending, as the ELO Ratings tab's record bar, the backtest's weeks counted in it (each pill's
-   title saying how many of its own; app v129 took off the chip that named the weeks). No record and no backtest,
-   nothing (hidden) */
+/* a section's record at its head: one row, the parlays' (app v142: the Elo picks' row went, and the row's label with
+   it), a pill a level (won-lost, units on $1) and what is pending, as the ELO Ratings tab's record bar, the backtest's
+   weeks counted in it (each pill's title saying how many of its own; app v129 took off the chip that named the
+   weeks). No record and no backtest, nothing (hidden) */
 function spRecHtml(sec){
   if(!PB_REC&&!PB_BT) return `<div class="sp-rec" data-sp-recsec="${sec}" hidden></div>`;
   const un=v=>(v>0.0005?'+':v<-0.0005?'−':'')+Math.abs(v).toFixed(2), f1=v=>v.toFixed(1);
-  const rows=Object.entries(SP_KIND).map(([kind,K])=>{ const R=spRecSum(PB_REC,sec,kind,PB_BT), any=R.tiers.some(s=>s.graded||s.push);
-    /* (app v138) a level's p is the model's chance all land (the Elo's for an Elo pick), for old entries and new */
-    const by=kind==='elo'?'the Elo chance':'the model’s chance';
+  const kind='model', K=SP_KIND.model, R=spRecSum(PB_REC,sec,kind,PB_BT), any=R.tiers.some(s=>s.graded||s.push);
+    /* (app v138) a level's p is the model's chance all land, for old entries and new */
+    const by='the model’s chance';
     const pills=any?R.tiers.map(s=>`<span class="rec" data-sp-rec="${sec}:${s.id}" title="${esc(K.name)}, ${esc(s.label)}: ${s.graded} graded, ${s.won} won${s.graded?`; wins expected ${s.fairN?f1(s.fair)+' by the book’s fair chance'+(s.fairN<s.graded?' (on the '+s.fairN+' with one)':'')+', ':''}${f1(s.model)} at ${by}`:''}${s.push?`; ${s.push} push${s.push===1?'':'es'}, the stake back`:''}${s.bt?`; ${s.bt} of them from the backtest`:''}">${esc(s.label)} <b>${s.won}–${s.lost}</b> ${s.graded||s.push?un(s.units)+' units':''}</span>`).join('')
       :`<span class="rec" data-sp-rec="${sec}:${kind}:none">None graded yet</span>`;
-    return `<div class="bar" data-sp-reckind="${kind}"><span class="sp-reck">${esc(K.name)}</span>${pills}${R.pending?`<span class="rec" data-sp-rec="${sec}:${kind}:pending">Pending <b>${R.pending}</b></span>`:''}</div>`; }).join('');
-  return `<div class="sp-rec" data-sp-recsec="${sec}">${rows}</div>`;
+  return `<div class="sp-rec" data-sp-recsec="${sec}"><div class="bar" data-sp-reckind="${kind}">${pills}${R.pending?`<span class="rec" data-sp-rec="${sec}:${kind}:pending">Pending <b>${R.pending}</b></span>`:''}</div></div>`;
 }
 /* the tiers for the picks as they stand, from the cache when nothing they stand on has moved */
 /* everything the panel's choices stand on: the week, the games to come, those unticked, the boxes, the data */
@@ -3044,7 +3046,7 @@ function gameWinBtns(g){
 const pbMoney=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 /* a tier's payout on the amount in the box: what it pays, and on what */
 function pbPayHtml(dec){ const s=pbStake(); return `<b>${pbMoney(s*dec)}</b><span>${pbAmt(s)} pays</span>`; }
-/* the payouts redrawn in place as the amount is typed, the panel's tiers and the Elo picks alike
+/* the payouts redrawn in place as the amount is typed, the panel's tiers and Suggested Parlays' levels alike
    (each card's data-pb-pay is its decimal price), so the box keeps its focus and its caret */
 function pbPays(){ document.querySelectorAll('#pbPanel [data-pb-pay], #spPanel [data-pb-pay]').forEach(x=>{ x.innerHTML=pbPayHtml(+x.dataset.pbPay); }); }
 /* the builder's own figures on the amount, redrawn only when they show another one; the panel is
@@ -3064,7 +3066,7 @@ const pbInBuilder=legs=>Object.keys(S.parlay||{}).length===legs.length&&legs.eve
 const pbIsValue=l=>!!l&&l.thin===false&&!l.market&&!!l.hook;
 const pbValMark=l=>pbIsValue(l)?' <i class="pb-valmark">Value</i>':'';
 window.pbIsValue=pbIsValue;
-/* what a leg priced from DraftKings' line read on ESPN is, on a level's card or an Elo pick's: a price that is an
+/* what a leg priced from DraftKings' line read on ESPN is, on a level's card: a price that is an
    estimate, in a few words (app v130), each such leg wearing its est. mark too; dated by the oldest read */
 function pbEspnLine(legs){
   const at=legs.filter(l=>l.src==='dkline').map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0];
@@ -3125,26 +3127,27 @@ function spUpdLine(u){
   const at=Date.parse(u.at);
   return `Updated${u.by==='page'?' in this browser':''}: ${esc(u.name)} ${esc(u.reason||'ruled out')}${isFinite(at)?` (${spEt(at,true)})`:''}.`;
 }
-/* one tier's card, or why it has none. The Elo picks draw theirs with it (window.pbTierCard). o.fid: the
+/* one tier's card, or why it has none (window.pbTierCard; until app v142 the Elo picks drew theirs with it too, with
+   options of their own, badge, legNote, rule and noun, which went with them). o.fid: the
    id its Finish names (a Suggested Parlays level's game:level); o.what: the game, for the buttons' names;
    o.legAdd false: no Add on each leg (o.quiet, a card with no line saying why a leg is not a Value pick or why a total
    is there, went in app v130: every card is so); o.acts false: no Add to builder or Finish (app v118: the Sunday slot under
-   way, its first games begun); o.noun: what its buttons call it (an Elo pick's, app v118: 'Elo pick'; else 'parlay');
+   way, its first games begun);
    o.game (app v121, the Sunday slot's cards): the game its legs are of, under its title */
 function pbTierGame(gid){ const g=(S.sched||[]).find(x=>x.id===gid); if(!g) return '';
   const k=kickoff(g); return `<span class="pb-tgame" data-pb-tgame="${esc(gid)}">${esc(TEAM_NAMES[g.a]||g.a)} at ${esc(TEAM_NAMES[g.h]||g.h)}${k?' · '+esc(spEt(k.getTime(),true)):''}</span>`; }
 /* (app v138) each leg's chance is DraftKings' fair chance (legChance; a locked leg's the one kept at the lock), a dash
-   with none; no Value mark but a hook's, no far-off line; o.legNote(l): a line of its own under a leg (the Elo picks'
-   lean) */
+   with none; no Value mark but a hook's, no far-off line. (app v142) On the hub the ELO tab puts the Mismatch tag after a
+   player's name on Suggested Parlays' cards once they are drawn (spMmDecorate), on the legs that bet his way */
 function pbTierCard(t,o){
   o=o||{}; const card=!!window.PARLAY_CARD, chance=o.chance!=null?o.chance:t.corr, legAdd=o.legAdd!==false;
   const upd=t.updated?`<p class="pb-thin sp-upd" data-sp-upd="${esc(t.updated.pid)}">${spUpdLine(t.updated)}</p>`:'';
   if(t.why) return `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.n} legs</span></div><p class="pb-why">${esc(t.why)}</p>${upd}</div>`;
-  const fm={}, nE=t.legs.filter(l=>l.src==='dkline').length, nm=o.what?` the ${esc(t.label)} ${esc(o.noun||'parlay')} for ${esc(o.what)}`:'';
+  const fm={}, nE=t.legs.filter(l=>l.src==='dkline').length, nm=o.what?` the ${esc(t.label)} parlay for ${esc(o.what)}`:'';
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
-    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.game&&t.legs.length?pbTierGame(t.legs[0].gid):''}${o.rule||(t.floor!=null&&pbRuleKnown(t)?pbRuleHtml(t):'')}</div>
+    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.game&&t.legs.length?pbTierGame(t.legs[0].gid):''}${t.floor!=null&&pbRuleKnown(t)?pbRuleHtml(t):''}</div>
     <div class="pb-nums">${pbChanceHtml(t.fair,chance,o,t.dec)}<div><b>${fmtML(decToML(t.dec))}</b><span>${nE?'price, est.':'price'}</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
-    <ul class="pb-legs">${t.legs.map(l=>{ const c=legChance(l,fm); return `<li><span class="nm">${o.badge?o.badge(l):''}${glanceName(l)}<small>${esc(l.label)}${pbValMark(l)}</small>${o.legNote?o.legNote(l):''}</span><span class="pr">${fmtML(l.price)}${l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:''}<em${c?` data-legchance="${c.p}"`:''}>${c?(c.p*100).toFixed(0)+'%':'–'}</em></span>${legAdd?pbLegAddBtn(l):''}</li>`; }).join('')}</ul>
+    <ul class="pb-legs">${t.legs.map(l=>{ const c=legChance(l,fm); return `<li><span class="nm">${glanceName(l)}<small>${esc(l.label)}${pbValMark(l)}</small></span><span class="pr">${fmtML(l.price)}${l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:''}<em${c?` data-legchance="${c.p}"`:''}>${c?(c.p*100).toFixed(0)+'%':'–'}</em></span>${legAdd?pbLegAddBtn(l):''}</li>`; }).join('')}</ul>
     ${nE?`<p class="pb-thin pb-espnline">${pbEspnLine(t.legs)}</p>`:''}${upd}
     ${o.acts===false?'':`<div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}${nm?` aria-label="${pbInBuilder(t.legs)?'In the builder:':'Add'}${nm}${pbInBuilder(t.legs)?'':' to the builder'}"`:''}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${o.fid||t.id}"${nm?` aria-label="Finish${nm}"`:''}>Finish</button>`:''}</div>`}</div>`;
 }
@@ -3339,8 +3342,8 @@ function renderPb(){
   const el=$('pbPanel'); if(!el||!S||!S.sched) return;
   el.innerHTML=pbPanel(); wirePb();
   PB_SHOWN=pbGames().map(g=>g.id).join();
-  /* Suggested Parlays is drawn with it, so the ELO tab's wrap of renderPb (its Elo picks, in #pbElo at the
-     tab's foot) still draws last */
+  /* Suggested Parlays is drawn with it, and on the hub the ELO tab's wrap of renderSp puts the Mismatch tag on its cards
+     (app v142; until app v118 the ELO tab's wrap of renderPb drew the Elo picks in #pbElo at the tab's foot) */
   renderSp();
 }
 /* ---------- Suggested Parlays (#suggest, app v111): each prime-time game's own four parlays ----------
@@ -3359,10 +3362,13 @@ function renderPb(){
    first kickoff and set out from 6:00 AM Eastern on the morning after the night game before it (Friday's, after
    Thursday night's), to its last kickoff: from its first kickoff its set is shown as it locked, under way, with no
    Add or Finish (its first games have started). A night game or the slot is a unit: a schedule game, or the slot's
-   own object (id <season>_<WW>_SUN, d and t its first kickoff's, games). Every unit carries the Elo picks too, the
-   ELO tab's four levels on that unit's games alone (window.eloUnit; until app v118 one set over the games and player
-   sides ticked on the Parlay Builder tab, at the tab's foot, which a reader with the priced games unticked saw empty
-   all of Sunday 18 October 2026), locked, kept, replaced and recorded with the model's. */
+   own object (id <season>_<WW>_SUN, d and t its first kickoff's, games). From app v118 to app v141 every unit carried
+   the Elo picks too, the ELO tab's four levels on its games alone, locked, kept, replaced and recorded with the model's.
+   (app v142, the owner's call of 5 November 2026: "instead of having the ELO picks in suggested parlays, i suggest we
+   scrap that. and then if a player has a big mismatch on the positive side, we give them a mismatch button to go next
+   to their name in the normal suggested parlays") None now: each unit draws its parlays alone, and on the hub the ELO
+   tab puts the Mismatches' tag after the name of a player its Mismatches tag, in that game, on a leg that bets his way
+   (an over or his touchdown), on every card live, locked or under way (spMmDecorate, nflbets/build/tab_elo.html). */
 const SP_LOCK_H=2, SP_LOCK_MS=SP_LOCK_H*3600e3;
 const SP_ALL={k:Object.fromEntries(PB_KINDS.map(([k])=>[k,true])),off:[],gx:null};
 /* one game's lists are short (some 20 to 60 legs once its player prices are in), so a set is searched far
@@ -3479,7 +3485,7 @@ function spWhySlot(n,per,u){
   return `${what}.`;
 }
 /* a unit's live set, the same for the same data (the searches are seeded), from the cache when nothing it
-   stands on has moved: its games' kickoffs and pbDataSig (the publish, the Elo files, ESPN_SEQ) */
+   stands on has moved: its games' kickoffs and pbDataSig (the publish, ESPN_SEQ) */
 const spSig=g=>[g.id,...spGamesOf(g).map(x=>x.id+'@'+(x.d||'')+'T'+(x.t||'')),pbDataSig()].join('|');
 function spSet(gid){
   const g=spUnit(gid); if(!g) return null;
@@ -3488,24 +3494,10 @@ function spSet(gid){
   if(!r){ r={sig,...spBuild(g)}; SP_CACHE.set(sig,r); if(SP_CACHE.size>48) SP_CACHE.delete(SP_CACHE.keys().next().value); }
   return r;
 }
-/* (app v118) a unit's Elo picks as they stand: the ELO tab's four levels on its games alone (window.eloUnit, cached
-   there on its candidates), each id elo-<level>; null where the ELO tab is not on the page or its files are not in
-   yet; {wait:true} with o.kept where they are not built yet (a hidden tab builds nothing) */
-const spEloOn=()=>typeof window.eloUnit==='function';
-function spEloSet(gid,o){ const u=spUnit(gid); if(!u||!spEloOn()) return null;
-  let r=null; try{ r=window.eloUnit(spGamesOf(u).map(g=>g.id),{where:u.slot?'in the Sunday slot':'in this game',perGame:!!u.slot,...(o||{})})||null; }catch(e){ console.error(e); return null; }
-  /* an empty level where the unit has no player prices yet (a pick is a player's line) says when they come, as the
-     model's levels do */
-  if(r&&!r.error&&Array.isArray(r.tiers)&&r.tiers.some(t=>!t.legs)){ const s=spSet(gid);
-    if(s&&!s.plGames){ const where=u.slot?'in the Sunday slot':'in this game', t=espnLastRead(spGamesOf(u).map(x=>x.id));
-      const why=s.plNoId?`No player leg with a DraftKings id ${where}.`:t?`No ${espnTdOnly(spGamesOf(u).map(x=>x.id))?'yards':'player'} lines ${where} yet (read ${espnWhen(t)}).`:`No player lines ${where} read yet.`;
-      r={...r,tiers:r.tiers.map(x=>x.legs?x:{...x,why})}; } }
-  return r; }
-/* one level of a unit built again now, from the lines at hand (a locked level holding a player ruled out): a model
-   level or an Elo pick's */
+/* one level of a unit built again now, from the lines at hand (a locked level holding a player ruled out); (app v142)
+   a model level alone: a locked Elo pick is never built again */
 function spRebuild(gid,id){
   const g=spUnit(gid); if(!g) return null;
-  if(/^elo-/.test(String(id))){ const e=spEloSet(gid); return e&&Array.isArray(e.tiers)?e.tiers.find(t=>t.id===id)||null:null; }
   const t=PB_TIERS.find(s=>s[0]===id); if(!t) return null;
   /* (app v121) the Sunday slot's level is the best of its games' own, built the same way */
   if(g.slot) return spSlotLevel(g,t);
@@ -3522,27 +3514,24 @@ function spOutWhy(pid){
 /* a level as the record and the browser keep it (the shape suggest_ledger.js writes), and back. A leg
    kept is {gid, week, pid, team, grp, stat, k, side, main, price, src, name, label, p, fair, fair_est, thin,
    market}; a level {id, label, n, floor, legs, p, fair, fair_est, dec, likeliest, thin, mkt} or {id, label,
-   n, floor, why}, a level built again carrying `updated`. An Elo pick's (id elo-<level>) keeps each leg's Elo chance
-   (pe) beside the model's, its thin and market null (it is chosen on the Elo matchup, never marked a Value pick), and
-   its p is the Elo chance all land */
+   n, floor, why}, a level built again carrying `updated`. A record entry taken from app v118 to app v141 may carry its
+   unit's Elo picks beside its levels (elo, each leg with its Elo chance pe), which the page never reads (app v142) */
 const spR=(v,d)=>v==null||!isFinite(v)?null:Math.round(v*d)/d;
-const spIsElo=t=>!!t&&/^elo-/.test(String(t.id||''));
 /* (app v138) a leg's p is the model's chance (pm, on a pool copy at DraftKings' chance), as the record has always kept
-   it; a level's p the model's chance all land (on pm; an Elo pick's the Elo chance), its fair DraftKings', and every
+   it; a level's p the model's chance all land (on pm), its fair DraftKings', and every
    level built since carries chance:'fair' (the rule it was chosen and stated on) */
-function spLegOut(l,memo,elo){ const f=legFair(l,memo);
+function spLegOut(l,memo){ const f=legFair(l,memo);
   return {gid:l.gid,week:l.week,pid:l.pid,team:l.team,grp:l.grp,stat:l.stat,k:l.k,side:l.side,main:!!l.main,price:l.price,src:l.src,name:l.name,label:l.label,
-    p:spR(l.pm??l.p,1e4),...(elo?{pe:spR(l.pe,1e4)}:{}),fair:f?spR(f.p,1e4):null,fair_est:!!(f&&f.est),thin:elo?null:!!l.thin,market:elo?null:!!l.market}; }
-function spTierOut(t){ const memo={}, elo=spIsElo(t);
+    p:spR(l.pm??l.p,1e4),fair:f?spR(f.p,1e4):null,fair_est:!!(f&&f.est),thin:!!l.thin,market:!!l.market}; }
+function spTierOut(t){ const memo={};
   if(!t||!t.legs||!t.legs.length) return {id:t.id,label:t.label,n:t.n,floor:t.floor,why:t.why};
-  const pm=!elo&&t.legs.some(l=>l.pm!=null)?parlayProb(pbOrder(t.legs.map(l=>({...l,p:l.pm??l.p})))).corr:null;
-  return {id:t.id,label:t.label,n:t.n,floor:t.floor,legs:t.legs.map(l=>spLegOut(l,memo,elo)),p:spR(elo?t.p:(pm!=null?pm:t.corr),1e4),fair:t.fair&&t.fair.p!=null?spR(t.fair.p,1e4):null,
-    fair_est:!!(t.fair&&t.fair.est),dec:spR(t.dec,1e3),likeliest:!!t.likeliest,thin:elo?0:(t.thin||0),mkt:elo?0:(t.mkt||0),...(t.updated?{updated:t.updated}:{}),chance:'fair'}; }
+  const pm=t.legs.some(l=>l.pm!=null)?parlayProb(pbOrder(t.legs.map(l=>({...l,p:l.pm??l.p})))).corr:null;
+  return {id:t.id,label:t.label,n:t.n,floor:t.floor,legs:t.legs.map(l=>spLegOut(l,memo)),p:spR(pm!=null?pm:t.corr,1e4),fair:t.fair&&t.fair.p!=null?spR(t.fair.p,1e4):null,
+    fair_est:!!(t.fair&&t.fair.est),dec:spR(t.dec,1e3),likeliest:!!t.likeliest,thin:t.thin||0,mkt:t.mkt||0,...(t.updated?{updated:t.updated}:{}),chance:'fair'}; }
 function spLegIn(l,g){
   const G=spGamesOf(g), lg=l&&typeof l==='object'?G.find(x=>x.id===l.gid):null;
   if(!lg||typeof l.pid!=='string'||typeof l.stat!=='string') return null;
   const p=+l.p, price=+l.price; if(!(p>0&&p<1)||!isFinite(price)||price===0) return null;
-  const elo=l.pe!=null, pe=+l.pe; if(elo&&!(pe>0&&pe<1)) return null;
   const tot=l.stat==='total', team=String(l.team||''), pl=S.players&&S.players[l.pid];
   /* (app v125) kept: the leg is at its locked price and fair chance through any later publish or press (legPrice,
      legFair), so Add to builder pays what the locked card says; the record's own shape is untouched */
@@ -3550,31 +3539,29 @@ function spLegIn(l,g){
   return {key:legKey(l.gid,l.pid,l.stat),gid:l.gid,pid:l.pid,stat:l.stat,k:+l.k,side:l.side==='under'?'under':'over',main:!!l.main,p,price,src:typeof l.src==='string'?l.src:'real',
     kept:{fair:kf,est:!!l.fair_est},
     mu:tot?lg.tot:null,name:String(l.name||''),pos:l.grp==='TEAM'?'Game':((pl&&pl.pos)||String(l.grp||'')),grp:String(l.grp||''),team,opp:tot?lg.h:(team===lg.h?lg.a:lg.h),
-    week:+l.week||+lg.w,label:String(l.label||''),...(elo?{pe}:{thin:!!l.thin,...(l.market?{market:true}:{})})};
+    week:+l.week||+lg.w,label:String(l.label||''),thin:!!l.thin,...(l.market?{market:true}:{})};
 }
 const SP_IN=new Map();
 function spTierIn(t,g){
-  const elo=spIsElo(t), spec=t&&PB_TIERS.find(s=>(elo?'elo-':'')+s[0]===t.id); if(!spec) return null;
-  const head={id:t.id,label:spec[1],n:spec[2],floor:elo?(isFinite(+t.floor)?+t.floor:spec[3]):spec[3]};
+  const spec=t&&PB_TIERS.find(s=>s[0]===t.id); if(!spec) return null;
+  const head={id:t.id,label:spec[1],n:spec[2],floor:spec[3]};
   const U=t.updated&&typeof t.updated==='object'?{updated:{pid:String(t.updated.pid||''),name:String(t.updated.name||''),reason:String(t.updated.reason||''),at:String(t.updated.at||''),...(t.updated.by==='page'?{by:'page'}:{})}}:{};
   if(!Array.isArray(t.legs)) return {...head,why:typeof t.why==='string'&&t.why?t.why:`No parlay of this size in ${g.slot?'the Sunday slot':'this game'}.`,...U};
-  const legs=t.legs.map(l=>spLegIn(l,g)); if(legs.length!==spec[2]||legs.some(l=>!l)||(elo&&legs.some(l=>l.pe==null))) return null;
+  const legs=t.legs.map(l=>spLegIn(l,g)); if(legs.length!==spec[2]||legs.some(l=>!l)) return null;
   if(!(+t.dec>1)||!(+t.p>0&&+t.p<=1)) return null;
   /* the chance and price worked out again on the legs as kept (each its own chance and price), by the builder's
      own sums (parlayProb, parlayDec), so a locked level states what Add to builder and Finish then pay: the kept
      figures are rounded (4 places a chance, 3 a price), which on $37.50 moved a payout a cent off the builder's.
      The fair chance is the one kept, the book's at the lock, so a press after it moves nothing of the set. The
-     record grades on its own kept figures; this is only how the page draws them. An Elo pick's chance is worked on
-     its legs' Elo chances, as the ELO tab works it. Cached on the kept level and the data (pbDataSig), since a
-     locked set is read back on every draw */
+     record grades on its own kept figures; this is only how the page draws them. Cached on
+     the kept level and the data (pbDataSig), since a locked set is read back on every draw */
   const L=pbOrder(legs), ck=[JSON.stringify(t),g.id,pbDataSig()].join('|'), was=SP_IN.get(ck);
-  const sum=was||(()=>{ const pr=parlayProb(elo?L.map(l=>({...l,p:l.pe})):L); return {corr:pr.corr,indep:pr.indep,dec:parlayDec(L.map(l=>({leg:l,ml:l.price})))}; })();
+  const sum=was||(()=>{ const pr=parlayProb(L); return {corr:pr.corr,indep:pr.indep,dec:parlayDec(L.map(l=>({leg:l,ml:l.price})))}; })();
   if(!was){ SP_IN.set(ck,sum); if(SP_IN.size>64) SP_IN.delete(SP_IN.keys().next().value); }
   const fair=t.fair!=null&&isFinite(+t.fair)?{p:+t.fair,est:!!t.fair_est}:null;
   /* (app v138) chance 'fair' carried, so a level locked before it is drawn without a rule that did not choose it
      (pbRuleKnown) */
   const C=t.chance==='fair'?{chance:'fair'}:{};
-  if(elo) return {...head,legs:L,p:sum.corr,dec:sum.dec,fair,...(t.likeliest?{likeliest:true}:{}),...U,...C};
   return {...head,legs:L,corr:sum.corr,indep:sum.indep,dec:sum.dec,fair,likeliest:!!t.likeliest,
     thin:L.filter(l=>l.thin).length,mkt:L.filter(l=>l.market).length,...U,...C};
 }
@@ -3591,7 +3578,7 @@ function spLedgerOf(g){
   return e;
 }
 /* what this browser keeps of a locked unit (props_sp_lock_v1, outside S and never sent anywhere): the set the
-   page built where the record had none (own), its Elo picks where the record has none of them (elo, eloOwn), and the
+   page built where the record had none (own), and the
    levels the page built again for a player ruled out (rep), per unit, under the unit's kickoff; a unit that has
    kicked off (the slot: its last game), or is off the schedule, is pruned on every write. Held in memory too
    (SP_KEEP), so a browser that keeps nothing still shows one set a load */
@@ -3601,7 +3588,10 @@ function spKeep(){
   if(SP_KEEP) return SP_KEEP;
   SP_KEEP={};
   try{ const v=JSON.parse(localStorage.getItem(SP_KEEP_KEY)||'null');
-    if(v&&v.v===1&&+v.season===SEASON&&pbIsMap(v.games)) for(const [id,x] of Object.entries(v.games)) if(pbIsMap(x)&&typeof x.kickoff==='string') SP_KEEP[id]=x; }catch(e){}
+    /* (app v142) the Elo picks a browser kept before (elo, eloOwn, eloAt, a page replacement of an elo-<level> in rep) are
+       dropped as they are read, never drawn; the next write leaves them out */
+    if(v&&v.v===1&&+v.season===SEASON&&pbIsMap(v.games)) for(const [id,x] of Object.entries(v.games)) if(pbIsMap(x)&&typeof x.kickoff==='string'){
+      const {elo,eloOwn,eloAt,...y}=x; if(pbIsMap(y.rep)) y.rep=Object.fromEntries(Object.entries(y.rep).filter(([r])=>!/^elo-/.test(r))); SP_KEEP[id]=y; } }catch(e){}
   return SP_KEEP;
 }
 function spKeepSave(){
@@ -3612,38 +3602,27 @@ function spKeepSave(){
 }
 /* a unit's set as the tab shows it: live before the lock; from it, the site's locked set (the record's), or,
    with none, the page's own built once and kept; a locked level holding a player ruled out since built again,
-   that level only (the record's own replacement where the job made one, else the page's, kept). The same for its
-   Elo picks (elo), the record's where its entry holds them, else the page's own kept beside the set (eloOwn); under:
-   the Sunday slot once its first game has kicked off (shown as it locked, nothing to add). Nothing is built of the
-   page's own once the slot is under way (its games begun, a set built then would be of the games left, never locked:
-   none, eloNone say the site's was not published), nor before the Elo files are in (a set built without the ratings has
-   no Elo picks, which the set keeps beside it (app v138: the model's levels no longer need the ratings): the tab says it is
-   loading until they are), and no level is built again
-   for a player ruled out once it is under way, as the record replaces none after the first kickoff */
+   that level only (the record's own replacement where the job made one, else the page's, kept); under: the Sunday
+   slot once its first game has kicked off (shown as it locked, nothing to add). Nothing is built of the page's own
+   once the slot is under way (its games begun, a set built then would be of the games left, never locked: none says
+   the site's was not published), and no level is built again for a player ruled out once it is under way, as the
+   record replaces none after the first kickoff. (app v142) No Elo picks, and a locked unit with no record entry no
+   longer waits for the ELO tab's files before building its own (the model's levels have not stood on the ratings
+   since app v138) */
 function spShown(g){
-  const lock=spLockAt(g), now=Date.now(), eon=spEloOn();
-  const under=!!g.slot&&now>=kickoff(g).getTime(), eloPend=eon&&window.eloUnit([],{})==null;
-  if(lock==null||now<lock){ const s=spSet(g.id), e=eon?spEloSet(g.id):null; return {phase:'live',lock,tiers:s?s.tiers:[],elo:e&&Array.isArray(e.tiers)?e.tiers:null,eloErr:e&&e.error||null}; }
-  if(!PB_REC_DONE) return {phase:'loading',lock,tiers:null,elo:null};
+  const lock=spLockAt(g), now=Date.now(), under=!!g.slot&&now>=kickoff(g).getTime();
+  if(lock==null||now<lock){ const s=spSet(g.id); return {phase:'live',lock,tiers:s?s.tiers:[]}; }
+  if(!PB_REC_DONE) return {phase:'loading',lock,tiers:null};
   const K=spKeep(), kick=spIso(kickoff(g).getTime()); let k=K[g.id]&&K[g.id].kickoff===kick?K[g.id]:null, dirty=false;
-  const e=spLedgerOf(g); let tiers=null, own=false, at=null, elo=null, eloOwn=false;
+  const e=spLedgerOf(g); let tiers=null, own=false, at=null;
   if(e){ const T=PB_TIERS.map(([id])=>spTierIn(e.tiers.find(t=>t&&t.id===id),g));
-    if(T.every(Boolean)){ tiers=T; at=e.taken_at||null; if(k&&k.own){ k={kickoff:kick,rep:{},...(k.eloOwn?{elo:k.elo,eloOwn:true,eloAt:k.eloAt}:{})}; K[g.id]=k; dirty=true; } } }
+    if(T.every(Boolean)){ tiers=T; at=e.taken_at||null; if(k&&k.own){ k={kickoff:kick,rep:{}}; K[g.id]=k; dirty=true; } } }
   if(!tiers&&k&&k.own&&Array.isArray(k.tiers)){ const T=PB_TIERS.map(([id])=>spTierIn(k.tiers.find(t=>t&&t.id===id),g));
     if(T.every(Boolean)){ tiers=T; own=true; at=k.at||null; } }
-  if(!tiers&&under) return {phase:'locked',lock,tiers:null,elo:null,none:true,under};
-  if(!tiers&&eloPend) return {phase:'loading',lock,tiers:null,elo:null};
+  if(!tiers&&under) return {phase:'locked',lock,tiers:null,none:true,under};
   if(!tiers){ const s=spSet(g.id), out=s.tiers.map(spTierOut);
     tiers=PB_TIERS.map(([id],i)=>spTierIn(out.find(t=>t.id===id),g)||s.tiers[i]);
-    k={kickoff:kick,own:true,at:spIso(now),tiers:out,rep:{},...(k&&k.eloOwn?{elo:k.elo,eloOwn:true,eloAt:k.eloAt}:{})}; K[g.id]=k; dirty=true; own=true; at=k.at; }
-  /* the Elo picks: the record's, else the page's own kept, else built once now and kept (only where the ELO tab
-     can build them: its files in) */
-  const eIn=list=>{ if(!Array.isArray(list)) return null; const T=PB_TIERS.map(([id])=>spTierIn(list.find(t=>t&&t.id==='elo-'+id),g)); return T.every(Boolean)?T:null; };
-  if(e&&Array.isArray(e.elo)){ elo=eIn(e.elo); if(elo&&k&&k.eloOwn){ delete k.elo; delete k.eloOwn; delete k.eloAt; dirty=true; } }
-  if(!elo&&k&&k.eloOwn){ elo=eIn(k.elo); if(elo) eloOwn=true; }
-  let eloErr=null;
-  if(!elo&&eon&&!under&&!eloPend){ const s=spEloSet(g.id); if(s&&s.error) eloErr=s.error; if(s&&Array.isArray(s.tiers)){ const out=s.tiers.map(spTierOut);
-    elo=eIn(out)||s.tiers; eloOwn=true; if(!k){ k={kickoff:kick,rep:{}}; K[g.id]=k; } k.elo=out; k.eloOwn=true; k.eloAt=spIso(now); dirty=true; } }
+    k={kickoff:kick,own:true,at:spIso(now),tiers:out,rep:{}}; K[g.id]=k; dirty=true; own=true; at=k.at; }
   const rep=k&&pbIsMap(k.rep)?k.rep:{};
   const swap=list=>list.map(t=>{
     let cur=t, upd=null; const r=rep[t.id];
@@ -3658,9 +3637,9 @@ function spShown(g){
         cur=spTierIn(rep[t.id].tier,g)||nt; upd={pid:out.pid,name:out.name,reason:why,at:at2,by:'page'}; } }
     return upd?{...cur,updated:upd}:cur;
   });
-  tiers=swap(tiers); if(elo) elo=swap(elo);
+  tiers=swap(tiers);
   if(dirty){ if(!k){ k={kickoff:kick,rep:{}}; K[g.id]=k; } k.rep=rep; spKeepSave(); }
-  return {phase:'locked',lock,tiers,elo,own,at,ledger:!!e,eloOwn,eloErr:elo?null:eloErr,eloNone:!!eon&&!elo&&!eloErr&&under,under};
+  return {phase:'locked',lock,tiers,own,at,ledger:!!e,under};
 }
 /* (app v112) one night at a time (the owner's call of 17 October 2026: "just show the next night game dont stack the
    monday night game until monday morning"). The tab shows the games of the next prime-time night still to
@@ -3699,13 +3678,13 @@ function spSlotNext(){
 function spOnAll(){ const s=spSlotNext(); return [...spOn(),...(s&&s.up?[s]:[])]; }
 /* a level by the id its Finish names (unit id:level), as the tab shows it; the card reads it. Only a unit on the
    screen, and not the Sunday slot under way: a set the tab does not show yet, or whose games have begun, is not
-   finished from it. An Elo pick's (elo-<level>) carries elo */
+   finished from it */
 function spTier(fid){
   const s=String(fid||''), i=s.lastIndexOf(':'); if(i<0) return null;
   const g=spOnAll().find(x=>x.id===s.slice(0,i)); if(!g) return null;
   const v=spShown(g); if(v.under) return null;
-  const lv=s.slice(i+1), t=[...(v.tiers||[]),...(v.elo||[])].find(x=>x&&x.id===lv);
-  return t&&t.legs&&t.legs.length?{...t,game:g.slot?`the Sunday slot`:`${g.a} at ${g.h}`,...(spIsElo(t)?{elo:true}:{})}:null;
+  const lv=s.slice(i+1), t=(v.tiers||[]).find(x=>x&&x.id===lv);
+  return t&&t.legs&&t.legs.length?{...t,game:g.slot?`the Sunday slot`:`${g.a} at ${g.h}`}:null;
 }
 /* what the tab stands on beyond the data: the games to come and which side of its lock each is, and the games it
    sets out (app v112: the morning's turn to the next night redraws an open page); the Sunday slot's side of its
@@ -3727,10 +3706,10 @@ function spHdHtml(g){
   return `<div class="sp-hd"><h4 id="spg-${esc(g.id)}">Week ${g.w}, ${g.games.length} game${g.games.length===1?'':'s'}</h4><span class="pill">Sunday slot</span><small>${esc(d.day)}${d.t?' · '+esc(d.t)+(e.t&&e.t!==d.t?' to '+esc(e.t):''):''}</small></div>`;
 }
 function spGameHtml(g,on){
-  const lk=spLockAt(g), live=lk!=null&&Date.now()<lk, eon=spEloOn();
+  const lk=spLockAt(g), live=lk!=null&&Date.now()<lk;
   const open=`<div class="sp-game${g.slot?' sp-slot':''}" role="group" data-sp-game="${esc(g.id)}" aria-labelledby="spg-${esc(g.id)}">${spHdHtml(g)}`;
   /* a hidden tab draws a live set only once it is built: the tab builds it when it is opened */
-  if(!on&&live&&(!SP_CACHE.has(spSig(g))||(eon&&(spEloSet(g.id,{kept:true})||{}).wait))) return `${open}<p class="sp-lock" data-sp-phase="wait">Built when this tab is open.</p></div>`;
+  if(!on&&live&&!SP_CACHE.has(spSig(g))) return `${open}<p class="sp-lock" data-sp-phase="wait">Built when this tab is open.</p></div>`;
   const v=spShown(g), what=g.slot?'the Sunday slot':`${g.a} at ${g.h}`, lockT=v.lock!=null?spEt(v.lock,true):'';
   /* (app v113) one short line each: the owner's "get rid of all the long paragraph description stuff" */
   /* (app v130) and its state alone: when it locks, whose set it is (the owner's call of 22 October 2026) */
@@ -3742,12 +3721,9 @@ function spGameHtml(g,on){
     :`<p class="sp-lock" data-sp-phase="locked">${mark} since ${lockT}.</p>`;
   /* under way, the levels are shown as they locked, with nothing to add or finish */
   const ro=v.under?{acts:false,legAdd:false}:{};
-  const cards=v.tiers?`<h5 class="sp-sub" data-sp-kind="model">Parlays</h5><div class="pb-tiers" data-sp-kind="model">${v.tiers.map(t=>pbTierCard(t,{kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,game:!!g.slot,...ro})).join('')}</div>`:'';
-  /* the Elo picks, where the ELO tab is on the page: its cards' own options (eloCardOpt: the Elo chance, each
-     player's shield), the set's buttons */
-  const eloCards=!eon||!v.tiers?'':`<h5 class="sp-sub" data-sp-kind="elo">Elo picks</h5>${v.eloErr?`<p class="pb-why" data-sp-elo-err>${esc(v.eloErr)}</p>`:v.eloNone?`<p class="pb-why" data-sp-elo-none>Elo picks not published in time.</p>`:v.elo?`${v.eloOwn&&v.phase==='locked'&&!v.own?`<p class="sp-lock" data-sp-phase="eloown">This browser’s own Elo picks (not graded).</p>`:''}<div class="pb-tiers" data-sp-kind="elo">${v.elo.map(t=>pbTierCard(t,{...(typeof window.eloCardOpt==='function'?window.eloCardOpt(t):{}),kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,noun:'Elo pick',game:!!g.slot,...ro})).join('')}</div>`
-    :`<p class="pb-why" data-sp-elo-wait>Loading the Elo ratings…</p>`}`;
-  return `${open}${line}${cards}${eloCards}</div>`;
+  /* (app v142) the unit's parlays alone, right under its line: no sub-heading, the Elo picks under theirs gone */
+  const cards=v.tiers?`<div class="pb-tiers" data-sp-kind="model">${v.tiers.map(t=>pbTierCard(t,{kind:'sp',fid:`${g.id}:${t.id}`,add:`data-sp-add="${g.id}:${t.id}"`,what,game:!!g.slot,...ro})).join('')}</div>`:'';
+  return `${open}${line}${cards}</div>`;
 }
 function spHeadHtml(){
   const w=currentWeek();
@@ -3786,7 +3762,7 @@ function renderSp(){
      rather than building every set left in this one task: the run's own last draw shows the page as it is then */
   if(spSoftAgain()){ spFocusBack(fk); return; }
   SP_SOFT=null;   /* (app v135) drawn whole: a run of spOpenSoft still going has nothing left to do */
-  /* the frame once (app v118: the Elo picks are in each unit now, no longer a section of their own at the foot) */
+  /* the frame once */
   if(!$('spSets')) el.innerHTML='<div class="card pb sp" id="spCard"><div id="spHead"></div><div id="spSets"></div></div>';
   const tab=$('tab-suggest'), on=!tab||!tab.hidden;
   $('spHead').innerHTML=spHeadHtml(); $('spSets').innerHTML=spSetsHtml(on);
@@ -3816,18 +3792,15 @@ function spFocusBack(f){ if(!f) return;
   const to=f.own.some(v=>v!=null)?[...el.querySelectorAll('button')].find(x=>SP_FK.every((n,i)=>x.getAttribute(n)===f.own[i])&&up(x,'[data-sp-game]','data-sp-game')===f.u&&up(x,'[data-pb-tier]','data-pb-tier')===f.t&&up(x,'.pb-tiers[data-sp-kind]','data-sp-kind')===f.k):null;
   const b=to||document.querySelector('#tabs button[data-tab="suggest"]'); try{ if(b) b.focus({preventScroll:true}); }catch(e){} }
 /* (app v135) what opening the tab has still to build, a step a game: each live unit's games (a night game, or each game
-   of the Sunday slot), its own set (spSet, the cache the slot's levels are taken from) and its Elo picks on that game
-   alone ('in this game', as eloUnit builds them for a night game and the slot builds them a game at a time), each only
-   where it is not built yet; a unit locked or under way builds nothing new (the record's set). (app v138) A game's set is
-   four steps, a level each (spPartStep) */
+   of the Sunday slot), its own set (spSet, the cache the slot's levels are taken from), only where it is not built yet;
+   a unit locked or under way builds nothing new (the record's set). (app v138) A game's set is four steps, a level each
+   (spPartStep); (app v142) and nothing more, the Elo picks gone */
 function spWarmSteps(){
   const steps=[], now=Date.now(), units=[...(spDayOff()?[]:[spSlotNext()].filter(u=>u&&u.up)),...spOn()];
   for(const u of units){
     const lock=spLockAt(u); if(lock!=null&&now>=lock) continue;
     for(const x of (u.slot?u.games:[u])){ const g=spUnit(x.id); if(!g) continue;
-      if(!SP_CACHE.has(spSig(g))){ const w={g}; for(let i=0;i<PB_TIERS.length;i++) steps.push(()=>spPartStep(w)); }
-      if(spEloOn()){ let k=null; try{ k=window.eloUnit([g.id],{where:'in this game',kept:true}); }catch(e){ k=null; }
-        if(k&&k.wait) steps.push(()=>window.eloUnit([g.id],{where:'in this game'})); } } }
+      if(!SP_CACHE.has(spSig(g))){ const w={g}; for(let i=0;i<PB_TIERS.length;i++) steps.push(()=>spPartStep(w)); } } }
   return steps;
 }
 /* (app v138) how long a task of spOpenSoft's runs its steps, in ms, on the page's own timer (performance.now) */
@@ -3866,7 +3839,7 @@ function spOpenSoft(){
 if(typeof document!=='undefined') document.addEventListener('click',e=>{
   const b=e.target&&e.target.closest?e.target.closest('#tabs button[data-tab="suggest"]'):null;
   if(b&&typeof S==='object'&&S&&S.sched) try{ if(!(e.isTrusted&&spOpenSoft())) renderSp(); }catch(err){ console.error(err); } });
-Object.assign(window,{spOpenSoft,spWarmSteps,spDayOff,SP_SHOW,spPrime,spGames,spNight,spOn,spOnAll,spOpenAt,spSlotUnit,spSlotNext,spUnit,spLockAt,spSet,spEloSet,spRebuild,spOutWhy,spTierOut,spShown,spTier,renderSp});
+Object.assign(window,{spOpenSoft,spWarmSteps,spDayOff,SP_SHOW,spPrime,spGames,spNight,spOn,spOnAll,spOpenAt,spSlotUnit,spSlotNext,spUnit,spLockAt,spSet,spRebuild,spOutWhy,spTierOut,spShown,spTier,renderSp});
 /* exactly these legs into the builder, in its own order, so it prices them as the tier did */
 function pbPut(legs,what){
   const L=pbOrder(legs), have=Object.keys(S.parlay||{});
@@ -3964,7 +3937,7 @@ function pbLegClick(b,box){
 function spAddClick(b){
   if(pbStale()){ renderParlay(); return; }
   const fid=b.dataset.spAdd, t=spTier(fid); if(!t) return;
-  pbPut(t.legs,t.elo?`the ${t.label} Elo pick for ${t.game}`:`the ${t.label} ${t.legs.length}-leg parlay for ${t.game}`);
+  pbPut(t.legs,`the ${t.label} ${t.legs.length}-leg parlay for ${t.game}`);
   const f=document.querySelector(`#spPanel [data-sp-add="${fid}"]`); try{ if(f) f.focus({preventScroll:true}); }catch(e){}
 }
 if(typeof document!=='undefined') document.addEventListener('click',e=>{

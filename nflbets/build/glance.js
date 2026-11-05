@@ -3,7 +3,7 @@
    where it shows their matchup for the day so i can see info at a glance."
 
    A leg's name on the Parlay Builder tab and on Suggested Parlays (the Top lines, the builder's rows, a set's
-   level cards and the Elo picks' cards) is, on this page, a button the props parts draw (glanceName in part3.js,
+   level cards; until app v142 the Elo picks' cards too) is, on this page, a button the props parts draw (glanceName in part3.js,
    app v114): data-glance "p:<pid>" for a player's line, "t:<ABBR>" for a team's moneyline or spread, "g:<gid>" for
    a game total, the leg's game in data-glance-game and the leg itself kept by its signature (window.glanceLeg). The
    parts draw it only where this module is on the page (window.hubGlance), so the prop model's own page keeps plain
@@ -15,8 +15,8 @@
    the name. It sits under the page's windows (z-index 45; the Game snapshot it opens closes it first).
 
    The same leg is often drawn in several places at once (a Top row and its builder row, one set's Safe to Extreme
-   cards, a set's card and an Elo pick's), so the bubble keeps the place it was opened from (the builder, the Top lines,
-   or a level card in its set or in the Elo picks: placeOf) and the leg's key, side and line, and when the page draws
+   cards), so the bubble keeps the place it was opened from (the builder, the Top lines,
+   or a level card in its set: placeOf) and the leg's key, side and line, and when the page draws
    its rows again while it is open (a MutationObserver, connected only then) it is bound to that place's copy of the
    leg (marked open, placed again, drawn again where the copy's price moved), or closed, the focus on the leg's
    neighbour there, where that place no longer draws the leg. Placed again, it keeps where the reader had scrolled it.
@@ -31,7 +31,7 @@
    since 4 November 2026 "Mismatch · +7 pts (+6.1 rec yds)", the word on a row at the file's tag alone, titled with the
    row's words, window.eloGlance's title and pts; a row of the old Mismatches, on a file from before the score, its grade
    and edge as before, with no rank of its own), the stats where the Elo part of the matchup has held up (muTrusted)
-   with his average and the projection the Elo picks read (since 29 October 2026 the Elo-adjusted averages, read through
+   with his average and the projection the builder's Elo lean reads (since 29 October 2026 the Elo-adjusted averages, read through
    window.eloGlance.entry; on a file from before them the matchup formula's recent form and projection), then his card (the props parts' playerCard: his projection for the
    game and his season week by week, app v134) and Open prop leg. His season Elo, shield and tier sit beside his name in
    the bubble's head, and a player's bubble draws no leg box (the owner's call of 24 October 2026, a screenshot of
@@ -96,10 +96,10 @@ const legOf=sig=>sig&&typeof window.glanceLeg==='function'?window.glanceLeg(sig)
 let cur=null, box=null;
 /* where a name is drawn, worked out from the page when the bubble opens, so a redraw finds the same copy of it: the
    builder (#parlayBody), the Top lines (#pbPanel), or a level card (.pb-tier[data-pb-tier]) in its section, a
-   set's and an Elo pick's under its unit ([data-sp-game], a night game or the Sunday slot, inside #spPanel; an Elo
-   pick's level ids are elo-<level>, so a unit's eight cards are eight places); anywhere else the nearest element with
+   set's under its unit ([data-sp-game], a night game or the Sunday slot, inside #spPanel, so a unit's four cards are
+   four places; until app v142 its Elo picks' four, ids elo-<level>, four more); anywhere else the nearest element with
    an id. One leg is often drawn in several
-   places at once (a Top row and its builder row, one set's Safe to Extreme cards, a set's card and an Elo pick's),
+   places at once (a Top row and its builder row, one set's Safe to Extreme cards),
    but within one of these once: the builder holds one leg a stat, the list each bet once, a card one leg a player.
    A leg is known there by its key, side and line (its signature less the price, its source and the model's chance,
    which a Refresh odds press or a rung's book price can move while the leg stays) */
@@ -375,7 +375,7 @@ function close(restore){
 /* the page draws its rows again while a bubble is open (the half-minute look at a kickoff or a lock, a Refresh
    odds press finishing, a level built again, the builder's own redraw): one MutationObserver on the page, connected
    only while a bubble is open, so the bubble follows whatever draws them, the props parts' renderParlay, renderPb and
-   renderSp and the Elo picks' own alike, without glance.js wrapping any of them. After each redraw the bubble is
+   renderSp (and the ELO tab's Mismatch tag on Suggested Parlays' cards, put on after it) alike, without glance.js wrapping any of them. After each redraw the bubble is
    bound again to its leg's copy in the place it was opened from (anchor), drawn again where the copy's numbers moved,
    placed again (a row above may have gone) and its name marked open; where that place no longer draws the leg (it
    left the builder, its game kicked off, its set moved on), the bubble closes (gone) */
