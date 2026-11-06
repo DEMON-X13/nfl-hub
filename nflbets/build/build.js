@@ -326,16 +326,18 @@ for (const need of ['function parlayLegs', 'function parlayProb', 'function legP
    nowhere a visitor reads. A unit draws its parlays alone, right under its line (the model's grid, which the card's
    Finish and the focus code read), and each level's Add and Finish as before. And the Mismatch tag on the model's cards
    stays wired: the ELO tab's wrap of renderSp calls spMmDecorate, which reads each card's level as the unit shows it,
-   tags a leg on a player its Mismatches tag (mmByPlayer, mmTagged), in that same game, on a leg that bets his way
-   (mmFavours: an over, never an under, interceptions, a team bet or a total), once a leg, with the Mismatches' own tag
-   (mmTagEl, the graded words on an old file), under its own style */
+   finds each drawn leg in it by what the leg's own markup carries (spLiId; the review of 5 November 2026), tags a leg on
+   a player its Mismatches tag (mmByPlayer, mmTagged), in that same game, on a leg that bets his way (mmFavours: an over,
+   never an under, interceptions, a team bet or a total), once a leg, with the Mismatches' own tag (mmTagEl, the graded
+   words on an old file), under its own style; and the old #pbElo section's .pb-elo rules stay gone */
 { const strip = x => x.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '');
   const SRC = { 'props/build/part1.html': part1, 'props/build/part2.js': part2, 'props/build/part3.js': part3,
     'nflbets/build/tab_elo.html': eloTab, 'nflbets/build/card.html': cardSrc, 'nflbets/build/glance.js': rd('nflbets', 'build', 'glance.js'),
     'nflbets/build/theme.css': rd('nflbets', 'build', 'theme.css') };
   const GONE_V142 = [['data-sp-kind="elo"', /data-sp-kind="elo"/], ['eloUnit', /\beloUnit\b/], ['spEloSet', /\bspEloSet\b/], ['spEloOn', /\bspEloOn\b/],
     ['eloCardOpt', /\beloCardOpt\b/], ['eloPicks', /\beloPicks\b/], ['epTake', /\bepTake\b/], ['epOpposed', /\bepOpposed\b/], ['spIsElo', /\bspIsElo\b/],
-    ['data-sp-elo-', /data-sp-elo-/], ['eloown', /\beloown\b/], ['.pb-tier.elo-', /\.pb-tier\.elo-/], ['eloDecorate', /\beloDecorate\b/]];
+    ['data-sp-elo-', /data-sp-elo-/], ['eloown', /\beloown\b/], ['.pb-tier.elo-', /\.pb-tier\.elo-/], ['eloDecorate', /\beloDecorate\b/],
+    ['the old #pbElo section\'s .pb-elo style', /\.pb-elo\b/]];
   const WORDS = ['props/build/part1.html', 'props/build/part2.js', 'props/build/part3.js', 'nflbets/build/card.html'];
   for (const [file, src] of Object.entries(SRC)) {
     const bare = strip(src), list = [...GONE_V142, ...(WORDS.includes(file) ? [['"Elo picks"', /\bElo picks?\b/]] : []),
@@ -351,7 +353,7 @@ for (const need of ['function parlayLegs', 'function parlayProb', 'function legP
   const css = ELO_CSS.replace(/\/\*[\s\S]*?\*\//g, ''), ci = css.indexOf('.sp-game .pb-tiers[data-sp-kind="model"] .pb-legs .nm .pe-mmtag{'), rule = ci < 0 ? '' : css.slice(ci, css.indexOf('}', ci));
   const wired = [
     ['function spMmDecorate(){', body !== null],
-    ...['.sp-game .pb-tiers[data-sp-kind="model"] > .pb-tier[data-pb-tier]', 'mmByPlayer()', 'v.tiers', 'String(m.game_id)!==String(l.gid)', 'mmFavours(l)', 'mmTagEl(m,true)', "li.querySelector('.pe-mmtag')"]
+    ...['.sp-game .pb-tiers[data-sp-kind="model"] > .pb-tier[data-pb-tier]', 'mmByPlayer()', 'v.tiers', 'spLiId(li)', 'String(m.game_id)!==String(l.gid)', 'mmFavours(l)', 'mmTagEl(m,true)', "li.querySelector('.pe-mmtag')"]
       .map(n => [n, body !== null && body.includes(n)]),
     ['renderSp=function(){ ... spMmDecorate() }', /renderSp=function\(\)\{[^}]*spMmDecorate\(\)/.test(eb)],
     ['mmFavours: an over, never interceptions, a team bet or a total', eb.includes("const mmFavours=l=>!!l&&l.side==='over'&&l.stat!=='passing_interceptions'&&l.stat!=='ml'&&l.stat!=='ats'&&l.stat!=='total';")],

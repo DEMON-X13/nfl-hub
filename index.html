@@ -685,14 +685,11 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pb-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
 .pb-acts .btn{flex:1 1 auto;text-align:center;min-height:44px}
 .pb-none{margin:6px 0 0;padding:18px;text-align:center;color:var(--ink-2);background:var(--panel-2);border:1.5px dashed var(--line-2);border-radius:var(--r-md)}
-.pb-elo:not(:empty){margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
-.pb-elo h3{margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pb-elo .pb-tiers{grid-template-columns:repeat(3,minmax(0,1fr))}
-@media(max-width:1100px){ .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-nums{display:flex;flex-wrap:wrap} }
+@media(max-width:1100px){ .pb-tiers{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-nums{display:flex;flex-wrap:wrap} }
 /* (app v132) Extreme off Suggested Parlays: its cards hidden, three levels to a row on a wide screen */
 #spSets .pb-tier.xtrm{display:none}
 @media(min-width:1101px){ #spSets .pb-tiers{grid-template-columns:repeat(3,minmax(0,1fr))} }
-@media(max-width:640px){ .card.pb{padding:16px 14px} .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:minmax(0,1fr)} .pb-lbl{min-width:0;flex-basis:100%} .pb-ctl{padding:12px} .pb-glist{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-seg{display:flex;width:100%} .pb-seg button{flex:1 1 auto;padding:8px 10px}
+@media(max-width:640px){ .card.pb{padding:16px 14px} .pb-tiers{grid-template-columns:minmax(0,1fr)} .pb-lbl{min-width:0;flex-basis:100%} .pb-ctl{padding:12px} .pb-glist{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-seg{display:flex;width:100%} .pb-seg button{flex:1 1 auto;padding:8px 10px}
   .pb-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%} .pb-chip{border-radius:12px;padding:7px 10px;line-height:1.25} .pb-chip small{display:block} .pb-chip span{min-width:0} }
 /* app v111: Suggested Parlays (each Thursday, Sunday and Monday night game's own set, its lock and the record bar)
    and the Parlay Builder's Top 100 lines; each leg's own Add, 44px */
@@ -8113,7 +8110,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='4db90cc';
+const PAGE_HASH='a354cee';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -11113,8 +11110,14 @@ const mmFavours=l=>!!l&&l.side==='over'&&l.stat!=='passing_interceptions'&&l.sta
    record's or this browser's own) and the Sunday slot under way: each leg on a player whose row of this week's Mismatches
    is tagged, in that same game, on a leg mmFavours, wears the Mismatches' tag after his name, once (mmTagEl(row,true): on
    a file from before the score the graded words). A card's level is read as the unit shows it (spShown, once a unit a
-   pass), its legs in the order the card draws them; nothing is asked where no row is tagged or no card is drawn (a hidden
-   tab's live unit draws none until it is built), and a name's button naming another player is left alone */
+   pass), each drawn leg found in it by what its own markup carries (spLiId: the hub's name button's leg signature, else
+   its Add's key, side and line), its place on the card only where it carries neither, so a level read a moment after the
+   draw (a lock passing between the two) never lends a leg's tag to another drawn at its place (the review of 5 November
+   2026); nothing is asked where no row is tagged or no card is drawn (a hidden tab's live unit draws none until it is
+   built), and a name's button naming another player is left alone */
+const spLiId=li=>{ const g=li.querySelector('.nm > .glance-name[data-glance-leg]'); if(g) return {sig:g.dataset.glanceLeg};
+  const a=li.querySelector('.pb-legadd[data-pb-leg]'); return a?{key:a.dataset.pbLeg,side:a.dataset.side,k:a.dataset.k}:null; };
+const spLiIs=(id,l)=>id.sig!=null?id.sig.startsWith([l.key,l.side,l.k].join('|')+'|'):id.key===l.key&&id.side===l.side&&id.k===String(l.k);
 function spMmDecorate(){
   const panel=document.getElementById('spPanel'); if(!panel||typeof window.spShown!=='function'||typeof window.spUnit!=='function') return;
   const mm=mmByPlayer(); if(!Object.keys(mm).length) return;
@@ -11123,7 +11126,7 @@ function spMmDecorate(){
     const el=card.closest('.sp-game'), id=el&&el.dataset.spGame; if(!id) return;
     if(!shown.has(id)){ let v=null; try{ const u=window.spUnit(id); v=u?window.spShown(u):null; }catch(e){ v=null; } shown.set(id,v); }
     const v=shown.get(id), t=v&&Array.isArray(v.tiers)?v.tiers.find(x=>x&&x.id===card.dataset.pbTier):null; if(!t||!Array.isArray(t.legs)) return;
-    [...card.querySelectorAll('.pb-legs > li')].forEach((li,i)=>{ const l=t.legs[i], m=l&&mm[l.pid];
+    [...card.querySelectorAll('.pb-legs > li')].forEach((li,i)=>{ const id=spLiId(li), l=id?t.legs.find(x=>x&&spLiIs(id,x)):t.legs[i], m=l&&mm[l.pid];
       if(!m||String(m.game_id)!==String(l.gid)||!mmFavours(l)||li.querySelector('.pe-mmtag')) return;
       const nm=li.querySelector('.nm'), btn=nm&&nm.querySelector(':scope > .glance-name');
       if(btn&&btn.dataset.glance!=='p:'+l.pid) return;

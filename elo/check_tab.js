@@ -555,16 +555,16 @@ async function v2Mm(MU, lab) {
     const z = o.find(r => r.pid === c), bz = d.querySelector(`#peMism .pe-mm-b[data-mm-pid="${c}"]`), sc = bz && bz.querySelector('.pe-mm-score');
     chk(o.length === 3 && !!z && z.pts === '0 pts' && / that is 0 pts on the over\.$/.test(z.title) && !!sc && txt(sc) === '0 pts' && sc.title === z.title && !/\+0 pts/.test(allText(d.getElementById('peMism'))),
       `${lab}: a row whose size rounds to nothing is not drawn "0 pts", unsigned: ${sc ? `"${txt(sc)}" ("${sc.title}")` : 'no bubble'}`); }
-  /* (app v142) the Mismatch tag on Suggested Parlays' cards, on a file with the score: three rows of the check's own
-     planting, a's tagged and b's listed under the tag in one game, c's tagged in another (spTagHeld, below) */
-  { const C = JSON.parse(JSON.stringify(base)), [a, b, c] = elig, g0 = C.avg[a].game_id;
+  /* (app v142) the Mismatch tag on Suggested Parlays' cards, on a file with the score: four rows of the check's own
+     planting, a's and d's tagged and b's listed under the tag in one game, c's tagged in another (spTagHeld, below) */
+  { const C = JSON.parse(JSON.stringify(base)), [a, b, c, dd] = elig, g0 = C.avg[a].game_id;
     const g1 = Object.values(C.avg).map(v => v.game_id).find(x => x && x !== g0);
-    for (const pid of [a, b, c]) if (C.out) delete C.out[pid];
-    plantRow(C, a, 0.3, true); plantRow(C, b, 0.02, false); plantRow(C, c, 0.25, true);
-    C.avg[b].game_id = g0; if (g1) C.avg[c].game_id = g1;
+    for (const pid of [a, b, c, dd]) if (C.out) delete C.out[pid];
+    plantRow(C, a, 0.3, true); plantRow(C, b, 0.02, false); plantRow(C, c, 0.25, true); plantRow(C, dd, 0.28, true);
+    C.avg[b].game_id = g0; C.avg[dd].game_id = g0; if (g1) C.avg[c].game_id = g1;
     const rowsOf = w => mmOwnV2(C, M, { inactive: w.eval('S').inactive, kicked: gid => kickedC(w, gid) })
       .map(r => ({ ...r, text: 'Mismatch', n: String(Math.round(100 * r.shift)), grade: null }));
-    await spTagHeld(C, `${lab}, Suggested Parlays' cards`, rowsOf, { a, b, c, g0, stat: MM_LEAD_C[C.avg[a].group], team: C.avg[a].team, name: pid => (P.players[pid] || {}).name || pid }); }
+    await spTagHeld(C, `${lab}, Suggested Parlays' cards`, rowsOf, { a, b, c, d: dd, g0, stat: MM_LEAD_C[C.avg[a].group], team: C.avg[a].team, name: pid => (P.players[pid] || {}).name || pid }); }
 }
 /* ---- (app v142) the Mismatch tag on Suggested Parlays' cards ----
    The owner's call of 5 November 2026: "instead of having the ELO picks in suggested parlays, i suggest we scrap that. and
@@ -582,13 +582,17 @@ const GAME_C = new Set(['ml', 'ats', 'total']);
 const favoursC = l => !!l && !GAME_C.has(l.stat) && l.side === 'over' && l.stat !== 'passing_interceptions';
 const wearC = (rows, l) => { if (!favoursC(l) || (l.btn && l.btn !== l.pid)) return null;
   const r = rows.find(x => x.pid === l.pid && x.tag) || null; return r && String(r.gid) === String(l.gid) ? r : null; };
-/* the stand-in unit: window.spUnit and spShown stood in (a live unit, its levels the fixture's), its model cards in
-   #spPanel as pbTierCard draws them (each leg's name, or the hub's name button, then its label in a small, then its price),
-   an empty level beside them */
-function spStand(w, d, tiers, name) {
-  w.spUnit = id => (id === 'U1' ? { id, slot: false } : null); w.spShown = () => ({ phase: 'live', lock: null, tiers });
+/* the stand-in unit: window.spUnit and spShown stood in (a live unit, its levels the fixture's, or shown's where the
+   fixture reads the levels apart from the cards it draws), its model cards in #spPanel as pbTierCard draws them (each
+   leg's name, or the hub's name button, then its label in a small, then its price, then where the leg asks for it its
+   own Add), an empty level beside them. A leg with sig carries the hub's leg signature on its name button
+   (glanceName's: key, side and line first), one with add its own Add (key, side and line); one with neither is found
+   by its place on the card */
+const sigC = l => [l.key, l.side, l.k, '', '', ''].join('|');
+function spStand(w, d, tiers, name, shown) {
+  w.spUnit = id => (id === 'U1' ? { id, slot: false } : null); w.spShown = () => ({ phase: 'live', lock: null, tiers: shown || tiers });
   const panel = d.getElementById('spPanel') || d.body.appendChild(Object.assign(d.createElement('div'), { id: 'spPanel' }));
-  const li = l => `<li><span class="nm">${l.btn ? `<button type="button" class="glance-name" data-glance="p:${escC(l.btn)}" data-glance-game="${escC(l.gid)}">${escC(name(l))}</button>` : escC(name(l))}<small>${escC(l.label)}</small></span><span class="pr">+100</span></li>`;
+  const li = l => `<li><span class="nm">${l.btn ? `<button type="button" class="glance-name" data-glance="p:${escC(l.btn)}" data-glance-game="${escC(l.gid)}"${l.sig ? ` data-glance-leg="${escC(sigC(l))}"` : ''}>${escC(name(l))}</button>` : escC(name(l))}<small>${escC(l.label)}</small></span><span class="pr">+100</span>${l.add ? `<button type="button" class="btn quiet pb-legadd" data-pb-leg="${escC(l.key)}" data-k="${escC(l.k)}" data-side="${escC(l.side)}">Add</button>` : ''}</li>`;
   panel.innerHTML = `<div id="spSets"><section class="sp-sec" data-sp-sec="night"><h3 class="sp-sech">Night games</h3><div class="sp-game" data-sp-game="U1"><div class="sp-hd"><b>Fixture game</b></div><p class="sp-lock" data-sp-phase="live">Locks Thu 6:15 PM ET.</p><div class="pb-tiers" data-sp-kind="model">${tiers.map(t => Array.isArray(t.legs)
     ? `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}"><div class="pb-th"><span class="pb-tn">${t.label}</span></div><ul class="pb-legs">${t.legs.map(li).join('')}</ul></div>`
     : `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${t.label}</span></div><p class="pb-why">${escC(t.why)}</p></div>`).join('')}</div></div></section></div>`;
@@ -610,17 +614,22 @@ function tagsOff(w, panel, tiers, rows) {
   if (side.length) bad.push(`window.mmFavours is not the side rule on ${side.map(l => `${l.pid} ${l.side} ${l.stat}`).join(', ')}`);
   return bad;
 }
-/* on a file C with three rows the fixture planted (o.a's tagged and o.b's listed untagged in game o.g0, o.c's tagged in
-   another game; rowsOf(w), the check's own list on the page's clock and inactive list): a unit of four levels, Safe a's
-   over and b's over, Medium a's under, c's over in a's game and a's anytime touchdown, Aggressive more of a's
-   interceptions, his club's moneyline, the game's total, a's over named by a name button of his own and his receptions
-   named by b's button, Extreme empty; drawn twice, one tag a leg; then with the matchups still being read (held) no tag
-   and nothing thrown or logged, and the tab's own redraw once they answer (the hub's boot draws the Parlay Builder again,
-   renderPb, standing for it here) carrying exactly the tags, drawn once more still once */
+/* on a file C with four rows the fixture planted (o.a's and o.d's tagged and o.b's listed untagged in game o.g0, o.c's
+   tagged in another game; rowsOf(w), the check's own list on the page's clock and inactive list): a unit of four levels,
+   Safe a's over, b's over and d's over (two tags on one card: the review of 5 November 2026, a page tagging one leg a card
+   passed), Medium a's under, c's over in a's game and a's anytime touchdown, Aggressive more of a's interceptions, his
+   club's moneyline, the game's total, a's over named by a name button of his own and his receptions named by b's button,
+   Extreme empty; drawn twice, one tag a leg, each card's count its own; then each drawn leg found in the level by what
+   its markup carries where the level read after the draw differs (a lock passing between the two): Safe drawn a's under
+   and d's over, each named with the hub's leg signature, and Medium b's over and a's over, each with its own Add, where
+   the level says a's over and d's over, a's over and b's over: d's over and Medium's a's over wear the tag and a's under
+   none, whatever the places say; then with the matchups still being read (held) no tag and nothing thrown or logged,
+   and the tab's own redraw once they answer (the hub's boot draws the Parlay Builder again, renderPb, standing for it
+   here) carrying exactly the tags, drawn once more still once */
 async function spTagHeld(C, lab, rowsOf, o) {
-  const { a, b, c, g0, stat, team } = o, leg = (pid, st, side, x) => ({ pid, gid: g0, stat: st, side, label: `${side} ${st}`, ...(x || {}) });
+  const { a, b, c, d: dd, g0, stat, team } = o, leg = (pid, st, side, x) => ({ pid, gid: g0, stat: st, side, label: `${side} ${st}`, key: `${g0}|${pid}|${st}`, k: st === 'any_td' ? 1 : 40.5, ...(x || {}) });
   const tiers = [
-    { id: 'safe', label: 'Safe', legs: [leg(a, stat, 'over'), leg(b, stat, 'over')] },
+    { id: 'safe', label: 'Safe', legs: [leg(a, stat, 'over'), leg(b, stat, 'over'), leg(dd, stat, 'over')] },
     { id: 'med', label: 'Medium', legs: [leg(a, stat, 'under'), leg(c, stat, 'over'), leg(a, 'any_td', 'over')] },
     { id: 'aggr', label: 'Aggressive', legs: [leg(a, 'passing_interceptions', 'over'), leg('team:' + team, 'ml', 'over', { name: team }), leg('game', 'total', 'over', { name: 'Total' }),
       leg(a, stat, 'over', { btn: a }), leg(a, 'receptions', 'over', { btn: b })] },
@@ -628,13 +637,30 @@ async function spTagHeld(C, lab, rowsOf, o) {
   const name = l => l.name || o.name(l.pid);
   { const errors = [], { w, d } = page(C, { sp: true, errors }); await wait(60);
     const rows = rowsOf(w), panel = spStand(w, d, tiers, name);
-    const cases = [!!wearC(rows, tiers[0].legs[0]), rows.some(r => r.pid === b && !r.tag) && !rows.some(r => r.pid === b && r.tag), rows.some(r => r.pid === c && r.tag && String(r.gid) !== String(g0))];
-    let thrown = ''; try { w.renderSp(); w.renderSp(); } catch (err) { thrown = err.message; }
-    /* three legs wear it: a's over, a's touchdown and a's over under his own name button */
-    const bad = tagsOff(w, panel, tiers, rows), n = panel.querySelectorAll('.pe-mmtag').length, want = tiers.flatMap(t => t.legs || []).filter(l => wearC(rows, l)).length;
-    chk(!thrown && cases.every(Boolean) && !bad.length && n === want && want === 3 && !errors.length,
-      `${lab}: a leg does not wear its player's Mismatch tag exactly where his row is tagged, in his own game and on a leg that bets his way, after his name, once: ${thrown ? 'threw ' + thrown : bad.join(' | ') || (cases.every(Boolean) ? `${n} tags, the rule's ${want}, the fixture's 3` : 'the fixture lacks a case: ' + cases.join(', '))}${errors.length ? '; errors: ' + errors.slice(0, 2).join('; ') : ''}`);
+    const cases = [!!wearC(rows, tiers[0].legs[0]), rows.some(r => r.pid === b && !r.tag) && !rows.some(r => r.pid === b && r.tag), rows.some(r => r.pid === c && r.tag && String(r.gid) !== String(g0)),
+      tiers[0].legs.filter(l => wearC(rows, l)).length === 2];
+    /* four legs wear it: a's over and d's over on Safe, a's touchdown and a's over under his own name button; held after
+       the first draw (the stand-in stays between draws, so a second draw could finish what the first left) and the second */
+    let thrown = '', first = []; try { w.renderSp(); first = tagsOff(w, panel, tiers, rows).map(x => 'the first draw: ' + x); w.renderSp(); } catch (err) { thrown = err.message; }
+    const bad = [...first, ...tagsOff(w, panel, tiers, rows)], n = panel.querySelectorAll('.pe-mmtag').length, want = tiers.flatMap(t => t.legs || []).filter(l => wearC(rows, l)).length;
+    const cards = tiers.filter(t => Array.isArray(t.legs)).map(t => { const el = panel.querySelector(`.pb-tier[data-pb-tier="${t.id}"]`);
+      return { id: t.id, got: el ? el.querySelectorAll('.pe-mmtag').length : -1, want: t.legs.filter(l => wearC(rows, l)).length }; });
+    chk(!thrown && cases.every(Boolean) && !bad.length && n === want && want === 4 && cards.every(x => x.got === x.want) && !errors.length,
+      `${lab}: a leg does not wear its player's Mismatch tag exactly where his row is tagged, in his own game and on a leg that bets his way, after his name, once: ${thrown ? 'threw ' + thrown : bad.join(' | ') || (cases.every(Boolean) ? `${n} tags, the rule's ${want}, the fixture's 4; each card ${cards.map(x => `${x.id} ${x.got} of ${x.want}`).join(', ')}` : 'the fixture lacks a case: ' + cases.join(', '))}${errors.length ? '; errors: ' + errors.slice(0, 2).join('; ') : ''}`);
     notes.push(`${lab}: ${n} tags on ${tiers.reduce((x, t) => x + (t.legs ? t.legs.length : 0), 0)} legs`); }
+  { const errors = [], { w, d } = page(C, { sp: true, errors }); await wait(60);
+    const rows = rowsOf(w), sg = x => ({ btn: x.pid, sig: true }), ad = x => ({ btn: x.pid, add: true });
+    const drawn = [
+      { id: 'safe', label: 'Safe', legs: [leg(a, stat, 'under', sg({ pid: a })), leg(dd, stat, 'over', sg({ pid: dd }))] },
+      { id: 'med', label: 'Medium', legs: [leg(b, stat, 'over', ad({ pid: b })), leg(a, stat, 'over', ad({ pid: a }))] }];
+    const shown = [
+      { id: 'safe', label: 'Safe', legs: [leg(a, stat, 'over'), leg(dd, stat, 'over')] },
+      { id: 'med', label: 'Medium', legs: [leg(a, stat, 'over'), leg(b, stat, 'over')] }];
+    const panel = spStand(w, d, drawn, name, shown);
+    let thrown = '', first = []; try { w.renderSp(); first = tagsOff(w, panel, drawn, rows).map(x => 'the first draw: ' + x); w.renderSp(); } catch (err) { thrown = err.message; }
+    const bad = [...first, ...tagsOff(w, panel, drawn, rows)], n = panel.querySelectorAll('.pe-mmtag').length, want = drawn.flatMap(t => t.legs).filter(l => wearC(rows, l)).length;
+    chk(!thrown && !bad.length && n === want && want === 2 && !errors.length,
+      `${lab}, the level read after the draw differing from the cards: a drawn leg is not found in it by its own markup (the hub's leg signature, else its own Add), so a tag goes by its place: ${thrown ? 'threw ' + thrown : bad.join(' | ') || `${n} tags, the rule's ${want}, the fixture's 2`}${errors.length ? '; errors: ' + errors.slice(0, 2).join('; ') : ''}`); }
   { let release = null; const hold = new Promise(r => { release = r; }), errors = [], { w, d } = page(C, { sp: true, errors, hold: { 'matchups.json': hold } });
     w.renderPb = () => w.renderSp();
     const panel = spStand(w, d, tiers, name); await wait(60);
@@ -648,17 +674,19 @@ async function spTagHeld(C, lab, rowsOf, o) {
       `${lab}, the matchups still being read: ${thrown ? 'threw ' + thrown : !rated ? 'the ratings were not in' : before ? `${before} tags drawn before the matchups answered` : (bad.length ? 'once they answered: ' + bad.join(' | ') : again.length ? 'drawn once more: ' + again.join(' | ') : '')}${errors.length ? '; errors: ' + errors.slice(0, 2).join('; ') : ''}`); }
 }
 /* the same on a file from before the score (the old Mismatches' rows, graded): a tagged row's player (a), one listed and
-   graded Slight (b) moved into a's game, and another tagged row (c) in another game (moved there if it is in a's) */
+   graded Slight (b) and a third tagged row's (d) moved into a's game, and another tagged row (c) in another game (moved
+   there if it is in a's) */
 async function oldSpTag(MUo, lab) {
   if (!MUo || !MUo.players || !Object.keys(MUo.players).length) { notes.push(`${lab}: no projections: the old tag on Suggested Parlays' cards is not held`); return; }
   const ctx = { inactive: {}, kicked: () => false }, rows0 = oldTagRowsC(MUo, ctx), tg = rows0.filter(r => r.tag), sl = rows0.filter(r => !r.tag);
-  if (tg.length < 2 || !sl.length) { notes.push(`${lab}: ${tg.length} old rows graded Solid or better and ${sl.length} Slight: the old tag on Suggested Parlays' cards is not held`); return; }
+  if (tg.length < 3 || !sl.length) { notes.push(`${lab}: ${tg.length} old rows graded Solid or better and ${sl.length} Slight: the old tag on Suggested Parlays' cards is not held`); return; }
   const C = JSON.parse(JSON.stringify(MUo)), A = tg[0], B = sl[0], Cc = tg.find(r => r.pid !== A.pid && String(r.gid) !== String(A.gid)) || tg.find(r => r.pid !== A.pid);
+  const Dd = tg.find(r => r.pid !== A.pid && r.pid !== Cc.pid);
   const g1 = [...new Set(Object.values(C.players).map(v => v.game_id))].find(x => x && String(x) !== String(A.gid));
-  C.players[B.pid].game_id = A.gid; if (String(Cc.gid) === String(A.gid) && g1) C.players[Cc.pid].game_id = g1;
+  C.players[B.pid].game_id = A.gid; C.players[Dd.pid].game_id = A.gid; if (String(Cc.gid) === String(A.gid) && g1) C.players[Cc.pid].game_id = g1;
   const LEAD = { QB: 'passing_yards', RB: 'rushing_yards', WR: 'receiving_yards', TE: 'receiving_yards' };
   const rowsOf = w => oldTagRowsC(C, { inactive: w.eval('S').inactive, kicked: gid => kickedC(w, gid) });
-  await spTagHeld(C, `${lab}, Suggested Parlays' cards`, rowsOf, { a: A.pid, b: B.pid, c: Cc.pid, g0: A.gid, stat: LEAD[A.group], team: C.players[A.pid].team, name: pid => (P.players[pid] || {}).name || pid });
+  await spTagHeld(C, `${lab}, Suggested Parlays' cards`, rowsOf, { a: A.pid, b: B.pid, c: Cc.pid, d: Dd.pid, g0: A.gid, stat: LEAD[A.group], team: C.players[A.pid].team, name: pid => (P.players[pid] || {}).name || pid });
 }
 
 (async () => {

@@ -775,8 +775,14 @@ const mmFavours=l=>!!l&&l.side==='over'&&l.stat!=='passing_interceptions'&&l.sta
    record's or this browser's own) and the Sunday slot under way: each leg on a player whose row of this week's Mismatches
    is tagged, in that same game, on a leg mmFavours, wears the Mismatches' tag after his name, once (mmTagEl(row,true): on
    a file from before the score the graded words). A card's level is read as the unit shows it (spShown, once a unit a
-   pass), its legs in the order the card draws them; nothing is asked where no row is tagged or no card is drawn (a hidden
-   tab's live unit draws none until it is built), and a name's button naming another player is left alone */
+   pass), each drawn leg found in it by what its own markup carries (spLiId: the hub's name button's leg signature, else
+   its Add's key, side and line), its place on the card only where it carries neither, so a level read a moment after the
+   draw (a lock passing between the two) never lends a leg's tag to another drawn at its place (the review of 5 November
+   2026); nothing is asked where no row is tagged or no card is drawn (a hidden tab's live unit draws none until it is
+   built), and a name's button naming another player is left alone */
+const spLiId=li=>{ const g=li.querySelector('.nm > .glance-name[data-glance-leg]'); if(g) return {sig:g.dataset.glanceLeg};
+  const a=li.querySelector('.pb-legadd[data-pb-leg]'); return a?{key:a.dataset.pbLeg,side:a.dataset.side,k:a.dataset.k}:null; };
+const spLiIs=(id,l)=>id.sig!=null?id.sig.startsWith([l.key,l.side,l.k].join('|')+'|'):id.key===l.key&&id.side===l.side&&id.k===String(l.k);
 function spMmDecorate(){
   const panel=document.getElementById('spPanel'); if(!panel||typeof window.spShown!=='function'||typeof window.spUnit!=='function') return;
   const mm=mmByPlayer(); if(!Object.keys(mm).length) return;
@@ -785,7 +791,7 @@ function spMmDecorate(){
     const el=card.closest('.sp-game'), id=el&&el.dataset.spGame; if(!id) return;
     if(!shown.has(id)){ let v=null; try{ const u=window.spUnit(id); v=u?window.spShown(u):null; }catch(e){ v=null; } shown.set(id,v); }
     const v=shown.get(id), t=v&&Array.isArray(v.tiers)?v.tiers.find(x=>x&&x.id===card.dataset.pbTier):null; if(!t||!Array.isArray(t.legs)) return;
-    [...card.querySelectorAll('.pb-legs > li')].forEach((li,i)=>{ const l=t.legs[i], m=l&&mm[l.pid];
+    [...card.querySelectorAll('.pb-legs > li')].forEach((li,i)=>{ const id=spLiId(li), l=id?t.legs.find(x=>x&&spLiIs(id,x)):t.legs[i], m=l&&mm[l.pid];
       if(!m||String(m.game_id)!==String(l.gid)||!mmFavours(l)||li.querySelector('.pe-mmtag')) return;
       const nm=li.querySelector('.nm'), btn=nm&&nm.querySelector(':scope > .glance-name');
       if(btn&&btn.dataset.glance!=='p:'+l.pid) return;

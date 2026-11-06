@@ -21,6 +21,10 @@ an entry not yet locked is rewritten without its `elo` by the first run before i
 them as they locked, graded as before and counted in its summaries, which the page never reads: the Elo picks' history
 stays in the file as data, drawn nowhere. The backtest's file is untouched.
 
+The old Suggested parlays section's Elo picks (`#pbElo`, gone since app v118) left three `.pb-elo` rules in part1 and a
+`.pb-elo .pb-tiers` beside `.pb-tiers` in two narrow layouts; they go too (the review of 5 November 2026), changing
+nothing drawn.
+
 A locked unit with no record entry no longer waits for the ELO tab's files before building this browser's own set (it
 said "Loading the site's set..." until the ratings were in): the model's levels have not stood on the ratings since app
 v138. And a browser's kept copy (props_sp_lock_v1) from before, carrying `elo`, `eloOwn` and `eloAt` beside a unit's set
@@ -33,9 +37,9 @@ record, this browser's own locked set, and under way), a leg on a player whose r
 better), in that same game (the row's game_id the leg's gid), and on a leg that bets his way (an over, his anytime
 touchdown among them, never an Under, never more of his interceptions, never a team bet or a game total) wears the
 Mismatches' own tag (`mmTagEl(row,true)`: "Mismatch", or on an older file the graded words) right after his name's
-button (on the prop model's own page, his name's text), once. The tag is put on by the ELO tab, which is set into the
+button (his name's text where no name button is drawn), once. The tag is put on by the ELO tab, which is set into the
 hub's page alone (nflbets/build/tab_elo.html: `spMmDecorate`, wrapping `renderSp`, reading each card's level as the
-unit shows it, `spShown`), so the prop model's own page draws none, and nothing is tagged or thrown while the ELO tab's
+unit shows it, `spShown`, and finding each drawn leg in it by its own markup), so the prop model's own page draws none, and nothing is tagged or thrown while the ELO tab's
 files are loading or missing: the next draw carries the tags. Its look is the Elo picks' old tag rule moved to the model
 cards. The owner said "button": the tag is the Mismatches' label, and the name beside it is already the matchup bubble's
 button, which shows the Mismatches row.
@@ -73,6 +77,11 @@ sub1('p1', """/* app v118: two sections, Night games and the Sunday slot, each h
      """/* app v118: two sections, Night games and the Sunday slot, each headed by its record; (app v142) the record one row, the
    parlays', and each unit its parlays alone, with no sub-heading (the Elo picks went) */""")
 sub1('p1', ".sp-sub{margin:14px 0 8px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}\n")
+sub1('p1', """.pb-elo:not(:empty){margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.pb-elo h3{margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pb-elo .pb-tiers{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1100px){ .pb-tiers,.pb-elo .pb-tiers{""", """@media(max-width:1100px){ .pb-tiers{""")
+sub1('p1', "@media(max-width:640px){ .card.pb{padding:16px 14px} .pb-tiers,.pb-elo .pb-tiers{", "@media(max-width:640px){ .card.pb{padding:16px 14px} .pb-tiers{")
 sub1('p1', """.sp-reck{flex:0 0 auto;min-width:112px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
 @media(max-width:640px){ .sp-reck{flex-basis:100%;min-width:0} }
 """)
