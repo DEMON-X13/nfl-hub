@@ -211,7 +211,7 @@
   },
   "CIN": {
    "kick": "2026-11-08T14:30Z",
-   "built_at": "2026-11-05T21:15:09.807Z",
+   "built_at": "2026-11-06T18:30:24.703Z",
    "units": {
     "qb": [
      {
@@ -297,8 +297,7 @@
      {
       "id": "00-0038560",
       "n": "Jordan Battle",
-      "pos": "SS",
-      "q": "questionable: hamstring"
+      "pos": "SS"
      },
      {
       "id": "00-0037743",
@@ -831,7 +830,7 @@
   },
   "NYJ": {
    "kick": "2026-11-08T18:00Z",
-   "built_at": "2026-11-06T14:28:45.525Z",
+   "built_at": "2026-11-06T18:30:24.703Z",
    "units": {
     "qb": [
      {
@@ -881,12 +880,6 @@
     ],
     "rec": [
      {
-      "id": "00-0037740",
-      "n": "Garrett Wilson",
-      "pos": "WR",
-      "q": "questionable: concussion, not practising"
-     },
-     {
       "id": "00-0039890",
       "n": "Adonai Mitchell",
       "pos": "WR"
@@ -895,6 +888,11 @@
       "id": "00-0040736",
       "n": "Mason Taylor",
       "pos": "TE"
+     },
+     {
+      "id": "00-0039451",
+      "n": "Isaiah Williams",
+      "pos": "WR"
      }
     ],
     "front": [
@@ -2409,7 +2407,7 @@
   },
   "NE": {
    "kick": "2026-11-08T21:25Z",
-   "built_at": "2026-11-06T14:28:45.525Z",
+   "built_at": "2026-11-06T18:30:24.703Z",
    "units": {
     "qb": [
      {
@@ -2453,10 +2451,9 @@
       "pos": "RB"
      },
      {
-      "id": "00-0040734",
-      "n": "TreVeyon Henderson",
-      "pos": "RB",
-      "q": "questionable: illness, not practising"
+      "id": "00-0040556",
+      "n": "Corey Kiner",
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -2466,16 +2463,14 @@
       "pos": "WR"
      },
      {
-      "id": "00-0033090",
-      "n": "Hunter Henry",
-      "pos": "TE",
-      "q": "questionable: foot, not practising"
+      "id": "00-0040563",
+      "n": "Efton Chism III",
+      "pos": "WR"
      },
      {
-      "id": "00-0035676",
-      "n": "A.J. Brown",
-      "pos": "WR",
-      "q": "questionable: ankle, not practising"
+      "id": "00-0041395",
+      "n": "Eli Raridon",
+      "pos": "TE"
      }
     ],
     "front": [
@@ -2518,7 +2513,7 @@
   },
   "ARI": {
    "kick": "2026-11-08T21:25Z",
-   "built_at": "2026-11-06T14:28:45.525Z",
+   "built_at": "2026-11-06T18:30:24.703Z",
    "units": {
     "qb": [
      {
@@ -2529,10 +2524,9 @@
     ],
     "ol": [
      {
-      "id": "00-0041113",
-      "n": "Jayden Williams",
-      "pos": "T",
-      "q": "questionable: knee, not practising"
+      "id": "00-0040382",
+      "n": "Josh Fryar",
+      "pos": "T"
      },
      {
       "id": "00-0032954",
@@ -2562,10 +2556,9 @@
       "pos": "RB"
      },
      {
-      "id": "00-0037157",
-      "n": "Bam Knight",
-      "pos": "RB",
-      "q": "questionable: concussion, not practising"
+      "id": "00-0038397",
+      "n": "Evan Hull",
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -2732,7 +2725,7 @@
   },
   "TB": {
    "kick": "2026-11-09T01:20Z",
-   "built_at": "2026-11-06T14:28:45.525Z",
+   "built_at": "2026-11-06T18:30:24.703Z",
    "units": {
     "qb": [
      {
@@ -2785,7 +2778,8 @@
      {
       "id": "00-0040129",
       "n": "Emeka Egbuka",
-      "pos": "WR"
+      "pos": "WR",
+      "q": "questionable: foot"
      },
      {
       "id": "00-0033921",
