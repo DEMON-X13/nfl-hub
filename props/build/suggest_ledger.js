@@ -560,8 +560,9 @@ function check(L, prev, now, runAt) {
   }
   for (const map of UNIT_MAPS) for (const [key, e] of Object.entries((L && L[map]) || {})) {
     bad.push(...primeEntryBad(key, e, now, map));
-    /* (app v142) the record takes no Elo picks: an entry this run took carrying them is refused */
-    if (runAt != null && e && e.taken_at === runAt && e.elo != null) bad.push(`${key}: taken by this run with Elo picks, which the record no longer takes (app v142)`);
+    /* (app v142) the record takes no Elo picks: an entry this run took carrying them, or carrying the field at all (an elo
+       of null too, which no take writes), is refused */
+    if (runAt != null && isMap(e) && e.taken_at === runAt && Object.prototype.hasOwnProperty.call(e, 'elo')) bad.push(`${key}: taken by this run with Elo picks, which the record no longer takes (app v142)`);
   }
   if (prev) {
     bad.push(...frozenMoved(L, prev, now));

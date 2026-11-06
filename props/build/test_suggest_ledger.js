@@ -962,6 +962,7 @@ chk(r.code === 1 && /^suggest ledger: refused/.test(r.last) && bytes() === ledge
   const UE = () => ({ ...clone(U), elo: fourE(eloT('elo-safe', [plLeg('XX-E1', gU, 'BBB', 'receiving_yards', 50.5, 'over', true, -110), plLeg('XX-E2', gU, 'AAA', 'rushing_yards', 40.5, 'over', true, 120)])) });
   const addUE = (x, f) => { const e = UE(); if (f) f(e); x.prime[pkey(e)] = e; return e; };
   t('a set new with its Elo picks, by this run', x => addUE(x), /taken by this run with Elo picks/);
+  t('a set new with an empty Elo picks field (elo: null), by this run', x => addUE(x, e => { e.elo = null; }), /taken by this run with Elo picks/);
   t('a set\'s Elo picks not the four', x => addUE(x, e => { e.elo = e.elo.slice(1); }), /Elo picks are not the four/);
   t('an Elo pick\'s leg with no Elo chance', x => addUE(x, e => { delete e.elo[0].legs[0].pe; }), /with no Elo chance/);
   t('an Elo pick\'s leg on another game', x => addUE(x, e => { e.elo[0].legs[0].gid = gP.id; }), /a leg on another game/);

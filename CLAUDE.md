@@ -3786,7 +3786,8 @@ history. An entry locked with them keeps its `elo` byte for byte: its Elo
 levels are graded as before and counted in `prime_summary.elo` and `slot_summary.elo`, which the page never reads, and
 one holding a player ruled out is no longer built again (`replaceRuledOut` walks `tiers` alone). `ready()` no longer
 waits for or refuses on the ELO tab's files, and no longer asks the page for `spEloSet`. The guard refuses everything it
-refused before, and since this change also an entry this run takes carrying `elo` ("taken by this run with Elo picks,
+refused before, and since this change also an entry this run takes carrying `elo` (the field at all, an `elo` of null
+among them, which no take writes: "taken by this run with Elo picks,
 which the record no longer takes (app v142)") and an Elo pick this run replaces ("an Elo pick replaced by this run,
 which the record no longer does (app v142)"), both read on this run's own takes and replacements alone (those dated by
 its own clock), never in the check against the last commit, so an older page's take stands until a run rewrites or
@@ -3862,7 +3863,8 @@ failures (9 of them the tag's), and the side term taken out, 16 (14, one of them
 button's player check, the game-leg terms, an Under let through, the tag before the name, the old file's words,
 `nowrap`, the mismatches cached while the files load, `eloLeanNote` not handed over, `window.eloUnit` put back); in
 `smoke_live.js` the sub-heading put back, 14 failures, and the record row's label, 2; and in `test_suggest_ledger.js`
-(392 checks) on scratch copies of `suggest_ledger.js`, `takeUnits` taking Elo picks again, 5 failures (18 with the
+(393 checks) on scratch copies of `suggest_ledger.js`, the guard reading `e.elo != null` again (an `elo` of null taken
+by this run let through), 1 failure, `takeUnits` taking Elo picks again, 5 failures (18 with the
 guard's new refusal taken out too), a rewrite keeping the old entry's `elo`, 12, a locked Elo pick built again for a
 player ruled out, 9, both new refusals taken out, 4, `ready()` still asking for `spEloSet`, 5 (every stage refused),
 the model's levels alone graded, 11, and a locked set's Elo picks dropped, 85. Wherever this file says, before

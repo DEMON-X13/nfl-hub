@@ -7,7 +7,8 @@ that turned on the week or the hour: a Sunday at 3pm whose first game's RB1 had 
 before the last kickoff and left Node's where it was), the off-season (a leg left in the builder by an
 earlier section, unticked by the next click, then a crash), a week with no game's moneylines posted
 (the audit's copy of the fair-chance rule without the page's fallback), and an Elo pick taking a leg
-priced from a Refresh odds read (counted with the levels' est. marks); and in the page smoke, a Monday
+priced from a Refresh odds read (counted with the levels' est. marks; the Elo picks left Suggested
+Parlays in app v142, and M8 now counts the set cards' marks alone); and in the page smoke, a Monday
 night under way (its shift sets the page's clock two days back, and a press check dated a made-up pull
 by Node's, about a day in the page's future), and a Monday night under way on a payload baked that Monday
 (the page set back before that Monday's DraftKings pull, so a press rightly left the published game lines,
