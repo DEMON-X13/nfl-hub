@@ -1262,7 +1262,8 @@ button, on the side it favours only (`epMm`, `epMmFor`, `epMmTag`). **Since app 
 the Elo picks and all of that engine are gone from the tab (the record keeps their history as data, drawn nowhere), and
 the tab wraps `renderSp` to put the Mismatches' tag on Suggested Parlays' model cards instead (`spMmDecorate`): on each
 card (`.sp-game .pb-tiers[data-sp-kind="model"] > .pb-tier[data-pb-tier]`), its level read as the unit shows it
-(`spShown`) and each `li` against its legs in order, a leg on a player `mmByPlayer` finds tagged on this week's
+(`spShown`) and each drawn `li` found in its legs by its own markup (`spLiId`: the name button's leg signature, else its
+Add's key, side and line; its place only where it carries neither), a leg on a player `mmByPlayer` finds tagged on this week's
 Mismatches (`mmTagged`, his first such row), in that same game, on a leg `mmFavours` (his over or his touchdown, never
 an under, his interceptions, a team bet or a total), wears `mmTagEl(row, true)` right after his name's button, once;
 nothing is asked or tagged while the files load, and `boot`'s `renderPb()` draws the tags once they are in.
@@ -2559,15 +2560,17 @@ alone. Gone from the parts: `spEloOn`, `spEloSet`, `spIsElo`, the Elo branches o
 waiting for the ELO tab's files), `spTier` and `spWarmSteps`, and `pbTierCard`'s `badge`, `legNote`, `rule` and `noun`;
 `spKeep` drops a kept copy's `elo`, `eloOwn`, `eloAt` and `elo-<level>` replacements as it reads. Gone from
 `tab_elo.html`: `eloPicks`, `window.eloUnit`, `eloUnitPerGame`, `eloCands`, `epTake`, `epOpposed`, `EP`, `EP_CACHE`,
-`epFitWhy`, `window.eloCardOpt`, `epMm`, `epMmFor`, `epMmTag` and `eloDecorate`; new there `mmByPlayer`, `mmFavours` and
-`spMmDecorate` (the ELO tab section, above), and `window.mmFavours` and `window.eloLeanNote` for the checks.
+`epFitWhy`, `window.eloCardOpt`, `epMm`, `epMmFor`, `epMmTag` and `eloDecorate`, and part1's old `.pb-elo` rules; new
+there `mmByPlayer`, `mmFavours`, `spLiId` and `spMmDecorate` (the ELO tab section, above), and `window.mmFavours` and `window.eloLeanNote` for the checks.
 `suggest_ledger.js` takes no `elo` (`takeUnits`), no longer waits for the ELO tab's files (`ready()`), rebuilds the
 model's levels alone (`replaceRuledOut`), and its guard also refuses an entry this run takes with `elo` and an Elo pick
 this run replaces; an entry locked with them keeps them, graded and summed (`prime_summary.elo`, `slot_summary.elo`).
 `suggest_backtest.js` is untouched: a by-hand run now refuses (the page has no `spEloSet`), and its `--check` stands.
 Held by `build.js`'s `GONE_V142` stops and its check that the tag stays wired, the audit's `spDrawHold` (`spEloAud`,
 `spShapeAud`, `spMmAud`) with P2, M2, M8, NL1 and M10, the nflbets smoke's `blocksHeld` and `mmTagsHeld` on every unit
-and THE MISMATCH TAG ON THE REGULAR PARLAYS, `elo/check_tab.js`'s `spTagHeld` (`wearC`, `favoursC`, `oldSpTag`) and F1
+and THE MISMATCH TAG ON THE REGULAR PARLAYS (two tags on one card, `spOpenSoft` and `pbWatchTick` as well as `renderSp`,
+`mmOldListOwn` on an older file), `elo/check_tab.js`'s `spTagHeld` (`wearC`, `favoursC`, `oldSpTag`; two tags on one
+card and the level read after the draw differing from the cards) and F1
 through `window.eloLeanNote`, `smoke_live.js`'s unit and record shapes, and `test_suggest_ledger.js` (`noEloTaken`,
 `legacyElo`). Wherever this file says, before this paragraph or after it, that Suggested Parlays carries Elo picks, that
 the record takes or replaces them, or that the ELO tab tags an Elo pick's leg, that is history from app v142.

@@ -301,8 +301,9 @@ for the Mismatch scorecard's ledger, `elo/scorecard/ledger.json`, which the Elo 
 and `betting/tools`' build parts, the props parts, `liveparlays/build/`), a renamed file by its old path
 too; with neither it passes at once, and a push or a dispatch runs everything. Job A runs `weekly.py
 --no-odds` on the PR's code, today's nflverse files and today's read of DraftKings' lines on ESPN (which
-`espn_read.js` records in `props/raw/espn/`), then the page smoke and `elo/check_tab.js` (the ELO tab and the Elo
-picks, which the Elo job runs every morning and which blocks its publish) on the payload it baked (the
+`espn_read.js` records in `props/raw/espn/`), then the page smoke and `elo/check_tab.js` (the ELO tab, the Elo matchup
+chance, the builder's Elo lean and the Mismatch tag on Suggested Parlays' cards, until app v142 the Elo picks, which the
+Elo job runs every morning and which blocks its publish) on the payload it baked (the
 published one when weekly.py refused), within 40 minutes; job B runs each case of `test_audit_phases.py` on a runner of its
 own (the smoke cases alone when only PAGE changed); job C (since 20 October 2026) runs the unit tests, `UNITS` in
 `props_gate.py`, on fixtures of their own, seconds each but for the page's two smokes: `test_apply_espn.py`,
@@ -3765,7 +3766,8 @@ alone (`fromTier`). In `tab_elo.html` the Elo picks' engine went: `eloPicks`, `w
 `eloCands`, `eloCandsOf`, `epTake`, `epOpposed`, `EP` and its constants, `EP_CACHE`, `EP_DRAW`, `epFitWhy`, `epLean`,
 `epSlotBetter`, `window.eloCardOpt`, `epMm`, `epMmFor`, `epMmTag` and `eloDecorate`, with their styles (the Elo cards'
 shields and their four levels' colours, and theme.css's `.pb-tier.elo-xtrm`; part1's Extreme rule is `#spSets
-.pb-tier.xtrm{display:none}`). Kept, since other surfaces read them: `muP` and `window.eloMatchupP`, the builder's Elo
+.pb-tier.xtrm{display:none}`, and since the review of 5 November 2026 its `.pb-elo` rules, left from the old `#pbElo`
+section, gone since app v118, went too). Kept, since other surfaces read them: `muP` and `window.eloMatchupP`, the builder's Elo
 lean (`eloLeanNote`, `muNudge`, the Elo-adjusted averages, under Player Elo), the Mismatches and their tags
 (`mismatches`, `mmTagged`, `mmTagEl` and the old file's `mmTaggedOld` and `mmTagElOld`), the matchup bubble and the ELO
 tab. A locked unit with no record entry no longer waits for the ELO tab's files before building this browser's own set
@@ -3809,8 +3811,11 @@ both, so a Sunday slot under way tags only its games still to come), and the leg
 anytime touchdown among them; never an Under, never more of his interceptions, never a team bet or a game total, whose
 side is over too); a name's button naming another player is left alone. The ELO tab puts it on after every draw of
 Suggested Parlays (`spMmDecorate`, wrapping `renderSp`, where `eloDecorate` put the Elo picks' grades on theirs),
-reading each card's level by its `data-pb-tier` as the unit shows it (`spShown`, once a unit a draw) and each `li`
-against that level's legs in order, so nothing is asked where no card is drawn (a hidden tab's live unit draws none
+reading each card's level by its `data-pb-tier` as the unit shows it (`spShown`, once a unit a draw) and finding each
+drawn `li`'s leg in that level by what its own markup carries (`spLiId`: the name button's leg signature,
+`data-glance-leg`, which its key, side and line lead, else the leg's own Add's key, side and line; its place on the card
+only where it carries neither), so a level read a moment after the draw (a lock passing between the two) never lends a
+leg's tag to another leg drawn at its place (the review of 5 November 2026); nothing is asked where no card is drawn (a hidden tab's live unit draws none
 until it is built), nothing is tagged or thrown while the tab's files are loading or missing (`mismatches()` is empty),
 and the tab's own redraw once they are in (`boot` calls `renderPb`) carries the tags. The prop model's own page, with no
 ELO tab, draws none. Its style is the Elo picks' old tag rule moved to the model cards (`.sp-game
@@ -3822,10 +3827,10 @@ is already the matchup bubble's button, which shows his Mismatches row.
 
 Held, blocking. `build.js` stops if the Elo picks come back (outside comments, in the props parts, the ELO tab, the
 parlay card, the bubble or the theme: `data-sp-kind="elo"`, `eloUnit`, `spEloSet`, `spEloOn`, `eloCardOpt`, `eloPicks`,
-`epTake`, `epOpposed`, `spIsElo`, `data-sp-elo-`, `eloown`, `.pb-tier.elo-`, `eloDecorate`; "Elo picks" in the parts or
-the card; `SP_KIND`'s Elo kind or a unit's `h5.sp-sub` in part3), if a unit stops drawing its levels in the model's grid
-with each level's Add, if the card stops finding a level by `window.spTier`, or if the tag comes unwired (`spMmDecorate`
-with its card selector, `mmByPlayer()`, `v.tiers`, the same-game test, `mmFavours(l)`, `mmTagEl(m,true)` and the leg's
+`epTake`, `epOpposed`, `spIsElo`, `data-sp-elo-`, `eloown`, `.pb-tier.elo-`, `eloDecorate`, `.pb-elo`; "Elo picks" in the
+parts or the card; `SP_KIND`'s Elo kind or a unit's `h5.sp-sub` in part3), if a unit stops drawing its levels in the
+model's grid with each level's Add, if the card stops finding a level by `window.spTier`, or if the tag comes unwired
+(`spMmDecorate` with its card selector, `mmByPlayer()`, `v.tiers`, `spLiId(li)`, the same-game test, `mmFavours(l)`, `mmTagEl(m,true)` and the leg's
 already-tagged guard; the `renderSp` wrap calling it; `mmFavours`' rule; `mmByPlayer` on `mmTagged`; the style with
 `nowrap`); each stop was bitten in memory. The audit (`spDrawHold`, wherever `holdSets`, M10 and M15 draw the tab:
 `spEloAud`, nothing of the Elo picks on the page or the tab; `spShapeAud`, each unit its head, its one line and its
@@ -3836,17 +3841,25 @@ its label a `W.wording`; M2's card handed the Elo cards' old options drawing non
 planted Elo pick; NL1 reading no Elo picks; M10 a key kept before app v142 with Elo picks beside its set, drawn as kept
 and written back without them). The nflbets smoke (`blocksHeld` and `mmTagsHeld` on every unit it meets, the week as it
 stands and every fixture, by its own rule, `mmTagsBad` on `mmTagMapOwn` with `mmSideOwn`; THE MISMATCH TAG ON THE
-REGULAR PARLAYS at any hour on made-up games two days out, a tagged player (`mmC`), an untagged one beside him (`mmU`)
-and a tagged one in another game (`mmW`), on whichever matchups file it runs on (the week's, with the score, or an older
-one, as `test_audit_phases.py`'s page smoke cases carry): a set of its own drawn by the page's cards live, locked from
-the record, as this browser's own and as the Sunday slot under way, each drawn twice, the tag on `mmC`'s over and
-touchdown alone and never on his Under, his interceptions, `mmU`'s over, a moneyline, a spread, a total or `mmW`'s leg
-in the wrong game or in a game begun; none on the Parlay Builder; `window.mmFavours` against its own rule; the Elo files
+REGULAR PARLAYS at any hour on made-up games two days out, a tagged player (`mmC`), an untagged one beside him (`mmU`), a
+second tagged one there (`mmD`, his over on one card beside `mmC`'s touchdown, so it wants two tags: since the review of 5 November
+2026, when a page tagging one leg a card passed every check) and a tagged one in another game (`mmW`), on whichever
+matchups file it runs on (the week's, with the score, or an older one, as `test_audit_phases.py`'s page smoke cases carry,
+its tagged rows then the smoke's own reading of the old rule, `mmOldListOwn`, where it read the page's list until the
+review): a set of its own drawn by the page's cards live, locked from the record, as this browser's own and as the Sunday
+slot under way, each drawn twice, each card's count held, the tag on `mmC`'s and `mmD`'s overs and `mmC`'s touchdown alone
+and never on his Under, his interceptions, `mmU`'s over, a moneyline, a spread, a total or `mmW`'s leg in the wrong game
+or in a game begun; the live set drawn too by the reader's own opening (`spOpenSoft`, its building line first) and by the
+half-minute look finding it stale (`pbWatchTick`), each with exactly the tags (since the review); none on the Parlay
+Builder; the builder's Elo lean held word for word on a ranked player's trusted leg (a back's rushing yards on this
+week's files, where the receiver it stood on had held only "no lean" since the inputs); `window.mmFavours` against its own rule; the Elo files
 held back drawing the levels with no tag and nothing thrown, then the tag; the record one row with no label and no Elo
 pill; a kept copy from before; record entries carrying Elo picks drawing none; `spEloLeft` wherever `holdSets` runs;
 softChecks' four steps a game). `elo/check_tab.js` (`spTagHeld` on a stand-in unit's model cards, by its own `wearC` and
 `favoursC`, on a file with the score and one from before it (`oldSpTag`), a leg under a name's button naming another
-player, an empty level, two draws, the matchups held back then answered; none of the Elo picks' window exports on the
+player, an empty level, a second tagged player's over beside the first on Safe (each card's count, held after the first
+draw and after the second), the level read after the draw differing from the cards (each drawn leg found by its leg
+signature or its own Add, never its place), the matchups held back then answered; none of the Elo picks' window exports on the
 page and every export other surfaces read still there; F1 the builder's Elo lean through `window.eloLeanNote` in its
 four forms). `smoke_live.js` (each unit its head, its phase line and its four cards; the record one row, unlabelled; a
 record entry carrying Elo picks drawing, counting and keeping none; the Sunday slot's second game a model Medium where
@@ -3867,7 +3880,14 @@ button's player check, the game-leg terms, an Under let through, the tag before 
 by this run let through), 1 failure, `takeUnits` taking Elo picks again, 5 failures (18 with the
 guard's new refusal taken out too), a rewrite keeping the old entry's `elo`, 12, a locked Elo pick built again for a
 player ruled out, 9, both new refusals taken out, 4, `ready()` still asking for `spEloSet`, 5 (every stage refused),
-the model's levels alone graded, 11, and a locked set's Elo picks dropped, 85. Wherever this file says, before
+the model's levels alone graded, 11, and a locked set's Elo picks dropped, 85. The review of 5 November 2026 found the
+checks could not tell one tag a leg from one tag a card (a `spMmDecorate` stopping after a card's first tagged leg
+passed `build.js`, `check_tab.js` and the smoke): with the second tagged player on a card, that page fails
+`check_tab.js` 4 times and the smoke 13; the tag paired by its place alone fails `check_tab.js` twice, and with the Add's
+reading taken out of `spLiId` twice; a wrap skipping the tag on a draw that starts under the building line fails the
+smoke's `spOpenSoft` check, and one skipping it inside `renderParlay` its `pbWatchTick` check, once each (that one
+failed nothing before); and the builder drawing no Elo lean fails the smoke's builder check twice, where only the
+bubble's rung caught it before. Wherever this file says, before
 this paragraph or after it, that Suggested Parlays carries Elo picks (each unit's own four under an "Elo picks" heading,
 live, locked, kept in the browser and recorded with its set, with a record row of their own), that the suggestions
 record takes, locks or replaces Elo picks, that a unit's model parlays sit under a "Parlays" sub-heading, or that a

@@ -24,8 +24,9 @@ all (it still gets --no-odds, which a base from before needs and this one ignore
   bake       job A: `weekly.py --no-odds` on this code (today's nflverse files, today's read of DraftKings' lines
              on ESPN, which espn_read.js records in props/raw/espn/, the audit with PROPS_AUDIT_RAW as weekly.py
              sets it), judged on its exit code; then the page smoke on the payload it baked (SMOKE_PAYLOAD) and
-             elo/check_tab.js (the ELO tab and the Elo picks on that payload's schedule, which the Elo job runs
-             every morning and which blocks its publish), each judged on its "0 failures" line.
+             elo/check_tab.js (the ELO tab, the Elo matchup chance, the builder's Elo lean and the Mismatch tag
+             on Suggested Parlays' cards, until app v142 the Elo picks, on that payload's schedule, which the Elo
+             job runs every morning and which blocks its publish), each judged on its "0 failures" line.
   phase      job B, one case of props/build/test_audit_phases.py: the audit or the page smoke replayed on
              a payload from git history at its own moment.
   units      job C: the props job's own tests and the page's (UNITS: the ESPN read and its application, the
@@ -392,8 +393,9 @@ def smoke(root, payload, label):
 
 
 def check_tab(root, label):
-    """elo/check_tab.js in this tree, on its props/data/payload.json (the one its weekly.py baked): the ELO tab and
-    the Elo picks, which read that payload's schedule and which the Elo job runs every morning (critique 13 of the
+    """elo/check_tab.js in this tree, on its props/data/payload.json (the one its weekly.py baked): the ELO tab, the
+    Elo matchup chance, the builder's Elo lean and the Mismatch tag on Suggested Parlays' cards (until app v142 the
+    Elo picks), which read that payload's schedule and which the Elo job runs every morning (critique 13 of the
     ESPN-only change: a payload the props job publishes must not turn the next Elo publish red)"""
     rc, o = stream(['node', 'elo/check_tab.js'], root, clean_env(), f'elo/check_tab.js on {label}')
     m = [x for x in (SMOKE_LINE.search(l) for l in o.splitlines()) if x]
