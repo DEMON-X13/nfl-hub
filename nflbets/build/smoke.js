@@ -474,7 +474,13 @@ function fairRule(w) {
       if (g.tot != null && isFinite(g.tot) && px(g.tov) && px(g.tou)) by.total.push(imp(g.tov) + imp(g.tou)); }
     const o = { all: med([...by.player, ...by.ml, ...by.ats, ...by.total]) }; for (const k in by) o[k] = med(by[k]); return o; };
   const ESR = ESPN_RULE.make(w);
-  return l => { const lp = legPrice(l);
+  return l => {
+    /* (app v125) a pulled leg's fair chance is the pull's, and a locked leg's the one kept at its lock, as the page's
+       legFair and the audit's fairOf read them first (6 November 2026: a locked Thursday set's JAX moneyline, kept at
+       -520 and 80%, was read here at the moneylines DraftKings had moved to since, 79%, beside its locked price) */
+    if (l && l.pulled && l.pulled.fair && isFinite(l.pulled.fair.p) && l.pulled.fair.p > 0 && l.pulled.fair.p < 1) return { p: +l.pulled.fair.p, est: !!l.pulled.fair.est };
+    if (l && l.kept && typeof l.kept === 'object') return l.kept.fair != null && isFinite(l.kept.fair) && l.kept.fair > 0 && l.kept.fair < 1 ? { p: +l.kept.fair, est: !!l.kept.est } : null;
+    const lp = legPrice(l);
     /* priced from DraftKings' line read on ESPN (app v107): the formula's own fair chance, est. (a
        touchdown's its price over the week's typical player overround), by espn_rule.js */
     if (lp && lp.src === 'dkline' && px(lp.ml)) { const x = ESR.price(l); if (!x) return null;
