@@ -116,8 +116,9 @@ jobs:
       - name: Is there a week to call
         id: season
         # between the Super Bowl and the fortnight before a new week 1 there is no game to call
-        # and no matchup to project, and the page smoke's Elo picks checks need one: then it is
-        # skipped (the two checks above are the gate either way)
+        # and no matchup to project, and the page smoke's suggestion and Mismatch tag checks need one
+        # (its Elo picks checks did until app v142): then it is skipped (the two checks above are the
+        # gate either way)
         run: echo "calls=$(python -c "import json; print(len(json.load(open('elo/data/model.json'))['next']['games']))")" >> "$GITHUB_OUTPUT"
       - name: Commit if anything changed
         id: commit
@@ -164,8 +165,9 @@ jobs:
           mv "$T/new.json" "$T/ledger.json"
       - name: Check the page still reads what was written (after the commit; a red here never holds back the ratings)
         # a page check, not a check of the Elo data (check.py and check_tab.js gate that, above;
-        # check_tab.js runs the files through market + form, the Elo matchup chance and the Elo
-        # picks, the code that touches a chance or a price): the whole Bets and Stats page booted on
+        # check_tab.js runs the files through the Elo matchup chance and the builder's Elo lean, the
+        # code that touches a chance or a price, and the Mismatch tag on Suggested Parlays' cards;
+        # market + form until app v138, the Elo picks until app v142): the whole Bets and Stats page booted on
         # the files just committed. It runs once the commit has
         # landed, so a page case the smoke has never seen turns the run red with the ratings already
         # live, and is fixed in the page or the smoke

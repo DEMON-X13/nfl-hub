@@ -18,8 +18,8 @@
    four levels on the Suggested Parlays tab, Safe, Medium, Aggressive and Extreme, 2 to 5 legs from that game
    alone: a game kicking off on a Thursday, Sunday or Monday at or after 7:00 pm US Eastern (the page's
    spPrime, which the guard below works out again on its own from the kickoff). Taken from the published
-   page itself: index.html, at the site's root, booted in jsdom on the payload the job has just baked, with the Elo files
-   beside it (market + form decides which player legs qualify) and the window's clock at the run's time,
+   page itself: index.html, at the site's root, booted in jsdom on the payload the job has just baked (the Elo files
+   beside it, though since app v142 nothing the record takes stands on them) and the window's clock at the run's time,
    read by the page's own spGames, spSet and spTierOut, so the record holds exactly the sets the tab shows
    (every prime-time game's, each taken from its first run, though since app v112 the tab sets out one night at
    a time, from 6:00 AM Eastern the morning after the night before: spOn). Keyed
@@ -39,17 +39,21 @@
    with the same written into the entry's `updates` list beside the level's id; the other levels stay as
    locked. From kickoff nothing changes but the grade.
 
-   Since app v118 (the owner's calls of 19 October 2026: "I would like it to have ELO picks for the slot of Sunday
-   games", and "do a separate section for night games and then the sunday slot of games") each entry carries the
+   From app v118 to app v141 (the owner's calls of 19 October 2026: "I would like it to have ELO picks for the slot of
+   Sunday games", and "do a separate section for night games and then the sunday slot of games") each entry carried the
    unit's Elo picks too, `elo`, the ELO tab's four levels on that game's lines alone (elo-safe, elo-med, elo-aggr,
    elo-xtrm, in spTierOut's shape, each leg with its Elo chance `pe`, the level's p the Elo chance all land), taken,
    locked, replaced and graded with the model's, their grades beside the model's in `grade`; an entry taken before
-   app v118 has none.
+   app v118 has none. Since app v142 (the owner's call of 5 November 2026: "instead of having the ELO picks in suggested
+   parlays, i suggest we scrap that") none is taken: an entry not yet locked is rewritten without its `elo` by the first
+   run before its lock, as any set that has changed is, and an entry locked with them keeps them byte for byte, its Elo
+   levels graded as before and counted in the summaries' `elo`, never built again for a player ruled out. The guard
+   refuses an entry this run takes carrying `elo` and an Elo pick this run replaces.
 
    slot (since app v118). The Sunday slot's set on the Suggested Parlays tab: every Sunday game of the week kicking off
-   before 7:00 pm Eastern (the page's spSlotUnit), the four model levels and the four Elo picks across them, keyed
-   season|week|first kickoff|<season>_<WW>_SUN, with `games` (the slot's game ids) and `last` (its last kickoff), taken
-   from the page's spSlotNext, spSet and spEloSet while its lock, 2 hours before its first kickoff, is to come, and
+   before 7:00 pm Eastern (the page's spSlotUnit), the four model levels across them (and, until app v142, the four Elo
+   picks), keyed season|week|first kickoff|<season>_<WW>_SUN, with `games` (the slot's game ids) and `last` (its last
+   kickoff), taken from the page's spSlotNext and spSet while its lock, 2 hours before its first kickoff, is to come, and
    locked, replaced and graded by the same rules as a night game's, from its first kickoff on.
 
    suggest_backtest.json beside it is the record's weeks before it took them (suggest_backtest.js, run by hand,
@@ -108,7 +112,8 @@
    replace: a replacement is recorded in `updates` (the list only ever grows), made from the lock to
    kickoff, by this run, for a player the level held and does not hold now, and a level carrying `updated`
    is the last replacement recorded for it. Any entry new or changed otherwise is this run's, before its
-   kickoff (old) or its lock (prime). A grade is only on a frozen entry and follows its legs' settlements;
+   kickoff (old) or its lock (prime), and since app v142 carries no Elo picks, nor replaces one in an entry locked with
+   them. A grade is only on a frozen entry and follows its legs' settlements;
    each summary follows from its entries. And to the last commit's (git show HEAD; SUGGEST_PREV names
    another file, 'none' skips it): no entry it had frozen or locked may be gone or changed beyond those
    rules (a replacement there may be an earlier run's, not yet committed), whatever the file on disk says.
@@ -157,14 +162,15 @@ const HOW = 'The suggestions record, written by props/build/suggest_ledger.js in
   + 'from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the '
   + 'set\'s lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before '
   + 'the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in '
-  + 'updates. Since app v118 each entry holds the unit\'s Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe), '
-  + 'taken, locked, replaced and graded with the model\'s levels; and slot holds each week\'s Sunday slot (every Sunday game before 7 pm '
+  + 'updates. From app v118 to app v141 each entry held the unit\'s Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo '
+  + 'chance pe); since app v142 none is taken (an entry not yet locked is rewritten without them), and an entry locked with them keeps '
+  + 'them as they locked, graded as before and never built again. slot holds each week\'s Sunday slot (every Sunday game before 7 pm '
   + 'Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first '
   + 'kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder\'s retired all-games panel under its default choices, keyed '
   + 'season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app\'s '
   + 'settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a '
   + 'player with no stat line who took a snap, by nflverse\'s snap counts, is graded on zero, one who did not is void), the payout on '
-  + 'a $1 stake. prime_summary, slot_summary (each with its elo) and summary: per level, parlays graded won or lost (prime: each game\'s level once; entries: each parlay '
+  + 'a $1 stake. prime_summary, slot_summary (each with its elo, the Elo picks\' history) and summary: per level, parlays graded won or lost (prime: each game\'s level once; entries: each parlay '
   + 'once however many waves showed it), won, the wins expected by the fair chance and by the model\'s, and units on $1. Never edited '
   + 'by hand: the script refuses a ledger whose frozen or locked entries moved.';
 
@@ -264,16 +270,14 @@ function boot(payloadText, now) {
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function ready(w, errs, payload, asked) {
-  for (let i = 0; i < 300 && !w.eval("typeof window.eloLoaded==='function'&&window.eloLoaded()"); i++) await sleep(100);
-  /* the Elo picks stand on the matchups too, which the ELO tab reads after the ratings */
-  try { await Promise.race([w.eval("typeof window.eloFiles==='function'?window.eloFiles():null"), sleep(30000)]); } catch (e) {}
+  /* (app v142) nothing the record takes stands on the ELO tab's files: the model's levels have not read the ratings since
+     app v138, and the Elo picks, which did, are taken no more */
   const why = [];
   const PAY = w.eval('typeof PAY==="undefined"?null:PAY');
   if (!PAY || PAY.baked_at !== payload.baked_at) why.push('the page did not load the payload');
-  if (!w.eval("typeof window.eloLoaded==='function'&&window.eloLoaded()")) why.push('the Elo files did not load, so the page would build no Elo picks');
   if (errs.length) why.push('the page threw: ' + errs.slice(0, 3).join('; '));
   if (w.eval('PB_TIERS').map(t => t[0] + ':' + t[1]).join() !== TIERS.map(id => id + ':' + LABELS[id]).join()) why.push("the page's levels are not the four this record keeps");
-  const missing = ['spGames', 'spSet', 'spTierOut', 'spLockAt', 'spOutWhy', 'spRebuild', 'spSlotNext', 'spEloSet', 'spUnit', 'settleLeg', 'parlayDec', 'isGameLeg', 'kickoff']
+  const missing = ['spGames', 'spSet', 'spTierOut', 'spLockAt', 'spOutWhy', 'spRebuild', 'spSlotNext', 'spUnit', 'settleLeg', 'parlayDec', 'isGameLeg', 'kickoff']
     .filter(f => w.eval(`typeof ${f}`) !== 'function');
   if (missing.length) why.push("the page has no Suggested Parlays sets to take (no " + missing.join(', ') + ')');
   else if (w.eval('SP_LOCK_MS') !== LOCK_MS) why.push('the page locks a set at another time than 2 hours before kickoff');
@@ -298,14 +302,13 @@ async function ready(w, errs, payload, asked) {
 }
 
 /* ---- the sets the tab shows now, each unit whose lock is still to come: every prime-time game's, and the Sunday
-   slot of the week (spSlotNext, where it is this week's and none of its games has kicked off), each with its Elo picks
-   where the ELO tab can build them (spEloSet) ---- */
+   slot of the week (spSlotNext, where it is this week's and none of its games has kicked off); since app v142 with no
+   Elo picks ---- */
 function takeUnits(w, now, said) {
   const games = w.eval('spGames()'), kick = w.eval('kickoff'), lockAt = w.eval('spLockAt'), set = w.eval('spSet'), out = w.eval('spTierOut');
-  const eloSet = w.eval('spEloSet'), slot = w.eval('spSlotNext()'), week = w.eval('currentWeek()');
+  const slot = w.eval('spSlotNext()'), week = w.eval('currentWeek()');
   const season = w.eval('SEASON'), baked = w.eval('PAY.baked_at') || null, takes = [];
-  let locked = 0, noElo = 0;
-  const eloOf = id => { const e = eloSet(id); if (!e || !Array.isArray(e.tiers)) { noElo++; return {}; } return { elo: e.tiers.map(t => out(t)) }; };
+  let locked = 0;
   for (const g of games) {
     const k = kick(g).getTime(), lock = lockAt(g);
     if (!(k > now)) throw new Error(`${g.id}, a game still to come, kicks off at or before the clock`);
@@ -316,7 +319,7 @@ function takeUnits(w, now, said) {
     const s = set(g.id);
     if (!s) throw new Error(`the page has no set for ${g.id}`);
     const entry = { season, week: +g.w, gid: g.id, away: g.a, home: g.h, kickoff: iso(k), lock: iso(lock), baked_at: baked,
-      pool: { pref: s.pref, thin: s.thin, mkt: s.mkt, far: s.far }, tiers: s.tiers.map(t => out(t)), ...eloOf(g.id) };
+      pool: { pref: s.pref, thin: s.thin, mkt: s.mkt, far: s.far }, tiers: s.tiers.map(t => out(t)) };
     takes.push({ map: 'prime', key: primeKey(entry), entry });
   }
   let slotLocked = false, slotGames = 0;
@@ -331,16 +334,16 @@ function takeUnits(w, now, said) {
       if (!s) throw new Error(`the page has no set for ${slot.id}`);
       slotGames = slot.games.length;
       const entry = { season, week: +slot.w, gid: slot.id, games: slot.games.map(g => g.id), kickoff: iso(k), last: iso(slot.last), lock: iso(lock), baked_at: baked,
-        pool: { pref: s.pref, thin: s.thin, mkt: s.mkt, far: s.far }, tiers: s.tiers.map(t => out(t)), ...eloOf(slot.id) };
+        pool: { pref: s.pref, thin: s.thin, mkt: s.mkt, far: s.far }, tiers: s.tiers.map(t => out(t)) };
       takes.push({ map: 'slot', key: primeKey(entry), entry });
     }
   }
-  if (noElo) said.push(`${noElo} set${noElo === 1 ? '' : 's'} taken with no Elo picks: the page could not build them (the Elo files or the matchups did not load)`);
   return { games: games.length, locked, takes, slot: slot && +slot.w === +week ? slot.id : null, slotLocked, slotGames };
 }
 
 /* ---- a locked set, from its lock to kickoff: a level holding a player now ruled out built again, that
-   level alone (the page's spOutWhy and spRebuild, its own rule for every suggestion) ---- */
+   level alone (the page's spOutWhy and spRebuild, its own rule for every suggestion); since app v142 the model's levels
+   alone: an entry's Elo picks, locked before then, are never built again (nothing shows them) ---- */
 function replaceRuledOut(w, P, now, runAt, said) {
   const unit = w.eval('spUnit'), why = w.eval('spOutWhy'), rebuild = w.eval('spRebuild'), out = w.eval('spTierOut');
   const kick = w.eval('kickoff'), isGame = w.eval('isGameLeg'), season = w.eval('SEASON');
@@ -352,7 +355,7 @@ function replaceRuledOut(w, P, now, runAt, said) {
        other games than the entry's, which the guard holds its legs to) */
     const g = unit(e.gid); if (!g || !kick(g) || iso(kick(g).getTime()) !== e.kickoff) continue;
     if (Array.isArray(e.games) && (!g.games || g.games.map(x => x.id).join() !== e.games.join())) continue;
-    for (const field of ['tiers', 'elo']) {
+    for (const field of ['tiers']) {
       if (!Array.isArray(e[field])) continue;
       e[field].forEach((t, i) => {
         if (!t || !Array.isArray(t.legs)) return;
@@ -489,6 +492,8 @@ function primeMoved(L, prev, now, runAt, map = 'prime') {
     const fresh = u.slice(pu.length), T = levelsOf(e), PT = levelsOf(pe);
     if (!Array.isArray(e.tiers) || Array.isArray(e.elo) !== Array.isArray(pe.elo) || T.length !== PT.length || T.some((t, i) => !t || !PT[i] || t.id !== PT[i].id)) { bad.push(`${key}: locked at ${at}, and its levels changed`); continue; }
     if (runAt != null && fresh.some(x => !x || x.at !== runAt)) bad.push(`${key}: locked at ${at}, and a replacement recorded that is not this run's`);
+    /* (app v142) the record replaces no Elo pick: one recorded by this run is refused */
+    if (runAt != null) for (const x of fresh) if (x && ELO_TIERS.includes(x.tier)) bad.push(`${key} ${x.tier}: an Elo pick replaced by this run, which the record no longer does (app v142)`);
     T.forEach((t, i) => {
       const mine = fresh.filter(x => x && x.tier === t.id), same = canon(t) === canon(PT[i]);
       if (same) { if (mine.length) bad.push(`${key} ${t.id}: a replacement recorded for a level that did not change`); return; }
@@ -553,7 +558,12 @@ function check(L, prev, now, runAt) {
     if (e.grade && t(e.kickoff) > now) bad.push(`${key}: graded before its kickoff`);
     bad.push(...gradeBad(key, e));
   }
-  for (const map of UNIT_MAPS) for (const [key, e] of Object.entries((L && L[map]) || {})) bad.push(...primeEntryBad(key, e, now, map));
+  for (const map of UNIT_MAPS) for (const [key, e] of Object.entries((L && L[map]) || {})) {
+    bad.push(...primeEntryBad(key, e, now, map));
+    /* (app v142) the record takes no Elo picks: an entry this run took carrying them, or carrying the field at all (an elo
+       of null too, which no take writes), is refused */
+    if (runAt != null && isMap(e) && e.taken_at === runAt && Object.prototype.hasOwnProperty.call(e, 'elo')) bad.push(`${key}: taken by this run with Elo picks, which the record no longer takes (app v142)`);
+  }
   if (prev) {
     bad.push(...frozenMoved(L, prev, now));
     for (const [key, e] of Object.entries(E)) {

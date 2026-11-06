@@ -180,17 +180,23 @@ props/
                                  void) -> data/suggest_ledger.json's prime, each game's
                                  level counted once; the retired all-games panel's
                                  entries kept, frozen and graded; its guard refuses a
-                                 ledger whose frozen or locked entries moved; since app
-                                 v118 each set's Elo picks (elo) too, and the Sunday
-                                 slot's sets in its slot map; since app v125 the sets
+                                 ledger whose frozen or locked entries moved; from app
+                                 v118 to app v141 each set's Elo picks (elo) too (none
+                                 taken since app v142: one still to lock rewritten without
+                                 them, one locked with them keeping them, graded, never
+                                 built again); the Sunday slot's sets in its slot map;
+                                 since app v125 the sets
                                  stand on the payload's ESPN read (graded at estimated
                                  prices from week 7), and it refuses a page that drops
                                  that read or asks ESPN's player lines on load
   build/test_suggest_ledger.js   its test: made-up weeks cut from the payload, the
                                  rewrite, the lock, a run hours late, the ruled-out
-                                 level, a book's settlement, the guard, the Sunday slot
-                                 and the Elo picks, and since app v127 no ladder bet in
-                                 any set it takes (offeredOwn) (about a minute)
+                                 level, a book's settlement, the guard, the Sunday slot,
+                                 since app v127 no ladder bet in any set it takes
+                                 (offeredOwn), and since app v142 no Elo picks in any
+                                 entry a run takes (noEloTaken), an older entry's
+                                 rewritten before its lock and kept, graded, once locked
+                                 (legacyElo) (about a minute)
   build/suggest_backtest.js      by hand, never by a job: the record's weeks before it
                                  took them (from week 3), each night game and Sunday slot
                                  rebuilt by today's page on the files of the last commit
@@ -356,6 +362,14 @@ props/
                                  expected return the estimate's flat margins put every
                                  qualifying anytime touchdown first (its docstring is the
                                  design and the diagnosis)
+  build/patch_no_elo_picks.py    app v142 (5 November 2026, the owner's call): no Elo picks on
+                                 Suggested Parlays (each unit's parlays alone, right under its
+                                 line with no sub-heading; the record one row, unlabelled;
+                                 spEloOn, spEloSet, spIsElo, SP_KIND's Elo kind, pbTierCard's
+                                 Elo-only options and every Elo branch of the kept shape gone;
+                                 a kept copy's elo dropped on read), the ELO tab putting the
+                                 Mismatch tag on the model cards instead (tab_elo.html's
+                                 spMmDecorate) (its docstring is the design)
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
                                  answers (audit M8 and M17, the nflbets smoke), its own tdBranch
                                  among it
@@ -371,7 +385,9 @@ props/
                                  grade, read by Suggested Parlays (its locked sets and its
                                  record); entries, the all-games panel's from 12 to 16
                                  October 2026, frozen, graded and drawn nowhere; slot
-                                 (app v118), each Sunday slot's set; each set's elo
+                                 (app v118), each Sunday slot's set; each set's elo, the
+                                 Elo picks from app v118 to app v141 (none taken since,
+                                 those locked kept and graded, drawn nowhere)
   data/suggest_backtest.json     written by suggest_backtest.js by hand, never edited: the
                                  record's prime and slot maps for weeks 3 to 6, each entry
                                  src backtest with the commit it was rebuilt from; the
@@ -512,8 +528,9 @@ elo/
                                  rows, their order and words, each bubble's score its size
                                  alone, Show more, a game page's tags, and fixtures: no
                                  quarterback, the ties, the tag null, a lead leg untrusted, a
-                                 size of nothing drawn "0 pts", the Elo picks' tag through
-                                 eloDecorate on a stand-in unit; the score planted where the
+                                 size of nothing drawn "0 pts", and since app v142 the
+                                 Mismatch tag on a stand-in unit's model cards, spTagHeld,
+                                 spMmDecorate; the score planted where the
                                  files lack it) and
                                  the old ones on a file from before it; kicked-off games leave
                                  the Mismatches, shields agree,
@@ -553,17 +570,14 @@ elo/
                                  the matchup's nudge: since 29 October 2026 the Elo-adjusted
                                  average's Elo part in its spread, `z`, none on a player the
                                  block does not cover, and the formula's nudge on a file from
-                                 before it), the Elo picks the strongest leans
-                                 that go together on one DraftKings slip (none refused, none
-                                 moving against another by the pair table) at the builder's own sums
-                                 (parlayProb, parlayDec, PB_TIERS, pbOrder loaded from the
-                                 props parts), their stated fair chance parlayFair's, on a fair
-                                 chance of the check's own (legFairStand), with fixtures F1
-                                 (the candidates' rule) and F2 (the greedy prefix, the pairs
-                                 DraftKings refuses, the legs moving against each other, ties,
-                                 the slot's summed lean, the empty levels' words), no error (the gate on that, the page smoke
-                                 running after the commit; market + form, the search on the Elo
-                                 chance over floors, its fast sums and F3-F6 until app v138)
+                                 before it) on a fair chance of the check's own
+                                 (legFairStand), and F1 the Elo lean a builder row wears
+                                 (window.eloLeanNote), no error (the gate on that, the page
+                                 smoke running after the commit; market + form, the search on
+                                 the Elo chance over floors, its fast sums and F3-F6 until app
+                                 v138; the Elo picks, the strongest leans that go together on
+                                 one DraftKings slip at the builder's own sums, F1's
+                                 candidates and F2 until app v142)
   tools/units_fit.py             the fit and the walk-forward test behind Overall Offense and
                                  Overall Defense: 2012-2025 play-by-play, every constant fitted
                                  on 2012-2017 (the carry's share chosen there, one season left
@@ -645,8 +659,9 @@ elo/
                                  the table he faces, `vs`), `avg_ref` and
                                  `avg_fit` (ELO_AVG whole, each leg's `trusted`, and
                                  `mismatch`, the lead legs, the tag and its record), which the
-                                 page's Elo picks, leans, player window, bubble and Mismatches'
-                                 projected line read; since 4 November 2026 each lead block's
+                                 page's leans, player window, bubble and Mismatches' projected
+                                 line read (and until app v142 its Elo picks); since 4
+                                 November 2026 each lead block's
                                  `mm`, {stat, shift, tag}, the Mismatches' score, and the
                                  inputs (THE INPUTS): each block's `in` (his last and usual snap
                                  shares, his long and short shares of his club's targets,
@@ -754,8 +769,8 @@ nflbets/
                                  before the snapshot as window.gsDeepDive, and required by
                                  news/tools/smoke.js and cases.js, which hold it to the real data
   build/card.html                the parlay card (pc-): Finish parlay, its window and its PNG
-                                 download, on every device, for the builder, a Suggested Parlays
-                                 level and an Elo pick;
+                                 download, on every device, for the builder and a Suggested
+                                 Parlays level (an Elo pick too until app v142);
                                  the builder's pricing is lifted into it; on the site owner's
                                  devices Pull from DraftKings (20 October 2026: that parlay's
                                  player markets from The Odds API through HUB_ADMIN, placed by
@@ -788,8 +803,9 @@ nflbets/
                                  (build.js refuses one that does)
   build/smoke.js  smoke_live.js  the page, and the X Parlays section, in jsdom: the gates
                                  (smoke.js also: Suggested Parlays' sets, their night rule,
-                                 their lock and their short lines, the Elo picks' four
-                                 levels, every leg at DraftKings' fair chance (app v138: no
+                                 their lock and their short lines, no Elo picks and the
+                                 Mismatch tag on their regular parlays (app v142), every
+                                 leg at DraftKings' fair chance (app v138: no
                                  Value mark, model chance or far-off flag drawn, each level's
                                  quality by its own enumeration), the matchup bubble (THE MATCHUP BUBBLE), and the Parlay Builder,
                                  the builder first, its Top 50 lines (30 from app v116 to
@@ -1222,7 +1238,7 @@ a MISMATCH tag beside the name of each player with a Solid, Big or Huge mismatch
 Elo matchup chance on each leg in the builder (since app v138 its nudge alone, "Elo +2.1"; since 29 October 2026 the
 Elo-adjusted average's Elo part with the defence it is set against, "Elo +0.5 · vs CAR Pass D #23"), until app v138 a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
-and the Elo picks, since app v118 each Suggested Parlays set's own on its night game's or Sunday slot's games alone
+and, until app v142 (below), the Elo picks, from app v118 each Suggested Parlays set's own on its night game's or Sunday slot's games alone
 (`window.eloUnit`, drawn by the props parts with `window.eloCardOpt`, the mismatch tags put on by `eloDecorate`, no
 longer on the Parlay Builder's ticks), from app v111 to v117 at the foot of Suggested Parlays (`#pbElo`, until then the foot of the Parlay
 Builder's suggested parlays; drawn with the sets' own `pbTierCard`, each leg with its own Add and no Value mark,
@@ -1242,7 +1258,17 @@ and the others 25%, 12% and 5%, legs of one game priced together by the builder'
 sums equal to the parts' to the bit (`epDraws`, `epSums`, `epDec`), every level worked again by the parts before it is
 drawn (`EP_FAST` off should they differ), built only while the tab is on the screen and cached (`EP_CACHE`; the ELO tab
 wraps `renderSp`); each leg on a player with a Solid-or-better mismatch wearing "<Grade> mismatch" after his name's
-button, on the side it favours only (`epMm`, `epMmFor`, `epMmTag`). The Mismatches' words (`mmLine`, `mmTitle`,
+button, on the side it favours only (`epMm`, `epMmFor`, `epMmTag`). **Since app v142** (CLAUDE.md, **No Elo picks, and a Mismatch tag on the regular parlays**)
+the Elo picks and all of that engine are gone from the tab (the record keeps their history as data, drawn nowhere), and
+the tab wraps `renderSp` to put the Mismatches' tag on Suggested Parlays' model cards instead (`spMmDecorate`): on each
+card (`.sp-game .pb-tiers[data-sp-kind="model"] > .pb-tier[data-pb-tier]`), its level read as the unit shows it
+(`spShown`) and each drawn `li` found in its legs by its own markup (`spLiId`: the name button's leg signature, else its
+Add's key, side and line; its place only where it carries neither), a leg on a player `mmByPlayer` finds tagged on this week's
+Mismatches (`mmTagged`, his first such row), in that same game, on a leg `mmFavours` (his over or his touchdown, never
+an under, his interceptions, a team bet or a total), wears `mmTagEl(row, true)` right after his name's button, once;
+nothing is asked or tagged while the files load, and `boot`'s `renderPb()` draws the tags once they are in.
+`muP`/`window.eloMatchupP` and the builder's lean stay, and `window.eloLeanNote` and `window.mmFavours` are handed to
+the checks. The Mismatches' words (`mmLine`, `mmTitle`,
 `mmAgainst`) name the matchup formula's units, "vs the LAC secondary and defensive line, 32nd by player Elo", never
 "pass defense ranked", which is the ELO Ratings tab's table's alone; clubs level on a unit share its rank there, in a
 player's window and in the Game snapshot's Starters headers and Mismatches (20 October 2026; the window and the headers on
@@ -1258,7 +1284,7 @@ inputs**), a shift above nothing, his game to come and he not ruled out, ranked 
 in yards and the id; each row's words (`mmSayV2`, carried on the row as `say` for the Game snapshot and the bubble): "+7
 pts", "+6.1 rec yds", "vs LAC Pass Defense #32" (the block's `vs`, the tab's own table), "58 rec yds" and the title; one
 tag, Mismatch, at the file's tag (`mmTagged`, `mmTagEl`; none where it is null); the bubble (`bubbleV2`), Show more's row
-(`rowV2`, a Pts column), a game page's MISMATCH and an Elo pick's tag the same row. The old score above stands, untouched,
+(`rowV2`, a Pts column), a game page's MISMATCH and a Suggested Parlays card's tag (an Elo pick's until app v142) the same row. The old score above stands, untouched,
 for a file from before the score, between one pair of OLD-MISMATCHES marks in this file, `snapshot.html` and `glance.js`
 (`mismatchesOld`, `mmTaggedOld`, `mmTagElOld`, `bubbleOld`, `rowOld`; `mmCxOld`, `mmLiOld`; the bubble's old line);
 `build.js` refuses the old score's words outside the marks. **Since November 2026** (the owner's call "Switch to ELO tab
@@ -1342,8 +1368,11 @@ spSlotHtml(on))`), under one record of both of the record's maps (`SP_SEC.night.
 `spRecSum` takes a map at a time, each unit and level once, the record over the backtest as before; `SP_SEC.slot`, the
 slot's map alone, kept for a caller that names it and drawn nowhere), the backtest's weeks still counted (each pill's title
 says how many of its own) and no chip naming them (`.sp-recbt`, "Incl. backtest, weeks 3–6", and its row `.sp-recbtbar`,
-gone). Each unit (`spUnit`: a night game or the slot) has its model parlays and its own Elo
-picks (`spEloSet`, the ELO tab's `window.eloUnit`), locked, kept and recorded together. A prime-time game (`spPrime`) kicks off on a Thursday, Sunday or Monday at or after 19:00 Eastern,
+gone). Each unit (`spUnit`: a night game or the slot) has its model parlays, locked, kept and recorded (from app v118
+to app v141 its own Elo picks too, `spEloSet`, the ELO tab's `window.eloUnit`, under a sub-heading each; since app v142,
+CLAUDE.md's **No Elo picks, and a Mismatch tag on the regular parlays**, its cards stand right under its line with no
+sub-heading, the record is one row with no label, and a leg on a player this week's Mismatches tag, in that game, on his
+over or his touchdown, wears the tag, put on by the ELO tab's `spMmDecorate`). A prime-time game (`spPrime`) kicks off on a Thursday, Sunday or Monday at or after 19:00 Eastern,
 read from the schedule's `g.d` and `g.t`, which are Eastern already: Thursday, Sunday and Monday night football,
 both games of a Monday doubleheader, Thanksgiving's night game and a Christmas night game on one of those days;
 never a day game, a Saturday or a Friday. `spGames()` is those of `pbGames()` (the week's games still to kick off,
@@ -1612,7 +1641,7 @@ and Reset: app v95, `patch_pb_lock_turn.py`, and `PB_VIEW`, `pbLocked`, `pbShown
 them; the levels are each prime-time game's own, on Suggested Parlays. Its controls are, in order, the **Bet amount**
 box (`#pbStake`, a number box with `inputmode="decimal"`, min $1, max $100,000, step $1), which is the builder's
 own stake, `S.stake`: one amount, $20 to start, saved with the prop model's state, set from either box or the
-builder's one-tap amounts (its hint says every parlay on Suggested Parlays pays on it). Every level card on Suggested Parlays (`pbTierCard`, which draws the Elo picks too) pays
+builder's one-tap amounts (its hint says every parlay on Suggested Parlays pays on it). Every level card on Suggested Parlays (`pbTierCard`, which drew the Elo picks too until app v142) pays
 it times the level's own decimal price, `pbPayHtml(dec)`, under "$25 pays"; each card's `data-pb-pay` holds its
 price so `pbPays()` redraws every payout in place, on either tab, as the amount is typed, and the builder follows
 250 ms later (`pbSyncBuilder`). The box's `change` (leaving it, or Enter) settles the amount and redraws only the
@@ -1880,7 +1909,8 @@ reads `spGames`) is what the page suggested, written down before the games and g
 the page rather than remembered. `props/build/suggest_ledger.js` runs in the props job (`weekly.py`, once the audit
 is clean; never a reason to refuse or redden a run). It boots the published page, the root's `index.html`
 (`nflbets/index.html` until 17 October 2026), in jsdom at the site's root on
-the payload just baked, the Elo files beside it (the Elo picks stand on them, and until app v138 market + form
+the payload just baked, the Elo files beside it (the Elo picks stood on them until app v142, when the record stopped
+taking them and `ready()` stopped waiting for those files, and until app v138 market + form
 decided which player legs qualify, so the props app alone would not be the page a visitor sees) and the window's clock held at the run's time (moving, a boot of a few
 seconds could carry it past a lock or a kickoff the script still counts as to come), and reads each prime-time
 game's set with the page's own `spGames`, `spSet` and `spTierOut`, into the ledger's `prime` map, keyed
@@ -1920,7 +1950,9 @@ lock is not exactly 2 hours before it, taken at or after its lock, with a leg on
 its legs, or, once locked, gone or changed beyond its grade and a replacement the rule allows (in `updates`, which
 only grows, made from the lock to kickoff by this run for a player the level held and does not hold now); an entry
 new or changed not by this run; a grade that does not follow its legs or a summary that does not follow from the
-entries: refused, the file put back (the last commit's where the disk copy had moved), exit 1.
+entries: refused, the file put back (the last commit's where the disk copy had moved), exit 1. Since app v142 it also
+refuses an entry this run takes carrying Elo picks and an Elo pick this run replaces, and an entry locked with them keeps
+them, graded (**No Elo picks, and a Mismatch tag on the regular parlays**, below).
 `test_suggest_ledger.js` (about a minute) runs the script on made-up weeks cut from the payload (or
 `SL_TEST_PAYLOAD`'s), its prime-time games moved where each stage needs them (those a week of few games lacks made up
 between clubs of its own, each with a row of zeros so its stats are in) and prime time worked out on its own (taken for every prime-time game and
@@ -2517,6 +2549,32 @@ at any hour (the review of app v141). Wherever this file says, before this parag
 player lines are ranked by expected return, or that the list is the Top 30 with up to 20 player lines, that is history
 from app v141.
 
+**No Elo picks, and a Mismatch tag on the regular parlays** (app v142, `patch_no_elo_picks.py`, whose docstring is the
+design; the owner's call of 5 November 2026, "instead of having the ELO picks in suggested parlays, i suggest we scrap
+that. and then if a player has a big mismatch on the positive side, we give them a mismatch button to go next to their
+name in the normal suggested parlays"; CLAUDE.md under "Bets and Stats: the loop" has the whole of it). `spGameHtml`
+draws a unit's phase line and then its levels, `<div class="pb-tiers" data-sp-kind="model">`, with no `h5.sp-sub` and
+no Elo block; `spRecHtml` one row, `.bar[data-sp-reckind="model"]`, with no `.sp-reck`; `SP_KIND` is the model's kind
+alone. Gone from the parts: `spEloOn`, `spEloSet`, `spIsElo`, the Elo branches of `spLegOut`, `spTierOut`, `spLegIn`,
+`spTierIn`, `spRebuild`, `spShown` (a locked unit with no record entry builds this browser's own set at once, no longer
+waiting for the ELO tab's files), `spTier` and `spWarmSteps`, and `pbTierCard`'s `badge`, `legNote`, `rule` and `noun`;
+`spKeep` drops a kept copy's `elo`, `eloOwn`, `eloAt` and `elo-<level>` replacements as it reads. Gone from
+`tab_elo.html`: `eloPicks`, `window.eloUnit`, `eloUnitPerGame`, `eloCands`, `epTake`, `epOpposed`, `EP`, `EP_CACHE`,
+`epFitWhy`, `window.eloCardOpt`, `epMm`, `epMmFor`, `epMmTag` and `eloDecorate`, and part1's old `.pb-elo` rules; new
+there `mmByPlayer`, `mmFavours`, `spLiId` and `spMmDecorate` (the ELO tab section, above), and `window.mmFavours` and `window.eloLeanNote` for the checks.
+`suggest_ledger.js` takes no `elo` (`takeUnits`), no longer waits for the ELO tab's files (`ready()`), rebuilds the
+model's levels alone (`replaceRuledOut`), and its guard also refuses an entry this run takes with `elo` and an Elo pick
+this run replaces; an entry locked with them keeps them, graded and summed (`prime_summary.elo`, `slot_summary.elo`).
+`suggest_backtest.js` is untouched: a by-hand run now refuses (the page has no `spEloSet`), and its `--check` stands.
+Held by `build.js`'s `GONE_V142` stops and its check that the tag stays wired, the audit's `spDrawHold` (`spEloAud`,
+`spShapeAud`, `spMmAud`) with P2, M2, M8, NL1 and M10, the nflbets smoke's `blocksHeld` and `mmTagsHeld` on every unit
+and THE MISMATCH TAG ON THE REGULAR PARLAYS (two tags on one card, `spOpenSoft` and `pbWatchTick` as well as `renderSp`,
+`mmOldListOwn` on an older file), `elo/check_tab.js`'s `spTagHeld` (`wearC`, `favoursC`, `oldSpTag`; two tags on one
+card and the level read after the draw differing from the cards) and F1
+through `window.eloLeanNote`, `smoke_live.js`'s unit and record shapes, and `test_suggest_ledger.js` (`noEloTaken`,
+`legacyElo`). Wherever this file says, before this paragraph or after it, that Suggested Parlays carries Elo picks, that
+the record takes or replaces them, or that the ELO tab tags an Elo pick's leg, that is history from app v142.
+
 Who is playing is decided on every load from the payload, outside `S`: `RSTAT` (the roster
 status by player) and `INJ` (this week's tags: Q, did not practise, limited), with the ruled
 out in `S.inactive` (Out, Doubtful, Questionable without practice, "pending" -- out or
@@ -2549,7 +2607,7 @@ live outside it.
 Sections. part1.html's own tab bar (Games, Suggested Parlays, Parlay Builder, Track Record, Weekly Update,
 Backup) is the audit's standalone page; the Bets and Stats build replaces it with its own
 bar. `tab-slate` is the Props tab (`slateView` + the `gameModal` overlay), `tab-suggest` is
-Suggested Parlays (`spPanel`: the record, the next prime-time night's sets, the Elo picks), `tab-parlay` is
+Suggested Parlays (`spPanel`: the record, the Sunday slot's and the next prime-time night's sets), `tab-parlay` is
 the Parlay Builder (`parlayBody`, the builder, first since app v116, over `pbPanel`, its choices and the Top 30
 lines), the build adds
 `tab-xparlays` (X Parlays, `#lpCard` alone), and three have no
@@ -2659,8 +2717,8 @@ Mismatches and Team Stats**, has the whole of it).
   chance; from app v138 to v140 Player lines up to 20, then Game bets to 30, all by expected
   return; until then the Value picks first, then the other lines, the thin ones and then the
   totals), each bet once (a ladder rung that is a half-point main Over's bet left out; dormant since app
-  v127, no rung reaching the list). The
-  Elo picks use `pricedLegs()` too, and since 18 October 2026 the same four levels on the Elo
+  v127, no rung reaching the list). Until
+  app v142 the Elo picks used `pricedLegs()` too, and from 18 October 2026 the same four levels on the Elo
   chance (`eloPicks` in `tab_elo.html`, an exact search by the builder's own sums; since app v138 each level the n
   strongest Elo leans that go together on one DraftKings slip, `epTake`, at the fair chance); since app v109 all of them, and a game page's hands,
   take only legs with DraftKings' id at their own line, `dkIdOf`,
@@ -2677,7 +2735,7 @@ Mismatches and Team Stats**, has the whole of it).
 - **matchup bubble / place** -- (app v114) the window a leg's name opens on the hub
   (`glance.js`, `glanceName` in `part3.js`): the player's or both clubs' matchup for the day
   and the leg's own numbers. Its place is where the name was drawn (the builder, the Top lines, a
-  level card in its set or in the Elo picks), which it keeps across a redraw. "This leg" in it
+  level card in its set, or until app v142 in the Elo picks), which it keeps across a redraw. "This leg" in it
   is a row's line, never a bet the visitor made.
 - **mismatch / shift / Mismatch tag** -- (4 November 2026) a back's, receiver's or tight end's lead leg (rushing or
   receiving yards) scored by the Elo-adjusted average's own Elo part as the chance shift it gives an even (50%) line on
@@ -2686,14 +2744,15 @@ Mismatches and Team Stats**, has the whole of it).
   record; null if a season failed, and then nothing is tagged). No quarterback, no grades. Untested against DraftKings'
   lines. Since the averages' inputs (the same day) only a back's rushing yards is a trusted lead leg, so the list is
   backs alone; the tag, chosen again on its rows, is still 3.5 points, 8 of 8. Before it, the matchup formula's edge
-  graded Slight, Solid, Big and Huge, kept for a file from before.
+  graded Slight, Solid, Big and Huge, kept for a file from before. Since app v142 a Suggested Parlays card's leg on a
+  tagged player, in that game, on his over or touchdown, wears the tag after his name (`spMmDecorate`).
 - **Value pick / thin / market** -- (app v112) a leg `pbPool` puts on its preferred list, 3 points
   above the chance its price implies with market + form agreeing on a player's line (`thin:
   false`, not `market`): `pbIsValue()`, and the one mark a leg wears, Value (`pbValMark`). A thin
   leg (`thin: true`, at or above the book by less) and a game total (`market: true`, the book's
   own chance) are not Value picks, fill a level only where the Value picks cannot, and wear no
   mark, a line under the level saying why (`pbThinLine`, `pbMktLine`); they wore "thin edge" and
-  "no edge" until app v112. An Elo pick's legs say neither and are not marked. The record keeps
+  "no edge" until app v112. An Elo pick's legs (until app v142) said neither and were not marked. The record keeps
   `thin` and `market` on every leg. Since app v138 a Value pick needs a hook's chance (`l.hook`), none is set,
   so no leg is one and none is marked: every pool leg is thin but a total.
 - **chance / fair chance** -- (app v138) `legChance(l)`, the chance every leg is stated and chosen at:
@@ -2704,7 +2763,7 @@ Mismatches and Team Stats**, has the whole of it).
   expected return, fair x price - 1, is stated on every card ("expected −22%").
 - **lean** -- (app v138) the model's chance less the stated chance on a leg's own side (`pbLean`, `pm - p`),
   which breaks a tie in the side a line keeps and among parlays of one expected return, and is stated
-  nowhere; an Elo pick's lean is its Elo chance less its fair chance, which ranks the Elo picks.
+  nowhere; until app v142 an Elo pick's lean was its Elo chance less its fair chance, which ranked the Elo picks.
 - **chance hook** -- (app v138) `window.setChanceHook(fn)`, null and never called by the page (`build.js`
   refuses a page that calls it): where a model earns the right, its chance stands in for the fair chance and
   a leg 3 points over its price's implied chance becomes a Value pick; the checks plant one on fixtures alone.

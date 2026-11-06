@@ -1296,6 +1296,33 @@ setTimeout(async()=>{
     if(dayOffAud()) return !B.length&&!dd.querySelector(SPD)&&!dd.querySelector(`${SPN} .sp-slot,${SPN} [data-sp-next$="_SUN"],${SPN} [data-sp-none]`);
     return B.length===1&&A.every(a=>B.every(b=>!!(b.compareDocumentPosition(a)&4)))&&!dd.querySelector(`${SPN} .sp-slot,${SPN} [data-sp-next$="_SUN"],${SPN} [data-sp-none]`)
       &&[...dd.querySelectorAll('#spPanel [data-sp-game]')].every(x=>x.classList.contains('sp-slot')===slotId.test(x.dataset.spGame||'')); };
+  /* (app v142, the owner's call of 5 November 2026: "instead of having the ELO picks in suggested parlays, i suggest we
+     scrap that. and then if a player has a big mismatch on the positive side, we give them a mismatch button to go next
+     to their name in the normal suggested parlays") Suggested Parlays as drawn, worked here wherever the tab is drawn
+     (holdSets, M10, M15), all blocking: spEloAud lists what is left of the Elo picks (their code on the page, a unit's
+     Elo block, its sub-heading, an Elo pick's card, Add to builder or Finish, its loading, error or none line, this
+     browser's own Elo picks' line, #pbElo, "Elo pick" in the tab's words); spShapeAud lists each unit that is not its
+     head, its one line (data-sp-phase) and its parlays (.pb-tiers[data-sp-kind="model"]) as that line's next sibling and
+     nothing else, or, drawing no set (waiting to go up, built when the tab is open, waiting for the record, the Sunday
+     slot under way with nothing kept), its head and its line alone; and spMmAud the Mismatch tags it draws, which on
+     this page, the prop model's own, with no ELO tab (the hub's spMmDecorate, wrapping renderSp, puts them on), are none.
+     spShapeAud asks spShown of a unit only once its card or line is drawn (a unit waiting for its tab draws no card and
+     is never built here) */
+  const spEloAud=()=>{ const dd=w.document, left=['spEloOn','spEloSet','spIsElo','eloUnit','eloCardOpt','eloPicks','eloCands','eloDecorate'].filter(n=>w.eval(`typeof ${n}`)!=='undefined').map(n=>'the page defines '+n);
+    for(const x of dd.querySelectorAll('#pbElo,#spPanel [data-sp-kind="elo"],#spPanel [data-sp-elo-wait],#spPanel [data-sp-elo-err],#spPanel [data-sp-elo-none],#spPanel [data-sp-phase="eloown"],#spPanel .pb-tier[data-pb-tier^="elo-"],#spPanel [data-sp-add*=":elo-"],#spPanel [data-pc-finish*=":elo-"],#spPanel h5')) left.push(x.outerHTML.slice(0,90));
+    const tx=((dd.getElementById('spPanel')||{}).textContent||'').replace(/\s+/g,' '), m=/.{0,40}\bElo picks?\b.{0,30}/.exec(tx); if(m) left.push(`"${m[0]}"`);
+    return left; };
+  const spShapeAud=()=>[...w.document.querySelectorAll('#spPanel .sp-game')].filter(b=>{ const k=[...b.children], ph=k[1];
+      const noSet=!!b.querySelector('[data-sp-phase="wait"],[data-sp-phase="loading"]')||!!(F('spShown')(F('spUnit')(b.dataset.spGame))||{}).none;
+      return !(k.length===(noSet?2:3)&&k[0].tagName==='DIV'&&k[0].classList.contains('sp-hd')&&!!ph&&ph.tagName==='P'&&ph.hasAttribute('data-sp-phase')
+        &&(noSet||(k[2].tagName==='DIV'&&k[2].classList.contains('pb-tiers')&&k[2].dataset.spKind==='model'&&ph.nextElementSibling===k[2]&&b.querySelectorAll('.pb-tiers').length===1))); })
+    .map(b=>b.dataset.spGame+' = '+[...b.children].map(x=>x.tagName+(x.className?'.'+String(x.className).split(' ')[0]:'')+(x.dataset.spKind?'['+x.dataset.spKind+']':'')+(x.dataset.spPhase?'['+x.dataset.spPhase+']':'')).join(', '));
+  const spMmAud=()=>w.document.querySelectorAll('#spPanel .pe-mmtag').length;
+  let spDrawHeld=0;
+  const spDrawHold=(lab)=>{ spDrawHeld++; const e=spEloAud(), sh=spShapeAud(), mm=spMmAud();
+    chk(!e.length,`${lab}: the Elo picks are still on Suggested Parlays (app v142 took them off): ${e.slice(0,4).join(' | ')}`);
+    chk(!sh.length,`${lab}: a unit on Suggested Parlays is not its head, its one line and its parlays straight under it (app v142: no sub-heading, no Elo block): ${sh.slice(0,3).join(' | ')}`);
+    chk(!mm,`${lab}: the prop model's own page, which has no ELO tab, draws ${mm} Mismatch tag${mm===1?'':'s'} on Suggested Parlays`); };
   /* the slot's own words, worked here: its wait line, its head (its week and games, its first kickoff to its last, in
      Eastern time), and the line that says why a level of it is empty */
   /* (app v130) the wait line its state alone: which slot, and when its sets go up (no ", the morning after ...") */
@@ -1935,9 +1962,10 @@ setTimeout(async()=>{
        slot's level is its game's own level (spSet on that game) and no other game of the slot's own level beats it by
        the audit's own copy of the slot rule (slotBestAud), both blocking since app v138; an empty level says so of any one game
        (spWhySlotAud, W.wording). Every level, a night's and the slot's, holds no pair DraftKings will not take on one
-       slip (clashAud), blocking. And the tab's shape: its head, then the two sections, Night games
-       and the Sunday slot, each its heading and its own record first; on this page, the prop model's own, with no
-       ELO tab, no Elo picks (no #pbElo, no unit's Elo block) and each unit's model parlays under their heading */
+       slip (clashAud), blocking. And the tab's shape: its head, then its sections, each under its heading, the record in
+       Record alone; no Elo picks anywhere (app v142, the owner's call of 5 November 2026: their code off the parts, no
+       #pbElo, no unit's Elo block, sub-heading or Elo pick card), each unit its head, its one line and its parlays straight
+       under it, and, on this page, the prop model's own, with no ELO tab, no Mismatch tag (spDrawHold) */
     let setsBuilt=0, setLevels=0, setsSaid=0, setsLocked=0, setMktSeen=0, setThinSeen=0, searchWorked=0; const nightSaid=[];
     const SPS=w.eval('SP_SEARCH'), r4=v=>Math.round(v*1e4)/1e4, r3=v=>Math.round(v*1e3)/1e3;
     /* (maxAud, dayAud, spWhyAud and spWhySlotAud are the audit's own, before M, so M16 reads them too) */
@@ -2050,12 +2078,13 @@ setTimeout(async()=>{
       const NS='#spPanel [data-sp-sec="night"]';
       const N=nightRuleAud(mine,S.sched,now), onG=N.up?N.games:[], ids=a=>a.map(g=>g.id).sort().join(), byK=a=>[...a].sort((x,y)=>(kickAud(x)-kickAud(y))||String(x.id).localeCompare(String(y.id))).map(g=>g.id).join();
       nightSaid.push(`${lab}: ${!mine.length?'no prime-time game to come':N.up?`${ids(onG)} set out${mine.length>onG.length?`, ${mine.length-onG.length} later game${mine.length-onG.length===1?'':'s'} not yet`:''}`:`the next night (${ids(N.games)}) not up until ${isoAud(N.open)}, said so`}`);
-      /* (app v118) the tab's sections are each headed by its own record; the record is no longer at the tab's head, and
-         this page, the prop model's own, with no ELO tab, draws no Elo picks (each unit's, .pb-tiers[data-sp-kind="elo"],
-         which the hub's ELO tab fills) and no #pbElo, only each unit's model parlays under their heading. (app v129, the
-         owner's call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a part of 'Night
-         Games'") one section, Night games, its record first, then the night's sets and then the Sunday slot's; no section
-         of the Sunday slot's own (data-sp-sec="slot") anywhere */
+      /* (app v118) the tab's sections are each headed by its own record; the record is no longer at the tab's head.
+         (app v129, the owner's call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a
+         part of 'Night Games'") one section, Night games, its record first, then the night's sets and then the Sunday
+         slot's; no section of the Sunday slot's own (data-sp-sec="slot") anywhere. (app v142, the owner's call of 5
+         November 2026: "instead of having the ELO picks in suggested parlays, i suggest we scrap that") no unit draws Elo
+         picks, on any page: the parts carry none of their code, and each unit is its head, its one line and its parlays
+         straight under it, with no sub-heading */
       { const sets=d.getElementById('spSets'), kids=sets?[...sets.children]:[];
         const ORD=dayOffAud()?['all','night']:['all','slot','night'];
         /* (app v133) no fold: no details or summary on the tab */
@@ -2067,16 +2096,12 @@ setTimeout(async()=>{
           `${lab}: Suggested Parlays is not its head and the sections Record, Day games and Night games (no Day games on a Sunday from 4pm ET), each a plain section under its heading, no fold, the record in Record alone: ${kids.map(x=>x.tagName+(x.dataset.spSec?'['+x.dataset.spSec+']':'')).join(', ')||'no sections'}`);
         chk(spPartsAud(),`${lab}: the Night games section does not draw the night's sets (or their line) and then the Sunday slot's one part (its set, marked .sp-slot, its line before it is up, or the line that none is left), in that order`);
         W.wording(kids.map(x=>(x.querySelector('h3.sp-sech')||{}).textContent).join('|')===ORD.map(s=>({all:'Record',slot:'Day games',night:'Night games'})[s]).join('|'),`${lab}: the sections are not headed Record, Day games and Night games`);
-        /* (app v132) no Extreme level drawn: a set's cards and its Elo picks Safe, Medium and Aggressive alone */
+        /* (app v132) no Extreme level drawn: a set's cards Safe, Medium and Aggressive alone (and its Elo picks' until app
+           v142 took them off) */
         /* (app v132) Extreme hidden by the stylesheet (jsdom lays nothing out, so the rule itself), and no Extreme pill */
-        chk([...d.querySelectorAll('style')].some(x=>x.textContent.includes('#spSets .pb-tier.xtrm,#spSets .pb-tier.elo-xtrm{display:none}'))&&!d.querySelector('#spSets [data-sp-rec*="xtrm"]'),`${lab}: Suggested Parlays does not hide its Extreme cards, or counts an Extreme level`);
-        /* the units that draw a set: not one waiting to go up or for the record, nor the Sunday slot under way with
-           nothing to show (no record entry and nothing kept: its one line, held in drawSlot below) */
-        const units=[...d.querySelectorAll('#spPanel .sp-game')].filter(b=>!b.querySelector('[data-sp-phase="wait"],[data-sp-phase="loading"]')&&!(F('spShown')(F('spUnit')(b.dataset.spGame))||{}).none);
-        chk(!F('spEloOn')()&&!d.querySelector('#pbElo,#spPanel [data-sp-kind="elo"],#spPanel [data-sp-elo-wait]')
-          &&units.every(b=>b.querySelectorAll('h5.sp-sub[data-sp-kind="model"]').length===1&&b.querySelectorAll('.pb-tiers[data-sp-kind="model"]').length===1&&b.querySelector('h5.sp-sub[data-sp-kind="model"]').nextElementSibling===b.querySelector('.pb-tiers[data-sp-kind="model"]')),
-          `${lab}: the prop model's own page, which has no ELO tab, draws Elo picks (#pbElo, a unit's Elo block or its loading line), or a unit's model parlays are not under their heading`);
-        W.wording(units.every(b=>b.querySelector('h5.sp-sub[data-sp-kind="model"]').textContent==='Parlays'),`${lab}: a unit's parlays are not headed Parlays (app v138: Model parlays until then)`); }
+        chk([...d.querySelectorAll('style')].some(x=>x.textContent.includes('#spSets .pb-tier.xtrm{display:none}'))&&!d.querySelector('#spSets [data-sp-rec*="xtrm"]'),`${lab}: Suggested Parlays does not hide its Extreme cards, or counts an Extreme level`);
+        /* (app v142) no Elo picks, each unit its head, its line and its parlays, and no Mismatch tag on this page (spDrawHold) */
+        spDrawHold(lab); }
       { const pOn=F('spOn')(), drawnIds=[...d.querySelectorAll(SP_NG)].map(x=>x.dataset.spGame), say=`the night rule gives ${ids(onG)||'none'} (the next night ${ids(N.games)||'none'}, ${N.prev?`the night before it ${N.prev}, so up from ${isoAud(N.open)}`:'none before it, so up at once'})`;
         chk(ids(pOn)===ids(onG),`${lab}: Suggested Parlays sets out ${ids(pOn)||'no game'}, where ${say}`);
         chk([...drawnIds].sort().join()===ids(onG),`${lab}: Suggested Parlays draws sets for ${drawnIds.join(', ')||'no game'}, where ${say}`);
@@ -2143,6 +2168,12 @@ setTimeout(async()=>{
             &&tx.includes(shownCh)&&tx.includes(fm(dml(t.dec)))&&(ro?!c.querySelector('[data-sp-add],[data-pc-finish]'):!!c.querySelector(`[data-sp-add="${g.id}:${t.id}"]`)),
             ro?`${tl} does not show its legs, chance and price as it locked, or still offers an Add, Add to builder or Finish with its games under way`:`${tl} does not show its legs, each with an Add of its own named for it, its chance and price, or Add to builder`);
           chk(payOk(c.querySelector('[data-pb-pay]'),stake,t.dec),`${tl} does not pay the Bet amount (${amtTxt(stake)}) times its price ${t.dec}`);
+          /* (app v142) what the hub's Mismatch tag stands on: the card keyed by its level's id (data-pb-tier, which the ELO
+             tab's spMmDecorate reads the level by, as the unit shows it), its legs in the level's order (above), and each
+             leg's name first in its .nm (a text node here, the page having no matchup bubble; the hub's name button), the tag
+             going right after it */
+          chk(c.dataset.pbTier===t.id&&li.length===t.legs.length&&t.legs.every((l,i)=>{ const nm=li[i].querySelector(':scope > .nm'), f=nm&&nm.firstChild; return !!f&&f.nodeType===3&&f.textContent===String(l.name); }),
+            `${tl} is not keyed by its level (data-pb-tier "${c.dataset.pbTier}"), or a leg's name is not first in its name cell, where the hub's Mismatch tag goes after it: ${li.map(x=>{ const f=(x.querySelector('.nm')||{}).firstChild; return f?(f.nodeType===3?JSON.stringify(f.textContent):f.nodeName):'none'; }).join(', ')}`);
           /* (app v112) a Value pick (a preferred leg of the audit's own pool) wears Value, and no other leg any mark.
              (app v113) a set's card is quiet (and since app v130 every card, pbMktLine and pbThinLine gone): it draws no
              line saying why it holds a total and none saying why a leg is not a Value pick, whatever it holds; the Value
@@ -2445,8 +2476,8 @@ setTimeout(async()=>{
        anywhere"): no card says why a leg is not a Value pick, for any kind of leg, as it did until then on a card not
        drawn quiet. (app v138, the owner's call of 27 October 2026: "Value marks disappear until a model earns them") A
        Value pick is a preferred leg standing on a chance hook's chance (thin false, not a total, a hook named on it), and
-       only it wears Value; with no hook none does, whatever its thin flag says; a thin leg, a total and an Elo pick's leg
-       none; and no card or row carries a far-off flag (.faroff, data-pb-far). Worked on cards of the audit's own
+       only it wears Value; with no hook none does, whatever its thin flag says; a thin leg, a total and a leg that says
+       neither (an Elo pick's, until app v142 took them off) none; and no card or row carries a far-off flag (.faroff, data-pb-far). Worked on cards of the audit's own
        (blocking: made-up data) */
     { const C=F('pbTierCard'), base={gid:'gT',name:'Thin',label:'a leg',price:-110,p:0.53,week:F('currentWeek')(),thin:true,side:'over',k:0,main:false};
       const tm={...base,key:'gT|team:AAA|ml',pid:'team:AAA',stat:'ml',grp:'TEAM'}, pl={...base,key:'gT|p1|receiving_yards',pid:'p1',stat:'receiving_yards',grp:'WR'};
@@ -2464,7 +2495,7 @@ setTimeout(async()=>{
       const isV=w.eval("typeof pbIsValue==='function'?pbIsValue:null"); let nMark=0;
       chk(!!isV,'the page has no reading of a Value pick (pbIsValue)');
       if(isV) for(const [l,want,lab] of [[{thin:false,hook:'audit'},true,'a preferred leg on a hook\'s chance'],[{thin:false},false,'a preferred leg with no hook (a locked leg of a set taken before app v138)'],
-          [{thin:true,hook:'audit'},false,'a thin leg, a hook named on it'],[{thin:false,market:true,hook:'audit'},false,'a game total, a hook named on it'],[{},false,'a leg that says neither (an Elo pick\'s)'],
+          [{thin:true,hook:'audit'},false,'a thin leg, a hook named on it'],[{thin:false,market:true,hook:'audit'},false,'a game total, a hook named on it'],[{},false,'a leg that says neither thin nor market'],
           [{thin:undefined,hook:'audit'},false,'thin undefined'],[{thin:0,hook:'audit'},false,'thin 0'],[null,false,'no leg'],[{thin:false,market:false,hook:'audit'},true,'a preferred leg on a hook, market false'],[{thin:false,hook:''},false,'a hook named empty']]){ nMark++;
         chk(isV(l)===want,`pbIsValue on ${lab} says ${isV(l)}, not ${want}`); }
       const tot=(gid,side)=>({key:gid+'|game|total',gid,pid:'game',stat:'total',k:44.5,side,main:false,price:-110,p:0.5,week:F('currentWeek')(),thin:false,market:true,name:gid+' total',label:(side==='over'?'Over':'Under')+' 44.5 points',grp:'TEAM'});
@@ -2493,11 +2524,12 @@ setTimeout(async()=>{
           chk(marks(q2)==='V----'&&lines(q2).length===1&&lines(q2)[0].cls==='pb-thin.pb-espnline'&&/^Price est\. from DraftKings’ line/.test(lines(q2)[0].tx)&&!why.test(q2.textContent),
             `a quiet card with a leg priced from DraftKings' line read on ESPN does not keep its est. line alone: ${JSON.stringify(lines(q2))}`);
           W.wording(!!lines(q2)[0]&&lines(q2)[0].tx===wantE,`the est. line reads "${lines(q2)[0]&&lines(q2)[0].tx}", not "${wantE}"`); } }
-      /* an Elo pick's legs come from pricedLegs, with no thin or market: none is marked, on the Elo picks' own card (their
-         options since app v138: a badge, a line under each leg, the rule; nothing of a chance by the Elo) */
-      { const {thin:_a,...eT}=tm, {thin:_b,...eP}=pl, x=card([eT,eP],{kind:'elo',add:'data-pb-elo-add="elo2"',legNote:()=>'<small class="pe-lean" data-pe-lean="2.1">Elo +2.1</small>',rule:'<span class="pb-rule">strongest Elo leans</span>'}); nMark++;
-        chk(marks(x)==='--'&&noOld(x)&&!x.querySelector('p.pb-thin')&&x.querySelectorAll('.pb-legs li .pe-lean').length===2&&(x.querySelector('.pb-rule')||{}).textContent==='strongest Elo leans',`an Elo pick's legs are marked (${marks(x)}), its card speaks of a thin edge, a Value pick or a chance by the Elo, or it does not draw the line under each leg and the rule it is handed`); }
-      console.log(`M2. thin edge: no line under a tier for any kind of leg, ${cases.length} cases; the Value mark: ${nMark} cases (a hook's Value pick alone marked, never a leg marked thin false with no hook, a thin leg, a total or an Elo pick's leg; no far-off flag; every card quiet, drawing neither line and keeping its est. line)`); }
+      /* legs with no thin or market (pricedLegs' own, as the Elo picks' were until app v142 took them off): none marked.
+         (app v142) the options only the Elo picks' cards used (a badge, a line under each leg, the rule, the noun) are gone
+         from pbTierCard: a card handed them draws none of them */
+      { const {thin:_a,...eT}=tm, {thin:_b,...eP}=pl, x=card([eT,eP],{kind:'sp',legNote:()=>'<small class="pe-lean" data-pe-lean="2.1">Elo +2.1</small>',rule:'<span class="pb-rule">strongest Elo leans</span>',badge:()=>'<i class="pe-badge">B</i>',noun:'Elo pick'}); nMark++;
+        chk(marks(x)==='--'&&noOld(x)&&!x.querySelector('p.pb-thin')&&!x.querySelector('.pe-lean,.pe-badge')&&!/strongest Elo leans|Elo pick/.test(x.textContent),`legs with no thin or market are marked (${marks(x)}), their card speaks of a thin edge, a Value pick or a chance by the Elo, or it still draws an option only the Elo picks' cards used (a lean under each leg, a badge, the Elo rule, the noun Elo pick)`); }
+      console.log(`M2. thin edge: no line under a tier for any kind of leg, ${cases.length} cases; the Value mark: ${nMark} cases (a hook's Value pick alone marked, never a leg marked thin false with no hook, a thin leg, a total or a leg with no thin or market; no far-off flag; every card quiet, drawing neither line and keeping its est. line; the Elo picks' card options gone)`); }
     /* no player prices on file yet (before the week's pulls): Players only says so on every tier,
        and so does a mix with team bets where a tier cannot be filled; the note does not repeat it */
     if(games.length){ const cw=F('currentWeek')(), keepO=JSON.stringify(S.odds||{}), keepM=JSON.stringify(PAY.mkt[String(cw)]||null);
@@ -3204,6 +3236,7 @@ setTimeout(async()=>{
       { const dA=drawn(GA), dB=drawn(GB);
         chk(!!dA&&!!dB&&dA.phase==='wait'&&dB.phase==='wait'&&!d.querySelector('#spPanel .pb-tier')&&w.eval('SP_CACHE.size')===0&&!drawn(GN),'with Suggested Parlays not on the screen, a set was built, drawn, or given to the 4:30 pm game');
         W.wording(!!dA&&dA.line==='Built when this tab is open.','a hidden set does not say it is built when the tab is open'); }
+      spDrawHold('M10, the tab hidden three hours before GA');
       d.querySelector('#tabs button[data-tab="suggest"]').click();
       const fA=holdFull(GA,'GA, three hours out'), fB=holdFull(GB,'GB, three hours out');
       { const dA=drawn(GA), dB=drawn(GB);
@@ -3217,6 +3250,7 @@ setTimeout(async()=>{
         /* (app v113) the lock's line is one short line, and the tab draws no foot or lead */
         W.wording(dA.line===`Locks ${etAud(lockA)}.`,`GA's live line reads "${dA&&dA.line}", not "Locks ${etAud(lockA)}."`);
         W.wording(!d.querySelector('#spSets .pb-foot,#spHead .pb-lead,#spHead .sp-rec-line'),'Suggested Parlays still draws its foot under the sets, its lead or the record\'s sentence'); }
+      spDrawHold('M10, opened three hours before GA (both live)');
       chk(!!fA&&fA.s.tiers.some(t=>t.likeliest)&&fA.s.tiers.some(t=>t.floor&&t.legs&&!t.likeliest),'GA\'s made-up lines do not give both a level that falls back to the likeliest and one over its floor, so the case cannot tell them apart');
       /* a press before the lock re-picks the set: a line moved under the same publish (ESPN_SEQ, as a press moves it) */
       const moveA=v=>{ const l=w.__spL.find(x=>x.pid==='aud-a1'); l.p=v; }, liveA0=sig(fA.s.tiers);
@@ -3249,6 +3283,7 @@ setTimeout(async()=>{
         chk(JSON.stringify(dA.tiers)===JSON.stringify(tierIds(own)),'GA\'s locked set as this browser built it is not the set at the lock');
         { const want=`Locked since ${etAud(lockA)}. This browser’s own set (not graded).`;
           W.wording(dA.line===want,`GA's own locked set's line reads "${dA.line}", not "${want}"`); } }
+      spDrawHold('M10, at GA\'s lock with no record (its own set, GB live)');
       const ownIds=JSON.stringify(drawn(GA).tiers);
       /* a press after the lock changes nothing of it; GB, still live, is re-picked */
       /* GB's Safe pair loses a leg: the line under the book once the press has moved it, so GB's set must move */
@@ -3259,10 +3294,28 @@ setTimeout(async()=>{
         /* a reload: the set comes back from the key, on the moved lines */
         spKeyClear(); w.localStorage.setItem(SPK,JSON.stringify(K1)); dropCaches(); F('renderParlay')();
         chk(JSON.stringify(drawn(GA).tiers)===ownIds&&drawn(GA).phase==='own','a reload after GA\'s lock did not show the set this browser kept');
+        /* (app v142) a key a browser kept before app v142, this browser's own Elo picks beside the set (elo, eloOwn,
+           eloAt) and a page replacement of an Elo level in rep: read harmlessly, nothing thrown, the set as kept and
+           nothing of the Elo picks drawn, and the next write of the key leaves them out (its own set and rep kept) */
+        { const old=JSON.parse(JSON.stringify(K1)), eo=old.games[GA.id], at0=eo.at||isoZ(lockA);
+          eo.elo=[{id:'elo-safe',label:'Safe',n:2,floor:0,legs:(eo.tiers.find(t=>Array.isArray(t.legs))||{legs:[]}).legs.slice(0,2).map(l=>({...l,pe:0.55})),p:0.41,fair:0.3,dec:3.1},{id:'elo-med',label:'Medium',n:3,floor:0,why:'made up'}];
+          eo.eloOwn=true; eo.eloAt=at0; eo.rep={...(eo.rep&&typeof eo.rep==='object'&&!Array.isArray(eo.rep)?eo.rep:{}),'elo-safe':{pid:'aud-a1',name:'Made-up aud-a1',reason:'ruled out',at:at0,tier:{id:'elo-safe',label:'Safe',n:2,floor:0,why:'made up'}}};
+          spKeyClear(); w.localStorage.setItem(SPK,JSON.stringify(old)); dropCaches(); let threw=null;
+          try{ F('renderParlay')(); }catch(e){ threw=e; }
+          const dA=drawn(GA);
+          chk(!threw&&!!dA&&dA.phase==='own'&&JSON.stringify(dA.tiers)===ownIds&&!dA.box.querySelector('[data-sp-kind="elo"],.pb-tier[data-pb-tier^="elo-"],[data-sp-upd],h5'),
+            `a key kept before app v142 with this browser's own Elo picks beside GA's set ${threw?'threw: '+String(threw).slice(0,120):`did not draw GA's own set as kept, with nothing of its Elo picks: ${dA?dA.phase:'not drawn'}`}`);
+          spDrawHold('M10, a key kept before app v142 with Elo picks beside GA\'s set');
+          let threw2=null; try{ w.eval('spKeepSave()'); }catch(e){ threw2=e; }
+          const K6=keyNow(), e6=K6&&K6.games&&K6.games[GA.id];
+          chk(!threw2&&!!e6&&!('elo' in e6)&&!('eloOwn' in e6)&&!('eloAt' in e6)&&!Object.keys(e6.rep||{}).some(r=>/^elo-/.test(r))&&e6.own===true&&JSON.stringify(e6.tiers)===JSON.stringify(eo.tiers),
+            `the next write of a key kept before app v142 does not leave its Elo picks out, or loses GA's own set: ${String(JSON.stringify(e6)).slice(0,240)}`);
+          spKeyClear(); w.localStorage.setItem(SPK,JSON.stringify(K1)); dropCaches(); F('renderParlay')(); }
         moveA(0.66); if(moveB) moveB.p=pB; w.eval('ESPN_SEQ++'); dropCaches(); F('renderParlay')(); }
       /* still reading the record: the locked set waits for it */
       setVar('PB_REC_DONE',false); F('renderSp')();
       chk(drawn(GA).phase==='loading'&&!drawn(GA).box.querySelector('.pb-tier'),'a locked set did not wait for the record');
+      spDrawHold('M10, GA locked while the record is still read');
       W.wording(drawn(GA).line===`Locked since ${etAud(lockA)}. Loading the site’s set…`,`a locked set waiting for the record reads "${drawn(GA).line}", not "Locked since ${etAud(lockA)}. Loading the site’s set…"`);
       setVar('PB_REC_DONE',true);
       /* 3. the record's entry for GA: its set, the same for everyone, through a press; this browser's own given up */
@@ -3288,6 +3341,7 @@ setTimeout(async()=>{
           /* (app v138) the card states the record's fair chance, the one kept at the lock (none here: a dash and why) */
           if(c) fairShown(c,{...t,fair:t.fair!=null?{p:t.fair,est:!!t.fair_est}:null,dec:sd},`the record's ${t.id} level of GA`); }
         W.wording(dA.line===`Locked since ${etAud(lockA)}.`,`GA's locked set from the record reads "${dA.line}", not "Locked since ${etAud(lockA)}."`); }
+      spDrawHold('M10, GA locked from the record');
       /* a press after the lock: the record's set stands */
       moveA(0.72); w.eval('ESPN_SEQ++'); dropCaches(); F('renderParlay')();
       chk(JSON.stringify(drawn(GA).tiers)===JSON.stringify(recIds)&&drawn(GA).phase==='locked','a press after the lock changed the record\'s set for GA');
@@ -3341,6 +3395,7 @@ setTimeout(async()=>{
         chk(dA.phase==='locked'&&[0,2,3].every(i=>dA.tiers[i]===recIds[i])&&!!dA.tiers[1]&&!/aud-a7/.test(dA.tiers[1])&&!!b&&b.best.some(c=>c.L.map(l=>`${l.key}|over|${l.k}`).join()===dA.tiers[1]),
           `with aud-a7 ruled out after the lock, GA's Medium was not built again on the lines at hand, or another level moved: ${JSON.stringify(dA.tiers)}`);
         chk(!!u&&u.dataset.spUpd==='aud-a7'&&!dA.box.querySelector('.pb-tier:not(.med) [data-sp-upd]'),'the level built again is not marked with the player ruled out, or another level is');
+        spDrawHold('M10, GA\'s Medium built again for a player ruled out after the lock');
         chk(!!rep1&&!!rep1.rep&&!!rep1.rep.med&&rep1.rep.med.pid==='aud-a7'&&!!rep1.rep.med.tier&&Object.keys(rep1.rep).length===1&&!rep1.own,`the page's own replacement of GA's Medium is not kept in this browser beside the record's set: ${String(JSON.stringify(rep1)).slice(0,240)}`);
         { const want=rep1&&rep1.rep&&rep1.rep.med?`Updated in this browser: Made-up aud-a7 held out (${etAud(Date.parse(rep1.rep.med.at))}).`:null;
           W.wording(!!u&&!!want&&u.textContent===want,`the replaced level's line reads "${u&&u.textContent}", not "${want}"`); } }
@@ -3557,6 +3612,7 @@ setTimeout(async()=>{
         const box=slotBox(), wt=[...d.querySelectorAll(SP_SW)], nn=d.querySelector(SP_SN), lv=R?SETS[R.id].tiers.filter(x=>x.legs):[];
         /* (app v129) in the one Night games section, after the night's sets, and no section of its own */
         chk(spPartsAud(),`${gl}: the Sunday slot is not the one last part of the Night games section, after the night's sets, or has a section of its own`);
+        spDrawHold(gl);
         if(!R){ chk(!box&&!wt.length&&!!nn,`${gl}: with no slot to come its section draws ${box?'a set':wt.length?'a wait line':'no line saying so'}`);
           W.wording(!!nn&&nn.textContent===`No Sunday game left in week ${cwAud(ms)}.`,`${gl}: the slot's section reads "${nn?nn.textContent:''}"`);
           for(const g of [L1,C1]) chk(F('spTier')(`${sid(g.w)}:safe`)===null,`${gl}: a gone slot's Safe is found for its Finish`); continue; }
@@ -3647,7 +3703,7 @@ setTimeout(async()=>{
       recBody=404; w.fetch=recStub; try{ await w.pbRecLoad(); } finally { w.fetch=fetch0; }
       spKeyClear(); try{ if(spKey0!=null) w.localStorage.setItem(SPK,spKey0); }catch(e){}
       stab.hidden=keepTab; S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; dropCaches(); F('save')(); F('renderParlay')(); }
-    console.log(`M15. the Sunday slot, on made-up weeks of 2019: ${nCase} moments (${said15.join('; ')})`); }
+    console.log(`M15. the Sunday slot, on made-up weeks of 2019: ${nCase} moments (${said15.join('; ')}); Suggested Parlays drawn ${spDrawHeld} times (the week's, M10's and M15's) with no Elo pick, each unit its head, its line and its parlays, and no Mismatch tag on this page (app v142)`); }
 
   /* ---- M16. one game's legs a parlay, and no pair DraftKings will not take on one slip (app v121) ----
      The owner, 19 October 2026, after reading how DraftKings builds a same-game parlay: "If your parlay already has a
@@ -4771,31 +4827,33 @@ setTimeout(async()=>{
              dropped: what a build from nothing gives on the read, never what stood before it (the press
              drops PB_CACHE and GAME_TIER_CACHE, and ESPN_SEQ is in pbDataSig and gameSuggestSig) */
           /* the est. marks drawn: the Top 50 lines' (each a leg priced from DraftKings' line read by the press),
-             and the sets' on Suggested Parlays, where (app v118) each unit's Elo picks (.pb-tiers[data-sp-kind="elo"],
-             drawn on the hub by its ELO tab with the same cards) may take a leg priced from the read, and theirs are
-             never a set's model parlays */
+             and the sets' on Suggested Parlays: one on each leg priced from the read of every card a unit draws, by the
+             level the unit shows (spShown), and none on any other. (app v118 to v141 a unit's Elo picks, drawn on the
+             hub by its ELO tab with the same cards, could hold one too, and a unit of the audit's own was planted here
+             to keep them out of the count: app v142 took them off) */
           const estTop=()=>d.querySelectorAll('#pbPanel ol.pb-top i.est').length;
-          const estAll=()=>[...d.querySelectorAll('#spPanel .pb-tier .pb-legs li .pr i.est')], estLv=()=>estAll().filter(e=>!e.closest('[data-sp-kind="elo"]')).length;
-          /* planted before the count and kept through the main check, so the count is held whatever the
-             week's Elo picks take: a unit of the audit's own at the foot of the sets (taken out after, on every path)
-             holding an Elo pick of the page's own card, as the hub draws a unit's, with a leg priced from the read;
-             its est. mark is drawn and the levels' count does not take it in (this page, with no ELO tab, draws no
-             Elo picks of its own, so a count that took them in would pass) */
-          { const host=d.getElementById('spSets'), el=host?d.createElement('div'):null, nAll0=estAll().length, nLv0=estLv();
-            let rNow, drawn, hNow, rNew, hNew, topNow, topNew, setsNow, setsNew;
-            if(!el) W.coverage(false,'Suggested Parlays has no sets to plant a unit\'s Elo pick in');
+          const estAll=()=>[...d.querySelectorAll('#spPanel .pb-tier .pb-legs li .pr i.est')];
+          const estSets=()=>{ let n=0, cards=0;
+            for(const b of d.querySelectorAll('#spPanel .sp-game[data-sp-game]')){ if(!b.querySelector('.pb-tiers')) continue;
+              const u=F('spUnit')(b.dataset.spGame), v=u?F('spShown')(u):null;
+              for(const t of ((v&&v.tiers)||[])) if(t&&Array.isArray(t.legs)&&b.querySelector(`.pb-tier[data-pb-tier="${t.id}"]`)){ cards++; n+=t.legs.filter(l=>l.src==='dkline').length; } }
+            return {n,cards}; };
+          { let rNow, drawn, hNow, rNew, hNew, topNow, topNew, setsNow, setsNew;
             try{
-              if(el){ const leg={key:g0.id+'|00-AUDIT-ELO|receptions',gid:g0.id,week:+wk,pid:'00-AUDIT-ELO',name:'Planted Elopick',label:'Over 3.5 receptions',stat:'receptions',k:3.5,side:'over',main:true,
-                    p:0.5,price:120,src:'dkline',grp:'WR',pos:'WR',team:g0.h,opp:g0.a,espn:{at:new w.Date(w.Date.now()).toISOString(),fair:0.45,tested:true,listed:true}};
-                el.className='sp-game'; el.dataset.spGame='aud-elo-plant'; host.appendChild(el);
-                el.innerHTML=`<h5 class="sp-sub" data-sp-kind="elo">Elo picks</h5><div class="pb-tiers" data-sp-kind="elo">${F('pbTierCard')({id:'elo-safe',label:'Safe',n:1,legs:[leg],p:0.5,dec:2.2,fair:null},{chance:0.5,chanceBy:'Elo chance',by:'Elo',kind:'sp',add:'data-sp-add="aud-elo-plant:elo-safe"',legP:l=>l.p,quiet:true})}</div>`;
-                chk(estAll().length===nAll0+1&&estLv()===nLv0,`an Elo pick's leg priced from the read is counted with the sets' est. marks, or not drawn est.: ${estLv()} of ${estAll().length} against the sets' ${nLv0}`); }
               rNow=F('getPbTiers')(); topNow=F('getPbTop')(); drawn=estTop(); setsNow=setSig(); hNow=F('gameTiers')(g0);
+              /* the sets' est. marks, on the tab drawn as on the screen with every prime-time game set out (spAllOn: their
+                 sets, built on the read by setSig just now, drawn from the cache, whatever the hour), then as it was */
+              { const tab=d.getElementById('tab-suggest'), hid=tab?tab.hidden:null;
+                try{ if(tab) tab.hidden=false;
+                  spAllOn(()=>{ F('renderSp')(); const E=estSets();
+                    if(!E.cards&&F('spGames')().length) W.coverage(false,'Suggested Parlays drew no card right after the press, so its est. marks were held on none');
+                    chk(estAll().length===E.n,`right after the press, Suggested Parlays draws ${estAll().length} legs marked est., where the cards it draws hold ${E.n} legs priced from DraftKings' line read on ESPN`); }); }
+                finally{ if(tab) tab.hidden=hid; F('renderSp')(); } }
               w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={}');
               rNew=F('getPbTiers')(); topNew=F('getPbTop')(); setsNew=setSig(); hNew=F('gameTiers')(g0);
               const nDk=topNew.rows.filter(l=>l.src==='dkline').length;
               chk(lvSig(rNow)===lvSig(rNew)&&topSig(topNow)===topSig(topNew)&&setsNow===setsNew&&drawn===nDk,`right after the press, the levels, the Top 50 lines or a set are not what a build on the read gives (stale from before it), or the list drawn shows ${drawn} lines marked est. where the read gives ${nDk}: ${topSig(topNow).slice(0,160)} against ${topSig(topNew).slice(0,160)}`); }
-            finally{ if(el) el.remove(); }
+            finally{}
             chk(hdSig(hNow)===hdSig(hNew),`right after the press, ${g0.id}'s hands (its lines unmoved by the read) are not what a build on the read gives, but the published ones: ${hdSig(hNow).slice(0,160)} against ${hdSig(hNew).slice(0,160)}`);
             /* (app v109) where the payload carries DraftKings' ids, a leg priced from the read has none (ESPN
                gives none for a player's line) and suggests nowhere, and g0's own lines are held where the read
@@ -6786,8 +6844,8 @@ setTimeout(async()=>{
             the game bets); no ladder in pricedLegs, in any game to come's hands' pool (with every leg, as the ids would
             leave them), in the all-games levels or the Top 50 lines on every bet type (and none left out there as a
             rung's main line, getPbTop().same 0, since no rung reaches them), in every prime-time game's and the Sunday
-            slot's live set as built (spSet) and as the tab shows one before its lock (spShown), or in their Elo picks
-            where the page builds them; a locked set is the record's, as it locked, and is not held to it
+            slot's live set as built (spSet) and as the tab shows one before its lock (spShown) (and, until app v142 took
+            them off, in their Elo picks); a locked set is the record's, as it locked, and is not held to it
        NL2  on a made-up Monday night game of the audit's own (rule (c): on the schedule for the check, three made-up
             players in S.players, a published read of DraftKings' lines on ESPN in place of the payload's listing
             milestone rungs for each, a paid rung price and a 2+ touchdowns price in S.odds under the game's own id, all
@@ -6817,19 +6875,18 @@ setTimeout(async()=>{
         const top=F('getPbTop')(), rl=top.rows.filter(ladderAud);
         chk(!rl.length&&!(top.same>0),`NL1: the Top 50 lines list a ladder bet (${ladTxt(rl)||'none'}) or leave out ${top.same||0} rungs as their main line's bet, where no rung reaches them`);
         const units=[...F('spGames')()], sl=F('spSlotNext')(); if(sl) units.push(sl);
-        let nSets=0, nShown=0, nElo=0; const sb=[], now=w.Date.now();
+        let nSets=0, nShown=0; const sb=[], now=w.Date.now();
         for(const un of units){ const s=F('spSet')(un.id); if(!s) continue; nSets++;
           for(const t of (s.tiers||[])) for(const l of ((t&&t.legs)||[])) if(ladderAud(l)) sb.push(`${un.id}'s ${t.id}: ${ladTxt([l])}`);
           /* as the tab shows it, only before its lock (from the lock a set is the record's or this browser's own, kept) */
           const lock=F('spLockAt')(un);
           if(lock==null||now<lock){ const v=F('spShown')(un); nShown++;
-            for(const t of [...((v&&v.tiers)||[]),...((v&&v.elo)||[])]) for(const l of ((t&&t.legs)||[])) if(ladderAud(l)) sb.push(`${un.id}'s ${t.id} as the tab shows it: ${ladTxt([l])}`); }
-          const e=F('spEloSet')(un.id); if(e&&Array.isArray(e.tiers)){ nElo++; for(const t of e.tiers) for(const l of ((t&&t.legs)||[])) if(ladderAud(l)) sb.push(`${un.id}'s ${t.id}: ${ladTxt([l])}`); } }
+            for(const t of ((v&&v.tiers)||[])) for(const l of ((t&&t.legs)||[])) if(ladderAud(l)) sb.push(`${un.id}'s ${t.id} as the tab shows it: ${ladTxt([l])}`); } }
         chk(!sb.length,`NL1: a Suggested Parlays set holds a ladder bet: ${sb.slice(0,4).join('; ')}`);
         /* what the published read lists for the games to come: rungs it read, none of them a leg */
         let nR=0; const G=pubGamesAud()||{};
         for(const g of open){ const e=G[g.id], R=e&&e.pl&&e.pl.rungs; if(R&&typeof R==='object') for(const p in R) for(const st in (R[p]||{})) nR+=(Array.isArray(R[p][st])?R[p][st].length:0); }
-        said.push(`NL1 the week as it stands: ${pl.length} priced legs of ${open.length} games to come, ${T.tiers.filter(t=>t.legs).length} all-games levels, ${top.rows.length} Top 50 rows, ${nSets} sets built (${nShown} as the tab shows them before their lock, ${nElo} with Elo picks), no ladder bet, though the published read lists ${nR} rungs`); }
+        said.push(`NL1 the week as it stands: ${pl.length} priced legs of ${open.length} games to come, ${T.tiers.filter(t=>t.legs).length} all-games levels, ${top.rows.length} Top 50 rows, ${nSets} sets built (${nShown} as the tab shows them before their lock), no ladder bet, though the published read lists ${nR} rungs`); }
       finally{ S.ui.pb=JSON.parse(keepU); } }
     /* NL2 and NL3. a made-up Monday night game, its read listing rungs, a rung and 2+ touchdowns priced by the pull */
     const GN={id:`2099_${pad}_AUV_AUW`,w:cw,a:'AUV',h:'AUW',d:'2099-01-05',t:'20:15',sp:-2.5,tot:45.5,mla:120,mlh:-140,spa:-110,sph:-110,tov:-110,tou:-110};
@@ -7052,27 +7109,31 @@ setTimeout(async()=>{
      own record; since app v129 (the owner's calls of 22 October 2026: "get rid of the Sunday slot record section -> all
      should be a part of 'Night Games'", and "get rid of button (incl backteest wk 3-6), just include the record") one,
      Night games, its record both maps together, the backtest counted in it and no chip naming its weeks. The record is
-     a row for the model's parlays (an entry's tiers, safe to xtrm) and one for the Elo picks (its elo, elo-safe
-     to elo-xtrm), a pill a level, as the ELO Ratings tab's record bar: won-lost and units on $1, a push and a pending level
+     one row, the parlays' (an entry's tiers, safe to xtrm; until app v142 a second row for the Elo picks, its elo,
+     elo-safe to elo-xtrm, which the files keep as history and the page draws nowhere since, the owner's call of 5
+     November 2026: "instead of having the ELO picks in suggested parlays, i suggest we scrap that"), with no label of its
+     own, a pill a level, as the ELO Ratings tab's record bar: won-lost and units on $1, a push and a pending level
      counted apart, each season's unit and level once. A level is taken from the backtest and then from the record over
      it, each file in key order, so the record's grade for a level wins over the backtest's and, within a file, the last
      key holding the level's grade (a kickoff the league moved makes a new key); only a level with legs and a grade
      counts. Each pill's title gives the levels graded and won, the wins expected by the book's fair chance (on how many
-     had one) and by the level's own chance (the model's, or the Elo's), the pushes and how many came from the backtest,
+     had one) and by the level's own chance (the model's), the pushes and how many came from the backtest,
      and no chip says which weeks (one did until app v129). All worked here on the audit's own (recAud), on hand for the
      made-up files, then held on the page: on the real files read from disk, on a made-up record and backtest (a level only
      in the backtest, one in both with other results, a push, a pending level, a push-shortened win, a level with no
-     parlay, another season's game, an entry still to come, Elo levels), on the backtest alone, on a backtest that is junk
+     parlay, another season's game, an entry still to come, Elo levels, which count nowhere and draw nothing), on the
+     backtest alone, on a backtest that is junk
      or missing (the record drawn as with none), on a record with nothing graded and on files that are not records
      (nothing drawn). The numbers are blocking (the pills' won-lost and units, each title's counts, the pending and none
-     pills, no chip), the words W.wording. The all-games record (`entries`) stays in the file and is drawn
+     pills, no chip, and since app v142 the one row, the parlays', with nothing of the Elo picks'), the words W.wording. The all-games record (`entries`) stays in the file and is drawn
      nowhere. Nothing drawn while there is neither file (this audit's page has none) ---- */
   { d.querySelector('#tabs button[data-tab="suggest"]').click();
     const txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'', recBox=sec=>d.querySelector(`#spSets [data-sp-sec="${sec}"] > .sp-rec[data-sp-recsec="${sec}"]`);
-    /* (app v138) the model's row is headed Parlays, and a pill's title gives the wins expected at the level's own chance,
-       the model's (or the Elo's): a level's p is still the model's chance all land (R1), for an entry taken before app v138
-       and one taken since (chance 'fair', the rule it was chosen and stated on), each summed as it is */
-    const SECS=['all'], SEC_MAP={all:['prime','slot']}, KINDS_R={model:{pre:'',f:'tiers',by:'the model’s chance',name:'Parlays'},elo:{pre:'elo-',f:'elo',by:'the Elo chance',name:'Elo picks'}};
+    /* (app v138) the model's row was headed Parlays (app v142: its one row, unlabelled), and a pill's title gives the
+       wins expected at the level's own chance, the model's: a level's p is still the model's chance all land (R1), for an
+       entry taken before app v138 and one taken since (chance 'fair', the rule it was chosen and stated on), each summed
+       as it is; each title still names its kind, Parlays. (app v142) one kind: the Elo picks' row is gone */
+    const SECS=['all'], SEC_MAP={all:['prime','slot']}, KINDS_R={model:{pre:'',f:'tiers',by:'the model’s chance',name:'Parlays'}};
     /* the two files, each asked for once as the page loaded, beside its payload, with no-store; the backtest, which never
        changes once written, never again (a set reaching its lock has the record read again alone) */
     { const askL=BOOT_CALLS.filter(c=>/suggest_ledger\.json/.test(c.url)), askB=BOOT_CALLS.filter(c=>/suggest_backtest\.json/.test(c.url));
@@ -7123,7 +7184,7 @@ setTimeout(async()=>{
        how many had one) and by the level's own chance, the pushes, how many from the backtest; read from the title and held
        to the record worked here (blocking: they are numbers the page states, whatever the words around them) */
     const titleNums=p=>{ const t=p&&p.title||'', m=/: (\d+) graded, (\d+) won/.exec(t), f=/wins expected (\d+\.\d) by the book’s fair chance(?: \(on the (\d+) with one\))?/.exec(t),
-        mo=/(?:wins expected |, )(\d+\.\d) at (?:the model’s chance|the Elo chance)/.exec(t), pu=/; (\d+) push(?:es)?, the stake back/.exec(t), bt=/; (\d+) of them from the backtest/.exec(t);
+        mo=/(?:wins expected |, )(\d+\.\d) at the model’s chance/.exec(t), pu=/; (\d+) push(?:es)?, the stake back/.exec(t), bt=/; (\d+) of them from the backtest/.exec(t);
       return {graded:m?+m[1]:null,won:m?+m[2]:null,fair:f?f[1]:null,fairOn:f&&f[2]?+f[2]:null,model:mo?mo[1]:null,push:pu?+pu[1]:0,bt:bt?+bt[1]:0}; };
     const titleWant=s=>{ const graded=s.won+s.lost; return {graded,won:s.won,fair:graded&&s.fairN?s.fair.toFixed(1):null,fairOn:graded&&s.fairN&&s.fairN<graded?s.fairN:null,model:graded?s.model.toFixed(1):null,push:s.push,bt:s.bt}; };
     const un=v=>(v>0.0005?'+':v<-0.0005?'−':'')+Math.abs(v).toFixed(2);
@@ -7146,10 +7207,16 @@ setTimeout(async()=>{
         if(!Lv&&!Bv){ chk(!!box&&box.hidden&&!txt(box),`${lab}: with neither a record nor a backtest the ${sec} section draws a record: `+txt(box)); continue; }
         chk(!!box&&!box.hidden,`${lab}: the ${sec} section draws no record`); if(!box) continue;
         const wk=new Set();
+        /* (app v142) one row, the parlays', and nothing of the Elo picks' (the files' Elo levels, the made-up ones' and the
+           real record's history, drawn nowhere): no Elo row, pill, none or pending pill, nor their words */
+        { const rows=[...box.querySelectorAll('.bar[data-sp-reckind]')], eloAny=box.querySelector('.bar[data-sp-reckind="elo"],[data-sp-rec*=":elo-"],[data-sp-rec*=":elo:"]');
+          chk(rows.length===1&&rows[0].dataset.spReckind==='model'&&!eloAny&&!/\bElo\b/.test(txt(box))&&![...box.querySelectorAll('[title]')].some(x=>/\bElo\b/.test(x.title)),
+            `${lab}: the ${sec} record does not draw one row, the parlays' (app v142 took the Elo picks' row off): rows ${rows.map(r=>r.dataset.spReckind).join(', ')||'none'}${eloAny?`, ${eloAny.outerHTML.slice(0,90)}`:''}`); }
         for(const kind of Object.keys(KINDS_R)){ const K=KINDS_R[kind], R=recAud(Lv,Bv,sec,kind), row=box.querySelector(`.bar[data-sp-reckind="${kind}"]`), any=Object.values(R.o).some(s=>s.won+s.lost+s.push>0);
           R.weeks.forEach(x=>wk.add(x));
           chk(!!row,`${lab}: the ${sec} record has no row for the ${K.name}`); if(!row) continue;
-          W.wording(txt(row.querySelector('.sp-reck'))===K.name,`${lab}: the ${sec} record's ${kind} row is headed "${txt(row.querySelector('.sp-reck'))}", not "${K.name}"`);
+          /* (app v142) the lone row has no label of its own (it was headed Parlays, beside the Elo picks' row) */
+          W.wording(!row.querySelector('.sp-reck'),`${lab}: the ${sec} record's one row is still headed "${txt(row.querySelector('.sp-reck'))}"`);
           if(any){ for(const id of Object.keys(LAB)){ const p=box.querySelector(`[data-sp-rec="${sec}:${K.pre}${id}"]`); recHeld++;
               chk(!!p&&p.closest('.bar')===row&&pillOk(p,id,R.o[id]),`${lab}: the ${sec} record's ${K.name} ${LAB[id]} pill reads "${txt(p)}", not "${pillOf(id,R.o[id])}"`);
               chk(titleOk(titleNums(p),R.o[id]),`${lab}: the ${sec} record's ${K.name} ${LAB[id]} pill's title states ${JSON.stringify(titleNums(p))}, where the grades give ${JSON.stringify(titleWant(R.o[id]))}: "${p?p.title:''}"`);
@@ -7210,10 +7277,10 @@ setTimeout(async()=>{
        2-0 +3.30, Medium 0-1, Extreme 0-1; the slot map alone: model Safe 2-0 +3.90, Medium 0-2, Elo Safe 1-1 +1.00) */
     /* (app v131) two sections again: Night games the prime map, Day games the slot map (the hand record of app v128) */
     /* (app v132) one record over both maps (app v129's hand record), Extreme off the tab */
+    /* (app v142) the model's row alone (the Elo picks' row, which the files' Elo levels made Safe 3–1 +4.30, Medium 0–1
+       and Aggressive 0–0 with one pending, is drawn nowhere since: their levels stay in the files and count nowhere) */
     const HAND={all:{model:{pills:{safe:'Safe 4–2 +5.50 units',med:'Medium 2–3 +4.20 units',aggr:'Aggressive 2–0 +20.00 units'},pending:0,
-        titles:{safe:{graded:6,won:4,fair:'2.6',fairOn:null,model:'3.1',push:1,bt:3},med:{graded:5,won:2,fair:'0.9',fairOn:4,model:'1.5',push:0,bt:2},aggr:{graded:2,won:2,fair:'0.2',fairOn:null,model:'0.3',push:1,bt:1}}},
-      elo:{pills:{safe:'Safe 3–1 +4.30 units',med:'Medium 0–1 −1.00 units',aggr:'Aggressive 0–0'},pending:1,
-        titles:{safe:{graded:4,won:3,fair:'1.5',fairOn:null,model:'1.7',push:1,bt:2},med:{graded:1,won:0,fair:'0.3',fairOn:null,model:'0.3',push:0,bt:0},aggr:{graded:0,won:0,fair:null,fairOn:null,model:null,push:0,bt:0}}},weeks:[3,4,5]}};
+        titles:{safe:{graded:6,won:4,fair:'2.6',fairOn:null,model:'3.1',push:1,bt:3},med:{graded:5,won:2,fair:'0.9',fairOn:4,model:'1.5',push:0,bt:2},aggr:{graded:2,won:2,fair:'0.2',fairOn:null,model:'0.3',push:1,bt:1}}},weeks:[3,4,5]}};
     { const bad=[];
       for(const sec of SECS){ const wk=new Set(); for(const kind of Object.keys(KINDS_R)){ const R=recAud(L,BT,sec,kind), H=HAND[sec][kind]; R.weeks.forEach(x=>wk.add(x));
           for(const id of Object.keys(LAB)){ if(pillOf(id,R.o[id])!==H.pills[id]) bad.push(`${sec} ${kind} ${id} pill ${pillOf(id,R.o[id])}`);
@@ -7245,7 +7312,7 @@ setTimeout(async()=>{
     /* nothing graded yet, and a file with only the all-games record: each row says so, and the old record draws nothing */
     for(const [lab,body] of [['an empty prime map',{how:'made up',prime:{}}],['only the all-games record',{how:'made up',entries:L.entries}]]){ await load(body);
       holdRec(`a record with ${lab}`,body,null);
-      chk(SECS.every(sec=>!!d.querySelector(`#spSets [data-sp-rec="${sec}:model:none"]`)&&!!d.querySelector(`#spSets [data-sp-rec="${sec}:elo:none"]`)&&!d.querySelector(`#spSets [data-sp-rec="${sec}:safe"]`)),`a record with ${lab} does not say none is graded in each section and kind, or counts something: `+SECS.map(s=>txt(recBox(s))).join(' / ')); }
+      chk(SECS.every(sec=>!!d.querySelector(`#spSets [data-sp-rec="${sec}:model:none"]`)&&!d.querySelector(`#spSets [data-sp-rec="${sec}:elo:none"]`)&&!d.querySelector(`#spSets [data-sp-rec="${sec}:safe"]`)),`a record with ${lab} does not say none is graded, says it of the Elo picks too (app v142 took their row off), or counts something: `+SECS.map(s=>txt(recBox(s))).join(' / ')); }
     /* files that are not a record and no backtest: nothing drawn, nothing thrown */
     for(const bad of [404,[],{how:'x'},{entries:[]},{prime:[]},'junk']){ await load(bad);
       chk(SECS.every(sec=>{ const b=recBox(sec); return !!b&&b.hidden&&!txt(b); }),`a record file that is not one (${JSON.stringify(bad)}), with no backtest, drew something: `+SECS.map(s=>txt(recBox(s))).join(' / ')); }
@@ -7253,7 +7320,7 @@ setTimeout(async()=>{
     await load('junk',BT); holdRec('a record file that is not one beside the made-up backtest','junk',BT);
     await load(404);
     d.querySelector('#tabs button[data-tab="parlay"]').click();
-    console.log(`P2. the suggestions record, one section (Night games, the prime and slot maps together, no chip naming the backtest's weeks) and a kind at a time (the model's parlays, the Elo picks), the backtest under the record: both files asked for once with no-store, nothing drawn without them; ${recHeld} pills held to the audit's own working; ${saidP2.join('; ')}; an empty record and the all-games record alone say none is graded; a junk one draws nothing`); }
+    console.log(`P2. the suggestions record, one section (Record, the prime and slot maps together, no chip naming the backtest's weeks), one row, the parlays' (the files' Elo levels drawn nowhere and counted nowhere, app v142), the backtest under the record: both files asked for once with no-store, nothing drawn without them; ${recHeld} pills held to the audit's own working; ${saidP2.join('; ')}; an empty record and the all-games record alone say none is graded; a junk one draws nothing`); }
 
   /* ---- L. record chips beside the week dropdown ---- */
   { const main=F('trackRecord')().filter(r=>r.kind==='main'); const wkx=main.length?main[0].w:1;
