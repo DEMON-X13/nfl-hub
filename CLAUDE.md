@@ -3776,16 +3776,21 @@ the next write leaves them out.
 
 The record. `suggest_ledger.js` takes no Elo picks: an entry it takes carries no `elo`, and an entry not yet locked that
 carries them (taken by an older page) is rewritten without them by the first run before its lock, as any set that has
-changed is; on a copy of the ledger of 5 November 2026 at 23:37 UTC that was week 9's three still to lock, Sunday
-night's TB at CHI, Monday's BUF at MIN and the week's Sunday slot, their model levels byte for byte what app v141 had
-written, the guard content; Thursday's JAX at BAL had locked at 23:15 with its Elo picks, and a set that locks before a
-run on the new page reaches it keeps them as history. An entry locked with them keeps its `elo` byte for byte: its Elo
+changed is. Run as `weekly.py` runs it on a copy of the ledger (5 November 2026 at 23:37 UTC, and again at 00:45 UTC on
+6 November), it rewrote week 9's three sets still to lock, Sunday night's TB at CHI, Monday's BUF at MIN and the
+week's Sunday slot, with nothing moved in them but their `elo` gone and `taken_at` (their model levels byte for byte
+what app v141 had written), the guard content and a second run "unchanged"; the eleven sets locked by then (nine prime-time and two
+Sunday slots, ten of them with Elo picks, Thursday's JAX at BAL among them, locked at 23:15) kept them byte for byte,
+both summaries' `elo` unchanged, and a set that locks before a run on the new page reaches it keeps them so, as
+history. An entry locked with them keeps its `elo` byte for byte: its Elo
 levels are graded as before and counted in `prime_summary.elo` and `slot_summary.elo`, which the page never reads, and
 one holding a player ruled out is no longer built again (`replaceRuledOut` walks `tiers` alone). `ready()` no longer
 waits for or refuses on the ELO tab's files, and no longer asks the page for `spEloSet`. The guard refuses everything it
 refused before, and since this change also an entry this run takes carrying `elo` ("taken by this run with Elo picks,
 which the record no longer takes (app v142)") and an Elo pick this run replaces ("an Elo pick replaced by this run,
-which the record no longer does (app v142)"), both judged only against the file the run started from. The Elo picks'
+which the record no longer does (app v142)"), both read on this run's own takes and replacements alone (those dated by
+its own clock), never in the check against the last commit, so an older page's take stands until a run rewrites or
+locks it. The Elo picks'
 history (the record's from app v118 to app v141, the backtest's weeks 3 to 6) stays in `props/data/suggest_ledger.json`
 and `suggest_backtest.json` as data, drawn nowhere. `suggest_backtest.js` and its file are untouched: a by-hand run of
 it now refuses at once (its `ready()` asks the page for `spEloSet`), and it has nothing left to build (every unit of
@@ -3856,7 +3861,11 @@ failures (9 of them the tag's), and the side term taken out, 16 (14, one of them
 `check_tab.js` each of thirteen (the same-game term, the side term, the wrap, the already-tagged guard, the name
 button's player check, the game-leg terms, an Under let through, the tag before the name, the old file's words,
 `nowrap`, the mismatches cached while the files load, `eloLeanNote` not handed over, `window.eloUnit` put back); in
-`smoke_live.js` the sub-heading put back, 14 failures, and the record row's label, 2. Wherever this file says, before
+`smoke_live.js` the sub-heading put back, 14 failures, and the record row's label, 2; and in `test_suggest_ledger.js`
+(392 checks) on scratch copies of `suggest_ledger.js`, `takeUnits` taking Elo picks again, 5 failures (18 with the
+guard's new refusal taken out too), a rewrite keeping the old entry's `elo`, 12, a locked Elo pick built again for a
+player ruled out, 9, both new refusals taken out, 4, `ready()` still asking for `spEloSet`, 5 (every stage refused),
+the model's levels alone graded, 11, and a locked set's Elo picks dropped, 85. Wherever this file says, before
 this paragraph or after it, that Suggested Parlays carries Elo picks (each unit's own four under an "Elo picks" heading,
 live, locked, kept in the browser and recorded with its set, with a record row of their own), that the suggestions
 record takes, locks or replaces Elo picks, that a unit's model parlays sit under a "Parlays" sub-heading, or that a
@@ -4079,7 +4088,8 @@ the image's step down from 19px to 14px, then take a second row. Finishing saves
 nothing anywhere; a suggested level's Finish finishes the same way, answered by one listener in the card
 (`finishFrom`): a Suggested Parlays level's (`data-pc-finish="sp|<game id>:<level>"`, which `fromTier` reads through
 `window.spTier` as the tab shows it, live or locked, and since app v112 only for a game the tab sets out, the card's
-kicker naming the game: "Medium parlay · SEA at DEN") and an Elo pick's (`"elo|<pick>"`). Start over gives the focus to the tab's choices on the screen: the Parlay Builder's mix (`[data-pb-mix]`, as before
+kicker naming the game: "Medium parlay · SEA at DEN") and, until app v142, an Elo pick's (`"elo|<pick>"`, from app
+v118 a unit's level, `"sp|<unit>:elo-<level>"`, which `spTier` no longer finds). Start over gives the focus to the tab's choices on the screen: the Parlay Builder's mix (`[data-pb-mix]`, as before
 app v116 put the builder over it), or Suggested Parlays' first Add to builder.
 
 **Pull from DraftKings** (`card.html`, app v125's companion, the owner's call of 20 October 2026: every visitor on the
@@ -4221,8 +4231,9 @@ sets at any hour. Which games Suggested Parlays sets out turns on the hour too (
 Eastern: under "Bets and Stats: the loop"), so the smoke works that out on its own (`nightOwn`, through `Intl`) at the
 page's clock and holds the tab to it, and a check that needs the cards of a set the rule keeps off the tab at that
 hour stands the page's `spOn` in with every prime-time game to come and puts it back. The made-up lines plant a total of
-44.5 on every game they stand on that has none posted (weeks 8 to 18 of a mid-October payload have none), and the Elo
-picks' block and the matchup bubble's stand on made-up games of their own two days out, so each holds on a Sunday
+44.5 on every game they stand on that has none posted (weeks 8 to 18 of a mid-October payload have none), and THE
+MISMATCH TAG ON THE REGULAR PARLAYS (the Elo picks' block until app v142) and the matchup bubble's stand on made-up
+games of their own two days out, so each holds on a Sunday
 afternoon, the Tuesday after and the off-season alike (until 18 October 2026 the Elo picks' block stood on
 matchups.json's own games and threw once they had kicked off). `SMOKE_PAYLOAD=<file>` boots it on another
 payload, to try a week the job has not baked, and `SMOKE_NOW=<ISO time>` runs it as if it were then

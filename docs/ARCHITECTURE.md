@@ -1640,7 +1640,7 @@ and Reset: app v95, `patch_pb_lock_turn.py`, and `PB_VIEW`, `pbLocked`, `pbShown
 them; the levels are each prime-time game's own, on Suggested Parlays. Its controls are, in order, the **Bet amount**
 box (`#pbStake`, a number box with `inputmode="decimal"`, min $1, max $100,000, step $1), which is the builder's
 own stake, `S.stake`: one amount, $20 to start, saved with the prop model's state, set from either box or the
-builder's one-tap amounts (its hint says every parlay on Suggested Parlays pays on it). Every level card on Suggested Parlays (`pbTierCard`, which draws the Elo picks too) pays
+builder's one-tap amounts (its hint says every parlay on Suggested Parlays pays on it). Every level card on Suggested Parlays (`pbTierCard`, which drew the Elo picks too until app v142) pays
 it times the level's own decimal price, `pbPayHtml(dec)`, under "$25 pays"; each card's `data-pb-pay` holds its
 price so `pbPays()` redraws every payout in place, on either tab, as the amount is typed, and the builder follows
 250 ms later (`pbSyncBuilder`). The box's `change` (leaving it, or Enter) settles the amount and redraws only the
@@ -1908,7 +1908,8 @@ reads `spGames`) is what the page suggested, written down before the games and g
 the page rather than remembered. `props/build/suggest_ledger.js` runs in the props job (`weekly.py`, once the audit
 is clean; never a reason to refuse or redden a run). It boots the published page, the root's `index.html`
 (`nflbets/index.html` until 17 October 2026), in jsdom at the site's root on
-the payload just baked, the Elo files beside it (the Elo picks stand on them, and until app v138 market + form
+the payload just baked, the Elo files beside it (the Elo picks stood on them until app v142, when the record stopped
+taking them and `ready()` stopped waiting for those files, and until app v138 market + form
 decided which player legs qualify, so the props app alone would not be the page a visitor sees) and the window's clock held at the run's time (moving, a boot of a few
 seconds could carry it past a lock or a kickoff the script still counts as to come), and reads each prime-time
 game's set with the page's own `spGames`, `spSet` and `spTierOut`, into the ledger's `prime` map, keyed
@@ -1948,7 +1949,9 @@ lock is not exactly 2 hours before it, taken at or after its lock, with a leg on
 its legs, or, once locked, gone or changed beyond its grade and a replacement the rule allows (in `updates`, which
 only grows, made from the lock to kickoff by this run for a player the level held and does not hold now); an entry
 new or changed not by this run; a grade that does not follow its legs or a summary that does not follow from the
-entries: refused, the file put back (the last commit's where the disk copy had moved), exit 1.
+entries: refused, the file put back (the last commit's where the disk copy had moved), exit 1. Since app v142 it also
+refuses an entry this run takes carrying Elo picks and an Elo pick this run replaces, and an entry locked with them keeps
+them, graded (**No Elo picks, and a Mismatch tag on the regular parlays**, below).
 `test_suggest_ledger.js` (about a minute) runs the script on made-up weeks cut from the payload (or
 `SL_TEST_PAYLOAD`'s), its prime-time games moved where each stage needs them (those a week of few games lacks made up
 between clubs of its own, each with a row of zeros so its stats are in) and prime time worked out on its own (taken for every prime-time game and
