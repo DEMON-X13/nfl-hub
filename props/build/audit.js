@@ -1456,11 +1456,16 @@ setTimeout(async()=>{
         const fill=L.filter(l=>mk?l.market:l.thin).length; if(kMax==null||fill<=kMax) all.push({L,pr,dec,ev:pr*dec,fill,ln:L.reduce((a,l)=>a+leanAud(l),0),id:L.map(legIdAud).sort().join()}); return; }
       for(let i=i0;i<list.length;i++){ if(!fitsAud(cur,list[i])) continue; cur.push(list[i]); rec(i+1,cur); cur.pop(); } };
     rec(0,[]); if(seen>250000||!all.length) return null;
-    const top=(c,f)=>{ const m=Math.max(...c.map(f)), best=c.filter(x=>f(x)>=m-1e-12); return {m,best,ln:Math.max(...best.map(x=>x.ln))}; };
-    const km=Math.min(...all.map(c=>c.fill)), lk=()=>({kind:floor?'likeliest':'pair',f:'pr',...top(all.filter(c=>c.fill===km),c=>c.pr),n:all.length});
+    /* (6 November 2026) the least and the most by a fold, never Math.min(...a) or Math.max(...a): a level of a game with
+       many legs makes up to 250,000 parlays, and an argument list that long overflows the stack (every props run from
+       4 November 2026 was refused on it, a RangeError here on Seattle's held level). Math.max folded over a list from
+       -Infinity is Math.max(...list) exactly, an empty list's -Infinity and a NaN among them included, so no verdict moves */
+    const mxF=(c,f)=>c.reduce((m,x)=>Math.max(m,f(x)),-Infinity), mnF=(c,f)=>c.reduce((m,x)=>Math.min(m,f(x)),Infinity);
+    const top=(c,f)=>{ const m=mxF(c,f), best=c.filter(x=>f(x)>=m-1e-12); return {m,best,ln:mxF(best,x=>x.ln)}; };
+    const km=mnF(all,c=>c.fill), lk=()=>({kind:floor?'likeliest':'pair',f:'pr',...top(all.filter(c=>c.fill===km),c=>c.pr),n:all.length});
     if(!floor) return lk();
     const clear=all.filter(c=>c.pr>=floor); if(!clear.length) return lk();
-    const kc=Math.min(...clear.map(c=>c.fill)); return {kind:'floor',f:'ev',...top(clear.filter(c=>c.fill===kc),c=>c.ev),n:all.length}; };
+    const kc=mnF(clear,c=>c.fill); return {kind:'floor',f:'ev',...top(clear.filter(c=>c.fill===kc),c=>c.ev),n:all.length}; };
   /* (app v138, the review of 27 October 2026) a level of a game whose legs move together, where levelAud's full working
      on the builder's own sums is too dear: every parlay of n of the legs that can be made (fitsAud, the audit's own reading
      of the leg rules), each scored by the search's own pairwise reading (pbEval, used here only to choose which to work in
