@@ -639,15 +639,28 @@ const PRIME_NIGHT = { 4: 'Thursday night', 0: 'Sunday night', 1: 'Monday night' 
 const PB_TIERS_OWN = ['safe', 'med', 'aggr', 'xtrm'];
 /* (app v143, the owner's call of 7 November 2026: "id want to at least double my bet, so 1$ bet wins 2$ for a profit of
    1$") the smoke's own copy of the least price a level pays, never the page's PB_MIN_DEC: a level's price in full (the
-   builder's own parlayDec on its legs) at least MIN_DEC_OWN, so $1 returns $2 or more; its words worked from it */
-const MIN_DEC_OWN = 2, MIN_ML_OWN = '+' + Math.round((MIN_DEC_OWN - 1) * 100);
-/* the rule's words as a card states them: a level chosen among the parlays paying +100 or more (minDec) says so, Safe
-   "likeliest pair · +100+" and a fallback "likeliest 3 legs · +100+", a floor level "least costly · 25%+" as before; one read
-   back from a lock taken before the rule its old words; and their titles (null: none) */
-const ruleOwn = t => { const mp = t.minDec ? ` · ${MIN_ML_OWN}+` : ''; return t.likeliest ? `${mp ? '' : 'the '}likeliest ${t.n} legs${mp}` : t.floor ? `least costly · ${Math.round(t.floor * 100)}%+` : (mp ? `likeliest pair${mp}` : 'the likeliest pair'); };
-const ruleTitleOwn = t => { const pay = t.minDec ? `paying at least ${MIN_ML_OWN}` : '';
+   builder's own parlayDec on its legs) at least MIN_DEC_OWN, so $1 returns $2 or more; its words worked from it.
+   (app v144, the owner's calls of 7 November 2026: "yes" to "I'd raise the floor to about +110, so the real slip almost
+   always doubles your bet", and "in suggested props. i want the med prop to be at least $4 outcome from 1$ and aggressive
+   to be $8 or more. I want the best possible model confidence to match what level bet") each level its own least price,
+   the smoke's own copy, never the page's PB_TIERS: Safe 2.1 (+110), Medium 4 (+300), Aggressive 8 (+700), Extreme 16
+   (+1500), by the level's id (LEVEL_DEC_OWN) or its size (lvDecOwn); each level the likeliest parlay of its size whose price
+   in full pays it, carrying that price (minDec) and the rule (pick 'likeliest', PICK_OWN). A level kept at a lock taken
+   under app v143 carries MIN_DEC_V143_OWN (2) and no pick */
+const LEVEL_DEC_OWN = { safe: 2.1, med: 4, aggr: 8, xtrm: 16 }, lvDecOwn = n => ({ 2: 2.1, 3: 4, 4: 8, 5: 16 })[n], PICK_OWN = 'likeliest', MIN_DEC_V143_OWN = 2;
+const mlOwnD = d => '+' + Math.round((d - 1) * 100), usdOwn = d => '$' + (Number.isInteger(d) ? String(d) : d.toFixed(2)), mlN = n => mlOwnD(lvDecOwn(n));
+const ruledOwn = t => !!t && t.pick === PICK_OWN && t.minDec === LEVEL_DEC_OWN[t.id];
+/* the rule's words as a card states them, by the level's own recorded rule: (app v144) one taken by the rule (pick
+   'likeliest') "likeliest pair · +110+", "likeliest 3 legs · +300+", "likeliest 4 legs · +700+", "likeliest 5 legs ·
+   +1500+", titled "The likeliest 3-leg parlay paying at least +300 by the site’s price: $1 returns $4 or more"; one kept
+   at a lock under app v143 (minDec 2, no pick) its words then, Safe "likeliest pair · +100+", a fallback "likeliest 3 legs
+   · +100+", a floor level "least costly · 25%+"; one before it its old words; and their titles (null: none) */
+const ruleOwn = t => { if (t.pick === PICK_OWN && t.minDec) return `${t.n === 2 ? 'likeliest pair' : `likeliest ${t.n} legs`} · ${mlOwnD(t.minDec)}+`;
+  const mp = t.minDec ? ` · ${mlOwnD(t.minDec)}+` : ''; return t.likeliest ? `${mp ? '' : 'the '}likeliest ${t.n} legs${mp}` : t.floor ? `least costly · ${Math.round(t.floor * 100)}%+` : (mp ? `likeliest pair${mp}` : 'the likeliest pair'); };
+const ruleTitleOwn = t => { if (t.pick === PICK_OWN && t.minDec) return `The likeliest ${t.n}-leg parlay paying at least ${mlOwnD(t.minDec)} by the site’s price: $1 returns ${usdOwn(t.minDec)} or more`;
+  const pay = t.minDec ? `paying at least ${mlOwnD(t.minDec)}` : '';
   if (!t.likeliest && t.floor) return `Smallest expected loss of the ${t.n}-leg parlays landing ${Math.round(t.floor * 100)}%+ by DraftKings’ fair chance${pay ? ' and ' + pay : ''}`;
-  return pay ? `The likeliest ${t.n}-leg parlay ${pay}: $1 returns $${MIN_DEC_OWN} or more` : null; };
+  return pay ? `The likeliest ${t.n}-leg parlay ${pay}: $1 returns ${usdOwn(t.minDec)} or more` : null; };
 /* (app v113) the Parlay Builder's list is the Top 50 lines (the owner, 17 October 2026: "in parlay builder only do top
    50 now instead of 100"; the Top 30 from app v116, 18 October 2026: "its only showing top 30, but honestly top 30 is
    enough if you want to set it at that"; the Top 50 again since app v141, 31 October 2026: "okay lets just build it.
@@ -1895,8 +1908,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      that a tie went to the larger lean */
   const likeliestOf = (list, n, thin) => { let best = -1, legs = null, seen = 0, tieKey = null, tieLean = -Infinity;
     const rec = (i0, cur, th) => { if (seen > LIKELY_CAP) return;
-      /* (app v143) only the parlays paying +100 or more in full (MIN_DEC_OWN, the builder's own price) */
-      if (cur.length === n) { if (th !== thin) return; seen++; const O = orderF(cur); if (!(w.eval('parlayDec')(O.map(l => ({ leg: l, ml: l.price }))) >= MIN_DEC_OWN)) return;
+      /* (app v143) only the parlays paying their price in full (the builder's own price); (app v144) the level's own, decOwn */
+      if (cur.length === n) { if (th !== thin) return; seen++; const O = orderF(cur); if (!(w.eval('parlayDec')(O.map(l => ({ leg: l, ml: l.price }))) >= lvDecOwn(n))) return;
         const pr = ppF(O).corr, k = Math.round(pr * 1e9), ln = Math.round(cur.reduce((a, l) => a + leanOwn(l), 0) * 1e9);
         if (pr > best) { best = pr; legs = cur.slice(); }
         if (tieKey === null || k > tieKey) { tieKey = k; tieLean = ln; } else if (k === tieKey && ln > tieLean) tieLean = ln; return; }
@@ -1906,9 +1919,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      builder's own price, at least MIN_DEC_OWN), with at most kMax fill legs (mk: the totals as fill); true, false, or null
      past its bound; and on a unit's own legs (q), by a set's rule: the legs with an edge alone where
      they make n on one slip, else the totals filling what they leave */
-  const paysOwn = (list, n, mk, kMax, cap = 60000) => { let seen = 0, hit = false;
+  /* (app v144) minD the level's own price, lvDecOwn(n) */
+  const paysOwn = (list, n, mk, kMax, cap = 60000, minD = lvDecOwn(n)) => { let seen = 0, hit = false, md = w.eval('mlToDec');
     const rec = (i0, cur, fill) => { if (hit || seen > cap) return;
-      if (cur.length === n) { seen++; if (w.eval('parlayDec')(orderF(cur).map(l => ({ leg: l, ml: l.price }))) >= MIN_DEC_OWN) hit = true; return; }
+      if (cur.length === n) { seen++; if (cur.reduce((a, l) => a * (md(l.price) || 1), 1) < minD * (1 - 1e-12)) return; if (w.eval('parlayDec')(orderF(cur).map(l => ({ leg: l, ml: l.price }))) >= minD) hit = true; return; }
       for (let i = i0; i < list.length && !hit; i++) { const c = list[i], f2 = fill + (mk && c.market ? 1 : 0); if (kMax != null && f2 > kMax) continue; if (!fitsF(cur, c)) continue; cur.push(c); rec(i + 1, cur, f2); cur.pop(); } };
     rec(0, [], 0); return hit ? true : seen > cap ? null : false; };
   /* (the review of app v143) the totals fill as many places as the legs with an edge leave and one at most where they
@@ -2172,15 +2186,15 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const fE = maxFitOwn([...pool.pref, ...pool.thin]);
       chk(t.legs.every(l => (l.stat === 'total') === !!l.market) && (t.mkt || 0) === t.legs.filter(l => l.market).length
         && (!t.mkt || (t.mkt === kTotOwn(t.n, fE) && (fE < t.n || paysOwn([...pool.pref, ...pool.thin], t.n, false) !== true))),
-        `${lab}: the ${t.id} tier holds a total that is not a market leg, more totals than the legs with an edge leave to fill, or one for the price where they make ${t.n} paying ${MIN_ML_OWN}`);
+        `${lab}: the ${t.id} tier holds a total that is not a market leg, more totals than the legs with an edge leave to fill, or one for the price where they make ${t.n} paying ${mlN(t.n)}`);
       chk(!clashPairsOwn(t.legs).length, `${lab}: the ${t.id} tier holds a pair DraftKings will not take on one slip: ` + clashTxt(t.legs));
       { const sd = t.legs.filter(l => isG(l) && l.stat !== 'total'), tt = t.legs.filter(l => l.stat === 'total'), pl = t.legs.filter(l => !isG(l));
         chk(new Set(sd.map(l => l.gid)).size === sd.length && new Set(tt.map(l => l.gid)).size === tt.length && new Set(pl.map(l => l.pid)).size === pl.length,
           `${lab}: the ${t.id} tier has two sides or two totals on one game, or two legs on one player`); }
       chk(w.eval('parlayProb')(t.legs).corr === t.corr && w.eval('parlayDec')(t.legs.map(l => ({ leg: l, ml: l.price }))) === t.dec && (!t.floor || t.likeliest || t.corr >= t.floor) && (!t.likeliest || t.floor > 0),
         `${lab}: the ${t.id} tier's chance or price is not the builder's sum, or it is under its floor without being the likeliest of its size`);
-      /* (app v143) it pays +100 or more (its price, the figure its card states, at least MIN_DEC_OWN), chosen by that rule */
-      chk(t.dec >= MIN_DEC_OWN && t.minDec === MIN_DEC_OWN, `${lab}: the ${t.id} tier pays ${t.dec} (${w.eval('fmtML')(w.eval('decToML')(t.dec))}), under ${MIN_ML_OWN}, or carries no price rule (minDec ${t.minDec})`);
+      /* (app v143) it pays its price (the figure its card states), chosen by that rule; (app v144) its own level's, ruled so */
+      chk(t.dec >= LEVEL_DEC_OWN[t.id] && ruledOwn(t) && !t.likeliest, `${lab}: the ${t.id} tier pays ${t.dec} (${w.eval('fmtML')(w.eval('decToML')(t.dec))}), under its own ${mlOwnD(LEVEL_DEC_OWN[t.id])}, or does not carry that price and the rule that chose it (${JSON.stringify({ minDec: t.minDec, pick: t.pick, likeliest: t.likeliest })})`);
       { const fs = t.legs.map(chanceOwn());
         chk(fs.every(Boolean) ? (!!t.fair && t.fair.p != null && Math.abs(t.fair.p - w.eval('parlayProb')(t.legs.map((l, i) => ({ ...l, p: fs[i].p }))).corr) < 1e-9 && t.fair.est === fs.some(f => f.est)) : (!!t.fair && t.fair.p === null),
           `${lab}: the ${t.id} tier's fair chance ${t.fair && t.fair.p} is not parlayProb on its legs at their fair chances as stated (a total on one price at its own 50%)`);
@@ -2196,8 +2210,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       for (const t of r.tiers) {
         /* every level shows a parlay of its size whenever the picks make that many legs */
         if (!t.legs) { const pays = m >= t.n ? paysUnitOwn({ pref: pool.pref, thin: pool.thin, mkt: pool.mkt || [] }, t.n) : false;
-          chk(typeof t.why === 'string' && t.why.length > 10 && (m < t.n || pays === false) && !/of the time or more/.test(t.why) && (m < t.n || t.why === `No ${t.n} legs ${pays === false ? `on your picks pay ${MIN_ML_OWN}` : `found on your picks that pay ${MIN_ML_OWN}`} or more together: tick more games or bet types.`),
-            `${lab}: the ${t.id} tier is empty though the picks make ${m} legs for its ${t.n}${m >= t.n ? `, ${pays ? 'one of its parlays paying' : 'none paying'} ${MIN_ML_OWN} or more` : ''}, or says nothing or not that: ${t.why}`); continue; }
+          chk(typeof t.why === 'string' && t.why.length > 10 && (m < t.n || pays === false) && !/of the time or more/.test(t.why) && (m < t.n || t.why === `No ${t.n} legs ${pays === false ? `on your picks pay ${mlN(t.n)}` : `found on your picks that pay ${mlN(t.n)}`} or more together: tick more games or bet types.`),
+            `${lab}: the ${t.id} tier is empty though the picks make ${m} legs for its ${t.n}${m >= t.n ? `, ${pays ? 'one of its parlays paying' : 'none paying'} ${mlN(t.n)} or more` : ''}, or says nothing or not that: ${t.why}`); continue; }
         built++;
         holdTier(lab, t, pool, l => u.k[kindOf(l)] && !u.off.includes(l.gid) && games.some(g => g.id === l.gid));
         /* Safe's likeliest pair and a level's likeliest of its size, worked out in full where every parlay is a plain product */
@@ -2350,13 +2364,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(t.legs.every(l => ownSet.has(legId(l)) && !!l.thin === thinOf.has(legId(l)) && !!l.market === mktOf.has(legId(l))), `${lab2}: the ${t.id} level holds a leg the rules do not let a suggestion take, or keeps one thin or a total wrongly: ` + t.legs.filter(l => !ownSet.has(legId(l))).map(l => l.name + ' ' + l.label).join(', '));
         /* Safe: no pair of the game's legs with as many from the preferred list lands likelier, two legs worked out here
            (never a pair DraftKings refuses: fitsF) */
-        if (!t.floor && !t.mkt) { const kMin = [0, 1, 2].find(k => maxFitOwn(qx.pref) >= 2 - k && maxFitOwn(all) >= 2), need = 2 - kMin, cand = capOwn(qx.pref).concat(capOwn(qx.thin));
-          /* (app v143) the likeliest of the pairs paying +100 or more in full (the builder's own price, MIN_DEC_OWN): every
-             pair by its chance, likeliest first, the first that pays it */
+        if (t.n === 2 && !t.mkt) { const kMin = [0, 1, 2].find(k => maxFitOwn(qx.pref) >= 2 - k && maxFitOwn(all) >= 2), need = 2 - kMin, cand = capOwn(qx.pref).concat(capOwn(qx.thin));
+          /* (app v143) the likeliest of the pairs paying their price in full (the builder's own price; app v144 Safe's own,
+             +110): every pair by its chance, likeliest first, the first that pays it */
           const prs = []; for (let i = 0; i < cand.length; i++) for (let j = i + 1; j < cand.length; j++) { const a = cand[i], b = cand[j];
             if (!fitsF([a], b) || [a, b].filter(y => !thinOf.has(legId(y))).length < need) continue; prs.push({ pj: pairOwn(a, b, rhoF(a, b)), ls: [a, b] }); }
           prs.sort((x, y) => y.pj - x.pj);
-          let best = -1, bl = null; for (const x of prs) if (w.eval('parlayDec')(orderF(x.ls).map(l => ({ leg: l, ml: l.price }))) >= MIN_DEC_OWN) { best = x.pj; bl = x.ls; break; }
+          let best = -1, bl = null; for (const x of prs) if (w.eval('parlayDec')(orderF(x.ls).map(l => ({ leg: l, ml: l.price }))) >= lvDecOwn(2)) { best = x.pj; bl = x.ls; break; }
           const mine = pairOwn(t.legs[0], t.legs[1], rhoF(t.legs[0], t.legs[1]));
           chk(t.thin === t.legs.filter(l => l.thin).length && t.legs.filter(l => !l.thin).length >= need && Math.abs(t.corr - mine) < 0.012 && mine >= best - 0.015,
             `${lab2}: Safe lands ${(mine * 100).toFixed(1)}% worked out here (${(t.corr * 100).toFixed(1)}% shown) where ${bl ? bl.map(l => l.name + ' ' + l.label).join(' + ') : 'no pair'} land ${(best * 100).toFixed(1)}%: it is not the likeliest pair on the game's legs`); }
@@ -2404,7 +2418,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         chk(!!sx && sx.tiers.map(t => t.id + t.n).join() === 'safe2,med3,aggr4,xtrm5', `${lab}, ${g.id}: its game ${x.id}'s own set is not Safe 2, Medium 3, Aggressive 4, Extreme 5`);
         if (sx) for (const t of sx.tiers) { const qx = QG.get(x.id), mx = maxFitOwn([...qx.pref, ...qx.thin, ...qx.mkt]);
           if (t.legs) tierHeld(`${lab}, ${g.id}, its game ${x.id}'s own set`, x, t, null);
-          else chk(mx < t.n || paysUnitOwn(qx, t.n) === false, `${lab}, ${g.id}: its game ${x.id}'s own ${t.id} level is empty though the game's legs make ${mx} of its ${t.n} with no pair DraftKings refuses, one of them paying ${MIN_ML_OWN} or more: ${t.why}`); } }
+          else chk(mx < t.n || paysUnitOwn(qx, t.n) === false, `${lab}, ${g.id}: its game ${x.id}'s own ${t.id} level is empty though the game's legs make ${mx} of its ${t.n} with no pair DraftKings refuses, one of them paying ${mlN(t.n)} or more: ${t.why}`); } }
       let built = 0;
       s.tiers.forEach((t, ti) => { const c = el && el.querySelector(`:scope > .pb-tiers[data-sp-kind="model"] > .pb-tier.${t.id}`);
         if (per) { const levels = per.map(P => P.s && P.s.tiers[ti]), k = slotPickOwn(levels, t.floor), want = k < 0 ? null : levels[k], sig = r => r && r.legs ? r.legs.map(legId).join(',') + '|' + r.corr + '|' + r.dec : 'none';
@@ -2428,8 +2442,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
              more (paysUnitOwn, on each game's own legs), which it says in a few words of its own */
           const priced = m >= t.n && fit >= t.n, pays = priced && G.some(x => paysUnitOwn(QG.get(x.id), t.n) !== false);
           /* (the review of app v143) said so only where the smoke's own reading shows it, else that none was found */
-          const said = priced ? (pays ? (g.slot ? `No ${t.n} legs found in any one game of the Sunday slot that pay ${MIN_ML_OWN} or more together.` : `No ${t.n} legs found in this game that pay ${MIN_ML_OWN} or more together.`)
-            : (g.slot ? `No ${t.n} legs of any one game of the Sunday slot pay ${MIN_ML_OWN} or more together.` : `No ${t.n} legs in this game pay ${MIN_ML_OWN} or more together.`))
+          const said = priced ? (pays ? (g.slot ? `No ${t.n} legs found in any one game of the Sunday slot that pay ${mlN(t.n)} or more together.` : `No ${t.n} legs found in this game that pay ${mlN(t.n)} or more together.`)
+            : (g.slot ? `No ${t.n} legs of any one game of the Sunday slot pay ${mlN(t.n)} or more together.` : `No ${t.n} legs in this game pay ${mlN(t.n)} or more together.`))
             : clash ? (g.slot ? `No ${t.n} legs of any one game of the Sunday slot go together on DraftKings’ slip.` : `No ${t.n} of this game’s legs go together on DraftKings’ slip.`) : null;
           chk((fit < t.n || (priced && !pays)) && typeof t.why === 'string' && (said ? t.why === said : whys.includes(t.why)) && (!vis || (!!c && c.classList.contains('none') && txt(c.querySelector('.pb-why')) === t.why && !c.querySelector('.pb-tgame'))),
             `${lab}, ${g.id}: the ${t.id} level is empty though the ${g.slot ? 'legs of one of the slot\'s games' : 'game\'s legs'} make ${fit} of its ${t.n} with no pair DraftKings refuses, or it does not say so (${clash ? `"${said}": ${m} legs by count, ${fit} that go together` : `"${whys[0]}"`})${q.plId ? '' : ', with why it has no player line (none posted when DraftKings\' lines were last read from ESPN, or not read yet)'}: ${t.why}`);
@@ -2514,7 +2528,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         { const rl = c ? [...c.querySelectorAll('.pb-th .pb-rule')] : [], kept = t.legs.every(l => l.kept && typeof l.kept === 'object'), known = !kept || t.chance === 'fair';
           /* (app v143) a level taken under the price rule (minDec) says it; one taken before, its old words; (the review of
              app v143) the rule read from the level as it was kept (rawOf), its title too */
-          const raw = rawOf(t), rawMin = raw && +raw.minDec === MIN_DEC_OWN ? MIN_DEC_OWN : undefined, want = !known ? '' : ruleOwn({ ...t, minDec: rawMin }), wantT = !known ? null : ruleTitleOwn({ ...t, minDec: rawMin });
+          /* (app v144) and the rule it was taken by (pick): a level taken by it at its own level's price, one without it at
+             app v143's +100 or at none */
+          const raw = rawOf(t), rawMin = raw && +raw.minDec > 1 ? +raw.minDec : undefined, rawPick = raw && raw.pick === PICK_OWN ? PICK_OWN : undefined;
+          chk(!raw || (rawPick ? rawMin === LEVEL_DEC_OWN[t.id] : (rawMin == null || rawMin === MIN_DEC_V143_OWN)), `${gl}: the locked ${t.id} level was kept with ${JSON.stringify({ minDec: raw && raw.minDec, pick: raw && raw.pick })}, neither its own level's price by the rule nor app v143's +100 nor none`);
+          const want = !known ? '' : ruleOwn({ ...t, minDec: rawMin, pick: rawPick }), wantT = !known ? null : ruleTitleOwn({ ...t, minDec: rawMin, pick: rawPick });
           chk(!!raw && (rl.length !== 1 || (rl[0].getAttribute('title') || null) === wantT), `${gl}: the locked ${t.id} card's rule is titled "${rl.length === 1 ? rl[0].getAttribute('title') : ''}" where ${wantT ? `"${wantT}"` : 'no title'} is due by the level as it was kept${raw ? '' : ' (not found where it is kept)'}`);
           const at = !kept ? t.corr : t.legs.every(l => l.market || l.kept.fair != null) ? w.eval('parlayProb')(w.eval('pbOrder')(t.legs.map(l => ({ ...l, p: l.market ? l.p : l.kept.fair })))).corr : null;
           chk(rl.map(txt).join('|') === want && (!want || !t.floor || t.likeliest || (at != null && at >= t.floor - (kept ? 5e-4 : 1e-12))),
@@ -3158,7 +3176,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      parlay of their size; Safe is the likeliest pair and Extreme its least costly over 5% (one even cover with the four
      odd ones, each of the four even ones landing it over 5% at the same cost, so the model's lean breaks the tie, the
      amendment's rule: H6, the model 3 points over its fair chance where every other cover is 2, the last of the four by
-     the search's own tie-break, the lower id). The Top 50 lines on them are the ten covers by what $1 on each is expected to return,
+     the search's own tie-break, the lower id). That is history from app v144: each level is the likeliest parlay of its
+     size paying its own price (+110, +300, +700, +1500), worked out below in full. The Top 50 lines on them are the ten covers by what $1 on each is expected to return,
      the even games first, then the odd, then the two at 1.09, each three tied on it in the order of their chances */
   if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepU = JSON.stringify(Sx.ui.pb);
     w.__pbKeep4 = w.eval('[pbGames, pricedLegs]');
@@ -3175,42 +3194,37 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     w.eval(`PAY.dk=${JSON.stringify(dkFixture(w.__pb4.L, new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z', 'TEN'))}`);
     Sx.ui.pb = { k: { ml: false, ats: true, total: false, over: false, under: false }, off: [], gx: false };
     w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); renderParlay()'); await wait(40);
-    const r = w.eval('getPbTiers()'), kinds = r.tiers.map(t => t.legs ? (t.likeliest ? 'likeliest' : 'built') : 'empty').join();
-    chk(kinds === 'built,likeliest,likeliest,built' && r.tiers.every(t => t.legs && t.legs.length === t.n),
-      `ten made-up games with only Spread ticked: the levels are ${kinds}, not Safe and Extreme built with Medium and Aggressive the likeliest of their size`);
+    /* (app v144) every level a parlay of its size taken by the rule (its own price and pick 'likeliest'), none the
+       likeliest-of-its-size fallback, which the rule has no more */
+    const r = w.eval('getPbTiers()');
+    chk(r.tiers.every(t => t.legs && t.legs.length === t.n && !t.likeliest && ruledOwn(t)),
+      `ten made-up games with only Spread ticked: the levels are ${r.tiers.map(t => t.legs ? t.legs.length + (t.likeliest ? ' (the old fallback)' : '') + (ruledOwn(t) ? '' : ' (not by the rule)') : 'empty').join(', ')}, not each a parlay of its size taken by the rule`);
     chk(!d.querySelector('#pbPanel [data-pb-mix].on') && !d.querySelector('#pbPanel .pb-custom') && !/\bCustom\b/.test(txt(panel)), 'ten made-up games with only Spread ticked: a mix is lit or a Custom tag shows');
     /* the Top 50 lines on the ten covers, ranked here by hand: what $1 is expected to return, 1/1.02 - 1 = -$0.02 for the
        even games first (tied on it, the higher chance first), then the odd ones, the two at 1.09 last */
     { const n = holdTop('ten made-up games, Spread only', Sx.ui.pb, G), order = [...panel.querySelectorAll('ol.pb-top li [data-pb-leg]')].map(b => b.dataset.pbLeg.split('|')[1].replace('team:', ''));
       chk(n === 10 && order.join() === 'H0,H2,H4,H6,H1,H3,H5,H7,H8,H9' && txt(panel.querySelector('ol.pb-top li .pb-tc:nth-child(5) b')) === '−$0.02',
         'ten made-up games: the Top 50 lines are not the ten covers best first by what $1 is expected to return at DraftKings\' fair chance (H0, H2, H4, H6 summing to 1.02, then the 1.06s, the 1.09s last): ' + order.join()); }
-    /* the likeliest 3 and 4 legs are the three and four likeliest covers (a plain product, legs in different games), and
-       no parlay of their size lands likelier; the best-paying 3 and 4 are the even covers, so the case tells a fallback
-       by return from the likeliest; and Extreme the least costly parlay of five over 5%, H6 with the four odd covers */
-    const pool4 = w.eval('pbPool')(G), teams = c => c.map(l => l.team).sort().join(), mlToDec = w.eval('mlToDec');
-    /* Extreme, by every parlay of five worked here on the builder's own sums (parlayProb and parlayDec, the legs in different
-       games: a plain product), the best expected return at the fair chance landing 5%+ and, on a tie, the larger lean:
-       H6 with the four odd covers, as worked out by hand above. Held on the sets' search (a night game's widths, SP_SEARCH,
-       which a set is built by) to 1e-12; the all-games levels (getPbTiers, drawn nowhere, the panel's narrow widths)
-       only to a parlay of five over its floor, not the likeliest */
-    { const all = [...pool4.pref, ...pool4.thin], ppE = w.eval('parlayProb'), pdE = w.eval('parlayDec'), K9 = v => Math.round(v * 1e9); let best = null;
-      (function rec(i0, cur) { if (cur.length === 5) { const O = orderF(cur), pr = ppE(O).corr, ev = pr * pdE(O.map(l => ({ leg: l, ml: l.price }))), ln = cur.reduce((a, l) => a + leanOwn(l), 0);
-          if (pr >= 0.05 && (!best || K9(ev) > K9(best.ev) || (K9(ev) === K9(best.ev) && K9(ln) > K9(best.ln)))) best = { c: cur.slice(), ev, ln }; return; }
-        for (let i = i0; i < all.length; i++) { if (!fitsF(cur, all[i])) continue; cur.push(all[i]); rec(i + 1, cur); cur.pop(); } })(0, []);
-      const want = 'H1,H3,H5,H6,H7', SPW = w.eval('SP_SEARCH'), tS = w.eval('pbTier')(w.eval('PB_TIERS').find(x => x[0] === 'xtrm'), w.eval('pbPool')(G, Sx.ui.pb, SPW), new Map(), SPW), t = r.tiers.find(x => x.id === 'xtrm');
-      const evOf = x => x && x.legs ? x.corr * x.dec : null;
-      chk(!!best && teams(best.c) === want && !!tS && !!tS.legs && !tS.likeliest && teams(tS.legs) === want && Math.abs(evOf(tS) - best.ev) < 1e-12 && !!t && !!t.legs && !t.likeliest && t.corr >= 0.05,
-        `ten made-up games: Extreme is not the least costly five over 5% (worked out here: ${best ? teams(best.c) + ' at ' + best.ev.toFixed(4) : 'none'}, by hand ${want}): the sets' search gives ${tS && tS.legs ? teams(tS.legs) + ' at ' + evOf(tS).toFixed(4) : 'none'}, the all-games levels ${t && t.legs ? teams(t.legs) + ' ' + t.corr.toFixed(4) : 'none'}`);
-      if (t && t.legs && best && Math.abs(evOf(t) - best.ev) > 1e-12) console.log(`  (ten made-up games: the all-games levels' narrow search takes ${teams(t.legs)} for Extreme at ${evOf(t).toFixed(4)} on $1, where the least costly five over 5% is ${teams(best.c)} at ${best.ev.toFixed(4)}; the sets' search finds it)`); }
-    for (const [id, want] of [['med', 'H1,H8,H9'], ['aggr', 'H1,H3,H8,H9']]) { const t = r.tiers.find(x => x.id === id), p = want.split(',').reduce((a, h) => a * COVER[+h.slice(1)][0], 1);
-      chk(!!t && !!t.legs && teams(t.legs) === want && Math.abs(t.corr - p) < 1e-12, `ten made-up games: ${id} is not the likeliest covers ${want}: ${t && t.legs ? teams(t.legs) : 'none'}`);
-      const all = [...pool4.pref, ...pool4.thin], b = t && t.legs && noMovers(all) ? likeliestOf(all, t.n, t.thin) : null;
-      chk(!!b && t.corr >= b.best - 1e-12, `ten made-up games: ${id} lands ${t && t.corr} where ${b ? teams(b.legs) + ' land ' + b.best : 'no parlay could be worked'}`);
-      const ret = [], n = id === 'med' ? 3 : 4;
-      (function rec(i0, cur) { if (cur.length === n) { ret.push({ c: cur.slice(), ev: cur.reduce((a, l) => a * l.p * mlToDec(l.price), 1) }); return; }
-        for (let i = i0; i < all.length; i++) { if (!fitsF(cur, all[i])) continue; cur.push(all[i]); rec(i + 1, cur); cur.pop(); } })(0, []);
-      const byRet = ret.sort((a, b2) => b2.ev - a.ev)[0];
-      chk(!!byRet && teams(byRet.c) !== want, `ten made-up games: the best-paying ${n} covers are the likeliest too (${byRet ? teams(byRet.c) : 'none'}), so the case cannot tell a fallback by return from the likeliest`); }
+    /* (app v144) each level the likeliest parlay of its size paying its own price (decOwn), worked out here against every
+       parlay of its size on the builder's own sums (parlayProb and parlayDec; the legs in different games, a plain
+       product with no same-game price). The covers' prices put the likeliest three overall (H1, H8, H9) at about 3.91 and
+       the likeliest four (H1, H3, H8, H9) at about 6.37, short of +300 and +700, so the case tells the rule from the
+       likeliest of its size; Safe is the likeliest pair outright (H8 and H9, about 2.43). Held on the all-games levels and
+       on the sets' search alike (a set's pool, SP_SEARCH), which since app v144 are one search */
+    const pool4 = w.eval('pbPool')(G), teams = c => c.map(l => l.team).sort().join();
+    { const all = [...pool4.pref, ...pool4.thin], ppE = w.eval('parlayProb'), pdE = w.eval('parlayDec'), SPW = w.eval('SP_SEARCH'), poolS = w.eval('pbPool')(G, Sx.ui.pb, SPW), got = [];
+      for (const [id, n] of [['safe', 2], ['med', 3], ['aggr', 4], ['xtrm', 5]]) { let best = null, top0 = null;
+        (function rec(i0, cur) { if (cur.length === n) { const O = orderF(cur), pr = ppE(O).corr, dec = pdE(O.map(l => ({ leg: l, ml: l.price })));
+            if (!top0 || pr > top0.pr + 1e-12) top0 = { c: cur.slice(), pr, dec };
+            if (dec >= lvDecOwn(n) && (!best || pr > best.pr + 1e-12)) best = { c: cur.slice(), pr, dec }; return; }
+          for (let i = i0; i < all.length; i++) { if (!fitsF(cur, all[i])) continue; cur.push(all[i]); rec(i + 1, cur); cur.pop(); } })(0, []);
+        const t = r.tiers.find(x => x.id === id), tS = w.eval('pbTier')(w.eval('PB_TIERS').find(x => x[0] === id), poolS, new Map(), SPW);
+        chk(!!best && !!t && !!t.legs && teams(t.legs) === teams(best.c) && Math.abs(t.corr - best.pr) < 1e-12 && t.dec >= lvDecOwn(n) && !!tS && !!tS.legs && teams(tS.legs) === teams(best.c),
+          `ten made-up games: ${id} is not the likeliest ${n} covers paying ${mlN(n)} (worked out here: ${best ? teams(best.c) + ' landing ' + best.pr.toFixed(4) + ' at ' + best.dec.toFixed(3) : 'none'}): the all-games levels give ${t && t.legs ? teams(t.legs) : 'none'}, the sets' search ${tS && tS.legs ? teams(tS.legs) : 'none'}`);
+        if (n >= 3) chk(!!top0 && top0.dec < lvDecOwn(n) && !!best && teams(best.c) !== teams(top0.c), `ten made-up games: the likeliest ${n} covers overall (${top0 ? teams(top0.c) + ' at ' + top0.dec.toFixed(3) : 'none'}) pay ${mlN(n)}, so the case cannot tell the rule from the likeliest of its size`);
+        else chk(!!top0 && !!best && teams(best.c) === teams(top0.c) && top0.dec >= lvDecOwn(2), `ten made-up games: the likeliest pair overall (${top0 ? teams(top0.c) + ' at ' + top0.dec.toFixed(3) : 'none'}) does not pay +110, which the case means it to`);
+        if (t && t.legs) got.push(`${id} ${teams(t.legs)}`); }
+      console.log(`  (ten made-up games, each level the likeliest at its price: ${got.join('; ')})`); }
     /* (app v109) H1's id taken out, then put at another number (-4.5) alone: a suggestion takes a leg only
        with DraftKings' id at its own line, so H1 leaves the levels' lines, every level and the list, the pool
        counts it, and the panel says one line is left out for want of an id and that it is still on the game
@@ -3846,8 +3860,11 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           return r && r.length === 1 ? [txt(r[0]), r[0].getAttribute('title')] : (r && r.length ? ['two rules'] : null); };
         const cases = [['before the rule', null, [['safe', 'the likeliest pair', null], ['med', 'least costly · 25%+', 'Smallest expected loss of the 3-leg parlays landing 25%+ by DraftKings’ fair chance']]],
           ['the Medium the likeliest 3, before the rule', T2 => { T2[1].likeliest = true; }, [['med', 'the likeliest 3 legs', null]]],
-          ['under the rule', T2 => { T2[0].minDec = MIN_DEC_OWN; T2[1].minDec = MIN_DEC_OWN; }, [['safe', `likeliest pair · ${MIN_ML_OWN}+`, `The likeliest 2-leg parlay paying at least ${MIN_ML_OWN}: $1 returns $${MIN_DEC_OWN} or more`], ['med', 'least costly · 25%+', `Smallest expected loss of the 3-leg parlays landing 25%+ by DraftKings’ fair chance and paying at least ${MIN_ML_OWN}`]]],
-          ['the Medium the likeliest 3, under the rule', T2 => { T2[1].likeliest = true; T2[1].minDec = MIN_DEC_OWN; }, [['med', `likeliest 3 legs · ${MIN_ML_OWN}+`, `The likeliest 3-leg parlay paying at least ${MIN_ML_OWN}: $1 returns $${MIN_DEC_OWN} or more`]]]];
+          ['under app v143’s rule', T2 => { T2[0].minDec = MIN_DEC_V143_OWN; T2[1].minDec = MIN_DEC_V143_OWN; }, [['safe', 'likeliest pair · +100+', 'The likeliest 2-leg parlay paying at least +100: $1 returns $2 or more'], ['med', 'least costly · 25%+', 'Smallest expected loss of the 3-leg parlays landing 25%+ by DraftKings’ fair chance and paying at least +100']]],
+          ['the Medium the likeliest 3, under app v143’s rule', T2 => { T2[1].likeliest = true; T2[1].minDec = MIN_DEC_V143_OWN; }, [['med', 'likeliest 3 legs · +100+', 'The likeliest 3-leg parlay paying at least +100: $1 returns $2 or more']]],
+          /* (app v144) taken by the rule: each level the likeliest of its size at its own price, no floor of chance */
+          ['under app v144’s rule', T2 => { T2[0].minDec = LEVEL_DEC_OWN.safe; T2[0].pick = PICK_OWN; T2[1].minDec = LEVEL_DEC_OWN.med; T2[1].pick = PICK_OWN; T2[1].floor = 0; },
+            [['safe', 'likeliest pair · +110+', 'The likeliest 2-leg parlay paying at least +110 by the site’s price: $1 returns $2.10 or more'], ['med', 'likeliest 3 legs · +300+', 'The likeliest 3-leg parlay paying at least +300 by the site’s price: $1 returns $4 or more']]]];
         const bad = [], fresh = async R => { setRec(R); w.eval('SP_KEEP=null'); w.localStorage.removeItem(KK); await redraw(); };
         for (const [lab0, edit, want] of cases) { const R = JSON.parse(JSON.stringify(REC)), T2 = R.prime[k0].tiers; if (edit) edit(T2);
           await fresh(R);
@@ -4267,7 +4284,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       name: tag.startsWith('team:') ? 'Made-up ' + tag.slice(5) : 'Pair ' + tag.split('-')[1], pos: grp === 'TEAM' ? 'Game' : grp, grp, team, opp: team === g.h ? g.a : g.h, week: cw, label, ...(extra || {}) });
     /* every leg thin (no Elo rating for a made-up player, and the money line's edge under 3 points), so the likeliest pair
        is the likeliest of all */
-    const QB = leg(C1, 'C61-QB1', 'QB', C1.h, 'passing_tds', 2, 0.66, -170, '2+ pass TDs'), TD = leg(C1, 'C61-WR1', 'WR', C1.h, 'any_td', 1, 0.64, -160, 'Scores a touchdown');
+    /* (app v144) the quarterback's passing TDs at +100 and the touchdown at -105, where they were -170 and -160: moving
+       together, their pair is the likeliest and pays +110 (about 2.5), and with a third leg +300, so the levels a page
+       without the rule would take hold them */
+    const QB = leg(C1, 'C61-QB1', 'QB', C1.h, 'passing_tds', 2, 0.66, 100, '2+ pass TDs'), TD = leg(C1, 'C61-WR1', 'WR', C1.h, 'any_td', 1, 0.64, -105, 'Scores a touchdown');
     const RB = leg(C1, 'C61-RB1', 'RB', C1.a, 'rushing_yards', 60, 0.58, -125, '60+ rush yds'), TE = leg(C1, 'C61-TE1', 'TE', C1.a, 'receptions', 4, 0.56, -115, '4+ rec');
     const WR2 = leg(C1, 'C61-WR2', 'WR', C1.a, 'receiving_yards', 50, 0.57, -120, '50+ rec yds'), ML1 = leg(C1, 'team:H61', 'TEAM', C1.h, 'ml', 0, 0.58, -130, 'To win');
     const ML2 = leg(C2, 'team:H62', 'TEAM', C2.h, 'ml', 0, 0.58, -130, 'To win');
@@ -4339,12 +4359,14 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const nB = holdSetF(lab, C1, true), s1 = w.eval('spSet')(C1.id), T1 = s1 ? Object.fromEntries(s1.tiers.map(t => [t.id, t])) : {};
       { const chF = chanceOwn(), L1 = L1raw.map(l => ({ ...l, p: chF(l).p })), QB = L1[0], TD = L1[1];
         const fitsNo = (cur, c) => !cur.some(l => l.key === c.key) && (isGameOwn(c) ? !cur.some(l => isGameOwn(l) && l.gid === c.gid && (l.stat === 'total') === (c.stat === 'total')) : !cur.some(l => !isGameOwn(l) && l.pid === c.pid));
-        let bp = -1, bl = null; for (let i = 0; i < L1.length; i++) for (let j = i + 1; j < L1.length; j++) { if (!fitsNo([L1[i]], L1[j])) continue; const pj = pairOwn(L1[i], L1[j], rhoF(L1[i], L1[j])); if (pj > bp) { bp = pj; bl = [L1[i], L1[j]]; } }
-        let mb = null, ml = null; for (let i = 0; i < L1.length; i++) for (let j = i + 1; j < L1.length; j++) for (let k = j + 1; k < L1.length; k++) { const ls = [L1[i], L1[j], L1[k]];
-          if (!fitsNo([L1[i]], L1[j]) || !fitsNo([L1[i], L1[j]], L1[k])) continue; const O = orderF(ls), pr = ppF(O).corr, dc = w.eval('parlayDec')(O.map(l => ({ leg: l, ml: l.price }))), x = { ls, pr, ev: pr * dc };
-          if (!ml || pr > ml.pr) ml = x; if (pr >= 0.25 && (!mb || x.ev > mb.ev)) mb = x; }
-        const has2 = ls => !!ls && ls.includes(QB) && ls.includes(TD), med = mb || ml, held = t => !!t && !!t.legs && t.legs.some(l => l.pid === QB.pid) && t.legs.some(l => l.pid === TD.pid);
-        chk(nB === 4 && clashOwn(QB, TD) === 'td' && has2(bl) && has2(med && med.ls) && !held(T1.safe) && !held(T1.med) && Object.values(T1).every(t => !t.legs || !clashPairsOwn(t.legs).length),
+        /* (app v144) with no such rule: the likeliest pair paying +110 and the likeliest three paying +300 */
+        const decL = ls => w.eval('parlayDec')(orderF(ls).map(l => ({ leg: l, ml: l.price })));
+        let bp = -1, bl = null; for (let i = 0; i < L1.length; i++) for (let j = i + 1; j < L1.length; j++) { if (!fitsNo([L1[i]], L1[j])) continue; if (!(decL([L1[i], L1[j]]) >= lvDecOwn(2))) continue; const pj = pairOwn(L1[i], L1[j], rhoF(L1[i], L1[j])); if (pj > bp) { bp = pj; bl = [L1[i], L1[j]]; } }
+        let ml = null; for (let i = 0; i < L1.length; i++) for (let j = i + 1; j < L1.length; j++) for (let k = j + 1; k < L1.length; k++) { const ls = [L1[i], L1[j], L1[k]];
+          if (!fitsNo([L1[i]], L1[j]) || !fitsNo([L1[i], L1[j]], L1[k])) continue; const O = orderF(ls), pr = ppF(O).corr, dc = decL(ls), x = { ls, pr, ev: pr * dc };
+          if (dc >= lvDecOwn(3) && (!ml || pr > ml.pr)) ml = x; }
+        const has2 = ls => !!ls && ls.includes(QB) && ls.includes(TD), med = ml, held = t => !!t && !!t.legs && t.legs.some(l => l.pid === QB.pid) && t.legs.some(l => l.pid === TD.pid);
+        chk(nB >= 3 && clashOwn(QB, TD) === 'td' && has2(bl) && has2(med && med.ls) && !held(T1.safe) && !held(T1.med) && Object.values(T1).every(t => !t.legs || !clashPairsOwn(t.legs).length),
           `${lab}: the set does not build its four levels with no pair DraftKings refuses, where with no such rule its likeliest pair and its Medium would hold the quarterback's passing TDs and the touchdown (${nB} levels; no rule: ${bl ? bl.map(l => l.name).join('+') : 'none'}, ${med ? med.ls.map(l => l.name).join('+') : 'none'}; the set: ` + s1.tiers.map(t => t.id + ' ' + (t.legs ? t.legs.map(l => l.name).join('+') : t.why)).join(' | ') + ')'); }
       /* the second game: its set held to every rule (holdSet: a level empty only where the game's legs make too few with
          no pair DraftKings refuses), and, as it was made for it, its Medium the money line, the touchdown and a total */
@@ -4507,43 +4529,56 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (!d.getElementById('pcModal').hidden) w.eval('PARLAY_CARD.close()');
       w.eval('SP_CACHE=new Map(); PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_SHOWN=null; renderParlay(); renderSp()'); await wait(30);
       tabBtn('parlay').click(); await wait(40); } }
-  /* ---- EVERY LEVEL PAYS +100 OR MORE (app v143, the owner's call of 7 November 2026: "I am not really wanting to do safe
-     bets that are like only 50 cent wins. id want to at least double my bet, so 1$ bet wins 2$ for a profit of 1$") ----
-     On made-up games of the smoke's own (pbGames and pricedLegs stood in for, the games put on the schedule for the block
-     and the night rule's spOn and the slot's spSlotNext stood in for, each put back whatever happens), so it holds on any
-     day, the off-season included. Each leg's chance is DraftKings' fair chance, the page's and the smoke's own reading
-     alike (chanceOwn), and no line moves with another (their made-up group), so a pair's chance is its legs' product and
-     its price the builder's own same-game sum:
+  /* ---- EACH LEVEL THE LIKELIEST AT ITS PAYOUT (app v144; app v143: every level pays +100 or more) ----
+     The owner's calls of 7 November 2026: "id want to at least double my bet, so 1$ bet wins 2$ for a profit of 1$" (app
+     v143), "yes" to "I'd raise the floor to about +110, so the real slip almost always doubles your bet", and "in suggested
+     props. i want the med prop to be at least $4 outcome from 1$ and aggressive to be $8 or more. I want the best possible
+     model confidence to match what level bet" (app v144). On made-up games of the smoke's own (pbGames and pricedLegs stood
+     in for, the games put on the schedule for the block and the night rule's spOn and the slot's spSlotNext stood in for,
+     each put back whatever happens), so it holds on any day, the off-season included. Each leg's chance is DraftKings' fair
+     chance, the page's and the smoke's own reading alike (chanceOwn), and no line moves with another (their made-up
+     group), so a parlay's chance is its legs' product and its price the builder's own same-game sum; each level held to
+     the likeliest of its size paying its own price (LEVEL_DEC_OWN), worked out here in full:
        PV  a Monday night game of five lines, two short (-400 and -380), one at -150 and two near evens: its likeliest pair,
-           the two short lines, pays about -240, so Safe is the likeliest pair paying +100 or more, the shortest line with an
-           even one, worked out here on the smoke's own floor (MIN_DEC_OWN); every level drawn on the tab paying +100 or
-           more, its pill and title the smoke's own words ("likeliest pair · +100+")
-       PW  a Monday night game of three lines at -700 to -900, none of whose pairs or three pays +100: Safe and Medium empty,
-           saying so ("No 2 legs in this game pay +100 or more together."), Aggressive and Extreme too few legs
-       the engine  ten made-up games, Spread only, each cover priced on both sides with a hold of its own: three heavy
-           favourites at the smallest hold, so the overall least costly 3 landing 25% (the three) and the likeliest pair
-           (two of them) pay under +100; the engine's Safe and Medium (getPbTiers, drawn nowhere) are the likeliest pair
-           and the least costly 3 landing 25% among the parlays paying +100 or more, worked out in full here
-     (and holdSet holds both sets to every rule a set keeps, its Safe's pair, its empty levels and their words on the
-     smoke's own reading of the price rule) ---- */
+           the two short lines, pays about -240, so Safe is the likeliest pair paying +110, the shortest line with an even
+           one; Medium the likeliest three paying +300; no four or five paying +700 or +1500, Aggressive and Extreme empty,
+           saying so; every card's pill and title the smoke's own words
+       PM  a Thursday night game at Medium's edge: three legs paying 3.855 (about 3.9) and three paying 3.9985, each likelier,
+           refused; Medium the three paying 4.0027, alike but one leg's price (-264 against -265)
+       PA  a Monday 9 pm game of four lines at -165 and four nearer evens: its likeliest four pay about 5.96, so Aggressive is a
+           less likely four paying +700
+       PW  a Monday night game of three lines at -700 to -900, none of whose pairs or three pays its price: Safe and Medium
+           empty, saying so ("No 2 legs in this game pay +110 or more together."), Aggressive and Extreme too few legs
+       the engine  ten made-up games, Spread only, each cover priced on both sides with a hold of its own, three heavy
+           favourites among them: the engine's levels (getPbTiers, drawn nowhere) each the likeliest of its size paying its
+           price, worked out in full here, where the likeliest pair and the likeliest three overall pay under theirs
+     (and holdSet holds every set to every rule a set keeps on the smoke's own reading of the prices) ---- */
   if (hasPb && holdSetF && SPH) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), wk2 = String(cw).padStart(2, '0'), said = [];
     const mk = (n, d0, t0) => ({ id: `2099_${wk2}_A${n}_H${n}`, w: cw, a: 'A' + n, h: 'H' + n, d: d0, t: t0 });
-    const PV = mk(71, '2099-01-05', '20:15'), PW = mk(72, '2099-01-05', '20:15');
+    const PV = mk(71, '2099-01-05', '20:15'), PW = mk(72, '2099-01-05', '20:15'), PM = mk(73, '2099-01-01', '21:00'), PA = mk(74, '2099-01-05', '21:00');
     /* (the review of app v143) each a player's main line, Over k receptions, as the page offers them: no ladder rung, which
        the site has offered nowhere since app v127 and which toggleLeg refuses */
     const leg = (g, tag, k, price, p) => ({ key: `${g.id}|${tag}|receptions`, gid: g.id, pid: tag, stat: 'receptions', k, side: 'over', main: true, p, price, src: 'real', mu: null,
       name: 'Price ' + tag.split('-')[1], pos: 'WR', grp: 'WR', team: g.h, opp: g.a, week: cw, label: `Over ${k} receptions` });
     const LV = [leg(PV, 'P71-a', 2.5, -400, 0.8), leg(PV, 'P71-b', 3.5, -380, 0.79), leg(PV, 'P71-c', 4.5, -150, 0.6), leg(PV, 'P71-d', 5.5, 100, 0.5), leg(PV, 'P71-e', 6.5, -105, 0.49)];
     const LW = [leg(PW, 'P72-a', 2.5, -900, 0.9), leg(PW, 'P72-b', 3.5, -800, 0.89), leg(PW, 'P72-c', 4.5, -700, 0.87)];
+    /* (each leg's fair chance in the band a leg qualifies by, 45% to 97%: the +100 line about 47%) */
+    const LM = [leg(PM, 'P73-a', 2.5, 100, 0.5), leg(PM, 'P73-b', 3.5, 62, 0.6), leg(PM, 'P73-c', 4.5, -265, 0.77), leg(PM, 'P73-d', 5.5, -264, 0.77), leg(PM, 'P73-e', 6.5, -305, 0.8), leg(PM, 'P73-f', 7.5, -305, 0.8)];
+    const LA = [...[0, 1, 2, 3].map(i => leg(PA, 'P74-' + 'abcd'[i], 2.5 + i, -165, 0.62)), leg(PA, 'P74-e', 6.5, 100, 0.5), leg(PA, 'P74-f', 7.5, 100, 0.5), leg(PA, 'P74-g', 8.5, -110, 0.52), leg(PA, 'P74-h', 9.5, -105, 0.51)];
+    const LALL = [...LV, ...LW, ...LM, ...LA];
     /* none of them a ladder by the smoke's own reading */
-    chk([...LV, ...LW].every(l => !ladderOwn(l)), 'the made-up price floor games hold a ladder leg, which the site offers nowhere');
+    chk(LALL.every(l => !ladderOwn(l)), 'the made-up price floor games hold a ladder leg, which the site offers nowhere');
     const keep = { pb: w.eval('[pbGames, pricedLegs]'), on: w.eval('typeof spOn') === 'function' ? w.eval('spOn') : null, slot: w.eval('typeof spSlotNext') === 'function' ? w.eval('spSlotNext') : null,
       dk: w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)'), parlay: w.eval('JSON.stringify(S.parlay||{})'), u: JSON.stringify(Sx.ui.pb), n: Sx.sched.length };
     const pdF = w.eval('parlayDec'), ordF = w.eval('pbOrder'), decOf = ls => pdF(ordF(ls.map(l => ({ ...l }))).map(l => ({ leg: l, ml: l.price })));
-    const nmOf = ls => (ls || []).map(l => l.name).sort().join('+');
+    const nmOf = ls => (ls || []).map(l => l.name).sort().join('+'), fm = x => w.eval('fmtML')(w.eval('decToML')(x));
+    /* every parlay of n of a list that go together (the page's pbFits), at the chances given, by the builder's own sums */
+    const every = (L, n) => { const out = [], fitP = w.eval('pbFits'), rec = (i0, cur) => { if (cur.length === n) { out.push({ ls: cur.slice(), pj: cur.reduce((a, l) => a * l.p, 1), dec: decOf(cur) }); return; }
+      for (let i = i0; i < L.length; i++) { if (!fitP(cur, L[i])) continue; cur.push(L[i]); rec(i + 1, cur); cur.pop(); } }; rec(0, []); return out; };
+    const top = c => c.reduce((m, x) => !m || x.pj > m.pj + 1e-12 ? x : m, null);
     let G10 = null;
     try {
-      Sx.sched.push(PV, PW); w.__mpG = { G: [PV, PW], L: [...LV, ...LW] };
+      Sx.sched.push(PV, PW, PM, PA); w.__mpG = { G: [PV, PW, PM, PA], L: LALL };
       /* each main line on the paid pull's table at its own number and price (its over alone, so its fair chance is the
          price over the week's typical overround, est., as it was), as a main line with a real price stands; taken out
          again whatever happens */
@@ -4554,37 +4589,50 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (keep.slot) w.eval('spSlotNext=function(){ return null; }');
       w.eval('delete PAY.dk; S.parlay={}; SP_CACHE=new Map(); PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_SHOWN=null; renderParlay()');
       tabBtn('suggest').click(); await wait(80);
-      /* PV: every rule a set keeps (holdSet, its Safe the likeliest pair paying +100 or more among them), and the case */
-      const labV = `a made-up Monday night game (${PV.id}) whose likeliest pair pays under ${MIN_ML_OWN}`, labW = `a made-up Monday night game (${PW.id}) none of whose pairs pays ${MIN_ML_OWN}`;
-      const nV = holdSetF(labV, PV, true), sV = w.eval('spSet')(PV.id), safe = sV && sV.tiers.find(t => t.id === 'safe');
-      { const ch = chanceOwn(), L = LV.map(l => ({ ...l, p: ch(l).p })), prs = [];
-        for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) { const ls = [L[i], L[j]]; prs.push({ ls, pj: L[i].p * L[j].p, dec: decOf(ls) }); }
-        prs.sort((a, b) => b.pj - a.pj); const top = prs[0], pay = prs.find(x => x.dec >= MIN_DEC_OWN);
-        chk(nV === 4 && !!top && top.dec < MIN_DEC_OWN * 0.95 && !!pay && pay !== top && pay.dec >= MIN_DEC_OWN * 1.03,
-          `${labV}: the case cannot tell (${nV} levels; its likeliest pair ${top ? nmOf(top.ls) + ' at ' + top.dec.toFixed(3) : 'none'}, the likeliest paying ${MIN_ML_OWN} ${pay ? nmOf(pay.ls) + ' at ' + pay.dec.toFixed(3) : 'none'})`);
-        chk(!!safe && !!safe.legs && !!pay && nmOf(safe.legs) === nmOf(pay.ls) && safe.dec >= MIN_DEC_OWN && safe.minDec === MIN_DEC_OWN,
-          `${labV}: Safe is ${safe && safe.legs ? nmOf(safe.legs) + ' at ' + safe.dec : 'empty: ' + (safe && safe.why)}, not the likeliest pair paying ${MIN_ML_OWN} or more, ${pay ? nmOf(pay.ls) : 'none'}`);
-        /* drawn on the tab: every card of the set paying +100 or more, and Safe's pill and title the smoke's own words */
-        const el = d.querySelector(`#spSets .sp-game[data-sp-game="${PV.id}"]`), c = el && el.querySelector('.pb-tiers[data-sp-kind="model"] > .pb-tier.safe'), r = c && c.querySelector('.pb-rule');
-        const want = ruleOwn({ ...safe, n: 2 }), wantT = ruleTitleOwn({ ...safe, n: 2 });
-        chk(!!r && txt(r) === `likeliest pair · ${MIN_ML_OWN}+` && txt(r) === want && r.getAttribute('title') === wantT && wantT === `The likeliest 2-leg parlay paying at least ${MIN_ML_OWN}: $1 returns $${MIN_DEC_OWN} or more`,
-          `${labV}: its Safe card's rule reads "${r ? txt(r) : 'none'}" (${r ? r.getAttribute('title') : ''}), not "${want}" (${wantT})`);
-        const prices = el ? [...el.querySelectorAll('.pb-tiers[data-sp-kind="model"] > .pb-tier:not(.none) .pb-nums > div:nth-child(2) b')].map(b => txt(b)) : [];
-        chk(prices.length === 4 && prices.every(x => /^\+\d+$/.test(x) && +x.slice(1) >= 100), `${labV}: its cards state the prices ${prices.join(', ') || 'none'}, not every one +100 or more`);
-        if (safe && safe.legs) said.push(`${PV.id}'s Safe ${nmOf(safe.legs)} at ${prices[0]} where its likeliest pair ${nmOf(top.ls)} pays ${w.eval('fmtML')(w.eval('decToML')(top.dec))}`); }
-      /* PW: Safe and Medium empty, saying none of its pairs (threes) pays +100 or more, drawn so */
+      const ch = chanceOwn(), atCh = L => L.map(l => ({ ...l, p: ch(l).p }));
+      /* each level of a game's set the likeliest of its size paying its own price, worked out here, drawn with the smoke's
+         own words (its pill and its title) and its price at least its level's; an empty one only where none pays */
+      const levelsHeld = (lab, g, L0) => { const s = w.eval('spSet')(g.id), L = atCh(L0), el = d.querySelector(`#spSets .sp-game[data-sp-game="${g.id}"]`), out = {};
+        for (const [id, n] of [['safe', 2], ['med', 3], ['aggr', 4], ['xtrm', 5]]) { const t = s && s.tiers.find(x => x.id === id), c = el && el.querySelector(`.pb-tiers[data-sp-kind="model"] > .pb-tier.${id}`);
+          const all = L.length >= n ? every(L, n) : [], pays = all.filter(x => x.dec >= lvDecOwn(n)), b = top(pays); out[id] = { t, b, all, pays };
+          if (!b) { chk(!!t && !t.legs, `${lab}: its ${id} level is ${t && t.legs ? nmOf(t.legs) + ' at ' + t.dec : 'missing'} where none of its ${n} pays ${mlN(n)}`); continue; }
+          chk(!!t && !!t.legs && Math.abs(t.corr - b.pj) < 1e-12 && t.dec >= lvDecOwn(n) && ruledOwn(t), `${lab}: its ${id} level is ${t && t.legs ? nmOf(t.legs) + ' at ' + t.dec + ' landing ' + t.corr : 'empty: ' + (t && t.why)}, not the likeliest ${n} paying ${mlN(n)} (${nmOf(b.ls)} at ${b.dec.toFixed(4)} landing ${b.pj}), or does not carry its price and its rule`);
+          const r = c && c.querySelector('.pb-rule'), want = t && t.legs ? ruleOwn({ ...t, n }) : null, wantT = t && t.legs ? ruleTitleOwn({ ...t, n }) : null, pr = c && c.querySelector('.pb-nums > div:nth-child(2) b');
+          chk(!!r && txt(r) === want && r.getAttribute('title') === wantT && want === `${n === 2 ? 'likeliest pair' : `likeliest ${n} legs`} · ${mlN(n)}+` && wantT === `The likeliest ${n}-leg parlay paying at least ${mlN(n)} by the site’s price: $1 returns ${usdOwn(lvDecOwn(n))} or more`
+            && !!pr && /^\+\d+$/.test(txt(pr)) && +txt(pr).slice(1) >= Math.round((lvDecOwn(n) - 1) * 100),
+            `${lab}: its ${id} card's rule reads "${r ? txt(r) : 'none'}" (${r ? r.getAttribute('title') : ''}) at ${pr ? txt(pr) : 'no price'}, not "${want}" (${wantT}) at ${mlN(n)} or more`); }
+        return { s, el, out }; };
+      /* PV */
+      const labV = `a made-up Monday night game (${PV.id}) whose likeliest pair pays under +110`, labW = `a made-up Monday night game (${PW.id}) none of whose pairs pays +110`;
+      { const nV = holdSetF(labV, PV, true), H = levelsHeld(labV, PV, LV), t0 = top(H.out.safe.all), b = H.out.safe.b;
+        chk(nV === 2 && !!t0 && t0.dec < lvDecOwn(2) * 0.95 && !!b && b !== t0 && b.dec >= lvDecOwn(2) * 1.03 && !H.out.aggr.b && !H.out.xtrm.b && !!H.out.med.b,
+          `${labV}: the case cannot tell (${nV} levels; its likeliest pair ${t0 ? nmOf(t0.ls) + ' at ' + t0.dec.toFixed(3) : 'none'}, the likeliest paying +110 ${b ? nmOf(b.ls) + ' at ' + b.dec.toFixed(3) : 'none'}; a Medium ${H.out.med.b ? 'paying +300' : 'none'}; an Aggressive or Extreme paying ${H.out.aggr.b || H.out.xtrm.b ? 'its price, which the case means none to' : 'none'})`);
+        for (const [id, n] of [['aggr', 4], ['xtrm', 5]]) { const t = H.out[id].t, want = `No ${n} legs in this game pay ${mlN(n)} or more together.`;
+          chk(!!t && !t.legs && t.why === want, `${labV}: its ${id} level is ${t && t.legs ? nmOf(t.legs) : `empty saying "${t && t.why}"`}, not "${want}"`); }
+        const sf = H.out.safe.t; if (sf && sf.legs) said.push(`${PV.id}'s Safe ${nmOf(sf.legs)} at ${fm(sf.dec)} where its likeliest pair ${nmOf(t0.ls)} pays ${fm(t0.dec)}, its Aggressive and Extreme empty`); }
+      /* PM: Medium at its edge */
+      { const lab = `a made-up Thursday night game (${PM.id}) at Medium's edge`, H = levelsHeld(lab, PM, LM), L = atCh(LM), by = tags => { const ls = tags.map(x => L.find(l => l.pid === 'P73-' + x)); return { ls, pj: ls.reduce((a, l) => a * l.p, 1), dec: decOf(ls) }; };
+        const near = by(['a', 'b', 'e']), edge = by(['a', 'b', 'c']), at = by(['a', 'b', 'd']), md = H.out.med.t;
+        chk(near.dec >= 3.85 && near.dec < 3.9 && edge.dec >= 3.99 && edge.dec < 4 && at.dec >= 4 && at.dec < 4.01 && near.pj > at.pj && edge.pj > at.pj,
+          `${lab}: the case cannot tell (about 3.9: ${near.dec.toFixed(4)} landing ${near.pj.toFixed(4)}; just under 4: ${edge.dec.toFixed(4)} landing ${edge.pj.toFixed(4)}; just over: ${at.dec.toFixed(4)} landing ${at.pj.toFixed(4)})`);
+        chk(!!md && !!md.legs && nmOf(md.legs) === nmOf(at.ls) && md.dec >= 4, `${lab}: Medium is ${md && md.legs ? nmOf(md.legs) + ' at ' + md.dec : 'empty: ' + (md && md.why)}, not ${nmOf(at.ls)} at ${at.dec.toFixed(4)}, the likeliest three paying +300`);
+        if (md && md.legs) said.push(`${PM.id}'s Medium at ${md.dec.toFixed(4)}, where likelier threes pay ${near.dec.toFixed(4)} and ${edge.dec.toFixed(4)}`); }
+      /* PA: Aggressive a less likely four than the likeliest four, which pays about 5.96 */
+      { const lab = `a made-up Monday night game (${PA.id}) whose likeliest four pay under +700`, H = levelsHeld(lab, PA, LA), t0 = top(H.out.aggr.all), ag = H.out.aggr.t;
+        chk(!!t0 && t0.dec >= 5.5 && t0.dec < 6.5 && !!H.out.aggr.b && nmOf(H.out.aggr.b.ls) !== nmOf(t0.ls), `${lab}: the case cannot tell (its likeliest four ${t0 ? nmOf(t0.ls) + ' at ' + t0.dec.toFixed(3) : 'none'}, the likeliest paying +700 ${H.out.aggr.b ? nmOf(H.out.aggr.b.ls) : 'none'})`);
+        if (ag && ag.legs) said.push(`${PA.id}'s Aggressive at ${fm(ag.dec)} where its likeliest four pay ${t0.dec.toFixed(2)}`); }
+      /* PW: Safe and Medium empty, saying none of its pairs (threes) pays its price, drawn so */
       { holdSetF(labW, PW, true); const sW = w.eval('spSet')(PW.id), el = d.querySelector(`#spSets .sp-game[data-sp-game="${PW.id}"]`);
-        const W0 = [['safe', `No 2 legs in this game pay ${MIN_ML_OWN} or more together.`], ['med', `No 3 legs in this game pay ${MIN_ML_OWN} or more together.`], ['aggr', 'Only 3 legs in this game.'], ['xtrm', 'Only 3 legs in this game.']];
-        const ch = chanceOwn(), L = LW.map(l => ({ ...l, p: ch(l).p }));
-        chk(decOf(L) < MIN_DEC_OWN && [[0, 1], [0, 2], [1, 2]].every(([i, j]) => decOf([L[i], L[j]]) < MIN_DEC_OWN), `${labW}: one of its pairs or its three pays ${MIN_ML_OWN} or more, so the case cannot tell`);
+        const W0 = [['safe', 'No 2 legs in this game pay +110 or more together.'], ['med', 'No 3 legs in this game pay +300 or more together.'], ['aggr', 'Only 3 legs in this game.'], ['xtrm', 'Only 3 legs in this game.']];
+        const L = atCh(LW);
+        chk(decOf(L) < lvDecOwn(3) && [[0, 1], [0, 2], [1, 2]].every(([i, j]) => decOf([L[i], L[j]]) < lvDecOwn(2)), `${labW}: one of its pairs or its three pays its price, so the case cannot tell`);
         for (const [id, want] of W0) { const t = sW && sW.tiers.find(x => x.id === id), c = el && el.querySelector(`.pb-tiers[data-sp-kind="model"] > .pb-tier.${id}`);
           chk(!!t && !t.legs && t.why === want && !!c && c.classList.contains('none') && txt(c.querySelector('.pb-why')) === want,
             `${labW}: its ${id} level is ${t && t.legs ? nmOf(t.legs) + ' at ' + t.dec : `empty saying "${t && t.why}"`}${c ? '' : ', not drawn'}, not "${want}"`); }
-        said.push(`${PW.id}'s Safe and Medium empty, saying no pair or three of its legs pays ${MIN_ML_OWN}`); }
+        said.push(`${PW.id}'s Safe and Medium empty, saying no pair or three of its legs pays its price`); }
       /* the engine: ten made-up games, Spread only, each cover priced on both sides with its own hold */
       { const amer = q => q >= 0.5 ? -100 * q / (1 - q) : 100 * (1 - q) / q;
-        /* [the home side's fair chance, the two implied chances summed]: three heavy favourites at the smallest holds (the
-           three together the least costly 3 landing 25%, at about 1.96, and two of them the likeliest pair, about 1.55), the
+        /* [the home side's fair chance, the two implied chances summed]: three heavy favourites at the smallest holds, the
            rest nearer evens, each at a hold of its own so no two parlays of a size tie */
         const COV = [[0.8, 1.010], [0.79, 1.012], [0.78, 1.014], [0.55, 1.04], [0.54, 1.05], [0.53, 1.06], [0.52, 1.07], [0.51, 1.07], [0.5, 1.08], [0.5, 1.09]];
         G10 = [...Array(10)].map((_, i) => ({ id: `2099_${wk2}_B${i}_I${i}`, w: cw, a: 'B' + i, h: 'I' + i, d: `2099-01-0${1 + (i % 7)}`, t: '13:00', sp: 3.5, sph: amer(COV[i][0] * COV[i][1]), spa: amer((1 - COV[i][0]) * COV[i][1]) }));
@@ -4594,27 +4642,24 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         Sx.ui.pb = { k: { ml: false, ats: true, total: false, over: false, under: false }, off: [], gx: false };
         w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); renderParlay()'); await wait(40);
         const r = w.eval('getPbTiers()'), pool = w.eval('pbPool')(G10), all = [...pool.pref, ...pool.thin], ppF0 = w.eval('parlayProb');
-        const every = n => { const out = [], rec = (i0, cur) => { if (cur.length === n) { const O = ordF(cur.map(l => ({ ...l }))); out.push({ ls: O, pr: ppF0(O).corr, dec: decOf(O) }); return; }
+        const ev = n => { const out = [], rec = (i0, cur) => { if (cur.length === n) { const O = ordF(cur.map(l => ({ ...l }))); out.push({ ls: O, pr: ppF0(O).corr, dec: decOf(O) }); return; }
           for (let i = i0; i < all.length; i++) { if (!w.eval('pbFits')(cur, all[i])) continue; cur.push(all[i]); rec(i + 1, cur); cur.pop(); } }; rec(0, []); return out; };
-        const P2 = every(2), P3 = every(3).filter(x => x.pr >= 0.25), best = (c, f) => c.reduce((m, x) => !m || f(x) > f(m) + 1e-12 ? x : m, null);
-        const lk0 = best(P2, x => x.pr), lk = best(P2.filter(x => x.dec >= MIN_DEC_OWN), x => x.pr), ch0 = best(P3, x => x.pr * x.dec), chP = best(P3.filter(x => x.dec >= MIN_DEC_OWN), x => x.pr * x.dec);
-        const sf = r.tiers.find(t => t.id === 'safe'), md = r.tiers.find(t => t.id === 'med');
-        chk(!!lk0 && lk0.dec < MIN_DEC_OWN && !!ch0 && ch0.dec < MIN_DEC_OWN && !!lk && !!chP && nmOf(lk.ls) !== nmOf(lk0.ls) && nmOf(chP.ls) !== nmOf(ch0.ls),
-          `ten made-up games: the case cannot tell (the likeliest pair ${lk0 ? nmOf(lk0.ls) + ' at ' + lk0.dec.toFixed(3) : 'none'}, the least costly 3 landing 25% ${ch0 ? nmOf(ch0.ls) + ' at ' + ch0.dec.toFixed(3) : 'none'})`);
-        chk(!!sf && !!sf.legs && !!lk && nmOf(sf.legs) === nmOf(lk.ls) && sf.dec >= MIN_DEC_OWN && sf.minDec === MIN_DEC_OWN,
-          `ten made-up games: the engine's Safe is ${sf && sf.legs ? nmOf(sf.legs) + ' at ' + sf.dec : 'empty'}, not the likeliest pair paying ${MIN_ML_OWN} or more, ${lk ? nmOf(lk.ls) : 'none'}`);
-        chk(!!md && !!md.legs && !md.likeliest && !!chP && nmOf(md.legs) === nmOf(chP.ls) && md.dec >= MIN_DEC_OWN && md.corr >= 0.25,
-          `ten made-up games: the engine's Medium is ${md && md.legs ? nmOf(md.legs) + ' at ' + md.dec + (md.likeliest ? ' (the likeliest)' : '') : 'empty'}, not the least costly 3 landing 25% paying ${MIN_ML_OWN} or more, ${chP ? nmOf(chP.ls) : 'none'}`);
-        if (sf && sf.legs && md && md.legs) said.push(`ten made-up games: the engine's Safe ${nmOf(sf.legs)} (its likeliest pair ${nmOf(lk0.ls)} paying ${w.eval('fmtML')(w.eval('decToML')(lk0.dec))}) and Medium ${nmOf(md.legs)} (the least costly 3 landing 25% paying ${w.eval('fmtML')(w.eval('decToML')(ch0.dec))})`); }
+        const best = c => c.reduce((m, x) => !m || x.pr > m.pr + 1e-12 ? x : m, null), got = [];
+        for (const [id, n] of [['safe', 2], ['med', 3], ['aggr', 4], ['xtrm', 5]]) { const P = ev(n), lk0 = best(P), lk = best(P.filter(x => x.dec >= lvDecOwn(n))), t = r.tiers.find(x => x.id === id);
+          chk(!!t && !!t.legs && !!lk && nmOf(t.legs) === nmOf(lk.ls) && t.dec >= lvDecOwn(n) && ruledOwn(t),
+            `ten made-up games: the engine's ${id} is ${t && t.legs ? nmOf(t.legs) + ' at ' + t.dec : 'empty'}, not the likeliest ${n} paying ${mlN(n)} or more, ${lk ? nmOf(lk.ls) : 'none'}, or does not carry its price and its rule`);
+          if (n <= 3) chk(!!lk0 && lk0.dec < lvDecOwn(n) && !!lk && nmOf(lk.ls) !== nmOf(lk0.ls), `ten made-up games: the likeliest ${n} overall (${lk0 ? nmOf(lk0.ls) + ' at ' + lk0.dec.toFixed(3) : 'none'}) pays ${mlN(n)}, so the case cannot tell`);
+          if (t && t.legs) got.push(`${id} ${nmOf(t.legs)} at ${fm(t.dec)}`); }
+        said.push(`ten made-up games: the engine's ${got.join(', ')}, where its likeliest pair and three overall pay under their price`); }
     } finally {
       Sx.sched.splice(keep.n); Sx.ui.pb = JSON.parse(keep.u);
-      w.eval('(function(){ const x=window.__mpMkt; if(!x) return; const M=PAY.mkt; for(const l of [...LV_IDS]) if(M&&M[x.k]) delete M[x.k][l]; if(M&&!x.had) delete M[x.k]; if(!x.any) delete PAY.mkt; delete window.__mpMkt; })()'.replace('[...LV_IDS]', JSON.stringify([...LV, ...LW].map(l => l.pid))));
+      w.eval('(function(){ const x=window.__mpMkt; if(!x) return; const M=PAY.mkt; for(const l of [...LV_IDS]) if(M&&M[x.k]) delete M[x.k][l]; if(M&&!x.had) delete M[x.k]; if(!x.any) delete PAY.mkt; delete window.__mpMkt; })()'.replace('[...LV_IDS]', JSON.stringify(LALL.map(l => l.pid))));
       w.__mpKeep = keep; w.eval('pbGames=window.__mpKeep.pb[0]; pricedLegs=window.__mpKeep.pb[1]; if(window.__mpKeep.on) spOn=window.__mpKeep.on; if(window.__mpKeep.slot) spSlotNext=window.__mpKeep.slot;');
       w.eval(`(function(){ const k=${keep.dk}; if(k===null) delete PAY.dk; else PAY.dk=k; S.parlay=${keep.parlay}; })()`);
       delete w.__mpG; delete w.__mpKeep;
       w.eval('SP_CACHE=new Map(); PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_SHOWN=null; renderParlay(); renderSp()'); await wait(30);
       tabBtn('parlay').click(); await wait(40); }
-    console.log(`EVERY LEVEL PAYS ${MIN_ML_OWN} OR MORE, on made-up games: ${said.join('; ')}`); }
+    console.log(`EACH LEVEL THE LIKELIEST AT ITS PAYOUT (+110, +300, +700, +1500), on made-up games: ${said.join('; ')}`); }
   /* ---- X Parlays (the owner's call of 20 October 2026: X Parlays and the X Bet Log on the admin's devices alone, "hide
      only"). On this visitor's page: no button for it on the bar, its section in the page, hidden and marked admin-only,
      nothing drawn in it and neither of the X files read. On an admin's page (a boot with the admin's checked key,
@@ -9824,11 +9869,10 @@ async function glanceChecks() {
       page uses, one call past the kept stream's 1.5 million pairs), and on this week's priced legs where there are any,
       each call made twice (the second from the memo). Since app v138's speed change parlayProb counts the hits of 2 to 5
       legs without a branch on each leg, which this holds to the same bit.
-   1b. (app v138) pbBeam scores a parlay one leg longer from its parent's figures and keeps each step's best by a selection:
-      held to the smoke's own copy of the beam as it stood before (bmOwn, on the page's pbEval and pbFits), the same
-      parlays in the same order, their legs in the same order, the figures within 1e-12, on made-up pools at any hour (one
-      game's legs mostly tied at one chance and price, the lean tied on some, a preferred list, the totals as the fill, two
-      games, three games of more than 64 legs, a narrow beam among ties) and on this week's own pools where there are any.
+   1b. (app v144) the level search, pbLevel: on made-up pools at any hour (one game's legs mostly tied at one chance and
+      price, the lean tied on some, a preferred list with thin legs to fill, two games) and on this week's own pools where
+      there are any, the likeliest parlay of each size paying its own price, held to the smoke's own enumeration of every
+      parlay of 2 and 3 legs in full (app v138's beam, pbBeam, which this check held to the beam as it stood, is gone).
    2. spOpenSoft (the reader's own click on the tab) draws the tab at once with the record and one line, "Building the
       sets…" (role status, no level yet), builds one step a task (since app v138's speed change a step is one level of one
       game's set, and a task runs steps until about 40 ms have passed: one step leaves a set unbuilt, its four keep exactly
@@ -9889,32 +9933,16 @@ async function softChecks() {
     if (o.corr !== m.corr) bad.push(`${big.length} legs at 600,000 trials, past the kept stream: ${o.corr} where the page says ${m.corr}`);
     chk(bad.length === 0 && withPairs > 50, `parlayProb is not the same to the bit as the function it was (app v134's, the smoke's own copy): ${bad.slice(0, 4).join(' | ') || withPairs + ' calls with correlated legs, too few'}`);
     console.log(`  (fast sums: ${n} parlayProb calls, ${withPairs} with correlated legs, each twice, ${real.length} parlays of this week's legs, the same to the bit as app v134's)`); }
-  /* ---- 1b. the beam (app v138, the sets at app v137's speed: pbBeam scores a parlay one leg longer from its parent's
-     figures, each leg and pair indexed once with the memo, and keeps each step's best by a selection): the same parlays in
-     the same order, each with its legs in the order they were first put together, and its figures within 1e-12, as the
-     beam as it stood before (bmOwn, the smoke's own copy of it, on the page's pbEval and pbFits: the score and the leg
-     rules it always read), with one memo a game as a set's build shares it. On made-up pools at any hour (one game's legs
-     most at one chance and price, the lean tied on some, under and over, a quarterback's passing touchdowns beside his
-     teammates' touchdowns; a preferred list; the totals as the fill; two games; three games, more than 64 legs; a narrow
-     beam among ties) and on this week's own pools where there are any ---- */
-  { const pbFits = w.eval('pbFits'), pbId = w.eval('pbId'), pbEval = w.eval('pbEval'), pbBeam = w.eval('pbBeam');
-    const k9 = v => Math.round(v * 1e9), rankOwn = by => (a, b) => (k9(b[by]) - k9(a[by])) || (k9(b.ln || 0) - k9(a.ln || 0)) || a.id.localeCompare(b.id);
-    const bmOwn = (pools, floor, by, width, memo) => {
-      let beam = [{ legs: [], id: '' }];
-      for (let s = 0; s < pools.length; s++) {
-        const next = new Map();
-        for (const b of beam) {
-          const bi = b.ids || (b.ids = b.legs.map(pbId).sort());
-          for (const c of pools[s]) { if (!pbFits(b.legs, c)) continue;
-            const ci = pbId(c); let lo = 0, hi = bi.length; while (lo < hi) { const m = (lo + hi) >> 1; if (bi[m] < ci) lo = m + 1; else hi = m; }
-            const ids = bi.slice(0, lo); ids.push(ci); for (let t = lo; t < bi.length; t++) ids.push(bi[t]);
-            const id = ids.join(','); if (next.has(id)) continue;
-            let e = memo.get(id); if (!e || typeof e !== 'object') e = pbEval([...b.legs, c], memo);
-            if (next.has(e.id) || (floor && e.pr < floor * 0.9)) continue; if (!e.ids) e.ids = ids; next.set(e.id, e); } }
-        if (!next.size) return [];
-        beam = [...next.values()].sort(rankOwn(by)).slice(0, width);
-      }
-      return beam; };
+  /* ---- 1b. the level search (app v144: each level the likeliest parlay of its size paying its own price, pbLevel). The
+     page's pick held to the smoke's own enumeration of every parlay of 2 and 3 legs that go together (the page's pbFits),
+     each worked in full on the builder's own sums (parlayProb and parlayDec, the legs in the builder's order), the fewest
+     fill legs first as a level takes them: the level pays its own price in full (decOwn) and lands within 0.002 of the
+     likeliest that does (the full sums' own noise; no tie is broken here), and is none only where none pays. On made-up
+     pools at any hour (one game's legs most at one chance and price, the lean tied on some, under and over, a quarterback's
+     passing touchdowns beside his teammates' touchdowns; a preferred list with thin legs to fill; two games) and on this
+     week's own pools where there are any (pairs alone there). App v138's beam (pbBeam) and its check, which held it to the
+     beam as it stood (bmOwn), are gone with it ---- */
+  { const pbFitsF = w.eval('pbFits'), pbLevelF = w.eval('pbLevel'), ppL = w.eval('parlayProb'), pdL = w.eval('parlayDec'), orderL = w.eval('pbOrder');
     /* a made-up game's legs: a moneyline, a spread, a total (both sides, the fill), and two clubs' players on stats the
        payload's table correlates, most at 50% and -112 as DraftKings' estimated yards lines are, the lean (pm) tied on some */
     let sd = 7; const rr = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
@@ -9929,38 +9957,30 @@ async function softChecks() {
         add({ pid: `${gid}P${i}`, team, opp: team === A ? B : A, grp, stat, k: td ? (stat === 'passing_tds' ? 1.5 : 0.5) : 40.5 + i, side: stat === 'passing_tds' || i % 4 === 1 ? 'under' : 'over',
           name: `${grp} ${gid} ${i}`, price, p, pm: tie ? p + 0.02 : p + 0.1 * (rr() - 0.4), thin: !(i % 6 === 0 && i < 13) }); }
       return { legs: L, tot }; };
-    const levelJobs = (lab, U, P, mkt, opt = {}) => { const out = [];
-      for (const [n, floor] of (opt.levels || [[2, 0], [3, 0.25], [4, 0.12], [5, 0.05]])) {
-        const W = opt.width || 200, all = () => Array.from({ length: n }, () => U);
-        if (!floor) out.push([`${lab}, ${n} legs by chance`, all(), 0, 'pr', opt.width || Infinity]);
-        else out.push([`${lab}, ${n} legs by return`, all(), floor, 'ev', W], [`${lab}, ${n} legs by chance`, all(), floor, 'pr', W], [`${lab}, the likeliest ${n}`, all(), 0, 'pr', 2 * W]);
-        if (P.length) out.push([`${lab}, ${n} legs from the preferred list first`, Array.from({ length: n }, (_, s) => s < n - 1 ? P : U), floor, floor ? 'ev' : 'pr', W]);
-        if (mkt.length) out.push([`${lab}, ${n} legs with a total to fill`, Array.from({ length: n }, (_, s) => s < n - 1 ? U : mkt), floor, floor ? 'ev' : 'pr', W]); }
-      return out; };
-    const groups = [];
-    { const g1 = madeGame('XX_B1', 'XXA', 'XXB', 24), pref = g1.legs.filter(l => l.thin === false);
-      groups.push(['a made-up game', levelJobs('a made-up game', g1.legs, pref, g1.tot)]);
-      groups.push(['a narrow beam among ties', levelJobs('a narrow beam', g1.legs.filter(l => l.stat !== 'ml'), [], [], { width: 7, levels: [[3, 0.25], [4, 0.12], [5, 0.05]] })]);
-      const g2 = madeGame('XX_B2', 'XXC', 'XXD', 16), two = [...g1.legs.slice(0, 14), ...g2.legs];
-      groups.push(['two made-up games', levelJobs('two games', two, two.filter(l => l.thin === false), [...g1.tot.slice(0, 1), ...g2.tot.slice(1)], { width: 60, levels: [[2, 0], [3, 0.25], [4, 0.12]] })]);
-      const g3 = madeGame('XX_B3', 'XXE', 'XXF', 24), big = [...g1.legs, ...g2.legs, ...g3.legs];
-      groups.push([`three made-up games, ${big.length} legs`, levelJobs('three games', big, [], [], { width: 40, levels: [[2, 0], [3, 0.25], [4, 0.12]] })]); }
+    const ownLevel = (P, T, n) => { const U = [...P, ...T], fill = new Set(T);
+      for (let k = 0; k <= n; k++) { if (k && !T.length) break; let best = null, seen = 0;
+        (function rec(i0, cur, th) { if (cur.length === n) { if (th !== k) return; seen++; const O = orderL(cur), dec = pdL(O.map(l => ({ leg: l, ml: l.price })));
+            if (!(dec >= lvDecOwn(n))) return; const pr = ppL(O).corr; if (!best || pr > best.pr) best = { pr, dec, ls: O }; return; }
+          for (let i = i0; i < U.length; i++) { const th2 = th + (fill.has(U[i]) ? 1 : 0); if (th2 > k || !pbFitsF(cur, U[i])) continue; cur.push(U[i]); rec(i + 1, cur, th2); cur.pop(); } })(0, [], 0);
+        if (best) return { ...best, k }; }
+      return null; };
+    const jobs = [], bad = []; let held = 0, tPage = 0, tOwn = 0;
+    { const g1 = madeGame('XX_B1', 'XXA', 'XXB', 22), pref = g1.legs.filter(l => l.thin === false), thin = g1.legs.filter(l => l.thin !== false);
+      jobs.push(['a made-up game, every leg on one list', g1.legs, [], [2, 3]], ['a made-up game, a preferred list with thin legs to fill', pref, thin, [2, 3]]);
+      const g2 = madeGame('XX_B2', 'XXC', 'XXD', 12); jobs.push(['two made-up games', [...g1.legs.slice(0, 10), ...g2.legs], [], [2, 3]]); }
     { const SPS = w.eval('SP_SEARCH'), SPA = w.eval('SP_ALL'); let gs = []; try { gs = w.eval('pbGames()') || []; } catch (e) { gs = []; }
-      for (const g of gs) { if (groups.length >= 6) break; let pool = null; try { pool = w.eval('pbPool')([g], SPA, SPS); } catch (e) { pool = null; }
-        if (!pool) continue; const U = [...pool.pref, ...pool.thin]; if (U.length < 8) continue;
-        groups.push([`this week's ${g.id}`, levelJobs(g.id, U, pool.pref, pool.mkt)]); } }
-    const bad = []; let jobs = 0, rows = 0, tOwn = 0, tPage = 0;
-    for (const [what, list] of groups) { const m1 = new Map(), m2 = new Map();
-      for (const [lab, pools, floor, by, width] of list) { jobs++;
-        let t = Date.now(); const a = bmOwn(pools, floor, by, width, m1); tOwn += Date.now() - t;
-        t = Date.now(); const b = pbBeam(pools, floor, by, width, m2); tPage += Date.now() - t;
-        if (a.length !== b.length) { bad.push(`${lab}: ${b.length} parlays where the beam as it stood keeps ${a.length}`); continue; }
-        for (let i = 0; i < a.length; i++) { const x = a[i], y = b[i]; rows++;
-          const near = k => Math.abs(x[k] - y[k]) <= 1e-12 * Math.max(1, Math.abs(x[k]));
-          if (x.id !== y.id || x.legs.map(pbId).join() !== y.legs.map(pbId).join() || !['pr', 'd', 'ev', 'ln'].every(near)) {
-            bad.push(`${lab}: #${i + 1} is ${y.id} (${y.legs.map(pbId).join(' ')}, chance ${y.pr}, price ${y.d}, lean ${y.ln}) where the beam as it stood has ${x.id} (${x.legs.map(pbId).join(' ')}, ${x.pr}, ${x.d}, ${x.ln})`); break; } } } }
-    chk(bad.length === 0 && jobs >= 40 && rows > 2000, `pbBeam does not keep the parlays the beam as it stood keeps (bmOwn, on the page's pbEval): ${bad.slice(0, 3).join(' | ') || jobs + ' beams, ' + rows + ' parlays held: too few'}`);
-    console.log(`  (the beam: ${jobs} beams on ${groups.map(g => g[0]).join(', ')}, ${rows} parlays, the same in the same order as the beam as it stood; ${tOwn} ms as it stood, ${tPage} ms now)`); }
+      for (const g of gs) { if (jobs.length >= 6) break; let pool = null; try { pool = w.eval('pbPool')([g], SPA, SPS); } catch (e) { pool = null; }
+        if (!pool || pool.pref.length + pool.thin.length < 6) continue; jobs.push([`this week's ${g.id}`, pool.pref, pool.thin, [2]]); } }
+    for (const [lab, P, T, sizes] of jobs) for (const n of sizes) {
+      let t = Date.now(); const r = pbLevelF(n, { pref: P, thin: T }, new Map(), null, lvDecOwn(n)); tPage += Date.now() - t;
+      t = Date.now(); const o = ownLevel(P, T, n); tOwn += Date.now() - t; held++;
+      const Tk = new Set(T.map(l => `${l.key}|${l.side}|${l.k}`)), rd = r && r.legs ? pdL(orderL(r.legs).map(l => ({ leg: l, ml: l.price }))) : null, rk = r && r.legs ? r.legs.filter(l => Tk.has(`${l.key}|${l.side}|${l.k}`)).length : null;
+      if (!o) { if (r && r.legs) bad.push(`${lab}, ${n} legs: the page takes ${r.legs.map(l => l.pid).join(' ')} where no parlay of ${n} pays ${mlN(n)}`); continue; }
+      if (!r || !r.legs) { bad.push(`${lab}, ${n} legs: the page takes none where ${o.ls.map(l => l.pid).join(' ')} lands ${o.pr.toFixed(4)} at ${o.dec.toFixed(3)}`); continue; }
+      if (!(rd >= lvDecOwn(n)) || rk !== o.k || r.corr < o.pr - 0.002)
+        bad.push(`${lab}, ${n} legs: the page takes ${r.legs.map(l => l.pid).join(' ')} landing ${r.corr.toFixed(4)} at ${rd.toFixed(3)} with ${rk} fill legs, where the likeliest paying ${mlN(n)} is ${o.ls.map(l => l.pid).join(' ')} landing ${o.pr.toFixed(4)} at ${o.dec.toFixed(3)} with ${o.k}`); }
+    chk(bad.length === 0 && held >= 6, `the level search does not take the likeliest parlay paying its price (the smoke's own enumeration): ${bad.slice(0, 3).join(' | ') || held + ' levels held: too few'}`);
+    console.log(`  (the level search: ${held} levels on ${jobs.map(j => j[0]).join(', ')}, each the likeliest paying its price within 0.002; ${tPage} ms the page, ${tOwn} ms the enumeration)`); }
   /* ---- 2. the tab opened without a freeze ---- */
   const tabBtn = t => [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === t);
   const sets = () => (d.getElementById('spSets') || {}).innerHTML || '';
