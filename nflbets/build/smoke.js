@@ -647,6 +647,8 @@ const PB_TIERS_OWN = ['safe', 'med', 'aggr', 'xtrm'];
    (+1500), by the level's id (LEVEL_DEC_OWN) or its size (lvDecOwn); each level the likeliest parlay of its size whose price
    in full pays it, carrying that price (minDec) and the rule (pick 'likeliest', PICK_OWN). A level kept at a lock taken
    under app v143 carries MIN_DEC_V143_OWN (2) and no pick */
+/* (the review of 7 November 2026) the level search's own answer on a game's pool, once a run (tierHeld) */
+const LV_OWN = new Map(), legRhoKey = l => `${l.grp}:${l.stat}:${l.team}`;
 const LEVEL_DEC_OWN = { safe: 2.1, med: 4, aggr: 8, xtrm: 16 }, lvDecOwn = n => ({ 2: 2.1, 3: 4, 4: 8, 5: 16 })[n], PICK_OWN = 'likeliest', MIN_DEC_V143_OWN = 2;
 const mlOwnD = d => '+' + Math.round((d - 1) * 100), usdOwn = d => '$' + (Number.isInteger(d) ? String(d) : d.toFixed(2)), mlN = n => mlOwnD(lvDecOwn(n));
 const ruledOwn = t => !!t && t.pick === PICK_OWN && t.minDec === LEVEL_DEC_OWN[t.id];
@@ -1908,7 +1910,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
      that a tie went to the larger lean */
   const likeliestOf = (list, n, thin) => { let best = -1, legs = null, seen = 0, tieKey = null, tieLean = -Infinity;
     const rec = (i0, cur, th) => { if (seen > LIKELY_CAP) return;
-      /* (app v143) only the parlays paying their price in full (the builder's own price); (app v144) the level's own, decOwn */
+      /* (app v143) only the parlays paying their price in full (the builder's own price); (app v144) the level's own, lvDecOwn */
       if (cur.length === n) { if (th !== thin) return; seen++; const O = orderF(cur); if (!(w.eval('parlayDec')(O.map(l => ({ leg: l, ml: l.price }))) >= lvDecOwn(n))) return;
         const pr = ppF(O).corr, k = Math.round(pr * 1e9), ln = Math.round(cur.reduce((a, l) => a + leanOwn(l), 0) * 1e9);
         if (pr > best) { best = pr; legs = cur.slice(); }
@@ -2361,6 +2363,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       const tierHeld = (lab2, x, t, c) => { const qx = QG.get(x.id), all = [...qx.pref, ...qx.thin], allM = [...all, ...qx.mkt];
         const ownSet = new Map(allM.map(l => [legId(l), l])), thinOf = new Set(qx.thin.map(legId)), mktOf = new Set(qx.mkt.map(legId)), prefOf = new Set(qx.pref.map(legId));
         holdTier(lab2, t, { pref: qx.pref, thin: qx.thin }, l => l.gid === x.id);
+        /* (the review of 7 November 2026) Medium, Aggressive and Extreme with no total: the level search's own parlay on the
+           game's pool as the search cuts it (pbLevel at the level's own price, which 1b holds to every parlay of its size,
+           on made-up pools and this week's), so a level the set takes by another rule than the search's fails here on any
+           week's data; one search a game and level a run */
+        if (t.n >= 3 && !t.mkt) { const pool = { pref: capOwn(qx.pref), thin: capOwn(qx.thin) }, lk = l => `${legId(l)}:${l.p}:${l.price}:${legRhoKey(l)}`, k = `${x.id}|${t.n}|${pool.pref.map(lk).join()}|${pool.thin.map(lk).join()}`;
+          let r = LV_OWN.get(k); if (r === undefined) { r = w.eval('pbLevel')(t.n, pool, new Map(), null, lvDecOwn(t.n)) || null; LV_OWN.set(k, r); }
+          chk(!!r && !!r.legs && r.legs.map(legId).sort().join() === t.legs.map(legId).sort().join(), `${lab2}: the ${t.id} level (${t.legs.map(l => l.name + ' ' + l.label).join(' + ')}) is not the level search's own parlay on its game's pool (${r && r.legs ? r.legs.map(l => l.name + ' ' + l.label).join(' + ') : 'none'})`); }
         chk(t.legs.every(l => ownSet.has(legId(l)) && !!l.thin === thinOf.has(legId(l)) && !!l.market === mktOf.has(legId(l))), `${lab2}: the ${t.id} level holds a leg the rules do not let a suggestion take, or keeps one thin or a total wrongly: ` + t.legs.filter(l => !ownSet.has(legId(l))).map(l => l.name + ' ' + l.label).join(', '));
         /* Safe: no pair of the game's legs with as many from the preferred list lands likelier, two legs worked out here
            (never a pair DraftKings refuses: fitsF) */
@@ -3205,7 +3214,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     { const n = holdTop('ten made-up games, Spread only', Sx.ui.pb, G), order = [...panel.querySelectorAll('ol.pb-top li [data-pb-leg]')].map(b => b.dataset.pbLeg.split('|')[1].replace('team:', ''));
       chk(n === 10 && order.join() === 'H0,H2,H4,H6,H1,H3,H5,H7,H8,H9' && txt(panel.querySelector('ol.pb-top li .pb-tc:nth-child(5) b')) === '−$0.02',
         'ten made-up games: the Top 50 lines are not the ten covers best first by what $1 is expected to return at DraftKings\' fair chance (H0, H2, H4, H6 summing to 1.02, then the 1.06s, the 1.09s last): ' + order.join()); }
-    /* (app v144) each level the likeliest parlay of its size paying its own price (decOwn), worked out here against every
+    /* (app v144) each level the likeliest parlay of its size paying its own price (lvDecOwn), worked out here against every
        parlay of its size on the builder's own sums (parlayProb and parlayDec; the legs in different games, a plain
        product with no same-game price). The covers' prices put the likeliest three overall (H1, H8, H9) at about 3.91 and
        the likeliest four (H1, H3, H8, H9) at about 6.37, short of +300 and +700, so the case tells the rule from the
@@ -9936,13 +9945,14 @@ async function softChecks() {
   /* ---- 1b. the level search (app v144: each level the likeliest parlay of its size paying its own price, pbLevel). The
      page's pick held to the smoke's own enumeration of every parlay of 2 and 3 legs that go together (the page's pbFits),
      each worked in full on the builder's own sums (parlayProb and parlayDec, the legs in the builder's order), the fewest
-     fill legs first as a level takes them: the level pays its own price in full (decOwn) and lands within 0.002 of the
+     fill legs first as a level takes them: the level pays its own price in full (lvDecOwn) and lands within 0.002 of the
      likeliest that does (the full sums' own noise; no tie is broken here), and is none only where none pays. On made-up
      pools at any hour (one game's legs most at one chance and price, the lean tied on some, under and over, a quarterback's
      passing touchdowns beside his teammates' touchdowns; a preferred list with thin legs to fill; two games) and on this
-     week's own pools where there are any (pairs alone there). App v138's beam (pbBeam) and its check, which held it to the
+     week's own pools where there are any (pairs and threes there since the review of 7 November 2026, on up to three games of
+     45 legs or fewer; pairs alone until then). App v138's beam (pbBeam) and its check, which held it to the
      beam as it stood (bmOwn), are gone with it ---- */
-  { const pbFitsF = w.eval('pbFits'), pbLevelF = w.eval('pbLevel'), ppL = w.eval('parlayProb'), pdL = w.eval('parlayDec'), orderL = w.eval('pbOrder');
+  { const pbFitsF = w.eval('pbFits'), pbLevelF = w.eval('pbLevel'), ppL = w.eval('parlayProb'), pdL = w.eval('parlayDec'), orderL = w.eval('pbOrder'), mdL = a => w.eval('mlToDec')(a) || 1;
     /* a made-up game's legs: a moneyline, a spread, a total (both sides, the fill), and two clubs' players on stats the
        payload's table correlates, most at 50% and -112 as DraftKings' estimated yards lines are, the lean (pm) tied on some */
     let sd = 7; const rr = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
@@ -9959,7 +9969,7 @@ async function softChecks() {
       return { legs: L, tot }; };
     const ownLevel = (P, T, n) => { const U = [...P, ...T], fill = new Set(T);
       for (let k = 0; k <= n; k++) { if (k && !T.length) break; let best = null, seen = 0;
-        (function rec(i0, cur, th) { if (cur.length === n) { if (th !== k) return; seen++; const O = orderL(cur), dec = pdL(O.map(l => ({ leg: l, ml: l.price })));
+        (function rec(i0, cur, th) { if (cur.length === n) { if (th !== k) return; seen++; if (cur.reduce((a, l) => a * mdL(l.price), 1) < lvDecOwn(n) * (1 - 1e-12)) return; const O = orderL(cur), dec = pdL(O.map(l => ({ leg: l, ml: l.price })));
             if (!(dec >= lvDecOwn(n))) return; const pr = ppL(O).corr; if (!best || pr > best.pr) best = { pr, dec, ls: O }; return; }
           for (let i = i0; i < U.length; i++) { const th2 = th + (fill.has(U[i]) ? 1 : 0); if (th2 > k || !pbFitsF(cur, U[i])) continue; cur.push(U[i]); rec(i + 1, cur, th2); cur.pop(); } })(0, [], 0);
         if (best) return { ...best, k }; }
@@ -9968,9 +9978,44 @@ async function softChecks() {
     { const g1 = madeGame('XX_B1', 'XXA', 'XXB', 22), pref = g1.legs.filter(l => l.thin === false), thin = g1.legs.filter(l => l.thin !== false);
       jobs.push(['a made-up game, every leg on one list', g1.legs, [], [2, 3]], ['a made-up game, a preferred list with thin legs to fill', pref, thin, [2, 3]]);
       const g2 = madeGame('XX_B2', 'XXC', 'XXD', 12); jobs.push(['two made-up games', [...g1.legs.slice(0, 10), ...g2.legs], [], [2, 3]]); }
-    { const SPS = w.eval('SP_SEARCH'), SPA = w.eval('SP_ALL'); let gs = []; try { gs = w.eval('pbGames()') || []; } catch (e) { gs = []; }
-      for (const g of gs) { if (jobs.length >= 6) break; let pool = null; try { pool = w.eval('pbPool')([g], SPA, SPS); } catch (e) { pool = null; }
-        if (!pool || pool.pref.length + pool.thin.length < 6) continue; jobs.push([`this week's ${g.id}`, pool.pref, pool.thin, [2]]); } }
+    /* (the review of 7 November 2026) three pools built for what a weaker search misses, at any hour, each one game's legs:
+       BW, a wide pool of plain products (no two legs moving together: chance and price each a product, the price SGP_HOLD
+       times the decimals) of 10 lines at -400, 8 at -150 and 15 at +115, where the likeliest 4 paying +700 (two +115s, a
+       -150 and a -400) has none of its threes among the 400 likeliest threes or the 400 dearest, so a beam by the chance with
+       a reserve by the price (app v143's, at the new prices) cannot reach it (it took 7.54% where 9.53% pays); BY3 and BY4,
+       a quarterback's passing yards over beside one receiver under and the others over (the pair table's own shape, planted
+       here for made-up groups: 0.353 through the quarterback, -0.038 between receivers), the likeliest paying +300 (+700),
+       which the search's reading understates by its make (its key times 1.03 under its rival's chance), beside a rival of
+       unrelated lines landing just over that and over 0.2 points under it, so a walk that takes the first parlay paying in
+       full in the key order, or stops at 1.03, takes the rival (0.31 and 0.57 points short) */
+    const BG = 'XX_BW', bl = (gid, id, grp, stat, side, price, p, team) => ({ gid, week: 1, k: 40.5, side, main: true, src: 'real', pid: `${gid}${id}`, team, opp: team === 'XXA' ? 'XXB' : 'XXA', grp, stat, name: `${grp} ${gid} ${id}`, price, p, pm: p, thin: true, key: `${gid}|${gid}${id}|${stat}` });
+    const BW = [...Array.from({ length: 10 }, (_, j) => bl(BG, 's' + j, 'XAUD', 'receptions', 'over', -400, 0.78 - 0.0007 * j, j % 2 ? 'XXA' : 'XXB')),
+      ...Array.from({ length: 8 }, (_, j) => bl(BG, 'm' + j, 'XAUD', 'receptions', 'over', -150, 0.58 - 0.0009 * j, j % 2 ? 'XXA' : 'XXB')),
+      ...Array.from({ length: 15 }, (_, j) => bl(BG, 'x' + j, 'XAUD', 'receptions', 'over', 115, 0.455 + 0.0003 * j, j % 2 ? 'XXA' : 'XXB'))];
+    const BY3 = [bl('XX_BY3', 'q', 'XAQ', 'passing_yards', 'over', -200, 0.641, 'XXB'), bl('XX_BY3', 'w1', 'XAW', 'receiving_yards', 'under', -130, 0.5435, 'XXB'), bl('XX_BY3', 'w2', 'XAW', 'receiving_yards', 'over', -125, 0.5342, 'XXB'),
+      ...[0.57774, 0.57773, 0.57772].map((p, j) => bl('XX_BY3', 'x' + j, 'XAUD', 'receptions', 'over', -153, p, 'XXA'))];
+    const BY4 = [bl('XX_BY4', 'q', 'XAQ', 'passing_yards', 'over', -195, 0.6356, 'XXB'), bl('XX_BY4', 'w1', 'XAW', 'receiving_yards', 'under', 110, 0.4579, 'XXB'), bl('XX_BY4', 'w2', 'XAW', 'receiving_yards', 'over', 110, 0.4579, 'XXB'),
+      bl('XX_BY4', 'w3', 'XAW', 'receiving_yards', 'over', -150, 0.5759, 'XXB'), ...[0.54954, 0.54953, 0.54952, 0.54951].map((p, j) => bl('XX_BY4', 'x' + j, 'XAUD', 'receptions', 'over', -136, p, 'XXA'))];
+    const CORR = w.eval('PAY').corr, PLANT = { 'team|XAQ:passing_yards|XAW:receiving_yards': 0.353, 'team|XAW:receiving_yards|XAW:receiving_yards': -0.038 }, KEEPC = {};
+    for (const k in PLANT) { KEEPC[k] = CORR[k]; CORR[k] = PLANT[k]; }
+    try {
+    const pidsOf = ls => ls.map(l => l.pid).sort().join(), nmB = ls => ls.map(l => l.pid).join(' ');
+    /* each built pool says what it stands on, by the smoke's own working (its key, the search's reading as pbEval gives it) */
+    { const ev = w.eval('pbEval'), keyOf = (ls, minD) => { const e = ev(ls, new Map()); return Math.min(e.pr, e.pr * e.d / minD); };
+      for (const [lab, L, n] of [['BY3', BY3, 3], ['BY4', BY4, 4]]) { const o = ownLevel(L, [], n), X = L.slice(n), ox = ownLevel(X, [], n), Y = L.slice(0, n), kY = keyOf(Y, lvDecOwn(n));
+        chk(!!o && pidsOf(o.ls) === pidsOf(Y) && !!ox && ox.pr < o.pr - 0.002 && kY * 1.03 + 5e-4 < ox.pr && keyOf(X, lvDecOwn(n)) > kY,
+          `the level search's built pool ${lab} does not stand on what it is for (the likeliest ${n} paying ${mlN(n)} its quarterback's star, ${o ? nmB(o.ls) + ' landing ' + o.pr.toFixed(5) : 'none'}; its rival ${ox ? ox.pr.toFixed(5) : 'none'}, over 0.2 points under it and over its key ${kY.toFixed(5)} times 1.03 and the tolerance, ahead of it by the key)`); }
+      /* BW: the likeliest 4 paying +700 has none of its threes among the 400 likeliest threes or the 400 dearest */
+      const o4 = ownLevel(BW, [], 4), tri = []; for (let a = 0; a < BW.length; a++) for (let b = a + 1; b < BW.length; b++) for (let c = b + 1; c < BW.length; c++) tri.push([BW[a], BW[b], BW[c]]);
+      const prT = t => t[0].p * t[1].p * t[2].p, dT = t => mdL(t[0].price) * mdL(t[1].price) * mdL(t[2].price), subs = o4 ? [0, 1, 2, 3].map(i => o4.ls.filter((_, j) => j !== i)) : [];
+      const likelier = o4 ? tri.filter(t => prT(t) > Math.max(...subs.map(prT)) + 1e-15).length : 0, dearer = o4 ? tri.filter(t => dT(t) > Math.max(...subs.map(dT)) + 1e-12).length : 0;
+      chk(!!o4 && likelier > 400 && dearer > 400, `the level search's built pool BW does not stand on what it is for: ${likelier} threes likelier than any three of its likeliest 4 paying +700 (${o4 ? nmB(o4.ls) : 'none'}) and ${dearer} dearer, where each must be over 400`); }
+    jobs.push(['BW, a wide pool of plain products', BW, [], [2, 3, 4]], ['BY3, a quarterback\'s opposite-sign star at +300', BY3, [], [3]], ['BY4, the same at +700', BY4, [], [4]]);
+    /* this week's own pools, pairs and threes (the review of 7 November 2026: threes too, so a real game's Medium is held to
+       every parlay of three that pays +300), on up to three games of 45 legs or fewer */
+    { const SPS = w.eval('SP_SEARCH'), SPA = w.eval('SP_ALL'); let gs = [], nWk = 0; try { gs = w.eval('pbGames()') || []; } catch (e) { gs = []; }
+      for (const g of gs) { if (nWk >= 3) break; let pool = null; try { pool = w.eval('pbPool')([g], SPA, SPS); } catch (e) { pool = null; }
+        if (!pool || pool.pref.length + pool.thin.length < 6 || pool.pref.length + pool.thin.length > 45) continue; nWk++; jobs.push([`this week's ${g.id}`, pool.pref, pool.thin, [2, 3]]); } }
     for (const [lab, P, T, sizes] of jobs) for (const n of sizes) {
       let t = Date.now(); const r = pbLevelF(n, { pref: P, thin: T }, new Map(), null, lvDecOwn(n)); tPage += Date.now() - t;
       t = Date.now(); const o = ownLevel(P, T, n); tOwn += Date.now() - t; held++;
@@ -9979,8 +10024,23 @@ async function softChecks() {
       if (!r || !r.legs) { bad.push(`${lab}, ${n} legs: the page takes none where ${o.ls.map(l => l.pid).join(' ')} lands ${o.pr.toFixed(4)} at ${o.dec.toFixed(3)}`); continue; }
       if (!(rd >= lvDecOwn(n)) || rk !== o.k || r.corr < o.pr - 0.002)
         bad.push(`${lab}, ${n} legs: the page takes ${r.legs.map(l => l.pid).join(' ')} landing ${r.corr.toFixed(4)} at ${rd.toFixed(3)} with ${rk} fill legs, where the likeliest paying ${mlN(n)} is ${o.ls.map(l => l.pid).join(' ')} landing ${o.pr.toFixed(4)} at ${o.dec.toFixed(3)} with ${o.k}`); }
-    chk(bad.length === 0 && held >= 6, `the level search does not take the likeliest parlay paying its price (the smoke's own enumeration): ${bad.slice(0, 3).join(' | ') || held + ' levels held: too few'}`);
-    console.log(`  (the level search: ${held} levels on ${jobs.map(j => j[0]).join(', ')}, each the likeliest paying its price within 0.002; ${tPage} ms the page, ${tOwn} ms the enumeration)`); }
+    /* BW's Extreme: every parlay of five worked by the smoke's own arithmetic, a plain product (no pair moves together:
+       held first), its price SGP_HOLD times the decimals, the page's level that one within 1e-12, paying +1500 in full */
+    { const H = w.eval('SGP_HOLD'), rho = w.eval('legRho'); let plain = true; for (let a = 0; a < BW.length; a++) for (let b = a + 1; b < BW.length; b++) if (Math.abs(rho(BW[a], BW[b])) >= 0.03 || !pbFitsF([BW[a]], BW[b])) plain = false;
+      let best = null; const D = BW.map(l => mdL(l.price)); (function rec(i0, cur, pr, d) { if (cur.length === 5) { if (H * d >= 16 * (1 + 1e-9) && (!best || pr > best.pr)) best = { pr, ls: cur.map(i => BW[i]) }; return; }
+        for (let i = i0; i < BW.length; i++) { cur.push(i); rec(i + 1, cur, pr * BW[i].p, d * D[i]); cur.pop(); } })(0, [], 1, 1);
+      let t = Date.now(); const r = pbLevelF(5, { pref: [], thin: BW }, new Map(), null, 16); tPage += Date.now() - t; held++;
+      const rd = r && r.legs ? pdL(orderL(r.legs).map(l => ({ leg: l, ml: l.price }))) : null;
+      if (!plain || !best || !r || !r.legs || !(rd >= 16) || Math.abs(r.corr - best.pr) > 1e-12) bad.push(`BW, 5 legs: the page takes ${r && r.legs ? nmB(r.legs) + ' landing ' + r.corr.toFixed(5) + ' at ' + rd.toFixed(3) : 'none'}, where every parlay of five worked here (a plain product: ${plain}) gives ${best ? nmB(best.ls) + ' landing ' + best.pr.toFixed(5) : 'none'}`); }
+    } finally { for (const k in KEEPC) { if (KEEPC[k] === undefined) delete CORR[k]; else CORR[k] = KEEPC[k]; } }
+    chk(bad.length === 0 && held >= 10, `the level search does not take the likeliest parlay paying its price (the smoke's own enumeration): ${bad.slice(0, 3).join(' | ') || held + ' levels held: too few'}`);
+    console.log(`  (the level search: ${held} levels on ${jobs.map(j => j[0]).join(', ')}, each the likeliest paying its price within 0.002; ${tPage} ms the page, ${tOwn} ms the enumeration)`);
+    /* (the review of 7 November 2026) 24 legs of one game tied at 50% and -112, none moving with another: the page's Extreme
+       is five of them (3.125%, paying +1500) in one task of under 5 s, where pruning on every push past twice the kept made
+       it quadratic (29 s) */
+    { const TL = Array.from({ length: 24 }, (_, j) => bl('XX_TIE', 't' + j, 'XAUD', 'receptions', 'over', -112, 0.5, j % 2 ? 'XXA' : 'XXB')), t0 = Date.now(), r = pbLevelF(5, { pref: [], thin: TL }, new Map(), null, 16), ms = Date.now() - t0;
+      chk(ms < 5000 && !!r && !!r.legs && r.legs.length === 5 && Math.abs(r.corr - 0.03125) < 1e-12 && r.dec >= 16, `the level search on 24 tied legs: ${r && r.legs ? r.legs.length + ' legs landing ' + r.corr + ' at ' + r.dec : 'none'} in ${ms} ms, where five of them (3.125%, +1500 or more) must come in under 5 s`);
+      console.log(`  (the level search on 24 tied legs: Extreme in ${ms} ms)`); } }
   /* ---- 2. the tab opened without a freeze ---- */
   const tabBtn = t => [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === t);
   const sets = () => (d.getElementById('spSets') || {}).innerHTML || '';
