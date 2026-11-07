@@ -64,7 +64,12 @@ first, a partial let go once its price times the best the places left can add fa
 than its legs multiplied, and a whole one worked in full where its approximate price times its slack reaches +100, the
 rule the search keeps one by; within 60,000 parlays), and else "No 3 legs found in this game that pay +100 or more
 together." (the slot's "No 3 legs found in any one game of the Sunday slot ...", the engine's "No 3 legs found on your
-picks ..."), the slot's claim only where each of its games making that many on one slip says it of itself.
+picks ..."), the slot's claim only where each of its games making that many on one slip says it of itself. Not changed,
+and put to the owner: +100 is met on the page's own price, the builder's same-game sum (parlayDec: a same-game group at the
+lower of its legs multiplied and SGP_HOLD, 0.896, over their joint chance, fitted on two tickets and off by about 5% either
+way on them), as every price a card states is, so DraftKings' own slip can pay a little under +100 on a Safe at the
+floor's edge (11 of the 14 games' Safes on the payload of 6 November priced 2.004 to 2.084); whether the title should say
+it is the site's estimate of DraftKings' same-game price, or the floor sit a margin above 2, is his to call.
 
 The words. A level chosen under the rule carries it (minDec: 2, the live level from pbExact, and the record's and this
 browser's copy from spTierOut, read back by spTierIn), and its pill says it: Safe "likeliest pair · +100+", a fallback

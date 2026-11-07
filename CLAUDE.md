@@ -3914,7 +3914,15 @@ product), is under `PB_MIN_DEC` is not kept, before the width cut, so the width 
 +100 (on the payload of 6 November, over 14 games and about 23,000 same-game parlays, the price in full is at most 1.023
 times the approximate one on 2 legs, 1.058 on 3, 1.124 on 4 and 1.219 on 5). The first form of the change, one slack of
 1.25 over every parlay, let the all-games engine's narrow search (12 a step) fill its width with parlays of other games
-paying 1.6 to 2.0 and come out empty where a parlay paying +100 was had (the nflbets smoke's made-up lines found it). Each finalist is worked in full, its price first
+paying 1.6 to 2.0 and come out empty where a parlay paying +100 was had (the nflbets smoke's made-up lines found it). The
+earlier steps cut to their width on the score alone, so a game crowded with short legs, whose best partials by the score pay
+under +100 with any leg after them, could starve the last: where the price set some candidates aside and a search's
+finalists ran short, `pbBestReturn` and `pbLikeliest` run their beams again keeping at each step, besides their best by the
+score, as many again of the highest approximate price times its slack (`pbBeam`'s `res`, the last step too); a search the
+price did not starve is exactly as before (the review of app v143: 30 lines at -1000 and 10 at -150 had left Medium empty
+though two -150 lines with a -1000 one land 28.6% at +174, and with 25 short lines it fell back to the likeliest 3 though
+that parlay clears the floor; every set and the all-games engine on five real payloads and clocks of weeks 7 to 9 are byte
+for byte what they were, at the same speed). Each finalist is worked in full, its price first
 (`pbExact(legs, floor, minDec)` returns false under it: no finalist, not counted), and a search's finalists are the first
 `final` (`pbBestReturn`) or `likely` (`pbLikeliest`) of its candidates, in its own order, that pay +100 or more; the level is
 the best of those as before. A call of `pbBeam` without `minD`, or of `pbExact` without `minDec`, is exactly as before. It
@@ -3924,9 +3932,24 @@ holds wherever `PB_TIERS` is searched: each night game's set, each game of the S
 nowhere) are a search of their own and are left alone. Where no parlay of a level's size in the unit pays +100 or more the
 level is empty and says so (app v130's few words): "No 2 legs in this game pay +100 or more together." (`spWhy`), "No 2 legs
 of any one game of the Sunday slot pay +100 or more together." (`spWhySlot`), and the engine's "No 2 legs on your picks pay
-+100 or more together: tick more games or bet types." (`pbWhy`), each said wherever the unit makes a parlay of that many on
-one slip (`pbMaxFit`), the one reason a level can then be empty; never a parlay under +100. The totals keep their rule (the
-last fill only where the game's other legs cannot make a parlay of the size), never a way round the price. A level chosen
++100 or more together: tick more games or bet types." (`pbWhy`), each said where the unit makes a parlay of that many on
+one slip (`pbMaxFit`) and `pbPaysAny`, a pruned enumeration of every such parlay (the totals as they may fill, the highest
+prices first, a partial let go once its price times the best the places left can add falls short, a whole one worked in
+full only where its approximate price times its slack reaches 2, at most 60,000 parlays and 3,000 prices in full), shows
+none pays; where it cannot tell, the words say only that none was found: "No 2 legs found in this game that pay +100 or more
+together.", "No 2 legs found in any one game of the Sunday slot that pay +100 or more together." (only where every game of
+the slot says the first of itself) and "No 2 legs found on your picks that pay +100 or more together: tick more games or bet
+types."; never a parlay under +100. The totals keep their rule (the last fill only where the game's other legs cannot make a
+parlay of the size), with one more case since the review of app v143: where those legs make the size and none of it pays
++100, the game total may fill one place for the price (`pbTotalsKMax`: as many places as they leave, one at most where they
+leave none), so a level is empty only where no parlay of its size in the unit pays +100, totals and all (three lines at -400
+to -450 and a total at -110 had left Safe empty saying no two legs pay +100, though the total with one of them pays +102).
++100 is met on the page's own price, the builder's same-game sum (`parlayDec`: a same-game group at the lower of its legs
+multiplied and `SGP_HOLD`, 0.896, over their joint chance, fitted on two tickets and off by about 5% either way on them), as
+every price a card states is; so a Safe priced at the floor's edge can pay a little under +100 on DraftKings' own slip (on
+the payload of 6 November 11 of the 14 games' Safes priced 2.004 to 2.084). Whether the title should say it is the site's
+estimate of DraftKings' same-game price, or the floor sit a margin above 2 (2.0/0.95, about 2.1), is the owner's to call,
+put to him with this change. A level chosen
 under the rule carries it, `minDec: 2` (from `pbExact`, kept in the record and this browser's copy by `spTierOut` after
 `chance:'fair'`, read back by `spTierIn`), and its pill says so: Safe "likeliest pair · +100+" (titled "The likeliest 2-leg
 parlay paying at least +100: $1 returns $2 or more"), a fallback "likeliest 3 legs · +100+" (titled the same of its size), a
@@ -3965,7 +3988,16 @@ the least costly landing 25% among those (+173); GQ, no 3 of whose legs land 25%
 the likeliest 3 paying +100 (+133), ruled "likeliest 3 legs · +100+"; GR, none of whose pairs or three pays +100, its Safe
 and Medium empty saying so; a Sunday slot whose likeliest pair (SX's) pays under +100, its Safe SY's, and built again with
 SY's player ruled out SX's pair paying +100; a slot of two games like GR, saying so of any one game; GP's Safe read back from
-a lock with the rule, before it ("the likeliest pair", no title) and before app v138 (no pill). M16's made-up lines were
+a lock with the rule, before it ("the likeliest pair", no title) and before app v138 (no pill), and GP's Medium and GQ's
+likeliest 3 read back from a lock taken before the rule with their old words and titles; and, since the review of app v143,
+each with its own guard that the case can tell: GC and GD, 30 and 25 lines at -1000 beside 10 at -150, their Safe and Medium
+the full enumeration's (Medium the least costly 3 landing 25% among those paying +100, never empty and never the likeliest
+3); GT, three short lines and the game total, its Safe, Medium and Aggressive taking the one total for the price and its
+Extreme saying it has only 4 legs; GF, whose likeliest pair pays 1.904, its Safe the likeliest pair paying 2.0 (a floor of
+1.9 fails it); and GK, a quarterback's passing yards and his receiver's yards moving together by the payload's pair table,
+priced at the run so that their approximate price clears +100 and their price in full does not, never a level.
+`pbPaysAny` is held to the audit's own enumeration on every game, an empty level whose enumeration cannot tell saying none
+was found, and a card's claim of the rule is read in its title as well as its pill. M16's made-up lines were
 priced so short that GQ's likeliest pair, the one its pair-rule case stands on, paid 1.93: every made-up price but GH's and
 the totals' is a quarter longer (`LONG16`), which moves every parlay of one size alike. The nflbets smoke: `likeliestOf`, a
 set's Safe pair (every pair by its own chance, the first paying +100), `holdTier` (every live level pays +100 and carries
@@ -3976,9 +4008,15 @@ hook): PV, whose likeliest pair pays -241, its Safe the likeliest pair paying +1
 and every card's price +100 or more; PW, none of whose pairs or three pays +100, its Safe and Medium drawn empty saying so;
 and ten made-up games, Spread only, each cover priced on both sides with a hold of its own, the engine's Safe the likeliest
 pair paying +100 where its likeliest pair pays under it and its Medium the least costly 3 landing 25% paying +100 where the
-least costly overall pays under it (with every leg at DraftKings' fair chance a fallback cannot pay under +100: three legs
-landing under 25% pay well over +100, about +200 and up, so the fallback case stands on the audit's hook alone). The smoke's made-up record
-(its Safe taken before the rule) draws "the likeliest pair" as before. `test_suggest_ledger.js`: every level a run takes or
+least costly overall pays under it (a fallback landing under its floor at the fair chance always pays well over +100, about
++200 and up, so the smoke's PW, no parlay of the size paying +100 and Medium empty, not its likeliest 3, and the audit's GQ,
+on a hook, hold the fallback's price rule between them). PV's and PW's legs are each a player's main line (Over 2.5 to 6.5
+receptions, the paid pull's table carrying each at its own number for the block), none a ladder. A locked card's pill and
+title are held to the rule its level was kept under, read raw from the record's entry, this browser's kept copy or the page's
+own replacement in it (`rawOf`), never from the level the page read back; and the smoke's made-up record is drawn four ways,
+each pill word for word with its title (Safe and Medium taken before the rule, "the likeliest pair" untitled and "least
+costly · 25%+" with its old title; the Medium the likeliest 3 before it, "the likeliest 3 legs" untitled; the two under the
+rule, the new words and titles; and the Medium the likeliest 3 under it, "likeliest 3 legs · +100+"). `test_suggest_ledger.js`: every level a run takes or
 builds again pays +100 and carries `minDec` 2 (`pricedTaken`, in every `noEloTaken`; A's levels; R's level built again);
 F's guard refusing a level this run takes with no price rule, with another, or at 1.909, a slot level at 1.75 or with no
 rule, and a level it builds again with no rule or at 1.778, and passing one at 2.000 exactly, an empty level, a set still

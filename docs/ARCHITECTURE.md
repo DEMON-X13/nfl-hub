@@ -1389,12 +1389,17 @@ level carries `likeliest: true`, and its card's rule reads "the likeliest 3 legs
 floor reads "best return that lands 25%+ by the model" ("least costly · 25%+" since app v138) and Safe "the likeliest
 pair". Since app v143 (the owner's call of 7 November 2026, "id want to at least double my bet, so 1$ bet wins 2$")
 every level is chosen among the parlays paying +100 or more: `PB_MIN_DEC` 2 on the price in full (`pbExact(legs, floor,
-minDec)`, false under it), the search's approximate price only keeping candidates at `PB_MIN_DEC` times `PB_MIN_TOL` (0.8)
-at the beam's last step (`pbBeam`'s `minD`), the finalists the first `final` (or `likely`) paying +100; so Safe is the
-likeliest pair paying +100 or more, its pill "likeliest pair · +100+", a fallback "likeliest 3 legs · +100+", the level
-carrying `minDec` (kept by `spTierOut`, read back by `spTierIn`, a level locked before drawing its old words), and a level
-none of whose parlays pays +100 is empty, "No 2 legs in this game pay +100 or more together." (`spWhy`, `spWhySlot`,
-`pbWhy`); CLAUDE.md's **Every suggested parlay pays +100 or more**. The card shows its chance and
+minDec)`, false under it), the search's approximate price (`pbDecApprox`) only keeping candidates at the beam's last step
+(`pbBeam`'s `minD`), times a slack for each game holding two legs or more (`PB_MIN_SLACK`, `pbMinSlack`: 1.05, 1.10, 1.20
+and 1.30 for two to five legs; none across games, where the two prices are one product), the finalists the first `final`
+(or `likely`) paying +100, and a search the price starved (some set aside, its finalists short) run again keeping at each
+step its best by the price beside its best by the score (`pbBeam`'s `res`); so Safe is the likeliest pair paying +100 or
+more, its pill "likeliest pair · +100+", a fallback "likeliest 3 legs · +100+", the level carrying `minDec` (kept by
+`spTierOut`, read back by `spTierIn`, a level locked before drawing its old words); where the legs with a chance make a
+level's size and none of it pays +100 the game total may fill one place (`pbTotalsKMax`); and a level still with none is
+empty, "No 2 legs in this game pay +100 or more together." (`spWhy`, `spWhySlot`, `pbWhy`) where `pbPaysAny`, a pruned
+enumeration of the unit's parlays, shows none pays, else "No 2 legs found in this game that pay +100 or more together.";
+CLAUDE.md's **Every suggested parlay pays +100 or more**. The card shows its chance and
 price like any other and says nothing about the floor (the owner's call, October 2026: every level shows a parlay,
 "just state the percentage"). The tab's footer says so in a line. `SP_ALL` ticks every bet type, whatever the
 Parlay Builder's boxes say, so the page and the record agree. `SP_SEARCH` is the owner's "absolute best" on one
