@@ -1399,7 +1399,24 @@ more, its pill "likeliest pair · +100+", a fallback "likeliest 3 legs · +100+"
 level's size and none of it pays +100 the game total may fill one place (`pbTotalsKMax`); and a level still with none is
 empty, "No 2 legs in this game pay +100 or more together." (`spWhy`, `spWhySlot`, `pbWhy`) where `pbPaysAny`, a pruned
 enumeration of the unit's parlays, shows none pays, else "No 2 legs found in this game that pay +100 or more together.";
-CLAUDE.md's **Every suggested parlay pays +100 or more**. The card shows its chance and
+CLAUDE.md's **Every suggested parlay pays +100 or more**. Since app v144 (the owner's calls of 7 November 2026, "yes" to
++110 for Safe, then "i want the med prop to be at least $4 outcome from 1$ and aggressive to be $8 or more. I want the best
+possible model confidence to match what level bet") each level has a least price of its own, `PB_TIERS`' fifth figure
+(Safe 2.10, Medium 4.00, Aggressive 8.00, Extreme 16.00, the doubling carried on), its fourth, the floor of chance, 0 for
+every level, and is the likeliest parlay of its size whose price in full pays it: no "least costly", no floor, no
+fallback to the likeliest of its size. The beam is gone (`pbBeam`, `pbBestReturn`, `pbLikeliest`, `pbGrow`, `pbEntry`,
+`pbMinSlack`): `pbLevel` tries the fewest fill legs first, `pbLevelCands` reads every parlay of the size on `pbCtx`'s
+figures (legs multiplied short of the price let go, the approximate price times `PB_MIN_SLACK` kept as the admission,
+each keyed by the lesser of its approximate chance and its approximate return over the price, the best 1,500 kept), and
+`pbLevelPick` works them best key first in full (`pbExact`), the likeliest that pays taken, stopping once no key times
+1.03 can beat it by 0.05 points (`PB_LV_C`, `PB_LV_TOL`), run again keeping eight times as many where it ran out with
+some let go, and, where it worked some and found none, walked again by the chance alone among the parlays whose search
+price pays (`PB_LV_EVALS2`). A level carries `minDec` (2.1, 4, 8, 16) and `pick: 'likeliest'` (kept by `spTierOut`, read
+back by `spTierIn`, which reads the floor a level was kept with), its pill "likeliest 3 legs · +300+" titled "The
+likeliest 3-leg parlay paying at least +300 by the site’s price: $1 returns $4 or more"; a level locked under app v143
+draws app v143's words; an empty one "No 3 legs in this game pay +300 or more together." where `pbPaysAny` (every whole
+parlay its legs multiplied let through, worked in full) shows none does, else "No 3 legs found ...": CLAUDE.md's **Each
+level is the likeliest parlay at its payout**. The card shows its chance and
 price like any other and says nothing about the floor (the owner's call, October 2026: every level shows a parlay,
 "just state the percentage"). The tab's footer says so in a line. `SP_ALL` ticks every bet type, whatever the
 Parlay Builder's boxes say, so the page and the record agree. `SP_SEARCH` is the owner's "absolute best" on one
@@ -2719,7 +2736,9 @@ Mismatches and Team Stats**, has the whole of it).
 - **suggested parlays** -- two engines. The levels (`PB_TIERS`: Safe/Medium/Aggressive/Extreme,
   2/3/4/5 legs, floors 25/12/5% after Safe, by DraftKings' fair chance since app v138, the least costly parlay
   clearing each, `pbTier` on `pbPool`; since app v143 each among the parlays paying +100 or more, `PB_MIN_DEC`, Safe the
-  likeliest pair paying it, the level carrying `minDec`) are, since app v111, each
+  likeliest pair paying it, the level carrying `minDec`; since app v144 each the likeliest parlay of its size paying its
+  own price, +110, +300, +700 or +1500, `PB_TIERS`' fifth figure, no floor of chance, `pbLevel`, the level carrying
+  `minDec` and `pick: 'likeliest'`) are, since app v111, each
   prime-time game's set on Suggested Parlays (`spSet`, from that game's `pricedLegs` and its total
   on every bet type, `SP_ALL`, searched wider, `SP_SEARCH`, cached in `SP_CACHE`, outside `S`;
   the tab sets out one night's at a time, `spOn`, the record every one); `getPbTiers()`, the same

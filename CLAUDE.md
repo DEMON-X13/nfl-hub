@@ -54,7 +54,8 @@ by hand when a source changes, and reads the models' data on every load, every f
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what the page reads); the app itself lives inside the page, the root's `index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to the root): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`, which since app v124 a game page's Team Stats window reads when it first opens, the Game snapshot's Stat breakdown having gone on 16 October 2026), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches with `units.json` | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
 | `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (one section since app v129, Night games, under one record: each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme (each paying +100 or more since app
-v143: **Every suggested parlay pays +100 or more**), shown one night at a time, then the Sunday slot's, one set across the week's Sunday games before 7 pm Eastern, a section with its own record from app v118 to v128; each set (with its own four Elo picks from app v118 to v141; since app v142 a player's leg wearing his Mismatch tag where this week's Mismatches tag him: **No Elo picks, and a Mismatch tag on the regular parlays**), locked 2 hours before its kickoff, the slot's first, and graded by the props job's suggestions record, weeks 3 to 6 replayed as a backtest, and from week 7 on graded at the page's estimated prices on DraftKings' lines read from ESPN), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 50 lines (the Top 30 from app v116 to v140; Value picks first until app v138; since, Player lines then Game bets: **DraftKings' chance on every leg**; the player lines a mix of bet types since app v141: **The Top 50's player lines are a mix of bet types**), each bet once, on the bet types and games a visitor ticks), every price DraftKings' line read from ESPN (the props job's read, published with the payload, or a visitor's Refresh odds press), a player's at the page's estimate of DraftKings' price, X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs on the site owner's devices alone (the admin link, `#owner=<his Odds API key>`, the owner's call of 20 October 2026, "hide only": the files stay public by address), with Pull from DraftKings on the admin's parlay card, the Props tab first (the Matchups tab, the board in front of it, went on 22 October 2026, app v128: its row had been the Props list's since app v122), on each game's page there Matchup, Mismatches and Team Stats buttons, each opening that card alone in a little window (app v124), and the whole Game snapshot of a game (with the news job's preview and Deep Dive) opened by the matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw (and for a few hours of 22 October 2026 by a fourth button on the game's page, app v128, which app v129 took off) | `nflbets/build/hub.html` (the page's glue: the season's read, the tabs as addresses, the framed tabs; `tab_pickems.html`, the Matchups tab, until 22 October 2026) + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css`, `theme.js` and `admin.js` |
+v143: **Every suggested parlay pays +100 or more**; since app v144 each the likeliest parlay of its size paying +110, +300,
++700 or +1500: **Each level is the likeliest parlay at its payout**), shown one night at a time, then the Sunday slot's, one set across the week's Sunday games before 7 pm Eastern, a section with its own record from app v118 to v128; each set (with its own four Elo picks from app v118 to v141; since app v142 a player's leg wearing his Mismatch tag where this week's Mismatches tag him: **No Elo picks, and a Mismatch tag on the regular parlays**), locked 2 hours before its kickoff, the slot's first, and graded by the props job's suggestions record, weeks 3 to 6 replayed as a backtest, and from week 7 on graded at the page's estimated prices on DraftKings' lines read from ESPN), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 50 lines (the Top 30 from app v116 to v140; Value picks first until app v138; since, Player lines then Game bets: **DraftKings' chance on every leg**; the player lines a mix of bet types since app v141: **The Top 50's player lines are a mix of bet types**), each bet once, on the bet types and games a visitor ticks), every price DraftKings' line read from ESPN (the props job's read, published with the payload, or a visitor's Refresh odds press), a player's at the page's estimate of DraftKings' price, X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs on the site owner's devices alone (the admin link, `#owner=<his Odds API key>`, the owner's call of 20 October 2026, "hide only": the files stay public by address), with Pull from DraftKings on the admin's parlay card, the Props tab first (the Matchups tab, the board in front of it, went on 22 October 2026, app v128: its row had been the Props list's since app v122), on each game's page there Matchup, Mismatches and Team Stats buttons, each opening that card alone in a little window (app v124), and the whole Game snapshot of a game (with the news job's preview and Deep Dive) opened by the matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw (and for a few hours of 22 October 2026 by a fourth button on the game's page, app v128, which app v129 took off) | `nflbets/build/hub.html` (the page's glue: the season's read, the tabs as addresses, the framed tabs; `tab_pickems.html`, the Matchups tab, until 22 October 2026) + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css`, `theme.js` and `admin.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the current week (`betting/state.json`'s schedule, the first week with a game still to play, the week the Matchups board opened on until it went on 22 October 2026) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `cfb/` | retired: CFB Hub (then X College Football Bets) moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
@@ -405,9 +406,12 @@ anything for the lean, a tie-break alone (the model's measured lean toward under
 set holds, never in a number it states). The levels keep the search on the chance: Safe the likeliest pair; Medium,
 Aggressive and Extreme the least costly parlay, the best expected return, that lands 25%, 12% or 5% at the fair chance,
 else the likeliest of their size (since app v143 each among the parlays paying +100 or more: **Every suggested parlay pays
-+100 or more**, under "Bets and Stats: the loop"). Each card states the fair chance and `expected −22%` (`small.pb-ev[data-pb-ev]`, fair
++100 or more**, under "Bets and Stats: the loop"; since app v144 no floor of chance, each level the likeliest parlay of its
+size paying its own price, +110, +300, +700 or +1500: **Each level is the likeliest parlay at its payout**, there). Each
+card states the fair chance and `expected −22%` (`small.pb-ev[data-pb-ev]`, fair
 × price − 1, titled "At DraftKings’ fair chance: $1 returns $0.78 on average"), its rule `least costly · 25%+` (titled
-"Smallest expected loss of the 3-leg parlays landing 25%+ by DraftKings’ fair chance"), each leg at its chance, and no
+"Smallest expected loss of the 3-leg parlays landing 25%+ by DraftKings’ fair chance"; since app v144 "likeliest 3 legs ·
++300+", the words app v138 gave a level drawn only on one locked before app v144), each leg at its chance, and no
 model percentage. `pbIsValue` needs `l.hook`, so no Value mark is drawn, and the far-off flags left every drawn surface
 (`legFarOff`, `FAR_OFF` and `farText` stay for `gameLegPool` alone). The Top 30 lines are Player lines, up to 20
 (`PB_TOP_PL`), then Game bets filling to 30, moneylines and spreads and then totals (`getPbTop().parts`), each part
@@ -2979,7 +2983,9 @@ night game on one of those days; never a day game, never a Saturday or a Friday)
 out only the next night's, from its morning: **One night at a time**, below; the record takes every one), the four
 levels the Parlay Builder drew over every game until that day, each built from that one game's lines alone, a
 same-game parlay priced by the builder's own sums (since app v143 every level among the parlays paying +100 or more:
-**Every suggested parlay pays +100 or more**, below): Safe, the likeliest 2-leg parlay; Medium, Aggressive and Extreme,
+**Every suggested parlay pays +100 or more**, below; since app v144 each level the likeliest parlay of its size paying its
+own price, +110, +300, +700 or +1500, with no floor of chance and no fallback, which makes the rest of this description of
+the levels history: **Each level is the likeliest parlay at its payout**, below): Safe, the likeliest 2-leg parlay; Medium, Aggressive and Extreme,
 the 3-, 4- and 5-leg parlay with the best expected return (chance times payout) that lands at least 25%, 12% and 5%
 of the time by the model's chance (`PB_TIERS`; since app v138 by DraftKings' fair chance, the least costly parlay that
 lands so, its negative expected return stated: **DraftKings' chance on every leg**, under Props); where no parlay of a level's size reaches its floor with any count
@@ -3896,7 +3902,9 @@ live, locked, kept in the browser and recorded with its set, with a record row o
 record takes, locks or replaces Elo picks, that a unit's model parlays sit under a "Parlays" sub-heading, or that a
 Mismatch tag is put on an Elo pick's leg, that is history from app v142.
 
-**Every suggested parlay pays +100 or more** (app v143, `patch_min_price.py`, whose docstring is the design, the owner's call
+**Every suggested parlay pays +100 or more** (since app v144 each level has a price of its own, +110, +300, +700 and
++1500, and is the likeliest parlay of its size paying it, which makes this paragraph's rule history: **Each level is the
+likeliest parlay at its payout**, next) (app v143, `patch_min_price.py`, whose docstring is the design, the owner's call
 of 7 November 2026: "I am not really wanting to do safe bets that are like only 50 cent wins. id want to at least double my
 bet, so 1$ bet wins 2$ for a profit of 1$."). Safe had no floor of any kind, the likeliest 2-leg parlay of its unit, and
 since app v138 every leg is chosen at DraftKings' fair chance, so it was two short-priced legs together: the suggestions
@@ -4040,6 +4048,116 @@ Wherever this file says, before this paragraph or after it, that Safe is the lik
 parlay), that Medium, Aggressive and Extreme are the least costly over their floor or the likeliest of their size with no
 word of the price, or that a level is empty only where its unit makes too few legs on one slip, that is history from app
 v143: every level is chosen among the parlays paying +100 or more.
+
+**Each level is the likeliest parlay at its payout** (app v144, `patch_min_price_110.py` and then `patch_level_prices.py`,
+whose docstrings are the design and the measurements, the owner's calls of 7 November 2026: asked "I'd raise the floor to
+about +110, so the real slip almost always doubles your bet. Safe would then land a little less often, about 38% instead of
+40%. Want me to make that change?", "yes"; then "in suggested props. i want the med prop to be at least $4 outcome from 1$
+and aggressive to be $8 or more. I want the best possible model confidence to match what level bet"). "$4 outcome from 1$"
+is $4 returned on $1, decimal 4.00, as his "1$ bet wins 2$" of app v143 was 2.00, and "the best possible model confidence"
+the chance a card states, DraftKings' fair chance by the builder's own sums (`parlayProb` on `legChance`), the prop model's
+own chance having carried nothing beyond it (app v138). The rule: each level of every unit (each night game and each game
+of the Sunday slot, a level built again for a player ruled out, and the all-games engine `getPbTiers`, drawn nowhere) is
+the likeliest parlay of its size, a tie to 1e-9 to the larger lean and then the lower id, whose price in full (`parlayDec`
+on its legs, est. where a leg is, the figure its card states) is at least its own least price: **Safe 2 legs at 2.10
+(+110), Medium 3 at 4.00 (+300), Aggressive 4 at 8.00 (+700), Extreme 5 at 16.00 (+1500)**. The price is the site's own: a same-game
+group's is its estimate of DraftKings' (`SGP_HOLD`, about 5% off either way on the tickets it was fitted on), so a level
+priced at its edge can pay a little under its price on DraftKings' own slip, as app v143's +100 could; the card's title
+says "by the site’s price", and the +110 Safe (the owner's "yes") is the margin above +100 taken for it. Extreme's is the doubling
+carried on (2, 4, 8, 16), a call made with this change and said to the owner, his to move; Extreme stays hidden on the tab
+and kept in the record. The four are one table, `PB_TIERS`' fifth figure, whose fourth, the floor of chance, is 0 for every
+level: the chance floors (25%, 12%, 5%), "least costly" and the fallback to the likeliest of a size leave Suggested Parlays
+and `getPbTiers` (the game page's hands, `gameTiers`, drawn nowhere, keep their own search and floors). As before, each on
+the level's own price: the leg rules, the fewest thin legs first, the totals' fill (as many as the legs with a chance leave,
+one at most for the price where they leave none), the slot's best-of by `spSlotBetter` (no total first, the fewer thin
+legs, the higher chance, the earlier game), the price held in full (`pbExact`), `pbPaysAny` and the empty levels' two
+wordings ("No 3 legs in this game pay +300 or more together." where `pbPaysAny` shows none does, "No 3 legs found in this
+game that pay +300 or more together." where it cannot tell; the slot's and the engine's alike).
+
+The search. At DraftKings' fair chance every parlay of a game returns about the same on $1 (each leg's margin, `SGP_HOLD`
+on a same-game group), so a parlay's chance is about that over its price and the likeliest paying a level's price is one
+whose price lands just over it, no likely partial parlay: a beam by the chance (app v138 to v143's `pbBeam`,
+`pbBestReturn` and `pbLikeliest`, gone with `pbGrow`, `pbEntry` and `pbMinSlack`) cannot find it. `pbLevel` tries the
+fewest fill legs first; `pbLevelCands` reads every parlay of the size that goes together on one slip on the search's own
+figures (`pbCtx`: each leg's chance, the price's implied chance and decimal, each pair's lift), the legs walked likeliest
+first, a branch let go once its legs and the dearest the rest can add multiplied fall short of the price (a parlay never
+pays more), a parlay kept only where its approximate price times its slack (`PB_MIN_SLACK`, app v143's) reaches it, keyed
+by the lesser of its approximate chance and its approximate return over the price, the best 1,500 kept (`PB_LV_M`, every
+tie of the last with them) and a branch given up that cannot reach them; `pbLevelPick` works them best key first in full
+(`pbExact`, its price first), the likeliest that pays taken, stopping once no key times 1.03 (`PB_LV_C`) can beat it by
+0.05 points of chance (`PB_LV_TOL`), run again keeping eight times as many where the kept ran out with some let go, at most
+6,000 worked in full a run (`PB_LV_EVALS`); and where that walk worked some and found none, a second walk by the search's
+chance alone among the parlays whose search price already pays, at most 12,000 (`PB_LV_EVALS2`): the audit's made-up
+lines, where every leg returns alike and the search's price runs 1 to 7% over the price in full, starved the first walk
+(on TB at CHI's 53 lines every one of its first 7,505 fell short in full, though 124,312 of the 211,454 parlays of four
+paid +700), and the second finds one landing 10.19% where the likeliest paying lands 10.27%, in 1.7 s. No game of week 9
+needs it. Measured on the payload of 7 November 2026 at Saturday 18:00 UTC (week 9's 14 games, every unit live) against
+every parlay of each size worked in full (2 and 3 legs whole, the best 20,000 of 4 and 40,000 of 5 by the search's reading):
+every Safe and Medium the likeliest paying its price, 10 of the 14 Aggressives and the rest within 0.065 points of chance
+(0.012 on average), the Extremes within 0.105 (0.050); on 24 adversarial pools of those games' legs at random prices and
+margins, every Safe, Medium and Aggressive the likeliest and the Extremes within 0.075 (18 exactly). Every unit's set
+builds in about 2.1 to 2.3 s in jsdom, as app v143's did, at most about 0.27 s a level (each one task of `spOpenSoft`).
+
+On that payload and clock (fair chance, expected return at it): TB at CHI from +104 (39.8%, -18.9%), +202 (25.5%,
+-23.1%), +516 (12.4%, -23.7%) and +1148 (6.0%, -25.7%) to +113 (38.0%, -19.1%), +311 (19.1%, -21.4%), +704 (9.5%, -23.9%)
+and +1513 (4.5%, -26.9%); BUF at MIN from +112 (38.2%), +241 (22.5%), +498 (12.8%) and +1345 (5.2%) to +112 (38.2%), +301
+(19.5%), +704 (9.6%) and +1546 (4.6%); the Sunday slot from +101 (40.4%), +184 (27.6%), +513 (12.8%) and +1130 (6.2%) to +110
+(38.6%), +301 (19.7%), +701 (9.6%) and +1514 (4.7%). A Medium lands about 19 to 20% where it landed 22 to 28%, an Aggressive
+about 9.5% where 12 to 13%: the owner's price, at the chance it costs.
+
+The words, by each level's own recorded rule. A level taken from app v144 on carries its price and the rule (`minDec` 2.1,
+4, 8 or 16, `pick: 'likeliest'`; kept in the record and this browser's copy by `spTierOut` and read back by `spTierIn`,
+which reads the floor of chance a level was kept with, its own, so a Medium locked under app v143 keeps its "least
+costly"): its pill "likeliest pair · +110+", "likeliest 3 legs · +300+", "likeliest 4 legs · +700+" or "likeliest 5 legs ·
++1500+", titled "The likeliest 3-leg parlay paying at least +300 by the site’s price: $1 returns $4 or more" (Safe
+"$2.10"). A level locked under app v143 (`minDec` 2, no pick) draws app v143's words, one before it its own, one before
+app v138 no pill. No paragraph went on the page (app v130).
+
+The record. `suggest_ledger.js` keeps its own copy of the prices (`LEVEL_DEC`) and the rule (`PICK`); `ready()` refuses a
+page whose `PB_TIERS` prices are other; the guard refuses, on this run's own levels alone (taken by it, its `taken_at`, or
+built again by it, its `updated.at`), a level with legs whose `minDec` is not its `LEVEL_DEC`, whose `pick` is not
+'likeliest', or whose `dec` is under its price; a locked or graded entry stays byte for byte, and the file's `how` says the
+rule. Run as `weekly.py` runs it on a copy of the ledger (7 November 2026 19:20 UTC), it rewrote week 9's three sets still
+to lock (TB at CHI, BUF at MIN, the Sunday slot), every level at its price with `minDec` and `pick`, the other eleven
+entries, the old panel's two and the three summaries byte for byte, and a second run wrote nothing. The record's pills
+therefore mix the levels as they locked under the old rules (Medium least costly at 25% until app v143, then among those
+paying +100) with the new.
+
+Held, blocking, each on its own reading (never the page's `PB_TIERS`). The audit: `LEVEL_DEC_AUD`, `decN` and
+`PICK_AUD`; every drawn set's level the likeliest of its size paying its price (`levelAud` in full where every parlay is a
+plain product, `searchAud` the likeliest of the best by the search's chance among those paying, a miss under 0.2 points
+`W.search`), carrying its price and rule, an empty one only where `paysAud` (the legs dearest first, a branch let go once
+their product falls short) shows none pays, its words the rule's; the engine's the same as `W.engine`; M4, M10, M16 and
+M18's made-up cases at the new prices (M18: GP's Safe the likeliest pair paying +110 where its likeliest pays -241; GM at
+Medium's edge, three at 3.853 and three at 3.9996 refused and three at 4.0023 taken; GA's Aggressive and Extreme less
+likely than the likeliest of their size, which pay about 5.96 and 11.4; GR empty in its own words; GC, GD, GT, GU, GF and
+GK at the new prices; each level read back from a lock under app v144, under app v143 and before, with its own words).
+The nflbets smoke: `LEVEL_DEC_OWN` and `lvDecOwn` (not `decOwn`: the scope its level checks run in has a `decOwn` of its
+own, an American price's decimal, which shadowed that name and passed every check of the price), every set's level held so, and EACH
+LEVEL THE LIKELIEST AT ITS PAYOUT on made-up games at any hour (PV, whose likeliest pair pays -241, its Safe +119; PM at
+Medium's edge; PA, whose likeliest four pay 5.96, its Aggressive +761; PW, empty in its words; and ten made-up games,
+Spread only, the engine's four levels each the likeliest at its price where the likeliest pair and three overall pay
+under theirs), and 1b, the level search against its own enumeration of every parlay of 2 and 3 legs on made-up pools and
+the week's own (app v138's check of the beam, `bmOwn`, gone with it). `test_suggest_ledger.js`: every level a run takes
+or builds again at its price with `minDec` and `pick`; F's guard refusing a Medium at 3.9 or with no pick and passing one
+at exactly 4.00, the same at each level's price, and a set an older page took under app v143 left as it was.
+
+Bitten on scratch copies of the tree, never the worktree's files: Medium and Aggressive left at app v143's price
+(`PB_TIERS` 2 for both), the audit 120 failures and 42 warnings and the smoke 114 failures; Medium the least costly parlay
+landing 25% again (paying +100), the audit 34 and 10 and the smoke 37; the pill's words read from `PB_TIERS`' prices in
+place of the level's own `minDec`, the audit 6 and 3 (M18's levels read back from a lock under app v143 said +110 and
++300); the search without its price in full (`pbExact` handed no price, the search's own reading taken as it stands),
+the audit 154 and 64; and the record's guard taking a Medium at 3.9, `test_suggest_ledger.js` 2 failures (F's Medium and
+the Sunday slot's Medium at 3.9). With the change: the audit 44,423 checks, 0 failures and 0 warnings (on the off-season
+clock, `PROPS_AUDIT_NOW=2027-02-15T15:00:00Z`, 38,767 checks, 0 failures, its two coverage warnings the off-season's), the
+nflbets smoke 4,272 and `--season-over` 4,167, 0 failures each, `smoke_live.js` 762, `smoke_admin.js` 127,
+`test_dkname.js` 255, `elo/check_tab.js` 458, `test_suggest_ledger.js` 450, `test_props_gate.py` 226 cases, and the
+four page smoke cases of `test_audit_phases.py` (2,914, 2,792, 3,535 and 2,513 checks), 0 failures each.
+
+Wherever this file says, before this paragraph or after it, that Safe is the likeliest pair paying +100, that Medium,
+Aggressive and Extreme are the least costly parlay landing 25%, 12% or 5%, or the likeliest of their size, among the
+parlays paying +100 or more, or that a level is ruled "least costly · 25%+", that is history from app v144: every level
+is the likeliest parlay of its size paying its own price, +110, +300, +700 or +1500.
 
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
