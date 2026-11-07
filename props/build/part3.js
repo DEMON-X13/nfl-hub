@@ -2382,9 +2382,13 @@ const PB_MIXES=[['all','All',['ml','ats','total','over','under']],['teams','Team
 const PB_TIERS=[['safe','Safe',2,0],['med','Medium',3,0.25],['aggr','Aggressive',4,0.12],['xtrm','Extreme',5,0.05]];
 /* (app v143, the owner's call of 7 November 2026: "id want to at least double my bet, so 1$ bet wins 2$") every level pays
    +100 or more: its price in full (pbExact's dec, parlayDec on its legs, as its card states it) at least PB_MIN_DEC. The
-   search's approximate price (pbDecApprox) only keeps candidates, at PB_MIN_DEC times PB_MIN_TOL and up: the price in full
-   is at most 1.22 times the approximate one on a 5-leg same-game parlay (1.02 on 2 legs), so none that pays +100 is dropped */
-const PB_MIN_DEC=2, PB_MIN_TOL=0.8, PB_MIN_ML=fmtML(decToML(PB_MIN_DEC));
+   search's approximate price (pbDecApprox) only keeps candidates, times a slack for each game holding two legs or more of
+   the parlay (PB_MIN_SLACK, by their count: across games the two prices are one product): the price in full is at most 1.02
+   times the approximate one on a 2-leg same-game parlay, 1.06 on 3, 1.12 on 4 and 1.22 on 5, so none that pays +100 is
+   dropped */
+const PB_MIN_DEC=2, PB_MIN_SLACK=[1,1,1.05,1.1,1.2,1.3], PB_MIN_ML=fmtML(decToML(PB_MIN_DEC));
+/* the slack of a parlay the beam scores, from its games' counts (pbGrow's g: game, count, price product, book product) */
+const pbMinSlack=G=>{ let v=1; for(let i=0;i<G.length;i+=4){ const c=G[i+1]; if(c>1) v*=PB_MIN_SLACK[Math.min(c,PB_MIN_SLACK.length-1)]; } return v; };
 const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_CAP=40, PB_BEAM=12, PB_WIDE=24, PB_LIKELY=3, PB_FINAL=8;
 let PB_CACHE=new Map(), PB_SHOWN=null, PB_AMT_T=null;
 /* (app v111) the search's widths, as the panel has always run them: a caller may widen them (opt), as
@@ -2673,8 +2677,9 @@ function pbKth(a,k){
    order as before (pbRank: the score to 1e-9, the larger lean, the id), each step's best `width` chosen by a selection on
    the rounded score (pbKth), only those sorted; a set of up to 5 legs among fewer than 64 is keyed by a small number, any
    other by its indexes joined.
-   (app v143) minD: at the last step a parlay whose approximate price is under it is not kept, before the width cut, so the
-   width keeps the best of those that can pay the level's least price; a call without it is exactly as before */
+   (app v143) minD: at the last step a parlay whose approximate price, times its slack (pbMinSlack), is under it is not kept,
+   before the width cut, so the width keeps the best of those that can pay the level's least price; a call without it is
+   exactly as before */
 function pbBeam(pools,floor,by,width,memo,minD){
   const x=pbCtx(memo), P=pools.map(pl=>pl.map(c=>pbCtxLeg(x,c))), kk=by==='ev'?'kev':'kpr', small=x.N<64&&pools.length<=5, last=pools.length-1;
   const cmp=(a,b)=>(b[kk]-a[kk])||(b.kln-a.kln)||pbEntry(x,a).id.localeCompare(pbEntry(x,b).id);
@@ -2693,7 +2698,7 @@ function pbBeam(pools,floor,by,width,memo,minD){
         else { E=pbGrow(x,B,c); x.sets.set(k,E); }
         E.st=stamp;
         if(floor&&E.pr<floor*0.9) continue;
-        if(minD&&s===last&&!(E.d>=minD)) continue;
+        if(minD&&s===last&&!(E.d*pbMinSlack(E.g)>=minD)) continue;
         next.push(E); } }
     if(!next.length) return [];
     let keep=next;
@@ -2723,7 +2728,7 @@ function pbExact(legs,floor,minDec){
    first. The best few by the search's own score are worked exactly, and the best of those that
    clears the floor is the tier; null when none does. Safe, with no floor, is the likeliest pair.
    opt: the search's widths (pbOpt; the panel's own without it). (app v143) Every candidate pays +100 or more: the beams
-   keep only those whose approximate price can (PB_MIN_DEC times PB_MIN_TOL), and the finalists are the first o.final of
+   keep only those whose approximate price can (with its slack, pbMinSlack), and the finalists are the first o.final of
    them, in the search's own order, whose price in full is PB_MIN_DEC or more (one under it is set aside, not counted) */
 function pbBestReturn([id,label,n,floor],pool,memo,kMax,opt){
   const o=pbOpt(opt), P=pool.pref, U=[...pool.pref,...pool.thin];
@@ -2733,7 +2738,7 @@ function pbBestReturn([id,label,n,floor],pool,memo,kMax,opt){
     if(pbMaxLegs(P)<n-k||pbMaxLegs(U)<n) continue;
     const pools=Array.from({length:n},(_,s)=>s<n-k?P:U);
     const fin=new Map();
-    const minD=PB_MIN_DEC*PB_MIN_TOL;
+    const minD=PB_MIN_DEC;
     if(!floor) for(const e of pbBeam(pools,0,'pr',Infinity,memo,minD)) fin.set(e.id,e);
     else for(const e of [...pbBeam(pools,floor,'ev',o.beam,memo,minD),...pbBeam(pools,floor,'pr',o.beam,memo,minD)]) fin.set(e.id,e);
     /* the finalists that clear the floor by the search's own score, in the beam's own order (app v136), each then
@@ -2768,7 +2773,7 @@ function pbLikeliest(n,pool,memo,kMax,opt){
     if(pbMaxLegs(P)<n-k||pbMaxLegs(U)<n) continue;
     const pools=Array.from({length:n},(_,s)=>s<n-k?P:U);
     let best=null, kept=0;
-    for(const e of pbBeam(pools,0,'pr',o.wide,memo,PB_MIN_DEC*PB_MIN_TOL)){ if(kept>=o.likely) break;
+    for(const e of pbBeam(pools,0,'pr',o.wide,memo,PB_MIN_DEC)){ if(kept>=o.likely) break;
       const r=pbExact(e.legs,0,PB_MIN_DEC); if(!r) continue; kept++;
       const pr=r.corr;
       /* (app v138) the highest to 1e-9, a tie to the larger lean, then the lower id */
