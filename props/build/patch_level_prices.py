@@ -335,10 +335,13 @@ function pbTierOf(t,pool,memo,opt){
 
    pbLevelPick: those walked best key first (a tie to the larger lean, then the lower id, as the search breaks every tie), each
    worked in full by pbExact (its price first, false under minD, then its chance), the likeliest that pays the level (a tie
-   to 1e-9 to the larger lean, then the lower id). The walk stops once no parlay left can beat it by more than PB_LV_TOL (0.05
-   points of chance): one whose key times PB_LV_C is under the best's chance in full plus that (1.03: about the 99th
-   percentile of the chance in full over the search's reading of chance, and of the return in full over the search's
-   reading of return, on week 9's parlays of 3 to 5 legs; most of the spread is the full sums' own noise). Where the kept
+   to 1e-9 to the larger lean, then the lower id). The walk stops at the first parlay whose key times PB_LV_C is under the
+   best's chance in full plus PB_LV_TOL (0.05 points of chance; 1.03: about the 99th percentile of the chance in full over the
+   search's reading of chance, and of the return in full over the search's reading of return, on week 9's parlays of 3 to 5
+   legs, most of the spread the full sums' own noise). It is a stop measured, not a bound (the review of 7 November 2026):
+   that ratio reaches 1.07 on 4 legs and 1.09 on 5, and the levels it took on the payloads of 7 and 1 November were within
+   0.105 points of chance of the likeliest of every parlay of their size worked in full, against the full sums' own noise of
+   about 0.2 (patch_level_prices.py's docstring has the measurements). Where the kept
    ran out first with some let go (the price starving them: many parlays short of it in full ahead of the one that pays),
    the search is run again keeping eight times as many; and it stops at PB_LV_EVALS parlays worked in full, a bound no real
    game has come near.
@@ -379,10 +382,14 @@ function pbLevelCands(x,I,fl,n,k,minD,M,mode){
   const CAND=[], WM=[], WB=[]; for(let d=0;d<=n;d++){ CAND.push(new Int32Array(m)); WM.push(new Float64Array(m)); WB.push(new Float64Array(m)); }
   const CN=new Int32Array(n+1), ch=new Int32Array(n), pr=new Float64Array(n+1), mu=new Float64Array(n+1);
   const Gg=new Int32Array((n+1)*n), Gc=new Int32Array((n+1)*n), Gm=new Float64Array((n+1)*n), Gb=new Float64Array((n+1)*n), Gn=new Int32Array(n+1);
-  let thr=-Infinity, keys=[], sets=[];
+  /* (the review of 7 November 2026) pruned again only once another M have come in past what the last prune kept (lim):
+     every tie of the M-th is kept, so on a pool of tied legs a prune on every push past 2M was quadratic (24 tied legs of
+     one game at 50% and -112, Extreme at +1500: 29 s in one task); the same parlays kept, in the same order, since a prune
+     keeps exactly those at or over the M-th of all met and thr only ever rises */
+  let thr=-Infinity, keys=[], sets=[], lim=2*M;
   const prune=()=>{ const T=pbKth(Float64Array.from(keys),M), K2=[], S2=[];
     for(let i=0;i<keys.length;i++) if(keys[i]>=T){ K2.push(keys[i]); S2.push(sets[i]); }
-    if(K2.length<keys.length) out.over=true; keys=K2; sets=S2; thr=T; };
+    if(K2.length<keys.length) out.over=true; keys=K2; sets=S2; thr=T; lim=Math.max(2*M,keys.length+M); };
   const tw=new Float64Array(m);
   for(let i=0;i<m;i++){ CAND[0][i]=i; WM[0][i]=1; WB[0][i]=1; } CN[0]=m; pr[0]=1; mu[0]=1; Gn[0]=0;
   const rec=(d,nf)=>{
@@ -405,7 +412,7 @@ function pbLevelCands(x,I,fl,n,k,minD,M,mode){
         const pp=Math.max(0,Math.min(1,p)), key=mode===1?pp:Math.min(pp,pp*dd/minD);
         if(key<thr) continue;
         ch[d]=j; keys.push(key); const S=new Array(n); for(let a=0;a<n;a++) S[a]=L[ch[a]]; sets.push(S);
-        if(keys.length>=2*M) prune();
+        if(keys.length>=lim) prune();
         continue; }
       const o2=(d+1)*n; let gn2=gn;
       for(let t=0;t<gn;t++){ Gg[o2+t]=Gg[o+t]; Gc[o2+t]=Gc[o+t]; Gm[o2+t]=Gm[o+t]; Gb[o2+t]=Gb[o+t]; }
@@ -673,6 +680,26 @@ sub1('p3', r"""  /* (app v143) the price rule it was chosen by, where it was (mi
   if(+t.minDec>1) C.minDec=+t.minDec;
   if(t.pick==='likeliest') C.pick='likeliest';""",
      'spTierIn: the rule')
+
+# (the review of 7 November 2026) the beam's widths, read by nothing since the beam went
+sub1('p3', r"""const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_CAP=40, PB_BEAM=12, PB_WIDE=24, PB_LIKELY=3, PB_FINAL=8;""",
+     r"""const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_CAP=40;""",
+     "the beam's widths gone")
+
+sub1('p3', r"""/* (app v111) the search's widths, as the panel has always run them: a caller may widen them (opt), as
+   Suggested Parlays does for one game's pool (SP_SEARCH); a call without opt is exactly as before */
+const PB_SEARCH={cap:PB_CAP,beam:PB_BEAM,wide:PB_WIDE,likely:PB_LIKELY,final:PB_FINAL};""",
+     r"""/* (app v111) the search's widths, as the panel has always run them: a caller may widen them (opt), as
+   Suggested Parlays does for one game's pool (SP_SEARCH); a call without opt is exactly as before. (app v144, the review of 7
+   November 2026) the cap on each list alone (pbPool): the beam's widths, beam, wide, likely and final, went with pbBeam,
+   pbBestReturn and pbLikeliest, and pbTier and pbTierOf no longer read their opt */
+const PB_SEARCH={cap:PB_CAP};""",
+     'PB_SEARCH the cap alone')
+
+sub1('p3', r"""const SP_SEARCH={cap:60,beam:200,wide:400,likely:40,final:40};""",
+     r"""/* (app v144, the review of 7 November 2026) the cap alone: the beam's widths went with it */
+const SP_SEARCH={cap:60};""",
+     'SP_SEARCH the cap alone')
 
 for k, p in FILES.items():
     p.write_text(T[k], encoding='utf-8')
