@@ -4081,6 +4081,139 @@ setTimeout(async()=>{
       stab.hidden=keepTab; S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; dropCaches(); F('save')(); F('renderParlay')(); }
     console.log(`M16. one game's legs a parlay, and no pair DraftKings will not take on one slip, on a made-up week: ${said16.join('; ')}`); }
 
+  /* ---- M18. every level pays +100 or more (app v143) ----
+     The owner's call of 7 November 2026: "I am not really wanting to do safe bets that are like only 50 cent wins. id want
+     to at least double my bet, so 1$ bet wins 2$ for a profit of 1$." Held on a made-up week of the audit's own (rule (c):
+     week 95 and week 96, their games on the schedule in January 2099, so always still to come, at any hour of the week and
+     in the off-season; pricedLegs stood in with made-up lines on made-up players, none moving with another (no correlation
+     for their made-up group), so every parlay's chance is a plain product and every level is worked out in full here, its
+     price the builder's own sum; each line's chance the one the case gives it, on a chance hook the audit plants for these
+     games alone; no game total; every stand-in put back on every path). Each case's answer is worked out here on the
+     audit's own floor (MIN_DEC_AUD), never the page's PB_MIN_DEC, and each case says what it stands on, worked out with
+     no floor:
+       GP  Sunday night: its likeliest pair (two lines at -400 and -380) pays under +100, so Safe is the likeliest pair
+           paying +100 or more (another); its least costly 3 legs landing 25% pays under +100 too, so Medium is the least
+           costly landing 25% among those paying +100 or more (another)
+       GQ  Monday 7:15 pm: no 3 of its legs land 25%, and the likeliest 3 (three lines at -400) pay under +100, so Medium
+           falls back to the likeliest 3 paying +100 or more (another), ruled so
+       GR  Monday 8:15 pm: three lines at -700 to -900, none of whose pairs or three pays +100: Safe and Medium empty,
+           saying so, Aggressive and Extreme too few legs
+       the slot   week 95's Sunday slot (SX at 1:00, SY at 4:25): SX's likeliest pair, the likeliest of the slot, pays
+           under +100, so the slot's Safe is SY's, the likelier of the two games' pairs paying +100 or more; built again
+           with SY's player ruled out (spRebuild), SX's pair paying +100, never its likeliest
+       the slot 2 week 96's Sunday slot of two games each like GR: its Safe and Medium empty, saying no 2 (3) legs of any
+           one game of the slot pay +100 or more together
+       the words  each card's rule and its title the audit's own (ruleFor, ruleTitleFor), "likeliest pair · +100+",
+           "likeliest 3 legs · +100+" and "least costly · 25%+" paying +100; a level read back from a lock taken before the
+           rule (spTierIn on the record's shape with no minDec) drawn with its old words ("the likeliest pair", no title),
+           and one taken before app v138 with no rule at all; a card claiming +100+ only where it pays it
+     Blocking (made-up data) */
+  { const WK=95, WK2=96, isG=F('isGameLeg'), pp=F('parlayProb'), pd=F('parlayDec'), order=F('pbOrder'), said18=[], SEA=F('SEASON');
+    const mk=(a,h,dd,tt,wk)=>({id:`2099_${wk||WK}_${a}_${h}`,w:wk||WK,a,h,d:dd,t:tt,mla:120,mlh:-140});
+    const GP=mk('APP','APQ','2099-01-18','20:20'), GQ=mk('AQQ','AQR','2099-01-19','19:15'), GR=mk('ARR','ARS','2099-01-19','20:15');
+    const SX=mk('ASX','ATX','2099-01-18','13:00'), SY=mk('ASY','ATY','2099-01-18','16:25');
+    const Z1=mk('AZ1','AY1','2099-01-25','13:00',WK2), Z2=mk('AZ2','AY2','2099-01-25','16:25',WK2);
+    const FX=[GP,GQ,GR,SX,SY,Z1,Z2], NIGHTS=[GP,GQ,GR];
+    const pl=(g,id,p,price,stat,k)=>({key:`${g.id}|aud18-${id}|${stat||'receptions'}`,gid:g.id,pid:'aud18-'+id,stat:stat||'receptions',k:k||4,side:'over',main:true,p,price,src:'real',mu:null,
+      name:'Made-up '+id,pos:'WR',grp:'AUD',team:g.h,opp:g.a,week:g.w,label:`Over ${(k||4)-0.5} ${stat==='receiving_yards'?'receiving yards':'receptions'}`});
+    const L18=[
+      /* GP: three short lines with the largest edge, then three nearer evens */
+      pl(GP,'p1',0.95,-400),pl(GP,'p2',0.94,-380),pl(GP,'p3',0.93,-360),pl(GP,'p4',0.60,-110),pl(GP,'p5',0.55,100),pl(GP,'p6',0.50,120),
+      /* GQ: three short lines at long odds of landing (thin), then two longer */
+      pl(GQ,'q1',0.62,-400),pl(GQ,'q2',0.61,-400),pl(GQ,'q3',0.60,-400),pl(GQ,'q4',0.55,-150),pl(GQ,'q5',0.47,120),
+      /* GR: three very short lines */
+      pl(GR,'r1',0.92,-900),pl(GR,'r2',0.90,-800),pl(GR,'r3',0.88,-700),
+      /* the slot: SX two short lines and one at evens; SY two nearer -200 and one at evens */
+      pl(SX,'x1',0.93,-400),pl(SX,'x2',0.92,-380),pl(SX,'x3',0.55,100),pl(SY,'y1',0.80,-200),pl(SY,'y2',0.78,-180),pl(SY,'y3',0.55,100),
+      /* the slot 2: each game three very short lines */
+      ...[Z1,Z2].flatMap((g,i)=>[pl(g,`z${i}a`,0.92,-900),pl(g,`z${i}b`,0.90,-800),pl(g,`z${i}c`,0.88,-700)])];
+    /* every parlay of n of a game's legs that can be made, worked by the builder's own sums; with a floor on the price
+       (MIN_DEC_AUD) or none (what the case stands on) */
+    const every=(legs,n,minDec)=>{ const out=[], rec=(i0,cur)=>{ if(cur.length===n){ const L=order(cur.map(l=>({...l}))), dec=pd(L.map(l=>({leg:l,ml:l.price})));
+          if(!minDec||dec>=minDec) out.push({L,pr:pp(L).corr,dec,id:L.map(legIdAud).sort().join()}); return; }
+        for(let i=i0;i<legs.length;i++){ if(!fitsAud(cur,legs[i])) continue; cur.push(legs[i]); rec(i+1,cur); cur.pop(); } };
+      rec(0,[]); return out; };
+    const likeliest=c=>c.reduce((m,x)=>!m||x.pr>m.pr?x:m,null);
+    const ids=legs=>(legs||[]).map(legIdAud).sort().join(), names=legs=>(legs||[]).map(l=>l.name).join('+');
+    const legsOf=g=>{ const q=qualAud([g],ALL_U); return [...q.pref,...q.thin]; };
+    const cardOf=t=>{ const x=d.createElement('div'); x.innerHTML=F('pbTierCard')(t); return x.firstElementChild; };
+    /* a card's rule and title held to the audit's own words (blocking: made-up data), and its claim of +100 to its price */
+    const words=(t,lab)=>{ const c=cardOf(t), r=c&&c.querySelector('.pb-rule'), want=ruleFor({...t,n:t.legs.length}), wantT=ruleTitleFor({...t,n:t.legs.length});
+      chk(!!r&&r.textContent===want&&(r.getAttribute('title')||'')===wantT,`${lab}: the card's rule reads "${r?r.textContent:'none'}" (${r?r.getAttribute('title')||'no title':''}), not "${want}" (${wantT||'no title'})`);
+      if(c) cardWords(c,t,lab); return r?r.textContent:''; };
+    const keepF=w.eval('[pricedLegs]'), INJ=F('INJ');
+    try{
+      S.sched.push(...FX); w.__m18L=L18;
+      { const mine=new Set(FX.map(g=>g.id)); hookSet(l=>l&&mine.has(l.gid)&&l.p>0&&l.p<1?{p:l.p,by:'audit'}:null); }
+      w.eval(`pricedLegs=function(games){ return window.__m18L.filter(l=>(games||[]).some(g=>g.id===l.gid&&!gameStarted(g))&&suggestable(l.pid)).map(l=>({...l})); };`);
+      dropCaches();
+      chk(F('PB_MIN_DEC')===MIN_DEC_AUD,`M18: the page's least price a level pays is ${F('PB_MIN_DEC')}, not the audit's own ${MIN_DEC_AUD}`);
+      /* every night's set worked out in full on the floor, each level held to it (levelHeld: its kind, its value and its legs
+         among the best), every level with legs paying +100 or more and carrying the rule */
+      const sets={};
+      for(const g of NIGHTS){ const s=F('spSet')(g.id), all=legsOf(g), gl=`M18, ${g.a} at ${g.h}`; sets[g.id]=s;
+        chk(primeAud(g)&&!!s&&s.tiers.length===4,`${gl}: no set of four levels, or not a prime-time game`); if(!s) continue;
+        for(const [id,,n,floor] of SPEC_AUD){ const t=s.tiers.find(x=>x.id===id), b=levelAud(all,n,floor,false,undefined);
+          if(!b){ chk(!!t&&!t.legs,`${gl}: the ${id} level is ${t&&t.legs?names(t.legs)+' at '+t.dec:'missing'} where no ${n} of its legs pay ${MIN_ML_AUD} or more`); continue; }
+          chk(levelHeld(t,b,`${gl}: the ${id} level`,chk,true),`${gl}: the ${id} level is empty (${t&&t.why}) where ${b.n} parlays of ${n} pay ${MIN_ML_AUD} or more`);
+          if(t&&t.legs) chk(t.dec>=MIN_DEC_AUD&&t.minDec===MIN_DEC_AUD,`${gl}: the ${id} level pays ${t.dec}, under ${MIN_ML_AUD}, or carries no price rule`); } }
+      /* GP: what the case stands on, and what the rule takes instead */
+      { const s=sets[GP.id], all=legsOf(GP), sf=s&&s.tiers.find(x=>x.id==='safe'), md=s&&s.tiers.find(x=>x.id==='med'), lk0=likeliest(every(all,2)), lk=likeliest(every(all,2,MIN_DEC_AUD));
+        const c3=every(all,3).filter(x=>x.pr>=0.25), ch0=c3.reduce((m,x)=>!m||x.pr*x.dec>m.pr*m.dec?x:m,null), ch=c3.filter(x=>x.dec>=MIN_DEC_AUD).reduce((m,x)=>!m||x.pr*x.dec>m.pr*m.dec?x:m,null);
+        chk(!!lk0&&lk0.dec<MIN_DEC_AUD*0.95&&!!lk&&lk.id!==lk0.id&&lk.dec>=MIN_DEC_AUD*1.03,`M18, GP: its likeliest pair (${lk0?names(lk0.L)+' at '+lk0.dec.toFixed(3):'none'}) does not pay well under ${MIN_ML_AUD}, or the likeliest paying it (${lk?names(lk.L)+' at '+lk.dec.toFixed(3):'none'}) is the same or near it, so the case cannot tell`);
+        chk(!!sf&&!!sf.legs&&!!lk&&ids(sf.legs)===lk.id&&!sf.likeliest,`M18, GP: Safe is ${sf&&sf.legs?names(sf.legs)+' at '+sf.dec:'empty'}, not the likeliest pair paying ${MIN_ML_AUD} or more, ${lk?names(lk.L):'none'}`);
+        chk(!!ch0&&ch0.dec<MIN_DEC_AUD*0.95&&!!ch&&ch.id!==ch0.id,`M18, GP: the least costly 3 legs landing 25% (${ch0?names(ch0.L)+' at '+ch0.dec.toFixed(3):'none'}) does not pay under ${MIN_ML_AUD}, so the case cannot tell`);
+        chk(!!md&&!!md.legs&&!md.likeliest&&md.corr>=0.25&&md.dec>=MIN_DEC_AUD&&ids(md.legs)!==(ch0&&ch0.id),`M18, GP: Medium is ${md&&md.legs?names(md.legs)+' at '+md.dec+(md.likeliest?' (the likeliest)':''):'empty'}, not a parlay landing 25% paying ${MIN_ML_AUD} or more, or is the least costly that pays under it`);
+        if(sf&&sf.legs){ const w0=words(sf,'M18, GP\'s Safe'); said18.push(`GP's Safe ${names(sf.legs)} at ${F('fmtML')(F('decToML')(sf.dec))} ("${w0}"), where its likeliest pair ${names(lk0.L)} pays ${F('fmtML')(F('decToML')(lk0.dec))}`); }
+        if(md&&md.legs){ words(md,'M18, GP\'s Medium'); said18.push(`GP's Medium at ${F('fmtML')(F('decToML')(md.dec))}, where its least costly landing 25% pays ${F('fmtML')(F('decToML')(ch0.dec))}`); }
+        /* a level read back from a lock: with the rule kept, the new words; taken before it (no minDec), its old words; taken
+           before app v138 (no chance 'fair'), no rule at all; a card that claims +100+ only where it pays it */
+        if(sf&&sf.legs){ const out=F('spTierOut')(sf);
+          chk(out.minDec===MIN_DEC_AUD&&out.chance==='fair',`M18, GP's Safe as the record keeps it (spTierOut) does not carry the price rule it was chosen by: ${JSON.stringify({minDec:out.minDec,chance:out.chance})}`);
+          const kNew=F('spTierIn')(JSON.parse(JSON.stringify(out)),GP), {minDec,...old}=out, kOld=F('spTierIn')(JSON.parse(JSON.stringify(old)),GP), {chance,...older}=old, kOlder=F('spTierIn')(JSON.parse(JSON.stringify(older)),GP);
+          chk(!!kNew&&kNew.minDec===MIN_DEC_AUD&&!!kOld&&kOld.minDec==null&&!!kOlder,`M18, GP's Safe read back from a lock does not carry the rule it was taken under (${kNew&&kNew.minDec}, ${kOld&&kOld.minDec})`);
+          if(kNew) words(kNew,'M18, GP\'s Safe read back from a lock under the rule');
+          if(kOld){ const r=words(kOld,'M18, GP\'s Safe read back from a lock taken before the rule'); chk(r==='the likeliest pair',`M18, GP's Safe read back from a lock taken before the rule reads "${r}", not its old words "the likeliest pair"`); }
+          if(kOlder){ const c=cardOf(kOlder); chk(!!c&&!c.querySelector('.pb-rule'),`M18, GP's Safe read back from a lock taken before app v138 draws a rule: "${c&&c.querySelector('.pb-rule')?c.querySelector('.pb-rule').textContent:''}"`); }
+          said18.push('a lock under the rule read back with its words, one taken before with "the likeliest pair", one before app v138 with none'); } }
+      /* GQ: Medium falls back to the likeliest 3 paying +100 or more */
+      { const s=sets[GQ.id], all=legsOf(GQ), md=s&&s.tiers.find(x=>x.id==='med'), c3=every(all,3), lk0=likeliest(c3), lk=likeliest(c3.filter(x=>x.dec>=MIN_DEC_AUD));
+        chk(c3.every(x=>x.pr<0.25)&&!!lk0&&lk0.dec<MIN_DEC_AUD*0.95&&!!lk&&lk.id!==lk0.id,`M18, GQ: a 3-leg parlay lands 25%, or its likeliest 3 (${lk0?names(lk0.L)+' at '+lk0.dec.toFixed(3):'none'}) do not pay under ${MIN_ML_AUD}, so the case cannot tell`);
+        chk(!!md&&!!md.legs&&!!md.likeliest&&!!lk&&ids(md.legs)===lk.id&&md.dec>=MIN_DEC_AUD,`M18, GQ: Medium is ${md&&md.legs?names(md.legs)+' at '+md.dec+(md.likeliest?' (the likeliest)':''):'empty: '+(md&&md.why)}, not the likeliest 3 paying ${MIN_ML_AUD} or more, ${lk?names(lk.L):'none'}, marked so`);
+        if(md&&md.legs){ const w0=words(md,'M18, GQ\'s Medium'); said18.push(`GQ's Medium the likeliest 3 paying ${MIN_ML_AUD}+ at ${F('fmtML')(F('decToML')(md.dec))} ("${w0}"), where its likeliest 3 pay ${F('fmtML')(F('decToML')(lk0.dec))}`); } }
+      /* GR: Safe and Medium empty, saying no 2 (3) legs here pay +100 or more together; Aggressive and Extreme too few legs */
+      { const s=sets[GR.id], q=qualAud([GR],ALL_U), all=legsOf(GR);
+        for(const [id,n,want] of [['safe',2,`No 2 legs in this game pay ${MIN_ML_AUD} or more together.`],['med',3,`No 3 legs in this game pay ${MIN_ML_AUD} or more together.`],['aggr',4,'Only 3 legs in this game.'],['xtrm',5,'Only 3 legs in this game.']]){
+          const t=s&&s.tiers.find(x=>x.id===id), mine=spWhyAud(GR,n,q);
+          if(n<=3) chk(every(all,n).length>0&&paysAud(all,n,false)===false,`M18, GR: its ${n} legs make no parlay of ${n}, or one of them pays ${MIN_ML_AUD} or more, so the case cannot tell`);
+          chk(!!t&&!t.legs&&t.why===want&&mine===want,`M18, GR: the ${id} level is ${t&&t.legs?names(t.legs)+' at '+t.dec:`empty saying "${t&&t.why}"`}, where the audit's own words are "${mine}" and the case's "${want}"`); }
+        said18.push('GR\'s Safe and Medium empty, no pair or three of its legs paying '+MIN_ML_AUD); }
+      /* the slot: its Safe is SY's, since SX's likeliest pair pays under +100; built again with SY's player ruled out, SX's
+         pair paying +100 */
+      { const SID=`${SEA}_${WK}_SUN`, s=F('spSet')(SID), sf=s&&s.tiers.find(x=>x.id==='safe');
+        const per=[SX,SY].map(g=>({g,all:legsOf(g)})), lk0=per.map(P=>likeliest(every(P.all,2))), lk=per.map(P=>likeliest(every(P.all,2,MIN_DEC_AUD)));
+        chk(!!lk0[0]&&!!lk0[1]&&lk0[0].pr>lk0[1].pr&&lk0[0].dec<MIN_DEC_AUD*0.95&&!!lk[0]&&!!lk[1]&&lk[1].pr>lk[0].pr&&lk[1].dec>=MIN_DEC_AUD*1.03,`M18, the slot: SX's likeliest pair is not the slot's and under ${MIN_ML_AUD}, or SY's paying it not the likelier, so the case cannot tell`);
+        chk(!!s&&!!sf&&!!sf.legs&&sf.legs.every(l=>l.gid===SY.id)&&ids(sf.legs)===lk[1].id&&sf.dec>=MIN_DEC_AUD&&sf.minDec===MIN_DEC_AUD,`M18, the slot: its Safe is ${sf&&sf.legs?names(sf.legs)+' at '+sf.dec:'empty: '+(sf&&sf.why)}, not SY's likeliest pair paying ${MIN_ML_AUD} or more`);
+        for(const t of (s&&s.tiers)||[]) if(t.legs) chk(t.dec>=MIN_DEC_AUD&&t.minDec===MIN_DEC_AUD,`M18, the slot's ${t.id} level pays ${t.dec}, under ${MIN_ML_AUD}, or carries no price rule`);
+        const y1=L18.find(l=>l.pid==='aud18-y1'), had=Object.prototype.hasOwnProperty.call(INJ,y1.pid), keep=INJ[y1.pid];
+        try{ INJ[y1.pid]={k:'out',t:'OUT',title:'Out'};
+          const r=F('spRebuild')(SID,'safe'), lkX=likeliest(every(legsOf(SX),2,MIN_DEC_AUD));
+          chk(!!r&&!!r.legs&&!r.legs.some(l=>l.pid===y1.pid)&&!!lkX&&ids(r.legs)===lkX.id&&r.dec>=MIN_DEC_AUD&&r.minDec===MIN_DEC_AUD,`M18, the slot's Safe built again with ${y1.name} ruled out is ${r&&r.legs?names(r.legs)+' at '+r.dec:'empty: '+(r&&r.why)}, not SX's likeliest pair paying ${MIN_ML_AUD} or more (${lkX?names(lkX.L):'none'})`);
+        } finally { if(had) INJ[y1.pid]=keep; else delete INJ[y1.pid]; dropCaches(); }
+        if(sf&&sf.legs) said18.push(`the slot's Safe SY's ${names(sf.legs)} at ${F('fmtML')(F('decToML')(sf.dec))}, where SX's likeliest pair pays ${F('fmtML')(F('decToML')(lk0[0].dec))}; built again with SY's player out, SX's pair paying ${MIN_ML_AUD}`); }
+      /* the slot 2: each of its games like GR */
+      { const SID=`${SEA}_${WK2}_SUN`, s=F('spSet')(SID);
+        for(const [id,n,want] of [['safe',2,`No 2 legs of any one game of the Sunday slot pay ${MIN_ML_AUD} or more together.`],['med',3,`No 3 legs of any one game of the Sunday slot pay ${MIN_ML_AUD} or more together.`],['aggr',4,'Only 3 legs in any one game of the Sunday slot.']]){
+          const t=s&&s.tiers.find(x=>x.id===id), mine=spWhySlotAud([Z1,Z2],n);
+          chk(!!t&&!t.legs&&t.why===want&&mine===want,`M18, week ${WK2}'s slot: the ${id} level is ${t&&t.legs?names(t.legs)+' at '+t.dec:`empty saying "${t&&t.why}"`}, where the audit's own words are "${mine}" and the case's "${want}"`); }
+        said18.push(`week ${WK2}'s slot's Safe and Medium empty, no pair or three of any one game paying ${MIN_ML_AUD}`); }
+    } catch(e){ chk(false,'M18 threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
+    finally {
+      hookSet(null); w.__m18k=keepF; w.eval('pricedLegs=window.__m18k[0];'); delete w.__m18k; delete w.__m18L;
+      for(const g of FX){ const i=S.sched.findIndex(x=>x.id===g.id); if(i>=0) S.sched.splice(i,1); }
+      dropCaches(); }
+    console.log(`M18. every level pays ${MIN_ML_AUD} or more, on a made-up week: ${said18.join('; ')}`); }
+
   /* ---- M7. the book's fair chance, and legs far off it ----
      A leg's fair chance is DraftKings' own: where both sides of its line are priced (a player's main
      line, a game's two moneylines or spread prices on the leg's number, the total's over and under),
