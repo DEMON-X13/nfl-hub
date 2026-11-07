@@ -2380,6 +2380,11 @@ function parlayFair(legs,memo,sims){
 const PB_KINDS=[['ml','Moneyline'],['ats','Spread'],['total','Game total'],['over','Player overs'],['under','Player unders']];
 const PB_MIXES=[['all','All',['ml','ats','total','over','under']],['teams','Teams only',['ml','ats','total']],['players','Players only',['over','under']]];
 const PB_TIERS=[['safe','Safe',2,0],['med','Medium',3,0.25],['aggr','Aggressive',4,0.12],['xtrm','Extreme',5,0.05]];
+/* (app v143, the owner's call of 7 November 2026: "id want to at least double my bet, so 1$ bet wins 2$") every level pays
+   +100 or more: its price in full (pbExact's dec, parlayDec on its legs, as its card states it) at least PB_MIN_DEC. The
+   search's approximate price (pbDecApprox) only keeps candidates, at PB_MIN_DEC times PB_MIN_TOL and up: the price in full
+   is at most 1.22 times the approximate one on a 5-leg same-game parlay (1.02 on 2 legs), so none that pays +100 is dropped */
+const PB_MIN_DEC=2, PB_MIN_TOL=0.8, PB_MIN_ML=fmtML(decToML(PB_MIN_DEC));
 const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_CAP=40, PB_BEAM=12, PB_WIDE=24, PB_LIKELY=3, PB_FINAL=8;
 let PB_CACHE=new Map(), PB_SHOWN=null, PB_AMT_T=null;
 /* (app v111) the search's widths, as the panel has always run them: a caller may widen them (opt), as
@@ -2667,9 +2672,11 @@ function pbKth(a,k){
    (app v138) Each scored from its parent's figures (pbGrow) and kept by its legs' indexes, the same parlays in the same
    order as before (pbRank: the score to 1e-9, the larger lean, the id), each step's best `width` chosen by a selection on
    the rounded score (pbKth), only those sorted; a set of up to 5 legs among fewer than 64 is keyed by a small number, any
-   other by its indexes joined */
-function pbBeam(pools,floor,by,width,memo){
-  const x=pbCtx(memo), P=pools.map(pl=>pl.map(c=>pbCtxLeg(x,c))), kk=by==='ev'?'kev':'kpr', small=x.N<64&&pools.length<=5;
+   other by its indexes joined.
+   (app v143) minD: at the last step a parlay whose approximate price is under it is not kept, before the width cut, so the
+   width keeps the best of those that can pay the level's least price; a call without it is exactly as before */
+function pbBeam(pools,floor,by,width,memo,minD){
+  const x=pbCtx(memo), P=pools.map(pl=>pl.map(c=>pbCtxLeg(x,c))), kk=by==='ev'?'kev':'kpr', small=x.N<64&&pools.length<=5, last=pools.length-1;
   const cmp=(a,b)=>(b[kk]-a[kk])||(b.kln-a.kln)||pbEntry(x,a).id.localeCompare(pbEntry(x,b).id);
   let beam=[x.root];
   for(let s=0;s<pools.length;s++){
@@ -2686,6 +2693,7 @@ function pbBeam(pools,floor,by,width,memo){
         else { E=pbGrow(x,B,c); x.sets.set(k,E); }
         E.st=stamp;
         if(floor&&E.pr<floor*0.9) continue;
+        if(minD&&s===last&&!(E.d>=minD)) continue;
         next.push(E); } }
     if(!next.length) return [];
     let keep=next;
@@ -2701,16 +2709,22 @@ function pbBeam(pools,floor,by,width,memo){
   return beam.map(E=>pbEntry(x,E));
 }
 /* a finalist with the builder's own sums, on the legs in the builder's order. (app v138) floor: null where its chance in
-   full is under the floor, its price not worked (a finalist that misses the floor is never taken) */
-function pbExact(legs,floor){
-  const L=pbOrder(legs.map(l=>({...l}))), pr=parlayProb(L);
+   full is under the floor, its price not worked (a finalist that misses the floor is never taken). (app v143) minDec: its
+   price in full worked first, false where it is under minDec (no finalist at all), and the level carries the rule it was
+   chosen by (minDec) */
+function pbExact(legs,floor,minDec){
+  const L=pbOrder(legs.map(l=>({...l}))), D=()=>parlayDec(L.map(l=>({leg:l,ml:l.price}))), d0=minDec?D():null;
+  if(minDec&&!(d0>=minDec)) return false;
+  const pr=parlayProb(L);
   if(floor&&pr.corr<floor) return null;
-  return {legs:L,corr:pr.corr,indep:pr.indep,dec:parlayDec(L.map(l=>({leg:l,ml:l.price}))),thin:L.filter(l=>l.thin).length,mkt:L.filter(l=>l.market).length};
+  return {legs:L,corr:pr.corr,indep:pr.indep,dec:d0!=null?d0:D(),thin:L.filter(l=>l.thin).length,mkt:L.filter(l=>l.market).length,...(minDec?{minDec}:{})};
 }
 /* a level's best return: preferred legs alone first, then with k legs from the thin list, fewest
    first. The best few by the search's own score are worked exactly, and the best of those that
    clears the floor is the tier; null when none does. Safe, with no floor, is the likeliest pair.
-   opt: the search's widths (pbOpt; the panel's own without it) */
+   opt: the search's widths (pbOpt; the panel's own without it). (app v143) Every candidate pays +100 or more: the beams
+   keep only those whose approximate price can (PB_MIN_DEC times PB_MIN_TOL), and the finalists are the first o.final of
+   them, in the search's own order, whose price in full is PB_MIN_DEC or more (one under it is set aside, not counted) */
 function pbBestReturn([id,label,n,floor],pool,memo,kMax,opt){
   const o=pbOpt(opt), P=pool.pref, U=[...pool.pref,...pool.thin];
   /* kMax, when given, is the most fill legs a parlay may take (the totals' pass, pbTier) */
@@ -2719,8 +2733,9 @@ function pbBestReturn([id,label,n,floor],pool,memo,kMax,opt){
     if(pbMaxLegs(P)<n-k||pbMaxLegs(U)<n) continue;
     const pools=Array.from({length:n},(_,s)=>s<n-k?P:U);
     const fin=new Map();
-    if(!floor) for(const e of pbBeam(pools,0,'pr',Infinity,memo)) fin.set(e.id,e);
-    else for(const e of [...pbBeam(pools,floor,'ev',o.beam,memo),...pbBeam(pools,floor,'pr',o.beam,memo)]) fin.set(e.id,e);
+    const minD=PB_MIN_DEC*PB_MIN_TOL;
+    if(!floor) for(const e of pbBeam(pools,0,'pr',Infinity,memo,minD)) fin.set(e.id,e);
+    else for(const e of [...pbBeam(pools,floor,'ev',o.beam,memo,minD),...pbBeam(pools,floor,'pr',o.beam,memo,minD)]) fin.set(e.id,e);
     /* the finalists that clear the floor by the search's own score, in the beam's own order (app v136), each then
        worked in full, which is what the card shows and what the floor is held to. (app v138) The best of them in full
        is taken, no longer the first to clear the floor: at DraftKings' fair chance every estimated leg returns the same
@@ -2728,9 +2743,10 @@ function pbBestReturn([id,label,n,floor],pool,memo,kMax,opt){
        search's pairwise score errs by more than the gaps between them, and the card's "least costly" (Safe's "the
        likeliest pair") is said of the figures it states. The highest chance times price (Safe: chance) to 1e-9, a tie
        to the larger lean, then the lower id; the full sums are seeded and kept, so the same lines give the same pick */
-    const top=[...fin.values()].filter(e=>!floor||e.pr>=floor*0.97).sort(pbRank(floor?'ev':'pr')).slice(0,o.final);
-    let best=null;
-    for(const e of top){ const r=pbExact(e.legs,floor); if(!r) continue;
+    const top=[...fin.values()].filter(e=>!floor||e.pr>=floor*0.97).sort(pbRank(floor?'ev':'pr'));
+    let best=null, kept=0;
+    for(const e of top){ if(kept>=o.final) break;
+      const r=pbExact(e.legs,floor,PB_MIN_DEC); if(r===false) continue; kept++; if(!r) continue;
       const x={v:floor?r.corr*r.dec:r.corr,ln:e.ln,id:e.id}; if(!best||pbRank('v')(x,best.x)<0) best={x,r}; }
     if(best) return best.r;
   }
@@ -2743,19 +2759,21 @@ function pbBestReturn([id,label,n,floor],pool,memo,kMax,opt){
    builder's order), the highest of those the tier (the lower id on a tie, so the same picks always
    give the same parlay). Legs in different games are a plain product, so there the search's chance
    is the builder's and this is the likeliest parlay outright. null only when the picks do not make
-   n legs at all */
+   n legs at all. (app v143) Among the parlays paying +100 or more alone, as pbBestReturn's: the beam keeps those whose
+   approximate price can, and its best few are the first o.likely whose price in full does (null where none does) */
 function pbLikeliest(n,pool,memo,kMax,opt){
   const o=pbOpt(opt), P=pool.pref, U=[...pool.pref,...pool.thin];
   for(let k=0;k<=(kMax==null?n:kMax);k++){
     if(k&&!pool.thin.length) break;
     if(pbMaxLegs(P)<n-k||pbMaxLegs(U)<n) continue;
     const pools=Array.from({length:n},(_,s)=>s<n-k?P:U);
-    let best=null;
-    for(const e of pbBeam(pools,0,'pr',o.wide,memo).slice(0,o.likely)){
-      const pr=parlayProb(pbOrder(e.legs)).corr;
+    let best=null, kept=0;
+    for(const e of pbBeam(pools,0,'pr',o.wide,memo,PB_MIN_DEC*PB_MIN_TOL)){ if(kept>=o.likely) break;
+      const r=pbExact(e.legs,0,PB_MIN_DEC); if(!r) continue; kept++;
+      const pr=r.corr;
       /* (app v138) the highest to 1e-9, a tie to the larger lean, then the lower id */
-      if(!best||pbRank('pr')({pr,ln:e.ln,id:e.id},{pr:best.pr,ln:best.e.ln,id:best.e.id})<0) best={e,pr}; }
-    if(best) return pbExact(best.e.legs);
+      if(!best||pbRank('pr')({pr,ln:e.ln,id:e.id},{pr:best.pr,ln:best.e.ln,id:best.e.id})<0) best={e,pr,r}; }
+    if(best) return best.r;
   }
   return null;
 }
@@ -2805,6 +2823,8 @@ function pbWhy(n,pool,c){
   const m=pbMaxLegs([...pool.pref,...pool.thin,...(pool.mkt||[])]);
   /* (app v109) short of legs only for want of DraftKings' ids: said so */
   const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks${pool.noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay on your picks`;
+  /* (app v143) legs enough, on one slip: none of n pays +100 or more */
+  if(m>=n&&pbMaxFit([...pool.pref,...pool.thin,...(pool.mkt||[])])>=n) return `No ${n} legs on your picks pay ${PB_MIN_ML} or more together: tick more games or bet types.`;
   if(c&&c.players&&!pool.plGames){ const np=pool.plNoId?PB_NO_ID:pbNoPl(c.ids); return c.teams?`${what}, and ${np}`:np[0].toUpperCase()+np.slice(1); }
   return `${what}: tick more games or bet types.`;
 }
@@ -3074,11 +3094,15 @@ function pbEspnLine(legs){
 }
 /* what a level was chosen by, as its card says it (app v138: the least costly, the best expected return at DraftKings'
    fair chance, over its floor; else the likeliest of its size), and the pill's title */
+/* (app v143) a level chosen among the parlays paying +100 or more (t.minDec, carried by the record since) says so; one
+   read back from a lock taken before it was chosen without the rule and says what did choose it */
 function pbRuleOf(t){
-  const n=t.legs.length, pct=Math.round((t.floor||0)*100);
-  return t.likeliest?`the likeliest ${n} legs`:t.floor?`least costly · ${pct}%+`:'the likeliest pair';
+  const n=t.legs.length, pct=Math.round((t.floor||0)*100), mp=t.minDec?` · ${PB_MIN_ML}+`:'';
+  return t.likeliest?`${mp?'':'the '}likeliest ${n} legs${mp}`:t.floor?`least costly · ${pct}%+`:(mp?`likeliest pair${mp}`:'the likeliest pair');
 }
-function pbRuleTitle(t){ return !t.likeliest&&t.floor?`Smallest expected loss of the ${t.legs.length}-leg parlays landing ${Math.round(t.floor*100)}%+ by DraftKings’ fair chance`:''; }
+function pbRuleTitle(t){ const n=t.legs.length, pay=t.minDec?`paying at least ${PB_MIN_ML}`:'';
+  if(!t.likeliest&&t.floor) return `Smallest expected loss of the ${n}-leg parlays landing ${Math.round(t.floor*100)}%+ by DraftKings’ fair chance${pay?' and '+pay:''}`;
+  return pay?`The likeliest ${n}-leg parlay ${pay}: $1 returns $${PB_MIN_DEC} or more`:''; }
 function pbRuleHtml(t){ const tt=pbRuleTitle(t); return `<span class="pb-rule"${tt?` title="${tt}"`:''}>${pbRuleOf(t)}</span>`; }
 /* whether a level was chosen by the rule its pill would state: a live level always; one read back from the record or this
    browser's copy (every leg kept at its lock) only where it carries chance 'fair' (spTierOut, from app v138 on), since a
@@ -3417,6 +3441,8 @@ function spNoPl(g){ const I=spGamesOf(g).map(x=>x.id); return noPlSay(espnLastRe
 function spWhy(n,pool,g){
   const m=pbMaxLegs([...pool.pref,...pool.thin,...(pool.mkt||[])]), where=g.slot?'the Sunday slot':'this game';
   const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in ${where}${pool.noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in ${where}`;
+  /* (app v143) legs enough, on one slip: none of n pays +100 or more */
+  if(m>=n&&pbMaxFit([...pool.pref,...pool.thin,...(pool.mkt||[])])>=n) return `No ${n} legs in ${where} pay ${PB_MIN_ML} or more together.`;
   if(!pool.plGames) return `${what}: ${pool.plNoId?'no player leg with a DraftKings id.':spNoPl(g)}`;
   /* (app v121) legs enough in number, but not on one slip */
   if(m>=n&&pbMaxFit([...pool.pref,...pool.thin,...(pool.mkt||[])])<n) return `No ${n} of this game’s legs go together on DraftKings’ slip.`;
@@ -3479,8 +3505,10 @@ function spSlotLevel(u,t){
 function spWhySlot(n,per,u){
   const m=Math.max(0,...per.map(s=>s.max||0)), noId=per.some(s=>s.noId), pl=per.some(s=>s.plGames), plNoId=per.some(s=>s.plNoId);
   const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} in any one game of the Sunday slot${noId?' that DraftKings’ betslip can take':''}`:`No ${n}-leg parlay in any one game of the Sunday slot`;
-  if(!pl) return `${what}: ${plNoId?'no player leg with a DraftKings id.':spNoPl(u)}`;
   const f=Math.max(0,...per.map(s=>s.fit==null?(s.max||0):s.fit));
+  /* (app v143) a game of the slot makes n legs on one slip: none of them pays +100 or more */
+  if(m>=n&&f>=n) return `No ${n} legs of any one game of the Sunday slot pay ${PB_MIN_ML} or more together.`;
+  if(!pl) return `${what}: ${plNoId?'no player leg with a DraftKings id.':spNoPl(u)}`;
   if(m>=n&&f<n) return `No ${n} legs of any one game of the Sunday slot go together on DraftKings’ slip.`;
   return `${what}.`;
 }
@@ -3527,7 +3555,7 @@ function spTierOut(t){ const memo={};
   if(!t||!t.legs||!t.legs.length) return {id:t.id,label:t.label,n:t.n,floor:t.floor,why:t.why};
   const pm=t.legs.some(l=>l.pm!=null)?parlayProb(pbOrder(t.legs.map(l=>({...l,p:l.pm??l.p})))).corr:null;
   return {id:t.id,label:t.label,n:t.n,floor:t.floor,legs:t.legs.map(l=>spLegOut(l,memo)),p:spR(pm!=null?pm:t.corr,1e4),fair:t.fair&&t.fair.p!=null?spR(t.fair.p,1e4):null,
-    fair_est:!!(t.fair&&t.fair.est),dec:spR(t.dec,1e3),likeliest:!!t.likeliest,thin:t.thin||0,mkt:t.mkt||0,...(t.updated?{updated:t.updated}:{}),chance:'fair'}; }
+    fair_est:!!(t.fair&&t.fair.est),dec:spR(t.dec,1e3),likeliest:!!t.likeliest,thin:t.thin||0,mkt:t.mkt||0,...(t.updated?{updated:t.updated}:{}),chance:'fair',...(t.minDec?{minDec:t.minDec}:{})}; }
 function spLegIn(l,g){
   const G=spGamesOf(g), lg=l&&typeof l==='object'?G.find(x=>x.id===l.gid):null;
   if(!lg||typeof l.pid!=='string'||typeof l.stat!=='string') return null;
@@ -3562,6 +3590,8 @@ function spTierIn(t,g){
   /* (app v138) chance 'fair' carried, so a level locked before it is drawn without a rule that did not choose it
      (pbRuleKnown) */
   const C=t.chance==='fair'?{chance:'fair'}:{};
+  /* (app v143) the price rule it was chosen by, where it was (minDec), so its pill says it; a level taken before has none */
+  if(+t.minDec>1) C.minDec=+t.minDec;
   return {...head,legs:L,corr:sum.corr,indep:sum.indep,dec:sum.dec,fair,likeliest:!!t.likeliest,
     thin:L.filter(l=>l.thin).length,mkt:L.filter(l=>l.market).length,...U,...C};
 }
