@@ -1387,7 +1387,14 @@ level's size clears its floor with any count of thin legs, the level is the like
 search's own chance, its best few worked with the builder's own `parlayProb` and the highest of those taken. The
 level carries `likeliest: true`, and its card's rule reads "the likeliest 3 legs" (4, 5) where a level over its
 floor reads "best return that lands 25%+ by the model" ("least costly · 25%+" since app v138) and Safe "the likeliest
-pair"; the card shows its chance and
+pair". Since app v143 (the owner's call of 7 November 2026, "id want to at least double my bet, so 1$ bet wins 2$")
+every level is chosen among the parlays paying +100 or more: `PB_MIN_DEC` 2 on the price in full (`pbExact(legs, floor,
+minDec)`, false under it), the search's approximate price only keeping candidates at `PB_MIN_DEC` times `PB_MIN_TOL` (0.8)
+at the beam's last step (`pbBeam`'s `minD`), the finalists the first `final` (or `likely`) paying +100; so Safe is the
+likeliest pair paying +100 or more, its pill "likeliest pair · +100+", a fallback "likeliest 3 legs · +100+", the level
+carrying `minDec` (kept by `spTierOut`, read back by `spTierIn`, a level locked before drawing its old words), and a level
+none of whose parlays pays +100 is empty, "No 2 legs in this game pay +100 or more together." (`spWhy`, `spWhySlot`,
+`pbWhy`); CLAUDE.md's **Every suggested parlay pays +100 or more**. The card shows its chance and
 price like any other and says nothing about the floor (the owner's call, October 2026: every level shows a parlay,
 "just state the percentage"). The tab's footer says so in a line. `SP_ALL` ticks every bet type, whatever the
 Parlay Builder's boxes say, so the page and the record agree. `SP_SEARCH` is the owner's "absolute best" on one
@@ -2706,7 +2713,8 @@ Mismatches and Team Stats**, has the whole of it).
 - **margin** -- the book's cut, `light`/`typical`/`heavy`, a visitor setting.
 - **suggested parlays** -- two engines. The levels (`PB_TIERS`: Safe/Medium/Aggressive/Extreme,
   2/3/4/5 legs, floors 25/12/5% after Safe, by DraftKings' fair chance since app v138, the least costly parlay
-  clearing each, `pbTier` on `pbPool`) are, since app v111, each
+  clearing each, `pbTier` on `pbPool`; since app v143 each among the parlays paying +100 or more, `PB_MIN_DEC`, Safe the
+  likeliest pair paying it, the level carrying `minDec`) are, since app v111, each
   prime-time game's set on Suggested Parlays (`spSet`, from that game's `pricedLegs` and its total
   on every bet type, `SP_ALL`, searched wider, `SP_SEARCH`, cached in `SP_CACHE`, outside `S`;
   the tab sets out one night's at a time, `spOn`, the record every one); `getPbTiers()`, the same
