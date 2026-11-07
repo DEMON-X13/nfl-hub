@@ -4151,8 +4151,9 @@ the audit 154 and 64; and the record's guard taking a Medium at 3.9, `test_sugge
 the Sunday slot's Medium at 3.9). With the change: the audit 44,423 checks, 0 failures and 0 warnings (on the off-season
 clock, `PROPS_AUDIT_NOW=2027-02-15T15:00:00Z`, 38,767 checks, 0 failures, its two coverage warnings the off-season's), the
 nflbets smoke 4,272 and `--season-over` 4,167, 0 failures each, `smoke_live.js` 762, `smoke_admin.js` 127,
-`test_dkname.js` 255, `elo/check_tab.js` 458, `test_suggest_ledger.js` 450, `test_props_gate.py` 226 cases, and the
-four page smoke cases of `test_audit_phases.py` (2,914, 2,792, 3,535 and 2,513 checks), 0 failures each.
+`test_dkname.js` 255, `elo/check_tab.js` 458, `test_suggest_ledger.js` 450, `test_props_gate.py` 226 cases, and
+`test_audit_phases.py`'s fourteen audit cases (0 failures and 0 warnings each) and its four page smoke cases, one at a
+time (2,914, 2,792, 3,535 and 2,513 checks), 0 failures each.
 
 Wherever this file says, before this paragraph or after it, that Safe is the likeliest pair paying +100, that Medium,
 Aggressive and Extreme are the least costly parlay landing 25%, 12% or 5%, or the likeliest of their size, among the
