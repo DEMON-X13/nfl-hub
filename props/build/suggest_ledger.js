@@ -114,7 +114,8 @@
    is the last replacement recorded for it. Any entry new or changed otherwise is this run's, before its
    kickoff (old) or its lock (prime), and since app v142 carries no Elo picks, nor replaces one in an entry locked with
    them; since app v143 every level with legs this run takes or builds again carries the price rule it was chosen by
-   (minDec, MIN_DEC) and pays +100 or more (its dec at least MIN_DEC), as the page's every level does. A grade is only on a frozen entry and follows its legs' settlements;
+   (minDec, MIN_DEC) and pays +100 or more (its dec at least MIN_DEC), as the page's every level does, +110 or more since
+   app v144 (MIN_DEC 2.1; a level an earlier run took at +100 carries minDec 2). A grade is only on a frozen entry and follows its legs' settlements;
    each summary follows from its entries. And to the last commit's (git show HEAD; SUGGEST_PREV names
    another file, 'none' skips it): no entry it had frozen or locked may be gone or changed beyond those
    rules (a replacement there may be an earlier run's, not yet committed), whatever the file on disk says.
@@ -154,8 +155,11 @@ const TIERS = ['safe', 'med', 'aggr', 'xtrm'], LABELS = { safe: 'Safe', med: 'Me
 const ELO_TIERS = TIERS.map(id => 'elo-' + id), LEVELS = [...TIERS, ...ELO_TIERS];
 /* (app v143, the owner's call of 7 November 2026: "id want to at least double my bet, so 1$ bet wins 2$") the least price a
    level pays, as a decimal (PB_MIN_DEC in part3.js; a page with another is refused): every level with legs this run takes
-   or builds again carries it as minDec, the rule it was chosen by, and pays at least it. A level taken before carries none */
-const MIN_DEC = 2;
+   or builds again carries it as minDec, the rule it was chosen by, and pays at least it. A level taken before carries none.
+   (app v144, the owner's "yes" of 7 November 2026 to "I'd raise the floor to about +110, so the real slip almost always
+   doubles your bet") 2.1, +110: the page meets its floor on its own estimate of DraftKings' same-game price, off by about
+   5% either way. A level taken by an app v143 page carries minDec 2 and stands as it was taken; MIN_ML is the floor's words */
+const MIN_DEC = 2.1, MIN_ML = '+' + Math.round((MIN_DEC - 1) * 100);
 const SLOT_SINCE = '2026-10-19';
 /* the maps of units: the night games and the Sunday slots */
 const UNIT_MAPS = ['prime', 'slot'];
@@ -169,9 +173,10 @@ const HOW = 'The suggestions record, written by props/build/suggest_ledger.js in
   + 'the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in '
   + 'updates. From app v118 to app v141 each entry held the unit\'s Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo '
   + 'chance pe); since app v142 none is taken (an entry not yet locked is rewritten without them), and an entry locked with them keeps '
-  + 'them as they locked, graded as before and never built again. Since app v143 (7 November 2026) every level with legs taken pays +100 or more '
-  + '(minDec: 2, the rule it was chosen by: Safe the likeliest pair paying +100 or more; Medium, Aggressive and Extreme the least costly '
-  + 'landing 25%, 12% or 5% among those, else the likeliest of their size among those); a level taken before, and an empty level, carries '
+  + 'them as they locked, graded as before and never built again. Since app v144 (7 November 2026) every level with legs taken pays +110 or more '
+  + '(minDec: 2.1, the rule it was chosen by: Safe the likeliest pair paying +110 or more; Medium, Aggressive and Extreme the least costly '
+  + 'landing 25%, 12% or 5% among those, else the likeliest of their size among those); a level taken under app v143 (7 November 2026, '
+  + 'until app v144 the same day) pays +100 or more and carries minDec: 2; a level taken before, and an empty level, carries '
   + 'no minDec. slot holds each week\'s Sunday slot (every Sunday game before 7 pm '
   + 'Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first '
   + 'kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder\'s retired all-games panel under its default choices, keyed '
@@ -290,7 +295,7 @@ async function ready(w, errs, payload, asked) {
   if (missing.length) why.push("the page has no Suggested Parlays sets to take (no " + missing.join(', ') + ')');
   else if (w.eval('SP_LOCK_MS') !== LOCK_MS) why.push('the page locks a set at another time than 2 hours before kickoff');
   /* (app v143) the page's least price a level pays is the record's */
-  if (w.eval("typeof PB_MIN_DEC==='undefined'?null:PB_MIN_DEC") !== MIN_DEC) why.push(`the page's levels do not pay +100 or more (its least price is not ${MIN_DEC})`);
+  if (w.eval("typeof PB_MIN_DEC==='undefined'?null:PB_MIN_DEC") !== MIN_DEC) why.push(`the page's levels do not pay ${MIN_ML} or more (its least price is not ${MIN_DEC})`);
   /* (app v125) the props job's own read of DraftKings' lines on ESPN, in the payload (PAY.espn): where it carries a
      well-formed block of player lines for a game still to come, read before its kickoff, the page must have applied it
      (espnGame), or every set would hold team legs only (the job and the page shipped out of order) */
@@ -574,13 +579,13 @@ function check(L, prev, now, runAt) {
        of null too, which no take writes), is refused */
     if (runAt != null && isMap(e) && e.taken_at === runAt && Object.prototype.hasOwnProperty.call(e, 'elo')) bad.push(`${key}: taken by this run with Elo picks, which the record no longer takes (app v142)`);
     /* (app v143) every level with legs this run took (the entry's taken_at its clock) or built again (its updated.at)
-       carries the price rule (minDec, MIN_DEC) and pays +100 or more; read on this run's own levels alone, never in the
+       carries the price rule (minDec, MIN_DEC) and pays +100 or more (app v144: +110, MIN_ML); read on this run's own levels alone, never in the
        check against the last commit, so a level an older page took stands until a run rewrites or locks it */
     if (runAt != null && isMap(e) && Array.isArray(e.tiers)) for (const x of e.tiers) {
       if (!isMap(x) || !Array.isArray(x.legs) || !x.legs.length) continue;
       const mine = e.taken_at === runAt ? 'taken' : isMap(x.updated) && x.updated.at === runAt ? 'built again' : null; if (!mine) continue;
-      if (x.minDec !== MIN_DEC) bad.push(`${key} ${x.id}: ${mine} by this run without the price rule (minDec ${JSON.stringify(x.minDec)}, not ${MIN_DEC}), which every level carries since app v143`);
-      if (!(typeof x.dec === 'number' && x.dec >= MIN_DEC)) bad.push(`${key} ${x.id}: ${mine} by this run at a price of ${JSON.stringify(x.dec)}, under +100, which no level pays since app v143`);
+      if (x.minDec !== MIN_DEC) bad.push(`${key} ${x.id}: ${mine} by this run without the price rule (minDec ${JSON.stringify(x.minDec)}, not ${MIN_DEC}), which every level this run takes carries (${MIN_ML}, app v144)`);
+      if (!(typeof x.dec === 'number' && x.dec >= MIN_DEC)) bad.push(`${key} ${x.id}: ${mine} by this run at a price of ${JSON.stringify(x.dec)}, under ${MIN_ML}, which no level this run takes pays (app v144)`);
     }
   }
   if (prev) {
