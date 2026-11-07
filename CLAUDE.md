@@ -4029,7 +4029,13 @@ no rule 28 failures and 28 warnings, `spWhy` without the price reason 2, `spWhyS
 price in full not enforced 24, the pill's words with no rule 32, `spWhy` without the price reason 4 (PW's two levels, twice), and the first form's one
 slack of 1.25 over every parlay 1 (the all-games engine's Medium empty on the made-up lines); in `test_suggest_ledger.js` on scratch copies of `suggest_ledger.js`, the
 guard's two new refusals taken out 8 failures, its price refusal alone 3, and `spTierOut` not keeping `minDec` in the page
-the run itself refused (5 of 6 checks failed, every take refused without the price rule).
+the run itself refused (5 of 6 checks failed, every take refused without the price rule). The review's changes, bitten
+the same way, each at the run's clock and on the audit's off-season clock: the search never run again by the price 3
+failures in the audit (GC's Medium empty, GD's the likeliest 3); the total never filling for the price 2 and 2 (GT's Safe
+and Medium empty); every empty level claiming no parlay pays 1 and 1; the floor met on the approximate price alone 2 and 2
+(GK); a floor of 1.9 15 and 2 (GF's on the off-season clock); `spTierIn` giving every level taken at the fair chance the
+rule 4 and 4, and 2 in the smoke (its record drawn four ways and its older literal); a title claiming +100 on every level
+7 and 7, and 1 in the smoke (the record drawn four ways alone).
 Wherever this file says, before this paragraph or after it, that Safe is the likeliest pair (or the likeliest 2-leg
 parlay), that Medium, Aggressive and Extreme are the least costly over their floor or the likeliest of their size with no
 word of the price, or that a level is empty only where its unit makes too few legs on one slip, that is history from app
