@@ -50,7 +50,16 @@ search's reading of chance, and of the return in full over the search's reading 
 legs, most of it the full sums' own noise) is under the best's chance in full plus that. Where the kept ran out first with
 some let go (many parlays short of the price in full ahead of the one that pays it), it runs again keeping eight times as
 many; it stops at 6,000 parlays worked in full (PB_LV_EVALS), a bound no real game has come near. The totals' pass looks only
-at parlays holding a total (the first pass has looked at every one with none).
+at parlays holding a total (the first pass has looked at every one with none). Where that walk works some and finds none
+that pays, a second walk is made by the search's chance alone among the parlays whose search price already pays the level,
+under a bound of 12,000 of its own (PB_LV_EVALS2): wherever every leg returns alike, the key ties every parlay short of the
+price with the answer, and where the search's price also runs above the price in full (legs that all move together beyond
+what their pairs say) the first walk can spend its bound on parlays that never pay. The audit's made-up lines (every
+starter's main line set off his own projection at -105 to -115) are such a world: on TB at CHI's 53 lines, 124,312 of the
+211,454 parlays of four pay +700 in full, the first walk's 7,505 by key all fell short, and the second finds one landing
+10.19% where the likeliest paying lands 10.27%, in 1.7 s. No game of week 9 needs it, and every level there is what it was
+without it. pbPaysAny now works every whole parlay its legs multiplied let through in full (up to 3,000), where it skipped
+those whose search price times its slack fell short, so it says false only where none of them pays.
 
 Measured, on the payload of 7 November 2026 at Saturday 18:00 UTC (week 9: Sunday night's TB at CHI, Monday night's BUF at
 MIN and the Sunday slot's 12 games, every unit live). Against every parlay of each level's size in each of the 14 games, the
@@ -329,16 +338,27 @@ function pbTierOf(t,pool,memo,opt){
    to 1e-9 to the larger lean, then the lower id). The walk stops once no parlay left can beat it by more than PB_LV_TOL (0.05
    points of chance): one whose key times PB_LV_C is under the best's chance in full plus that (1.03: about the 99th
    percentile of the chance in full over the search's reading of chance, and of the return in full over the search's
-   reading of return, on week 9's parlays of 3 to 5 legs; most of the spread is the full sums' own noise). Where the kept ran out first with some let go (the price starving them: many parlays short of it in full ahead
-   of the one that pays), the search is run again keeping eight times as many; and it stops at PB_LV_EVALS parlays worked in
-   full, a bound no real game has come near.
+   reading of return, on week 9's parlays of 3 to 5 legs; most of the spread is the full sums' own noise). Where the kept
+   ran out first with some let go (the price starving them: many parlays short of it in full ahead of the one that pays),
+   the search is run again keeping eight times as many; and it stops at PB_LV_EVALS parlays worked in full, a bound no real
+   game has come near.
+
+   Where that walk finds none that pays though it worked some, a second walk is made: by the search's chance alone, among
+   the parlays whose search price already pays the level (mode 1), each worked in full as before, under a bound of its own.
+   The key above ties every parlay short of the price with the answer wherever the legs return alike (a parlay's chance
+   times its price about the same for all, as at DraftKings' fair chance on lines at one margin), and where the search's
+   price also runs above the price in full (legs that all move together, beyond what their pairs say) the first walk can
+   spend its bound on parlays that never pay: on a made-up game of 53 correlated lines at -105 to -115, every one of its
+   first 7,500 by key fell short in full, where the second walk finds one within 0.08 points of chance of the likeliest
+   that pays, after about 6,400 prices worked in full (a price alone costs about a tenth of a millisecond). No game of week
+   9 needs it: there the first walk finds every level.
 
    How close it comes to every parlay of the size worked in full, and how fast, is in patch_level_prices.py's docstring.
    Where pool.pref is not empty (a chance hook's Value picks, setChanceHook) the preferred legs alone are tried first and then
    with k thin legs, fewest first, as every level has been searched since app v100. kMin: the fewest fill legs (1 on the
    totals' pass, whose parlays with none are the first pass's own) */
-const PB_LV_C=1.03, PB_LV_TOL=5e-4, PB_LV_M=1500, PB_LV_EVALS=6000;
-function pbLevelCands(x,I,fl,n,k,minD,M){
+const PB_LV_C=1.03, PB_LV_TOL=5e-4, PB_LV_M=1500, PB_LV_EVALS=6000, PB_LV_EVALS2=12000;
+function pbLevelCands(x,I,fl,n,k,minD,M,mode){
   const m=I.length, out={key:[],set:[],over:false};
   if(m<n) return out;
   const ord=I.map((c,i)=>i).sort((a,b)=>(x.p[I[b]]-x.p[I[a]])||(x.id[I[a]]<x.id[I[b]]?-1:x.id[I[a]]>x.id[I[b]]?1:0));
@@ -381,8 +401,8 @@ function pbLevelCands(x,I,fl,n,k,minD,M){
         for(let t=0;t<gn;t++){ let cnt=Gc[o+t], mm=Gm[o+t], pj=Gb[o+t]; if(t===gi){ cnt++; mm*=DE[j]; pj*=Q[j]*wb[s]; }
           if(cnt<2){ dd*=mm; continue; } pj=Math.max(0,Math.min(1,pj)); dd*=(pj>0&&isFinite(pj))?Math.min(mm,SGP_HOLD/pj):mm; sl*=slackOf(cnt); }
         if(gi<0) dd*=DE[j];
-        if(!(dd*sl>=minD)) continue;
-        const pp=Math.max(0,Math.min(1,p)), key=Math.min(pp,pp*dd/minD);
+        if(!(mode===1?dd>=minD:dd*sl>=minD)) continue;
+        const pp=Math.max(0,Math.min(1,p)), key=mode===1?pp:Math.min(pp,pp*dd/minD);
         if(key<thr) continue;
         ch[d]=j; keys.push(key); const S=new Array(n); for(let a=0;a<n;a++) S[a]=L[ch[a]]; sets.push(S);
         if(keys.length>=2*M) prune();
@@ -402,21 +422,24 @@ function pbLevelCands(x,I,fl,n,k,minD,M){
   out.key=keys; out.set=sets; return out;
 }
 /* what the last searches did, for the checks and the measurements (parlays worked in full, kept, runs): drawn nowhere */
-const PB_LV_STAT={ev:0,kept:0,runs:0};
+const PB_LV_STAT={ev:0,kept:0,runs:0,second:0};
 function pbLevelPick(x,I,fl,n,k,minD){
-  for(let M=PB_LV_M;;M*=8){
-    const C=pbLevelCands(x,I,fl,n,k,minD,M);
-    const E=C.set.map((s,i)=>({key:C.key[i],s,ln:s.reduce((a,c)=>a+x.ln[c],0),id:s.map(c=>x.id[c]).sort().join(',')}));
-    E.sort((a,b)=>(pbEvKey(b.key)-pbEvKey(a.key))||(pbEvKey(b.ln)-pbEvKey(a.ln))||a.id.localeCompare(b.id));
-    let best=null, ev=0, done=!C.over;
-    for(const e of E){
-      if(best&&e.key*PB_LV_C<best.pr+PB_LV_TOL){ done=true; break; }
-      if(ev>=PB_LV_EVALS){ done=true; break; }
-      ev++; const r=pbExact(e.s.map(c=>x.L[c]),0,minD); if(!r) continue;
-      const c={pr:r.corr,ln:e.ln,id:e.id}; if(!best||pbRank('pr')(c,best)<0) best={...c,r}; }
-    PB_LV_STAT.ev+=ev; PB_LV_STAT.kept+=E.length; PB_LV_STAT.runs++;
-    if(done) return best?best.r:null;
-  }
+  /* the first walk's bound is a run's, as it was; the second's its whole */
+  const walk=(mode,cap)=>{ let ev=0;
+    for(let M=PB_LV_M;;M*=8){
+      const C=pbLevelCands(x,I,fl,n,k,minD,M,mode);
+      const E=C.set.map((s,i)=>({key:C.key[i],s,ln:s.reduce((a,c)=>a+x.ln[c],0),id:s.map(c=>x.id[c]).sort().join(',')}));
+      E.sort((a,b)=>(pbEvKey(b.key)-pbEvKey(a.key))||(pbEvKey(b.ln)-pbEvKey(a.ln))||a.id.localeCompare(b.id));
+      let best=null, done=!C.over, ev0=ev;
+      for(const e of E){
+        if(best&&e.key*PB_LV_C<best.pr+PB_LV_TOL){ done=true; break; }
+        if((mode===1?ev:ev-ev0)>=cap){ done=true; break; }
+        ev++; const r=pbExact(e.s.map(c=>x.L[c]),0,minD); if(!r) continue;
+        const c={pr:r.corr,ln:e.ln,id:e.id}; if(!best||pbRank('pr')(c,best)<0) best={...c,r}; }
+      PB_LV_STAT.ev+=ev-ev0; PB_LV_STAT.kept+=E.length; PB_LV_STAT.runs++;
+      if(done) return {r:best?best.r:null,ev}; } };
+  const a=walk(0,PB_LV_EVALS); if(a.r||!a.ev) return a.r;
+  PB_LV_STAT.second++; return walk(1,PB_LV_EVALS2).r;
 }
 function pbLevel(n,pool,memo,kMax,minD,kMin){
   const x=pbCtx(memo), P=pool.pref, U=[...pool.pref,...pool.thin], I=U.map(l=>pbCtxLeg(x,l)), fl=U.map((l,i)=>i>=P.length);
@@ -460,6 +483,13 @@ sub1('p3', r"""/* (the review of app v143) whether some n of these legs that go 
    (parlayDec, the card's price; app v144: the level's own least price), at most kMax of them a game total (l.market): true, false, or null where telling""",
      'pbPaysAny on a least price of its own')
 
+sub1('p3', r"""   one after it; a whole one is worked in full only where its approximate price (pbDecApprox) times its slack reaches the
+   floor, the rule the search keeps a candidate by (at most PB_PAYS_FULL of them, the price in full being the dear part).""",
+     r"""   one after it; (app v144) every whole one is worked in full (at most PB_PAYS_FULL of them; a price in full costs about a
+   tenth of a millisecond), where until then only those whose approximate price (pbDecApprox) times its slack reached the
+   floor were, so a false could stand where the search's price ran under the price in full.""",
+     'pbPaysAny: the comment')
+
 sub1('p3', r"""   An empty level says no n legs pay +100 together only where this is false, and else that none was found */
 const PB_PAYS_CAP=60000, PB_PAYS_FULL=3000;
 function pbPaysAny(list,n,kMax,cap){""",
@@ -468,9 +498,15 @@ const PB_PAYS_CAP=60000, PB_PAYS_FULL=3000;
 function pbPaysAny(list,n,kMax,cap,minD){""",
      'pbPaysAny takes minD')
 
-sub1('p3', r"""      if(!(pbDecApprox(cur,memo)*slack(cur)>=PB_MIN_DEC)) return;""",
-     r"""      if(!(pbDecApprox(cur,memo)*slack(cur)>=minD)) return;""",
-     'pbPaysAny: approx at minD')
+sub1('p3', r"""
+      if(!(pbDecApprox(cur,memo)*slack(cur)>=PB_MIN_DEC)) return;""",
+     r"""""",
+     "pbPaysAny: every whole parlay its legs multiplied let through worked in full, none set aside by the search's price")
+
+sub1('p3', r"""  const slack=cur=>{ const c={}; for(const l of cur) c[l.gid]=(c[l.gid]||0)+1; let v=1; for(const k in c) if(c[k]>1) v*=PB_MIN_SLACK[Math.min(c[k],PB_MIN_SLACK.length-1)]; return v; };
+""",
+     r"""""",
+     'pbPaysAny: no slack')
 
 sub1('p3', r"""      if(parlayDec(pbOrder(cur.map(l=>({...l}))).map(l=>({leg:l,ml:l.price})))>=PB_MIN_DEC) hit=true; return; }""",
      r"""      if(parlayDec(pbOrder(cur.map(l=>({...l}))).map(l=>({leg:l,ml:l.price})))>=minD) hit=true; return; }""",
