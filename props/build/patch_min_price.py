@@ -234,17 +234,19 @@ const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_CAP=40, PB_BEAM=12, PB_WIDE=2
    would take more than PB_PAYS_CAP parlays. A parlay never pays more than its legs multiplied, so the legs are tried
    highest price first and a partial whose price times the best the places left can add falls short is let go, with every
    one after it; a whole one is worked in full only where its approximate price (pbDecApprox) times its slack reaches the
-   floor, the rule the search keeps a candidate by. An empty level says no n legs pay +100 together only where this is
-   false, and else that none was found */
-const PB_PAYS_CAP=60000;
+   floor, the rule the search keeps a candidate by (at most PB_PAYS_FULL of them, the price in full being the dear part).
+   An empty level says no n legs pay +100 together only where this is false, and else that none was found */
+const PB_PAYS_CAP=60000, PB_PAYS_FULL=3000;
 function pbPaysAny(list,n,kMax,cap){
   const L=list.map(l=>({l,d:mlToDec(l.price)||1})).sort((a,b)=>b.d-a.d), m=L.length, memo=new Map(), lim=cap||PB_PAYS_CAP;
   if(m<n) return false;
-  let seen=0, hit=false, over=false;
+  let seen=0, full=0, hit=false, over=false;
   const slack=cur=>{ const c={}; for(const l of cur) c[l.gid]=(c[l.gid]||0)+1; let v=1; for(const k in c) if(c[k]>1) v*=PB_MIN_SLACK[Math.min(c[k],PB_MIN_SLACK.length-1)]; return v; };
   const rec=(i0,cur,prod,fill)=>{ const need=n-cur.length;
     if(!need){ if(++seen>lim){ over=true; return; }
-      if(pbDecApprox(cur,memo)*slack(cur)>=PB_MIN_DEC&&parlayDec(pbOrder(cur.map(l=>({...l}))).map(l=>({leg:l,ml:l.price})))>=PB_MIN_DEC) hit=true; return; }
+      if(!(pbDecApprox(cur,memo)*slack(cur)>=PB_MIN_DEC)) return;
+      if(++full>PB_PAYS_FULL){ over=true; return; }
+      if(parlayDec(pbOrder(cur.map(l=>({...l}))).map(l=>({leg:l,ml:l.price})))>=PB_MIN_DEC) hit=true; return; }
     for(let i=i0;i<=m-need&&!hit&&!over;i++){
       let b=prod; for(let j=i;j<i+need;j++) b*=L[j].d;
       if(b<PB_MIN_DEC) break;
