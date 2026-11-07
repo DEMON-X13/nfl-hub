@@ -97,6 +97,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const cp = require('child_process');
+/* (app v144, the review of 7 November 2026) the test stops itself, and fails, once it has run this long: it is a unit of the
+   props gate's job C since then (test_props_gate.py reads this line for the job's cap, run here and again on the base).
+   Each run of the script is held to what is left (spawnSync's timeout, since a timer cannot fire inside it), and a timer
+   stops it between runs; about a minute when nothing else is running */
+const STOP_AFTER_MS = 8 * 60 * 1000, T0 = Date.now(), leftMs = () => Math.max(1000, STOP_AFTER_MS - (Date.now() - T0));
 const HERE = __dirname, ROOT = path.resolve(HERE, '..', '..');
 const SCRIPT = path.join(HERE, 'suggest_ledger.js');
 const SL = require('./suggest_ledger.js');
@@ -133,8 +138,9 @@ const r3 = v => Math.round(v * 1e3) / 1e3;
 let seq = 0;
 function run(pay, now, extra = {}) {
   const pf = path.join(DIR, `payload_${++seq}.json`); fs.writeFileSync(pf, JSON.stringify(pay));
-  const r = cp.spawnSync('node', [SCRIPT], { encoding: 'utf8', env: { ...process.env, SUGGEST_NOW: iso(now), SUGGEST_PAYLOAD: pf,
+  const r = cp.spawnSync('node', [SCRIPT], { encoding: 'utf8', timeout: leftMs(), env: { ...process.env, SUGGEST_NOW: iso(now), SUGGEST_PAYLOAD: pf,
     SUGGEST_LEDGER: LEDGER, SUGGEST_PREV: 'none', ...extra } });
+  if (r.error && r.error.code === 'ETIMEDOUT') stopped();
   const out = (r.stdout || '') + (r.stderr || '');
   return { code: r.status, out, last: out.trim().split('\n').pop() };
 }
@@ -159,6 +165,8 @@ const homeOf = gid => (REAL.sched.find(g => g.id === gid) || {}).h || 'AAA';
 
 /* a stage the stages before it left broken stops with a failure, never a crash */
 process.on('uncaughtException', e => { chk(false, 'the test stopped: ' + (e && e.stack || e)); end(); });
+function stopped() { chk(false, `the test did not finish in ${STOP_AFTER_MS / 60000} minutes: stopped with what it had`); end(); }
+setTimeout(stopped, STOP_AFTER_MS).unref();
 function end() {
   console.log(`${n} checks, ${fails.length} failures`);
   for (const f of fails) console.log('  FAIL: ' + f);
@@ -1093,7 +1101,8 @@ const gLegacy = { kept: 0, dropped: 0 };
 { const realText = fs.readFileSync(path.join(ROOT, SL.LEDGER_REL), 'utf8'), realL = JSON.parse(realText);
   const copy = path.join(DIR, 'real_prev.json'); fs.writeFileSync(copy, realText); fs.writeFileSync(LEDGER, realText);
   const realPay = path.join(ROOT, 'props', 'data', 'payload.json'), t0 = Date.now();
-  const rr = cp.spawnSync('node', [SCRIPT], { encoding: 'utf8', env: { ...process.env, SUGGEST_PAYLOAD: realPay, SUGGEST_LEDGER: LEDGER, SUGGEST_PREV: copy } });
+  const rr = cp.spawnSync('node', [SCRIPT], { encoding: 'utf8', timeout: leftMs(), env: { ...process.env, SUGGEST_PAYLOAD: realPay, SUGGEST_LEDGER: LEDGER, SUGGEST_PREV: copy } });
+  if (rr.error && rr.error.code === 'ETIMEDOUT') stopped();
   const outG = (rr.stdout || '') + (rr.stderr || ''), now = Date.now();
   chk(rr.status === 0 && /^suggest ledger: (written|unchanged)/m.test(outG), 'G: the real ledger on the real payload was refused: ' + outG.slice(-500));
   const after = bytes(), A2 = JSON.parse(after);

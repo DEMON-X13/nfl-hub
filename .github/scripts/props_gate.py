@@ -128,7 +128,12 @@ UNITS = [('props/build/test_apply_espn.py', 'py'), ('props/build/test_espn_read.
          # forecasts' rules, and its downloads and forecasts on a local server, seconds each on fixtures of their own (no
          # network, no elo/cache), so a pull request this gate covers holds them before it merges; an elo-only one is held
          # by the Elo job's own run of both before its commit (elo.yml), which this gate never sees
-         ('elo/test_parity.py', 'py'), ('elo/test_fetch.py', 'py')]
+         ('elo/test_parity.py', 'py'), ('elo/test_fetch.py', 'py'),
+         # (app v144, the review of 7 November 2026) the suggestions record's test: suggest_ledger.js run as the props job
+         # runs it on made-up weeks, its guard on hand-made ledgers (each level held to its own price and rule) and the real
+         # ledger copied; the props job's own run of the script only logs a refusal and publishes, so a weakened guard merged
+         # green until it joined the units. About a minute, eight at most by its own stop (STOP_AFTER_MS)
+         ('props/build/test_suggest_ledger.js', 'node')]
 # a unit run only where its file is in the tree; every other one missing fails the gate (none is optional: the parlay
 # card's name rule's test landed with its change)
 UNITS_OPTIONAL = set()

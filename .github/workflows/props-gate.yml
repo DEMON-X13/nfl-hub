@@ -163,14 +163,15 @@ jobs:
     # parlay card and its Pull from DraftKings, the touchdown shadow, the Elo job's averages' inputs and downloads: those
     # two under props/requirements.txt's pins, which they run on as on elo's), on fixtures of their own beside jobs A and B,
     # seconds each but for the page's two smokes (smoke_admin.js about a minute, smoke_live.js about four) and the
-    # touchdown shadow's test (about 45 seconds); a failure is run again on the base's code. 50 minutes: about 8 when
-    # all pass, and room for the worst case, the three running to their own caps (smoke_live.js ten minutes,
-    # smoke_admin.js eight, test_td_shadow.py three) here and again on the base, with the base's npm ci
+    # touchdown shadow's test (about 45 seconds) and the suggestions record's (about a minute); a failure is run again on
+    # the base's code. 65 minutes: about 9 when all pass, and room for the worst case, the four running to their own caps
+    # (smoke_live.js ten minutes, smoke_admin.js eight, test_suggest_ledger.js eight, test_td_shadow.py three) here and
+    # again on the base, with the base's npm ci
     name: unit tests
     needs: paths
     if: needs.paths.outputs.audit == 'true' || needs.paths.outputs.page == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 65
     steps:
       - uses: actions/checkout@v7
         with:
