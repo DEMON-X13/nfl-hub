@@ -2503,7 +2503,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v143 \u00b7 2026-11-07';
+const APP_BUILD='app v144 \u00b7 2026-11-07';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -6065,8 +6065,14 @@ const PB_TIERS=[['safe','Safe',2,0],['med','Medium',3,0.25],['aggr','Aggressive'
    search's approximate price (pbDecApprox) only keeps candidates, times a slack for each game holding two legs or more of
    the parlay (PB_MIN_SLACK, by their count: across games the two prices are one product): the price in full is at most 1.02
    times the approximate one on a 2-leg same-game parlay, 1.06 on 3, 1.12 on 4 and 1.22 on 5, so none that pays +100 is
-   dropped */
-const PB_MIN_DEC=2, PB_MIN_SLACK=[1,1,1.05,1.1,1.2,1.3], PB_MIN_ML=fmtML(decToML(PB_MIN_DEC));
+   dropped.
+   (app v144, the owner's "yes" of 7 November 2026 to "I'd raise the floor to about +110, so the real slip almost always
+   doubles your bet") PB_MIN_DEC is 2.1, +110: the floor is met on the site's own estimate of DraftKings' same-game price
+   (parlayDec's SGP_HOLD, off by about 5% either way on the tickets it was fitted on), so it sits 5% over doubling. The
+   slack is a ratio and holds at any floor. pbMinMl and pbMinUsd word a floor from its decimal ("+110", "$2.10"), so a
+   level's words follow the floor it carries (minDec), never this constant alone */
+const PB_MIN_DEC=2.1, PB_MIN_SLACK=[1,1,1.05,1.1,1.2,1.3], PB_MIN_ML=fmtML(decToML(PB_MIN_DEC));
+const pbMinMl=d=>fmtML(decToML(d)), pbMinUsd=d=>'$'+(Number.isInteger(d)?String(d):d.toFixed(2));
 /* the slack of a parlay the beam scores, from its games' counts (pbGrow's g: game, count, price product, book product) */
 const pbMinSlack=G=>{ let v=1; for(let i=0;i<G.length;i+=4){ const c=G[i+1]; if(c>1) v*=PB_MIN_SLACK[Math.min(c,PB_MIN_SLACK.length-1)]; } return v; };
 /* (the review of app v143) whether some n of these legs that go together on one slip (pbFits) pay PB_MIN_DEC or more in
@@ -6834,14 +6840,16 @@ function pbEspnLine(legs){
 /* what a level was chosen by, as its card says it (app v138: the least costly, the best expected return at DraftKings'
    fair chance, over its floor; else the likeliest of its size), and the pill's title */
 /* (app v143) a level chosen among the parlays paying +100 or more (t.minDec, carried by the record since) says so; one
-   read back from a lock taken before it was chosen without the rule and says what did choose it */
+   read back from a lock taken before it was chosen without the rule and says what did choose it.
+   (app v144) the words are the level's own floor (t.minDec): a level taken from app v144 on says +110, one locked under
+   app v143 (minDec 2) the +100 it was chosen at, with the words it was drawn with then (its title no "by the site’s price") */
 function pbRuleOf(t){
-  const n=t.legs.length, pct=Math.round((t.floor||0)*100), mp=t.minDec?` · ${PB_MIN_ML}+`:'';
+  const n=t.legs.length, pct=Math.round((t.floor||0)*100), mp=t.minDec?` · ${pbMinMl(t.minDec)}+`:'';
   return t.likeliest?`${mp?'':'the '}likeliest ${n} legs${mp}`:t.floor?`least costly · ${pct}%+`:(mp?`likeliest pair${mp}`:'the likeliest pair');
 }
-function pbRuleTitle(t){ const n=t.legs.length, pay=t.minDec?`paying at least ${PB_MIN_ML}`:'';
+function pbRuleTitle(t){ const n=t.legs.length, pay=t.minDec?`paying at least ${pbMinMl(t.minDec)}`:'';
   if(!t.likeliest&&t.floor) return `Smallest expected loss of the ${n}-leg parlays landing ${Math.round(t.floor*100)}%+ by DraftKings’ fair chance${pay?' and '+pay:''}`;
-  return pay?`The likeliest ${n}-leg parlay ${pay}: $1 returns $${PB_MIN_DEC} or more`:''; }
+  return pay?`The likeliest ${n}-leg parlay ${pay}${t.minDec===2?'':' by the site’s price'}: $1 returns ${pbMinUsd(t.minDec)} or more`:''; }
 function pbRuleHtml(t){ const tt=pbRuleTitle(t); return `<span class="pb-rule"${tt?` title="${tt}"`:''}>${pbRuleOf(t)}</span>`; }
 /* whether a level was chosen by the rule its pill would state: a live level always; one read back from the record or this
    browser's copy (every leg kept at its lock) only where it carries chance 'fair' (spTierOut, from app v138 on), since a
@@ -8202,7 +8210,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='092c8de';
+const PAGE_HASH='3e6f958';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
