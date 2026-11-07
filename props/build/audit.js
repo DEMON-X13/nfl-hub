@@ -58,8 +58,9 @@ const WARN={
      game's parlays where every parlay is a plain product, and to the page's own search on the audit's own pool elsewhere.
      What stays a warning is the choice of the two engines no page draws */
   engine:'(app v138) which parlay an engine no page draws composes: the all-games levels (getPbTiers, drawn nowhere since app v111) and a game page\'s hands (gameTiers, drawn nowhere since app v124), kept because the sets and these checks stand on them: every leg either holds is still held, blocking, to a real price, its chance in the band, the leg rules, the pair rule, the floors a level states and the builder\'s own sums',
-  /* (app v138, the review of 27 October 2026) the search's reach on a same-game parlay */
-  search:'(app v138) whether a Suggested Parlays level of a game whose legs move together is the least costly (Safe: the likeliest) of the parlays its own search\'s pairwise score ranks best on a full enumeration of the game\'s parlays, worked in full: the page\'s search is a beam on that score, which an enumeration can see past, so a miss is a correctly priced parlay that costs a little more than another; every leg, the floor, the chance and the price a card states are held blocking, and on a game whose parlays are plain products the choice is held in full, blocking',
+  /* (app v138, the review of 27 October 2026) the search's reach on a same-game parlay; (app v144, the review of 7 November
+     2026) argued for the likeliest-at-price rule, and blocking on the audit's own made-up data */
+  search:'(app v144) whether a Suggested Parlays level of a game of the week whose legs move together is the likeliest parlay of its size paying its own price, against the audit\'s own walk of every parlay of the size whose legs multiplied pay that price, by the search\'s pairwise reading of the chance, the first 20 paying in full worked in full (searchAud): a miss of more than 0.2 points of chance (SEARCH_TOL_AUD, the full sums\' own noise) is a correctly priced parlay paying the level\'s price that lands a little less often than another, while every leg, its price paid in full, the chance, the fair chance and the words a card states are held blocking; the same choice is held blocking wherever the audit\'s own data stands under it (the made-up lines on the week\'s games, and M18\'s planted games, where a search that cannot reach the likeliest at the price fails), and on a game whose parlays are plain products in full',
   wording:'the wording of a note or a reason in the suggestions panel: no number in it',
   coverage:'the week gave a made-up case nothing to stand on, so a rule went untested this run: nothing shown is wrong',
   panel:'the credit-pull panel, the owner\'s note of what the odds API cost: no price, line or chance in it',
@@ -2153,8 +2154,11 @@ setTimeout(async()=>{
             if(noMovers(all)){ const b=levelAud(all,n,decN(n),!!t.mkt,kTop); levelHeld(t,b,gl,chk,true); }
             /* (app v138, the review of 27 October 2026) legs that move together: the level against the best 20 of its game's
                parlays by the search's own score, worked in full (the page works its best 40 of the beam's); every leg a
-               Value pick's equal, no total among them (W.search) */
-            else if(!t.mkt&&!from.pref.length&&searchHeld(t,searchAud(all,n,decN(n),20),gl,W.search,20)) searchWorked++; }
+               Value pick's equal, no total among them (W.search). (app v144, the review of 7 November 2026) blocking on the
+               audit's own made-up lines (rule (c): its own data on the week's games), where a search that cannot reach the
+               likeliest parlay at a level's price (app v143's beam at the new prices missed by 4 to 10 points there) fails;
+               a warning on the week's own lines, as WARN says */
+            else if(!t.mkt&&!from.pref.length&&searchHeld(t,searchAud(all,n,decN(n),20),gl,lab.startsWith('made-up lines')?chk:W.search,20)) searchWorked++; }
           /* (app v121) the slot's level is its game's own level, and no other game of the slot's own level beats it by the
              slot's rule (slotBestAud, the audit's own copy; the earlier game on a tie) */
           if(slot){ const own=P.s&&P.s.tiers.find(x=>x.id===t.id), sig=x=>x&&x.legs?x.legs.map(legIdAud).join()+'@'+x.corr+'@'+x.dec:'none';
@@ -4168,6 +4172,17 @@ setTimeout(async()=>{
        GK  Monday 8:45 pm: a quarterback's passing yards over and his receiver's receiving yards over (the payload's pair
            table, 0.35), priced at the run so their approximate price (pbDecApprox) is +110 or more and their price in full
            (parlayDec) under it, and the likeliest pair: never a level, so a price met by the approximate reading fails it
+       GW  Sunday 8:55 pm (the review of 7 November 2026): a wide pool of plain products, 10 lines at -400, 8 at -150 and 15
+           at +115, where the likeliest 4 paying +700 (two +115s, a -150 and a -400) has none of its threes among the 400
+           likeliest threes or the 400 dearest, and the likeliest 5 paying +1500 none of its fours among the 400 likeliest
+           fours or the 400 dearest, so a beam by the chance with a reserve by the price (app v143's, at the new prices: 7.54%
+           where 9.53% pays) cannot reach them; its Aggressive and Extreme worked out in full by the audit's own arithmetic
+       GY3, GY4  Thursday 9:30 pm and Monday 10 pm (the same review): a quarterback's passing yards over beside one receiver
+           under and the others over (the pair table's own shape, planted for made-up groups: 0.353 through the quarterback,
+           -0.038 between receivers), the likeliest 3 paying +300 (4 paying +700), which the search's reading understates by
+           its make, beside a rival of unrelated lines landing over that reading times 1.03 and over 0.2 points under it, so a
+           walk that takes the first parlay paying in full in the key order, or stops at 1.03, takes the rival (0.31 and 0.57
+           points short)
        the words  each card's rule and title the audit's own (ruleFor, ruleTitleFor) by the level's own recorded rule: a
            level built now "likeliest pair · +110+", "likeliest 3 legs · +300+", "likeliest 4 legs · +700+", "likeliest 5 legs
            · +1500+", titled "The likeliest 3-leg parlay paying at least +300 by the site’s price: $1 returns $4 or more"; a
@@ -4187,7 +4202,8 @@ setTimeout(async()=>{
     const GC=mk('ACC','ACD','2099-01-15','20:15'), GD=mk('ADD','ADE','2099-01-15','20:30');
     const GT={...mk('ATT','ATU','2099-01-19','20:30'),tot:44.5,tov:-110,tou:-110}, GU={...mk('AUU','AUV','2099-01-19','21:30'),tot:44.5,tov:-110,tou:-110};
     const GF=mk('AFF','AFG','2099-01-18','20:40'), GK=mk('AKK','AKL','2099-01-19','20:45');
-    const FX=[GP,GM,GA,GR,SX,SY,Z1,Z2,GC,GD,GT,GU,GF,GK], NIGHTS=[GP,GM,GA,GR,GC,GD,GT,GU,GF];
+    const GW=mk('AWW','AWX','2099-01-18','20:55'), GY3=mk('AY3','AZ3','2099-01-15','21:30'), GY4=mk('AY4','AZ4','2099-01-19','22:00');
+    const FX=[GP,GM,GA,GR,SX,SY,Z1,Z2,GC,GD,GT,GU,GF,GK,GW,GY3,GY4], NIGHTS=[GP,GM,GA,GR,GC,GD,GT,GU,GF,GW,GY3,GY4];
     const pl=(g,id,p,price,stat,k)=>({key:`${g.id}|aud18-${id}|${stat||'receptions'}`,gid:g.id,pid:'aud18-'+id,stat:stat||'receptions',k:k||4,side:'over',main:true,p,price,src:'real',mu:null,
       name:'Made-up '+id,pos:'WR',grp:'AUD',team:g.h,opp:g.a,week:g.w,label:`Over ${(k||4)-0.5} ${stat==='receiving_yards'?'receiving yards':'receptions'}`});
     const L18=[
@@ -4210,7 +4226,21 @@ setTimeout(async()=>{
       /* GT three lines at -180, GU four at -140 (their totals from the schedule); GF a -400 line, a +80, a +90 and a +120 */
       pl(GT,'t1',0.70,-180),pl(GT,'t2',0.69,-180),pl(GT,'t3',0.68,-180),
       pl(GU,'u1',0.64,-140),pl(GU,'u2',0.63,-140),pl(GU,'u3',0.62,-140),pl(GU,'u4',0.61,-140),
-      pl(GF,'f1',0.95,-400),pl(GF,'f2',0.62,80),pl(GF,'f3',0.58,90),pl(GF,'f4',0.45,120)];
+      pl(GF,'f1',0.95,-400),pl(GF,'f2',0.62,80),pl(GF,'f3',0.58,90),pl(GF,'f4',0.45,120),
+      /* GW: 10 lines at -400, 8 at -150 and 15 at +115, each a chance of its own (no two level) */
+      ...Array.from({length:10},(_,j)=>pl(GW,`ws${j}`,0.78-0.0007*j,-400)),...Array.from({length:8},(_,j)=>pl(GW,`wm${j}`,0.58-0.0009*j,-150)),
+      ...Array.from({length:15},(_,j)=>pl(GW,`wx${j}`,0.455+0.0003*j,115))];
+    /* GY3 and GY4: the quarterback (AQ8) and his receivers (AW8) on the home club, moving together by the pair table the case
+       plants; the rival's lines of no correlated group (AUD) on the away club */
+    const py=(g,id,grp,side,p,price,team)=>({key:`${g.id}|aud18-${id}|${grp==='AQ8'?'passing_yards':grp==='AW8'?'receiving_yards':'receptions'}`,gid:g.id,pid:'aud18-'+id,
+      stat:grp==='AQ8'?'passing_yards':grp==='AW8'?'receiving_yards':'receptions',k:40,side,main:true,p,price,src:'real',mu:null,name:'Made-up '+id,pos:grp==='AQ8'?'QB':'WR',grp,
+      team:team||g.h,opp:team===g.a?g.h:g.a,week:g.w,label:`${side==='under'?'Under':'Over'} 39.5 ${grp==='AQ8'?'passing yards':grp==='AW8'?'receiving yards':'receptions'}`});
+    const Y3=[py(GY3,'yq','AQ8','over',0.641,-200),py(GY3,'yw1','AW8','under',0.5435,-130),py(GY3,'yw2','AW8','over',0.5342,-125)],
+      X3=[0.57774,0.57773,0.57772].map((p,j)=>py(GY3,`yx${j}`,'AUD','over',p,-153,GY3.a));
+    const Y4=[py(GY4,'zq','AQ8','over',0.6356,-195),py(GY4,'zw1','AW8','under',0.4579,110),py(GY4,'zw2','AW8','over',0.4579,110),py(GY4,'zw3','AW8','over',0.5759,-150)],
+      X4=[0.54954,0.54953,0.54952,0.54951].map((p,j)=>py(GY4,`zx${j}`,'AUD','over',p,-136,GY4.a));
+    L18.push(...Y3,...X3,...Y4,...X4);
+    const CORR18={'team|AQ8:passing_yards|AW8:receiving_yards':0.353,'team|AW8:receiving_yards|AW8:receiving_yards':-0.038}, KEEPC18={};
     /* GK: a quarterback's passing yards over and his receiver's yards over, moving together by the payload's pair table,
        their prices found at the run (below), with two lines of no correlation beside them */
     const kq=X=>({key:`${GK.id}|aud18-kq|passing_yards`,gid:GK.id,pid:'aud18-kq',stat:'passing_yards',k:250,side:'over',main:true,p:0.62,price:X,src:'real',mu:null,name:'Made-up kq',pos:'QB',grp:'QB',team:GK.h,opp:GK.a,week:GK.w,label:'Over 249.5 passing yards'});
@@ -4240,6 +4270,7 @@ setTimeout(async()=>{
       S.sched.push(...FX); w.__m18L=L18;
       { const mine=new Set(FX.map(g=>g.id)); hookSet(l=>l&&mine.has(l.gid)&&l.p>0&&l.p<1?{p:l.p,by:'audit'}:null); }
       w.eval(`pricedLegs=function(games){ return window.__m18L.filter(l=>(games||[]).some(g=>g.id===l.gid&&!gameStarted(g))&&suggestable(l.pid)).map(l=>({...l})); };`);
+      { const C=F('PAY').corr; for(const k in CORR18){ KEEPC18[k]=Object.prototype.hasOwnProperty.call(C,k)?C[k]:undefined; C[k]=CORR18[k]; } }
       dropCaches();
       { const own=w.eval('PB_TIERS').map(t=>t[0]+':'+t[4]).join(), want=SPEC_AUD.map(s=>s[0]+':'+LEVEL_DEC_AUD[s[0]]).join();
         chk(own===want,`M18: the page's levels' prices are ${own}, not the audit's own ${want}`); }
@@ -4364,6 +4395,30 @@ setTimeout(async()=>{
         chk(!!sf&&!!sf.legs&&!!lk&&ids(sf.legs)===lk.id&&sf.dec>=D2,`M18, GK: Safe is ${sf&&sf.legs?names(sf.legs)+' at '+sf.dec:'empty'}, not the likeliest pair paying +110 or more in full (${lk?names(lk.L):'none'})`);
         for(const t of (s&&s.tiers)||[]) if(t.legs) chk(!(t.legs.some(l=>l.pid==='aud18-kq')&&t.legs.some(l=>l.pid==='aud18-kw')&&t.legs.length===2)&&t.dec>=LEVEL_DEC_AUD[t.id],`M18, GK: the ${t.id} level is the pair paying +110 by its approximate price alone, or pays ${t.dec}`);
         if(K) said18.push(`GK's pair at ${KX} and ${KY} paying ${F('pbDecApprox')(K.L,new Map()).toFixed(4)} approximately and ${K.dec.toFixed(4)} in full, never a level`); }
+      /* GW: the old beam's reach. Its threes and fours counted against the answer's, and its Aggressive and Extreme worked out
+         in full here: every parlay of 4 and 5 of its legs, a plain product (held first: no two of its legs move together),
+         the chance its legs' chances multiplied and the price SGP_HOLD times their decimals, the page's level that likeliest
+         within 1e-12 and paying its price in full */
+      { const s=sets[GW.id], all=legsOf(GW), md=F('mlToDec'), H=F('SGP_HOLD'), rho=F('legRho'), D=all.map(l=>md(l.price)||1);
+        let plain=all.length===33; for(let a=0;a<all.length;a++) for(let b=a+1;b<all.length;b++) if(Math.abs(rho(all[a],all[b]))>=0.03||!fitsAud([all[a]],all[b])) plain=false;
+        const best=(n,minD)=>{ let b=null; (function rec(i0,cur,pr,d){ if(cur.length===n){ if(H*d>=minD*(1+1e-9)&&(!b||pr>b.pr)) b={pr,ix:cur.slice()}; return; }
+            for(let i=i0;i<all.length;i++){ cur.push(i); rec(i+1,cur,pr*all[i].p,d*D[i]); cur.pop(); } })(0,[],1,1); return b; };
+        const subsets=(n)=>{ const out=[]; (function rec(i0,cur){ if(cur.length===n){ out.push(cur.slice()); return; } for(let i=i0;i<all.length;i++){ cur.push(i); rec(i+1,cur); cur.pop(); } })(0,[]); return out; };
+        const prI=ix=>ix.reduce((a,i)=>a*all[i].p,1), dI=ix=>ix.reduce((a,i)=>a*D[i],1);
+        for(const [id,n] of [['aggr',4],['xtrm',5]]){ const b=best(n,decN(n)), t=s&&s.tiers.find(x=>x.id===id), gl=`M18, GW: the ${id} level`;
+          const sub=b?b.ix.map((_,j)=>b.ix.filter((__,k)=>k!==j)):[], S=subsets(n-1), mp=sub.length?Math.max(...sub.map(prI)):1, mdx=sub.length?Math.max(...sub.map(dI)):1;
+          const likelier=S.filter(ix=>prI(ix)>mp+1e-15).length, dearer=S.filter(ix=>dI(ix)>mdx+1e-12).length;
+          chk(plain&&!!b&&likelier>400&&dearer>400,`${gl}: the case does not stand on what it is for (a plain product: ${plain}; ${likelier} parlays of ${n-1} likelier than any ${n-1} of the likeliest ${n} paying ${mlN(n)}, and ${dearer} dearer, each over 400)`);
+          chk(!!b&&!!t&&!!t.legs&&Math.abs(t.corr-b.pr)<1e-12&&t.dec>=decN(n)&&ruledAud(t),`${gl} is ${t&&t.legs?names(t.legs)+' landing '+t.corr+' at '+t.dec:'empty: '+(t&&t.why)}, not the likeliest ${n} paying ${mlN(n)} (${b?b.ix.map(i=>all[i].name).join('+')+' landing '+b.pr:'none'}), or does not carry its price and its rule`);
+          if(b&&t&&t.legs) said18.push(`GW's ${id} ${(t.corr*100).toFixed(2)}% at ${ml(t.dec)}, every parlay of ${n} worked out, ${likelier} likelier and ${dearer} dearer parlays of ${n-1} past its reach by a beam`); } }
+      /* GY3 and GY4: the star the likeliest paying (the loop above holds each level to every parlay of its size worked out in
+         full), its rival landing over its reading times 1.03 and over 0.2 points under it, and ahead of it by the key */
+      { const ev=F('pbEval'), keyOf=(ls,minD)=>{ const e=ev(ls,new Map()); return Math.min(e.pr,e.pr*e.d/minD); };
+        for(const [g,Y,X,n] of [[GY3,Y3,X3,3],[GY4,Y4,X4,4]]){ const all=legsOf(g), lk=likeliest(every(all,n,decN(n))), rv=likeliest(every(X.map(l=>({...l})),n,decN(n))), kY=keyOf(Y.map(l=>({...l})),decN(n));
+          const t=sets[g.id]&&sets[g.id].tiers.find(x=>x.id===(n===3?'med':'aggr')), gl=`M18, ${g===GY3?'GY3':'GY4'}`;
+          chk(!!lk&&lk.id===ids(Y)&&!!rv&&rv.pr<lk.pr-SEARCH_TOL_AUD&&rv.pr>kY*1.03+5e-4&&keyOf(X.map(l=>({...l})),decN(n))>kY,`${gl}: the case does not stand on what it is for (the likeliest ${n} paying ${mlN(n)} ${lk?names(lk.L)+' landing '+lk.pr.toFixed(5):'none'}, its quarterback's star; its rival ${rv?rv.pr.toFixed(5):'none'}, over 0.2 points under it, over its reading ${kY.toFixed(5)} times 1.03, and ahead of it by the key)`);
+          chk(!!t&&!!t.legs&&ids(t.legs)===ids(Y),`${gl}: the ${n===3?'Medium':'Aggressive'} level is ${t&&t.legs?names(t.legs)+' landing '+t.corr:'empty: '+(t&&t.why)}, not the quarterback's star (${names(Y)}), the likeliest ${n} paying ${mlN(n)}`);
+          if(t&&t.legs&&rv) said18.push(`${gl.slice(5)}'s ${n===3?'Medium':'Aggressive'} the quarterback's star at ${(t.corr*100).toFixed(3)}%, its rival ${(rv.pr*100).toFixed(3)}%`); } }
       /* the words where the enumeration cannot tell, and pbPaysAny the audit's own paysAud, at each level's price */
       { const keepP=w.eval('[pbPaysAny]');
         for(const g of [GP,GM,GA,GR,GF,GT,GU]){ const q=qualAud([g],ALL_U), all=[...q.pref,...q.thin,...q.mkt], f=fitAud([...q.pref,...q.thin]);
@@ -4378,6 +4433,7 @@ setTimeout(async()=>{
     } catch(e){ chk(false,'M18 threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
     finally {
       hookSet(null); w.__m18k=keepF; w.eval('pricedLegs=window.__m18k[0];'); delete w.__m18k; delete w.__m18L;
+      { const C=F('PAY').corr; for(const k in KEEPC18){ if(KEEPC18[k]===undefined) delete C[k]; else C[k]=KEEPC18[k]; } }
       for(const g of FX){ const i=S.sched.findIndex(x=>x.id===g.id); if(i>=0) S.sched.splice(i,1); }
       dropCaches(); }
     console.log(`M18. each level the likeliest at its own payout (+110, +300, +700, +1500), on a made-up week: ${said18.join('; ')}`); }
