@@ -6404,7 +6404,15 @@ function pbExact(legs,floor,minDec){
    legs, most of the spread the full sums' own noise). It is a stop measured, not a bound (the review of 7 November 2026):
    that ratio reaches 1.07 on 4 legs and 1.09 on 5, and the levels it took on the payloads of 7 and 1 November were within
    0.105 points of chance of the likeliest of every parlay of their size worked in full, against the full sums' own noise of
-   about 0.2 (patch_level_prices.py's docstring has the measurements). Where the kept
+   about 0.2 (patch_level_prices.py's docstring has the measurements). Past that stop the walk goes on, without running the
+   search again, down to the key times PB_LV_C2 (by the parlay's size: 1.12 on 3 legs, 1.15 on 4, 1.18 on 5), working in full
+   only the parlays the search's reading understates by its own make (pbLvOpp: a leg linked to two others of the parlay at
+   opposite effective signs, each of 0.1 or more, as a quarterback's passing yards over with one receiver under and another
+   over: conditioned on him, the pairwise reading takes the two receivers as unrelated, where they move together, so the
+   chance in full runs up to 9% over it on 3 legs, 12% on 4 and 15% on 5, against 1% for every other shape of star); such a
+   parlay is rare near the top of a real game's (1 to 6% of the candidates of week 9's), so this costs about a fifth more
+   time and moves no level of week 9's or week 8's, where without it a parlay built so as to be the likeliest at the price,
+   beside a rival just over the stop, was missed by 0.33 points of chance on 3 legs and 0.64 on 4. Where the kept
    ran out first with some let go (the price starving them: many parlays short of it in full ahead of the one that pays),
    the search is run again keeping eight times as many; and it stops at PB_LV_EVALS parlays worked in full, a bound no real
    game has come near.
@@ -6424,6 +6432,17 @@ function pbExact(legs,floor,minDec){
    with k thin legs, fewest first, as every level has been searched since app v100. kMin: the fewest fill legs (1 on the
    totals' pass, whose parlays with none are the first pass's own) */
 const PB_LV_C=1.03, PB_LV_TOL=5e-4, PB_LV_M=1500, PB_LV_EVALS=6000, PB_LV_EVALS2=12000;
+/* (the review of 7 November 2026) the walk past its stop: how far, by the parlay's size, and the signs it looks for */
+const PB_LV_C2=[1,1,1,1.12,1.15,1.18], PB_LV_OPP=0.1;
+/* whether a leg of the parlay (its legs' places in x) is linked to two others at opposite effective signs (each correlation
+   with the legs' sides, an under turning it, of PB_LV_OPP or more) */
+function pbLvOpp(x,s){
+  const n=s.length, R=new Float64Array(n*n);
+  for(let a=0;a<n;a++) for(let b=a+1;b<n;b++){ const A=x.L[s[a]], B=x.L[s[b]], r=legRho(A,B)*(A.side==='under'?-1:1)*(B.side==='under'?-1:1); R[a*n+b]=r; R[b*n+a]=r; }
+  for(let b=0;b<n;b++) for(let a=0;a<n;a++){ if(a===b) continue; const u=R[a*n+b]; if(Math.abs(u)<PB_LV_OPP) continue;
+    for(let c=a+1;c<n;c++){ if(c===b) continue; const v=R[b*n+c]; if(Math.abs(v)>=PB_LV_OPP&&u*v<0) return true; } }
+  return false;
+}
 function pbLevelCands(x,I,fl,n,k,minD,M,mode){
   const m=I.length, out={key:[],set:[],over:false};
   if(m<n) return out;
@@ -6492,7 +6511,7 @@ function pbLevelCands(x,I,fl,n,k,minD,M,mode){
   out.key=keys; out.set=sets; return out;
 }
 /* what the last searches did, for the checks and the measurements (parlays worked in full, kept, runs): drawn nowhere */
-const PB_LV_STAT={ev:0,kept:0,runs:0,second:0};
+const PB_LV_STAT={ev:0,kept:0,runs:0,second:0,opp:0};
 function pbLevelPick(x,I,fl,n,k,minD){
   /* the first walk's bound is a run's, as it was; the second's its whole */
   const walk=(mode,cap)=>{ let ev=0;
@@ -6500,12 +6519,15 @@ function pbLevelPick(x,I,fl,n,k,minD){
       const C=pbLevelCands(x,I,fl,n,k,minD,M,mode);
       const E=C.set.map((s,i)=>({key:C.key[i],s,ln:s.reduce((a,c)=>a+x.ln[c],0),id:s.map(c=>x.id[c]).sort().join(',')}));
       E.sort((a,b)=>(pbEvKey(b.key)-pbEvKey(a.key))||(pbEvKey(b.ln)-pbEvKey(a.ln))||a.id.localeCompare(b.id));
-      let best=null, done=!C.over, ev0=ev;
+      /* past: the walk has reached its stop (PB_LV_C), and goes on to PB_LV_C2's working the opposite-sign parlays alone,
+         within the parlays kept: past it, the search is never run again */
+      let best=null, done=!C.over, ev0=ev, past=false; const c2=PB_LV_C2[Math.min(n,PB_LV_C2.length-1)];
       for(const e of E){
-        if(best&&e.key*PB_LV_C<best.pr+PB_LV_TOL){ done=true; break; }
+        if(best&&e.key*PB_LV_C<best.pr+PB_LV_TOL){ past=true; if(e.key*c2<best.pr+PB_LV_TOL) break; if(!pbLvOpp(x,e.s)) continue; PB_LV_STAT.opp++; }
         if((mode===1?ev:ev-ev0)>=cap){ done=true; break; }
         ev++; const r=pbExact(e.s.map(c=>x.L[c]),0,minD); if(!r) continue;
         const c={pr:r.corr,ln:e.ln,id:e.id}; if(!best||pbRank('pr')(c,best)<0) best={...c,r}; }
+      if(past) done=true;
       PB_LV_STAT.ev+=ev-ev0; PB_LV_STAT.kept+=E.length; PB_LV_STAT.runs++;
       if(done) return {r:best?best.r:null,ev}; } };
   const a=walk(0,PB_LV_EVALS); if(a.r||!a.ev) return a.r;
@@ -8232,7 +8254,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='c0eea2a';
+const PAGE_HASH='3efdaca';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){

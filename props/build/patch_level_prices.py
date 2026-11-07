@@ -85,6 +85,28 @@ paying at least +100: $1 returns $2 or more"); one locked before as before. No p
 On that payload at that clock, TB at CHI's levels go from +104 (fair 39.8%), +202 (25.5%), +516 (12.4%) and +1148 (6.0%) to
 +113 (38.0%), +311 (19.1%), +704 (9.5%) and +1513 (4.5%); BUF at MIN's from +112, +241, +498 and +1345 to +112, +301, +704 and
 +1546; the Sunday slot's from +101, +184, +513 and +1130 to +110, +301, +701 and +1514.
+
+The review of 7 November 2026, before it merged, changed four things here. (1) The walk's stop is a stop measured, not a
+bound: the chance in full over the search's reading reaches 1.07 on 4 legs and 1.09 on 5. Where the reading understates by
+the parlay's own make the stop could miss: a leg linked to two others at opposite effective signs (a quarterback's passing
+yards over with one receiver under and another over), where the pairwise reading takes the two receivers as unrelated
+given him though they move together. On such stars built within the 45-97% band, over 3,000 each at random prices, the
+chance in full ran up to 1.092 times the reading on 3 legs, 1.123 on 4 and 1.146 on 5, against 1.009 for every other shape;
+and a game built so that one is the likeliest at the price, beside an unrelated rival placed just over the stop, was
+missed by 0.33 points of chance on 3 legs (19.267% taken where 19.592% pays +300) and by 0.52 to 0.64 on 4 (9.044% where
+9.685% pays +700). So past its stop the walk goes on within the parlays kept, never running the search again, to the key
+times PB_LV_C2 (1.12 on 3 legs, 1.15 on 4, 1.18 on 5), working in full only those of that make (pbLvOpp, each link 0.1 or
+more): every such case is then the likeliest. On week 9's real pools those are 1 to 6% of the best 1,500 candidates of each
+size, read up to 1.039, 1.040 and 1.060; the extension costs about a fifth more time (every set at Saturday 18:00 UTC 2.9 s
+against 2.25; week 8's at Sunday 12:00 3.7 against 3.05) and moves no level of week 9 at Saturday 18:00 or Sunday 11:00, or
+of week 8 at Sunday 12:00. A stop of 1.06 for every parlay, measured as the other way, was 4.2 times slower and moved
+three levels by 0.03 to 0.11 points. (2) pbLevelCands prunes again only once another 1,500 have come in past what its last
+prune kept: on tied legs it had pruned on every push (24 legs of one game at 50% and -112, Extreme: 29 s, now 0.47). (3) The
+beam's widths left PB_SEARCH and SP_SEARCH, which keep the cap alone. (4) What is left, said: the price slack
+(PB_MIN_SLACK) is measured on the pair table's own shape, where players move together only through their quarterback
+(receivers with one another at -0.038); a made-up pool whose receivers move with one another at 0.28 can put a 4-leg
+parlay's price in full 29% over the reading, past the slack, and the search there missed by up to 0.57 points of chance.
+No game can meet such a pool while the table stands so, and a table that changed shape would need the slack measured again.
 """
 from pathlib import Path
 
@@ -341,7 +363,15 @@ function pbTierOf(t,pool,memo,opt){
    legs, most of the spread the full sums' own noise). It is a stop measured, not a bound (the review of 7 November 2026):
    that ratio reaches 1.07 on 4 legs and 1.09 on 5, and the levels it took on the payloads of 7 and 1 November were within
    0.105 points of chance of the likeliest of every parlay of their size worked in full, against the full sums' own noise of
-   about 0.2 (patch_level_prices.py's docstring has the measurements). Where the kept
+   about 0.2 (patch_level_prices.py's docstring has the measurements). Past that stop the walk goes on, without running the
+   search again, down to the key times PB_LV_C2 (by the parlay's size: 1.12 on 3 legs, 1.15 on 4, 1.18 on 5), working in full
+   only the parlays the search's reading understates by its own make (pbLvOpp: a leg linked to two others of the parlay at
+   opposite effective signs, each of 0.1 or more, as a quarterback's passing yards over with one receiver under and another
+   over: conditioned on him, the pairwise reading takes the two receivers as unrelated, where they move together, so the
+   chance in full runs up to 9% over it on 3 legs, 12% on 4 and 15% on 5, against 1% for every other shape of star); such a
+   parlay is rare near the top of a real game's (1 to 6% of the candidates of week 9's), so this costs about a fifth more
+   time and moves no level of week 9's or week 8's, where without it a parlay built so as to be the likeliest at the price,
+   beside a rival just over the stop, was missed by 0.33 points of chance on 3 legs and 0.64 on 4. Where the kept
    ran out first with some let go (the price starving them: many parlays short of it in full ahead of the one that pays),
    the search is run again keeping eight times as many; and it stops at PB_LV_EVALS parlays worked in full, a bound no real
    game has come near.
@@ -361,6 +391,17 @@ function pbTierOf(t,pool,memo,opt){
    with k thin legs, fewest first, as every level has been searched since app v100. kMin: the fewest fill legs (1 on the
    totals' pass, whose parlays with none are the first pass's own) */
 const PB_LV_C=1.03, PB_LV_TOL=5e-4, PB_LV_M=1500, PB_LV_EVALS=6000, PB_LV_EVALS2=12000;
+/* (the review of 7 November 2026) the walk past its stop: how far, by the parlay's size, and the signs it looks for */
+const PB_LV_C2=[1,1,1,1.12,1.15,1.18], PB_LV_OPP=0.1;
+/* whether a leg of the parlay (its legs' places in x) is linked to two others at opposite effective signs (each correlation
+   with the legs' sides, an under turning it, of PB_LV_OPP or more) */
+function pbLvOpp(x,s){
+  const n=s.length, R=new Float64Array(n*n);
+  for(let a=0;a<n;a++) for(let b=a+1;b<n;b++){ const A=x.L[s[a]], B=x.L[s[b]], r=legRho(A,B)*(A.side==='under'?-1:1)*(B.side==='under'?-1:1); R[a*n+b]=r; R[b*n+a]=r; }
+  for(let b=0;b<n;b++) for(let a=0;a<n;a++){ if(a===b) continue; const u=R[a*n+b]; if(Math.abs(u)<PB_LV_OPP) continue;
+    for(let c=a+1;c<n;c++){ if(c===b) continue; const v=R[b*n+c]; if(Math.abs(v)>=PB_LV_OPP&&u*v<0) return true; } }
+  return false;
+}
 function pbLevelCands(x,I,fl,n,k,minD,M,mode){
   const m=I.length, out={key:[],set:[],over:false};
   if(m<n) return out;
@@ -429,7 +470,7 @@ function pbLevelCands(x,I,fl,n,k,minD,M,mode){
   out.key=keys; out.set=sets; return out;
 }
 /* what the last searches did, for the checks and the measurements (parlays worked in full, kept, runs): drawn nowhere */
-const PB_LV_STAT={ev:0,kept:0,runs:0,second:0};
+const PB_LV_STAT={ev:0,kept:0,runs:0,second:0,opp:0};
 function pbLevelPick(x,I,fl,n,k,minD){
   /* the first walk's bound is a run's, as it was; the second's its whole */
   const walk=(mode,cap)=>{ let ev=0;
@@ -437,12 +478,15 @@ function pbLevelPick(x,I,fl,n,k,minD){
       const C=pbLevelCands(x,I,fl,n,k,minD,M,mode);
       const E=C.set.map((s,i)=>({key:C.key[i],s,ln:s.reduce((a,c)=>a+x.ln[c],0),id:s.map(c=>x.id[c]).sort().join(',')}));
       E.sort((a,b)=>(pbEvKey(b.key)-pbEvKey(a.key))||(pbEvKey(b.ln)-pbEvKey(a.ln))||a.id.localeCompare(b.id));
-      let best=null, done=!C.over, ev0=ev;
+      /* past: the walk has reached its stop (PB_LV_C), and goes on to PB_LV_C2's working the opposite-sign parlays alone,
+         within the parlays kept: past it, the search is never run again */
+      let best=null, done=!C.over, ev0=ev, past=false; const c2=PB_LV_C2[Math.min(n,PB_LV_C2.length-1)];
       for(const e of E){
-        if(best&&e.key*PB_LV_C<best.pr+PB_LV_TOL){ done=true; break; }
+        if(best&&e.key*PB_LV_C<best.pr+PB_LV_TOL){ past=true; if(e.key*c2<best.pr+PB_LV_TOL) break; if(!pbLvOpp(x,e.s)) continue; PB_LV_STAT.opp++; }
         if((mode===1?ev:ev-ev0)>=cap){ done=true; break; }
         ev++; const r=pbExact(e.s.map(c=>x.L[c]),0,minD); if(!r) continue;
         const c={pr:r.corr,ln:e.ln,id:e.id}; if(!best||pbRank('pr')(c,best)<0) best={...c,r}; }
+      if(past) done=true;
       PB_LV_STAT.ev+=ev-ev0; PB_LV_STAT.kept+=E.length; PB_LV_STAT.runs++;
       if(done) return {r:best?best.r:null,ev}; } };
   const a=walk(0,PB_LV_EVALS); if(a.r||!a.ev) return a.r;
