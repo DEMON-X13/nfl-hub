@@ -2663,7 +2663,11 @@ setTimeout(async()=>{
       /* each prime-time set: no player leg, and each empty level says when its game's player prices come */
       { const sets=holdSets('no player prices');
         chk([...sets,...(sets.slot?[sets.slot]:[])].every(({s})=>s.tiers.every(t=>!t.legs||t.legs.every(isG))),'with no player price on file a set (a night\'s or the Sunday slot\'s) holds a player leg'); }
-      chk(rA.noPlayerPrices&&rA.tiers.every(t=>t.legs?t.legs.every(isG):t.why.endsWith(', and '+noPlLow)),'with no player price on file, All builds a player leg, or an empty tier does not say no player prices are on file: '+rA.tiers.map(t=>t.why||'built').join(' / '));
+      /* (app v145, any size from 2) an empty tier says no player prices are on file where the team bets do not make two legs
+         on one slip, else that no parlay of the picks pays its price (the audit's own enumeration deciding shown or found) */
+      { const qA=qualAud(games,U()), LA=[...qA.pref,...qA.thin,...qA.mkt], fitA=fitAud(LA)>=2, priceA=t=>{ const minD=LEVEL_DEC_AUD[t.id], p=paysFreeAud(LA,minD), ml=mlAud(minD);
+          return p===false?t.why===`No parlay on your picks pays ${ml} or more: tick more games or bet types.`:p===null&&/^No parlay (found )?on your picks (that )?pays /.test(t.why); };
+        chk(rA.noPlayerPrices&&rA.tiers.every(t=>t.legs?t.legs.every(isG):(fitA?priceA(t):t.why.endsWith(', and '+noPlLow))),'with no player price on file, All builds a player leg, or an empty tier does not say why (no player prices on file, or no parlay of the team bets paying its price): '+rA.tiers.map(t=>t.why||'built').join(' / ')); }
       /* a level built with no player price on file says nothing of the missing player legs, so the
          panel does, whenever one is built; and player bets with Game total build their levels from
          the totals, with that note */
