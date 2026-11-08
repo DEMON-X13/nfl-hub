@@ -32,7 +32,10 @@ ratio of the full chance over the reading (PB_FREE.C) is under the best, and pas
 make the reading understates (a leg linked to two others at opposite signs, pbLvOpp, PB_FREE.C2); run again keeping eight
 times as many where candidates were let go, and where none paid, a second walk by the reading's chance alone. Several games
 (pbFreeUnit, pbFreeDp): an exact knapsack across games, each game offering its single legs and the same-game groups that can
-matter (found by the one-game walk in its front mode and worked in full standalone), a partial carried only while its chance
+matter (found by the one-game walk in its front mode, each game's best PB_FREE.FM (300) by their bound, and worked in full
+standalone: where a leg returns more than it costs, a line priced with no margin or less than none, the bound lets every
+group of a game through, and on the audit's made-up lines the Day games' Extreme ran past 2 GB and 8 minutes before the
+cap; on real data no game came near 300 and no group ever entered a level), a partial carried only while its chance
 can still beat the best and its price reach the level's, dominance tie-safe (partials compared in blocks of equal chance and
 lean, to 1e-9, so a tie goes to the rule); the complete parlays within 0.004 of the best then worked in full on the card and
 checked on pbFits pair by pair. Across games a parlay of single legs is exact in chance and price (legRho is 0 across games,
@@ -70,10 +73,13 @@ KC at SEA 0.060, four exact), none under app v144's own. The night games' levels
 4.570%). The Day games mix: on week 9 at Saturday 18:00 Safe two legs of two games at 43.08% (app v144's best single game
 38.56%), Medium two legs at 22.38% (19.71%), Aggressive three of three games at 10.59% (9.64%), Extreme four of four games at
 5.05% (4.68%); on week 8 43.82%, 21.95%, 10.68% and 5.05% (38.59%, 19.49%, 9.65%, 4.69%); on week 7 43.53%, 22.53%, 10.68%
-and 5.03% (38.55%, 19.88%, 9.70%, 4.66%), each at its price; expected return at the fair chance -8% to -19% where app v144's
-was -19% to -27%. The largest size chosen on real data is 5, so the cap does not bind there (caps of 5, 10, 12 and 14 give the
-same parlays); on made-up pools of 85%+ legs Safe takes 6 and 7 legs and Extreme up to 12. The longest step of a unit's
-build (one level) 314 to 412 ms, a unit's whole set with its pools 1.2 to 1.7 s, as app v144's.
+and 5.03% (38.55%, 19.88%, 9.70%, 4.66%), each at its price; expected return at the fair chance -8% to -20% where app v144's
+was -19% to -25% (a parlay across games pays its legs multiplied, with no same-game hold). The largest size chosen on real
+data is 5, so the cap does not bind there (caps of 5, 10, 12 and 14 give the same parlays); on made-up pools of 85%+ legs
+Safe takes 6 and 7 legs and Extreme up to 12. Timed the same way (medians of three cold builds): the longest step (one level)
+336 to 421 ms, where app v144's was 1.3 to 1.8 s (the Day games' Extreme over each of its games' own sets); a night game's set
+0.23 to 0.62 s (app v144's 0.14 to 0.28 s), the Day games' 0.52 to 0.59 s (2.3 to 2.6 s), every live unit 1.3 to 1.7 s where
+app v144 took 2.6 to 3.1 s.
 """
 from pathlib import Path
 

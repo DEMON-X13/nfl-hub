@@ -2339,7 +2339,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     /* (app v118) a unit of Suggested Parlays: a night game (a schedule row) or the Sunday slot (slotOwn's, the rule worked
        out here): the games it stands on, how the tab names it, where its legs come from in the page's words, and the
        line under its heading before its lock (until app v142 why its Elo picks had no player line too) */
-    const unitGames = u => u.slot ? u.games : [u], unitWhat = u => u.slot ? 'the Sunday slot' : `${u.a} at ${u.h}`, unitWhere = u => u.slot ? 'the Sunday slot' : 'this game';
+    const unitGames = u => u.slot ? u.games : [u], unitWhat = u => u.slot ? 'the Day games' : `${u.a} at ${u.h}`;
     const unitLock = u => u.slot ? u.lock : etKick(u) - 2 * 3600e3;
     const unitHead = u => { if (!u.slot) return { h: `${TN[u.a] || u.a} at ${TN[u.h] || u.h}`, pill: nightOf(u), small: null };
       const et = (ms, o) => new Date(ms).toLocaleString('en-US', { timeZone: 'America/New_York', ...o });
@@ -2936,7 +2936,10 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       { const keepK = JSON.stringify(U().k); for (const k of KINDS) U().k[k] = k === 'total'; w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40);
         const nT = new Set(w.eval('pbPool(pbGames())').mkt.map(l => l.gid)).size, rT = w.eval('getPbTiers()');
         hold('made-up lines, Game total alone');
-        chk((nT >= 2 || games.length < 3) && rT.tiers.every(x => x.n > nT ? !x.legs : (!!x.legs && x.legs.every(l => l.market && l.stat === 'total') && x.mkt === x.n)),
+        /* (app v145) of any size: a level built of totals alone, or empty only where no parlay of the priced totals pays its
+           price (the smoke's own enumeration, paysFreeOwn) */
+        const totsT = w.eval('pbPool(pbGames())').mkt;
+        chk((nT >= 2 || games.length < 3) && rT.tiers.every(x => x.legs ? x.legs.every(l => l.market && l.stat === 'total') && x.mkt === x.legs.length && x.n === x.legs.length : paysFreeOwn(totsT, LEVEL_DEC_OWN[x.id]) !== true),
           `with only Game total ticked, a level the totals make legs for was not built of totals alone (${nT} totals priced): ` + rT.tiers.map(x => x.why || x.legs.map(l => l.label).join('+')).join(' / '));
         { const lis = [...panel.querySelectorAll('ol.pb-top li')];
           chk(lis.every(li => !li.querySelector('.pb-valmark') && li.dataset.pbGrp === 'game' && !!li.closest('ol.pb-top[data-pb-sec="game"]') && !OLD_TAG.test(txt(li)) && /\|game\|total$/.test((li.querySelector('[data-pb-leg]') || { dataset: {} }).dataset.pbLeg || ''))
@@ -5405,7 +5408,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           const out = l => ({ gid: l.gid, week: l.week, pid: l.pid, team: l.team, grp: l.grp, stat: l.stat, k: l.k, side: l.side, main: l.main, price: l.price, src: l.src, name: l.name, label: l.label, p: l.p, fair: 0.5, fair_est: false, thin: !l.market, market: !!l.market });
           const decOf = pr => pr > 0 ? 1 + pr / 100 : 1 + 100 / -pr;
           const LV = w.eval('PB_TIERS'), lvOf = id => LV.find(x => x[0] === id);
-          const T = (id, ls) => { const s = lvOf(id); return { id, label: s[1], n: s[2], floor: s[3], legs: ls.map(out), p: Math.round(ls.reduce((a, l) => a * l.p, 1) * 1e4) / 1e4, fair: 0.3, fair_est: false,
+          /* (app v145) a level's n its legs' count (PB_TIERS' third figure the fewest legs, 2, since) */
+          const T = (id, ls) => { const s = lvOf(id); return { id, label: s[1], n: ls.length, floor: s[3], legs: ls.map(out), p: Math.round(ls.reduce((a, l) => a * l.p, 1) * 1e4) / 1e4, fair: 0.3, fair_est: false,
             dec: Math.round(ls.reduce((a, l) => a * decOf(l.price), 1) * 1e3) / 1e3, likeliest: false, thin: ls.filter(l => !l.market).length, mkt: ls.filter(l => l.market).length, chance: 'fair' }; };
           const TW = (id, why) => { const s = lvOf(id); return { id, label: s[1], n: s[2], floor: s[3], why }; };
           /* each leg the set holds and the tags it is due by hand: [level, leg, tags, what] */

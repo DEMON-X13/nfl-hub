@@ -2357,7 +2357,10 @@ setTimeout(async()=>{
           /* its Finish (spTier) finds each level with its own legs, the slot named, until its first kickoff; none after */
           for(const t of shown.filter(t=>t.legs)){ const x=F('spTier')(`${g.id}:${t.id}`);
             chk(ph0==='under'?x===null:(!!x&&x.legs.map(legIdAud).join()===t.legs.map(legIdAud).join()),`${gl}: the ${t.id} level, ${ph0}, is ${x?'':'not '}found for its Finish (spTier)`);
-            if(x) W.wording(x.game==='the Sunday slot',`${gl}: the ${t.id} level's Finish names it "${x.game}", not the Sunday slot`); } };
+            /* (app v145) named for the Day games where its legs span their games, else for its one game ("SEA at DEN"); until
+               app v145 "the Sunday slot" */
+            if(x){ const ids=[...new Set(t.legs.map(l=>l.gid))], one=ids.length===1?S.sched.find(y=>y.id===ids[0]):null, want=one?`${one.a} at ${one.h}`:'Day games';
+              W.wording(x.game===want,`${gl}: the ${t.id} level's Finish names it "${x.game}", not "${want}"`); } } };
         if(out.slot){ if(SL.up&&!dayOffAud()) drawSlot(out.slot); else { slotAllOn(()=>{ F('renderSp')(); drawSlot(out.slot); }); F('renderSp')(); } } }
       /* (app v113, the owner's "get rid of all the long paragraph description stuff. we dont need to clutter the page") the
          tab's lead under its heading and the foot under the sets are gone, and nothing of their paragraphs is left */

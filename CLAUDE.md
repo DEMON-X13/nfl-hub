@@ -4288,8 +4288,13 @@ mix: week 9 at Saturday 18:00 Safe two legs of two games at 43.08% (app v144's b
 (19.71%), Aggressive three of three games at 10.59% (9.64%), Extreme four of four games at 5.05% (4.68%); weeks 8 and 7 the
 same shape (Safe 43.82% and 43.53%, Extreme 5.05% and 5.03%, where app v144's were 38.59% and 38.55%, 4.69% and 4.66%). The
 largest size chosen on real data is 5 (caps of 5, 10, 12 and 14 give the same parlays there); on made-up pools of 85%+ legs
-Safe takes 6 and 7 legs and Extreme up to 12. The longest step (one level) 314 to 412 ms, a unit's whole set 1.2 to 1.7 s,
-as app v144's.
+Safe takes 6 and 7 legs and Extreme up to 12. The Day games' expected return at the fair chance -8% to -20% where app v144's
+best single game's was -19% to -25% (across games a parlay pays its legs multiplied, with no same-game hold). The longest
+step (one level) 336 to 421 ms where app v144's was 1.3 to 1.8 s, a night game's set 0.23 to 0.62 s (app v144's 0.14 to
+0.28 s), the Day games' 0.52 to 0.59 s (2.3 to 2.6 s), every live unit 1.3 to 1.7 s (2.6 to 3.1 s). Each game keeps its best
+300 same-game groups for the knapsack (`PB_FREE.FM`): on the audit's made-up lines, where a total at +110/+105 returns more
+than it costs, the bound let every group through and the Day games' Extreme ran past 2 GB and 8 minutes; on real data no
+game came near 300 and the four payloads' 48 levels are the same with the cap and without.
 
 Held, blocking, each on its own reading. The audit: `CAP_AUD`, `PICK_AUD` and `PICK_V144_AUD` its own; `freeAud` (every
 set of 2 to 12 worked out, a plain list's branch let go by its chance), `paysFreeAud`, `ref23Aud` (the likeliest of 2 and 3
