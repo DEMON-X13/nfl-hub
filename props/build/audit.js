@@ -2417,15 +2417,19 @@ setTimeout(async()=>{
       for(const g of games.slice(1)){ const c=d.querySelector(`#pbPanel [data-pb-game="${g.id}"]`); c.checked=false; c.dispatchEvent(new w.Event('change')); }
       chk(U().off.length===games.length-1&&!U().off.includes(one.id),'unticking the games one by one did not leave one ticked');
       hold('one game');
-      /* Teams only on one game: a side and its total make two legs at most, so Safe is that pair or
-         says why, and every bigger level says there are too few, "that DraftKings' betslip can take" exactly where
+      /* Teams only on one game: a side and its total make two legs at most, so every level is that pair or says why: (app
+         v145, any size from 2) where the two go together, that no parlay of the picks pays the level's price (shown or
+         found, the audit's own enumeration deciding which: paysFreeAud), else that there are too few, "that DraftKings'
+         betslip can take" exactly where
          the audit's own count has legs on the game left out for want of an id at their line (on a Sunday morning
          an early game's spread and total are nflverse's numbers, where DraftKings' ids are at its own: the props
          job's refused run of 18 October 2026, issue #290, which the old wording failed) */
       d.querySelector('#pbPanel [data-pb-mix="teams"]').click();
       const r1=hold('one game, teams only'), idP1=qualAud([one],U()).noId>0?' that DraftKings’ betslip can take':'';
       const few1=new RegExp(`^(Only [12] legs?|No legs) on your picks${idP1}: tick more games or bet types\\.$`);
-      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.filter(l=>l.stat==='total').length===1&&t.legs.filter(l=>l.stat!=='total').length===1:(!t.legs&&few1.test(t.why))),'one game\'s team bets did not make at most a side and its total, or a level too big for them did not say there are too few legs: '+r1.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
+      const q1=qualAud([one],U()), L1=[...q1.pref,...q1.thin,...q1.mkt], priceWhy1=t=>{ const minD=LEVEL_DEC_AUD[t.id], p=paysFreeAud(L1,minD), ml=mlAud(minD);
+          return fitAud(L1)>=2&&(p===false?t.why===`No parlay on your picks pays ${ml} or more: tick more games or bet types.`:p===null?/^No parlay (found )?on your picks (that )?pays /.test(t.why):false); };
+      chk(r1.tiers.every(t=>t.legs?t.n===t.legs.length&&t.legs.filter(l=>l.stat==='total').length===1&&t.legs.filter(l=>l.stat!=='total').length===1:(!t.legs&&t.n===2&&(fitAud(L1)>=2?priceWhy1(t):few1.test(t.why)))),'one game\'s team bets did not make at most a side and its total, or a level they do not make did not say why (no parlay of them paying its price, or too few legs): '+r1.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
       d.querySelector('#pbPanel [data-pb-games="all"]').click(); d.querySelector('#pbPanel [data-pb-mix="all"]').click(); }
     setKinds([]); { const r0=F('getPbTiers')(); chk(r0.tiers.every(t=>!t.legs&&/No bet types ticked/.test(t.why)),'with no bet type ticked the tiers did not say so'); }
     setKinds(KINDS); F('renderPb')();
@@ -2672,16 +2676,20 @@ setTimeout(async()=>{
       W.wording(plNoted()===(F('getPbTop')().rows.length>0),'with no player price on file, player bets and Game total do not say the list has no player lines');
       setKinds(KINDS);
       /* All on one game: its team bets make two legs at most (a side and its total), so only Safe
-         can be built, and every bigger level says both why: too few legs, and no player prices yet */
+         can be built, and every bigger level says both why: too few legs, and no player prices yet. (app v145, any size
+         from 2) Where the two go together a level they do not pay says so, no parlay of the picks paying its price (the
+         audit's own enumeration deciding shown or found); both reasons only where they do not make two on one slip */
       U().off=games.slice(1).map(g=>g.id); w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()'); const r1=hold('no player prices, all, one game');
       /* (the id phrase exactly where the audit's own count has legs on the game left out for want of an id, as above) */
       const idP3=qualAud([games[0]],U()).noId>0?' that DraftKings’ betslip can take':'', few3=new RegExp(`^(Only [12] legs?|No legs) on your picks${idP3}, and `), noPl1=low1(noPlAud([games[0].id]));
-      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.every(isG):(!t.legs&&few3.test(t.why)&&t.why.endsWith(', and '+noPl1))),
+      const q3=qualAud([games[0]],U()), L3=[...q3.pref,...q3.thin,...q3.mkt], fit3=fitAud(L3)>=2, price3=t=>{ const minD=LEVEL_DEC_AUD[t.id], p=paysFreeAud(L3,minD), ml=mlAud(minD);
+          return p===false?t.why===`No parlay on your picks pays ${ml} or more: tick more games or bet types.`:p===null&&/^No parlay (found )?on your picks (that )?pays /.test(t.why); };
+      chk(r1.tiers.every(t=>t.legs?t.n===t.legs.length&&t.legs.every(isG):(!t.legs&&t.n===2&&(fit3?price3(t):(few3.test(t.why)&&t.why.endsWith(', and '+noPl1))))),
         'with no player price on file, All on one game does not give both reasons on every tier: '+r1.tiers.map(t=>t.why||'built').join(' / '));
       U().off=[];
       S.odds=JSON.parse(keepO); if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM); rebake();
       w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()'); F('renderPb')();
-      console.log(`M3. no player prices yet: Players only says so on all 4 tiers; All ${rA.tiers.filter(t=>t.legs).length} built on team bets, ${rA.tiers.filter(t=>!t.legs).length} saying why; All on one game gives both reasons on all 4`); }
+      console.log(`M3. no player prices yet: Players only says so on all 4 tiers; All ${rA.tiers.filter(t=>t.legs).length} built on team bets, ${rA.tiers.filter(t=>!t.legs).length} saying why; All on one game gives its reason on every empty level (the price's where its team bets go together)`); }
     /* M4. every level shows a parlay of its size whenever the picks make that many legs. Held on
        made-up games standing in for the week's (pbGames and pricedLegs stood in for, and PAY.dk by a
        made-up id table giving every leg its id, so the levels are built as before ids), so it holds
@@ -2754,7 +2762,7 @@ setTimeout(async()=>{
           /* (app v138) every cover here is priced on both sides, so with no hook planted the level's chance is its fair
              chance; its card states the fair chance with what it is expected to return */
           if(!HOOK_AUD) chk(!!t.fair&&t.fair.p!=null&&Math.abs(t.fair.p-t.corr)<1e-12&&!t.fair.est,`${lab}: the ${t.id} tier's chance ${t.corr} is not its fair chance ${t.fair&&t.fair.p}, every leg priced on both sides`);
-          chk(!!c&&c.querySelectorAll('.pb-legs li').length===n&&!!t.fair&&t.fair.p!=null&&c.textContent.includes(`${(t.fair.p*100).toFixed(0)}%`)&&c.textContent.includes(F('fmtML')(F('decToML')(t.dec))),`${lab}: the ${t.id} card does not show its legs, fair chance and price`);
+          chk(!!c&&c.querySelectorAll('.pb-legs li').length===t.legs.length&&!!t.fair&&t.fair.p!=null&&c.textContent.includes(`${(t.fair.p*100).toFixed(0)}%`)&&c.textContent.includes(F('fmtML')(F('decToML')(t.dec))),`${lab}: the ${t.id} card does not show its legs, fair chance and price`);
           if(c){ fairShown(c,t,lab); cardWords(c,t,lab); } }
         /* the same picks always give the same parlays */
         w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map()'); const r2=F('getPbTiers')();
@@ -4136,8 +4144,8 @@ setTimeout(async()=>{
            the likeliest pair paying +110 mixes the games (a1 with b1, 37.8%), likelier than the one game's own (a1 with a2,
            37.2%): the slot of one game a level (app v121 to app v145) cannot pass for it; the card names its 2 games and each
            leg its own game
-       F3  the Day games of six games: five -312s (73.5%) land 21.4% at 4.016 together, where four pay 3.04, and a +150 (34%)
-           with two -312s, the best of fewer legs paying +300, lands 18.4%: Medium is the 5-leg parlay
+       F3  the Day games of six games: five -312s (73.5%) land 21.4% at 4.016 together, where four pay 3.04, and a -130 (50%)
+           with three -312s, the best of fewer legs paying +300, lands 19.9% at 4.074: Medium is the 5-leg parlay
        F4  ties to the fewer legs: A and B at +100 (50%) pay exactly 4.000 at 25%; C at -400 (80%) and D at -150 (62.5%)
            with A or B pay 4.167 at 25%: Medium is A with B (at the border, BORDER: worked on the card)
        F5  ties to the larger lean: three +100s at 50% whose model chance (the lean) is 55%, 50% and 45%, every pair 4.000 at
@@ -4188,8 +4196,8 @@ setTimeout(async()=>{
       ...D1.map((g,i)=>pl(g,`f1${i}`,0.85,-750)),
       /* F2: a1 and a2 of the first game, b1 of the second */
       pl(D2[0],'a1',0.62,-150),pl(D2[0],'a2',0.60,-140),pl(D2[1],'b1',0.61,-145),
-      /* F3: five -312s and a +150 */
-      ...D3.slice(0,5).map((g,i)=>pl(g,`f3${i}`,0.735,-312)),pl(D3[5],'f3x',0.34,150),
+      /* F3: five -312s and a -130 */
+      ...D3.slice(0,5).map((g,i)=>pl(g,`f3${i}`,0.735,-312)),pl(D3[5],'f3x',0.5,-130),
       /* F4: A and B at +100, C at -400, D at -150 */
       pl(D4[0],'f4a',0.5,100),pl(D4[1],'f4b',0.5,100),pl(D4[2],'f4c',0.8,-400),pl(D4[3],'f4d',0.625,-150),
       /* F5: three +100s at 50%, leaning 55%, 50% and 45%; F5b three alike */
@@ -4335,9 +4343,11 @@ setTimeout(async()=>{
         if(sf&&pair&&lk3){ const lvlOf=(base,L)=>({...F('spTierOut')({...base,legs:L.L,corr:L.pr,dec:L.dec,n:L.L.length})});
           const strip=(t,o)=>{ const {pick,minDec,...rest}=t; return JSON.parse(JSON.stringify({...rest,...o})); };
           const S2=lvlOf({...sf,id:'safe',label:'Safe'},pair), M3=lvlOf({...sf,id:'med',label:'Medium'},lk3);
+          /* a Medium kept under app v144 paid +300 (its rule): GP's own Medium of the any-size rule stands for it, at its size */
+          const md0=s&&s.tiers.find(x=>x.id==='med'&&x.legs), M4=md0?lvlOf({...sf,id:'med',label:'Medium'},{L:md0.legs,pr:md0.corr,dec:md0.dec}):M3, n4=M4.legs.length;
           const CASES=[
             ['Safe, under app v144',{...S2,minDec:DS,pick:PICK_V144_AUD},'likeliest pair · +110+','The likeliest 2-leg parlay paying at least +110 by the site’s price: $1 returns $2.10 or more'],
-            ['Medium of 3, under app v144',{...M3,minDec:LEVEL_DEC_AUD.med,pick:PICK_V144_AUD},'likeliest 3 legs · +300+','The likeliest 3-leg parlay paying at least +300 by the site’s price: $1 returns $4 or more'],
+            [`Medium of ${n4}, under app v144`,{...M4,minDec:LEVEL_DEC_AUD.med,pick:PICK_V144_AUD},`${n4===2?'likeliest pair':`likeliest ${n4} legs`} · +300+`,`The likeliest ${n4}-leg parlay paying at least +300 by the site’s price: $1 returns $4 or more`],
             ['Safe, under app v143',strip(S2,{minDec:2}),'likeliest pair · +100+','The likeliest 2-leg parlay paying at least +100: $1 returns $2 or more'],
             ['Medium least costly at 25%, under app v143',strip(M3,{minDec:2,floor:0.25}),'least costly · 25%+','Smallest expected loss of the 3-leg parlays landing 25%+ by DraftKings’ fair chance and paying at least +100'],
             ['Medium the likeliest 3, under app v143',strip(M3,{minDec:2,floor:0.25,likeliest:true}),'likeliest 3 legs · +100+','The likeliest 3-leg parlay paying at least +100: $1 returns $2 or more'],

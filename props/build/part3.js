@@ -2743,6 +2743,10 @@ function pbExact(legs,floor,minDec){
    (within PB_FREE.BORDER of it, worked on the card). The groups (pbFreeUnit): each game's sets (pbFreeCands' front mode)
    whose chance, where they cannot pay alone at most the best the other games return (rO, the best single leg's chance times
    price, to the power of the games left), can reach the singles' best; a parlay holding a group under that cannot beat it.
+   Each game keeps its best PB_FREE.FM (300) groups by that key: where legs return more than they cost (a line priced with
+   no margin or less than none, rO over 1) the bound lets every group of a game through, and on the audit's made-up lines,
+   every starter's line at -112 or -150 and a total at +110/+105, the Day games' Extreme ran past 2 GB and 8 minutes; on
+   real data no game came near 300 and no group ever entered a level.
    The complete parlays within PB_FREE.WIN of the best (BORDER with no group) are worked on the card, at most WIN_EVALS, every
    pair held to pbFits, the likeliest that pays by pbFreeRank.
 
@@ -2759,7 +2763,7 @@ const PB_FREE={M:1500,DELTA:0.15,TOL:5e-4,E1:1500,E2:300,E3:12000,
   SLACK:[1,1,1.05,1.10,1.20,1.30,1.35,1.40,1.45,1.50,1.55,1.60,1.65],
   C:[1,1,1.03,1.04,1.05,1.06,1.08,1.09,1.10,1.11,1.12,1.13,1.14],
   C2:[1,1,1,1.12,1.15,1.18,1.21,1.24,1.27,1.30,1.33,1.36,1.39],
-  FRONT:1.03,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9};
+  FRONT:1.03,FM:300,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9};
 /* (the review of 7 November 2026) the opposite-sign make (pbLvOpp): each link of 0.1 or more */
 const PB_LV_OPP=0.1;
 /* whether a leg of the parlay (its legs' places in x) is linked to two others at opposite effective signs (each correlation
@@ -2798,7 +2802,7 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k){
   let thr=FR?thr0:-Infinity, keys=[], sets=[], lim=2*M, kmax=-Infinity;
   /* the kept: the M best keys, and none under (1-DELTA) times the best met; pruned again only once another M have come in
      past what the last prune kept, every tie of the M-th kept (app v144's rule) */
-  const prune=()=>{ const T=Math.max(pbKth(Float64Array.from(keys),Math.min(M,keys.length)),kmax*(1-PB_FREE.DELTA)), K2=[], S2=[];
+  const prune=()=>{ const kth=pbKth(Float64Array.from(keys),Math.min(M,keys.length)), T=FR?Math.max(thr0,kth):Math.max(kth,kmax*(1-PB_FREE.DELTA)), K2=[], S2=[];
     for(let i=0;i<keys.length;i++) if(keys[i]>=T){ K2.push(keys[i]); S2.push(sets[i]); }
     if(K2.length<keys.length) out.over=true; keys=K2; sets=S2; thr=T; lim=Math.max(2*M,keys.length+M); };
   for(let i=0;i<m;i++){ CAND[0][i]=i; WM[0][i]=1; WB[0][i]=1; WS[0][i]=1; } CN[0]=m; pr[0]=1; pb[0]=1; mu[0]=1; ps[0]=SGP_HOLD;
@@ -2812,7 +2816,7 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k){
       if(n>=2&&(k==null||nf2===k)){
         const key=FR?(dd>=F?c:c*rOb*dd/F):mode==='level1'?(dd>=F?c:-1):(dd*SL[Math.min(n,SL.length-1)]>=F?Math.min(c,c*dd/F):-1);
         if(key>=thr&&key>0){ ch[d]=j; keys.push(key); const S=new Array(n); for(let a=0;a<n;a++) S[a]=L[ch[a]]; sets.push(S);
-          if(!FR){ if(keys.length>=lim) prune(); if(key>kmax){ kmax=key; if(kmax*(1-PB_FREE.DELTA)>thr) thr=kmax*(1-PB_FREE.DELTA); } } } }
+          if(FR){ if(M&&keys.length>=lim) prune(); } else { if(keys.length>=lim) prune(); if(key>kmax){ kmax=key; if(kmax*(1-PB_FREE.DELTA)>thr) thr=kmax*(1-PB_FREE.DELTA); } } } }
       if(n>=cap) continue;
       if(!FR&&mult*TOP[(j+1)*W+(cap-n)]<F*(1-1e-12)) continue;
       /* the child's legs, their lifts, and H: the most the legs that can still join can raise psi (each leg's p/q times every
@@ -2835,7 +2839,7 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k){
       rec(d+1,nf2); }
   };
   rec(0,0);
-  if(!FR&&keys.length>M) prune();
+  if((!FR||M)&&keys.length>M) prune();
   PB_LV_STAT.kept+=keys.length;
   out.key=keys; out.set=sets; return out;
 }
@@ -2931,7 +2935,7 @@ function pbFreeUnit(pools0,F,memo,cap){
     let added=0, thr=cb>0?cb:0.5*SGP_HOLD*rOb/F;
     for(let tries=1;;tries++){ const o2=singles.map(g=>g.slice()); added=0;
       pools.forEach((p,gi)=>{ const legs=legsOf(p); if(legs.length<2) return; const I=legs.map(l=>pbCtxLeg(x,l));
-        const cnd=pbFreeCands(x,I,F,cap,0,'front',thr/PB_FREE.FRONT,rOb,null,null);
+        const cnd=pbFreeCands(x,I,F,cap,PB_FREE.FM,'front',thr/PB_FREE.FRONT,rOb,null,null);
         for(const s of cnd.set){ const ls=s.map(c=>x.L[c]), ex=pbExact(ls,0,0); if(!ex) continue;
           const c=ex.corr, d=ex.dec, key=d>=F?c:c*rOb*d/F; if(key<thr) continue;
           o2[gi].push({c,d,n:ls.length,ln:ls.reduce((a,l)=>a+pbLean(l),0),legs:ls,grp:1,t:fillN(ls),id:ls.map(pbId).sort().join(',')}); added++; } });
