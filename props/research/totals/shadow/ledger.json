@@ -19,7 +19,7 @@
   "before": "no verdict before 285: until then the summary gives the running numbers and how many of the 285 are in, never a verdict or a word of passing"
  },
  "bar_registered": "2026-10-11T02:01:51Z",
- "run_at": "2026-11-08T15:32:22Z",
+ "run_at": "2026-11-08T19:55:15Z",
  "fits": {
   "2026": {
    "b0": 1.294144,
@@ -31,30 +31,30 @@
  "decision": null,
  "summary": {
   "calls": 85,
-  "to_come": 27,
-  "frozen_awaiting_final": 1,
-  "graded": 57,
+  "to_come": 20,
+  "frozen_awaiting_final": 7,
+  "graded": 58,
   "pushes": 0,
   "graded_without_market_price": 0,
-  "compared": 57,
+  "compared": 58,
   "scores": {
    "model": {
-    "brier": 0.252081,
-    "logloss": 0.697319
+    "brier": 0.252308,
+    "logloss": 0.697771
    },
    "market": {
-    "brier": 0.248254,
-    "logloss": 0.689655
+    "brier": 0.2481,
+    "logloss": 0.689345
    },
-   "brier_diff": 0.003827,
+   "brier_diff": 0.004208,
    "brier_diff_ci90": [
-    -0.00165,
-    0.009549
+    -0.001294,
+    0.009902
    ],
-   "logloss_diff": 0.007664,
+   "logloss_diff": 0.008426,
    "logloss_diff_ci90": [
-    -0.003313,
-    0.019133
+    -0.002582,
+    0.019833
    ]
   },
   "picks": {
@@ -65,7 +65,7 @@
    "units": -3.0,
    "at_est_price": 0
   },
-  "standing": "57 of 285 graded games toward the verdict; the bar is judged at 285, not before"
+  "standing": "58 of 285 graded games toward the verdict; the bar is judged at 285, not before"
  },
  "calls": {
   "2026_05_PHI_JAX": {
@@ -1799,7 +1799,14 @@
    "called_at": "2026-11-08T11:19:19Z",
    "frozen": true,
    "frozen_at": "2026-11-08T15:32:22Z",
-   "final": null
+   "final": {
+    "home": 17,
+    "away": 34,
+    "total": 51,
+    "result": "under",
+    "units": null,
+    "graded_at": "2026-11-08T19:55:15Z"
+   }
   },
   "2026_09_CLE_NO": {
    "season": 2026,
@@ -1820,8 +1827,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-07T21:03:53Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-08T19:55:15Z",
    "final": null
   },
   "2026_09_DAL_IND": {
@@ -1843,8 +1850,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-07T21:03:53Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-08T19:55:15Z",
    "final": null
   },
   "2026_09_DEN_CAR": {
@@ -1866,8 +1873,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-06T11:25:54Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-08T19:55:15Z",
    "final": null
   },
   "2026_09_DET_MIA": {
@@ -1889,8 +1896,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-08T15:32:22Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-08T19:55:15Z",
    "final": null
   },
   "2026_09_LA_WAS": {
@@ -1912,8 +1919,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-07T14:58:05Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-08T19:55:15Z",
    "final": null
   },
   "2026_09_NYG_PHI": {
@@ -1935,8 +1942,8 @@
    "pick_price": null,
    "pick_price_est": null,
    "called_at": "2026-11-08T11:19:19Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-08T19:55:15Z",
    "final": null
   },
   "2026_09_NYJ_KC": {
@@ -1958,8 +1965,8 @@
    "pick_price": -102,
    "pick_price_est": false,
    "called_at": "2026-11-07T21:03:53Z",
-   "frozen": false,
-   "frozen_at": null,
+   "frozen": true,
+   "frozen_at": "2026-11-08T19:55:15Z",
    "final": null
   },
   "2026_09_HOU_LAC": {
@@ -2087,15 +2094,15 @@
    "line": 43.5,
    "over_odds": -118,
    "under_odds": -102,
-   "p_model": 0.483392,
+   "p_model": 0.483389,
    "p_market": 0.517364,
-   "mu": 42.9506,
+   "mu": 42.9505,
    "sd": 13.1937,
-   "model_total": 45.6977,
+   "model_total": 45.698,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-11-06T21:47:22Z",
+   "called_at": "2026-11-08T19:55:15Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
