@@ -184,7 +184,7 @@ need = {'props/build/test_apply_espn.py', 'props/build/test_espn_read.js', 'prop
         'props/build/test_dk_links.py', 'props/build/test_unmatched.py', 'props/build/test_who_played.py', 'props/build/test_fetch.py',
         'props/build/test_audit_gate.py', 'lib/test_netfetch.py', 'lib/test_netfetch.js', 'nflbets/build/test_dkname.js', 'nflbets/build/smoke_admin.js',
         'nflbets/build/smoke_live.js', 'props/build/test_espn_archive.py', 'props/research/propmodel/test_td_shadow.py',
-        'elo/test_parity.py', 'elo/test_fetch.py'}
+        'elo/test_parity.py', 'elo/test_fetch.py', 'props/build/test_suggest_ledger.js'}
 case(need <= {r for r, _ in G.UNITS}, f'unit tests left out of job C: {sorted(need - {r for r, _ in G.UNITS})}')
 # smoke_live.js (the parlay card's Pull from DraftKings, and X Parlays) runs in job C as node, and a change to the card
 # alone (nflbets/build/card.html, PAGE) is one job C runs on, so a regression in the paid-call path cannot merge unchecked
@@ -202,7 +202,9 @@ case(bool(job) and 'props_gate.py units --base' in job.group(1) and "needs.paths
 caps = []
 for rel, pat in (('nflbets/build/smoke_live.js', r'SMOKE_LIMIT_MS = (\d+) \* 60 \* 1000'), ('nflbets/build/smoke_admin.js', r'did not finish in \d+ minutes[^\n]*?(\d+) \* 60 \* 1000'),
                  # the touchdown shadow's test stops itself (and fails) at its own cap
-                 ('props/research/propmodel/test_td_shadow.py', r'(?m)^STOP_AFTER_S = (\d+) \* 60\b')):
+                 ('props/research/propmodel/test_td_shadow.py', r'(?m)^STOP_AFTER_S = (\d+) \* 60\b'),
+                 # (app v144) the suggestions record's test stops itself (and fails) at its own cap
+                 ('props/build/test_suggest_ledger.js', r'(?m)^const STOP_AFTER_MS = (\d+) \* 60 \* 1000\b')):
     m = re.search(pat, open(os.path.join(ROOT, rel), encoding='utf-8').read()); caps.append(int(m.group(1)) if m else None)
 tmo = re.search(r'\n    timeout-minutes: (\d+)\n', job.group(1)) if job else None
 case(None not in caps and bool(tmo) and int(tmo.group(1)) >= 2 * sum(caps) + 5,
