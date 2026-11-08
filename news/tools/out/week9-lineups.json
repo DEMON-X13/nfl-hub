@@ -2902,7 +2902,7 @@
   },
   "BUF": {
    "kick": "2026-11-10T01:15Z",
-   "built_at": "2026-11-07T22:39:22.217Z",
+   "built_at": "2026-11-08T02:17:10.570Z",
    "units": {
     "qb": [
      {
@@ -2913,16 +2913,15 @@
     ],
     "ol": [
      {
-      "id": "00-0033904",
-      "n": "Dion Dawkins",
-      "pos": "T",
-      "q": "questionable: rib, not practising"
+      "id": "00-0041548",
+      "n": "Jude Bowry",
+      "pos": "T"
      },
      {
       "id": "00-0037428",
       "n": "Alec Anderson",
       "pos": "G",
-      "q": "questionable: ankle, not practising"
+      "q": "questionable: ankle"
      },
      {
       "id": "00-0035679",

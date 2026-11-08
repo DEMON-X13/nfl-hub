@@ -1,6 +1,6 @@
 # Week 9 reading pack
 
-Generated 2026-11-07. Facts below are pulled; everything narrative still has to be read and written.
+Generated 2026-11-08. Facts below are pulled; everything narrative still has to be read and written.
 
 ## Games
 
@@ -112,15 +112,15 @@ Cincinnati Bengals, injuries:
 Cincinnati Bengals, ESPN headlines:
 
 Atlanta Falcons, injuries:
+- Beaux Collins (WR) Questionable, Hip: Atlanta activated Collins (hip) from injured reserve Saturday, though he remains questionable for Sunday's matchup against the Bengals.
+- Khalil Herbert (RB) Active: The Falcons signed Herbert from their practice squad to their active roster Saturday.
 - Yasir Abdullah (LB) Questionable, Hamstring: questionable
 - Brian Robinson Jr. (RB) Injured Reserve, Hamstring: Robinson (hamstring) was placed on injured reserve Saturday, Marc Raimondi of ESPN.com reports.
-- Beaux Collins (WR) Questionable, Hip: Collins (hip) is listed as questionable for Sunday's game against the Bengals in Madrid, Spain,, Tori McElhaney of the Falcons' official site reports.
 - James Pearce Jr. (LB) Questionable, Back: The Falcons listed Pearce (back) as questionable for Sunday's game against the Bengals, Tori McElhaney of the Falcons' official site reports.
 - Divine Deablo (LB) Questionable, Forearm: The Falcons listed Deablo (forearm) as questionable for Sunday's game against the Bengals, Tori McElhaney of the Falcons' official site reports.
 - Billy Bowman Jr. (CB) Active: Bowman was estimated as a full participant in Wednesday's practice.
 - Samson Ebukam (DE) Injured Reserve, Hamstring: Ebukam (hamstring) was placed on injured reserve by the Falcons on Tuesday, Tori McElhaney of the team's official website reports.
 - Nick Folk (PK) Active: Folk went 0-for-1 on field-goal tries and did not attempt an extra point in Sunday's 16-0 loss to the Buccaneers.
-- Khalil Herbert (RB) Active: Herbert reverted to the Falcons' practice squad Monday, per the NFL's transaction log.
 - Zachariah Branch (WR) Out, Hamstring: Coach Kevin Stefanski noted Monday that Branch (hamstring) won't play Sunday against the Bengals, William McFadden of the Falcons' official site reports.
 - Jack Strand (QB) Active
 - Andy Dalton (QB) Active
@@ -151,6 +151,8 @@ Searches to run:
 - "NFL week 9 picks DAL IND"
 
 Dallas Cowboys, injuries:
+- Jordan Hudson (WR) Active: The Cowboys elevated Hudson from their practice squad to their active roster Saturday, Patrik Walker of the Cowboys' official site reports.
+- James Mitchell (TE) Active: The Cowboys elevated Mitchell from their practice squad to their active roster Saturday, Patrik Walker of the Cowboys' official site reports.
 - Malachi Lawrence (LB) Injured Reserve, Ankle: Dallas placed Lawrence (ankle) on injured reserve Saturday, Patrik Walker of the Cowboys' official site reports.
 - Marist Liufau (LB) Questionable, Forearm: questionable
 - Tyler Smith (G) Active: Smith (ankle) does not have any injury designation ahead of Sunday's game against the Colts, Tommy Yarrish of the Cowboys' official site reports.
@@ -174,8 +176,6 @@ Dallas Cowboys, injuries:
 - Dak Prescott (QB) Active: Prescott was 19-for-29 passing for 195 yards, one touchdown and no interceptions while rushing seven times for 20 yards and one more TD during Sunday's 33-30 overtime defeat to the Cardinals.
 - Javonte Williams (RB) Active: Williams churned out 56 yards on 24 carries and notched one catch (on two targets) for one yard during Sunday's 33-30 overtime defeat to the Cardinals.
 - CeeDee Lamb (WR) Active: Lamb recorded seven catches (on 11 targets) for 58 yards during Sunday's 33-30 overtime loss to the Cardinals.
-- Kenny Clark (DT) Active: Clark (back) is active for Sunday's game against the Cardinals.
-- Quinnen Williams (DT) Active: Williams (hamstring) is set to play Sunday against Arizona, Tommy Yarrish of the Cowboys' official site reports.
 
 Dallas Cowboys, ESPN headlines:
 
@@ -219,8 +219,9 @@ Searches to run:
 - "NFL week 9 picks NYJ KC"
 
 New York Jets, injuries:
-- Nahshon Wright (CB) Out, Back: out
-- Joseph Ossai (DE) Out, Ankle: Ossai (ankle) is listed as questionable for Sunday's game against the Chiefs.
+- VJ Payne (S) Injured Reserve, Knee: Payne (knee) has been ruled out for Sunday's Week 9 clash against Kansas City.
+- Nahshon Wright (CB) Out, Back: Wright (back) won't suit up Sunday against Kansas City.
+- Joseph Ossai (DE) Out, Ankle: Ossai (ankle) has been ruled out for Sunday's contest against the Chiefs.
 - Trevin Wallace (LB) Out, Groin: Jets head coach Aaron Glenn said Friday that Wallace (groin) will not play in Sunday's matchup against the Chiefs.
 - Braelon Allen (RB) Active: Jets coach Aaron Glenn declined to elaborate on the distribution of carries between Allen and Breece Hall, who will return from a five-game absence for Sunday's matchup with Kansas City, ESPN's Rich Cimini reports.
 - Adonai Mitchell (WR) Active: Mitchell and Omar Cooper will be the Jets' top wide receivers with Garrett Wilson (concussion) unavailable for Sunday's game at Kansas City, ESPN's Rich Cimini reports.
@@ -231,7 +232,6 @@ New York Jets, injuries:
 - Jamien Sherwood (LB) Active: Sherwood recorded 14 total tackles (five solo) during Sunday's 38-33 loss to the Raiders.
 - David Bailey (LB) Active: Bailey (groin) was a full participant in Thursday's practice.
 - Mason Taylor (TE) Active: Taylor (back) was a full participant in Thursday's practice.
-- VJ Payne (S) Injured Reserve, Knee: Payne (knee) was designated to return from injured reserve by the Jets on Wednesday, Amanda Vogt of the team's official website reports.
 - Harrison Phillips (DT) Questionable, Ankle: questionable
 - Max Mitchell (OT) Injured Reserve, Concussion: The Jets placed Mitchell (concussion) on their injured reserve list Tuesday, Amanda Vogt of the team's official site reports.
 - Isaiah Davis (RB) Active: Davis rushed five times for 15 yards in Sunday's 38-33 loss to the Raiders.
@@ -287,6 +287,7 @@ Searches to run:
 - "NFL week 9 picks DET MIA"
 
 Detroit Lions, injuries:
+- Jabari Small (RB) Active: The Lions elevated Small from the practice squad to the active roster Saturday ahead of Sunday's matchup versus the Dolphins.
 - Jack Campbell (LB) Injured Reserve, Neck: The Lions moved Campbell (neck) to injured reserve Saturday.
 - Cade Mays (C) Out, Ankle: Mays (ankle) has been ruled out ahead of Sunday's game against the Dolphins.
 - DJ Wonnum (LB) Out, Concussion: Wonnum (concussion) has been ruled out ahead of Sunday's game against the Dolphins.
@@ -311,11 +312,12 @@ Detroit Lions, injuries:
 - Ennis Rakestraw Jr. (CB) Active: Rakestraw (ankle) does not have a game designation for Sunday's Week 8 tilt versus the Vikings.
 - Isiah Pacheco (RB) Injured Reserve, Back: Lions coach Dan Campbell said Friday that Pacheco (back) has a chance to return in late December, Justin Rogers of DetroitFootball.net reports.
 - Tyleik Williams (DT) Active
-- Isaac TeSlaa (WR) Active: TeSlaa caught one of his two targets for 10 yards in the Lions' 20-17 win over the Packers on Sunday.
 
 Detroit Lions, ESPN headlines:
 
 Miami Dolphins, injuries:
+- Carlos Washington Jr. (RB) Active: Miami elevated Washington from the practice squad to the active roster Saturday ahead of Sunday's tilt against Detroit.
+- Zane Gonzalez (PK) Active: The Dolphins elevated Gonzalez from their practice squad to their active roster Saturday.
 - Kadyn Proctor (OT) Active: Proctor (concussion) does not have a designation for Sunday's Week 9 matchup versus Detroit, David Furones of the South Florida Sun Sentinel reports.
 - Malik Herring (DE) Questionable, Neck: Herring (neck) is listed as questionable for Sunday's game against the Lions, David Furones of the South Florida Sun Sentinel reports.
 - Will Kacmarek (TE) Active: Kacmarek (hamstring) does not carry an official injury designation ahead of Sunday's game versus the Lions, David Furones of the South Florida Sun Sentinel reports.
@@ -329,7 +331,6 @@ Miami Dolphins, injuries:
 - Jacob Rodriguez (LB) Active: Rodriguez notched eight tackles (two solo) and forced a fumble in Sunday's 24-19 loss to the Patriots.
 - Jordyn Brooks (LB) Active: Brooks recorded 11 tackles (six solo) in Sunday's 24-19 loss to the Patriots.
 - Darrell Baker Jr. (CB) Out, Undisclosed: Baker (undisclosed) is not ready to return to practice, David Furones of the South Florida Sun Sentinel reports.
-- Zane Gonzalez (PK) Active: Gonzalez reverted to the Dolphins' practice squad Monday, per the NFL's official transaction log.
 - Christian Haynes (G) Active
 - Jaylin Simpson (S) Active
 - Marcellas Dial Jr. (CB) Active
@@ -340,7 +341,6 @@ Miami Dolphins, injuries:
 - Ollie Gordon II (RB) Active: Gordon carried the ball 19 times for 69 yards in Sunday's 24-19 loss to the Patriots. He failed to catch his only target.
 - Malik Willis (QB) Active: Willis completed 21 of 32 passes for 211 yards and two touchdowns with one interception in Sunday's 24-19 loss to New England. He gained two rushing yards on his only carry.
 - Caleb Douglas (WR) Active: Douglas caught four of six targets for 43 yards in Sunday's 24-19 loss to the Patriots.
-- Greg Dulcich (TE) Active: Dulcich caught four of six targets for 43 yards in Sunday's 24-19 loss to the Patriots.
 
 Miami Dolphins, ESPN headlines:
 
@@ -356,7 +356,7 @@ Searches to run:
 
 Cleveland Browns, injuries:
 - Carsen Ryan (TE) Active: The Browns elevated Ryan from the practice squad to the active roster Saturday.
-- Deshaun Watson (QB) Questionable, Concussion: Watson (concussion) cleared the concussion protocol Saturday but remains questionable for Sunday's game at New Orleans.
+- Deshaun Watson (QB) Questionable, Concussion: Watson cleared the concussion protocol Saturday but remains questionable for Sunday's game at New Orleans.
 - Quincy Williams (LB) Active: Williams has no injury designation ahead of Sunday's game against the Saints, Scott Petrak of the Elyria Chronicle-Telegram reports.
 - Denzel Boston (WR) Active: Boston (calf) was a full participant in Friday's practice and doesn't have an injury designation for Sunday's game at New Orleans, Chris Easterling of the Akron Beacon Journal reports.
 - Carson Schwesinger (LB) Active
@@ -384,6 +384,8 @@ Cleveland Browns, injuries:
 Cleveland Browns, ESPN headlines:
 
 New Orleans Saints, injuries:
+- Zamir White (RB) Active: The Saints elevated White from their practice squad to their active roster Saturday ahead of Sunday's matchup against Cleveland.
+- Charlie Smyth (PK) Active: The Saints elevated Smyth from their practice squad to their active roster Saturday.
 - Jordyn Tyson (WR) Questionable, Hamstring: Tyson (hamstring) was activated from injured reserve Saturday, but he remains questionable for Sunday's game against the Browns.
 - Kelvin Banks Jr. (OT) Questionable, Ankle: Banks (ankle) is listed as questionable for Sunday's game against the Browns.
 - Justin Reid (S) Active: Reid (concussion) does not have any injury designation ahead of Sunday's game against the Browns.
@@ -393,7 +395,6 @@ New Orleans Saints, injuries:
 - Cesar Ruiz (G) Active: Ruiz (knee) was a full participant in Wednesday's practice.
 - Nathan Shepherd (DT) Active: Shepherd (illness) practiced in full Wednesday.
 - Asim Richards (OT) Questionable, Thumb: questionable
-- Charlie Smyth (PK) Active: Coach Kellen Moore announced Wednesday that Smyth will be the Saints' kicker in Week 9, Katherine Terrell of ESPN.com reports.
 - Travis Etienne Jr. (RB) Injured Reserve, Hamstring: Head coach Kellen Moore said Wednesday that the Saints haven't opened Etienne's (hamstring) practice window just yet, Jeff Nowak of WWL Louisiana reports.
 - Carl Granderson (DE) Active: Granderson totaled four tackles, including 1.5 sacks, in Sunday's Week 7 loss to Pittsburgh.
 - Pete Werner (LB) Active: Werner finished Sunday's loss to the Steelers with eight tackles (three solo).
@@ -408,7 +409,6 @@ New Orleans Saints, injuries:
 - Juwan Johnson (TE) Active: Johnson caught one of three targets for seven yards during Sunday's 16-10 loss to the Steelers.
 - Devaughn Vele (WR) Active: Vele caught all five of his targets for 54 yards and a touchdown in Sunday's 16-10 loss to the Steelers.
 - Tyler Shough (QB) Active: Shough completed 30 of 38 passes for 278 yards and one touchdown with one interception in Sunday's 16-10 loss to the Steelers. He added seven rushing yards on three carries.
-- Chris Olave (WR) Active: Olave caught six of 10 targets for 56 yards in Sunday's 16-10 loss to the Steelers.
 
 New Orleans Saints, ESPN headlines:
 
@@ -423,6 +423,8 @@ Searches to run:
 - "NFL week 9 picks NYG PHI"
 
 New York Giants, injuries:
+- Phil Mafah (RB) Active: The Giants elevated Mafah from their practice squad to their active roster Saturday, Dan Salomone of the team's official site reports.
+- Jalin Hyatt (WR) Active: The Giants signed Hyatt from their practice squad to their active roster Saturday, Dan Salomone of the team's official site reports.
 - Andrew Thomas (OT) Active: Thomas (groin) does not have a designation for Sunday's matchup in Philadelphia.
 - Darius Alexander (DT) Active
 - Jermaine Eluemunor (OT) Active
@@ -446,8 +448,6 @@ New York Giants, injuries:
 - Dominic Zvada (PK) Active: Head coach John Harbaugh reiterated Monday that he's confident in Zvada and said that the Giants have no plans to work out other kickers, Pat Leonard of the New York Daily News reports.
 - Nikko Reed (CB) Active
 - Josh Sills (G) Active
-- Isaiah Likely (TE) Active: Likely caught two of four targets for 12 yards in Sunday's 27-21 overtime win over the Texans.
-- Malachi Fields (WR) Active: Fields caught four of five targets for 83 yards in Sunday's 27-21 overtime win over Houston.
 
 New York Giants, ESPN headlines:
 
@@ -520,7 +520,8 @@ Los Angeles Rams, injuries:
 Los Angeles Rams, ESPN headlines:
 
 Washington Commanders, injuries:
-- Dyami Brown (WR) Injured Reserve, Calf: ir
+- Jaden Bradley (WR) Active: The Commanders elevated Bradley from their practice squad to the active roster Saturday ahead of Sunday's matchup versus the Rams.
+- Dyami Brown (WR) Injured Reserve, Calf: The Commanders placed Brown (calf) on injured reserve Saturday.
 - Jer'Zhan Newton (DT) Questionable, Pectoral: The Commanders activated Newton (pectoral) from injured reserve Saturday, Ian Rapoport of NFL Network reports.
 - Sam Cosmi (G) Active
 - John Bates (TE) Active
@@ -544,7 +545,6 @@ Washington Commanders, injuries:
 - Athan Kaliakmanis (QB) Active: Kaliakmanis (coach's decision) is inactive but serving as the Commanders' emergency third quarterback Sunday night against the Eagles.
 - Nick Allegretti (G) Active
 - Terry McLaurin (WR) Injured Reserve, Knee: McLaurin (knee) underwent surgery Friday to repair the torn patellar tendon in his left knee, Nicki Jhabvala of The Athletic reports.
-- Laremy Tunsil (OT) Injured Reserve, Triceps: Tunsil (triceps) could potentially return late in the season, Nicki Jhabvala of The Athletic reports.
 
 Washington Commanders, ESPN headlines:
 
@@ -559,6 +559,7 @@ Searches to run:
 - "NFL week 9 picks DEN CAR"
 
 Denver Broncos, injuries:
+- Cody Schrader (RB) Active: The Broncos elevated Schrader from their practice squad to their active roster Saturday ahead of Sunday's matchup in Carolina, Aric DiLalla of the team's official site reports.
 - Pat Bryant (WR) Questionable, Ankle: Bryant (ankle) was activated from injured reserve Saturday, but he remains questionable for Sunday's game in Carolina, Zac Stevens of TheDNVR.com reports.
 - Kris Abrams-Draine (CB) Out, Ankle: Abrams-Draine (ankle) has been ruled out ahead of Sunday's game against the Panthers.
 - Eyioma Uwazurike (DE) Injured Reserve, Shoulder: Uwazurike (shoulder) is officially listed as out for Sunday's game against the Panthers.
@@ -583,11 +584,11 @@ Denver Broncos, injuries:
 - Sam Ehlinger (QB) Active: Ehlinger (coach's decision) is inactive but will be the third emergency quarterback against the Chiefs on Sunday, Aric DiLalla of the Broncos' official site reports.
 - Garett Bolles (OT) Active
 - Taylor Rapp (S) Active: The Broncos signed Rapp off the practice squad to the active roster Saturday, Parker Gabriel of The Denver Post reports.
-- Cody Schrader (RB) Active: The Broncos elevated Schrader from the practice squad to the active roster Saturday, Zac Stevens of TheDNVR.com reports.
 
 Denver Broncos, ESPN headlines:
 
 Carolina Panthers, injuries:
+- Marco Wilson (CB) Active: The Panthers elevated Wilson from their practice squad to their active roster Saturday, Darin Gantt of the team's official site reports.
 - Brady Christensen (G) Injured Reserve, Hamstring: Christensen (hamstring), who is on injured reserve, is questionable to play Sunday versus Denver.
 - Damien Lewis (G) Out, Knee: Lewis (knee) won't play Sunday against Denver.
 - Will Lee III (CB) Out, Hamstring: Lee has been ruled out for Sunday's game against Denver due to a hamstring injury.
@@ -612,7 +613,6 @@ Carolina Panthers, injuries:
 - Chuba Hubbard (RB) Active: Hubbard rushed 22 times for 81 yards and a touchdown and brought in seven of eight targets for 38 yards in the Panthers' 27-19 loss to the Packers on Thursday.
 - Tetairoa McMillan (WR) Active: McMillan brought in six of 11 targets for 57 yards in the Panthers' 27-19 loss to the Packers on Thursday.
 - Akayleb Evans (CB) Injured Reserve, Triceps: Evans (triceps) was placed on injured reserve by the Panthers on Thursday, Darin Gantt of the team's official website reports.
-- Devin Lloyd (LB) Active: Lloyd posted four tackles in Sunday's loss to the Buccaneers.
 
 Carolina Panthers, ESPN headlines:
 
@@ -685,7 +685,7 @@ Los Angeles Chargers, injuries:
 Los Angeles Chargers, ESPN headlines:
 
 ### Green Bay Packers at New England Patriots
-Sun, Nov 8, 4:25 PM ET, Fox, Gillette Stadium, Foxborough. Line: NE -3, O/U 44.5
+Sun, Nov 8, 4:25 PM ET, Fox, Gillette Stadium, Foxborough. Line: NE -3.5, O/U 44.5
 
 Searches to run:
 - "Green Bay Packers New England Patriots preview week 9"
@@ -695,6 +695,7 @@ Searches to run:
 - "NFL week 9 picks GB NE"
 
 Green Bay Packers, injuries:
+- Chris Brooks (RB) Injured Reserve, Ankle: The Packers didn't activate Brooks (ankle) from injured reserve Saturday, Weston Hodkiewicz of the Packers' official site reports.
 - Drake Dabney (TE) Active: The Packers elevated Dabney from the practice squad to the active roster Saturday.
 - Travis Glover (OT) Out, Knee: Glover (knee) has been ruled out ahead of Sunday's game against the Patriots, Wes Hodkiewicz of the Packers' official site reports.
 - Sean Rhyan (G) Out, Ankle: Rhyan (ankle) has been ruled out ahead of Sunday's game against the Patriots, Wes Hodkiewicz of the Packers' official site reports.
@@ -702,7 +703,6 @@ Green Bay Packers, injuries:
 - Keisean Nixon (CB) Questionable, Groin: Nixon (groin) is listed as questionable for Sunday's game against the Patriots, Wes Hodkiewicz of the Packers' official site reports.
 - Zaire Franklin (LB) Out, Shin: Franklin (shin) has been ruled out ahead of Sunday's game against the Patriots, Wes Hodkiewicz of the Packers' official site reports.
 - Josh Whyle (TE) Out, Concussion: Whyle (concussion) has been ruled out ahead of Sunday's game against the Patriots, Wes Hodkiewicz of the Packers' official site reports.
-- Chris Brooks (RB) Injured Reserve, Ankle: Brooks (ankle) is listed as questionable for Sunday's game against the Patriots, Wes Hodkiewicz of the Packers' official site reports.
 - MarShawn Lloyd (RB) Questionable, Knee: Lloyd (knee) is listed as questionable for Sunday's game against the Patriots.
 - Micah Parsons (DE) Out, Knee - ACL: Parsons (knee) officially was ruled out for Sunday's contest in New England.
 - Christian Watson (WR) Active: Watson (ribs) doesn't have a designation for Sunday's contest at New England.
@@ -792,12 +792,13 @@ Las Vegas Raiders, injuries:
 Las Vegas Raiders, ESPN headlines:
 
 San Francisco 49ers, injuries:
+- Nate Hobbs (CB) Injured Reserve, Groin: San Francisco didn't activate Hobbs (groin) from injured reserve Saturday, David Lombardi of SFStandard.com reports.
+- KhaDarel Hodge (WR) Active: The 49ers elevated Hodge from their practice squad to their active roster Saturday.
 - Christian Kirk (WR) Injured Reserve, Knee - Meniscus: The 49ers placed Kirk (knee) on injured reserve Saturday.
 - Demarcus Robinson (WR) Active: Robinson (ankle) was activated from injured reserve Saturday, per Matt Maiocco of NBC Sports Bay Area, and the 49ers removed his questionable designation for Sunday's game versus the Raiders.
 - Brandon Aiyuk (WR) Out, Personal: Prior to meeting with 49ers officials Friday, Aiyuk (personal) told assembled media that he's "feeling great, healthy" and "looking to get reinstated to the National Football League," Nick Wagoner of ESPN.com reports.
 - Garret Wallow (LB) Active: Wallow (hamstring) does not have a designation for Sunday's clash against Las Vegas.
 - Luke Gifford (LB) Active: Gifford (groin) does not have a designation for Sunday's Week 9 tilt against the Raiders.
-- Nate Hobbs (CB) Injured Reserve, Groin: Hobbs (groin) is officially listed as questionable for Sunday's game versus the Raiders.
 - Marques Sigle (S) Active: Sigle (ankle) does not carry an official injury designation ahead of Sunday's game versus the Raiders.
 - Nick Bosa (DE) Active: Bosa (knee) does not carry an official injury designation ahead of Sunday's game versus Las Vegas.
 - Christian McCaffrey (RB) Active: McCaffrey (hamstring) doesn't have a designation for Sunday's game versus the Raiders, Nick Wagoner of ESPN.com reports.
@@ -816,7 +817,6 @@ San Francisco 49ers, injuries:
 - Kyle Juszczyk (FB) Active: Juszczyk caught all three of his targets for 11 yards and a touchdown during Sunday's 29-20 loss to Atlanta.
 - Eddy Pineiro (PK) Active: Pineiro did not attempt a field goal while going 2-for-3 on PATs in Sunday's 26-20 loss to the Falcons.
 - Jordan Watkins (WR) Active: Watkins brought in three of six targets for 56 yards in the 49ers' 29-20 loss to the Falcons on Sunday.
-- Kaelon Black (RB) Active: Black rushed 12 times for 63 yards and a touchdown and brought in one of three targets for minus-4 yards in the 49ers' 29-20 loss to the Falcons on Sunday. He also lost a fumble and returned one kickoff for 34 yards.
 
 San Francisco 49ers, ESPN headlines:
 
@@ -831,6 +831,8 @@ Searches to run:
 - "NFL week 9 picks ARI SEA"
 
 Arizona Cardinals, injuries:
+- Shawn Bowman (TE) Active: Arizona elevated Bowman from the practice squad to the active roster Saturday.
+- Jerome Ford (RB) Active: The Cardinals elevated Ford from their practice squad to their active roster Saturday.
 - Isaiah Adams (G) Questionable, Ankle: Adams (ankle) is officially questionable for Sunday's matchup in Seattle, Josh Weinfuss of ESPN.com reports.
 - Jon Gaines II (G) Out, Ankle: Gaines (ankle) has been ruled out for Sunday's Week 9 matchup versus the Seahawks, Bo Brack of GoPHNX.com reports.
 - Jayden Williams (OT) Out, Knee: Williams (knee) has been ruled out for Sunday's contest in Seattle, Bo Brack of GoPHNX.com reports.
@@ -854,12 +856,11 @@ Arizona Cardinals, injuries:
 - Eku Leota (LB) Active
 - Starling Thomas V (CB) Active
 - Albert Reese IV (OT) Active
-- Trey McBride (TE) Active: McBride hauled in seven of eight targets for 72 yards and one touchdown during Sunday's 33-30 overtime victory at Dallas.
-- Andrew Wingard (S) Active: Wingard (knee) is active for Sunday's game versus the Cowboys, Darren Urban of the team's official site reports.
 
 Arizona Cardinals, ESPN headlines:
 
 Seattle Seahawks, injuries:
+- Montorie Foster Jr. (WR) Active: The Seahawks elevated Foster from their practice squad to their active roster Saturday, John Boyle of the team's official site reports.
 - Charles Cross (OT) Out, Ankle: Cross (ankle) has been ruled out for Sunday's Week 9 tilt against the Cardinals, John Boyle of the Seahawks' official site reports.
 - Brandon Pili (DT) Out, Back: Pili (back) has been ruled out to face Arizona on Sunday, John Boyle of the Seahawks' official site reports.
 - Uchenna Nwosu (LB) Out, Ankle: Nwosu (ankle) is officially listed as out for Sunday's game versus the Cardinals, John Boyle of the Seahawks' official site reports.
@@ -884,7 +885,6 @@ Seattle Seahawks, injuries:
 - Jadarian Price (RB) Active: Price rushed 10 times for 29 yards and brought in two of four targets for eight yards in the Seahawks' 34-17 loss to the Bears on Monday night.
 - Jaxon Smith-Njigba (WR) Active: Smith-Njigba brought in six of 11 targets for 118 yards and a touchdown in the Seahawks' 34-17 loss to the Bears on Monday night.
 - Patrick O'Connell (LB) Active
-- Tyrice Knight (LB) Active: Knight (hip) doesn't have an injury designation for Monday's game against the Bears, John Boyle of the Seahawks' official site reports.
 
 Seattle Seahawks, ESPN headlines:
 
@@ -928,6 +928,7 @@ Tampa Bay Buccaneers, injuries:
 Tampa Bay Buccaneers, ESPN headlines:
 
 Chicago Bears, injuries:
+- Salvon Ahmed (RB) Active: The Bears elevated Ahmed from their practice squad to the active roster Saturday ahead of Sunday's matchup against the Buccaneers.
 - Grady Jarrett (DE) Active: Jarrett (groin) does not carry an official injury designation ahead of Sunday's game versus the Buccaneers.
 - Tyrique Stevenson Sr. (CB) Questionable, Thumb: Stevenson (thumb) is officially listed as questionable for Sunday's game versus the Buccaneers.
 - Malik Muhammad II (CB) Questionable, Toe: Muhammad (toe) is officially listed as questionable for Sunday's game versus the Buccaneers.
@@ -952,7 +953,6 @@ Chicago Bears, injuries:
 - D'Andre Swift (RB) Active: Swift rushed 27 times for 69 yards and three touchdowns and brought in two of three targets for 10 yards in the Bears' 34-17 win over the Seahawks on Monday night.
 - Case Keenum (QB) Active: Keenum (coach's decision) is inactive but will operate as the Bears' emergency third quarterback for Monday night's matchup against the Seahawks.
 - Jack Sanborn (LB) Active: Sanborn (concussion) does not carry an injury designation into Monday's game against the Seahawks.
-- T.J. Edwards (LB) Active: Edwards (hamstring) does not have an injury designation for Monday's tilt against the Seahawks.
 
 Chicago Bears, ESPN headlines:
 
@@ -967,17 +967,17 @@ Searches to run:
 - "NFL week 9 picks BUF MIN"
 
 Buffalo Bills, injuries:
+- Alec Anderson (OT) Questionable, Ankle: Anderson (ankle) is questionable for Monday's tilt versus the Vikings.
+- Spencer Brown (OT) Active: Brown (back) does not have a designation for Monday's matchup in Minnesota.
+- Dion Dawkins (OT) Questionable, Ribs: Dawkins (ribs) is officially questionable to suit up against the Vikings in Week 9.
 - Tyrell Shavers (WR) Out, Knee - ACL: Shavers (knee) is listed as questionable ahead of Monday night's game against the Vikings, Maddy Glab of the Bills' official site reports.
 - Sam Franklin Jr. (S) Active
-- Spencer Brown (OT) Active
 - Keon Coleman (WR) Active: Coleman (shoulder) doesn't have a designation for Monday's contest in Minnesota.
 - DJ Moore (WR) Active: Moore (shoulder) doesn't have a designation for Monday's contest at Minnesota.
 - Joshua Palmer (WR) Out, Hamstring: Palmer (hamstring) has been ruled out for Monday's game in Minnesota, Maddy Glab of the Bills' official site reports.
 - Ty Johnson (RB) Active: Johnson (illness) was a full practice participant Friday.
 - Dalton Kincaid (TE) Active: Kincaid (chest) was a full participant in Friday's practice.
 - Dee Alford (CB) Active: Alford (ankle) was a full participant in Thursday's practice.
-- Dion Dawkins (OT) Questionable, Ribs: questionable
-- Alec Anderson (OT) Questionable, Ankle: questionable
 - Jordan Hancock (CB) Injured Reserve, Hamstring: Hancock (hamstring) was designated to return from injured reserve by the Bills on Wednesday, Sal Capaccio of WGR Sports Radio 550 Buffalo reports.
 - Greg Gaines (DT) Questionable, Calf: questionable
 - Dawson Knox (TE) Active: Knox caught one of two targets for six yards in Sunday's 36-10 win over the Ravens.
@@ -996,11 +996,11 @@ Buffalo Bills, injuries:
 Buffalo Bills, ESPN headlines:
 
 Minnesota Vikings, injuries:
-- Andrew Van Ginkel (LB) Active
+- Andrew Van Ginkel (LB) Active: Van Ginkel (chest) doesn't have a designation for Monday's matchup against the Bills, Craig Peters of the Vikings' official site reports.
+- Demond Claiborne (RB) Out, Knee: Claiborne (knee) has been ruled out for Monday's battle against Buffalo, Craig Peters of the Vikings' official site reports.
 - Jauan Jennings (WR) Out, Calf: Jennings (calf) has been ruled out for Monday's contest versus the Bills.
 - Kyler Murray (QB) Out, Hamstring: Head coach Kevin O'Connell said Saturday that Murray (hamstring) has been ruled out for Monday's game versus the Bills.
 - Christian Darrisaw (OT) Active: Darrisaw (shoulder) was a full practice participant Friday.
-- Demond Claiborne (RB) Out, Knee: Claiborne (knee) did not participate in Friday's practice.
 - Isaiah Rodgers (CB) Active
 - Jake Golday (LB) Active
 - Jay Ward (S) Questionable, Knee: questionable
