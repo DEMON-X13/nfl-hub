@@ -1,6 +1,6 @@
 {
  "how": "X's placed parlays: what X Parlays shows, read only, on the site owner's devices (admin only: the admin link, #owner=<his Odds API key>, makes a browser his; no one else's page has the tab or reads this file, which stays public all the same). Claude keeps this file from the slips the owner sends in chat; the page only reads it, on every load of the owner's browser, so a change here is what his devices see on their next load. A parlay is id (any name not used before), week, stake, price (the American odds it was placed at), payout (what it pays, stake included), note (optional) and legs. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet, total for the game's points. A whole-game bet takes line 0 (the spread for ats), team set to the side you are on, and player set to whatever you want it called; a total takes the line and side over or under. A line the book moved before X placed the bet is written as the line X took. A parlay X has cleared (settled, and no longer wanted on the page) stays here as history with \"cleared\": true and is not drawn. A finished one clears itself: the betting job marks it cleared (cleared_by auto, cleared_on the date) two Eastern days after its last game, once every game has a final in games.csv (liveparlays/tools/autoclear.py), so it shows in full on its game day and the next day. updated is when this file last changed what X Parlays shows.",
- "updated": "2026-11-07T10:38:23Z",
+ "updated": "2026-11-08T04:23:54Z",
  "games": [
   "2026_02_NO_BAL",
   "2026_02_PHI_TEN",
@@ -62,7 +62,12 @@
   "2026_08_LAC_LA",
   "2026_08_NE_MIA",
   "2026_08_CHI_SEA",
-  "2026_09_JAX_BAL"
+  "2026_09_JAX_BAL",
+  "2026_09_DEN_CAR",
+  "2026_09_DAL_IND",
+  "2026_09_NYG_PHI",
+  "2026_09_DET_MIA",
+  "2026_09_LA_WAS"
  ],
  "parlays": [
   {
@@ -2794,6 +2799,61 @@
    "cleared": true,
    "cleared_on": "2026-11-07",
    "cleared_by": "auto"
+  },
+  {
+   "id": "w9-dk-ml5-boost",
+   "week": 9,
+   "stake": 1,
+   "price": 869,
+   "payout": 9.69,
+   "note": "+30% boost",
+   "legs": [
+    {
+     "game": 61,
+     "player": "Broncos",
+     "team": "DEN",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 62,
+     "player": "Cowboys",
+     "team": "DAL",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 63,
+     "player": "Giants",
+     "team": "NYG",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 64,
+     "player": "Lions",
+     "team": "DET",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 65,
+     "player": "Rams",
+     "team": "LA",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    }
+   ]
   }
  ]
 }
