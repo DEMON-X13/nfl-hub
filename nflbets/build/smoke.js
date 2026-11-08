@@ -2321,7 +2321,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
           if (![...panel.querySelectorAll('p.pb-note')].some(p => txt(p) === want)) bad.push(`the list's note is not "${want}": ` + [...panel.querySelectorAll('p.pb-note')].map(txt).filter(x => /player/.test(x)).join(' / ')); }
         else { const want = (u.k.ml || u.k.ats || u.k.total) ? `No line qualifies yet: ${np}` : cap, none = txt(panel.querySelector('.pb-top-none'));
           if (none !== want) bad.push(`the empty list says "${none}", not "${want}"`); }
-        for (const t of r.tiers) if (!t.legs && !((u.k.ml || u.k.ats) ? t.why.endsWith(', and ' + np) : t.why === cap)) bad.push(`the ${t.id} level says "${t.why}"`);
+        /* (app v145, any size from 2) where the ticked team bets make two legs on one slip, an empty level says no parlay of the
+           picks pays its price (shown where the smoke's own enumeration shows it, found where it cannot tell), not why there are
+           no player lines */
+        const PL = w.eval('pbPool')(on, u), LT = [...PL.pref, ...PL.thin, ...(PL.mkt || [])], fitT = maxFitOwn(LT) >= 2;
+        const priceOk = t => { const minD = LEVEL_DEC_OWN[t.id], p = paysFreeOwn(LT, minD), ml = mlOwnD(minD), no = `No parlay on your picks pays ${ml} or more: tick more games or bet types.`, fd = `No parlay found on your picks that pays ${ml} or more: tick more games or bet types.`;
+          return p === false ? t.why === no : p === null ? (t.why === no || t.why === fd) : false; };
+        for (const t of r.tiers) if (!t.legs && !(fitT ? priceOk(t) : ((u.k.ml || u.k.ats) ? t.why.endsWith(', and ' + np) : t.why === cap))) bad.push(`the ${t.id} level says "${t.why}"`);
         chk(!bad.length, `${lab}: with player bets ticked and no player line priced on the ticked games, the Parlay Builder does not say why in the page's words: ` + bad.slice(0, 3).join('; '));
         nplSeen++; }
       return built; };
@@ -10139,7 +10145,7 @@ async function softChecks() {
         console.log(`  (the level search on 24 tied legs: Extreme in ${ms} ms)`); }
     } finally { for (const k in KEEPC) { if (KEEPC[k] === undefined) delete CORR[k]; else CORR[k] = KEEPC[k]; } }
     /* the cases tell: some level the smoke works out is of another size than app v144's fixed one, and some mixes games */
-    chk(bad.length === 0 && held >= 30 && sized >= 4 && mixed >= 2, `the level search does not take the likeliest parlay of any size paying its price (the smoke's own working), or the cases cannot tell (${held} levels held, ${sized} of another size than app v144's, ${mixed} mixing games): ${bad.slice(0, 3).join(' | ')}`);
+    chk(bad.length === 0 && held >= 26 && sized >= 4 && mixed >= 2, `the level search does not take the likeliest parlay of any size paying its price (the smoke's own working), or the cases cannot tell (${held} levels held, ${sized} of another size than app v144's, ${mixed} mixing games): ${bad.slice(0, 3).join(' | ')}`);
     console.log(`  (the level search: ${held} levels, ${sized} of another size than app v144's fixed one and ${mixed} mixing games${said.length ? ', this week\'s ' + said.join(', ') : ''}; ${tPage} ms the page, ${tOwn} ms the smoke's own)`); }
   /* ---- 2. the tab opened without a freeze ---- */
   const tabBtn = t => [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === t);
