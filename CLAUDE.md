@@ -314,11 +314,14 @@ own (the smoke cases alone when only PAGE changed); job C (since 20 October 2026
 **The archive of DraftKings' lines**), `props/research/propmodel/test_td_shadow.py` (since 31 October 2026, **The
 touchdown shadow**: about 45 seconds, stopping itself at 3 minutes), `elo/test_parity.py` and `elo/test_fetch.py`
 (since 4 November 2026, **The inputs' review**, under Player Elo: seconds each, under `props/requirements.txt`'s pins),
-`nflbets/build/test_dkname.js`,
+`nflbets/build/test_dkname.js`, since the review of 7 November 2026 `props/build/test_suggest_ledger.js` (about a minute, eight at
+most by its own stop, `STOP_AFTER_MS`: the props job's run of `suggest_ledger.js` only logs a refusal and publishes, so its
+guard was held by nothing a pull request had to pass; **The review of the level search**, under "Bets and Stats: the loop"),
 `nflbets/build/smoke_admin.js` and, since the review of 21 October 2026, `nflbets/build/smoke_live.js` (about four minutes,
 the one place the parlay card's Pull from DraftKings and its money rules are held; job C's `timeout-minutes` went from 20 to
 45 with it, room for both page smokes running to their own caps here and again on the base, which `test_props_gate.py`
-holds, and to 50 on 31 October 2026, the touchdown shadow's test's 3 minutes added to that sum; and its unit-test step's env sets `NODE_OPTIONS: "--max-old-space-size=6144"`, since smoke_live.js, which boots
+holds, to 50 on 31 October 2026, the touchdown shadow's test's 3 minutes added to that sum, and to 65 on 7 November 2026, the
+suggestions record's test's 8 added (twice the four caps, 29 minutes, and 5 over); and its unit-test step's env sets `NODE_OPTIONS: "--max-old-space-size=6144"`, since smoke_live.js, which boots
 the whole page more than sixty times and closes few of them, holds a live heap of about 3.25 GB at its peak (measured after forced collections), over Node's default old space
 on a runner under about 16 GiB of memory (about 2.2 GB): there it and the base's run both died of out-of-memory, verdict()
 read a failure on both sides as a warning, and job C went green with Pull from DraftKings never held (the second review of
@@ -1310,7 +1313,8 @@ takes with them and an Elo pick this run replaces, and `ready()` no longer waits
 weeks before it took them are
 `props/data/suggest_backtest.json` (**The backtest**, under "Bets and Stats: the loop"), which this script neither reads
 nor writes.
-`node test_suggest_ledger.js` (about a minute) runs it on made-up weeks cut from the payload, the prime-time games
+`node test_suggest_ledger.js` (about a minute; a unit of the props gate's job C since app v144, run from the repository's
+root, stopping itself at eight minutes) runs it on made-up weeks cut from the payload, the prime-time games
 it stands on moved where each stage needs them (a week of too few games for them, the divisional round on and the
 off-season, gets the rest made up between clubs of the test's own; `SL_TEST_PAYLOAD=<file>` runs it on another
 payload), and which kickoffs are prime time worked out on its own (`primeAt`):
@@ -4084,9 +4088,11 @@ first, a branch let go once its legs and the dearest the rest can add multiplied
 pays more), a parlay kept only where its approximate price times its slack (`PB_MIN_SLACK`, app v143's) reaches it, keyed
 by the lesser of its approximate chance and its approximate return over the price, the best 1,500 kept (`PB_LV_M`, every
 tie of the last with them) and a branch given up that cannot reach them; `pbLevelPick` works them best key first in full
-(`pbExact`, its price first), the likeliest that pays taken, stopping once no key times 1.03 (`PB_LV_C`) can beat it by
-0.05 points of chance (`PB_LV_TOL`), run again keeping eight times as many where the kept ran out with some let go, at most
-6,000 worked in full a run (`PB_LV_EVALS`); and where that walk worked some and found none, a second walk by the search's
+(`pbExact`, its price first), the likeliest that pays taken, stopping at the first whose key times 1.03 (`PB_LV_C`) is
+under the best's chance in full and 0.05 points (`PB_LV_TOL`), a stop measured and not a bound, and past it working on,
+within the parlays kept, to 1.12, 1.15 or 1.18 by size (`PB_LV_C2`), only those the reading understates by their make
+(`pbLvOpp`: **The review of the level search**, below); run again keeping eight times as many where the kept ran out with
+some let go before the stop, at most 6,000 worked in full a run (`PB_LV_EVALS`); and where that walk worked some and found none, a second walk by the search's
 chance alone among the parlays whose search price already pays, at most 12,000 (`PB_LV_EVALS2`): the audit's made-up
 lines, where every leg returns alike and the search's price runs 1 to 7% over the price in full, starved the first walk
 (on TB at CHI's 53 lines every one of its first 7,505 fell short in full, though 124,312 of the 211,454 parlays of four
@@ -4096,7 +4102,8 @@ every parlay of each size worked in full (2 and 3 legs whole, the best 20,000 of
 every Safe and Medium the likeliest paying its price, 10 of the 14 Aggressives and the rest within 0.065 points of chance
 (0.012 on average), the Extremes within 0.105 (0.050); on 24 adversarial pools of those games' legs at random prices and
 margins, every Safe, Medium and Aggressive the likeliest and the Extremes within 0.075 (18 exactly). Every unit's set
-builds in about 2.1 to 2.3 s in jsdom, as app v143's did, at most about 0.27 s a level (each one task of `spOpenSoft`).
+builds in about 2.1 to 2.3 s in jsdom, as app v143's did, at most about 0.27 s a level (each one task of `spOpenSoft`);
+about 2.9 s since the review's walk past the stop (**The review of the level search**, below).
 
 On that payload and clock (fair chance, expected return at it): TB at CHI from +104 (39.8%, -18.9%), +202 (25.5%,
 -23.1%), +516 (12.4%, -23.7%) and +1148 (6.0%, -25.7%) to +113 (38.0%, -19.1%), +311 (19.1%, -21.4%), +704 (9.5%, -23.9%)
@@ -4124,9 +4131,11 @@ therefore mix the levels as they locked under the old rules (Medium least costly
 paying +100) with the new.
 
 Held, blocking, each on its own reading (never the page's `PB_TIERS`). The audit: `LEVEL_DEC_AUD`, `decN` and
-`PICK_AUD`; every drawn set's level the likeliest of its size paying its price (`levelAud` in full where every parlay is a
-plain product, `searchAud` the likeliest of the best by the search's chance among those paying, a miss under 0.2 points
-`W.search`), carrying its price and rule, an empty one only where `paysAud` (the legs dearest first, a branch let go once
+`PICK_AUD`; every drawn set's level carrying its price and rule, the page's own search's parlay on the audit's own pool,
+and the likeliest of its size paying its price: worked out in full (`levelAud`) where every parlay is a plain product, and
+else held within 0.2 points to the likeliest of the best 20 paying, walked by the search's chance (`searchAud`), which is a
+warning (`W.search`) on the week's own lines and blocking on the audit's own made-up lines (since the review of 7 November
+2026; a real same-game level is never a plain product, so on the week's lines that choice is a warning alone), an empty one only where `paysAud` (the legs dearest first, a branch let go once
 their product falls short) shows none pays, its words the rule's; the engine's the same as `W.engine`; M4, M10, M16 and
 M18's made-up cases at the new prices (M18: GP's Safe the likeliest pair paying +110 where its likeliest pays -241; GM at
 Medium's edge, three at 3.853 and three at 3.9996 refused and three at 4.0023 taken; GA's Aggressive and Extreme less
@@ -4138,7 +4147,8 @@ LEVEL THE LIKELIEST AT ITS PAYOUT on made-up games at any hour (PV, whose likeli
 Medium's edge; PA, whose likeliest four pay 5.96, its Aggressive +761; PW, empty in its words; and ten made-up games,
 Spread only, the engine's four levels each the likeliest at its price where the likeliest pair and three overall pay
 under theirs), and 1b, the level search against its own enumeration of every parlay of 2 and 3 legs on made-up pools and
-the week's own (app v138's check of the beam, `bmOwn`, gone with it). `test_suggest_ledger.js`: every level a run takes
+of pairs on the week's own (pairs and threes since the review of 7 November 2026: **The review of the level search**,
+below; app v138's check of the beam, `bmOwn`, gone with it). `test_suggest_ledger.js`: every level a run takes
 or builds again at its price with `minDec` and `pick`; F's guard refusing a Medium at 3.9 or with no pick and passing one
 at exactly 4.00, the same at each level's price, and a set an older page took under app v143 left as it was.
 
@@ -4159,6 +4169,59 @@ Wherever this file says, before this paragraph or after it, that Safe is the lik
 Aggressive and Extreme are the least costly parlay landing 25%, 12% or 5%, or the likeliest of their size, among the
 parlays paying +100 or more, or that a level is ruled "least costly · 25%+", that is history from app v144: every level
 is the likeliest parlay of its size paying its own price, +110, +300, +700 or +1500.
+
+**The review of the level search** (7 November 2026, before app v144 merged: `patch_level_prices.py`'s last section). The
+review found the search's crux held by no blocking check, and two weaknesses of the page besides. (1) The walk's stop is
+measured, not a bound, and one make of parlay beats it: where a leg is linked to two others of the parlay at opposite
+effective signs (a quarterback's passing yards over with one receiver under and another over), the search's pairwise reading
+takes the two receivers as unrelated given him though they move together, and understates the chance in full (on such stars
+within the 45-97% band at random prices up to 1.092 times on 3 legs, 1.123 on 4 and 1.146 on 5, where every other shape read
+within 1.009). A game built so that one is the likeliest at the price, beside an unrelated rival just over the stop, was
+missed by 0.33 points of chance on 3 legs and 0.52 to 0.64 on 4. Past its stop the walk now goes on within the parlays kept,
+never running the search again, to the key times `PB_LV_C2` (1.12, 1.15 and 1.18 by size), working in full only those of
+that make (`pbLvOpp`, each link 0.1 or more): every built case is then the likeliest. On week 9's pools they are 1 to 6% of
+the best 1,500 candidates and read up to 1.06; it costs about a fifth more time (every set 2.9 s against 2.25 on week 9 at
+Saturday 18:00 UTC, 3.7 against 3.05 on week 8 at Sunday 12:00) and moves no level of either week. A stop of 1.06 for every
+parlay was 4.2 times slower for moves of 0.03 to 0.11 points. (2) `pbLevelCands` keeps every tie of its 1,500th, and on tied
+legs pruned on every push past 3,000, quadratic: 24 legs of one game at 50% and -112, Extreme, 29 s in one task. It prunes
+again only once another 1,500 have come in past what it kept (the same parlays, in the same order): 0.47 s. (3) The beam's
+widths left `PB_SEARCH` and `SP_SEARCH`, which keep the cap alone. What is left, said: the price slack (`PB_MIN_SLACK`) is
+measured on the pair table's own shape, where players move together only through their quarterback (receivers with one
+another at -0.038); a made-up pool whose receivers move with one another at 0.28 can put a 4-leg price in full 29% over the
+reading, past the slack, and the search there missed by up to 0.57 points of chance. No game meets such a pool while the
+table stands so, and a table that changed shape would need the slack measured again.
+
+The checks, blocking, each on its own reading. The audit's M18 gains GW (a wide pool of plain products, 10 lines at -400, 8
+at -150 and 15 at +115, whose likeliest 4 paying +700 has none of its threes among the 400 likeliest or dearest threes and
+whose likeliest 5 paying +1500 none of its fours among the 400 likeliest or dearest, so app v143's beam at the new prices,
+by the chance with a reserve by the price, takes 7.54% where 9.53% pays; its Aggressive and Extreme worked out in full by the
+audit's own arithmetic) and GY3 and GY4 (the opposite-sign star the likeliest 3 paying +300 and 4 paying +700, the pair
+table's shape planted for made-up groups and taken out again, beside a rival landing over the star's reading times 1.03 and
+0.31 and 0.57 points under it, so a walk that takes the first parlay paying in full in the key order, or stops at 1.03,
+takes the rival), each saying what it stands on; and `searchHeld` on the audit's own made-up lines is blocking, the
+audit's own data (`W.search` on the week's own lines, its reason in `WARN` written again for this rule). The nflbets
+smoke's 1b holds the same three pools (BW, BY3, BY4) and this week's own pools at pairs and threes (up to three games of 45
+legs or fewer; pairs alone until then), each against its own enumeration of every parlay of the size in full (BW's
+Extreme by its own arithmetic); its `tierHeld` holds every drawn Medium, Aggressive and Extreme with no total to the level
+search's own parlay on its game's pool (`pbLevel`, which 1b holds), so a set taking a level by another rule fails on any
+week's data; and 24 tied legs' Extreme in under 5 s. `test_suggest_ledger.js` is a unit of the props gate's job C, stopping
+itself at eight minutes (`STOP_AFTER_MS`, which `test_props_gate.py` reads beside the other caps: job C's `timeout-minutes`
+65). Bitten on scratch copies of the tree, never the worktree's files: the walk taking the first parlay that pays in full
+in the key order, the audit 4 failures and 6 warnings (GY3 and GY4, each by its full working and its own case; `W.search` on
+the week's TB at CHI and BUF at MIN) and the smoke 1 (1b: BY3, BY4 and this week's CIN at ATL Medium, 19.09% where 19.40%
+pays), where before the review every blocking check passed it; app v143's beam put back at the new prices (the search
+without its step by the price), the audit 4 and 10 (the made-up lines' Mediums of TB at CHI and BUF at MIN, 11.48% where
+about 21% pays, and GW's Aggressive, 7.54% where 9.53% pays, and Extreme, 3.45% where 4.37%) and the smoke 70 (every drawn
+Aggressive and Extreme of the week not the search's own, and the engine's), where before the audit gave 12 warnings and
+no failure; the walk's stop at 1.03 for every parlay (no extension), the audit 4 (GY3, GY4) and the smoke 1 (1b: BY3,
+BY4); the prune on every push past twice the kept, the smoke 1 (24 tied legs' Extreme in 47 s); Medium the best expected
+return among the 3-leg parlays paying +300 (the review's own bite), the audit 17 and 12 and the smoke 36 (every drawn
+Medium of the week now, where before it found 4 on the engine and fixtures alone); and the record's guard taking a level
+within 0.1 of its price, `test_suggest_ledger.js` 8 (a Medium at 3.9, an Aggressive at 7.9, an Extreme at 15.9, Safe at
++105 and +100, both slot cases), now a failure of job C. Not taken from the review: a wall-clock budget for one level
+(a level's parlay would then turn on the machine's speed, so the record and the checks could not reproduce the page; the
+longest real step is about 0.2 s cold, a level a task), and skipping the hidden Extreme in a visitor's build (this
+browser's own locked set keeps all four levels as the record does).
 
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built

@@ -196,7 +196,8 @@ props/
                                  (offeredOwn), and since app v142 no Elo picks in any
                                  entry a run takes (noEloTaken), an older entry's
                                  rewritten before its lock and kept, graded, once locked
-                                 (legacyElo) (about a minute)
+                                 (legacyElo) (about a minute; a unit of the props gate's
+                                 job C since app v144, stopping itself at eight minutes)
   build/suggest_backtest.js      by hand, never by a job: the record's weeks before it
                                  took them (from week 3), each night game and Sunday slot
                                  rebuilt by today's page on the files of the last commit
@@ -1408,9 +1409,11 @@ fallback to the likeliest of its size. The beam is gone (`pbBeam`, `pbBestReturn
 `pbMinSlack`): `pbLevel` tries the fewest fill legs first, `pbLevelCands` reads every parlay of the size on `pbCtx`'s
 figures (legs multiplied short of the price let go, the approximate price times `PB_MIN_SLACK` kept as the admission,
 each keyed by the lesser of its approximate chance and its approximate return over the price, the best 1,500 kept), and
-`pbLevelPick` works them best key first in full (`pbExact`), the likeliest that pays taken, stopping once no key times
-1.03 can beat it by 0.05 points (`PB_LV_C`, `PB_LV_TOL`), run again keeping eight times as many where it ran out with
-some let go, and, where it worked some and found none, walked again by the chance alone among the parlays whose search
+`pbLevelPick` works them best key first in full (`pbExact`), the likeliest that pays taken, stopping at the first whose key
+times 1.03 is under the best's chance in full and 0.05 points (`PB_LV_C`, `PB_LV_TOL`; measured, not a bound) and past it,
+within the kept, to 1.12, 1.15 or 1.18 by size (`PB_LV_C2`) working only parlays with a leg linked to two others at
+opposite signs (`pbLvOpp`, which the reading understates), run again keeping eight times as many where it ran out with
+some let go before the stop (`pbLevelCands` pruning again only once another 1,500 come in: tied legs were quadratic), and, where it worked some and found none, walked again by the chance alone among the parlays whose search
 price pays (`PB_LV_EVALS2`). A level carries `minDec` (2.1, 4, 8, 16) and `pick: 'likeliest'` (kept by `spTierOut`, read
 back by `spTierIn`, which reads the floor a level was kept with), its pill "likeliest 3 legs · +300+" titled "The
 likeliest 3-leg parlay paying at least +300 by the site’s price: $1 returns $4 or more"; a level locked under app v143
