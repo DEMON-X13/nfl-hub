@@ -32,10 +32,13 @@ ratio of the full chance over the reading (PB_FREE.C) is under the best, and pas
 make the reading understates (a leg linked to two others at opposite signs, pbLvOpp, PB_FREE.C2); run again keeping eight
 times as many where candidates were let go, and where none paid, a second walk by the reading's chance alone. Several games
 (pbFreeUnit, pbFreeDp): an exact knapsack across games, each game offering its single legs and the same-game groups that can
-matter (found by the one-game walk in its front mode, each game's best PB_FREE.FM (300) by their bound, and worked in full
-standalone: where a leg returns more than it costs, a line priced with no margin or less than none, the bound lets every
-group of a game through, and on the audit's made-up lines the Day games' Extreme ran past 2 GB and 8 minutes before the
-cap; on real data no game came near 300 and no group ever entered a level), a partial carried only while its chance
+matter (found by the one-game walk in its front mode and worked in full standalone, each game's best by their bound, 24,000
+shared among the unit's games and at least 300 a game, PB_FREE.FMT and FM: where few games' single legs cannot reach the
+price, or legs return about what they cost, the bound lets thousands of groups of a game through, and uncapped the engine on
+week 5's Sunday night, two games left, took 397 s, and the Day games' Extreme on the audit's made-up lines, every starter's
+line at -112 or -150 and a total at +110/+105, ran past 2 GB and 8 minutes; capped, 8.9 s for the engine's four levels, its
+Extreme 4.540% where the uncapped search found 4.605%, and 2 to 4 s; on real Day games no game came near the cap and no
+group ever entered a level), a partial carried only while its chance
 can still beat the best and its price reach the level's, dominance tie-safe (partials compared in blocks of equal chance and
 lean, to 1e-9, so a tie goes to the rule); the complete parlays within 0.004 of the best then worked in full on the card and
 checked on pbFits pair by pair. Across games a parlay of single legs is exact in chance and price (legRho is 0 across games,
@@ -431,10 +434,13 @@ function pbTier(t,pool,memo,opt){ return pbWithFair(pbTierOf(t,pool,memo,opt)); 
    (within PB_FREE.BORDER of it, worked on the card). The groups (pbFreeUnit): each game's sets (pbFreeCands' front mode)
    whose chance, where they cannot pay alone at most the best the other games return (rO, the best single leg's chance times
    price, to the power of the games left), can reach the singles' best; a parlay holding a group under that cannot beat it.
-   Each game keeps its best PB_FREE.FM (300) groups by that key: where legs return more than they cost (a line priced with
-   no margin or less than none, rO over 1) the bound lets every group of a game through, and on the audit's made-up lines,
-   every starter's line at -112 or -150 and a total at +110/+105, the Day games' Extreme ran past 2 GB and 8 minutes; on
-   real data no game came near 300 and no group ever entered a level.
+   Each game keeps its best groups by that key, PB_FREE.FMT (24,000) shared among the unit's games and at least FM (300)
+   a game: where few games' single legs cannot reach the price (two games left on a Sunday night, the engine's All) or legs
+   return about what they cost, the bound lets thousands of groups of a game through (the engine on week 5's Sunday night,
+   two games, took 397 s uncapped; on the audit's made-up lines, every starter's line at -112 or -150 and a total at
+   +110/+105, the Day games' Extreme ran past 2 GB and 8 minutes). Capped, those take 5 s and 2 to 7 s, the Sunday night's
+   Extreme 4.540% where the uncapped search found 4.605%; on real Day games no game came near the cap and no group ever
+   entered a level.
    The complete parlays within PB_FREE.WIN of the best (BORDER with no group) are worked on the card, at most WIN_EVALS, every
    pair held to pbFits, the likeliest that pays by pbFreeRank.
 
@@ -451,7 +457,7 @@ const PB_FREE={M:1500,DELTA:0.15,TOL:5e-4,E1:1500,E2:300,E3:12000,
   SLACK:[1,1,1.05,1.10,1.20,1.30,1.35,1.40,1.45,1.50,1.55,1.60,1.65],
   C:[1,1,1.03,1.04,1.05,1.06,1.08,1.09,1.10,1.11,1.12,1.13,1.14],
   C2:[1,1,1,1.12,1.15,1.18,1.21,1.24,1.27,1.30,1.33,1.36,1.39],
-  FRONT:1.03,FM:300,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9};
+  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9};
 /* (the review of 7 November 2026) the opposite-sign make (pbLvOpp): each link of 0.1 or more */
 const PB_LV_OPP=0.1;
 /* whether a leg of the parlay (its legs' places in x) is linked to two others at opposite effective signs (each correlation
@@ -614,6 +620,7 @@ function pbFreeUnit(pools0,F,memo,cap){
   if(pools.length===1) return pbFreeOne(pools[0],F,memo,cap);
   const x=pbCtx(memo);
   const srt=a=>a.sort((u,v)=>(v.c-u.c)||(v.ln-u.ln)||(v.d-u.d)||(u.id<v.id?-1:u.id>v.id?1:0));
+  const FMg=Math.max(PB_FREE.FM,Math.floor(PB_FREE.FMT/pools.length));
   const pass=(withTot,fillOf,k)=>{
     const legsOf=p=>[...p.pref,...p.thin,...(withTot?p.mkt||[]:[])], fillN=ls=>fillOf?ls.reduce((a,l)=>a+fillOf(l),0):0;
     const singles=pools.map(p=>srt(legsOf(p).map(l=>({c:l.p,d:mlToDec(l.price)||1,n:1,ln:pbLean(l),legs:[l],t:fillN([l]),id:pbId(l)}))));
@@ -623,7 +630,7 @@ function pbFreeUnit(pools0,F,memo,cap){
     let added=0, thr=cb>0?cb:0.5*SGP_HOLD*rOb/F;
     for(let tries=1;;tries++){ const o2=singles.map(g=>g.slice()); added=0;
       pools.forEach((p,gi)=>{ const legs=legsOf(p); if(legs.length<2) return; const I=legs.map(l=>pbCtxLeg(x,l));
-        const cnd=pbFreeCands(x,I,F,cap,PB_FREE.FM,'front',thr/PB_FREE.FRONT,rOb,null,null);
+        const cnd=pbFreeCands(x,I,F,cap,FMg,'front',thr/PB_FREE.FRONT,rOb,null,null);
         for(const s of cnd.set){ const ls=s.map(c=>x.L[c]), ex=pbExact(ls,0,0); if(!ex) continue;
           const c=ex.corr, d=ex.dec, key=d>=F?c:c*rOb*d/F; if(key<thr) continue;
           o2[gi].push({c,d,n:ls.length,ln:ls.reduce((a,l)=>a+pbLean(l),0),legs:ls,grp:1,t:fillN(ls),id:ls.map(pbId).sort().join(',')}); added++; } });

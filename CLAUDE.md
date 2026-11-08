@@ -4292,9 +4292,12 @@ Safe takes 6 and 7 legs and Extreme up to 12. The Day games' expected return at 
 best single game's was -19% to -25% (across games a parlay pays its legs multiplied, with no same-game hold). The longest
 step (one level) 336 to 421 ms where app v144's was 1.3 to 1.8 s, a night game's set 0.23 to 0.62 s (app v144's 0.14 to
 0.28 s), the Day games' 0.52 to 0.59 s (2.3 to 2.6 s), every live unit 1.3 to 1.7 s (2.6 to 3.1 s). Each game keeps its best
-300 same-game groups for the knapsack (`PB_FREE.FM`): on the audit's made-up lines, where a total at +110/+105 returns more
-than it costs, the bound let every group through and the Day games' Extreme ran past 2 GB and 8 minutes; on real data no
-game came near 300 and the four payloads' 48 levels are the same with the cap and without.
+same-game groups for the knapsack by their bound, 24,000 shared among the unit's games and at least 300 a game
+(`PB_FREE.FMT`, `FM`): where few games' single legs cannot reach the price (two games left on a Sunday night, the engine's
+All) or legs return about what they cost, the bound lets thousands through, and uncapped the engine on week 5's Sunday
+night took 397 s and the Day games' Extreme on the audit's made-up lines ran past 2 GB and 8 minutes; capped, 8.9 s for the
+engine's four levels (its Extreme 4.540% where the uncapped search found 4.605%) and 2 to 4 s; on real Day games no game came
+near the cap, and the four payloads' 48 levels are the same with it and without.
 
 Held, blocking, each on its own reading. The audit: `CAP_AUD`, `PICK_AUD` and `PICK_V144_AUD` its own; `freeAud` (every
 set of 2 to 12 worked out, a plain list's branch let go by its chance), `paysFreeAud`, `ref23Aud` (the likeliest of 2 and 3
