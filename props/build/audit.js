@@ -1506,35 +1506,37 @@ setTimeout(async()=>{
      its chance in full (parlayProb) the likeliest, a tie to 1e-9 to the fewer legs, then the larger lean, then the lower id
      (freeRankAud); of the parlays with the fewest totals (a total only where none without one pays) and, where the list has a
      hook's Value picks (a leg neither thin nor a total), with no total the fewest thin legs (freeKeyAud: the passes). */
+  /* the page's own sums and helpers, read once (the enumerations call them thousands of times) */
+  const ordA=F('pbOrder'), pdA=F('parlayDec'), ppA=F('parlayProb'), rhoA=F('legRho'), mdA=F('mlToDec'), pjA=F('pbJoint');
   const freeRankAud=(a,b)=>(k9(b.pr)-k9(a.pr))||(a.n-b.n)||(k9(b.ln)-k9(a.ln))||a.id.localeCompare(b.id);
   const freeKeyAud=(L,hook)=>{ const t=L.filter(l=>l.market).length; return [t,!t&&hook?L.filter(l=>l.thin).length:0]; };
   const freeBetterAud=(x,y)=>{ if(!y) return true; const d=(x.k[0]-y.k[0])||(x.k[1]-y.k[1]); return d<0||(d===0&&freeRankAud(x,y)<0); };
-  const freeOfAud=(cur,dec)=>{ const O=F('pbOrder')(cur.map(l=>({...l}))), d0=dec!=null?dec:F('parlayDec')(O.map(l=>({leg:l,ml:l.price})));
-    return {L:O,dec:d0,pr:F('parlayProb')(O).corr,n:O.length,ln:O.reduce((a,l)=>a+leanAud(l),0),id:O.map(legIdAud).sort().join(),
-      plain:!O.some((a,i)=>O.slice(i+1).some(b=>Math.abs(F('legRho')(a,b))>=0.03))}; };
+  const freeOfAud=(cur,dec)=>{ const O=ordA(cur.map(l=>({...l}))), d0=dec!=null?dec:pdA(O.map(l=>({leg:l,ml:l.price})));
+    return {L:O,dec:d0,pr:ppA(O).corr,n:O.length,ln:O.reduce((a,l)=>a+leanAud(l),0),id:O.map(legIdAud).sort().join(),
+      plain:!O.some((a,i)=>O.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03))}; };
   /* every fitting set of 2 to cap of a list, the dearest legs first, a branch let go once its legs and the dearest the places
      left can add multiplied fall short of minD (a parlay never pays more); each whose legs multiplied reach minD worked in
      full. {best, paying, seen}, or null past FREE_SEEN_AUD sets worked: an exact reference on a list small enough */
   const FREE_SEEN_AUD=200000;
   /* (on a list none of whose pairs moves together, every chance the legs' product: a branch whose product is already
      under the best, with as many totals (and thin legs) as it, cannot beat it, and is let go) */
-  const freeAud=(list,minD,cap=CAP_AUD,fits=fitsAud)=>{ const hook=list.some(l=>!l.thin&&!l.market), md=F('mlToDec'), L=list.map(l=>({l,d:md(l.price)||1})).sort((a,b)=>b.d-a.d), m=L.length, cur=[], rho=F('legRho');
+  const freeAud=(list,minD,cap=CAP_AUD,fits=fitsAud)=>{ const hook=list.some(l=>!l.thin&&!l.market), md=mdA, L=list.map(l=>({l,d:md(l.price)||1})).sort((a,b)=>b.d-a.d), m=L.length, cur=[], rho=rhoA;
     const plain=!list.some((a,i)=>list.slice(i+1).some(b=>Math.abs(rho(a,b))>=0.03));
     let seen=0, best=null, paying=0;
     const rec=(i0,prod,pp0,nT,nTh)=>{ for(let i=i0;i<m&&seen<=FREE_SEEN_AUD;i++){ let b=prod; for(let j=i,r=cap-cur.length;j<m&&r>0;j++,r--) b*=L[j].d; if(b<minD*(1-1e-12)) break;
         const c=L[i].l; if(!fits(cur,c)) continue; const q=pp0*c.p, t2=nT+(c.market?1:0), h2=nTh+(c.thin?1:0);
         if(plain&&best&&q<best.pr-1e-9&&t2>=best.k[0]&&(!hook||t2>0||h2>=best.k[1])) continue;
         cur.push(c); const p2=prod*L[i].d;
-        if(cur.length>=2&&p2>=minD*(1-1e-12)){ seen++; const O=F('pbOrder')(cur.map(l=>({...l}))), dec=F('parlayDec')(O.map(l=>({leg:l,ml:l.price})));
+        if(cur.length>=2&&p2>=minD*(1-1e-12)){ seen++; const O=ordA(cur.map(l=>({...l}))), dec=pdA(O.map(l=>({leg:l,ml:l.price})));
           if(dec>=minD){ paying++; const x=freeOfAud(cur,dec); x.k=freeKeyAud(x.L,hook); if(freeBetterAud(x,best)) best=x; } }
         if(cur.length<cap) rec(i+1,p2,q,t2,h2); cur.pop(); } };
     rec(0,1,1,0,0); return seen>FREE_SEEN_AUD?null:{best,paying,seen,plain}; };
   /* whether some fitting set of 2 to cap of a list pays minD in full: true, false, or null past the bound (the walk and its
      cut as freeAud's, stopping at the first that pays) */
-  const paysFreeAud=(list,minD,cap=CAP_AUD,lim=60000,fits=fitsAud)=>{ const md=F('mlToDec'), L=list.map(l=>({l,d:md(l.price)||1})).sort((a,b)=>b.d-a.d), m=L.length, cur=[]; let seen=0, hit=false;
+  const paysFreeAud=(list,minD,cap=CAP_AUD,lim=60000,fits=fitsAud)=>{ const md=mdA, L=list.map(l=>({l,d:md(l.price)||1})).sort((a,b)=>b.d-a.d), m=L.length, cur=[]; let seen=0, hit=false;
     const rec=(i0,prod)=>{ for(let i=i0;i<m&&!hit&&seen<=lim;i++){ let b=prod; for(let j=i,r=cap-cur.length;j<m&&r>0;j++,r--) b*=L[j].d; if(b<minD*(1-1e-12)) break;
         const c=L[i].l; if(!fits(cur,c)) continue; cur.push(c); const p2=prod*L[i].d;
-        if(cur.length>=2){ seen++; if(p2>=minD*(1-1e-12)&&F('parlayDec')(F('pbOrder')(cur.map(l=>({...l}))).map(l=>({leg:l,ml:l.price})))>=minD) hit=true; }
+        if(cur.length>=2){ seen++; if(p2>=minD*(1-1e-12)&&pdA(ordA(cur.map(l=>({...l}))).map(l=>({leg:l,ml:l.price})))>=minD) hit=true; }
         if(!hit&&cur.length<cap) rec(i+1,p2); cur.pop(); } };
     rec(0,1); return hit?true:seen>lim?null:false; };
   /* (app v145) the week's own pools, where an exact reference of every size is too dear: every parlay of 2 and 3 legs of a
@@ -1547,7 +1549,7 @@ setTimeout(async()=>{
      product, chance and price (worked exactly here, then the best in full on the card), and every pair of one game is
      worked in full, alone and beside the likeliest single leg of another game that brings it to minD. Each candidate its
      figures on the card (freeOfAud); plain where no pair of it moves together (its chance and price then exact) */
-  const ref23Aud=(per,floors)=>{ const md=F('mlToDec'), pj=F('pbJoint'), modelP=l=>l.p, memo=new Map(), noT=L=>L.filter(l=>!l.market), ok=(a,b)=>fitsAud([a],b);
+  const ref23Aud=(per,floors)=>{ const md=mdA, pj=pjA, modelP=l=>l.p, memo=new Map(), noT=L=>L.filter(l=>!l.market), ok=(a,b)=>fitsAud([a],b);
     const G=per.map(L=>noT(L)), out=floors.map(()=>({best:null,worked:0})), full=new Map();
     const fo=cur=>{ const id=cur.map(legIdAud).sort().join(); let x=full.get(id); if(!x){ x=freeOfAud(cur); x.k=[0,0]; full.set(id,x); } return x; };
     const put=(fi,x)=>{ const o=out[fi]; o.worked++; if(x.dec>=floors[fi]&&(!o.best||freeRankAud(x,o.best)<0)) o.best=x; };
@@ -1560,25 +1562,40 @@ setTimeout(async()=>{
       floors.forEach((f,fi)=>{ for(const t of tri){ const o=out[fi]; if(o.best&&t.r*1.15<o.best.pr) break; if(t.d3<f*(1-1e-12)) continue; put(fi,fo(t.c)); } });
       return out; }
     /* the singles of every game, likeliest first, each with its game's place; every pair of one game in full */
-    const S1=[]; G.forEach((L,gi)=>L.forEach(l=>S1.push({l,gi,p:l.p,d:md(l.price)||1}))); S1.sort((a,b)=>b.p-a.p);
-    const P2=[]; G.forEach((L,gi)=>{ for(let i=0;i<L.length;i++) for(let j=i+1;j<L.length;j++) if(ok(L[i],L[j])) P2.push({gi,x:fo([L[i],L[j]])}); });
-    const m=S1.length;
+    const S1=[]; G.forEach((L,gi)=>L.forEach(l=>S1.push({l,gi,p:l.p,d:md(l.price)||1,pl:isGA(l)?null:l.pid}))); S1.sort((a,b)=>b.p-a.p);
+    /* two single legs of different games go together unless they are one player's (a key holds its game, a pair DraftKings
+       refuses and one side and one total a game are of one game: fitsAud's rules) */
+    const ok2=(a,b)=>a.pl==null||a.pl!==b.pl;
+    /* every pair of one game, by the copula's pairwise reading (pbJoint, only to choose which to work in full), likeliest
+       first: worked in full until that reading times 1.15 is under the best found (the one-game rule's own bound) */
+    const P2=[]; G.forEach((L,gi)=>{ for(let i=0;i<L.length;i++) for(let j=i+1;j<L.length;j++) if(ok(L[i],L[j])){ const c=[L[i],L[j]]; P2.push({gi,c,d2:(md(L[i].price)||1)*(md(L[j].price)||1),r:pj(c,modelP,memo)}); } });
+    P2.sort((a,b)=>b.r-a.r);
+    const m=S1.length, sufD=new Float64Array(m+1); for(let k=m-1;k>=0;k--) sufD[k]=Math.max(sufD[k+1],S1[k].d);
     floors.forEach((f,fi)=>{ const o=out[fi]; let bc=0;
       const cand=(arr,c)=>{ if(c<bc-1e-9) return; const x=fo(arr); o.worked++; if(!(x.dec>=f)) return; if(!o.best||freeRankAud(x,o.best)<0){ o.best=x; bc=Math.max(bc,x.pr); } };
-      for(const q of P2){ if(q.x.dec>=f){ put(fi,q.x); bc=Math.max(bc,o.best?o.best.pr:0); continue; }
-        const s=S1.find(y=>y.gi!==q.gi&&y.d*q.x.dec>=f*(1-1e-12)&&fitsAud(q.x.L,y.l)); if(s) cand([...q.x.L,s.l],q.x.pr*s.p); }
+      /* two and three single legs of different games first, by their exact product (no same-game price among them) */
+      /* (the third leg of a pair: the likeliest after it, of another game and player, whose price brings it to F; none past
+         the dearest the rest of the list holds, sufD) */
       for(let i=0;i<m;i++){ const a=S1[i]; if(i+1<m&&a.p*S1[i+1].p<bc-1e-9) break;
-        for(let j=i+1;j<m;j++){ const b=S1[j]; if(b.gi===a.gi||!ok(a.l,b.l)) continue; const c2=a.p*b.p; if(c2<bc-1e-9) break;
+        for(let j=i+1;j<m;j++){ const b=S1[j]; if(b.gi===a.gi||!ok2(a,b)) continue; const c2=a.p*b.p; if(c2<bc-1e-9) break;
           if(a.d*b.d>=f*(1-1e-12)) cand([a.l,b.l],c2);
-          for(let k=j+1;k<m;k++){ const e=S1[k]; if(e.gi===a.gi||e.gi===b.gi||!ok(a.l,e.l)||!ok(b.l,e.l)) continue; const c3=c2*e.p; if(c3<bc-1e-9) break;
-            if(a.d*b.d*e.d>=f*(1-1e-12)) cand([a.l,b.l,e.l],c3); } } } });
+          const need=f*(1-1e-12)/(a.d*b.d);
+          for(let k=j+1;k<m&&sufD[k]>=need;k++){ const e=S1[k]; if(e.d<need||e.gi===a.gi||e.gi===b.gi||!ok2(a,e)||!ok2(b,e)) continue; const c3=c2*e.p; if(c3<bc-1e-9) break;
+            cand([a.l,b.l,e.l],c3); break; } } }
+      /* then a pair of one game, alone where it pays, else beside the likeliest single leg of another game bringing it there */
+      for(const q of P2){ if(q.r*1.15<bc-1e-9) break;
+        const s=S1.find(y=>y.gi!==q.gi&&y.d*q.d2>=f*(1-1e-12)&&fitsAud(q.c,y.l));
+        if(q.d2<f*(1-1e-12)&&!s) continue;
+        const x=fo(q.c); o.worked++;
+        if(x.dec>=f){ if(!o.best||freeRankAud(x,o.best)<0){ o.best=x; bc=Math.max(bc,x.pr); } continue; }
+        const s2=S1.find(y=>y.gi!==q.gi&&y.d*x.dec>=f*(1-1e-12)&&fitsAud(x.L,y.l)); if(s2) cand([...x.L,s2.l],x.pr*s2.p); } });
     return out; };
   /* a drawn level against a reference (ref: its best, a parlay that pays): at least as likely by the rule's order where both
      are plain products (their chances exact), else within SEARCH_TOL_AUD (0.2 points, the full sums' own noise). hold: chk, or
      W.search (a level of the week's own same-game lines). Returns whether it ran */
   const SEARCH_TOL_AUD=0.002;
   const refHeldAud=(t,ref,lab,hold,what)=>{ if(!ref||!t||!t.legs) return false; const nm=L=>L.map(l=>l.name+' '+l.label).join(', ');
-    const me={pr:t.corr,n:t.legs.length,ln:t.legs.reduce((a,l)=>a+leanAud(l),0),id:t.legs.map(legIdAud).sort().join()}, plain=!t.legs.some((a,i)=>t.legs.slice(i+1).some(b=>Math.abs(F('legRho')(a,b))>=0.03));
+    const me={pr:t.corr,n:t.legs.length,ln:t.legs.reduce((a,l)=>a+leanAud(l),0),id:t.legs.map(legIdAud).sort().join()}, plain=!t.legs.some((a,i)=>t.legs.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03));
     const ok=plain&&ref.plain?freeRankAud(me,ref)<=0:t.corr>=ref.pr-SEARCH_TOL_AUD;
     (plain&&ref.plain?chk:hold)(ok,`${lab} lands ${(t.corr*100).toFixed(3)}% on ${t.legs.length} legs paying ${t.dec.toFixed(3)}, where ${what} ${nm(ref.L)} land${ref.L.length===1?'s':''} ${(ref.pr*100).toFixed(3)}% on ${ref.n} paying ${ref.dec.toFixed(3)}${plain&&ref.plain?' (both plain products: by the rule, a tie to the fewer legs)':`, more than ${SEARCH_TOL_AUD*100} points`}`);
     return true; };
@@ -1593,7 +1610,9 @@ setTimeout(async()=>{
      it outright". Of one game: a player's passing touchdowns (over or under, a main line or a rung) with an anytime
      touchdown of another player of his club ('td'), or his passing touchdowns over with the game's total ('total'),
      either leg first; null for any other pair, and for two legs of different games */
-  const clashAud=(a,b)=>{ const isG=F('isGameLeg'); if(!a||!b||a.gid!==b.gid) return null;
+  /* (app v145) the page's isGameLeg read once (the enumerations call these millions of times) */
+  let isGameAud=null; const isGA=l=>(isGameAud||(isGameAud=F('isGameLeg')))(l);
+  const clashAud=(a,b)=>{ const isG=isGA; if(!a||!b||a.gid!==b.gid) return null;
     for(const [q,o] of [[a,b],[b,a]]){ if(isG(q)||q.stat!=='passing_tds') continue;
       if(!isG(o)&&o.stat==='any_td'&&o.team===q.team&&o.pid!==q.pid) return 'td';
       if(isG(o)&&o.stat==='total'&&q.side!=='under') return 'total'; }
@@ -1603,7 +1622,7 @@ setTimeout(async()=>{
   const clashTxt=legs=>clashPairsAud(legs).map(([i,j,x])=>`${legs[i].name} ${legs[i].label} with ${legs[j].name} ${legs[j].label} (${x})`).join('; ');
   /* a parlay that can be made: no line twice, one side (to win or to cover) and one total a game, one leg a player, and
      (app v121) no pair DraftKings will not take on one slip (clashAud) */
-  const fitsAud=(cur,c)=>{ const isG=F('isGameLeg'); if(cur.some(l=>l.key===c.key)) return false;
+  const fitsAud=(cur,c)=>{ const isG=isGA; if(cur.some(l=>l.key===c.key)) return false;
     if(cur.some(l=>clashAud(l,c))) return false;
     if(isG(c)) return !cur.some(l=>isG(l)&&l.gid===c.gid&&(l.stat==='total')===(c.stat==='total'));
     return !cur.some(l=>!isG(l)&&l.pid===c.pid); };
