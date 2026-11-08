@@ -299,14 +299,19 @@ const slotUnder = (mv, gs = realW) => { const G = gs.map((g, i) => ({ g, i, k: k
    (app v144, the owner's call of the same day: "in suggested props. i want the med prop to be at least $4 outcome from 1$ and
    aggressive to be $8 or more. I want the best possible model confidence to match what level bet") each level its own
    least price, the test's own copy (LEVEL_DEC_T, never the page's or the script's): Safe 2.1, Medium 4, Aggressive 8,
-   Extreme 16, each level carrying the rule that chose it, pick 'likeliest' (PICK_T); mlT words a price, mlRe for a pattern */
-const LEVEL_DEC_T = { safe: 2.1, med: 4, aggr: 8, xtrm: 16 }, PICK_T = 'likeliest';
+   Extreme 16, each level carrying the rule that chose it, pick 'likeliest' (PICK_T); mlT words a price, mlRe for a pattern.
+   (app v145, the owner's calls of 8 November 2026: "also, we can eliminate maximum legs for all the sections, it cane be
+   multiple legs as long as it meets the criteria of safe and meets min payout requirements" and "so for example the safe
+   section could sometimes have up to 5-6 legs but it meets safe req and min payout req") each level the likeliest of 2 to
+   CAP_T legs, any size, carrying pick 'likeliest-any' (PICK_T; app v144's 'likeliest', PICK_V144_T, of a fixed size, stands
+   where an earlier run took it), and a Sunday slot's legs of any mix of its games */
+const LEVEL_DEC_T = { safe: 2.1, med: 4, aggr: 8, xtrm: 16 }, PICK_T = 'likeliest-any', PICK_V144_T = 'likeliest', MIN_LEGS_T = 2, CAP_T = 12;
 const mlT = d => '+' + Math.round((d - 1) * 100), mlRe = id => mlT(LEVEL_DEC_T[id]).replace('+', '\\+'), MIN_ML_RE = mlRe('safe');
 const pricedTaken = (x, at, lab) => { const bad = []; let n = 0;
   for (const m of ['prime', 'slot']) for (const [k, e] of Object.entries((x && x[m]) || {})) for (const t of (e && e.tiers) || []) {
     if (!t || !Array.isArray(t.legs) || !t.legs.length || !(e.taken_at === at || (t.updated && t.updated.at === at))) continue;
-    n++; const want = LEVEL_DEC_T[t.id]; if (!(t.dec >= want) || t.minDec !== want || t.pick !== PICK_T) bad.push(`${m} ${k} ${t.id} at ${t.dec} (minDec ${JSON.stringify(t.minDec)}, pick ${JSON.stringify(t.pick)})`); }
-  chk(!bad.length, `${lab}: ${bad.length} of the ${n} levels this run took or built again pay under their own least price (Safe +110, Medium +300, Aggressive +700, Extreme +1500) or carry no price rule (app v144): ` + bad.join(', '));
+    n++; const want = LEVEL_DEC_T[t.id]; if (!(t.dec >= want) || t.minDec !== want || t.pick !== PICK_T || !(t.legs.length >= MIN_LEGS_T && t.legs.length <= CAP_T && t.legs.length === t.n)) bad.push(`${m} ${k} ${t.id} at ${t.dec} (minDec ${JSON.stringify(t.minDec)}, pick ${JSON.stringify(t.pick)})`); }
+  chk(!bad.length, `${lab}: ${bad.length} of the ${n} levels this run took or built again pay under their own least price (Safe +110, Medium +300, Aggressive +700, Extreme +1500) or carry no price rule, or are not of 2 to 12 legs (app v145): ` + bad.join(', '));
   return n; };
 const noEloTaken = (x, at, lab) => { const taken = ['prime', 'slot'].flatMap(m => Object.entries((x && x[m]) || {}).filter(([, e]) => e && e.taken_at === at).map(([k, e]) => [m, k, e]));
   const bad = taken.filter(([, , e]) => 'elo' in e);
@@ -374,7 +379,8 @@ for (const g of primesA) {
     const pl = t.legs.filter(l => l.grp !== 'TEAM'), side = t.legs.filter(l => l.stat === 'ml' || l.stat === 'ats'), tot = t.legs.filter(l => l.stat === 'total');
     chk(new Set(pl.map(l => l.pid)).size === pl.length && side.length <= 1 && tot.length <= 1, `A: ${g.id} ${t.id} has a player twice, or two sides or two totals of the game`);
   }
-  chk(!!e.tiers.find(t => t.id === 'safe').legs || !e.tiers.some(t => t.legs && t.n > 2), `A: ${g.id} has a bigger parlay and no Safe pair`);
+  /* (app v145) a parlay paying a dearer level pays Safe's: a set with any parlay has a Safe */
+  chk(!!e.tiers.find(t => t.id === 'safe').legs || !e.tiers.some(t => t.legs), `A: ${g.id} has a parlay and no Safe`);
 }
 const eA = L.prime[KP];
 chk(!!eA && eA.tiers.some(t => t.legs), `A: the made-up week gives gP (${gP.id}, ${rowsOf(gP.id)} price rows) no parlay to hold the rewrite to`);
@@ -588,7 +594,7 @@ const sR = (eR.tiers || []).find(t => t.id === 'safe') || {};
 chk(r.code === 0 && /replaced /.test(r.last), 'R: the run did not replace the level holding a player ruled out: ' + r.out.slice(-400));
 chk(sR.updated && sR.updated.pid === 'XX-RULED' && sR.updated.name === 'Ruled Out Jr.' && typeof sR.updated.reason === 'string' && sR.updated.reason && sR.updated.at === iso(tR),
   'R: the replaced level is not marked updated with the player, the reason and the run\'s time: ' + JSON.stringify(sR.updated));
-chk(!(sR.legs || []).some(l => l.pid === 'XX-RULED') && (!sR.legs || (sR.legs.length === 2 && sR.legs.every(l => l.gid === gP.id))), 'R: the replaced level still holds him, or is not a pair on its own game');
+chk(!(sR.legs || []).some(l => l.pid === 'XX-RULED') && (!sR.legs || (sR.legs.length >= MIN_LEGS_T && sR.legs.length <= CAP_T && sR.legs.length === sR.n && sR.legs.every(l => l.gid === gP.id))), 'R: the replaced level still holds him, or is not a parlay of 2 to 12 legs on its own game');
 /* (app v138) a level built again inside an entry taken before the change is the new rule's, and says so (chance 'fair'), so
    an entry mixing the two stays readable; its legs held to the band as A holds them */
 chk(!sR.legs || (sR.chance === 'fair' && sR.legs.filter(l => l.stat !== 'total').every(fairBand)), 'R: the level built again is not marked chance \'fair\', or holds a leg off the band: ' + JSON.stringify({ chance: sR.chance, legs: (sR.legs || []).map(l => [l.pid, l.stat, l.fair]) }));
@@ -1000,6 +1006,13 @@ chk(r.code === 1 && /^suggest ledger: refused/.test(r.last) && bytes() === ledge
   t('a level new by this run without the rule that chose it (no pick)', x => { delete addU(x).tiers[0].pick; }, /taken by this run without the rule that chose it/);
   t('a level new by this run by another rule (pick least costly)', lvU('med', 3, 4.4, { pick: 'least costly' }), /med: taken by this run without the rule that chose it/);
   t('a level new by this run under app v143\'s rule (minDec 2)', x => { addU(x).tiers[0].minDec = 2; }, /taken by this run without the price rule \(minDec 2, not 2\.1\)/);
+  /* (app v145) any size: a 6-leg Safe and a 12-leg Extreme taken by this run stand; a 13-leg one, or a level by app v144's
+     rule of a fixed size (pick 'likeliest'), taken by this run, refused; a level whose n is not its legs' count refused */
+  t('a 6-leg Safe new by this run', lvU('safe', 6, 2.3), null);
+  t('a 12-leg Extreme new by this run', lvU('xtrm', 12, 17), null);
+  t('a 13-leg Extreme new by this run', lvU('xtrm', 13, 18), /xtrm: taken by this run with 13 legs, outside 2 to 12/);
+  t('a level new by this run by app v144\'s rule (pick likeliest, a fixed size)', lvU('med', 3, 4.4, { pick: PICK_V144_T }), /med: taken by this run without the rule that chose it \(pick "likeliest", not "likeliest-any"\)/);
+  t('a 4-leg Medium new by this run whose n says 3', lvU('med', 4, 4.4, { n: 3 }), /med: 4 legs on a level of 3/);
   t('an empty level new by this run, with no price rule', x => { const e = addU(x); e.tiers[1] = why('med'); }, null);
   t('a set still to lock an earlier run took before the rule, untouched', () => {}, null, p => { const e = { ...clone(U), taken_at: iso(now - H) }; delete e.tiers[0].minDec; e.tiers[0].dec = 1.523; p.prime[pkey(e)] = e; });
   t('a set still to lock an earlier run took before the rule, rewritten by this run as it was', x => { const e = x.prime[pkey(U)]; e.pool.pref += 1; e.taken_at = runAt; }, new RegExp(`taken by this run without the price rule|under ${MIN_ML_RE}`),
@@ -1013,6 +1026,13 @@ chk(r.code === 1 && /^suggest ledger: refused/.test(r.last) && bytes() === ledge
   t('a set still to lock an earlier run took under app v143\'s +100, untouched', () => {}, null, v143U);
   t('a set still to lock an earlier run took under app v143\'s +100, rewritten by this run as it was', x => { const e = x.prime[pkey(U)]; e.pool.pref += 1; e.taken_at = runAt; }, new RegExp(`taken by this run without the price rule \\(minDec 2, not 2\\.1\\)|under ${MIN_ML_RE}`), v143U);
   t('a locked set taken under app v143\'s +100, untouched', () => {}, null, p => { for (const tt of p.prime[KP].tiers) if (tt.legs) { tt.minDec = 2; delete tt.pick; } });
+  /* (app v145) a set an app v144 page took (pick 'likeliest', each level its fixed size: Safe 2, Medium 3): locked and
+     untouched it stands; still to lock and untouched it stands; rewritten by this run as it was, refused */
+  const v144U = p => { const e = { ...clone(U), taken_at: iso(now - H) }; e.tiers[0].pick = PICK_V144_T;
+    e.tiers[1] = { ...tier('med', 3, [0, 1, 2].map(j => plLeg('XX-W' + j, gU, 'BBB', 'receiving_yards', 30.5 + j, 'over', true, 120))), pick: PICK_V144_T, dec: 4.2 }; p.prime[pkey(e)] = e; };
+  t('a locked set taken under app v144\'s fixed sizes, untouched', () => {}, null, p => { for (const tt of p.prime[KP].tiers) if (tt.legs) tt.pick = PICK_V144_T; });
+  t('a set still to lock an earlier run took under app v144\'s fixed sizes, untouched', () => {}, null, v144U);
+  t('a set still to lock an earlier run took under app v144\'s fixed sizes, rewritten by this run as it was', x => { const e = x.prime[pkey(U)]; e.pool.pref += 1; e.taken_at = runAt; }, /taken by this run without the rule that chose it \(pick "likeliest", not "likeliest-any"\)/, v144U);
   t('a set still to lock, changed not by this run', x => addU(x, { taken_at: iso(now - H) }), /not taken by this run before its lock/);
   t('a set still to lock, graded', x => { addU(x).grade = {}; }, /graded before its kickoff/);
   t('a set taken at its lock', x => { addU(x, { taken_at: iso(kNew - LOCK) }); }, /at or after its lock/);
@@ -1075,6 +1095,9 @@ chk(r.code === 1 && /^suggest ledger: refused/.test(r.last) && bytes() === ledge
   const slotMed = d => x => addS(x, e => { e.tiers[1] = { ...tier('med', 3, [teamLeg(gS1, 'BBB', 'ml', 0, 120), plLeg('XX-S1', gS1, 'AAA', 'receptions', 4.5, 'over', true, 100), plLeg('XX-S2', gS1, 'BBB', 'receptions', 3.5, 'over', true, -110)]), dec: d }; });
   t('a Sunday slot Medium new by this run at +300 exactly', slotMed(4), null);
   t('a Sunday slot Medium new by this run at 3.9', slotMed(3.9), /med: taken by this run at a price of 3\.9, under \+300/);
+  /* (app v145) the Day games one set: a level whose legs are of all three of its games, one a game, stands */
+  t('a Sunday slot of three games, its Medium one leg of each, new by this run', x => addS(x, e => { const g3 = `${season}_${pad(wk)}_EEE_FFF`; e.games = [...sg, g3];
+    e.tiers[1] = { ...tier('med', 3, [teamLeg(gS1, 'BBB', 'ml', 0, 110), teamLeg(gS2, 'DDD', 'ml', 0, 105), teamLeg({ id: g3, a: 'EEE', h: 'FFF' }, 'FFF', 'ml', 0, -105)]), dec: 4.04 }; }), null);
   t('a Sunday slot new with Elo picks, by this run', x => addS(x, e => { e.elo = fourE(); }), /taken by this run with Elo picks/);
   t('a Sunday slot not the slot of its own week', x => addS(x, e => { e.gid = `${season}_${pad(wk + 1)}_SUN`; }), /not the Sunday slot of its own season and week/);
   t('a Sunday slot on a Sunday night', x => addS(x, e => { const k2 = sunAt(now + 3 * H, 20, 20); e.kickoff = iso(k2); e.lock = iso(k2 - LOCK); }), /not a Sunday before 7 pm Eastern/);
