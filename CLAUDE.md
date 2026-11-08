@@ -4221,7 +4221,15 @@ within 0.1 of its price, `test_suggest_ledger.js` 8 (a Medium at 3.9, an Aggress
 +105 and +100, both slot cases), now a failure of job C. Not taken from the review: a wall-clock budget for one level
 (a level's parlay would then turn on the machine's speed, so the record and the checks could not reproduce the page; the
 longest real step is about 0.2 s cold, a level a task), and skipping the hidden Extreme in a visitor's build (this
-browser's own locked set keeps all four levels as the record does).
+browser's own locked set keeps all four levels as the record does). With the review's changes: the audit 44,468 checks,
+0 failures and 0 warnings (on the off-season clock 38,812, 0 failures, its two coverage warnings the off-season's), the
+nflbets smoke 4,383 and `--season-over` 4,278, 0 failures each, `smoke_live.js` 762, `smoke_admin.js` 127,
+`test_dkname.js` 255, `elo/check_tab.js` 458, `test_suggest_ledger.js` 450 (from the repository's root, as job C runs it),
+`test_props_gate.py` 227 cases, `test_audit_phases.py`'s fourteen audit cases (0 failures and 0 warnings each, the made-up
+lines' search check blocking on weeks 5 to 8 too) and its four page smoke cases one at a time (2,947, 2,822, 3,598 and
+2,540 checks), 0 failures each; and the record run as `weekly.py` runs it on a copy of the ledger (7 November 2026 23:36
+UTC) rewrote week 9's three sets still to lock with every level at its own price and rule, the other 13 entries unchanged,
+and a second run wrote nothing.
 
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
