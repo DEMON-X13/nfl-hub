@@ -1,4 +1,79 @@
-"""Every level any size, and the Day games one set (app v145). (draft)
+"""Every level any size, and the Day games one set (app v145).
+
+The owner's calls of 8 November 2026, on Suggested Parlays: "why are they day games only showing one game for each section?
+shouldnt all the day games be considered ? like a mix and match", then "also, we can eliminate maximum legs for all the
+sections, it cane be multiple legs as long as it meets the criteria of safe and meets min payout requirements", and "so for
+example the safe section could sometimes have up to 5-6 legs but it meets safe req and min payout req".
+
+The rule. Each level of every unit (each night game, the Day games, a level built again for a player ruled out, and the
+all-games engine getPbTiers, drawn nowhere) is the likeliest parlay of 2 to PB_LV_CAP (12) legs, of any size, whose price in
+full (parlayDec on its legs, the figure its card states) is at least its level's own price, app v144's: Safe 2.10 (+110),
+Medium 4.00 (+300), Aggressive 8.00 (+700), Extreme 16.00 (+1500). "Likeliest" is the chance the card states, DraftKings' fair
+chance by the builder's own sums (parlayProb on legChance); a tie to 1e-9 goes to the fewer legs, then the larger lean (the
+model's chance less the fair chance, summed), then the lower id (each leg's pbId, sorted, joined, by localeCompare): pbFreeRank.
+Every leg rule is as before (pbFits on every pair, so one leg a player, one side and one total a game and no pair DraftKings
+refuses; the 45 to 97% band; V6), and the fill as before: with a preferred list (a chance hook, dormant) the fewest thin legs
+first, and a game total only where no parlay of the legs with a chance pays, the fewest totals first. PB_TIERS' third figure
+is now the fewest legs, 2 for every level; a built level's n is its legs' count, and an empty one's 2. PB_PICK,
+'likeliest-any', marks a level chosen so, where app v144's carried 'likeliest' and a fixed size.
+
+The Day games (the Sunday slot) are one unit: one set across all their games, a level's legs from any of them in any mix.
+Its pools are each game's own pbPool([g], SP_ALL, SP_SEARCH), its lists to 60, kept apart by game in the slot's order
+(spPools), never pbPool over the slot's games, whose cap of 60 would cut the union of about 400 legs to 60. From app v121 to
+app v144 each of the slot's games had its own set and each level was the best of theirs (spSlotBuild, spSlotBetter, gone).
+The engine splits its own pool by game the same way (pbSplitPool).
+
+The search. One game (pbFreeOne, pbFreeGame): every candidate set of the game's legs by a depth-first walk over the places,
+likeliest first, its chance and price read on the search's pairwise figures (pbCtx, pbLift), a branch let go once its
+legs and the dearest the places left can add fall short of the price or its bound falls under the best kept (pbFreeCands),
+each candidate keyed by the lesser of its reading's chance and its return over the price, the best 1,500 kept; then a phased
+walk (pbFreeWalk) works them best key first in full (pbExact, its price first), stopping where a key times its size's measured
+ratio of the full chance over the reading (PB_FREE.C) is under the best, and past it, within the kept, the parlays of the
+make the reading understates (a leg linked to two others at opposite signs, pbLvOpp, PB_FREE.C2); run again keeping eight
+times as many where candidates were let go, and where none paid, a second walk by the reading's chance alone. Several games
+(pbFreeUnit, pbFreeDp): an exact knapsack across games, each game offering its single legs and the same-game groups that can
+matter (found by the one-game walk in its front mode and worked in full standalone), a partial carried only while its chance
+can still beat the best and its price reach the level's, dominance tie-safe (partials compared in blocks of equal chance and
+lean, to 1e-9, so a tie goes to the rule); the complete parlays within 0.004 of the best then worked in full on the card and
+checked on pbFits pair by pair. Across games a parlay of single legs is exact in chance and price (legRho is 0 across games,
+and parlayDec the product of each game's own price), so on real data every Day games level is exact. pbPaysFree says whether
+some parlay of the unit pays a price (a pruned enumeration, the dearest legs first), for the empty level's words.
+
+The words, by each level's own recorded rule. A level taken from app v145 on: its pill "likeliest · +110+", "likeliest ·
++300+", "likeliest · +700+" or "likeliest · +1500+" (its size on the card's own "N legs" pill), titled "The likeliest parlay
+paying at least +300 by the site’s price: $1 returns $4 or more" (Safe "$2.10"). One locked under app v144 (pick
+'likeliest') keeps "likeliest 3 legs · +300+", one under app v143 its words then, one before app v138 no pill. A Day games
+card whose legs span games shows "3 games" after its legs pill (data-pb-tgame the games' ids in the slot's order) and each
+leg its own game ("SEA at DEN", pb-lgame); one whose legs are of one game shows that game, as before. The parlay card's
+kicker is "Medium parlay · Day games" where the level's legs span games, else its one game. An empty level: "No parlay in this
+game pays +300 or more." where pbPaysFree shows none does, "No parlay found in this game that pays +300 or more." where it
+cannot tell; the Day games' "No parlay of the Day games pays …" and "No parlay found in the Day games that pays …"; the
+engine's "No parlay on your picks pays … : tick more games or bet types." and its "found" twin; no size pill on an empty
+level of the rule.
+
+The record. suggest_ledger.js keeps its own copies (LEVEL_DEC, MIN_LEGS 2, CAP 12, PICK 'likeliest-any'); ready() refuses a
+page whose PB_TIERS prices, fewest legs, PB_LV_CAP or PB_PICK differ; the guard refuses, on this run's own levels alone, one
+outside 2 to 12 legs, whose n is not its count, whose pick is not the rule's or whose price is under its level's; a locked or
+graded entry stays byte for byte. spTierIn reads a level back of any size from 2 to 12 whose n is its count, under the pick it
+was taken by.
+
+parlayProb counts the hits of 6 to 8 legs without a branch on each leg, as 2 to 5 since app v138 (the same count to the bit):
+a 6-leg parlay in full cost 2.2 to 6 ms on the generic loop.
+
+Measured, the page in jsdom, on four payloads at their own clocks (week 9 at Sunday 05:00 and Saturday 18:00 UTC, week 8 at
+Sunday 12:00, week 7 at Sunday 10:00), every live unit's four levels against a reference that worked every parlay of every
+size (the night games' best of every set by the search's reading, then in full; the Day games' by an exact enumeration of
+single legs across games) and against app v144's level: every Day games level is the reference's exactly; every night Safe,
+Medium and Aggressive is; the night Extremes within 0.060 points of chance of it (TB at CHI 0.048 and 0.025, CHI at SEA 0.048,
+KC at SEA 0.060, four exact), none under app v144's own. The night games' levels are the same sizes as app v144's (2, 3, 4,
+5 legs) and the same parlays but where the search now finds a likelier one (BUF at MIN's Extreme 4.675% where app v144 took
+4.570%). The Day games mix: on week 9 at Saturday 18:00 Safe two legs of two games at 43.08% (app v144's best single game
+38.56%), Medium two legs at 22.38% (19.71%), Aggressive three of three games at 10.59% (9.64%), Extreme four of four games at
+5.05% (4.68%); on week 8 43.82%, 21.95%, 10.68% and 5.05% (38.59%, 19.49%, 9.65%, 4.69%); on week 7 43.53%, 22.53%, 10.68%
+and 5.03% (38.55%, 19.88%, 9.70%, 4.66%), each at its price; expected return at the fair chance -8% to -19% where app v144's
+was -19% to -27%. The largest size chosen on real data is 5, so the cap does not bind there (caps of 5, 10, 12 and 14 give the
+same parlays); on made-up pools of 85%+ legs Safe takes 6 and 7 legs and Extreme up to 12. The longest step of a unit's
+build (one level) 314 to 412 ms, a unit's whole set with its pools 1.2 to 1.7 s, as app v144's.
 """
 from pathlib import Path
 

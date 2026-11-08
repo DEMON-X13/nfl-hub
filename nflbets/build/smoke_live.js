@@ -2531,14 +2531,16 @@ const ladderBoot = async (x, seeded, how) => {
            2100, the first at 9:30 am Eastern (a game abroad), the last two at 4:05 and 4:25 pm and the rest at 1:00, so by
            the rule it goes up at 6:00 am on the Friday after this Thursday night game and locks at 7:30 am on the Sunday.
            Its Safe is its first game's home money line and total, its Medium its second game's home money line, spread and
-           total (since app v142, where its Elo Safe stood, so the cards still name two games), each priced by the
-           builder's own sums, the rest empty. With no
+           total (since app v142, where its Elo Safe stood, so the cards still name two games), and (app v145, the Day games
+           one set across their games) its Aggressive the two games' money lines with the first's total and the second's
+           spread, each priced by the builder's own sums, its Extreme empty. With no
            record read, the page's clock is moved through it: the Thursday an hour before this night game's kickoff (not
            up), the Saturday at noon (up, live), the Sunday at 8:00 am (locked, this browser's own set), at 10:00 am (under
            way) and at 5:00 pm (past its last kickoff). At each, the section is held to the rule worked out here (slotHeldL
            on slotNextL: its line word for word, its head, the games and every time the rule's); up and live, Finish on its
-           Medium opens the card as "Medium parlay · the Sunday slot", with its three legs, and on its Safe as "Safe parlay ·
-           the Sunday slot"; locked, a leg's own Add puts the leg in as it was locked, never the line
+           Medium opens the card as "Medium parlay · <its game>", with its three legs, on its Safe as "Safe parlay · <its
+           game>" and on its Aggressive, of two games, as "Aggressive parlay · Day games" (until app v145 each "· the Sunday
+           slot"); locked, a leg's own Add puts the leg in as it was locked, never the line
            as it stands now; under way, its levels are drawn as they locked with nothing to add or finish, and before it is
            up, under way and after it, no level of it can be finished (spTier). The check fails unless it met all five.
            Everything moved is put back */
@@ -2557,12 +2559,15 @@ const ladderBoot = async (x, seeded, how) => {
               const MLL = ML.find(l => l.stat === 'ml');
               /* the money line's game's home money line as it stands now, moved off the locked leg's price (put back below) */
               G.find(g => g.id === MLL.gid).mlh = -180;
-              const SWHY = 'Only 2 legs in any one game of the Sunday slot.';
+              const SWHY = 'No parlay of the Day games pays +1500 or more.';
               const atsLeg = (g, k, price, p) => ({ key: `${g.id}|team:${g.h}|ats`, gid: g.id, pid: 'team:' + g.h, stat: 'ats', k, side: 'over', main: false, p, price, src: 'real', mu: null, name: TN[g.h] || g.h, pos: 'Game', grp: 'TEAM', team: g.h, opp: g.a, week: wk, label: `Spread ${k}` });
               const MD = PO([mlLeg(G[1], -120, 0.58), atsLeg(G[1], -2.5, -110, 0.53), totLeg(G[1])]).map(l => ({ ...l })), mdc = PP(MD).corr, mddec = PD(MD.map(l => ({ leg: l, ml: l.price })));
-              const slotSet = { pref: 2, thin: 0, mkt: 0, far: 0, farDk: 0, noId: 0, moved: 0, plGames: 1, plNoId: 0, tiers: [{ id: 'safe', label: 'Safe', n: 2, floor: 0, legs: ML, corr: mc, indep: mc, dec: mdec, thin: 0, mkt: 0, fair: { p: 0.5, est: false, miss: 0 } },
-                { id: 'med', label: 'Medium', n: 3, floor: 0.25, legs: MD, corr: mdc, indep: mdc, dec: mddec, thin: 0, mkt: 0, fair: { p: 0.3, est: false, miss: 0 } },
-                ...[['aggr', 'Aggressive', 4, 0.12], ['xtrm', 'Extreme', 5, 0.05]].map(([id, label, n, floor]) => ({ id, label, n, floor, why: SWHY }))] };
+              const AG = PO([mlLeg(G[0], -150, 0.64), totLeg(G[0]), mlLeg(G[1], -120, 0.58), atsLeg(G[1], -2.5, -110, 0.53)]).map(l => ({ ...l })), agc = PP(AG).corr, agdec = PD(AG.map(l => ({ leg: l, ml: l.price })));
+              const V145 = (id, minDec) => ({ chance: 'fair', minDec, pick: 'likeliest-any' });
+              const slotSet = { pref: 2, thin: 0, mkt: 0, far: 0, farDk: 0, noId: 0, moved: 0, plGames: 1, plNoId: 0, tiers: [{ id: 'safe', label: 'Safe', n: 2, floor: 0, legs: ML, corr: mc, indep: mc, dec: mdec, thin: 0, mkt: 0, fair: { p: 0.5, est: false, miss: 0 }, ...V145('safe', 2.1) },
+                { id: 'med', label: 'Medium', n: 3, floor: 0, legs: MD, corr: mdc, indep: mdc, dec: mddec, thin: 0, mkt: 0, fair: { p: 0.3, est: false, miss: 0 }, ...V145('med', 4) },
+                { id: 'aggr', label: 'Aggressive', n: 4, floor: 0, legs: AG, corr: agc, indep: agc, dec: agdec, thin: 0, mkt: 0, fair: { p: 0.15, est: false, miss: 0 }, ...V145('aggr', 8) },
+                { id: 'xtrm', label: 'Extreme', n: 2, floor: 0, why: SWHY, pick: 'likeliest-any' }] };
               const slotIds = G.map(g => g.id).sort().join();
               /* a slot card with legs names its game in its head, right after the legs pill: "<away> at <home> · <its kickoff
                  in Eastern time>", data-pb-tgame its id (app v121); an empty level and a night game's cards none. tgameOf: the
@@ -2609,20 +2614,34 @@ const ladderBoot = async (x, seeded, how) => {
                   chk(!!u && ['safe', 'med'].every(id => !!u.querySelector(`.pb-tier[data-pb-tier="${id}"] .pb-legs li`)) && !u.querySelector('.pb-acts'),
                     `${how}: ${when}, the Sunday slot under way does not show its levels as they locked, with no Add to builder or Finish: ` + txt(u).slice(0, 200));
                 if (ph === 'live') {
-                  { const bad = [['safe', G[0]], ['med', G[1]], ['aggr', null]].map(([id, g]) => tgameOf(u, id, g)).filter(Boolean);
-                    chk(!bad.length, `${how}: ${when}, the Sunday slot's cards do not each name their own game after the legs pill, or an empty level names one: ` + bad.join('; ')); }
-                  /* its Medium, the second game's three legs, finished as "Medium parlay · the Sunday slot" at the builder's sums */
+                  { const bad = [['safe', G[0]], ['med', G[1]], ['xtrm', null]].map(([id, g]) => tgameOf(u, id, g)).filter(Boolean);
+                    /* (app v145) its Aggressive, of two games: "2 games" after the legs pill (data-pb-tgame the games' ids in the
+                       slot's order), and each leg its own game, "<away> at <home>", by the codes */
+                    { const c = u && u.querySelector('.pb-tiers[data-sp-kind="model"] > .pb-tier.aggr'), sp = c ? [...c.querySelectorAll('.pb-tgame, [data-pb-tgame]')] : [], lis = c ? [...c.querySelectorAll('.pb-legs li')] : [];
+                      const ids = [G[0].id, G[1].id].join(' '), legOk = lis.length === AG.length && AG.every((l, i) => { const lg = lis[i].querySelectorAll('.pb-lgame'), g = G.find(x => x.id === l.gid); return lg.length === 1 && lg[0].dataset.pbLgame === l.gid && txt(lg[0]) === `${g.a} at ${g.h}`; });
+                      if (!(sp.length === 1 && sp[0].matches('.pb-th > span.pb-tgame') && sp[0].getAttribute('data-pb-tgame') === ids && txt(sp[0]) === '2 games' && sp[0].previousElementSibling && sp[0].previousElementSibling.matches('span.pill') && legOk))
+                        bad.push(`the aggr card, of two games, names ${sp.map(x => x.outerHTML).join(' ') || 'nothing'} in its head${legOk ? '' : ', or its legs not each their own game'}, not "2 games" (${ids})`); }
+                    /* and a night game's or a one-game card names no leg's game */
+                    if (u && ['safe', 'med'].some(id => { const c = u.querySelector(`.pb-tiers[data-sp-kind="model"] > .pb-tier.${id}`); return c && c.querySelector('.pb-lgame'); })) bad.push('a card of one game names each leg\'s game');
+                    chk(!bad.length, `${how}: ${when}, the Sunday slot's cards do not each name their own games after the legs pill, or an empty level names one: ` + bad.join('; ')); }
+                  /* its Medium, the second game's three legs, finished as "Medium parlay · <its game>" at the builder's sums (until
+                     app v145 "· the Sunday slot"); its Aggressive, of two games, as "Aggressive parlay · Day games" */
                   const ef = u && u.querySelector(`[data-pc-finish="sp|${sid}:med"]`);
                   if (ef) { ef.click(); await wait(20); }
                   const mpr = w.eval('fmtML')(w.eval('decToML')(mddec)).replace('-', '−');
-                  chk(!!ef && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === 'Medium parlay · the Sunday slot' && txt(d.querySelector('#pcView .pc-price')) === mpr
+                  chk(!!ef && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === `Medium parlay · ${G[1].a} at ${G[1].h}` && txt(d.querySelector('#pcView .pc-price')) === mpr
                     && d.querySelectorAll('#pcView .pc-legs > li').length === 3 && MD.every(l => txt(d.getElementById('pcView')).includes(l.label)) && !/\bElo\b/.test(txt(d.getElementById('pcView'))),
                     `${how}: ${when}, Finish on the Sunday slot's Medium does not open the card on it (${mpr}): ` + txt(d.querySelector('#pcView .pc-head')));
                   if (ef) d.getElementById('pcClose').click();
+                  { const af = d.querySelector(`#spSets [data-sp-game="${sid}"] [data-pc-finish="sp|${sid}:aggr"]`);
+                    if (af) { af.click(); await wait(20); }
+                    chk(!!af && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === 'Aggressive parlay · Day games' && d.querySelectorAll('#pcView .pc-legs > li').length === 4,
+                      `${how}: ${when}, Finish on the Sunday slot's Aggressive, of two games, does not open the card as "Aggressive parlay · Day games": ` + txt(d.querySelector('#pcView .pc-head')));
+                    if (af) d.getElementById('pcClose').click(); }
                   /* the tab as the card's check of DraftKings' lines (a press, as the card opens) redrew it under the card */
                   const mf = d.querySelector(`#spSets [data-sp-game="${sid}"] [data-pc-finish="sp|${sid}:safe"]`);
                   if (mf) { mf.click(); await wait(20); }
-                  chk(!!mf && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === 'Safe parlay · the Sunday slot' && d.querySelectorAll('#pcView .pc-legs > li').length === 2 && ML.every(l => txt(d.getElementById('pcView')).includes(l.name)) && !gameBtns(null),
+                  chk(!!mf && !md.hidden && txt(d.querySelector('#pcView .pc-kick')) === `Safe parlay · ${G[0].a} at ${G[0].h}` && d.querySelectorAll('#pcView .pc-legs > li').length === 2 && ML.every(l => txt(d.getElementById('pcView')).includes(l.name)) && !gameBtns(null),
                     `${how}: ${when}, Finish on the Sunday slot's model Safe does not open the card on it: ` + txt(d.querySelector('#pcView .pc-head')));
                   if (mf) d.getElementById('pcClose').click(); }
                 } finally { if (offOff) { w.eval('spDayOff=window.__sltDayL'); delete w.__sltDayL; } }

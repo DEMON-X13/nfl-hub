@@ -371,6 +371,12 @@ props/
                                  a kept copy's elo dropped on read), the ELO tab putting the
                                  Mismatch tag on the model cards instead (tab_elo.html's
                                  spMmDecorate) (its docstring is the design)
+  build/patch_free_legs.py       app v145 (8 November 2026, the owner's calls): every level the
+                                 likeliest parlay of 2 to 12 legs, any size, paying its price,
+                                 and the Day games one set mixing their games (pbFreeUnit,
+                                 pbFreeDp, pbFreeOne, pbPaysFree, spPools; parlayProb's 6 to 8
+                                 legs without a branch) (its docstring is the design and the
+                                 measurements)
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
                                  answers (audit M8 and M17, the nflbets smoke), its own tdBranch
                                  among it
@@ -1419,7 +1425,16 @@ back by `spTierIn`, which reads the floor a level was kept with), its pill "like
 likeliest 3-leg parlay paying at least +300 by the site’s price: $1 returns $4 or more"; a level locked under app v143
 draws app v143's words; an empty one "No 3 legs in this game pay +300 or more together." where `pbPaysAny` (every whole
 parlay its legs multiplied let through, worked in full) shows none does, else "No 3 legs found ...": CLAUDE.md's **Each
-level is the likeliest parlay at its payout**. The card shows its chance and
+level is the likeliest parlay at its payout**. Since app v145 (`patch_free_legs.py`, the owner's calls of 8 November 2026,
+"like a mix and match" for the Day games and "the safe section could sometimes have up to 5-6 legs but it meets safe req
+and min payout req") each level is the likeliest parlay of 2 to `PB_LV_CAP` (12) legs, any size, paying its price,
+`PB_TIERS`' third figure the fewest legs (2), a built level's `n` its count, `pick: 'likeliest-any'` (`PB_PICK`), its pill
+"likeliest · +300+"; the Day games one unit, its games' own pools kept apart by game (`spPools`), a level mixing them, its
+card "3 games" and each leg its own game (`pb-lgame`); the search `pbFreeUnit` (one game `pbFreeOne`/`pbFreeGame`, a
+depth-first candidate walk `pbFreeCands` and a phased walk `pbFreeWalk`; several games `pbFreeDp`, an exact knapsack across
+games, dominance tie-safe), a tie to the fewer legs, then the lean, then the id (`pbFreeRank`); empty "No parlay in this game
+pays +300 or more." where `pbPaysFree` shows none does; `pbLevel`, `pbLevelCands`, `pbLevelPick`, `pbPaysAny`,
+`spSlotBuild`, `spSlotBetter` and `spSlotLevel` gone: CLAUDE.md's **Every level any size, and Day games one set**. The card shows its chance and
 price like any other and says nothing about the floor (the owner's call, October 2026: every level shows a parlay,
 "just state the percentage"). The tab's footer says so in a line. `SP_ALL` ticks every bet type, whatever the
 Parlay Builder's boxes say, so the page and the record agree. `SP_SEARCH` is the owner's "absolute best" on one
