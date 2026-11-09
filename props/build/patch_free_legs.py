@@ -79,7 +79,9 @@ KC at SEA 0.060, four exact), none under app v144's own. The night games' levels
 and 5.03% (38.55%, 19.88%, 9.70%, 4.66%), each at its price; expected return at the fair chance -8% to -20% where app v144's
 was -19% to -25% (a parlay across games pays its legs multiplied, with no same-game hold). The largest size chosen on real
 data is 5, so the cap does not bind there (caps of 5, 10, 12 and 14 give the same parlays); on made-up pools of 85%+ legs
-Safe takes 6 and 7 legs and Extreme up to 12. Timed the same way (medians of three cold builds): the longest step (one level)
+Safe takes 6 and 7 legs and Extreme up to 12. On 168 adversarial pools small enough to work out every parlay of every size
+(seven shapes, six seeds, four levels: short lines, long, totals, a quarterback's star, slots of four and six games, a mix)
+the page's level is the enumeration's on all 168, sizes up to 12, the slowest 23 ms. Timed the same way (medians of three cold builds): the longest step (one level)
 336 to 421 ms, where app v144's was 1.3 to 1.8 s (the Day games' Extreme over each of its games' own sets); a night game's set
 0.23 to 0.62 s (app v144's 0.14 to 0.28 s), the Day games' 0.52 to 0.59 s (2.3 to 2.6 s), every live unit 1.3 to 1.7 s where
 app v144 took 2.6 to 3.1 s.

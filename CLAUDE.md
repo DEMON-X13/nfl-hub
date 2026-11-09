@@ -4307,10 +4307,11 @@ bringing it to the price) and `spWhyFreeAud`; every drawn set's level of 2 to 12
 page's own search's parlay on the audit's own pools, and the reference's very parlay where the unit's legs with a chance are
 16 or fewer, else at least as likely as the likeliest of 2 and 3 legs (a warning, `W.search`, on the week's own same-game
 lines, blocking on the made-up ones); a Day games card naming its games in order and each leg's own; the empty words; M4,
-M10, M15 and M16 at any size, M16's Day games mixed; and M18 rewritten, fixtures F1 to F9 on a hook at any hour (F1 six lines
+M10, M15 and M16 at any size, M16's Day games mixed; and M18 rewritten, fixtures F1 to F10 on a hook at any hour (F1 six lines
 at -750, a 6-leg Safe; F2 a mixed 2-game Safe; F3 a 5-leg Medium; F4 a tie to the fewer legs at the price's edge; F5 and F5b
 the lean, then the lower id; F6 one total over two; F7 the opposite-sign stars at any size; F8 and F8b the cap of 12, 13
-legs empty; F9 the shown and found words). The nflbets smoke: `freeOwn`, `paysFreeOwn`, `ref23Own` and `whyFreeOwn` its own;
+legs empty; F9 the shown and found words; F10 the knapsack's tie across games, two pairs tied on their chance, the dearer
+leaning less, kept to the larger lean through its dominance). The nflbets smoke: `freeOwn`, `paysFreeOwn`, `ref23Own` and `whyFreeOwn` its own;
 every live and locked unit held so; the locked sets of any size; the made-up Day games one set across their games (its Safe
 the two money lines across games, likelier than any one game's, its Extreme of more than one game where one game's four pay
 too little, a level built again for a player ruled out the likeliest across the slot's games as the lines stand, Finish named
@@ -4320,7 +4321,20 @@ search on plain pools worked out in full (a preferred list with thin legs, BW, s
 and correlated and this week's pools against their 2-and-3-leg best, with 6 to 8 legs in `parlayProb`'s check.
 `smoke_live.js` its Thursday fixture's Day games' Aggressive of two games ("2 games", each leg its own game, "Aggressive
 parlay · Day games"). `test_suggest_ledger.js` a 6-leg Safe, a 12-leg Extreme, 13 legs refused, app v144's pick refused on
-this run's levels and an entry of app v144's kept, and a Day games Medium of three games.
+this run's levels and an entry of app v144's kept, and a Day games Medium of three games. The search measured too on 168
+adversarial pools small enough to work out every parlay of every size (seven shapes, six seeds, four levels: short lines,
+long, totals, a quarterback's star, slots of four and six games, a mix): the page's level the enumeration's on all 168,
+sizes up to 12, the slowest 23 ms.
+
+Bitten on scratch copies of the tree, never the worktree's files: each level of its fixed size again (2, 3, 4, 5) the audit
+57 failures and the smoke 17; the Day games back to their best single game the audit 80 and the smoke 32; `PB_LV_CAP` 5 the
+audit 9, the smoke 3 and `test_suggest_ledger.js` 5 (its `ready()` refusing the page); a tie to the more legs the audit 2
+(F4); the words drawn from the page's prices whatever rule a level was kept under the audit 5; the knapsack's dominance on the
+raw figures the audit 2 (F10, added for it: before F10 the audit passed it); the totals in any number the audit 2 (F6); no
+phase 2 the audit 2 (F7) and the smoke 1; and in `suggest_ledger.js` a level 0.15 under its price taken 8, 13 legs 1 and no
+pick 1. One bite passed every check: the one-game walk at 1,000 evaluations where it is 1,500 (`PB_FREE.E1`), which measured on
+the payloads loses 0.113 points of chance on week 8's CHI at SEA Extreme, 0.035 on PHI at WAS's and 0.050 on week 7's DAL at
+PHI's: no check holds a night Extreme to every parlay of five, and that is open.
 
 Wherever this file says, before this paragraph or after it, that a level is the likeliest of its size (2, 3, 4 or 5 legs),
 that the Sunday slot's levels are each one game's legs or the best of its games' own, or that the slot's empty level speaks
