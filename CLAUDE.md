@@ -4305,7 +4305,10 @@ legs, of one game every pair in full and the threes by the pairwise reading unti
 games single legs by their exact product, a pair of one game in full alone or beside the likeliest single of another game
 bringing it to the price) and `spWhyFreeAud`; every drawn set's level of 2 to 12 legs carrying its count, price and rule, the
 page's own search's parlay on the audit's own pools, and the reference's very parlay where the unit's legs with a chance are
-16 or fewer, else at least as likely as the likeliest of 2 and 3 legs (a warning, `W.search`, on the week's own same-game
+16 or fewer (where the level and the reference's best are both plain products, their chances exact; legs moving together,
+at least as likely within 0.2 points, the full sums' own noise: the one-game walk's stop is measured, not a bound, and on week
+6's Monday night replay the engine's Extreme of a made-up unders game landed 3.050% where the enumeration found 3.060%), else
+at least as likely as the likeliest of 2 and 3 legs (a warning, `W.search`, on the week's own same-game
 lines, blocking on the made-up ones); a Day games card naming its games in order and each leg's own; the empty words; M4,
 M10, M15 and M16 at any size, M16's Day games mixed; and M18 rewritten, fixtures F1 to F10 on a hook at any hour (F1 six lines
 at -750, a 6-leg Safe; F2 a mixed 2-game Safe; F3 a 5-leg Medium; F4 a tie to the fewer legs at the price's edge; F5 and F5b
