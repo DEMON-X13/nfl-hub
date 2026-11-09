@@ -116,7 +116,10 @@
    them; since app v143 every level with legs this run takes or builds again carries the price rule it was chosen by
    (minDec) and pays it (its dec at least it), as the page's every level does: +100 under app v143 (minDec 2), and since app
    v144 each level's own least price, LEVEL_DEC (Safe 2.1, Medium 4, Aggressive 8, Extreme 16), with the rule that chose it,
-   pick 'likeliest' (a level an earlier run took under app v143 carries minDec 2 and no pick, and stands as taken). A grade is only on a frozen entry and follows its legs' settlements;
+   pick 'likeliest' (a level an earlier run took under app v143 carries minDec 2 and no pick, and stands as taken); since
+   app v145 each the likeliest parlay of 2 to CAP (12) legs, any size, paying it, pick 'likeliest-any' (PICK; a level taken
+   under app v144, of its level's fixed size, carries pick 'likeliest' and stands as taken), and a Sunday slot's legs from any
+   mix of its games. A grade is only on a frozen entry and follows its legs' settlements;
    each summary follows from its entries. And to the last commit's (git show HEAD; SUGGEST_PREV names
    another file, 'none' skips it): no entry it had frozen or locked may be gone or changed beyond those
    rules (a replacement there may be an earlier run's, not yet committed), whatever the file on disk says.
@@ -162,8 +165,15 @@ const ELO_TIERS = TIERS.map(id => 'elo-' + id), LEVELS = [...TIERS, ...ELO_TIERS
    more. I want the best possible model confidence to match what level bet") each level's own, the record's copy of PB_TIERS'
    fifth figure in part3.js (a page with others is refused): Safe 2.1 (+110), Medium 4 (+300), Aggressive 8 (+700), Extreme
    16 (+1500), each level the likeliest parlay of its size paying it, which it carries as pick 'likeliest'. A level taken by an
-   app v143 page carries minDec 2 and no pick and stands as it was taken; mlOf words a price ("+300") */
-const LEVEL_DEC = { safe: 2.1, med: 4, aggr: 8, xtrm: 16 }, PICK = 'likeliest';
+   app v143 page carries minDec 2 and no pick and stands as it was taken; mlOf words a price ("+300").
+   (app v145, the owner's calls of 8 November 2026: "also, we can eliminate maximum legs for all the sections, it cane be
+   multiple legs as long as it meets the criteria of safe and meets min payout requirements" and "so for example the safe
+   section could sometimes have up to 5-6 legs but it meets safe req and min payout req") each level the likeliest parlay of
+   MIN_LEGS (2) to CAP legs, of any size, paying its own least price, which it carries as pick 'likeliest-any' (PICK); the
+   page's PB_LV_CAP and PB_PICK (part3.js) are the record's (a page with others is refused). The Day games (the Sunday slot)
+   are one set across their games (the owner's "like a mix and match"), so a slot level's legs may be of any of its games.
+   A level an app v144 page took carries pick 'likeliest' (PICK_V144), of its level's fixed size, and stands as it was taken */
+const LEVEL_DEC = { safe: 2.1, med: 4, aggr: 8, xtrm: 16 }, PICK = 'likeliest-any', PICK_V144 = 'likeliest', MIN_LEGS = 2, CAP = 12;
 const mlOf = d => '+' + Math.round((d - 1) * 100);
 const SLOT_SINCE = '2026-10-19';
 /* the maps of units: the night games and the Sunday slots */
@@ -178,12 +188,14 @@ const HOW = 'The suggestions record, written by props/build/suggest_ledger.js in
   + 'the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in '
   + 'updates. From app v118 to app v141 each entry held the unit\'s Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo '
   + 'chance pe); since app v142 none is taken (an entry not yet locked is rewritten without them), and an entry locked with them keeps '
-  + 'them as they locked, graded as before and never built again. Since app v144 (7 November 2026) every level with legs taken is the '
-  + 'likeliest parlay of its size paying its own least price (minDec: Safe 2.1, +110; Medium 4, +300; Aggressive 8, +700; Extreme 16, '
-  + '+1500; pick: likeliest, the rule it was chosen by); a level taken under app v143 (7 November 2026, until app v144 the same day) '
+  + 'them as they locked, graded as before and never built again. Since app v145 (8 November 2026) every level with legs taken is the '
+  + 'likeliest parlay of 2 to 12 legs, of any size, paying its own least price (minDec: Safe 2.1, +110; Medium 4, +300; Aggressive 8, '
+  + '+700; Extreme 16, +1500; pick: likeliest-any, the rule it was chosen by), and a Sunday slot\'s legs may be of any of its games '
+  + '(one set searched across them); a level taken under app v144 (7 to 8 November 2026) is the likeliest parlay of its fixed size '
+  + '(2, 3, 4 and 5 legs) paying the same prices, a slot level one game\'s, and carries pick: likeliest; a level taken under app v143 (7 November 2026, until app v144 the same day) '
   + 'pays +100 or more and carries minDec: 2 and no pick (Safe the likeliest pair paying +100; Medium, Aggressive and Extreme the '
   + 'least costly landing 25%, 12% or 5% among those, else the likeliest of their size among those); a level taken before, and an '
-  + 'empty level, carries no minDec. slot holds each week\'s Sunday slot (every Sunday game before 7 pm '
+  + 'empty level, carries no minDec (an empty level taken since app v145 carries its pick). slot holds each week\'s Sunday slot (every Sunday game before 7 pm '
   + 'Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first '
   + 'kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder\'s retired all-games panel under its default choices, keyed '
   + 'season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app\'s '
@@ -303,6 +315,11 @@ async function ready(w, errs, payload, asked) {
   /* (app v143) the page's least price a level pays is the record's; (app v144) each level's own (PB_TIERS' fifth figure) */
   { const own = w.eval('PB_TIERS').map(t => t[0] + ':' + t[4]).join(), want = TIERS.map(id => id + ':' + LEVEL_DEC[id]).join();
     if (own !== want) why.push(`the page's levels do not pay the record's least prices (${own}, not ${want})`); }
+  /* (app v145) the page's levels of any size, 2 to CAP legs, chosen by the rule the record keeps (PB_LV_CAP, PB_PICK) */
+  { const cap = w.eval("typeof PB_LV_CAP==='undefined'?null:PB_LV_CAP"), pick = w.eval("typeof PB_PICK==='undefined'?null:PB_PICK"), few = w.eval('PB_TIERS').map(t => t[2]).join();
+    if (cap !== CAP) why.push(`the page's levels run to ${JSON.stringify(cap)} legs, not the record's ${CAP}`);
+    if (pick !== PICK) why.push(`the page's levels are chosen by ${JSON.stringify(pick)}, not the record's rule ${JSON.stringify(PICK)}`);
+    if (few !== TIERS.map(() => MIN_LEGS).join()) why.push(`the page's levels take ${few} legs at the fewest, not ${MIN_LEGS} each`); }
   /* (app v125) the props job's own read of DraftKings' lines on ESPN, in the payload (PAY.espn): where it carries a
      well-formed block of player lines for a game still to come, read before its kickoff, the page must have applied it
      (espnGame), or every set would hold team legs only (the job and the page shipped out of order) */
@@ -588,13 +605,14 @@ function check(L, prev, now, runAt) {
     /* (app v143) every level with legs this run took (the entry's taken_at its clock) or built again (its updated.at)
        carries the price rule (minDec) and pays it; (app v144) the level's own least price (LEVEL_DEC) and the rule that chose
        it (pick 'likeliest'); read on this run's own levels alone, never in the check against the last commit, so a level an
-       older page took stands until a run rewrites or locks it */
+       older page took stands until a run rewrites or locks it. (app v145) the rule 'likeliest-any' (PICK), 2 to CAP legs */
     if (runAt != null && isMap(e) && Array.isArray(e.tiers)) for (const x of e.tiers) {
       if (!isMap(x) || !Array.isArray(x.legs) || !x.legs.length) continue;
       const mine = e.taken_at === runAt ? 'taken' : isMap(x.updated) && x.updated.at === runAt ? 'built again' : null; if (!mine) continue;
       const want = LEVEL_DEC[x.id]; if (want == null) continue;
       if (x.minDec !== want) bad.push(`${key} ${x.id}: ${mine} by this run without the price rule (minDec ${JSON.stringify(x.minDec)}, not ${want}), which every ${x.id} level this run takes carries (${mlOf(want)}, app v144)`);
-      if (x.pick !== PICK) bad.push(`${key} ${x.id}: ${mine} by this run without the rule that chose it (pick ${JSON.stringify(x.pick)}, not ${JSON.stringify(PICK)}), which every level this run takes carries (app v144)`);
+      if (x.pick !== PICK) bad.push(`${key} ${x.id}: ${mine} by this run without the rule that chose it (pick ${JSON.stringify(x.pick)}, not ${JSON.stringify(PICK)}), which every level this run takes carries (app v145)`);
+      if (!(x.legs.length >= MIN_LEGS && x.legs.length <= CAP)) bad.push(`${key} ${x.id}: ${mine} by this run with ${x.legs.length} legs, outside ${MIN_LEGS} to ${CAP} (app v145)`);
       if (!(typeof x.dec === 'number' && x.dec >= want)) bad.push(`${key} ${x.id}: ${mine} by this run at a price of ${JSON.stringify(x.dec)}, under ${mlOf(want)}, which no ${x.id} level this run takes pays (app v144)`);
     }
   }
@@ -705,7 +723,7 @@ async function main() {
 }
 
 module.exports = { check, frozenMoved, primeMoved, primeEntryBad, summarize, summarizePrime, parlayId, callOf, canon, dumps, primeTime, slotTime, primeKey, slotId,
-  levelsOf, boot, ready, gradeTier, gradeEntries, TIERS, ELO_TIERS, LEVELS, LABELS, LEDGER_REL, LOCK_MS, LEVEL_DEC, PICK, PRIME_SINCE, SLOT_SINCE, iso, r3, r4 };
+  levelsOf, boot, ready, gradeTier, gradeEntries, TIERS, ELO_TIERS, LEVELS, LABELS, LEDGER_REL, LOCK_MS, LEVEL_DEC, PICK, PICK_V144, MIN_LEGS, CAP, PRIME_SINCE, SLOT_SINCE, iso, r3, r4 };
 if (require.main === module) {
   main().then(code => process.exit(code), e => { console.log('suggest ledger: refused: ' + (e && e.message || e)); process.exit(1); });
 }

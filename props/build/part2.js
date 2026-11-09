@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v144 \u00b7 2026-11-07';
+const APP_BUILD='app v145 \u00b7 2026-11-08';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -417,7 +417,8 @@ function parlayProb(legs,sims=40000){
     /* (app v138) 2 to 5 legs, every leg of a trial worked and a hit counted where all land, with no branch on each leg
        (a coin flip the processor guesses wrong half the time): each leg's z is the very sum it was (0, then each term
        added in turn, row i's terms in order, so the same double), and a leg lands exactly where dir*z<=thr is false
-       (z is never NaN), so the same count to the bit, in about a third of the time. 6 legs or more as before */
+       (z is never NaN), so the same count to the bit, in about a third of the time. 6 legs or more as before (app v145: 9 or
+       more) */
     if(n===2){ const d0=dir[0], d1=dir[1], t0=thr[0], t1=thr[1], a0=F[0], b0=F[2], b1=F[3];
       for(let s=0,b=0;s<sims;s++,b+=st){ const z0=Z[b], z1=Z[b+1];
         hits+=(d0*(0+a0*z0)>t0)&(d1*(0+b0*z0+b1*z1)>t1); } }
@@ -430,6 +431,17 @@ function parlayProb(legs,sims=40000){
     else if(n===5){ const d0=dir[0], d1=dir[1], d2=dir[2], d3=dir[3], d4=dir[4], t0=thr[0], t1=thr[1], t2=thr[2], t3=thr[3], t4=thr[4], a0=F[0], b0=F[5], b1=F[6], c0=F[10], c1=F[11], c2=F[12], e0=F[15], e1=F[16], e2=F[17], e3=F[18], g0=F[20], g1=F[21], g2=F[22], g3=F[23], g4=F[24];
       for(let s=0,b=0;s<sims;s++,b+=st){ const z0=Z[b], z1=Z[b+1], z2=Z[b+2], z3=Z[b+3], z4=Z[b+4];
         hits+=(d0*(0+a0*z0)>t0)&(d1*(0+b0*z0+b1*z1)>t1)&(d2*(0+c0*z0+c1*z1+c2*z2)>t2)&(d3*(0+e0*z0+e1*z1+e2*z2+e3*z3)>t3)&(d4*(0+g0*z0+g1*z1+g2*z2+g3*z3+g4*z4)>t4); } }
+    /* (app v145) 6, 7 and 8 legs the same way (a level of any size: a night Extreme of 6 legs or more, and a Day games mix
+       holding a same-game group, is a draw over every leg): the same count to the bit; 9 legs or more as before */
+    else if(n===6){ const d0=dir[0], d1=dir[1], d2=dir[2], d3=dir[3], d4=dir[4], d5=dir[5], t0=thr[0], t1=thr[1], t2=thr[2], t3=thr[3], t4=thr[4], t5=thr[5], r0_0=F[0], r1_0=F[6], r1_1=F[7], r2_0=F[12], r2_1=F[13], r2_2=F[14], r3_0=F[18], r3_1=F[19], r3_2=F[20], r3_3=F[21], r4_0=F[24], r4_1=F[25], r4_2=F[26], r4_3=F[27], r4_4=F[28], r5_0=F[30], r5_1=F[31], r5_2=F[32], r5_3=F[33], r5_4=F[34], r5_5=F[35];
+      for(let s=0,b=0;s<sims;s++,b+=st){ const z0=Z[b], z1=Z[b+1], z2=Z[b+2], z3=Z[b+3], z4=Z[b+4], z5=Z[b+5];
+        hits+=(d0*(0+r0_0*z0)>t0)&(d1*(0+r1_0*z0+r1_1*z1)>t1)&(d2*(0+r2_0*z0+r2_1*z1+r2_2*z2)>t2)&(d3*(0+r3_0*z0+r3_1*z1+r3_2*z2+r3_3*z3)>t3)&(d4*(0+r4_0*z0+r4_1*z1+r4_2*z2+r4_3*z3+r4_4*z4)>t4)&(d5*(0+r5_0*z0+r5_1*z1+r5_2*z2+r5_3*z3+r5_4*z4+r5_5*z5)>t5); } }
+    else if(n===7){ const d0=dir[0], d1=dir[1], d2=dir[2], d3=dir[3], d4=dir[4], d5=dir[5], d6=dir[6], t0=thr[0], t1=thr[1], t2=thr[2], t3=thr[3], t4=thr[4], t5=thr[5], t6=thr[6], r0_0=F[0], r1_0=F[7], r1_1=F[8], r2_0=F[14], r2_1=F[15], r2_2=F[16], r3_0=F[21], r3_1=F[22], r3_2=F[23], r3_3=F[24], r4_0=F[28], r4_1=F[29], r4_2=F[30], r4_3=F[31], r4_4=F[32], r5_0=F[35], r5_1=F[36], r5_2=F[37], r5_3=F[38], r5_4=F[39], r5_5=F[40], r6_0=F[42], r6_1=F[43], r6_2=F[44], r6_3=F[45], r6_4=F[46], r6_5=F[47], r6_6=F[48];
+      for(let s=0,b=0;s<sims;s++,b+=st){ const z0=Z[b], z1=Z[b+1], z2=Z[b+2], z3=Z[b+3], z4=Z[b+4], z5=Z[b+5], z6=Z[b+6];
+        hits+=(d0*(0+r0_0*z0)>t0)&(d1*(0+r1_0*z0+r1_1*z1)>t1)&(d2*(0+r2_0*z0+r2_1*z1+r2_2*z2)>t2)&(d3*(0+r3_0*z0+r3_1*z1+r3_2*z2+r3_3*z3)>t3)&(d4*(0+r4_0*z0+r4_1*z1+r4_2*z2+r4_3*z3+r4_4*z4)>t4)&(d5*(0+r5_0*z0+r5_1*z1+r5_2*z2+r5_3*z3+r5_4*z4+r5_5*z5)>t5)&(d6*(0+r6_0*z0+r6_1*z1+r6_2*z2+r6_3*z3+r6_4*z4+r6_5*z5+r6_6*z6)>t6); } }
+    else if(n===8){ const d0=dir[0], d1=dir[1], d2=dir[2], d3=dir[3], d4=dir[4], d5=dir[5], d6=dir[6], d7=dir[7], t0=thr[0], t1=thr[1], t2=thr[2], t3=thr[3], t4=thr[4], t5=thr[5], t6=thr[6], t7=thr[7], r0_0=F[0], r1_0=F[8], r1_1=F[9], r2_0=F[16], r2_1=F[17], r2_2=F[18], r3_0=F[24], r3_1=F[25], r3_2=F[26], r3_3=F[27], r4_0=F[32], r4_1=F[33], r4_2=F[34], r4_3=F[35], r4_4=F[36], r5_0=F[40], r5_1=F[41], r5_2=F[42], r5_3=F[43], r5_4=F[44], r5_5=F[45], r6_0=F[48], r6_1=F[49], r6_2=F[50], r6_3=F[51], r6_4=F[52], r6_5=F[53], r6_6=F[54], r7_0=F[56], r7_1=F[57], r7_2=F[58], r7_3=F[59], r7_4=F[60], r7_5=F[61], r7_6=F[62], r7_7=F[63];
+      for(let s=0,b=0;s<sims;s++,b+=st){ const z0=Z[b], z1=Z[b+1], z2=Z[b+2], z3=Z[b+3], z4=Z[b+4], z5=Z[b+5], z6=Z[b+6], z7=Z[b+7];
+        hits+=(d0*(0+r0_0*z0)>t0)&(d1*(0+r1_0*z0+r1_1*z1)>t1)&(d2*(0+r2_0*z0+r2_1*z1+r2_2*z2)>t2)&(d3*(0+r3_0*z0+r3_1*z1+r3_2*z2+r3_3*z3)>t3)&(d4*(0+r4_0*z0+r4_1*z1+r4_2*z2+r4_3*z3+r4_4*z4)>t4)&(d5*(0+r5_0*z0+r5_1*z1+r5_2*z2+r5_3*z3+r5_4*z4+r5_5*z5)>t5)&(d6*(0+r6_0*z0+r6_1*z1+r6_2*z2+r6_3*z3+r6_4*z4+r6_5*z5+r6_6*z6)>t6)&(d7*(0+r7_0*z0+r7_1*z1+r7_2*z2+r7_3*z3+r7_4*z4+r7_5*z5+r7_6*z6+r7_7*z7)>t7); } }
     else for(let s=0,b=0;s<sims;s++,b+=st){ let ok=true;
       for(let i=0,o=0;i<n&&ok;i++,o+=n){ let z=0; for(let k=0;k<=i;k++) z+=F[o+k]*Z[b+k]; if(dir[i]*z<=thr[i]) ok=false; }
       if(ok) hits++; }

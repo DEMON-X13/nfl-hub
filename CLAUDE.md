@@ -55,7 +55,7 @@ by hand when a source changes, and reads the models' data on every load, every f
 | `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to the root): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`, which since app v124 a game page's Team Stats window reads when it first opens, the Game snapshot's Stat breakdown having gone on 16 October 2026), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches with `units.json` | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
 | `index.html` (the root), from `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026; at `nflbets/` until 17 October 2026, whose `index.html` is now a redirect to the root), in the NBA Hub's and the NHL Hub's look (dark, with a light look a visitor can switch to at the header's top right): the two models on one page, built one tab at a time, with Suggested Parlays (one section since app v129, Night games, under one record: each Thursday, Sunday and Monday night game's own Safe, Medium, Aggressive and Extreme (each paying +100 or more since app
 v143: **Every suggested parlay pays +100 or more**; since app v144 each the likeliest parlay of its size paying +110, +300,
-+700 or +1500: **Each level is the likeliest parlay at its payout**), shown one night at a time, then the Sunday slot's, one set across the week's Sunday games before 7 pm Eastern, a section with its own record from app v118 to v128; each set (with its own four Elo picks from app v118 to v141; since app v142 a player's leg wearing his Mismatch tag where this week's Mismatches tag him: **No Elo picks, and a Mismatch tag on the regular parlays**), locked 2 hours before its kickoff, the slot's first, and graded by the props job's suggestions record, weeks 3 to 6 replayed as a backtest, and from week 7 on graded at the page's estimated prices on DraftKings' lines read from ESPN), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 50 lines (the Top 30 from app v116 to v140; Value picks first until app v138; since, Player lines then Game bets: **DraftKings' chance on every leg**; the player lines a mix of bet types since app v141: **The Top 50's player lines are a mix of bet types**), each bet once, on the bet types and games a visitor ticks), every price DraftKings' line read from ESPN (the props job's read, published with the payload, or a visitor's Refresh odds press), a player's at the page's estimate of DraftKings' price, X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs on the site owner's devices alone (the admin link, `#owner=<his Odds API key>`, the owner's call of 20 October 2026, "hide only": the files stay public by address), with Pull from DraftKings on the admin's parlay card, the Props tab first (the Matchups tab, the board in front of it, went on 22 October 2026, app v128: its row had been the Props list's since app v122), on each game's page there Matchup, Mismatches and Team Stats buttons, each opening that card alone in a little window (app v124), and the whole Game snapshot of a game (with the news job's preview and Deep Dive) opened by the matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw (and for a few hours of 22 October 2026 by a fourth button on the game's page, app v128, which app v129 took off) | `nflbets/build/hub.html` (the page's glue: the season's read, the tabs as addresses, the framed tabs; `tab_pickems.html`, the Matchups tab, until 22 October 2026) + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css`, `theme.js` and `admin.js` |
++700 or +1500: **Each level is the likeliest parlay at its payout**; since app v145 of any size, 2 to 12 legs, and the Day games one set mixing their games: **Every level any size, and Day games one set**), shown one night at a time, then the Sunday slot's, one set across the week's Sunday games before 7 pm Eastern, a section with its own record from app v118 to v128; each set (with its own four Elo picks from app v118 to v141; since app v142 a player's leg wearing his Mismatch tag where this week's Mismatches tag him: **No Elo picks, and a Mismatch tag on the regular parlays**), locked 2 hours before its kickoff, the slot's first, and graded by the props job's suggestions record, weeks 3 to 6 replayed as a backtest, and from week 7 on graded at the page's estimated prices on DraftKings' lines read from ESPN), the Parlay Builder (the builder first, which finishes a parlay as a downloadable card, saved nowhere, over the Top 50 lines (the Top 30 from app v116 to v140; Value picks first until app v138; since, Player lines then Game bets: **DraftKings' chance on every leg**; the player lines a mix of bet types since app v141: **The Top 50's player lines are a mix of bet types**), each bet once, on the bet types and games a visitor ticks), every price DraftKings' line read from ESPN (the props job's read, published with the payload, or a visitor's Refresh odds press), a player's at the page's estimate of DraftKings' price, X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs on the site owner's devices alone (the admin link, `#owner=<his Odds API key>`, the owner's call of 20 October 2026, "hide only": the files stay public by address), with Pull from DraftKings on the admin's parlay card, the Props tab first (the Matchups tab, the board in front of it, went on 22 October 2026, app v128: its row had been the Props list's since app v122), on each game's page there Matchup, Mismatches and Team Stats buttons, each opening that card alone in a little window (app v124), and the whole Game snapshot of a game (with the news job's preview and Deep Dive) opened by the matchup bubble on the name of every leg the Parlay Builder and Suggested Parlays draw (and for a few hours of 22 October 2026 by a fourth button on the game's page, app v128, which app v129 took off) | `nflbets/build/hub.html` (the page's glue: the season's read, the tabs as addresses, the framed tabs; `tab_pickems.html`, the Matchups tab, until 22 October 2026) + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js`, `xbets.js`, `glance.js`, `theme.css`, `theme.js` and `admin.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the current week (`betting/state.json`'s schedule, the first week with a game still to play, the week the Matchups board opened on until it went on 22 October 2026) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `cfb/` | retired: CFB Hub (then X College Football Bets) moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
@@ -3157,8 +3157,9 @@ one slip, a quarterback's passing touchdowns, over or under, a main line or a ru
 (`td`), or his passing touchdowns over with the game's total (`total`). No suggestion takes such a pair: `pbFits` (every
 level's search: the all-games levels, each night set, each Sunday slot game's set), a game page's hands (`gameTiers`' own
 `fits`, the engine drawn nowhere since app v124) and the Elo picks' search (`epScan`'s `P.cl` in `tab_elo.html`, whose empty level says "No 3 of the 3 players in
-this game go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown."). The
-Sunday slot's levels are each one game's legs: the slot builds each of its games' own set exactly as a night game's is
+this game go together on DraftKings’ slip: it takes no quarterback’s passing TDs with a teammate’s touchdown."). From
+app v121 to app v144 the Sunday slot's levels were each one game's legs (since app v145 the Day games are one set mixing
+their games, the owner's "like a mix and match": **Every level any size, and Day games one set**): the slot built each of its games' own set exactly as a night game's is
 (`spSet` on the game, `SP_SEARCH`) and each level is the best of theirs (`spSlotBuild`, `spSlotBetter`: a parlay before
 none, without a game total before with one, its floor met before the likeliest of its size, the fewer thin legs, then the
 better expected return where it met a floor, else the higher chance, then the earlier game), its empty level said of "any
@@ -4168,7 +4169,8 @@ time (2,914, 2,792, 3,535 and 2,513 checks), 0 failures each.
 Wherever this file says, before this paragraph or after it, that Safe is the likeliest pair paying +100, that Medium,
 Aggressive and Extreme are the least costly parlay landing 25%, 12% or 5%, or the likeliest of their size, among the
 parlays paying +100 or more, or that a level is ruled "least costly · 25%+", that is history from app v144: every level
-is the likeliest parlay of its size paying its own price, +110, +300, +700 or +1500.
+is the likeliest parlay of its size paying its own price, +110, +300, +700 or +1500. (Since app v145 of any size, 2 to 12
+legs, and the Day games one set: **Every level any size, and Day games one set**, below.)
 
 **The review of the level search** (7 November 2026, before app v144 merged: `patch_level_prices.py`'s last section). The
 review found the search's crux held by no blocking check, and two weaknesses of the page besides. (1) The walk's stop is
@@ -4230,6 +4232,212 @@ lines' search check blocking on weeks 5 to 8 too) and its four page smoke cases 
 2,540 checks), 0 failures each; and the record run as `weekly.py` runs it on a copy of the ledger (7 November 2026 23:36
 UTC) rewrote week 9's three sets still to lock with every level at its own price and rule, the other 13 entries unchanged,
 and a second run wrote nothing.
+
+**Every level any size, and Day games one set** (app v145, `patch_free_legs.py`, whose docstring is the design and the
+measurements, the owner's calls of 8 November 2026: "why are they day games only showing one game for each section?
+shouldnt all the day games be considered ? like a mix and match", then "also, we can eliminate maximum legs for all the
+sections, it cane be multiple legs as long as it meets the criteria of safe and meets min payout requirements", and "so for
+example the safe section could sometimes have up to 5-6 legs but it meets safe req and min payout req"). Each level of every
+unit (each night game, the Day games, a level built again for a player ruled out, and the all-games engine `getPbTiers`,
+drawn nowhere) is the likeliest parlay of 2 to `PB_LV_CAP` (12) legs, of any size, whose price in full (`parlayDec` on its
+legs, the figure its card states) is at least its level's own price, app v144's: Safe 2.10 (+110), Medium 4.00 (+300),
+Aggressive 8.00 (+700), Extreme 16.00 (+1500). The likeliest is the chance the card states, DraftKings' fair chance by the
+builder's own sums; a tie to 1e-9 goes to the fewer legs, then the larger lean, then the lower id (`pbFreeRank`). Every leg
+rule and the fill are as before: one leg a player, one side and one total a game, no pair DraftKings refuses, the 45 to 97%
+band, V6, the fewest thin legs first where a hook makes a preferred list (dormant), and a game total only where no parlay of
+the legs with a chance pays, the fewest totals first. `PB_TIERS`' third figure is the fewest legs, 2 for every level; a built
+level's `n` is its legs' count and an empty one's 2; `PB_PICK`, 'likeliest-any', marks a level chosen so, where app v144's
+carried 'likeliest' and a fixed size. **The Day games** (the Sunday slot) are one unit, a level's legs from any of their
+games in any mix: its pools are each game's own `pbPool([g], SP_ALL, SP_SEARCH)`, kept apart by game in the slot's order
+(`spPools`; never `pbPool` over the slot's games, whose cap of 60 would cut a union of about 400 legs), and from app v121 to
+app v144 each game had its own set and each level was the best of theirs (`spSlotBuild`, `spSlotBetter`, `spSlotLevel`, gone
+with `pbLevel`, `pbLevelCands`, `pbLevelPick` and `pbPaysAny`). The engine splits its own pool by game the same way
+(`pbSplitPool`). The search: one game (`pbFreeOne`, `pbFreeGame`), a depth-first walk over every candidate set of the game's
+legs on the search's pairwise reading (`pbFreeCands`), a branch let go once its price cannot reach the level's or its bound
+falls under the best kept, the best 1,500 by the lesser of the reading's chance and its return over the price, then a phased
+walk working them in full best key first (`pbFreeWalk`, `PB_FREE`'s measured ratios `C` and, for a leg linked to two others
+at opposite signs, `C2`), run again wider where some were let go, and a second walk by the reading's chance alone where none
+paid; several games (`pbFreeUnit`, `pbFreeDp`), an exact knapsack across games over each game's single legs and the
+same-game groups that can matter, dominance tie-safe (partials compared in blocks of equal chance and lean to 1e-9), the
+complete parlays near the best worked in full on the card. A parlay of single legs of different games is exact in chance and
+price (no same-game hold: the legs multiplied), so on real data every Day games level is exact and pays more for its chance
+than one game's. `pbPaysFree` says whether some parlay of a unit pays a price, for the empty level's words. `parlayProb`
+counts 6 to 8 legs without a branch, as 2 to 5 since app v138, the same count to the bit.
+
+The words, by each level's own recorded rule: a level taken from app v145 on reads "likeliest · +110+" ("+300+", "+700+",
+"+1500+"), its size on the card's own "N legs" pill, titled "The likeliest parlay paying at least +300 by the site’s price:
+$1 returns $4 or more"; one locked under app v144 keeps "likeliest 3 legs · +300+", one under app v143 its words then, one
+before app v138 no pill. A Day games card whose legs span games shows "3 games" after its legs pill (`data-pb-tgame` the
+games' ids in the slot's order) and each leg its own game ("SEA at DEN", `small.pb-lgame[data-pb-lgame]`); one of one game
+names that game as before; the parlay card's kicker is "Medium parlay · Day games" where the legs span games, else the one
+game. An empty level says "No parlay in this game pays +300 or more." where `pbPaysFree` shows none does, "No parlay found in
+this game that pays +300 or more." where it cannot tell, the Day games' "No parlay of the Day games pays …" and "No parlay
+found in the Day games that pays …", the engine's "No parlay on your picks pays … : tick more games or bet types." and its
+"found" twin, and draws no size pill. The record: `suggest_ledger.js` keeps `LEVEL_DEC`, `MIN_LEGS` 2, `CAP` 12 and `PICK`
+'likeliest-any' of its own; `ready()` refuses a page whose prices, fewest legs, `PB_LV_CAP` or `PB_PICK` differ; the guard
+refuses, on this run's own levels alone, one outside 2 to 12 legs, whose `n` is not its count, whose pick is not the rule's
+or whose price is under its level's; a locked or graded entry stays byte for byte, and `spTierIn` reads a level back of any
+size from 2 to 12 whose `n` is its count, under the pick it was taken by.
+
+Measured in jsdom on four payloads at their own clocks (week 9 at Sunday 05:00 and Saturday 18:00 UTC, week 8 at Sunday
+12:00, week 7 at Sunday 10:00), every live unit's four levels against a reference working every parlay of every size and
+against app v144's: every Day games level and every night Safe, Medium and Aggressive the reference's exactly, the night
+Extremes within 0.060 points of chance (four exact), none under app v144's own; the night games' levels app v144's sizes and
+parlays but where the search finds a likelier one (BUF at MIN's Extreme 4.675% where app v144 took 4.570%). The Day games
+mix: week 9 at Saturday 18:00 Safe two legs of two games at 43.08% (app v144's best single game 38.56%), Medium two at 22.38%
+(19.71%), Aggressive three of three games at 10.59% (9.64%), Extreme four of four games at 5.05% (4.68%); weeks 8 and 7 the
+same shape (Safe 43.82% and 43.53%, Extreme 5.05% and 5.03%, where app v144's were 38.59% and 38.55%, 4.69% and 4.66%). The
+largest size chosen on real data is 5 (caps of 5, 10, 12 and 14 give the same parlays there); on made-up pools of 85%+ legs
+Safe takes 6 and 7 legs and Extreme up to 12. The Day games' expected return at the fair chance -8% to -20% where app v144's
+best single game's was -19% to -25% (across games a parlay pays its legs multiplied, with no same-game hold). The longest
+step (one level) 336 to 421 ms (timed again by the review of app v145, below), where app v144's longest was 198 to 296 ms (it
+built each Sunday game's level as a step of its own; the 1.3 to 1.8 s first written here added those steps up: the second
+review of app v145, below), so the longest step is about 1.5 to 1.8 times app v144's while every set is quicker; a night game's set 0.23 to 0.62 s (app v144's 0.14 to
+0.28 s), the Day games' 0.52 to 0.59 s (2.3 to 2.6 s), every live unit 1.3 to 1.7 s (2.6 to 3.1 s). Each game keeps its best
+same-game groups for the knapsack by their bound, 24,000 shared among the unit's games and at least 300 a game
+(`PB_FREE.FMT`, `FM`): where few games' single legs cannot reach the price (two games left on a Sunday night, the engine's
+All) or legs return about what they cost, the bound lets thousands through, and uncapped the engine on week 5's Sunday
+night took 397 s and the Day games' Extreme on the audit's made-up lines ran past 2 GB and 8 minutes; capped, 8.9 s for the
+engine's four levels (its Extreme 4.540% where the uncapped search found 4.605%) and 2 to 4 s; on real Day games no game came
+near the cap, and the four payloads' 48 levels are the same with it and without.
+
+Held, blocking, each on its own reading. The audit: `CAP_AUD`, `PICK_AUD` and `PICK_V144_AUD` its own; `freeAud` (every
+set of 2 to 12 worked out, a plain list's branch let go by its chance), `paysFreeAud`, `ref23Aud` (the likeliest of 2 and 3
+legs, of one game every pair in full and the threes by the pairwise reading until it times 1.15 falls under the best; across
+games single legs by their exact product, a pair of one game in full alone or beside the likeliest single of another game
+bringing it to the price) and `spWhyFreeAud`; every drawn set's level of 2 to 12 legs carrying its count, price and rule, the
+page's own search's parlay on the audit's own pools, and the reference's very parlay where the unit's legs with a chance are
+16 or fewer (where the level and the reference's best are both plain products, their chances exact; legs moving together,
+at least as likely within 0.2 points, the full sums' own noise: the one-game walk's stop is measured, not a bound, and on week
+6's Monday night replay the engine's Extreme of a made-up unders game landed 3.050% where the enumeration found 3.060%), else
+at least as likely as the likeliest of 2 and 3 legs (a warning, `W.search`, on the week's own same-game
+lines, blocking on the made-up ones; and of every size since the review of app v145, below); a Day games card naming its games in order and each leg's own; the empty words; M4,
+M10, M15 and M16 at any size, M16's Day games mixed; and M18 rewritten, fixtures F1 to F10 on a hook at any hour (F1 six lines
+at -750, a 6-leg Safe; F2 a mixed 2-game Safe; F3 a 5-leg Medium; F4 a tie to the fewer legs at the price's edge; F5 and F5b
+the lean, then the lower id; F6 one total over two; F7 the opposite-sign stars at any size; F8 and F8b the cap of 12, 13
+legs empty; F9 the shown and found words; F10 the knapsack's tie across games, two pairs tied on their chance, the dearer
+leaning less, kept to the larger lean through its dominance). The nflbets smoke: `freeOwn`, `paysFreeOwn`, `ref23Own` and `whyFreeOwn` its own;
+every live and locked unit held so; the locked sets of any size; the made-up Day games one set across their games (its Safe
+the two money lines across games, likelier than any one game's, its Extreme of more than one game where one game's four pay
+too little, a level built again for a player ruled out the likeliest across the slot's games as the lines stand, Finish named
+"Day games" or the one game); EVERY LEVEL ANY SIZE AT ITS PAYOUT (PS a 5-leg Safe of six short lines, PV an Aggressive of all
+five where no four pays +700, PM, PA, PW, and the engine's ten covers, Aggressive five and Extreme six); and 1b, the level
+search on plain pools worked out in full (a preferred list with thin legs, BW, seeded mixed slots of four games), the stars,
+and correlated and this week's pools against their 2-and-3-leg best, with 6 to 8 legs in `parlayProb`'s check.
+`smoke_live.js` its Thursday fixture's Day games' Aggressive of two games ("2 games", each leg its own game, "Aggressive
+parlay · Day games"). `test_suggest_ledger.js` a 6-leg Safe, a 12-leg Extreme, 13 legs refused, app v144's pick refused on
+this run's levels and an entry of app v144's kept, and a Day games Medium of three games. The search measured too on 168
+adversarial pools small enough to work out every parlay of every size (seven shapes, six seeds, four levels: short lines,
+long, totals, a quarterback's star, slots of four and six games, a mix): the page's level the enumeration's on all 168,
+sizes up to 12, the slowest 23 ms.
+
+Bitten on scratch copies of the tree, never the worktree's files: each level of its fixed size again (2, 3, 4, 5) the audit
+57 failures and the smoke 17; the Day games back to their best single game the audit 80 and the smoke 32; `PB_LV_CAP` 5 the
+audit 9, the smoke 3 and `test_suggest_ledger.js` 5 (its `ready()` refusing the page); a tie to the more legs the audit 2
+(F4); the words drawn from the page's prices whatever rule a level was kept under the audit 5; the knapsack's dominance on the
+raw figures the audit 2 (F10, added for it: before F10 the audit passed it); the totals in any number the audit 2 (F6); no
+phase 2 the audit 2 (F7) and the smoke 1; and in `suggest_ledger.js` a level 0.15 under its price taken 8, 13 legs 1 and no
+pick 1. One bite passed every check: the one-game walk at 1,000 evaluations where it is 1,500 (`PB_FREE.E1`), which measured on
+the payloads loses 0.113 points of chance on week 8's CHI at SEA Extreme, 0.035 on PHI at WAS's and 0.050 on week 7's DAL at
+PHI's: no check held a night Extreme to every parlay of five. Since the review of app v145 (next) each night level is held
+to its own screen's counterexamples within 0.2 points, the full sums' noise, so a loss of 0.113 points still passes, and the
+cut to a tenth of the search's widths does not. Those counts are from before the review; the review's own, on the final
+tree, are in its paragraph.
+
+**The review of app v145** (9 November 2026, before app v145 merged: `patch_free_legs.py`'s last section). Each finding
+reproduced, then fixed with a check that fails without it. (1) The checks held, on the week's own lines, a Day games level
+of four legs or more, any Extreme and a night Aggressive to nothing of their size: past 16 legs the audit and the smoke fell
+back to the likeliest of two and three legs, and the search cut to a tenth of its widths (`PB_FREE.M` and `E1` 150) passed
+both (40,972 and 2,527 checks, no failure) though it moved week 9's TB at CHI Extreme 0.81 points; a search that saw only the
+Day games' first ten games moved their Extreme unseen. Now every Day games level is held to the audit's and the smoke's own
+exact knapsack of single legs across its games, every size from 2 to 12 (`dgAud`, `dgOwn`: one leg a game at most, their
+chance and price the legs' product, as `parlayProb` and `parlayDec` work them; a partial let go where its chance falls under
+the best or the dearest the games left cannot bring it to the price, a partial of as many legs dominated only where another
+has at least its price capped at the level's and a chance a key ahead after any completion likely enough to matter, or as
+much and a lean a key larger, so a tie is the rule's; the best chance first, then the tie-safe front, every complete parlay
+within 1e-7 worked on the card), the very parlay by the rule where both are plain products (blocking on the week's own lines
+too), within 0.2 points where the level holds a same-game group (`ref23Aud` still works each game's pairs in full); and every
+night level, and the engine's of one game, to a counterexample search of their own (`screenAud`, `screenOwn`: a screen of
+8,192 common draws of the game's own latent normals, its correlations shrunk till positive-definite, their own generator and
+seed, a leg landing where its normal passes its chance's threshold and its price's implied chance the same way; every set of 2
+to 6 legs, or one past the level's, that can be made, whose chance on the screen is within 2.5 of its noise's standard
+deviations of beating the level by 0.2 points and whose price on the screen is within 6% of the floor; the 400 likeliest
+worked in full), a counterexample a warning on the week's own same-game lines (`W.search`) and blocking on the made-up ones
+and in the smoke. On week 9 at Sunday 05:00 the audit holds the twelve Day games levels of its three passes to the knapsack
+exactly and finds no night counterexample. The knapsack reproduced all 16 Day games levels of the four payloads; the
+screen found no counterexample on any of their 32 night levels and, on the tenth-width search, TB at CHI's Extreme 0.81
+points under and BUF at MIN's 0.24 under parlays it worked out. (2) The one-game search had no bound on its work: eighteen
+legs of one game at 85 to 95% moving together took 10 to 12 s for Safe in one step, landing 0.37 points under the likeliest
+paying parlay. Now a candidate's legs multiplied must reach the price and SGP_HOLD times them must too (exactly where no pair
+of it moves, within 5% where pairs move together and none against, Slepian's inequality: `PB_FREE.SLEP`); where the first
+walk works some and none pays, or ends at its cap or its budget before its stop, the second walk comes first, from a greedy
+paying set or the first walk's best on the sets whose reading pays within 3% (`pbFreeSeed`, `PB_FREE.SLT`), then the wider
+runs with its best as their bar (the screen itself found the cut case: on the made-up lines of `test_audit_phases.py`'s week
+5 Saturday, week 6 Sunday 3pm and week 5 Sunday morning, every starter's line at -112 or -150, a 7-leg Extreme 0.28 to 0.56
+points under a 6-leg one paying +1500, the walk by key at its cap of 1,500 first, as app v144's search was; now the six,
+5.205% on week 6's pool); and every walk draws on a budget
+(`pbFreeCost`, `PB_FREE.UNITS1`, `NODES1`, `UNITS2`, `NODES2`: 2,000 units of a five-leg price and six million nodes for the
+first walk, 1,000 and half a million more; where the first walk's candidates are cut by its nodes, the second walk runs too),
+so each pass of a level of one game (`pbFreeGame`: the pass with no game total, then one with it, and on a hook's preferred
+list one for each count of fill legs) is bounded alike on every machine: the budgets are a pass's, not a level's, and the
+second review of app v145 timed a level at 4.4 to 4.8 s on sixty made-up independent legs and 4.3 s on sixty at -375 beside a
+total at +100 (12.5 million nodes over its two passes), where this said at most about 4 s (a first budget of a million nodes cut the
+candidates of the smoke's made-up lines on week 6's WAS at SF, 56 legs whose walk takes 5.3 million nodes, and its
+Aggressive fell 0.49 points under app v144's 10.172%, which the smoke's screen found at 0.215 points: six million keep it). Real
+levels use at most 1,710 units and 434,000 nodes (every game of weeks 7 to 9 taken as a night game, at most 2,622 units and
+949,356 nodes over a level's walks) and are as they were but one, week 9's TB at CHI Extreme at Saturday 18:00,
+likelier (4.5575% for 4.5325%). The eighteen legs' Safe is now the exhaustive enumeration's 29.730% in 2.0 s; twenty-four
+legs at 85 to 95% the one pool where the budget binds hard (28.977% in 4.0 s, unbounded 29.843% in 11.6 s). The audit's M18
+F12 and the smoke's 1b (f) hold each pass of each level of eighteen such legs (the first eighteen draws of seed 777, not the
+review's pool) to the budgets, counted in the page's own units and nodes (`PB_LV_STAT`, through a wrap of `pbFreeGame`), each
+paying, Safe at least as likely as their own greedy paying set: on those pools the budget runs out and Safe is that greedy
+set, 12 legs, at 26.795% on the smoke's (where every set worked in full finds 28.010%, in about a minute) and 26.498% on the
+audit's own copy of the draws (where the search with its budgets lifted finds 28.360%), the budget's cost there. Until the second
+review of app v145 they held each level to under 5 s by the clock, which a slow or busy runner could fail, and the audit
+gates the publish. (3) The knapsack's dominance kept, within a block tied on chance and lean, only the dearest of partials of
+as many legs, so a same-game pair beside another game's leg lost a tie its lower id should have won (four games of three
+uncorrelated legs at 50% and -112); it now drops one only for a partial of fewer legs at least as dear: M18's F11 holds it.
+(4) The smoke had no case where the tie to the fewer legs decides a level: 1b (e) and EVERY LEVEL ANY SIZE's four made-up
+games (the audit's F4 shape) now do. (5) The longest step, timed again on the final search (medians of three cold boots in jsdom, another suite running on the
+machine's four CPUs beside them): a night Extreme 392 to 476 ms, and 659 ms for week 8's CHI at SEA, whose first walk reaches
+its cap so the second runs too; the Day games' Extreme 277 to 455 ms; every other level under 320 ms; a night game's set 0.25
+to 1.18 s, the Day games' 0.71 to 0.94 s (app v144's 2.6 to 3.2 s in one build), every live unit of a payload 2.0 to 2.6 s
+(app v144's 3.0 to 4.0 s): over the aim of 0.3 s a step on Extreme, which the tab hides. (6) The
+record's guard is held at its lower bound too: `test_suggest_ledger.js` refuses a 1-leg Safe taken by this run. (7)
+`audit.js` lost `paysAud`, `mlN`, `noMovers` and `likeliestOf`, which nothing called; ARCHITECTURE.md's suggested parlays
+entry names app v145. Not taken: the review's advice to admit same-game groups into the Day games' knapsack by a bound on
+their return (the knapsack stands on single legs, exact; `ref23Aud` and `ref23Own` work each game's pairs, and M18's and the
+smoke's made-up slots hold a slot whose likeliest is one game's group). Bitten on scratch copies of the final tree (the audit
+and the smoke at the committed payload's clock, `:w9a` on week 9 at Sunday 05:00): the search at a tenth of its widths (`PB_FREE.M` and `E1` 150), the audit 4 warnings and the smoke 1 failure (BUF at MIN's Extreme against each one's screen), on week 9 1 warning and 1 failure, where before the review both passed it; the Day games' search seeing only its first ten games where they hold over 100 legs, on week 9 the audit 2 failures and the smoke 2 (their Extreme, 5.035% on 4 legs, under the knapsack's); the tie to the more legs, the audit 2 and the smoke 2 (F4, the four made-up games and 1b (e)); the knapsack's dominance as it stood (a partial of as many legs at least as dear dropping another), the audit 2 (F11); the one-game search as it stood before the review (no budget, no floor on the legs' product, the second walk only where none paid, from no seed and with no room), the audit 1 and the smoke 1 (eighteen legs' Safe 11 legs in 7.1 and 8.4 s); no second walk, the audit 1 (F12's Safe empty); the Day games with no same-game groups, the audit 11 and the smoke 7; the Day games as the best one game's set, the audit 84 and the smoke 23; every level at app v144's size, 2 to 5 legs, the audit 58 and 10 warnings and the smoke 18; the any-size words on every level with a price whatever its rule, the audit 5 and 5 warnings and the smoke 1; the cap at 5 legs, the audit 11 and 10 warnings, the smoke 3 and `test_suggest_ledger.js` 5 of its 6 checks (the page refused); and the record's guard taking a level within 0.15 of its price 8 failures, one of 13 legs 1, one with no `pick` 1 and a 1-leg Safe 1. With the review's changes, on the final tree: the audit 41,042 checks, 0 failures and 0 warnings (on the off-season clock 39,438, 0 failures, its two coverage warnings the off-season's), the nflbets smoke 2,555 and `--season-over` 2,461, `smoke_live.js` 763, `smoke_admin.js` 127, `test_dkname.js` 255, `elo/check_tab.js` 458, `test_suggest_ledger.js` 460, `test_td_shadow.py` 359, 0 failures each, `test_props_gate.py` 227 cases and the other units of job C passing, `test_audit_phases.py`'s fourteen audit cases 0 failures and 0 warnings each and its four page smoke cases one at a time (2,727, 2,877, 2,793 and 2,466 checks) 0 failures each; and the record run as `weekly.py` runs it on a copy of the ledger (9 November 2026 12:00 UTC) rewrote week 9's BUF at MIN, the one set still to lock, at the any-size rule, the other entries moving by their grades alone, and a second run wrote nothing.
+
+**The second review of app v145** (9 November 2026, before it merged: three reviewers on the first review's own changes, the
+search, its speed and the checks, each finding then put to another). Fixed before the merge: the audit's M18 F12 and the
+smoke's 1b (f) held each level to under 5 s by the clock, which turns on the machine where every other blocking check turns
+on the code alone, and the audit gates the publish; they now hold each pass to the budgets in the page's own units and
+nodes (above). Three claims here were wrong and are corrected above: the budgets are a pass's, not a level's; the longest
+step is about 1.5 to 1.8 times app v144's, not a third of it; and F12's pool is not the first review's. Left for a change of
+its own, each measured by the review and none moving a real level today: (1) a Day games slate of four games or fewer (a
+Christmas-on-Sunday week, as 2022's, or a Sunday of the playoffs wherever the page sets the slot out then) builds a level in
+3.4 to 8.4 s in one task, since where its single legs cannot reach the price the knapsack's same-game groups
+(`pbFreeCands`' front mode, in `pbFreeUnit`) are walked with no budget and up to 24,000 of them worked in full (app v144: 0.2
+s); (2) a level's passes do not share their budgets, so a level of one game can take about 4.8 s on sixty made-up legs; (3)
+the night screens (`screenAud`, `screenOwn`) work the 400 likeliest sets on their 8,192 draws, most of which do not pay, so
+their real tolerance runs to about 0.43 points where 0.2 is written, and they say nothing when they reach their node cap
+(both of week 9's made-up Extremes); (4) six real Extremes that need the second walk miss a paying parlay 0.03 to 0.065
+points likelier (week 8's CHI at SEA: 4.5950% where 4.6425% pays), inside `W.search`'s 0.2; (5) the Day games' knapsack
+takes each game's chance apart, while `parlayProb` draws every leg together once any pair moves, so on small made-up slates
+with a same-game group 9 of 320 levels miss by 0.015 to 0.50 points (no real Day games level has held a group); (6)
+`pbOrder` sorts names by the browser's own collation (`localeCompare`), so a Czech or Danish visitor's leg order, and with
+it a correlated set's stated chance and price, can differ from the record's (no real level of weeks 7 to 9 moved on 16
+locales; older than app v145); (7) a Refresh odds press, or a level's Finish, empties `SP_CACHE` even where nothing changed
+and builds every shown set again in one task, 1.3 to 1.5 s on week 9 (app v144's 2.6 to 2.8 s; older than app v145); (8) no
+fixture holds a Day games level whose answer is a same-game group of three legs or more, and only the smoke, not the
+audit, holds the exemption from the same-game floor for a set with a pair moving against each other.
+
+Wherever this file says, before this paragraph or after it, that a level is the likeliest of its size (2, 3, 4 or 5 legs),
+that the Sunday slot's levels are each one game's legs or the best of its games' own, or that the slot's empty level speaks
+of "any one game of the Sunday slot", that is history from app v145: every level is the likeliest parlay of 2 to 12 legs
+paying its price, the Day games one set across their games.
 
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
