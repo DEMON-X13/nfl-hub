@@ -1600,8 +1600,14 @@ setTimeout(async()=>{
     (plain&&ref.plain?chk:hold)(ok,`${lab} lands ${(t.corr*100).toFixed(3)}% on ${t.legs.length} legs paying ${t.dec.toFixed(3)}, where ${what} ${nm(ref.L)} land${ref.L.length===1?'s':''} ${(ref.pr*100).toFixed(3)}% on ${ref.n} paying ${ref.dec.toFixed(3)}${plain&&ref.plain?' (both plain products: by the rule, a tie to the fewer legs)':`, more than ${SEARCH_TOL_AUD*100} points`}`);
     return true; };
   /* a level held to an exact reference (freeAud's best): the very parlay, its legs and its fill */
+  /* (the plain-product rule, as app v144's search check had it) the very parlay where it and the level are both plain products,
+     their chances exact; else, legs moving together and the chance a seeded draw, at least as likely within SEARCH_TOL_AUD
+     (0.2 points, the full sums' own noise), with the same count of totals: the search's stop is measured, not a bound, where
+     the reading and the full chance part */
   const freeHeldAud=(t,b,lab,hold)=>{ if(!b) return false; const want=b.best;
-    hold(!!want===!!(t&&t.legs)&&(!want||(t.legs.map(legIdAud).sort().join()===want.id)),`${lab}: the ${t&&t.id} level is ${t&&t.legs?`${t.legs.length} legs, ${t.legs.map(l=>l.name+' '+l.label).join(', ')} (${(t.corr*100).toFixed(4)}% at ${t.dec.toFixed(3)})`:'empty'}, where every parlay of 2 to ${CAP_AUD} worked out in full (${b.paying} paying of ${b.seen}) gives ${want?`${want.n} legs, ${want.L.map(l=>l.name+' '+l.label).join(', ')} (${(want.pr*100).toFixed(4)}% at ${want.dec.toFixed(3)})`:'none'}`);
+    const tPlain=!!(t&&t.legs)&&!t.legs.some((a,i)=>t.legs.slice(i+1).some(c=>Math.abs(rhoA(a,c))>=0.03)), nT=L=>(L||[]).filter(l=>l.market).length;
+    const near=!!want&&!!(t&&t.legs)&&!(tPlain&&want.plain)&&t.dec>=0&&t.corr>=want.pr-SEARCH_TOL_AUD&&nT(t.legs)===nT(want.L);
+    hold(!!want===!!(t&&t.legs)&&(!want||(t.legs.map(legIdAud).sort().join()===want.id)||near),`${lab}: the ${t&&t.id} level is ${t&&t.legs?`${t.legs.length} legs, ${t.legs.map(l=>l.name+' '+l.label).join(', ')} (${(t.corr*100).toFixed(4)}% at ${t.dec.toFixed(3)})`:'empty'}, where every parlay of 2 to ${CAP_AUD} worked out in full (${b.paying} paying of ${b.seen}) gives ${want?`${want.n} legs, ${want.L.map(l=>l.name+' '+l.label).join(', ')} (${(want.pr*100).toFixed(4)}% at ${want.dec.toFixed(3)})`:'none'}`);
     return true; };
   /* (app v121) two legs of one game DraftKings will not take on one slip, the audit's own copy of the rule, worked from the
      legs alone and never by the page's dkClash or dkClashWhy. The owner, 19 October 2026: "If your parlay already has a

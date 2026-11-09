@@ -1984,8 +1984,13 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       `${lab}: the ${t.id} level lands ${(t.corr * 100).toFixed(3)}% on ${t.legs.length} legs paying ${t.dec.toFixed(3)}, where ${what} ${ref.L.map(l => l.name + ' ' + l.label).join(', ')} land ${(ref.pr * 100).toFixed(3)}% on ${ref.n} paying ${ref.dec.toFixed(3)}`);
     return true; };
   /* a level held to an exact reference (freeOwn's best): the very parlay; empty only where none pays */
+  /* the very parlay where it and the level are both plain products (their chances exact); else, legs moving together and the
+     chance a seeded draw, at least as likely within REF_TOL_OWN (0.2 points) with as many totals: the search's stop is
+     measured, not a bound, where the reading and the full chance part */
   const freeHeldOwn = (lab, t, b) => { if (!b) return false; const want = b.best;
-    chk(want ? (!!t && !!t.legs && t.legs.map(l => l.key + '|' + l.side + '|' + l.k).sort().join() === want.id) : (!!t && !t.legs),
+    const tPlain = !!(t && t.legs) && !t.legs.some((a, i) => t.legs.slice(i + 1).some(c => Math.abs(rhoF(a, c)) >= 0.03)), nT = L => (L || []).filter(l => l.market).length;
+    const near = !!want && !!(t && t.legs) && !(tPlain && want.plain) && t.corr >= want.pr - REF_TOL_OWN && nT(t.legs) === nT(want.L);
+    chk(want ? (!!t && !!t.legs && (t.legs.map(l => l.key + '|' + l.side + '|' + l.k).sort().join() === want.id || near)) : (!!t && !t.legs),
       `${lab}: the ${t && t.id} level is ${t && t.legs ? `${t.legs.length} legs, ${t.legs.map(l => l.name + ' ' + l.label).join(', ')} (${(t.corr * 100).toFixed(4)}%)` : 'empty'}, where every parlay of 2 to ${CAP_OWN} worked out in full (${b.paying} paying) gives ${want ? `${want.n} legs, ${want.L.map(l => l.name + ' ' + l.label).join(', ')} (${(want.pr * 100).toFixed(4)}%)` : 'none'}`);
     return true; };
   /* why an empty level of a unit says what it says (n the fewest legs, 2): too few legs, no player lines, none on one slip,
