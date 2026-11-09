@@ -4337,8 +4337,10 @@ raw figures the audit 2 (F10, added for it: before F10 the audit passed it); the
 phase 2 the audit 2 (F7) and the smoke 1; and in `suggest_ledger.js` a level 0.15 under its price taken 8, 13 legs 1 and no
 pick 1. One bite passed every check: the one-game walk at 1,000 evaluations where it is 1,500 (`PB_FREE.E1`), which measured on
 the payloads loses 0.113 points of chance on week 8's CHI at SEA Extreme, 0.035 on PHI at WAS's and 0.050 on week 7's DAL at
-PHI's: no check held a night Extreme to every parlay of five, which the review of app v145 closed (next). Those counts are
-from before the review; the review's own, on the final tree, are in its paragraph.
+PHI's: no check held a night Extreme to every parlay of five. Since the review of app v145 (next) each night level is held
+to its own screen's counterexamples within 0.2 points, the full sums' noise, so a loss of 0.113 points still passes, and the
+cut to a tenth of the search's widths does not. Those counts are from before the review; the review's own, on the final
+tree, are in its paragraph.
 
 **The review of app v145** (9 November 2026, before app v145 merged: `patch_free_legs.py`'s last section). Each finding
 reproduced, then fixed with a check that fails without it. (1) The checks held, on the week's own lines, a Day games level
@@ -4366,22 +4368,27 @@ points under and BUF at MIN's 0.24 under parlays it worked out. (2) The one-game
 legs of one game at 85 to 95% moving together took 10 to 12 s for Safe in one step, landing 0.37 points under the likeliest
 paying parlay. Now a candidate's legs multiplied must reach the price and SGP_HOLD times them must too (exactly where no pair
 of it moves, within 5% where pairs move together and none against, Slepian's inequality: `PB_FREE.SLEP`); where the first
-walk works some and none pays, the second walk comes first, from a greedy paying set on the sets whose reading pays within
-3% (`pbFreeSeed`, `PB_FREE.SLT`), then the wider runs with its best as their bar; and every walk draws on a budget
+walk works some and none pays, or ends at its cap or its budget before its stop, the second walk comes first, from a greedy
+paying set or the first walk's best on the sets whose reading pays within 3% (`pbFreeSeed`, `PB_FREE.SLT`), then the wider
+runs with its best as their bar (the screen itself found the cut case: on the made-up lines of `test_audit_phases.py`'s week
+5 Saturday, week 6 Sunday 3pm and week 5 Sunday morning, every starter's line at -112 or -150, a 7-leg Extreme 0.28 to 0.56
+points under a 6-leg one paying +1500, the walk by key at its cap of 1,500 first, as app v144's search was; now the six,
+5.205% on week 6's pool); and every walk draws on a budget
 (`pbFreeCost`, `PB_FREE.UNITS1`, `NODES1`, `UNITS2`, `NODES2`: 2,000 units of a five-leg price and a million nodes for the
-first walk, 1,000 and half a million more), so a level of one game takes at most about 2.5 s however its legs are made. Real
+first walk, 1,000 and half a million more), so a level of one game takes at most about 3 s however its legs are made. Real
 levels use at most 1,710 units and 434,000 nodes and are as they were but one, week 9's TB at CHI Extreme at Saturday 18:00,
-likelier (4.5575% for 4.5325%). The eighteen legs' Safe is now the exhaustive enumeration's 29.730% in 1.9 s; twenty-four
-legs at 85 to 95% the one pool where the budget binds hard (28.977% in 2.4 s, unbounded 29.843% in 11.6 s). The audit's M18
+likelier (4.5575% for 4.5325%). The eighteen legs' Safe is now the exhaustive enumeration's 29.730% in 2.0 s; twenty-four
+legs at 85 to 95% the one pool where the budget binds hard (28.977% in 2.7 s, unbounded 29.843% in 11.6 s). The audit's M18
 F12 and the smoke's 1b (f) hold eighteen such legs to under 5 s a level, each paying, Safe at least as likely as their own
 greedy paying set. (3) The knapsack's dominance kept, within a block tied on chance and lean, only the dearest of partials of
 as many legs, so a same-game pair beside another game's leg lost a tie its lower id should have won (four games of three
 uncorrelated legs at 50% and -112); it now drops one only for a partial of fewer legs at least as dear: M18's F11 holds it.
 (4) The smoke had no case where the tie to the fewer legs decides a level: 1b (e) and EVERY LEVEL ANY SIZE's four made-up
-games (the audit's F4 shape) now do. (5) The longest step, timed again (medians of three cold boots, another suite running on
-the machine's four CPUs): a night Extreme 353 to 432 ms, the Day games' Extreme 265 to 398 ms, every other level under 240 ms;
-a night game's set 0.21 to 0.88 s, the Day games' 0.66 to 0.83 s (app v144's 2.6 to 3.2 s in one build), every live unit of a
-payload 1.7 to 2.1 s (app v144's 3.0 to 4.0 s): over the aim of 0.3 s a step on Extreme, which the tab hides. (6) The
+games (the audit's F4 shape) now do. (5) The longest step, timed again on the final search (medians of three cold boots in jsdom, an audit running on the
+machine's four CPUs beside them): a night Extreme 389 to 510 ms, and 710 ms for week 8's CHI at SEA, whose first walk reaches
+its cap so the second runs too; the Day games' Extreme 295 to 498 ms; every other level under 310 ms; a night game's set 0.22
+to 1.23 s, the Day games' 0.82 to 0.94 s (app v144's 2.6 to 3.2 s in one build), every live unit of a payload 2.0 to 3.0 s
+(app v144's 3.0 to 4.0 s): over the aim of 0.3 s a step on Extreme, which the tab hides. (6) The
 record's guard is held at its lower bound too: `test_suggest_ledger.js` refuses a 1-leg Safe taken by this run. (7)
 `audit.js` lost `paysAud`, `mlN`, `noMovers` and `likeliestOf`, which nothing called; ARCHITECTURE.md's suggested parlays
 entry names app v145. Not taken: the review's advice to admit same-game groups into the Day games' knapsack by a bound on
