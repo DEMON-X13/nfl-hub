@@ -597,17 +597,17 @@ function pbFreeWalk(x,cand,F,mode,B,bar){
   E.sort((a,b)=>(pbEvKey(b.key)-pbEvKey(a.key))||(pbEvKey(b.ln)-pbEvKey(a.ln))||a.id.localeCompare(b.id));
   const C=PB_FREE.C, C2=PB_FREE.C2, TOL=PB_FREE.TOL, SUFC=new Float64Array(E.length+1);
   for(let i=E.length-1;i>=0;i--) SUFC[i]=Math.max(SUFC[i+1],C[E[i].s.length]);
-  let best=bar||null, ev=0, ev2=0, i=0, mine=null; const rest=[];
+  let best=bar||null, ev=0, ev2=0, i=0, mine=null, cut=false; const rest=[];
   const work=e=>{ const r=pbExact(e.s.map(c=>x.L[c]),0,F), u=pbFreeCost(e.s.length,!!r); B.u-=u; PB_LV_STAT.units+=u; if(!r) return; const c={pr:r.corr,n:e.s.length,ln:e.ln,id:e.id}; if(!best||pbFreeRank(c,best)<0){ best={...c,r}; mine=best; } };
   const cap=mode===1?PB_FREE.E3:PB_FREE.E1;
   for(;i<E.length;i++){ const e=E[i], n=e.s.length;
     if(best&&e.key*SUFC[i]<best.pr+TOL) break;
     if(best&&e.key*C[n]<best.pr+TOL){ rest.push(e); continue; }
-    if(ev>=cap||B.u<=0) break; ev++; work(e); }
+    if(ev>=cap||B.u<=0){ cut=true; break; } ev++; work(e); }
   if(best&&mode!==1){ for(;i<E.length;i++) rest.push(E[i]);
     for(const e of rest){ const n=e.s.length; if(e.key*Math.max(C[n],C2[n])<best.pr+TOL) continue; if(!pbLvOpp(x,e.s)) continue; if(ev2>=PB_FREE.E2||B.u<=0) break; ev2++; PB_LV_STAT.opp++; work(e); } }
   PB_LV_STAT.ev+=ev+ev2; PB_LV_STAT.runs++;
-  return {best,mine,ev:ev+ev2};
+  return {best,mine,ev:ev+ev2,cut};
 }
 /* (the review of app v145) a paying parlay to start the second walk from: the game's legs that fit taken greedily, those that
    give the most price for the chance they cost first (the log of the price over the log of the chance), each set worked in
@@ -626,15 +626,19 @@ function pbFreeSeed(x,I,F,cap,fl,k,B){
 function pbFreeGame(x,legs,fl,k,F,cap){
   const I=legs.map(l=>pbCtxLeg(x,l)), B={u:PB_FREE.UNITS1,n:PB_FREE.NODES1};
   const c1=pbFreeCands(x,I,F,cap,PB_FREE.M,'level',0,1,fl,k,B), w1=pbFreeWalk(x,c1,F,0,B,null);
-  if(w1.best) return w1.best.r;
-  /* (the review of app v145) none paid: first the second walk, the sets whose reading pays within PB_FREE.SLT by the
-     reading's chance (on many short legs moving together the walk by key works thousands of sets whose legs multiplied pay
-     and whose same-game price does not); then, where candidates were let go, the search again keeping eight and sixty-four
-     times as many, the best so far its bar; every walk from the level's one budget (B) */
-  let best=null;
+  if(w1.best&&!w1.cut) return w1.best.r;
+  /* (the review of app v145) none paid, or the first walk ended at its cap or its budget before its stop: first the second
+     walk, the sets whose reading pays within PB_FREE.SLT by the reading's chance, the first walk's best (or a greedy paying
+     set) its bar (on many short legs moving together the walk by key works thousands of sets whose legs multiplied pay and
+     whose same-game price does not; on many legs at one price, the audit's made-up lines, the paying set it misses is
+     past its cap); then, where none paid and candidates were let go, the search again keeping eight and sixty-four times as
+     many, the best so far its bar; every walk from the level's budgets (B, B2) */
+  let best=w1.best||null;
   const B2={u:PB_FREE.UNITS2,n:PB_FREE.NODES2};
   if(w1.ev){ PB_LV_STAT.second++; const sd=pbFreeSeed(x,I,F,cap,fl,k,B2), s0=sd?{pr:sd.corr,n:sd.legs.length,ln:sd.legs.reduce((a,l)=>a+pbLean(l),0),id:sd.legs.map(pbId).sort().join(','),r:sd}:null;
-    const c=pbFreeCands(x,I,F,cap,PB_FREE.M,'level1',s0?s0.pr/PB_FREE.C[cap]:0,1,fl,k,B2), w=pbFreeWalk(x,c,F,1,B2,s0); best=w.best; }
+    const b0=best&&(!s0||pbFreeRank(best,s0)<0)?best:s0;
+    const c=pbFreeCands(x,I,F,cap,PB_FREE.M,'level1',b0?b0.pr/PB_FREE.C[cap]:0,1,fl,k,B2), w=pbFreeWalk(x,c,F,1,B2,b0); best=w.best; }
+  if(w1.best) return best?best.r:null;
   B.u=Math.max(0,B.u)+Math.max(0,B2.u); B.n=Math.max(0,B.n)+Math.max(0,B2.n);
   if(c1.over) for(let M=PB_FREE.M*8;M<=PB_FREE.M*64&&B.u>0&&B.n>0;M*=8){ const c=pbFreeCands(x,I,F,cap,M,'level',0,1,fl,k,B), w=pbFreeWalk(x,c,F,0,B,best); if(w.best) best=w.best; if(w.mine||!c.over) break; }
   return best?best.r:null;
