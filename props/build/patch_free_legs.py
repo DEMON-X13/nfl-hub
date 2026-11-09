@@ -120,10 +120,10 @@ any Extreme and a night Aggressive to nothing of their size on the week's own li
 likeliest of two and three legs): the audit and the smoke now hold each Day games level to an exact knapsack of single legs
 across its games of every size (dgAud, dgOwn) and each night level to a counterexample search on a screen of 8,192 common
 draws of the game's latent normals (screenAud, screenOwn). (4) The longest step, timed again on the final search (medians of
-three cold boots in jsdom, an audit running on the machine's four CPUs beside them): a night Extreme 389 to 510 ms, and 710 ms
-for week 8's CHI at SEA, whose first walk reaches its cap so the second runs too; the Day games' Extreme 295 to 498 ms; every
-other level under 310 ms; a night game's set 0.22 to 1.23 s, the Day games' 0.82 to 0.94 s (app v144's 2.6 to 3.2 s in one
-build), every live unit of a payload 2.0 to 3.0 s (app v144's 3.0 to 4.0 s).
+three cold boots in jsdom, another suite running on the machine's four CPUs beside them): a night Extreme 392 to 476 ms, and 659 ms
+for week 8's CHI at SEA, whose first walk reaches its cap so the second runs too; the Day games' Extreme 277 to 455 ms; every
+other level under 320 ms; a night game's set 0.25 to 1.18 s, the Day games' 0.71 to 0.94 s (app v144's 2.6 to 3.2 s in one
+build), every live unit of a payload 2.0 to 2.6 s (app v144's 3.0 to 4.0 s).
 """
 from pathlib import Path
 

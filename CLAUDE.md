@@ -4387,10 +4387,10 @@ greedy paying set. (3) The knapsack's dominance kept, within a block tied on cha
 as many legs, so a same-game pair beside another game's leg lost a tie its lower id should have won (four games of three
 uncorrelated legs at 50% and -112); it now drops one only for a partial of fewer legs at least as dear: M18's F11 holds it.
 (4) The smoke had no case where the tie to the fewer legs decides a level: 1b (e) and EVERY LEVEL ANY SIZE's four made-up
-games (the audit's F4 shape) now do. (5) The longest step, timed again on the final search (medians of three cold boots in jsdom, an audit running on the
-machine's four CPUs beside them): a night Extreme 389 to 510 ms, and 710 ms for week 8's CHI at SEA, whose first walk reaches
-its cap so the second runs too; the Day games' Extreme 295 to 498 ms; every other level under 310 ms; a night game's set 0.22
-to 1.23 s, the Day games' 0.82 to 0.94 s (app v144's 2.6 to 3.2 s in one build), every live unit of a payload 2.0 to 3.0 s
+games (the audit's F4 shape) now do. (5) The longest step, timed again on the final search (medians of three cold boots in jsdom, another suite running on the
+machine's four CPUs beside them): a night Extreme 392 to 476 ms, and 659 ms for week 8's CHI at SEA, whose first walk reaches
+its cap so the second runs too; the Day games' Extreme 277 to 455 ms; every other level under 320 ms; a night game's set 0.25
+to 1.18 s, the Day games' 0.71 to 0.94 s (app v144's 2.6 to 3.2 s in one build), every live unit of a payload 2.0 to 2.6 s
 (app v144's 3.0 to 4.0 s): over the aim of 0.3 s a step on Extreme, which the tab hides. (6) The
 record's guard is held at its lower bound too: `test_suggest_ledger.js` refuses a 1-leg Safe taken by this run. (7)
 `audit.js` lost `paysAud`, `mlN`, `noMovers` and `likeliestOf`, which nothing called; ARCHITECTURE.md's suggested parlays
