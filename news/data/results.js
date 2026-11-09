@@ -489,6 +489,58 @@ const RESULTS = {
  "wk9:JAX-BAL": [
   33,
   10
+ ],
+ "wk9:CIN-ATL": [
+  34,
+  17
+ ],
+ "wk9:DAL-IND": [
+  27,
+  23
+ ],
+ "wk9:NYJ-KC": [
+  12,
+  35
+ ],
+ "wk9:DET-MIA": [
+  19,
+  9
+ ],
+ "wk9:CLE-NO": [
+  22,
+  23
+ ],
+ "wk9:NYG-PHI": [
+  19,
+  11
+ ],
+ "wk9:LAR-WAS": [
+  20,
+  13
+ ],
+ "wk9:DEN-CAR": [
+  26,
+  21
+ ],
+ "wk9:HOU-LAC": [
+  44,
+  22
+ ],
+ "wk9:GB-NE": [
+  45,
+  27
+ ],
+ "wk9:LV-SF": [
+  17,
+  38
+ ],
+ "wk9:ARI-SEA": [
+  3,
+  17
+ ],
+ "wk9:TB-CHI": [
+  24,
+  27
  ]
 };
 const LINES = {
@@ -615,31 +667,32 @@ const LINES = {
  "wk8:CHI-SEA": "SEA -3, O/U 46.5",
  "wk9:JAX-BAL": "JAX -8.5, O/U 40.5",
  "wk9:CIN-ATL": "CIN -3, O/U 52.5",
- "wk9:DEN-CAR": "DEN -2.5, O/U 44.5",
- "wk9:DAL-IND": "DAL -5.5, O/U 51.5",
- "wk9:NYJ-KC": "KC -9.5, O/U 48.5",
+ "wk9:DEN-CAR": "DEN -3, O/U 44.5",
+ "wk9:DAL-IND": "DAL -4.5, O/U 51.5",
+ "wk9:NYJ-KC": "KC -9.5, O/U 47.5",
  "wk9:DET-MIA": "DET -6.5, O/U 49.5",
- "wk9:CLE-NO": "NO -3, O/U 42.5",
+ "wk9:CLE-NO": "NO -4.5, O/U 43.5",
  "wk9:NYG-PHI": "NYG -3, O/U 38.5",
- "wk9:LAR-WAS": "LAR -4.5, O/U 47.5",
+ "wk9:LAR-WAS": "LAR -4.5, O/U 48.5",
  "wk9:HOU-LAC": "HOU -5.5, O/U 40.5",
- "wk9:LV-SF": "SF -9.5, O/U 51.5",
+ "wk9:LV-SF": "SF -8.5, O/U 51.5",
  "wk9:GB-NE": "NE -3, O/U 44.5",
  "wk9:ARI-SEA": "SEA -8.5, O/U 39.5",
- "wk9:TB-CHI": "CHI -6, O/U 47.5",
+ "wk9:TB-CHI": "CHI -6.5, O/U 47.5",
  "wk9:BUF-MIN": "BUF -3, O/U 43.5",
- "wk10:WAS-NYG": "NYG -1.5, O/U 44.5",
- "wk10:NE-DET": "NE -1.5, O/U 49.5",
- "wk10:KC-ATL": "KC -3, O/U 46.5",
+ "wk10:WAS-NYG": "NYG -1.5, O/U 43.5",
+ "wk10:NE-DET": "DET -2.5, O/U 51.5",
+ "wk10:KC-ATL": "KC -3.5, O/U 45.5",
  "wk10:HOU-CLE": "HOU -4.5, O/U 39.5",
- "wk10:MIN-GB": "GB -3, O/U 40.5",
- "wk10:MIA-IND": "IND -2.5, O/U 43.5",
- "wk10:CAR-NO": "CAR -1.5, O/U 47.5",
- "wk10:BUF-NYJ": "BUF -7.5, O/U 50.5",
- "wk10:JAX-TEN": "JAX -10, O/U 45.5",
- "wk10:LAR-ARI": "LAR -8.5, O/U 47.5",
- "wk10:SF-DAL": "SF -3.5, O/U 53.5",
+ "wk10:MIN-GB": "GB -3, O/U 42.5",
+ "wk10:MIA-IND": "IND -2.5, O/U 40.5",
+ "wk10:CAR-NO": "NO -1.5, O/U 47.5",
+ "wk10:BUF-NYJ": "BUF -7.5, O/U 51.5",
+ "wk10:JAX-TEN": "JAX -9.5, O/U 47.5",
+ "wk10:LAR-ARI": "LAR -7, O/U 44.5",
+ "wk10:SEA-LV": "SEA -3, O/U 43.5",
+ "wk10:SF-DAL": "SF -3.5, O/U 55.5",
  "wk10:PIT-CIN": "CIN -3.5, O/U 47.5",
- "wk10:LAC-BAL": "BAL -1.5, O/U 37.5"
+ "wk10:LAC-BAL": "BAL -5.5, O/U 38.5"
 };
-const LINES_ASOF = "2026-11-08";
+const LINES_ASOF = "2026-11-09";
