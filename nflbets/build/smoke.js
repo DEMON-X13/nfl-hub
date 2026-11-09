@@ -1983,6 +1983,82 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     chk(plain && ref.plain ? freeRankOwn(me, ref) <= 0 : t.corr >= ref.pr - REF_TOL_OWN,
       `${lab}: the ${t.id} level lands ${(t.corr * 100).toFixed(3)}% on ${t.legs.length} legs paying ${t.dec.toFixed(3)}, where ${what} ${ref.L.map(l => l.name + ' ' + l.label).join(', ')} land ${(ref.pr * 100).toFixed(3)}% on ${ref.n} paying ${ref.dec.toFixed(3)}`);
     return true; };
+  /* (the review of app v145) every size, where a unit's legs are too many to work every parlay out. Of two games or more
+     (the Day games, the engine's ticked games): dgOwn, the likeliest parlay of 2 to cap single legs, at most one a game,
+     across the games, paying the floor in full, worked out exactly (legs of different games never move together and are
+     priced apart, so a parlay of them is its legs' product in chance and in price): a knapsack over the games, a partial let
+     go where its chance falls under the best or the dearest the games left can add cannot bring it to the floor, a partial
+     of as many legs dominated only where another has at least its price (capped at the floor) and a chance a key ahead after
+     any completion that can matter, or as much and a lean a key larger, so a tie is the rule's; two passes (the best chance,
+     then the tie-safe front with it as the bar), every complete parlay within 1e-7 of it worked on the card, the likeliest
+     by the rule's order. A same-game group is no option of it (ref23Own works each game's pairs), so a level holding one is
+     held to it within REF_TOL_OWN, a plain one exactly. Of one game: screenOwn, a counterexample search on a screen of
+     SCREEN_N_OWN common draws of the game's own latent normals (its correlations shrunk till positive-definite, the smoke's
+     own generator and seed; a leg lands where its normal passes its chance's threshold, its price's implied chance the same
+     way), every set of 2 to cap that can be made whose chance on the screen is within SCREEN_Z_OWN of its noise of beating
+     target and whose price on the screen is within 6% of the floor, the SCREEN_K_OWN likeliest of them worked on the card;
+     target the level's chance plus REF_TOL_OWN, so what it finds paying likelier than that is a parlay the level should have
+     been. Nothing of the page's search is read */
+  const dgOwn = (per, minD, cap = CAP_OWN) => { const G = per.map(L => L.filter(l => !l.market).map(l => ({ l, c: l.p, d: mdS(l.price) || 1, ln: leanOwn(l) })).sort((a, b) => b.c - a.c)).filter(g => g.length), m = G.length;
+    if (m < 2) return { best: null, cands: 0 };
+    const dmax = G.map(g => g.reduce((a, o) => Math.max(a, o.d), 1)), TOP = [];
+    for (let i = 0; i <= m; i++) { const ds = dmax.slice(i).sort((a, b) => b - a), t = [1]; for (let r = 1; r <= cap; r++) t.push(t[r - 1] * (r <= ds.length ? ds[r - 1] : 1)); TOP.push(t); }
+    const FL = minD * (1 - 1e-12);
+    const run = (lb, tie) => { let P = [{ c: 1, d: 1, n: 0, ln: 0, o: null }], best = lb; const done = [];
+      for (let i = 0; i < m; i++) { const nx = [];
+        for (const p of P) { nx.push(p); if (p.n >= cap) continue;
+          for (const o of G[i]) { const c = p.c * o.c; if (c < best) break; const d = p.d * o.d, n = p.n + 1, q = { c, d, n, ln: p.ln + o.ln, o: { l: o.l, up: p.o } };
+            if (n >= 2 && d >= FL) { done.push(q); if (!tie && c > best) best = c; continue; }
+            if (d * TOP[i + 1][cap - n] >= FL) nx.push(q); } }
+        const byN = new Map(); for (const p of nx) { if (p.c < best || p.d * TOP[i + 1][cap - p.n] < FL) continue; (byN.get(p.n) || byN.set(p.n, []).get(p.n)).push(p); }
+        P = [];
+        for (const L of byN.values()) { L.sort((a, b) => (Math.min(b.d, minD) - Math.min(a.d, minD)) || (b.c - a.c) || (b.ln - a.ln));
+          if (!tie) { let bc = -1; for (const p of L) if (p.c > bc) { P.push(p); bc = p.c; } }
+          else { const K = []; for (const p of L) { const pd = Math.min(p.d, minD);
+              if (!K.some(q => Math.min(q.d, minD) >= pd && ((q.c - p.c) * lb / p.c >= 2e-9 || (q.c >= p.c && q.ln - p.ln >= 2e-9)))) { K.push(p); P.push(p); } } } } }
+      return done; };
+    const d1 = run(0, false); if (!d1.length) return { best: null, cands: 0 };
+    const lb = d1.reduce((a, q) => Math.max(a, q.c), 0) * (1 - 1e-7), cands = run(lb, true).filter(q => q.c >= lb);
+    let best = null; for (const q of cands) { const legs = []; for (let o = q.o; o; o = o.up) legs.push(o.l); const x = freeOfOwn(legs); x.k = [0, 0]; if (x.dec >= minD && (!best || freeRankOwn(x, best) < 0)) best = x; }
+    return { best, cands: cands.length }; };
+  const SCREEN_N_OWN = 8192, SCREEN_Z_OWN = 2.5, SCREEN_K_OWN = 400, SCREEN_NODES_OWN = 3e6;
+  const screenOwn = (list, minD, target, cap = 6) => { const L = list.filter(l => !l.market).sort((a, b) => b.p - a.p), n = L.length, N = SCREEN_N_OWN, Wd = N >>> 5; if (n < 2) return { best: null, worked: 0, cands: 0 };
+    const R = L.map((a, i) => L.map((b, j) => i === j ? 1 : rhoF(a, b)));
+    const chol = M => { const k = M.length, C = Array.from({ length: k }, () => new Float64Array(k));
+      for (let i = 0; i < k; i++) for (let j = 0; j <= i; j++) { let v = M[i][j]; for (let t = 0; t < j; t++) v -= C[i][t] * C[j][t]; if (i === j) { if (v <= 1e-10) return null; C[i][i] = Math.sqrt(v); } else C[i][j] = v / C[j][j]; } return C; };
+    let C = null, lam = 0; while (!C && lam < 1) { C = chol(R.map((r, i) => r.map((v, j) => i === j ? 1 : v * (1 - lam)))); if (!C) lam += 0.05; }
+    if (!C) return { best: null, worked: 0, cands: 0 };
+    let seed = 0x6a09e667; const rnd = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return (seed + 0.5) / 4294967296; };
+    const inv = w.eval('invNorm'), SGP = w.eval('SGP_HOLD'), tf = L.map(l => inv(1 - l.p)), ti = L.map(l => inv(1 - 1 / (mdS(l.price) || 1))), dir = L.map(l => l.side === 'under' ? -1 : 1);
+    const BF = L.map(() => new Uint32Array(Wd)), BI = L.map(() => new Uint32Array(Wd)), g = new Float64Array(n);
+    for (let s = 0; s < N; s++) { for (let i = 0; i < n; i += 2) { const u = rnd(), v = rnd(), r = Math.sqrt(-2 * Math.log(u)); g[i] = r * Math.cos(2 * Math.PI * v); if (i + 1 < n) g[i + 1] = r * Math.sin(2 * Math.PI * v); }
+      const wd = s >>> 5, b = 1 << (s & 31); for (let i = 0; i < n; i++) { let z = 0; const Ci = C[i]; for (let k = 0; k <= i; k++) z += Ci[k] * g[k]; z *= dir[i]; if (z > tf[i]) BF[i][wd] |= b; if (z > ti[i]) BI[i][wd] |= b; } }
+    const POP = new Uint8Array(65536); for (let i = 1; i < 65536; i++) POP[i] = POP[i >>> 1] + (i & 1);
+    const pop = a => { let c = 0; for (let k = 0; k < Wd; k++) { const v = a[k]; c += POP[v & 0xffff] + POP[v >>> 16]; } return c; };
+    const dec = L.map(l => mdS(l.price) || 1), TOP = []; for (let i = 0; i <= n; i++) { const ds = dec.slice(i).sort((a, b) => b - a), t = [1]; for (let r = 1; r <= cap; r++) t.push(t[r - 1] * (r <= ds.length ? ds[r - 1] : 1)); TOP.push(t); }
+    const OK = new Uint8Array(n * n); for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) if (a !== b) OK[a * n + b] = fitsF([L[a]], L[b]) ? 1 : 0;
+    const fF = [], fI = []; for (let k = 0; k <= cap; k++) { fF.push(new Uint32Array(Wd).fill(0xffffffff)); fI.push(new Uint32Array(Wd).fill(0xffffffff)); }
+    const sd = c => Math.sqrt(Math.max(c, 1 / N) * (1 - Math.min(c, 1 - 1 / N)) / N), out = [], ch = []; let nodes = 0, over = false;
+    const go = (dd, i0, mult) => { for (let j = i0; j < n && !over; j++) { let ok = true; for (let t = 0; t < dd; t++) if (!OK[ch[t] * n + j]) { ok = false; break; } if (!ok) continue;
+        if (++nodes > SCREEN_NODES_OWN) { over = true; return; }
+        const a = fF[dd], b = fI[dd], A = BF[j], B = BI[j], f = fF[dd + 1], q = fI[dd + 1]; for (let k = 0; k < Wd; k++) { f[k] = a[k] & A[k]; q[k] = b[k] & B[k]; }
+        const cf = pop(f) / N; if (cf + SCREEN_Z_OWN * sd(cf) < target) continue;
+        const m2 = mult * dec[j], k1 = dd + 1; ch[dd] = j;
+        if (k1 >= 2) { const ci = pop(q) / N, pa = ci > 0 ? Math.min(m2, SGP / ci) : m2; if (pa >= minD * 0.94) out.push({ ix: ch.slice(0, k1), cf }); }
+        if (k1 < cap && m2 * TOP[j + 1][cap - k1] >= minD * (1 - 1e-12)) go(k1, j + 1, m2); } };
+    go(0, 0, 1); out.sort((x, y) => y.cf - x.cf);
+    let best = null, worked = 0; for (const e of out) { if (worked >= SCREEN_K_OWN) break; worked++; const x = freeOfOwn(e.ix.map(t => L[t])); x.k = [0, 0]; if (x.dec >= minD && (!best || freeRankOwn(x, best) < 0)) best = x; }
+    return { best, worked, cands: out.length, nodes, over }; };
+  /* both kept a run, by the unit's legs, the floor and the target */
+  const REF_MEMO_OWN = new Map(), refKeyOwn = (L, minD, x) => `${minD}|${x}|${L.map(l => `${l.key}|${l.side}|${l.k}:${l.p}:${l.price}:${l.gid}`).sort().join()}`;
+  /* a unit's level (no total, no hook's Value picks) held, every size, to dgOwn (two games or more) or screenOwn (one) */
+  let REF_HELD_OWN = { dg: 0, screen: 0 };
+  const unitRefHeldOwn = (lab, t, per, minD) => { if (!t || !t.legs) return null;
+    if (per.length >= 2) { const k = refKeyOwn(per.flat(), minD, 'dg|' + per.length); let r = REF_MEMO_OWN.get(k); if (!r) { r = dgOwn(per, minD); REF_MEMO_OWN.set(k, r); }
+      if (!r.best) return null; refHeldOwn(lab, t, r.best, 'the likeliest parlay of single legs across the games (every size, worked out exactly),'); REF_HELD_OWN.dg++; return 'dg'; }
+    const cap = Math.min(CAP_OWN, Math.max(6, t.legs.length + 1)), tg = t.corr + REF_TOL_OWN, k = refKeyOwn(per[0] || [], minD, `sc|${tg}|${cap}`); let r = REF_MEMO_OWN.get(k); if (!r) { r = screenOwn(per[0] || [], minD, tg, cap); REF_MEMO_OWN.set(k, r); }
+    if (r.best) refHeldOwn(lab, t, r.best, `the likeliest on the smoke's own screen of ${SCREEN_N_OWN} draws (${r.cands} sets of 2 to ${cap} within its noise of beating it, ${r.worked} worked in full),`);
+    REF_HELD_OWN.screen++; return 'screen'; };
   /* a level held to an exact reference (freeOwn's best): the very parlay; empty only where none pays */
   /* the very parlay where it and the level are both plain products (their chances exact); else, legs moving together and the
      chance a seeded draw, at least as likely within REF_TOL_OWN (0.2 points) with as many totals: the search's stop is
@@ -2230,7 +2306,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     /* (app v145) a level held to the smoke's own reference: every parlay of 2 to 12 worked out in full on a list small
        enough (freeOwn: the very parlay), else at least the likeliest of 2 and 3 legs paying its price (ref23Own) */
     const provedLikeliest = (lab, t, list, per) => { if (list.length <= 16) { freeHeldOwn(lab, t, freeOwn(list, LEVEL_DEC_OWN[t.id])); return; }
-      const r = ref23Own(per || [list], [LEVEL_DEC_OWN[t.id]])[0]; if (r.best) refHeldOwn(lab, t, r.best, 'the likeliest of 2 and 3 legs paying it,'); };
+      const r = ref23Own(per || [list], [LEVEL_DEC_OWN[t.id]])[0]; if (r.best) refHeldOwn(lab, t, r.best, 'the likeliest of 2 and 3 legs paying it,');
+      /* (the review of app v145) and every size (no hook's Value picks among the legs) */
+      if (!list.some(l => !l.thin && !l.market)) unitRefHeldOwn(lab, t, per || [list], LEVEL_DEC_OWN[t.id]); };
     /* a leg's game has kicked off, by the page's clock; and DraftKings' id at the leg's own line in the
        payload's ids as they stand. No press has been made yet in this part, so PAY.dk is the payload's own
        (baked by the job, with the published read's game-line ids put in it at boot, app v125) or a fixture of the
@@ -2462,7 +2540,9 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         { const pools = G.map(x => { const qg = QG.get(x.id); return { pref: capOwn(qg.pref), thin: capOwn(qg.thin), mkt: t.mkt ? capOwn(qg.mkt) : [] }; }), lk = l => `${legId(l)}:${l.p}:${l.price}:${legRhoKey(l)}`, k = `${g.id}|${t.id}|${pools.map(P => [...P.pref, ...P.thin, ...P.mkt].map(lk).join()).join('/')}`;
           let r = LV_OWN.get(k); if (r === undefined) { r = w.eval('pbTierOf')(w.eval('PB_TIERS').find(x => x[0] === t.id), pools, new Map()) || null; LV_OWN.set(k, r); }
           chk(!!r && !!r.legs && r.legs.map(legId).sort().join() === t.legs.map(legId).sort().join(), `${lab2}: the ${t.id} level (${t.legs.map(l => l.name + ' ' + l.label).join(' + ')}) is not the page's own search's parlay on the unit's pools (${r && r.legs ? r.legs.map(l => l.name + ' ' + l.label).join(' + ') : 'none'})`);
-          if (!t.mkt) { if (smallU) freeHeldOwn(lab2, t, freeOwn(edgeU, LEVEL_DEC_OWN[t.id])); else { const R = refsU[PB_TIERS_OWN.indexOf(t.id)]; if (R && R.best) refHeldOwn(lab2, t, R.best, 'the likeliest of 2 and 3 legs paying it,'); } } }
+          if (!t.mkt) { if (smallU) freeHeldOwn(lab2, t, freeOwn(edgeU, LEVEL_DEC_OWN[t.id])); else { const R = refsU[PB_TIERS_OWN.indexOf(t.id)]; if (R && R.best) refHeldOwn(lab2, t, R.best, 'the likeliest of 2 and 3 legs paying it,');
+              /* (the review of app v145) and every size: the Day games' exactly (dgOwn), a night game's on the screen (screenOwn) */
+              if (!G.some(x => QG.get(x.id).pref.length)) unitRefHeldOwn(lab2, t, perL, LEVEL_DEC_OWN[t.id]); } } }
         chk(t.legs.every(l => ownSet.has(legId(l)) && !!l.thin === thinOf.has(legId(l)) && !!l.market === mktOf.has(legId(l))), `${lab2}: the ${t.id} level holds a leg the rules do not let a suggestion take, or keeps one thin or a total wrongly: ` + t.legs.filter(l => !ownSet.has(legId(l))).map(l => l.name + ' ' + l.label).join(', '));
         /* the card: its legs each with its own Add (44px, named for the leg), its rule, the fair chance first,
            Add to builder and Finish named for the unit, no lock (a set the night rule hides has no card: above) */
@@ -2795,7 +2875,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         const wrong = rows.filter(([dd, tt, want]) => rule({ d: dd, t: tt }) !== want || primeOwn({ d: dd, t: tt }) !== want), sch = Sx.sched.filter(g => rule(g) !== primeOwn(g));
         chk(!wrong.length && !sch.length, 'the page\'s prime-time rule is not a Thursday, Sunday or Monday kickoff at or after 7:00 pm Eastern: ' + wrong.map(x => x.join(' ')).concat(sch.slice(0, 3).map(g => g.id + ' ' + g.d + ' ' + g.t)).join(', '));
         const n = await holdSets('this week, as published');
-        { const N = shownHere(), U = slotHere(); console.log(`  (Suggested Parlays on the published week: ${primeHere().map(g => g.id).join(', ') || 'no prime-time game to come'}, ${N.on.length ? N.on.map(g => g.id).join(', ') + ' on the tab' : N.games.length ? 'none on the tab until ' + isoOwn(N.open) : 'none on the tab'}; the Sunday slot ${U ? `${U.id} (${U.games.length} games), ${slotPhaseOwn(U, w.eval('Date.now()'))}` : 'none to come'}; ${n} levels built)`); }
+        { const N = shownHere(), U = slotHere(); console.log(`  (Suggested Parlays on the published week: ${primeHere().map(g => g.id).join(', ') || 'no prime-time game to come'}, ${N.on.length ? N.on.map(g => g.id).join(', ') + ' on the tab' : N.games.length ? 'none on the tab until ' + isoOwn(N.open) : 'none on the tab'}; the Sunday slot ${U ? `${U.id} (${U.games.length} games), ${slotPhaseOwn(U, w.eval('Date.now()'))}` : 'none to come'}; ${n} levels built; of every size ${REF_HELD_OWN.dg} held to the exact knapsack of single legs across games and ${REF_HELD_OWN.screen} to the smoke's own screen's counterexamples so far)`); }
         await openPb(); }
       /* made-up lines on every starter (each a few points off his own projection), a made-up total of 44.5 on
          every game with none posted (a week the payload has no lines for yet: a clock far past the bake, the

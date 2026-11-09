@@ -2756,7 +2756,8 @@ Mismatches and Team Stats**, has the whole of it).
   clearing each, `pbTier` on `pbPool`; since app v143 each among the parlays paying +100 or more, `PB_MIN_DEC`, Safe the
   likeliest pair paying it, the level carrying `minDec`; since app v144 each the likeliest parlay of its size paying its
   own price, +110, +300, +700 or +1500, `PB_TIERS`' fifth figure, no floor of chance, `pbLevel`, the level carrying
-  `minDec` and `pick: 'likeliest'`) are, since app v111, each
+  `minDec` and `pick: 'likeliest'`; since app v145 each the likeliest parlay of 2 to 12 legs, any size, paying its price,
+  `pbFreeUnit`, the level carrying `pick: 'likeliest-any'`, and the Day games one set across their games) are, since app v111, each
   prime-time game's set on Suggested Parlays (`spSet`, from that game's `pricedLegs` and its total
   on every bet type, `SP_ALL`, searched wider, `SP_SEARCH`, cached in `SP_CACHE`, outside `S`;
   the tab sets out one night's at a time, `spOn`, the record every one); `getPbTiers()`, the same

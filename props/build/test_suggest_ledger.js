@@ -1011,6 +1011,8 @@ chk(r.code === 1 && /^suggest ledger: refused/.test(r.last) && bytes() === ledge
   t('a 6-leg Safe new by this run', lvU('safe', 6, 2.3), null);
   t('a 12-leg Extreme new by this run', lvU('xtrm', 12, 17), null);
   t('a 13-leg Extreme new by this run', lvU('xtrm', 13, 18), /xtrm: taken by this run with 13 legs, outside 2 to 12/);
+  /* (the review of app v145) the lower bound too: a 1-leg Safe taken by this run, at a price over its own, refused */
+  t('a 1-leg Safe new by this run', lvU('safe', 1, 2.2), /safe: taken by this run with 1 legs, outside 2 to 12/);
   t('a level new by this run by app v144\'s rule (pick likeliest, a fixed size)', lvU('med', 3, 4.4, { pick: PICK_V144_T }), /med: taken by this run without the rule that chose it \(pick "likeliest", not "likeliest-any"\)/);
   t('a 4-leg Medium new by this run whose n says 3', lvU('med', 4, 4.4, { n: 3 }), /med: 4 legs on a level of 3/);
   t('an empty level new by this run, with no price rule', x => { const e = addU(x); e.tiers[1] = why('med'); }, null);
