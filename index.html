@@ -6458,7 +6458,7 @@ const PB_FREE={M:1500,DELTA:0.15,TOL:5e-4,E1:1500,E2:300,E3:12000,
   SLACK:[1,1,1.05,1.10,1.20,1.30,1.35,1.40,1.45,1.50,1.55,1.60,1.65],
   C:[1,1,1.03,1.04,1.05,1.06,1.08,1.09,1.10,1.11,1.12,1.13,1.14],
   C2:[1,1,1,1.12,1.15,1.18,1.21,1.24,1.27,1.30,1.33,1.36,1.39],
-  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9,SLEP:1.05,SLT:1.03,UNITS1:2000,NODES1:1000000,UNITS2:1000,NODES2:500000};
+  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9,SLEP:1.05,SLT:1.03,UNITS1:2000,NODES1:6000000,UNITS2:1000,NODES2:500000};
 /* (the review of app v145) a parlay worked in full, in units of a 5-leg price (about 0.4 ms in jsdom): its price's draws,
    and, where it pays, its chance's (about 1.3 times as dear), each dearer with its legs (the draws' rows), so a level's
    passes share PB_FREE.UNITS of them and its work is bounded alike on every machine */
@@ -6593,7 +6593,7 @@ function pbFreeSeed(x,I,F,cap,fl,k,B){
 function pbFreeGame(x,legs,fl,k,F,cap){
   const I=legs.map(l=>pbCtxLeg(x,l)), B={u:PB_FREE.UNITS1,n:PB_FREE.NODES1};
   const c1=pbFreeCands(x,I,F,cap,PB_FREE.M,'level',0,1,fl,k,B), w1=pbFreeWalk(x,c1,F,0,B,null);
-  if(w1.best&&!w1.cut) return w1.best.r;
+  if(w1.best&&!w1.cut&&!c1.cut) return w1.best.r;
   /* (the review of app v145) none paid, or the first walk ended at its cap or its budget before its stop: first the second
      walk, the sets whose reading pays within PB_FREE.SLT by the reading's chance, the first walk's best (or a greedy paying
      set) its bar (on many short legs moving together the walk by key works thousands of sets whose legs multiplied pay and
@@ -8395,7 +8395,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='3060e8d';
+const PAGE_HASH='2ab8685';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){

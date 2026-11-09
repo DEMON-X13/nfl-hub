@@ -101,13 +101,16 @@ the search again keeping eight and sixty-four times as many with the best so far
 case on the made-up lines of three of test_audit_phases.py's payloads, every starter's line at -112 or -150: a 7-leg Extreme
 0.28 to 0.56 points under a 6-leg one paying +1500, the walk by key at its cap of 1,500 first, as app v144's search was; now
 5.205% on week 6's pool where the screen found 5.210%); and every walk from a budget (pbFreeCost: a parlay worked in full costs (n/5)^2 units of a five-leg price,
-2.3 times that where it pays and its chance is worked too): the first walk 2,000 units and a million nodes, the rest 1,000
-units and half a million nodes and what the first left. Real levels use at most 1,710 units and 434,000 nodes and are as
+2.3 times that where it pays and its chance is worked too): the first walk 2,000 units and six million nodes, the rest 1,000
+units and half a million nodes and what the first left; where the first walk's candidates were cut by its nodes, the second
+walk runs too (a first budget of a million nodes cut the candidates of the smoke's made-up lines on week 6's WAS at SF, 56
+legs whose walk takes 5.3 million nodes, and its Aggressive fell to 9.682% where app v144's search, and this one with the six
+million, find 10.172%). Real levels use at most 1,710 units and 434,000 nodes and are as
 they were but one, week 9's TB at CHI Extreme at Saturday 18:00, likelier (4.5575% where it was 4.5325%: the floor let the
 first walk's 1,500 work payers). On the review's pools: eighteen legs' Safe 29.730% in 2.0 s (the enumeration's own),
-twenty-four at 85 to 95% 28.977% in 2.7 s (unbounded, 29.843% in 11.6 s: the budget's cost, the one pool where it binds
+twenty-four at 85 to 95% 28.977% in 4.0 s (unbounded, 29.843% in 11.6 s: the budget's cost, the one pool where it binds
 hard), twenty-four at 75 to 92% Safe 37.175% in 0.5 s, Medium 17.563% in 1.5 s and Aggressive 7.508% in 1.8 s (unbounded
-17.485% in 5.8 s and 7.465% in 11.3 s); a level of one game takes at most about 3 s however its legs are made. The review's
+17.485% in 5.8 s and 7.465% in 11.3 s); a level of one game takes at most about 4 s however its legs are made (twenty-four at 85 to 95%, the worst seen, 4.0 s). The review's
 82 adversarial pools: the page's level the enumeration's on 81 (a tie and a Safe of eight legs now found), the one other E.1's
 Extreme, 0.045 points under it.
 (2) The knapsack across games kept, within a block tied on chance and lean, only the dearest of partials of as many legs, so
@@ -495,7 +498,7 @@ const PB_FREE={M:1500,DELTA:0.15,TOL:5e-4,E1:1500,E2:300,E3:12000,
   SLACK:[1,1,1.05,1.10,1.20,1.30,1.35,1.40,1.45,1.50,1.55,1.60,1.65],
   C:[1,1,1.03,1.04,1.05,1.06,1.08,1.09,1.10,1.11,1.12,1.13,1.14],
   C2:[1,1,1,1.12,1.15,1.18,1.21,1.24,1.27,1.30,1.33,1.36,1.39],
-  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9,SLEP:1.05,SLT:1.03,UNITS1:2000,NODES1:1000000,UNITS2:1000,NODES2:500000};
+  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9,SLEP:1.05,SLT:1.03,UNITS1:2000,NODES1:6000000,UNITS2:1000,NODES2:500000};
 /* (the review of app v145) a parlay worked in full, in units of a 5-leg price (about 0.4 ms in jsdom): its price's draws,
    and, where it pays, its chance's (about 1.3 times as dear), each dearer with its legs (the draws' rows), so a level's
    passes share PB_FREE.UNITS of them and its work is bounded alike on every machine */
@@ -630,7 +633,7 @@ function pbFreeSeed(x,I,F,cap,fl,k,B){
 function pbFreeGame(x,legs,fl,k,F,cap){
   const I=legs.map(l=>pbCtxLeg(x,l)), B={u:PB_FREE.UNITS1,n:PB_FREE.NODES1};
   const c1=pbFreeCands(x,I,F,cap,PB_FREE.M,'level',0,1,fl,k,B), w1=pbFreeWalk(x,c1,F,0,B,null);
-  if(w1.best&&!w1.cut) return w1.best.r;
+  if(w1.best&&!w1.cut&&!c1.cut) return w1.best.r;
   /* (the review of app v145) none paid, or the first walk ended at its cap or its budget before its stop: first the second
      walk, the sets whose reading pays within PB_FREE.SLT by the reading's chance, the first walk's best (or a greedy paying
      set) its bar (on many short legs moving together the walk by key works thousands of sets whose legs multiplied pay and

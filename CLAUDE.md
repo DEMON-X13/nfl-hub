@@ -4374,11 +4374,14 @@ runs with its best as their bar (the screen itself found the cut case: on the ma
 5 Saturday, week 6 Sunday 3pm and week 5 Sunday morning, every starter's line at -112 or -150, a 7-leg Extreme 0.28 to 0.56
 points under a 6-leg one paying +1500, the walk by key at its cap of 1,500 first, as app v144's search was; now the six,
 5.205% on week 6's pool); and every walk draws on a budget
-(`pbFreeCost`, `PB_FREE.UNITS1`, `NODES1`, `UNITS2`, `NODES2`: 2,000 units of a five-leg price and a million nodes for the
-first walk, 1,000 and half a million more), so a level of one game takes at most about 3 s however its legs are made. Real
+(`pbFreeCost`, `PB_FREE.UNITS1`, `NODES1`, `UNITS2`, `NODES2`: 2,000 units of a five-leg price and six million nodes for the
+first walk, 1,000 and half a million more; where the first walk's candidates are cut by its nodes, the second walk runs too),
+so a level of one game takes at most about 4 s however its legs are made (a first budget of a million nodes cut the
+candidates of the smoke's made-up lines on week 6's WAS at SF, 56 legs whose walk takes 5.3 million nodes, and its
+Aggressive fell 0.49 points under app v144's 10.172%, which the smoke's screen found at 0.215 points: six million keep it). Real
 levels use at most 1,710 units and 434,000 nodes and are as they were but one, week 9's TB at CHI Extreme at Saturday 18:00,
 likelier (4.5575% for 4.5325%). The eighteen legs' Safe is now the exhaustive enumeration's 29.730% in 2.0 s; twenty-four
-legs at 85 to 95% the one pool where the budget binds hard (28.977% in 2.7 s, unbounded 29.843% in 11.6 s). The audit's M18
+legs at 85 to 95% the one pool where the budget binds hard (28.977% in 4.0 s, unbounded 29.843% in 11.6 s). The audit's M18
 F12 and the smoke's 1b (f) hold eighteen such legs to under 5 s a level, each paying, Safe at least as likely as their own
 greedy paying set. (3) The knapsack's dominance kept, within a block tied on chance and lean, only the dearest of partials of
 as many legs, so a same-game pair beside another game's leg lost a tie its lower id should have won (four games of three
