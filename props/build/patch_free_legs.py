@@ -500,13 +500,16 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k,B){
   /* (the review of app v145) which pairs move against each other, the sides counted (an under turning it): where no pair of
      a set does, the chance all its legs land at their prices' implied chances is at least those chances multiplied
      (Slepian's inequality, the Gaussian copula's), so its price in full is at most SGP_HOLD times its legs multiplied, and
-     a set under F over PB_FREE.SLEP of that is no candidate (SLEP the room for the price's own draws) */
-  const NEG=new Uint8Array(m*m); for(let a=0;a<m;a++) for(let b=0;b<m;b++){ if(a===b) continue; const A=x.L[L[a]], B=x.L[L[b]]; NEG[a*m+b]=legRho(A,B)*(A.side==='under'?-1:1)*(B.side==='under'?-1:1)<0?1:0; }
+     a set under F over PB_FREE.SLEP of that is no candidate (SLEP the room for the price's own draws); where no pair of it
+     moves at all (each under 0.03), parlayProb works the chance exactly, the legs' product, and the price is SGP_HOLD times
+     the legs multiplied to the last place, so a set under F at that is none (NEG: 1 a pair moving against, 2 with) */
+  const NEG=new Uint8Array(m*m); for(let a=0;a<m;a++) for(let b=0;b<m;b++){ if(a===b) continue; const A=x.L[L[a]], B=x.L[L[b]], r=legRho(A,B);
+    NEG[a*m+b]=r*(A.side==='under'?-1:1)*(B.side==='under'?-1:1)<0?1:Math.abs(r)>=0.03?2:0; }
   /* the r dearest legs from each place on, multiplied (r up to cap; a missing factor 1) */
   const W=cap+1, TOP=new Float64Array((m+1)*W); { const cur=[]; for(let i=m;i>=0;i--){ if(i<m){ cur.push(DE[i]); cur.sort((a,b)=>b-a); if(cur.length>cap) cur.length=cap; }
       let pr=1; TOP[i*W]=1; for(let r=1;r<=cap;r++){ pr*=r<=cur.length?cur[r-1]:1; TOP[i*W+r]=pr; } } }
-  const CAND=[], WM=[], WB=[], WS=[], NG=[]; for(let d=0;d<=cap;d++){ CAND.push(new Int32Array(m)); WM.push(new Float64Array(m)); WB.push(new Float64Array(m)); WS.push(new Float64Array(m)); NG.push(new Uint8Array(m)); }
-  const CN=new Int32Array(cap+1), ch=new Int32Array(cap), pr=new Float64Array(cap+1), pb=new Float64Array(cap+1), mu=new Float64Array(cap+1), ps=new Float64Array(cap+1), SN=new Uint8Array(cap+1), SLEP=SGP_HOLD*PB_FREE.SLEP, SLT=PB_FREE.SLT, RS=mode==='level1'?SLT:1;
+  const CAND=[], WM=[], WB=[], WS=[], NG=[], CG=[]; for(let d=0;d<=cap;d++){ CAND.push(new Int32Array(m)); WM.push(new Float64Array(m)); WB.push(new Float64Array(m)); WS.push(new Float64Array(m)); NG.push(new Uint8Array(m)); CG.push(new Uint8Array(m)); }
+  const CN=new Int32Array(cap+1), ch=new Int32Array(cap), pr=new Float64Array(cap+1), pb=new Float64Array(cap+1), mu=new Float64Array(cap+1), ps=new Float64Array(cap+1), SN=new Uint8Array(cap+1), SC=new Uint8Array(cap+1), SLEP=SGP_HOLD*PB_FREE.SLEP, SLT=PB_FREE.SLT, RS=mode==='level1'?SLT:1;
   let thr=FR||mode==='level1'?thr0:-Infinity, keys=[], sets=[], lim=2*M, kmax=-Infinity;
   /* the kept: the M best keys, and none under (1-DELTA) times the best met; pruned again only once another M have come in
      past what the last prune kept, every tie of the M-th kept (app v144's rule) */
@@ -515,23 +518,23 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k,B){
     if(K2.length<keys.length) out.over=true; keys=K2; sets=S2; thr=T; lim=Math.max(2*M,keys.length+M); };
   for(let i=0;i<m;i++){ CAND[0][i]=i; WM[0][i]=1; WB[0][i]=1; WS[0][i]=1; } CN[0]=m; pr[0]=1; pb[0]=1; mu[0]=1; ps[0]=SGP_HOLD;
   const rec=(d,nf)=>{
-    const C=CAND[d], wm=WM[d], wb=WB[d], ws=WS[d], ng=NG[d], cn=CN[d];
+    const C=CAND[d], wm=WM[d], wb=WB[d], ws=WS[d], ng=NG[d], cg=CG[d], cn=CN[d];
     for(let s=0;s<cn;s++){
-      const j=C[s]; if(k!=null&&FL[j]&&nf>=k) continue; const neg=SN[d]|ng[s]; PB_LV_STAT.nodes++;
+      const j=C[s]; if(k!=null&&FL[j]&&nf>=k) continue; const neg=SN[d]|ng[s], cor=SC[d]|cg[s]; PB_LV_STAT.nodes++;
       if(B&&--B.n<0){ out.cut=true; return; }
       const c=d?Math.min(pr[d],pr[d]*P[j]*wm[s]):P[j], q=Math.min(1,pb[d]*Q[j]*wb[s]), mult=mu[d]*DE[j], psi=ps[d]*R[j]*wm[s]/wb[s], n=d+1, nf2=nf+FL[j];
       if(c<thr) continue;
       const dd=n>=2?Math.min(mult,(q>0?SGP_HOLD/q:mult)):mult;
       if(n>=2&&(k==null||nf2===k)){
-        const key=FR?(dd>=F?c:c*rOb*dd/F):mode==='level1'?(dd*SLT>=F&&mult>=F*(1-1e-12)&&(neg||mult*SLEP>=F)?c:-1):(dd*SL[Math.min(n,SL.length-1)]>=F&&mult>=F*(1-1e-12)&&(neg||mult*SLEP>=F)?Math.min(c,c*dd/F):-1);
+        const key=FR?(dd>=F?c:c*rOb*dd/F):mode==='level1'?(dd*SLT>=F&&mult>=F*(1-1e-12)&&(neg||(cor?mult*SLEP:mult*SGP_HOLD*(1+1e-12))>=F)?c:-1):(dd*SL[Math.min(n,SL.length-1)]>=F&&mult>=F*(1-1e-12)&&(neg||(cor?mult*SLEP:mult*SGP_HOLD*(1+1e-12))>=F)?Math.min(c,c*dd/F):-1);
         if(key>=thr&&key>0){ ch[d]=j; keys.push(key); const S=new Array(n); for(let a=0;a<n;a++) S[a]=L[ch[a]]; sets.push(S);
           if(FR){ if(M&&keys.length>=lim) prune(); } else { if(keys.length>=lim) prune(); if(key>kmax){ kmax=key; if(kmax*(1-PB_FREE.DELTA)>thr) thr=kmax*(1-PB_FREE.DELTA); } } } }
       if(n>=cap) continue;
       if(!FR&&mult*TOP[(j+1)*W+(cap-n)]<F*(1-1e-12)) continue;
       /* the child's legs, their lifts, and H: the most the legs that can still join can raise psi (each leg's p/q times every
          lift ratio over 1 it can meet, the legs taken in full and the rest at their square root) */
-      const C2=CAND[d+1], wm2=WM[d+1], wb2=WB[d+1], ws2=WS[d+1], ng2=NG[d+1], row=j*m; let c2=0, H=1, g1=0, g2=0, g3=0, p1=0, p2=0, p3=0;
-      for(let u=s+1;u<cn;u++){ const v=C[u]; if(!OK[row+v]) continue; const a=wm[u]*LM[row+v]; C2[c2]=v; wm2[c2]=a; wb2[c2]=wb[u]*LB[row+v]; const w2=ws[u]*SQ[row+v]; ws2[c2]=w2; ng2[c2]=ng[u]|NEG[row+v];
+      const C2=CAND[d+1], wm2=WM[d+1], wb2=WB[d+1], ws2=WS[d+1], ng2=NG[d+1], cg2=CG[d+1], row=j*m; let c2=0, H=1, g1=0, g2=0, g3=0, p1=0, p2=0, p3=0;
+      for(let u=s+1;u<cn;u++){ const v=C[u]; if(!OK[row+v]) continue; const a=wm[u]*LM[row+v]; C2[c2]=v; wm2[c2]=a; wb2[c2]=wb[u]*LB[row+v]; const w2=ws[u]*SQ[row+v]; ws2[c2]=w2; ng2[c2]=ng[u]|(NEG[row+v]&1); cg2[c2]=cg[u]|(NEG[row+v]?1:0);
         const g=R[v]*SIG[v]*w2; if(g>1) H*=g; if(g>g1){ g3=g2; g2=g1; g1=g; } else if(g>g2){ g3=g2; g2=g; } else if(g>g3) g3=g;
         const pc=P[v]*a*SIGC[v]; if(pc>p1){ p3=p2; p2=p1; p1=pc; } else if(pc>p2){ p3=p2; p2=pc; } else if(pc>p3) p3=pc; c2++; }
       if(!c2) continue;
@@ -544,7 +547,7 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k,B){
           if(mult*TOP[T0+2]*SL[Math.min(n+2,SL.length-1)]<F){ fe*=Math.min(1,g3); fc*=Math.min(1,p3); } } }
       else if(mult*TOP[(j+1)*W+(cap-n)]<F) fe*=Math.min(1,rOb);
       if(Math.min(c*fc,psi*H*fe*RS/F)<thr) continue;
-      CN[d+1]=c2; ch[d]=j; pr[d+1]=c; pb[d+1]=q; mu[d+1]=mult; ps[d+1]=psi; SN[d+1]=neg;
+      CN[d+1]=c2; ch[d]=j; pr[d+1]=c; pb[d+1]=q; mu[d+1]=mult; ps[d+1]=psi; SN[d+1]=neg; SC[d+1]=cor;
       rec(d+1,nf2); }
   };
   rec(0,0);

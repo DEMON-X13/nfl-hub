@@ -4713,7 +4713,8 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
        the engine  ten made-up games, Spread only, each cover priced on both sides with a hold of its own, three heavy
            favourites among them: the engine's levels (getPbTiers, drawn nowhere) each the likeliest parlay of any size paying
            its price, worked out in full here, Aggressive five covers (where the likeliest four paying +700 lands 8.19%) and
-           Extreme six
+           Extreme six; and (the review of app v145) four made-up games, Spread only, whose Medium is a tie the fewer legs
+           decide: A and B at +100 pay 4.000 at 25%, C at -400, D at -150 and A land 25% at 4.167; Medium A with B
      (and holdSet holds every set to every rule a set keeps on the smoke's own reading of the prices) ---- */
   if (hasPb && holdSetF && SPH) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), wk2 = String(cw).padStart(2, '0'), said = [];
     const mk = (n, d0, t0) => ({ id: `2099_${wk2}_A${n}_H${n}`, w: cw, a: 'A' + n, h: 'H' + n, d: d0, t: t0 });
@@ -4825,6 +4826,23 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             chk(!!lk && lk.n === n0 + 1 && !!f0 && f0.pr < lk.pr - 0.005, `ten made-up games: the engine's ${id} by the smoke is ${lk ? lk.n + ' covers landing ' + lk.pr.toFixed(4) : 'none'} against the likeliest ${n0} paying ${mlOwnD(minD)} (${f0 ? f0.pr.toFixed(4) : 'none'}), so the case cannot tell any size from a fixed one`); }
           if (t && t.legs) got.push(`${id} ${t.legs.length} covers at ${fm(t.dec)}`); }
         said.push(`ten made-up games: the engine's ${got.join(', ')}`); }
+      /* (the review of app v145) a tie the fewer legs decide, on the engine's drawn levels (as the audit's F4): four made-up
+         games, Spread only, the home sides' covers A and B at +100 (50%, the other side +100), C at -400 (80%, +400) and D at
+         -150 (62.5%): A with B pays exactly 4.000 at 25%, and C, D and A (or B) land 25% too at 4.167: Medium A with B */
+      { const amer = q => q >= 0.5 ? -100 * q / (1 - q) : 100 * (1 - q) / q, T = [[0.5, 0.5], [0.5, 0.5], [0.8, 0.2], [0.6, 0.36]];
+        const G4 = T.map(([qh, qa], i) => ({ id: `2099_${wk2}_C${i}_J${i}`, w: cw, a: 'C' + i, h: 'J' + i, d: `2099-01-0${1 + i}`, t: '13:00', sp: 3.5, sph: amer(qh), spa: amer(qa) }));
+        Sx.sched.push(...G4);
+        w.__mpG = { G: G4, L: G4.map((g, i) => ({ key: `${g.id}|team:${g.h}|ats`, gid: g.id, pid: 'team:' + g.h, stat: 'ats', k: -3.5, side: 'over', main: false, p: T[i][0] / (T[i][0] + T[i][1]), price: g.sph,
+          src: 'real', mu: null, name: 'Made-up ' + g.h, pos: 'Game', grp: 'TEAM', team: g.h, opp: g.a, week: cw, label: 'To cover -3.5' })) };
+        Sx.ui.pb = { k: { ml: false, ats: true, total: false, over: false, under: false }, off: [], gx: false };
+        w.eval('PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); renderParlay()'); await wait(40);
+        const r = w.eval('getPbTiers()'), pool = w.eval('pbPool')(G4), all = [...pool.pref, ...pool.thin], byH = h => all.find(l => l.team === h);
+        const A = byH('J0'), Bl = byH('J1'), Cl = byH('J2'), Dl = byH('J3'), ofT = ls => { const O = ordF(ls.map(l => ({ ...l }))); return { pr: w.eval('parlayProb')(O).corr, dec: decOf(O), id: O.map(legId).sort().join() }; };
+        const ab = A && Bl ? ofT([A, Bl]) : null, cda = Cl && Dl && A ? ofT([Cl, Dl, A]) : null, F = freeOwn(all, LEVEL_DEC_OWN.med), md = r.tiers.find(x => x.id === 'med');
+        chk(!!ab && !!cda && ab.dec >= 4 && cda.dec >= 4 && Math.round(ab.pr * 1e9) === Math.round(cda.pr * 1e9) && !!F && !!F.best && F.best.id === ab.id && F.best.n === 2,
+          `four made-up games, Spread only: the tie does not stand on what it is for (A with B ${ab ? ab.pr + ' at ' + ab.dec : 'none'}, C, D and A ${cda ? cda.pr + ' at ' + cda.dec : 'none'}, the smoke's own Medium ${F && F.best ? nmOf(F.best.L) : 'none'})`);
+        chk(!!md && !!md.legs && !!ab && md.legs.map(legId).sort().join() === ab.id, `four made-up games, Spread only: the engine's Medium is ${md && md.legs ? nmOf(md.legs) + ' (' + md.legs.length + ' covers)' : 'empty'}, not A with B, which tie C, D and A on the chance with the fewer legs`);
+        if (md && md.legs) said.push(`four made-up games: the engine's Medium the tie's fewer legs, ${md.legs.length} covers at ${md.dec.toFixed(3)}`); }
     } finally {
       Sx.sched.splice(keep.n); Sx.ui.pb = JSON.parse(keep.u);
       w.eval('(function(){ const x=window.__mpMkt; if(!x) return; const M=PAY.mkt; for(const l of [...LV_IDS]) if(M&&M[x.k]) delete M[x.k][l]; if(M&&!x.had) delete M[x.k]; if(!x.any) delete PAY.mkt; delete window.__mpMkt; })()'.replace('[...LV_IDS]', JSON.stringify(LALL.map(l => l.pid))));
@@ -10131,7 +10149,10 @@ async function softChecks() {
            or fewer): the page's level at least as likely, within 0.002 (the full sums' own noise), as the likeliest of 2
            and 3 legs paying its price (pairs in full; threes by the pairwise reading, worked in full until it times 1.15
            falls under the best), blocking
-     and 24 tied legs' Extreme in under 5 s ---- */
+     and 24 tied legs' Extreme in under 5 s; (e) (the review of app v145) a tie the fewer legs decide (the audit's F4: A and B
+     at +100 pay 4.000 at 25%, C at -400, D at -150 and A land 25% at 4.167; Medium A with B); and (f) eighteen lines of one
+     game at 85 to 95% that move together, each level in under 5 s, paying its price, Safe at least as likely as the smoke's
+     own greedy paying set ---- */
   { const pbFitsF = w.eval('pbFits'), unitF = w.eval('pbFreeUnit'), ppL = w.eval('parlayProb'), pdL = w.eval('parlayDec'), orderL = w.eval('pbOrder'), mdL = a => w.eval('mlToDec')(a) || 1, rhoL = w.eval('legRho'), pjL = w.eval('pbJoint');
     const CAPB = 12, LV = { safe: 2.1, med: 4, aggr: 8, xtrm: 16 }, k9 = v => Math.round(v * 1e9), leanB = l => l && l.pm != null && isFinite(l.pm) && isFinite(l.p) ? l.pm - l.p : 0, idB = l => `${l.key}|${l.side}|${l.k}`;
     const rankB = (a, b) => (k9(b.pr) - k9(a.pr)) || (a.n - b.n) || (k9(b.ln) - k9(a.ln)) || a.id.localeCompare(b.id);
@@ -10228,6 +10249,31 @@ async function softChecks() {
       { const TL = Array.from({ length: 24 }, (_, j) => bl('XX_TIE', 't' + j, 'XAUD', 'receptions', 'over', -112, 0.5, j % 2 ? 'XXA' : 'XXB')), t0 = Date.now(), r = unitF([{ pref: [], thin: TL, mkt: [] }], 16, new Map(), CAPB), ms = Date.now() - t0;
         chk(ms < 5000 && !!r && !!r.legs && r.legs.length === 5 && Math.abs(r.corr - 0.03125) < 1e-12 && r.dec >= 16, `the level search on 24 tied legs: ${r && r.legs ? r.legs.length + ' legs landing ' + r.corr + ' at ' + r.dec : 'none'} in ${ms} ms, where five of them (3.125%, +1500 or more) must come in under 5 s`);
         console.log(`  (the level search on 24 tied legs: Extreme in ${ms} ms)`); }
+      /* (e) (the review of app v145) a tie the fewer legs decide, as the audit's F4: four made-up games of one line each, A
+         and B at +100 (50%), C at -400 (80%) and D at -150 (62.5%): A with B pays exactly 4.000 at 25%, and C, D and A (or B)
+         land 25% too, paying 4.167; Medium A with B, the guard that the case ties */
+      { const T4 = [['a', 100, 0.5], ['b', 100, 0.5], ['c', -400, 0.8], ['d', -150, 0.625]].map(([id, pr, p], j) => bl(`XX_T4${id}`, id, 'XAUD', 'receptions', 'over', pr, p, j % 2 ? 'XXA' : 'XXB'));
+        const ab = ofB([T4[0], T4[1]]), cda = ofB([T4[2], T4[3], T4[0]]), o = ownFree(T4, 4).best, r = page(T4.map(l => ({ thin: [l] })), 4); held++;
+        chk(ab.dec >= 4 && cda.dec >= 4 && k9(ab.pr) === k9(cda.pr) && !!o && o.id === ab.id && o.n === 2, `the level search's tie (e) does not stand on what it is for: A with B ${ab.pr} at ${ab.dec}, C, D and A ${cda.pr} at ${cda.dec}, the smoke's own Medium ${o ? nm(o.L) : 'none'}`);
+        if (!r || r.legs.map(idB).sort().join() !== ab.id) bad.push(`(e) the tie to the fewer legs: the page's Medium is ${r ? nm(r.legs) + ' (' + r.legs.length + ' legs)' : 'none'}, not A with B (2 legs), which ties C, D and A on the chance`); }
+      /* (f) (the review of app v145) the work bounded: eighteen lines of one game at 85 to 95% on stats the payload's table
+         correlates, each at a 3 to 5% margin, where a price takes eight to twelve of them (the review's pool, whose Safe took
+         10 s and landed 0.37 points under the likeliest paying parlay): every level in under 5 s, each paying its price, Safe
+         at least as likely as the smoke's own greedy paying set (the legs that give most price for their chance first) */
+      { let sq = 777; const rq = () => { sq = (sq * 1103515245 + 12345) & 0x7fffffff; return sq / 0x7fffffff; };
+        const specs = [['QB', 'passing_yards'], ['WR', 'receiving_yards'], ['WR', 'receiving_yards'], ['WR', 'receiving_yards'], ['TE', 'receiving_yards'], ['RB', 'rushing_yards'], ['RB', 'receiving_yards'], ['WR', 'receptions'], ['TE', 'receptions'], ['RB', 'receptions'], ['QB', 'rushing_yards'], ['WR', 'receptions']];
+        const S18 = Array.from({ length: 18 }, (_, i) => { const [grp, stat] = specs[i % specs.length], p = 0.85 + 0.1 * rq(), impl = Math.min(0.985, p * (1.03 + 0.02 * rq())), side = rq() < 0.2 ? 'under' : 'over';
+          const x = bl('XX_S18', 's' + i, grp, stat, side, Math.round(-100 * impl / (1 - impl)), p, i % 2 ? 'XXA' : 'XXB'); x.k = 20.5 + i; return x; });
+        const pairsS = S18.filter((a, i) => S18.slice(i + 1).some(b => Math.abs(rhoL(a, b)) >= 0.03)).length;
+        const greedy = F => { const ord = S18.slice().sort((a, b) => (Math.log(mdL(b.price)) / -Math.log(b.p)) - (Math.log(mdL(a.price)) / -Math.log(a.p))), cur = []; let m = 1;
+          for (const l of ord) { if (cur.length >= CAPB) break; if (!pbFitsF(cur, l)) continue; cur.push(l); m *= mdL(l.price); if (cur.length >= 2 && m >= F) { const x = ofB(cur); if (x.dec >= F) return x; } } return null; };
+        const out = [];
+        for (const [id, F] of FS) { const t0 = Date.now(), r = unitF([{ pref: [], thin: S18, mkt: [] }], F, new Map(), CAPB), ms = Date.now() - t0, g = greedy(F); held++;
+          const okR = !r || (r.legs.length >= 2 && r.legs.length <= CAPB && pdL(orderL(r.legs).map(l => ({ leg: l, ml: l.price }))) >= F);
+          if (ms >= 5000 || !okR || (g && (!r || r.corr < g.pr - 1e-9))) bad.push(`(f) eighteen short correlated legs, ${id}: the page takes ${r ? r.legs.length + ' legs landing ' + r.corr.toFixed(4) : 'none'} in ${ms} ms, where it must take under 5 s a parlay paying ${F} at least as likely as the smoke's greedy ${g ? g.n + ' legs landing ' + g.pr.toFixed(4) : 'none'}`);
+          out.push(`${id} ${r ? r.legs.length + ' legs ' + (r.corr * 100).toFixed(2) + '%' : 'none'} in ${ms} ms`); }
+        chk(pairsS >= 12, `the level search's eighteen short legs (f) do not move together (${pairsS} of them in a pair the table correlates), so the case cannot tell`);
+        console.log(`  (the level search on eighteen short correlated legs: ${out.join(', ')})`); }
     } finally { for (const k in KEEPC) { if (KEEPC[k] === undefined) delete CORR[k]; else CORR[k] = KEEPC[k]; } }
     /* the cases tell: some level the smoke works out is of another size than app v144's fixed one, and some mixes games */
     chk(bad.length === 0 && held >= 26 && sized >= 4 && mixed >= 2, `the level search does not take the likeliest parlay of any size paying its price (the smoke's own working), or the cases cannot tell (${held} levels held, ${sized} of another size than app v144's, ${mixed} mixing games): ${bad.slice(0, 3).join(' | ')}`);
