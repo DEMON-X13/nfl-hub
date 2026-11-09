@@ -4166,11 +4166,12 @@ setTimeout(async()=>{
            at 1.06, whose Safe would take 13 (1.06 to the 12th pays 2.012): empty, in the price's words (pbPaysFree, to 12)
        F9  empty: three lines at -700 to -900 (no parlay paying +110), "No parlay in this game pays +110 or more."; with
            pbPaysFree stood in to answer null, "No parlay found in this game that pays +110 or more."
-       F10 the knapsack's tie-safe dominance: the Day games of three games, one player of the first at +100 (50%) or -500
-           (84%, leaning 6 points), one of the second at -400 (84%) or +105 (50%, leaning 8), a -150 (60%) of the third: the
-           pairs across the first two tie on their chance (42%), the one at +100 with -400 dearer (2.500 against 2.460), so a
-           dominance on the raw figures drops the leaning pair; Safe the leaning pair (-500 with +105, 2.460), Medium it with
-           the -150 (25.2% at 4.100), where the other pair with it pays 4.167 at the same chance
+       F10 the knapsack's tie-safe dominance: the Day games of three games, one player of the first at +100 (50%) or -450
+           (82.5%, leaning 5.5 points), one of the second at -400 (82.5%) or +100 (50%, leaning 8), a -155 (61%) of the third,
+           none of them 3 points over its price (so no Value pick, one pass): the pairs across the first two tie on their
+           chance (41.25%), the one at +100 with -400 dearer (2.500 against 2.444), so a dominance on the raw figures drops the
+           leaning pair; Safe the leaning pair (-450 with +100), Medium it with the -155 (25.16% at 4.021), where the other
+           pair with it pays 4.112 at the same chance and the two +100s 4.000 at 25%
        GP  a night of three short lines and three nearer evens: every level held; its words by the level's own recorded rule
            (app v145's "likeliest · +110+", titled "The likeliest parlay paying at least +110 by the site’s price: $1 returns
            $2.10 or more"; read back from a lock under app v144 its fixed size's words, "likeliest pair · +110+"; under app
@@ -4220,7 +4221,7 @@ setTimeout(async()=>{
       /* F8: thirteen at 1.065 (-1538), F8b thirteen at 1.06 (-1667) */
       ...D8.map((g,i)=>pl(g,`f8${i}`,0.93,am(1.065))),...D8b.map((g,i)=>pl(g,`f8b${i}`,0.93,am(1.06))),
       /* F10: one player of each of the first two games on two stats (one leg a player), and a -150 of the third */
-      pl(D10[0],'t10a',0.5,100),pl(D10[0],'t10a',0.84,-500,'receiving_yards',40,{pm:0.90}),pl(D10[1],'t10b',0.84,-400),pl(D10[1],'t10b',0.5,105,'receiving_yards',40,{pm:0.58}),pl(D10[2],'t10g',0.6,-150)];
+      pl(D10[0],'t10a',0.5,100),pl(D10[0],'t10a',0.825,-450,'receiving_yards',40,{pm:0.88}),pl(D10[1],'t10b',0.825,-400),pl(D10[1],'t10b',0.5,100,'receiving_yards',40,{pm:0.58}),pl(D10[2],'t10g',0.61,-155)];
     /* F7: GY3 and GY4 (app v144's), the quarterback (AQ8) and his receivers (AW8) on the home club, moving together by the
        pair table the case plants; the rival's lines of no correlated group (AUD) on the away club */
     const py=(g,id,grp,side,p,price,team)=>({key:`${g.id}|aud18-${id}|${grp==='AQ8'?'passing_yards':grp==='AW8'?'receiving_yards':'receptions'}`,gid:g.id,pid:'aud18-'+id,
@@ -4311,7 +4312,7 @@ setTimeout(async()=>{
       { const sf=lv(89,'safe'), md=lv(89,'med'), all=slotSet[89].all, leg=(pid,stat)=>all.find(l=>l.pid===pid&&l.stat===stat);
         const A=[leg('aud18-t10a','receptions'),leg('aud18-t10b','receptions')], B=[leg('aud18-t10a','receiving_yards'),leg('aud18-t10b','receiving_yards')], gx=leg('aud18-t10g','receptions');
         const fA=freeOfAud(A), fB=freeOfAud(B), fAg=freeOfAud([...A,gx]), fBg=freeOfAud([...B,gx]);
-        chk(A.every(Boolean)&&B.every(Boolean)&&!!gx&&k9(fA.pr)===k9(fB.pr)&&fA.dec>fB.dec&&fB.ln>fA.ln&&k9(fAg.pr)===k9(fBg.pr)&&fAg.dec>=LEVEL_DEC_AUD.med&&fBg.dec>=LEVEL_DEC_AUD.med&&fA.dec<LEVEL_DEC_AUD.med,
+        chk(A.every(Boolean)&&B.every(Boolean)&&!!gx&&all.every(l=>l.thin)&&k9(fA.pr)===k9(fB.pr)&&fA.dec>fB.dec&&fB.ln>fA.ln&&k9(fAg.pr)===k9(fBg.pr)&&fAg.dec>=LEVEL_DEC_AUD.med&&fBg.dec>=LEVEL_DEC_AUD.med&&fA.dec<LEVEL_DEC_AUD.med,
           `M18, F10: the case does not stand on what it is for (the two pairs tied at ${fA&&(fA.pr*100).toFixed(3)}% and ${fB&&(fB.pr*100).toFixed(3)}%, at ${fA&&fA.dec.toFixed(3)} and ${fB&&fB.dec.toFixed(3)}, leaning ${fA&&fA.ln.toFixed(2)} and ${fB&&fB.ln.toFixed(2)})`);
         chk(!!sf&&!!sf.legs&&ids(sf.legs)===ids(B)&&!!md&&!!md.legs&&ids(md.legs)===ids([...B,gx]),`M18, F10: Safe is ${sf&&sf.legs?names(sf.legs):'empty'} and Medium ${md&&md.legs?names(md.legs):'empty'}, not the leaning pair and it with the -150, the tie kept through the knapsack's dominance`);
         if(md&&md.legs) said18.push('F10\'s tie across games kept to the larger lean through the knapsack'); }
