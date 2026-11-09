@@ -10257,9 +10257,15 @@ async function softChecks() {
         chk(ab.dec >= 4 && cda.dec >= 4 && k9(ab.pr) === k9(cda.pr) && !!o && o.id === ab.id && o.n === 2, `the level search's tie (e) does not stand on what it is for: A with B ${ab.pr} at ${ab.dec}, C, D and A ${cda.pr} at ${cda.dec}, the smoke's own Medium ${o ? nm(o.L) : 'none'}`);
         if (!r || r.legs.map(idB).sort().join() !== ab.id) bad.push(`(e) the tie to the fewer legs: the page's Medium is ${r ? nm(r.legs) + ' (' + r.legs.length + ' legs)' : 'none'}, not A with B (2 legs), which ties C, D and A on the chance`); }
       /* (f) (the review of app v145) the work bounded: eighteen lines of one game at 85 to 95% on stats the payload's table
-         correlates, each at a 3 to 5% margin, where a price takes eight to twelve of them (the review's pool, whose Safe took
-         10 s and landed 0.37 points under the likeliest paying parlay): every level in under 5 s, each paying its price, Safe
-         at least as likely as the smoke's own greedy paying set (the legs that give most price for their chance first) */
+         correlates, each at a 3 to 5% margin, where a price takes eight to twelve of them (the first eighteen draws of seed
+         777): each pass of every level (one pbFreeGame call, wrapped for the case) within the work the smoke allows it,
+         WORK_OWN, counted in the page's own units and nodes and never timed (the second review of app v145: a bound in
+         milliseconds turns on the machine), each paying its price, Safe at least as likely as the smoke's own greedy paying
+         set (the legs that give most price for their chance first). WORK_OWN is the smoke's copy of the page's budgets (the
+         first walk's 2,000 units and six million nodes, the rest's 1,000 and half a million) with the room a budget can run
+         past its last check (a parlay worked in full at the cap, 13.25 units, and a node a depth, three times over). On this
+         pool the budget runs out and Safe is that greedy set, 12 legs at 26.795%, where every set worked in full finds
+         28.010%: the budget's cost */
       { let sq = 777; const rq = () => { sq = (sq * 1103515245 + 12345) & 0x7fffffff; return sq / 0x7fffffff; };
         const specs = [['QB', 'passing_yards'], ['WR', 'receiving_yards'], ['WR', 'receiving_yards'], ['WR', 'receiving_yards'], ['TE', 'receiving_yards'], ['RB', 'rushing_yards'], ['RB', 'receiving_yards'], ['WR', 'receptions'], ['TE', 'receptions'], ['RB', 'receptions'], ['QB', 'rushing_yards'], ['WR', 'receptions']];
         const S18 = Array.from({ length: 18 }, (_, i) => { const [grp, stat] = specs[i % specs.length], p = 0.85 + 0.1 * rq(), impl = Math.min(0.985, p * (1.03 + 0.02 * rq())), side = rq() < 0.2 ? 'under' : 'over';
@@ -10267,11 +10273,14 @@ async function softChecks() {
         const pairsS = S18.filter((a, i) => S18.slice(i + 1).some(b => Math.abs(rhoL(a, b)) >= 0.03)).length;
         const greedy = F => { const ord = S18.slice().sort((a, b) => (Math.log(mdL(b.price)) / -Math.log(b.p)) - (Math.log(mdL(a.price)) / -Math.log(a.p))), cur = []; let m = 1;
           for (const l of ord) { if (cur.length >= CAPB) break; if (!pbFitsF(cur, l)) continue; cur.push(l); m *= mdL(l.price); if (cur.length >= 2 && m >= F) { const x = ofB(cur); if (x.dec >= F) return x; } } return null; };
-        const out = [];
-        for (const [id, F] of FS) { const t0 = Date.now(), r = unitF([{ pref: [], thin: S18, mkt: [] }], F, new Map(), CAPB), ms = Date.now() - t0, g = greedy(F); held++;
+        const out = [], WORK_OWN = { u: 2000 + 1000 + 3 * 13.25, n: 6e6 + 5e5 + 3 * (CAPB + 1) }, ST = w.eval('PB_LV_STAT'), gameF = w.eval('pbFreeGame'), putGame = w.eval('(function(f){ pbFreeGame=f; })');
+        for (const [id, F] of FS) { const g = greedy(F), passes = []; held++;
+          putGame(function () { const u0 = ST.units, n0 = ST.nodes, x = gameF.apply(this, arguments); passes.push({ u: ST.units - u0, n: ST.nodes - n0 }); return x; });
+          let r = null; const t0 = Date.now(); try { r = unitF([{ pref: [], thin: S18, mkt: [] }], F, new Map(), CAPB); } finally { putGame(gameF); } const ms = Date.now() - t0;
+          const wu = Math.max(0, ...passes.map(q => q.u)), wn = Math.max(0, ...passes.map(q => q.n)), within = passes.length > 0 && wu <= WORK_OWN.u && wn <= WORK_OWN.n;
           const okR = !r || (r.legs.length >= 2 && r.legs.length <= CAPB && pdL(orderL(r.legs).map(l => ({ leg: l, ml: l.price }))) >= F);
-          if (ms >= 5000 || !okR || (g && (!r || r.corr < g.pr - 1e-9))) bad.push(`(f) eighteen short correlated legs, ${id}: the page takes ${r ? r.legs.length + ' legs landing ' + r.corr.toFixed(4) : 'none'} in ${ms} ms, where it must take under 5 s a parlay paying ${F} at least as likely as the smoke's greedy ${g ? g.n + ' legs landing ' + g.pr.toFixed(4) : 'none'}`);
-          out.push(`${id} ${r ? r.legs.length + ' legs ' + (r.corr * 100).toFixed(2) + '%' : 'none'} in ${ms} ms`); }
+          if (!within || !okR || (g && (!r || r.corr < g.pr - 1e-9))) bad.push(`(f) eighteen short correlated legs, ${id}: the page takes ${r ? r.legs.length + ' legs landing ' + r.corr.toFixed(4) : 'none'}, its ${passes.length} pass(es) at most ${wu.toFixed(1)} units and ${wn} nodes, where each must stay within ${WORK_OWN.u} units and ${WORK_OWN.n} nodes and the level be a parlay paying ${F} at least as likely as the smoke's greedy ${g ? g.n + ' legs landing ' + g.pr.toFixed(4) : 'none'}`);
+          out.push(`${id} ${r ? r.legs.length + ' legs ' + (r.corr * 100).toFixed(2) + '%' : 'none'} (${passes.length} pass(es), at most ${Math.round(wu)} units and ${wn} nodes, ${ms} ms)`); }
         chk(pairsS >= 12, `the level search's eighteen short legs (f) do not move together (${pairsS} of them in a pair the table correlates), so the case cannot tell`);
         console.log(`  (the level search on eighteen short correlated legs: ${out.join(', ')})`); }
     } finally { for (const k in KEEPC) { if (KEEPC[k] === undefined) delete CORR[k]; else CORR[k] = KEEPC[k]; } }

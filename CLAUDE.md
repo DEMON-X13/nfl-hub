@@ -4290,7 +4290,9 @@ same shape (Safe 43.82% and 43.53%, Extreme 5.05% and 5.03%, where app v144's we
 largest size chosen on real data is 5 (caps of 5, 10, 12 and 14 give the same parlays there); on made-up pools of 85%+ legs
 Safe takes 6 and 7 legs and Extreme up to 12. The Day games' expected return at the fair chance -8% to -20% where app v144's
 best single game's was -19% to -25% (across games a parlay pays its legs multiplied, with no same-game hold). The longest
-step (one level) 336 to 421 ms (timed again by the review of app v145, below) where app v144's was 1.3 to 1.8 s, a night game's set 0.23 to 0.62 s (app v144's 0.14 to
+step (one level) 336 to 421 ms (timed again by the review of app v145, below), where app v144's longest was 198 to 296 ms (it
+built each Sunday game's level as a step of its own; the 1.3 to 1.8 s first written here added those steps up: the second
+review of app v145, below), so the longest step is about 1.5 to 1.8 times app v144's while every set is quicker; a night game's set 0.23 to 0.62 s (app v144's 0.14 to
 0.28 s), the Day games' 0.52 to 0.59 s (2.3 to 2.6 s), every live unit 1.3 to 1.7 s (2.6 to 3.1 s). Each game keeps its best
 same-game groups for the knapsack by their bound, 24,000 shared among the unit's games and at least 300 a game
 (`PB_FREE.FMT`, `FM`): where few games' single legs cannot reach the price (two games left on a Sunday night, the engine's
@@ -4376,14 +4378,23 @@ points under a 6-leg one paying +1500, the walk by key at its cap of 1,500 first
 5.205% on week 6's pool); and every walk draws on a budget
 (`pbFreeCost`, `PB_FREE.UNITS1`, `NODES1`, `UNITS2`, `NODES2`: 2,000 units of a five-leg price and six million nodes for the
 first walk, 1,000 and half a million more; where the first walk's candidates are cut by its nodes, the second walk runs too),
-so a level of one game takes at most about 4 s however its legs are made (a first budget of a million nodes cut the
+so each pass of a level of one game (`pbFreeGame`: the pass with no game total, then one with it, and on a hook's preferred
+list one for each count of fill legs) is bounded alike on every machine: the budgets are a pass's, not a level's, and the
+second review of app v145 timed a level at 4.4 to 4.8 s on sixty made-up independent legs and 4.3 s on sixty at -375 beside a
+total at +100 (12.5 million nodes over its two passes), where this said at most about 4 s (a first budget of a million nodes cut the
 candidates of the smoke's made-up lines on week 6's WAS at SF, 56 legs whose walk takes 5.3 million nodes, and its
 Aggressive fell 0.49 points under app v144's 10.172%, which the smoke's screen found at 0.215 points: six million keep it). Real
-levels use at most 1,710 units and 434,000 nodes and are as they were but one, week 9's TB at CHI Extreme at Saturday 18:00,
+levels use at most 1,710 units and 434,000 nodes (every game of weeks 7 to 9 taken as a night game, at most 2,622 units and
+949,356 nodes over a level's walks) and are as they were but one, week 9's TB at CHI Extreme at Saturday 18:00,
 likelier (4.5575% for 4.5325%). The eighteen legs' Safe is now the exhaustive enumeration's 29.730% in 2.0 s; twenty-four
 legs at 85 to 95% the one pool where the budget binds hard (28.977% in 4.0 s, unbounded 29.843% in 11.6 s). The audit's M18
-F12 and the smoke's 1b (f) hold eighteen such legs to under 5 s a level, each paying, Safe at least as likely as their own
-greedy paying set. (3) The knapsack's dominance kept, within a block tied on chance and lean, only the dearest of partials of
+F12 and the smoke's 1b (f) hold each pass of each level of eighteen such legs (the first eighteen draws of seed 777, not the
+review's pool) to the budgets, counted in the page's own units and nodes (`PB_LV_STAT`, through a wrap of `pbFreeGame`), each
+paying, Safe at least as likely as their own greedy paying set: on those pools the budget runs out and Safe is that greedy
+set, 12 legs, at 26.795% on the smoke's (where every set worked in full finds 28.010%, in about a minute) and 26.498% on the
+audit's own copy of the draws (where the search with its budgets lifted finds 28.360%), the budget's cost there. Until the second
+review of app v145 they held each level to under 5 s by the clock, which a slow or busy runner could fail, and the audit
+gates the publish. (3) The knapsack's dominance kept, within a block tied on chance and lean, only the dearest of partials of
 as many legs, so a same-game pair beside another game's leg lost a tie its lower id should have won (four games of three
 uncorrelated legs at 50% and -112); it now drops one only for a partial of fewer legs at least as dear: M18's F11 holds it.
 (4) The smoke had no case where the tie to the fewer legs decides a level: 1b (e) and EVERY LEVEL ANY SIZE's four made-up
@@ -4398,6 +4409,30 @@ entry names app v145. Not taken: the review's advice to admit same-game groups i
 their return (the knapsack stands on single legs, exact; `ref23Aud` and `ref23Own` work each game's pairs, and M18's and the
 smoke's made-up slots hold a slot whose likeliest is one game's group). Bitten on scratch copies of the final tree (the audit
 and the smoke at the committed payload's clock, `:w9a` on week 9 at Sunday 05:00): the search at a tenth of its widths (`PB_FREE.M` and `E1` 150), the audit 4 warnings and the smoke 1 failure (BUF at MIN's Extreme against each one's screen), on week 9 1 warning and 1 failure, where before the review both passed it; the Day games' search seeing only its first ten games where they hold over 100 legs, on week 9 the audit 2 failures and the smoke 2 (their Extreme, 5.035% on 4 legs, under the knapsack's); the tie to the more legs, the audit 2 and the smoke 2 (F4, the four made-up games and 1b (e)); the knapsack's dominance as it stood (a partial of as many legs at least as dear dropping another), the audit 2 (F11); the one-game search as it stood before the review (no budget, no floor on the legs' product, the second walk only where none paid, from no seed and with no room), the audit 1 and the smoke 1 (eighteen legs' Safe 11 legs in 7.1 and 8.4 s); no second walk, the audit 1 (F12's Safe empty); the Day games with no same-game groups, the audit 11 and the smoke 7; the Day games as the best one game's set, the audit 84 and the smoke 23; every level at app v144's size, 2 to 5 legs, the audit 58 and 10 warnings and the smoke 18; the any-size words on every level with a price whatever its rule, the audit 5 and 5 warnings and the smoke 1; the cap at 5 legs, the audit 11 and 10 warnings, the smoke 3 and `test_suggest_ledger.js` 5 of its 6 checks (the page refused); and the record's guard taking a level within 0.15 of its price 8 failures, one of 13 legs 1, one with no `pick` 1 and a 1-leg Safe 1. With the review's changes, on the final tree: the audit 41,042 checks, 0 failures and 0 warnings (on the off-season clock 39,438, 0 failures, its two coverage warnings the off-season's), the nflbets smoke 2,555 and `--season-over` 2,461, `smoke_live.js` 763, `smoke_admin.js` 127, `test_dkname.js` 255, `elo/check_tab.js` 458, `test_suggest_ledger.js` 460, `test_td_shadow.py` 359, 0 failures each, `test_props_gate.py` 227 cases and the other units of job C passing, `test_audit_phases.py`'s fourteen audit cases 0 failures and 0 warnings each and its four page smoke cases one at a time (2,727, 2,877, 2,793 and 2,466 checks) 0 failures each; and the record run as `weekly.py` runs it on a copy of the ledger (9 November 2026 12:00 UTC) rewrote week 9's BUF at MIN, the one set still to lock, at the any-size rule, the other entries moving by their grades alone, and a second run wrote nothing.
+
+**The second review of app v145** (9 November 2026, before it merged: three reviewers on the first review's own changes, the
+search, its speed and the checks, each finding then put to another). Fixed before the merge: the audit's M18 F12 and the
+smoke's 1b (f) held each level to under 5 s by the clock, which turns on the machine where every other blocking check turns
+on the code alone, and the audit gates the publish; they now hold each pass to the budgets in the page's own units and
+nodes (above). Three claims here were wrong and are corrected above: the budgets are a pass's, not a level's; the longest
+step is about 1.5 to 1.8 times app v144's, not a third of it; and F12's pool is not the first review's. Left for a change of
+its own, each measured by the review and none moving a real level today: (1) a Day games slate of four games or fewer (a
+Christmas-on-Sunday week, as 2022's, or a Sunday of the playoffs wherever the page sets the slot out then) builds a level in
+3.4 to 8.4 s in one task, since where its single legs cannot reach the price the knapsack's same-game groups
+(`pbFreeCands`' front mode, in `pbFreeUnit`) are walked with no budget and up to 24,000 of them worked in full (app v144: 0.2
+s); (2) a level's passes do not share their budgets, so a level of one game can take about 4.8 s on sixty made-up legs; (3)
+the night screens (`screenAud`, `screenOwn`) work the 400 likeliest sets on their 8,192 draws, most of which do not pay, so
+their real tolerance runs to about 0.43 points where 0.2 is written, and they say nothing when they reach their node cap
+(both of week 9's made-up Extremes); (4) six real Extremes that need the second walk miss a paying parlay 0.03 to 0.065
+points likelier (week 8's CHI at SEA: 4.5950% where 4.6425% pays), inside `W.search`'s 0.2; (5) the Day games' knapsack
+takes each game's chance apart, while `parlayProb` draws every leg together once any pair moves, so on small made-up slates
+with a same-game group 9 of 320 levels miss by 0.015 to 0.50 points (no real Day games level has held a group); (6)
+`pbOrder` sorts names by the browser's own collation (`localeCompare`), so a Czech or Danish visitor's leg order, and with
+it a correlated set's stated chance and price, can differ from the record's (no real level of weeks 7 to 9 moved on 16
+locales; older than app v145); (7) a Refresh odds press, or a level's Finish, empties `SP_CACHE` even where nothing changed
+and builds every shown set again in one task, 1.3 to 1.5 s on week 9 (app v144's 2.6 to 2.8 s; older than app v145); (8) no
+fixture holds a Day games level whose answer is a same-game group of three legs or more, and only the smoke, not the
+audit, holds the exemption from the same-game floor for a set with a pair moving against each other.
 
 Wherever this file says, before this paragraph or after it, that a level is the likeliest of its size (2, 3, 4 or 5 legs),
 that the Sunday slot's levels are each one game's legs or the best of its games' own, or that the slot's empty level speaks

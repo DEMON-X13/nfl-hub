@@ -4244,9 +4244,13 @@ setTimeout(async()=>{
            leaning pair; Medium the leaning pair with the -150 (25.67% at 4.034), where the other pair with it pays 4.167 at the
            same chance (no parlay of the first two games' four lines pays +300)
        F12 (the review of app v145) the one-game search's work bounded: a night of eighteen lines at 85 to 95% on stats the
-           payload's table correlates, a fifth of them unders, where a price takes eight to twelve legs (the review's pool,
-           whose Safe took 10 s and landed 0.37 points under the likeliest paying parlay): each level in under 5 s, paying its
-           price, Safe at least as likely as the audit's own greedy paying set
+           payload's table correlates, a fifth of them unders, where a price takes eight to twelve legs (the first eighteen
+           draws of seed 777): each pass of each level (pbFreeGame, wrapped for the case) within the work the audit allows it,
+           WORK_AUD, counted in the page's own units and nodes, never timed (the second review of app v145: a bound in
+           milliseconds turns on the machine, and this audit gates the publish), paying its price, Safe at least as likely as
+           the audit's own greedy paying set; on this pool the budget runs out and Safe is that greedy set, 12 legs at
+           26.498%, where the search with its budgets lifted finds 11 legs at 28.360% in 32,497 units: the budget's cost,
+           said in CLAUDE.md
        F11 (the review of app v145) the knapsack's dominance tie-safe to the id: the Day games of four games, three players
            each at 50% and -112, no two moving together, leaning 0 to 4 points by turns: a same-game pair beside another
            game's leg and three games' legs tie on the chance (12.5%) and the lean (0.11), the pair's id the lower and its
@@ -4272,7 +4276,7 @@ setTimeout(async()=>{
     const D1=day(80,6), D2=day(81,2), D3=day(82,6), D4=day(83,4), D5=day(84,3), D5b=day(85,3), D6=day(86,2).map(g=>({...g,tot:44.5,tov:-150,tou:130})), D8=day(87,13), D8b=day(88,13), D10=day(89,3), D11=day(90,4);
     const SLOTS=[[80,D1],[81,D2],[82,D3],[83,D4],[84,D5],[85,D5b],[86,D6],[87,D8],[88,D8b],[89,D10],[90,D11]], NIGHTS=[GP,GR,GK,GT,GU,GY3,GY4];
     /* F12 (the review of app v145): a night of eighteen short lines on stats the payload's table correlates, held apart from
-       NIGHTS (no enumeration of it could finish) */
+       NIGHTS (its every set worked in full takes about a minute on Safe alone) */
     const GS=mk('ASS','AST','2099-01-20','20:20',95);
     const FX=[...NIGHTS,GS,...SLOTS.flatMap(([,G])=>G)];
     /* a made-up line: p its chance (on the hook), pm its model chance (the lean, where a case plants one) */
@@ -4422,16 +4426,24 @@ setTimeout(async()=>{
         chk(!!md&&!!md.legs&&!!fr&&!!fr.best&&ids(md.legs)===fr.best.id,`M18, F11: Medium is ${md&&md.legs?lab(md.legs):'empty'}, not the rule's ${fr&&fr.best?lab(fr.best.L):'none'} (its same-game pair, tied on the chance and the lean with ${tri?lab(tri.L):'three games\' legs'} and the lower id)`);
         if(md&&md.legs&&fr&&fr.best&&ids(md.legs)===fr.best.id) said18.push('F11\'s tie of a same-game pair and three games\' legs to the lower id through the knapsack'); }
       /* F12 (the review of app v145): the one-game search's work bounded on many short legs that move together: each level
-         built (pbTierOf on the night's own pools, a fresh memo) in under 5 s, of 2 to 12 legs paying its price, and Safe at
-         least as likely as the audit's own greedy paying set (the legs that give most price for the chance they cost first) */
+         built (pbTierOf on the night's own pools, a fresh memo), each of its passes (one pbFreeGame call) within WORK_AUD,
+         of 2 to 12 legs paying its price, and Safe at least as likely as the audit's own greedy paying set (the legs that
+         give most price for the chance they cost first). WORK_AUD is the audit's own copy of the page's budgets (the first
+         walk's 2,000 units and six million nodes and the rest's 1,000 and half a million: the review of app v145) with the
+         room a budget can run past its last check (a parlay worked in full at the cap, 13.25 units, and a node a depth,
+         three times over); the time is said and never held (the second review of app v145) */
       { const L=legsOf([GS]), md=F('mlToDec'), pools=F('spPools')(F('spUnit')(GS.id)), out=[];
+        const WORK_AUD={u:2000+1000+3*13.25,n:6e6+5e5+3*(CAP_AUD+1)}, ST=w.eval('PB_LV_STAT'), gameF=w.eval('pbFreeGame'), putGame=w.eval('(function(f){ pbFreeGame=f; })');
         const pairs=L.filter((a,i)=>L.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03)).length;
         const greedy=minD=>{ const ord=L.slice().sort((a,b)=>(Math.log(md(b.price))/-Math.log(b.p))-(Math.log(md(a.price))/-Math.log(a.p))), cur=[]; let m=1;
           for(const l of ord){ if(cur.length>=CAP_AUD) break; if(!fitsAud(cur,l)) continue; cur.push(l); m*=md(l.price); if(cur.length>=2&&m>=minD){ const x=freeOfAud(cur); if(x.dec>=minD) return x; } } return null; };
         chk(L.length===18&&pairs>=12,`M18, F12: the case does not stand on what it is for (${L.length} legs, ${pairs} in a pair the table correlates)`);
-        for(const s of w.eval('PB_TIERS')){ const minD=s[4], t0=Date.now(), t=F('pbTierOf')(s,pools,new Map()), ms=Date.now()-t0, g=s[0]==='safe'?greedy(minD):null;
-          chk(ms<5000&&(!t||(t.legs.length>=2&&t.legs.length<=CAP_AUD&&t.dec>=minD))&&(!g||(!!t&&t.corr>=g.pr-1e-9)),`M18, F12: the ${s[0]} level of eighteen short legs moving together is ${t?t.legs.length+' legs landing '+(t.corr*100).toFixed(3)+'% at '+t.dec.toFixed(3):'empty'} in ${ms} ms, where it must take under 5 s a parlay paying ${mlAud(minD)}${g?` at least as likely as the audit's greedy ${g.n} legs landing ${(g.pr*100).toFixed(3)}%`:''}`);
-          out.push(`${s[0]} ${t?t.legs.length+' legs':'none'} in ${ms} ms`); }
+        for(const s of w.eval('PB_TIERS')){ const minD=s[4], g=s[0]==='safe'?greedy(minD):null, passes=[];
+          putGame(function(){ const u0=ST.units, n0=ST.nodes, r=gameF.apply(this,arguments); passes.push({u:ST.units-u0,n:ST.nodes-n0}); return r; });
+          let t=null; const t0=Date.now(); try{ t=F('pbTierOf')(s,pools,new Map()); } finally { putGame(gameF); } const ms=Date.now()-t0;
+          const wu=Math.max(0,...passes.map(p=>p.u)), wn=Math.max(0,...passes.map(p=>p.n)), within=passes.length>0&&wu<=WORK_AUD.u&&wn<=WORK_AUD.n;
+          chk(within&&(!t||(t.legs.length>=2&&t.legs.length<=CAP_AUD&&t.dec>=minD))&&(!g||(!!t&&t.corr>=g.pr-1e-9)),`M18, F12: the ${s[0]} level of eighteen short legs moving together is ${t?t.legs.length+' legs landing '+(t.corr*100).toFixed(3)+'% at '+t.dec.toFixed(3):'empty'}, its ${passes.length} pass(es) at most ${wu.toFixed(1)} units and ${wn} nodes, where each must stay within ${WORK_AUD.u} units and ${WORK_AUD.n} nodes and the level be a parlay paying ${mlAud(minD)}${g?` at least as likely as the audit's greedy ${g.n} legs landing ${(g.pr*100).toFixed(3)}%`:''}`);
+          out.push(`${s[0]} ${t?t.legs.length+' legs '+(t.corr*100).toFixed(3)+'%':'none'} (${passes.length} pass(es), at most ${Math.round(wu)} units and ${wn} nodes, ${ms} ms)`); }
         said18.push(`F12's eighteen short legs moving together: ${out.join(', ')}`); }
       /* F7: the star past the stop, at any size */
       { const ev=F('pbEval'), keyOf=(ls,minD)=>{ const e=ev(ls,new Map()); return Math.min(e.pr,e.pr*e.d/minD); };

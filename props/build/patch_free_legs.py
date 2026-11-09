@@ -82,7 +82,8 @@ data is 5, so the cap does not bind there (caps of 5, 10, 12 and 14 give the sam
 Safe takes 6 and 7 legs and Extreme up to 12. On 168 adversarial pools small enough to work out every parlay of every size
 (seven shapes, six seeds, four levels: short lines, long, totals, a quarterback's star, slots of four and six games, a mix)
 the page's level is the enumeration's on all 168, sizes up to 12, the slowest 23 ms. Timed the same way (medians of three cold builds): the longest step (one level)
-336 to 421 ms, where app v144's was 1.3 to 1.8 s (the Day games' Extreme over each of its games' own sets); a night game's set
+336 to 421 ms, where app v144's longest was 198 to 296 ms (it built each Sunday game's level as a step of its own; the 1.3 to
+1.8 s first written here added those steps up: the second review, below); a night game's set
 0.23 to 0.62 s (app v144's 0.14 to 0.28 s), the Day games' 0.52 to 0.59 s (2.3 to 2.6 s), every live unit 1.3 to 1.7 s where
 app v144 took 2.6 to 3.1 s (timed again after the review, below).
 
@@ -110,7 +111,9 @@ they were but one, week 9's TB at CHI Extreme at Saturday 18:00, likelier (4.557
 first walk's 1,500 work payers). On the review's pools: eighteen legs' Safe 29.730% in 2.0 s (the enumeration's own),
 twenty-four at 85 to 95% 28.977% in 4.0 s (unbounded, 29.843% in 11.6 s: the budget's cost, the one pool where it binds
 hard), twenty-four at 75 to 92% Safe 37.175% in 0.5 s, Medium 17.563% in 1.5 s and Aggressive 7.508% in 1.8 s (unbounded
-17.485% in 5.8 s and 7.465% in 11.3 s); a level of one game takes at most about 4 s however its legs are made (twenty-four at 85 to 95%, the worst seen, 4.0 s). The review's
+17.485% in 5.8 s and 7.465% in 11.3 s); each pass of a level (pbFreeGame) is bounded alike on every machine, the budgets a
+pass's and not a level's (the second review timed a level at 4.4 to 4.8 s on sixty made-up independent legs, where this said
+at most about 4 s). The review's
 82 adversarial pools: the page's level the enumeration's on 81 (a tie and a Safe of eight legs now found), the one other E.1's
 Extreme, 0.045 points under it.
 (2) The knapsack across games kept, within a block tied on chance and lean, only the dearest of partials of as many legs, so
@@ -124,6 +127,19 @@ three cold boots in jsdom, another suite running on the machine's four CPUs besi
 for week 8's CHI at SEA, whose first walk reaches its cap so the second runs too; the Day games' Extreme 277 to 455 ms; every
 other level under 320 ms; a night game's set 0.25 to 1.18 s, the Day games' 0.71 to 0.94 s (app v144's 2.6 to 3.2 s in one
 build), every live unit of a payload 2.0 to 2.6 s (app v144's 3.0 to 4.0 s).
+
+The second review of app v145 (9 November 2026, before it merged), on the first review's own changes. Changed: the audit's
+M18 F12 and the smoke's 1b (f) hold each pass of each level to the budgets in the page's own units and nodes (PB_LV_STAT,
+through a wrap of pbFreeGame), where they held each level to under 5 s by the clock, which turns on the machine (the audit
+gates the publish); their pools are the first eighteen draws of seed 777, not the first review's, and on them the budget
+runs out and Safe is the greedy seed's 12 legs, at 26.795% on the smoke's where every set worked in full finds 28.010%, and
+at 26.498% on the audit's where the search with its budgets lifted finds 28.360%. Left for a change of its own
+(CLAUDE.md lists them): a Day games slate of four games or fewer, whose same-game groups are walked with no budget (3.4 to
+8.4 s a level in one task); a level's passes not sharing their budgets; the night screens' real tolerance (about 0.43 points)
+and their silence at their node cap; six real Extremes 0.03 to 0.065 points under a paying parlay; the Day games' knapsack
+taking each game's chance apart where parlayProb draws every leg together; pbOrder's localeCompare; a Refresh odds press
+building every shown set again in one task; and no fixture for a Day games group of three legs or for the floor's exemption in
+the audit.
 """
 from pathlib import Path
 
