@@ -84,7 +84,39 @@ Safe takes 6 and 7 legs and Extreme up to 12. On 168 adversarial pools small eno
 the page's level is the enumeration's on all 168, sizes up to 12, the slowest 23 ms. Timed the same way (medians of three cold builds): the longest step (one level)
 336 to 421 ms, where app v144's was 1.3 to 1.8 s (the Day games' Extreme over each of its games' own sets); a night game's set
 0.23 to 0.62 s (app v144's 0.14 to 0.28 s), the Day games' 0.52 to 0.59 s (2.3 to 2.6 s), every live unit 1.3 to 1.7 s where
-app v144 took 2.6 to 3.1 s.
+app v144 took 2.6 to 3.1 s (timed again after the review, below).
+
+The review of app v145 (9 November 2026), before it merged. (1) The one-game search had no bound on its work: on eighteen
+legs of one game at 85 to 95% moving together (a 3 to 5% margin, a fifth unders), Safe took 10 to 12 s in one step and landed
+29.360% where the likeliest paying parlay lands 29.730%. Its walk by key worked thousands of sets whose legs multiplied could
+not pay, or whose same-game price could not (the reading's price accurate there to 2%, the walk's room for it, SLACK, 1.40 at
+seven legs): seven- and eight-leg sets at 38 to 45% keyed over the ten-leg payers at 30%. Now a candidate's legs multiplied
+must reach F (parlayDec never pays more), and its same-game price SGP_HOLD times them must too: where no pair of it moves at
+all, to the last place (parlayProb's chance then the legs' product, exact), where pairs move together but none against each
+other, within PB_FREE.SLEP, 5% (the implied chance all land is at least the product, Slepian's inequality, the room the
+price's draws need); where the first walk works some and none pays, the second walk comes first (pbFreeSeed: a greedy paying
+set, the legs giving most price for their chance first, its bar; pbFreeCands' 'level1' on the sets whose reading pays within
+PB_FREE.SLT, 3%, its legs in that same order), then the search again keeping eight and sixty-four times as many with the best
+so far as its bar; and every walk from a budget (pbFreeCost: a parlay worked in full costs (n/5)^2 units of a five-leg price,
+2.3 times that where it pays and its chance is worked too): the first walk 2,000 units and a million nodes, the rest 1,000
+units and half a million nodes and what the first left. Real levels use at most 1,710 units and 434,000 nodes and are as
+they were but one, week 9's TB at CHI Extreme at Saturday 18:00, likelier (4.5575% where it was 4.5325%: the floor let the
+first walk's 1,500 work payers). On the review's pools: eighteen legs' Safe 29.730% in 1.9 s (the enumeration's own),
+twenty-four at 85 to 95% 28.977% in 2.4 s (unbounded, 29.843% in 11.6 s: the budget's cost, the one pool where it binds
+hard), twenty-four at 75 to 92% Safe 37.175% in 0.4 s, Medium 17.563% in 1.0 s and Aggressive 7.508% in 1.8 s (unbounded
+17.485% in 5.8 s and 7.465% in 11.3 s); a level of one game takes at most about 2.5 s however its legs are made. The review's
+82 adversarial pools: the page's level the enumeration's on 81 (a tie and a Safe of eight legs now found), the one other E.1's
+Extreme, 0.045 points under it.
+(2) The knapsack across games kept, within a block tied on chance and lean, only the dearest of partials of as many legs, so
+a same-game pair beside another game's leg lost to three games' legs a tie its lower id should have won; within a block it
+now drops a partial only for one of fewer legs at least as dear. (3) The checks held a Day games level of four legs or more,
+any Extreme and a night Aggressive to nothing of their size on the week's own lines (past 16 legs both fell back to the
+likeliest of two and three legs): the audit and the smoke now hold each Day games level to an exact knapsack of single legs
+across its games of every size (dgAud, dgOwn) and each night level to a counterexample search on a screen of 8,192 common
+draws of the game's latent normals (screenAud, screenOwn). (4) The longest step, timed again (medians of three cold boots in
+jsdom, another suite running on the machine's four CPUs): a night Extreme 353 to 432 ms, the Day games' Extreme 265 to 398 ms,
+every other level under 240 ms; a night game's set 0.21 to 0.88 s, the Day games' 0.66 to 0.83 s (app v144's 2.6 to 3.2 s in
+one build), every live unit of a payload 1.7 to 2.1 s (app v144's 3.0 to 4.0 s).
 """
 from pathlib import Path
 
