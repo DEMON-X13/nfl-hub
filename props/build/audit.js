@@ -4166,6 +4166,11 @@ setTimeout(async()=>{
            at 1.06, whose Safe would take 13 (1.06 to the 12th pays 2.012): empty, in the price's words (pbPaysFree, to 12)
        F9  empty: three lines at -700 to -900 (no parlay paying +110), "No parlay in this game pays +110 or more."; with
            pbPaysFree stood in to answer null, "No parlay found in this game that pays +110 or more."
+       F10 the knapsack's tie-safe dominance: the Day games of three games, one player of the first at +100 (50%) or -500
+           (84%, leaning 6 points), one of the second at -400 (84%) or +105 (50%, leaning 8), a -150 (60%) of the third: the
+           pairs across the first two tie on their chance (42%), the one at +100 with -400 dearer (2.500 against 2.460), so a
+           dominance on the raw figures drops the leaning pair; Safe the leaning pair (-500 with +105, 2.460), Medium it with
+           the -150 (25.2% at 4.100), where the other pair with it pays 4.167 at the same chance
        GP  a night of three short lines and three nearer evens: every level held; its words by the level's own recorded rule
            (app v145's "likeliest · +110+", titled "The likeliest parlay paying at least +110 by the site’s price: $1 returns
            $2.10 or more"; read back from a lock under app v144 its fixed size's words, "likeliest pair · +110+"; under app
@@ -4182,10 +4187,10 @@ setTimeout(async()=>{
     const GP=mk('APP','APQ','2099-01-18','20:20',95), GR=mk('ARR','ARS','2099-01-19','20:15',95), GK=mk('AKK','AKL','2099-01-19','20:45',95);
     const GT={...mk('ATT','ATU','2099-01-19','20:30',95),tot:44.5,tov:-110,tou:-110}, GU={...mk('AUU','AUV','2099-01-19','21:30',95),tot:44.5,tov:-110,tou:-110};
     const GY3=mk('AY3','AZ3','2099-01-15','21:30',95), GY4=mk('AY4','AZ4','2099-01-19','22:00',95);
-    const SUN={80:'2099-03-01',81:'2099-03-08',82:'2099-03-15',83:'2099-03-22',84:'2099-03-29',85:'2099-04-05',86:'2099-04-12',87:'2099-04-19',88:'2099-04-26'};
+    const SUN={80:'2099-03-01',81:'2099-03-08',82:'2099-03-15',83:'2099-03-22',84:'2099-03-29',85:'2099-04-05',86:'2099-04-12',87:'2099-04-19',88:'2099-04-26',89:'2099-05-03'};
     const day=(wk,n,tt)=>Array.from({length:n},(_,i)=>({...mk('B'+String.fromCharCode(65+i)+wk,'H'+String.fromCharCode(65+i)+wk,SUN[wk],tt||'13:00',wk)}));
-    const D1=day(80,6), D2=day(81,2), D3=day(82,6), D4=day(83,4), D5=day(84,3), D5b=day(85,3), D6=day(86,2).map(g=>({...g,tot:44.5,tov:-150,tou:130})), D8=day(87,13), D8b=day(88,13);
-    const SLOTS=[[80,D1],[81,D2],[82,D3],[83,D4],[84,D5],[85,D5b],[86,D6],[87,D8],[88,D8b]], NIGHTS=[GP,GR,GK,GT,GU,GY3,GY4];
+    const D1=day(80,6), D2=day(81,2), D3=day(82,6), D4=day(83,4), D5=day(84,3), D5b=day(85,3), D6=day(86,2).map(g=>({...g,tot:44.5,tov:-150,tou:130})), D8=day(87,13), D8b=day(88,13), D10=day(89,3);
+    const SLOTS=[[80,D1],[81,D2],[82,D3],[83,D4],[84,D5],[85,D5b],[86,D6],[87,D8],[88,D8b],[89,D10]], NIGHTS=[GP,GR,GK,GT,GU,GY3,GY4];
     const FX=[...NIGHTS,...SLOTS.flatMap(([,G])=>G)];
     /* a made-up line: p its chance (on the hook), pm its model chance (the lean, where a case plants one) */
     const pl=(g,id,p,price,stat,k,o)=>({key:`${g.id}|aud18-${id}|${stat||'receptions'}`,gid:g.id,pid:'aud18-'+id,stat:stat||'receptions',k:k||4,side:'over',main:true,hp:p,p:o&&o.pm!=null?o.pm:p,price,src:'real',mu:null,
@@ -4213,7 +4218,9 @@ setTimeout(async()=>{
       /* F6: one line at +115 on the first game (the totals from the schedule) */
       pl(D6[0],'f6',0.46,115),
       /* F8: thirteen at 1.065 (-1538), F8b thirteen at 1.06 (-1667) */
-      ...D8.map((g,i)=>pl(g,`f8${i}`,0.93,am(1.065))),...D8b.map((g,i)=>pl(g,`f8b${i}`,0.93,am(1.06)))];
+      ...D8.map((g,i)=>pl(g,`f8${i}`,0.93,am(1.065))),...D8b.map((g,i)=>pl(g,`f8b${i}`,0.93,am(1.06))),
+      /* F10: one player of each of the first two games on two stats (one leg a player), and a -150 of the third */
+      pl(D10[0],'t10a',0.5,100),pl(D10[0],'t10a',0.84,-500,'receiving_yards',40,{pm:0.90}),pl(D10[1],'t10b',0.84,-400),pl(D10[1],'t10b',0.5,105,'receiving_yards',40,{pm:0.58}),pl(D10[2],'t10g',0.6,-150)];
     /* F7: GY3 and GY4 (app v144's), the quarterback (AQ8) and his receivers (AW8) on the home club, moving together by the
        pair table the case plants; the rival's lines of no correlated group (AUD) on the away club */
     const py=(g,id,grp,side,p,price,team)=>({key:`${g.id}|aud18-${id}|${grp==='AQ8'?'passing_yards':grp==='AW8'?'receiving_yards':'receptions'}`,gid:g.id,pid:'aud18-'+id,
@@ -4300,6 +4307,14 @@ setTimeout(async()=>{
       { const sf=lv(86,'safe'), tots=slotSet[86].all.filter(l=>l.market), two=freeOfAud(tots);
         chk(tots.length===2&&two.dec>=DS&&!!sf&&!!sf.legs&&sf.mkt===1&&sf.legs.some(l=>l.pid==='aud18-f6')&&two.pr>sf.corr+1e-9,`M18, F6: Safe is ${sf&&sf.legs?names(sf.legs)+' with '+sf.mkt+' totals':'empty'}, not the line with one total, the two totals (${(two.pr*100).toFixed(1)}% at ${two.dec.toFixed(3)}) likelier`);
         if(sf&&sf.legs) said18.push(`F6's Safe one total at ${(sf.corr*100).toFixed(1)}%, where the two totals land ${(two.pr*100).toFixed(1)}%`); }
+      /* F10: the tie across games kept to the larger lean through the knapsack's dominance */
+      { const sf=lv(89,'safe'), md=lv(89,'med'), all=slotSet[89].all, leg=(pid,stat)=>all.find(l=>l.pid===pid&&l.stat===stat);
+        const A=[leg('aud18-t10a','receptions'),leg('aud18-t10b','receptions')], B=[leg('aud18-t10a','receiving_yards'),leg('aud18-t10b','receiving_yards')], gx=leg('aud18-t10g','receptions');
+        const fA=freeOfAud(A), fB=freeOfAud(B), fAg=freeOfAud([...A,gx]), fBg=freeOfAud([...B,gx]);
+        chk(A.every(Boolean)&&B.every(Boolean)&&!!gx&&k9(fA.pr)===k9(fB.pr)&&fA.dec>fB.dec&&fB.ln>fA.ln&&k9(fAg.pr)===k9(fBg.pr)&&fAg.dec>=LEVEL_DEC_AUD.med&&fBg.dec>=LEVEL_DEC_AUD.med&&fA.dec<LEVEL_DEC_AUD.med,
+          `M18, F10: the case does not stand on what it is for (the two pairs tied at ${fA&&(fA.pr*100).toFixed(3)}% and ${fB&&(fB.pr*100).toFixed(3)}%, at ${fA&&fA.dec.toFixed(3)} and ${fB&&fB.dec.toFixed(3)}, leaning ${fA&&fA.ln.toFixed(2)} and ${fB&&fB.ln.toFixed(2)})`);
+        chk(!!sf&&!!sf.legs&&ids(sf.legs)===ids(B)&&!!md&&!!md.legs&&ids(md.legs)===ids([...B,gx]),`M18, F10: Safe is ${sf&&sf.legs?names(sf.legs):'empty'} and Medium ${md&&md.legs?names(md.legs):'empty'}, not the leaning pair and it with the -150, the tie kept through the knapsack's dominance`);
+        if(md&&md.legs) said18.push('F10\'s tie across games kept to the larger lean through the knapsack'); }
       /* F7: the star past the stop, at any size */
       { const ev=F('pbEval'), keyOf=(ls,minD)=>{ const e=ev(ls,new Map()); return Math.min(e.pr,e.pr*e.d/minD); };
         for(const [g,Y,X,id] of [[GY3,Y3,X3,'med'],[GY4,Y4,X4,'aggr']]){ const minD=LEVEL_DEC_AUD[id], all=legsOf([g]), b=freeAud(all,minD), rv=freeAud(X.map(l=>({...l,thin:true})),minD), kY=keyOf(Y.map(l=>({...l})),minD);
