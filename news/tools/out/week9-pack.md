@@ -151,6 +151,7 @@ Searches to run:
 - "NFL week 9 picks DAL IND"
 
 Dallas Cowboys, injuries:
+- Jake Ferguson (TE) Questionable, Knee: Cowboys head coach Brian Schottenheimer said after Sunday's 27-23 win over the Colts that Ferguson will undergo imaging on his knee Monday, the team's official site reports.
 - Brandon Aubrey (PK) Active: Aubrey went 2-for-3 on field-goal attempts and made all three of his PATs during Sunday's 27-23 win over the Colts.
 - Tyler Goodson (RB) Active: Goodson rushed 12 times for 77 yards and failed to bring in his only target in the Cowboys' 27-23 win over the Colts on Sunday.
 - P.J. Locke (S) Questionable, Concussion: Locke suffered a concussion during Sunday's 27-23 win over the Colts, Todd Archer of ESPN.com reports.
@@ -159,7 +160,6 @@ Dallas Cowboys, injuries:
 - CeeDee Lamb (WR) Active: Lamb brought in 10 of 16 targets for 195 yards and a touchdown in the Cowboys' 27-23 win over the Colts on Sunday. He also lost a fumble.
 - Dee Winters (LB) Active: Winters (head) has returned to Sunday's Week 9 matchup against the Colts, Patrik Walker of the Cowboys' official site reports.
 - Jonathan Mingo (WR) Questionable, Ankle: Mingo (ankle) is questionable to return to Sunday's matchup against the Colts, Patrik Walker of the Cowboys' official site reports.
-- Jake Ferguson (TE) Questionable, Knee: Ferguson sustained a knee injury during Sunday's game against the Colts, Calvin Watkins of The Dallas Morning News reports.
 - Donovan Ezeiruaku (LB) Questionable, Ankle: Ezeiruaku (ankle) is questionable to return to Sunday's game against the Colts, Tommy Yarrish of the Cowboys' official site reports.
 - Marist Liufau (LB) Active: Liufau (forearm) is active for Sunday's game against the Colts.
 - Ryan Flournoy (WR) Active: With George Pickens (hamstring) inactive, Flournoy is slated to move into the No. 2 WR role opposite CeeDee Lamb in Sunday's game against the Colts, while Jonathan Mingo will be the team's No. 3 receiver, Todd Archer of ESPN reports.
@@ -219,6 +219,7 @@ Searches to run:
 - "NFL week 9 picks NYJ KC"
 
 New York Jets, injuries:
+- Will McDonald IV (DE) Active: McDonald put in a request for the Jets to trade him ahead of Tuesday's deadline, Ian Rapoport and Rich Cimini of ESPN report.
 - Jason Sanders (PK) Active: Sanders went 4-for-5 on field-goal tries during Sunday's 35-12 loss to the Chiefs.
 - Adonai Mitchell (WR) Active: Mitchell failed to reel in any of his seven targets during Sunday's 35-12 loss to the Chiefs.
 - Kenyon Sadiq (TE) Active: Sadiq caught all four of his targets for 49 yards in Sunday's 35-12 loss to the Chiefs.
@@ -243,12 +244,11 @@ New York Jets, injuries:
 - Isaiah Davis (RB) Active: Davis rushed five times for 15 yards in Sunday's 38-33 loss to the Raiders.
 - Isaiah Williams (WR) Active: Williams caught an 18-yard touchdown on his lone target in Sunday's 38-33 loss to the Raiders.
 - Dylan Parham (G) Active: Parham (knee) is active for Sunday's game against Las Vegas.
-- T'Vondre Sweat (DT) Injured Reserve, Knee: The Jets placed Sweat (knee) on injured reserve Saturday, Jeremy Fowler of ESPN.com reports.
 
 New York Jets, ESPN headlines:
 
 Kansas City Chiefs, injuries:
-- Patrick Mahomes (QB) Questionable, Elbow: Mahomes (elbow) underwent an MRI after Sunday's 35-12 win over the Jets, and the tests did not reveal a major injury, Ian Rapoport of NFL Network reports.
+- Patrick Mahomes (QB) Questionable, Elbow: Mahomes was diagnosed with an "elbow strain/sprain" on his throwing arm following an MRI on Sunday, and he'll "continue to be monitored" leading up to the Chiefs' Week 10 game in Atlanta, Ian Rapoport of NFL Network reports.
 - Emmett Johnson (RB) Active: Johnson rushed six times for 34 yards and a touchdown and returned one kickoff for 29 yards in the Chiefs' 35-12 win over the Jets on Sunday.
 - Rashee Rice (WR) Active: Rice secured five of seven targets for 49 yards in the Chiefs' 35-12 win over the Jets on Sunday.
 - Travis Kelce (TE) Active: Kelce brought in four of six targets for 72 yards in the Chiefs' 35-12 win over the Jets on Sunday. He also rushed once for one yard.
@@ -316,11 +316,11 @@ Detroit Lions, injuries:
 Detroit Lions, ESPN headlines:
 
 Miami Dolphins, injuries:
+- Malik Willis (QB) Questionable, Groin: questionable
 - Zane Gonzalez (PK) Active: Gonzalez went 3-for-4 on field-goal tries during Sunday's 19-9 loss to the Lions.
 - Greg Dulcich (TE) Active: Dulcich caught two of four targets for 14 yards in Sunday's 19-9 loss to the Lions.
 - Malik Washington (WR) Active: Washington caught two of three targets for 21 yards during Sunday's 19-9 loss to the Lions.
 - Caleb Douglas (WR) Active: Douglas secured six of eight targets for 70 yards in the Dolphins' 19-9 loss to the Lions on Sunday.
-- Malik Willis (QB) Active: Willis completed 13 of 25 passes for 128 yards with no touchdowns and one interception and added two rushes for seven yards in the Dolphins' 19-9 loss to the Lions on Sunday.
 - Ollie Gordon II (RB) Active: Gordon rushed 16 times for 55 yards and brought in his only target for nine yards in the Dolphins' 19-9 loss to the Lions on Sunday.
 - Will Kacmarek (TE) Questionable, Quadriceps: Kacmarek is dealing with a quad injury and is questionable to return to Sunday's clash against Detroit.
 - Malik Herring (DE) Active: Herring (neck) is active for Sunday's game against the Lions.
@@ -656,6 +656,7 @@ Houston Texans, injuries:
 Houston Texans, ESPN headlines:
 
 Los Angeles Chargers, injuries:
+- Ladd McConkey (WR) Questionable, Back: McConkey was active but didn't play any snaps in Sunday's 44-22 loss to the Texans after experiencing back spasms during pregame workouts, Noah Furtado of The Athletic reports.
 - Cameron Dicker (PK) Active: Dicker went 3-for-3 on field-goal attempts and made his only PAT during Sunday's 44-22 loss to Houston.
 - DJ Uiagalelei (QB) Active: Uiagalelei completed two of seven passes for 27 yards and a touchdown after replacing Justin Herbert (finger) in the fourth quarter of Sunday's 44-22 loss to the Texans, and head coach Jim Harbaugh said after the game that Herbert could have a fractured finger, Alex Insdorf of BoltBeat.com reports.
 - Quentin Johnston (WR) Active: Johnston caught one of four targets for a 58-yard touchdown in Sunday's 44-22 loss to the Texans.
@@ -664,9 +665,8 @@ Los Angeles Chargers, injuries:
 - Derius Davis (WR) Active: Davis caught one of two targets for a 15-yard touchdown in Sunday's 44-22 loss to the Texans.
 - Justin Herbert (QB) Questionable, Finger: Herbert sustained a left middle finger injury in Sunday's 44-22 loss to the Texans, Alex Insdorf of BoltBeat.com reports.
 - Cam Hart (CB) Active: Hart (ankle) is questionable to return to Sunday's game against the Texans.
-- Isas Waxter (CB) Questionable, Ankle: Waxter (ankle) has been ruled out for the remainder of Sunday's game against the Texans.
+- Isas Waxter (CB) Questionable, Ankle: Waxter (ankle) is questionable to return  to Sunday's game against the Texans.
 - Justin Eboigbe (DT) Questionable, Ankle: Eboigbe is questionable to return to Sunday's game against Houston due to an ankle injury, Noah Furtado of The Athletic reports.
-- Ladd McConkey (WR) Questionable, Back: McConkey (back) is questionable to return to Sunday's game against the Texans.
 - Kayode Awosika (G) Out, Lower Leg: Awosika (lower leg) is inactive for Sunday's game against the Texans.
 - Brenen Thompson (WR) Out, Quadriceps: Thompson (quadriceps/hamstring) is inactive against Houston on Sunday.
 - Kendall Williamson (S) Out, Calf: inactive
@@ -695,6 +695,7 @@ Searches to run:
 - "NFL week 9 picks GB NE"
 
 Green Bay Packers, injuries:
+- Josh Jacobs (RB) Questionable, Finger: Packers head coach Matt LaFleur acknowledged after Sunday's 45-27 win over the Patriots that Jacobs' (finger) availability for the team's Week 10 matchup with the Vikings is uncertain, Rob Demovsky of ESPN.com reports. "Hopefully we can do something to allow him to go out there," LaFleur said of Jacobs. "But he was just having a hard time gripping the ball."
 - Kaleb Johnson (RB) Active: Johnson rushed 14 times for 68 yards and a touchdown in the Packers' 45-27 win over the Patriots on Sunday.
 - Trey Smack (PK) Active: Smack went 3-for-3 on field-goal attempts and made all four of his PATs during Sunday's 45-27 win against the Patriots.
 - Tucker Kraft (TE) Active: Kraft brought in one of three targets for one yard and rushed twice for eight yards in the Packers' 45-27 win over the Patriots on Sunday.
@@ -702,7 +703,6 @@ Green Bay Packers, injuries:
 - Christian Watson (WR) Active: Watson secured seven of eight targets for 171 yards and a touchdown in the Packers' 45-27 win over the Patriots on Sunday.
 - Jordan Love (QB) Active: Love completed 23 of 29 passes for 372 yards with three touchdowns and no interceptions and rushed once for a 13-yard score in the Packers' 45-27 win over the Patriots on Sunday. He also ran in a two-point conversion.
 - Savion Williams (WR) Active: Williams caught three of four targets for 25 yards and a touchdown while adding three rushes for 13 yards during Sunday's 45-27 win over the Patriots.
-- Josh Jacobs (RB) Questionable, Finger: Jacobs fractured his finger during Sunday's 45-27 win over the Patriots, Matt Schneidman of The Athletic reports.
 - Bo Melton (WR) Questionable, Head: Melton exited Sunday's game against the Patriots and is being evaluated for a concussion.
 - Ty'Ron Hopper (LB) Questionable, Chest: Hopper (chest) has been ruled out for the remainder of Sunday's game against the Patriots.
 - Keisean Nixon (CB) Active: Nixon (groin) is active for Sunday's game against the Patriots, Mike Spofford of the Packers' official site reports.
@@ -957,7 +957,7 @@ Chicago Bears, injuries:
 Chicago Bears, ESPN headlines:
 
 ### Buffalo Bills at Minnesota Vikings
-Mon, Nov 9, 8:15 PM ET, ESPN / ABC, U.S. Bank Stadium, Minneapolis. Line: BUF -3, O/U 43.5
+Mon, Nov 9, 8:15 PM ET, ESPN / ABC, U.S. Bank Stadium, Minneapolis. Line: BUF -3, O/U 44.5
 
 Searches to run:
 - "Buffalo Bills Minnesota Vikings preview week 9"
