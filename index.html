@@ -6458,7 +6458,11 @@ const PB_FREE={M:1500,DELTA:0.15,TOL:5e-4,E1:1500,E2:300,E3:12000,
   SLACK:[1,1,1.05,1.10,1.20,1.30,1.35,1.40,1.45,1.50,1.55,1.60,1.65],
   C:[1,1,1.03,1.04,1.05,1.06,1.08,1.09,1.10,1.11,1.12,1.13,1.14],
   C2:[1,1,1,1.12,1.15,1.18,1.21,1.24,1.27,1.30,1.33,1.36,1.39],
-  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9};
+  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9,SLEP:1.05,SLT:1.03,UNITS1:2000,NODES1:1000000,UNITS2:1000,NODES2:500000};
+/* (the review of app v145) a parlay worked in full, in units of a 5-leg price (about 0.4 ms in jsdom): its price's draws,
+   and, where it pays, its chance's (about 1.3 times as dear), each dearer with its legs (the draws' rows), so a level's
+   passes share PB_FREE.UNITS of them and its work is bounded alike on every machine */
+const pbFreeCost=(n,paid)=>{ const u=Math.max(0.4,n*n/25); return paid?2.3*u:u; };
 /* (the review of 7 November 2026) the opposite-sign make (pbLvOpp): each link of 0.1 or more */
 const PB_LV_OPP=0.1;
 /* whether a leg of the parlay (its legs' places in x) is linked to two others at opposite effective signs (each correlation
@@ -6471,7 +6475,7 @@ function pbLvOpp(x,s){
   return false;
 }
 /* what the last searches did, for the checks and the measurements (parlays worked in full, kept, runs): drawn nowhere */
-const PB_LV_STAT={ev:0,kept:0,runs:0,second:0,opp:0,groups:0};
+const PB_LV_STAT={ev:0,kept:0,runs:0,second:0,opp:0,groups:0,nodes:0,units:0};
 /* the rule's order: the chance to 1e-9, then the fewer legs, then the larger lean (to 1e-9), then the lower id */
 const pbFreeRank=(a,b)=>(pbEvKey(b.pr)-pbEvKey(a.pr))||(a.n-b.n)||(pbEvKey(b.ln)-pbEvKey(a.ln))||a.id.localeCompare(b.id);
 /* one game's sets of 2 to cap of I (places in x), kept by key. mode 'level': the M best keys (min(c, c*d/F) where the price
@@ -6479,9 +6483,12 @@ const pbFreeRank=(a,b)=>(pbEvKey(b.pr)-pbEvKey(a.pr))||(a.n-b.n)||(pbEvKey(b.ln)
    several): every set whose key (c where it pays F, else c*rOb*d/F) is at least thr0. fl, k: the fill legs (fl[i]) and exactly
    how many a candidate holds (none, k null). c is the reading's chance (each leg's chance times its lifts with the legs taken,
    never above the parent's), q the book's, mult the legs multiplied, psi = SGP_HOLD * prod(p/q) * prod(lift/book lift) */
-function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k){
+function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k,B){
   const m=I.length, out={key:[],set:[],over:false}; if(m<2) return out;
-  const ord=I.map((c,i)=>i).sort((a,b)=>(x.p[I[b]]-x.p[I[a]])||(x.id[I[a]]<x.id[I[b]]?-1:x.id[I[a]]>x.id[I[b]]?1:0));
+  /* the legs likeliest first; (the review of app v145) on the second walk those that give the most price for the chance they
+     cost first (the log of the price over the log of the chance), so its sets reach F in the legs a price takes before its
+     nodes run out */
+  const eff=c=>Math.log(x.dec[c])/-Math.log(Math.max(1e-9,x.p[c])), ord=I.map((c,i)=>i).sort(mode==='level1'?(a,b)=>(eff(I[b])-eff(I[a]))||(x.id[I[a]]<x.id[I[b]]?-1:x.id[I[a]]>x.id[I[b]]?1:0):(a,b)=>(x.p[I[b]]-x.p[I[a]])||(x.id[I[a]]<x.id[I[b]]?-1:x.id[I[a]]>x.id[I[b]]?1:0));
   const L=Int32Array.from(ord.map(i=>I[i])), FL=Uint8Array.from(ord.map(i=>fl&&fl[i]?1:0)), FR=mode==='front', SL=PB_FREE.SLACK;
   const P=new Float64Array(m), Q=new Float64Array(m), DE=new Float64Array(m), R=new Float64Array(m);
   for(let i=0;i<m;i++){ P[i]=x.p[L[i]]; Q[i]=x.q[L[i]]; DE[i]=x.dec[L[i]]; R[i]=P[i]/Q[i]; }
@@ -6489,12 +6496,17 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k){
   for(let a=0;a<m;a++) for(let b=0;b<m;b++){ if(a===b) continue; const ok=pbPairOk(x,L[a],L[b]); OK[a*m+b]=ok?1:0;
     const lm=pbLift(x,L[a],L[b],false), lb=pbLift(x,L[a],L[b],true); LM[a*m+b]=lm; LB[a*m+b]=lb; const s=Math.sqrt(Math.max(1,lm/lb)); SQ[a*m+b]=s;
     if(ok){ SIG[a]*=s; SIGC[a]*=Math.sqrt(Math.max(1,lm)); } }
+  /* (the review of app v145) which pairs move against each other, the sides counted (an under turning it): where no pair of
+     a set does, the chance all its legs land at their prices' implied chances is at least those chances multiplied
+     (Slepian's inequality, the Gaussian copula's), so its price in full is at most SGP_HOLD times its legs multiplied, and
+     a set under F over PB_FREE.SLEP of that is no candidate (SLEP the room for the price's own draws) */
+  const NEG=new Uint8Array(m*m); for(let a=0;a<m;a++) for(let b=0;b<m;b++){ if(a===b) continue; const A=x.L[L[a]], B=x.L[L[b]]; NEG[a*m+b]=legRho(A,B)*(A.side==='under'?-1:1)*(B.side==='under'?-1:1)<0?1:0; }
   /* the r dearest legs from each place on, multiplied (r up to cap; a missing factor 1) */
   const W=cap+1, TOP=new Float64Array((m+1)*W); { const cur=[]; for(let i=m;i>=0;i--){ if(i<m){ cur.push(DE[i]); cur.sort((a,b)=>b-a); if(cur.length>cap) cur.length=cap; }
       let pr=1; TOP[i*W]=1; for(let r=1;r<=cap;r++){ pr*=r<=cur.length?cur[r-1]:1; TOP[i*W+r]=pr; } } }
-  const CAND=[], WM=[], WB=[], WS=[]; for(let d=0;d<=cap;d++){ CAND.push(new Int32Array(m)); WM.push(new Float64Array(m)); WB.push(new Float64Array(m)); WS.push(new Float64Array(m)); }
-  const CN=new Int32Array(cap+1), ch=new Int32Array(cap), pr=new Float64Array(cap+1), pb=new Float64Array(cap+1), mu=new Float64Array(cap+1), ps=new Float64Array(cap+1);
-  let thr=FR?thr0:-Infinity, keys=[], sets=[], lim=2*M, kmax=-Infinity;
+  const CAND=[], WM=[], WB=[], WS=[], NG=[]; for(let d=0;d<=cap;d++){ CAND.push(new Int32Array(m)); WM.push(new Float64Array(m)); WB.push(new Float64Array(m)); WS.push(new Float64Array(m)); NG.push(new Uint8Array(m)); }
+  const CN=new Int32Array(cap+1), ch=new Int32Array(cap), pr=new Float64Array(cap+1), pb=new Float64Array(cap+1), mu=new Float64Array(cap+1), ps=new Float64Array(cap+1), SN=new Uint8Array(cap+1), SLEP=SGP_HOLD*PB_FREE.SLEP, SLT=PB_FREE.SLT, RS=mode==='level1'?SLT:1;
+  let thr=FR||mode==='level1'?thr0:-Infinity, keys=[], sets=[], lim=2*M, kmax=-Infinity;
   /* the kept: the M best keys, and none under (1-DELTA) times the best met; pruned again only once another M have come in
      past what the last prune kept, every tie of the M-th kept (app v144's rule) */
   const prune=()=>{ const kth=pbKth(Float64Array.from(keys),Math.min(M,keys.length)), T=FR?Math.max(thr0,kth):Math.max(kth,kmax*(1-PB_FREE.DELTA)), K2=[], S2=[];
@@ -6502,22 +6514,23 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k){
     if(K2.length<keys.length) out.over=true; keys=K2; sets=S2; thr=T; lim=Math.max(2*M,keys.length+M); };
   for(let i=0;i<m;i++){ CAND[0][i]=i; WM[0][i]=1; WB[0][i]=1; WS[0][i]=1; } CN[0]=m; pr[0]=1; pb[0]=1; mu[0]=1; ps[0]=SGP_HOLD;
   const rec=(d,nf)=>{
-    const C=CAND[d], wm=WM[d], wb=WB[d], ws=WS[d], cn=CN[d];
+    const C=CAND[d], wm=WM[d], wb=WB[d], ws=WS[d], ng=NG[d], cn=CN[d];
     for(let s=0;s<cn;s++){
-      const j=C[s]; if(k!=null&&FL[j]&&nf>=k) continue;
+      const j=C[s]; if(k!=null&&FL[j]&&nf>=k) continue; const neg=SN[d]|ng[s]; PB_LV_STAT.nodes++;
+      if(B&&--B.n<0){ out.cut=true; return; }
       const c=d?Math.min(pr[d],pr[d]*P[j]*wm[s]):P[j], q=Math.min(1,pb[d]*Q[j]*wb[s]), mult=mu[d]*DE[j], psi=ps[d]*R[j]*wm[s]/wb[s], n=d+1, nf2=nf+FL[j];
       if(c<thr) continue;
       const dd=n>=2?Math.min(mult,(q>0?SGP_HOLD/q:mult)):mult;
       if(n>=2&&(k==null||nf2===k)){
-        const key=FR?(dd>=F?c:c*rOb*dd/F):mode==='level1'?(dd>=F?c:-1):(dd*SL[Math.min(n,SL.length-1)]>=F?Math.min(c,c*dd/F):-1);
+        const key=FR?(dd>=F?c:c*rOb*dd/F):mode==='level1'?(dd*SLT>=F&&mult>=F*(1-1e-12)&&(neg||mult*SLEP>=F)?c:-1):(dd*SL[Math.min(n,SL.length-1)]>=F&&mult>=F*(1-1e-12)&&(neg||mult*SLEP>=F)?Math.min(c,c*dd/F):-1);
         if(key>=thr&&key>0){ ch[d]=j; keys.push(key); const S=new Array(n); for(let a=0;a<n;a++) S[a]=L[ch[a]]; sets.push(S);
           if(FR){ if(M&&keys.length>=lim) prune(); } else { if(keys.length>=lim) prune(); if(key>kmax){ kmax=key; if(kmax*(1-PB_FREE.DELTA)>thr) thr=kmax*(1-PB_FREE.DELTA); } } } }
       if(n>=cap) continue;
       if(!FR&&mult*TOP[(j+1)*W+(cap-n)]<F*(1-1e-12)) continue;
       /* the child's legs, their lifts, and H: the most the legs that can still join can raise psi (each leg's p/q times every
          lift ratio over 1 it can meet, the legs taken in full and the rest at their square root) */
-      const C2=CAND[d+1], wm2=WM[d+1], wb2=WB[d+1], ws2=WS[d+1], row=j*m; let c2=0, H=1, g1=0, g2=0, g3=0, p1=0, p2=0, p3=0;
-      for(let u=s+1;u<cn;u++){ const v=C[u]; if(!OK[row+v]) continue; const a=wm[u]*LM[row+v]; C2[c2]=v; wm2[c2]=a; wb2[c2]=wb[u]*LB[row+v]; const w2=ws[u]*SQ[row+v]; ws2[c2]=w2;
+      const C2=CAND[d+1], wm2=WM[d+1], wb2=WB[d+1], ws2=WS[d+1], ng2=NG[d+1], row=j*m; let c2=0, H=1, g1=0, g2=0, g3=0, p1=0, p2=0, p3=0;
+      for(let u=s+1;u<cn;u++){ const v=C[u]; if(!OK[row+v]) continue; const a=wm[u]*LM[row+v]; C2[c2]=v; wm2[c2]=a; wb2[c2]=wb[u]*LB[row+v]; const w2=ws[u]*SQ[row+v]; ws2[c2]=w2; ng2[c2]=ng[u]|NEG[row+v];
         const g=R[v]*SIG[v]*w2; if(g>1) H*=g; if(g>g1){ g3=g2; g2=g1; g1=g; } else if(g>g2){ g3=g2; g2=g; } else if(g>g3) g3=g;
         const pc=P[v]*a*SIGC[v]; if(pc>p1){ p3=p2; p2=p1; p1=pc; } else if(pc>p2){ p3=p2; p2=pc; } else if(pc>p3) p3=pc; c2++; }
       if(!c2) continue;
@@ -6529,8 +6542,8 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k){
         if(mult*TOP[T0+1]*SL[Math.min(n+1,SL.length-1)]<F){ fe*=Math.min(1,g2); fc*=Math.min(1,p2);
           if(mult*TOP[T0+2]*SL[Math.min(n+2,SL.length-1)]<F){ fe*=Math.min(1,g3); fc*=Math.min(1,p3); } } }
       else if(mult*TOP[(j+1)*W+(cap-n)]<F) fe*=Math.min(1,rOb);
-      if(Math.min(c*fc,psi*H*fe/F)<thr) continue;
-      CN[d+1]=c2; ch[d]=j; pr[d+1]=c; pb[d+1]=q; mu[d+1]=mult; ps[d+1]=psi;
+      if(Math.min(c*fc,psi*H*fe*RS/F)<thr) continue;
+      CN[d+1]=c2; ch[d]=j; pr[d+1]=c; pb[d+1]=q; mu[d+1]=mult; ps[d+1]=psi; SN[d+1]=neg;
       rec(d+1,nf2); }
   };
   rec(0,0);
@@ -6543,30 +6556,52 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k){
    is under the best's chance plus TOL, setting aside one whose own C falls short (at most E1 worked; E3 on the second walk,
    mode 1); phase 2, with a best and not on the second walk, the set aside and the rest, in order, the opposite-sign ones
    alone (pbLvOpp) to max(C, C2) at their size, at most E2 */
-function pbFreeWalk(x,cand,F,mode){
+function pbFreeWalk(x,cand,F,mode,B,bar){
   const E=cand.set.map((s,i)=>({key:cand.key[i],s,ln:s.reduce((a,c)=>a+x.ln[c],0),id:s.map(c=>x.id[c]).sort().join(',')}));
   E.sort((a,b)=>(pbEvKey(b.key)-pbEvKey(a.key))||(pbEvKey(b.ln)-pbEvKey(a.ln))||a.id.localeCompare(b.id));
   const C=PB_FREE.C, C2=PB_FREE.C2, TOL=PB_FREE.TOL, SUFC=new Float64Array(E.length+1);
   for(let i=E.length-1;i>=0;i--) SUFC[i]=Math.max(SUFC[i+1],C[E[i].s.length]);
-  let best=null, ev=0, ev2=0, i=0; const rest=[];
-  const work=e=>{ const r=pbExact(e.s.map(c=>x.L[c]),0,F); if(!r) return; const c={pr:r.corr,n:e.s.length,ln:e.ln,id:e.id}; if(!best||pbFreeRank(c,best)<0) best={...c,r}; };
+  let best=bar||null, ev=0, ev2=0, i=0, mine=null; const rest=[];
+  const work=e=>{ const r=pbExact(e.s.map(c=>x.L[c]),0,F), u=pbFreeCost(e.s.length,!!r); B.u-=u; PB_LV_STAT.units+=u; if(!r) return; const c={pr:r.corr,n:e.s.length,ln:e.ln,id:e.id}; if(!best||pbFreeRank(c,best)<0){ best={...c,r}; mine=best; } };
   const cap=mode===1?PB_FREE.E3:PB_FREE.E1;
   for(;i<E.length;i++){ const e=E[i], n=e.s.length;
     if(best&&e.key*SUFC[i]<best.pr+TOL) break;
     if(best&&e.key*C[n]<best.pr+TOL){ rest.push(e); continue; }
-    if(ev>=cap) break; ev++; work(e); }
+    if(ev>=cap||B.u<=0) break; ev++; work(e); }
   if(best&&mode!==1){ for(;i<E.length;i++) rest.push(E[i]);
-    for(const e of rest){ const n=e.s.length; if(e.key*Math.max(C[n],C2[n])<best.pr+TOL) continue; if(!pbLvOpp(x,e.s)) continue; if(ev2>=PB_FREE.E2) break; ev2++; PB_LV_STAT.opp++; work(e); } }
+    for(const e of rest){ const n=e.s.length; if(e.key*Math.max(C[n],C2[n])<best.pr+TOL) continue; if(!pbLvOpp(x,e.s)) continue; if(ev2>=PB_FREE.E2||B.u<=0) break; ev2++; PB_LV_STAT.opp++; work(e); } }
   PB_LV_STAT.ev+=ev+ev2; PB_LV_STAT.runs++;
-  return {best,ev:ev+ev2};
+  return {best,mine,ev:ev+ev2};
+}
+/* (the review of app v145) a paying parlay to start the second walk from: the game's legs that fit taken greedily, those that
+   give the most price for the chance they cost first (the log of the price over the log of the chance), each set worked in
+   full (pbExact) once its legs multiplied reach F, till one pays (at most cap legs, from B's units); its chance over C at
+   the cap is the second walk's bar, below which no set's reading can beat it (none where k fill legs are asked: the passes
+   with a preferred list) */
+function pbFreeSeed(x,I,F,cap,fl,k,B){
+  if(k!=null) return null;
+  const ord=I.slice().sort((a,b)=>((Math.log(x.dec[b])/-Math.log(Math.max(1e-9,x.p[b])))-(Math.log(x.dec[a])/-Math.log(Math.max(1e-9,x.p[a]))))||(x.id[a]<x.id[b]?-1:x.id[a]>x.id[b]?1:0));
+  const cur=[]; let mult=1;
+  for(const i of ord){ if(cur.length>=cap||B.u<=0) break; const l=x.L[i]; if(!pbFits(cur,l)) continue; cur.push(l); mult*=x.dec[i];
+    if(cur.length>=2&&mult>=F*(1-1e-12)){ const r=pbExact(cur,0,F), u=pbFreeCost(cur.length,!!r); B.u-=u; PB_LV_STAT.units+=u; PB_LV_STAT.ev++; if(r) return r; } }
+  return null;
 }
 /* one game, one pass: legs (fl, k: the fill legs and exactly how many) */
 function pbFreeGame(x,legs,fl,k,F,cap){
-  const I=legs.map(l=>pbCtxLeg(x,l)); let worked=0;
-  for(let M=PB_FREE.M;;M*=8){ const c=pbFreeCands(x,I,F,cap,M,'level',0,1,fl,k), w=pbFreeWalk(x,c,F,0); worked+=w.ev;
-    if(w.best) return w.best.r; if(!c.over||M>=PB_FREE.M*64) break; }
-  if(!worked) return null;
-  PB_LV_STAT.second++; const c=pbFreeCands(x,I,F,cap,PB_FREE.M,'level1',0,1,fl,k), w=pbFreeWalk(x,c,F,1); return w.best?w.best.r:null;
+  const I=legs.map(l=>pbCtxLeg(x,l)), B={u:PB_FREE.UNITS1,n:PB_FREE.NODES1};
+  const c1=pbFreeCands(x,I,F,cap,PB_FREE.M,'level',0,1,fl,k,B), w1=pbFreeWalk(x,c1,F,0,B,null);
+  if(w1.best) return w1.best.r;
+  /* (the review of app v145) none paid: first the second walk, the sets whose reading pays within PB_FREE.SLT by the
+     reading's chance (on many short legs moving together the walk by key works thousands of sets whose legs multiplied pay
+     and whose same-game price does not); then, where candidates were let go, the search again keeping eight and sixty-four
+     times as many, the best so far its bar; every walk from the level's one budget (B) */
+  let best=null;
+  const B2={u:PB_FREE.UNITS2,n:PB_FREE.NODES2};
+  if(w1.ev){ PB_LV_STAT.second++; const sd=pbFreeSeed(x,I,F,cap,fl,k,B2), s0=sd?{pr:sd.corr,n:sd.legs.length,ln:sd.legs.reduce((a,l)=>a+pbLean(l),0),id:sd.legs.map(pbId).sort().join(','),r:sd}:null;
+    const c=pbFreeCands(x,I,F,cap,PB_FREE.M,'level1',s0?s0.pr/PB_FREE.C[cap]:0,1,fl,k,B2), w=pbFreeWalk(x,c,F,1,B2,s0); best=w.best; }
+  B.u=Math.max(0,B.u)+Math.max(0,B2.u); B.n=Math.max(0,B.n)+Math.max(0,B2.n);
+  if(c1.over) for(let M=PB_FREE.M*8;M<=PB_FREE.M*64&&B.u>0&&B.n>0;M*=8){ const c=pbFreeCands(x,I,F,cap,M,'level',0,1,fl,k,B), w=pbFreeWalk(x,c,F,0,B,best); if(w.best) best=w.best; if(w.mine||!c.over) break; }
+  return best?best.r:null;
 }
 /* one game's level: the passes */
 function pbFreeOne(pool,F,memo,cap){
@@ -6599,13 +6634,17 @@ function pbFreeDp(G0,F,cap,tol,k){
     for(const p of nx){ if(p.kc<low||p.d*dm<F*(1-EPS)) continue; const ub=p.c*p.d*rm/F; if(ub<p.c&&pbEvKey(ub)<low) continue; keep.push(p); }
     keep.sort((a,b)=>(a.t-b.t)||(b.kc-a.kc)||(b.kl-a.kl)||(b.d-a.d)||(a.n-b.n));
     /* tie-safe dominance, within each fill count: B goes where a kept partial of an earlier (chance key, lean key) block has
-       no more legs and at least its price, or one of its own block does and is not alike on legs and price */
+       no more legs and at least its price, or one of its own block has fewer legs and at least its price (a completion's
+       tie on the chance and the lean then goes to the fewer legs); one of its own block of as many legs is kept whatever
+       its price, the id deciding on the card (the review of app v145: four games of three uncorrelated legs at 50% and
+       -112 tied a same-game pair beside another game's leg with three games' legs on chance and lean, and the dominance
+       dropped the pair, whose id was the lower, for the other's higher price) */
     Pp=[]; const bestD=new Float64Array(cap+1).fill(-1); let curT=-1;
     for(let a=0;a<keep.length;){ if(keep[a].t!==curT){ curT=keep[a].t; bestD.fill(-1); }
       let b=a; const kc=keep[a].kc, kl=keep[a].kl, tt=keep[a].t; while(b<keep.length&&keep[b].kc===kc&&keep[b].kl===kl&&keep[b].t===tt) b++;
       const blk=[];
       for(let t=a;t<b;t++){ const p=keep[t]; let dom=false; for(let n=0;n<=p.n;n++) if(bestD[n]>=p.d){ dom=true; break; }
-        if(!dom) for(const q of blk){ if(q.n<=p.n&&q.d>=p.d&&!(q.n===p.n&&q.d===p.d)){ dom=true; break; } }
+        if(!dom) for(const q of blk){ if(q.n<p.n&&q.d>=p.d){ dom=true; break; } }
         if(!dom){ blk.push(p); Pp.push(p); } }
       for(const q of blk) if(q.d>bestD[q.n]) bestD[q.n]=q.d;
       a=b; }
@@ -8349,7 +8388,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='c2d64ae';
+const PAGE_HASH='216cb34';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
