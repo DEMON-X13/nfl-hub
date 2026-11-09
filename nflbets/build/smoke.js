@@ -1214,10 +1214,18 @@ function sbEvent(g, kind) {
     { homeAway: 'home', team: { abbreviation: g.home_team }, score: String(hs) },
     { homeAway: 'away', team: { abbreviation: g.away_team }, score: String(as) } ] }] };
 }
+/* the games the payload has a final for (the props job's, which can come hours before the betting job grades the game:
+   a Sunday afternoon) */
+const PAY_FINALS = new Map((JSON.parse(PAYLOAD).sched || []).filter(g => g.hs != null && g.as != null && isFinite(g.hs) && isFinite(g.as)).map(g => [g.id, g]));
+/* the week as ESPN's scoreboard has it: a game graded final; one the payload has a final for final on the payload's score
+   (on the 8 November 2026 Elo run at 18:04 UTC the scoreboard said the week's first game the betting job had not graded,
+   CIN's, was the stub's own 27-20, which the payload's real final outranks on the page, and the snapshot's check of it
+   failed: the smoke at any hour); of the rest the first over (the home side 27-20), the second on, the others to come */
 function scoreboard(state, week) {
   const games = state.schedule.filter(g => +g.week === week);
   let n = 0;
-  return { events: games.map(g => sbEvent(g, g.result != null ? 'final' : (n++ === 0 ? 'post' : (n === 2 ? 'in' : 'pre')))) };
+  return { events: games.map(g => { const p = g.result == null && PAY_FINALS.get(g.game_id);
+    return p ? sbEvent({ ...g, away_score: p.as, home_score: p.hs }, 'final') : sbEvent(g, g.result != null ? 'final' : (n++ === 0 ? 'post' : (n === 2 ? 'in' : 'pre'))); }) };
 }
 /* the same week with one game on (gid: the away side leads 14-10 in the third quarter), every other final if graded and
    to come if not: the scoreboard on load's own fixture */
@@ -5481,6 +5489,15 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         return !!a && liveMu.avg_fit.mismatch.lead[v.group] === st && muTrustOwn(liveMu, v.group, st); };
       const cands = mmV2 ? Object.keys(liveMu.avg || {}).filter(pid => ok0(pid) && leadOk(pid))
         : Object.keys(liveMu.players || {}).filter(pid => ok0(pid) && MMG.includes(liveMu.players[pid].group) && liveMu.players[pid].opp_def);
+      /* (the smoke at any hour) the week's file can hold fewer than four such players: on a Monday only that night's game is
+         left in it (two backs on 9 November 2026, and the check failed in the Elo job). The rest are then rated players of
+         the first one's group with no block of their own, out by no rule, each given a copy of his block once the blocks
+         are kept, and taken out with the rest after */
+      const mmCopyOf = {};
+      if (cands.length && cands.length < 4) { const MAP = mmV2 ? liveMu.avg : liveMu.players, grp = MAP[cands[0]].group;
+        for (const pid of Object.keys(eloP.players)) { if (cands.length >= 4) break;
+          if (MAP[pid] !== undefined || (mmV2 && liveMu.players && liveMu.players[pid] !== undefined) || eloP.players[pid].group !== grp || !ok0(pid)) continue;
+          mmCopyOf[pid] = cands[0]; cands.push(pid); } }
       const wkE = w.eval('currentWeek()'), seasonE = +w.eval('SEASON'), atE = new Date(w.Date.now() + 2 * 86400e3).toISOString().slice(0, 10), wk2E = String(wkE).padStart(2, '0');
       /* the first game (mmC's and mmU's) at 4:25 pm, the second (mmW's) too, the third (the slot's first, begun when the
          slot is held under way) at 1:00 pm */
@@ -5494,6 +5511,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         try {
           Sx.sched.push(...EG);
           for (const x of [C, U, Wm, Dm]) keepMu[x.pid] = muKeepOwn(liveMu, x.pid);
+          for (const [pid, from] of Object.entries(mmCopyOf)) { const MAP = mmV2 ? liveMu.avg : liveMu.players; MAP[pid] = w.JSON.parse(JSON.stringify(MAP[from])); }
           if (mmV2) { if (liveMu.avg_fit.mismatch.tag == null) liveMu.avg_fit.mismatch.tag = 0.035;
             const plant = (x, gid, shift, tg) => { const e = liveMu.avg[x.pid]; e.game_id = gid; e.mm = { stat: MM_LEAD_V2_OWN[e.group], shift, tag: tg }; Object.assign(x, { group: e.group, opp: e.opp, st: MM_LEAD_V2_OWN[e.group] }); };
             plant(C, G0.id, 0.4472, true); plant(U, G0.id, 0.02, false); plant(Wm, G1.id, 0.3, true); plant(Dm, G0.id, 0.38, true); }
@@ -8003,7 +8021,7 @@ async function snapshotChecks() {
      load, went): its first game with no published result over, the home side 27-20, its second on */
   const PWs = +R.d.getElementById('weekSel').value;
   R.d.getElementById('slateNow').click(); await wait(400);
-  const sbMarked = st.schedule.filter(g => +g.week === PWs && g.result == null).slice(0, 2).map(g => g.game_id);
+  const sbMarked = st.schedule.filter(g => +g.week === PWs && g.result == null && !PAY_FINALS.has(g.game_id)).slice(0, 2).map(g => g.game_id);
   /* the position table on a phone: laid out fixed, so each team keeps half the card and a long name
      wraps inside its half (laid out automatically, a long name set the column's width and pushed
      the home side past the card's edge on 34 of 45 games at 390px in Chromium), and no rule stops a

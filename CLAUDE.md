@@ -4792,7 +4792,14 @@ first with a game not yet final, else the last) has no game still to kick off (w
 kickoff or past it: Monday night under way before the props job rebakes after its final, which the Elo job,
 dispatched by the betting job on a final, lands in; and the season's end), boots the page two days before
 that week's last kickoff so the Top 50 lines, the sets (and until app v142 the Elo picks) and the builder checks still have a game to stand on;
-a missing section there is a failed check, never a crash. A prime-time game between its set's lock and its kickoff
+a missing section there is a failed check, never a crash. Two of its fixtures turned on the hour until 9 November 2026,
+when each turned the Elo job red: its stand-in scoreboard marked the week's first game the betting job had not graded
+as over at its own 27-20, where by a Sunday afternoon the props job's payload carried that game's real final, which the
+page rightly draws first (the 8 November run at 18:04 UTC, four failures on CIN's game); it now draws a game the payload
+has a final for on the payload's score and marks the next ones (`PAY_FINALS`). And the Mismatch tag on the regular
+parlays needs four listed players, where on a Monday only that night's game is left in the week's matchups file (two
+backs on 9 November at 01:46 UTC); a rated player of the first one's group with no block of his own now takes a copy of
+his block for the check, taken out after (`mmCopyOf`). A prime-time game between its set's lock and its kickoff
 (Sunday night's from about 22:20 UTC, when the betting job's late-afternoon finals dispatch the Elo job) is held as
 the set it locked (`holdLocked`), and the checks on made-up lines move it a day and more out, so they stand on live
 sets at any hour. Which games Suggested Parlays sets out turns on the hour too (one night at a time, from 6:00 AM
