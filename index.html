@@ -2497,13 +2497,18 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const TEAM_COLORS={"ARI":["#97233F","#000000","#FFB612","#A5ACAF"],"ATL":["#A71930","#000000","#A5ACAF","#A30D2D"],"BAL":["#241773","#9E7C0C","#C60C30"],"BUF":["#00338D","#C60C30","#0C2E82","#D50A0A"],"CAR":["#0085CA","#000000","#BFC0BF"],"CHI":["#0B162A","#E64100"],"CIN":["#FB4F14","#000000","#D32F1E"],"CLE":["#FF3C00","#311D00","#A5ACAF","#D32F1E"],"DAL":["#002244","#B0B7BC","#ACC0C6","#A5ACAF"],"DEN":["#002244","#FB4F14","#00234C","#FF5200"],"DET":["#0076B6","#B0B7BC","#000000","#004E89"],"GB":["#203731","#FFB612","#1C2D25","#EEAD1E"],"HOU":["#03202F","#A71930","#00071C","#A30D2D"],"IND":["#002C5F","#A5ACAF","#013369","#9BA1A2"],"JAX":["#006778","#000000","#9F792C","#D7A22A"],"KC":["#E31837","#FFB612","#000000"],"LA":["#003594","#FFD100","#001532","#AF925D"],"LAC":["#007BC7","#FFC20E","#FFB612","#001532"],"LV":["#000000","#A5ACAF","#A6AEB0"],"MIA":["#008E97","#F58220","#005778"],"MIN":["#4F2683","#FFC62F","#E9BF9B","#000000"],"NE":["#002244","#C60C30","#B0B7BC","#001532"],"NO":["#D3BC8D","#000000","#9F8958"],"NYG":["#0B2265","#A71930","#A5ACAF","#012352"],"NYJ":["#125740","#000000","#FFFFFF"],"PHI":["#004C54","#A5ACAF","#ACC0C6","#000000"],"PIT":["#000000","#FFB612","#C60C30","#00539B"],"SEA":["#002244","#69BE28","#A5ACAF","#001532"],"SF":["#AA0000","#B3995D","#000000","#A5ACAF"],"TB":["#A71930","#322F2B","#000000","#FF7900"],"TEN":["#0C2340","#4B92DB","#C8102E"],"WAS":["#5A1414","#FFB612","#000000","#5B2B2F"]};
 const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
+/* (app v146) the one collation every order of a parlay's legs, chance or price stands on is sorted by (pbOrder and
+   parlayLegs on the name, the search's ids, the games' kickoffs): 'en', ICU's root order, the order the record gets in
+   Node (en-US), whatever language the visitor's browser speaks. One collator, shared: localeCompare(b,'en') makes one
+   on every call in Safari and Firefox */
+const EN_COLL=new Intl.Collator('en'), enCmp=(a,b)=>EN_COLL.compare(a,b);
 const MODEL_BUILD='2026.2 fit 2019-2025';
 let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPayload */
 /* what the saved season is checked against. DATA_BUILD is the model's own hash and moves
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v145 \u00b7 2026-11-08';
+const APP_BUILD='app v146 \u00b7 2026-11-10';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2882,6 +2887,12 @@ function parlayProb(legs,sims=40000){
   const pairs=[];
   for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) if(Math.abs(R[i][j])>=0.03) pairs.push({i,j,rho:R[i][j]});
   if(!pairs.length) return {indep,corr:indep,pairs};
+  /* (app v146) legs of different games never move together (legRho 0), so the chance all land is the product over games of
+     each game's own: each game's legs, in the order given, worked on their own (the exact product where none of that game's
+     pairs moves, the seeded draw over that game's legs alone where one does), the games multiplied in the order they first
+     appear. A parlay of one game is exactly as before (patch_free_legs_review.py) */
+  const gids=[]; for(const l of legs) if(!gids.includes(l.gid)) gids.push(l.gid);
+  if(gids.length>1){ let corr=1; for(const g of gids) corr*=parlayProb(legs.filter(l=>l.gid===g),sims).corr; return {indep,corr,pairs}; }
   /* (app v135) the trials' normals worked once and kept, and an answer worked once and kept, both on the function itself:
      every call draws from the one seeded stream, ceil(n/2) Box-Muller pairs a trial (trial s of n legs: pairs s*q to
      s*q+q-1), and the count is a pure function of the trials, each leg's chance and side and the correlations Cholesky
@@ -3158,7 +3169,7 @@ function parlayLegs(){
        pulled for this leg, put on this fresh copy only, never on S.parlay; inert without the card */
     if(typeof window!=='undefined'&&typeof window.dkPulledFor==='function'){ try{ const P=window.dkPulledFor(x); if(P) x.pulled=P; }catch(e){} }
     return x; })
-    .sort((a,b)=>(a.week-b.week)||a.name.localeCompare(b.name));
+    .sort((a,b)=>(a.week-b.week)||enCmp(a.name,b.name));
 }
 
 /* ---------- the market: real main lines baked in per week ---------- */
@@ -3730,7 +3741,7 @@ function log(msg,cls=''){ const el=$('log'); if(!el) return; const ph=el.querySe
 function setStatus(id,msg,cls){ const el=$(id); if(el){ el.textContent=msg; el.className=cls||'muted'; } }
 function weeks(){ return [...new Set(S.sched.map(g=>+g.w))].sort((a,b)=>a-b); }
 function currentWeek(){ return liveWeek(); }
-function gamesIn(w){ return S.sched.filter(g=>+g.w===w).sort((a,b)=>((a.d||'')+(a.t||'')).localeCompare((b.d||'')+(b.t||''))); }
+function gamesIn(w){ return S.sched.filter(g=>+g.w===w).sort((a,b)=>enCmp((a.d||'')+(a.t||''),(b.d||'')+(b.t||''))); }
 
 /* ---------- games list ---------- */
 function renderWeekOptions(){
@@ -4324,7 +4335,7 @@ function ingestStats(rows){
       team:r.team,opp:r.opponent_team,st:rowStats(r)});
   }
   const done=[],skipped=[];
-  const ids=Object.keys(byGame).sort((a,b)=>(byGame[a].g.w-byGame[b].g.w)||((byGame[a].g.d||'')+(byGame[a].g.t||'')).localeCompare((byGame[b].g.d||'')+(byGame[b].g.t||'')));
+  const ids=Object.keys(byGame).sort((a,b)=>(byGame[a].g.w-byGame[b].g.w)||enCmp((byGame[a].g.d||'')+(byGame[a].g.t||''),(byGame[b].g.d||'')+(byGame[b].g.t||'')));
   for(const id of ids){
     if(S.processedGames[id]){ skipped.push(id); continue; }
     const {g,recs}=byGame[id];
@@ -5271,7 +5282,8 @@ async function espnRefresh(gid){
     try{ espnKeepPut(w,games,gls); }catch(e){ console.error(e); }
     ESPN_RUN={...ESPN_RUN,busy:false,done:ESPN_RUN.total};
     if(changed) ESPN_SEQ++;
-    espnRedraw();
+    /* (app v146) a press that changed nothing the sets stand on keeps the sets it can */
+    espnRedraw(!changed);
   }
   return true;
 }
@@ -5654,13 +5666,18 @@ function espnCtl(gid,where){
   const k=gid||'week', id='espnSt-'+where, what=gid?'this game':'every game of the week still to come';
   return `<div class="espn-ctl" data-espn-ctl="${esc(k)}"><button type="button" class="btn quiet espn-btn" data-espn-refresh="${esc(k)}" aria-describedby="${id}" aria-busy="${ESPN_RUN.busy?'true':'false'}" title="Read DraftKings’ current lines for ${what} from ESPN now: free, in this browser, only when pressed, and kept in this browser until the game kicks off or newer prices are published. The game lines come with DraftKings’ own prices; a player’s price is our estimate from his line.">Refresh odds</button><span class="espn-st" id="${id}" data-espn-status="${esc(k)}" role="status" aria-live="polite">${esc(espnStatus(gid))}</span></div>`;
 }
-/* after a press: every cache a price stands on dropped, the page drawn again, the focus kept */
-function espnRedraw(){
+/* after a press: every cache a price stands on dropped, the page drawn again, the focus kept. (app v146) same: the press
+   changed nothing the sets stand on (ESPN_SEQ unmoved, so every set's signature is as it was): the sets are kept but a
+   unit's with no player line, whose empty levels date the last read (spNoPl), which a press finding none posted moves.
+   And with Suggested Parlays on the screen, what it has to build again is built a level a step (spSoftShown) */
+function espnRedraw(same){
   const a=document.activeElement, fk=a&&a.dataset?a.dataset.espnRefresh:null;
   /* (app v111) the button pressed is found again wherever it was: a game's page, the Parlay Builder's
      controls or its builder, Suggested Parlays, the Props tab */
   const where=fk&&a.closest?(['#gameView','#pbPanel','#parlayBody','#spPanel','#slateOdds'].find(s=>a.closest(s))||null):null;
-  PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); SP_CACHE=new Map(); GAME_TIER_CACHE={};
+  if(same===true){ for(const [k,r] of [...SP_CACHE]) if(!r||!r.plGames) SP_CACHE.delete(k); } else SP_CACHE=new Map();
+  PB_CACHE=new Map(); PB_TOP_CACHE=new Map(); GAME_TIER_CACHE={};
+  try{ spSoftShown(); }catch(e){ console.error(e); }
   try{ renderSlate(); }catch(e){ console.error(e); }
   try{ renderParlay(); }catch(e){ console.error(e); }
   espnPaint();
@@ -6169,10 +6186,11 @@ function pbGames(){ return gamesIn(currentWeek()).filter(g=>!gameStarted(g)&&!ha
    Parlays' every bet type, SP_ALL; the reader's own by default) */
 function pbAllows(l,u){ u=u||pbUi(); return !!u.k[pbKind(l)]&&!u.off.includes(l.gid); }
 function pbPlayerSides(){ const u=pbUi(); return !!(u.k.over||u.k.under); }
-const pbOrd=(a,b)=>(a.key+'|'+a.side+'|'+a.k).localeCompare(b.key+'|'+b.side+'|'+b.k);
+const pbOrd=(a,b)=>enCmp(a.key+'|'+a.side+'|'+a.k,b.key+'|'+b.side+'|'+b.k);
 /* the builder's order (parlayLegs): the week, then the name. The tier's numbers are worked on
-   the legs in this order, so the builder, which works them the same way, shows the same */
-const pbOrder=legs=>[...legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name)));
+   the legs in this order, so the builder, which works them the same way, shows the same. (app v146) The name by EN_COLL,
+   never the visitor's own collation, so a level states the chance and price the record does in every language */
+const pbOrder=legs=>[...legs].sort((a,b)=>(a.week-b.week)||enCmp(String(a.name),String(b.name)));
 /* a long list is cut to the likeliest half and the best-paying half, so the search stays quick */
 function pbCap(list,cap){
   cap=cap||PB_CAP; list=[...list].sort(pbOrd); if(list.length<=cap) return list;
@@ -6339,7 +6357,7 @@ function pbEval(legs,memo){
 }
 /* (app v138) the search's order on a score: the score to 1e-9 (pbEvKey), then the larger lean (the model's projection
    breaking a tie of DraftKings' chances, the owner's amendment of 27 October 2026), then the id as before */
-const pbRank=by=>(a,b)=>(pbEvKey(b[by])-pbEvKey(a[by]))||(pbEvKey(b.ln||0)-pbEvKey(a.ln||0))||a.id.localeCompare(b.id);
+const pbRank=by=>(a,b)=>(pbEvKey(b[by])-pbEvKey(a[by]))||(pbEvKey(b.ln||0)-pbEvKey(a.ln||0))||enCmp(a.id,b.id);
 /* (app v138) the search's own figures, kept with the memo (pbCtx): each leg it meets indexed once, by its id, with its
    chance (pbJoint's modelP), the price's implied chance (mlP), its decimal price, its lean and its game; for a pair, whether
    the two go together (pbFits on the two: every rule it applies is one between two legs) and the lift each reading gives
@@ -6408,8 +6426,10 @@ function pbExact(legs,floor,minDec){
 
    What the search rests on, verified in the page: legs of different games never move together (legRho 0), and parlayDec is
    the product over games of each game's own group price (a game's one leg its decimal; two or more its same-game price,
-   SGP_HOLD over their joint implied chance, never above multiplying). parlayProb is the exact product where no pair moves
-   together and a seeded draw over every leg where one does. So it decomposes by game.
+   SGP_HOLD over their joint implied chance, never above multiplying). parlayProb is the product over games of each game's
+   own chance (app v146): the exact product of a game's legs where none of its pairs moves together, else a seeded draw over
+   that game's legs alone. So both decompose by game, and a game's option (a single leg, or a same-game group worked by
+   pbExact alone) has the very chance and price it carries on the card.
 
    One game (a night game, or a unit of one game): pbFreeCands walks every set of 2 to cap of its legs that go together on
    one slip (pbPairOk on each pair) depth first, the legs likeliest first, on the search's own figures (pbCtx: each leg's
@@ -6443,14 +6463,17 @@ function pbExact(legs,floor,minDec){
    Extreme 4.540% where the uncapped search found 4.605%; on real Day games no game came near the cap and no group ever
    entered a level.
    The complete parlays within PB_FREE.WIN of the best (BORDER with no group) are worked on the card, at most WIN_EVALS, every
-   pair held to pbFits, the likeliest that pays by pbFreeRank.
+   pair held to pbFits, the likeliest that pays by pbFreeRank. (app v146) The groups' walks, the groups worked in full and
+   the knapsack with groups draw on one work budget a level (PB_FREE.GWORK), and every pass and walk of a level of one game
+   on another (PB_FREE.WORK), each counted in PB_W, never timed.
 
    Passes (both): where pool.pref is not empty (a chance hook's Value picks, setChanceHook; dormant) parlays of exactly k thin
    legs, k from 0, the first k that pays; else one pass on pref and thin. Where none pays, the totals' pass: pref and thin the
    base and the totals the fill, exactly k totals for k from 1 (one at most in one game), the first k that pays (fewest
    totals first, as app v144's pbLevel). None: the level is empty.
 
-   How close it comes to an independent enumeration of every parlay, and how fast, is in patch_free_legs.py's docstring.
+   How close it comes to an independent enumeration of every parlay, and how fast, is in patch_free_legs.py's docstring
+   (app v146's budgets, and what they cost, in patch_free_legs_review.py's).
    (app v144 to app v145: pbLevelCands, pbLevelPick and pbLevel, each level a fixed size; the Sunday slot each game's own set,
    the slot's level the best of theirs, spSlotBuild) */
 const PB_LV_CAP=12, PB_PICK='likeliest-any';
@@ -6458,11 +6481,38 @@ const PB_FREE={M:1500,DELTA:0.15,TOL:5e-4,E1:1500,E2:300,E3:12000,
   SLACK:[1,1,1.05,1.10,1.20,1.30,1.35,1.40,1.45,1.50,1.55,1.60,1.65],
   C:[1,1,1.03,1.04,1.05,1.06,1.08,1.09,1.10,1.11,1.12,1.13,1.14],
   C2:[1,1,1,1.12,1.15,1.18,1.21,1.24,1.27,1.30,1.33,1.36,1.39],
-  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9,SLEP:1.05,SLT:1.03,UNITS1:2000,NODES1:6000000,UNITS2:1000,NODES2:500000};
+  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9,SLEP:1.05,SLT:1.03,UNITS1:2000,NODES1:6000000,UNITS2:1000,NODES2:500000,
+  WORK:1500000,RT:200000,R2:150000,RW:100000,GWORK:1200000,GWALK:600000,GFLOOR:10000,GR:300000};
+/* (v146) a level's work, deterministic and alike on every machine, in microseconds of jsdom on the box it was measured on
+   (a 4-CPU 2.1 GHz Xeon): a walk's node NODE, each leg its children read KID, a candidate kept KEEP, a parlay of n legs worked in full EX n^2 and its draws
+   (pbDraws: a same-game group of g legs with a pair moving draws its price, 20000 trials of g(g+1)/2 terms, and where it
+   pays and any pair moves its chance, 40000 trials of n(n+1)/2) DRAW a term (DRAW9 in a row of 9 legs or more, worked by
+   the generic loop), a step of the knapsack across games DP; a set worked again within a level costs nothing (its result
+   kept). PB_FREE.WORK is a level's (every pass and walk of a level of one game: the passes before a totals' pass leave it
+   RT, a first walk leaves its pass's second walk R2, a walk's candidates leave its parlays worked in full RW), GWORK the
+   Day games' groups' (GWALK of it their walks, each game's leaving GFLOOR to each game after it; the rest the groups worked
+   in full, best key first across the games, leaving GR to the knapsack with groups and the parlays it gives worked on the
+   card) */
+const PB_W={NODE:0.3,KID:0.07,KEEP:7.5,EX:4,DRAW:0.00025,DRAW9:0.003,DP:0.3};
 /* (the review of app v145) a parlay worked in full, in units of a 5-leg price (about 0.4 ms in jsdom): its price's draws,
-   and, where it pays, its chance's (about 1.3 times as dear), each dearer with its legs (the draws' rows), so a level's
-   passes share PB_FREE.UNITS of them and its work is bounded alike on every machine */
+   and, where it pays, its chance's (about 1.3 times as dear), each dearer with its legs (the draws' rows): a walk's own
+   budget (UNITS1, UNITS2) */
 const pbFreeCost=(n,paid)=>{ const u=Math.max(0.4,n*n/25); return paid?2.3*u:u; };
+/* (v146) a parlay worked in full, in the level's work (PB_W): its n legs, whether it paid (its chance drawn), and its
+   same-game groups' sizes where a pair of the group moves (cg: [g, ...]; one game's set: [n] where it moves, else []) */
+function pbWorkEx(n,paid,cg){
+  let d=0, d9=0; const add=(o,k)=>{ if(k>=9) d9+=o; else d+=o; };
+  for(const g of cg) add(20000*g*(g+1)/2,g);
+  if(paid&&cg.length) add(40000*n*(n+1)/2,n);
+  return PB_W.EX*n*n+d*PB_W.DRAW+d9*PB_W.DRAW9;
+}
+/* whether a pair of these legs (one game's) moves, as parlayProb reads it */
+const pbMoves=ls=>{ for(let i=0;i<ls.length;i++) for(let j=i+1;j<ls.length;j++) if(Math.abs(legRho(ls[i],ls[j]))>=0.03) return true; return false; };
+/* a walk's budget (pbTake): its own (u units, n nodes, as before) and the level's work less a reserve (res) for what comes
+   after it; pbGive charges the level what the walk spent (and PB_LV_STAT.w, for the checks); seen, the level's sets worked
+   in full (by id: pbExact's result, or false), each worked and charged once */
+const pbTake=(LV,u,n,res)=>{ const w=LV.w-(res||0); return {u,n,w,w0:w,seen:LV.seen}; };
+const pbGive=(LV,b)=>{ const s=b.w0-b.w; LV.w-=s; b.w0=b.w; PB_LV_STAT.w+=s; };
 /* (the review of 7 November 2026) the opposite-sign make (pbLvOpp): each link of 0.1 or more */
 const PB_LV_OPP=0.1;
 /* whether a leg of the parlay (its legs' places in x) is linked to two others at opposite effective signs (each correlation
@@ -6475,15 +6525,16 @@ function pbLvOpp(x,s){
   return false;
 }
 /* what the last searches did, for the checks and the measurements (parlays worked in full, kept, runs): drawn nowhere */
-const PB_LV_STAT={ev:0,kept:0,runs:0,second:0,opp:0,groups:0,nodes:0,units:0};
+const PB_LV_STAT={ev:0,kept:0,runs:0,second:0,opp:0,groups:0,nodes:0,units:0,w:0,gw:0,dp:0,pk:0};
 /* the rule's order: the chance to 1e-9, then the fewer legs, then the larger lean (to 1e-9), then the lower id */
-const pbFreeRank=(a,b)=>(pbEvKey(b.pr)-pbEvKey(a.pr))||(a.n-b.n)||(pbEvKey(b.ln)-pbEvKey(a.ln))||a.id.localeCompare(b.id);
+const pbFreeRank=(a,b)=>(pbEvKey(b.pr)-pbEvKey(a.pr))||(a.n-b.n)||(pbEvKey(b.ln)-pbEvKey(a.ln))||enCmp(a.id,b.id);
 /* one game's sets of 2 to cap of I (places in x), kept by key. mode 'level': the M best keys (min(c, c*d/F) where the price
    read times its slack pays F); 'level1' (the second walk): c where the price read pays; 'front' (a group of a game of
    several): every set whose key (c where it pays F, else c*rOb*d/F) is at least thr0. fl, k: the fill legs (fl[i]) and exactly
    how many a candidate holds (none, k null). c is the reading's chance (each leg's chance times its lifts with the legs taken,
    never above the parent's), q the book's, mult the legs multiplied, psi = SGP_HOLD * prod(p/q) * prod(lift/book lift) */
-function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k,B){
+function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k,B,res){
+  res=res||0;
   const m=I.length, out={key:[],set:[],over:false}; if(m<2) return out;
   /* the legs likeliest first; (the review of app v145) on the second walk those that give the most price for the chance they
      cost first (the log of the price over the log of the chance), so its sets reach F in the legs a price takes before its
@@ -6512,7 +6563,7 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k,B){
   let thr=FR||mode==='level1'?thr0:-Infinity, keys=[], sets=[], lim=2*M, kmax=-Infinity;
   /* the kept: the M best keys, and none under (1-DELTA) times the best met; pruned again only once another M have come in
      past what the last prune kept, every tie of the M-th kept (app v144's rule) */
-  const prune=()=>{ const kth=pbKth(Float64Array.from(keys),Math.min(M,keys.length)), T=FR?Math.max(thr0,kth):Math.max(kth,kmax*(1-PB_FREE.DELTA)), K2=[], S2=[];
+  const prune=()=>{ PB_LV_STAT.pk+=keys.length; const kth=pbKth(Float64Array.from(keys),Math.min(M,keys.length)), T=FR?Math.max(thr0,kth):Math.max(kth,kmax*(1-PB_FREE.DELTA)), K2=[], S2=[];
     for(let i=0;i<keys.length;i++) if(keys[i]>=T){ K2.push(keys[i]); S2.push(sets[i]); }
     if(K2.length<keys.length) out.over=true; keys=K2; sets=S2; thr=T; lim=Math.max(2*M,keys.length+M); };
   for(let i=0;i<m;i++){ CAND[0][i]=i; WM[0][i]=1; WB[0][i]=1; WS[0][i]=1; } CN[0]=m; pr[0]=1; pb[0]=1; mu[0]=1; ps[0]=SGP_HOLD;
@@ -6520,13 +6571,13 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k,B){
     const C=CAND[d], wm=WM[d], wb=WB[d], ws=WS[d], ng=NG[d], cg=CG[d], cn=CN[d];
     for(let s=0;s<cn;s++){
       const j=C[s]; if(k!=null&&FL[j]&&nf>=k) continue; const neg=SN[d]|ng[s], cor=SC[d]|cg[s]; PB_LV_STAT.nodes++;
-      if(B&&--B.n<0){ out.cut=true; return; }
+      if(B&&(--B.n<0||(B.w-=PB_W.NODE)<res)){ out.cut=true; return; }
       const c=d?Math.min(pr[d],pr[d]*P[j]*wm[s]):P[j], q=Math.min(1,pb[d]*Q[j]*wb[s]), mult=mu[d]*DE[j], psi=ps[d]*R[j]*wm[s]/wb[s], n=d+1, nf2=nf+FL[j];
       if(c<thr) continue;
       const dd=n>=2?Math.min(mult,(q>0?SGP_HOLD/q:mult)):mult;
       if(n>=2&&(k==null||nf2===k)){
         const key=FR?(dd>=F?c:c*rOb*dd/F):mode==='level1'?(dd*SLT>=F&&mult>=F*(1-1e-12)&&(neg||(cor?mult*SLEP:mult*SGP_HOLD*(1+1e-12))>=F)?c:-1):(dd*SL[Math.min(n,SL.length-1)]>=F&&mult>=F*(1-1e-12)&&(neg||(cor?mult*SLEP:mult*SGP_HOLD*(1+1e-12))>=F)?Math.min(c,c*dd/F):-1);
-        if(key>=thr&&key>0){ ch[d]=j; keys.push(key); const S=new Array(n); for(let a=0;a<n;a++) S[a]=L[ch[a]]; sets.push(S);
+        if(key>=thr&&key>0){ ch[d]=j; keys.push(key); const S=new Array(n); for(let a=0;a<n;a++) S[a]=L[ch[a]]; S.cor=cor; sets.push(S); if(B) B.w-=PB_W.KEEP;
           if(FR){ if(M&&keys.length>=lim) prune(); } else { if(keys.length>=lim) prune(); if(key>kmax){ kmax=key; if(kmax*(1-PB_FREE.DELTA)>thr) thr=kmax*(1-PB_FREE.DELTA); } } } }
       if(n>=cap) continue;
       if(!FR&&mult*TOP[(j+1)*W+(cap-n)]<F*(1-1e-12)) continue;
@@ -6536,6 +6587,7 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k,B){
       for(let u=s+1;u<cn;u++){ const v=C[u]; if(!OK[row+v]) continue; const a=wm[u]*LM[row+v]; C2[c2]=v; wm2[c2]=a; wb2[c2]=wb[u]*LB[row+v]; const w2=ws[u]*SQ[row+v]; ws2[c2]=w2; ng2[c2]=ng[u]|(NEG[row+v]&1); cg2[c2]=cg[u]|(NEG[row+v]?1:0);
         const g=R[v]*SIG[v]*w2; if(g>1) H*=g; if(g>g1){ g3=g2; g2=g1; g1=g; } else if(g>g2){ g3=g2; g2=g; } else if(g>g3) g3=g;
         const pc=P[v]*a*SIGC[v]; if(pc>p1){ p3=p2; p2=p1; p1=pc; } else if(pc>p2){ p3=p2; p2=pc; } else if(pc>p3) p3=pc; c2++; }
+      if(B) B.w-=PB_W.KID*(cn-s-1);
       if(!c2) continue;
       /* every set under this one has a leg more at least (its growth g and chance factor p the best one leg left can give);
          in the level modes one that cannot pay yet two or three more where the dearest legs left cannot bring it to F, and
@@ -6561,38 +6613,46 @@ function pbFreeCands(x,I,F,cap,M,mode,thr0,rOb,fl,k,B){
    alone (pbLvOpp) to max(C, C2) at their size, at most E2 */
 function pbFreeWalk(x,cand,F,mode,B,bar){
   const E=cand.set.map((s,i)=>({key:cand.key[i],s,ln:s.reduce((a,c)=>a+x.ln[c],0),id:s.map(c=>x.id[c]).sort().join(',')}));
-  E.sort((a,b)=>(pbEvKey(b.key)-pbEvKey(a.key))||(pbEvKey(b.ln)-pbEvKey(a.ln))||a.id.localeCompare(b.id));
+  E.sort((a,b)=>(pbEvKey(b.key)-pbEvKey(a.key))||(pbEvKey(b.ln)-pbEvKey(a.ln))||enCmp(a.id,b.id));
   const C=PB_FREE.C, C2=PB_FREE.C2, TOL=PB_FREE.TOL, SUFC=new Float64Array(E.length+1);
   for(let i=E.length-1;i>=0;i--) SUFC[i]=Math.max(SUFC[i+1],C[E[i].s.length]);
   let best=bar||null, ev=0, ev2=0, i=0, mine=null, cut=false; const rest=[];
-  const work=e=>{ const r=pbExact(e.s.map(c=>x.L[c]),0,F), u=pbFreeCost(e.s.length,!!r); B.u-=u; PB_LV_STAT.units+=u; if(!r) return; const c={pr:r.corr,n:e.s.length,ln:e.ln,id:e.id}; if(!best||pbFreeRank(c,best)<0){ best={...c,r}; mine=best; } };
+  const work=e=>{ let r=B.seen?B.seen.get(e.id):undefined; const hit=r!==undefined; if(!hit){ r=pbExact(e.s.map(c=>x.L[c]),0,F); if(B.seen) B.seen.set(e.id,r||false); }
+    const u=pbFreeCost(e.s.length,!!r); B.u-=u; PB_LV_STAT.units+=u; if(!hit) B.w-=pbWorkEx(e.s.length,!!r,e.s.cor?[e.s.length]:[]); if(!r) return; const c={pr:r.corr,n:e.s.length,ln:e.ln,id:e.id}; if(!best||pbFreeRank(c,best)<0){ best={...c,r}; mine=best; } };
   const cap=mode===1?PB_FREE.E3:PB_FREE.E1;
   for(;i<E.length;i++){ const e=E[i], n=e.s.length;
     if(best&&e.key*SUFC[i]<best.pr+TOL) break;
     if(best&&e.key*C[n]<best.pr+TOL){ rest.push(e); continue; }
-    if(ev>=cap||B.u<=0){ cut=true; break; } ev++; work(e); }
+    if(ev>=cap||B.u<=0||B.w<=0){ cut=true; break; } ev++; work(e); }
   if(best&&mode!==1){ for(;i<E.length;i++) rest.push(E[i]);
-    for(const e of rest){ const n=e.s.length; if(e.key*Math.max(C[n],C2[n])<best.pr+TOL) continue; if(!pbLvOpp(x,e.s)) continue; if(ev2>=PB_FREE.E2||B.u<=0) break; ev2++; PB_LV_STAT.opp++; work(e); } }
+    for(const e of rest){ const n=e.s.length; if(e.key*Math.max(C[n],C2[n])<best.pr+TOL) continue; if(!pbLvOpp(x,e.s)) continue; if(ev2>=PB_FREE.E2||B.u<=0||B.w<=0) break; ev2++; PB_LV_STAT.opp++; work(e); } }
   PB_LV_STAT.ev+=ev+ev2; PB_LV_STAT.runs++;
   return {best,mine,ev:ev+ev2,cut};
 }
 /* (the review of app v145) a paying parlay to start the second walk from: the game's legs that fit taken greedily, those that
    give the most price for the chance they cost first (the log of the price over the log of the chance), each set worked in
-   full (pbExact) once its legs multiplied reach F, till one pays (at most cap legs, from B's units); its chance over C at
-   the cap is the second walk's bar, below which no set's reading can beat it (none where k fill legs are asked: the passes
-   with a preferred list) */
+   full (pbExact) once its legs multiplied reach F, till one pays (at most cap legs, from B's units and, app v146, the
+   level's work, a set the level has worked already read from its seen map; none where k fill legs are asked: the passes
+   with a preferred list). Its chance over C at the cap is the second walk's bar: a set whose reading's chance is under it
+   is not kept. C is measured (the 99th percentile of the chance in full over the reading), not a bound, and an
+   opposite-sign set (pbLvOpp) of 4 legs or more can run further over its reading than C at the cap (C2, 1.15 to 1.39,
+   against 1.14), so the bar can let one go that is likelier than the parlay it stands on (the second review of app v145;
+   accepted, app v146) */
 function pbFreeSeed(x,I,F,cap,fl,k,B){
   if(k!=null) return null;
   const ord=I.slice().sort((a,b)=>((Math.log(x.dec[b])/-Math.log(Math.max(1e-9,x.p[b])))-(Math.log(x.dec[a])/-Math.log(Math.max(1e-9,x.p[a]))))||(x.id[a]<x.id[b]?-1:x.id[a]>x.id[b]?1:0));
   const cur=[]; let mult=1;
-  for(const i of ord){ if(cur.length>=cap||B.u<=0) break; const l=x.L[i]; if(!pbFits(cur,l)) continue; cur.push(l); mult*=x.dec[i];
-    if(cur.length>=2&&mult>=F*(1-1e-12)){ const r=pbExact(cur,0,F), u=pbFreeCost(cur.length,!!r); B.u-=u; PB_LV_STAT.units+=u; PB_LV_STAT.ev++; if(r) return r; } }
+  for(const i of ord){ if(cur.length>=cap||B.u<=0||B.w<=0) break; const l=x.L[i]; if(!pbFits(cur,l)) continue; cur.push(l); mult*=x.dec[i];
+    if(cur.length>=2&&mult>=F*(1-1e-12)){ const id=cur.map(pbId).sort().join(','); let r=B.seen?B.seen.get(id):undefined; const hit=r!==undefined; if(!hit){ r=pbExact(cur,0,F); if(B.seen) B.seen.set(id,r||false); }
+      const u=pbFreeCost(cur.length,!!r); B.u-=u; PB_LV_STAT.units+=u; if(!hit) B.w-=pbWorkEx(cur.length,!!r,pbMoves(cur)?[cur.length]:[]); PB_LV_STAT.ev++; if(r) return r; } }
   return null;
 }
-/* one game, one pass: legs (fl, k: the fill legs and exactly how many) */
-function pbFreeGame(x,legs,fl,k,F,cap){
-  const I=legs.map(l=>pbCtxLeg(x,l)), B={u:PB_FREE.UNITS1,n:PB_FREE.NODES1};
-  const c1=pbFreeCands(x,I,F,cap,PB_FREE.M,'level',0,1,fl,k,B), w1=pbFreeWalk(x,c1,F,0,B,null);
+/* one game, one pass: legs (fl, k: the fill legs and exactly how many). (app v146) LV: the level's work, which every pass of
+   the level draws on (pbFreeOne makes it); a caller that wraps pbFreeGame hands it on, or each pass gets a fresh one */
+function pbFreeGame(x,legs,fl,k,F,cap,LV){
+  LV=LV||{w:PB_FREE.WORK,seen:new Map()};
+  const I=legs.map(l=>pbCtxLeg(x,l)), B=pbTake(LV,PB_FREE.UNITS1,PB_FREE.NODES1,PB_FREE.R2);
+  const c1=pbFreeCands(x,I,F,cap,PB_FREE.M,'level',0,1,fl,k,B,PB_FREE.RW), w1=pbFreeWalk(x,c1,F,0,B,null); pbGive(LV,B);
   if(w1.best&&!w1.cut&&!c1.cut) return w1.best.r;
   /* (the review of app v145) none paid, or the first walk ended at its cap or its budget before its stop: first the second
      walk, the sets whose reading pays within PB_FREE.SLT by the reading's chance, the first walk's best (or a greedy paying
@@ -6601,29 +6661,39 @@ function pbFreeGame(x,legs,fl,k,F,cap){
      past its cap); then, where none paid and candidates were let go, the search again keeping eight and sixty-four times as
      many, the best so far its bar; every walk from the level's budgets (B, B2) */
   let best=w1.best||null;
-  const B2={u:PB_FREE.UNITS2,n:PB_FREE.NODES2};
-  if(w1.ev){ PB_LV_STAT.second++; const sd=pbFreeSeed(x,I,F,cap,fl,k,B2), s0=sd?{pr:sd.corr,n:sd.legs.length,ln:sd.legs.reduce((a,l)=>a+pbLean(l),0),id:sd.legs.map(pbId).sort().join(','),r:sd}:null;
+  const B2=pbTake(LV,PB_FREE.UNITS2,PB_FREE.NODES2);
+  /* (v146) the second walk also where the first walk's candidates were cut before it worked any */
+  if(w1.ev||c1.cut){ PB_LV_STAT.second++; const sd=pbFreeSeed(x,I,F,cap,fl,k,B2), s0=sd?{pr:sd.corr,n:sd.legs.length,ln:sd.legs.reduce((a,l)=>a+pbLean(l),0),id:sd.legs.map(pbId).sort().join(','),r:sd}:null;
     const b0=best&&(!s0||pbFreeRank(best,s0)<0)?best:s0;
-    const c=pbFreeCands(x,I,F,cap,PB_FREE.M,'level1',b0?b0.pr/PB_FREE.C[cap]:0,1,fl,k,B2), w=pbFreeWalk(x,c,F,1,B2,b0); best=w.best; }
+    const c=pbFreeCands(x,I,F,cap,PB_FREE.M,'level1',b0?b0.pr/PB_FREE.C[cap]:0,1,fl,k,B2,PB_FREE.RW), w=pbFreeWalk(x,c,F,1,B2,b0); best=w.best; }
+  pbGive(LV,B2);
   if(w1.best) return best?best.r:null;
-  B.u=Math.max(0,B.u)+Math.max(0,B2.u); B.n=Math.max(0,B.n)+Math.max(0,B2.n);
-  if(c1.over) for(let M=PB_FREE.M*8;M<=PB_FREE.M*64&&B.u>0&&B.n>0;M*=8){ const c=pbFreeCands(x,I,F,cap,M,'level',0,1,fl,k,B), w=pbFreeWalk(x,c,F,0,B,best); if(w.best) best=w.best; if(w.mine||!c.over) break; }
+  const B3=pbTake(LV,Math.max(0,B.u)+Math.max(0,B2.u),Math.max(0,B.n)+Math.max(0,B2.n));
+  if(c1.over) for(let M=PB_FREE.M*8;M<=PB_FREE.M*64&&B3.u>0&&B3.n>0&&B3.w>0;M*=8){ const c=pbFreeCands(x,I,F,cap,M,'level',0,1,fl,k,B3), w=pbFreeWalk(x,c,F,0,B3,best); if(w.best) best=w.best; if(w.mine||!c.over) break; }
+  pbGive(LV,B3);
   return best?best.r:null;
 }
 /* one game's level: the passes */
 function pbFreeOne(pool,F,memo,cap){
-  const x=pbCtx(memo), P=pool.pref, base=[...P,...pool.thin];
+  const x=pbCtx(memo), P=pool.pref, base=[...P,...pool.thin], mk=pool.mkt||[], nT=new Set(mk.map(l=>l.gid)).size;
+  /* (v146) the level's work, every pass drawing on it: those before the totals' pass leave it RT, whether or not the pool has
+     a total, so a level with no total is the same parlay on the pool without its totals (the audit holds it so) */
+  const LV={w:PB_FREE.WORK,seen:new Map()}, LV0={w:LV.w-PB_FREE.RT,seen:LV.seen}, w00=LV0.w;
+  let r=null;
   if(P.length){ const fl=base.map((l,i)=>i>=P.length);
-    for(let k=0;k<=cap&&k<=pool.thin.length;k++){ const r=pbFreeGame(x,base,fl,k,F,cap); if(r) return r; } }
-  else { const r=pbFreeGame(x,base,null,null,F,cap); if(r) return r; }
-  const mk=pool.mkt||[], nT=new Set(mk.map(l=>l.gid)).size; if(!nT) return null;
+    for(let k=0;k<=cap&&k<=pool.thin.length&&!r;k++) r=pbFreeGame(x,base,fl,k,F,cap,LV0); }
+  else r=pbFreeGame(x,base,null,null,F,cap,LV0);
+  LV.w-=w00-LV0.w;
+  if(r) return r; if(!nT) return null;
   const all=[...base,...mk], fl=all.map((l,i)=>i>=base.length);
-  for(let k=1;k<=nT;k++){ const r=pbFreeGame(x,all,fl,k,F,cap); if(r) return r; }
+  for(let k=1;k<=nT;k++){ const r=pbFreeGame(x,all,fl,k,F,cap,LV); if(r) return r; }
   return null;
 }
 /* the knapsack across games: G, a game's options each {c, d, n, ln, legs, t (its fill count)}; k: exactly how many fill legs
-   (none, null); tol: how far under the best a complete parlay is returned */
-function pbFreeDp(G0,F,cap,tol,k){
+   (none, null); tol: how far under the best a complete parlay is returned; W: (v146) a budget its steps draw on (PB_W.DP a
+   partial taken with an option), the knapsack ending where it is spent (cut) with what it found (none: where every option
+   is a single leg) */
+function pbFreeDp(G0,F,cap,tol,k,W){
   const G=G0.map(g=>g.filter(o=>o.n<=cap)), m=G.length, Dmax=new Float64Array(m+1), Rmax=new Float64Array(m+1); Dmax[m]=1; Rmax[m]=1;
   for(let i=m-1;i>=0;i--){ let dm=1, rm=1; for(const o of G[i]){ if(o.d>dm) dm=o.d; if(o.c*o.d>rm) rm=o.c*o.d; } Dmax[i]=Dmax[i+1]*dm; Rmax[i]=Rmax[i+1]*rm; }
   const B=PB_FREE.BORDER, hi=F*(1+B), lo=F*(1-B), EPS=1e-12;
@@ -6631,8 +6701,9 @@ function pbFreeDp(G0,F,cap,tol,k){
   const setBest=c=>{ if(c>best){ best=c; low=pbEvKey(Math.max(0,best-tol)); } };
   /* a price at the border worked on the card (parlayDec on its legs, in the builder's order) */
   const pays=q=>q.d>=hi||parlayDec(pbOrder(q.o.flatMap(o=>o.legs).map(l=>({...l}))).map(l=>({leg:l,ml:l.price})))>=F;
-  for(let i=0;i<m;i++){ const nx=Pp.slice();
-    for(const p of Pp) for(const o of G[i]){ const n=p.n+o.n; if(n>cap) continue; const tt=p.t+(o.t||0); if(k!=null&&tt>k) continue;
+  let cut=false;
+  for(let i=0;i<m&&!cut;i++){ const nx=Pp.slice();
+    stage: for(const p of Pp) for(const o of G[i]){ if(W){ PB_LV_STAT.dp++; if((W.w-=PB_W.DP)<0){ cut=true; break stage; } } const n=p.n+o.n; if(n>cap) continue; const tt=p.t+(o.t||0); if(k!=null&&tt>k) continue;
       const c=p.c*o.c, kc=pbEvKey(c); if(kc<low) continue; const d=p.d*o.d, ln=p.ln+o.ln;
       const q={c,d,n,ln,kc,kl:pbEvKey(ln),t:tt,o:p.o.concat(o)};
       if(n>=2&&(k==null||tt===k)&&d>=lo&&pays(q)){ done.push(q); setBest(c); continue; }
@@ -6656,7 +6727,7 @@ function pbFreeDp(G0,F,cap,tol,k){
       for(const q of blk) if(q.d>bestD[q.n]) bestD[q.n]=q.d;
       a=b; }
   }
-  done=done.filter(q=>q.kc>=low); done.sort((a,b)=>(b.c-a.c)||(a.n-b.n)||(b.ln-a.ln)); return {best,done};
+  done=done.filter(q=>q.kc>=low); done.sort((a,b)=>(b.c-a.c)||(a.n-b.n)||(b.ln-a.ln)); return {best,done,cut};
 }
 /* a unit's level: pools, one {pref, thin, mkt} a game (a game with no legs dropped); one game, its own search; several, the
    knapsack, each game's single legs and, where they can help, its groups */
@@ -6668,36 +6739,61 @@ function pbFreeUnit(pools0,F,memo,cap){
   const x=pbCtx(memo);
   const srt=a=>a.sort((u,v)=>(v.c-u.c)||(v.ln-u.ln)||(v.d-u.d)||(u.id<v.id?-1:u.id>v.id?1:0));
   const FMg=Math.max(PB_FREE.FM,Math.floor(PB_FREE.FMT/pools.length));
+  /* (v146) the groups' work (GWORK), every pass and try of the level drawing on it: their walks GWALK of it (GV, each game's
+     leaving GFLOOR to each game after it), then the groups worked in full, the games' together best key first, each once
+     (kept from try to try: pbExact the same each time), leaving GR to the knapsack with groups and the parlays it gives
+     worked on the card (the first always) */
+  const GV={w:PB_FREE.GWALK}, GB={w:PB_FREE.GWORK-PB_FREE.GWALK}, seen=new Map();
   const pass=(withTot,fillOf,k)=>{
-    const legsOf=p=>[...p.pref,...p.thin,...(withTot?p.mkt||[]:[])], fillN=ls=>fillOf?ls.reduce((a,l)=>a+fillOf(l),0):0;
+    const legsOf=p=>[...p.pref,...p.thin,...(withTot?p.mkt||[]:[])], fillN=ls=>fillOf?ls.reduce((a,l)=>a+fillOf(l),0):0, g0=GB.w+GV.w;
     const singles=pools.map(p=>srt(legsOf(p).map(l=>({c:l.p,d:mlToDec(l.price)||1,n:1,ln:pbLean(l),legs:[l],t:fillN([l]),id:pbId(l)}))));
-    let r0=pbFreeDp(singles,F,cap,0,k), opts=singles; const cb=r0.best;
+    const rS=pbFreeDp(singles,F,cap,0,k); let r0=rS, opts=singles; const cb=rS.best;
     let rO=0; for(const g of singles) for(const o of g) if(o.c*o.d>rO) rO=o.c*o.d;
     const rOb=rO<=1?rO:Math.pow(rO,pools.length-1);
     let added=0, thr=cb>0?cb:0.5*SGP_HOLD*rOb/F;
     for(let tries=1;;tries++){ const o2=singles.map(g=>g.slice()); added=0;
-      pools.forEach((p,gi)=>{ const legs=legsOf(p); if(legs.length<2) return; const I=legs.map(l=>pbCtxLeg(x,l));
-        const cnd=pbFreeCands(x,I,F,cap,FMg,'front',thr/PB_FREE.FRONT,rOb,null,null);
-        for(const s of cnd.set){ const ls=s.map(c=>x.L[c]), ex=pbExact(ls,0,0); if(!ex) continue;
-          const c=ex.corr, d=ex.dec, key=d>=F?c:c*rOb*d/F; if(key<thr) continue;
-          o2[gi].push({c,d,n:ls.length,ln:ls.reduce((a,l)=>a+pbLean(l),0),legs:ls,grp:1,t:fillN(ls),id:ls.map(pbId).sort().join(',')}); added++; } });
-      const r=added?pbFreeDp(o2.map(srt),F,cap,0,k):r0;
-      if(r.best>=thr||tries>=PB_FREE.TRIES){ r0=r; opts=o2.map(srt); break; }
+      const live=pools.map((p,gi)=>gi).filter(gi=>legsOf(pools[gi]).length>=2), E=[];
+      live.forEach((gi,j)=>{ const legs=legsOf(pools[gi]), I=legs.map(l=>pbCtxLeg(x,l));
+        const Bw=pbTake(GV,Infinity,Infinity,(live.length-j-1)*PB_FREE.GFLOOR), cnd=pbFreeCands(x,I,F,cap,FMg,'front',thr/PB_FREE.FRONT,rOb,null,null,Bw); pbGive(GV,Bw);
+        cnd.set.forEach((s,i)=>{ const ls=s.map(c=>x.L[c]); E.push({gi,ls,cor:!!s.cor,key:cnd.key[i],id:ls.map(pbId).sort().join(',')}); }); });
+      E.sort((a,b)=>(pbEvKey(b.key)-pbEvKey(a.key))||(a.id<b.id?-1:a.id>b.id?1:0));
+      for(const e of E){ const ls=e.ls; let ex=seen.get(e.id);
+        if(ex===undefined){ if(GB.w<=PB_FREE.GR) continue; ex=pbExact(ls,0,0)||null; GB.w-=pbWorkEx(ls.length,true,e.cor?[ls.length]:[]); seen.set(e.id,ex); }
+        if(!ex) continue;
+        const c=ex.corr, d=ex.dec, key=d>=F?c:c*rOb*d/F; if(key<thr) continue;
+        o2[e.gi].push({c,d,n:ls.length,ln:ls.reduce((a,l)=>a+pbLean(l),0),legs:ls,grp:1,cor:e.cor,t:fillN(ls),id:e.id}); added++; }
+      /* (v146) the knapsack with groups keeps the parlays within WIN of its best (its best the same at any tol), so the last
+         try's is the one worked on the card */
+      const r=added?pbFreeDp(o2.map(srt),F,cap,PB_FREE.WIN,k,GB):r0;
+      if(r.best>=thr||tries>=PB_FREE.TRIES||r.cut||GB.w<=PB_FREE.GR||GV.w<=0){ r0=r; opts=o2.map(srt); break; }
       thr=r.best>0?r.best:thr/4; }
     PB_LV_STAT.groups+=added;
-    const r1=pbFreeDp(opts,F,cap,added?PB_FREE.WIN:PB_FREE.BORDER,k);
+    const r1=added?r0:pbFreeDp(opts,F,cap,PB_FREE.BORDER,k);
+    /* a knapsack cut by the budget: the singles' own complete parlays beside what it found */
+    let done=r1.done; if(r1.cut){ const sk=new Set(done.map(q=>q.o.map(o=>o.id).join('|'))); done=done.concat(rS.done.filter(q=>!sk.has(q.o.map(o=>o.id).join('|')))).sort((a,b)=>(b.c-a.c)||(a.n-b.n)||(b.ln-a.ln)); }
+    /* (v146) the card's walk in the rule's order (pbFreeRank's on the knapsack's figures: the chance to 1e-9, the fewer
+       legs, the larger lean to 1e-9, the lower id by enCmp), so a walk the groups' budget or WIN_EVALS cuts keeps the
+       rule's first */
+    { const qid=q=>q.id||(q.id=q.o.flatMap(o=>o.legs).map(pbId).sort().join(',')); done=done.slice().sort((a,b)=>(b.kc-a.kc)||(a.n-b.n)||(b.kl-a.kl)||enCmp(qid(a),qid(b))); }
     let best=null, ev=0;
-    for(const q of r1.done){ if(ev>=PB_FREE.WIN_EVALS) break; const legs=q.o.flatMap(o=>o.legs);
+    for(const q of done){ if(ev>=PB_FREE.WIN_EVALS||(added&&best&&GB.w<=0)) break; const legs=q.o.flatMap(o=>o.legs);
       if(!legs.every((l,i)=>pbFits(legs.slice(0,i),l))) continue;
-      ev++; const ex=pbExact(legs,0,F); if(!ex) continue;
+      ev++; const ex=pbExact(legs,0,F); if(added) GB.w-=pbWorkEx(legs.length,!!ex,q.o.filter(o=>o.cor).map(o=>o.n)); if(!ex) continue;
       const c={pr:ex.corr,n:legs.length,ln:q.ln,id:legs.map(pbId).sort().join(',')}; if(!best||pbFreeRank(c,best)<0) best={...c,r:ex}; }
-    PB_LV_STAT.ev+=ev; PB_LV_STAT.runs++;
+    PB_LV_STAT.ev+=ev; PB_LV_STAT.runs++; PB_LV_STAT.gw+=g0-GB.w-GV.w;
     return best?best.r:null; };
   if(pools.some(p=>p.pref.length)){ const nThin=pools.reduce((a,p)=>a+p.thin.length,0);
     for(let k=0;k<=cap&&k<=nThin;k++){ const r=pass(false,l=>l.thin?1:0,k); if(r) return r; } }
   else { const r=pass(false,null,null); if(r) return r; }
   const nT=pools.filter(p=>(p.mkt||[]).length).length;
   for(let k=1;k<=nT;k++){ const r=pass(true,l=>l.market?1:0,k); if(r) return r; }
+  /* (the review of app v146) every pass ended with nothing found (a slate of a few day games whose single legs cannot reach
+     the price, its tries ending on the groups' walks before the threshold comes down): the greedy paying set across the
+     games (pbFreeSeed, as the one-game path seeds its second walk), the legs without the totals first, on what is left of
+     the groups' work and charged to it; none where no greedy set pays (a preferred list's passes take none) */
+  if(!pools.some(p=>p.pref.length)){ const seen2=new Map();
+    for(const wt of nT?[false,true]:[false]){ const I=pools.flatMap(p=>[...p.thin,...(wt?p.mkt||[]:[])]).map(l=>pbCtxLeg(x,l)), B={u:PB_FREE.UNITS2,n:PB_FREE.NODES2,w:GB.w,seen:seen2}, w0=B.w;
+      const sd=pbFreeSeed(x,I,F,cap,null,null,B); GB.w=B.w; PB_LV_STAT.gw+=w0-B.w; if(sd) return sd; } }
   return null;
 }
 /* a pool kept apart by game: an array of pools is taken as it is; one pool is split by its legs' games, in the order of
@@ -7787,7 +7883,8 @@ function spOpenSoft(){
   $('spHead').innerHTML=spHeadHtml();
   $('spSets').innerHTML=spSecHtml('all','')+'<p class="pb-none sp-building" data-sp-building role="status">Building the sets…</p>';
   spFocusBack(fk);
-  return new Promise(done=>{
+  /* (app v146) the run's promise kept on it (SP_SOFT.done), for a redraw's caller that waits for the tab drawn whole */
+  return run.done=new Promise(done=>{
     const next=()=>{
       if(SP_SOFT!==run){ done(false); return; }
       const tab=$('tab-suggest'); if(tab&&tab.hidden){ SP_SOFT=null; done(false); return; }
@@ -7799,6 +7896,15 @@ function spOpenSoft(){
     if(typeof requestAnimationFrame==='function') requestAnimationFrame(first); else first();
   });
 }
+/* (app v146) Suggested Parlays on the screen, drawn, with a set to build and no run of spOpenSoft going (a press dropped
+   the caches the sets stood on, or the parlay card's check of DraftKings' lines did, under the card): a run started, so the
+   draw that follows (renderParlay's renderSp) takes its steps again (spSoftAgain) rather than building every set in its
+   own task; false where there is none to start (a hidden tab builds nothing, and a run going is taken again by renderSp) */
+function spSoftShown(){
+  const tab=$('tab-suggest'); if(SP_SOFT||!tab||tab.hidden||!$('spSets')||!$('spHead')) return false;
+  return !!spOpenSoft();
+}
+window.spSoftShown=spSoftShown;
 /* the tab opened: its sets built and drawn (the prop model's tab switch has shown the section by the time
    the click reaches the document); by the reader's own click or key, without holding the page (spOpenSoft) */
 if(typeof document!=='undefined') document.addEventListener('click',e=>{
@@ -8395,7 +8501,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='2ab8685';
+const PAGE_HASH='d2024c8';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -9556,8 +9662,10 @@ window.PARLAY_CARD=(function(){
       modalKeep.observe(document.body,{attributes:true,attributeFilter:['class']}); } }catch(e){} }
   /* the page's espnRedraw held back while the card's own reads run (only espnRefresh calls it, and no other press can
      start while one runs): each read's redraw is owed, and drawn once after the last (flushRedraw). Where the page's
-     redraw is not this global (a part that wraps it), nothing is held and each read draws as a press does */
-  function holdRedraw(owe){ let real=null; try{ real=window.espnRedraw; if(typeof real!=='function') return null; window.espnRedraw=function(){ owe(); }; }catch(e){ return null; }
+     redraw is not this global (a part that wraps it), nothing is held and each read draws as a press does. (app v146) Each
+     held redraw says whether its read changed nothing the sets stand on (espnRedraw's same), and the one drawn after says
+     so only where every read did */
+  function holdRedraw(owe){ let real=null; try{ real=window.espnRedraw; if(typeof real!=='function') return null; window.espnRedraw=function(same){ owe(same===true); }; }catch(e){ return null; }
     const held=window.espnRedraw; return {real,put:()=>{ try{ if(window.espnRedraw===held) window.espnRedraw=real; }catch(e){} }}; }
   function check(m){
     const gids=[...new Set((m.dkLegs||[]).map(l=>l.gid))].filter(readable);
@@ -9577,7 +9685,7 @@ window.PARLAY_CARD=(function(){
     const of=`${(dk.ok||[]).length} of ${dk.n} leg${dk.n===1?'':'s'}`;
     return 'DraftKings’ lines checked: '+(dk.multi&&dk.all?`${of} on one slip, ${dk.games.length} game links.`:`${of} on the slip.`); }
   async function runCheck(c){
-    let bad=false, owed=false, real=null;
+    let bad=false, owed=false, same=true, real=null;
     try{
       for(const gid of c.gids){
         if(c!==ck) return;
@@ -9586,7 +9694,7 @@ window.PARLAY_CARD=(function(){
         if(espnBusy()){ while(espnBusy()){ await sleep(100); if(c!==ck) return; } afterRedraw(); }
         if(fresh(gid)) continue;
         if(!readable(gid)) continue;
-        const t0=Date.now(), h=holdRedraw(()=>{ owed=true; }); if(h&&!real) real=h.real;
+        const t0=Date.now(), h=holdRedraw(s=>{ owed=true; if(!s) same=false; }); if(h&&!real) real=h.real;
         let done;
         try{ done=await espnRefresh(gid); }finally{ if(h) h.put(); }
         if(c!==ck) return;
@@ -9597,7 +9705,7 @@ window.PARLAY_CARD=(function(){
     }catch(e){ bad=true; }
     finally{
       /* the page drawn once on what the reads found, closed card or not */
-      if(owed&&real){ try{ real(); }catch(e){ console.error(e); } }
+      if(owed&&real){ try{ real(same); }catch(e){ console.error(e); } }
       afterRedraw();
     }
     if(c!==ck) return;

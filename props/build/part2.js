@@ -2,13 +2,18 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const TEAM_COLORS={"ARI":["#97233F","#000000","#FFB612","#A5ACAF"],"ATL":["#A71930","#000000","#A5ACAF","#A30D2D"],"BAL":["#241773","#9E7C0C","#C60C30"],"BUF":["#00338D","#C60C30","#0C2E82","#D50A0A"],"CAR":["#0085CA","#000000","#BFC0BF"],"CHI":["#0B162A","#E64100"],"CIN":["#FB4F14","#000000","#D32F1E"],"CLE":["#FF3C00","#311D00","#A5ACAF","#D32F1E"],"DAL":["#002244","#B0B7BC","#ACC0C6","#A5ACAF"],"DEN":["#002244","#FB4F14","#00234C","#FF5200"],"DET":["#0076B6","#B0B7BC","#000000","#004E89"],"GB":["#203731","#FFB612","#1C2D25","#EEAD1E"],"HOU":["#03202F","#A71930","#00071C","#A30D2D"],"IND":["#002C5F","#A5ACAF","#013369","#9BA1A2"],"JAX":["#006778","#000000","#9F792C","#D7A22A"],"KC":["#E31837","#FFB612","#000000"],"LA":["#003594","#FFD100","#001532","#AF925D"],"LAC":["#007BC7","#FFC20E","#FFB612","#001532"],"LV":["#000000","#A5ACAF","#A6AEB0"],"MIA":["#008E97","#F58220","#005778"],"MIN":["#4F2683","#FFC62F","#E9BF9B","#000000"],"NE":["#002244","#C60C30","#B0B7BC","#001532"],"NO":["#D3BC8D","#000000","#9F8958"],"NYG":["#0B2265","#A71930","#A5ACAF","#012352"],"NYJ":["#125740","#000000","#FFFFFF"],"PHI":["#004C54","#A5ACAF","#ACC0C6","#000000"],"PIT":["#000000","#FFB612","#C60C30","#00539B"],"SEA":["#002244","#69BE28","#A5ACAF","#001532"],"SF":["#AA0000","#B3995D","#000000","#A5ACAF"],"TB":["#A71930","#322F2B","#000000","#FF7900"],"TEN":["#0C2340","#4B92DB","#C8102E"],"WAS":["#5A1414","#FFB612","#000000","#5B2B2F"]};
 const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
+/* (app v146) the one collation every order of a parlay's legs, chance or price stands on is sorted by (pbOrder and
+   parlayLegs on the name, the search's ids, the games' kickoffs): 'en', ICU's root order, the order the record gets in
+   Node (en-US), whatever language the visitor's browser speaks. One collator, shared: localeCompare(b,'en') makes one
+   on every call in Safari and Firefox */
+const EN_COLL=new Intl.Collator('en'), enCmp=(a,b)=>EN_COLL.compare(a,b);
 const MODEL_BUILD='2026.2 fit 2019-2025';
 let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPayload */
 /* what the saved season is checked against. DATA_BUILD is the model's own hash and moves
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v145 \u00b7 2026-11-08';
+const APP_BUILD='app v146 \u00b7 2026-11-10';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -387,6 +392,12 @@ function parlayProb(legs,sims=40000){
   const pairs=[];
   for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) if(Math.abs(R[i][j])>=0.03) pairs.push({i,j,rho:R[i][j]});
   if(!pairs.length) return {indep,corr:indep,pairs};
+  /* (app v146) legs of different games never move together (legRho 0), so the chance all land is the product over games of
+     each game's own: each game's legs, in the order given, worked on their own (the exact product where none of that game's
+     pairs moves, the seeded draw over that game's legs alone where one does), the games multiplied in the order they first
+     appear. A parlay of one game is exactly as before (patch_free_legs_review.py) */
+  const gids=[]; for(const l of legs) if(!gids.includes(l.gid)) gids.push(l.gid);
+  if(gids.length>1){ let corr=1; for(const g of gids) corr*=parlayProb(legs.filter(l=>l.gid===g),sims).corr; return {indep,corr,pairs}; }
   /* (app v135) the trials' normals worked once and kept, and an answer worked once and kept, both on the function itself:
      every call draws from the one seeded stream, ceil(n/2) Box-Muller pairs a trial (trial s of n legs: pairs s*q to
      s*q+q-1), and the count is a pure function of the trials, each leg's chance and side and the correlations Cholesky
@@ -663,7 +674,7 @@ function parlayLegs(){
        pulled for this leg, put on this fresh copy only, never on S.parlay; inert without the card */
     if(typeof window!=='undefined'&&typeof window.dkPulledFor==='function'){ try{ const P=window.dkPulledFor(x); if(P) x.pulled=P; }catch(e){} }
     return x; })
-    .sort((a,b)=>(a.week-b.week)||a.name.localeCompare(b.name));
+    .sort((a,b)=>(a.week-b.week)||enCmp(a.name,b.name));
 }
 
 /* ---------- the market: real main lines baked in per week ---------- */

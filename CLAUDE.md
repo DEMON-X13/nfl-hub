@@ -1522,7 +1522,9 @@ app v124 took the hands off the page) says its price is estimated; the parlay ca
 at its line or converted to DraftKings' number, and lists it to add by hand only where they have nothing
 for it (ESPN carries no outcome id for a player's line; since app v125 there are none but a by-hand pull's, so a visitor
 adds every player leg by hand, and on the admin's card Pull from DraftKings puts it on). A press drops every cache a price stands on (`PB_CACHE`, `PB_TOP_CACHE`,
-`SP_CACHE`, `GAME_TIER_CACHE`; `ESPN_SEQ` is in `pbDataSig` and `gameSuggestSig`) and redraws, the focus kept on
+`SP_CACHE`, `GAME_TIER_CACHE`; `ESPN_SEQ` is in `pbDataSig` and `gameSuggestSig`; since app v146 a press that changed nothing
+keeps the sets but a unit's with no player line, and with Suggested Parlays on the screen builds them again a level a step:
+**The press's redraw**, under "Bets and Stats: the loop") and redraws, the focus kept on
 the button wherever it was (a game's page, the Parlay Builder's controls or its builder, Suggested Parlays, the
 Props tab); a set is re-picked by a press until its lock and never after it.
 The status line says the published prices before a press (since app v125 the published read: "DraftKings’ lines as the
@@ -4355,14 +4357,16 @@ chance and price the legs' product, as `parlayProb` and `parlayDec` work them; a
 the best or the dearest the games left cannot bring it to the price, a partial of as many legs dominated only where another
 has at least its price capped at the level's and a chance a key ahead after any completion likely enough to matter, or as
 much and a lean a key larger, so a tie is the rule's; the best chance first, then the tie-safe front, every complete parlay
-within 1e-7 worked on the card), the very parlay by the rule where both are plain products (blocking on the week's own lines
-too), within 0.2 points where the level holds a same-game group (`ref23Aud` still works each game's pairs in full); and every
+within 1e-7 worked on the card), the very parlay by the rule (blocking on the week's own lines too), whatever it holds since
+app v146 (**A parlay's chance decomposes by game**, below; until then only where both were plain products, within 0.2 points
+where the level held a same-game group; `ref23Aud` still works each game's pairs in full); and every
 night level, and the engine's of one game, to a counterexample search of their own (`screenAud`, `screenOwn`: a screen of
 8,192 common draws of the game's own latent normals, its correlations shrunk till positive-definite, their own generator and
 seed, a leg landing where its normal passes its chance's threshold and its price's implied chance the same way; every set of 2
 to 6 legs, or one past the level's, that can be made, whose chance on the screen is within 2.5 of its noise's standard
 deviations of beating the level by 0.2 points and whose price on the screen is within 6% of the floor; the 400 likeliest
-worked in full), a counterexample a warning on the week's own same-game lines (`W.search`) and blocking on the made-up ones
+worked in full; since app v146 a candidate's price on the screen within 2.5 of its own noise of the floor, the candidates
+worked in their key's order to a noise stop, at most 3,000 priced: **The screens and the fixtures**, below), a counterexample a warning on the week's own same-game lines (`W.search`) and blocking on the made-up ones
 and in the smoke. On week 9 at Sunday 05:00 the audit holds the twelve Day games levels of its three passes to the knapsack
 exactly and finds no night counterexample. The knapsack reproduced all 16 Day games levels of the four payloads; the
 screen found no counterexample on any of their 32 night levels and, on the tenth-width search, TB at CHI's Extreme 0.81
@@ -4379,17 +4383,22 @@ points under a 6-leg one paying +1500, the walk by key at its cap of 1,500 first
 (`pbFreeCost`, `PB_FREE.UNITS1`, `NODES1`, `UNITS2`, `NODES2`: 2,000 units of a five-leg price and six million nodes for the
 first walk, 1,000 and half a million more; where the first walk's candidates are cut by its nodes, the second walk runs too),
 so each pass of a level of one game (`pbFreeGame`: the pass with no game total, then one with it, and on a hook's preferred
-list one for each count of fill legs) is bounded alike on every machine: the budgets are a pass's, not a level's, and the
-second review of app v145 timed a level at 4.4 to 4.8 s on sixty made-up independent legs and 4.3 s on sixty at -375 beside a
+list one for each count of fill legs) is bounded alike on every machine: since app v146 the budgets are a level's (**One
+work budget a level**, below: at most about 1.5 s of W, 1.27 to 1.56 s by the clock on the worst made-up pools on the
+4-CPU box); until then they were a pass's, not a level's, and the second review of app v145 timed a level at 4.4 to 4.8 s on sixty made-up independent legs and 4.3 s on sixty at -375 beside a
 total at +100 (12.5 million nodes over its two passes), where this said at most about 4 s (a first budget of a million nodes cut the
 candidates of the smoke's made-up lines on week 6's WAS at SF, 56 legs whose walk takes 5.3 million nodes, and its
 Aggressive fell 0.49 points under app v144's 10.172%, which the smoke's screen found at 0.215 points: six million keep it). Real
-levels use at most 1,710 units and 434,000 nodes (every game of weeks 7 to 9 taken as a night game, at most 2,622 units and
-949,356 nodes over a level's walks) and are as they were but one, week 9's TB at CHI Extreme at Saturday 18:00,
-likelier (4.5575% for 4.5325%). The eighteen legs' Safe is now the exhaustive enumeration's 29.730% in 2.0 s; twenty-four
-legs at 85 to 95% the one pool where the budget binds hard (28.977% in 4.0 s, unbounded 29.843% in 11.6 s). The audit's M18
+levels use at most 1,710 units and 434,000 nodes (every game of weeks 7 to 9 taken as a night game, across the four saved
+payloads at most 2,791 units, CLE at NO's, and 1,244,752 nodes, HOU at LAC's, over a level's walks, as measured for app v146,
+whose budgets leave the old measure as it was) and are as they were but one, week 9's TB at CHI Extreme at Saturday 18:00,
+likelier (4.5575% for 4.5325%). On the review's pools app v145's eighteen legs' Safe was the exhaustive enumeration's 29.730% in 2.0 s,
+and twenty-four legs at 85 to 95% the one pool where its pass budgets bound hard (28.977% in 4.0 s, unbounded 29.843% in
+11.6 s); neither pool was timed again under app v146, whose level budget holds a level of such legs to about 1.5 s (the
+budgets' own twenty-four short legs, below: 27.265% in 1.5 s where it took 4.0 s). The audit's M18
 F12 and the smoke's 1b (f) hold each pass of each level of eighteen such legs (the first eighteen draws of seed 777, not the
-review's pool) to the budgets, counted in the page's own units and nodes (`PB_LV_STAT`, through a wrap of `pbFreeGame`), each
+review's pool) to the budgets, counted in the page's own units and nodes (`PB_LV_STAT`, through a wrap of `pbFreeGame`, and
+since app v146 the whole level's work in W too: **One work budget a level**), each
 paying, Safe at least as likely as their own greedy paying set: on those pools the budget runs out and Safe is that greedy
 set, 12 legs, at 26.795% on the smoke's (where every set worked in full finds 28.010%, in about a minute) and 26.498% on the
 audit's own copy of the draws (where the search with its budgets lifted finds 28.360%), the budget's cost there. Until the second
@@ -4414,30 +4423,431 @@ and the smoke at the committed payload's clock, `:w9a` on week 9 at Sunday 05:00
 search, its speed and the checks, each finding then put to another). Fixed before the merge: the audit's M18 F12 and the
 smoke's 1b (f) held each level to under 5 s by the clock, which turns on the machine where every other blocking check turns
 on the code alone, and the audit gates the publish; they now hold each pass to the budgets in the page's own units and
-nodes (above). Three claims here were wrong and are corrected above: the budgets are a pass's, not a level's; the longest
+nodes (above). Three claims here were wrong and are corrected above: the budgets were a pass's, not a level's (a level's
+since app v146: **One work budget a level**); the longest
 step is about 1.5 to 1.8 times app v144's, not a third of it; and F12's pool is not the first review's. Left for a change of
-its own, each measured by the review and none moving a real level today: (1) a Day games slate of four games or fewer (a
-Christmas-on-Sunday week, as 2022's, or a Sunday of the playoffs wherever the page sets the slot out then) builds a level in
-3.4 to 8.4 s in one task, since where its single legs cannot reach the price the knapsack's same-game groups
-(`pbFreeCands`' front mode, in `pbFreeUnit`) are walked with no budget and up to 24,000 of them worked in full (app v144: 0.2
-s); (2) a level's passes do not share their budgets, so a level of one game can take about 4.8 s on sixty made-up legs; (3)
-the night screens (`screenAud`, `screenOwn`) work the 400 likeliest sets on their 8,192 draws, most of which do not pay, so
-their real tolerance runs to about 0.43 points where 0.2 is written, and they say nothing when they reach their node cap
-(both of week 9's made-up Extremes); (4) six real Extremes that need the second walk miss a paying parlay 0.03 to 0.065
-points likelier (week 8's CHI at SEA: 4.5950% where 4.6425% pays), inside `W.search`'s 0.2; (5) the Day games' knapsack
-takes each game's chance apart, while `parlayProb` draws every leg together once any pair moves, so on small made-up slates
-with a same-game group 9 of 320 levels miss by 0.015 to 0.50 points (no real Day games level has held a group); (6)
-`pbOrder` sorts names by the browser's own collation (`localeCompare`), so a Czech or Danish visitor's leg order, and with
-it a correlated set's stated chance and price, can differ from the record's (no real level of weeks 7 to 9 moved on 16
-locales; older than app v145); (7) a Refresh odds press, or a level's Finish, empties `SP_CACHE` even where nothing changed
-and builds every shown set again in one task, 1.3 to 1.5 s on week 9 (app v144's 2.6 to 2.8 s; older than app v145); (8) no
-fixture holds a Day games level whose answer is a same-game group of three legs or more, and only the smoke, not the
-audit, holds the exemption from the same-game floor for a set with a pair moving against each other.
+its own, each measured by the review and none moving a real level today, each since taken up by app v146 (**The follow-up
+of app v145 (app v146)**, below): (1) a Day games slate of four games or fewer (a Christmas-on-Sunday week, as 2022's)
+builds a level in 3.4 to 8.4 s in one task, since where its single legs cannot reach the price the knapsack's same-game
+groups (`pbFreeCands`' front mode, in `pbFreeUnit`) are walked with no budget and up to 24,000 of them worked in full (app
+v144: 0.2 s; app v146: the group path draws on a budget of its own, at most 1.46 s a level there, at a cost of about 0.1 to
+0.25 points of true chance: **One work budget a level**); (2) a level's passes do not share their budgets, so a level of one
+game can take about 4.8 s on sixty made-up legs (app v146: one budget a level, **One work budget a level**); (3) the night
+screens (`screenAud`, `screenOwn`) work the 400 likeliest sets on their 8,192 draws, most of which do not pay, so their real
+tolerance runs to about 0.43 points where 0.2 is written, and they say nothing when they reach their node cap (both of week
+9's made-up Extremes) (app v146: the candidates worked in their key's order to a noise stop, a screen past its node cap said
+as a lower bound: **The screens and the fixtures**); (4) six real Extremes that need the second walk miss a paying parlay
+0.03 to 0.065 points likelier (week 8's CHI at SEA: 4.5950% where 4.6425% pays), inside `W.search`'s 0.2 (accepted in app
+v146: **Accepted, and written down**); (5) the Day games' knapsack takes each game's chance apart, while `parlayProb` draws
+every leg together once any pair moves, so on small made-up slates with a same-game group 9 of 320 levels miss by 0.015 to
+0.50 points (no real Day games level has held a group) (app v146: `parlayProb` decomposes by game, so the knapsack and the
+card read a parlay alike: **A parlay's chance decomposes by game**); (6) `pbOrder` sorts names by the browser's own
+collation (`localeCompare`), so a Czech or Danish visitor's leg order, and with it a correlated set's stated chance and
+price, can differ from the record's (no real level of weeks 7 to 9 moved on 16 locales; older than app v145) (app v146: one
+collator, 'en', for every order a chance or price stands on: **One collation**); (7) a Refresh odds press, or a level's
+Finish, empties `SP_CACHE` even where nothing changed and builds every shown set again in one task, 1.3 to 1.5 s on week 9
+(app v144's 2.6 to 2.8 s; older than app v145) (app v146: a press that changed nothing keeps the sets, and the shown tab is
+built a level a step: **The press's redraw**); (8) no fixture holds a Day games level whose answer is a same-game group of
+three legs or more, and only the smoke, not the audit, holds the exemption from the same-game floor for a set with a pair
+moving against each other (app v146: M18's F13 and the smoke's 1b (g), a group of three, and F14 and 1b (h), the exemption:
+**The screens and the fixtures**).
 
 Wherever this file says, before this paragraph or after it, that a level is the likeliest of its size (2, 3, 4 or 5 legs),
 that the Sunday slot's levels are each one game's legs or the best of its games' own, or that the slot's empty level speaks
 of "any one game of the Sunday slot", that is history from app v145: every level is the likeliest parlay of 2 to 12 legs
 paying its price, the Day games one set across their games.
+
+**The follow-up of app v145 (app v146)** (10 November 2026: `props/build/patch_free_legs_review.py`, whose docstring is
+the design and the measurements, beside direct edits to `nflbets/build/card.html` and `build.js` and to the checks). The
+second review of app v145 left eight items for a change of their own (numbered there). Five designs prototyped and
+measured them, and a critique composed them in the order the script applies them: a parlay's chance by game (the
+review's item (5)), one collation (6), the press's redraw (7), and one work budget a level with one on the Day games'
+group path (2 and 1); items (3) and (8) are the checks' (**The screens and the fixtures**), and item (4) is accepted
+(**Accepted, and written down**). `APP_BUILD` is app v146. Every real level is the same parlay as app v145's: 264 levels
+(every live unit of the four saved payloads at their clocks, weeks 7 to 9, and every game of their live week still to
+kick off taken as a one-game unit), against app v145's page and against the critique's composition alike; only week 9's
+Day games cut to two to four games move (**One work budget a level**). A review of the whole change then put each of its
+findings to a verifier (the review of app v146): what it fixed is written below where each part is described, and none
+of it moves a level that filled before (the 264 levels and the slates' 28, 292 in all, the same parlays to the bit,
+words and all). `patch_free_legs.py` is left as it is: its docstring is app v145's history, its anchors app v144's text.
+
+**A parlay's chance decomposes by game** (the script's section 1; the second review's item (5)). `parlayProb` drew every
+leg of a parlay together once any pair moved (|r| ≥ 0.03), the other games' independent legs included, while the Day
+games' knapsack (`pbFreeDp`) multiplies each game's own chance (a single leg's, or a same-game group's own draw by
+`pbExact` alone): the card then carried draw noise on legs that move with nothing (about half a point between parlays of
+the same true chance), and the knapsack's dominance could drop the parlay whose draw came out luckier (9 of 320 small
+made-up Day games levels, by 0.015 to 0.50 points; at a million draws 8 of the 9 were the page's parlay truly as likely
+or likelier). Legs of different games never move together (`legRho` is 0 across games), so `parlayProb` now says so:
+where its legs span two games or more and a pair moves, each game's legs (in the order given, which `pbOrder`'s stable
+sort keeps the same alone or among the others) are worked by `parlayProb` on their own, the exact product where none of
+that game's pairs moves and that game's own seeded draw where one does, and the games are multiplied in the order they
+first appear; `indep` and `pairs` stay the whole parlay's. A parlay of one game, and every parlay with no moving pair,
+is unchanged to the bit, so `parlayDec` (a game a call), every night set, every one-game level, every Day games level of
+single legs and every level the record has locked but four are the same (the four: week 6's Sunday slot in the backtest,
+built across games before app v121, one parlay level and three Elo picks, drawn nowhere, their kept figures untouched;
+worked again they would move -0.10 to +0.18 points). Not split inside a game: `parlayDec`'s same-game price draws a
+game's legs together, and splitting a moneyline from a correlated pair of its game would move the price and chance of
+existing night levels. The search's docstring in `part3.js`, which said `parlayProb` "decomposes by game" where it did
+not, says how it does now. What moved: on weeks 7 to 9 (the four payloads at their clocks) no level of 280 (every live
+unit's, every game to come as a one-game unit, the all-games engine's); on week 9's Day games cut to two to six of its
+games (the only real-leg units where same-game groups enter the knapsack) 4 of 360 by this change alone (the budgets of
+the script's section 4 move the two- to four-game slates again: **One work budget a level**), each holding a group and
+each truly likelier after, by 0.11 to 0.13 points at four million draws a game (its old stated chance a joint draw 0.16
+to 0.18 points over its true one, so the stated chance fell 0.01 to 0.12 points); and on the small made-up Day games of
+the review's generator (seeds 11 to 15) the page's level the every-subset answer on 6,719 of 6,720 levels where app
+v145's missed 119, the one left a same-game pair alone that the groups' front bound (`FRONT`) cuts, as app v145's did
+(seed 13's trial 135: measured on the design's page, and the same, 6,719 of 6,720, on the final page with the budgets
+composed and the fallback in). Held, blocking: the smoke's fast
+sums hold `parlayProb` to its own copy with the same split (`ppOwn`: 229 calls on made-up legs a run and up to 240 on
+this week's own, 469 in all on a week with priced games, most of them with legs moving together, the 123 across two
+games or more all on made-up legs, more than 10 required; since the review of app v146 48 of them on two or three
+made-up games each holding a moving pair, 24 of them three, two sets in every four with their games' legs interleaved,
+at least 24 and 12 required); the audit's M18 holds it the product of each game's own chance on 27 sets of F13's lines
+and, since that review, their copies in two made-up games of their own (12 of the 27 two games holding a moving pair, 5
+of them two games or more each holding one, 3 of those three; at least 6, 5 and 3 required: until then every set either
+check built had one game with a moving pair at most, so a page splitting there alone, and drawing two moving games
+together as app v145 did, passed both); and `dgAud` and `dgOwn` hold every Day games level to the very parlay by the
+rule's order whatever it holds (`refOkAud` and `refHeldOwn` read the Day games' hold as exact: the card's chance is now
+its games' own multiplied, as both knapsacks read it; until app v146 within 0.2 points where the level held a same-game
+group). Bitten on scratch copies: app v145's `parlayProb` fails `ppOwn` on the calls across two games, and the audit's
+M18 hold on 7 of the 22 sets it then built (before that hold was added the whole audit passed it: 44,994 checks, 0
+failures, on week 9 at Saturday 18:00); and a `parlayProb` that splits by game only where one game at most holds a
+moving pair, drawing the rest together as app v145 did (the review's), fails `ppOwn` (four legs over two games at 40,000
+trials 0.101275, where the split gives 0.102327) and the audit's hold on 5 of the 27 sets (the trimmed audit, M18 and
+the sections before it, 24,176 checks, 1 failure), where before both passed it.
+
+**One collation** (the script's section 2; the second review's item (6)). `pbOrder`, the builder's order of a parlay's
+legs, decides which seeded normals each leg draws in `parlayProb` and in `parlayDec`'s same-game group, and it sorted
+the names with `localeCompare` in the visitor's own collation: Czech sorts "Ch" after "H", Danish and Norwegian "Aa"
+last, Lithuanian "y" between "i" and "j"; `parlayLegs`, the builder's and the parlay card's own order, did the same. The
+record is worked in Node, en-US under the runners' C.UTF-8, so on every game of weeks 7 to 9 still to kick off built as
+a one-game unit, with each payload's Day games (232 levels on the four saved payloads), a Czech browser drew 12 other
+parlays than Node's en build and would have read 9 of them back otherwise were they locked, 5 under their own price, and
+a Danish one 7, 5 and 4 (2026_07_IND_MIN's Extreme, a Sunday 1 pm game whose one-game set only the engine builds,
+16.0000 in the en build, read back at 15.0210, "+1402" under a "+1500+" pill); none of the record's own units (its night
+games and Day games, 48 levels across 16 languages) moved. Every order a parlay's legs, chance or price stand on now
+sorts by one shared collator, part2's `EN_COLL`, `Intl.Collator('en')` (`enCmp`, beside `SEASON`): `parlayLegs` and
+`pbOrder` on the name, `pbOrd`, `pbRank`, `pbFreeRank` and `pbFreeWalk`'s candidates on their ids, `gamesIn` and the
+stats ingest's games (`ingestStats`) on their kickoffs. 'en' is ICU's root order, Node's en-US exactly: the 232 levels
+are the same to the bit under C.UTF-8, and under cs, sk, da, nb, hu, lt and et the page draws and reads back exactly
+those. A shared collator, never `localeCompare(b,'en')`: Safari's and Firefox's engines make a collator on every call
+that names a locale, which in the search's sorts would cost seconds on a phone (in V8 the shared collator costs 160 to
+170 ns a compare against a bare `localeCompare`'s 85, and every shown set builds within noise of before); a code-point
+compare would move "DJ" before "Dalton" and every locked level read back with them. Display orders (the ELO tab's table
+sort, the snapshot's tie order of the Power Ratings) state no money and keep the visitor's language. `build.js` refuses,
+outside comments in part2, part3 and the parlay card, `localeCompare` in any spelling (`.localeCompare(`,
+`localeCompare?.(`, `['localeCompare'](`, `String.prototype.localeCompare.call`) and any collator but part2's one
+`EN_COLL`, made with or without `new` (`Intl.Collator` is callable without it), read by brackets or destructured from
+`Intl`, and `Intl` read by brackets at all (until the review of app v146 it matched `.localeCompare(` and
+`new Intl.Collator(` alone, so `Intl.Collator('cs').compare` and `String.prototype.localeCompare.call` built, left to
+M19 and 1c at run time), and a `pbOrder` or `parlayLegs` that does not sort the name by `enCmp`. Held, blocking: the
+audit's own sorts read 'en' whatever the runner's language (`EN_AUD`: `ordAud`, `freeRankAud`, both builder-order
+checks, `nightRuleAud`, M7's picks and M18's id tie-breaks), and its M19 (THE COLLATION) plants cs, sk, da, nb, lt, hu
+and et as the page's default collation (the page's realm alone, put back in `finally`) and holds `pbOrder`,
+`parlayLegs`, `pbOrd`, `pbRank` and `pbFreeRank` on made-up names and ids to its own 'en' sort, and the week's live
+units built from nothing under cs and da to the unplanted build, each level read back by `spTierIn`; the smoke the same
+on its own copies (`EN_OWN` at `freeRankOwn`, `likelyOwn`, `capOwn`, the Top 50's ties, `sortB` and `rankB`; softChecks'
+1c on 18 made-up names and 15 ids, each language shown to move them, and the week's units under cs and da), the parlay
+card under a planted da on three made-up legs of one game (their order 'en''s, 21.090% at 4.129 either way, a guard that
+the order moves the draw). Run once by hand under `LANG=da_DK.UTF-8`, which makes Node's own default collation Danish,
+the smoke's softChecks passed; no job runs them so. Bitten: app v145's `pbOrder` fails M19 under each of the seven
+planted languages (7 failures) and 1c, its `parlayLegs` the smoke's hold of it and the card under da, and `build.js`
+refuses seven mutations (each `localeCompare` put back, a code-point `pbOrder`, a collator of 'cs' or of no locale) and,
+since the review of app v146, fourteen of the collation in all, the forms its first rule let through among them
+(`Intl.Collator('cs')` made without `new`, `localeCompare?.(`, `['localeCompare'](`,
+`String.prototype.localeCompare.call`, `Intl['Collator']`, a collator destructured from `Intl`, `Intl['Coll'+'ator']`, a
+second collator in part2 beside `EN_COLL`, and the parlay card's own collator and `localeCompare?.(`), while a comment
+naming `localeCompare` and a collator still builds.
+
+**The press's redraw** (the script's section 3 and `card.html`; the second review's item (7)). A press of Refresh odds
+ended in `espnRedraw`, which emptied `SP_CACHE` whatever the read found and, with Suggested Parlays on the screen, built
+every shown set again in one task (0.84 to 1.68 s in Node on the four payloads, the parlay card's check after a level's
+Finish the same). `espnRefresh` now hands it whether the press changed nothing the sets stand on (`espnRedraw(same)`,
+`ESPN_SEQ` unmoved): then it keeps every set but a unit's with no player line, whose empty levels date the last read
+(`spNoPl`), which such a press moves (in practice only where ESPN fails or its scoreboard carries no lines: any answered
+scoreboard sets the game lines' read time, a change); `PB_CACHE`, `PB_TOP_CACHE` and `GAME_TIER_CACHE` go as before
+(their notes date the read too), and `espnRedraw()` with no argument drops everything. And with the tab on the screen
+and a set to build it starts `spOpenSoft` first (`spSoftShown`), so the tab shows the record and "Building the sets…" at
+once and builds a level a task, as opening the tab does, the run ending drawn on the very HTML a synchronous draw gives,
+the focus on the tab's Refresh odds kept; a hidden tab builds nothing, as before. The run's promise is kept on it
+(`SP_SOFT.done`). The card's held redraw passes `same` on, true only where every read it held said so
+(`owe(same===true)`, then `real(same)`). Measured on the hub page in Node (the Day games and a night game shown, the
+four payloads): the redraw's own task 198 to 298 ms, every press's whatever tab is shown (the Props list, the Top 50 and
+the builder), the run's longest task one level's step (210 to 554 ms), the tab drawn whole 1.04 to 1.76 s after the
+press; a press that found nothing new 240 to 324 ms in all, nothing built. `build.js` refuses an `espnRefresh` that does
+not hand on `!changed`, an `espnRedraw(same)` without its keep rule, an `espnRedraw` that draws before `spSoftShown()`,
+a `spSoftShown` without its guard (the tab on the screen, drawn, no run going) or its `spOpenSoft`, and a card whose
+held redraw does not pass `same` on. Held, blocking: the audit's M17b, on two made-up Monday night games at any hour,
+holds five rules (a press that moved the lines builds nothing in its own task, then the tab a level a step, ending on
+what a draw from nothing draws; a press that changed nothing keeps every set holding a player line, building nothing; a
+unit with no player line built again, its empty levels dated by the new read, the other kept; a hidden tab builds
+nothing; a real press of the tab with ESPN answering 404 builds nothing, the tab as it was and the focus on its Refresh
+odds), and M8's press on Suggested Parlays waits for `SP_SOFT.done`; the smoke's softChecks 2b holds the same five and
+three more (a press during a run makes no second run and the run ends drawn; the focus on the tab's Refresh odds when it
+ends; `espnRedraw()` with no argument drops every set and builds it again in a run), its locked-set cases waiting for
+`SP_SOFT.done` where they waited 40 ms; and `smoke_live.js`'s J2 holds the card over two games whose reads found nothing
+new redrawing with `real(true)` (a set on a player line kept, one on none dropped), one with a moved line with
+`real(false)`, Suggested Parlays under the card built a level a step (one redraw, no level built in it and four in the
+run, Download working meanwhile, the tab whole at the end with the card open; at any hour since the review of app v146:
+its made-up game, on the schedule's last week, stands in for `spGames` beside `spOn` and `spSlotNext`, each put back in
+`finally`, since `spNightHtml` reads `spGames`, the live week's night games still to kick off, before it asks `spOn`,
+and with none left draws its "No night game left" line and returns, so from the live week's last night kickoff until
+that game counts final four hours later (a Monday night under way) the made-up game was never drawn and the case failed
+a correct page, as the v146 gate's run of 04:21 UTC on 10 November did, 768 checks and 1 failure; on a copy whose Monday
+night kicked off just before the run's clock it fails so before the fix and passes after, 768 checks each), and a
+Suggested Parlays card closed mid-build giving the focus to the tab's button, never the body, and once the tab is built
+to the level's Finish. Bitten on scratch copies: `espnRedraw` without `spSoftShown` fails M17b's first rule (8 levels
+built in its own task), 2b's first and 3 of `smoke_live.js`'s checks; `same` keeping every set fails the third rule in
+the audit and the smoke; `same` ignored fails the second and third (and the audit's fifth); `spSoftShown` on a hidden
+tab fails the fourth (the smoke's once that rule came to count `spOpenSoft`'s runs: before, `renderSp` ended the run at
+once and the rule passed it); the card's `real()` with no argument fails 7 of `smoke_live.js`'s checks, an `owe`
+ignoring `same` 2, and a card's close with no fallback to the tab's button 5; and `build.js` refuses eight mutations of
+the wiring.
+
+**One work budget a level** (the script's section 4; the second review's items (2) and (1)). Each call of `pbFreeGame`
+made fresh walk budgets and `pbFreeOne` calls it once a pass, so a level's passes did not share them: on legal 60-leg
+pools a level of one game took 3.9 to 4.8 s in one task (sixty lines at -375 beside a total at +100: 12.5 million nodes
+over its two passes, 4.3 s); and the Day games' same-game groups (`pbFreeUnit`, two games or more, where the single legs
+across games cannot reach a level's price) were walked and worked in full with no budget at all, 4.5 to 11.7 s a level
+on week 9's Day games cut to two to four games (the page's task 3.4 to 10.0 s). A level's work is now counted, never
+timed: W (`PB_W`), microseconds of jsdom on the 4-CPU 2.1 GHz Xeon it was fitted on, read off what the search does (a
+walk's node 0.3, each leg a node's children are read from 0.07, a candidate kept 7.5, a parlay of n legs worked in full
+4n² and its draws, `pbWorkEx`: 20,000 trials of g(g+1)/2 terms for each same-game group of g legs with a moving pair,
+40,000 of n(n+1)/2 for the chance where it pays and a pair moves, 0.00025 a term and 0.003 at 9 legs or more; a step of
+the knapsack with groups 0.3), fitted on app v145's own runs (264 real levels, 40 made-up one-game levels and 28 Day
+games levels: a level over 400 ms runs 0.8 to 1.2 times its W, about 1.5 times on small correlated groups worked cold)
+and reading no memo of `parlayProb`, so every choice that turns on it is the same on every machine and every run. A
+level of one game draws every pass and walk on one budget, `PB_FREE.WORK`, 1,500,000 (1.5 s of W: `LV`, made by
+`pbFreeOne` and handed to every `pbFreeGame` as its seventh argument, which a wrapper must hand on, since one that drops
+it gives each pass a fresh budget): the passes before the totals' pass leave `RT` (200,000) whether or not the pool has
+a total, so a level with no total is the same parlay on the pool without its totals; a first walk leaves `R2` (150,000)
+to its pass's second walk, and a walk's candidates leave `RW` (100,000) for the sets it works in full; a set worked
+twice within a level is worked and charged once (`LV.seen`); and the second walk also runs where the first walk's
+candidates were cut before it worked any, so a pool whose candidates spend the budget still gets the greedy seed. The
+walks' own budgets in the old measure (`UNITS1`, `NODES1`, `UNITS2`, `NODES2`, `pbFreeCost`) are as they were, and on
+every real level they, not W, shape the search. The Day games' groups draw on `PB_FREE.GWORK`, 1,200,000 a level:
+`GWALK` (600,000) for the groups' walks (`pbFreeCands`' front mode, now budgeted, each game's walk leaving `GFLOOR`,
+10,000, to each game after it), the rest for the groups worked in full (every game's candidates sorted together best key
+first, each worked once, while more than `GR`, 300,000, is left), the knapsack with groups (`pbFreeDp`'s budget, cut
+where it is spent, the singles' own complete parlays put beside what it found) and the card, whose walk of the
+knapsack's parlays goes in the rule's own order (`pbFreeRank`'s on the knapsack's figures), so a walk the budget cuts
+keeps the rule's first among the parlays it ties (the audit's off-season run found a five-leg Extreme of made-up lines
+tied at 5.2281% where the rule's parlay leans 0.450 and the page had taken one leaning 0.428; the rule's order moves
+none of the 264 real levels or the slates' 28), which M18's F17 and the smoke's 1b (k) hold at any hour since the review
+of app v146 (until then only the off-season audit did, on whatever week's Day games its clock met): two made-up Day
+games, a line at 60% and -140 leaning to 66% beside one at 60.00000003% and -138 leaning to 62% in the first and one at
+65% and -175 in the second, so the two pairs with the second game's line tie on the chance to 1e-9, both pay +110, and
+the one leaning less is the likelier raw and the dearer, which keeps it in the knapsack; with the card's walk cut after
+one parlay (`PB_FREE.WIN_EVALS` stood in at 1, put back in `finally`) and at its own 2,000, Safe is the pair leaning
+more, and with the sort taken out it is the other (39.000000019% at 2.710), the audit failing F17 once and the smoke (k)
+once. Where every pass of a level ends with nothing found (the review of app v146: a slate of a few day games whose
+single legs, one a game, cannot reach the price, its tries ending on the groups' walks before the threshold comes down
+and its totals' pass left no walk), the level is the greedy paying set across the games (`pbFreeSeed`, as the one-game
+path seeds its second walk), the legs without the totals first, on what is left of the groups' work and charged to it;
+until then it was empty though a parlay paid ("No parlay found in the Day games that pays +1500 or more."). On week 9's
+two-game slate (CIN at ATL and DEN at CAR) with every price 0.85 times its own, the Extreme fills at 1.405% (17.760, six
+legs of one game), where the search with the groups' budgets ten thousand times over finds 1.484% in 10.2 s; at 0.75
+times, the Aggressive at 1.405% (the lifted search 1.315%) and the Extreme at 0.198% (0.336%), and on the three-game
+slate the Extreme at 0.391% (0.371%). No level that filled moves (the 292 above), no line the page prices comes so far
+under its fair chance (a player's leg priced at the estimate's flat 5.66% margin and a team's at DraftKings' own, each
+returning about 0.95 on $1, where the case needs about 0.80), and no 2026 Sunday has so few day games. The singles'
+knapsack, every real slate's path, is not budgeted (about 0.4 s at most on sixteen games of filled lines). `build.js`
+refuses `Date.now`, `performance.now` or `new Date(` anywhere from `const PB_FREE=` to the end of `pbFreeUnit`, a
+`pbFreeGame` of six parameters, and any call of it whose seventh argument is not a bare name (an object literal,
+`undefined` or `null` among them); and since the review of app v146 a candidates' prune not as app v144's review left it
+(`lim=Math.max(2*M,keys.length+M)` once in `pbFreeCands`, two `lim=` in part3 in all, the prune called only where the
+kept reach `lim` and once at the walk's end) or its keys not counted (`PB_LV_STAT.pk+=keys.length` as the prune begins,
+`pk` in `PB_LV_STAT`), and a `pbFreeUnit` whose card's walk is not sorted into the rule's order (the chance, the fewer
+legs, the lean, `enCmp` on the ids) before it walks. Measured in jsdom on that box, every timed run under one lock: a
+level of one game at most about 1.5 s of W, 1.27 to 1.56 s by the clock on the worst made-up pools (app v145 up to 5.3
+s; the second review's sixty legs 1.27 to 1.49 s where they took 4.3 to 5.0 s), a Day games level at most 1.46 s on the
+two- to four-game slates (app v145 11.7 s) and 0.92 s on sixteen games of filled lines (1.40 s), and the page's longest
+task with Suggested Parlays opened cold 0.72 to 1.0 s on the slates (4.5 to 10.0 s) and 341 to 473 ms on the four
+payloads (338 to 429 ms: the same work). On the real levels, the 264 the same parlays, the longest 0.75 to 0.85 s by the
+clock as before, nothing binds: the largest real night level's W is 804 ms (week 8's CHI at SEA Extreme, 62% of the
+1,300 its passes before a totals' pass may spend), the largest of any game taken as a one-game unit 1,152 ms (89%: week
+9's HOU at LAC Extreme, a day game whose one-game search only the engine runs, so the budget cannot come down much
+without moving a level), the largest first walk 901 ms of its 1,150, and the real Day games' groups at most 198 ms of
+their 1,200 (week 7's Extreme). Only units the groups' budget binds move: week 9's Day games cut to two, three and four
+games (no 2026 Sunday has so few day games; Christmas 2022's had two) lose against app v145's stated figures 0.20 to
+0.29 points on the real lines (slot2's Aggressive 9.6250% to 9.4239% and Extreme 4.7250% to 4.4322%, slot3's 9.6550% to
+9.4239% and 4.7250% to 4.4557%, slot4's Extreme 4.6925% to 4.4899%) and 0.45 to 0.48 on filled lines (slot2's filled
+Extreme gains 0.13, six legs for five), part of which is the decomposition by game taking out the lucky joint draw those
+figures stood on (0.16 to 0.18 points over the true chance): against that change alone the budget costs 0.11 to 0.22
+points (slot2's Aggressive 9.6250% and every Extreme there 4.6040%), about 0.1 to 0.25 points of true chance on such a
+slate, accepted. On the budgets' made-up one-game pools four levels of 26 fall 0.008 to 0.23 points under app v145's
+(the independent sixty's Medium the most), the rest the same chance, and the budgets' own twenty-four short legs' Safe
+is the same 27.265% in 1.5 s where it took 4.0 s. Held, blocking, each on its own reading: the audit's M18 F12 holds
+each pass within the walks' own budgets as before and now the whole level, its work by the audit's own count (`NODE` a
+node, and its own `pbWorkEx` of each distinct set the level worked in full, through its own wrap of `pbExact`) within
+`WORK` and a room of 87.7 ms (`ROOM_AUD`, six walks' last step past their check) and within the page's own charge
+(`PB_LV_STAT.w`, with 8 nodes a pass of slack: the nodes a walk cut by its node budget counts and does not charge), and
+since the review of app v146 the page's charge itself within `WORK` and that room (the audit's reading leaves out the
+children read and the candidates kept, about 30% of the page's charge on F12b's Medium and Aggressive, so a level could
+spend some three times its budget before that reading crossed it), its copies of `PB_W` and the budgets held equal to
+the page's (`PB_W_AUD`, `BUDGET_AUD`; F12's Safe 12 legs at 26.498%, 1,278 units and 141,966 nodes in its one pass,
+1,220 ms of W by the audit and 1,302 by the page); F12b, sixty lines at -375 beside a +100 total, every level the very
+parlay (Safe 4 legs at 34.525%, Medium 7 at 15.550%, Aggressive 10 at 7.003%, Extreme 11 with the total at 3.397% over
+two passes) within the level's budget (120, 368, 378 and 1,129 ms of W by the audit, 331, 1,200, 1,200 and 1,426 by the
+page); F16, a Day games slot of three made-up games of sixteen correlated lines, every level paying, Aggressive and
+Extreme on a same-game group, its groups' work (nodes, its own `pbWorkEx` of each distinct same-game set, `DP` a
+knapsack step with groups) within `GWORK` and 29.3 ms (`GROOM_AUD`) and within the page's `PB_LV_STAT.gw`, the page's
+charge itself within the bound since the review of app v146 (Aggressive four legs of one game at 9.285%, 418 ms of the
+groups' W by the audit against the page's 547; Extreme five of two games holding a group at 4.367%, 612 against 854);
+F18, since the review of app v146, two made-up Day games of forty lines each, every one returning 0.80 on $1 on stats
+the pair table moves (its 2026 figures planted under made-up groups and taken out in `finally`), so one leg a game pays
+3.151 at most and only same-game groups reach +300 and up (a guard: 80 of the lines in moving pairs, where 60 must be,
+their returns 0.79 to 0.81, the audit's own enumeration finding a parlay paying +700 and one paying +1500), every level
+where a parlay pays a parlay of 2 to 12 legs that go together paying its price, at least as likely as the audit's own
+greedy paying set across the games, its groups' work within the bound on both readings (Aggressive five legs of two
+games at 2.947%, 11.439, and Extreme six at 1.337%, 18.073, each the greedy set, 671 and 457 ms of the groups' W by the
+audit against the page's 911 and 633); and on the week as it stands each live level's work and whether its search
+stopped on a budget (a walk's candidates cut where the work ran out, a walk ended with none left, the knapsack with
+groups cut, a same-game group a front walk offered left unworked in full, the groups' work spent) are read on the
+audit's own records, a stop said as `W.search` (a correctly priced parlay a search given more work might better) and the
+largest share in M's summary line (week 9 at Saturday 18:00: the largest of one game 281 ms of W, BUF at MIN's Extreme,
+22% of 1,300; the Day games' groups at most 30 ms of their 1,200; none stopped; a level with no leg to search, as the
+off-season clock's are, counted apart since the review of app v146, never as one game's). The smoke's 1b (f), (f2) and
+(i) are their twins on its own copies (`W_OWN`, `ROOM_W`, `GROOM_W`, a slack of 64 nodes, the page's charge held to the
+bound as well since the review of app v146; (i)'s Aggressive four legs of one game at 9.248%, its Extreme six of three
+games at 4.377%, no group knapsack run without its budget), and since that review (j) is F18's (two made-up Day games of
+forty lines returning 0.80 on $1, one leg a game reaching 2.556: Aggressive five legs at 3.445%, 8.763, Extreme seven at
+0.915%, 21.08, each the greedy paying set, of one game) and (k) F17's; and the twenty-four tied legs' Extreme is held to
+its work (120 ms of W by the smoke, 784 charged by the page, now within the level's budget too), not to `ms < 5000`, the
+last clock a blocking check read, and since that review to the keys its candidates' prunes scan (`PB_LV_STAT.pk`, drawn
+nowhere, which the prune adds as it begins: at most 4 million): the page scans 1,300,008 there, and with the prune of
+app v144's review undone, run on every push past twice the kept, 1,797,720,528 in 51 to 60 s, the same parlay, nodes and
+work, which the work's hold alone could not tell, so that review's bite fails the smoke once again, on the count where
+it read the clock. Bitten on scratch copies: app v145's search put back fails the audit 13 times (the copies of `PB_W`
+and the budgets, F12's four levels with a pass handed no level's work, F12b's four, and F16's four, whose Aggressive and
+Extreme worked 11,654 and 25,184 sets in full with the knapsack unbudgeted) and the smoke 7 ((f)'s level work, (f2),
+(i), the twenty-four tied legs, the `PB_W` copies, and `pbFreeRank`'s id tie under the planted collations, app v145's
+own `localeCompare`); a `pbFreeGame` handed no level's work fails the audit 8 times (F12's four levels and F12b's four);
+F12b's own wrapper naming six arguments, so each pass gets a fresh budget, fails F12b (the Extreme 2,222 ms of W by the
+audit); `WORK` cut to 470,000 fails the made-up TB at CHI Aggressive against its screen and says three live levels
+stopped on it; `GWORK` cut so the groups' walks leave only the knapsack's reserve says the Day games' Extreme stopped on
+it; with the groups' work spent the audit said nothing until that stop was added, then once; and `build.js` refuses five
+clock reads in the search and four mutations of the level's work. And since the review of app v146: a `pbGive` that
+leaves the level's work as it was (the review's) fails the audit, run on M18 and the sections before it, 12 times (F12's
+Safe, F12b's Medium, Aggressive and Extreme, F16's three and F18's five), where F12b's Medium and Aggressive had passed
+charged 1,739 and 1,727 ms of W by the page, and the smoke 4 times ((f), (f2), (i) and (j)) where it failed 3; the Day
+games' fallback taken out fails F18 twice (its Aggressive and Extreme empty) and the smoke's (j) once; the card's walk
+unsorted F17 once and (k) once; the prune on every push past twice the kept the smoke's twenty-four tied legs once,
+which the work's hold had passed; and `build.js` refuses seven mutations of the prune and the card's walk (the prune on
+every push past twice M, its keys not counted, `PB_LV_STAT` without `pk`, the front mode pruning on every push past M;
+no sort, the sort without the lean, and the walk over the list sorted again by its raw chance).
+
+**The screens and the fixtures** (the checks' half: `screenAud` in `audit.js`, `screenOwn` in `smoke.js`, M18's F13 to
+F15 and the smoke's 1b (g) and (h); the second review's items (3) and (8); nothing of the page moves). The night screens
+worked the 400 likeliest sets on their 8,192 draws among those priced within a fixed 6% of the floor: most of the 400
+were sets priced just under the floor (likelier than those that pay; the made-up TB at CHI Aggressive of week 9: 1 of
+the 400 paid), so the 400 did not move with the target and a level up to 0.45 points under the screen's own best passed
+where 0.2 is written; and 6% was one standard deviation of the screen's price at an Extreme, so week 9's likeliest
+paying TB at CHI Extreme (priced 8% short on the screen) was never a candidate. Now a set is a candidate only where its
+legs multiplied reach the floor (`parlayDec` never pays more) and its price on the screen falls short of the floor by no
+more than 2.5 of that price's own standard deviations (the screen's draws of the implied chance and `parlayDec`'s
+20,000); the candidates are worked in the order of their key, min(cf, cf × pa / floor) (the chance on the screen scaled
+down by how far the screen's price falls short: about what the set lands where it is priced at the floor), each priced
+in full first and its chance worked in full only where it pays, until a key with its own noise falls 2.5 of it under the
+target or the best found, or 3,000 have been priced (`SCREEN_W_AUD`, `SCREEN_W_OWN`). Measured by an instrumented audit
+on week 9 at Sunday 05:00, week 8 at Sunday 12:00 and week 7 at Sunday 10:00 (every candidate of a 40-million-node
+screen priced and, where it paid, its chance worked in full, an oracle): the hold passes a level down to 0.2 points
+under the screen's best, and that best is, on every level whose candidates were all made, within 0.013 points of the
+level or above it (so 0.213 at most, where the 400 by the screen's chance passed levels 0.45 under); 0.285 at most where
+the node cap cut the candidates (the made-up TB at CHI Extreme of week 9); 96 level holds, the levels' tolerance at the
+90th percentile 0.213 where it was 0.313. A screen past its node cap (3 million, kept: raising it to 15 million buys
+little under the work cap, since the extra candidates crowd the 3,000 priced, and week 9's made-up Extremes take 11.3
+million nodes, 12 s each) is held to what it found, a lower bound, said by its label in M's summary line (the smoke's
+Suggested Parlays line) and in the hold's line, never a warning: the made-up lines' Extremes pass it every week, so a
+`W.coverage` there would turn every props run red, and rule (b)'s warning is for a case the week gave nothing to stand
+on. A screen whose candidates were all made is held whether or not it found a paying set (the walk to its stop or its
+work cap is the hold), and the summary counts those that priced their 3,000 best by the key before their stop. The
+hold's verdict is its own function (`refOkAud`), which F15 reads. Three fixtures, blocking on made-up data at any hour
+and in the off-season. M18's F13 and the smoke's 1b (g): two Day games, the first a quarterback's passing yards over and
+two of his receivers' yards over at their prices' own chances (-120, -120 and -110 at 54.55%, 54.55% and 52.38%, the
+pair table's own shape planted for made-up groups), the second two lines of other players at a margin (-150 at 57% and
++100 at 47%): Medium the first game's three, 21.418% at 4.164 (21.42% in the audit), and Aggressive the three with the
+second game's +100, 10.066% at 8.327 (10.07% in the audit; the group's chance times the +100's 47%, now that a parlay's
+chance decomposes by game, where the joint draw had said 10.330%), each held to every parlay worked out in full and more
+than 0.2 points likelier than any parlay holding two legs of a game at most (20.420% and 7.590%), a guard that the case
+stands on what it is for. With `if(s.length>2) continue` in `pbFreeUnit`'s groups the page takes exactly those, 20.420%
+(a pair with the second game's -150) and 7.590%: the audit fails 4 checks (F13 twice and M18's every-parlay hold twice)
+and the smoke its level-search check on (g) for both levels, where before neither failed. M18's F14 and the smoke's 1b
+(h), the review's pool: a night of a quarterback's passing yards over at +105 (50%), his receiver's yards under at +100
+(50%; the pair table's 0.353 turned by the under) and another club's receptions over at +100 (47%): Medium the pair,
+19.215% at exactly its legs multiplied, 4.100, where Slepian's floor (SGP_HOLD × 1.05 × the legs, 3.857) would refuse it
+and take the three (9.290% at 8.200 in the audit's leg order, 8.973% in the smoke's), and Aggressive the three, which
+that floor would refuse too. With the exemption taken out of `pbFreeCands` (`(neg||…)` dropped, both places) the audit
+fails 4 checks (F14 twice, M18's every-parlay hold twice) and the smoke its level-search check on (h) as well as on its
+correlated game (before, only that game caught it, in the smoke alone). M18's F15 and the smoke's screen fixture (in its
+main run, beside `leanOwn`): fourteen plain lines of one game at -136 to -142 (a seeded pool, five of them a little
+better priced) whose likeliest paying +700, four of those five at 9.356%, lies behind more than 400 sets likelier on the
+screen priced just under +700 (a guard that it stands on what it is for: in the audit 622 of the screen's 988 candidates
+within 6% of +700 likelier on it and short of +700 in full, where more than 400 must be, so the old rule cannot reach
+it; in the smoke 985 sets of 2 to 6 of its lines likelier by their exact product and priced 0.94 to 1 times +700): the
+screen's best that very parlay (`freeAud`'s, `freeOwn`'s), not cut short, and the hold's verdict failing a level planted
+0.3 points under it and passing the level at it. With the old work rule put back (6%, the 400 likeliest) the screen's
+best is none on both (the audit's of 827 sets, 400 priced; the smoke's of 622), and both checks fail; and the audit's
+guard fails on a flat pool, on a pool of too few candidates (172 likelier of 457) and with its bar raised past any pool,
+so a change of generator or draws fails loudly rather than leave F15 vacuous. The screens cost no time: on app v145's
+committed payload of 9 November at 18:00 UTC, one run each under the lock, the audit 232 s before and 220 s after, the
+smoke 448 s and 449 s.
+
+**Accepted, and written down** (the second review's item (4) and the review's nits, none moving a real level). The
+second walk: taken as one-game units, 12 of weeks 7 to 9's 54 Extremes land 0.010 to 0.225 points of the card's chance
+under the parlay the search finds keeping eight times the candidates uncapped. The night games' three are KC at SEA
+0.060, CHI at SEA 0.0475 and TB at CHI 0.010; the rest are day games, whose one-game search only the engine uses. Half
+never run the second walk: the 1,500 kept (`PB_FREE.M`, `E1`) is the cause. Within 0.1 point of each best lie 4 to 104
+paying parlays. At 1,000,000 draws the page's parlay is the likelier on 2 of the 12, and 9 of the others buy their
+chance with a lower price. Keeping 2,000 recovers two night levels at up to 799 ms a night Extreme; 1,650 makes KC at
+DEN 0.075 less likely; a 10% second-walk window makes two levels less likely. The prunes' two nits: in 'level' mode a
+candidate with a high reading key that does not pay raises the walk's bar to 0.85 of it, which can cut the rule's answer
+while a weaker set found earlier stays (`DELTA`'s order: a made-up nine-leg pool with several quarterbacks a club and
+legs worth more than they cost, its Aggressive 9.740% where 11.835% pays; on realistic one-game pools of 10 to 14 legs 1
+miss in 160 levels, by 0.013 to 0.015 points), and the groups' front bound multiplies by min(1, chance × price), no
+bound once a single leg returns more than it costs, which DraftKings' fair chance never gives and only a hook can;
+`pbFreeSeed`'s comment no longer says its bar is one below which no set's reading can beat it (an opposite-sign set of
+four legs or more can run to `C2`, 1.15 to 1.39 times its reading, above `C` at the cap, 1.14). F12's quality bar is the
+seed by construction: the audit's and the smoke's greedy paying set use the very order and stop of `pbFreeSeed`, which
+`pbFreeGame` hands the second walk as its bar, so once the budget binds "Safe at least as likely as the greedy set"
+holds whatever the search does; F12 and 1b (f) hold the budget and the price, and the budget's cost on that pool is
+said, not held (26.795% where every set worked in full finds 28.010%). `pbWorkEx` charges a parlay of several games
+holding a moving pair a draw over all its legs, where `parlayProb` now draws each game's legs alone: it charges more
+than the work, never less. The half-minute look still builds a unit gone up at the 6:00 AM turn in its own task
+(`pbWatchTick`: routing it through `spOpenSoft` needs every check that reads the tab right after a look to wait for
+`SP_SOFT.done`). A parlay card closed while the tab is still building gives the focus to the tab's button, the rule's
+last fallback. The screens' node cap (`SCREEN_NODES_AUD` and its twin, 3 million) and the knapsack's `WIN` and
+`WIN_EVALS` are kept. The price-selection bias measured for app v146 (app v145's page, every game of weeks 7 to 9 as a
+one-game unit: at 1,000,000 draws 4 of 54 Safes, 41 of 54 Mediums, 50 of 54 Aggressives and 53 of 54 Extremes price
+under their floor, every night game's Medium, Aggressive and Extreme among them; the price at 1,000,000 draws a median
+1.000, 0.975, 0.965 and 0.956 of the card's) was put to the owner and is not changed by app v146. Not taken from the
+review of app v146: keeping the best knapsack across the Day games' tries, and a share of the groups' work kept back for
+later tries and the totals' pass, which move levels on small slates (a prototype leaving a quarter of the walks' work
+and of the spare to the later tries moved week 9's two-game Extreme on its real lines from 4.432% to 4.249% and, at 0.85
+times its prices, the Aggressive from 3.879% to 2.753%, filling the Extreme there at only 0.900%) and need a measurement
+of their own.
+
+With app v146, on the final tree (the gate's own run after the review's fixes, 10 November 2026, each suite one at a
+time): the audit 44,333 checks at the committed payload's clock (07:48 UTC on 10 November, Monday night's game counted
+final), 0 failures and 0 warnings; on the four saved payloads at their clocks 45,024, 45,009, 45,236 and 44,881 (week 7
+beside its own commit's `grid_model.json`, which its baked team model was made on: against today's it fails T1 alone), 0
+failures and 0 warnings each; and on the off-season clock 39,357, 0 failures and its two coverage warnings; the nflbets
+smoke 2,799 checks and `--season-over` 2,696, and on the four payloads at their clocks 3,072, 3,073, 3,011 and 2,998, 0
+failures each; `smoke_live.js` 768 (and at a clock inside Monday night's window as well, the fix stage's run: **The
+press's redraw**), `smoke_admin.js` 127, `test_dkname.js` 255, `elo/check_tab.js` 382, `test_suggest_ledger.js` 464 and
+`test_td_shadow.py` 359, 0 failures each; `props_gate.py`'s units, every one, on this tree (its base re-run not made
+here), with job C's `NODE_OPTIONS` (without it `smoke_live.js` runs out of Node's default heap, as job C's own note
+says); `test_props_gate.py` 227 cases; `test_audit_phases.py`'s fourteen audit cases and its four page smoke cases one
+at a time, 0 failures each; every real level (264 on the four payloads and 28 on the seven slates cut from week 9) the
+same parlay as app v145's and the all-games engine the same; and the record run as `weekly.py` runs it on a copy of the
+ledger unchanged (week 9's last set, BUF at MIN, locked; no Sunday slot to come), a second run the same.
+
+Wherever this file says, before this paragraph or after it, that a level's budgets are a pass's, that the Day games'
+same-game groups are walked and worked in full with no budget, that `parlayProb` draws every leg of a parlay of several
+games together, that the builder's order and a parlay's stated chance follow the visitor's collation, that a press of
+Refresh odds empties `SP_CACHE` and builds every shown set in one task, that the night screens work the 400 likeliest
+sets priced within 6% of the floor, or that the twenty-four tied legs' Extreme is held to under 5 s by the clock, that
+is history from app v146.
 
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
 the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
@@ -4615,7 +5025,8 @@ set never), and the page under the card is drawn again once, when the last of it
 ends in `espnRedraw`, which empties every cache and draws the tabs again, about half a second on Suggested Parlays in
 Chromium on the Saturday of week 6 (a pre-lock Sunday slot and Sunday night set on the screen), so a card over four
 games drew the page four times; the card holds the page's `espnRedraw` back while its own reads run and draws once
-after (`holdRedraw`; only `espnRefresh` calls it, and no other press can start while one runs). The page under an open
+after (`holdRedraw`; since app v146 passing on whether every read it held changed nothing, `real(same)`: **The press's
+redraw**; only `espnRefresh` calls it, and no other press can start while one runs). The page under an open
 card never scrolls: a redraw under it (`renderSlate` closes the game window and takes body's `modal-open` off with it,
 a press the card waited for among them) is undone at once (`keepModal`). A control the visitor was on that a redraw
 replaces is found again by an attribute it keeps (`lastFocus`, `refind`: Start over's Parlay Builder choice, with none
@@ -4776,9 +5187,9 @@ rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the ne
 
 ```
 node nflbets/build/build.js      # writes the page, the root's index.html
-node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, no Elo picks and the Mismatch tag on its regular parlays' cards, the Parlay Builder (the builder first) and its Top 50 lines, their two parts (the player lines a mix of bet types), the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, the Mismatches on the averages' Elo part (its own score planted on a file from before it) in every place they are drawn, the defences a player's window and the Starters headers rank on the ELO tab's tables, the parlay sums the same to the bit, the search's beam the same as it stood and Suggested Parlays opened without a freeze a level a step, the Elo leans, player window and bubble on the Elo-adjusted averages (the formula's on a file from before them), the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
+node nflbets/build/smoke.js       # must end "0 failures"; Suggested Parlays, its night rule, its lock and its short lines, no Elo picks and the Mismatch tag on its regular parlays' cards, the Parlay Builder (the builder first) and its Top 50 lines, their two parts (the player lines a mix of bet types), the totals last and each bet once, the published ESPN read and the id rule by content, only DraftKings' markets, no ladder bet anywhere (and one kept in the builder taken out on a reboot), the matchup bubble, a game page's Matchup, Mismatches and Team Stats windows and no Game snapshot button (the whole snapshot the matchup bubble's alone), Suggested Parlays one section with one record and no backtest chip, the Mismatches on the averages' Elo part (its own score planted on a file from before it) in every place they are drawn, the defences a player's window and the Starters headers rank on the ELO tab's tables, the parlay sums the same to the bit (a parlay's chance the product over its games since app v146), the search's beam the same as it stood and Suggested Parlays opened without a freeze a level a step, one collation ('en') under seven planted languages (the builder's order, the id ties, the week's sets read back and the parlay card), a press's redraw keeping the sets it can and building the shown tab a level a step, each level's counted work within its one budget (1b (f), (f2) and (i)) and the night screens' fixtures (1b (g) and (h), the screen fixture), the Elo leans, player window and bubble on the Elo-adjusted averages (the formula's on a file from before them), the ELO tab's bar its stamp alone, the X Bet Log with no Note column, the scoreboard on load, the Props tab first with the board's old addresses landing on it, a visitor's six tabs and, on an admin's boot, X Parlays and the X Bet Log from their files, the old addresses' redirects to the root, and the light look and its switch
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
-node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on the admin's browser and a visitor's, and the parlay card (the builder's and a Suggested Parlays level's, its check of DraftKings' current lines as it opens, and the admin's Pull from DraftKings on a stubbed Odds API), each boot's seeded ladder legs taken out with the builder's line; must end "0 failures"
+node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on the admin's browser and a visitor's, and the parlay card (the builder's and a Suggested Parlays level's, its check of DraftKings' current lines as it opens, and the admin's Pull from DraftKings on a stubbed Odds API, and the page's redraw under it keeping the sets or building them a level a step, a card closed mid-build giving the focus to the tab's button), each boot's seeded ladder legs taken out with the builder's line; must end "0 failures"
 node nflbets/build/smoke_admin.js # the admin link and the hidden X tabs (admin.js, HUB_ADMIN, the header, Sign out, a visitor's page, the key nowhere but The Odds API's requests); must end "0 failures"
 node nflbets/build/test_dkname.js # the parlay card's name rule (Pull from DraftKings) against props/build/names.py, case by case (python3 beside it); must end "0 failures"
 (cd news && npm ci && node tools/smoke.js)   # after a change to deepdive.js: the Deep Dive drawn on the real news files (the nflbets smoke only uses stand-ins); must end "all checks passed"

@@ -60,7 +60,7 @@ const WARN={
   engine:'(app v138) which parlay an engine no page draws composes: the all-games levels (getPbTiers, drawn nowhere since app v111) and a game page\'s hands (gameTiers, drawn nowhere since app v124), kept because the sets and these checks stand on them: every leg either holds is still held, blocking, to a real price, its chance in the band, the leg rules, the pair rule, the floors a level states and the builder\'s own sums',
   /* (app v138, the review of 27 October 2026) the search's reach on a same-game parlay; (app v144, the review of 7 November
      2026) argued for the likeliest-at-price rule, and blocking on the audit's own made-up data */
-  search:'(app v145) whether a Suggested Parlays level of the week (a night game\'s, or the Day games\' across their games) whose legs move together is at least as likely as the likeliest parlay of 2 and 3 of its legs paying its own price, by the audit\'s own working (ref23Aud: every pair and the triples the copula\'s reading leaves within its measured understatement worked in full; across the Day games\' games every pair and triple of single legs by their exact product, and every same-game pair in full, alone and with the likeliest single leg of another game bringing it to the price), and of every size (the review of app v145): a Day games level holding a same-game group as likely as the likeliest parlay of single legs across the games of any size, worked out exactly (dgAud), and a night level as likely as the likeliest parlay of 2 to 6 legs (one past its own) the audit\'s own screen of 8,192 common draws finds within its noise of beating it, worked in full (screenAud): a miss of more than 0.2 points of chance (SEARCH_TOL_AUD, the full sums\' own noise) is a correctly priced parlay paying the level\'s price that lands a little less often than another, while every leg, its price paid in full, the chance, the fair chance and the words a card states are held blocking; a miss where both are plain products (their chances exact: every Day games level of single legs against dgAud) is blocking, and the same choice is held blocking wherever the audit\'s own data stands under it (the made-up lines on the week\'s games, and M18\'s made-up schedule, held to every parlay of 2 to 12 worked out in full)',
+  search:'(app v145) whether a Suggested Parlays level of the week (a night game\'s, or the Day games\' across their games) whose legs move together is at least as likely as the likeliest parlay of 2 and 3 of its legs paying its own price, by the audit\'s own working (ref23Aud: every pair and the triples the copula\'s reading leaves within its measured understatement worked in full; across the Day games\' games every pair and triple of single legs by their exact product, and every same-game pair in full, alone and with the likeliest single leg of another game bringing it to the price), and of every size (the review of app v145): a Day games level holding a same-game group as likely as the likeliest parlay of single legs across the games of any size, worked out exactly (dgAud), and a night level as likely as the likeliest parlay of 2 to 6 legs (one past its own) the audit\'s own screen of 8,192 common draws finds within its noise of beating it, ranked by what each lands at the level\'s price and worked in full, its price first (screenAud; a screen cut short by its node or work cap said in M\'s summary, a lower bound): a miss of more than 0.2 points of chance (SEARCH_TOL_AUD, the full sums\' own noise) is a correctly priced parlay paying the level\'s price that lands a little less often than another, while every leg, its price paid in full, the chance, the fair chance and the words a card states are held blocking; a miss where both are plain products (their chances exact: every Day games level of single legs against dgAud) is blocking, and the same choice is held blocking wherever the audit\'s own data stands under it (the made-up lines on the week\'s games, and M18\'s made-up schedule, held to every parlay of 2 to 12 worked out in full); and (app v146) a level of the week whose search stopped on the level\'s work budget (PB_FREE.WORK, the Day games\' groups\' GWORK: a walk\'s candidates cut, a walk ended or the knapsack with groups cut where the work ran out) is a correctly priced parlay paying its price that a search given more work might better, every leg, price and chance it states held blocking as any level\'s are',
   wording:'the wording of a note or a reason in the suggestions panel: no number in it',
   coverage:'the week gave a made-up case nothing to stand on, so a rule went untested this run: nothing shown is wrong',
   panel:'the credit-pull panel, the owner\'s note of what the odds API cost: no price, line or chance in it',
@@ -76,6 +76,10 @@ const amtTxt=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:v%1?2:0,maxi
 const payOk=(el,stake,dec)=>!!el&&+el.dataset.pbPay===dec&&isFinite(stake*dec)
   &&(el.querySelector('b')||{}).textContent===money(stake*dec)&&(el.querySelector('span')||{}).textContent===amtTxt(stake)+' pays';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+/* (app v146) the audit's own orders by 'en', whatever language the runner's Node defaults to (one collator, as the page's
+   EN_COLL): its readings of the builder's order, the rule's id tie-breaks and its picks of a row then read alike on every
+   machine, and the COLLATION section holds the page to them under other languages */
+const EN_AUD=new Intl.Collator('en'), enAud=(a,b)=>EN_AUD.compare(a,b);
 setTimeout(async()=>{
   /* what the page asked for as it loaded, before any check moves its clock (a set reaching its lock on a
      clock moved here has the record read again, which P2 holds on its own) */
@@ -218,7 +222,7 @@ setTimeout(async()=>{
     if(ks.length){ const off=Math.max(...ks)-3600e3-w.Date.now(), now0=w.Date.now.bind(w.Date), nodeNow0=Date.now; w.Date.now=()=>now0()+off; Date.now=()=>nodeNow0()+off; F('renderAll')();
       console.log(`clock: no game left to start, set back ${(-off/3600e3).toFixed(1)}h to before week ${wk}'s last kickoff`); } }
   /* open the first game that has not kicked off, in any open week (the audit must not depend on the date) */
-  const openUpcoming=()=>{ const g=S.sched.filter(x=>!F('gameStarted')(x)&&F('weekOpen')(+x.w)).sort((a,b)=>(a.w-b.w)||((a.d+a.t).localeCompare(b.d+b.t)))[0];
+  const openUpcoming=()=>{ const g=S.sched.filter(x=>!F('gameStarted')(x)&&F('weekOpen')(+x.w)).sort((a,b)=>(a.w-b.w)||enAud(a.d+a.t,b.d+b.t))[0];
     const ws=d.getElementById('weekSel'); if(ws.value!==String(g.w)){ ws.value=String(g.w); ws.dispatchEvent(new w.Event('change')); }
     d.querySelector('[data-game="'+g.id+'"]').click(); return g; };
 
@@ -1241,7 +1245,7 @@ setTimeout(async()=>{
      spNight or its easternOffset */
   const etDateAud=ms=>{ const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(ms).map(x=>[x.type,x.value])); return `${p.year}-${p.month}-${p.day}`; };
   const dayAfterAud=dd=>new Date(Date.UTC(+dd.slice(0,4),+dd.slice(5,7)-1,+dd.slice(8,10)+1,12)).toISOString().slice(0,10);
-  const nightRuleAud=(toCome,sched,now)=>{ const G=toCome.filter(primeAud).map(g=>({g,k:kickAud(g)})).sort((a,b)=>(a.k-b.k)||String(a.g.id).localeCompare(String(b.g.id)));
+  const nightRuleAud=(toCome,sched,now)=>{ const G=toCome.filter(primeAud).map(g=>({g,k:kickAud(g)})).sort((a,b)=>(a.k-b.k)||enAud(String(a.g.id),String(b.g.id)));
     if(!G.length) return {games:[],open:null,prev:null,up:false};
     const D=etDateAud(G[0].k), games=G.filter(x=>etDateAud(x.k)===D).map(x=>x.g);
     const prev=(sched||[]).filter(primeAud).map(g=>etDateAud(kickAud(g))).filter(x=>x<D).sort().pop()||null;
@@ -1362,7 +1366,7 @@ setTimeout(async()=>{
   /* a live level as the rule takes it: its own level's price, the rule that chose it, and 2 to CAP_AUD legs, its n their count */
   const ruledAud=t=>!!t&&t.pick===PICK_AUD&&t.minDec===LEVEL_DEC_AUD[t.id]&&Array.isArray(t.legs)&&t.legs.length>=2&&t.legs.length<=CAP_AUD&&(t.n==null||t.n===t.legs.length);
   const ALL_U={k:{ml:true,ats:true,total:true,over:true,under:true},off:[]};
-  const legIdAud=l=>l.key+'|'+l.side+'|'+l.k, ordAud=(a,b)=>legIdAud(a).localeCompare(legIdAud(b));
+  const legIdAud=l=>l.key+'|'+l.side+'|'+l.k, ordAud=(a,b)=>enAud(legIdAud(a),legIdAud(b));
   const kindAud=l=>l.stat==='ml'||l.stat==='ats'||l.stat==='total'?l.stat:(l.side==='under'?'under':'over');
   /* top: the Top lines' own pool, the same rule since app v119 (from app v115 it kept a leg from the read with no id).
      (app v138) Each leg a copy at its chance (chanceAud), its model chance beside it (pm), one side a line (sideAud); a
@@ -1508,12 +1512,51 @@ setTimeout(async()=>{
      hook's Value picks (a leg neither thin nor a total), with no total the fewest thin legs (freeKeyAud: the passes). */
   /* the page's own sums and helpers, read once (the enumerations call them thousands of times) */
   const ordA=F('pbOrder'), pdA=F('parlayDec'), ppA=F('parlayProb'), rhoA=F('legRho'), mdA=F('mlToDec'), pjA=F('pbJoint');
-  const freeRankAud=(a,b)=>(k9(b.pr)-k9(a.pr))||(a.n-b.n)||(k9(b.ln)-k9(a.ln))||a.id.localeCompare(b.id);
+  const freeRankAud=(a,b)=>(k9(b.pr)-k9(a.pr))||(a.n-b.n)||(k9(b.ln)-k9(a.ln))||enAud(a.id,b.id);
   const freeKeyAud=(L,hook)=>{ const t=L.filter(l=>l.market).length; return [t,!t&&hook?L.filter(l=>l.thin).length:0]; };
   const freeBetterAud=(x,y)=>{ if(!y) return true; const d=(x.k[0]-y.k[0])||(x.k[1]-y.k[1]); return d<0||(d===0&&freeRankAud(x,y)<0); };
   const freeOfAud=(cur,dec)=>{ const O=ordA(cur.map(l=>({...l}))), d0=dec!=null?dec:pdA(O.map(l=>({leg:l,ml:l.price})));
     return {L:O,dec:d0,pr:ppA(O).corr,n:O.length,ln:O.reduce((a,l)=>a+leanAud(l),0),id:O.map(legIdAud).sort().join(),
       plain:!O.some((a,i)=>O.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03))}; };
+  /* (app v146) a level's work, on the audit's own copies (as the Elo gate keeps DRAFT_START_OWN) of the page's measure (PB_W:
+     microseconds of jsdom on the box it was measured on: a walk's node, each leg its children are read from, a candidate
+     kept, a parlay worked in full and its draws, a step of the knapsack with groups) and its budgets (PB_FREE's WORK, a level
+     of one game, with the reserves its passes and walks leave, RT, R2 and RW; GWORK, the Day games' groups, of which GWALK
+     their walks, GFLOOR each game's floor and GR the knapsack's), held equal to the page's in M18, so a change to a budget
+     is made in both. ownExAud: a parlay worked in full as the page charges it (pbWorkEx), on the audit's own reading of its
+     legs (a pair moves at legRho 0.03 or more, as parlayProb reads one): EX n^2, and for each same-game group of g legs a pair
+     of which moves 20,000 draws of g(g+1)/2 terms, and where it paid and a pair moves 40,000 draws of n(n+1)/2 (DRAW a term,
+     DRAW9 in a row of 9 legs or more). ROOM_AUD: what a level's walks can spend past their last check (six walks, each a
+     parlay at the cap worked in full and a node a depth: about 88 ms); GROOM_AUD the groups' (two parlays at the cap and a
+     knapsack step each, and 64 nodes: about 30 ms) */
+  const PB_W_AUD={NODE:0.3,KID:0.07,KEEP:7.5,EX:4,DRAW:0.00025,DRAW9:0.003,DP:0.3};
+  const BUDGET_AUD={WORK:1500000,RT:200000,R2:150000,RW:100000,GWORK:1200000,GWALK:600000,GFLOOR:10000,GR:300000};
+  const EX_CAP_AUD=PB_W_AUD.EX*CAP_AUD*CAP_AUD+60000*(CAP_AUD*(CAP_AUD+1)/2)*PB_W_AUD.DRAW9;
+  const ROOM_AUD=6*(EX_CAP_AUD+(CAP_AUD+1)*PB_W_AUD.NODE), GROOM_AUD=2*(EX_CAP_AUD+PB_W_AUD.DP)+64*PB_W_AUD.NODE;
+  const ownExAud=(legs,paid)=>{ const by=new Map(); for(const l of legs){ if(!by.has(l.gid)) by.set(l.gid,[]); by.get(l.gid).push(l); }
+    let d=0, d9=0, any=false; const add=(o,k)=>{ if(k>=9) d9+=o; else d+=o; };
+    for(const G of by.values()) if(G.length>=2&&G.some((a,i)=>G.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03))){ any=true; add(20000*G.length*(G.length+1)/2,G.length); }
+    const n=legs.length; if(paid&&any) add(40000*n*(n+1)/2,n);
+    return PB_W_AUD.EX*n*n+d*PB_W_AUD.DRAW+d9*PB_W_AUD.DRAW9; };
+  /* one level built (run) with pbExact and pbFreeGame wrapped for it alone and put back on every path, every argument
+     forwarded (pbFreeGame's seventh, the level's work, among them: a wrapper of six named arguments would hand each pass a
+     fresh budget): each pass's units and nodes (the walks' own budgets) and whether it was handed the level's work (lv), and
+     the level's work read by the audit itself: own, NODE times the nodes it walked (PB_LV_STAT.nodes: nothing else sees
+     them) and each distinct set it worked in full (by its legs) at ownExAud; ownG, the Day games' groups', the nodes, the sets
+     holding two legs of a game or more (the singles' parlays priced on the card are charged only beside a group) and DP times
+     its knapsack's steps with groups (PB_LV_STAT.dp); beside the page's own charges, PB_LV_STAT.w and gw, which also count
+     what the audit cannot see (each leg a node's children are read from, a candidate kept, a set worked again), so they are at
+     least the audit's */
+  const lvWorkAud=run=>{ const ST=w.eval('PB_LV_STAT'), exF=w.eval('pbExact'), gF=w.eval('pbFreeGame'), put=w.eval('(function(a,b){ pbExact=a; pbFreeGame=b; })');
+    const s0={...ST}, passes=[], sets=new Map();
+    put(function(legs){ const r=exF.apply(this,arguments), L0=Array.isArray(legs)?legs:[], id=L0.map(legIdAud).sort().join(), was=sets.get(id);
+        if(!was) sets.set(id,{legs:L0.slice(),paid:!!r}); else if(r) was.paid=true; return r; },
+      function(){ const u0=ST.units, n0=ST.nodes, r=gF.apply(this,arguments); passes.push({u:ST.units-u0,n:ST.nodes-n0,lv:arguments.length>=7&&!!arguments[6]&&typeof arguments[6]==='object'}); return r; });
+    let r=null; try{ r=run(); } finally { put(exF,gF); }
+    const dl=k=>(+ST[k])-(+s0[k]), nodes=dl('nodes'), dp=dl('dp'); let ex=0, exG=0;
+    for(const x of sets.values()){ const e=ownExAud(x.legs,x.paid); ex+=e; if(new Set(x.legs.map(l=>l.gid)).size<x.legs.length) exG+=e; }
+    return {r,passes,sets:sets.size,nodes,dp,own:PB_W_AUD.NODE*nodes+ex,ownG:PB_W_AUD.NODE*nodes+exG+PB_W_AUD.DP*(isFinite(dp)?dp:0),w:dl('w'),gw:dl('gw')}; };
+  const msW=v=>isFinite(v)?(v/1000).toFixed(0):'uncounted';
   /* every fitting set of 2 to cap of a list, the dearest legs first, a branch let go once its legs and the dearest the places
      left can add multiplied fall short of minD (a parlay never pays more); each whose legs multiplied reach minD worked in
      full. {best, paying, seen}, or null past FREE_SEEN_AUD sets worked: an exact reference on a list small enough */
@@ -1594,10 +1637,12 @@ setTimeout(async()=>{
      are plain products (their chances exact), else within SEARCH_TOL_AUD (0.2 points, the full sums' own noise). hold: chk, or
      W.search (a level of the week's own same-game lines). Returns whether it ran */
   const SEARCH_TOL_AUD=0.002;
-  const refHeldAud=(t,ref,lab,hold,what)=>{ if(!ref||!t||!t.legs) return false; const nm=L=>L.map(l=>l.name+' '+l.label).join(', ');
-    const me={pr:t.corr,n:t.legs.length,ln:t.legs.reduce((a,l)=>a+leanAud(l),0),id:t.legs.map(legIdAud).sort().join()}, plain=!t.legs.some((a,i)=>t.legs.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03));
-    const ok=plain&&ref.plain?freeRankAud(me,ref)<=0:t.corr>=ref.pr-SEARCH_TOL_AUD;
-    (plain&&ref.plain?chk:hold)(ok,`${lab} lands ${(t.corr*100).toFixed(3)}% on ${t.legs.length} legs paying ${t.dec.toFixed(3)}, where ${what} ${nm(ref.L)} land${ref.L.length===1?'s':''} ${(ref.pr*100).toFixed(3)}% on ${ref.n} paying ${ref.dec.toFixed(3)}${plain&&ref.plain?' (both plain products: by the rule, a tie to the fewer legs)':`, more than ${SEARCH_TOL_AUD*100} points`}`);
+  /* the verdict alone (F15 reads it on a level it plants): {ok, plain}, plain where both are plain products */
+  const refOkAud=(t,ref,exact)=>{ const me={pr:t.corr,n:t.legs.length,ln:t.legs.reduce((a,l)=>a+leanAud(l),0),id:t.legs.map(legIdAud).sort().join()}, plain=(!t.legs.some((a,i)=>t.legs.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03))||!!exact)&&!!ref.plain;
+    return {ok:plain?freeRankAud(me,ref)<=0:t.corr>=ref.pr-SEARCH_TOL_AUD,plain}; };
+  const refHeldAud=(t,ref,lab,hold,what,exact)=>{ if(!ref||!t||!t.legs) return false; const nm=L=>L.map(l=>l.name+' '+l.label).join(', ');
+    const {ok,plain:pp}=refOkAud(t,ref,exact), plain=pp;
+    (plain?chk:hold)(ok,`${lab} lands ${(t.corr*100).toFixed(3)}% on ${t.legs.length} legs paying ${t.dec.toFixed(3)}, where ${what} ${nm(ref.L)} land${ref.L.length===1?'s':''} ${(ref.pr*100).toFixed(3)}% on ${ref.n} paying ${ref.dec.toFixed(3)}${plain?' (both plain products: by the rule, a tie to the fewer legs)':`, more than ${SEARCH_TOL_AUD*100} points`}`);
     return true; };
   /* (the review of app v145) the Day games', and the engine's, exact reference: the likeliest parlay of 2 to cap single legs,
      at most one a game, across the unit's games, paying minD in full. Legs of different games never move together (legRho
@@ -1638,19 +1683,41 @@ setTimeout(async()=>{
      set of 2 to cap of them that can be made (fitsAud) whose chance on a screen of SCREEN_N_AUD common draws of the game's
      own latent normals (its correlations, legRho, shrunk till positive-definite; a leg lands where its normal passes the
      threshold of its chance, and its price's implied chance the same way, the audit's own generator and seed) is within
-     SCREEN_Z_AUD of its own noise of target or over it, and whose price on the screen (its legs multiplied, or SGP_HOLD over
-     the implied chance all land) is within 6% of minD or over it; a branch let go once its chance on the screen cannot
-     reach target (the screen's chance only falls as legs join) or the dearest legs left cannot bring it to minD; the
-     SCREEN_K_AUD likeliest on the screen worked on the card (freeOfAud). target is a level's chance plus SEARCH_TOL_AUD: what
-     it finds paying minD in full, likelier than that, is a parlay the level should have been, and its best a lower bound on
-     the level either way. Nothing of the page's search is read */
-  const SCREEN_N_AUD=8192, SCREEN_Z_AUD=2.5, SCREEN_K_AUD=400, SCREEN_NODES_AUD=3e6;
-  const screenAud=(list,minD,target,cap=6)=>{ const L=list.filter(l=>!l.market).sort((a,b)=>b.p-a.p), n=L.length, N=SCREEN_N_AUD, Wd=N>>>5; if(n<2) return {best:null,worked:0,cands:0,nodes:0};
+     SCREEN_Z_AUD of its own noise of target or over it, whose legs multiplied reach minD (parlayDec never pays more than
+     multiplying) and whose price on the screen (its legs multiplied, or SGP_HOLD over the implied chance all land) falls
+     short of minD by no more than SCREEN_Z_AUD of that price's own noise (the screen's draws of the implied chance and
+     parlayDec's own SCREEN_DEC_N_AUD); a branch let go once its chance on the screen cannot reach target (the screen's chance
+     only falls as legs join) or the dearest legs left cannot bring it to minD. target is a level's chance plus
+     SEARCH_TOL_AUD: what it finds paying minD in full, likelier than that, is a parlay the level should have been, and its
+     best a lower bound on the level either way.
+     (the second review of app v145) The candidates are worked by their key, min(cf, cf x pa / minD): the chance on the
+     screen, scaled down by how far the price on the screen falls short of minD (about what the set lands where it is
+     priced at minD), each priced in full first (parlayDec on the card's order) and its chance worked in full (parlayProb)
+     only where it pays, until a key with its own noise (the chance's draws and the price's) falls SCREEN_Z_AUD of it under
+     the target or the best found, or SCREEN_W_AUD have been priced. Until then the SCREEN_K_AUD (400) likeliest on the screen
+     were worked, of those within a fixed 6% of minD: most were sets priced just under minD, likelier than those that pay
+     (the made-up TB at CHI Aggressive of week 9: 1 of the 400 paid), the 400 did not move with the target, and the 6% was
+     one of the price's own standard deviations at an Extreme (week 9's likeliest paying TB at CHI Extreme was priced 8% short
+     on the screen and never a candidate), so a level up to 0.45 points under the screen's own best passed where 0.2 is
+     written. Measured by an instrumented audit on weeks 7 to 9's payloads at their clocks (96 holds, every candidate of a
+     40-million-node screen priced and its chance worked in full where it paid): the hold passes a level down to 0.2 points
+     under the screen's best, and that best is within 0.013 points of the level or above it wherever the screen's
+     candidates were all made (0.213 at most), 0.285 where the node cap cut them (the made-up TB at CHI Extreme of week 9),
+     where the 400 by the screen's chance passed levels 0.452 under (the 90th percentile 0.213, where it was 0.313). A
+     screen past SCREEN_NODES_AUD nodes has not made
+     all its candidates: its level is held to what it found, a lower bound, said by its label in M's summary and in its
+     line, never a warning (rule (b)'s W.coverage is for a case the week gave nothing to stand on; the made-up lines'
+     Extremes pass the node cap every week, and a red props run on ordinary data would say nothing). Raising the node cap
+     buys little under the work cap (week 9's made-up Extremes take 11.3 million nodes, 12 s each, and their extra
+     candidates crowd the 3000 priced). Nothing of the page's search is read */
+  const SCREEN_N_AUD=8192, SCREEN_Z_AUD=2.5, SCREEN_W_AUD=3000, SCREEN_NODES_AUD=3e6, SCREEN_DEC_N_AUD=20000, SCREEN_K_OLD_AUD=400;
+  /* keep: the candidates (out, each its places in L) returned with it, for a case that asks what the screen saw */
+  const screenAud=(list,minD,target,cap=6,keep=false)=>{ const L=list.filter(l=>!l.market).sort((a,b)=>b.p-a.p), n=L.length, N=SCREEN_N_AUD, Wd=N>>>5; if(n<2) return {best:null,priced:0,paid:0,cands:0,nodes:0,over:false,short:false};
     const R=L.map((a,i)=>L.map((b,j)=>i===j?1:rhoA(a,b)));
     const chol=M=>{ const k=M.length, C=Array.from({length:k},()=>new Float64Array(k));
       for(let i=0;i<k;i++) for(let j=0;j<=i;j++){ let v=M[i][j]; for(let t=0;t<j;t++) v-=C[i][t]*C[j][t]; if(i===j){ if(v<=1e-10) return null; C[i][i]=Math.sqrt(v); } else C[i][j]=v/C[j][j]; } return C; };
     let C=null, lam=0; while(!C&&lam<1){ C=chol(R.map((r,i)=>r.map((v,j)=>i===j?1:v*(1-lam)))); if(!C) lam+=0.05; }
-    if(!C) return {best:null,worked:0,cands:0,nodes:0};
+    if(!C) return {best:null,priced:0,paid:0,cands:0,nodes:0,over:false,short:false};
     let seed=0x2545f491; const rnd=()=>{ seed^=seed<<13; seed>>>=0; seed^=seed>>>17; seed^=seed<<5; seed>>>=0; return (seed+0.5)/4294967296; };
     const inv=F('invNorm'), md=mdA, SGP=w.eval('SGP_HOLD'), tf=L.map(l=>inv(1-l.p)), ti=L.map(l=>inv(1-1/(md(l.price)||1))), dir=L.map(l=>l.side==='under'?-1:1);
     const BF=L.map(()=>new Uint32Array(Wd)), BI=L.map(()=>new Uint32Array(Wd)), g=new Float64Array(n);
@@ -1662,16 +1729,22 @@ setTimeout(async()=>{
     const OK=new Uint8Array(n*n); for(let a=0;a<n;a++) for(let b=0;b<n;b++) if(a!==b) OK[a*n+b]=fitsAud([L[a]],L[b])?1:0;
     const fF=[], fI=[]; for(let d=0;d<=cap;d++){ fF.push(new Uint32Array(Wd).fill(0xffffffff)); fI.push(new Uint32Array(Wd).fill(0xffffffff)); }
     const sd=c=>Math.sqrt(Math.max(c,1/N)*(1-Math.min(c,1-1/N))/N), out=[], ch=[]; let nodes=0, over=false;
+    /* the price's relative noise on the screen (the implied chance's draws here and parlayDec's own) */
+    const rel=ci=>Math.sqrt((1-ci)/Math.max(ci,1/N)*(1/N+1/SCREEN_DEC_N_AUD));
     const go=(dd,i0,mult)=>{ for(let j=i0;j<n&&!over;j++){ let ok=true; for(let t=0;t<dd;t++) if(!OK[ch[t]*n+j]){ ok=false; break; } if(!ok) continue;
         if(++nodes>SCREEN_NODES_AUD){ over=true; return; }
         const a=fF[dd], b=fI[dd], A=BF[j], B=BI[j], f=fF[dd+1], q=fI[dd+1]; for(let k=0;k<Wd;k++){ f[k]=a[k]&A[k]; q[k]=b[k]&B[k]; }
         const cf=pop(f)/N; if(cf+SCREEN_Z_AUD*sd(cf)<target) continue;
         const m2=mult*dec[j], k1=dd+1; ch[dd]=j;
-        if(k1>=2){ const ci=pop(q)/N, pa=ci>0?Math.min(m2,SGP/ci):m2; if(pa>=minD*0.94) out.push({ix:ch.slice(0,k1),cf}); }
+        if(k1>=2&&m2>=minD*(1-1e-12)){ const ci=pop(q)/N, pa=ci>0?Math.min(m2,SGP/ci):m2; if(pa>=minD*(1-SCREEN_Z_AUD*rel(ci))) out.push({ix:ch.slice(0,k1),cf,ci,key:Math.min(cf,cf*pa/minD)}); }
         if(k1<cap&&m2*TOP[j+1][cap-k1]>=minD*(1-1e-12)) go(k1,j+1,m2); } };
-    go(0,0,1); out.sort((x,y)=>y.cf-x.cf);
-    let best=null, worked=0; for(const e of out){ if(worked>=SCREEN_K_AUD) break; worked++; const x=freeOfAud(e.ix.map(t=>L[t])); x.k=[0,0]; if(x.dec>=minD&&(!best||freeRankAud(x,best)<0)) best=x; }
-    return {best,worked,cands:out.length,nodes,over}; };
+    go(0,0,1); out.sort((x,y)=>(y.key-x.key)||(y.cf-x.cf));
+    let best=null, priced=0, paid=0, short=false;
+    for(const e of out){ if(e.key+SCREEN_Z_AUD*Math.sqrt(sd(e.cf)**2+(e.key*rel(e.ci))**2)<Math.max(target,best?best.pr:0)) break;
+      if(priced>=SCREEN_W_AUD){ short=true; break; } priced++;
+      const O=ordA(e.ix.map(t=>({...L[t]}))), dec=pdA(O.map(l=>({leg:l,ml:l.price}))); if(!(dec>=minD)) continue; paid++;
+      const x=freeOfAud(e.ix.map(t=>L[t]),dec); x.k=[0,0]; if(!best||freeRankAud(x,best)<0) best=x; }
+    return {best,priced,paid,cands:out.length,nodes,over,short,...(keep?{out,L}:{})}; };
   /* the two kept a run, by the unit's legs, the level and its chance (the Spread-alone pass and the week's are the same sets) */
   const REF_MEMO_AUD=new Map(), refKeyAud=(L,minD,x)=>`${minD}|${x}|${L.map(l=>`${legIdAud(l)}:${l.p}:${l.price}:${l.gid}`).sort().join()}`;
   const dgMemo=(per,minD)=>{ const k=refKeyAud(per.flat(),minD,'dg|'+per.length); let r=REF_MEMO_AUD.get(k); if(!r){ r=dgAud(per,minD); REF_MEMO_AUD.set(k,r); } return r; };
@@ -1679,12 +1752,19 @@ setTimeout(async()=>{
   /* a unit's level (no total, no hook's Value picks) held to its own reference where its legs are too many to work every
      parlay out: of two games or more, to dgAud (the very parlay by the rule where both are plain products, else within
      SEARCH_TOL_AUD); of one game, to screenAud's best, a counterexample likelier than the level by more than SEARCH_TOL_AUD
-     (the very parlay by the rule where both are plain). hold: chk, or W.search / W.engine. Returns {ran, what} */
+     (the very parlay by the rule where both are plain). hold: chk, or W.search / W.engine. Returns 'dg', 'screen' (a screen
+     whose candidates were all made: held, whether or not it found one paying, its walk ended at its stop or at its work cap,
+     SCREEN_W_AUD priced, counted in SCREEN_SHORT_AUD), 'part' (a screen past its node cap, its candidates not all made: held
+     to what it found, a lower bound, said by its label in SCREEN_PART_AUD and in its line, never a warning: the made-up lines'
+     Extremes pass it every week), or null */
+  const SCREEN_PART_AUD=[], SCREEN_SHORT_AUD={n:0};
   const unitRefHeldAud=(t,per,minD,lab,hold)=>{ if(!t||!t.legs) return null;
-    if(per.length>=2){ const r=dgMemo(per,minD); if(!r.best) return null; refHeldAud(t,r.best,lab,hold,'the likeliest parlay of single legs across the games (every size, worked out exactly),'); return 'dg'; }
+    if(per.length>=2){ const r=dgMemo(per,minD); if(!r.best) return null; refHeldAud(t,r.best,lab,hold,'the likeliest parlay of single legs across the games (every size, worked out exactly),',true); return 'dg'; }
     const L=per[0]||[], r=screenMemo(L,minD,t.corr+SEARCH_TOL_AUD,Math.min(CAP_AUD,Math.max(6,t.legs.length+1)));
-    if(r.best) refHeldAud(t,r.best,lab,hold,`the likeliest on the audit's own screen of ${SCREEN_N_AUD} draws (${r.cands} sets of 2 to ${Math.min(CAP_AUD,Math.max(6,t.legs.length+1))} within its noise of beating it, ${r.worked} worked in full),`);
-    return 'screen'; };
+    const part=!!r.over, why=r.over?`stopped at its ${SCREEN_NODES_AUD} nodes, so a lower bound`:r.short?`its ${SCREEN_W_AUD} best by the key`:'';
+    if(part) SCREEN_PART_AUD.push(`${lab} (${r.cands} sets made by its ${SCREEN_NODES_AUD} nodes)`); else if(r.short) SCREEN_SHORT_AUD.n++;
+    if(r.best) refHeldAud(t,r.best,lab,hold,`the likeliest on the audit's own screen of ${SCREEN_N_AUD} draws (${r.cands} sets of 2 to ${Math.min(CAP_AUD,Math.max(6,t.legs.length+1))} within its noise of beating it, ${r.priced} priced in full and ${r.paid} of them paying${why?'; '+why:''}),`);
+    return part?'part':'screen'; };
   /* a level held to an exact reference (freeAud's best): the very parlay, its legs and its fill */
   /* (the plain-product rule, as app v144's search check had it) the very parlay where it and the level are both plain products,
      their chances exact; else, legs moving together and the chance a seeded draw, at least as likely within SEARCH_TOL_AUD
@@ -2064,7 +2144,7 @@ setTimeout(async()=>{
         /* (app v121) no pair DraftKings will not take on one slip, by the audit's own copy of the rule (clashAud) */
         chk(!clashPairsAud(t.legs).length,`${lab}: the ${t.id} tier holds a pair DraftKings will not take on one slip: ${clashTxt(t.legs)}`);
         /* the card's numbers are the builder's own sums on the legs as the builder orders them */
-        const order=t.legs.map(l=>l.key).join(), want=[...t.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join();
+        const order=t.legs.map(l=>l.key).join(), want=[...t.legs].sort((a,b)=>(a.week-b.week)||enAud(String(a.name),String(b.name))).map(l=>l.key).join();
         chk(order===want,`${lab}: the ${t.id} tier's legs are not in the builder's order`);
         chk(pp(t.legs).corr===t.corr&&pd(t.legs.map(l=>({leg:l,ml:l.price})))===t.dec,`${lab}: the ${t.id} tier's chance or price is not what parlayProb and parlayDec say`);
         /* (app v143) it pays its price, chosen by that rule (an engine no page draws: W.engine); (app v145) its own level's,
@@ -2085,7 +2165,7 @@ setTimeout(async()=>{
         if(!t.mkt){ if(allE.length<=16){ const b=freeAud(allE,minD); if(freeHeldAud(t,b,lab,W.engine)){ likeliestWorked++; combosWorked+=b.seen; } }
           else { if(refE&&refE[si].best){ refHeldAud(t,refE[si].best,`${lab}: the ${t.id} tier`,W.engine,'the likeliest of 2 and 3 legs paying it,'); likeliestWorked++; combosWorked+=refE[si].worked; }
             /* (the review of app v145) every size: across the ticked games the exact knapsack (dgAud), one game its screen */
-            if(!pool.pref.length&&unitRefHeldAud(t,perE,minD,`${lab}: the ${t.id} tier`,W.engine)) likeliestWorked++; } }
+            if(!pool.pref.length){ const kind=unitRefHeldAud(t,perE,minD,`${lab}: the ${t.id} tier`,W.engine); if(kind==='dg'||kind==='screen') likeliestWorked++; } } }
         /* thin legs only fill what the preferred could not */
         if(t.thin&&pool.pref.length) chk(!pgLevel||pgLevel(SPEC.find(s=>s[0]===t.id),F('pbSplitPool')({pref:pool.pref,thin:[],mkt:[]},on.map(g=>g.id)),new Map())===null,`${lab}: the ${t.id} tier took a thin leg the preferred legs did not need`);
         if(pool.pref.length>=2){ /* the two likeliest preferred legs that fit together, where they pay the level's price, do not beat it */
@@ -2134,11 +2214,45 @@ setTimeout(async()=>{
        Record alone; no Elo picks anywhere (app v142, the owner's call of 5 November 2026: their code off the parts, no
        #pbElo, no unit's Elo block, sub-heading or Elo pick card), each unit its head, its one line and its parlays straight
        under it, and, on this page, the prop model's own, with no ELO tab, no Mismatch tag (spDrawHold) */
-    let setsBuilt=0, setLevels=0, setsSaid=0, setsLocked=0, setMktSeen=0, setThinSeen=0, searchWorked=0, dgHeld=0, screenHeld=0; const nightSaid=[];
+    let setsBuilt=0, setLevels=0, setsSaid=0, setsLocked=0, setMktSeen=0, setThinSeen=0, searchWorked=0, dgHeld=0, screenHeld=0, screenPart=0; const nightSaid=[];
     const SPS=w.eval('SP_SEARCH'), r4=v=>Math.round(v*1e4)/1e4, r3=v=>Math.round(v*1e3)/1e3;
     /* (maxAud, dayAud, spWhyAud and spWhySlotAud are the audit's own, before M, so M16 reads them too) */
     const nightAud=g=>({Thu:'Thursday night',Sun:'Sunday night',Mon:'Monday night'})[dayAud(g)];
     let slotsBuilt=0, slotLevels=0, slotsLocked=0, slotsNone=0, slotsUnderway=0, slotMixed=0; const slotSaid=[];
+    /* (app v146, the critique of the budgets) each live level's work on the week as it stands: spLevel wrapped while a unit's
+       set is built (its PB_LV_STAT.w and, the Day games, its groups' gw), and whether its search stopped on the level's work
+       budget (a walk's candidates cut where the work ran out, a walk ending with none left, the knapsack with groups cut;
+       on the Day games' group path also a same-game group a front walk offered and left unworked in full, which the page
+       does once GB is down to GR, and the groups' work spent, which ends the card's walk of the knapsack's parlays: each
+       on the audit's own records, the candidates by their legs' ids against the groups pbExact worked with no price, and
+       GB's spend the groups' charge, PB_LV_STAT.gw, less the front walks' own, each walk's budget's w0 - w as it returns):
+       W.search, a correctly priced parlay a search given more work might better; the largest share said in M's summary line.
+       Every wrapper passes its arguments and its answer through, and is put back on every path */
+    let lvSaid='no live level built';
+    const LV_SRC=`(function(){ const A={on:false,cur:null,recs:[]}, K={spLevel,pbFreeCands,pbFreeWalk,pbFreeDp,pbExact};
+      spLevel=function(t,pools,pool,memo,g){ if(!A.on) return K.spLevel.apply(this,arguments);
+        const S0=PB_LV_STAT, w0=S0.w, g0=S0.gw, prev=A.cur;
+        A.cur={u:g&&g.id,id:t&&t[0],stop:0,games:(pools||[]).filter(p=>p&&(p.pref.length+p.thin.length+(p.mkt||[]).length)).length,gc:new Set(),gx:new Set(),gv:0};
+        try{ return K.spLevel.apply(this,arguments); } finally { const c=A.cur; c.w=S0.w-w0; c.gw=S0.gw-g0; c.skip=0; for(const id of c.gc) if(!c.gx.has(id)) c.skip++; if(c.skip) c.stop|=8;
+          c.gb=c.gw-c.gv; if(c.games>1&&c.gb>=PB_FREE.GWORK-PB_FREE.GWALK) c.stop|=16; delete c.gc; delete c.gx; A.recs.push(c); A.cur=prev; } };
+      pbFreeCands=function(x,I,F,cap,M,mode,thr0,rOb,fl,k,B,res){ const r=K.pbFreeCands.apply(this,arguments); if(A.cur&&r&&r.cut&&B&&B.n>=0&&B.w<(res||0)) A.cur.stop|=1;
+        if(A.cur&&r&&mode==='front'){ if(B&&isFinite(B.w0)) A.cur.gv+=B.w0-B.w; for(const s of r.set||[]) A.cur.gc.add(s.map(c=>x.id[c]).sort().join(',')); } return r; };
+      pbExact=function(legs,floor,minDec){ if(A.cur&&minDec===0&&Array.isArray(legs)) A.cur.gx.add(legs.map(pbId).sort().join(',')); return K.pbExact.apply(this,arguments); };
+      pbFreeWalk=function(x,cand,F,mode,B,bar){ const r=K.pbFreeWalk.apply(this,arguments); if(A.cur&&B&&B.w<=0) A.cur.stop|=2; return r; };
+      pbFreeDp=function(G0,F,cap,tol,k,W){ const r=K.pbFreeDp.apply(this,arguments); if(A.cur&&W&&r&&r.cut) A.cur.stop|=4; return r; };
+      A.put=function(){ spLevel=K.spLevel; pbFreeCands=K.pbFreeCands; pbFreeWalk=K.pbFreeWalk; pbFreeDp=K.pbFreeDp; pbExact=K.pbExact; };
+      return A; })()`;
+    const lvDoneAud=A=>{ A.put(); const R=A.recs.filter(r=>r.u);
+      if(!R.length){ lvSaid='no live level built'; return; }
+      const nm=r=>{ if(/_SUN$/.test(String(r.u))) return 'the Day games'; const g=S.sched.find(x=>x.id===r.u); return g?`${g.a} at ${g.h}`:r.u; };
+      /* (the review of app v146) a level by the games it searched, as the page chooses its path (pbFreeUnit: none where no
+         pool has a leg, the one-game path for one, the groups' for two or more), so a unit with no leg to search (the Day
+         games in the off-season, every pool empty) is never counted a level of one game */
+      const one=R.filter(r=>r.games===1), many=R.filter(r=>r.games>1), none=R.filter(r=>!r.games).length, base=BUDGET_AUD.WORK-BUDGET_AUD.RT;
+      const top=one.reduce((a,r)=>!a||r.w>a.w?r:a,null), topG=many.reduce((a,r)=>!a||r.gw>a.gw?r:a,null);
+      const why=r=>[r.stop&1?'a walk\'s candidates cut':'',r.stop&2?'a walk ended with no work left':'',r.stop&4?'the knapsack with groups cut':'',r.stop&8?`${r.skip} same-game group${r.skip===1?'':'s'} left unworked in full where the groups' work came down to the knapsack's reserve`:'',r.stop&16?'the groups\' work spent, ending the card\'s walk of the knapsack\'s parlays':''].filter(Boolean).join(', ');
+      for(const r of R) W.search(!r.stop,`this week, ${nm(r)}: the ${r.id} level's search stopped on the level's work budget (${why(r)}; ${msW(r.w)} ms of W${r.games>1?`, the groups ${msW(r.gw)} ms of their ${BUDGET_AUD.GWORK/1000}`:''}): a likelier parlay paying its price may exist`);
+      lvSaid=`the level budget on the week's ${R.length} live levels: ${top?`the largest of one game ${msW(top.w)} ms of W (the ${top.id} level of ${nm(top)}, ${isFinite(top.w)?(100*top.w/base).toFixed(0):'?'}% of the ${base/1000} ms its passes before a totals' pass may spend)`:'none of one game'}${topG?`, the Day games' groups at most ${msW(topG.gw)} ms of their ${BUDGET_AUD.GWORK/1000} ms (${topG.id})`:''}${none?`, ${none} with no leg to search`:''}, ${R.filter(r=>r.stop).length} stopped on it`; };
     const holdSets=(lab)=>{
       const now=w.Date.now(), mine=F('pbGames')().filter(primeAud), page=F('spGames')();
       chk(page.map(g=>g.id).join()===mine.map(g=>g.id).join(),`${lab}: Suggested Parlays has sets for ${page.map(g=>g.id).join(', ')||'no game'}, where the week's prime-time games to come are ${mine.map(g=>g.id).join(', ')||'none'}`);
@@ -2151,9 +2265,11 @@ setTimeout(async()=>{
         `${lab}: the page's Sunday slot is ${pSL?`${pSL.id} (${gs(pSL.games)}), ${pSL.up?'up':'not up'}${pSL.open!=null?' from '+isoAud(pSL.open):''}`:'none'}, where the rule gives ${SL?`${SL.id} (${gs(SL.games)}), ${SL.up?'up':'not up'}${SL.open!=null?' from '+isoAud(SL.open):''}`:'none'}`);
       /* the units held: each prime-time game to come, and the slot (its games the audit's own) */
       const units=[...mine.map(g=>({g,G:[g],slot:null})),...(SL&&pSL&&pSL.id===SL.id?[{g:F('spUnit')(SL.id),G:SL.games,slot:SL}]:[])];
+      const LW=lab==='this week'?w.eval(LV_SRC):null;
+      try{
       for(const {g,G,slot} of units){ if(!g) continue;
         const gids=new Set(G.map(x=>x.id)), uname=slot?`week ${slot.w}'s Day games`:`${g.a} at ${g.h}`;
-        const s=F('spSet')(g.id), q=qualAud(G,ALL_U);
+        if(LW) LW.on=!(slot&&slot.phase==='under'); const s=F('spSet')(g.id), q=qualAud(G,ALL_U); if(LW) LW.on=false;
         /* (app v118) the Sunday slot under way: from its first kickoff the page builds and shows no set of its own (the
            locked one, the record's or kept, else its one line), finds none for a Finish and rebuilds no level, so its
            live build, which would stand on the games left, is held to nothing here; drawSlot holds what the tab shows */
@@ -2206,7 +2322,7 @@ setTimeout(async()=>{
             chk(new Set(t.legs.map(l=>l.key)).size===N&&new Set(sides.map(l=>l.gid)).size===sides.length&&new Set(tots.map(l=>l.gid)).size===tots.length&&new Set(pl.map(l=>l.pid)).size===pl.length,`${gl} has one line twice, two sides or two totals of a game, or two legs on one player`); }
           /* (app v121) no pair DraftKings will not take on one slip (clashAud, the audit's own copy) */
           chk(!clashPairsAud(t.legs).length,`${gl} holds a pair DraftKings will not take on one slip: ${clashTxt(t.legs)}`);
-          chk(t.legs.map(l=>l.key).join()===[...t.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join(),`${gl}'s legs are not in the builder's order`);
+          chk(t.legs.map(l=>l.key).join()===[...t.legs].sort((a,b)=>(a.week-b.week)||enAud(String(a.name),String(b.name))).map(l=>l.key).join(),`${gl}'s legs are not in the builder's order`);
           chk(pp(t.legs).corr===t.corr&&pd(t.legs.map(l=>({leg:l,ml:l.price})))===t.dec,`${gl}'s chance or price is not what parlayProb and parlayDec say`);
           /* (app v143) every level pays its price (its price in full, the figure its card states), chosen by that rule:
              blocking, a number the page states; (app v145) its own level's, LEVEL_DEC_AUD, by the any-size rule */
@@ -2235,13 +2351,14 @@ setTimeout(async()=>{
                  games (dgAud), a night game's to the audit's own screen's counterexamples (screenAud), no hook's Value
                  picks among the legs (their fewest-thin-legs pass is the rule's, not these references') */
               if(!per.some(p=>p.q.pref.length)){ const kind=unitRefHeldAud(t,per.map(p=>[...capAud(p.q.pref,SPS.cap),...capAud(p.q.thin,SPS.cap)]),minD,gl,hs);
-                if(kind==='dg') dgHeld++; else if(kind==='screen') screenHeld++; } } } }
+                if(kind==='dg') dgHeld++; else if(kind==='screen') screenHeld++; else if(kind==='part') screenPart++; } } } }
         if(slot) out.slot={g,s,q,R:slot}; else out.push({g,s,q}); }
+      } finally { if(LW) lvDoneAud(LW); }
       /* the tab as it draws them: which games it sets out, by the night rule worked here (app v118: in its Night games
          section; since app v129 the Sunday slot is in it too, after the night's sets, below) */
       F('renderSp')();
       const NS='#spPanel [data-sp-sec="night"]';
-      const N=nightRuleAud(mine,S.sched,now), onG=N.up?N.games:[], ids=a=>a.map(g=>g.id).sort().join(), byK=a=>[...a].sort((x,y)=>(kickAud(x)-kickAud(y))||String(x.id).localeCompare(String(y.id))).map(g=>g.id).join();
+      const N=nightRuleAud(mine,S.sched,now), onG=N.up?N.games:[], ids=a=>a.map(g=>g.id).sort().join(), byK=a=>[...a].sort((x,y)=>(kickAud(x)-kickAud(y))||enAud(String(x.id),String(y.id))).map(g=>g.id).join();
       nightSaid.push(`${lab}: ${!mine.length?'no prime-time game to come':N.up?`${ids(onG)} set out${mine.length>onG.length?`, ${mine.length-onG.length} later game${mine.length-onG.length===1?'':'s'} not yet`:''}`:`the next night (${ids(N.games)}) not up until ${isoAud(N.open)}, said so`}`);
       /* (app v118) the tab's sections are each headed by its own record; the record is no longer at the tab's head.
          (app v129, the owner's call of 22 October 2026: "get rid of the Sunday slot record section -> all should be a
@@ -2534,7 +2651,7 @@ setTimeout(async()=>{
          with the most made-up player lines on file */
       if(games.length){
         const plLegs=g=>F('pricedLegs')([g],true).filter(l=>!isG(l)).length;
-        const g1=[...games].sort((a,b)=>(plLegs(b)-plLegs(a))||String(a.id).localeCompare(String(b.id)))[0];
+        const g1=[...games].sort((a,b)=>(plLegs(b)-plLegs(a))||enAud(String(a.id),String(b.id)))[0];
         U().off=games.filter(g=>g.id!==g1.id).map(g=>g.id); setKinds(['over','under']);
         const r1=hold(`made-up lines, one game (${g1.a} @ ${g1.h}), players only`);
         corrTiers=r1.tiers.filter(t=>t.legs&&pp(t.legs).pairs.length>0).length;
@@ -2658,7 +2775,7 @@ setTimeout(async()=>{
       if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
       S.sched.forEach((g,i)=>{ g.tov=keepT[i][0]; g.tou=keepT[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
       dkSet(keepDk); rebake();
-      console.log(`M. Top ${TOP_N_AUD} lines: ${topLists} lists held on as many sets of ticks, ${topRows} rows in their parts (${topV} Value picks, ${topPl} player lines, ${topGm} game bets, the totals after every moneyline and spread, ${topTotAfter} lists with both; each bet once, ${topSame} main lines a ladder rung was left out for, ${topSameCut} of them past the ${TOP_N_AUD}th; M12 holds both on made-up games); Suggested Parlays: ${setsBuilt} sets of the week's prime-time games, ${setLevels} levels built and ${setsSaid} that said why, ${setsLocked} drawn locked, ${setThinSeen} cards with a thin leg and ${setMktSeen} with a total drawn quiet (no line on either), ${searchWorked} levels held to the audit's own reference (every parlay of 2 to 12 worked out in full where the unit's legs are few, else the likeliest of 2 and 3 legs paying each level's price, and of every size the Day games' ${dgHeld} to the exact knapsack of single legs across their games and the night games' ${screenHeld} to the audit's own screen's counterexamples; W.search on the week's own same-game lines), ${slotMixed} Day games levels mixing their games; ${nightSaid.join('; ')}; the Sunday slot: ${slotsBuilt} sets held, ${slotLevels} levels built, ${slotsLocked} drawn locked or under way${slotsUnderway?` (${slotsUnderway} under way, its live build not held: the page builds none then)`:''}${slotsNone?`, ${slotsNone} under way with the site's set not published in time (its line alone)`:''}; ${slotSaid.join('; ')}`);
+      console.log(`M. Top ${TOP_N_AUD} lines: ${topLists} lists held on as many sets of ticks, ${topRows} rows in their parts (${topV} Value picks, ${topPl} player lines, ${topGm} game bets, the totals after every moneyline and spread, ${topTotAfter} lists with both; each bet once, ${topSame} main lines a ladder rung was left out for, ${topSameCut} of them past the ${TOP_N_AUD}th; M12 holds both on made-up games); Suggested Parlays: ${setsBuilt} sets of the week's prime-time games, ${setLevels} levels built and ${setsSaid} that said why, ${setsLocked} drawn locked, ${setThinSeen} cards with a thin leg and ${setMktSeen} with a total drawn quiet (no line on either), ${searchWorked} levels held to the audit's own reference (every parlay of 2 to 12 worked out in full where the unit's legs are few, else the likeliest of 2 and 3 legs paying each level's price, and of every size the Day games' ${dgHeld} to the exact knapsack of single legs across their games and the night games' ${screenHeld} to the audit's own screen's counterexamples (of every screen this run, ${SCREEN_SHORT_AUD.n} priced their ${SCREEN_W_AUD} best by the key before their stop), ${screenPart} more to a screen past its node cap, a lower bound${SCREEN_PART_AUD.length?` (of every screen this run: ${SCREEN_PART_AUD.join('; ')})`:''}; W.search on the week's own same-game lines), ${slotMixed} Day games levels mixing their games; ${lvSaid}; ${nightSaid.join('; ')}; the Sunday slot: ${slotsBuilt} sets held, ${slotLevels} levels built, ${slotsLocked} drawn locked or under way${slotsUnderway?` (${slotsUnderway} under way, its live build not held: the page builds none then)`:''}${slotsNone?`, ${slotsNone} under way with the site's set not published in time (its line alone)`:''}; ${slotSaid.join('; ')}`);
       console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, ${corrTiers} of one game's tiers on legs that move together, over this week's ${games.length} games and ${nL} made-up player lines`); }
     /* the thin-edge line is gone (app v130, the owner's call of 22 October 2026: "i dont want any descriptions
        anywhere"): no card says why a leg is not a Value pick, for any kind of leg, as it did until then on a card not
@@ -4250,11 +4367,48 @@ setTimeout(async()=>{
            milliseconds turns on the machine, and this audit gates the publish), paying its price, Safe at least as likely as
            the audit's own greedy paying set; on this pool the budget runs out and Safe is that greedy set, 12 legs at
            26.498%, where the search with its budgets lifted finds 11 legs at 28.360% in 32,497 units: the budget's cost,
-           said in CLAUDE.md
+           said in CLAUDE.md; (app v146) and the whole level within the level's work (lvWorkAud: the audit's own reading of it,
+           at most PB_FREE.WORK with ROOM_AUD's room and at most the page's own charge), each pass handed it
+       F12b (app v146, the budgets) a level's passes share one budget: a night of sixty lines at -375 on a stat no table
+           correlates and its game total at +100, the dearest twelve paying under +1500 and eleven with the total over it:
+           every level within the level's work and paying its price, Extreme the total's in a second pass
        F11 (the review of app v145) the knapsack's dominance tie-safe to the id: the Day games of four games, three players
            each at 50% and -112, no two moving together, leaning 0 to 4 points by turns: a same-game pair beside another
            game's leg and three games' legs tie on the chance (12.5%) and the lean (0.11), the pair's id the lower and its
            price the lower (6.08 against 6.78); Medium the pair's (a dominance by price within the tie dropped it)
+       F13 (the second review of app v145) a same-game group of three in the Day games: two games, the first a quarterback's
+           passing yards over and two of his receivers' yards over at their prices' own chances (the pair table's own shape
+           planted for made-up groups), the second two lines of other players at a margin: Medium the first game's three
+           (21.42% at 4.164), likelier than any parlay holding two legs of a game at most (a pair with the second game's
+           line, 20.42%), and Aggressive the three with the second game's +100 (10.07% at 8.327: since app v146 the group's
+           own chance times the other game's line's, parlayProb by game, where the one draw over every leg gave 10.33%),
+           where that rule leaves it empty of three (a pair and the two second-game lines, 7.59%): a knapsack that takes
+           same-game groups of two alone fails both
+       F14 (the second review of app v145) a pair moving against each other, priced over SGP_HOLD times 1.05 times its legs
+           multiplied (Slepian's floor for a set none of whose pairs moves against another): a night of a quarterback's
+           passing yards over at +105 (50%), his receiver's yards under at +100 (50%, the pair table's 0.353 turned by the
+           under) and another club's receptions over at +100 (47%): Medium the pair (19.2% at 4.100, its legs multiplied),
+           where that floor (3.857) would refuse it and take the three (9.0% at 8.200), and Aggressive the three, which it
+           would refuse too
+       F15 (the second review of app v145) the audit's own one-game screen (screenAud), on fourteen plain lines of one game
+           where the likeliest paying +700 lies behind over 400 sets likelier on the screen priced just under it: a level
+           planted 0.3 points under it failed by the screen's hold, the screen's best that parlay (freeAud's), and the
+           level at it passing; the case standing on more than 400 sets likelier on the screen and short of +700 in full
+       F16 (app v146, the budgets) the Day games' groups within their budget: three games of sixteen lines on stats the
+           payload's table correlates, one leg a game short of +700: every level paying its price, the groups' work (the
+           audit's own reading) within PB_FREE.GWORK with GROOM_AUD's room and at most the page's own charge, and (the review
+           of app v146) that charge itself within the same bound, as F12's and F12b's are within the level's
+       F17 (the review of app v146) the card's walk in the rule's order: the Day games of two games, two players of the first
+           (60% at -140 leaning 6 points, and 60.00000003% at -138 leaning 2) and one of the second (65% at -175): the pairs
+           across the games tie on the chance to 1e-9 (39%), the one leaning less the higher raw chance and the dearer price;
+           with PB_FREE.WIN_EVALS stood in at 1 (the card's walk cut after its first parlay, as WIN_EVALS or the groups' work
+           cut it on a large slate) Safe is still the rule's pair (freeAud's, the larger lean), which a walk in the raw
+           chance's order misses
+       F18 (the review of app v146) a Day games level where the groups' work runs out before any pass finds one: two games
+           of forty lines on stats the pair table correlates (its own figures planted for made-up groups), each line
+           returning 0.80 on $1, one leg a game short of +700: Aggressive and Extreme never empty where the audit's own
+           enumeration finds a parlay paying their price, paying it, at least as likely as the audit's own greedy paying set
+           across the games (before the review both were empty), the groups' work within PB_FREE.GWORK with GROOM_AUD's room
        GP  a night of three short lines and three nearer evens: every level held; its words by the level's own recorded rule
            (app v145's "likeliest · +110+", titled "The likeliest parlay paying at least +110 by the site’s price: $1 returns
            $2.10 or more"; read back from a lock under app v144 its fixed size's words, "likeliest pair · +110+"; under app
@@ -4263,18 +4417,20 @@ setTimeout(async()=>{
            priced so their approximate price pays +110 and their price in full does not: never a level
        GT, GU  three lines at -180 (four at -140) and the game total: each level held, the total only where no parlay
            without it pays
-     and pbPaysFree on each game's and each slot's legs the audit's own paysFreeAud at each level's price.
+     and pbPaysFree on each game's and each slot's legs the audit's own paysFreeAud at each level's price, and parlayProb by
+     game (app v146) on F13's lines and, since the review of app v146, on copies of its first game's in two more made-up
+     games, so parlays of two and three games each holding a moving pair are met.
      Blocking (made-up data) */
   { const isG=F('isGameLeg'), pp=F('parlayProb'), pd=F('parlayDec'), order=F('pbOrder'), said18=[], SEA=F('SEASON');
     const mk=(a,h,dd,tt,wk)=>({id:`2099_${wk}_${a}_${h}`,w:wk,a,h,d:dd,t:tt,mla:120,mlh:-140});
     /* the nights (week 95) and the Day games' weeks, each its own Sunday */
     const GP=mk('APP','APQ','2099-01-18','20:20',95), GR=mk('ARR','ARS','2099-01-19','20:15',95), GK=mk('AKK','AKL','2099-01-19','20:45',95);
     const GT={...mk('ATT','ATU','2099-01-19','20:30',95),tot:44.5,tov:-110,tou:-110}, GU={...mk('AUU','AUV','2099-01-19','21:30',95),tot:44.5,tov:-110,tou:-110};
-    const GY3=mk('AY3','AZ3','2099-01-15','21:30',95), GY4=mk('AY4','AZ4','2099-01-19','22:00',95);
-    const SUN={80:'2099-03-01',81:'2099-03-08',82:'2099-03-15',83:'2099-03-22',84:'2099-03-29',85:'2099-04-05',86:'2099-04-12',87:'2099-04-19',88:'2099-04-26',89:'2099-05-03',90:'2099-05-10'};
+    const GY3=mk('AY3','AZ3','2099-01-15','21:30',95), GY4=mk('AY4','AZ4','2099-01-19','22:00',95), GN=mk('ANN','ANO','2099-01-15','20:40',95);
+    const SUN={80:'2099-03-01',81:'2099-03-08',82:'2099-03-15',83:'2099-03-22',84:'2099-03-29',85:'2099-04-05',86:'2099-04-12',87:'2099-04-19',88:'2099-04-26',89:'2099-05-03',90:'2099-05-10',91:'2099-05-17'};
     const day=(wk,n,tt)=>Array.from({length:n},(_,i)=>({...mk('B'+String.fromCharCode(65+i)+wk,'H'+String.fromCharCode(65+i)+wk,SUN[wk],tt||'13:00',wk)}));
-    const D1=day(80,6), D2=day(81,2), D3=day(82,6), D4=day(83,4), D5=day(84,3), D5b=day(85,3), D6=day(86,2).map(g=>({...g,tot:44.5,tov:-150,tou:130})), D8=day(87,13), D8b=day(88,13), D10=day(89,3), D11=day(90,4);
-    const SLOTS=[[80,D1],[81,D2],[82,D3],[83,D4],[84,D5],[85,D5b],[86,D6],[87,D8],[88,D8b],[89,D10],[90,D11]], NIGHTS=[GP,GR,GK,GT,GU,GY3,GY4];
+    const D1=day(80,6), D2=day(81,2), D3=day(82,6), D4=day(83,4), D5=day(84,3), D5b=day(85,3), D6=day(86,2).map(g=>({...g,tot:44.5,tov:-150,tou:130})), D8=day(87,13), D8b=day(88,13), D10=day(89,3), D11=day(90,4), D13=day(91,2);
+    const SLOTS=[[80,D1],[81,D2],[82,D3],[83,D4],[84,D5],[85,D5b],[86,D6],[87,D8],[88,D8b],[89,D10],[90,D11],[91,D13]], NIGHTS=[GP,GR,GK,GT,GU,GY3,GY4,GN];
     /* F12 (the review of app v145): a night of eighteen short lines on stats the payload's table correlates, held apart from
        NIGHTS (its every set worked in full takes about a minute on Safe alone) */
     const GS=mk('ASS','AST','2099-01-20','20:20',95);
@@ -4320,6 +4476,12 @@ setTimeout(async()=>{
     const Y4=[py(GY4,'zq','AQ8','over',0.6356,-195),py(GY4,'zw1','AW8','under',0.4579,110),py(GY4,'zw2','AW8','over',0.4579,110),py(GY4,'zw3','AW8','over',0.5759,-150)],
       X4=[0.54954,0.54953,0.54952,0.54951].map((p,j)=>py(GY4,`zx${j}`,'AUD','over',p,-136,GY4.a));
     L18.push(...Y3,...X3,...Y4,...X4);
+    /* F13: the first game's quarterback and two receivers at their prices' own chances, the second game's two lines at a
+       margin; F14: the quarterback's yards over and his receiver's under, and another club's receptions */
+    const G13=[py(D13[0],'gq','AQ8','over',0.5455,-120),py(D13[0],'gw1','AW8','over',0.5455,-120),py(D13[0],'gw2','AW8','over',0.5238,-110)],
+      B13=[pl(D13[1],'gb1',0.57,-150),pl(D13[1],'gb2',0.47,100)];
+    const N14=[py(GN,'nq','AQ8','over',0.5,105),py(GN,'nw','AW8','under',0.5,100)], X14=py(GN,'nx','AUD','over',0.47,100,GN.a);
+    L18.push(...G13,...B13,...N14,X14);
     /* F12: eighteen lines at 85 to 95% (seeded), each at a 3 to 5% margin, a fifth of them unders, on the quarterback's,
        receivers', tight end's and backs' stats the payload's table correlates, both clubs */
     const SPEC12=[['QB','passing_yards'],['WR','receiving_yards'],['WR','receiving_yards'],['WR','receiving_yards'],['TE','receiving_yards'],['RB','rushing_yards'],['RB','receiving_yards'],['WR','receptions'],['TE','receptions'],['RB','receptions'],['QB','rushing_yards'],['WR','receptions']];
@@ -4328,6 +4490,16 @@ setTimeout(async()=>{
         L18.push({key:`${GS.id}|aud18-s${i}|${stat}`,gid:GS.id,pid:'aud18-s'+i,stat,k:20+i,side,main:true,p,hp:p,price:Math.round(-100*impl/(1-impl)),src:'real',mu:null,name:'Made-up s'+i,pos:grp,grp,team,opp:team===GS.h?GS.a:GS.h,week:GS.w,
           label:`${side==='under'?'Under':'Over'} ${19.5+i} ${stat.replace(/_/g,' ')}`}); } }
     const CORR18={'team|AQ8:passing_yards|AW8:receiving_yards':0.353,'team|AW8:receiving_yards|AW8:receiving_yards':-0.038}, KEEPC18={};
+    /* F18 (the review of app v146): the pair table's figures for a quarterback's, receivers', tight ends' and backs' yards and
+       receptions as every payload of 2026 carries them, under made-up groups (X before the group's name, which keeps the
+       order the table's keys are written in), planted with CORR18 and put back with it */
+    { const T18={'opp|QB:passing_yards|QB:passing_yards':0.094,'opp|QB:passing_yards|WR:receiving_yards':0.064,'opp|QB:passing_yards|WR:receptions':0.036,'opp|RB:rushing_yards|RB:rushing_yards':-0.102,
+        'opp|WR:receiving_yards|WR:receiving_yards':0.035,'self|RB:receiving_yards|RB:rushing_yards':0.04,'self|TE:receiving_yards|TE:receptions':0.809,'self|WR:receiving_yards|WR:receptions':0.803,
+        'team|QB:passing_yards|RB:receiving_yards':0.176,'team|QB:passing_yards|RB:rushing_yards':-0.11,'team|QB:passing_yards|TE:receiving_yards':0.229,'team|QB:passing_yards|TE:receptions':0.206,
+        'team|QB:passing_yards|WR:receiving_yards':0.353,'team|QB:passing_yards|WR:receptions':0.305,'team|RB:receiving_yards|RB:rushing_yards':-0.059,'team|RB:receiving_yards|TE:receptions':0.039,
+        'team|RB:rushing_yards|TE:receptions':-0.04,'team|RB:rushing_yards|WR:receiving_yards':-0.037,'team|RB:rushing_yards|WR:receptions':-0.054,'team|TE:receiving_yards|TE:receiving_yards':-0.032,
+        'team|WR:receiving_yards|WR:receiving_yards':-0.038};
+      for(const k in T18){ const [r,a,b]=k.split('|'); CORR18[`${r}|X${a}|X${b}`]=T18[k]; } }
     /* GK: a quarterback's passing yards over and his receiver's yards over, moving together by the payload's pair table,
        their prices found at the run (below), with two lines of no correlation beside them */
     const kq=X=>({key:`${GK.id}|aud18-kq|passing_yards`,gid:GK.id,pid:'aud18-kq',stat:'passing_yards',k:250,side:'over',main:true,p:0.62,hp:0.62,price:X,src:'real',mu:null,name:'Made-up kq',pos:'QB',grp:'QB',team:GK.h,opp:GK.a,week:GK.w,label:'Over 249.5 passing yards'});
@@ -4358,6 +4530,11 @@ setTimeout(async()=>{
       dropCaches();
       { const own=w.eval('PB_TIERS').map(t=>t[0]+':'+t[2]+':'+t[4]).join(), want=SPEC_AUD.map(s=>s[0]+':2:'+LEVEL_DEC_AUD[s[0]]).join(), cap=w.eval("typeof PB_LV_CAP==='undefined'?null:PB_LV_CAP"), pick=w.eval("typeof PB_PICK==='undefined'?null:PB_PICK");
         chk(own===want&&cap===CAP_AUD&&pick===PICK_AUD,`M18: the page's levels are ${own} (cap ${cap}, rule ${pick}), not the audit's own ${want} (cap ${CAP_AUD}, rule ${PICK_AUD})`); }
+      /* (app v146) the page's work measure and budgets the audit's own copies (PB_W_AUD, BUDGET_AUD): a change to either is
+         made in both */
+      { const pw=w.eval("typeof PB_W==='undefined'?null:PB_W"), pf=w.eval('PB_FREE'), bk=Object.keys(BUDGET_AUD);
+        chk(!!pw&&JSON.stringify(Object.keys(pw).sort())===JSON.stringify(Object.keys(PB_W_AUD).sort())&&Object.keys(PB_W_AUD).every(k=>pw[k]===PB_W_AUD[k])&&!!pf&&bk.every(k=>pf[k]===BUDGET_AUD[k]),
+          `M18: the page's work measure ${JSON.stringify(pw)} and budgets ${JSON.stringify(pf?Object.fromEntries(bk.map(k=>[k,pf[k]])):null)} are not the audit's own ${JSON.stringify(PB_W_AUD)} and ${JSON.stringify(BUDGET_AUD)}`); }
       /* every night and every Day games' set held to the audit's own enumeration, every level */
       const sets={};
       for(const g of NIGHTS){ const s=F('spSet')(g.id), all=legsOf([g]), gl=`M18, ${g.a} at ${g.h}`; sets[g.id]=s;
@@ -4396,7 +4573,7 @@ setTimeout(async()=>{
       /* F5: the larger lean, then the lower id */
       { const sf=lv(84,'safe'), sb=lv(85,'safe'), all5b=slotSet[85].all;
         chk(!!sf&&!!sf.legs&&sf.legs.map(l=>l.pid).sort().join()==='aud18-f5a,aud18-f5b',`M18, F5: Safe is ${sf&&sf.legs?names(sf.legs):'empty'}, not the pair leaning most (f5a with f5b)`);
-        const pairs=[[0,1],[0,2],[1,2]].map(([i,j])=>[all5b[i],all5b[j]].map(legIdAud).sort().join()).sort((a,b)=>a.localeCompare(b));
+        const pairs=[[0,1],[0,2],[1,2]].map(([i,j])=>[all5b[i],all5b[j]].map(legIdAud).sort().join()).sort(enAud);
         chk(!!sb&&!!sb.legs&&ids(sb.legs)===pairs[0],`M18, F5b: Safe is ${sb&&sb.legs?ids(sb.legs):'empty'}, not the pair of the lower id (${pairs[0]})`);
         said18.push('F5\'s Safe the pair leaning most, F5b\'s the lower id'); }
       /* F6: one total, never the likelier two */
@@ -4419,32 +4596,140 @@ setTimeout(async()=>{
       { const md=lv(90,'med'), all=slotSet[90].all, fr=freeAud(all,LEVEL_DEC_AUD.med), lab=L=>(L||[]).map(l=>l.pid.slice(6)).join('+');
         const pairOf=L=>{ const g=new Map(); for(const l of L) g.set(l.gid,(g.get(l.gid)||0)+1); return [...g.values()].some(v=>v>=2); };
         const tri=fr&&fr.best?(()=>{ let b=null; const L=all.filter(l=>l.thin), cur=[];
-          const go=i0=>{ for(let i=i0;i<L.length;i++){ if(cur.some(l=>l.gid===L[i].gid)) continue; cur.push(L[i]); if(cur.length===3){ const x=freeOfAud(cur); if(x.dec>=LEVEL_DEC_AUD.med&&k9(x.pr)===k9(fr.best.pr)&&k9(x.ln)===k9(fr.best.ln)&&(!b||x.id.localeCompare(b.id)<0)) b=x; } else go(i+1); cur.pop(); } };
+          const go=i0=>{ for(let i=i0;i<L.length;i++){ if(cur.some(l=>l.gid===L[i].gid)) continue; cur.push(L[i]); if(cur.length===3){ const x=freeOfAud(cur); if(x.dec>=LEVEL_DEC_AUD.med&&k9(x.pr)===k9(fr.best.pr)&&k9(x.ln)===k9(fr.best.ln)&&(!b||enAud(x.id,b.id)<0)) b=x; } else go(i+1); cur.pop(); } };
           go(0); return b; })():null;
-        chk(all.length===12&&!!fr&&!!fr.best&&fr.best.n===3&&pairOf(fr.best.L)&&!!tri&&tri.dec>fr.best.dec&&fr.best.id.localeCompare(tri.id)<0,
+        chk(all.length===12&&!!fr&&!!fr.best&&fr.best.n===3&&pairOf(fr.best.L)&&!!tri&&tri.dec>fr.best.dec&&enAud(fr.best.id,tri.id)<0,
           `M18, F11: the case does not stand on what it is for (the rule's Medium ${fr&&fr.best?lab(fr.best.L)+' at '+fr.best.dec.toFixed(3):'none'}, the three games' tie ${tri?lab(tri.L)+' at '+tri.dec.toFixed(3):'none'})`);
         chk(!!md&&!!md.legs&&!!fr&&!!fr.best&&ids(md.legs)===fr.best.id,`M18, F11: Medium is ${md&&md.legs?lab(md.legs):'empty'}, not the rule's ${fr&&fr.best?lab(fr.best.L):'none'} (its same-game pair, tied on the chance and the lean with ${tri?lab(tri.L):'three games\' legs'} and the lower id)`);
         if(md&&md.legs&&fr&&fr.best&&ids(md.legs)===fr.best.id) said18.push('F11\'s tie of a same-game pair and three games\' legs to the lower id through the knapsack'); }
       /* F12 (the review of app v145): the one-game search's work bounded on many short legs that move together: each level
-         built (pbTierOf on the night's own pools, a fresh memo), each of its passes (one pbFreeGame call) within WORK_AUD,
-         of 2 to 12 legs paying its price, and Safe at least as likely as the audit's own greedy paying set (the legs that
-         give most price for the chance they cost first). WORK_AUD is the audit's own copy of the page's budgets (the first
-         walk's 2,000 units and six million nodes and the rest's 1,000 and half a million: the review of app v145) with the
-         room a budget can run past its last check (a parlay worked in full at the cap, 13.25 units, and a node a depth,
-         three times over); the time is said and never held (the second review of app v145) */
+         built (pbTierOf on the night's own pools, a fresh memo), each of its passes (one pbFreeGame call) within WORK_AUD
+         and handed the level's work, the whole level within the level's work (app v146: lvWorkAud's own reading at most
+         BUDGET_AUD.WORK and ROOM_AUD, and at most the page's own charge, PB_LV_STAT.w; since the review of app v146 the page's
+         charge itself within the same bound, since the audit's reading leaves out the children read and the candidates kept,
+         about a third of the charge on F12b's sixty lines, so a page charging three times its share passed it), of 2 to 12
+         legs paying its price, and
+         Safe at least as likely as the audit's own greedy paying set (the legs that give most price for the chance they cost
+         first). WORK_AUD is the audit's own copy of the walks' budgets (the first walk's 2,000 units and six million nodes and
+         the rest's 1,000 and half a million: the review of app v145) with the room a budget can run past its last check (a
+         parlay worked in full at the cap, 13.25 units, and a node a depth, three times over); the time is said and never held
+         (the second review of app v145) */
       { const L=legsOf([GS]), md=F('mlToDec'), pools=F('spPools')(F('spUnit')(GS.id)), out=[];
-        const WORK_AUD={u:2000+1000+3*13.25,n:6e6+5e5+3*(CAP_AUD+1)}, ST=w.eval('PB_LV_STAT'), gameF=w.eval('pbFreeGame'), putGame=w.eval('(function(f){ pbFreeGame=f; })');
+        const WORK_AUD={u:2000+1000+3*13.25,n:6e6+5e5+3*(CAP_AUD+1)};
         const pairs=L.filter((a,i)=>L.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03)).length;
         const greedy=minD=>{ const ord=L.slice().sort((a,b)=>(Math.log(md(b.price))/-Math.log(b.p))-(Math.log(md(a.price))/-Math.log(a.p))), cur=[]; let m=1;
           for(const l of ord){ if(cur.length>=CAP_AUD) break; if(!fitsAud(cur,l)) continue; cur.push(l); m*=md(l.price); if(cur.length>=2&&m>=minD){ const x=freeOfAud(cur); if(x.dec>=minD) return x; } } return null; };
         chk(L.length===18&&pairs>=12,`M18, F12: the case does not stand on what it is for (${L.length} legs, ${pairs} in a pair the table correlates)`);
-        for(const s of w.eval('PB_TIERS')){ const minD=s[4], g=s[0]==='safe'?greedy(minD):null, passes=[];
-          putGame(function(){ const u0=ST.units, n0=ST.nodes, r=gameF.apply(this,arguments); passes.push({u:ST.units-u0,n:ST.nodes-n0}); return r; });
-          let t=null; const t0=Date.now(); try{ t=F('pbTierOf')(s,pools,new Map()); } finally { putGame(gameF); } const ms=Date.now()-t0;
-          const wu=Math.max(0,...passes.map(p=>p.u)), wn=Math.max(0,...passes.map(p=>p.n)), within=passes.length>0&&wu<=WORK_AUD.u&&wn<=WORK_AUD.n;
-          chk(within&&(!t||(t.legs.length>=2&&t.legs.length<=CAP_AUD&&t.dec>=minD))&&(!g||(!!t&&t.corr>=g.pr-1e-9)),`M18, F12: the ${s[0]} level of eighteen short legs moving together is ${t?t.legs.length+' legs landing '+(t.corr*100).toFixed(3)+'% at '+t.dec.toFixed(3):'empty'}, its ${passes.length} pass(es) at most ${wu.toFixed(1)} units and ${wn} nodes, where each must stay within ${WORK_AUD.u} units and ${WORK_AUD.n} nodes and the level be a parlay paying ${mlAud(minD)}${g?` at least as likely as the audit's greedy ${g.n} legs landing ${(g.pr*100).toFixed(3)}%`:''}`);
-          out.push(`${s[0]} ${t?t.legs.length+' legs '+(t.corr*100).toFixed(3)+'%':'none'} (${passes.length} pass(es), at most ${Math.round(wu)} units and ${wn} nodes, ${ms} ms)`); }
+        for(const s of w.eval('PB_TIERS')){ const minD=s[4], g=s[0]==='safe'?greedy(minD):null;
+          const t0=Date.now(), R=lvWorkAud(()=>F('pbTierOf')(s,pools,new Map())), ms=Date.now()-t0, t=R.r, passes=R.passes;
+          const wu=Math.max(0,...passes.map(p=>p.u)), wn=Math.max(0,...passes.map(p=>p.n)), within=passes.length>0&&passes.every(p=>p.lv)&&wu<=WORK_AUD.u&&wn<=WORK_AUD.n;
+          const lvOk=R.own<=BUDGET_AUD.WORK+ROOM_AUD&&R.own<=R.w+PB_W_AUD.NODE*8*passes.length&&R.w<=BUDGET_AUD.WORK+ROOM_AUD;
+          chk(within&&lvOk&&(!t||(t.legs.length>=2&&t.legs.length<=CAP_AUD&&t.dec>=minD))&&(!g||(!!t&&t.corr>=g.pr-1e-9)),`M18, F12: the ${s[0]} level of eighteen short legs moving together is ${t?t.legs.length+' legs landing '+(t.corr*100).toFixed(3)+'% at '+t.dec.toFixed(3):'empty'}, its ${passes.length} pass(es) at most ${wu.toFixed(1)} units and ${wn} nodes${passes.every(p=>p.lv)?'':' (a pass handed no level\'s work)'}, the level's work by the audit ${msW(R.own)} ms of W and the page's ${msW(R.w)} ms, where each pass must stay within ${WORK_AUD.u} units and ${WORK_AUD.n} nodes, the level's work by the audit and the page's own charge each within ${msW(BUDGET_AUD.WORK+ROOM_AUD)} ms and the audit's at most the page's, and be a parlay paying ${mlAud(minD)}${g?` at least as likely as the audit's greedy ${g.n} legs landing ${(g.pr*100).toFixed(3)}%`:''}`);
+          out.push(`${s[0]} ${t?t.legs.length+' legs '+(t.corr*100).toFixed(3)+'%':'none'} (${passes.length} pass(es), at most ${Math.round(wu)} units and ${wn} nodes, ${msW(R.own)} ms of W by the audit and ${msW(R.w)} by the page, ${ms} ms)`); }
         said18.push(`F12's eighteen short legs moving together: ${out.join(', ')}`); }
+      /* F12b (app v146, the budgets): a level's passes share its one budget. One made-up game of sixty lines at -375 on a stat
+         the payload's table does not correlate (no two moving together: every parlay a plain product), whose dearest twelve at
+         SGP_HOLD times their legs multiplied pay under +1500, and its game total at +100, with which eleven pay it: Extreme
+         needs the total, a second pass (the totals'), after a first that spends its share of the level's work and finds none.
+         Each level built (pbTierOf on the game's pool, a fresh memo) within the level's work (lvWorkAud's own reading at most
+         BUDGET_AUD.WORK and ROOM_AUD, and at most the page's own charge, which since the review of app v146 is held within the
+         same bound itself), each pass within the walks' own budgets and handed
+         the level's work, paying its price, and Extreme holding the total (app v145: Medium, Aggressive and Extreme 2.0, 2.0
+         and 3.8 s of W read by the audit, each pass on a fresh budget) */
+      { const GX='2099_95_ABT_ABU', mlP=F('mlProb'), md=F('mlToDec'), SG=w.eval('SGP_HOLD'), out=[], WORK_AUD={u:2000+1000+3*13.25,n:6e6+5e5+3*(CAP_AUD+1)};
+        const L=Array.from({length:60},(_,i)=>{ const p=mlP(-375)/1.03+1e-6*i; return {key:`${GX}|aud18-tp${i}|receptions`,gid:GX,pid:'aud18-tp'+i,stat:'receptions',k:4.5+i,side:'over',main:true,p,pm:p,hp:p,price:-375,src:'real',mu:null,name:'Made-up tp'+i,pos:'WR',grp:'AUD',team:i%2?'ABT':'ABU',opp:i%2?'ABU':'ABT',week:95,thin:true,label:`Over ${4.5+i} receptions`}; });
+        const T={key:`${GX}|game|total`,gid:GX,pid:'game',stat:'total',k:44.5,side:'over',main:true,p:0.485,pm:0.485,hp:0.485,price:100,src:'real',mu:null,name:'ABT at ABU',pos:'Game',grp:'TEAM',team:'ABT',opp:'ABU',week:95,market:true,thin:false,label:'Over 44.5 points'};
+        const all=[...L,T], plain=!all.some((a,i)=>all.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03)), top12=SG*Math.pow(md(-375),CAP_AUD), withT=SG*md(100)*Math.pow(md(-375),CAP_AUD-1);
+        chk(plain&&top12<LEVEL_DEC_AUD.xtrm&&withT>=LEVEL_DEC_AUD.xtrm,`M18, F12b: the case does not stand on what it is for (plain ${plain}; twelve lines pay ${top12.toFixed(2)} and eleven with the total ${withT.toFixed(2)}, against +1500's 16)`);
+        for(const s of w.eval('PB_TIERS')){ const minD=s[4];
+          const t0=Date.now(), R=lvWorkAud(()=>F('pbTierOf')(s,[{pref:[],thin:L.map(l=>({...l})),mkt:[{...T}]}],new Map())), ms=Date.now()-t0, t=R.r, P=R.passes;
+          const wu=Math.max(0,...P.map(p=>p.u)), wn=Math.max(0,...P.map(p=>p.n)), within=P.length>0&&P.every(p=>p.lv)&&wu<=WORK_AUD.u&&wn<=WORK_AUD.n;
+          const lvOk=R.own<=BUDGET_AUD.WORK+ROOM_AUD&&R.own<=R.w+PB_W_AUD.NODE*8*P.length&&R.w<=BUDGET_AUD.WORK+ROOM_AUD, tot=!!t&&!!t.legs&&t.legs.some(l=>l.stat==='total');
+          chk(within&&lvOk&&!!t&&!!t.legs&&t.legs.length>=2&&t.legs.length<=CAP_AUD&&t.dec>=minD&&(s[0]!=='xtrm'||(tot&&P.length>=2)),
+            `M18, F12b: the ${s[0]} level of sixty lines at -375 and a total at +100 is ${t&&t.legs?t.legs.length+' legs'+(tot?' with the total':'')+' landing '+(t.corr*100).toFixed(3)+'% at '+t.dec.toFixed(3):'empty'}, its ${P.length} pass(es) at most ${wu.toFixed(1)} units and ${wn} nodes${P.every(p=>p.lv)?'':' (a pass handed no level\'s work)'}, the level's work by the audit ${msW(R.own)} ms of W and the page's ${msW(R.w)} ms, where each pass must stay within ${WORK_AUD.u} units and ${WORK_AUD.n} nodes, the level's work by the audit and the page's own charge each within ${msW(BUDGET_AUD.WORK+ROOM_AUD)} ms and the audit's at most the page's, and pay ${mlAud(minD)}${s[0]==='xtrm'?', the total taken in a second pass':''}`);
+          out.push(`${s[0]} ${t&&t.legs?t.legs.length+' legs'+(tot?' with the total':'')+' '+(t.corr*100).toFixed(3)+'%':'none'} (${P.length} pass(es), ${msW(R.own)} ms of W by the audit and ${msW(R.w)} by the page, ${ms} ms)`); }
+        said18.push(`F12b's sixty lines at -375 and a total: ${out.join(', ')}`); }
+      /* F16 (app v146, the budgets): the Day games' groups within their budget. Three made-up games of sixteen lines each on
+         stats the payload's table correlates (a quarterback's passing yards, receivers' and tight ends' yards and receptions, a
+         back's rushing and receiving yards), most at 50% and -112, a fifth of them short, a fourth of them unders (seed 11,
+         the budgets' own generator): one leg a game cannot reach +700, so Aggressive and Extreme need a same-game group. Each
+         level built (pbTierOf on the three games' pools, a fresh memo) paying its price, none empty, and the groups' work
+         read by the audit (lvWorkAud's ownG: NODE times the groups' walks' nodes, each distinct set holding two legs of a game
+         worked in full, DP times the knapsack's steps with groups) within BUDGET_AUD.GWORK and GROOM_AUD and at most the
+         page's own charge, PB_LV_STAT.gw, held within the same bound itself since the review of app v146 (app v145: 11,827
+         and 25,183 sets worked in full for Aggressive and Extreme, 2.4 and
+         5.8 s, the knapsack unbudgeted). Its quality is said, not held: the group search is bounded and orders the groups by a
+         key that can put the answer's deep, so a hold to an exhaustive answer would fail by design */
+      { let sd=11; const rr=()=>(sd=(sd*16807)%2147483647)/2147483647, out=[], md=F('mlToDec');
+        const roles=[['QB','passing_yards'],['WR','receiving_yards'],['WR','receptions'],['TE','receiving_yards'],['RB','rushing_yards'],['RB','receiving_yards'],['WR','receiving_yards'],['TE','receptions']];
+        const game=n=>{ const gid=`2099_96_AG${n}_AH${n}`, A=`AG${n}`, B=`AH${n}`;
+          return Array.from({length:16},(_,i)=>{ const [grp,stat]=roles[i%roles.length], team=i%2?A:B, p=i%5===4?0.62+0.1*rr():0.5, price=p>0.55?Math.round(-100*p*1.05/(1-p*1.05)):-112, side=i%4===1?'under':'over';
+            return {key:`${gid}|aud18-g${n}p${i}|${stat}`,gid,pid:`aud18-g${n}p${i}`,stat,k:20.5+i,side,main:true,src:'dkline',team,opp:team===A?B:A,grp,pos:grp,name:`Made-up g${n}p${i}`,price,p,hp:p,pm:p+0.02*(rr()-0.5),mu:null,week:96,thin:true,label:`${side==='under'?'Under':'Over'} ${20.5+i} ${stat.replace(/_/g,' ')}`}; }); };
+        const G=[game(1),game(2),game(3)], best1=G.map(L=>Math.max(...L.map(l=>md(l.price)))).reduce((a,v)=>a*v,1), pairs=G.reduce((a,L)=>a+L.filter((x,i)=>L.some((y,j)=>j!==i&&Math.abs(rhoA(x,y))>=0.03)).length,0);
+        chk(best1<LEVEL_DEC_AUD.aggr&&pairs>=12,`M18, F16: the case does not stand on what it is for (one leg a game pays at most ${best1.toFixed(3)}, against +700's 8; ${pairs} lines in a pair the table correlates)`);
+        for(const s of w.eval('PB_TIERS')){ const minD=s[4];
+          const t0=Date.now(), R=lvWorkAud(()=>F('pbTierOf')(s,G.map(L=>({pref:[],thin:L.map(l=>({...l})),mkt:[]})),new Map())), ms=Date.now()-t0, t=R.r;
+          const nG=t&&t.legs?new Set(t.legs.map(l=>l.gid)).size:0, grp=!!t&&!!t.legs&&nG<t.legs.length;
+          chk(R.ownG<=BUDGET_AUD.GWORK+GROOM_AUD&&R.ownG<=R.gw+1e-6&&R.gw<=BUDGET_AUD.GWORK+GROOM_AUD&&!!t&&!!t.legs&&t.legs.length>=2&&t.legs.length<=CAP_AUD&&t.dec>=minD,
+            `M18, F16: the Day games' ${s[0]} level of three games of sixteen lines is ${t&&t.legs?`${t.legs.length} legs of ${nG} game(s)${grp?' holding a same-game group':''} landing ${(t.corr*100).toFixed(3)}% at ${t.dec.toFixed(3)}`:'empty'}; the groups' work by the audit ${msW(R.ownG)} ms of W (${R.nodes} nodes, ${R.sets} sets worked in full, ${R.dp} knapsack steps with groups) and the page's ${msW(R.gw)} ms, where it must pay ${mlAud(minD)}, the groups' work by the audit and the page's own charge each within ${msW(BUDGET_AUD.GWORK+GROOM_AUD)} ms and the audit's at most the page's`);
+          out.push(`${s[0]} ${t&&t.legs?`${t.legs.length} legs of ${nG} game(s)${grp?' with a group':''} ${(t.corr*100).toFixed(3)}%`:'none'} (${msW(R.ownG)} ms of the groups' W by the audit and ${msW(R.gw)} by the page, ${ms} ms)`); }
+        said18.push(`F16's three games of sixteen correlated lines: ${out.join(', ')}`); }
+      /* F17 (the review of app v146): the card's walk in the rule's order (pbFreeUnit sorts the knapsack's parlays by the
+         rule, pbFreeRank's on its figures, before the walk WIN_EVALS or the groups' work cuts). Two made-up Day games: t17a
+         at 60% and -140 (its model chance 66%) and t17b at 60.00000003% and -138 (62%), one player each of the first game,
+         and t17y at 65% and -175 of the second, no two moving together (grp AUD) and none 3 points over its price (no Value
+         pick: one pass): t17a with t17y and t17b with t17y tie on the chance to 1e-9 (39%), each paying +110 (2.694 and
+         2.710), t17b's the higher raw chance and the smaller lean, its dearer price keeping it in the knapsack's done list
+         beside t17a's. Built (pbTierOf on the two games' pools, a fresh memo) with PB_FREE.WIN_EVALS stood in at 1, the
+         walk cut after its first parlay (put back in finally), and uncut: Safe each time the rule's pair, the audit's own
+         enumeration's (freeAud: the tie to the larger lean), t17a with t17y; a walk in the raw chance's order takes t17b's
+         when cut (the off-season audit's made-up lines on week 18's Day games met it, an Extreme tied at 5.228%, the one hold
+         until this case) */
+      { const GA='2099_92_BA92_HA92', GB2='2099_92_BB92_HB92', safe=w.eval('PB_TIERS').find(t=>t[0]==='safe');
+        const p17=(gid,id,p,price,pm,team)=>({key:`${gid}|aud18-${id}|receptions`,gid,pid:'aud18-'+id,stat:'receptions',k:4,side:'over',main:true,p,pm:pm!=null?pm:p,hp:p,price,src:'real',mu:null,name:'Made-up '+id,pos:'WR',grp:'AUD',team,opp:team==='HA92'?'BA92':'BB92',week:92,thin:true,label:'Over 3.5 receptions'});
+        const a=p17(GA,'t17a',0.60,-140,0.66,'HA92'), b=p17(GA,'t17b',0.6000000003,-138,0.62,'HA92'), y=p17(GB2,'t17y',0.65,-175,null,'HB92');
+        const fA=freeOfAud([a,y]), fB=freeOfAud([b,y]), ref=freeAud([a,b,y],DS), want=ids([a,y]), keepE=w.eval('PB_FREE.WIN_EVALS'), got={};
+        chk(!!safe&&k9(fA.pr)===k9(fB.pr)&&fB.pr>fA.pr&&fA.dec>=DS&&fB.dec>=DS&&fA.ln>fB.ln+1e-6&&fA.plain&&fB.plain&&!!ref&&!!ref.best&&ref.best.id===want,
+          `M18, F17: the case does not stand on what it is for (t17a with t17y ${(fA.pr*100).toFixed(9)}% at ${fA.dec.toFixed(3)} leaning ${fA.ln.toFixed(4)}, t17b with t17y ${(fB.pr*100).toFixed(9)}% at ${fB.dec.toFixed(3)} leaning ${fB.ln.toFixed(4)}; the rule's Safe ${ref&&ref.best?ref.best.id:'none'})`);
+        try{ for(const we of [1,keepE]){ w.eval(`PB_FREE.WIN_EVALS=${we}`);
+            const t=safe&&F('pbTierOf')(safe,[{pref:[],thin:[{...a},{...b}],mkt:[]},{pref:[],thin:[{...y}],mkt:[]}],new Map()); got[we]=t;
+            chk(w.eval('PB_FREE.WIN_EVALS')===we&&!!t&&!!t.legs&&ids(t.legs)===want&&t.dec>=DS,`M18, F17: with the card's walk ${we===1?'cut after its first parlay (PB_FREE.WIN_EVALS stood in at 1)':`uncut (WIN_EVALS ${we})`}, Safe is ${t&&t.legs?names(t.legs)+' '+(t.corr*100).toFixed(9)+'% at '+t.dec.toFixed(3):'empty'}, not the rule's pair, t17a with t17y (the tie on the chance to the larger lean)`); } }
+        finally { w.eval(`PB_FREE.WIN_EVALS=${keepE}`); }
+        chk(w.eval('PB_FREE.WIN_EVALS')===keepE,`M18, F17: PB_FREE.WIN_EVALS is not put back (${w.eval('PB_FREE.WIN_EVALS')} for ${keepE})`);
+        if(got[1]&&got[1].legs&&ids(got[1].legs)===want) said18.push(`F17's Safe the rule's pair of a tie on the chance with the card's walk cut after one parlay`); }
+      /* F18 (the review of app v146): a Day games level where the groups' work runs out before any pass finds one. Two
+         made-up games of forty lines each on a quarterback's passing yards, receivers' and tight ends' yards and receptions
+         and backs' rushing and receiving yards (F16's roles, its seed), under made-up groups whose pair table is the one
+         every payload of 2026 carries (planted with CORR18), each line's price setting its return at 0.80 on $1 at its
+         chance (45 to 60%), a fourth of them unders: one leg a game pays at most 3.15, under +700, so Aggressive and Extreme
+         need a same-game group, and on forty lines a game moving together the groups' walks spend their work before the
+         threshold comes down, so no pass finds one (app v146 before its review: both empty, "No parlay found in the Day
+         games that pays +700 or more.", though a parlay pays each; the page since takes the greedy paying set across the
+         games there). Each level built (pbTierOf on the two games' pools, a fresh memo): where the audit's own enumeration
+         finds a parlay paying its price (paysFreeAud), never empty, of 2 to 12 legs that go together, paying its price, at
+         least as likely as the audit's own greedy paying set across the games (F12's rule: the legs that give most price for
+         the chance they cost first), and the groups' work by the audit and the page's own charge within BUDGET_AUD.GWORK and
+         GROOM_AUD; whether the level is that greedy set is said */
+      { let sd=11; const rr=()=>(sd=(sd*16807)%2147483647)/2147483647, out=[], md=F('mlToDec'), RET=0.8, toMl=x=>x>=2?Math.round((x-1)*100):-Math.round(100/(x-1));
+        const roles=[['QB','passing_yards'],['WR','receiving_yards'],['WR','receptions'],['TE','receiving_yards'],['RB','rushing_yards'],['RB','receiving_yards'],['WR','receiving_yards'],['TE','receptions']];
+        const game=n=>{ const gid=`2099_97_AJ${n}_AK${n}`, A=`AJ${n}`, B=`AK${n}`;
+          return Array.from({length:40},(_,i)=>{ const [g0,stat]=roles[i%roles.length], team=i%2?A:B, p=0.45+0.15*rr(), price=toMl(RET/p), side=i%4===1?'under':'over';
+            return {key:`${gid}|aud18-h${n}p${i}|${stat}`,gid,pid:`aud18-h${n}p${i}`,stat,k:20.5+i,side,main:true,src:'dkline',team,opp:team===A?B:A,grp:'X'+g0,pos:g0,name:`Made-up h${n}p${i}`,price,p,hp:p,pm:p,mu:null,week:97,thin:true,label:`${side==='under'?'Under':'Over'} ${20.5+i} ${stat.replace(/_/g,' ')}`}; }); };
+        const G=[game(1),game(2)], all=G.flat(), best1=G.map(L=>Math.max(...L.map(l=>md(l.price)))).reduce((a,v)=>a*v,1), rets=all.map(l=>md(l.price)*l.p);
+        const pairs=G.reduce((a,L)=>a+L.filter((x,i)=>L.some((y,j)=>j!==i&&Math.abs(rhoA(x,y))>=0.03)).length,0);
+        const greedy=minD=>{ const ord=all.slice().sort((a,b)=>(Math.log(md(b.price))/-Math.log(b.p))-(Math.log(md(a.price))/-Math.log(a.p))), cur=[]; let m=1;
+          for(const l of ord){ if(cur.length>=CAP_AUD) break; if(!fitsAud(cur,l)) continue; cur.push(l); m*=md(l.price); if(cur.length>=2&&m>=minD){ const x=freeOfAud(cur); if(x.dec>=minD) return x; } } return null; };
+        const paysA=paysFreeAud(all,LEVEL_DEC_AUD.aggr), paysX=paysFreeAud(all,LEVEL_DEC_AUD.xtrm);
+        chk(best1<LEVEL_DEC_AUD.aggr&&Math.min(...rets)>=0.79&&Math.max(...rets)<=0.81&&pairs>=60&&paysA===true&&paysX===true,
+          `M18, F18: the case does not stand on what it is for (one leg a game pays at most ${best1.toFixed(3)}, against +700's 8; each line returns ${Math.min(...rets).toFixed(4)} to ${Math.max(...rets).toFixed(4)} on $1; ${pairs} lines in a pair the planted table correlates; a parlay paying +700 ${paysA}, +1500 ${paysX} by the audit's own enumeration)`);
+        for(const s of w.eval('PB_TIERS')){ const minD=s[4], pays=paysFreeAud(all,minD), g=greedy(minD);
+          const t0=Date.now(), R=lvWorkAud(()=>F('pbTierOf')(s,G.map(L=>({pref:[],thin:L.map(l=>({...l})),mkt:[]})),new Map())), ms=Date.now()-t0, t=R.r;
+          const has=!!t&&!!t.legs, nG=has?new Set(t.legs.map(l=>l.gid)).size:0, isG=has&&!!g&&ids(t.legs)===g.id;
+          chk(pays!==true||(has&&t.legs.length>=2&&t.legs.length<=CAP_AUD&&t.legs.every((l,i)=>fitsAud(t.legs.slice(0,i),l))&&t.dec>=minD&&(!g||t.corr>=g.pr-1e-9)),
+            `M18, F18: the Day games' ${s[0]} level of two games of forty lines returning 0.80, one leg a game short of +700, is ${has?`${t.legs.length} legs of ${nG} game(s) landing ${(t.corr*100).toFixed(3)}% at ${t.dec.toFixed(3)}`:`empty (${t&&t.why})`}, where the audit's own enumeration finds a parlay paying ${mlAud(minD)}${g?` and its greedy paying set lands ${(g.pr*100).toFixed(3)}% at ${g.dec.toFixed(3)} (${g.n} legs)`:''}: a level must pay its price, its legs go together, at least as likely as that greedy set`);
+          chk(R.ownG<=BUDGET_AUD.GWORK+GROOM_AUD&&R.ownG<=R.gw+1e-6&&R.gw<=BUDGET_AUD.GWORK+GROOM_AUD,`M18, F18: the Day games' ${s[0]} level's groups' work is ${msW(R.ownG)} ms of W by the audit (${R.nodes} nodes, ${R.sets} sets worked in full, ${R.dp} knapsack steps with groups) and ${msW(R.gw)} ms by the page, where each must stay within ${msW(BUDGET_AUD.GWORK+GROOM_AUD)} ms and the audit's at most the page's`);
+          out.push(`${s[0]} ${has?`${t.legs.length} legs of ${nG} game(s) ${(t.corr*100).toFixed(3)}% at ${t.dec.toFixed(3)}${isG?', the greedy paying set':''}`:'none'} (${msW(R.ownG)} ms of the groups' W by the audit and ${msW(R.gw)} by the page, ${ms} ms)`); }
+        said18.push(`F18's two games of forty lines returning 0.80: ${out.join(', ')}`); }
       /* F7: the star past the stop, at any size */
       { const ev=F('pbEval'), keyOf=(ls,minD)=>{ const e=ev(ls,new Map()); return Math.min(e.pr,e.pr*e.d/minD); };
         for(const [g,Y,X,id] of [[GY3,Y3,X3,'med'],[GY4,Y4,X4,'aggr']]){ const minD=LEVEL_DEC_AUD[id], all=legsOf([g]), b=freeAud(all,minD), rv=freeAud(X.map(l=>({...l,thin:true})),minD), kY=keyOf(Y.map(l=>({...l})),minD);
@@ -4452,6 +4737,73 @@ setTimeout(async()=>{
           chk(!!b&&!!b.best&&b.best.id===ids(Y)&&!!rv&&!!rv.best&&rv.best.pr<b.best.pr-SEARCH_TOL_AUD&&rv.best.pr>kY*1.03+5e-4,`${gl}: the case does not stand on what it is for (the likeliest paying ${mlAud(minD)} ${b&&b.best?names(b.best.L)+' '+b.best.pr.toFixed(5):'none'}; the rival ${rv&&rv.best?rv.best.pr.toFixed(5):'none'}; the star's key ${kY.toFixed(5)})`);
           chk(!!t&&!!t.legs&&ids(t.legs)===ids(Y),`${gl}: the ${id} level is ${t&&t.legs?names(t.legs)+' landing '+t.corr:'empty: '+(t&&t.why)}, not the quarterback's star (${names(Y)})`);
           if(t&&t.legs&&rv&&rv.best) said18.push(`${gl.slice(5)}'s ${id} the star at ${(t.corr*100).toFixed(3)}%, its rival ${(rv.best.pr*100).toFixed(3)}%`); } }
+      /* F13 (the second review of app v145): the Day games' Medium a same-game group of three legs, and Aggressive the three
+         with the other game's line, each likelier than any parlay holding two legs of a game at most (freeAud with that rule) */
+      { const all=slotSet[91].all, fits2=(cur,c)=>fitsAud(cur,c)&&cur.filter(l=>l.gid===c.gid).length<2, lab=L=>(L||[]).map(l=>l.pid.slice(6)).join('+'), gOf=L=>{ const g=new Map(); for(const l of L) g.set(l.gid,(g.get(l.gid)||0)+1); return Math.max(0,...g.values()); };
+        for(const [id,want] of [['med',ids(G13)],['aggr',ids([...G13,B13[1]])]]){ const minD=LEVEL_DEC_AUD[id], b=freeAud(all,minD), two=freeAud(all,minD,CAP_AUD,fits2), t=lv(91,id);
+          chk(all.length===5&&!!b&&!!b.best&&b.best.id===want&&gOf(b.best.L)===3&&!b.best.plain&&!!two&&(!two.best||two.best.pr<b.best.pr-SEARCH_TOL_AUD),
+            `M18, F13: the case does not stand on what it is for (the ${id} level by every parlay worked out ${b&&b.best?lab(b.best.L)+' '+(b.best.pr*100).toFixed(3)+'% at '+b.best.dec.toFixed(3):'none'}, by those holding two legs of a game at most ${two&&two.best?lab(two.best.L)+' '+(two.best.pr*100).toFixed(3)+'%':'none'})`);
+          chk(!!t&&!!t.legs&&ids(t.legs)===want,`M18, F13: the Day games' ${id} level is ${t&&t.legs?lab(t.legs)+' landing '+(t.corr*100).toFixed(3)+'%':'empty: '+(t&&t.why)}, not ${lab(b&&b.best?b.best.L:[])}, a same-game group of three${id==='aggr'?' with the other game\'s line':''}`);
+          if(t&&t.legs&&ids(t.legs)===want) said18.push(`F13's ${id} a same-game group of three${id==='aggr'?' with the other game\'s line':''} at ${(t.corr*100).toFixed(2)}% (${t.dec.toFixed(3)}), two legs of a game at most ${two&&two.best?(two.best.pr*100).toFixed(2)+'%':'none'}`); } }
+      /* (app v146) parlayProb by game: legs of different games never move together (legRho is 0 across games), so a parlay's
+         chance is each game's own (its legs in the order given, worked alone) multiplied in the order the games first appear.
+         Held exactly, on the audit's own reading of the rule, on every pair and triple of F13's five lines and on its Medium and
+         Aggressive as the page draws them (the one draw over every leg of app v145 gave F13's Aggressive 10.33% where its
+         group's own chance times the other game's line is 10.07%), the sets of two games holding a moving pair counted */
+      { const all=slotSet[91].all, byG=L=>{ const gids=[]; for(const l of L) if(!gids.includes(l.gid)) gids.push(l.gid); return gids.reduce((a,g)=>a*pp(L.filter(l=>l.gid===g)).corr,1); };
+        const sets=[]; for(let i=0;i<all.length;i++) for(let j=i+1;j<all.length;j++){ sets.push([all[i],all[j]]); for(let k=j+1;k<all.length;k++) sets.push([all[i],all[j],all[k]]); }
+        for(const id of ['med','aggr']){ const x=lv(91,id); if(x&&x.legs) sets.push(x.legs); }
+        /* (the review of app v146) parlays of two and three games each holding a moving pair: F13's first game's three lines
+           copied as they stand into two made-up games of their own (each copy's id, key and name its own), so each game's
+           own seeded draw and the product of three games' chances are met, not only one moving game beside plain legs (a
+           page that split by game only where at most one game moves, and drew the rest together as app v145 did, passed) */
+        const g13=G13.map(x=>all.find(l=>l.pid===x.pid)), cp=tag=>g13.map(l=>{ const gid=`2099_91_${tag}`, pid=`${l.pid}-${tag}`; return {...l,gid,pid,key:`${gid}|${pid}|${l.stat}`,name:`${l.name} ${tag}`}; });
+        if(g13.every(Boolean)){ const GX1=cp('X1'), GX2=cp('X2');
+          sets.push([g13[0],g13[1],GX1[0],GX1[1]],[...g13,...GX1],[g13[0],g13[1],GX1[0],GX1[2],GX2[1],GX2[2]],[...g13,...GX1,...GX2],[GX1[1],GX1[2],GX2[0],GX2[1],g13[0],g13[2]]); }
+        let multi=0, multi2=0, tri=0; const bad=[];
+        for(const L0 of sets){ const L=order(L0.map(l=>({...l}))), r=pp(L), want=byG(L), gs=[...new Set(L.map(l=>l.gid))], mv=gs.filter(g=>pp(L.filter(l=>l.gid===g)).pairs.length).length;
+          if(gs.length>1&&r.pairs.length) multi++; if(mv>=2) multi2++; if(mv>=3) tri++;
+          if(r.corr!==want) bad.push(`${L.map(l=>l.pid.slice(6)).join('+')} ${r.corr} for ${want}`); }
+        chk(!bad.length&&multi>=6&&multi2>=5&&tri>=3,`M18: parlayProb is not the product over games of each game's own chance on ${bad.length} of ${sets.length} sets of F13's lines and their copies (${bad.slice(0,3).join('; ')}), or the case met ${multi} sets of two games holding a moving pair (under 6), ${multi2} of two games or more each holding one (under 5) or ${tri} of three (under 3)`);
+        if(!bad.length) said18.push(`parlayProb the product of each game's own chance on ${sets.length} sets of F13's lines and their copies, ${multi} of them two games holding a moving pair, ${multi2} two games or more each holding one, ${tri} of them three`); }
+      /* F14 (the second review of app v145): a pair moving against each other, priced over SGP_HOLD x 1.05 x its legs, is
+         Medium; a floor that took every same-game set to SGP_HOLD x 1.05 x its legs would refuse it, and the three (Aggressive) */
+      { const all=legsOf([GN]), SG=w.eval('SGP_HOLD'), mult=L=>L.reduce((a,l)=>a*(F('mlToDec')(l.price)||1),1), lab=L=>(L||[]).map(l=>l.pid.slice(6)).join('+');
+        const neg=(a,b)=>rhoA(a,b)*(a.side==='under'?-1:1)*(b.side==='under'?-1:1)<0, noNeg=(cur,c)=>fitsAud(cur,c)&&!cur.some(l=>neg(l,c));
+        const mb=freeAud(all,LEVEL_DEC_AUD.med), mf=freeAud(all,LEVEL_DEC_AUD.med,CAP_AUD,noNeg), ab=freeAud(all,LEVEL_DEC_AUD.aggr);
+        chk(all.length===3&&!!mb&&!!mb.best&&mb.best.id===ids(N14)&&neg(N14[0],N14[1])&&mb.best.dec>=LEVEL_DEC_AUD.med&&SG*1.05*mult(N14)<LEVEL_DEC_AUD.med&&!!mf&&(!mf.best||mf.best.pr<mb.best.pr-SEARCH_TOL_AUD)&&!!ab&&!!ab.best&&ab.best.id===ids([...N14,X14])&&SG*1.05*mult([...N14,X14])<LEVEL_DEC_AUD.aggr,
+          `M18, F14: the case does not stand on what it is for (Medium by every parlay worked out ${mb&&mb.best?lab(mb.best.L)+' '+(mb.best.pr*100).toFixed(3)+'% at '+mb.best.dec.toFixed(3):'none'}, Slepian's floor ${(SG*1.05*mult(N14)).toFixed(3)}; without the pair ${mf&&mf.best?lab(mf.best.L)+' '+(mf.best.pr*100).toFixed(3)+'%':'none'}; Aggressive ${ab&&ab.best?lab(ab.best.L):'none'})`);
+        for(const [id,want] of [['med',ids(N14)],['aggr',ids([...N14,X14])]]){ const t=sets[GN.id]&&sets[GN.id].tiers.find(x=>x.id===id);
+          chk(!!t&&!!t.legs&&ids(t.legs)===want,`M18, F14: GN's ${id} level is ${t&&t.legs?lab(t.legs)+' landing '+(t.corr*100).toFixed(3)+'%':'empty: '+(t&&t.why)}, where the likeliest paying it holds the quarterback's yards over with his receiver's under, a pair moving against each other priced over Slepian's floor`);
+          if(t&&t.legs&&ids(t.legs)===want) said18.push(`F14's ${id} the pair moving against each other${id==='aggr'?' with the other club\'s line':''} at ${(t.corr*100).toFixed(2)}%`); } }
+      /* F15 (the second review of app v145): the audit's own screen finds what it is there to find. Fourteen plain lines of
+         one game at -136 to -142 (a seeded pool: no two moving together, so a parlay's chance is its legs' product and its
+         price SGP_HOLD times its legs multiplied, both exact), five of them a little better priced than the rest: the
+         likeliest paying +700 is four of those five (9.356%), and over 400 sets likelier on the screen than it are priced
+         just under +700 (their legs multiplied under 8 / SGP_HOLD), so the 400 likeliest on the screen hold no paying set at
+         all. A level planted 0.3 points under the likeliest paying parlay (its legs, its chance lowered) is failed by the
+         screen's hold, its best that very parlay (freeAud's), the screen not cut short; and the level at that parlay itself
+         passes */
+      { const GF=mk('AFF','AFG','2099-01-15','20:50',95), PX=[[0.5666,-142],[0.5599,-138],[0.5649,-141],[0.5649,-141],[0.5615,-139],[0.5591,-142],[0.5525,-138],[0.5575,-141],[0.5491,-136],[0.5542,-139],[0.5591,-142],[0.5508,-137],[0.5542,-139],[0.5559,-140]];
+        const L=PX.map(([p,pr],i)=>({key:`${GF.id}|aud18-sc${i}|receptions`,gid:GF.id,pid:'aud18-sc'+i,stat:'receptions',k:4,side:'over',main:true,p,hp:p,price:pr,src:'real',mu:null,name:'Made-up sc'+i,pos:'WR',grp:'AUD',team:GF.h,opp:GF.a,week:GF.w,thin:true,label:'Over 3.5 receptions'}));
+        const minD=LEVEL_DEC_AUD.aggr, ex=freeAud(L,minD), T=ex&&ex.best, lab=`M18, F15`;
+        chk(!!T&&T.plain&&T.n===4&&!L.some((a,i)=>L.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03)),`${lab}: the case does not stand on what it is for (the likeliest paying +700 ${T?T.n+' legs '+(T.pr*100).toFixed(3)+'%':'none'}, the pool plain)`);
+        if(T){ const cap=Math.min(CAP_AUD,Math.max(6,T.n+1)), lv0={id:'aggr',legs:T.L,corr:T.pr-0.003,dec:T.dec}, lv1={id:'aggr',legs:T.L,corr:T.pr,dec:T.dec};
+          /* the screen unitRefHeldAud runs for each (its target the level's chance plus SEARCH_TOL_AUD, its cap), and the
+             hold's own verdict on its best (refOkAud: both plain, by the rule) */
+          const sc=screenAud(L,minD,lv0.corr+SEARCH_TOL_AUD,cap,true), v0=sc.best?refOkAud(lv0,sc.best):null, s1=screenAud(L,minD,lv1.corr+SEARCH_TOL_AUD,cap), v1=s1.best?refOkAud(lv1,s1.best):null;
+          chk(!!sc.best&&sc.best.id===T.id&&!sc.over&&!sc.short&&!!v0&&v0.plain&&!v0.ok,`${lab}: the screen's hold does not fail a level 0.3 points under the likeliest paying parlay (${(T.pr*100).toFixed(3)}%): the screen's best ${sc.best?(sc.best.pr*100).toFixed(3)+'%':'none'} of ${sc.cands} sets, ${sc.priced} priced, ${sc.over?'at its node cap':sc.short?'at its work cap':'complete'}, the hold ${v0?(v0.ok?'passing':'failing'):'not run'}`);
+          chk(!s1.over&&(!v1||v1.ok),`${lab}: the screen's hold fails the level at the likeliest paying parlay itself (its best ${s1.best?(s1.best.pr*100).toFixed(3)+'%':'none'})`);
+          if(!!v0&&!v0.ok&&(!v1||v1.ok)) said18.push(`F15's screen failing a level 0.3 points under the likeliest paying (${(T.pr*100).toFixed(3)}%, ${sc.cands} sets, ${sc.priced} priced)`);
+          /* (the critique of app v146) the case stands on what it is for: more than SCREEN_K_OLD_AUD (400) of the screen's
+             candidates within the old rule's 6% of +700 on the screen are likelier on it than the likeliest paying parlay and do
+             not pay in full, so the old rule (the 400 likeliest on the screen) could not reach it; else a change of the
+             generator or of the draws would leave F15 holding nothing */
+          { const eT=(sc.out||[]).find(e=>e.ix.map(i=>legIdAud(sc.L[i])).sort().join()===T.id); let nb=0;
+            if(eT) for(const e of sc.out){ if(!(e.cf>eT.cf&&e.key>=0.94*e.cf*(1-1e-12))) continue; const O=ordA(e.ix.map(i=>({...sc.L[i]})));
+              if(!(pdA(O.map(l=>({leg:l,ml:l.price})))>=minD)) nb++; }
+            chk(!!eT&&nb>SCREEN_K_OLD_AUD,`${lab}: the case does not stand on what it is for (${nb} of the screen's ${sc.cands} candidates within 6% of +700 on it are likelier on it than the likeliest paying parlay${eT?` (${(eT.cf*100).toFixed(3)}% on the screen)`:', which is not one of them'} and short of +700 in full, where more than ${SCREEN_K_OLD_AUD} must be, so the old rule could not reach it)`);
+            if(eT) said18.push(`F15's likeliest paying behind ${nb} sets likelier on the screen and short of +700 in full`); } } }
       /* F8: the cap: 12 legs found, 13 never */
       { const sf=lv(87,'safe'), sb=lv(88,'safe'), all=slotSet[88].all, twelve=all.slice(0,12).reduce((a,l)=>a*F('mlToDec')(l.price),1), want=`No parlay of the Day games pays +110 or more.`;
         chk(!!sf&&!!sf.legs&&sf.legs.length===12&&sf.dec>=DS,`M18, F8: Safe is ${sf&&sf.legs?sf.legs.length+' legs at '+sf.dec:'empty'}, not 12 legs at 1.065 (the cap)`);
@@ -4522,6 +4874,60 @@ setTimeout(async()=>{
       dropCaches(); }
     console.log(`M18. every level of any size at its own payout (+110, +300, +700, +1500), and the Day games one set, on a made-up schedule: ${said18.join('; ')}`); }
 
+  /* ---- M19. one collation (app v146, the second review of app v145) ----
+     The builder's order (pbOrder, parlayLegs: the week, then the name) picks each leg's seeded normals in parlayProb and
+     parlayDec, so it moves the chance and the price a level states, and the search's id tie-breaks (pbOrd, pbRank,
+     pbFreeRank) pick between parlays; until app v146 they read the visitor's own collation (localeCompare with no locale),
+     so a Czech or a Danish browser could state other figures than the record's. Now each reads one collator, 'en' (EN_COLL
+     in part2). Held here against the audit's own 'en' (EN_AUD), with the page realm's default collation planted as each of
+     seven languages that order Latin names otherwise (cs, sk, da, nb, lt, hu, et: String.prototype.localeCompare and
+     Intl.Collator with no locale, in the page's realm alone, put back on every path): on made-up names whose orders differ
+     by language and ids that differ at "CH", "Aa", "y", "i" and "j" (each language moves one or the other), pbOrder and
+     parlayLegs (S.parlay planted and put back), pbOrd, pbRank('pr') and pbFreeRank; and on the week as it stands, every
+     unit the tab sets out (spOnAll: the night's and the Day games') built from nothing under cs and da, each level the
+     page's own set's (spSet, built under the page's own collation) to the bit (its legs in order, its chance and price) and read back from its record shape (spTierOut) by
+     spTierIn at the same chance and price (SP_IN and parlayProb's memo cleared each time). At any hour and in the
+     off-season (made-up data; the week's part holds nothing where no unit is set out). Blocking: a number the page states */
+  { const LOC=['cs','sk','da','nb','lt','hu','et'], said19=[], lc0=w.String.prototype.localeCompare, C0=w.Intl.Collator;
+    const plant=L=>{ if(!L){ w.String.prototype.localeCompare=lc0; w.Intl.Collator=C0; return; }
+      w.String.prototype.localeCompare=function(b,l,o){ return lc0.call(this,b,l===undefined?L:l,o); };
+      const C=function(l,o){ return new C0(l===undefined?L:l,o); }; C.prototype=C0.prototype; C.supportedLocalesOf=C0.supportedLocalesOf; w.Intl.Collator=C; };
+    const names=['Aaron Jones','Josh Allen','T.J. Hockenson','Chase Brown','Corey Coleman','Hal Hanson','Ida Iyer','Yusuf Young','Jalen Ivy','Ádám Szabó','Csaba Cser','Zed Zsolt','Šimon Sova','Ole Ågård','Øystein Ørn','Cyrus Cole','Nzuri Nash','Nyheim Hines'];
+    const GID='2099_97_ACO_ACP', legs=names.map((n,i)=>({key:`${GID}|aud19-p${i}|receiving_yards`,gid:GID,pid:'aud19-p'+i,stat:'receiving_yards',side:'over',k:40+i,name:n,week:97,main:true,p:0.5,price:-110}));
+    const ids=['team:CIN|ml','team:CHI|ml','team:CAR|ml','x|pass_td|over|1.5','x|pass_yds|over|224.5','x|aaron','x|abe','x|zed','x|ys','x|is','x|js','x|csa','x|cyr','x|nya','x|nza'];
+    const wantN=[...names].sort(enAud).join(' | '), wantI=[...ids].sort(enAud).join(' | '), wantO=[...ids].sort((a,b)=>enAud(a+'|over|1',b+'|over|1')).join(' | ');
+    const rows=ids.map(id=>({id,pr:0.25,n:3,ln:0})), keepPar=S.parlay;
+    const sigT=t=>t&&t.legs?t.legs.map(legIdAud).join(' / ')+` @ ${t.corr} ${t.dec}`:'empty: '+(t&&t.why);
+    const clearMemo=()=>{ F('SP_IN').clear(); const c=F('parlayProb').cache; if(c&&c.memo) c.memo.clear(); };
+    let held=0;
+    try{
+      for(const L of LOC){ const c=new Intl.Collator(L); chk([...names].sort(c.compare).join(' | ')!==wantN||[...ids].sort(c.compare).join(' | ')!==wantI,`M19: the case does not stand on what it is for: ${L} orders the made-up names and ids as 'en' does`); }
+      for(const L of [null,...LOC]){ const at=L||'the page\'s own'; plant(L);
+        try{
+          const o1=F('pbOrder')(legs).map(l=>l.name).join(' | ');
+          S.parlay=Object.fromEntries(legs.map(l=>[l.key,{...l}])); const o2=F('parlayLegs')().map(l=>l.name).join(' | '); S.parlay=keepPar;
+          const o3=[...rows].sort(F('pbFreeRank')).map(r=>r.id).join(' | '), o4=[...rows].sort(F('pbRank')('pr')).map(r=>r.id).join(' | '), o5=ids.map(id=>({key:id,side:'over',k:1})).sort(F('pbOrd')).map(r=>r.key).join(' | ');
+          chk(o1===wantN&&o2===wantN,`M19: under ${at} collation the builder's order (${o1===wantN?'parlayLegs':'pbOrder'}) is ${o1===wantN?o2:o1}, not 'en''s ${wantN}`);
+          chk(o3===wantI&&o4===wantI&&o5===wantO,`M19: under ${at} collation the search's id tie-breaks (${o3!==wantI?'pbFreeRank':o4!==wantI?'pbRank':'pbOrd'}) give ${o3!==wantI?o3:o4!==wantI?o4:o5}, not 'en''s`);
+          if(o1===wantN&&o2===wantN&&o3===wantI&&o4===wantI&&o5===wantO) held++;
+        } finally { S.parlay=keepPar; plant(null); } }
+      said19.push(`the builder's order and the id tie-breaks 'en''s under ${held} of ${LOC.length+1} collations`);
+      /* the week as it stands */
+      const units=F('spOnAll')(), ref=units.map(u=>({u,s:F('spSet')(u.id)})).filter(r=>r.s);
+      const back=(u,t)=>{ clearMemo(); const ti=F('spTierIn')(F('spTierOut')(t),u); return ti&&ti.legs?ti.legs.map(legIdAud).join(' / ')+` @ ${ti.corr} ${ti.dec}`:'null'; };
+      const refB=ref.map(r=>r.s.tiers.map(t=>t.legs?back(r.u,t):null)); let lv=0; for(const r of ref) for(const t of r.s.tiers) if(t.legs) lv++;
+      for(const L of ['cs','da']){ let moved=0, nb=0; plant(L);
+        try{ for(let i=0;i<ref.length;i++){ clearMemo(); const b=F('spBuild')(ref[i].u);
+            for(let j=0;j<ref[i].s.tiers.length;j++){ const a=ref[i].s.tiers[j], x=b&&b.tiers[j];
+              if(sigT(a)!==sigT(x)){ moved++; chk(false,`M19: under ${L}, ${ref[i].u.id}'s ${a.id} level built from nothing is ${sigT(x)}, where the page's own set (spSet) holds ${sigT(a)}`); }
+              if(a.legs){ const y=back(ref[i].u,a); if(y!==refB[i][j]){ nb++; chk(false,`M19: under ${L}, ${ref[i].u.id}'s ${a.id} level read back from its record shape is ${y}, not ${refB[i][j]}`); } } } } }
+        finally { plant(null); clearMemo(); }
+        chk(!moved&&!nb,`M19: under ${L}, of the week's ${lv} levels on ${ref.length} unit(s) ${moved} built otherwise and ${nb} read back otherwise`);
+        said19.push(`under ${L} the week's ${ref.length} unit(s), ${lv} levels: ${moved} built otherwise, ${nb} read back otherwise`); }
+    } catch(e){ chk(false,'M19 threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
+    finally { plant(null); S.parlay=keepPar; }
+    console.log(`M19. one collation ('en') under seven languages planted in the page: ${said19.join('; ')}`); }
+
   /* ---- M7. the book's fair chance, and legs far off it ----
      A leg's fair chance is DraftKings' own: where both sides of its line are priced (a player's main
      line, a game's two moneylines or spread prices on the leg's number, the total's over and under),
@@ -4537,7 +4943,7 @@ setTimeout(async()=>{
   { const cw=F('currentWeek')(), FAR=w.eval('FAR_OFF'), LF=F('legFair'), PF=F('parlayFair'), pp=F('parlayProb'), pd=F('parlayDec'), isG=F('isGameLeg'), toML=F('probToAmerican');
     /* the rule's own copy, lifted out before M (chanceAud), so the Top 50 lines and the sets are held to it too */
     const {imp,px,nv,vig,fairOf,gap,isFar}=chanceAud, near=(a,b)=>a!=null&&b!=null&&Math.abs(a-b)<1e-12;
-    const g0=S.sched.filter(g=>+g.w===cw).sort((a,b)=>String(a.id).localeCompare(String(b.id)))[0];
+    const g0=S.sched.filter(g=>+g.w===cw).sort((a,b)=>enAud(String(a.id),String(b.id)))[0];
     const keepM=JSON.stringify(PAY.mkt[String(cw)]||null), keepO=JSON.stringify(S.odds||{}), KF=['sp','tot','mla','mlh','spa','sph','tov','tou'], keepG=S.sched.map(g=>KF.map(k=>g[k]));
     const keepDk7=F('PAY').dk;
     /* (app v125) the made-up prices and lines stand alone on the week's games: their published read cleared, put back at
@@ -4696,8 +5102,8 @@ setTimeout(async()=>{
           finally{ dkSet(full); } }
         /* the game page: a far-off main line of a starter, his game opened on him, flagged nowhere, each of his main lines'
            sides drawn at its chance (DraftKings' fair chance, td.pct and data-legchance), no "book N%" beside it */
-        const farL=F('pricedLegs')(games).filter(l=>l.main&&!isG(l)&&isFar(l)).sort((a,b)=>String(a.key+a.side).localeCompare(String(b.key+b.side)))[0];
-        const nearL=[...pool.pref,...pool.thin].filter(l=>!isG(l)&&l.main).sort((a,b)=>String(a.key+a.side).localeCompare(String(b.key+b.side)))[0];
+        const farL=F('pricedLegs')(games).filter(l=>l.main&&!isG(l)&&isFar(l)).sort((a,b)=>enAud(String(a.key+a.side),String(b.key+b.side)))[0];
+        const nearL=[...pool.pref,...pool.thin].filter(l=>!isG(l)&&l.main).sort((a,b)=>enAud(String(a.key+a.side),String(b.key+b.side)))[0];
         let flagged='no far-off main line to open';
         if(farL){ const keepUi=JSON.stringify({game:S.ui.game,open:S.ui.open});
           S.ui.game=farL.gid; S.ui.open={[farL.pid]:true}; F('renderGame')();
@@ -4718,7 +5124,7 @@ setTimeout(async()=>{
         for(const tm in roF) roF[tm].players.forEach(x=>{ if(!x.starter) return; const ls=statLines(x), td=ls.find(l=>l.prob&&l.p>=0.2), ld=ls.find(l=>!l.prob&&l.rungs.some(r=>r.p>=0.3&&r.p<0.97));
           if(td) pick.push({x,td,ld,r:ld?ld.rungs.find(r=>r.p>=0.3&&r.p<0.97):null}); });
         const V=vig(cw), vp=V.player||V.all;
-        if(pick.length&&vp>0){ const {x,td,ld,r}=pick.sort((a,b)=>(!!b.r-!!a.r)||String(a.x.pl.id).localeCompare(String(b.x.pl.id)))[0];
+        if(pick.length&&vp>0){ const {x,td,ld,r}=pick.sort((a,b)=>(!!b.r-!!a.r)||enAud(String(a.x.pl.id),String(b.x.pl.id)))[0];
           const pTD=toML(Math.max(0.02,td.p-0.25)*vp), O=((S.odds[gF.id]??={})[x.pl.id]??={});
           O.any_td={...(O.any_td||{}),'1':pTD}; if(r) O[ld.stat]={...(O[ld.stat]||{}),[String(r.k)]:toML(Math.max(0.02,r.p-0.25)*vp)};
           const legTD={gid:gF.id,pid:x.pl.id,stat:'any_td',k:1,side:'over',main:false,p:td.p,price:pTD,src:'real',week:gF.w};
@@ -6852,6 +7258,8 @@ setTimeout(async()=>{
             reset(); w.Date.now=clock0; d.querySelector(`#tabs button[data-tab="${tab}"]`).click(); F('renderParlay')(); net.log=[];
             const b=d.querySelector(`${box} [data-espn-refresh="week"]`); if(b){ b.focus(); b.click(); }
             for(let i=0;i<200&&w.eval('ESPN_RUN.busy');i++) await sleep(25);
+            /* (app v146) the press's redraw builds the shown tab a level a step (spSoftShown): the tab read once drawn whole */
+            if(tab==='suggest'){ const run=w.eval('SP_SOFT'); if(run&&run.done) await Promise.race([run.done,sleep(180000)]); }
             const us=net.log.map(x=>x.url);
             chk(!!b&&us.filter(u=>/\/scoreboard\?/.test(u)).length===1&&net.log.every(x=>x.cache==='no-store'&&!x.headers),`${lab}'s Refresh odds did not read the week as the Parlay Builder's does: ${us.filter(u=>/scoreboard/.test(u)).length} scoreboards`);
             W.wording(!!d.activeElement&&!!d.activeElement.dataset&&d.activeElement.dataset.espnRefresh==='week'&&!!d.activeElement.closest(box),`the focus did not stay on ${lab}'s Refresh odds through the redraw`); }
@@ -7331,6 +7739,114 @@ setTimeout(async()=>{
       dropCaches(); F('save')(); F('renderParlay')(); }
     if(!ran) said16.push('did not run');
     console.log(`M17. the published read, on two made-up games: ${said16.join('; ')}`); }
+
+  /* ---- M17b. a press's redraw (app v146, the second review of app v145) ----
+     A press of Refresh odds, or the parlay card's check of DraftKings' lines, ends in espnRedraw: until app v146 it dropped
+     every set and, with Suggested Parlays on the screen, built every set left in that one task, though the press had
+     changed nothing (a 404, the lines as they were). Now espnRefresh hands espnRedraw whether it changed nothing the sets
+     stand on (same: ESPN_SEQ unmoved, so every set's signature is as it was), which keeps the sets but a unit's with no
+     player line, whose empty levels date the last read (spNoPl), and with the tab on the screen what is left to build is
+     built a level a step (spSoftShown starting spOpenSoft before the draw, whose renderSp takes its steps again); a hidden
+     tab builds nothing. Held on two made-up Monday night games of the audit's own (rule (c): on the schedule for the run,
+     pbGames, pricedLegs, spOn and spSlotNext stood in, the lines' chances on a hook planted for these games alone, ESPN
+     answered by a stub, and the page's ESPN state, its kept key, the tab and the caches put back on every path, so it holds
+     at any hour and in the off-season): AWX at AWY with eight lines of made-up players and its money line, AWZ at AWV with
+     its money line alone (no player line: its levels empty, dated by its last read), each level counted as the page builds
+     it (spLevel wrapped):
+       1  the tab on the screen, every set drawn: ESPN_SEQ moved and espnRedraw(false) builds no level in its own task and
+          draws the building line under the tab's head (its record and Refresh odds), a run going; awaited (SP_SOFT.done),
+          both sets built, the tab what a draw from nothing on the same data draws, nothing stale
+       2  espnRedraw(true) with every set on the tab holding a player line (AWX at AWY alone): every set kept (the very
+          object), no building line, no level built, the tab as it was
+       3  espnRedraw(true) after a stand-in press found AWZ at AWV's player lines not posted at a new time: its set built
+          again (a new object, its four levels) and its empty levels dated by the new read, the other kept
+       4  the tab hidden: espnRedraw(false) starts no run and builds no level, each set drawn as one built when the tab is open,
+          and spSoftShown itself starts nothing
+       5  a real press on the tab, ESPN answering 404 (nothing changed): no level built, the tab as it was, the focus on the
+          tab's Refresh odds; its status line the press's (W.wording)
+     Blocking (made-up data), the words W.wording */
+  { const cw=F('currentWeek')(), pad=String(cw).padStart(2,'0'), said=[], tabEl=d.getElementById('tab-suggest'), keepTab=tabEl?tabEl.hidden:true;
+    const setVar=(n,v)=>w.eval(`(function(v){ ${n}=v; })`)(v);
+    const GX={id:`2099_${pad}_AWX_AWY`,w:cw,a:'AWX',h:'AWY',d:'2099-01-05',t:'20:15',mla:120,mlh:-140};
+    const GY={id:`2099_${pad}_AWZ_AWV`,w:cw,a:'AWZ',h:'AWV',d:'2099-01-05',t:'21:15',mla:110,mlh:-130};
+    const pl=(g,id,stat,k,p,price)=>({key:`${g.id}|aud17-${id}|${stat}`,gid:g.id,pid:'aud17-'+id,stat,k,side:'over',main:true,p,price,src:'real',mu:null,name:'Made-up '+id,pos:'WR',grp:'AUD',team:g.h,opp:g.a,week:cw,label:`Over ${k-0.5} ${stat.replace(/_/g,' ')}`});
+    const tm=(g,team,p,price)=>({key:`${g.id}|team:${team}|ml`,gid:g.id,pid:'team:'+team,stat:'ml',k:0,side:'over',main:false,p,price,src:'real',mu:null,name:'Made-up '+team,pos:'Game',grp:'TEAM',team,opp:team===g.h?g.a:g.h,week:cw,label:'To win'});
+    const LX=[tm(GX,'AWY',0.58,-140),...[[-110,0.53],[105,0.49],[-120,0.555],[100,0.5],[110,0.48],[-105,0.515],[115,0.47],[-115,0.54]].map(([pr,p],i)=>pl(GX,'x'+i,['receptions','receiving_yards','rushing_yards','passing_yards'][i%4],[4,50,40,230][i%4]+i,p,pr))];
+    const LY=[tm(GY,'AWV',0.57,-130)];
+    const keepF=w.eval('[pbGames, pricedLegs, spOn, spSlotNext, spLevel]'), putF=w.eval('(function(a){ pbGames=a[0]; pricedLegs=a[1]; spOn=a[2]; spSlotNext=a[3]; spLevel=a[4]; })');
+    const keepFetch=w.fetch, keepSeq=F('ESPN_SEQ'), keepRun=F('ESPN_RUN'), out0=F('ESPN_OUT'), gl0=F('ESPN_GL'), outK=new Map(Object.entries(out0)), glK=new Map(Object.entries(gl0));
+    const KK=F('ESPN_KEEP_KEY'), key0=(()=>{ try{ return w.localStorage.getItem(KK); }catch(e){ return null; } })();
+    const html=()=>{ const x=d.getElementById('spSets'); return x?x.innerHTML:null; }, N=()=>w.__m17bN||0, soft=()=>w.eval('SP_SOFT');
+    const sig=id=>F('spSig')(F('spUnit')(id)), cache=()=>w.eval('SP_CACHE'), espW=t=>F('espnWhen')(t);
+    const whyT=(e,T)=>!!e&&e.tiers.length===4&&e.tiers.every(t=>!t.legs&&String(t.why).includes(`(read ${espW(T)})`));
+    const waitRun=async()=>{ const r=soft(); if(r&&r.done) await Promise.race([r.done,sleep(60000)]); };
+    try{
+      S.sched.push(GX,GY); w.__m17bG=[GX,GY]; w.__m17bL=[...LX,...LY]; w.__m17bOn=[GX,GY];
+      { const mine=new Set([GX.id,GY.id]); hookSet(l=>l&&mine.has(l.gid)&&l.p>0&&l.p<1?{p:l.p,by:'audit'}:null); }
+      w.eval(`pbGames=function(){ return window.__m17bG.filter(g=>!gameStarted(g)&&!hasScore(g)); };
+        pricedLegs=function(games){ return window.__m17bL.filter(l=>(games||[]).some(g=>g.id===l.gid&&!gameStarted(g))&&(l.grp==='TEAM'||suggestable(l.pid))).map(l=>({...l})); };
+        spOn=function(){ return window.__m17bOn.filter(g=>!gameStarted(g)); }; spSlotNext=function(){ return null; };
+        (function(L){ spLevel=function(){ window.__m17bN=(window.__m17bN||0)+1; return L.apply(this,arguments); }; })(spLevel);`);
+      const now=w.Date.now(), T1=now-5*3600e3, T2=now-3600e3;
+      out0[GY.id]={st:'none',when:T1};
+      /* the tab on the screen, both sets drawn at once */
+      setVar('SP_SOFT',null); tabEl.hidden=false; dropCaches(); w.__m17bN=0; F('renderSp')();
+      const e0X=cache().get(sig(GX.id)), e0Y=cache().get(sig(GY.id));
+      chk(N()===8&&!!e0X&&e0X.plGames>0&&e0X.tiers.some(t=>t.legs)&&!!e0Y&&!e0Y.plGames&&whyT(e0Y,T1)&&espW(T1)!==espW(T2),
+        `M17b: the case does not stand on what it is for (${N()} levels built of 8; AWX at AWY ${e0X?e0X.plGames+' game(s) with a player line, '+e0X.tiers.filter(t=>t.legs).length+' levels with a parlay':'not built'}; AWZ at AWV ${e0Y?'"'+e0Y.tiers.map(t=>t.why).join('" "')+'"':'not built'})`);
+      /* 1 */
+      { w.eval('ESPN_SEQ++'); w.__m17bN=0; F('espnRedraw')(false);
+        const n1=N(), run=soft(), bl=!!d.querySelector('#spSets [data-sp-building]'), head=!!d.querySelector('#spHead [data-espn-refresh="week"]')&&!!d.querySelector('#spSets section[data-sp-sec="all"] .sp-rec');
+        chk(n1===0&&!!run&&bl&&head,`M17b, 1: with the tab on the screen, espnRedraw(false) built ${n1} level(s) in its own task${run?'':', started no run'}${bl?'':', drew no building line'}${head?'':', or drew no head with the record and Refresh odds'}`);
+        await waitRun(); const built=N(), h1=html(), stale=F('pbStale')(), left=soft();
+        w.eval('SP_CACHE=new Map()'); F('renderSp')(); const h2=html();
+        chk(!left&&built===8&&h1===h2&&!stale,`M17b, 1: the run ${left?'is still going':'ended'} having built ${built} level(s) of 8, the tab ${h1===h2?'what':'not what'} a draw from nothing draws${stale?', and stale':''}`);
+        if(n1===0&&built===8&&h1===h2) said.push('a press that moved the lines builds nothing in its own task, the tab built a level a step and then what a draw from nothing draws'); }
+      /* 2 */
+      { w.__m17bOn=[GX]; w.eval('SP_CACHE=new Map()'); F('renderSp')(); const h0=html(), E=w.eval('[...SP_CACHE]');
+        w.__m17bN=0; F('espnRedraw')(true); const E2=w.eval('new Map(SP_CACHE)');
+        const kept=E.length===1&&E2.size===1&&E.every(([k,v])=>E2.get(k)===v);
+        chk(kept&&N()===0&&!soft()&&!d.querySelector('#spSets [data-sp-building]')&&html()===h0,`M17b, 2: espnRedraw(true) with every set holding a player line ${kept?'kept':'did not keep'} the set (the very object), built ${N()} level(s)${soft()?', started a run':''}${html()===h0?'':', and drew the tab otherwise'}`);
+        if(kept&&N()===0&&html()===h0) said.push('a press that changed nothing keeps every set holding a player line, building nothing'); }
+      /* 3 */
+      { w.__m17bOn=[GX,GY]; F('renderSp')(); const eX=cache().get(sig(GX.id)), eY=cache().get(sig(GY.id));
+        chk(!!eX&&!!eY&&whyT(eY,T1),`M17b, 3: the case does not stand on what it is for (${eX?'':'AWX at AWY not built; '}AWZ at AWV ${eY?'"'+eY.tiers.map(t=>t.why).join('" "')+'"':'not built'})`);
+        out0[GY.id]={st:'none',when:T2}; w.__m17bN=0; F('espnRedraw')(true); await waitRun();
+        const eX3=cache().get(sig(GX.id)), eY3=cache().get(sig(GY.id)), box=d.querySelector(`#spPanel [data-sp-game="${GY.id}"]`);
+        chk(eX3===eX&&!!eY3&&eY3!==eY&&N()===4&&whyT(eY3,T2)&&!whyT(eY3,T1),`M17b, 3: after a press found AWZ at AWV's player lines not posted at ${espW(T2)}, espnRedraw(true) ${eX3===eX?'kept':'did not keep'} AWX at AWY's set, ${eY3&&eY3!==eY?'built':'did not build'} AWZ at AWV's again (${N()} level(s) built of 4), its empty levels saying "${eY3?eY3.tiers.map(t=>t.why).join('" "'):''}"`);
+        W.wording(!!box&&box.textContent.includes(`(read ${espW(T2)})`)&&!box.textContent.includes(`(read ${espW(T1)})`),`M17b, 3: AWZ at AWV's levels on the tab do not say its lines were read at ${espW(T2)}`);
+        if(eX3===eX&&eY3&&eY3!==eY) said.push('a unit with no player line built again, its empty levels dated by the new read, the other kept'); }
+      /* 4 */
+      { tabEl.hidden=true; w.__m17bN=0; F('espnRedraw')(false);
+        const ph=[GX,GY].map(g=>{ const b=d.querySelector(`#spPanel [data-sp-game="${g.id}"]`); return b&&b.querySelector('[data-sp-phase]'); });
+        chk(N()===0&&!soft()&&w.eval('SP_CACHE.size')===0&&ph.every(x=>!!x&&x.dataset.spPhase==='wait')&&!d.querySelector('#spPanel .pb-tier'),`M17b, 4: with the tab hidden, espnRedraw(false) built ${N()} level(s)${soft()?', started a run':''}, or drew a set where each should wait for the tab (${ph.map(x=>x?x.dataset.spPhase:'none').join(', ')})`);
+        W.wording(ph.every(x=>!!x&&x.textContent==='Built when this tab is open.'),`M17b, 4: a hidden set does not say it is built when the tab is open`);
+        /* and the rule itself: with the tab hidden, spSoftShown starts nothing (false, no run, no building line), so no caller
+           of it (the press's redraw, the parlay card's) builds a level under a hidden tab */
+        { const r=F('spSoftShown')(), run=soft(), bl=!!d.querySelector('#spSets [data-sp-building]');
+          chk(r===false&&!run&&!bl,`M17b, 4: with the tab hidden spSoftShown answered ${r}${run?' and started a run':''}${bl?', drawing the building line under the hidden tab':''}`);
+          if(run||bl){ setVar('SP_SOFT',null); F('renderSp')(); } }
+        if(N()===0&&!soft()) said.push('a hidden tab builds nothing'); }
+      /* 5 */
+      { tabEl.hidden=false; w.__m17bOn=[GX]; w.eval('SP_CACHE=new Map()'); F('renderSp')(); const h0=html(), seq=F('ESPN_SEQ');
+        const stEl=()=>d.querySelector('#spPanel [data-espn-status="week"]'), st0=stEl()?stEl().textContent:null;
+        w.fetch=(u,o)=>/espn\.com/.test(String(u))?Promise.resolve({ok:false,status:404,headers:{get:()=>null},json:async()=>({error:{code:404}}),text:async()=>''}):keepFetch(u,o);
+        const b=d.querySelector('#spPanel [data-espn-refresh="week"]'); w.__m17bN=0;
+        if(b){ b.focus(); b.click(); } for(let i=0;i<400&&w.eval('ESPN_RUN.busy');i++) await sleep(25); await waitRun();
+        const a=d.activeElement, foc=!!a&&!!a.dataset&&a.dataset.espnRefresh==='week'&&!!a.closest&&!!a.closest('#spPanel');
+        chk(!!b&&!w.eval('ESPN_RUN.busy')&&F('ESPN_SEQ')===seq&&N()===0&&html()===h0&&foc,`M17b, 5: a press on the tab with ESPN answering 404 ${b?'':'found no Refresh odds; '}moved ESPN_SEQ ${F('ESPN_SEQ')-seq}, built ${N()} level(s), ${html()===h0?'left the tab as it was':'drew the tab otherwise'}, the focus ${foc?'on the tab\'s Refresh odds':'elsewhere ('+(a?a.tagName+(a.dataset&&a.dataset.espnRefresh?' '+a.dataset.espnRefresh:''):'none')+')'}`);
+        const st1=stEl()?stEl().textContent:null; W.wording(!!st1&&st1===F('espnStatus')(null)&&st1!==st0,`M17b, 5: after the press the tab's status line reads "${st1}" (before it "${st0}"), not the press's`);
+        if(N()===0&&html()===h0&&foc) said.push('a press of the tab finding nothing new builds nothing, the tab as it was and the focus on its Refresh odds'); }
+    } catch(e){ chk(false,'M17b threw: '+String(e&&e.stack||e).split('\n').slice(0,3).join(' ')); }
+    finally {
+      w.fetch=keepFetch; hookSet(null); putF(keepF); setVar('SP_SOFT',null); delete w.__m17bG; delete w.__m17bL; delete w.__m17bOn; delete w.__m17bN;
+      for(const k of Object.keys(out0)) if(!outK.has(k)) delete out0[k]; for(const [k,v] of outK) out0[k]=v;
+      for(const k of Object.keys(gl0)) if(!glK.has(k)) delete gl0[k]; for(const [k,v] of glK) gl0[k]=v;
+      setVar('ESPN_RUN',keepRun); setVar('ESPN_SEQ',keepSeq+1);
+      try{ if(key0==null) w.localStorage.removeItem(KK); else w.localStorage.setItem(KK,key0); }catch(e){}
+      for(const g of [GX,GY]){ const i=S.sched.findIndex(x=>x.id===g.id); if(i>=0) S.sched.splice(i,1); }
+      if(tabEl) tabEl.hidden=keepTab; dropCaches(); F('renderParlay')(); }
+    console.log(`M17b. a press's redraw, on two made-up Monday night games: ${said.join('; ')||'nothing held'}`); }
 
   /* ---- NL. no ladder bets (app v127) ----
      The owner, 21 October 2026: "general question, is it possible to not do ladders and just include Same Game Parlay
