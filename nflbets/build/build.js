@@ -361,6 +361,62 @@ for (const need of ['function parlayLegs', 'function parlayProb', 'function legP
     ['the tag\'s style on the model\'s cards, white-space:nowrap', rule.includes('white-space:nowrap')]];
   for (const [need, ok] of wired) if (!ok)
     throw new Error("the Mismatch tag on Suggested Parlays' cards (spMmDecorate, wrapping renderSp; app v142) is no longer wired: " + need); }
+/* (app v146, the second review of app v145) One collation for every order a parlay's legs, chance or price stand on:
+   outside comments the props parts and the parlay card call no localeCompare (which sorts in the visitor's own language,
+   so a Czech or Danish browser drew another set than the record locks, or read a locked level back under its price) and
+   make no Intl.Collator but part2's EN_COLL, 'en'; pbOrder and parlayLegs sort the name by enCmp. And a press's redraw
+   with Suggested Parlays on the screen builds a level a step: espnRefresh hands espnRedraw whether the press changed
+   nothing (same), espnRedraw keeps the sets then but a unit's with no player line, and starts spOpenSoft (spSoftShown)
+   before it draws; the card's held redraw passes same on. And the level search reads no clock (from PB_FREE to the end of
+   pbFreeUnit: no Date.now, performance.now or new Date, so a level is the same on every machine and every run, its budgets
+   counted in PB_W), and every pass of a level draws on the level's one work budget (pbFreeGame's seventh argument, LV,
+   handed on at every call). (The review of app v146) The collation refused in every spelling: localeCompare as a word
+   anywhere outside comments (a call, an optional call, a bracketed name, .call on the prototype), the word Collator
+   anywhere but part2's one EN_COLL (a collator made with or without new, read by brackets or destructured), and Intl read
+   by brackets (a name built from strings). And the candidates' prune as app v144's review left it (run only once another
+   M have come in past what it kept, quadratic on ties otherwise), its scanned keys counted (PB_LV_STAT.pk, drawn nowhere, a
+   count a check can hold where none reads the clock); and the card's walk of the Day games' knapsack in the rule's order
+   (pbFreeRank's, so a walk the groups' budget or WIN_EVALS cuts keeps the rule's first) */
+{ const strip = x => x.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '');
+  const at = (s, i) => `...${s.slice(Math.max(0, i - 60), i + 40)}...`;
+  for (const [file, src] of [['props/build/part2.js', part2], ['props/build/part3.js', part3], ['nflbets/build/card.html', cardSrc]]) {
+    let bare = strip(src); const m = bare.match(/\blocaleCompare\b/);
+    if (m) throw new Error(`${file} names localeCompare outside a comment: every order of a parlay's legs, chance or price sorts by enCmp, never the visitor's collation (app v146): ${at(bare, m.index)}`);
+    if (file === 'props/build/part2.js') bare = bare.replace("const EN_COLL=new Intl.Collator('en'), enCmp=", "const EN_COLL=EN_COLL_ONE, enCmp=");
+    const c = bare.match(/\bCollator\b/) || bare.match(/\bIntl\s*(?:\?\.\s*)?\[/);
+    if (c) throw new Error(`${file} makes or reads a collator other than part2's EN_COLL (new Intl.Collator('en'), once): ${at(bare, c.index)}`); }
+  const p3 = strip(part3), p2 = strip(part2), rd0 = p3.indexOf('function espnRedraw(same){'), rd1 = rd0 < 0 ? -1 : p3.indexOf('\n}', rd0), rdB = rd0 >= 0 && rd1 > rd0 ? p3.slice(rd0, rd1) : '';
+  const wired = [
+    ["part2's EN_COLL and enCmp", (p2.match(/const EN_COLL=new Intl\.Collator\('en'\), enCmp=\(a,b\)=>EN_COLL\.compare\(a,b\);/g) || []).length === 1],
+    ["pbOrder by enCmp on the name", p3.includes("const pbOrder=legs=>[...legs].sort((a,b)=>(a.week-b.week)||enCmp(String(a.name),String(b.name)));")],
+    ["parlayLegs by enCmp on the name", p2.includes(".sort((a,b)=>(a.week-b.week)||enCmp(a.name,b.name));")],
+    ['espnRefresh handing espnRedraw !changed', p3.includes('espnRedraw(!changed);')],
+    ['espnRedraw(same) keeping the sets with a player line', rdB.includes("if(same===true){ for(const [k,r] of [...SP_CACHE]) if(!r||!r.plGames) SP_CACHE.delete(k); } else SP_CACHE=new Map();")],
+    ['espnRedraw starting spSoftShown before it draws', rdB.indexOf('spSoftShown()') > 0 && rdB.indexOf('spSoftShown()') < rdB.indexOf('renderParlay()')],
+    ["spSoftShown starting spOpenSoft on the tab on the screen", /function spSoftShown\(\)\{\s*const tab=\$\('tab-suggest'\); if\(SP_SOFT\|\|!tab\|\|tab\.hidden\|\|!\$\('spSets'\)\|\|!\$\('spHead'\)\) return false;\s*return !!spOpenSoft\(\);/.test(p3)],
+    ["the card's held redraw passing same on", cardSrc.includes("window.espnRedraw=function(same){ owe(same===true); }") && cardSrc.includes("real(same)")]];
+  for (const [need, ok] of wired) if (!ok) throw new Error('the collation or the press\'s redraw of app v146 is no longer wired: ' + need);
+  /* the level search: no clock, and the level's work handed to every pass */
+  const s0 = p3.indexOf('const PB_FREE='), u0 = p3.indexOf('function pbFreeUnit('), u1 = u0 < 0 ? -1 : p3.indexOf('\n}', u0);
+  if (s0 < 0 || u0 < s0 || u1 < 0) throw new Error('the level search (from const PB_FREE= to the end of pbFreeUnit) is no longer where build.js looks for it');
+  const span = p3.slice(s0, u1 + 2), clk = span.match(/\bDate\.now\b|\bperformance\.now\b|\bnew\s+Date\s*\(/);
+  if (clk) throw new Error(`the level search reads the clock (${clk[0]}): a level's choices turn on its counted work (PB_W, PB_FREE.WORK and GWORK), never on time, so the page, the record and every check build the same level on any machine (app v146): ...${span.slice(Math.max(0, clk.index - 60), clk.index + 40)}...`);
+  if (!p3.includes('function pbFreeGame(x,legs,fl,k,F,cap,LV){')) throw new Error("pbFreeGame no longer takes the level's work as its seventh argument (LV, app v146)");
+  const calls = [...p3.matchAll(/(?<!function )\bpbFreeGame\(/g)];
+  if (!calls.length) throw new Error('nothing in part3.js calls pbFreeGame: the level search is no longer where build.js looks for it');
+  for (const c of calls) { const m = p3.slice(c.index).match(/^pbFreeGame\(((?:[^(),]+,){6})([^(),]+)\)/);
+    if (!m || /^\s*(?:undefined|null|void\b)/.test(m[2]) || !/^\s*[A-Za-z_$][\w$]*\s*$/.test(m[2]))
+      throw new Error(`a call of pbFreeGame does not hand on the level's work as its seventh argument, so that pass would get a fresh budget (app v146: every pass of a level draws on one, PB_FREE.WORK): ${p3.slice(c.index, c.index + 80)}`); }
+  /* the candidates' prune: pruned again only once another M have come in past what it kept (lim), at its two calls in the
+     walk, its keys counted on every prune; and the card's walk of the knapsack's parlays in the rule's order */
+  const cnt = (s, x) => s.split(x).length - 1, c0 = p3.indexOf('function pbFreeCands('), c1 = c0 < 0 ? -1 : p3.indexOf('\n}', c0), cB = c0 >= 0 && c1 > c0 ? p3.slice(c0, c1) : '';
+  const uB = p3.slice(u0, u1), srt = uB.indexOf('done=done.slice().sort((a,b)=>(b.kc-a.kc)||(a.n-b.n)||(b.kl-a.kl)||enCmp('), walk = uB.indexOf('for(const q of done)');
+  const held = [
+    ["the prune's rule, lim=Math.max(2*M,keys.length+M), once", cnt(cB, 'lim=Math.max(2*M,keys.length+M); };') === 1 && cnt(p3, 'lim=') === 2 && cnt(cB, 'let thr=FR||mode===\'level1\'?thr0:-Infinity, keys=[], sets=[], lim=2*M, kmax=-Infinity;') === 1],
+    ["the prune's keys counted, PB_LV_STAT.pk+=keys.length, once, as it begins", cnt(cB, 'const prune=()=>{ PB_LV_STAT.pk+=keys.length; const kth=') === 1 && cnt(p3, 'PB_LV_STAT.pk') === 1 && /const PB_LV_STAT=\{[^}]*\bpk:0\b[^}]*\};/.test(p3)],
+    ['the prune called only past lim in the walk, and once at its end', cnt(cB, 'prune()') === 3 && cnt(cB, 'keys.length>=lim) prune();') === 2 && cnt(cB, 'if((!FR||M)&&keys.length>M) prune();') === 1],
+    ["the card's walk of the knapsack's parlays sorted into the rule's order before it walks", cnt(uB, 'done=done.slice().sort((a,b)=>(b.kc-a.kc)||(a.n-b.n)||(b.kl-a.kl)||enCmp(qid(a),qid(b)));') === 1 && srt > 0 && walk > srt && cnt(uB, 'for(const q of done)') === 1]];
+  for (const [need, ok] of held) if (!ok) throw new Error("the level search of app v146 is no longer as its review left it: " + need); }
 /* X Parlays: X's parlays from the file, the whole of its tab, read only, on the admin's browser alone; a
    quiet line under the heading says when the file last changed them */
 const LIVE_SECTION = `<div class="card" id="lpCard">

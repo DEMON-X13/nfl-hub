@@ -2409,6 +2409,25 @@ const ladderBoot = async (x, seeded, how) => {
             if (!(f && md.hidden && !!t && d.activeElement === t && !d.activeElement.closest('[hidden]') && tabBtn('suggest').getAttribute('aria-selected') === 'true')) gone.push(`${step}: the focus is on ${at()}, not ${what}`);
             w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderParlay()'); await wait(30); }
           chk(!gone.length, `${how}: a level the tab no longer draws when its card closes does not give the focus back to its set or the tab: ` + gone.join(' | ')); }
+        /* (app v146) the card closed while the tab under it is still building: a press's redraw under the open card dropped
+           the sets (espnRedraw(false), as the card's own read that moves a line does), so the tab draws its building line and
+           the set's buttons are gone; closed then, the focus goes to the chosen tab's button, the rule's last fallback, never
+           the page's body; once the tab is drawn whole again a later close gives it back to the level's Finish. The set's
+           steps (spPartStep) stood in by its made-up set (spBuild here), put back after */
+        if (tb) { const escJ = () => d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+          w.eval('window.__ppsJ=spPartStep; spPartStep=function(x){ if(x.done) return; x.sig=spSig(x.g); if(!SP_CACHE.has(x.sig)) SP_CACHE.set(x.sig,{sig:x.sig,...spBuild(x.g)}); x.done=true; }');
+          let r3 = null;
+          try { w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderParlay()'); await wait(30);
+            const f = d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`); if (f) { f.focus(); f.click(); await wait(20); await cardSettled(w); }
+            const open1 = !!f && !md.hidden; w.eval('ESPN_SEQ++; espnRedraw(false)'); const run = w.eval('SP_SOFT'), mid = !!d.querySelector('#spSets [data-sp-building]') && !!run && !d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`);
+            escJ(); await wait(10); const a1 = d.activeElement, onTab = a1 === tabBtn('suggest'), body1 = a1 === d.body, closed = md.hidden;
+            const ok = run && run.done ? await Promise.race([run.done, new Promise(x => setTimeout(() => x('timeout'), 60000))]) : null; await wait(20);
+            const f2 = d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`); if (f2) { f2.click(); await wait(20); await cardSettled(w); escJ(); await wait(20); }
+            const a2 = d.activeElement;
+            r3 = { open1, mid, closed, onTab, body1, at1: a1 ? (a1.id || a1.getAttribute('data-tab') || a1.tagName) : 'none', ok, f2: !!f2, back2: !!f2 && (a2 === f2 || a2 === d.querySelector(`#spPanel [data-pc-finish="sp|${fid}"]`)) };
+          } finally { w.eval('spPartStep=window.__ppsJ; delete window.__ppsJ; SP_CACHE=new Map(); SP_SHOWN=null; renderParlay()'); await wait(30); }
+          chk(!!r3 && r3.open1 && r3.mid && r3.closed && r3.onTab && !r3.body1 && r3.ok === true && r3.f2 && r3.back2,
+            `${how}: the set's card closed while the tab under it was still building did not give the focus to the chosen tab's button (never the page's body), or once the tab was drawn whole a later close did not give it back to the level's Finish: ` + JSON.stringify(r3)); }
         /* an amount of the visitor's own in the Bet amount box, on the Parlay Builder tab: the set pays on
            it, Finish opens the card on it, and Add to builder leaves it in the builder, whose own Finish
            is on it too */
@@ -2741,8 +2760,10 @@ const ladderBoot = async (x, seeded, how) => {
          change puts its legs in, since the card still serves its ladders and every check below is of the seven */
       await ladderBoot(v, legs2, `${how} (app v127)`);
       const shared = []; Object.defineProperty(w.navigator, 'share', { value: async x => { shared.push(x); }, configurable: true });
-      /* how often the page under the card is drawn again for a read: the page's own espnRedraw, counted */
-      w.eval('window.__rd=0; { const r0=window.espnRedraw; window.espnRedraw=function(){ window.__rd++; return r0.apply(this,arguments); }; }');
+      /* how often the page under the card is drawn again for a read: the page's own espnRedraw, counted, (app v146) with what
+         each call was handed (same: the card's one redraw says true only where every read changed nothing the sets stand
+         on) and whether it is running (window.__inRd, so a level built inside it can be told from one built after) */
+      w.eval('window.__rd=0; window.__rdA=[]; window.__inRd=false; { const r0=window.espnRedraw; window.espnRedraw=function(){ window.__rd++; window.__rdA.push(arguments[0]); window.__inRd=true; try{ return r0.apply(this,arguments); }finally{ window.__inRd=false; } }; }');
       const q = w.PARLAY_CARD.quote(), L = q ? q.legs : [], nOf = (pid, stat) => L.findIndex(l => l.pid === pid && l.stat === stat) + 1, NL = Object.keys(legs2).length;
       const n = { tot: nOf('game', 'total'), rb: nOf('card-rb', 'rushing_yards'), wr: nOf('card-wr', 'receiving_yards'), wrRec: nOf('card-wr', 'receptions'), wrTd: nOf('card-wr', 'any_td'), te: nOf('card-te', 'receptions'), teTd: nOf('card-te', 'any_td') };
       chk(L.length === NL && Object.values(n).every(x => x > 0) && !!d.getElementById('pFinish') && !d.getElementById('pFinish').disabled, `${how}: the builder does not hold the ${NL} made-up legs ready to finish: ` + L.map(l => l.pid + ' ' + l.stat).join(', '));
@@ -2817,7 +2838,14 @@ const ladderBoot = async (x, seeded, how) => {
            Share link, Download, Start over, then the note's links; the read asked for the scoreboard once a game and nothing
            else */
         net.fail = true; let n0 = net.log.length;
+        /* (app v146) two sets in the page's cache under the card, one standing on a player line and one on none: the card's
+           reads of its two games change nothing (the scoreboard fails), so its one redraw is espnRedraw(true), which keeps
+           the first, the very object, and drops the second (its empty levels date the last read) */
+        w.eval('window.__rd=0; window.__rdA=[]; window.__keepJ={sig:"J2|kept",plGames:1,tiers:[]}; SP_CACHE.set("J2|kept",window.__keepJ); SP_CACHE.set("J2|nopl",{sig:"J2|nopl",plGames:0,tiers:[]})');
         d.getElementById('pFinish').click(); await wait(20); await cardSettled(w); await wait(10);
+        { const r = { rd: w.eval('window.__rd'), args: w.eval('JSON.stringify(window.__rdA)'), kept: w.eval('SP_CACHE.get("J2|kept")===window.__keepJ'), nopl: w.eval('SP_CACHE.has("J2|nopl")') };
+          w.eval('SP_CACHE.delete("J2|kept"); SP_CACHE.delete("J2|nopl"); delete window.__keepJ');
+          chk(r.rd === 1 && r.args === '[true]' && r.kept && !r.nopl, `${how}: with the scoreboard failing for both games (nothing changed), the card's one redraw of the page under it is not espnRedraw(true), keeping the set that stands on a player line and dropping the one on none: ` + JSON.stringify(r)); }
         { const bad = gameBtnsIn(d, G_PRE, null, NL), cb = checkHeld(note(), { st: 'failed' });
           chk(!md.hidden && ckS().state === 'failed' && idle() && !dkA.hidden && !bad && txt(dkA) === `Open all ${NL} legs in DraftKings` && txt(note().firstElementChild) === multiNote(G_PRE, AT_G, NL) && partsOf(note()) === PRE_PARTS && !cb
             && legHrefs() === eachOf(PRE) && swapOf('teTd') === `${n.teTd}. Card End, 2+ touchdowns: goes on as anytime touchdown` && note().querySelectorAll('[data-pc-dkswap]').length === 1 && !note().querySelector('[data-pc-dkmiss]')
@@ -2839,7 +2867,7 @@ const ladderBoot = async (x, seeded, how) => {
            then, on the receiver's own link in the note, it stays there through the read's redraw */
         net.hold = gate(); n0 = net.log.length;
         const tOpen = Date.now(); d.getElementById('pFinish').click(); await wait(30);
-        w.eval('window.__rd=0');
+        w.eval('window.__rd=0; window.__rdA=[]; SP_CACHE.set("J2|kept",{sig:"J2|kept",plGames:1,tiers:[]})');
         chk(waitingNow(), `${how}: while the card reads, Open in DraftKings does not wait ("Checking DraftKings’ lines…", no address, aria-disabled and aria-busy, in no ice though the card before wore it), Share link is not aria-disabled, the note is not its waiting line alone with no leg's own link, or a game button shows: ` + dkA.outerHTML + ' / ' + link.outerHTML + ' / ' + note().innerHTML + ' / ' + (gb() ? gb().outerHTML : 'no #pcDkGames'));
         /* (app v121) the game buttons stay hidden, and empty, until the check settles: the plan before the read is a mix, but
            the read can change it, so only the waiting Open in DraftKings stands in the action row */
@@ -2889,6 +2917,9 @@ const ladderBoot = async (x, seeded, how) => {
         chk(msg() === said(ok, NL, G_POST.length) && msg() === `DraftKings’ lines checked: ${ok} of ${NL} legs on one slip, 2 game links.`,
           `${how}: once the read is done the card's status line does not say how many legs the all-legs link tries and how many games' links there are now (${said(ok, NL, G_POST.length)}): ` + msg());
         chk(w.eval('window.__rd') === 1, `${how}: the page under the card was drawn ${w.eval('window.__rd')} times for the card's read of its two games, not once when the last was read`);
+        /* (app v146) a read that moved lines: the one redraw is espnRedraw(false), every set dropped */
+        { const args = w.eval('JSON.stringify(window.__rdA)'), kept = w.eval('SP_CACHE.has("J2|kept")'); w.eval('SP_CACHE.delete("J2|kept")');
+          chk(args === '[false]' && !kept, `${how}: the card's one redraw after a read that moved lines is not espnRedraw(false), dropping every set (handed ${args}; a set ${kept ? 'kept' : 'dropped'})`); }
         chk(missOf('rb') === RB_MOVED && missOf('te') === TE_MOVED && note().querySelectorAll('[data-pc-dkmiss]').length === 2,
           `${how}: a player's main line and a rung DraftKings has moved since the pull read their ids are not left off, each with the moved rule's words (the rung, moved off its own number, naming its own bet): ` + JSON.stringify([missOf('rb'), missOf('te')]));
         chk(swapOf('tot') === `${n.tot}. ${g1.a} at ${g1.h}, Over 43.5 points: goes on as Over 44.5` && swapOf('teTd') === `${n.teTd}. Card End, 2+ touchdowns: goes on as anytime touchdown` && note().querySelectorAll('[data-pc-dkswap]').length === 2,
@@ -3068,6 +3099,37 @@ const ladderBoot = async (x, seeded, how) => {
             && href === DKU([ID.tot2]) && sw === `1. ${g1.a} at ${g1.h}, Over 43.5 points: goes on as Over 44.5` && made,
             `${how}: on a payload baked before ids the card did not read its game (one scoreboard and that game alone) and put the total on at DraftKings' number on the read's id: ` + JSON.stringify({ st, href, sw, made, asked: asked.map(u => u.replace(/https:\/\/[^/]+/, '').slice(0, 70)) })); }
         await setParlay(legs2);
+        /* (b4) (app v146) the page under the card built a level a step: with Suggested Parlays on the screen under the card
+           (a made-up night game far off its only set, XXQ at XXR, four empty levels to build, the slot none), the seven-leg
+           card opened three minutes after the last read reads again and its read moves a line (the runner's, a player block
+           read): its one redraw, espnRedraw(false), starts a run of spOpenSoft under the open card (its building line drawn
+           there), no level built inside that redraw and the game's four in the run, the card's controls working meanwhile
+           (Download at once), the page drawn once (window.__rd 1) and the tab drawn whole once the run ends, the card still
+           open. The made-up game is of the payload's last week, so it is stood in as the night's games (spGames, which the
+           night section reads before it asks spOn: with the page's own week's night games all kicked off, a Monday night
+           under way until its game is four hours old, it drew "No night game left" and never the made-up unit) and as the
+           night set out (spOn), the slot none (spSlotNext), each put back in finally: so it holds at any hour, on a Monday
+           night and in the off-season (the review of app v146) */
+        { const F = { id: `${SEA}_${String(wk).padStart(2, '0')}_XXQ_XXR`, w: wk, d: '2099-12-31', t: '20:15', a: 'XXQ', h: 'XXR' }, tabJ = t => d.querySelector(`#tabs [data-tab="${t}"]`);
+          w.eval(`S.sched.push(${JSON.stringify(F)}); window.__j2Keep=[spOn,spSlotNext,spLevel,spOpenSoft,spGames]; spOn=function(){ return S.sched.filter(x=>x.id===${JSON.stringify(F.id)}); }; spGames=function(){ return S.sched.filter(x=>x.id===${JSON.stringify(F.id)}); }; spSlotNext=function(){ return null; };
+            window.__lvRd=0; window.__lvAll=0; spLevel=function(){ window.__lvAll++; if(window.__inRd) window.__lvRd++; return window.__j2Keep[2].apply(this,arguments); };
+            window.__soft=[]; spOpenSoft=function(){ const r=window.__j2Keep[3].apply(this,arguments); window.__soft.push({run:!!r,card:!document.getElementById('pcModal').hidden}); return r; };`);
+          let res = null;
+          try {
+            tabJ('suggest').click(); await wait(30); w.eval('SP_CACHE=new Map(); SP_SHOWN=null; renderSp(); window.__lvAll=0; window.__lvRd=0; window.__soft=[]');
+            const drawn0 = !!d.querySelector(`#spSets [data-sp-game="${F.id}"] .pb-tier`);
+            older(); w.eval('window.__rd=0; window.__rdA=[]');
+            w.PARLAY_CARD.open(w.PARLAY_CARD.fromBuilder(), tabJ('suggest')); await wait(20); await cardSettled(w);
+            const soft = w.eval('JSON.stringify(window.__soft)'), run = w.eval('SP_SOFT'), bl = !!d.querySelector('#spSets [data-sp-building]'), open0 = !md.hidden;
+            const c0 = rec.clicks.length; d.getElementById('pcDownload').click(); await wait(40); const dl = rec.clicks.length === c0 + 1;
+            const ok = run && run.done ? await Promise.race([run.done, new Promise(x => setTimeout(() => x('timeout'), 60000))]) : null; await wait(20);
+            res = { drawn0, rd: w.eval('window.__rd'), args: w.eval('JSON.stringify(window.__rdA)'), soft, run: !!run, bl, open0, dl, ok, lvRd: w.eval('window.__lvRd'), lvAll: w.eval('window.__lvAll'), openEnd: !md.hidden,
+              drawn: !!d.querySelector(`#spSets [data-sp-game="${F.id}"] .pb-tier`) && !d.querySelector('#spSets [data-sp-building]') };
+          } finally { if (!md.hidden) d.getElementById('pcClose').click(); await wait(10);
+            w.eval(`spOn=window.__j2Keep[0]; spSlotNext=window.__j2Keep[1]; spLevel=window.__j2Keep[2]; spOpenSoft=window.__j2Keep[3]; spGames=window.__j2Keep[4]; delete window.__j2Keep; S.sched.splice(S.sched.findIndex(x=>x.id===${JSON.stringify(F.id)}),1); SP_CACHE=new Map(); SP_SHOWN=null`);
+            tabJ('parlay').click(); await wait(30); }
+          chk(!!res && res.drawn0 && res.rd === 1 && res.args === '[false]' && res.soft === '[{"run":true,"card":true}]' && res.run && res.bl && res.open0 && res.dl && res.ok === true && res.lvRd === 0 && res.lvAll === 4 && res.openEnd && res.drawn,
+            `${how}: with Suggested Parlays under the card, the card's read that moved a line did not draw the page once with espnRedraw(false) and build the tab a level a step under the open card (a run of spOpenSoft, its building line, no level built inside the redraw and the made-up game's four in the run), the card's controls working meanwhile: ` + JSON.stringify(res)); }
         /* (f) Start over works at once while the card reads, and the read ending after it opens nothing and fills no
            builder; the focus it gave to the Parlay Builder's choices is found again on them when the read's redraw draws
            them again, never left on the page's body. The choices are drawn only while the page's own week has a game to

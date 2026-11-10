@@ -709,8 +709,10 @@ window.PARLAY_CARD=(function(){
       modalKeep.observe(document.body,{attributes:true,attributeFilter:['class']}); } }catch(e){} }
   /* the page's espnRedraw held back while the card's own reads run (only espnRefresh calls it, and no other press can
      start while one runs): each read's redraw is owed, and drawn once after the last (flushRedraw). Where the page's
-     redraw is not this global (a part that wraps it), nothing is held and each read draws as a press does */
-  function holdRedraw(owe){ let real=null; try{ real=window.espnRedraw; if(typeof real!=='function') return null; window.espnRedraw=function(){ owe(); }; }catch(e){ return null; }
+     redraw is not this global (a part that wraps it), nothing is held and each read draws as a press does. (app v146) Each
+     held redraw says whether its read changed nothing the sets stand on (espnRedraw's same), and the one drawn after says
+     so only where every read did */
+  function holdRedraw(owe){ let real=null; try{ real=window.espnRedraw; if(typeof real!=='function') return null; window.espnRedraw=function(same){ owe(same===true); }; }catch(e){ return null; }
     const held=window.espnRedraw; return {real,put:()=>{ try{ if(window.espnRedraw===held) window.espnRedraw=real; }catch(e){} }}; }
   function check(m){
     const gids=[...new Set((m.dkLegs||[]).map(l=>l.gid))].filter(readable);
@@ -730,7 +732,7 @@ window.PARLAY_CARD=(function(){
     const of=`${(dk.ok||[]).length} of ${dk.n} leg${dk.n===1?'':'s'}`;
     return 'DraftKings’ lines checked: '+(dk.multi&&dk.all?`${of} on one slip, ${dk.games.length} game links.`:`${of} on the slip.`); }
   async function runCheck(c){
-    let bad=false, owed=false, real=null;
+    let bad=false, owed=false, same=true, real=null;
     try{
       for(const gid of c.gids){
         if(c!==ck) return;
@@ -739,7 +741,7 @@ window.PARLAY_CARD=(function(){
         if(espnBusy()){ while(espnBusy()){ await sleep(100); if(c!==ck) return; } afterRedraw(); }
         if(fresh(gid)) continue;
         if(!readable(gid)) continue;
-        const t0=Date.now(), h=holdRedraw(()=>{ owed=true; }); if(h&&!real) real=h.real;
+        const t0=Date.now(), h=holdRedraw(s=>{ owed=true; if(!s) same=false; }); if(h&&!real) real=h.real;
         let done;
         try{ done=await espnRefresh(gid); }finally{ if(h) h.put(); }
         if(c!==ck) return;
@@ -750,7 +752,7 @@ window.PARLAY_CARD=(function(){
     }catch(e){ bad=true; }
     finally{
       /* the page drawn once on what the reads found, closed card or not */
-      if(owed&&real){ try{ real(); }catch(e){ console.error(e); } }
+      if(owed&&real){ try{ real(same); }catch(e){ console.error(e); } }
       afterRedraw();
     }
     if(c!==ck) return;
