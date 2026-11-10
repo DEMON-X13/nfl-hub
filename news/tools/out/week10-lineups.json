@@ -108,7 +108,7 @@
   },
   "NYG": {
    "kick": "2026-11-13T01:15Z",
-   "built_at": "2026-11-10T15:06:48.041Z",
+   "built_at": "2026-11-10T21:15:39.863Z",
    "units": {
     "qb": [
      {
@@ -147,13 +147,14 @@
     ],
     "rb": [
      {
-      "id": "00-0035250",
-      "n": "Devin Singletary",
-      "pos": "RB"
+      "id": "00-0040715",
+      "n": "Cam Skattebo",
+      "pos": "RB",
+      "q": "questionable: hamstring"
      },
      {
-      "id": null,
-      "n": "Greg Desrosiers Jr.",
+      "id": "00-0035250",
+      "n": "Devin Singletary",
       "pos": "RB"
      }
     ],
@@ -1043,14 +1044,13 @@
   },
   "MIA": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-10T18:51:44.901Z",
+   "built_at": "2026-11-10T21:15:39.863Z",
    "units": {
     "qb": [
      {
-      "id": "00-0038128",
-      "n": "Malik Willis",
-      "pos": "QB",
-      "q": "questionable: groin"
+      "id": "00-0040014",
+      "n": "Kyle McCord",
+      "pos": "QB"
      }
     ],
     "ol": [
