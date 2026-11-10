@@ -4820,7 +4820,10 @@ last fallback. The screens' node cap (`SCREEN_NODES_AUD` and its twin, 3 million
 `WIN_EVALS` are kept. The price-selection bias measured for app v146 (app v145's page, every game of weeks 7 to 9 as a
 one-game unit: at 1,000,000 draws 4 of 54 Safes, 41 of 54 Mediums, 50 of 54 Aggressives and 53 of 54 Extremes price
 under their floor, every night game's Medium, Aggressive and Extreme among them; the price at 1,000,000 draws a median
-1.000, 0.975, 0.965 and 0.956 of the card's) was put to the owner and is not changed by app v146. Not taken from the
+1.000, 0.975, 0.965 and 0.956 of the card's) was put to the owner, with three choices (price each chosen level again
+on more draws before it is shown, leave it, or set each floor a cushion above its price), and he left it (the owner's
+call of 10 November 2026, "just leave it"): a level's price stays the card's own, `parlayDec` on its 20,000 draws,
+and the floors stay +110, +300, +700 and +1500 on it. Not taken from the
 review of app v146: keeping the best knapsack across the Day games' tries, and a share of the groups' work kept back for
 later tries and the totals' pass, which move levels on small slates (a prototype leaving a quarter of the walks' work
 and of the spare to the later tries moved week 9's two-game Extreme on its real lines from 4.432% to 4.249% and, at 0.85
