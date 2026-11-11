@@ -3645,24 +3645,31 @@ function pbTopRow(l,i){
     <span class="pb-tcs"><span class="pb-tc"><b>${fmtML(l.price)}${est}</b><small>price</small></span><span class="pb-tc"><b${proj!=null?` data-pb-proj="${proj}"`:''}>${proj!=null?num(proj,td?2:proj<10?1:0)+(pbProjUnit(l.stat)?` <span class="pb-unit">${pbProjUnit(l.stat)}</span>`:''):'–'}</b><small>projected</small></span><span class="pb-tc"><b${l.fc?` data-pb-fair="${l.fc.p}"`:''}>${l.fc?pc(l.fc.p):'–'}</b><small>${l.fc?(l.fc.est?'fair, est.':'fair'):'no fair'}</small></span><span class="pb-tc"><b data-pb-win="${l.win}">${pbMoney1(l.win)}</b><small>wins on $1</small></span><span class="pb-tc"><b data-pb-ev="${l.ev}">${pbMoney1(l.ev)}</b><small>expected on $1</small></span></span>
     ${pbLegAddBtn(l)}</li>`;
 }
-/* (app v139) the Player lines' sort, this page load's alone: a column and its way round (1 highest first, -1 lowest) */
-let PB_TSORT={k:'rank',dir:1};
+/* (app v139) the Player lines' sort, this page load's alone: a column and its way round (1 highest first, -1 lowest).
+   (app v147) one a part of the list (player, game, value), each sorting on its own */
+let PB_TSORT={};
+const pbTs=sec=>PB_TSORT[sec]||(PB_TSORT[sec]={k:'rank',dir:1});
 const PB_TSORT_COLS=[['rank','Rank',null],['price','Price',l=>l.dec],['proj','Projected',pbProjOf],
   ['fair','Fair',l=>l.fc?l.fc.p:null],['win','Wins',l=>l.win],['ev','Expected',l=>l.ev]];
-function pbTsorted(L){
-  const c=PB_TSORT_COLS.find(x=>x[0]===PB_TSORT.k);
+function pbTsorted(L,sec){
+  const s=pbTs(sec), c=PB_TSORT_COLS.find(x=>x[0]===s.k);
   if(!c||!c[2]) return L;
-  const v=c[2], d=PB_TSORT.dir;
+  const v=c[2], d=s.dir;
   return [...L].sort((a,b)=>{ const x=v(a.l), y=v(b.l); if(x==null||y==null) return (x==null)-(y==null)||a.r-b.r; return d*(y-x)||a.r-b.r; });
 }
 /* (app v140) the Player lines' column headings, on the rows' own grid, each column's a button with its arrow: faint both
    ways while another column sorts, down while it sorts highest first, up lowest first; # the list's own order */
-function pbTsortHead(){
-  const btn=(k,lbl)=>{ const on=PB_TSORT.k===k, rk=k==='rank';
-    const ar=rk?'':on?(PB_TSORT.dir>0?'▼':'▲'):'⇅', way=on?(PB_TSORT.dir>0?'highest first':'lowest first'):'';
-    const say=rk?'Sort by rank, the list’s own order':`Sort by ${lbl.toLowerCase()}${on?`, ${way}: press again for ${PB_TSORT.dir>0?'lowest':'highest'} first`:''}`;
-    return `<button type="button" class="pb-th${on?' on':''}" data-pb-sort="${k}" aria-pressed="${on}" aria-label="${say}" title="${say}">${lbl}${ar?`<span class="pb-tharr" aria-hidden="true">${ar}</span>`:''}</button>`; };
-  return `<div class="pb-thead" role="group" aria-label="Sort the player lines">${btn('rank','#')}<span class="pb-thnm">Player</span><span class="pb-thcs">${PB_TSORT_COLS.filter(([k])=>k!=='rank').map(([k,lbl])=>btn(k,lbl)).join('')}</span><span class="pb-thad" aria-hidden="true"></span></div>`;
+function pbTsortHead(sec){
+  /* (app v147) a part's own headings: the Game bets' name their rows Bet and have no Projected (a team bet has none),
+     an empty slot of its width keeping every heading over its column */
+  const s=pbTs(sec), gm=sec==='game';
+  const btn=(k,lbl)=>{ if(gm&&k==='proj') return `<span class="pb-th pb-thx" aria-hidden="true"></span>`;
+    const on=s.k===k, rk=k==='rank';
+    const ar=rk?'':on?(s.dir>0?'▼':'▲'):'⇅', way=on?(s.dir>0?'highest first':'lowest first'):'';
+    const say=rk?'Sort by rank, the list’s own order':`Sort by ${lbl.toLowerCase()}${on?`, ${way}: press again for ${s.dir>0?'lowest':'highest'} first`:''}`;
+    return `<button type="button" class="pb-th${on?' on':''}" data-pb-sort="${k}" data-pb-sortsec="${sec}" aria-pressed="${on}" aria-label="${say}" title="${say}">${lbl}${ar?`<span class="pb-tharr" aria-hidden="true">${ar}</span>`:''}</button>`; };
+  const what={player:'player lines',game:'game bets',value:'Value picks'}[sec]||'lines', nm=gm?'Bet':sec==='player'?'Player':'Line';
+  return `<div class="pb-thead" data-pb-sec="${sec}" role="group" aria-label="Sort the ${what}">${btn('rank','#')}<span class="pb-thnm">${nm}</span><span class="pb-thcs">${PB_TSORT_COLS.filter(([k])=>k!=='rank').map(([k,lbl])=>btn(k,lbl)).join('')}</span><span class="pb-thad" aria-hidden="true"></span></div>`;
 }
 function pbPanel(){
   const u=pbUi(), w=currentWeek(), games=pbGames(), mix=pbMix(u);
@@ -3691,8 +3698,8 @@ function pbPanel(){
   const nV=r.rows.filter(pbIsValue).length, V=r.rows.slice(0,nV), rest=r.rows.slice(nV), Pl=rest.filter(l=>!isGameLeg(l)), Gm=rest.filter(isGameLeg);
   const secHd=(id,title,n)=>`<h3 class="pb-topsec" data-pb-sec="${id}">${title}${n?` <span class="pill">${n}</span>`:''}</h3>`;
   const part=(id,title,L,at,aria)=>{ if(!L.length) return ''; let R=L.map((l,i)=>({l,r:at+i}));
-    if(id==='player') R=pbTsorted(R);
-    return secHd(id,title,L.length)+(id==='player'&&L.length>1?pbTsortHead():'')+`<ol class="pb-top" data-pb-sec="${id}"${at?` start="${at+1}"`:''} aria-label="${aria}">${R.map(x=>pbTopRow(x.l,x.r)).join('')}</ol>`; };
+    R=pbTsorted(R,id);
+    return secHd(id,title,L.length)+(L.length>1?pbTsortHead(id):'')+`<ol class="pb-top" data-pb-sec="${id}"${at?` start="${at+1}"`:''} aria-label="${aria}">${R.map(x=>pbTopRow(x.l,x.r)).join('')}</ol>`; };
   const s=n=>n===1?'':'s';
   const list=r.rows.length?part('value','Value picks',V,0,`The ${V.length} Value pick${s(V.length)} on your picks, by expected return on $1`)
       +part('player','Player lines',Pl,nV,`${nV?'Then ':'The '}${Pl.length} player line${s(Pl.length)} on your picks, a mix of bet types, each type’s likeliest first`)
@@ -4234,9 +4241,9 @@ function wirePb(){
     amt.addEventListener('change',()=>{ const v=stakeRead(amt.value); if(v!=null) S.stake=v;
       S.stake=pbStake(); amt.value=stakeText(S.stake); save(); pbPays(); clearTimeout(PB_AMT_T); pbSyncBuilder(); });
   }
-  el.querySelectorAll('[data-pb-sort]').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.pbSort;
-    PB_TSORT=k==='rank'?{k,dir:1}:PB_TSORT.k===k?{k,dir:-PB_TSORT.dir}:{k,dir:1};
-    redraw(`[data-pb-sort="${k}"]`); }));
+  el.querySelectorAll('[data-pb-sort]').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.pbSort, sec=b.dataset.pbSortsec||'player', s=pbTs(sec);
+    PB_TSORT[sec]=k==='rank'?{k,dir:1}:s.k===k?{k,dir:-s.dir}:{k,dir:1};
+    redraw(`[data-pb-sortsec="${sec}"][data-pb-sort="${k}"]`); }));
   el.querySelectorAll('[data-pb-mix]').forEach(b=>b.addEventListener('click',()=>{ const u=pbUi(), m=PB_MIXES.find(x=>x[0]===b.dataset.pbMix); if(!m) return;
     for(const [k] of PB_KINDS) u.k[k]=m[2].includes(k); save(); redraw(`[data-pb-mix="${m[0]}"]`); }));
   el.querySelectorAll('[data-pb-kind]').forEach(cb=>cb.addEventListener('change',()=>{ const u=pbUi(); u.k[cb.dataset.pbKind]=cb.checked; save(); redraw(`[data-pb-kind="${cb.dataset.pbKind}"]`); }));
