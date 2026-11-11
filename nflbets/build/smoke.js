@@ -2268,7 +2268,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   const addName = (l, on) => `${on ? 'Remove' : 'Add'} ${l.name}, ${l.label}, ${on ? 'from' : 'to'} the builder`;
   /* (app v139) what a Top 50 projection counts, the smoke's own copy */
   const UNIT_OWN = { passing_yards: 'yds', rushing_yards: 'yds', receiving_yards: 'yds', scrim_yards: 'yds', receptions: 'catches', passing_tds: 'TDs', attempts: 'att', completions: 'comp', passing_interceptions: 'INTs', carries: 'carries', targets: 'targets', fg_made: 'FGs', fg_att: 'FG att', kick_pts: 'pts', any_td: 'TDs' };
-  let SORT_HELD = false;
+  let SORT_HELD = false, GSORT_HELD = false;
   const holdTop = (lab, u, on) => {
     const want = pbTopOwn(u, on), rows = [...panel.querySelectorAll('ol.pb-top > li.pb-trow')], fo = fairRule(w), fmt = w.eval('fmtML'), P = w.eval('S').parlay, bad = [];
     const inB = l => { const x = P[l.key]; return !!x && x.k === l.k && x.side === l.side && !!x.main === !!l.main; };
@@ -2424,23 +2424,54 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         `${lab}: ${u.k.total ? 'Game total is ticked' : 'Game total is not ticked'} and the list still says a total is never a Value pick`);
       holdTop(lab, u, on);
       /* (app v139) the Player lines: each wears its club's tag, and the sort bar sorts them by a column and back, each row
-         keeping its rank, Rank putting the list's own order back; held once, on the first list with two player lines */
-      if (!SORT_HELD) { const ol = () => panel.querySelector('ol.pb-top[data-pb-sec="player"]'), rowsP = () => ol() ? [...ol().querySelectorAll(':scope > li.pb-trow')] : [];
-        const R0 = rowsP(), top = w.eval('getPbTop()').rows.filter(l => !gameLegOwn(l));
-        if (R0.length > 1) { SORT_HELD = true; const bad = [], ranks = () => rowsP().map(r => r.dataset.pbRow).join();
-          R0.forEach((r, i) => { const l = top[i], c = r.querySelector('.nm > .ttag.pb-tteam');
-            if (!l || !c || txt(c) !== l.team || c.title !== (w.eval('TEAM_NAMES')[l.team] || l.team)) bad.push(`row ${r.dataset.pbRow} wears ${c ? txt(c) : 'no club tag'} where ${l ? l.name + ' plays for ' + l.team : 'no line ranks'}`);
-            const pj = r.querySelector('[data-pb-proj]'); if (pj && UNIT_OWN[l.stat] && !(pj.querySelector('.pb-unit') && txt(pj.querySelector('.pb-unit')) === UNIT_OWN[l.stat])) bad.push(`row ${r.dataset.pbRow}'s projection has no "${UNIT_OWN[l.stat]}"`); });
-          const base = ranks(), press = k => { const b = panel.querySelector(`.pb-thead button[data-pb-sort="${k}"]`); if (!b) { bad.push(`no ${k} sort button`); return null; } b.click(); return panel.querySelector(`.pb-thead button[data-pb-sort="${k}"]`); };
-          const decOf = r => w.eval('mlToDec')(+top.find(l => l.key === r.querySelector('button[data-pb-leg]').dataset.pbLeg && l.side === r.querySelector('button[data-pb-leg]').dataset.side).price);
-          for (const [k, val] of [['price', decOf], ['proj', r => { const x = r.querySelector('[data-pb-proj]'); return x ? +x.dataset.pbProj : null; }], ['ev', r => +r.querySelector('[data-pb-ev]').dataset.pbEv], ['fair', r => { const x = r.querySelector('[data-pb-fair]'); return x ? +x.dataset.pbFair : null; }]]) {
-            for (const dir of [1, -1]) { const b = press(k); if (!b) break;
-              const v = rowsP().map(val), have = v.filter(x => x != null), nl = v.indexOf(null), ok = have.every((x, i) => !i || dir * (have[i - 1] - x) >= 0) && (nl < 0 || v.slice(nl).every(x => x == null));
-              const arr = c => { const x = panel.querySelector(`.pb-thead button[data-pb-sort="${c}"] .pb-tharr`); return x ? txt(x) : ''; };
-              if (arr(k) !== (dir > 0 ? '▼' : '▲') || ['price', 'proj', 'fair', 'win', 'ev'].some(c => c !== k && arr(c) !== '⇅')) bad.push(`${k} ${dir > 0 ? 'highest' : 'lowest'} first: its arrow reads ${arr(k)}, the others ${['price', 'proj', 'fair', 'win', 'ev'].map(arr).join(' ')}`);
-              if (!ok || b.getAttribute('aria-pressed') !== 'true' || d.activeElement !== b || rowsP().length !== R0.length || ranks().split(',').sort().join() !== base.split(',').sort().join()) bad.push(`${k} ${dir > 0 ? 'highest' : 'lowest'} first: ${v.slice(0, 8).join(',')}, pressed ${b.getAttribute('aria-pressed')}, focus ${d.activeElement === b}`); } }
-          press('rank'); if (ranks() !== base) bad.push(`Rank does not put the order back: ${ranks()} where ${base}`);
+         keeping its rank, Rank putting the list's own order back; held once, on the first list with two player lines.
+         (app v147, the owner's report of 11 November 2026: "when i select the team only button, the ability to organize by
+         name/amount disappears") every part with two lines or more draws its own heading row, the Game bets' too (named
+         Bet, with no Projected button and an empty slot in its place), each part sorting on its own: held on every list,
+         and the Game bets' sort once, on the first list with two game bets, leaving the Player lines' order as it was */
+      { const bad = [];
+        for (const ol of panel.querySelectorAll('ol.pb-top')) { const sec = ol.dataset.pbSec, n = ol.querySelectorAll(':scope > li.pb-trow').length, hd = panel.querySelector(`.pb-thead[data-pb-sec="${sec}"]`);
+          if (n > 1 && !hd) bad.push(`the ${sec} part holds ${n} lines and has no heading row`);
+          if (n < 2 && hd) bad.push(`the ${sec} part holds ${n} line and draws a heading row`);
+          if (hd && hd.nextElementSibling !== ol) bad.push(`the ${sec} part's heading row is not right over its list`);
+          if (hd) { const ks = [...hd.querySelectorAll('button[data-pb-sort]')].map(b => b.dataset.pbSort).join(), want = sec === 'game' ? 'rank,price,fair,win,ev' : 'rank,price,proj,fair,win,ev';
+            if (ks !== want) bad.push(`the ${sec} part's headings are ${ks}, not ${want}`);
+            if ([...hd.querySelectorAll('button[data-pb-sort]')].some(b => b.dataset.pbSortsec !== sec)) bad.push(`a ${sec} heading names another part`);
+            const nm = txt(hd.querySelector('.pb-thnm')), wantNm = sec === 'game' ? 'Bet' : sec === 'player' ? 'Player' : 'Line';
+            if (nm !== wantNm) bad.push(`the ${sec} part's name heading reads "${nm}", not "${wantNm}"`);
+            const slots = [...hd.querySelector('.pb-thcs').children];
+            if (slots.length !== 5 || (sec === 'game' && !(slots[1].matches('span.pb-thx') && slots[1].getAttribute('aria-hidden') === 'true' && !txt(slots[1]))))
+              bad.push(`the ${sec} part's heading row does not keep five column slots${sec === 'game' ? ', Projected an empty one' : ''}: ${slots.map(e => e.tagName + (e.dataset.pbSort ? ':' + e.dataset.pbSort : '')).join(' ')}`);
+            if (hd.getAttribute('aria-label') !== `Sort the ${({ player: 'player lines', game: 'game bets', value: 'Value picks' })[sec]}`) bad.push(`the ${sec} heading row is named "${hd.getAttribute('aria-label')}"`); } }
+        chk(!bad.length, `${lab}: the Top 50's parts do not each wear their own sort headings: ${bad.slice(0, 4).join('; ')}`); }
+      const sortHeld = (sec, top) => { const ol = () => panel.querySelector(`ol.pb-top[data-pb-sec="${sec}"]`), rowsP = () => ol() ? [...ol().querySelectorAll(':scope > li.pb-trow')] : [];
+        const other = sec === 'game' ? 'player' : 'game', oRanks = () => { const o = panel.querySelector(`ol.pb-top[data-pb-sec="${other}"]`); return o ? [...o.querySelectorAll(':scope > li.pb-trow')].map(r => r.dataset.pbRow).join() : ''; };
+        const R0 = rowsP(), bad = [], ranks = () => rowsP().map(r => r.dataset.pbRow).join(), o0 = oRanks();
+        if (sec === 'player') R0.forEach((r, i) => { const l = top[i], c = r.querySelector('.nm > .ttag.pb-tteam');
+          if (!l || !c || txt(c) !== l.team || c.title !== (w.eval('TEAM_NAMES')[l.team] || l.team)) bad.push(`row ${r.dataset.pbRow} wears ${c ? txt(c) : 'no club tag'} where ${l ? l.name + ' plays for ' + l.team : 'no line ranks'}`);
+          const pj = r.querySelector('[data-pb-proj]'); if (pj && UNIT_OWN[l.stat] && !(pj.querySelector('.pb-unit') && txt(pj.querySelector('.pb-unit')) === UNIT_OWN[l.stat])) bad.push(`row ${r.dataset.pbRow}'s projection has no "${UNIT_OWN[l.stat]}"`); });
+        const sel = k => `.pb-thead[data-pb-sec="${sec}"] button[data-pb-sort="${k}"]`;
+        const base = ranks(), press = k => { const b = panel.querySelector(sel(k)); if (!b) { bad.push(`no ${k} sort button`); return null; } b.click(); return panel.querySelector(sel(k)); };
+        const decOf = r => w.eval('mlToDec')(+top.find(l => l.key === r.querySelector('button[data-pb-leg]').dataset.pbLeg && l.side === r.querySelector('button[data-pb-leg]').dataset.side).price);
+        const cols = sec === 'game' ? ['price', 'fair', 'win', 'ev'] : ['price', 'proj', 'fair', 'win', 'ev'];
+        const vals = { price: decOf, proj: r => { const x = r.querySelector('[data-pb-proj]'); return x ? +x.dataset.pbProj : null; }, ev: r => +r.querySelector('[data-pb-ev]').dataset.pbEv,
+          win: r => +r.querySelector('[data-pb-win]').dataset.pbWin, fair: r => { const x = r.querySelector('[data-pb-fair]'); return x ? +x.dataset.pbFair : null; } };
+        for (const k of (sec === 'game' ? ['price', 'win', 'ev', 'fair'] : ['price', 'proj', 'ev', 'fair'])) { const val = vals[k];
+          for (const dir of [1, -1]) { const b = press(k); if (!b) break;
+            const v = rowsP().map(val), have = v.filter(x => x != null), nl = v.indexOf(null), ok = have.every((x, i) => !i || dir * (have[i - 1] - x) >= 0) && (nl < 0 || v.slice(nl).every(x => x == null));
+            const arr = c => { const x = panel.querySelector(`${sel(c)} .pb-tharr`); return x ? txt(x) : ''; };
+            if (arr(k) !== (dir > 0 ? '▼' : '▲') || cols.some(c => c !== k && arr(c) !== '⇅')) bad.push(`${k} ${dir > 0 ? 'highest' : 'lowest'} first: its arrow reads ${arr(k)}, the others ${cols.map(arr).join(' ')}`);
+            if (!ok || b.getAttribute('aria-pressed') !== 'true' || d.activeElement !== b || rowsP().length !== R0.length || ranks().split(',').sort().join() !== base.split(',').sort().join()) bad.push(`${k} ${dir > 0 ? 'highest' : 'lowest'} first: ${v.slice(0, 8).join(',')}, pressed ${b.getAttribute('aria-pressed')}, focus ${d.activeElement === b}`);
+            if (oRanks() !== o0) bad.push(`sorting the ${sec} part by ${k} moved the ${other} part: ${oRanks()} where ${o0}`);
+            const oh = panel.querySelector(`.pb-thead[data-pb-sec="${other}"] button.on`); if (oh && oh.dataset.pbSort !== 'rank') bad.push(`sorting the ${sec} part by ${k} pressed the ${other} part's ${oh.dataset.pbSort}`); } }
+        press('rank'); if (ranks() !== base) bad.push(`Rank does not put the order back: ${ranks()} where ${base}`);
+        return bad; };
+      if (!SORT_HELD) { const R0 = panel.querySelectorAll('ol.pb-top[data-pb-sec="player"] > li.pb-trow'), top = w.eval('getPbTop()').rows.filter(l => !gameLegOwn(l));
+        if (R0.length > 1) { SORT_HELD = true; const bad = sortHeld('player', top);
           chk(!bad.length, `${lab}: the Top 50's player lines do not wear their clubs, units and sort: ${bad.slice(0, 4).join('; ')}`); } }
+      if (!GSORT_HELD) { const R0 = panel.querySelectorAll('ol.pb-top[data-pb-sec="game"] > li.pb-trow'), top = w.eval('getPbTop()').rows.filter(l => gameLegOwn(l));
+        if (R0.length > 1) { GSORT_HELD = true; const bad = sortHeld('game', top);
+          chk(!bad.length, `${lab}: the Top 50's game bets do not sort by their headings on their own: ${bad.slice(0, 4).join('; ')}`); } }
       /* (app v125) with player bets ticked and no player line priced on the ticked games, the list (its note, or with no
          line at all its empty line) and every empty level say why in the page's words (its pbNoPl, worked out here:
          no player lines with the time DraftKings' lines were last read from ESPN, or that they have not been read yet;
