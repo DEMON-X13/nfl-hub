@@ -5865,7 +5865,15 @@ may quietly outrank what the job published:
   from that browser only (`lp_cleared_here_v1`, under "Bets and Stats: the loop"); on every device, a parlay leaves the page
   when the file marks it cleared. The two files are the source, beside each other in `liveparlays/`:
   - `liveparlays/parlays.json` is X Parlays: the parlays X placed at the book. Claude adds one from
-    the slip the owner sends in chat (the game, each leg's player, team, stat, line and side, the
+    the slip the owner sends in chat with `python3 liveparlays/tools/add.py <slip.txt> --write` (the
+    owner's call of 11 November 2026, screenshots having become slow to load in: the slip typed as a
+    head line, `$5 +650 note same game`, and a line a leg, `Jayden Daniels o224.5 pass yds`,
+    `Bijan Robinson 80+ rush yds`, `Josh Allen td`, `BUF ml`, `KC -3.5`, `WAS@NYG o44.5`; it places
+    each on the payload's schedule and players or active roster, works out the game index, the id and
+    the payout, refuses a name it cannot place (with the closest names), a player off an active
+    roster, a whole-number main line and a repeated id, and with no `--write` only shows what it
+    would add; `--clear <id>` clears one; its docstring has the whole grammar, `test_add.py` its
+    test) (the game, each leg's player, team, stat, line and side, the
     stake, the price and the payout; the file's `how` says how each is written), corrects a line
     the book moved by writing the line X took, and marks a parlay the owner no longer wants on the
     page `"cleared": true`, which keeps it in the file as history and off the page. A finished
