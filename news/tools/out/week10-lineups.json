@@ -313,14 +313,13 @@
   },
   "DET": {
    "kick": "2026-11-15T14:30Z",
-   "built_at": "2026-11-12T10:55:18.963Z",
+   "built_at": "2026-11-12T21:36:45.396Z",
    "units": {
     "qb": [
      {
       "id": "00-0033106",
       "n": "Jared Goff",
-      "pos": "QB",
-      "q": "questionable: chest"
+      "pos": "QB"
      }
     ],
     "ol": [
@@ -525,7 +524,7 @@
   },
   "ATL": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-12T10:55:18.963Z",
+   "built_at": "2026-11-12T21:36:45.396Z",
    "units": {
     "qb": [
      {
@@ -594,7 +593,8 @@
      {
       "id": "00-0037815",
       "n": "Cameron Thomas",
-      "pos": "DE"
+      "pos": "DE",
+      "q": "questionable: groin"
      },
      {
       "id": "00-0039859",
@@ -629,7 +629,7 @@
   },
   "HOU": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-12T10:55:18.963Z",
+   "built_at": "2026-11-12T21:36:45.396Z",
    "units": {
     "qb": [
      {
@@ -671,7 +671,7 @@
       "id": "00-0040583",
       "n": "Woody Marks",
       "pos": "RB",
-      "q": "questionable: knee"
+      "q": "questionable: knee, not practising"
      },
      {
       "id": "00-0038705",
@@ -1367,7 +1367,7 @@
   },
   "NO": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-12T10:55:18.963Z",
+   "built_at": "2026-11-12T21:36:45.396Z",
    "units": {
     "qb": [
      {
@@ -1409,8 +1409,7 @@
      {
       "id": "00-0033906",
       "n": "Alvin Kamara",
-      "pos": "RB",
-      "q": "questionable: not injury related - resting player"
+      "pos": "RB"
      },
      {
       "id": "00-0039373",
@@ -1796,7 +1795,7 @@
   },
   "TEN": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-12T10:55:18.963Z",
+   "built_at": "2026-11-12T21:36:45.396Z",
    "units": {
     "qb": [
      {
@@ -1838,7 +1837,8 @@
      {
       "id": "00-0035261",
       "n": "Tony Pollard",
-      "pos": "RB"
+      "pos": "RB",
+      "q": "questionable: finger, not practising"
      },
      {
       "id": "00-0040886",
@@ -1889,7 +1889,8 @@
      {
       "id": "00-0040141",
       "n": "Kevin Winston Jr.",
-      "pos": "SS"
+      "pos": "SS",
+      "q": "questionable: shoulder"
      },
      {
       "id": "00-0040201",
@@ -2114,14 +2115,14 @@
   },
   "SEA": {
    "kick": "2026-11-15T21:05Z",
-   "built_at": "2026-11-12T02:12:15.930Z",
+   "built_at": "2026-11-12T21:36:45.396Z",
    "units": {
     "qb": [
      {
       "id": "00-0035704",
       "n": "Drew Lock",
       "pos": "QB",
-      "q": "questionable: oblique"
+      "q": "questionable: elbow"
      }
     ],
     "ol": [
@@ -2188,15 +2189,14 @@
       "pos": "DT"
      },
      {
-      "id": "00-0039047",
-      "n": "Derick Hall",
-      "pos": "OLB",
-      "q": "questionable: back, not practising"
-     },
-     {
       "id": "00-0031411",
       "n": "DeMarcus Lawrence",
       "pos": "OLB"
+     },
+     {
+      "id": "00-0036994",
+      "n": "Ernest Jones",
+      "pos": "ILB"
      }
     ],
     "db": [
