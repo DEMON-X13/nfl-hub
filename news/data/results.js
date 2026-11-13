@@ -689,7 +689,7 @@ const LINES = {
  "wk9:TB-CHI": "CHI -6.5, O/U 47.5",
  "wk9:BUF-MIN": "BUF -3, O/U 45.5",
  "wk10:WAS-NYG": "NYG -1.5, O/U 40.5",
- "wk10:NE-DET": "DET -2.5, O/U 49.5",
+ "wk10:NE-DET": "DET -3, O/U 49.5",
  "wk10:KC-ATL": "KC -3, O/U 47.5",
  "wk10:HOU-CLE": "HOU -4.5, O/U 40.5",
  "wk10:MIN-GB": "GB -3, O/U 41.5",
