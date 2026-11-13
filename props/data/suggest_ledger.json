@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. From app v118 to app v141 each entry held the unit's Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe); since app v142 none is taken (an entry not yet locked is rewritten without them), and an entry locked with them keeps them as they locked, graded as before and never built again. Since app v145 (8 November 2026) every level with legs taken is the likeliest parlay of 2 to 12 legs, of any size, paying its own least price (minDec: Safe 2.1, +110; Medium 4, +300; Aggressive 8, +700; Extreme 16, +1500; pick: likeliest-any, the rule it was chosen by), and a Sunday slot's legs may be of any of its games (one set searched across them); a level taken under app v144 (7 to 8 November 2026) is the likeliest parlay of its fixed size (2, 3, 4 and 5 legs) paying the same prices, a slot level one game's, and carries pick: likeliest; a level taken under app v143 (7 November 2026, until app v144 the same day) pays +100 or more and carries minDec: 2 and no pick (Safe the likeliest pair paying +100; Medium, Aggressive and Extreme the least costly landing 25%, 12% or 5% among those, else the likeliest of their size among those); a level taken before, and an empty level, carries no minDec (an empty level taken since app v145 carries its pick). slot holds each week's Sunday slot (every Sunday game before 7 pm Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary, slot_summary (each with its elo, the Elo picks' history) and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-11-13T19:34:43Z",
+ "updated": "2026-11-13T22:02:59Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -2051,7 +2051,7 @@
    "home": "CIN",
    "kickoff": "2026-11-16T01:20:00Z",
    "lock": "2026-11-15T23:20:00Z",
-   "baked_at": "2026-11-13T19:27+00:00",
+   "baked_at": "2026-11-13T21:54+00:00",
    "pool": {"pref":0,"thin":40,"mkt":1,"far":0},
    "tiers": [
     {
@@ -2102,14 +2102,14 @@
      "floor": 0,
      "legs": [
       {"gid":"2026_10_PIT_CIN","week":10,"pid":"00-0023459","team":"PIT","grp":"QB","stat":"passing_yards","k":238.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Aaron Rodgers","label":"Under 238.5 passing yards","p":0.5681,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_10_PIT_CIN","week":10,"pid":"00-0040785","team":"CIN","grp":"WR","stat":"receptions","k":2.5,"side":"under","main":true,"price":-167,"src":"dkline","name":"Dohnte Meyers","label":"Under 2.5 receptions","p":0.6005,"fair":0.5904,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_10_PIT_CIN","week":10,"pid":"00-0041489","team":"PIT","grp":"WR","stat":"receiving_yards","k":50.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Germie Bernard","label":"Under 50.5 receiving yards","p":0.6902,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_10_PIT_CIN","week":10,"pid":"00-0036900","team":"CIN","grp":"WR","stat":"receiving_yards","k":92.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Ja'Marr Chase","label":"Under 92.5 receiving yards","p":0.6312,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_10_PIT_CIN","week":10,"pid":"00-0035640","team":"PIT","grp":"WR","stat":"receptions","k":4.5,"side":"under","main":true,"price":-131,"src":"dkline","name":"DK Metcalf","label":"Under 4.5 receptions","p":0.6243,"fair":0.535,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_10_PIT_CIN","week":10,"pid":"00-0037228","team":"PIT","grp":"RB","stat":"receiving_yards","k":23.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Jaylen Warren","label":"Under 23.5 receiving yards","p":0.5903,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_10_PIT_CIN","week":10,"pid":"00-0036894","team":"PIT","grp":"TE","stat":"receiving_yards","k":29.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Pat Freiermuth","label":"Under 29.5 receiving yards","p":0.5412,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.1732,
-     "fair": 0.0964,
+     "p": 0.1477,
+     "fair": 0.0966,
      "fair_est": true,
-     "dec": 8,
+     "dec": 8.032,
      "likeliest": false,
      "thin": 4,
      "mkt": 0,
@@ -2141,7 +2141,7 @@
      "pick": "likeliest-any"
     }
    ],
-   "taken_at": "2026-11-13T19:34:43Z"
+   "taken_at": "2026-11-13T22:02:59Z"
   },
   "2026|10|2026-11-17T01:15:00Z|2026_10_LAC_BAL": {
    "season": 2026,
@@ -2151,7 +2151,7 @@
    "home": "BAL",
    "kickoff": "2026-11-17T01:15:00Z",
    "lock": "2026-11-16T23:15:00Z",
-   "baked_at": "2026-11-13T19:27+00:00",
+   "baked_at": "2026-11-13T21:54+00:00",
    "pool": {"pref":0,"thin":34,"mkt":1,"far":0},
    "tiers": [
     {
@@ -2204,9 +2204,9 @@
       {"gid":"2026_10_LAC_BAL","week":10,"pid":"00-0040870","team":"BAL","grp":"WR","stat":"receiving_yards","k":19.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Ja'Kobi Lane","label":"Under 19.5 receiving yards","p":0.6207,"fair":0.5,"fair_est":true,"thin":true,"market":false},
       {"gid":"2026_10_LAC_BAL","week":10,"pid":"00-0033119","team":"BAL","grp":"QB","stat":"passing_yards","k":215.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Jacoby Brissett","label":"Under 215.5 passing yards","p":0.5437,"fair":0.5,"fair_est":true,"thin":true,"market":false},
       {"gid":"2026_10_LAC_BAL","week":10,"pid":"00-0034975","team":"BAL","grp":"RB","stat":"receiving_yards","k":12.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Justice Hill","label":"Under 12.5 receiving yards","p":0.68,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_10_LAC_BAL","week":10,"pid":"00-0039064","team":"BAL","grp":"WR","stat":"receiving_yards","k":69.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Zay Flowers","label":"Under 69.5 receiving yards","p":0.6079,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_10_LAC_BAL","week":10,"pid":"00-0039064","team":"BAL","grp":"WR","stat":"receiving_yards","k":70.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Zay Flowers","label":"Under 70.5 receiving yards","p":0.618,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.1904,
+     "p": 0.193,
      "fair": 0.0958,
      "fair_est": true,
      "dec": 8.018,
@@ -2241,7 +2241,7 @@
      "pick": "likeliest-any"
     }
    ],
-   "taken_at": "2026-11-13T19:34:43Z"
+   "taken_at": "2026-11-13T22:02:59Z"
   }
  },
  "slot_since": "2026-10-19",
@@ -2738,8 +2738,8 @@
    "kickoff": "2026-11-15T14:30:00Z",
    "last": "2026-11-15T21:25:00Z",
    "lock": "2026-11-15T12:30:00Z",
-   "baked_at": "2026-11-13T19:27+00:00",
-   "pool": {"pref":0,"thin":344,"mkt":11,"far":0},
+   "baked_at": "2026-11-13T21:54+00:00",
+   "pool": {"pref":0,"thin":345,"mkt":11,"far":0},
    "tiers": [
     {
      "id": "safe",
@@ -2825,7 +2825,7 @@
      "pick": "likeliest-any"
     }
    ],
-   "taken_at": "2026-11-13T19:34:43Z"
+   "taken_at": "2026-11-13T22:02:59Z"
   }
  }
 }
