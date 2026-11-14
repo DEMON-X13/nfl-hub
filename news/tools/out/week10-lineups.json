@@ -316,7 +316,7 @@
   },
   "DET": {
    "kick": "2026-11-15T14:30Z",
-   "built_at": "2026-11-13T14:46:07.410Z",
+   "built_at": "2026-11-14T19:53:20.716Z",
    "units": {
     "qb": [
      {
@@ -361,14 +361,16 @@
      {
       "id": "00-0039364",
       "n": "Sione Vaki",
-      "pos": "RB"
+      "pos": "RB",
+      "q": "questionable: ankle"
      }
     ],
     "rec": [
      {
       "id": "00-0036963",
       "n": "Amon-Ra St. Brown",
-      "pos": "WR"
+      "pos": "WR",
+      "q": "questionable: rib"
      },
      {
       "id": "00-0039065",
@@ -419,7 +421,7 @@
   },
   "KC": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-14T01:24:52.357Z",
+   "built_at": "2026-11-14T19:53:20.716Z",
    "units": {
     "qb": [
      {
@@ -457,15 +459,15 @@
     ],
     "rb": [
      {
-      "id": "00-0038134",
-      "n": "Kenneth Walker III",
-      "pos": "RB",
-      "q": "questionable: groin"
-     },
-     {
       "id": "00-0041013",
       "n": "Emmett Johnson",
       "pos": "RB"
+     },
+     {
+      "id": "00-0040959",
+      "n": "Jaydn Ott",
+      "pos": "RB",
+      "q": "questionable: hamstring"
      }
     ],
     "rec": [
@@ -627,7 +629,7 @@
   },
   "HOU": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-14T01:24:52.357Z",
+   "built_at": "2026-11-14T19:53:20.716Z",
    "units": {
     "qb": [
      {
@@ -643,10 +645,9 @@
       "pos": "T"
      },
      {
-      "id": "00-0034399",
-      "n": "Wyatt Teller",
-      "pos": "G",
-      "q": "questionable: illness"
+      "id": "00-0041559",
+      "n": "Febechi Nwaiwu",
+      "pos": "G"
      },
      {
       "id": "00-0034495",
@@ -659,10 +660,9 @@
       "pos": "G"
      },
      {
-      "id": "00-0032071",
-      "n": "Trent Brown",
-      "pos": "T",
-      "q": "questionable: wrist"
+      "id": "00-0034836",
+      "n": "Braden Smith",
+      "pos": "T"
      }
     ],
     "rb": [
@@ -697,12 +697,6 @@
     ],
     "front": [
      {
-      "id": "00-0039108",
-      "n": "Will Anderson Jr.",
-      "pos": "DE",
-      "q": "questionable: ankle"
-     },
-     {
       "id": "00-0032759",
       "n": "Sheldon Rankins",
       "pos": "DT"
@@ -711,6 +705,11 @@
       "id": "00-0031364",
       "n": "Jadeveon Clowney",
       "pos": "DE"
+     },
+     {
+      "id": "00-0037457",
+      "n": "Jake Hansen",
+      "pos": "MLB"
      }
     ],
     "db": [
@@ -734,7 +733,7 @@
   },
   "CLE": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-14T01:24:52.357Z",
+   "built_at": "2026-11-14T19:53:20.716Z",
    "units": {
     "qb": [
      {
@@ -787,7 +786,7 @@
       "id": "00-0041037",
       "n": "Denzel Boston",
       "pos": "WR",
-      "q": "questionable: toe, not practising"
+      "q": "questionable: toe"
      },
      {
       "id": "00-0041547",
@@ -1360,7 +1359,7 @@
   },
   "NO": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-14T01:24:52.357Z",
+   "built_at": "2026-11-14T19:53:20.716Z",
    "units": {
     "qb": [
      {
@@ -1381,8 +1380,8 @@
       "pos": "G"
      },
      {
-      "id": "00-0036408",
-      "n": "Cesar Ruiz",
+      "id": "00-0036535",
+      "n": "Will Sherman",
       "pos": "G"
      },
      {
@@ -1391,8 +1390,8 @@
       "pos": "G"
      },
      {
-      "id": "00-0041173",
-      "n": "Mason Murphy",
+      "id": "00-0038601",
+      "n": "Asim Richards",
       "pos": "T"
      }
     ],
@@ -1776,7 +1775,7 @@
   },
   "TEN": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-14T01:24:52.357Z",
+   "built_at": "2026-11-14T19:53:20.716Z",
    "units": {
     "qb": [
      {
@@ -1792,9 +1791,9 @@
       "pos": "T"
      },
      {
-      "id": "00-0038586",
-      "n": "Atonio Mafi",
-      "pos": "G"
+      "id": "00-0036866",
+      "n": "James Hudson",
+      "pos": "T"
      },
      {
       "id": "00-0034112",
@@ -1802,8 +1801,8 @@
       "pos": "C"
      },
      {
-      "id": "00-0040079",
-      "n": "Garrett Dellinger",
+      "id": "00-0038586",
+      "n": "Atonio Mafi",
       "pos": "G"
      },
      {
@@ -1880,7 +1879,7 @@
   },
   "LAR": {
    "kick": "2026-11-15T21:05Z",
-   "built_at": "2026-11-14T01:24:52.357Z",
+   "built_at": "2026-11-14T19:53:20.716Z",
    "units": {
     "qb": [
      {
@@ -1932,8 +1931,7 @@
      {
       "id": "00-0033110",
       "n": "Tyler Higbee",
-      "pos": "TE",
-      "q": "not practising: illness"
+      "pos": "TE"
      },
      {
       "id": "00-0040590",
@@ -1970,22 +1968,22 @@
       "pos": "FS"
      },
      {
+      "id": "00-0036349",
+      "n": "Kam Curl",
+      "pos": "SS",
+      "q": "questionable: toe"
+     },
+     {
       "id": "00-0039772",
       "n": "Josh Wallace",
       "pos": "CB"
-     },
-     {
-      "id": "00-0037191",
-      "n": "Trent McDuffie",
-      "pos": "CB",
-      "q": "questionable: back"
      }
     ]
    }
   },
   "ARI": {
    "kick": "2026-11-15T21:05Z",
-   "built_at": "2026-11-14T01:24:52.357Z",
+   "built_at": "2026-11-14T19:53:20.716Z",
    "units": {
     "qb": [
      {
@@ -2004,6 +2002,11 @@
      {
       "id": "00-0032954",
       "n": "Isaac Seumalo",
+      "pos": "G"
+     },
+     {
+      "id": "00-0040219",
+      "n": "Hayden Conner",
       "pos": "G"
      },
      {
@@ -2291,7 +2294,7 @@
   },
   "SF": {
    "kick": "2026-11-15T21:25Z",
-   "built_at": "2026-11-14T01:24:52.357Z",
+   "built_at": "2026-11-14T19:53:20.716Z",
    "units": {
     "qb": [
      {
@@ -2302,10 +2305,9 @@
     ],
     "ol": [
      {
-      "id": "00-0027857",
-      "n": "Trent Williams",
-      "pos": "T",
-      "q": "questionable: shoulder"
+      "id": "00-0037287",
+      "n": "Vederian Lowe",
+      "pos": "T"
      },
      {
       "id": "00-0040245",
@@ -2379,13 +2381,13 @@
       "id": "00-0039345",
       "n": "Renardo Green",
       "pos": "CB",
-      "q": "questionable: back, not practising"
+      "q": "questionable: back"
      },
      {
       "id": "00-0036563",
       "n": "Deommodore Lenoir",
       "pos": "CB",
-      "q": "questionable: foot, not practising"
+      "q": "questionable: foot"
      },
      {
       "id": "00-0038554",
@@ -2702,7 +2704,7 @@
   },
   "LAC": {
    "kick": "2026-11-17T01:15Z",
-   "built_at": "2026-11-14T01:24:52.357Z",
+   "built_at": "2026-11-14T19:53:20.716Z",
    "units": {
     "qb": [
      {
@@ -2721,7 +2723,7 @@
       "id": "00-0036736",
       "n": "Kayode Awosika",
       "pos": "G",
-      "q": "questionable: lower leg"
+      "q": "questionable: fibula"
      },
      {
       "id": "00-0041392",
