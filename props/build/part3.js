@@ -1668,7 +1668,6 @@ function espnKeptGame(e,opt){
    of them that found none) */
 const espnKeptGl=e=>e&&e.gl?e.gl.at:0;
 const espnKeptPl=e=>e?Math.max(e.pl?Date.parse(e.pl.at)||0:0,e.out?e.out.when||0:0):0;
-function espnKeptAt(e){ return Math.max(espnKeptGl(e),espnKeptPl(e)); }
 function espnKeepParse(raw){
   let v=null; try{ v=JSON.parse(raw); }catch(e){ return null; }
   return v&&typeof v==='object'&&v.v===1&&v.season===SEASON&&v.games&&typeof v.games==='object'&&!Array.isArray(v.games)?v:null;
@@ -1894,8 +1893,7 @@ function espnPublished(){
 }
 window.espnPublished=espnPublished;
 window.espnReadWeek=espnReadWeek;
-/* any read for a week's games (or this week's), and the latest read time (ms) */
-function espnOn(week){ const W=ESPN_LIVE[String(week==null?currentWeek():week)]; return !!W&&Object.keys(W).length>0; }
+/* any read at all */
 function espnAny(){ return Object.values(ESPN_LIVE).some(W=>W&&Object.keys(W).length>0); }
 function espnLatest(week){ let t=0; for(const [w,W] of Object.entries(ESPN_LIVE)) if(week==null||String(week)===w) for(const e of Object.values(W||{})){ const a=Date.parse(e&&e.at); if(a>t) t=a; } return t||null; }
 /* a game's read, or null: none, not the shape the reader writes, or read at or after its kickoff */
@@ -2482,7 +2480,6 @@ function pbGames(){ return gamesIn(currentWeek()).filter(g=>!gameStarted(g)&&!ha
 /* a leg the reader's picks allow: its box ticked and its game ticked (u: other choices, as Suggest
    Parlays' every bet type, SP_ALL; the reader's own by default) */
 function pbAllows(l,u){ u=u||pbUi(); return !!u.k[pbKind(l)]&&!u.off.includes(l.gid); }
-function pbPlayerSides(){ const u=pbUi(); return !!(u.k.over||u.k.under); }
 const pbOrd=(a,b)=>enCmp(a.key+'|'+a.side+'|'+a.k,b.key+'|'+b.side+'|'+b.k);
 /* the builder's order (parlayLegs): the week, then the name. The tier's numbers are worked on
    the legs in this order, so the builder, which works them the same way, shows the same. (app v146) The name by EN_COLL,
@@ -3786,7 +3783,6 @@ function spSlotUnit(w){ const G=spSlotGames(w); if(!G.length) return null; const
 function spUnit(id){ id=String(id||''); const m=/^(\d{4})_(\d\d)_SUN$/.exec(id); if(m) return +m[1]===SEASON?spSlotUnit(+m[2]):null;
   return (S.sched||[]).find(g=>g.id===id)||null; }
 const spGamesOf=u=>u?(u.slot?u.games:[u]):[];
-const spUnitName=u=>u.slot?`week ${u.w}’s Sunday slot`:`${u.a} at ${u.h}`;
 function spLockAt(g){ const k=kickoff(g); return k?k.getTime()-SP_LOCK_MS:null; }
 const spIso=ms=>new Date(ms).toISOString().replace(/\.\d{3}Z$/,'Z');
 /* a time in US Eastern, as the schedule is ("Sun 6:20 PM ET") */
@@ -4337,7 +4333,6 @@ function dkSlipPlan(legs,prices){
   try{ return C.dkPlan(legs.map((l,i)=>Object.assign({},l,l.src==='dkline'&&prices[i].src!=='dkline'?{src:prices[i].src}:{},
       {card:{tag:prices[i].src==='real'?'book':(prices[i].src==='fair'?'fair':'est.')}})))||null; }catch(e){ return null; }
 }
-function dkSlipRows(legs,prices){ const p=dkSlipPlan(legs,prices); return p&&Array.isArray(p.each)?p.each:null; }
 function dkSlipLine(x,i){
   if(!x) return '';
   if(x.id&&x.swap) return `<small class="dkslip" data-dkslip="${i+1}">On DraftKings as ${esc(x.swap)}</small>`;
@@ -4386,7 +4381,6 @@ function renderParlay(o){
   const fair=parlayFair(legs);
   const prices=legs.map(legPrice);
   const allBook=prices.every(p=>p.src==='real');
-  const multDec=prices.reduce((a,p)=>a*(mlToDec(p.ml)||1),1);
   const bookDec=parlayDec(legs.map((l,i)=>({leg:l,ml:prices[i].ml})));
   const sg=sameGame(legs);
   /* (app v138) the fair price is DraftKings' fair chance's where every leg has one (the model's only to price a parlay
@@ -4490,12 +4484,6 @@ let LIVE_TIMER=null;
 /* the week on screen, which is not always the live one: someone reading week 1 in
    October wants that week's scoreboard, and gets an empty one, which is correct */
 const slateWeek=()=>+$('weekSel')?.value||currentWeek();
-/* every game the Games tab wants a score for: started, not yet final */
-const liveSlateWanted=()=>{
-  const ids=new Set(); if(!LIVE.slate) return ids;
-  for(const g of gamesIn(slateWeek())) if(gameStarted(g)&&!gameFinal(g)) ids.add(g.id);
-  return ids;
-};
 const liveWanted=()=>{                                   /* every game an unsettled parlay needs */
   const ids=new Set();
   for(const p of (S.saved||[])){ if(settleParlay(p).status!=='pending') continue;
@@ -4511,7 +4499,7 @@ async function liveGet(url){
 }
 async function liveRefresh(){
   if(LIVE.busy) return;
-  const want=liveWanted(), slate=liveSlateWanted();
+  const want=liveWanted();
   if(!want.size&&!LIVE.slate){ LIVE.on=false; return; }
   LIVE.busy=true;
   try{

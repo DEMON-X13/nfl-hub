@@ -147,7 +147,6 @@
 .gs-tiern{font-size:var(--gs-t2);font-weight:600;color:var(--ink-2)}
 .gs-none{font-size:var(--gs-t2);color:var(--muted)}
 .gs-nw{white-space:nowrap}
-.gs-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 #gsModal .pk-ttag.pk-mini{font-size:var(--gs-t1);padding:3px 5px;min-width:36px;border-radius:5px}
 /* the one mark for the side of a comparison that has the edge; every compared value sits in a
    box of the same padding, marked or not, so the two sides line up */
@@ -669,8 +668,6 @@ function noteOf(P,g){
 const DD=()=>window.gsDeepDive||null;
 /* the news job stays on week 18 once the regular season is over: it never covers the playoffs */
 const playoff=g=>g.game_type?g.game_type!=='REG':+g.week>18;
-/* the Deep Dive's file where it is this game's: loaded, of its season and week, a regular-season game */
-const ddFor=(P,g)=>{ const dd=DD(), D=NEWS.units&&NEWS.units.data; return dd&&D&&!playoff(g)&&dd.applies(D,seasonOf(P,g),+g.week)?D:null; };
 
 let cur=null, opener=null;
 /* the matchup bubble's hand-back (24 October 2026, the owner: "on the open prop leg or open game snapshot, when I close

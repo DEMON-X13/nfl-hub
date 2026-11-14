@@ -4941,7 +4941,7 @@ says that DraftKings prices a changed leg at its own line, so its slip's payout 
 card's. The button reads **Open in DraftKings** where every leg goes on the slip and **Open 2 of 3 legs in
 DraftKings** where some leg still cannot. The builder says it first: where the card is on the page
 (`window.PARLAY_CARD`), each builder row whose leg will not go on the slip as built has a quiet line under
-it, read from the card's own `dkPlan` (`dkSlipRows`, `dkSlipLine` in `part3.js`; `.dkslip`, in the theme's
+it, read from the card's own `dkPlan` (`dkSlipPlan`, `dkSlipLine` in `part3.js`; `.dkslip`, in the theme's
 `--ink-2`): "On DraftKings as Over 64.5 receiving yards" where the card converts it, or "Not on DraftKings'
 slip: " ("Not on DraftKings' slip yet: " until app v125) and its reason in a few words; nothing under a leg that goes on as built, and nothing on the
 prop model's own page, which has no card. Under the buttons the card says what it

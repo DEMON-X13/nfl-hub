@@ -188,7 +188,6 @@ const P_URL='elo/data/players.json', M_URL='elo/data/model.json', MU_URL='elo/da
 const D={players:null,model:null,mu:null,pos:'QB',more:false,unit:null,tsort:null};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const pct=p=>Math.round(p*100)+'%';
 const tag=(t,mini)=>window.pkTag?window.pkTag(t,window.pkTagColor?window.pkTagColor(t):null,false,mini?'mini':'')
   :'<span class="pill">'+esc(t)+'</span>';
 /* the tier is the betting app's own, as betting/tools/tiers.js reshapes it, on the same scale the

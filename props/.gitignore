@@ -5,6 +5,5 @@ raw/*.pkl
 # the props job's read of ESPN (build/espn_read.js): read.json and every answer it recorded, which --offline
 # replays and the props gate copies to its base run (it copies only ignored files under raw/)
 raw/espn/
-app/app.js
 .env
 app/prop_model_2026.html
