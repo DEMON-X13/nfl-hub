@@ -13,7 +13,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v147 \u00b7 2026-11-11';
+const APP_BUILD='app v148 \u00b7 2026-11-14';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -861,7 +861,6 @@ function rungPriceOf(p){
   const am=q>=0.5?-Math.round(100*q/(1-q)):Math.round(100*(1-q)/q);
   return am<0?Math.max(am,R.shortest):Math.min(am,R.longest);
 }
-function rungPriceGuess(stat,line,k,fair){ return rungPriceOf(rungFairGuess(stat,line,k,fair)); }
 /* the anytime touchdown: the touches that score his touchdown (a QB's runs, a back's runs and catches,
    a receiver's or tight end's catches) where DraftKings lines them; else, his club's lines complete
    and he no charted starter, DraftKings treats him as a backup; else the model alone.

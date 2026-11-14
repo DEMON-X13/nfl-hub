@@ -9,9 +9,6 @@ The rating layer only *requires* `off_epa` (offensive EPA per play). Any other
 columns are carried through the EWMA state untouched so they can be exported to
 the app, but the prediction model ignores them. NaN means "no data for this
 game" and is replaced by the league mean at update time (same as the app).
-
-Variants B/C/D will add sources here that compute `off_epa` from play-by-play
-instead of taking nflverse's team-week totals.
 """
 from __future__ import annotations
 
@@ -51,32 +48,6 @@ def nflverse_team_week(seasons) -> pd.DataFrame:
         "sr": _safe_div(n("sacks_suffered"), db).values,
         "expl": _safe_div(n("passing_20") + n("rushing_10"), plays).values,
     })
-
-
-def pbp_nflverse(seasons) -> pd.DataFrame:
-    """Pipeline check: nflverse's own play-level EPA, aggregated by us
-    (harness/pbp.py). Must score identically to `nflverse_team_week`."""
-    from . import pbp
-    return pbp.team_game_stats(pbp.aggregate(pbp.load_pbp(seasons)))
-
-
-def pbp_raw(seasons) -> pd.DataFrame:
-    """Control A_raw: nflverse play-level EPA, but passing EPA sums raw `epa`
-    instead of the QB-credited `qb_epa`. Variants B/C/D are compared to this."""
-    from . import pbp
-    return pbp.team_game_stats(pbp.aggregate(pbp.load_pbp(seasons), qb_epa_col="epa"))
-
-
-def market_prior_elo() -> dict:
-    """Variant H: {season: {team: elo}} from preseason win totals
-    (data/raw/win_totals.csv). w = expected wins / games; elo = 1500 + 400*log10(w/(1-w))."""
-    wt = pd.read_csv(RAW / "win_totals.csv")
-    extra = RAW / "win_totals_2026.csv"   # dated pre-kickoff snapshot, see PROVENANCE
-    if extra.exists():
-        wt = pd.concat([wt, pd.read_csv(extra)], ignore_index=True)
-    w = (wt.exp_wins / wt.games).clip(0.05, 0.95)
-    wt["elo"] = 1500 + 400 * np.log10(w / (1 - w))
-    return {int(s): dict(zip(g.team, g.elo)) for s, g in wt.groupby("season")}
 
 
 def league_means(stats: pd.DataFrame, cols) -> dict:

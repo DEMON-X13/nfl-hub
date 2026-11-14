@@ -5726,7 +5726,7 @@ setTimeout(async()=>{
           const urls=net.log.map(x=>x.url), sbN=urls.filter(u=>/\/scoreboard\?/.test(u)).length, OUT=F('ESPN_OUT'), LV=F('ESPN_LIVE');
           nReq=urls.length;
           /* (app v108) what the press kept in this browser, and the published lines it was read over, as it left them */
-          const kept1=lsGet(), sig1=Object.fromEntries(games.map(g=>[g.id,{gl:F('espnGlSig')(g),pl:F('espnPlSig')(g)}]));
+          const kept1=lsGet();
           /* the levels and hands the page has right after the press, before any cache of the checks' own is
              dropped: what a build from nothing gives on the read, never what stood before it (the press
              drops PB_CACHE and GAME_TIER_CACHE, and ESPN_SEQ is in pbDataSig and gameSuggestSig) */
