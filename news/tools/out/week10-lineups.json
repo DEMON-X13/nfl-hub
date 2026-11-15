@@ -1566,7 +1566,7 @@
   },
   "NYJ": {
    "kick": "2026-11-15T18:00Z",
-   "built_at": "2026-11-14T01:24:52.357Z",
+   "built_at": "2026-11-15T14:39:30.602Z",
    "units": {
     "qb": [
      {
@@ -1616,12 +1616,6 @@
     ],
     "rec": [
      {
-      "id": "00-0037740",
-      "n": "Garrett Wilson",
-      "pos": "WR",
-      "q": "questionable: concussion"
-     },
-     {
       "id": "00-0039890",
       "n": "Adonai Mitchell",
       "pos": "WR",
@@ -1631,6 +1625,12 @@
       "id": "00-0040736",
       "n": "Mason Taylor",
       "pos": "TE"
+     },
+     {
+      "id": "00-0041511",
+      "n": "Omar Cooper Jr.",
+      "pos": "WR",
+      "q": "questionable: ankle"
      }
     ],
     "front": [
@@ -2294,7 +2294,7 @@
   },
   "SF": {
    "kick": "2026-11-15T21:25Z",
-   "built_at": "2026-11-14T19:53:20.716Z",
+   "built_at": "2026-11-15T14:39:30.602Z",
    "units": {
     "qb": [
      {
@@ -2305,9 +2305,10 @@
     ],
     "ol": [
      {
-      "id": "00-0037287",
-      "n": "Vederian Lowe",
-      "pos": "T"
+      "id": "00-0027857",
+      "n": "Trent Williams",
+      "pos": "T",
+      "q": "questionable: shoulder"
      },
      {
       "id": "00-0040245",
