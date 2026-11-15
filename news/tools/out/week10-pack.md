@@ -73,7 +73,7 @@ New York Giants, injuries:
 New York Giants, ESPN headlines:
 
 ### New England Patriots at Detroit Lions
-Sun, Nov 15, 9:30 AM ET, Fox, FC Bayern Munich Stadium, Munich. Line: DET -3, O/U 49.5
+Sun, Nov 15, 9:30 AM ET, Fox, FC Bayern Munich Stadium, Munich. Line: DET -2.5, O/U 49.5
 
 Searches to run:
 - "New England Patriots Detroit Lions preview week 10"
@@ -549,7 +549,7 @@ New Orleans Saints, injuries:
 New Orleans Saints, ESPN headlines:
 
 ### Buffalo Bills at New York Jets
-Sun, Nov 15, 1:00 PM ET, CBS, MetLife Stadium, East Rutherford. Line: BUF -7.5, O/U 50.5
+Sun, Nov 15, 1:00 PM ET, CBS, MetLife Stadium, East Rutherford. Line: BUF -8.5, O/U 51.5
 
 Searches to run:
 - "Buffalo Bills New York Jets preview week 10"
@@ -604,7 +604,6 @@ New York Jets, injuries:
 - Troy Reeder (LB) Active: The Jets signed Reeder to their active roster Monday, Amanda Vogt of the team's official site reports.
 - Blake Freeland (OL) Active
 - Tim Patrick (WR) Active
-- Kohl Levao (G) Active
 - Will McDonald IV (DE) Active: McDonald put in a request for the Jets to trade him ahead of Tuesday's deadline, Ian Rapoport and Rich Cimini of ESPN report.
 - Jason Sanders (PK) Active: Sanders went 4-for-5 on field-goal tries during Sunday's 35-12 loss to the Chiefs.
 - Kenyon Sadiq (TE) Active: Sadiq caught all four of his targets for 49 yards in Sunday's 35-12 loss to the Chiefs.
@@ -613,6 +612,7 @@ New York Jets, injuries:
 - Breece Hall (RB) Active: Hall (quadriceps) rushed 15 times for 61 yards and caught three of four targets for 26 yards in Sunday's 35-12 loss to the Chiefs.
 - Dane Belton (S) Active: Belton recorded 12 total tackles (eight solo) and a pass defensed in Sunday's 38-33 loss to the Raiders.
 - Jamien Sherwood (LB) Active: Sherwood recorded 14 total tackles (five solo) during Sunday's 38-33 loss to the Raiders.
+- Max Mitchell (OT) Injured Reserve, Concussion: The Jets placed Mitchell (concussion) on their injured reserve list Tuesday, Amanda Vogt of the team's official site reports.
 
 New York Jets, ESPN headlines:
 
@@ -656,7 +656,7 @@ Seattle Seahawks, injuries:
 Seattle Seahawks, ESPN headlines:
 
 Las Vegas Raiders, injuries:
-- Carter Runyon (TE) Active: The Raiders elevated Runyon from their practice squad to their active roster Saturday.
+- Carter Runyon (TE) Active: The Raiders elevated Runyon from their practice squad to the active roster Saturday.
 - Thomas Booker IV (DT) Questionable, Ankle: Booker (ankle) is listed as questionable ahead of Sunday's game against the Seahawks, Ryan McFadden of ESPN.com reports.
 - Trey Zuhn III (C) Active: Zuhn (concussion) does not have any injury designation ahead of Sunday's game against the Seahawks, Ryan McFadden of ESPN.com reports.
 - Dont'e Thornton Jr. (WR) Questionable, Back: Thornton (back) is questionable to play against the Seahawks on Sunday, Ryan McFadden of ESPN.com reports.
@@ -685,7 +685,7 @@ Las Vegas Raiders, injuries:
 Las Vegas Raiders, ESPN headlines:
 
 ### Los Angeles Rams at Arizona Cardinals
-Sun, Nov 15, 4:05 PM ET, CBS, State Farm Stadium, Glendale. Line: LAR -9.5, O/U 39.5
+Sun, Nov 15, 4:05 PM ET, CBS, State Farm Stadium, Glendale. Line: LAR -9.5, O/U 38.5
 
 Searches to run:
 - "Los Angeles Rams Arizona Cardinals preview week 10"
@@ -753,7 +753,7 @@ Arizona Cardinals, injuries:
 Arizona Cardinals, ESPN headlines:
 
 ### San Francisco 49ers at Dallas Cowboys
-Sun, Nov 15, 4:25 PM ET, Fox, AT&T Stadium, Arlington. Line: SF -3.5, O/U 55.5
+Sun, Nov 15, 4:25 PM ET, Fox, AT&T Stadium, Arlington. Line: SF -4.5, O/U 55.5
 
 Searches to run:
 - "San Francisco 49ers Dallas Cowboys preview week 10"
@@ -765,7 +765,7 @@ Searches to run:
 San Francisco 49ers, injuries:
 - C.J. West (DT) Injured Reserve, Knee: West (knee) won't be activated from IR ahead of Sunday's Week 10 clash against the Cowboys, David Lombardi of SFStandard.com reports.
 - Nate Hobbs (CB) Injured Reserve, Groin: The 49ers aren't activating Hobbs (adductor) ahead of Sunday's tilt against Dallas, David Lombardi of SFStandard.com reports.
-- Gracen Halton (DT) Injured Reserve, Ankle: Halton underwent surgery to repair a broken leg and dislocated ankle that he suffered during the 49ers' Week 9 win over the Raiders, Adam Schefter of ESPN reports.
+- Gracen Halton (DT) Injured Reserve, Ankle: Halton recently underwent surgery to repair a broken leg and dislocated ankle that he suffered during the 49ers' Week 9 win over the Raiders, Adam Schefter of ESPN reports.
 - Trent Williams (OT) Questionable, Shoulder: Williams (shoulder) is listed as questionable for Sunday's game against the Cowboys.
 - Renardo Green (CB) Questionable, Back: Green (back) is listed as questionable for Sunday's game against Dallas.
 - Deommodore Lenoir (CB) Questionable, Foot: Lenoir (foot) is questionable for Sunday's game against the Cowboys.
@@ -793,7 +793,7 @@ San Francisco 49ers, ESPN headlines:
 
 Dallas Cowboys, injuries:
 - Jonathan Bullard (DT) Questionable, Calf: The Cowboys activated Bullard (calf) from injured reserve Saturday.
-- James Mitchell (TE) Active: The Cowboys elevated Mitchell from the practice squad to the active roster Saturday, Tommy Yarrish of the team's official site reports.
+- James Mitchell (TE) Active: The Cowboys signed Mitchell from the practice squad to the active roster Saturday, Tommy Yarrish of the team's official site reports.
 - Israel Abanikanda (RB) Active: The Cowboys elevated Abanikanda from the practice squad to the active roster Saturday, Tommy Yarrish of the team's official site reports.
 - Tyler Goodson (RB) Injured Reserve, Knee - ACL + MCL: The Cowboys placed Goodson (knee) on injured reserve Saturday, Tommy Yarrish of the team's official site reports.
 - Donovan Ezeiruaku (LB) Out, Ankle: Ezeiruaku (ankle) has been ruled out for Sunday's game against the 49ers, Tommy Yarrish of the Cowboys' official site reports.
