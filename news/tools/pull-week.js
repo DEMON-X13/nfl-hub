@@ -283,8 +283,14 @@ async function pack(games){
   const news = {};
   for (const team of TEAMS) {
     try {
-      const j = await getJSON(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${ESPN_ID[team]}/news?limit=8`);
-      news[team] = (j.articles || []).map(a => `- ${(a.published || '').slice(0, 10)} ${a.headline}${a.links && a.links.web ? ' <' + a.links.web.href + '>' : ''}`);
+      /* site.api's teams/<id>/news has answered {} since about week 4 of 2026, so the pack had no headlines; ESPN's
+         now feed for the team answers, but mixes in league roundups tagged with every club: keep the stories tagged
+         with this club and at most two others, the newest 8 */
+      const id = ESPN_ID[team];
+      const j = await getJSON(`https://now.core.api.espn.com/v1/sports/football/nfl/teams/${id}/news?limit=50`);
+      const tags = a => new Set((a.categories || []).filter(c => c.type === 'team').map(c => c.teamId));
+      const mine = (j.headlines || j.articles || []).filter(a => { const s = tags(a); return s.has(id) && s.size <= 3; }).slice(0, 8);
+      news[team] = mine.length ? mine.map(a => `- ${(a.published || '').slice(0, 10)} ${a.headline}${a.links && a.links.web ? ' <' + a.links.web.href + '>' : ''}`) : ['- (no team stories in the feed)'];
     } catch (e) { news[team] = ['- (news feed unavailable)']; }
   }
   const lines = [`# Week ${WEEK} reading pack`, '', `Generated ${new Date().toISOString().slice(0, 10)}. Facts below are pulled; everything narrative still has to be read and written.`, '', '## Games', ''];

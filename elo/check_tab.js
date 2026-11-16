@@ -777,15 +777,11 @@ async function oldSpTag(MUo, lab) {
     const rows = [...d.querySelectorAll('#peBody .card tbody tr.pe-plrow')];
     chk(rows.length > 0 && rows.every(tr => tr.querySelector('svg.pe-spark')), 'a ranked player has no trend line: ' + rows.filter(tr => !tr.querySelector('svg.pe-spark')).map(tr => txt(tr).slice(0, 30)).join('; '));
     top.this_season = had; }
-  /* a player kept out of the players map (out, or gone from his club) keeps his season so far
-     for the Prop Record: the weeks he played are graded on the rating he took into each, not
-     at 1500; and he is still priced by nothing */
-  { const past = Object.entries(P.past || {}).find(([, v]) => (v.h || []).length);
-    if (!past) notes.push('nobody kept out of the players map has a game this season: the past-ratings check is skipped');
-    else { const [pid, v] = past, { w } = page(MU0); await wait(60);
-      chk(w.eloOf(pid) === null, `${pid} is out but the page would price him`);
-      chk(w.eloPre(pid, v.h[0][0]) === v.s0 && w.eloPre(pid, v.h[0][0] + 1) === v.h[0][1],
-        `the Prop Record would not grade ${pid}'s past weeks on the rating he took into them: ${w.eloPre(pid, v.h[0][0] + 1)} for ${v.h[0][1]}`); } }
+  /* a player the rankings list as sidelined is out of the players map, so nothing prices him */
+  { const out = Object.values(P.groups || {}).flatMap(g => g.sidelined || []).find(x => !(P.players || {})[x.id]);
+    if (!out) notes.push('nobody sidelined is out of the players map: the priced-by-nothing check is skipped');
+    else { const { w } = page(MU0); await wait(60);
+      chk(w.eloOf(out.id) === null, `${out.id} is out but the page would price him`); } }
 
   /* ---- Mismatches ----
      (4 November 2026) On a matchups file carrying the score (avg_fit.mismatch: THE MISMATCH SCORE in elo/build.py) the

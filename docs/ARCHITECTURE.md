@@ -634,13 +634,10 @@ elo/
   data/players.json              generated: the rankings by position (this season's rating,
                                  the bell curve, who is sidelined and why, a Q for questionable)
                                  and every player the models may price, on his career rating
-                                 with the season's path and his club, his first career rating
-                                 and the draft slot it came from (`start`, `draft`: THE DRAFT
-                                 START, November 2026); `past`, beside the map,
-                                 the season's path of each player kept out of it (out, or gone
-                                 from his club), written for the Prop Record's weeks he played
-                                 and read by nothing since app v138 (27 October 2026) took
-                                 market + form and that record off
+                                 and his club, his first career rating and the draft slot it
+                                 came from (`start`, `draft`: THE DRAFT START, November 2026).
+                                 The season's path (`s0`, `h`) and the `past` map beside it,
+                                 read by nothing since app v138, went in November 2026
   data/model.json                generated: the fitted position weights (`coef`), the
                                  walk-forward record (and the who-played one, for comparison),
                                  this season's graded calls, frozen at kickoff, and the coming

@@ -694,17 +694,6 @@ function mmTags(){
   }
 }
 window.eloOf=pid=>(D.players&&D.players.players&&D.players.players[pid])||null;
-/* a player's rating as it stood before week w of this season: after his last game before
-   it, or where the season began. Grading a past week on today's rating would be hindsight.
-   A player out now is not in the map (nothing prices him or suggests his lines), but his
-   season so far is in `past`, so the weeks he did play are still graded on his rating. */
-function preElo(pid,w){
-  const e=window.eloOf(pid)||(D.players&&D.players.past&&D.players.past[pid])||null; if(!e) return null;
-  let v=e.s0!=null?e.s0:e.elo;
-  for(const [o,r] of (e.h||[])) if(o<w) v=r;
-  return v;
-}
-window.eloPre=preElo;
 
 /* ---- a builder row's Elo lean ----
    (app v138) Market + form, the second price this section put on every player leg until then (the book's chance moved by
