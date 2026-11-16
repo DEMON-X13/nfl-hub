@@ -310,41 +310,15 @@ body.modal-open{overflow:hidden}
 .bigp .hero{background:linear-gradient(135deg,#0B1526 0%,#132238 55%,#1B2E4A 100%);border-color:#0F1B2D}
 .bigp .hero b,.bigp .hero span{color:#fff}
 .bigp .hero span{color:#B9C5D4}
-/* suggested parlays */
-.sugg-hd{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
-.sugg-hd h2{margin:0}
-.sugg-hd .pill{white-space:nowrap}
-.sugg-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.sugg-tier{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.sugg-tier.safe{border-top:3px solid var(--pick)} .sugg-tier.med{border-top:3px solid var(--gold)} .sugg-tier.aggr{border-top:3px solid var(--miss)}
-.sugg-top{display:flex;align-items:center;gap:8px}
-.sugg-name{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
-.sugg-add{font-size:11px;margin-left:auto}
-.sugg-tier .conf::before{display:none}
-.sugg-tier.aggr .conf{background:var(--miss-soft);color:var(--miss)}
+/* the builder's one-tap amounts */
 .stake-chips{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden;box-shadow:var(--sh-xs)}
 .stake-chips button{background:var(--panel);color:var(--muted);border:0;border-left:1px solid var(--line-2);padding:7px 11px;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap}
 .stake-chips button:first-child{border-left:0}
 .stake-chips button.on{background:linear-gradient(180deg,#1A2B45,#0F1B2D);color:#fff}
 .stake-chips button{font-variant-numeric:tabular-nums;padding:7px 10px}
-.sugg-stake{display:inline-flex;align-items:center;gap:4px;font-size:13px;white-space:nowrap}
-.sugg-stake input{width:76px;padding:6px 8px;font-family:var(--display);font-variant-numeric:tabular-nums}
 /* (app v124) a game's Matchup, Mismatches and Team Stats buttons, under its head, each 44px */
 .gwin{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}
 .gwin .gwin-btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;font-weight:600;text-align:center}
-.sugg-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.sugg-nums div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px}
-.sugg-nums b{display:block;font-family:var(--display);font-size:18px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
-.sugg-nums b.payout{font-size:18px}
-.sugg-nums span{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
-.sugg-legs{list-style:none;margin:0;padding:0}
-.sugg-legs li{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
-.sugg-legs .nm{font-weight:600;min-width:0}
-.sugg-legs .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11.5px}
-.sugg-legs .pr{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;text-align:right}
-.sugg-legs .pr em{display:block;font-style:normal;font-size:11px;font-weight:500;color:var(--muted)}
-.sugg-tier .btn{margin-top:auto;align-self:stretch;text-align:center}
-@media(max-width:900px){ .sugg-grid{grid-template-columns:1fr} }
 /* the Parlay Builder's suggested parlays: what to build from, then four tiers */
 .pb .pb-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 4px}
 .pb .pb-hd h2{margin:0}
@@ -385,7 +359,7 @@ body.modal-open{overflow:hidden}
 .pb-note{margin:-4px 0 12px;font-size:12.5px;color:var(--ink-2)}
 .pb-tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .pb-tier{background:var(--panel-2);border:1px solid var(--line);border-top:3px solid var(--line-2);border-radius:var(--r-md);padding:12px 13px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.pb-tier.safe,.pb-tier.elo2{border-top-color:var(--pick)} .pb-tier.med,.pb-tier.elo3{border-top-color:var(--gold)} .pb-tier.aggr,.pb-tier.elo4{border-top-color:var(--miss)} .pb-tier.xtrm{border-top-color:#7C4DFF}
+.pb-tier.safe{border-top-color:var(--pick)} .pb-tier.med{border-top-color:var(--gold)} .pb-tier.aggr{border-top-color:var(--miss)} .pb-tier.xtrm{border-top-color:#7C4DFF}
 .pb-th{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .pb-tn{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
 .pb-rule{font-size:11px;color:var(--muted);flex-basis:100%}
@@ -403,7 +377,6 @@ body.modal-open{overflow:hidden}
 small.faroff{display:block;font-size:11px;font-weight:600;margin-top:2px;white-space:normal}
 p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .rungs tr.far td.thr{box-shadow:inset 3px 0 0 var(--gold)}
-.legfair{display:block;font-size:11px;font-weight:500;color:var(--ink-2);white-space:nowrap;margin-top:2px}
 .dkslip{display:block;font-size:11px;font-weight:500;color:var(--ink-2);white-space:normal;margin-top:2px}
 .bigp small{display:block;font-size:12px;margin-top:5px;color:var(--ink-2)}
 .bigp .hero small{color:#F0C565}
@@ -456,7 +429,6 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .sp-lockmark{display:inline-block;margin-right:6px;padding:1px 8px;border:1px solid var(--gold);border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);vertical-align:1px}
 .sp-rec .bar{margin:8px 0 6px}
 .sp-rec .bar .rec{white-space:normal;min-width:0;overflow-wrap:anywhere}
-.sp-rec-line{margin:0 0 12px;font-size:12px;line-height:1.5}
 .sp-odds{margin:0 0 4px}
 .sp-upd{color:var(--ink)}
 .pb-legs .nm{flex:1 1 auto}
@@ -493,7 +465,6 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pb-top .pb-legadd{justify-self:end}
 .pb-trow .nm .pb-tteam{margin-right:6px;vertical-align:1px}
 .pb-tc .pb-unit{font-size:10.5px;font-weight:600;color:var(--ink-2);margin-left:1px}
-.pb-topsub{margin:0 0 6px;font-size:12px}
 @media(max-width:1100px){ .pb-trow{grid-template-columns:26px minmax(0,1fr) auto;grid-template-areas:"rk nm ad" ". cs cs"} .pb-tcs{justify-content:start} .pb-tc{text-align:left}
   .pb-thead,.pb-top .pb-trow{grid-template-columns:26px minmax(0,1fr) auto;grid-template-areas:"rk nm ad" ". cs cs"} .pb-thcs{justify-content:start} .pb-thcs .pb-th{justify-content:flex-start}
   .pb-thead{grid-template-areas:"rk cs cs";align-items:start} .pb-thnm{display:none} }

@@ -1,6 +1,6 @@
-name: Update season tracker
+name: Update news
 # the news job: results, the stat bars (stats2026.js and stats.json), the Deep Dive (units2026.js and
-# units.json) and the reading pack, which X NFL Bets and Stats' Game snapshot reads at runtime; the
+# units.json) and the reading pack, which NFL Hub's Game snapshot reads at runtime; the
 # tracker's own page was retired on 14 October 2026 (its games are in the snapshot), the job was not
 
 on:

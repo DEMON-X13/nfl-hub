@@ -4092,7 +4092,7 @@ setTimeout(async()=>{
         ['his passing TDs with his own touchdown',P(),TDL({pid:'qb'}),null],['his passing TDs with a teammate\'s touchdown in another game',P(),TDL({gid:'g2'}),null],
         ['his passing yards with a teammate\'s touchdown',P({stat:'passing_yards',k:249.5}),TDL(),null],['a teammate\'s touchdown with the game total',TDL(),TOT(),null],
         ['his passing TDs with his club to win',P(),{gid:'g1',pid:'team:AAA',team:'AAA',stat:'ml',side:'over',k:0},null],
-        /* (app v148) DraftKings refused Daniels' passing TDs under with Rachaad White's receptions under, 16 November 2026 */
+        /* (app v149) DraftKings refused Daniels' passing TDs under with Rachaad White's receptions under, 16 November 2026 */
         ['his passing TDs under with a teammate\'s receptions under',P({side:'under'}),TDL({stat:'receptions',side:'under',main:true,k:2.5}),'td'],
         ['a teammate\'s receptions first, his passing TDs over',TDL({stat:'receptions',main:true,k:4.5}),P(),'td'],
         ['his passing TDs over with a teammate\'s receiving yards under',P(),TDL({stat:'receiving_yards',side:'under',main:true,k:59.5}),'td'],
@@ -5734,7 +5734,7 @@ setTimeout(async()=>{
           const urls=net.log.map(x=>x.url), sbN=urls.filter(u=>/\/scoreboard\?/.test(u)).length, OUT=F('ESPN_OUT'), LV=F('ESPN_LIVE');
           nReq=urls.length;
           /* (app v108) what the press kept in this browser, and the published lines it was read over, as it left them */
-          const kept1=lsGet(), sig1=Object.fromEntries(games.map(g=>[g.id,{gl:F('espnGlSig')(g),pl:F('espnPlSig')(g)}]));
+          const kept1=lsGet();
           /* the levels and hands the page has right after the press, before any cache of the checks' own is
              dropped: what a build from nothing gives on the read, never what stood before it (the press
              drops PB_CACHE and GAME_TIER_CACHE, and ESPN_SEQ is in pbDataSig and gameSuggestSig) */

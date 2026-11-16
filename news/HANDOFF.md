@@ -6,11 +6,13 @@ All paths here are relative to `news/`.
 
 Until 14 October 2026 this folder was the Season Tracker, a page of its own (and then a framed tab of X
 NFL Bets and Stats) with a hand-written narrative for every team each week. The owner folded it into the
-**Game snapshot**: the Game snapshot button on a game's page on the Props tab of NFL Hub (once X NFL Bets and
-Stats; a tap on a game on its Matchups board until that board went on 22 October 2026)
-(**https://demon-x13.github.io/nfl-hub/**, the site's root since 17 October 2026; `nflbets/` until then, which
-now sends a visitor there) opens a window with everything the site has on it, and
-the tracker's per-game content now lives there:
+**Game snapshot**, a window with everything the site has on a game, on NFL Hub (once X NFL Bets and Stats;
+**https://demon-x13.github.io/nfl-hub/**, the site's root since 17 October 2026; `nflbets/` until then, which
+now sends a visitor there). Since app v129 (22 October 2026) it opens from the matchup bubble's Open game
+snapshot (a tap on a player's or a team's name on the Parlay Builder or Suggested Parlays opens the bubble);
+until that day a tap on a game on the Matchups board opened it, and for a few hours of it a Game snapshot
+button on a game's page on the Props tab (app v128, taken off by app v129). The tracker's per-game content
+now lives there:
 
 - a one-line **preview** and a short **news** note for each game, written by hand each Wednesday into
   `data/notes/<season>-w<N>.json`, every player named in bold (`**Bo Nix**`); the snapshot shows the
@@ -25,10 +27,12 @@ the tracker's per-game content now lives there:
   14 October 2026) inside its Offense vs defense card, from `data/units.json`, drawn by
   `../nflbets/build/deepdive.js`.
 
-The **Stat breakdown** (the eleven stat bars from `data/stats.json`) went on 16 October 2026 (the owner's
-call, "get rid of stat breakdown section"): the job still writes `stats2026.js` and `stats.json` and the
-smoke still holds them, but no page reads them. The page reads the notes and `units.json` at runtime
-(`cache: 'no-store'`, as `news/data/units.json` and `news/data/notes/...`, from the site's root, where the page is), so
+The **Stat breakdown** (the eleven stat bars from `data/stats.json`) went from the snapshot on 16 October
+2026 (the owner's call, "get rid of stat breakdown section"), and its bars came back on 20 October 2026
+(app v124) as the **Team Stats** window of a game's page on the Props tab, which reads `stats.json` once a
+page load, only when that window first opens. The job writes `stats2026.js` and `stats.json` and the smoke
+holds them. The page reads the notes, `units.json` and `stats.json` at runtime (`cache: 'no-store'`, as
+`news/data/units.json`, `news/data/stats.json` and `news/data/notes/...`, from the site's root, where the page is), so
 nothing here ever needs NFL Hub rebuilt. The tracker's page, its week files, the matchup, positives, negatives and keys paragraphs, the
 rank chip and the player positions were dropped; they are in git history before that day. `index.html` is
 now a tiny page that sends a visitor (and any old bookmark) to `../`, NFL Hub at the site's root (`../nflbets/`
@@ -83,7 +87,7 @@ routine runs `--strict`, which refuses both.
 | `data/units2026.js` | `const UNITS26`, the Deep Dive: six units per team (passing offense, pass protection, run game, receivers, pass rush, coverage), each a rating in league standard deviations with its rank, the numbers behind it, who plays and who is out, from nflverse team and player stats with 2025 counted as 4 games plus the team's own 2026 games (`g26`), and each team's Overall Offense and Defense from `../elo/data/model.json`. `UNITS26_META` says which week, season and report the lineups are for and carries the tag constants; `UNITS26_BASIS` and `UNITS26_LINEUPS` the lines under the rows. Written by `tools/context.js`, which says how. |
 | `data/units.json` | Its twin, what the Game snapshot fetches: `{ season, week, built_at, meta, basis, lineups, units }`, exactly the consts of `units2026.js` (`writeTwin` in `tools/lib.js`), written with it and whenever it is missing or differs. |
 | `data/stats2026.js` | `const STATS26`, season to date team stats for the stat bars (TeamRankings and ESPN), each team with `g`, the games its numbers cover (verified against `results.js`), `STATS26_THROUGH` the last game day included and `STATS26_ASOF` the pull's day. After week 18 the tables are asked for as of the day after the last regular-season game. Written by `tools/pull-week.js`. |
-| `data/stats.json` | Its twin: `{ season, through, asof, stats }`, exactly the consts of `stats2026.js`. Read by no page since the snapshot's Stat breakdown went (16 October 2026). |
+| `data/stats.json` | Its twin: `{ season, through, asof, stats }`, exactly the consts of `stats2026.js`. Read by a game page's Team Stats window on the Props tab since app v124 (20 October 2026), once a page load and only when it first opens; no page read it from 16 October 2026, when the snapshot's Stat breakdown went, until then. |
 | `data/results.js` | `const RESULTS`, final scores keyed `wk<n>:AWAY-HOME`, which the smoke test holds each stat line to; `LINES` beside it is each game's line from the nflverse schedule, kept for reference (no page reads it). |
 | `data/teams.js` | `const TEAMS`, the 32 teams' names and colours. `../picks/` reads it, so it stays. |
 | `data/notes/<season>-w<N>.json` | The game notes, written by hand (above). Never written by the job. |
@@ -178,6 +182,11 @@ on its own.
 ## Backlog
 
 - The Wednesday routine that wrote the old week files ("NFL tracker: build and publish the week", id
-  `trig_017MSjEeFD8c5atgAEzBbWiF`, possibly under another account) must not run any more: its prompt
-  builds `data/weekN.js`, which nothing reads. The notes routine replaces it; its prompt is "The weekly
-  job" above.
+  `trig_017MSjEeFD8c5atgAEzBbWiF`) must not run any more: its prompt builds `data/weekN.js`, which nothing
+  reads. It is not listed under this account's scheduled tasks (as of 14 November 2026), so it may be under
+  another account. The notes routine replaces it; its prompt is "The weekly job" above.
+- The current Wednesday routine, "NFL game notes: write the week" (`trig_01MdfPf8SdiZFeHn4PH4za3T`), has
+  landed no notes file since week 6: its sessions write the notes but cannot push (the git proxy answered
+  403, no access to `DEMON-X13/nfl-hub`), and its prompt still names `/nfl-hub/nflbets/` (a redirect to the
+  root since 17 October 2026) and the Pick'ems board (gone since 22 October 2026). The owner was told (14
+  November 2026).

@@ -432,8 +432,6 @@ const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const money = v => '$' + (+v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const amtTxt = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const wait = ms => new Promise(r => setTimeout(r, ms));
-/* waits until f() holds (each 50ms) or ms have gone by, and gives f() then */
-const until = async (f, ms = 4000) => { const t0 = Date.now(); while (!f() && Date.now() - t0 < ms) await wait(50); return f(); };
 /* a box's overflow both ways (jsdom keeps the shorthand apart from the longhands), the box a table
    scrolls in at a desktop width (it or one between it and its card: jsdom reads only the rules a
    desktop screen gets), and whether a sticky cell can stick in that box: nothing between them may
@@ -880,20 +878,9 @@ const slotWaitHeld = (d, U, sched, wk, seasonOver, dayOff = dayOffOwn(d)) => { c
   if (el || none) bad.push(`a ${el ? 'wait' : 'none'} line is drawn where the slot ${U.id} is up: ${txt(el || none)}`);
   if (units.length !== 1 || units[0].dataset.spGame !== U.id || !units[0].classList.contains('sp-slot')) bad.push(`the section draws ${units.map(x => x.dataset.spGame).join(', ') || 'no unit'}, not the slot ${U.id}`);
   return bad.length ? bad.join('; ') : null; };
-/* two legs of one game together, worked out here on their own (a set's Safe is the likeliest pair of one
-   game's legs, which move together): the builder's gaussian copula, a leg landing when its own normal clears
-   the point its chance puts it at, the two normals correlated by legRho (and taken apart under 0.03, as
-   parlayProb takes them), the bivariate normal integrated here by Simpson's rule on the normal curve worked
-   from erf (Abramowitz and Stegun 7.1.26) */
+/* the normal curve worked from erf (Abramowitz and Stegun 7.1.26) */
 const erfOwn = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
 const PhiOwn = z => 0.5 * (1 + erfOwn(z / Math.SQRT2));
-const invPhiOwn = p => { let lo = -9, hi = 9; for (let i = 0; i < 80; i++) { const m = (lo + hi) / 2; if (PhiOwn(m) < p) lo = m; else hi = m; } return (lo + hi) / 2; };
-function bvnOwn(h, k, r) {
-  const b = Math.min(h, 9), a = -9, N = 400, dx = (b - a) / N, s = Math.sqrt(1 - r * r); if (b <= a) return 0;
-  let sum = 0; for (let i = 0; i <= N; i++) { const x = a + i * dx, f = Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI) * PhiOwn((k - r * x) / s); sum += f * (i === 0 || i === N ? 1 : i % 2 ? 4 : 2); }
-  return sum * dx / 3;
-}
-const pairOwn = (a, b, rho) => Math.abs(rho) < 0.03 ? a.p * b.p : bvnOwn(invPhiOwn(a.p), invPhiOwn(b.p), (a.side === 'under' ? -1 : 1) * (b.side === 'under' ? -1 : 1) * rho);
 /* a table of made-up DraftKings ids standing in for the payload's (a fixture of its own, never merged into
    the payload's): one under each leg's own key (dkKey), the game's lines and player prices read at `read` */
 function dkFixture(legs, read, tag) {
@@ -2340,7 +2327,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
   /* the panel holds on whatever the week offers: the mix sets the boxes, every tier is its legs or says
      why, and every leg is of a ticked kind and game, has not kicked off and is never rated below the book */
   if (hasPb) { const Sx = w.eval('S'), games = w.eval('pbGames()'), U = () => Sx.ui.pb, KINDS = ['ml', 'ats', 'total', 'over', 'under'];
-    const kindOf = w.eval('pbKind'), mlProb = w.eval('mlProb'), isG = w.eval('isGameLeg'), started = w.eval('gameStarted');
+    const kindOf = w.eval('pbKind'), isG = w.eval('isGameLeg'), started = w.eval('gameStarted');
     /* the legs the picks make, and the most a parlay can take of them (one a player, one side and one total a game) */
     const maxLegs = () => { const u = U(), on = games.filter(g => !u.off.includes(g.id));
       if (!on.length || !KINDS.some(k => u.k[k])) return 0; const p = w.eval('pbPool')(on); return maxFitOwn([...p.pref, ...p.thin, ...(p.mkt || [])]); };
@@ -3378,7 +3365,6 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
     const offers = () => d.querySelector('#spSets .sp-game, #spSets [data-pc-finish], #spSets [data-sp-add], #spSets [data-pb-leg]');
     try {
       w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; spSlotNext=function(){ return null; }; renderParlay(); renderSp();'); await wait(20);
-      const yr = w.eval('SEASON');
       chk(txt(panel.querySelector('.pb-none')) === 'Regular season over.' && !panel.querySelector('[data-pb-mix], .pb-tier, ol.pb-top, [data-pb-leg], [data-pc-finish]')
         && secLine('night') === 'Regular season over.' && (dayOffOwn(d) ? !d.querySelector(SEC_SLOT) : secLine('slot') === 'Regular season over.' && d.querySelector(SEC_SLOT).lastElementChild === d.querySelector(SLOT_NONE)) && !offers()
         && d.querySelectorAll('#spSets > section').length === (dayOffOwn(d) ? 2 : 3),
@@ -3874,7 +3860,6 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       if (F8) Sx.sched.push(F8);
       const plants = [G0, F8].filter(Boolean).map(g => ({ g, ...plantFor(g) }));
       for (const p of plants) Sx.odds[p.g.id] = JSON.parse(JSON.stringify(p.odds));
-      const F8p = plants.find(p => p.g === F8) || null;
       /* the made-up game's main line: the first starter with a yards ladder, DraftKings' line at his projection's half
          point, near even both ways */
       let mk = null;
@@ -4686,7 +4671,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
         ['one leg a game on the slip, beside a second leg of one of those games with no DraftKings id', [QB, ML2, NOID2]], ['two legs of one game and one of another on the slip, beside a third game\'s leg with no DraftKings id', [QB, RB, ML2, NOID3]],
         ['two legs of one game, one going on at DraftKings\' number, with a leg of another', [QB, ATS1, ML2]]]) {
         const C = await cardOf(ls), opened = C.opened, p = planOwn(ls), { B, gs, multi } = p, a = d.getElementById('pcDk'), gb = d.getElementById('pcDkGames'), note = d.getElementById('pcDkNote'), bad = [];
-        const okOf = gid => p.ok.filter(x => x.l.gid === gid), byHand = p.miss.length ? `; add ${nums(p.miss.map(x => x.n))} by hand` : '';
+        const byHand = p.miss.length ? `; add ${nums(p.miss.map(x => x.n))} by hand` : '';
         const gbs = gb ? [...gb.querySelectorAll('a.pc-dkbtn[data-pc-dkgame]')] : [], cl = note && note.querySelector('[data-pc-dkclash]'), lt = w.PARLAY_CARD.linkText(w.PARLAY_CARD.current() || w.PARLAY_CARD.fromBuilder()), tx = lt ? lt.text : '';
         const name = gid => { const g = [C1, C2, C3].find(x => x.id === gid); return g.a + ' at ' + g.h; };
         if (!opened) bad.push('Finish did not open the card');
@@ -6273,7 +6258,7 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
             const idsBaked = !!keep.dk && typeof keep.dk === 'object' && Object.values(keep.dk).some(W => W && typeof W === 'object' && Object.values(W).some(dkEntryOwn));
             if (!idsBaked) console.log(`  (after the press: the payload carries no paid DraftKings ids, so the read's legs are suggested; held below on ${g.id})`);
             if (idsBaked) { const DKn = w.eval('PAY').dk, st = l => w.eval('gameStarted')(S.sched.find(x => x.id === l.gid) || {});
-              const lv = rNew.tiers.flatMap(t => t.legs || []).concat(G0.flatMap(x => w.eval('spSet')(x.id).tiers.flatMap(t => t.legs || []))), tk = takenRule(w), isGt = w.eval('isGameLeg');
+              const lv = rNew.tiers.flatMap(t => t.legs || []).concat(G0.flatMap(x => w.eval('spSet')(x.id).tiers.flatMap(t => t.legs || [])));
               const badT = tNew.rows.filter(l => !dkTakes(DKn, l, st(l)));
               /* (a game the table has no entry for is taken as before ids, so a leg from the read stands only there) */
               chk(lv.every(l => dkTakes(DKn, l, st(l))) && !badT.length,

@@ -166,14 +166,3 @@ def build_features(games: pd.DataFrame, stats: pd.DataFrame, cols, lm: dict, p: 
     out = pd.concat([games.reset_index(drop=True), feats], axis=1)
     assert not out.columns.duplicated().any(), "duplicate feature columns would misalign the fit"
     return out, state
-
-
-def state_to_app_teams(state: dict, cols) -> dict:
-    """Serialize like MODEL.teams in the app (elo, n, stats, d_stats)."""
-    out = {}
-    for tm, t in sorted(state.items()):
-        d = {"elo": t.elo, "n": t.n}
-        d.update({c: t.off[c] for c in cols})
-        d.update({"d_" + c: t.dfn[c] for c in cols})
-        out[tm] = d
-    return out

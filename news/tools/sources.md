@@ -1,7 +1,8 @@
 # Where the news comes from, and how it becomes a week's notes
 
 The sources are fixed. The reading happens every Wednesday, for the notes in `data/notes/<season>-w<N>.json`
-that X NFL Bets and Stats' Game snapshot shows under each game's records (`HANDOFF.md`, "The weekly job").
+that NFL Hub's Game snapshot (X NFL Bets and Stats' until 16 October 2026) shows beside each game's records
+(`HANDOFF.md`, "The weekly job").
 
 ## 1. Pulled automatically (tools/pull-week.js and tools/context.js)
 
@@ -47,5 +48,6 @@ Never the market (the snapshot shows the line and the models apart), never a rec
 `tools/week-request.md`; `node tools/notes.js --strict` holds a file to them.
 
 Written automatically, not by hand: the Deep Dive (`data/units.json`) and the records, which the Game snapshot
-draws beside the notes; the stat bars (`data/stats.json`) are still written but read by no page since 16 October
-2026 (the owner's call: the Stat breakdown went).
+draws beside the notes; and the stat bars (`data/stats.json`), which a game page's Team Stats window on the
+Props tab reads since app v124 (20 October 2026); no page read them from 16 October 2026, when the snapshot's
+Stat breakdown went (the owner's call), until then.

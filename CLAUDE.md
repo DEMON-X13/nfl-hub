@@ -3206,7 +3206,7 @@ and the Elo picks' per game, the builder's notes, the card's buttons on made-up 
 buttons, per-leg list, Share link text, clash line and Tab order) and `elo/check_tab.js` (the rule loaded into the search
 it drives, its own copy in the full enumeration, F7) hold it.
 
-**A quarterback's passing TDs never with a teammate's catches** (app v148, `patch_qb_catch_clash.py`, the owner's report
+**A quarterback's passing TDs never with a teammate's catches** (app v149, `patch_qb_catch_clash.py`, the owner's report
 of 16 November 2026, with DraftKings' slip refusing Jayden Daniels' Under 1.5 passing TDs with Rachaad White's Under 2.5
 receptions: "Sorry, unfortunately your picks can not be parlayed"; Sunday night's Safe was the same shape, Burrow's
 passing TDs under with Dohnte Meyers' receptions under). DraftKings publishes no list of the pairs it refuses, so the rule
@@ -4951,7 +4951,7 @@ says that DraftKings prices a changed leg at its own line, so its slip's payout 
 card's. The button reads **Open in DraftKings** where every leg goes on the slip and **Open 2 of 3 legs in
 DraftKings** where some leg still cannot. The builder says it first: where the card is on the page
 (`window.PARLAY_CARD`), each builder row whose leg will not go on the slip as built has a quiet line under
-it, read from the card's own `dkPlan` (`dkSlipRows`, `dkSlipLine` in `part3.js`; `.dkslip`, in the theme's
+it, read from the card's own `dkPlan` (`dkSlipPlan`, `dkSlipLine` in `part3.js`; `.dkslip`, in the theme's
 `--ink-2`): "On DraftKings as Over 64.5 receiving yards" where the card converts it, or "Not on DraftKings'
 slip: " ("Not on DraftKings' slip yet: " until app v125) and its reason in a few words; nothing under a leg that goes on as built, and nothing on the
 prop model's own page, which has no card. Under the buttons the card says what it

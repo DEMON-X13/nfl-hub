@@ -418,7 +418,9 @@ props/
                                  run, which adds the season just finished and commits it
   research/features.py           builds raw/feat.pkl, seasons from build/season.py (weekly.py
                                  runs it when the table lacks BASE); the only research script
-                                 the job runs
+                                 weekly.py runs (props.yml also runs research/propmodel/'s
+                                 td_shadow.py, td_shadow_page.js and td_shadow_check.py after
+                                 the publish: the touchdown shadow, below)
   research/totals/               the game-totals study (README.md: the question, the rules,
                                  every result and the verdict the page follows since v88: a
                                  total at the market's own chance). Its downloader, dataset
@@ -636,7 +638,9 @@ elo/
                                  and the draft slot it came from (`start`, `draft`: THE DRAFT
                                  START, November 2026); `past`, beside the map,
                                  the season's path of each player kept out of it (out, or gone
-                                 from his club), for the Prop Record's weeks he played
+                                 from his club), written for the Prop Record's weeks he played
+                                 and read by nothing since app v138 (27 October 2026) took
+                                 market + form and that record off
   data/model.json                generated: the fitted position weights (`coef`), the
                                  walk-forward record (and the who-played one, for comparison),
                                  this season's graded calls, frozen at kickoff, and the coming
@@ -1544,7 +1548,8 @@ level said) and **Finish** (`data-pc-finish="sp|<game id>:<level>"`, which the p
 `window.spTier`). Both redraw first where what is on the screen is stale (`pbStale`). The tab's controls are its
 record and Refresh odds (`espnCtl(null, 'sp')`, the same read of every game of the week still to come); the Bet
 amount is the Parlay Builder's. With no prime-time game left to come the tab says so (the season over, or none of
-the week's still to kick off), and the Elo picks still draw under it.
+the week's still to kick off), and until app v142 (5 November 2026) the Elo picks still drew under it; since, there
+are none (CLAUDE.md's **No Elo picks, and a Mismatch tag on the regular parlays**).
 
 **Without the long paragraphs** (app v113, `patch_declutter_top50.py`, the owner's call of 17 October 2026: "in suggest
 parlays, get rid of all the long paragraph description stuff. we dont need to clutter the page."). `spHeadHtml` is
@@ -1802,11 +1807,13 @@ hand and then the first 10 games, and with Player overs alone the mix's first 50
 unless some list it held had more lines than the list holds (`topOver`). Which lines, their part, rank and numbers are blocking; the words are
 warnings in the audit (`W.wording`) and fail the smoke, which has no warnings.
 
-The notes over the list say what the all-games panel's said: the Elo ratings still loading, a line marked est. and
-when DraftKings' lines were read, the totals' lack of edge, no player line able to go on DraftKings' betslip yet or
+The notes over the list say what the all-games panel's said, fewer since app v138 (27 October 2026), which took off
+the line that the Elo ratings were still loading and the count of lines left out far off the market, and in fewer
+words since app v130 (22 October 2026), which also took off the totals' lack of edge: when DraftKings' lines were
+read, where a line is marked est., no player line able to go on DraftKings' betslip yet or
 no player lines in yet (since app v125 with when DraftKings' lines were last read from ESPN, `pbNoPl`; until then with
-when the player prices are pulled), how many lines are left out far off the market and why, and
-how many for want of a DraftKings id, apart: those DraftKings had at another number (`mvN`, which the card puts on
+when the player prices are pulled), and
+how many lines are left out for want of a DraftKings id, apart: those DraftKings had at another number (`mvN`, which the card puts on
 at DraftKings' number from the game pages; since app v115 only those still left out, a line with a real price whose
 id is at another number or a spread or total at nflverse's number, since a read's line the list keeps never reaches
 it) and those it had none for (`noneN`), each still on the game pages to add to the builder. An empty list says why (`pbTopWhy`: no box or no game ticked; since app v125 no player lines yet,
@@ -1836,8 +1843,9 @@ until app v124 took them off the page (below, the game page's windows), their po
 id rule since app v109 (`gameLegPool(g, true)` every leg as before, so `gameTiers` counts the legs the ids left out,
 and until app v124 a hand left empty for want of them said so and why, `gameNoIdWhy`, gone with the card: its player
 ids not pulled yet, never for Sunday's early games, `dkEarlySunday`, or none for its other lines); the engine is kept,
-drawn nowhere, and held to the rule still, as are the Elo picks (`eloPicks` in `tab_elo.html`, which says why where none is
-left); dormant since app v125, no entry a read of ESPN makes carrying ids.
+drawn nowhere, and held to the rule still, as the Elo picks were until app v142 took them off (`eloPicks` in
+`tab_elo.html`, which said why where none was left, gone with them); dormant since app v125, no entry a read of ESPN
+makes carrying ids.
 
 **Only the bets DraftKings offers** (app v113, `patch_declutter_top50.py`, the owner's call of 17 October 2026: "there
 are certain bets in the props that are not part of draft kings like for FG attempts. i only want to show legs that
@@ -1917,8 +1925,8 @@ a fixed number, `est: true` and marked est. wherever it is shown; a leg with no 
 (`legPrice`'s est. or fair) has none. `parlayFair(legs)` is `parlayProb` on the legs with each chance
 replaced by its fair chance (legs in one game move together as the model's do); `p` is null, with
 `miss` legs counted, where a leg has none. Every level carries it (`pbTier` wraps `pbTierOf`;
-`pbWithFair`), and so do a game page's hands (`gameTiers`, drawn nowhere since app v124) and the Elo picks (`eloPicks` in
-`tab_elo.html`). `pbTierCard` leads with it (`pbChanceHtml`: the figure, "fair chance" or "fair
+`pbWithFair`), and so do a game page's hands (`gameTiers`, drawn nowhere since app v124) and, until app v142 (5
+November 2026) took them off, the Elo picks (`eloPicks` in `tab_elo.html`, gone with them). `pbTierCard` leads with it (`pbChanceHtml`: the figure, "fair chance" or "fair
 chance, est.", and "model says 53%" beside it, the Elo picks' "Elo says"; with none, the chosen-on
 chance and "no fair chance: a leg has no book price"); the levels are still chosen on the model's
 chances, the floors included, so a level over its floor is ruled "... by the model". The builder's
@@ -2072,7 +2080,7 @@ leg is looked up like any other. `dkPlan` returns `swaps` and `each` (every leg'
 a changed leg at its own line, so its slip's payout can differ from the card's, whose legs and price are
 the builder's, untouched; the button reads "Open in DraftKings" where every leg goes on and "Open 2 of 3
 legs in DraftKings" where one does not. The builder says it first: where the card is on the page,
-`renderParlay` reads `window.PARLAY_CARD.dkPlan` on its legs (`dkSlipRows`) and puts a quiet line
+`renderParlay` reads `window.PARLAY_CARD.dkPlan` on its legs (`dkSlipPlan`) and puts a quiet line
 (`dkSlipLine`, `small.dkslip` in `--ink-2`, `data-dkslip`) under a leg that will not go on as built, "On
 DraftKings as Over 64.5 receiving yards" or "Not on DraftKings' slip: " ("... slip yet: " until app v125) and the reason in a few words,
 nothing under one that goes on as built, and nothing on the prop model's own page, which has no card.
@@ -2877,8 +2885,10 @@ replays every `build/test_audit_phases.py` case on a runner of its own (job B; t
 when only the page's files changed), and runs the unit tests, `UNITS` in `props_gate.py` (job C, since 20 October 2026:
 the ESPN read and its application, the crons against the locks, the ids, the names, who played, the downloads, the audit's
 verdict, the card's name rule, the admin link and `smoke_live.js`, the parlay card and Pull from DraftKings on a stubbed
-Odds API, and since 31 October 2026 the touchdown shadow's `test_td_shadow.py`; 50 minutes at most, room for both page
-smokes and that test at their own caps here and again on the base; its step's env sets
+Odds API, since 31 October 2026 the touchdown shadow's `test_td_shadow.py`, since 4 November 2026 the Elo job's
+`elo/test_parity.py` and `elo/test_fetch.py`, and since 7 November 2026 (app v144) the suggestions record's
+`test_suggest_ledger.js`; 65 minutes at most since that day (50 from 31 October), room for both page smokes and the two
+longer tests at their own caps here and again on the base; its step's env sets
 `NODE_OPTIONS` to `--max-old-space-size=6144`, smoke_live.js's live heap being over Node's default on a runner under about
 16 GiB, where it and the base both died of out-of-memory and job C passed it as a warning), each failure run again on the base's code, so only a failure that is the PR's fails the `props-gate` check. Section V is the reality check: it builds the page the way a
 browser does and compares it with the raw files the job downloaded (`PROPS_AUDIT_RAW=1`,
@@ -3032,7 +3042,7 @@ job stays on week 18; it does not cover the playoffs.
 | Workflow | When | Does |
 |---|---|---|
 | `props.yml` | 22 runs a week (UTC), every one free since 20 October 2026 (the owner's call: no scheduled paid pull; no odds-API key mapped): Mon, Wed and Thu 08:17 (Monday night, Thanksgiving's early game, Thursday night), Sat 05:17 (the weekend, on the site by Saturday morning Pacific), Sun 04:47 (new that day, for the Sunday slot's lock 2 hours before its first kickoff), 8 post-game and stats runs, Saturday 16:07 and 23:07, and a daily 12:07 that lands after nflverse posts the day's injury report; set by the Suggested Parlays locks they must land before, since GitHub fires this repo's crons 2-9.4 hours late, and held to them by `build/test_lock_runs.py` (which replaced `test_pull_schedule.py`). Until that day four of the slots were price pulls (~7 credits a game) and the rest catch-ups | `weekly.py --no-commit` (download, bake, assemble, read DraftKings' lines on ESPN with `espn_read.js`, apply the read with `apply_espn`, keep DraftKings' player lines in `data/espn_lines_<season>.json` with `espn_archive.py`, audit, then the suggestions record, `suggest_ledger.js`, which never fails the run), then the workflow commits `props/data` (the ledger with it) to `main` unless `weekly.py` refused the run (a required download failed, the stats would shrink, the read could not be applied, the audit is not clean), in which case it commits nothing and opens (or comments on) a `props-refused` issue with `build/refused_note.py`'s text (why, the published payload and its read, the next game and its kickoff, what to do: a fix, then `gh workflow run props.yml`), which the next clean publish closes; afterwards the run fails if `weekly.py` reported problems (a stale ESPN read near a kickoff, a reader that crashed, the audit's warnings). Between the commit and that last step, on `main` only and only after a clean `weekly.py`, the touchdown shadow's seven steps (since 31 October 2026; `research/propmodel/README.md`, "The touchdown shadow"), each continue-on-error with its own cap (39 minutes in all; every step of the job has its own cap, the publish's adding to 45, so the job's cap is 90): a stdlib plan, Python 3.13, the 2010-2025 files from `actions/cache` (saved again when it missed), the calls, freezes and grades (`td_shadow_page.js`, `td_shadow.py run`, `td_shadow_check.py`, the ledger moved into place only once checked), the ledger alone in a second commit, and the `td-shadow` issue; none writes the build's problems file, so the shadow never refuses, slows or reddens the publish; the repository variable `TD_SHADOW=off` stops it. The `no_odds` dispatch input is kept and read by nothing; `props/raw/espn/` is never committed |
-| `props-gate.yml` | every pull request, a push to main that touches what the props job or the page runs, and on demand | sorts the change's paths (AUDIT, PAGE, neither: passes at once), and on a pull request touching the touchdown shadow's ledger or the Mismatch scorecard's holds it (`ledger_hold`: added once as its init writes it, never changed or removed, since the props job alone writes the first and the Elo job the second); job A `weekly.py --no-odds` on today's nflverse files and today's read of ESPN (recorded, so the base replays the same answers: `--offline` over a copy, or `PROPS_ESPN_REPLAY` when it goes online), then the page smoke and `elo/check_tab.js` on its payload (40 minutes at most); job B each `test_audit_phases.py` case on a runner of its own; job C the unit tests (`UNITS`: `test_apply_espn.py`, `test_espn_read.js`, `test_lock_runs.py`, `test_espn_ids.py`, `test_dk_links.py`, `test_unmatched.py`, `test_who_played.py`, `test_fetch.py`, `test_audit_gate.py`, both `lib/test_netfetch`, `test_espn_archive.py`, `research/propmodel/test_td_shadow.py`, `nflbets/build/test_dkname.js`, `nflbets/build/smoke_admin.js`, `nflbets/build/smoke_live.js`; 50 minutes at most, with `NODE_OPTIONS=--max-old-space-size=6144` for smoke_live.js's heap, here and on the base); a failure is run again on the base's code and fails the `props-gate` check when the base passes or has nothing to compare with (`test_props_gate.py` holds the judgement); the verdict waits on all three. Spends nothing (no secret mapped; `ODDS_API_KEY` set empty), commits nothing |
+| `props-gate.yml` | every pull request, a push to main that touches what the props job or the page runs, and on demand | sorts the change's paths (AUDIT, PAGE, neither: passes at once), and on a pull request touching the touchdown shadow's ledger or the Mismatch scorecard's holds it (`ledger_hold`: added once as its init writes it, never changed or removed, since the props job alone writes the first and the Elo job the second); job A `weekly.py --no-odds` on today's nflverse files and today's read of ESPN (recorded, so the base replays the same answers: `--offline` over a copy, or `PROPS_ESPN_REPLAY` when it goes online), then the page smoke and `elo/check_tab.js` on its payload (40 minutes at most); job B each `test_audit_phases.py` case on a runner of its own; job C the unit tests (`UNITS`: `test_apply_espn.py`, `test_espn_read.js`, `test_lock_runs.py`, `test_espn_ids.py`, `test_dk_links.py`, `test_unmatched.py`, `test_who_played.py`, `test_fetch.py`, `test_audit_gate.py`, both `lib/test_netfetch`, `test_espn_archive.py`, `research/propmodel/test_td_shadow.py`, `nflbets/build/test_dkname.js`, `nflbets/build/smoke_admin.js`, `nflbets/build/smoke_live.js`, `elo/test_parity.py`, `elo/test_fetch.py` (since 4 November 2026), `test_suggest_ledger.js` (since 7 November 2026, app v144); 65 minutes at most since that day, with `NODE_OPTIONS=--max-old-space-size=6144` for smoke_live.js's heap, here and on the base); a failure is run again on the base's code and fails the `props-gate` check when the base passes or has nothing to compare with (`test_props_gate.py` holds the judgement); the verdict waits on all three. Spends nothing (no secret mapped; `ODDS_API_KEY` set empty), commits nothing |
 | `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js` and `joker/joker.py` (which may fail on its own without stopping the publish), the game-totals shadow `props/research/totals/shadow.py` with `shadow_check.py` (the same), the clearing of X's finished parlays (`liveparlays/tools/autoclear.py` after its test, the same), `smoke.js` (which builds the app; its few presentation checks warn, publish, and redden the run's last step, which runs only after a smoke with no failure); commits `betting/state.json`, `props/research/totals/shadow/ledger.json` and `liveparlays/parlays.json`; starts `elo.yml` when a final was graded, even if the smoke or the commit failed (the Elo job reads nflverse, not this state) |
 | `news.yml` | about 19 slots a week (UTC): five post-game runs, a mid-day refresh Mon/Tue/Fri, and eleven for the Deep Dive's lineups timed to the injury report (Tue and Wed afternoon, Wed evening and early Thu for Thursday games, Thu afternoon for Thursday night, Fri evening, Sat afternoon to early Sun four times for Sunday), each early enough to land before its kickoff at the 2.3-9.4 hour lateness GitHub shows this repo; and on a push to its tools, the game notes, `news/index.html` or `nflbets/build/deepdive.js` | `run-auto.js` (`pull-week.js`, which runs `context.js`; a required nflverse file that fails stops the run before the commit), `smoke.js` (the files against their sources, the twins, every game of the week drawn by `deepdive.js`, the lineups against the report they came from, the notes, the redirect, and `cases.js`; the lineup and notes checks warn, publish, and redden the run's last step, which runs only after a smoke with no failure); commits only what changed: `results.js`, `stats2026.js`, `stats.json`, `units2026.js`, `units.json` and `tools/out` (never a note) |
 | `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | restores the finished seasons' nflverse files (`actions/cache`, `elo/cache-past`, the set `elo/cache/past.lst` names), `elo/build.py` (refuses to write on a failed required download, `players.csv` among them since 4 November 2026, and the season in play's snap counts once due; the coming games' wind forecasts, held to 90 seconds of wall clock, never refuse), `elo/check.py`, `elo/test_parity.py` and `elo/test_fetch.py` (on their fixtures), `elo/check_tab.js`, commits `elo/data`; then the nflbets smoke (a page check: it reddens the run, never holds the ratings back); and, on main only, the Mismatch scorecard (two continue-on-error steps: right after the commit `test_scorecard.py`, `scorecard.py run` and `check`, 3 minutes; after the smoke its ledger committed alone, 2 minutes; off with the variable `ELO_SCORECARD=off`); saves the finished seasons' files when their set changed |
@@ -3054,8 +3064,8 @@ job's read of ESPN goes through `lib/netfetch.js` too (`espn_read.js`: a plain U
 150-second deadline for the whole read). Each NFL job has a
 `timeout-minutes` (elo 40, props 90: every step capped, 45 for the publish, 39 for the touchdown shadow's steps after it, 3 for the last two and 3 for GitHub's own, betting 40,
 news 30), so a stalled socket fails the run within the
-hour, not at GitHub's six. The Elo job reads 49 nflverse files a run in season, 43 of them finished seasons' (50 and 44 while the
-rankings are still on the finished season, which also reads the play-by-play of the season before it); the
+hour, not at GitHub's six. The Elo job reads 65 nflverse files a run in season, 56 of them finished seasons', about
+256 MB (elo.yml's own count, since PFR's snap counts from 2013 joined on 4 November 2026); the
 finished seasons' are kept between runs by `actions/cache` (CLAUDE.md, "Player Elo: the loop").
 
 ## Gotchas

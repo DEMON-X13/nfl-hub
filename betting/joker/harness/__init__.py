@@ -4,7 +4,7 @@ the formula was tested:
 
   data.py     - the games loader (nflverse games.csv), team codes kept across moves
   sources.py  - the stat source: one row per team per game, EPA per play and the rest
-  pbp.py      - play-by-play loading and the team-game aggregation the source uses
+  pbp.py      - play-by-play loading (the quarterback table reads it)
   ratings.py  - the Elo + EWMA rating state machine, a port of the app's own, read
                 before each game
   qb.py       - the quarterback ratings and the backup-quarterback drop

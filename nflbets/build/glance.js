@@ -537,7 +537,5 @@ html[data-theme="light"] .glance-pop{box-shadow:0 18px 40px -16px rgba(30,34,48,
 
 /* the parts ask for this before they draw a name as a button (glanceName in part3.js) */
 window.hubGlance=function(btn){ if(btn&&btn.dataset&&btn.dataset.glance) open(btn); };
-window.hubGlanceClose=()=>close(true);
-window.hubGlanceState=()=>cur?{of:cur.of,gid:cur.gid,sig:cur.sig}:null;
 window.hubGlanceBack=()=>RET?{of:RET.of,gid:RET.gid,game:RET.game,tab:RET.tab}:null;
 })();

@@ -80,7 +80,7 @@ def stats_table(seasons, fresh: Path | None):
     if SEASON in seasons and fresh is not None and (fresh / f"stats_team_week_{SEASON}.csv").exists():
         frames.append(pd.read_csv(fresh / f"stats_team_week_{SEASON}.csv", low_memory=False))
     raw = pd.concat(frames, ignore_index=True)
-    return sources.nflverse_team_week_from_frame(raw) if hasattr(sources, "nflverse_team_week_from_frame") else _aggregate_like_harness(raw, seasons)
+    return _aggregate_like_harness(raw, seasons)
 
 
 def _aggregate_like_harness(raw, seasons):
