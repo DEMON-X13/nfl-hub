@@ -546,6 +546,50 @@ const RESULTS = {
   23,
   6
  ],
+ "wk10:NE-DET": [
+  10,
+  35
+ ],
+ "wk10:KC-ATL": [
+  35,
+  13
+ ],
+ "wk10:HOU-CLE": [
+  24,
+  27
+ ],
+ "wk10:MIN-GB": [
+  30,
+  10
+ ],
+ "wk10:JAX-TEN": [
+  40,
+  23
+ ],
+ "wk10:MIA-IND": [
+  22,
+  24
+ ],
+ "wk10:CAR-NO": [
+  20,
+  17
+ ],
+ "wk10:BUF-NYJ": [
+  31,
+  12
+ ],
+ "wk10:SEA-LV": [
+  21,
+  13
+ ],
+ "wk10:LAR-ARI": [
+  34,
+  6
+ ],
+ "wk10:SF-DAL": [
+  46,
+  40
+ ],
  "wk10:WAS-NYG": [
   24,
   21
@@ -692,28 +736,26 @@ const LINES = {
  "wk10:NE-DET": "DET -2.5, O/U 50.5",
  "wk10:KC-ATL": "KC -3, O/U 47.5",
  "wk10:HOU-CLE": "HOU -4.5, O/U 40.5",
- "wk10:MIN-GB": "GB -3, O/U 42.5",
+ "wk10:MIN-GB": "GB -2.5, O/U 42.5",
  "wk10:MIA-IND": "IND -4.5, O/U 37.5",
  "wk10:CAR-NO": "NO -1.5, O/U 48.5",
  "wk10:BUF-NYJ": "BUF -8.5, O/U 50.5",
  "wk10:JAX-TEN": "JAX -10.5, O/U 45.5",
- "wk10:LAR-ARI": "LAR -9.5, O/U 38.5",
+ "wk10:LAR-ARI": "LAR -10, O/U 38.5",
  "wk10:SEA-LV": "SEA -6.5, O/U 40.5",
- "wk10:SF-DAL": "SF -4.5, O/U 55.5",
- "wk10:PIT-CIN": "CIN -3.5, O/U 49.5",
+ "wk10:SF-DAL": "SF -3.5, O/U 55.5",
+ "wk10:PIT-CIN": "CIN -4.5, O/U 49.5",
  "wk10:LAC-BAL": "BAL -4.5, O/U 38.5",
  "wk11:IND-HOU": "HOU -10, O/U 44.5",
  "wk11:MIA-BUF": "BUF -16.5, O/U 46.5",
- "wk11:BAL-CAR": "CAR -1.5, O/U 44.5",
- "wk11:NO-CHI": "CHI -9.5, O/U 48.5",
- "wk11:TEN-DAL": "DAL -7.5, O/U 51.5",
- "wk11:TB-DET": "DET -3.5, O/U 47.5",
- "wk11:ARI-KC": "KC -14, O/U 42.5",
- "wk11:JAX-NYG": "JAX -6, O/U 44.5",
- "wk11:NYJ-LAC": "LAC -1.5, O/U 42.5",
- "wk11:LV-DEN": "DEN -8.5, O/U 41.5",
- "wk11:PIT-PHI": "PIT -4.5, O/U 38.5",
- "wk11:MIN-SF": "SF -3.5, O/U 45.5",
- "wk11:CIN-WAS": "CIN -3.5, O/U 51.5"
+ "wk11:BAL-CAR": "CAR -2.5, O/U 44.5",
+ "wk11:NO-CHI": "CHI -10, O/U 48.5",
+ "wk11:TEN-DAL": "DAL -7.5, O/U 53.5",
+ "wk11:TB-DET": "DET -5.5, O/U 46.5",
+ "wk11:ARI-KC": "KC -16.5, O/U 41.5",
+ "wk11:JAX-NYG": "JAX -6, O/U 46.5",
+ "wk11:NYJ-LAC": "LAC -3, O/U 40.5",
+ "wk11:LV-DEN": "DEN -9.5, O/U 40.5",
+ "wk11:MIN-SF": "SF -3, O/U 45.5"
 };
-const LINES_ASOF = "2026-11-15";
+const LINES_ASOF = "2026-11-16";
