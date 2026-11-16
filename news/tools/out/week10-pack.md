@@ -83,8 +83,8 @@ Searches to run:
 - "NFL week 10 picks NE DET"
 
 New England Patriots, injuries:
-- Drake Maye (QB) Questionable, Ankle: Maye (ankle) will undergo additional testing, but the Patriots expect him to be out for a while, SNF on NBC reports.
-- A.J. Brown (WR) Questionable, Hamstring: Brown (hamstring) was spotted limping out of the locker room following Sunday's Week 10 loss to Detroit, Andrew Callahan of the Boston Herald reports.
+- Drake Maye (QB) Doubtful, Ankle: The Patriots are concerned that Maye fractured his ankle during Sunday's 35-10 loss to the Lions in Munich, Adam Schefter of ESPN reports.
+- A.J. Brown (WR) Questionable, Hamstring: Brown (hamstring) was spotted walking around with a limp in the locker room following Sunday's 35-10 loss to the Lions in Munich, Andrew Callahan of the Boston Herald reports.
 - Andy Borregales (PK) Active: Borregales made his sole field-goal attempt and one PAT in the Patriots' 35-10 loss to the Lions in Munich on Sunday.
 - DeMario Douglas (WR) Active: Douglas caught one of three passes for four yards during the Patriots' 35-10 loss to the Lions on Sunday in Munich.
 - Hunter Henry (TE) Active: Henry caught two of three passes for 22 yards during the Patriots' 35-10 loss to the Lions on Sunday in Munich.
@@ -112,6 +112,7 @@ New England Patriots, injuries:
 New England Patriots, ESPN headlines:
 
 Detroit Lions, injuries:
+- Aidan Hutchinson (DE) Out, Knee - ACL: Hutchison is expected to miss the remainder of the season after an initial MRI on his injured right knee Monday revealed a torn ACL, Ian Rapoport of NFL Network reports.
 - Sam LaPorta (TE) Active: LaPorta caught one of four targets for 16 yards in Sunday's 35-10 win over the Patriots in Munch.
 - Jameson Williams (WR) Active: Williams caught four of seven targets for 50 yards in Sunday's 35-10 win over the Patriots in Munich.
 - Amon-Ra St. Brown (WR) Active: St. Brown caught four of five targets for 98 yards and two touchdowns in Sunday's 35-10 win over the Patriots in Munich.
@@ -119,7 +120,6 @@ Detroit Lions, injuries:
 - Isaac TeSlaa (WR) Active: TeSlaa caught two of five targets for 19 yards and a touchdown during the Lions' 35-10 win over the Patriots on Sunday in Munich. He also recorded a tackle.
 - Sione Vaki (RB) Active: Vaki turned six carries into 28 yards and added a 17-yard catch on his only target during the Lions' 35-10 win over the Patriots on Sunday in Munich.
 - Jahmyr Gibbs (RB) Active: Gibbs carried the ball 22 times for 153 yards and two touchdowns while catching seven of eight targets for 99 yards in Sunday's 35-10 win over the Patriots.
-- Aidan Hutchinson (DE) Doubtful, Knee: Hutchinson is believed to have suffered a significant knee injury that "knocks him out for the foreseeable future," Ian Rapoport of NFL Network reports.
 - Jared Goff (QB) Active: Goff completed 20 of 31 passes for 303 yards and three touchdowns with two interceptions in Sunday's 35-10 win over the Patriots in Munich. He added three yards on his only carry.
 - Mekhi Wingo (DT) Out, Coach's Decision: inactive
 - Amen Ogbongbemiga (LB) Out, Coach's Decision: inactive
@@ -316,6 +316,7 @@ Minnesota Vikings, injuries:
 Minnesota Vikings, ESPN headlines:
 
 Green Bay Packers, injuries:
+- Tyrod Taylor (QB) Active: Taylor completed one of two pass attempts for three yards in Sunday's 30-10 loss to the Vikings.
 - MarShawn Lloyd (RB) Active: Lloyd finished Sunday's loss to Minnesota with 13 yards on four carries while catching all three of his targets for 26 yards.
 - Kaleb Johnson (RB) Active: Johnson carried the ball 10 times for 42 yards in Sunday's 30-10 loss to the Vikings.
 - Tucker Kraft (TE) Active: Kraft caught one of four targets for 19 yards in Sunday's 30-10 loss to the Vikings.
@@ -340,7 +341,6 @@ Green Bay Packers, injuries:
 - Josh Whyle (TE) Injured Reserve, Concussion: Green Bay placed Whyle (concussion) on injured reserve Saturday.
 - Aaron Banks (G) Active: Banks (knee/hip) does not have an injury designation for Sunday's game against the Vikings, Wes Hodkiewicz of the Packers' official site reports.
 - Ty'Ron Hopper (LB) Active: Hopper (illness) does not have any injury designation ahead of Sunday's game against the Vikings, Wes Hodkiewicz of the Packers' official site reports.
-- Savion Williams (WR) Active: Williams (groin) doesn't have a designation for Sunday's game versus the Vikings, Wes Hodkiewicz of the Packers' official site reports.
 
 Green Bay Packers, ESPN headlines:
 
@@ -384,15 +384,15 @@ Jacksonville Jaguars, injuries:
 Jacksonville Jaguars, ESPN headlines:
 
 Tennessee Titans, injuries:
+- Carnell Tate (WR) Out, Shoulder: Titans head coach Robert Saleh said Monday that he's hopeful that Tate (shoulder) will return to action Week 11 versus the Cowboys, Jim Wyatt of the team's official site reports.
 - Gunnar Helm (TE) Active: Helm caught all four of his targets for 23 yards in Sunday's 40-23 loss to the Jaguars.
 - Tyjae Spears (RB) Active: Spears rushed four times for 28 yards in Sunday's 40-23 loss to the Jaguars. He turned one catch into zero yards on one target.
 - Elic Ayomanor (WR) Active: Ayomanor caught five of 10 targets for 79 yards in Sunday's 40-23 loss to the Jaguars.
 - Tony Pollard (RB) Active: Pollard carried the ball nine times for 33 yards and caught eight of nine targets for 66 yards and a touchdown in Sunday's 40-23 loss to the Jaguars.
 - Cam Ward (QB) Active: Ward completed 28 of 39 passes for 231 yards and two touchdowns with one interception in Sunday's 40-23 loss to the Jaguars.
-- Wan'Dale Robinson (WR) Questionable, Ankle: Robinson (ankle) is questionable to return to Sunday's game against the Jaguars.
+- Wan'Dale Robinson (WR) Questionable, Ankle: Robinson is questionable to return to Sunday's game against the Jaguars due to an ankle injury.
 - Tony Adams (S) Questionable, Concussion: Adams has entered the league's concussion protocol and has been ruled out for the rest of Sunday's game against the Jaguars.
 - Nicholas Singleton (RB) Out, Coach's Decision: Singleton (coach's decision) is inactive for Sunday's game against the Jaguars.
-- Carnell Tate (WR) Out, Shoulder: inactive
 - Anthony Hill Jr. (LB) Out, Neck: inactive
 - Jaylon Jones (CB) Out, Coach's Decision: inactive
 - Jackie Marshall (DT) Out, Coach's Decision: inactive
@@ -423,6 +423,8 @@ Searches to run:
 - "NFL week 10 picks MIA IND"
 
 Miami Dolphins, injuries:
+- Seydou Traore (TE) Active: Traore went without a target while playing six of the Dolphins' 69 snaps on offense in Sunday's 24-22 loss to the Colts.
+- Greg Dulcich (TE) Active: Dulcich failed to haul in either of his two targets while logging 42 of 69 offensive snaps in the Dolphins' 24-22 loss to the Colts on Sunday.
 - Jalen Tolbert (WR) Active: Tolbert caught both of his targets for 49 yards and a touchdown in Sunday's 24-22 loss to the Colts.
 - Malik Washington (WR) Active: Washington secured all three targets for 50 yards, threw a 34-yard touchdown on his one pass attempt and returned four punts for 36 yards in the Dolphins' 24-22 loss to the Colts on Sunday.
 - Caleb Douglas (WR) Active: Douglas brought in three of eight targets for 71 yards in the Dolphins' 24-22 loss to the Colts on Sunday.
@@ -446,8 +448,6 @@ Miami Dolphins, injuries:
 - Jordyn Brooks (LB) Active: Brooks recorded 12 tackles (four solo) during Sunday's 19-9 loss versus the Lions.
 - Jacob Rodriguez (LB) Active: Rodriguez recorded 10 tackles (seven solo) including 1.0 sacks during Sunday's 19-9 loss versus the Lions.
 - Jaylen Wright (RB) Active: Wright (quadriceps) was a full participant in Wednesday's practice, C. Isaiah Smalls II of the Miami Herald reports.
-- Malik Willis (QB) Injured Reserve, Abdomen: The Dolphins hope Willis (abdomen) will return this year but haven't ruled out season-ending surgery, Joe Schad of The Palm Beach Post reports.
-- Kevin Coleman Jr. (WR) Active: Coleman wasn't targeted in Sunday's 19-9 loss to the Lions. He rushed one time for 16 yards.
 
 Miami Dolphins, ESPN headlines:
 
@@ -588,13 +588,13 @@ Buffalo Bills, injuries:
 Buffalo Bills, ESPN headlines:
 
 New York Jets, injuries:
+- Omar Cooper Jr. (WR) Questionable, Ankle: Jets head coach Aaron Glenn said that Cooper (ankle) will undergo imaging Monday, Eric Allen of the team's official site reports.
 - Adonai Mitchell (WR) Active: Mitchell caught three passes for 59 yards on eight targets in Sunday's 31-12 loss to the Bills.
 - Braelon Allen (RB) Active: Allen rushed eight times for 40 yards and caught his only target for six yards in Sunday's 31-12 loss to the Bills.
-- Geno Smith (QB) Questionable, Ankle: Jets head coach Aaron Glenn said after Sunday's loss to Buffalo that Smith, who departed the contest due to an ankle injury, will have his status for Week 11 determined during the upcoming week of practice, Jack Bell of the Jets' official site reports.
+- Geno Smith (QB) Questionable, Ankle: Jets head coach Aaron Glenn said after Sunday's 31-12 loss to the Bills that Smith, who departed the contest due to an ankle injury, will have his status for Week 11 against the Chargers determined during the upcoming week of practice, Jack Bell of the Jets' official site reports.
 - Cade Klubnik (QB) Active: Klubnik completed 11 of 20 passes for 137 yards, no touchdowns and one interception in Sunday's 31-12 loss to the Bills. He added three rushing attempts for 26 yards.
 - Breece Hall (RB) Active: Hall rushed 11 times for 41 yards and caught all four of his targets for 67 yards in Sunday's 31-12 loss to the Bills.
 - Garrett Wilson (WR) Active: Wilson (concussion) caught seven of 14 targets for 106 yards and lost a fumble in Sunday's 31-12 loss to the Bills.
-- Omar Cooper Jr. (WR) Questionable, Ankle: Cooper (ankle) won't return to Sunday's game against the Bills, Zack Rosenblatt of The Athletic reports.
 - Dylan Parham (G) Questionable, Knee: Parham (knee) is questionable to return to Sunday's game against the Bills.
 - VJ Payne (S) Active: Payne (knee) is active for Sunday's game against Buffalo.
 - Nahshon Wright (CB) Active: Wright (back) is active for Sunday's game against the Bills.
@@ -632,10 +632,10 @@ Seattle Seahawks, injuries:
 - Drew Lock (QB) Active: Lock completed 14 of 17 passes for 240 yards, two touchdowns and no interceptions and logged six carries for 20 yards during Sunday's 21-13 victory in Las Vegas.
 - Jadarian Price (RB) Active: Price posted nine carries for 36 yards and one touchdown and gathered in his only target for eight yards during Sunday's 21-13 victory at Las Vegas.
 - Zach Charbonnet (RB) Active: Charbonnet churned out 94 yards on 20 carries during Sunday's 21-13 win in Las Vegas.
-- Abraham Lucas (OT) Questionable, Ankle: Lucas suffered a sprained ankle during Sunday's Week 10 win over the Raiders, Brady Henderson of ESPN.com reports.
 - Jaxon Smith-Njigba (WR) Active: Smith-Njigba gathered in eight of 10 targets for 171 yards and one touchdown during Sunday's 21-13 win at Las Vegas.
 - George Holani (RB) Questionable, Knee: Holani (knee) has been ruled out for the remainder of Sunday's game against the Seahawks.
 - Jarran Reed (DT) Questionable, Toe: Reed is doubtful to return to Sunday's game against Las Vegas due to a toe injury.
+- Abraham Lucas (OT) Questionable, Ankle: Lucas (ankle) is doubtful to return to Sunday's game against the Raiders.
 - Emanuel Wilson (RB) Out, Coach's Decision: Wilson (coach's decision) is inactive for Sunday's game at Arizona.
 - Leonard Williams (DT) Out, Shoulder: inactive
 - Quenton Nelson (G) Out, Knee: inactive
@@ -656,13 +656,14 @@ Seattle Seahawks, injuries:
 Seattle Seahawks, ESPN headlines:
 
 Las Vegas Raiders, injuries:
+- Dylan Laube (RB) Active: Laube played all 22 of his snaps on special teams in Sunday's 21-13 loss to the Seahawks and returned two kickoffs for 46 yards and one punt for zero yards.
+- Brock Bowers (TE) Questionable, Ankle: Bowers, who will undergo additional testing Monday, isn't believed to have suffered a major ankle injury in Sunday's 21-13 loss to the Seahawks, Ian Rapoport of NFL Network reports.
 - Michael Mayer (TE) Active: Mayer caught two of three targets for 16 yards in Sunday's 21-13 loss to the Seahawks.
 - Tre Tucker (WR) Active: Tucker caught one pass for nine yards on two targets in Sunday's 21-13 loss to the Seahawks.
 - Fernando Mendoza (QB) Active: Mendoza completed 17 of 29 passes for 143 yards, no touchdowns and no interceptions and rushed six times for 22 yards and one TD during Sunday's 21-13 loss to the Seahawks.
 - Mike Washington Jr. (RB) Active: Washington compiled eight rushes for 23 yards and secured his only target for four yards during Sunday's 21-13 defeat to the Seahawks.
 - Ashton Jeanty (RB) Active: Jeanty turned his nine carries into just 18 yards and caught all four of his targets for 46 yards during Sunday's 21-13 loss to the Seahawks.
-- Brock Bowers (TE) Questionable, Ankle: Bowers (ankle) will be evaluated further Monday, Ryan McFadden of ESPN reports.
-- Kwity Paye (DE) Questionable, Neck: Paye (neck) is questionable to return to Sunday's game against the Seahawks
+- Kwity Paye (DE) Questionable, Neck: Paye (neck) is questionable to return to Sunday's game against the Seahawks.
 - Malik Benson (WR) Out, Coach's Decision: Benson (coach's decision) is inactive for Sunday's game against the Seahawks.
 - Thomas Booker IV (DT) Out, Ankle: Booker (ankle) is inactive for Sunday's game against the Seahawks.
 - Dont'e Thornton Jr. (WR) Out, Back: Thornton (back) is inactive for Sunday's game against the Seahawks.
@@ -680,7 +681,6 @@ Las Vegas Raiders, injuries:
 - Jack Bech (WR) Active: Bech caught one of two targets for nine yards Sunday in a loss to the 49ers.
 - Matt Gay (PK) Active: Gay converted his only field-goal attempt and both of his extra-point tries during Las Vegas' loss to the 49ers on Sunday.
 - Jalen Nailor (WR) Active: Nailor caught two of four targets for nine yards during Sunday's 38-17 loss to the 49ers.
-- Darien Porter (CB) Active: Porter (groin) is active for Sunday's Week 9 battle against the 49ers.
 
 Las Vegas Raiders, ESPN headlines:
 
@@ -831,6 +831,7 @@ Searches to run:
 - "NFL week 10 picks PIT CIN"
 
 Pittsburgh Steelers, injuries:
+- Mason Rudolph (QB) Active: Rudolph completed one of three pass attempts for two yards and rushed once for nine yards in Sunday's 38-18 loss to the Bengals.
 - DK Metcalf (WR) Active: Metcalf brought in two of six targets for 54 yards and a touchdown and added a two-point conversion catch in the Steelers' 38-18 loss to the Bengals on Sunday night.
 - Jaylen Warren (RB) Active: Warren rushed seven times for 15 yards and brought in five of six targets for 26 yards in the Steelers' 38-18 loss to the Bengals on Sunday night. He committed a fumble recovered by Pittsburgh.
 - Rico Dowdle (RB) Active: Dowdle rushed five times for 26 yards and caught both of his targets for eight yards during Sunday's 38-18 defeat at Cincinnati.
@@ -855,7 +856,6 @@ Pittsburgh Steelers, injuries:
 - Jalen Ramsey (CB) Active
 - Payton Wilson (LB) Active: Wilson totaled six tackles (three solo) and an interception during Pittsburgh's win over the Saints on Sunday.
 - Patrick Queen (LB) Active: Queen compiled 10 tackles (seven solo), including 1.0 sacks, during Pittsburgh's win over the Saints on Sunday.
-- Mason Rudolph (QB) Active: Rudolph is active for Sunday's game against the Saints in Paris, Teresa Varley of the Steelers' official site reports.
 
 Pittsburgh Steelers, ESPN headlines:
 
@@ -889,7 +889,7 @@ Cincinnati Bengals, injuries:
 Cincinnati Bengals, ESPN headlines:
 
 ### Los Angeles Chargers at Baltimore Ravens
-Mon, Nov 16, 8:15 PM ET, ESPN, M&T Bank Stadium, Baltimore. Line: BAL -4.5, O/U 38.5
+Mon, Nov 16, 8:15 PM ET, ESPN, M&T Bank Stadium, Baltimore. Line: BAL -4.5, O/U 39.5
 
 Searches to run:
 - "Los Angeles Chargers Baltimore Ravens preview week 10"
