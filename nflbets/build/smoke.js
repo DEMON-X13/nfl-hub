@@ -5497,11 +5497,6 @@ function run(state, url = SITE, espn = null, noState = false, { seed = null, fil
       chk(!d.querySelector('#trackBody .pe-track') && !/Market \+ form/i.test(txt(d.getElementById('trackBody'))), 'the Prop Record still draws the market + form card');
       w.eval('renderTrack()'); await wait(40);
       chk(!d.querySelector('#trackBody .pe-track'), 'a redraw of the Prop Record drew the market + form card');
-      /* past weeks are graded on the rating each player took into the week, not today's */
-      { const pl = Object.entries(eloP.players).find(([, v]) => (v.h || []).length >= 2);
-        if (pl) { const [pid, v] = pl;
-          chk(w.eval(`eloPre(${JSON.stringify(pid)},1)`) === v.s0 && w.eval(`eloPre(${JSON.stringify(pid)},${v.h[0][0] + 1})`) === v.h[0][1],
-            'eloPre does not read the rating a player took into the week'); } }
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
     { const MU = JSON.parse(ELO_MU);
       /* ---- THE MISMATCH TAG ON THE REGULAR PARLAYS (app v142, the owner's call of 5 November 2026: "instead of having the

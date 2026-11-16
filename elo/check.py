@@ -3117,13 +3117,6 @@ def main():
         by_club[v.get('team')] = by_club.get(v.get('team'), 0) + 1
     thin = sorted(t for t in clubs if by_club.get(t, 0) < 15)
     chk(not thin, f'ROSTER: clubs with fewer than 15 players in the players map: {thin}')
-    # a player kept out of the players map keeps his season so far beside it (the Prop Record
-    # grades the weeks he played on the rating he took into each; it graded them at 1500).
-    # Every sidelined player of this season's rankings has played this season, so has one.
-    if P.get('season') == P.get('season_in_play', P.get('season')):
-        past = P.get('past') or {}
-        lost = [x['name'] for g in groups for x in P['groups'][g]['sidelined'] if x['id'] not in players and x['id'] not in past]
-        chk(not lost, f'ROSTER: kept out with no season so far beside the players map, so their past lines grade at 1500: {lost[:5]}{" ..." if len(lost) > 5 else ""}')
 
     # ---- REPORT ----
     inj_path = os.path.join(a.cache, f'injuries_{int(games[games.kick > built].season.min()) if (games.kick > built).any() else sched}.csv')

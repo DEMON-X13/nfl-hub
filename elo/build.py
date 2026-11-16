@@ -2712,7 +2712,6 @@ def main():
     hist = {}              # player_id -> {season: [[ord, rating], ...]}
     recent = {}            # player_id -> involvement in his last five rated games
     skipped = 0            # games a regular left early, not rated
-    season_start = {}      # (season, player) -> rating at the start of the season
     start = {}             # player -> his first career rating (THE DRAFT START), for players.json
     peak = {}              # player -> (rating, season)
     game_feat = []         # per game: features from pre-game ratings
@@ -2768,8 +2767,6 @@ def main():
                 for k in U:
                     U[k] = 1500 + CARRY * (U[k] - 1500)
             cur_season = season
-            for p in R:
-                season_start[(season, p)] = R[p]
         week_games = games[(games.season == season) & (games.ord == ordw)]
         # 1. features for every game of the week from pre-game ratings and the pre-game lineups;
         #    the same from who took part, kept beside them for the comparison
@@ -2806,7 +2803,7 @@ def main():
                 pid, g = r.player_id, r.group
                 if pid not in R:
                     R[pid], N[pid] = first_rating(pid, g, int(season), slots), 0
-                    season_start[(season, pid)] = start[pid] = R[pid]
+                    start[pid] = R[pid]
                 info[pid] = {'name': r.player_display_name, 'pos': r.position, 'group': g, 'team': r.team}
                 # a regular who left early: his involvement collapsed against his own recent
                 # norm, so the game says nothing about how good he is and is not rated
@@ -3109,7 +3106,6 @@ def main():
     rated_games = [r for r in game_feat if r['season'] == rank_season and r['result'] is not None]
     last_ord = max((r['ord'] for r in rated_games), default=None)
     players = {}
-    kept_out = set()       # players the map would carry but for being out now (see `past` below)
     groups_out = {}
     def why_out(pid):
         if pid in out_now:
@@ -3183,28 +3179,19 @@ def main():
             x['elo'] = show(x.pop('raw'))
         groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'curve': [show(RS[p]) for p in pool],
                          'min_games': min((need_of(t) for t in team_games), default=1), 'top': rows[:25], 'sidelined': sidelined}
-        # the players map: every player the models may price, on his career rating (elo, with s0
-        # and h the season in play so far, so a rating can be read as it stood before any week:
-        # the Prop Record grades on those), his club, his place in the rankings where he has
-        # one (se, rank), and his first career rating with the draft slot it came from (start,
-        # draft: THE DRAFT START)
+        # the players map: every player the models may price, on his career rating (elo), his
+        # club, his place in the rankings where he has one (se, rank), and his first career
+        # rating with the draft slot it came from (start, draft: THE DRAFT START). Until
+        # November 2026 it carried s0 and h too (the season so far, week by week) and a `past`
+        # map beside it for the players kept out, which the Prop Record's market + form card
+        # graded on; that card went in app v138 and nothing has read them since.
         for pid in sorted(set(career) | set(pool)):
             if pid not in R:
                 continue
-            h = hist[pid]
             players[pid] = {'name': info[pid]['name'], 'group': g, 'team': info[pid]['team'], 'elo': round(R[pid]),
-                            's0': round(season_start.get((last, pid), 1500.0)), 'h': [[o, round(r)] for o, r in h.get(last, [])],
                             'se': show(RS[pid]) if pid in rank else None, 'rank': rank.get(pid),
                             # THE DRAFT START: his first career rating and the draft slot it was read from
                             'start': round(start[pid], 1), 'draft': list(slots[pid]) if pid in slots else None}
-        kept_out.update(p for p in set(rated) | {p for p in R if info[p]['group'] == g and latest_season[p] >= active_cut and N[p] >= 3}
-                        if why_out(p))
-    # a player the roster or the report keeps out (or one who has left his club) is not in the
-    # players map, so nothing on the page prices him or suggests his lines; but the Prop Record
-    # grades the lines he had before, each week on the rating he took into it, and with no
-    # rating it graded them at 1500. So his season so far (s0 and h, as in the map) is kept here.
-    past = {pid: {'s0': round(season_start.get((last, pid), 1500.0)), 'h': [[o, round(r)] for o, r in hist[pid][last]]}
-            for pid in sorted(kept_out) if pid in R and pid not in players and hist.get(pid, {}).get(last)}
 
     def through(season):
         """how far the season's rating has got: the latest week whose games are all rated (or
@@ -3241,7 +3228,7 @@ def main():
         'through_week': tw, 'through': tlabel, 'partial': partial,
         'rule': 'a real role (half the position\'s normal workload) in at least half of his club\'s rated games',
         'prov_games': PROV_GAMES,
-        'groups': groups_out, 'players': players, 'past': past,
+        'groups': groups_out, 'players': players,
     }
     mu = matchups([r for r in mu_log if r['group'] in MU_STATS], game_feat, coming, call_season, mu_lineups)
     if mu:
