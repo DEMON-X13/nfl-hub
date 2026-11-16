@@ -42,6 +42,14 @@ Washington Commanders, injuries:
 - Sam Cosmi (G) Active
 
 Washington Commanders, ESPN headlines:
+- 2026-11-14 Commanders QB Sam Hartman to star as 'The Bachelor' in milestone 30th season <https://www.espn.com/nfl/story/_/id/50472000/sam-hartman-bachelor-season-30>
+- 2026-11-13 Commanders QB Jayden Daniels finds redemption with game-winning drive <https://www.espn.com/nfl/story/_/id/50469451/commanders-jayden-daniels-redemption-game-winning-drive>
+- 2026-11-13 Giants' Jameis Winston lets 'the dogs out' on 4th down; Commanders don't bite <https://www.espn.com/nfl/story/_/id/50469309/giants-jameis-winston-barks-let-dogs-vs-commanders>
+- 2026-11-13 Commanders keep NFC East hopes alive with win over Giants <https://www.espn.com/nfl/story/_/id/50466279/new-york-giants-washington-commanders-week-10-tnf>
+- 2026-11-13 Week 10 TNF: Look back at the Commanders-Giants highlights <https://www.espn.com/nfl/story/_/id/50463340/thursday-night-football-commanders-giants-highlights>
+- 2026-11-13 Jayden Daniels and Commanders rally to stun the Giants 24-21 and keep their hopes alive <http://www.espn.com/nfl/recap?gameId=401873052>
+- 2026-11-12 Commanders-Giants odds, analysis, betting tips and recommended props <https://www.espn.com/espn/betting/story/_/id/50434703/nfl-week-10-odds-commanders-giants-betting-preview>
+- 2026-11-11 J.J. McCarthy makes his first Giants home start against the desperate Commanders <http://www.espn.com/nfl/preview?gameId=401873052>
 
 New York Giants, injuries:
 - Micah McFadden (LB) Active: McFadden made 10 tackles (five solo) in the Giants' 24-21 loss to the Commanders on Thursday.
@@ -71,6 +79,14 @@ New York Giants, injuries:
 - Colton Hood (CB) Active: Head coach John Harbaugh told reporters that Hood dislocated his finger during Tuesday's practice, Ryan Dunleavy of the New York Post reports.
 
 New York Giants, ESPN headlines:
+- 2026-11-16 Giants QB J.J. McCarthy's growth is showing in the numbers <https://www.espn.com/nfl/story/_/id/50491685/new-york-giants-qb-jj-mccarthy-growth-showing-week-10>
+- 2026-11-13 Giants' Jameis Winston lets 'the dogs out' on 4th down; Commanders don't bite <https://www.espn.com/nfl/story/_/id/50469309/giants-jameis-winston-barks-let-dogs-vs-commanders>
+- 2026-11-13 Commanders keep NFC East hopes alive with win over Giants <https://www.espn.com/nfl/story/_/id/50466279/new-york-giants-washington-commanders-week-10-tnf>
+- 2026-11-13 Week 10 TNF: Look back at the Commanders-Giants highlights <https://www.espn.com/nfl/story/_/id/50463340/thursday-night-football-commanders-giants-highlights>
+- 2026-11-13 Jayden Daniels and Commanders rally to stun the Giants 24-21 and keep their hopes alive <http://www.espn.com/nfl/recap?gameId=401873052>
+- 2026-11-12 Commanders-Giants odds, analysis, betting tips and recommended props <https://www.espn.com/espn/betting/story/_/id/50434703/nfl-week-10-odds-commanders-giants-betting-preview>
+- 2026-11-12 Inside the physical and mental toll of Malik Nabers' knee injury <https://www.espn.com/nfl/story/_/id/50454087/inside-physical-mental-toll-malik-nabers-knee-injury>
+- 2026-11-11 J.J. McCarthy makes his first Giants home start against the desperate Commanders <http://www.espn.com/nfl/preview?gameId=401873052>
 
 ### New England Patriots at Detroit Lions
 Sun, Nov 15, 9:30 AM ET, Fox, FC Bayern Munich Stadium, Munich
@@ -110,6 +126,14 @@ New England Patriots, injuries:
 - Christian Gonzalez (CB) Active: Gonzalez logged 10 tackles (nine solo) and one pass defense during the Patriots' 45-27 loss to the Packers in Week 9.
 
 New England Patriots, ESPN headlines:
+- 2026-11-16 Sources: Patriots fear Drake Maye has broken ankle, could miss rest of season <https://www.espn.com/nfl/story/_/id/50500352/patriots-qb-drake-maye-leg-miss-extended-sources-say>
+- 2026-11-16 Patriots need to fix defensive effort -- especially if Drake Maye misses time <https://www.espn.com/nfl/story/_/id/50497417/patriots-defense-struggles-lions-drake-maye>
+- 2026-11-15 Patriots QB Drake Maye knocked out of blowout loss to Lions with ankle injury <https://www.espn.com/nfl/story/_/id/50492387/patriots-qb-drake-maye-testing-ankle-injury>
+- 2026-11-15 Lions' Amon-Ra St. Brown: Germany trip one he'll 'never forget' <https://www.espn.com/nfl/story/_/id/50492174/never-forget-germany-trip>
+- 2026-11-15 St. Brown and Gibbs score 2 TDs each in Lions' 35-10 rout of Patriots after Maye injured in Munich <http://www.espn.com/nfl/recap?gameId=401873053>
+- 2026-11-15 Patriots' Drake Maye, Lions' Aidan Hutchinson both injured on same play in Munich <https://www.espn.com/nfl/story/_/id/50490533/patriots-drake-maye-lions-aidan-hutchinson-injured>
+- 2026-11-15 Patriots place RB TreVeyon Henderson on IR with still unexplained illness <https://www.espn.com/nfl/story/_/id/50483113/patriots-place-rb-henderson-ir-unexplained-illness>
+- 2026-11-14 Patriots are 6-0 after a regular-season loss under Vrabel: Can they do it again? <https://www.espn.com/nfl/story/_/id/50475264/patriots-lions-germany-week-10-mike-vrabel>
 
 Detroit Lions, injuries:
 - Aidan Hutchinson (DE) Out, Knee - ACL: Hutchison is expected to miss the remainder of the season after an initial MRI on his injured right knee Monday revealed a torn ACL, Ian Rapoport of NFL Network reports.
@@ -139,6 +163,14 @@ Detroit Lions, injuries:
 - Roger McCreary (CB) Active: McCreary (foot) is active for Sunday's game against the Vikings.
 
 Detroit Lions, ESPN headlines:
+- 2026-11-16 Sources: Lions' Aidan Hutchinson out for season with knee injury <https://www.espn.com/nfl/story/_/id/50501291/sources-aidan-hutchinson-season-torn-acl>
+- 2026-11-16 Sources: Patriots fear Drake Maye has broken ankle, could miss rest of season <https://www.espn.com/nfl/story/_/id/50500352/patriots-qb-drake-maye-leg-miss-extended-sources-say>
+- 2026-11-16 Ex-kicker Bill Gramatica sympathizes with Aidan Hutchinson, offers support <https://www.espn.com/nfl/story/_/id/50497214/bill-gramatica-sympathizes-lions-aidan-hutchinson>
+- 2026-11-16 Amon-Ra St. Brown talks lederhosen, Lions' 'human centipede' celebration <https://www.espn.com/nfl/story/_/id/50493599/amon-ra-st-brown-german-roots-lederhosen-munich>
+- 2026-11-15 Untold stories of Detroit Lions WR Amon-Ra St. Brown's German upbringing <https://www.espn.com/nfl/story/_/id/50475710/nfl-germany-lions-amon-ra-st-brown-munich>
+- 2026-11-15 Lions' Amon-Ra St. Brown: Germany trip one he'll 'never forget' <https://www.espn.com/nfl/story/_/id/50492174/never-forget-germany-trip>
+- 2026-11-16 Sources: Lions DE Aidan Hutchinson feared to have suffered significant knee injury <https://www.espn.com/nfl/story/_/id/50491838/sources-lions-hutchinson-feared-significant-knee-injury>
+- 2026-11-15 St. Brown and Gibbs score 2 TDs each in Lions' 35-10 rout of Patriots after Maye injured in Munich <http://www.espn.com/nfl/recap?gameId=401873053>
 
 ### Kansas City Chiefs at Atlanta Falcons
 Sun, Nov 15, 1:00 PM ET, CBS, Mercedes-Benz Stadium, Atlanta
@@ -178,6 +210,14 @@ Kansas City Chiefs, injuries:
 - Harrison Butker (PK) Active: Butker will remain Kansas City's kicker ahead of Sunday's game against the Falcons, Sam McDowell of The Kansas City Star reports.
 
 Kansas City Chiefs, ESPN headlines:
+- 2026-11-16 Patrick Mahomes stars for Chiefs, strikes early connection with Josh Downs <https://www.espn.com/nfl/story/_/id/50496736/patrick-mahomes-stars-chiefs-sync-josh-downs>
+- 2026-11-15 Mahomes throws 5 TD passes and rookie Johnson runs for 101 yards as Chiefs overwhelm Falcons 35-13 <http://www.espn.com/nfl/recap?gameId=401873058>
+- 2026-11-15 Sources: Chiefs had renowned baseball doctors weigh in on Patrick Mahomes' elbow <https://www.espn.com/nfl/story/_/id/50481210/sources-baseball-doctors-consulted-patrick-mahomes-elbow>
+- 2026-11-14 Chiefs' Kenneth Walker III (groin) to sit out vs. Falcons <https://www.espn.com/nfl/story/_/id/50480529/chiefs-kenneth-walker-iii-groin-sit-sources-say>
+- 2026-11-13 Chiefs RB Kenneth Walker III (groin) misses practice, status uncertain <https://www.espn.com/nfl/story/_/id/50473948/chiefs-rb-walker-groin-misses-practice-status-uncertain>
+- 2026-11-12 NFL rushing leaders in spotlight as Kenneth Walker III and Chiefs face Bijan Robinson and Falcons <http://www.espn.com/nfl/preview?gameId=401873058>
+- 2026-11-11 Chiefs sticking with struggling Harrison Butker as kicker this week <https://www.espn.com/nfl/story/_/id/50454081/chiefs-sticking-harrison-butker-kicker-vs-falcons>
+- 2026-11-11 How Josh Downs fits with Patrick Mahomes and the Chiefs' offense <https://www.espn.com/nfl/story/_/id/50448000/josh-downs-chiefs-trade-patrick-mahomes-offense-role>
 
 Atlanta Falcons, injuries:
 - Michael Penix Jr. (QB) Active: Penix completed 23 of 43 passes for 286 yards with no touchdowns and one interception and rushed four times for 29 yards in the Falcons' 35-13 loss to the Chiefs on Sunday. He also fumbled once but recovered.
@@ -207,6 +247,14 @@ Atlanta Falcons, injuries:
 - Brian Robinson Jr. (RB) Injured Reserve, Hamstring: Robinson (hamstring) was placed on injured reserve Saturday, Marc Raimondi of ESPN.com reports.
 
 Atlanta Falcons, ESPN headlines:
+- 2026-11-15 Bijan Robinson: Falcons deserved boos in loss to Chiefs <https://www.espn.com/nfl/story/_/id/50495406/bijan-robinson-says-falcons-deserved-boos-loss-chiefs>
+- 2026-11-15 Mahomes throws 5 TD passes and rookie Johnson runs for 101 yards as Chiefs overwhelm Falcons 35-13 <http://www.espn.com/nfl/recap?gameId=401873058>
+- 2026-11-14 Falcons insist winning still the goal despite trading Jessie Bates III <https://www.espn.com/nfl/story/_/id/50473666/atlanta-falcons-trade-deadline-jessie-bates-morale>
+- 2026-11-13 Falcons sign DE Cameron Thomas, CB C.J. Henderson to multiyear extensions <https://www.espn.com/nfl/story/_/id/50471659/falcons-sign-de-thomas-cb-henderson-multiyear-extensions>
+- 2026-11-12 NFL rushing leaders in spotlight as Kenneth Walker III and Chiefs face Bijan Robinson and Falcons <http://www.espn.com/nfl/preview?gameId=401873058>
+- 2026-11-11 Sources: Giants called Falcons to ask about Bijan Robinson before trade deadline <https://www.espn.com/nfl/story/_/id/50453373/sources-giants-eyed-bijan-robinson-trade-deadline>
+- 2026-11-10 Falcons trade center Ryan Neuzil to Ravens for guard Andrew Vorhees, pick <https://www.espn.com/nfl/story/_/id/50446499/falcons-trade-center-neuzil-ravens-guard-vorhees-pick>
+- 2026-11-10 Source: Falcons cutting kicker Nick Folk, signing Jake Moody <https://www.espn.com/nfl/story/_/id/50444069/sources-falcons-cutting-kicker-nick-folk-signing-jake-moody>
 
 ### Houston Texans at Cleveland Browns
 Sun, Nov 15, 1:00 PM ET, Fox, Huntington Bank Field, Cleveland
@@ -246,6 +294,14 @@ Houston Texans, injuries:
 - Foster Moreau (TE) Active: Moreau didn't log any targets or touches Sunday in a 44-22 win against the Chargers.
 
 Houston Texans, ESPN headlines:
+- 2026-11-16 Browns' Deshaun Watson relishes 'special' win vs. Texans after engineering rally <https://www.espn.com/nfl/story/_/id/50495783/browns-deshaun-watson-savors-special-win-vs-texans>
+- 2026-11-15 Deshaun Watson throws for 312 yards against his old team as the Browns rally past the Texans 27-24 <http://www.espn.com/nfl/recap?gameId=401873056>
+- 2026-11-15 Texans lose RB Woody Marks to concussion in loss to Browns <https://www.espn.com/nfl/story/_/id/50493317/texans-lose-rb-woody-marks-concussion-browns>
+- 2026-11-14 DE Danielle Hunter, LB Azeez Al-Shaair among Texans ruled out vs. Browns <https://www.espn.com/nfl/story/_/id/50481864/rb-montgomery-de-hunter-texans-ruled-vs-browns>
+- 2026-11-12 Deshaun Watson downplays facing Texans as Browns try to stay unbeaten at home, in playoff picture <http://www.espn.com/nfl/preview?gameId=401873056>
+- 2026-11-10 A 'confident' C.J. Stroud soaks in five-TD day against Chargers <https://www.espn.com/nfl/story/_/id/50434826/texans-cj-stroud-five-tds-chargers>
+- 2026-11-09 'Grateful' Tank Dell has 105 receiving yards in 2nd game back from knee injury <https://www.espn.com/nfl/story/_/id/50428998/grateful-tank-dell-105-receiving-yards-2nd-game-back-knee-injury>
+- 2026-11-09 Herbert to undergo testing after exiting Chargers' 44-22 loss with finger injury <https://www.espn.com/nfl/story/_/id/50428280/herbert-injures-finger-chargers-loss-testing>
 
 Cleveland Browns, injuries:
 - Dylan Sampson (RB) Active: Sampson rushed four times for six yards and caught four of six targets for 31 yards in Sunday's 27-24 win over the Texans.
@@ -275,6 +331,14 @@ Cleveland Browns, injuries:
 - Myles Harden (CB) Active: Harden recorded five tackles (four solo), including 2.0 sacks, and one pass defense during the Browns' 23-22 overtime loss to the Saints in Week 9.
 
 Cleveland Browns, ESPN headlines:
+- 2026-11-16 Betting buzz: How improbable is this Browns season? Here's what the numbers say <https://www.espn.com/espn/betting/story/_/id/49466506/nfl-betting-buzz-odds-updates-line-moves-spreads>
+- 2026-11-16 Browns' Deshaun Watson relishes 'special' win vs. Texans after engineering rally <https://www.espn.com/nfl/story/_/id/50495783/browns-deshaun-watson-savors-special-win-vs-texans>
+- 2026-11-15 Deshaun Watson throws for 312 yards against his old team as the Browns rally past the Texans 27-24 <http://www.espn.com/nfl/recap?gameId=401873056>
+- 2026-11-12 Deshaun Watson downplays facing Texans as Browns try to stay unbeaten at home, in playoff picture <http://www.espn.com/nfl/preview?gameId=401873056>
+- 2026-11-12 Browns' Jared Verse says he met with team psychiatrist to try to snap sack slump <https://www.espn.com/nfl/story/_/id/50463010/browns-jared-verse-met-psychiatrist-end-sack-slump>
+- 2026-11-11 Browns' Monken: Watson over Sanders QB decision based on 'full body of work' <https://www.espn.com/nfl/story/_/id/50453932/browns-todd-monken-explains-call-start-deshaun-watson>
+- 2026-11-11 Why protected picks aren't common in NFL trades <https://www.espn.com/nfl/story/_/id/50434740/nfl-trades-protected-draft-picks>
+- 2026-11-09 Source: Browns returning to Watson as QB1 despite Sanders' strong fill-in start <https://www.espn.com/nfl/story/_/id/50433760/source-browns-returning-deshaun-watson-qb1-week-10>
 
 ### Minnesota Vikings at Green Bay Packers
 Sun, Nov 15, 1:00 PM ET, Fox, Lambeau Field, Green Bay
@@ -314,6 +378,14 @@ Minnesota Vikings, injuries:
 - Will Reichard (PK) Active: Reichard made both of his field-goal attempts during the Vikings' 23-6 loss to the Bills on Monday.
 
 Minnesota Vikings, ESPN headlines:
+- 2026-11-16 Kirk Cousins emotional after win in Vikings return, reflects on 'tough 3 years' <https://www.espn.com/nfl/story/_/id/50495965/kirk-cousins-emotional-getting-win-return-vikings>
+- 2026-11-15 Kirk Cousins has triumphant return as Vikings sack Jordan Love 8 times in 30-10 win over Packers <http://www.espn.com/nfl/recap?gameId=401873060>
+- 2026-11-15 Sources: Vikings want to keep Kirk Cousins, talked to QB about staying in 2027 <https://www.espn.com/nfl/story/_/id/50484865/sources-vikings-want-keep-kirk-cousins-2027-season>
+- 2026-11-14 Sources: Vikings made initial Kirk Cousins trade call to Raiders before MNF <https://www.espn.com/nfl/story/_/id/50479874/sources-vikings-first-called-kirk-cousins-mnf>
+- 2026-11-14 Despite Cousins trade, are Vikings back to square one at QB? <https://www.espn.com/nfl/story/_/id/50472099/vikings-kirk-cousins-trade-contract>
+- 2026-11-14 Vikings to start reacquired QB Kirk Cousins vs. Packers <https://www.espn.com/nfl/story/_/id/50474753/vikings-start-reacquired-qb-kirk-cousins-vs-packers>
+- 2026-11-13 Vikings 'hyped' to welcome back 'leader' Cousins on 1st day of practice <https://www.espn.com/nfl/story/_/id/50466164/vikings-hyped-welcome-back-leader-kirk-cousins-1st-day-practice>
+- 2026-11-12 Kirk Cousins begins his 2nd stint with Vikings as they face the Packers in an NFC North showdown <http://www.espn.com/nfl/preview?gameId=401873060>
 
 Green Bay Packers, injuries:
 - Tyrod Taylor (QB) Active: Taylor completed one of two pass attempts for three yards in Sunday's 30-10 loss to the Vikings.
@@ -343,6 +415,14 @@ Green Bay Packers, injuries:
 - Ty'Ron Hopper (LB) Active: Hopper (illness) does not have any injury designation ahead of Sunday's game against the Vikings, Wes Hodkiewicz of the Packers' official site reports.
 
 Green Bay Packers, ESPN headlines:
+- 2026-11-16 QB Jordan Love, Packers frustrated after blowout loss at home to Vikings <https://www.espn.com/nfl/story/_/id/50495671/qb-jordan-love-packers-frustrated-home-loss-vikings>
+- 2026-11-15 Kirk Cousins has triumphant return as Vikings sack Jordan Love 8 times in 30-10 win over Packers <http://www.espn.com/nfl/recap?gameId=401873060>
+- 2026-11-12 Kirk Cousins begins his 2nd stint with Vikings as they face the Packers in an NFC North showdown <http://www.espn.com/nfl/preview?gameId=401873060>
+- 2026-11-12 Does Packers' Christian Watson + Matthew Golden = 3,000 yards? <https://www.espn.com/nfl/story/_/id/50455566/packers-christian-watson-matthew-golden-3000-yards>
+- 2026-11-09 Matt LaFleur: Packers' Josh Jacobs needs surgery on finger; IR not ruled out <https://www.espn.com/nfl/story/_/id/50435349/packers-rb-josh-jacobs-needs-surgery-fractured-finger>
+- 2026-11-09 'Balling' Jordan Love wows teammates with big performance at Patriots <https://www.espn.com/nfl/story/_/id/50429190/balling-jordan-love-wows-teammates-big-performance-patriots>
+- 2026-11-09 Packers' Josh Jacobs dealing with broken finger, status for Vikings tilt TBD <https://www.espn.com/nfl/story/_/id/50429092/packers-josh-jacobs-dealing-fractured-finger>
+- 2026-11-09 Jordan Love accounts for 4 touchdowns, Packers force 4 turnovers in 45-27 win over Patriots <http://www.espn.com/nfl/recap?gameId=401873049>
 
 ### Jacksonville Jaguars at Tennessee Titans
 Sun, Nov 15, 1:00 PM ET, Fox, Nissan Stadium, Nashville
@@ -382,6 +462,14 @@ Jacksonville Jaguars, injuries:
 - Ameer Abdullah (RB) Active: Abdullah carried the ball seven times for 30 yards and returned one kickoff for 24 yards in Thursday night's 33-10 win over the Ravens.
 
 Jacksonville Jaguars, ESPN headlines:
+- 2026-11-16 Tracking Jaguars CB/WR Travis Hunter's 2026 season: Snaps on offense, defense <https://www.espn.com/nfl/story/_/id/50043976/jacksonville-jaguars-travis-hunter-stats-snaps-tracker>
+- 2026-11-15 Trevor Lawrence lights up the Titans as the Jaguars roll 40-23 for a sixth win in 7 games <http://www.espn.com/nfl/recap?gameId=401873057>
+- 2026-11-13 Jaguars holding out new players Jordan Davis, Jessie Bates to give them bye <https://www.espn.com/nfl/story/_/id/50472481/jaguars-holding-new-players-jordan-davis-jessie-bates-give-bye>
+- 2026-11-12 Travis Hunter makes Jessie Bates' Jaguars trade a hit with his nephews <https://www.espn.com/nfl/story/_/id/50464631/jaguars-jessie-bates-trade-travis-hunter>
+- 2026-11-12 Trevor Lawrence sees a 'shot' as the Jaguars add 3 defenders in trades before visiting Tennessee <http://www.espn.com/nfl/preview?gameId=401873057>
+- 2026-11-12 Three Jaguars trade deadline takeaways, from 'F them picks' to BTJ staying <https://www.espn.com/nfl/story/_/id/50456429/jaguars-trade-takeaways-james-gladstone-btj>
+- 2026-11-11 Jacksonville Jaguars' Foyesade Oluokun leads the way again in Africa's Week 9 NFL exploits <https://www.espn.com/espn/story/_/id/50452204/jacksonville-jaguars-foyesade-oluokun-leads-way-again-africa-week-9-nfl-exploits>
+- 2026-11-10 Jaguars rebuff trade interest in WR Brian Thomas Jr. <https://www.espn.com/nfl/story/_/id/50442903/jaguars-not-planning-trade-wr-brian-thomas-jr>
 
 Tennessee Titans, injuries:
 - Carnell Tate (WR) Out, Shoulder: Titans head coach Robert Saleh said Monday that he's hopeful that Tate (shoulder) will return to action Week 11 versus the Cowboys, Jim Wyatt of the team's official site reports.
@@ -411,6 +499,14 @@ Tennessee Titans, injuries:
 - James Williams Sr. (LB) Injured Reserve, Groin: The Titans placed Williams (groin) on injured reserve Monday, Jim Wyatt of the Titans' official site reports.
 
 Tennessee Titans, ESPN headlines:
+- 2026-11-16 Titans getting more after adding more to QB Cam Ward's plate <https://www.espn.com/nfl/story/_/id/50502385/titans-getting-more-adding-more-qb-cam-ward-plate>
+- 2026-11-15 Trevor Lawrence lights up the Titans as the Jaguars roll 40-23 for a sixth win in 7 games <http://www.espn.com/nfl/recap?gameId=401873057>
+- 2026-11-13 Rookie WR Carnell Tate among multiple Titans starters ruled out vs. Jaguars <https://www.espn.com/nfl/story/_/id/50473143/rookie-wr-carnell-tate-multiple-titans-ruled-out>
+- 2026-11-12 Trevor Lawrence sees a 'shot' as the Jaguars add 3 defenders in trades before visiting Tennessee <http://www.espn.com/nfl/preview?gameId=401873057>
+- 2026-11-11 Titans' Calvin Ridley addresses incident with valet at Nashville airport <https://www.espn.com/nfl/story/_/id/50454416/titans-ridley-addresses-incident-valet-airport>
+- 2026-11-11 Where does Cam Ward stand coming out of the bye? <https://www.espn.com/nfl/story/_/id/50442969/titans-cam-ward-bye>
+- 2026-11-10 Bills fill major need at safety, trade for Titans' Amani Hooker <https://www.espn.com/nfl/story/_/id/50444810/bills-trade-titans-safety-amani-hooker>
+- 2026-11-09 Titans WR Calvin Ridley involved in incident at Nashville airport <https://www.espn.com/nfl/story/_/id/50429795/titans-wr-ridley-involved-incident-nashville-airport>
 
 ### Miami Dolphins at Indianapolis Colts
 Sun, Nov 15, 1:00 PM ET, CBS, Lucas Oil Stadium, Indianapolis
@@ -423,6 +519,7 @@ Searches to run:
 - "NFL week 10 picks MIA IND"
 
 Miami Dolphins, injuries:
+- Jordan Phillips (DT) Questionable, Arm: questionable
 - Seydou Traore (TE) Active: Traore went without a target while playing six of the Dolphins' 69 snaps on offense in Sunday's 24-22 loss to the Colts.
 - Greg Dulcich (TE) Active: Dulcich failed to haul in either of his two targets while logging 42 of 69 offensive snaps in the Dolphins' 24-22 loss to the Colts on Sunday.
 - Jalen Tolbert (WR) Active: Tolbert caught both of his targets for 49 yards and a touchdown in Sunday's 24-22 loss to the Colts.
@@ -441,7 +538,6 @@ Miami Dolphins, injuries:
 - Darrell Baker Jr. (CB) Out, Knee: Baker (knee) was not activated from the reserve/PUP list ahead of Sunday's clash against Indianapolis.
 - Jalen Reagor (WR) Active: The Dolphins elevated Reagor from the practice squad to the active roster Saturday.
 - Brady Cook (QB) Active: The Dolphins elevated Cook from the practice squad to the active roster Saturday.
-- Zane Gonzalez (PK) Active: The Dolphins signed Gonzalez off the practice squad to the active roster Saturday.
 - Will Kacmarek (TE) Active: Kacmarek (quadriceps) does not have any injury designation ahead of Sunday's game against the Colts, David Furones of the South Florida Sun Sentinel reports.
 - Malik Herring (DE) Active
 - Tucker Addington (LS) Active
@@ -450,6 +546,14 @@ Miami Dolphins, injuries:
 - Jaylen Wright (RB) Active: Wright (quadriceps) was a full participant in Wednesday's practice, C. Isaiah Smalls II of the Miami Herald reports.
 
 Miami Dolphins, ESPN headlines:
+- 2026-11-16 Dolphins cut kicker Zane Gonzalez a day after costly misses in loss to Colts <https://www.espn.com/nfl/story/_/id/50502391/dolphins-cut-kicker-zane-gonzalez-day-costly-misses>
+- 2026-11-15 Colts' struggling offense does just enough to beat Dolphins 24-22 and snap 5-game skid <http://www.espn.com/nfl/recap?gameId=401873059>
+- 2026-11-14 Fantasy football last-minute pickups: 12 players who can help in deeper leagues <https://www.espn.com/fantasy/football/story/_/id/50435678/fantasy-football-streamers-last-minute-pickups-week-10>
+- 2026-11-12 QB Kyle McCord eager to make his 1st NFL start as Dolphins and Colts meet in battle of reeling teams <http://www.espn.com/nfl/preview?gameId=401873059>
+- 2026-11-12 Dolphins hopeful QB Malik Willis will be back this season <https://www.espn.com/nfl/story/_/id/50456677/dolphins-quarterback-malik-willis-return-starter>
+- 2026-11-11 Dolphins put QB Malik Willis on IR with groin injury <https://www.espn.com/nfl/story/_/id/50445819/dolphins-put-qb-malik-willis-ir-groin-injury>
+- 2026-11-10 Dolphins captain Zach Sieler out for rest of season with ruptured biceps <https://www.espn.com/nfl/story/_/id/50443653/source-dolphins-captain-zach-sieler-rest-season>
+- 2026-11-09 Jeff Hafley calls out Dolphins' discipline after 11 penalties <https://www.espn.com/nfl/story/_/id/50435393/dolphins-coach-jeff-hafley-laments-penalties-vs-lions>
 
 Indianapolis Colts, injuries:
 - Seth McGowan (RB) Active: McGowan rushed 12 times for 77 yards and a touchdown and returned two kickoffs for 61 yards in the Colts' 24-22 win over the Dolphins on Sunday.
@@ -479,6 +583,14 @@ Indianapolis Colts, injuries:
 - Ashton Dulin (WR) Active: Head coach Shane Steichen said that Dulin will be one of the Colts receivers tasked with absorbing the snaps vacated by Keenan Allen, who was traded to the 49ers on Tuesday, Jake Arthur of Roundtable.io reports.
 
 Indianapolis Colts, ESPN headlines:
+- 2026-11-16 Citing short week, Colts sticking with Daniel Jones at QB despite dreadful start <https://www.espn.com/nfl/story/_/id/50496110/colts-sticking-daniel-jones-qb-dreadful-start>
+- 2026-11-15 Colts' struggling offense does just enough to beat Dolphins 24-22 and snap 5-game skid <http://www.espn.com/nfl/recap?gameId=401873059>
+- 2026-11-12 QB Kyle McCord eager to make his 1st NFL start as Dolphins and Colts meet in battle of reeling teams <http://www.espn.com/nfl/preview?gameId=401873059>
+- 2026-11-12 Jonathan Taylor focused on being leader for Colts with trade deadline drama over <https://www.espn.com/nfl/story/_/id/50463938/still-colts-jonathan-taylor-focused-being-leader>
+- 2026-11-11 Why protected picks aren't common in NFL trades <https://www.espn.com/nfl/story/_/id/50434740/nfl-trades-protected-draft-picks>
+- 2026-11-10 From 2-7 to 6-2: Josh Downs reacts to Chiefs trade with Vince Carter GIF <https://www.espn.com/nfl/story/_/id/50446669/chiefs-josh-downs-trade-reaction-vince-carter-gif>
+- 2026-11-10 RB Jonathan Taylor, QB Daniel Jones remain with Colts as trade deadline passes <https://www.espn.com/nfl/story/_/id/50446805/rb-taylor-qb-jones-remain-colts-trade-deadline-passes>
+- 2026-11-11 Chiefs snag needed help at WR, trade for Colts' Josh Downs <https://www.espn.com/nfl/story/_/id/50445576/chiefs-trade-colts-wr-josh-downs>
 
 ### Carolina Panthers at New Orleans Saints
 Sun, Nov 15, 1:00 PM ET, Fox, Caesars Superdome, New Orleans
@@ -518,6 +630,14 @@ Carolina Panthers, injuries:
 - Tommy Tremble (TE) Active: Tremble caught four of six targets for 24 yards and a touchdown in Sunday's 26-21 loss to the Broncos.
 
 Carolina Panthers, ESPN headlines:
+- 2026-11-16 Panthers 'talking about' penalties after nearly squandering win vs. Saints <https://www.espn.com/nfl/story/_/id/50496605/carolina-panthers-penalties-close-win-week-10-saints>
+- 2026-11-15 Is Chuba Hubbard the biggest X factor to spark a Panthers turnaround? <https://www.espn.com/nfl/story/_/id/50463509/chuba-hubbard-x-factor-spark-carolina-panthers>
+- 2026-11-15 Hubbard helps the Panthers top the Saints, 20-17, and retain first place in the NFC South <http://www.espn.com/nfl/recap?gameId=401873055>
+- 2026-11-15 Panthers WR Xavier Legette, out since Week 2 with knee injury, activated from IR <https://www.espn.com/nfl/story/_/id/50481450/panthers-xavier-legette-week-2-activated-ir>
+- 2026-11-12 Despite slow starts, the Panthers and Saints meet with a chance to become sole leaders of NFC South <http://www.espn.com/nfl/preview?gameId=401873055>
+- 2026-11-09 Rasheed Walker keeps 'analyzing issue' in protecting Bryce Young's blind side <https://www.espn.com/nfl/story/_/id/50433369/panthers-rasheed-walker-analyzes-protection-bryce-young>
+- 2026-11-09 Sean Payton's replay challenge results in key interception in Broncos' victory <https://www.espn.com/nfl/story/_/id/50427121/payton-challenge-results-key-interception-broncos-win>
+- 2026-11-08 Bo Nix throws for 2 TDs, Broncos win key challenge to beat Panthers 26-21 for fifth straight victory <http://www.espn.com/nfl/recap?gameId=401873041>
 
 New Orleans Saints, injuries:
 - Juwan Johnson (TE) Active: Johnson caught two passes for 28 yards on three targets in Sunday's 20-17 loss to the Panthers.
@@ -547,6 +667,14 @@ New Orleans Saints, injuries:
 - Barion Brown (WR) Active: Brown caught his only target for 52 yards during Sunday's 23-22 overtime win versus the Browns. He also lost a fumble on a punt return.
 
 New Orleans Saints, ESPN headlines:
+- 2026-11-15 Hubbard helps the Panthers top the Saints, 20-17, and retain first place in the NFC South <http://www.espn.com/nfl/recap?gameId=401873055>
+- 2026-11-15 Saints RB Travis Etienne Jr. activated off IR for game vs. Panthers <https://www.espn.com/nfl/story/_/id/50483551/saints-rb-travis-etienne-activated-ir-game-vs-panthers>
+- 2026-11-12 Despite slow starts, the Panthers and Saints meet with a chance to become sole leaders of NFC South <http://www.espn.com/nfl/preview?gameId=401873055>
+- 2026-11-09 Saints starting center Erik McCoy to miss time with biceps injury, coach says <https://www.espn.com/nfl/story/_/id/50434942/saints-center-erik-mccoy-miss-biceps-injury>
+- 2026-11-09 Jordyn Tyson's Saints debut showed promise, rookie mistakes <https://www.espn.com/nfl/story/_/id/50434104/jordyn-tyson-saints-debut-promise-rookie-mistakes>
+- 2026-11-09 Jaguars bolster defense, trade for safety Jessie Bates, DT Davon Godchaux <https://www.espn.com/nfl/story/_/id/50432277/sources-jaguars-get-jessie-bates-iii-trade-falcons>
+- 2026-11-08 Saints hold on for a 23-22 overtime victory over the Browns by stopping a 2-point conversion <http://www.espn.com/nfl/recap?gameId=401873039>
+- 2026-11-07 Saints activate WR Jordyn Tyson, LT Kelvin Banks, cut RB Kendre Miller <https://www.espn.com/nfl/story/_/id/50410541/sources-saints-activate-wr-jordyn-tyson-lt-kelvin-banks>
 
 ### Buffalo Bills at New York Jets
 Sun, Nov 15, 1:00 PM ET, CBS, MetLife Stadium, East Rutherford
@@ -586,12 +714,20 @@ Buffalo Bills, injuries:
 - Terrel Bernard (LB) Active: Bernard recorded six tackles (two solo) and a pair of pass breakups, including an interception, in Monday night's 23-6 win over the Vikings.
 
 Buffalo Bills, ESPN headlines:
+- 2026-11-15 Josh Allen powers Bills past Jets 31-12 for best start in 35 years. New York loses Geno Smith twice <http://www.espn.com/nfl/recap?gameId=401873054>
+- 2026-11-12 The Bills visit the Jets with a 7-1 record and a chance at their best start since 1991 <http://www.espn.com/nfl/preview?gameId=401873054>
+- 2026-11-11 New Bills safety Amani Hooker will be 'ready to go' vs. Jets <https://www.espn.com/nfl/story/_/id/50455698/new-bills-safety-amani-hooker-ready-go-vs-jets>
+- 2026-11-10 Bills fill major need at safety, trade for Titans' Amani Hooker <https://www.espn.com/nfl/story/_/id/50444810/bills-trade-titans-safety-amani-hooker>
+- 2026-11-10 Josh Allen and the Bills move to 7-1 with a 23-6 win over the sputtering Vikings <http://www.espn.com/nfl/recap?gameId=401873051>
+- 2026-11-11 Josh Allen leads Bills to win over tough Vikings defense <https://www.espn.com/nfl/story/_/id/50435734/bills-vikings-josh-allen-carson-wentz-mnf>
+- 2026-11-09 How to bet Bills-Vikings: Analysis, best bets and top prop plays <https://www.espn.com/espn/betting/story/_/id/50413261/nfl-week-9-odds-betting-preview-bills-vikings-prop-tips>
+- 2026-11-09 Inside Justin Jefferson's miraculous catch for Vikings versus Bills in 2022 <https://www.espn.com/nfl/story/_/id/50408415/vikings-justin-jefferson-miraculous-catch-bills-2022>
 
 New York Jets, injuries:
 - Omar Cooper Jr. (WR) Questionable, Ankle: Jets head coach Aaron Glenn said that Cooper (ankle) will undergo imaging Monday, Eric Allen of the team's official site reports.
+- Geno Smith (QB) Questionable, Ankle: Jets head coach Aaron Glenn said that Smith will get further imaging on his left ankle Monday, Antwan V. Staley of the New York Daily News reports.
 - Adonai Mitchell (WR) Active: Mitchell caught three passes for 59 yards on eight targets in Sunday's 31-12 loss to the Bills.
 - Braelon Allen (RB) Active: Allen rushed eight times for 40 yards and caught his only target for six yards in Sunday's 31-12 loss to the Bills.
-- Geno Smith (QB) Questionable, Ankle: Jets head coach Aaron Glenn said after Sunday's 31-12 loss to the Bills that Smith, who departed the contest due to an ankle injury, will have his status for Week 11 against the Chargers determined during the upcoming week of practice, Jack Bell of the Jets' official site reports.
 - Cade Klubnik (QB) Active: Klubnik completed 11 of 20 passes for 137 yards, no touchdowns and one interception in Sunday's 31-12 loss to the Bills. He added three rushing attempts for 26 yards.
 - Breece Hall (RB) Active: Hall rushed 11 times for 41 yards and caught all four of his targets for 67 yards in Sunday's 31-12 loss to the Bills.
 - Garrett Wilson (WR) Active: Wilson (concussion) caught seven of 14 targets for 106 yards and lost a fumble in Sunday's 31-12 loss to the Bills.
@@ -615,6 +751,14 @@ New York Jets, injuries:
 - Jason Sanders (PK) Active: Sanders went 4-for-5 on field-goal tries during Sunday's 35-12 loss to the Chiefs.
 
 New York Jets, ESPN headlines:
+- 2026-11-16 Geno Smith remains Jets' QB1 despite ankle injury, coach Aaron Glenn says <https://www.espn.com/nfl/story/_/id/50502082/geno-smith-remains-jets-qb1-injury-aaron-glenn-says>
+- 2026-11-15 Josh Allen powers Bills past Jets 31-12 for best start in 35 years. New York loses Geno Smith twice <http://www.espn.com/nfl/recap?gameId=401873054>
+- 2026-11-16 Jets QB Geno Smith suffers ankle injury, replaced by rookie Cade Klubnik <https://www.espn.com/nfl/story/_/id/50493391/jets-qb-geno-smith-suffers-ankle-injury-bills>
+- 2026-11-15 Five questions for the Jets in the second half of the season <https://www.espn.com/nfl/story/_/id/50473944/jets-five-questions-halfway-aaron-glenn-geno-smith>
+- 2026-11-12 The Bills visit the Jets with a 7-1 record and a chance at their best start since 1991 <http://www.espn.com/nfl/preview?gameId=401873054>
+- 2026-11-12 Why 2-7 Jets preferred to keep roster intact at trade deadline <https://www.espn.com/nfl/story/_/id/50454225/jets-2026-trade-deadline-garrett-wilson-geno-smith>
+- 2026-11-11 Jets' Will McDonald has 'earned' bigger role, coach says <https://www.espn.com/nfl/story/_/id/50454952/jets-mcdonald-earned-bigger-role-coach-says>
+- 2026-11-09 Jets trade safety Andre Cisco to injury-plagued Lions for draft pick <https://www.espn.com/nfl/story/_/id/50434559/sources-jets-trade-safety-andre-cisco-lions>
 
 ### Seattle Seahawks at Las Vegas Raiders
 Sun, Nov 15, 4:05 PM ET, CBS, Allegiant Stadium, Las Vegas
@@ -654,6 +798,14 @@ Seattle Seahawks, injuries:
 - Tory Horton (WR) Active: Horton caught two passes for 22 yards on three targets in Sunday's 17-3 win over the Cardinals.
 
 Seattle Seahawks, ESPN headlines:
+- 2026-11-16 Jaxon Smith-Njigba's 144-yard quarter sparks Seahawks in win over Raiders <https://www.espn.com/nfl/story/_/id/50498326/jaxon-smith-njigba-144-yard-third-quarter-sparks-seahawks-offense-win-raiders>
+- 2026-11-16 Seahawks beat Raiders 21-13 as Drew Lock throws for 2 TDs and Seattle sacks Fernando Mendoza 6 times <http://www.espn.com/nfl/recap?gameId=401873062>
+- 2026-11-14 Seahawks are hurting with injuries, but two players will return vs. Raiders <https://www.espn.com/nfl/story/_/id/50475505/seahawks-raiders-week-10-darnold-lock-shaheed-returns>
+- 2026-11-12 Raiders QB Fernando Mendoza’s first start will come against the Seahawks' NFL-best defense <http://www.espn.com/nfl/preview?gameId=401873062>
+- 2026-11-11 Jacksonville Jaguars' Foyesade Oluokun leads the way again in Africa's Week 9 NFL exploits <https://www.espn.com/espn/story/_/id/50452204/jacksonville-jaguars-foyesade-oluokun-leads-way-again-africa-week-9-nfl-exploits>
+- 2026-11-10 Gibbs, Allen, JSN and more Knockout league pickups for Week 10 <https://www.espn.com/fantasy/football/story/_/id/50442966/2026-fantasy-football-knockout-leagues-pickups-week-10>
+- 2026-11-10 Seahawks to start QB Drew Lock vs. Raiders, giving Sam Darnold more time to heal <https://www.espn.com/nfl/story/_/id/50434130/seahawks-start-drew-lock-vs-raiders-mike-macdonald-says>
+- 2026-11-09 Drew Lock overcomes oblique injury in fill-in start for Sam Darnold, Seahawks <https://www.espn.com/nfl/story/_/id/50429192/drew-lock-overcomes-oblique-injury-seahawks-top-cardinals>
 
 Las Vegas Raiders, injuries:
 - Dylan Laube (RB) Active: Laube played all 22 of his snaps on special teams in Sunday's 21-13 loss to the Seahawks and returned two kickoffs for 46 yards and one punt for zero yards.
@@ -683,6 +835,14 @@ Las Vegas Raiders, injuries:
 - Jalen Nailor (WR) Active: Nailor caught two of four targets for nine yards during Sunday's 38-17 loss to the 49ers.
 
 Las Vegas Raiders, ESPN headlines:
+- 2026-11-16 Raiders TE Brock Bowers avoids major ankle injury, source says <https://www.espn.com/nfl/story/_/id/50501232/raiders-te-brock-bowers-avoids-major-ankle-injury-source-says>
+- 2026-11-16 Raiders' Fernando Mendoza vows to learn from first NFL start, a loss to Seahawks <https://www.espn.com/nfl/story/_/id/50498040/raiders-fernando-mendoza-vows-learn-first-nfl-start>
+- 2026-11-16 Seahawks beat Raiders 21-13 as Drew Lock throws for 2 TDs and Seattle sacks Fernando Mendoza 6 times <http://www.espn.com/nfl/recap?gameId=401873062>
+- 2026-11-16 Raiders lose TE Brock Bowers to ankle injury vs. Seahawks <https://www.espn.com/nfl/story/_/id/50495181/raiders-lose-te-brock-bowers-ankle-injury-vs-seahawks>
+- 2026-11-15 Sources: Raiders planned to start Fernando Mendoza soon even if no Cousins trade <https://www.espn.com/nfl/story/_/id/50485164/sources-raiders-had-fernando-mendoza-plan-even-no-cousins-trade>
+- 2026-11-14 Sources: Vikings made initial Kirk Cousins trade call to Raiders before MNF <https://www.espn.com/nfl/story/_/id/50479874/sources-vikings-first-called-kirk-cousins-mnf>
+- 2026-11-14 Why the Raiders named Fernando Mendoza as the starter <https://www.espn.com/nfl/story/_/id/50466331/las-vegas-raiders-why-fernando-mendoza-starting>
+- 2026-11-13 Fernando Mendoza and the Raiders' sit-and-learn plan: Is he ready to start? <https://www.espn.com/nfl/story/_/id/50462155/raiders-starting-fernando-mendoza-plan-decision-graziano>
 
 ### Los Angeles Rams at Arizona Cardinals
 Sun, Nov 15, 4:05 PM ET, CBS, State Farm Stadium, Glendale
@@ -722,6 +882,14 @@ Los Angeles Rams, injuries:
 - Nate Landman (LB) Active: Landman recorded seven tackles (three solo), one pass breakup and a forced fumble in Sunday's 20-13 win over the Commanders.
 
 Los Angeles Rams, ESPN headlines:
+- 2026-11-16 Aaron Donald savors first sack in 1,050 days, but Rams' win 'felt even better' <https://www.espn.com/nfl/story/_/id/50497324/rams-aaron-donald-savors-first-sack-1050-days-vs-cardinals>
+- 2026-11-16 Rams win their 4th straight game, overcoming a slow start to crush the Cardinals 34-6 <http://www.espn.com/nfl/recap?gameId=401873061>
+- 2026-11-13 Rams put WR Puka Nacua on IR with knee, toe injuries <https://www.espn.com/nfl/story/_/id/50466270/rams-wide-receiver-puka-nacua-ir-knee-toe-injuries>
+- 2026-11-12 Cardinals' rookie QB Carson Beck makes his NFL debut against stellar Rams defense <http://www.espn.com/nfl/preview?gameId=401873061>
+- 2026-11-12 Sean McVay: Rams optimistic WR Davante Adams will return 'sooner than later' <https://www.espn.com/nfl/story/_/id/50455318/mcvay-rams-optimistic-wr-adams-return-sooner-later>
+- 2026-11-12 Cardinals to start rookie QB Carson Beck against Rams <https://www.espn.com/nfl/story/_/id/50455074/cardinals-start-rookie-qb-carson-beck-rams>
+- 2026-11-11 Why protected picks aren't common in NFL trades <https://www.espn.com/nfl/story/_/id/50434740/nfl-trades-protected-draft-picks>
+- 2026-11-09 Rams WR Puka Nacua likely to hit IR with MCL and PCL sprain, turf toe <https://www.espn.com/nfl/story/_/id/50435879/rams-nacua-likely-hit-ir-mcl-pcl-sprain-turf-toe>
 
 Arizona Cardinals, injuries:
 - Carson Beck (QB) Active: Beck was 11-for-18 passing for 108 yards, no touchdowns and two interceptions and had one rush for one yard during Sunday's 34-6 loss to the Rams.
@@ -751,6 +919,14 @@ Arizona Cardinals, injuries:
 - Evan Hull (RB) Active: Hull failed to haul in his lone target during the Cardinals' 17-3 loss to the Seahawks on Sunday.
 
 Arizona Cardinals, ESPN headlines:
+- 2026-11-16 Cards rookie QB Beck struggles in debut, but keeps optimism <https://www.espn.com/nfl/story/_/id/50502112/arizona-cardinals-carson-beck-rookie-debut>
+- 2026-11-16 Rams win their 4th straight game, overcoming a slow start to crush the Cardinals 34-6 <http://www.espn.com/nfl/recap?gameId=401873061>
+- 2026-11-12 Cardinals' rookie QB Carson Beck makes his NFL debut against stellar Rams defense <http://www.espn.com/nfl/preview?gameId=401873061>
+- 2026-11-12 Cardinals to start rookie QB Carson Beck against Rams <https://www.espn.com/nfl/story/_/id/50455074/cardinals-start-rookie-qb-carson-beck-rams>
+- 2026-11-10 Sources: Cardinals' Gardner Minshew has UCL injury; Michael Wilson out for year <https://www.espn.com/nfl/story/_/id/50435608/cardinals-wr-michael-wilson-neck-miss-rest-season>
+- 2026-11-09 AJ Barner has a TD catch and runs for a score in Seahawks' 17-3 win over Cardinals <http://www.espn.com/nfl/recap?gameId=401873048>
+- 2026-11-06 Sources: Ravens trade 4th-, 7th-rounders to get Jacoby Brissett, 5th-round pick <https://www.espn.com/nfl/story/_/id/50400123/ravens-complete-trade-cardinals-qb-jacoby-brissett>
+- 2026-11-05 Former Cougars QB Minshew returns to Washington with Arizona to face the Seahawks <http://www.espn.com/nfl/preview?gameId=401873048>
 
 ### San Francisco 49ers at Dallas Cowboys
 Sun, Nov 15, 4:25 PM ET, Fox, AT&T Stadium, Arlington
@@ -790,6 +966,14 @@ San Francisco 49ers, injuries:
 - Jordan James (RB) Active: James rushed three times for 11 yards and returned two kickoffs for 31 yards Sunday in a 38-17 victory versus Las Vegas.
 
 San Francisco 49ers, ESPN headlines:
+- 2026-11-16 49ers put up big numbers vs. Cowboys, tout 'incredibly dangerous' offense <https://www.espn.com/nfl/story/_/id/50498373/49ers-put-big-numbers-victory-cowboys>
+- 2026-11-16 McCaffrey's TDs of 74 and 66 yards and Samuel's 70-yard score help 49ers beat Cowboys 46-40 <http://www.espn.com/nfl/recap?gameId=401873063>
+- 2026-11-13 49ers OT Williams, LB Greenlaw questionable, WR Evans out vs. Cowboys <https://www.espn.com/nfl/story/_/id/50475033/49ers-williams-greenlaw-questionable-evans-vs-cowboys>
+- 2026-11-12 Cowboys host NFC-leading 49ers as they seek elusive winning streak under Schottenheimer <http://www.espn.com/nfl/preview?gameId=401873063>
+- 2026-11-12 Veteran WR Keenan Allen feeling energized by trade to 49ers <https://www.espn.com/nfl/story/_/id/50456881/veteran-wr-keenan-allen-feels-energized-trade-49ers>
+- 2026-11-10 49ers trade for Colts' Keenan Allen to bolster injury-plagued WR room <https://www.espn.com/nfl/story/_/id/50444457/sources-49ers-acquire-keenan-allen-trade-colts>
+- 2026-11-09 Brandon Aiyuk reinstated by NFL; 49ers have 2-game roster exemption for receiver <https://www.espn.com/nfl/story/_/id/50435848/49ers-receiver-brandon-aiyuk-reinstated-nfl>
+- 2026-11-09 The key behind 49ers' 7-1 start? Big contributions from the team's youth <https://www.espn.com/nfl/story/_/id/50433470/san-francisco-49ers-jaden-dugger-jordan-watkins>
 
 Dallas Cowboys, injuries:
 - Javonte Williams (RB) Active: Williams rushed 16 times for 63 yards and brought in his only target for four yards in the Cowboys' 46-40 loss to the 49ers on Sunday.
@@ -797,8 +981,8 @@ Dallas Cowboys, injuries:
 - Dak Prescott (QB) Active: Prescott completed 30 of 51 passes for 343 yards with five touchdowns and one interception while rushing four times for seven yards in the Cowboys' 46-40 loss to the 49ers on Sunday. He also ran for a two-point conversion.
 - George Pickens (WR) Active: Pickens brought in 11 of 18 targets for 145 yards and three touchdowns in the Cowboys' 46-40 loss to the 49ers on Sunday.
 - Ryan Flournoy (WR) Active: Flournoy tallied six catches for 71 yards and one touchdown on seven targets during Sunday's loss to San Francisco. He also recovered a fumble.
-- Tyler Booker (G) Questionable, Ankle: Booker hurt his ankle during Sunday's loss to San Francisco and is slated for X-rays and an MRI, Calvin Watkins of The Dallas Morning News reports.
-- DaRon Bland (CB) Questionable, Ankle: Bland (ankle) will undergo X-rays and an MRI, Calvin Watkins of The Dallas Morning News reports.
+- Tyler Booker (G) Out, Ankle: Booker hurt his ankle during Sunday's loss to San Francisco and is slated for X-rays and an MRI, Calvin Watkins of The Dallas Morning News reports.
+- DaRon Bland (CB) Doubtful, Ankle: Bland (ankle) will undergo X-rays and an MRI, Calvin Watkins of The Dallas Morning News reports.
 - Otito Ogbonnia (DT) Active: Ogbonnia (finger) has re-entered Sunday's matchup against San Francisco, Joe Hoyt of The Dallas Morning News reports.
 - Jonathan Bullard (DT) Active: Bullard (calf) is active for Sunday's game against the 49ers, Todd Archer of ESPN.com reports.
 - Joey Porter Jr. (CB) Active: Porter (ankle) is active for Sunday's game against the 49ers, Todd Archer of ESPN.com reports.
@@ -819,6 +1003,14 @@ Dallas Cowboys, injuries:
 - Luke Schoonmaker (TE) Active: Schoonmaker (groin) was a full participant in Wednesday's practice, Tommy Yarrish of the Cowboys' official site reports.
 
 Dallas Cowboys, ESPN headlines:
+- 2026-11-16 Schottenheimer 'very disappointed, very frustrated' with Cowboys' porous defense <https://www.espn.com/nfl/story/_/id/50498058/schottenheimer-very-frustrated-porous-cowboys-defense>
+- 2026-11-16 McCaffrey's TDs of 74 and 66 yards and Samuel's 70-yard score help 49ers beat Cowboys 46-40 <http://www.espn.com/nfl/recap?gameId=401873063>
+- 2026-11-13 Cowboys' Porter: My absence is because of injury, not my contract <https://www.espn.com/nfl/story/_/id/50464810/cowboys-joey-porter-absence-due-injury-not-contract>
+- 2026-11-12 Cowboys host NFC-leading 49ers as they seek elusive winning streak under Schottenheimer <http://www.espn.com/nfl/preview?gameId=401873063>
+- 2026-11-11 Cowboys rave about Quinnen Williams a year after trade deadline deal <https://www.espn.com/nfl/story/_/id/50445806/cowboys-quinnen-williams-trade-deadline>
+- 2026-11-10 Schottenheimer: Cowboys will be without Ferguson, Goodson for 'multiple weeks' <https://www.espn.com/nfl/story/_/id/50436570/cowboys-ferguson-goodson-multiple-weeks>
+- 2026-11-09 Multidrop game in Colts' loss irks WR Josh Downs as trade deadline looms <https://www.espn.com/nfl/story/_/id/50427666/multi-drop-game-irks-colts-wr-downs-trade-deadline-nears>
+- 2026-11-09 Dak Prescott: Cowboys can make playoffs without making trade <https://www.espn.com/nfl/story/_/id/50427153/dak-prescott-cowboys-make-playoffs-making-trade>
 
 ### Pittsburgh Steelers at Cincinnati Bengals
 Sun, Nov 15, 8:20 PM ET, NBC, Paycor Stadium, Cincinnati
@@ -858,6 +1050,14 @@ Pittsburgh Steelers, injuries:
 - Patrick Queen (LB) Active: Queen compiled 10 tackles (seven solo), including 1.0 sacks, during Pittsburgh's win over the Saints on Sunday.
 
 Pittsburgh Steelers, ESPN headlines:
+- 2026-11-16 Aaron Rodgers' 2026 NFL season: Tracking records, milestones <https://www.espn.com/nfl/story/_/id/49907062/aaron-rodgers-2026-nfl-season-steelers-packers-jets-tracking-records-milestones>
+- 2026-11-16 Joe Burrow and Bengals dominate Steelers 38-18 to take AFC North lead alone <http://www.espn.com/nfl/recap?gameId=401873064>
+- 2026-11-16 Steelers rally around Mason McCormick after guard suffers gruesome injury <https://www.espn.com/nfl/story/_/id/50497966/steelers-mason-mccormick-carted-field-air-cast-ankle>
+- 2026-11-15 Steelers-Bengals odds, analysis, betting tips and recommended props <https://www.espn.com/espn/betting/story/_/id/50446201/nfl-week-10-odds-betting-picks-steelers-bengals-preview>
+- 2026-11-14 Steelers activate DT Derrick Harmon from IR ahead of key Bengals clash <https://www.espn.com/nfl/story/_/id/50482239/steelers-activate-dt-derrick-harmon-injured-reserve>
+- 2026-11-13 It's a battle for the AFC North: Steelers at Bengals Week 10 primer <https://www.espn.com/nfl/story/_/id/50464709/afc-north-steelers-bengals-rodgers-burrow-week-10>
+- 2026-11-13 Steelers and Bengals meet for AFC North lead on Sunday night, both 6-2 <http://www.espn.com/nfl/preview?gameId=401873064>
+- 2026-11-12 Longtime Steelers player, assistant coach Dick Hoak dies at 86 <https://www.espn.com/nfl/story/_/id/50461920/long-steelers-player-assistant-coach-dick-hoak-dies-86>
 
 Cincinnati Bengals, injuries:
 - Mike Gesicki (TE) Active: Gesicki caught one pass for nine yards in Sunday night's 38-18 win over the Steelers.
@@ -887,6 +1087,14 @@ Cincinnati Bengals, injuries:
 - Mitchell Tinsley (WR) Active
 
 Cincinnati Bengals, ESPN headlines:
+- 2026-11-16 Joe Burrow's 4-TD night puts QB in company of Tom Brady, Peyton Manning <https://www.espn.com/nfl/story/_/id/50499235/bengals-joe-burrow-4-touchdowns-win-vs-steelers-puts-company-tom-brady-peyton-manning>
+- 2026-11-16 Joe Burrow and Bengals dominate Steelers 38-18 to take AFC North lead alone <http://www.espn.com/nfl/recap?gameId=401873064>
+- 2026-11-15 Steelers-Bengals odds, analysis, betting tips and recommended props <https://www.espn.com/espn/betting/story/_/id/50446201/nfl-week-10-odds-betting-picks-steelers-bengals-preview>
+- 2026-11-13 It's a battle for the AFC North: Steelers at Bengals Week 10 primer <https://www.espn.com/nfl/story/_/id/50464709/afc-north-steelers-bengals-rodgers-burrow-week-10>
+- 2026-11-13 Steelers and Bengals meet for AFC North lead on Sunday night, both 6-2 <http://www.espn.com/nfl/preview?gameId=401873064>
+- 2026-11-11 Bengals' Zac Taylor apologizes for failed trade with Eagles: 'It was on our end' <https://www.espn.com/nfl/story/_/id/50454351/bengals-zac-taylor-apologizes-failed-trade-eagles>
+- 2026-11-10 Bengals nix agreed-upon trade with Eagles, sources say <https://www.espn.com/nfl/story/_/id/50443891/bengals-nix-agreed-trade-eagles-sources-say>
+- 2026-11-10 Bengals trade for Eagles LB Arnold Ebiketie, sources say <https://www.espn.com/nfl/story/_/id/50443229/bengals-trade-eagles-lb-arnold-ebiketie-sources-say>
 
 ### Los Angeles Chargers at Baltimore Ravens
 Mon, Nov 16, 8:15 PM ET, ESPN, M&T Bank Stadium, Baltimore. Line: BAL -4.5, O/U 39.5
@@ -926,6 +1134,14 @@ Los Angeles Chargers, injuries:
 - DJ Uiagalelei (QB) Active: Uiagalelei completed two of seven passes for 27 yards and a touchdown after replacing Justin Herbert (finger) in the fourth quarter of Sunday's 44-22 loss to the Texans, and head coach Jim Harbaugh said after the game that Herbert could have a fractured finger, Alex Insdorf of BoltBeat.com reports.
 
 Los Angeles Chargers, ESPN headlines:
+- 2026-11-16 Chargers-Ravens odds, best bets: Tips, analysis and our favorite plays <https://www.espn.com/espn/betting/story/_/id/50453363/nfl-week-10-odds-chargers-ravens-betting-preview-props>
+- 2026-11-16 How Chargers' Harbaugh, Ravens' Minter can revive seasons <https://www.espn.com/nfl/story/_/id/50471544/chargers-jim-harbaugh-ravens-jesse-minter-week-10>
+- 2026-11-16 Five reasons why Chargers' offense, Justin Herbert have struggled in 2026 season <https://www.espn.com/nfl/story/_/id/50462293/los-angeles-chargers-offensive-struggles-herbert-mcdaniel-hampton>
+- 2026-11-12 Reunion for Jim Harbaugh and Jesse Minter comes with both the Chargers and Ravens spiraling <http://www.espn.com/nfl/preview?gameId=401873065>
+- 2026-11-13 GM Joe Hortiz says Chargers were listening to trade offers, none were enticing <https://www.espn.com/nfl/story/_/id/50465608/joe-hortiz-says-chargers-were-listening-trade-offers>
+- 2026-11-13 Chargers' Jim Harbaugh frustrated with Broncos after nixed Daiyan Henley trade <https://www.espn.com/nfl/story/_/id/50464601/chargers-jim-harbaugh-irked-broncos-nixed-trade>
+- 2026-11-12 Sources: Broncos-Chargers trade nixed due to concerns over Daiyan Henley's knee <https://www.espn.com/nfl/story/_/id/50459330/broncos-say-trade-chargers-lb-henley-not-finalized>
+- 2026-11-10 Broncos land LB Daiyan Henley in trade with Chargers before deadline <https://www.espn.com/nfl/story/_/id/50445309/sources-broncos-land-daiyan-henley-trade-chargers>
 
 Baltimore Ravens, injuries:
 - Adam Randall (RB) Injured Reserve, Neck: Randall (neck), who remains on IR, has been tagged as questionable to face the Chargers on Monday.
@@ -955,4 +1171,12 @@ Baltimore Ravens, injuries:
 - Zay Flowers (WR) Active: Flowers brought in three of six targets for six yards and rushed three times for 17 yards in the Ravens' 33-10 loss to the Jaguars on Thursday night.
 
 Baltimore Ravens, ESPN headlines:
+- 2026-11-16 Chargers-Ravens odds, best bets: Tips, analysis and our favorite plays <https://www.espn.com/espn/betting/story/_/id/50453363/nfl-week-10-odds-chargers-ravens-betting-preview-props>
+- 2026-11-16 How Chargers' Harbaugh, Ravens' Minter can revive seasons <https://www.espn.com/nfl/story/_/id/50471544/chargers-jim-harbaugh-ravens-jesse-minter-week-10>
+- 2026-11-12 Reunion for Jim Harbaugh and Jesse Minter comes with both the Chargers and Ravens spiraling <http://www.espn.com/nfl/preview?gameId=401873065>
+- 2026-11-12 Ravens QB Jacoby Brissett immersed in 'crash course' for Chargers tilt <https://www.espn.com/nfl/story/_/id/50464938/ravens-qb-brissett-immersed-crash-course-chargers>
+- 2026-11-12 Source: Ravens, now on third kicker, sign journeyman Riley Patterson <https://www.espn.com/nfl/story/_/id/50456455/source-ravens-now-third-kicker-sign-riley-patterson>
+- 2026-11-10 Falcons trade center Ryan Neuzil to Ravens for guard Andrew Vorhees, pick <https://www.espn.com/nfl/story/_/id/50446499/falcons-trade-center-neuzil-ravens-guard-vorhees-pick>
+- 2026-11-10 Source: Falcons cutting kicker Nick Folk, signing Jake Moody <https://www.espn.com/nfl/story/_/id/50444069/sources-falcons-cutting-kicker-nick-folk-signing-jake-moody>
+- 2026-11-08 Sources: Lamar Jackson told Ravens teammates he plans to return this season <https://www.espn.com/nfl/story/_/id/50407561/sources-lamar-jackson-told-ravens-plans-return-26>
 

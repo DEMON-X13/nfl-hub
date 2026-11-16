@@ -185,8 +185,11 @@ on its own.
   `trig_017MSjEeFD8c5atgAEzBbWiF`) must not run any more: its prompt builds `data/weekN.js`, which nothing
   reads. It is not listed under this account's scheduled tasks (as of 14 November 2026), so it may be under
   another account. The notes routine replaces it; its prompt is "The weekly job" above.
-- The current Wednesday routine, "NFL game notes: write the week" (`trig_01MdfPf8SdiZFeHn4PH4za3T`), has
-  landed no notes file since week 6: its sessions write the notes but cannot push (the git proxy answered
-  403, no access to `DEMON-X13/nfl-hub`), and its prompt still names `/nfl-hub/nflbets/` (a redirect to the
-  root since 17 October 2026) and the Pick'ems board (gone since 22 October 2026). The owner was told (14
-  November 2026).
+- The Wednesday routine, "NFL game notes: write the week", landed no notes file from week 7 to week 10: its
+  first form (`trig_01MdfPf8SdiZFeHn4PH4za3T`) started a fresh session each week with no push access to
+  `DEMON-X13/nfl-hub` (the git proxy answered 403, and add_repo was not offered there), and its prompt named
+  `/nfl-hub/nflbets/` and the Pick'ems board. On 16 November 2026 it was switched off and replaced by
+  `trig_01RiBFoq9MuWKMsZ17ieM9v8`, the same Wednesday 14:47 Pacific, which fires into a session that holds the
+  repository with push access, with the prompt brought up to date. The same day the pack's team headlines came
+  back: ESPN's `site.api` team news had answered `{}` since about week 4, so `pull-week.js` reads ESPN's now
+  feed for each team and keeps the stories tagged with that club and at most two others.
