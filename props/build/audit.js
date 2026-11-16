@@ -1786,7 +1786,7 @@ setTimeout(async()=>{
   let isGameAud=null; const isGA=l=>(isGameAud||(isGameAud=F('isGameLeg')))(l);
   const clashAud=(a,b)=>{ const isG=isGA; if(!a||!b||a.gid!==b.gid) return null;
     for(const [q,o] of [[a,b],[b,a]]){ if(isG(q)||q.stat!=='passing_tds') continue;
-      if(!isG(o)&&o.stat==='any_td'&&o.team===q.team&&o.pid!==q.pid) return 'td';
+      if(!isG(o)&&['any_td','receptions','receiving_yards','scrim_yards'].includes(o.stat)&&o.team===q.team&&o.pid!==q.pid) return 'td';
       if(isG(o)&&o.stat==='total'&&q.side!=='under') return 'total'; }
     return null; };
   /* every such pair in a parlay, by the legs' places in it */
@@ -4091,7 +4091,15 @@ setTimeout(async()=>{
         ['his passing TDs under with the game total',P({side:'under'}),TOT(),null],['his passing TDs with an opponent\'s touchdown',P(),TDL({team:'BBB'}),null],
         ['his passing TDs with his own touchdown',P(),TDL({pid:'qb'}),null],['his passing TDs with a teammate\'s touchdown in another game',P(),TDL({gid:'g2'}),null],
         ['his passing yards with a teammate\'s touchdown',P({stat:'passing_yards',k:249.5}),TDL(),null],['a teammate\'s touchdown with the game total',TDL(),TOT(),null],
-        ['his passing TDs with his club to win',P(),{gid:'g1',pid:'team:AAA',team:'AAA',stat:'ml',side:'over',k:0},null]];
+        ['his passing TDs with his club to win',P(),{gid:'g1',pid:'team:AAA',team:'AAA',stat:'ml',side:'over',k:0},null],
+        /* (app v148) DraftKings refused Daniels' passing TDs under with Rachaad White's receptions under, 16 November 2026 */
+        ['his passing TDs under with a teammate\'s receptions under',P({side:'under'}),TDL({stat:'receptions',side:'under',main:true,k:2.5}),'td'],
+        ['a teammate\'s receptions first, his passing TDs over',TDL({stat:'receptions',main:true,k:4.5}),P(),'td'],
+        ['his passing TDs over with a teammate\'s receiving yards under',P(),TDL({stat:'receiving_yards',side:'under',main:true,k:59.5}),'td'],
+        ['his passing TDs with a teammate\'s rush + rec yards',P(),TDL({stat:'scrim_yards',main:true,k:79.5}),'td'],
+        ['his passing TDs with an opponent\'s receptions',P(),TDL({team:'BBB',stat:'receptions',main:true,k:4.5}),null],
+        ['his passing yards with a teammate\'s receptions',P({stat:'passing_yards',k:249.5}),TDL({stat:'receptions',main:true,k:4.5}),null],
+        ['his passing TDs with a teammate\'s rushing yards',P(),TDL({stat:'rushing_yards',main:true,k:59.5}),null]];
       const dkWhy=w.eval("typeof dkClashWhy==='function'?dkClashWhy:null"); chk(!!dkWhy,'M16: the page has no pair rule of its own (dkClashWhy)');
       let nR=0; for(const [lab,a,b,want] of C){ nR++; const mine=clashAud(a,b), page=dkWhy?dkWhy(a,b):undefined;
         chk(mine===want&&page===want,`M16, the pair rule on ${lab}: the audit's own copy says ${mine}, the page ${page}, the case ${want}`); }

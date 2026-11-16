@@ -2559,14 +2559,16 @@ function pbPool(games,u,opt){ const r=pbLegs(games,u), cap=pbOpt(opt).cap; retur
    his passing touchdowns over with the game's total ('total'); null for any other pair. No suggestion takes such a pair
    (pbFits, gameTiers, the Elo picks' search), and the builder says so under its legs where it holds one */
 const dkPassTd=l=>!!l&&!isGameLeg(l)&&l.stat==='passing_tds';
+/* (app v148) a teammate's catches: DraftKings refused Daniels' passing TDs under with Rachaad White's receptions under */
+const DK_CATCH=new Set(['any_td','receptions','receiving_yards','scrim_yards']);
 function dkClashWhy(a,b){
   if(!a||!b||a.gid!==b.gid) return null;
-  const one=(q,o)=>!dkPassTd(q)?null:(!isGameLeg(o)&&o.stat==='any_td'&&o.team===q.team&&o.pid!==q.pid)?'td':(q.side!=='under'&&o.stat==='total'&&isGameLeg(o))?'total':null;
+  const one=(q,o)=>!dkPassTd(q)?null:(!isGameLeg(o)&&DK_CATCH.has(o.stat)&&o.team===q.team&&o.pid!==q.pid)?'td':(q.side!=='under'&&o.stat==='total'&&isGameLeg(o))?'total':null;
   return one(a,b)||one(b,a);
 }
 const dkClash=(a,b)=>!!dkClashWhy(a,b);
 /* what a pair is, in the builder's words */
-const DK_CLASH={td:'a quarterback’s passing TDs with a teammate’s touchdown',total:'a quarterback’s passing TDs over with the game total'};
+const DK_CLASH={td:'a quarterback’s passing TDs with a teammate’s catches, receiving yards or touchdown',total:'a quarterback’s passing TDs over with the game total'};
 /* every such pair in a list of legs, by their places in it: [i, j, kind], i before j */
 function dkClashPairs(legs){ const out=[]; (legs||[]).forEach((a,i)=>legs.slice(i+1).forEach((b,k)=>{ const w=dkClashWhy(a,b); if(w) out.push([i,i+1+k,w]); })); return out; }
 window.dkClashWhy=dkClashWhy; window.dkClash=dkClash; window.dkClashPairs=dkClashPairs; window.DK_CLASH=DK_CLASH;

@@ -1991,7 +1991,7 @@ const ladderBoot = async (x, seeded, how) => {
            week wk for the cases; it is put back, and so are the builder, the ids and the share sheet, on every path */
         { const gameLegOwn = l => ['ml', 'ats', 'total'].includes(l.stat);
           const clashOwn = (a, b) => { if (!a || !b || a.gid !== b.gid) return null;
-            const one = (qq, o) => gameLegOwn(qq) || qq.stat !== 'passing_tds' ? null : !gameLegOwn(o) && o.stat === 'any_td' && o.team === qq.team && o.pid !== qq.pid ? 'td' : qq.side !== 'under' && o.stat === 'total' ? 'total' : null;
+            const one = (qq, o) => gameLegOwn(qq) || qq.stat !== 'passing_tds' ? null : !gameLegOwn(o) && ['any_td','receptions','receiving_yards','scrim_yards'].includes(o.stat) && o.team === qq.team && o.pid !== qq.pid ? 'td' : qq.side !== 'under' && o.stat === 'total' ? 'total' : null;
             return one(a, b) || one(b, a); };
           const clashPairsOwn = legs => legs.flatMap((a, i) => legs.slice(i + 1).map((b, k) => [i, i + 1 + k, clashOwn(a, b)])).filter(x => x[2]);
           const ML2_ID = 'SMOKE5#ml_' + g2.h, ML3_ID = 'SMOKE7#ml_3', near = [g1.a, g1.h, g2.a, g2.h];

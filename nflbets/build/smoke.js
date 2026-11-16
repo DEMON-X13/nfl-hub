@@ -594,7 +594,7 @@ function dkTakes(DK, l, started) {
    card's lines name the pairs alone */
 const isGameOwn = l => !!l && ['ml', 'ats', 'total'].includes(l.stat);
 const clashOwn = (a, b) => { if (!a || !b || a.gid !== b.gid) return null;
-  const one = (q, o) => isGameOwn(q) || q.stat !== 'passing_tds' ? null : !isGameOwn(o) && o.stat === 'any_td' && o.team === q.team && o.pid !== q.pid ? 'td' : q.side !== 'under' && o.stat === 'total' ? 'total' : null;
+  const one = (q, o) => isGameOwn(q) || q.stat !== 'passing_tds' ? null : !isGameOwn(o) && ['any_td','receptions','receiving_yards','scrim_yards'].includes(o.stat) && o.team === q.team && o.pid !== q.pid ? 'td' : q.side !== 'under' && o.stat === 'total' ? 'total' : null;
   return one(a, b) || one(b, a); };
 const clashPairsOwn = legs => { const out = []; (legs || []).forEach((a, i) => legs.slice(i + 1).forEach((b, k) => { const x = clashOwn(a, b); if (x) out.push([i, i + 1 + k, x]); })); return out; };
 /* (the review of 27 October 2026 to app v142) the smoke's own reading of two players' legs moving against each other

@@ -3206,6 +3206,16 @@ and the Elo picks' per game, the builder's notes, the card's buttons on made-up 
 buttons, per-leg list, Share link text, clash line and Tab order) and `elo/check_tab.js` (the rule loaded into the search
 it drives, its own copy in the full enumeration, F7) hold it.
 
+**A quarterback's passing TDs never with a teammate's catches** (app v148, `patch_qb_catch_clash.py`, the owner's report
+of 16 November 2026, with DraftKings' slip refusing Jayden Daniels' Under 1.5 passing TDs with Rachaad White's Under 2.5
+receptions: "Sorry, unfortunately your picks can not be parlayed"; Sunday night's Safe was the same shape, Burrow's
+passing TDs under with Dohnte Meyers' receptions under). DraftKings publishes no list of the pairs it refuses, so the rule
+follows what the slip refused: `dkClashWhy`'s 'td' pair now takes a quarterback's passing TDs (over or under) with a
+teammate's anytime touchdown, receptions, receiving yards or rush + rec yards (`DK_CATCH`), over or under; his passing
+yards with a teammate's catches stay allowed (no slip has refused them). `DK_CLASH.td` reads "a quarterback’s passing TDs
+with a teammate’s catches, receiving yards or touchdown". The audit's `clashAud` (M16's 21 cases), the smoke's and
+`smoke_live.js`'s `clashOwn` carry the same rule.
+
 **The backtest** (app v118, `props/build/suggest_backtest.js`, run by hand, never by a job). Every night game and Sunday
 slot of the weeks before the record took them, from week 3 (the first week the props job published a payload before its
 locks), whose lock has passed and whose games are all final, rebuilt by today's page on exactly the files of the last

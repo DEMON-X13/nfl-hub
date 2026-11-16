@@ -2509,7 +2509,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v147 \u00b7 2026-11-11';
+const APP_BUILD='app v148 \u00b7 2026-11-16';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -6263,14 +6263,16 @@ function pbPool(games,u,opt){ const r=pbLegs(games,u), cap=pbOpt(opt).cap; retur
    his passing touchdowns over with the game's total ('total'); null for any other pair. No suggestion takes such a pair
    (pbFits, gameTiers, the Elo picks' search), and the builder says so under its legs where it holds one */
 const dkPassTd=l=>!!l&&!isGameLeg(l)&&l.stat==='passing_tds';
+/* (app v148) a teammate's catches: DraftKings refused Daniels' passing TDs under with Rachaad White's receptions under */
+const DK_CATCH=new Set(['any_td','receptions','receiving_yards','scrim_yards']);
 function dkClashWhy(a,b){
   if(!a||!b||a.gid!==b.gid) return null;
-  const one=(q,o)=>!dkPassTd(q)?null:(!isGameLeg(o)&&o.stat==='any_td'&&o.team===q.team&&o.pid!==q.pid)?'td':(q.side!=='under'&&o.stat==='total'&&isGameLeg(o))?'total':null;
+  const one=(q,o)=>!dkPassTd(q)?null:(!isGameLeg(o)&&DK_CATCH.has(o.stat)&&o.team===q.team&&o.pid!==q.pid)?'td':(q.side!=='under'&&o.stat==='total'&&isGameLeg(o))?'total':null;
   return one(a,b)||one(b,a);
 }
 const dkClash=(a,b)=>!!dkClashWhy(a,b);
 /* what a pair is, in the builder's words */
-const DK_CLASH={td:'a quarterback’s passing TDs with a teammate’s touchdown',total:'a quarterback’s passing TDs over with the game total'};
+const DK_CLASH={td:'a quarterback’s passing TDs with a teammate’s catches, receiving yards or touchdown',total:'a quarterback’s passing TDs over with the game total'};
 /* every such pair in a list of legs, by their places in it: [i, j, kind], i before j */
 function dkClashPairs(legs){ const out=[]; (legs||[]).forEach((a,i)=>legs.slice(i+1).forEach((b,k)=>{ const w=dkClashWhy(a,b); if(w) out.push([i,i+1+k,w]); })); return out; }
 window.dkClashWhy=dkClashWhy; window.dkClash=dkClash; window.dkClashPairs=dkClashPairs; window.DK_CLASH=DK_CLASH;
@@ -8509,7 +8511,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the page's glue,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the admin link, the
    betting app -- shows as a new tag. */
-const PAGE_HASH='1c30898';
+const PAGE_HASH='d1de691';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
