@@ -1,0 +1,95 @@
+name: Clean up merged branches and retired runs (one-off)
+
+# One-off, dispatched by hand on 16 November 2026 at the owner's ask, then removed.
+# Deletes the 49 branches whose head is still exactly the commit checked against its merged
+# pull request (each can be brought back from that PR's "Restore branch"), and the runs of
+# five workflows whose files were deleted long ago. Nothing else: a branch whose head moved
+# since the check is skipped and named.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  clean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Delete the merged branches
+        run: |
+          set -u
+          gone=0; kept=0
+          while read -r b want; do
+            [ -z "$b" ] && continue
+            case "$b" in main|claude/nice-newton-e43jf6) echo "never: $b"; continue;; esac
+            have=$(gh api "repos/$REPO/git/ref/heads/$b" --jq .object.sha 2>/dev/null || true)
+            if [ -z "$have" ]; then echo "already gone: $b"; continue; fi
+            if [ "$have" != "$want" ]; then echo "SKIPPED (head moved to $have): $b"; kept=$((kept+1)); continue; fi
+            gh api -X DELETE "repos/$REPO/git/refs/heads/$b" && { echo "deleted: $b"; gone=$((gone+1)); }
+          done <<'LIST'
+            claude/admiring-davinci-jplz8w f77592364bb85c50d4ea008862c378e5eabbb95f
+            claude/admiring-hawking-c6kc4e cdd74a4f03423f5cbadd40373c79d26eb6b86af0
+            claude/admiring-ritchie-5c2rph 781f97627e8e225f3ad589c9ec239d72e4936ac3
+            claude/amazing-allen-f3apmg 037574d5ffedaa47a86367bf43bb60b21ce205ef
+            claude/bold-gates-7yojhn 380ab99a9e526bf9458f009881b1ebd61d522d44
+            claude/brave-edison-j7jdm3 fcda39833eb33677dccb72fd91930f374827a7cf
+            claude/busy-maxwell-mkoakx 895bb56b81331de3217ac2f578e7d7ab61764276
+            claude/cfb-hub-rename a048c7b32c703627eb82d7c56cddbc512d7f9003
+            claude/college-football-betting-site-a4jx0x 71310f88c920bbe0e0cc45a48d2b4cd7791eacfa
+            claude/determined-goldberg-9qi4gn 3e7a15625ac73e76d5ff8bd26e73a906464596c6
+            claude/determined-hamilton-93sd16 da155d2461f9f522429c6c82a6636342aeedb9ec
+            claude/elegant-pascal-bngs9h 0284c7f6d016b686f3169e7c09947b9d0f18b113
+            claude/friendly-dirac-xuz02q 38deb1a928f02cd432aee26ca4dd24830378a5ba
+            claude/hopeful-goldberg-8hgev4 6d9d22c7652cf810e090cb282553d317900c513a
+            claude/jolly-noether-goyonw ffedabdf65d54ab5fce158a3e95ade5f4d30515a
+            claude/laughing-feynman-0l0z52 71a5def9260a46ce66cddc90cd3e2d42ea1efbd6
+            claude/matchups-elo-units e566cd74e4b9e0a31172d8305f8f590cc3747f16
+            claude/nfl-parlay-randomize-9cqso5 d7efd6f721715109d32a16ee43111cee3bfec459
+            claude/nhl-site-version-ipbji7 bc610ee8278c2012ee0622f6aae5ad389ecafe49
+            claude/nice-carson-mblu4e 9328f2b292bc3291c9dc0ab1e65a607ddff7a0f8
+            claude/practical-hypatia-hb9bwk af82d5505c736e1a320aa531af3cfd67d43c3255
+            claude/stoic-bardeen-5twhp1 5dc44f5b49530afec84a27bee9e4144fec44966c
+            claude/stoic-brahmagupta-tkm6en 2784e9a05c3d7f9ce3ca19f615895f7479fff480
+            claude/upbeat-dirac-elucel 08c57dc2a03cc5d8f3125f1a0a58e83dbf1471f3
+            claude/wizardly-volta-hacxbr f995baced425d250a96cfd834147500c624f5480
+            claude/wonderful-feynman-8ujzid 1782e567e78d8cf92005151f29ff44d52d90756e
+            espn-lines 0acff188b401b7ca87cdd5d8d834b361b7f4b4bc
+            fix-espn-check 42e4e8ac8073c5127289f4c1deafe0c655e2ca84
+            fix-press-paid-ids b8ee34a00e9ae6e949803ae3cb095feb60b5d9fc
+            friends-gonz b4a7558236f0e4bcf23455fe3efee3d0eb28c229
+            friends-picks 3d9e1d5eb5b0f849023828dfcbf095dc3eaf8fcd
+            gamebets-to-props aa55ff5faf8a8791b66cf05729c6ea8a989d095a
+            gamepage-text-mismatch-tags 0286fa2eaba291a4f9ea41340fd458cf7ba996a7
+            gate-hardening d7679a17eb8009695de6185b9b27c3c591655084
+            hub-look 56710e0327a904c365b0fe1811b7d519816f4b04
+            liveparlays-tbdal e5b308b57542cf1df06c2ce413481e83722b30c2
+            mismatch-tag-diamond a1717fd8a197ba118694cd27e6c2d0f8b746b5df
+            pickgrid-spacing a5b87b2a0550d4e74ae5701a8d071e017c41b62c
+            press-keep c15325cc34ab9a4dde5a6459dc9bdc79270be214
+            probbar 7adc00eee27b51917fe6f2f0e1966f914f7b49e9
+            props-skip-early-sunday 4b54716ad477b9d0ffc1ceb5e005fe6e7b25916d
+            season-tracker-tab 5cbddcf01b550cb31ade6e6bd8919210a0a0977a
+            snapshot-cleanup 1727cdc04a4dde38a3549b4cf1d903758bc28342
+            snapshot-trim 4262eca05ea86fa21d7b3acbb2a56645ff71310a
+            tracker-into-snapshot 19aa9b3fd55620c28faf494a592236db7d974480
+            xparlays-bufla 0d292f48d680070a08dddaae8d01d7ec62aefd4b
+            xparlays-bufla-spread 30f83a1fed98546e19b3496edd52560afa470e9f
+            xparlays-w6-seaden b26f0e0c0aabc5d4f12f395ad995ac02f062b1c0
+            xparlays-w6-update 7c82e156bdc8da8e0c8e709d7e0a528c8e955a34
+          LIST
+          echo "branches deleted: $gone, skipped: $kept"
+      - name: Delete the retired workflows' runs
+        run: |
+          set -u
+          n=0
+          for w in 386923018 381359023 380695922 362436206 367529762; do
+            for id in $(gh api --paginate "repos/$REPO/actions/workflows/$w/runs?per_page=100" --jq '.workflow_runs[].id'); do
+              gh api -X DELETE "repos/$REPO/actions/runs/$id" && { echo "deleted run $id (workflow $w)"; n=$((n+1)); }
+            done
+          done
+          echo "runs deleted: $n"
