@@ -110,7 +110,7 @@
   },
   "HOU": {
    "kick": "2026-11-20T01:15Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-17T22:51:26.367Z",
    "units": {
     "qb": [
      {
@@ -196,7 +196,8 @@
      {
       "id": "00-0039343",
       "n": "Kamari Lassiter",
-      "pos": "CB"
+      "pos": "CB",
+      "q": "questionable: wrist"
      },
      {
       "id": "00-0037237",
@@ -836,7 +837,7 @@
   },
   "TEN": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-17T22:51:26.367Z",
    "units": {
     "qb": [
      {
@@ -886,12 +887,6 @@
     ],
     "rec": [
      {
-      "id": "00-0038117",
-      "n": "Wan'Dale Robinson",
-      "pos": "WR",
-      "q": "questionable: ankle"
-     },
-     {
       "id": "00-0040170",
       "n": "Elic Ayomanor",
       "pos": "WR"
@@ -900,6 +895,11 @@
       "id": "00-0040584",
       "n": "Gunnar Helm",
       "pos": "TE"
+     },
+     {
+      "id": "00-0040705",
+      "n": "Chimere Dike",
+      "pos": "WR"
      }
     ],
     "front": [
