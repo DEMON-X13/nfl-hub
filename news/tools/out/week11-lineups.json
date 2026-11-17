@@ -525,7 +525,7 @@
   },
   "CAR": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-17T20:02:42.040Z",
    "units": {
     "qb": [
      {
@@ -619,9 +619,10 @@
       "pos": "SS"
      },
      {
-      "id": "00-0036884",
-      "n": "Marco Wilson",
-      "pos": "CB"
+      "id": "00-0041063",
+      "n": "Will Lee III",
+      "pos": "CB",
+      "q": "questionable: hamstring"
      }
     ]
    }
@@ -731,7 +732,7 @@
   },
   "CHI": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-17T20:02:42.040Z",
    "units": {
     "qb": [
      {
@@ -784,8 +785,7 @@
      {
       "id": "00-0040735",
       "n": "Luther Burden III",
-      "pos": "WR",
-      "q": "questionable: concussion"
+      "pos": "WR"
      },
      {
       "id": "00-0040126",
@@ -1142,7 +1142,7 @@
   },
   "DET": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-17T20:02:42.040Z",
    "units": {
     "qb": [
      {
@@ -1214,13 +1214,13 @@
       "pos": "DT"
      },
      {
-      "id": "00-0036964",
-      "n": "Derrick Barnes",
+      "id": "00-0036335",
+      "n": "DJ Wonnum",
       "pos": "OLB"
      },
      {
-      "id": "00-0041441",
-      "n": "Derrick Moore",
+      "id": "00-0036964",
+      "n": "Derrick Barnes",
       "pos": "OLB"
      }
     ],
@@ -1245,7 +1245,7 @@
   },
   "ARI": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-17T20:02:42.040Z",
    "units": {
     "qb": [
      {
@@ -1256,9 +1256,10 @@
     ],
     "ol": [
      {
-      "id": "00-0040382",
-      "n": "Josh Fryar",
-      "pos": "T"
+      "id": "00-0041113",
+      "n": "Jayden Williams",
+      "pos": "T",
+      "q": "questionable: knee"
      },
      {
       "id": "00-0032954",
@@ -1348,7 +1349,7 @@
   },
   "KC": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-17T20:02:42.040Z",
    "units": {
     "qb": [
      {
@@ -1386,6 +1387,12 @@
      }
     ],
     "rb": [
+     {
+      "id": "00-0038134",
+      "n": "Kenneth Walker III",
+      "pos": "RB",
+      "q": "questionable: groin"
+     },
      {
       "id": "00-0041013",
       "n": "Emmett Johnson",
@@ -1759,7 +1766,7 @@
   },
   "LAC": {
    "kick": "2026-11-22T21:05Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-17T20:02:42.040Z",
    "units": {
     "qb": [
      {
@@ -1819,9 +1826,10 @@
       "pos": "WR"
      },
      {
-      "id": "00-0038046",
-      "n": "Charlie Kolar",
-      "pos": "TE"
+      "id": "00-0039915",
+      "n": "Ladd McConkey",
+      "pos": "WR",
+      "q": "questionable: back"
      }
     ],
     "front": [
