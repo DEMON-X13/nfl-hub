@@ -2084,7 +2084,7 @@
   },
   "PIT": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-18T22:53:31.588Z",
    "units": {
     "qb": [
      {
@@ -2163,7 +2163,8 @@
      {
       "id": "00-0036323",
       "n": "Patrick Queen",
-      "pos": "ILB"
+      "pos": "ILB",
+      "q": "questionable: hand"
      }
     ],
     "db": [

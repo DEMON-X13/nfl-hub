@@ -136,10 +136,11 @@ Miami Dolphins, ESPN headlines:
 - 2026-11-11 Dolphins put QB Malik Willis on IR with groin injury <https://www.espn.com/nfl/story/_/id/50445819/dolphins-put-qb-malik-willis-ir-groin-injury>
 
 Buffalo Bills, injuries:
+- Ray Davis (RB) Questionable, Hamstring: Davis was a limited participant in Wednesday's practice due to a hamstring injury.
+- Jackson Hawes (TE) Questionable, Shoulder: questionable
 - Damar Hamlin (S) Questionable, Toe: questionable
 - Amani Hooker (S) Questionable, Knee: questionable
 - Cole Bishop (S) Questionable, Shoulder: questionable
-- Ray Davis (RB) Questionable, Hamstring: questionable
 - Dalton Kincaid (TE) Questionable, Thumb: Kincaid (thumb/ankle) did not practice Wednesday, David Furones of the Sun Sentinel reports.
 - Tyrell Shavers (WR) Active: Bills head coach Joe Brady said Wednesday that Shavers (knee) has been reinstated from the PUP list, Katherine Fitzgerald of The Buffalo News reports.
 - Ty Johnson (RB) Active: Johnson caught his only target for four yards in a 31-12 win over the Jets on Sunday.
@@ -160,7 +161,6 @@ Buffalo Bills, injuries:
 - Christian Benford (CB) Questionable, Groin: Benford (groin) has been ruled out for the rest of Sunday's game against the Jets.
 - Spencer Brown (OT) Active: Brown (ankle) is active for Sunday's game against the Jets.
 - Jordan Hancock (CB) Active: Hancock (hamstring) is active for Sunday's game against the Jets.
-- Sam Franklin Jr. (S) Active
 
 Buffalo Bills, ESPN headlines:
 - 2026-11-15 Josh Allen powers Bills past Jets 31-12 for best start in 35 years. New York loses Geno Smith twice <http://www.espn.com/nfl/recap?gameId=401873054>
@@ -388,8 +388,8 @@ Tampa Bay Buccaneers, ESPN headlines:
 - 2026-10-29 Falcons' Penix and Buccaneers' Mayfield aiming to help rebounding teams take control of NFC South <http://www.espn.com/nfl/preview?gameId=401873025>
 
 Detroit Lions, injuries:
+- Sione Vaki (RB) Questionable, Ankle: Vaki (ankle) was a limited participant in Wednesday's walkthrough practice.
 - Aidan Hutchinson (DE) Injured Reserve, Knee - ACL: The Lions placed Hutchinson (knee) on injured reserve Wednesday.
-- Sione Vaki (RB) Questionable, Ankle: questionable
 - Tyler Lacy (DT) Questionable, Shoulder: questionable
 - Ennis Rakestraw Jr. (CB) Questionable, Shoulder: questionable
 - Khalil Dorsey (CB) Questionable, Ankle: questionable
@@ -472,6 +472,7 @@ Arizona Cardinals, ESPN headlines:
 - 2026-11-06 Sources: Ravens trade 4th-, 7th-rounders to get Jacoby Brissett, 5th-round pick <https://www.espn.com/nfl/story/_/id/50400123/ravens-complete-trade-cardinals-qb-jacoby-brissett>
 
 Kansas City Chiefs, injuries:
+- Travis Kelce (TE) Active: Kelce was a full participant in Wednesday's practice, despite being listed with ankle and calf injuries.
 - Jared Wiley (TE) Injured Reserve, Ankle: ir
 - Omarr Norman-Lott (DT) Questionable, Knee - ACL: questionable
 - Peter Woods (DT) Active
@@ -490,7 +491,6 @@ Kansas City Chiefs, injuries:
 - Andrew Armstrong (WR) Active: Armstrong caught his only target for a 43-yard touchdown in Sunday's 35-13 win over the Falcons.
 - Cyrus Allen (WR) Active: Allen caught two of four targets for 44 yards and a touchdown in Sunday's 35-13 win over the Falcons.
 - Xavier Worthy (WR) Active: Worthy failed to catch any of his three targets in Sunday's 35-13 win over the Falcons.
-- Travis Kelce (TE) Active: Kelce secured both targets for 30 yards in the Chiefs' 35-13 win over the Falcons on Sunday.
 - Josh Downs (WR) Active: Downs secured four of five targets for 53 yards and a touchdown, fumbled once but recovered and returned three punts for 10 yards in the Chiefs' 35-13 win over the Falcons on Sunday.
 - Emmett Johnson (RB) Active: Johnson rushed 22 times for 101 yards and brought in six of seven targets for 70 yards and two touchdowns in the Chiefs' 35-13 win over the Falcons on Sunday.
 - Rashee Rice (WR) Active: Rice brought in five of six targets for 82 yards in the Chiefs' 35-13 win over the Falcons on Sunday.
@@ -519,12 +519,13 @@ Searches to run:
 - "NFL week 11 picks PIT PHI"
 
 Pittsburgh Steelers, injuries:
+- Michael Pittman Jr. (WR) Injured Reserve, Foot: Pittman (foot) was limited in his return to practice Wednesday, Teresa Varley of the Steelers' official site reports.
+- Nick Herbig (LB) Doubtful, Hip: doubtful
 - Max Hurleman (RB) Active
 - Mason McCormick (G) Injured Reserve, Ankle: ir
 - Roman Wilson (WR) Injured Reserve, Finger: Steelers head coach Mike McCarthy said Wednesday that Wilson (finger) has been designated for return from injured reserve, Nick Farabaugh of PennLive.com reports.
-- Michael Pittman Jr. (WR) Injured Reserve, Foot: Steelers head coach Mike McCarthy said Wednesday that Pittman (foot) has been designated for return from injured reserve, Nick Farabaugh of PennLive.com reports.
 - Jaquan Brisker (S) Active: Brisker notched 10 tackles (two solo) Sunday in a Week 10 loss to the Bengals.
-- Patrick Queen (LB) Active: Queen posted 14 tackles (five solo), including 1.0 sacks, in Sunday's loss to the Bengals.
+- Patrick Queen (LB) Questionable, Hand: Queen posted 14 tackles (five solo), including 1.0 sacks, in Sunday's loss to the Bengals.
 - Payton Wilson (LB) Active: Wilson recorded 19 tackles (nine solo) in Sunday's 38-18 loss to the Bengals.
 - Brandon Smith (WR) Active: Smith caught two of three targets for 15 yards during Sunday night's 38-18 loss to the Bengals.
 - DeShon Elliott (S) Questionable, Knee: questionable
@@ -543,7 +544,6 @@ Pittsburgh Steelers, injuries:
 - Will Howard (QB) Active: Howard (coach's decision) is inactive and serving as Pittsburgh's emergency third quarterback Sunday night versus Cincinnati.
 - Derrick Harmon (DT) Active: Harmon (foot) is active for Sunday's Week 10 clash against Cincinnati.
 - Brandin Echols (CB) Active: Echols (hamstring) was a full participant at practice Wednesday, Teresa Varley of the Steelers' official site reports.
-- Doneiko Slaughter (CB) Active: Slaughter (hamstring) was a full participant in Wednesday's practice, Teresa Varley of the Steelers' official site reports.
 
 Pittsburgh Steelers, ESPN headlines:
 - 2026-11-18 Sources: Mason McCormick avoided ankle fracture; Steelers place guard on IR <https://www.espn.com/nfl/story/_/id/50519701/sources-steelers-g-mccormick-need-surgery-ankle>
@@ -630,7 +630,7 @@ Baltimore Ravens, injuries:
 - Ryan Neuzil (C) Active: The Ravens acquired Neuzil from the Falcons on Tuesday in exchange for guard Andrew Vorhees and a conditional 2028 sixth-round pick, Jamison Hensley of ESPN.com reports.
 
 Baltimore Ravens, ESPN headlines:
-- 2026-11-18 Ravens' Humphrey apologizes for joking that Baltimore 'best at making criminals' <https://www.espn.com/nfl/story/_/id/50524109/ravens-humphrey-apologizes-criminals-quip-podcast>
+- 2026-11-18 Ravens' Humphrey apologizes for quip that Baltimore 'best at making criminals' <https://www.espn.com/nfl/story/_/id/50524109/ravens-humphrey-apologizes-criminals-quip-podcast>
 - 2026-11-18 Ravens' Flowers 'super frustrated' by latest late-game fumble <https://www.espn.com/nfl/story/_/id/50523527/ravens-flowers-super-frustrated-latest-late-game-fumble>
 - 2026-11-18 The NFL's current worst team? Lamar-less Ravens making that case <https://www.espn.com/nfl/story/_/id/50521008/nfl-current-worst-team-lamar-jackson-ravens-making-case-week-11>
 - 2026-11-18 Fantasy buzz: Kirk Cousins, Stefon Diggs bring reliability to fantasy lineups <https://www.espn.com/fantasy/football/story/_/id/40699880/fantasy-football-injuries-position-battles-nfl-news-analysis>
@@ -939,9 +939,9 @@ Searches to run:
 - "NFL week 11 picks MIN SF"
 
 Minnesota Vikings, injuries:
+- Jauan Jennings (WR) Active: Jennings (calf) practiced in full Wednesday.
 - Jay Ward (S) Questionable, Knee: questionable
 - Jeshaun Jones (WR) Questionable, Shoulder: questionable
-- Jauan Jennings (WR) Active
 - Tyrion Ingram-Dawkins (DE) Active
 - Kyle Van Noy (LB) Questionable, Calf: questionable
 - T.J. Hockenson (TE) Questionable, Wrist: Hockenson (wrist) practiced in a limited capacity Wednesday.
