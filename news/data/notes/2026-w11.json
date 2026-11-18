@@ -1,0 +1,123 @@
+{
+  "season": 2026,
+  "week": 11,
+  "written": "2026-11-18",
+  "games": {
+    "2026_11_IND_HOU": {
+      "preview": "**C.J. Stroud** and the Texans host the Colts on a short week without **Marvin Harrison Jr.** or **Woody Marks**.",
+      "news": "Houston ruled out **Marvin Harrison Jr.** (hamstring), **Woody Marks** (concussion) and **Danielle Hunter** (hamstring); Indianapolis ruled out **Charvarius Ward** (knee).",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "Colts official site"
+      ]
+    },
+    "2026_11_MIA_BUF": {
+      "preview": "With **Malik Willis** on injured reserve, the Dolphins travel to Buffalo to face **Josh Allen** in a division game.",
+      "news": "Buffalo's **Dalton Kincaid** (thumb, ankle) did not practice Wednesday; Miami lost defensive tackle **Jordan Phillips** to injured reserve after biceps surgery.",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "South Florida Sun Sentinel"
+      ]
+    },
+    "2026_11_BAL_CAR": {
+      "preview": "Baltimore visits Carolina still without **Lamar Jackson**, whom the Ravens think could return from his thumb injury in Week 16.",
+      "news": "Carolina tight ends **Tommy Tremble** and **Darren Waller** missed Wednesday's practice with knee injuries; Baltimore's **Nnamdi Madubuike** (hamstring) is questionable.",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "The Athletic"
+      ]
+    },
+    "2026_11_NO_CHI": {
+      "preview": "A battered Saints offensive line heads to Soldier Field to face **Caleb Williams** and the Bears.",
+      "news": "New Orleans lists **Erik McCoy** (biceps) and **Taliese Fuaga** (knee) as doubtful and **Asim Richards** (knee) as out; Chicago's **Kyler Gordon** (shoulder) is questionable.",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "NewOrleans.Football"
+      ]
+    },
+    "2026_11_TEN_DAL": {
+      "preview": "**Cam Ward** and the Titans visit Dallas, where a Cowboys defense without **DaRon Bland** tries to steady itself.",
+      "news": "Tennessee lost **Wan'Dale Robinson** (ankle) for the season; Dallas ruled out **DaRon Bland** and **Tyler Booker** with high ankle sprains, and **Jake Ferguson** (knee).",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "Dallas Morning News"
+      ]
+    },
+    "2026_11_TB_DET": {
+      "preview": "Tampa Bay waits on **Baker Mayfield**'s foot as it visits a Lions team that just lost **Aidan Hutchinson** for the season.",
+      "news": "**Baker Mayfield** (foot) did not practice Wednesday; Detroit placed **Aidan Hutchinson** (knee) on injured reserve and lists center **Cade Mays** (ankle) as doubtful.",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "Detroit Free Press"
+      ]
+    },
+    "2026_11_ARI_KC": {
+      "preview": "Arizona comes to Arrowhead after **Gardner Minshew**'s elbow surgery, facing **Patrick Mahomes** and the Chiefs.",
+      "news": "**Gardner Minshew** had UCL surgery on Monday; Kansas City's **Kenneth Walker III** (groin) did not practice Wednesday.",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "Kansas City Star"
+      ]
+    },
+    "2026_11_PIT_PHI": {
+      "preview": "**Aaron Rodgers** and the Steelers visit Philadelphia, where **Joe Milton III** stays the Eagles' starter.",
+      "news": "Pittsburgh placed guard **Mason McCormick** (ankle) on injured reserve and opened the return window for **Michael Pittman Jr.** and **Roman Wilson**; **DeVonta Smith** (hamstring) says he is healthy.",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "Philadelphia Inquirer"
+      ]
+    },
+    "2026_11_JAX_NYG": {
+      "preview": "**Trevor Lawrence** and the Jaguars visit MetLife Stadium to face **J.J. McCarthy** and the Giants.",
+      "news": "Jacksonville ruled out center **Robert Hainsey** (knee); **Jakobi Meyers** (ankle) and **Bhayshul Tuten** (ankle) were limited Wednesday.",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "Florida Times-Union"
+      ]
+    },
+    "2026_11_NYJ_LAC": {
+      "preview": "**Geno Smith** plans to play through an ankle injury as the Jets visit **Justin Herbert** and the Chargers.",
+      "news": "**Geno Smith** (ankle) was limited Wednesday; **Isaiah Williams** (ribs) and **Omar Cooper Jr.** (ankle) did not practice.",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "New York Post"
+      ]
+    },
+    "2026_11_LV_DEN": {
+      "preview": "**Fernando Mendoza** makes his second start for the Raiders in Denver against **Bo Nix** and the Broncos.",
+      "news": "Coach Klint Kubiak said **Brock Bowers** (ankle) does not need to practice to play Sunday; Denver's **Jaylen Waddle** (concussion) was at Wednesday's practice.",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "Denver Gazette"
+      ]
+    },
+    "2026_11_MIN_SF": {
+      "preview": "**Kirk Cousins** leads the Vikings against the 49ers in Mexico City, a week after his return to Minnesota.",
+      "news": "Minnesota's **Jordan Addison** had thumb surgery and is out; San Francisco's **Mike Evans** (Achilles) sat out Wednesday and **Brandon Aiyuk** is out for personal reasons.",
+      "sources": [
+        "NFL injury report",
+        "ESPN",
+        "NBC Sports"
+      ]
+    },
+    "2026_11_CIN_WAS": {
+      "preview": "**Joe Burrow** and the Bengals visit **Jayden Daniels** and the Commanders on Monday night.",
+      "news": "Washington designated **Jacory Croskey-Merritt** (groin) to return from injured reserve, and **Laremy Tunsil** (triceps) is set to begin his return.",
+      "sources": [
+        "NFL injury report",
+        "ESPN"
+      ]
+    }
+  }
+}
