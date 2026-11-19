@@ -765,7 +765,7 @@ const LINES = {
  "wk11:NYJ-LAC": "LAC -3, O/U 41.5",
  "wk11:LV-DEN": "DEN -10, O/U 40.5",
  "wk11:PIT-PHI": "PIT -4.5, O/U 37.5",
- "wk11:MIN-SF": "SF -3, O/U 45.5",
+ "wk11:MIN-SF": "SF -3, O/U 46.5",
  "wk11:CIN-WAS": "CIN -6.5, O/U 54.5",
  "wk12:GB-LAR": "LAR -3.5, O/U 45.5",
  "wk12:CHI-DET": "CHI -2.5, O/U 54.5",
@@ -784,4 +784,4 @@ const LINES = {
  "wk12:LV-CLE": "CLE -4.5, O/U 40.5",
  "wk12:CAR-TB": "TB -2.5, O/U 43.5"
 };
-const LINES_ASOF = "2026-11-18";
+const LINES_ASOF = "2026-11-19";
