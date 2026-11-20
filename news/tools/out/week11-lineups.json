@@ -205,7 +205,7 @@
   },
   "MIA": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-20T15:40:36.929Z",
+   "built_at": "2026-11-20T19:16:40.182Z",
    "units": {
     "qb": [
      {
@@ -301,17 +301,16 @@
       "pos": "FS"
      },
      {
-      "id": "00-0040182",
-      "n": "Dante Trader Jr.",
-      "pos": "FS",
-      "q": "questionable: shoulder, not practising"
+      "id": "00-0040178",
+      "n": "Jason Marshall Jr.",
+      "pos": "CB"
      }
     ]
    }
   },
   "BUF": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-19T22:29:09.381Z",
+   "built_at": "2026-11-20T19:16:40.182Z",
    "units": {
     "qb": [
      {
@@ -366,14 +365,13 @@
       "pos": "WR"
      },
      {
-      "id": "00-0038933",
-      "n": "Dalton Kincaid",
-      "pos": "TE",
-      "q": "questionable: thumb, not practising"
-     },
-     {
       "id": "00-0034827",
       "n": "DJ Moore",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0039901",
+      "n": "Keon Coleman",
       "pos": "WR"
      }
     ],
@@ -401,15 +399,15 @@
       "pos": "SS"
      },
      {
-      "id": "00-0037288",
-      "n": "Christian Benford",
-      "pos": "CB",
-      "q": "questionable: groin, not practising"
-     },
-     {
       "id": "00-0041391",
       "n": "Davison Igbinosun",
       "pos": "CB"
+     },
+     {
+      "id": "00-0037034",
+      "n": "Dee Alford",
+      "pos": "CB",
+      "q": "questionable: concussion"
      }
     ]
    }
@@ -1244,14 +1242,13 @@
   },
   "ARI": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-20T15:40:36.929Z",
+   "built_at": "2026-11-20T19:16:40.182Z",
    "units": {
     "qb": [
      {
-      "id": "00-0041561",
-      "n": "Carson Beck",
-      "pos": "QB",
-      "q": "questionable: back"
+      "id": "00-0026300",
+      "n": "Josh Johnson",
+      "pos": "QB"
      }
     ],
     "ol": [
@@ -1349,7 +1346,7 @@
   },
   "KC": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-19T02:29:29.998Z",
+   "built_at": "2026-11-20T19:16:40.182Z",
    "units": {
     "qb": [
      {
@@ -1388,14 +1385,13 @@
     ],
     "rb": [
      {
-      "id": "00-0038134",
-      "n": "Kenneth Walker III",
-      "pos": "RB",
-      "q": "questionable: groin, not practising"
-     },
-     {
       "id": "00-0041013",
       "n": "Emmett Johnson",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0040959",
+      "n": "Jaydn Ott",
       "pos": "RB"
      }
     ],
@@ -1563,7 +1559,7 @@
   },
   "NYG": {
    "kick": "2026-11-22T21:25Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-20T19:16:40.182Z",
    "units": {
     "qb": [
      {
@@ -1618,13 +1614,13 @@
       "pos": "WR"
      },
      {
-      "id": "00-0037838",
-      "n": "Isaiah Likely",
-      "pos": "TE"
-     },
-     {
       "id": "00-0041042",
       "n": "Malachi Fields",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0036309",
+      "n": "Darnell Mooney",
       "pos": "WR"
      }
     ],
