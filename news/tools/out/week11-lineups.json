@@ -205,7 +205,7 @@
   },
   "MIA": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-19T02:29:29.998Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
@@ -226,10 +226,10 @@
       "pos": "T"
      },
      {
-      "id": "00-0039485",
-      "n": "Andrew Meyer",
+      "id": "00-0036171",
+      "n": "Aaron Brewer",
       "pos": "C",
-      "q": "questionable: neck"
+      "q": "questionable: concussion"
      },
      {
       "id": "00-0040742",
@@ -623,7 +623,7 @@
   },
   "NO": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
@@ -717,9 +717,9 @@
       "pos": "CB"
      },
      {
-      "id": "00-0034361",
-      "n": "Justin Reid",
-      "pos": "SS"
+      "id": "00-0040643",
+      "n": "Jonas Sanker",
+      "pos": "FS"
      }
     ]
    }
@@ -829,7 +829,7 @@
   },
   "TEN": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-19T22:29:09.381Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
@@ -875,7 +875,7 @@
       "id": "00-0039032",
       "n": "Tyjae Spears",
       "pos": "RB",
-      "q": "questionable: knee, not practising"
+      "q": "questionable: knee"
      }
     ],
     "rec": [
@@ -935,7 +935,7 @@
   },
   "DAL": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
@@ -1007,9 +1007,10 @@
       "pos": "OLB"
      },
      {
-      "id": "00-0033120",
-      "n": "Kenny Clark",
-      "pos": "DT"
+      "id": "00-0040725",
+      "n": "Donovan Ezeiruaku",
+      "pos": "OLB",
+      "q": "questionable: ankle"
      }
     ],
     "db": [
@@ -1243,21 +1244,21 @@
   },
   "ARI": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-19T11:29:32.582Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
       "id": "00-0041561",
       "n": "Carson Beck",
-      "pos": "QB"
+      "pos": "QB",
+      "q": "questionable: back"
      }
     ],
     "ol": [
      {
       "id": "00-0041113",
       "n": "Jayden Williams",
-      "pos": "T",
-      "q": "questionable: knee"
+      "pos": "T"
      },
      {
       "id": "00-0032954",
@@ -1341,8 +1342,7 @@
      {
       "id": "00-0039807",
       "n": "Max Melton",
-      "pos": "CB",
-      "q": "questionable: knee"
+      "pos": "CB"
      }
     ]
    }
@@ -1875,7 +1875,7 @@
   },
   "LV": {
    "kick": "2026-11-22T21:25Z",
-   "built_at": "2026-11-19T11:29:32.582Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
@@ -1903,7 +1903,8 @@
      {
       "id": "00-0040871",
       "n": "Trey Zuhn III",
-      "pos": "C"
+      "pos": "C",
+      "q": "questionable: illness, not practising"
      },
      {
       "id": "00-0039349",
@@ -1928,7 +1929,7 @@
       "id": "00-0039338",
       "n": "Brock Bowers",
       "pos": "TE",
-      "q": "questionable: ankle, not practising"
+      "q": "questionable: ankle"
      },
      {
       "id": "00-0038563",
@@ -2189,7 +2190,7 @@
   },
   "PHI": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-19T11:29:32.582Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
@@ -2246,8 +2247,7 @@
      {
       "id": "00-0036912",
       "n": "DeVonta Smith",
-      "pos": "WR",
-      "q": "questionable: hamstring"
+      "pos": "WR"
      },
      {
       "id": "00-0034351",
@@ -2295,7 +2295,7 @@
   },
   "MIN": {
    "kick": "2026-11-23T01:20Z",
-   "built_at": "2026-11-19T22:29:09.381Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
@@ -2395,14 +2395,14 @@
       "id": "00-0036222",
       "n": "Isaiah Rodgers",
       "pos": "CB",
-      "q": "questionable: quadriceps"
+      "q": "questionable: quadricep"
      }
     ]
    }
   },
   "SF": {
    "kick": "2026-11-23T01:20Z",
-   "built_at": "2026-11-19T22:29:09.381Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
@@ -2494,8 +2494,7 @@
      {
       "id": "00-0039345",
       "n": "Renardo Green",
-      "pos": "CB",
-      "q": "questionable: back"
+      "pos": "CB"
      },
      {
       "id": "00-0038554",
@@ -2508,7 +2507,7 @@
   },
   "CIN": {
    "kick": "2026-11-24T01:15Z",
-   "built_at": "2026-11-19T22:29:09.381Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
@@ -2538,7 +2537,7 @@
       "id": "00-0035702",
       "n": "Dalton Risner",
       "pos": "G",
-      "q": "questionable: knee"
+      "q": "questionable: knee, not practising"
      },
      {
       "id": "00-0039925",
@@ -2602,7 +2601,7 @@
       "id": "00-0037743",
       "n": "Daxton Hill",
       "pos": "CB",
-      "q": "questionable: illness"
+      "q": "questionable: illness, not practising"
      },
      {
       "id": "00-0038549",
@@ -2614,7 +2613,7 @@
   },
   "WAS": {
    "kick": "2026-11-24T01:15Z",
-   "built_at": "2026-11-17T16:20:24.058Z",
+   "built_at": "2026-11-20T15:40:36.929Z",
    "units": {
     "qb": [
      {
@@ -2635,9 +2634,9 @@
       "pos": "G"
      },
      {
-      "id": "00-0035149",
-      "n": "Nick Allegretti",
-      "pos": "G"
+      "id": "00-0033082",
+      "n": "Lucas Patrick",
+      "pos": "C"
      },
      {
       "id": "00-0036618",
