@@ -763,7 +763,7 @@ const LINES = {
  "wk11:BAL-CAR": "CAR -3, O/U 43.5",
  "wk11:NO-CHI": "CHI -11.5, O/U 48.5",
  "wk11:TEN-DAL": "DAL -7.5, O/U 54.5",
- "wk11:TB-DET": "DET -4.5, O/U 46.5",
+ "wk11:TB-DET": "DET -4.5, O/U 47.5",
  "wk11:ARI-KC": "KC -15.5, O/U 40.5",
  "wk11:JAX-NYG": "JAX -6, O/U 46.5",
  "wk11:NYJ-LAC": "LAC -3, O/U 42.5",

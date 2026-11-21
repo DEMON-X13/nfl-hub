@@ -2588,7 +2588,7 @@
   },
   "WAS": {
    "kick": "2026-11-24T01:15Z",
-   "built_at": "2026-11-21T02:08:51.084Z",
+   "built_at": "2026-11-21T23:45:32.295Z",
    "units": {
     "qb": [
      {
@@ -2611,7 +2611,8 @@
      {
       "id": "00-0033082",
       "n": "Lucas Patrick",
-      "pos": "C"
+      "pos": "C",
+      "q": "questionable: concussion"
      },
      {
       "id": "00-0036618",
@@ -2626,14 +2627,13 @@
     ],
     "rb": [
      {
-      "id": "00-0037256",
-      "n": "Rachaad White",
-      "pos": "RB",
-      "q": "questionable: heel"
-     },
-     {
       "id": "00-0033699",
       "n": "Austin Ekeler",
+      "pos": "RB"
+     },
+     {
+      "id": "00-0041178",
+      "n": "Robert Henry Jr.",
       "pos": "RB"
      }
     ],
@@ -2675,7 +2675,8 @@
      {
       "id": "00-0036375",
       "n": "Amik Robertson",
-      "pos": "CB"
+      "pos": "CB",
+      "q": "questionable: ankle"
      },
      {
       "id": "00-0034465",
