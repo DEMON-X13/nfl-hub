@@ -515,7 +515,7 @@
   },
   "CAR": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-21T02:08:51.084Z",
+   "built_at": "2026-11-21T20:53:19.760Z",
    "units": {
     "qb": [
      {
@@ -575,8 +575,8 @@
       "pos": "WR"
      },
      {
-      "id": "00-0031610",
-      "n": "Darren Waller",
+      "id": "00-0037005",
+      "n": "Tommy Tremble",
       "pos": "TE",
       "q": "questionable: knee"
      }
@@ -1547,7 +1547,7 @@
   },
   "NYG": {
    "kick": "2026-11-22T21:25Z",
-   "built_at": "2026-11-21T02:08:51.084Z",
+   "built_at": "2026-11-21T20:53:19.760Z",
    "units": {
     "qb": [
      {
@@ -1605,7 +1605,7 @@
       "id": "00-0037838",
       "n": "Isaiah Likely",
       "pos": "TE",
-      "q": "not practising"
+      "q": "not practising: groin"
      },
      {
       "id": "00-0041042",
@@ -1860,7 +1860,7 @@
   },
   "LV": {
    "kick": "2026-11-22T21:25Z",
-   "built_at": "2026-11-21T02:08:51.084Z",
+   "built_at": "2026-11-21T20:53:19.760Z",
    "units": {
     "qb": [
      {
@@ -1888,8 +1888,7 @@
      {
       "id": "00-0040871",
       "n": "Trey Zuhn III",
-      "pos": "C",
-      "q": "not practising: illness"
+      "pos": "C"
      },
      {
       "id": "00-0039349",
@@ -2484,7 +2483,7 @@
   },
   "CIN": {
    "kick": "2026-11-24T01:15Z",
-   "built_at": "2026-11-20T15:40:36.929Z",
+   "built_at": "2026-11-21T20:53:19.760Z",
    "units": {
     "qb": [
      {
@@ -2511,10 +2510,9 @@
       "pos": "C"
      },
      {
-      "id": "00-0035702",
-      "n": "Dalton Risner",
-      "pos": "G",
-      "q": "questionable: knee, not practising"
+      "id": "00-0040359",
+      "n": "Jacob Bayer",
+      "pos": "C"
      },
      {
       "id": "00-0039925",
