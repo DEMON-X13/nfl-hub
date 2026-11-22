@@ -2081,6 +2081,21 @@ game two days out by the page's clock, three rows of the smoke's own planted (at
 at any hour and in the off-season. `build.js` also stops on a size in `snapshot.html` off its type scale (`--gs-t1` to
 `--gs-t6`), where the Game snapshot's Mismatch pill had set 10.5px.
 
+**A Mismatch needs a soft defence** (22 November 2026, the owner's call, after Christian McCaffrey wore the tag at MIN,
+Run Defense #5: "mismatch tag was intended to be for big mismatches against that current position corresponding
+opponent. not just bc a player is great", then "mismatch tag should only be when the offensive player is poised to have
+a big game", and the Mismatches list to drop players whose opponent is not weak). His +4 pts was his Elo for his average
+(×1.08) against a defence that pulled him down (×0.99). Each lead block's `mm` carries `soft` (`elo/build.py`'s THE
+MISMATCH SCORE): his defence multiplier, `def_x` as written, above 1, the defence he faces below the league's average for
+him. The page lists a row on the Mismatches (the bubbles, Show more, a game page's MISMATCH, Suggested Parlays' tag, the
+Game snapshot and the matchup bubble, all from `mismatchesV2`) only where it is soft, and so tags only a soft row at the
+tag's shift; a file from before `soft` lists as before. `tag` keeps its meaning, the shift's alone, which the Mismatch
+scorecard registered and grades; `ELO_AVG['mismatch']['record']` was measured on the shift alone, never with soft.
+Held: `elo/check.py` (`mm_block_bad`: `soft` on every lead block, exactly `def_x > 1`), `elo/check_tab.js` (`mmOwnV2`
+drops a row not soft; a fixture of a row not soft past every shift, never listed or tagged, beside a soft one listed and
+tagged and one with no `soft` listed as before; on a page without the rule 6 failures) and the nflbets smoke
+(`mmListOwn`; its made-up game's first row made not soft, off the list and untagged).
+
 **The Mismatch scorecard** (5 November 2026, item 3 of the Elo diagnosis; `elo/scorecard/`, its README.md first, which holds
 the bar word for word). Research only: no page, audit or smoke reads it, and nothing is fitted, tuned or chosen on it. Two
 steps of the Elo job, on main only, each continue-on-error with its own cap: right after its commit (so the clock is the

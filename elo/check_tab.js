@@ -380,7 +380,7 @@ function mmOwnV2(MU, Mm, o) {
     const m = v && v.mm; if (!m || typeof m !== 'object') continue;
     const st = MM_LEAD_C[v.group]; if (!st || m.stat !== st || F.lead[v.group] !== st) continue;
     const f = MU.avg_fit.legs[v.group + '|' + st], a = v.stats && v.stats[st];
-    if (!f || f.trusted !== true || !a || !(m.shift > 0)) continue;
+    if (!f || f.trusted !== true || !a || !(m.shift > 0) || m.soft === false) continue;
     if ((MU.out && MU.out[pid]) || (o.inactive && o.inactive[pid]) || o.kicked(v.game_id)) continue;
     const lb = MM_LB_C[st], pts = ptsC(m.shift), yds = `${sgnC(a.elo)} ${lb}`, q = a.vs && VS_NAME_OWN[a.vs.table] ? a.vs : null;
     const U = q && Mm.units && Mm.units[q.table], n = U && typeof U === 'object' ? Object.keys(U).length : null;
@@ -407,7 +407,7 @@ function plantMmC(MU) {
   for (const [g, st] of Object.entries(MM_LEAD_C)) { const f = C.avg_fit.legs[g + '|' + st]; if (f && f.trusted === true) lead[g] = st; }
   C.avg_fit.mismatch = { lead, tag: 0.035, chosen: 0.035, chosen_on: '2018-2021', record: {}, ladders: {} };
   for (const v of Object.values(C.avg)) { delete v.mm; const st = lead[v.group], a = st && v.stats && v.stats[st];
-    if (a && isFinite(a.z)) { const sh = Math.round(0.5 * erfC(a.z / Math.SQRT2) * 1e4) / 1e4; v.mm = { stat: st, shift: sh, tag: sh >= 0.035 }; } }
+    if (a && isFinite(a.z)) { const sh = Math.round(0.5 * erfC(a.z / Math.SQRT2) * 1e4) / 1e4; v.mm = { stat: st, shift: sh, tag: sh >= 0.035, soft: a.def_x > 1 }; } }
   return C;
 }
 /* the old Mismatches' rows, the check's own reading of a file from before the score (tab_elo.html's old rule, between its
@@ -532,6 +532,20 @@ async function v2Mm(MU, lab) {
     const u = o.find(r => r.pid === dd);
     chk(!o.some(r => r.pid === a) && !w.eloMismatches().some(v => v.pid === a) && !!u && !u.tag && /^The matchup /.test(u.title) && w.eloMismatches().some(v => v.pid === dd && !v.tag),
       `${lab}: a player the build counts out is on the Mismatches, or a row under the tag is not listed untagged`); }
+  /* (the owner's call of 22 November 2026) a row whose defence is not soft for him (soft false: its multiplier 1 or under,
+     as McCaffrey's at MIN, Run Defense #5): never listed and never tagged, though its shift is past every row's and its tag
+     true; the same row soft is listed and tagged, and one with no soft at all (a file from before it) listed as it was */
+  { const C = JSON.parse(JSON.stringify(base)), [a, b] = elig;
+    for (const pid of [a, b]) if (C.out) delete C.out[pid];
+    plantRow(C, a, 0.6, true); C.avg[a].mm.soft = false; plantRow(C, b, 0.55, true); C.avg[b].mm.soft = true;
+    const { w, d } = page(C); await wait(60); const o = await holdV2(w, d, C, `${lab}, a row whose defence is not soft`);
+    const more = d.getElementById('peMmMore'); if (more) { more.click(); await wait(20); }
+    chk(!o.some(r => r.pid === a) && !w.eloMismatches().some(v => v.pid === a) && !d.querySelector(`[data-mm-pid="${a}"]`)
+      && o.some(r => r.pid === b && r.tag) && w.eloMismatches().some(v => v.pid === b && v.tag) && !!d.querySelector(`#peMism .pe-mm-b[data-mm-pid="${b}"] .pe-mmtag`),
+      `${lab}: a row whose defence is not soft is on the Mismatches, or a soft one is not listed and tagged`);
+    const C2 = JSON.parse(JSON.stringify(base)); plantRow(C2, a, 0.6, true); delete C2.avg[a].mm.soft; if (C2.out) delete C2.out[a];
+    const p2 = page(C2); await wait(60); await holdV2(p2.w, p2.d, C2, `${lab}, a row with no soft (a file from before it)`);
+    chk(p2.w.eloMismatches().some(v => v.pid === a && v.tag), `${lab}: a row from a file before soft is not listed and tagged as it was`); }
   /* the file's tag null (every block's tag left as it was): no row tagged anywhere, the rows as before */
   { const C = JSON.parse(JSON.stringify(base)); plantRow(C, elig[0], 0.4, true); C.avg_fit.mismatch.tag = null;
     const { w, d } = page(C); await wait(60); const o = await holdV2(w, d, C, `${lab}, the file's tag null`);

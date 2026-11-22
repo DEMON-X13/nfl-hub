@@ -650,8 +650,14 @@ same); on that leg's rows the threshold chosen on 2018-2021 is again 3.5 points 
 it in every season, +0.020 to +0.237 sd, so it stays the tag (the research had expected none: on its own spec it held 4
 of 8 at 2.5 points, on the ratings before the draft start). This is the Elo system's own record:
 2018-2025 has no DraftKings prop lines, so it says nothing of beating the line. Each lead block carries `mm`, {stat,
-shift, tag}: the lead leg, phi(z) - 0.5 to four places on the z written, and whether that is at the tag or over
-(false wherever the tag is null).
+shift, tag, soft}: the lead leg, phi(z) - 0.5 to four places on the z written, whether that is at the tag or over
+(false wherever the tag is null), and whether the defence he faces is soft for him, its multiplier (def_x, as
+written) above 1. Soft is the owner's call of 22 November 2026 ("mismatch tag was intended to be for big mismatches
+against that current position corresponding opponent. not just bc a player is great"; Christian McCaffrey wore it at
+MIN, Run Defense #5, ×0.99 for the defence and ×1.08 for his Elo): the page lists a row on the Mismatches and tags it
+only where it is soft, so a Mismatch is a big projected lift against a defence that helps him. `tag` keeps its
+meaning, the shift's alone, which the Mismatch scorecard (elo/scorecard/) registered and grades; the record in
+ELO_AVG['mismatch']['record'] was measured on the shift alone, never with soft, and says nothing of it.
 
 Every run applies them, as the rankings move, to the coming week's expected starters on everything
 as it stands: his games through the latest final, the tables re-rated after every final (a club yet
@@ -2504,7 +2510,10 @@ def averages(log, coming, season, tables, rating, season_rating, defs, inputs=No
             lead = mm and mm['lead'].get(g)
             if lead and lead in blk['stats']:          # THE MISMATCH SCORE: the lead leg's chance shift on an even line
                 sh = round(0.5 * math.erf(blk['stats'][lead]['z'] / math.sqrt(2)), 4) + 0.0     # phi(z) - 0.5, on the z written
-                blk['mm'] = {'stat': lead, 'shift': sh, 'tag': bool(mm['tag'] is not None and sh >= mm['tag'])}
+                # soft (the owner's call of 22 November 2026): the defence he faces is below the league's average for him,
+                # its multiplier above 1; the page lists and tags only such a row (tag stays the shift's own, the scorecard's)
+                blk['mm'] = {'stat': lead, 'shift': sh, 'tag': bool(mm['tag'] is not None and sh >= mm['tag']),
+                             'soft': bool(blk['stats'][lead]['def_x'] > 1)}
             out[pid] = blk
     rd = lambda v: {k: round(x, 6) + 0.0 for k, x in v.items()}
     return out, {'raw': rd(ref['raw']), 'shown': rd(ref['shown']), 'defs': rd(ref['defs'])}
