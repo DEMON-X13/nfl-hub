@@ -801,7 +801,9 @@ if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
    tight end's receiving yards: avg_fit.mismatch.lead, and only where avg_fit.legs trusts that leg's Elo part) by the
    build's `mm` on his block: shift, the chance his Elo part moves an even (50%) line on his over, Phi(z) - 0.5, shown as
    points ("+7 pts"), and tag, whether it is at the file's one tag or over (no row is tagged where the file's tag is null).
-   Listed: a shift above nothing, his game still to kick off, he not ruled out; ranked by the shift, then the Elo part in
+   Listed: a shift above nothing, the defence soft for him (the block's soft, its multiplier above 1: the owner's call of
+   22 November 2026, a Mismatch is a big lift against a defence that helps him, never his Elo alone; a file from before
+   soft lists as it did), his game still to kick off, he not ruled out; ranked by the shift, then the Elo part in
    the stat's units, then his id. No quarterback: his passing yards' Elo part never held up. No grade words, one tag,
    Mismatch. The defence is the ELO Ratings tab's table his leg is set against, its Elo and rank as the tab draws them (the
    block's vs: "vs LAC Pass Defense #32"); a back's multiplier carries the defenders' player Elo too, where his leg's terms
@@ -833,7 +835,7 @@ function mismatchesV2(){
   for(const [pid,v] of Object.entries(M.avg)){
     const m=v&&v.mm; if(!m||typeof m!=='object') continue;
     const st=m.stat, a=v.stats&&v.stats[st];
-    if(!a||F.lead[v.group]!==st||!muTrusted(v.group,st)||!(+m.shift>0)||ruledOut(pid)||gameOn(v.game_id)) continue;
+    if(!a||F.lead[v.group]!==st||!muTrusted(v.group,st)||!(+m.shift>0)||m.soft===false||ruledOut(pid)||gameOn(v.game_id)) continue;
     const vs=a.vs&&typeof a.vs==='object'&&VS_NAME[a.vs.table]?a.vs:null, f=M.avg_fit.legs[v.group+'|'+st]||{};
     const r={v2:true,pid,group:v.group,game_id:v.game_id,team:v.team,opp:v.opp,home:v.home,lead:st,shift:+m.shift,pts:Math.round(100*m.shift),
       tag:F.tag!=null&&m.tag===true,part:+a.elo,proj:+a.proj,base:+a.no_elo,def_x:+a.def_x,elo_x:+a.elo_x,vs,defN:vs?mmTableN(vs.table):null,

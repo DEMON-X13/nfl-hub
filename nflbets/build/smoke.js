@@ -272,7 +272,7 @@ const ELO_MU = (() => {
     const lead = {}; for (const [g, st] of Object.entries({ RB: 'rushing_yards', WR: 'receiving_yards', TE: 'receiving_yards' })) { const f = M.avg_fit.legs[g + '|' + st]; if (f && f.trusted === true) lead[g] = st; }
     M.avg_fit.mismatch = { lead, tag: 0.035, chosen: 0.035, chosen_on: '2018-2021', record: {}, ladders: {} };
     for (const v of Object.values(M.avg)) { delete v.mm; const st = lead[v.group], a = st && v.stats && v.stats[st];
-      if (a && isFinite(a.z)) { const sh = Math.round(0.5 * erf(a.z / Math.SQRT2) * 1e4) / 1e4; v.mm = { stat: st, shift: sh, tag: sh >= 0.035 }; } }
+      if (a && isFinite(a.z)) { const sh = Math.round(0.5 * erf(a.z / Math.SQRT2) * 1e4) / 1e4; v.mm = { stat: st, shift: sh, tag: sh >= 0.035, soft: a.def_x > 1 }; } }
     MM_SCORE_PLANTED = planted = true; }
   return planted ? JSON.stringify(M) : raw;
 })();
@@ -985,7 +985,7 @@ const mmListOwn = (M, MOd, o) => { const F = M.avg_fit.mismatch, rows = [];
     const m = v && v.mm; if (!m || typeof m !== 'object') continue;
     const st = MM_LEAD_V2_OWN[v.group]; if (!st || m.stat !== st || F.lead[v.group] !== st) continue;
     const f = M.avg_fit.legs[v.group + '|' + st], a = v.stats && v.stats[st];
-    if (!f || f.trusted !== true || !a || !(m.shift > 0) || o.out(pid) || o.started(v.game_id)) continue;
+    if (!f || f.trusted !== true || !a || !(m.shift > 0) || m.soft === false || o.out(pid) || o.started(v.game_id)) continue;
     const n0 = Math.round(100 * m.shift), lb = MM_LB_V2_OWN[st], pts = `${n0 > 0 ? '+' : ''}${n0} pts`, yds = `${sgnOwn(a.elo)} ${lb}`, q = a.vs && VS_NAME_OWN[a.vs.table] ? a.vs : null;
     const U = q && MOd && MOd.units && MOd.units[q.table], n = U && typeof U === 'object' ? Object.keys(U).length : null;
     const dfn = Array.isArray(f.terms) && f.terms.some(t => t === 'DL' || t === 'LB' || t === 'DB'), tag = F.tag != null && m.tag === true, tb = q ? `${v.opp} ${VS_NAME_OWN[q.table]}` : String(v.opp);
@@ -11038,12 +11038,20 @@ async function mmFixChecks() {
       const U = MO.units && MO.units[table] && MO.units[table][opp], vs = U && U.rank != null && U.elo != null ? { table, elo: U.elo, rank: U.rank } : undefined, sh = SHIFTS[i];
       liveMu.avg[pid] = { group: grp, game_id: GID, team: sp.team, opp, home: sp.team === B ? 1 : 0,
         stats: { [lead]: { avg: 41.3 + i, proj: 47.6 + i, no_elo: 41.4 + i, elo: 6.2, sd: 22, z: 0.282, def_x: 1.03, elo_x: 1.12, ...(vs ? { vs } : {}) } },
-        mm: { stat: lead, shift: sh, tag: sh >= 0.035 } };
+        mm: { stat: lead, shift: sh, tag: sh >= 0.035, soft: true } };
       if (S.inactive) delete S.inactive[pid]; });
     const own = () => mmListOwn(liveMu, MO, mmCtxOwn(w, liveMu)), L0 = own();
     chk(L0.map(r => r.pid).join() === pick.join() && L0.map(r => r.pts).join() === ['+30 pts', '+2 pts', '0 pts'].slice(0, pick.length).join() && L0[0].tag && L0.slice(1).every(r => !r.tag)
       && w.eloMismatches().map(v => v.pid).join() === pick.join(),
       `the Mismatches on a made-up game: the planted rows are not the whole list, at the tag, under it and of nothing, in that order: ${w.eloMismatches().map(v => v.pid + ' ' + v.pts).join(', ')} (the smoke's ${L0.map(r => r.pid + ' ' + r.pts).join(', ')})`);
+    /* (the owner's call of 22 November 2026) the first row's defence not soft for him (soft false, its multiplier under 1):
+       off the list and untagged, on the page and the smoke's own reading, the rest as they were; then put back */
+    { const e = liveMu.avg[pick[0]], dx = e.stats[e.mm.stat].def_x; e.mm.soft = false; e.stats[e.mm.stat].def_x = 0.99;
+      const Ls = own();
+      chk(!Ls.some(r => r.pid === pick[0]) && !w.eloMismatches().some(v => v.pid === pick[0]) && w.eloMismatches().map(v => v.pid).join() === pick.slice(1).join()
+        && w.eloMismatches().every(v => !v.tag),
+        `the Mismatches on a made-up game: a row whose defence is not soft for him is still listed or tagged: ${w.eloMismatches().map(v => v.pid + (v.tag ? ' tagged' : '')).join(', ')}`);
+      e.mm.soft = true; e.stats[e.mm.stat].def_x = dx; }
     /* the Props card, its bubbles, a redraw, the game's page from the first bubble and its tags, a player ruled out */
     [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
     const ws = d.getElementById('weekSel');
@@ -11093,7 +11101,7 @@ async function mmFixChecks() {
           const vs = U && U.rank != null && U.elo != null ? { table: 'run_def', elo: U.elo, rank: U.rank } : undefined;
           liveMu.avg[pid] = w.JSON.parse(JSON.stringify({ group: 'RB', game_id: GID, team: sp.team, opp, home: sp.team === B ? 1 : 0,
             stats: { rushing_yards: { avg: 61.3 + i, proj: 67.6 + i, no_elo: 61.4 + i, elo: 6.2, sd: 30, z: 0.207, def_x: 1.02, elo_x: 1.08, ...(vs ? { vs } : {}) } },
-            mm: { stat: 'rushing_yards', shift: [0.3, 0.05][i], tag: true } }));
+            mm: { stat: 'rushing_yards', shift: [0.3, 0.05][i], tag: true, soft: true } }));
           if (S.inactive) delete S.inactive[pid]; });
         /* (the back among the three rows planted above keeps his row: his block's stat is the lead's) */
         const Ln = own(), others = pick.filter(pid => S.players[pid] && S.players[pid].grp !== 'RB');

@@ -1553,8 +1553,8 @@ def mm_block_bad(pid, b, A, z_own, ztol):
     col = lead.get(b.get('group'))
     if col is None or col not in (b.get('stats') or {}):
         return [f'{pid} ({b.get("group")}) carries a mismatch score off the lead legs: {mm}'] if mm is not None else []
-    if not isinstance(mm, dict) or set(mm) != {'stat', 'shift', 'tag'}:
-        return [f'{pid} ({b.get("group")}) carries no mismatch score of {{stat, shift, tag}} alone on his lead leg: {mm}']
+    if not isinstance(mm, dict) or set(mm) != {'stat', 'shift', 'tag', 'soft'}:
+        return [f'{pid} ({b.get("group")}) carries no mismatch score of {{stat, shift, tag, soft}} alone on his lead leg: {mm}']
     bad = []
     if mm['stat'] != col:
         bad.append(f'{pid}\'s mismatch is on {mm["stat"]}, his lead leg is {col}')
@@ -1570,6 +1570,9 @@ def mm_block_bad(pid, b, A, z_own, ztol):
         bad.append(f'{pid}\'s mismatch tag {mm["tag"]} on a shift of {sh} against the tag {T}')
     if T is not None and abs(own - T) > tol and mm['tag'] is not (own >= T):
         bad.append(f'{pid}\'s mismatch tag {mm["tag"]}, the gate\'s shift {own:.6f} against the tag {T}')
+    dx = ((b.get('stats') or {}).get(col) or {}).get('def_x')     # soft: the defence's multiplier, as written, above 1
+    if mm['soft'] is not (isinstance(dx, (int, float)) and not isinstance(dx, bool) and dx > 1):
+        bad.append(f'{pid}\'s mismatch soft {mm["soft"]} on a defence multiplier of {dx}')
     return bad
 
 
