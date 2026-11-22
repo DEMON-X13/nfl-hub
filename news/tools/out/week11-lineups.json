@@ -825,7 +825,7 @@
   },
   "TEN": {
    "kick": "2026-11-22T18:00Z",
-   "built_at": "2026-11-21T02:08:51.084Z",
+   "built_at": "2026-11-22T11:11:18.840Z",
    "units": {
     "qb": [
      {
@@ -868,10 +868,9 @@
       "pos": "RB"
      },
      {
-      "id": "00-0039032",
-      "n": "Tyjae Spears",
-      "pos": "RB",
-      "q": "questionable: knee"
+      "id": "00-0040886",
+      "n": "Nicholas Singleton",
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -2587,7 +2586,7 @@
   },
   "WAS": {
    "kick": "2026-11-24T01:15Z",
-   "built_at": "2026-11-21T23:45:32.295Z",
+   "built_at": "2026-11-22T11:11:18.840Z",
    "units": {
     "qb": [
      {
@@ -2672,12 +2671,6 @@
     ],
     "db": [
      {
-      "id": "00-0036375",
-      "n": "Amik Robertson",
-      "pos": "CB",
-      "q": "questionable: ankle"
-     },
-     {
       "id": "00-0034465",
       "n": "Jeremy Reaves",
       "pos": "FS"
@@ -2686,6 +2679,11 @@
       "id": "00-0037616",
       "n": "Nick Cross",
       "pos": "SS"
+     },
+     {
+      "id": "00-0033551",
+      "n": "Rasul Douglas",
+      "pos": "CB"
      }
     ]
    }

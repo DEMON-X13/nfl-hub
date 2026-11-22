@@ -267,7 +267,7 @@ Searches to run:
 - "NFL week 11 picks TEN DAL"
 
 Tennessee Titans, injuries:
-- Jaylen Harrell (LB) Injured Reserve, Knee - ACL: Harrell (knee) was taken to a hospital in Tampa following a serious car accident, Terry McCormick of TitanInsider.com reports.
+- Jaylen Harrell (LB) Injured Reserve, Knee - ACL: Harrell (knee) was taken to a hospital in Tampa on Saturday following a serious car accident, Terry McCormick of TitanInsider.com reports.
 - Tony Adams (S) Active: Adams has cleared the league's concussion protocol and no longer carries an injury designation into Sunday's game against the Cowboys, Jim Wyatt of the Titans' official site reports.
 - Michael Carter (RB) Active: The Titans elevated Carter from the practice squad to the active roster Saturday, Jim Wyatt of the Titans' official site reports.
 - Tyjae Spears (RB) Injured Reserve, Knee: The Titans placed Spears (knee) on injured reserve Saturday, Jim Wyatt of the Titans' official site reports.
@@ -294,6 +294,7 @@ Tennessee Titans, injuries:
 - Elic Ayomanor (WR) Active: Ayomanor caught five of 10 targets for 79 yards in Sunday's 40-23 loss to the Jaguars.
 
 Tennessee Titans, ESPN headlines:
+- 2026-11-22 Police investigating whether Titans DE Harrell assaulted driver before crash <https://www.espn.com/nfl/story/_/id/50558496/police-probing-whether-titans-de-harrell-assaulted-driver>
 - 2026-11-21 Titans DL Jaylen Harrell hospitalized after car accident in Tampa <https://www.espn.com/nfl/story/_/id/50551434/titans-dl-jaylen-harrell-hospitalized-car-accident-tampa>
 - 2026-11-20 Titans defense crumbling post-Jeffery Simmons, Amani Hooker trades <https://www.espn.com/nfl/story/_/id/50523033/titans-defense-post-jeffery-simmons-amani-hooker-trades>
 - 2026-11-20 Titans' Calvin Ridley facing misdemeanor assault charge over airport incident <https://www.espn.com/nfl/story/_/id/50539065/titans-calvin-ridley-assault-charge-airport-incident>
@@ -301,7 +302,6 @@ Tennessee Titans, ESPN headlines:
 - 2026-11-18 Titans WR Wan'Dale Robinson out for season with ankle injury <https://www.espn.com/nfl/story/_/id/50523261/titans-wr-wandale-robinson-season-ankle-injury>
 - 2026-11-18 Titans put WR Wan'Dale Robinson on IR due to ankle injury <https://www.espn.com/nfl/story/_/id/50513594/titans-put-wr-wandale-robinson-ankle-ir>
 - 2026-11-16 Titans getting more after adding more to QB Cam Ward's plate <https://www.espn.com/nfl/story/_/id/50502385/titans-getting-more-adding-more-qb-cam-ward-plate>
-- 2026-11-15 Trevor Lawrence lights up the Titans as the Jaguars roll 40-23 for a sixth win in 7 games <http://www.espn.com/nfl/recap?gameId=401873057>
 
 Dallas Cowboys, injuries:
 - Jashaun Corbin (RB) Active: Corbin was elevated from the Cowboys' practice squad to the active roster Saturday, Tommy Yarrish of the team's official site reports.
@@ -351,7 +351,7 @@ Searches to run:
 - "NFL week 11 picks TB DET"
 
 Tampa Bay Buccaneers, injuries:
-- Baker Mayfield (QB) Questionable, Foot: Mayfield (thumb) is dealing with a plantar fascia injury in his foot, and he would wear a special orthotic and new cleats to stabilize his foot if he's cleared to play against the Lions on Sunday, Tom Pelissero of The Ringer and Netflix reports.
+- Baker Mayfield (QB) Questionable, Foot: Mayfield (thumb) is dealing with a plantar fascia injury in his foot, and he will wear a special orthotic and new cleats to stabilize his foot if he's cleared to play against the Lions on Sunday, Tom Pelissero of The Ringer and Netflix reports.
 - Josh Hayes (CB) Injured Reserve, Knee: Hayes (knee) has been ruled out for Sunday's game against the Lions.
 - Yaya Diaby (LB) Questionable, Knee - MCL: Diaby (knee) is questionable for Sunday's game against the Lions.
 - Antoine Winfield Jr. (S) Out, Ankle: Winfield (ankle) has been ruled out for Sunday's game against the Lions.
@@ -677,7 +677,7 @@ Carolina Panthers, ESPN headlines:
 - 2026-11-09 Rasheed Walker keeps 'analyzing issue' in protecting Bryce Young's blind side <https://www.espn.com/nfl/story/_/id/50433369/panthers-rasheed-walker-analyzes-protection-bryce-young>
 
 ### New York Jets at Los Angeles Chargers
-Sun, Nov 22, 4:05 PM ET, Fox, SoFi Stadium, Inglewood. Line: LAC -3, O/U 42.5
+Sun, Nov 22, 4:05 PM ET, Fox, SoFi Stadium, Inglewood. Line: LAC -3, O/U 41.5
 
 Searches to run:
 - "New York Jets Los Angeles Chargers preview week 11"
@@ -714,6 +714,7 @@ New York Jets, injuries:
 - Garrett Wilson (WR) Active: Wilson (concussion) caught seven of 14 targets for 106 yards and lost a fumble in Sunday's 31-12 loss to the Bills.
 
 New York Jets, ESPN headlines:
+- 2026-11-22 Why the Jets' next two games have major implications on the 2027 draft <https://www.espn.com/nfl/story/_/id/50543176/jets-face-chargers-dolphins-impact-2027-draft>
 - 2026-11-20 Jets QB Geno Smith (ankle) cleared to start vs. Chargers <https://www.espn.com/nfl/story/_/id/50543665/jets-qb-geno-smith-ankle-cleared-start-vs-chargers>
 - 2026-11-19 Reeling Jets head to LA to face Chargers, who are coming off their first win of the season <http://www.espn.com/nfl/preview?gameId=401873074>
 - 2026-11-18 Jets QB Geno Smith (ankle) intends to play vs. Chargers: 'That's the plan' <https://www.espn.com/mlb/story/_/id/50523800/jets-qb-geno-smith-ankle-intends-play-vs-chargers>
@@ -721,7 +722,6 @@ New York Jets, ESPN headlines:
 - 2026-11-16 Jets Aaron Glenn ceded defensive playcalling to DC Brian Duker on Sunday <https://www.espn.com/nfl/story/_/id/50502248/jets-aaron-glenn-ceded-defensive-playcalling-sunday>
 - 2026-11-16 Geno Smith remains Jets' QB1 despite ankle injury, coach Aaron Glenn says <https://www.espn.com/nfl/story/_/id/50502082/geno-smith-remains-jets-qb1-injury-aaron-glenn-says>
 - 2026-11-15 Josh Allen powers Bills past Jets 31-12 for best start in 35 years. New York loses Geno Smith twice <http://www.espn.com/nfl/recap?gameId=401873054>
-- 2026-11-16 Jets QB Geno Smith suffers ankle injury, replaced by rookie Cade Klubnik <https://www.espn.com/nfl/story/_/id/50493391/jets-qb-geno-smith-suffers-ankle-injury-bills>
 
 Los Angeles Chargers, injuries:
 - Rodney Shelley (CB) Injured Reserve, Ankle: The Chargers placed Shelley (ankle) on injured reserve Saturday.
@@ -761,7 +761,7 @@ Los Angeles Chargers, ESPN headlines:
 - 2026-11-16 How Chargers' Harbaugh, Ravens' Minter can revive seasons <https://www.espn.com/nfl/story/_/id/50471544/chargers-jim-harbaugh-ravens-jesse-minter-week-10>
 
 ### Las Vegas Raiders at Denver Broncos
-Sun, Nov 22, 4:25 PM ET, CBS, Empower Field at Mile High, Denver. Line: DEN -10.5, O/U 40.5
+Sun, Nov 22, 4:25 PM ET, CBS, Empower Field at Mile High, Denver. Line: DEN -10.5, O/U 41.5
 
 Searches to run:
 - "Las Vegas Raiders Denver Broncos preview week 11"
@@ -808,7 +808,8 @@ Las Vegas Raiders, ESPN headlines:
 - 2026-11-16 Seahawks beat Raiders 21-13 as Drew Lock throws for 2 TDs and Seattle sacks Fernando Mendoza 6 times <http://www.espn.com/nfl/recap?gameId=401873062>
 
 Denver Broncos, injuries:
-- Taylor Rapp (S) Active: The Broncos elevated Rapp from the practice squad to the active roster Saturday, Zac Stevens of TheDNVR.com reports.
+- Cody Schrader (RB) Active: The Broncos elevated Schrader from their practice squad to their active roster Saturday, Susanna Weir of the team's official site reports.
+- Taylor Rapp (S) Active: The Broncos signed Rapp from the practice squad to the active roster Saturday, Zac Stevens of TheDNVR.com reports.
 - Talanoa Hufanga (S) Active: Hufanga (ankle) does not have any injury designation ahead of Sunday's game against the Raiders, Aric DiLalla of the Broncos' official site reports.
 - Caleb Lohner (TE) Injured Reserve, Foot: Lohner (foot) has been ruled out ahead of Sunday's game against the Raiders, Aric DiLalla of the Broncos' official site reports.
 - Riley Moss (CB) Active: Moss (concussion) does not have any injury designation ahead of Sunday's game against the Raiders, Aric DiLalla of the Broncos' official site reports.
@@ -832,7 +833,6 @@ Denver Broncos, injuries:
 - Jonah Coleman (RB) Active: Coleman carried the ball 17 times for 57 yards and a touchdown and caught all four of his targets for 31 yards in Sunday's 26-21 win over the Panthers.
 - Bo Nix (QB) Active: Nix completed 25 of 37 passes for 237 yards and two touchdowns with one interception in Sunday's 26-21 win over the Panthers. He added two rushing yards on five carries.
 - Dondrea Tillman (LB) Active: Tillman is active for Sunday's game against the Panthers, Aric DiLalla of the team's official site reports.
-- Eyioma Uwazurike (DE) Injured Reserve, Shoulder: The Broncos placed Uwazurike (shoulder) on injured reserve Saturday, Aric DiLalla of the team's official site reports.
 
 Denver Broncos, ESPN headlines:
 - 2026-11-20 Peyton Manning enshrined in ESPN Fantasy Football Hall of Fame <https://www.espn.com/fantasy/football/story/_/id/50541172/fantasy-football-hall-fame-peyton-manning>
@@ -929,7 +929,7 @@ New York Giants, ESPN headlines:
 - 2026-11-13 Jayden Daniels and Commanders rally to stun the Giants 24-21 and keep their hopes alive <http://www.espn.com/nfl/recap?gameId=401873052>
 
 ### Minnesota Vikings at San Francisco 49ers
-Sun, Nov 22, 8:20 PM ET, NBC, Estadio Banorte, Mexico City. Line: SF -3, O/U 46.5
+Sun, Nov 22, 8:20 PM ET, NBC, Estadio Banorte, Mexico City. Line: SF -3.5, O/U 46.5
 
 Searches to run:
 - "Minnesota Vikings San Francisco 49ers preview week 11"
@@ -976,7 +976,7 @@ Minnesota Vikings, ESPN headlines:
 - 2026-11-15 Sources: Vikings want to keep Kirk Cousins, talked to QB about staying in 2027 <https://www.espn.com/nfl/story/_/id/50484865/sources-vikings-want-keep-kirk-cousins-2027-season>
 
 San Francisco 49ers, injuries:
-- Nate Hobbs (CB) Injured Reserve, Groin: Hobbs (groin) has been downgraded to out for Sunday night' game against the Vikings.
+- Nate Hobbs (CB) Injured Reserve, Groin: Hobbs (groin) has been downgraded to out for Sunday night's game against the Vikings.
 - C.J. West (DT) Active: The 49ers activated West (knee) from injured reserve Saturday.
 - Ji'Ayir Brown (S) Active: Brown (ankle) does not carry an injury designation into Sunday's game against the Vikings in Mexico City.
 - Dre Greenlaw (LB) Questionable, Neck: Greenlaw (neck) is listed as questionable for Sunday's game against the Vikings in Mexico City.
