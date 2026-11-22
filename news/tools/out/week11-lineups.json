@@ -2483,7 +2483,7 @@
   },
   "CIN": {
    "kick": "2026-11-24T01:15Z",
-   "built_at": "2026-11-21T20:53:19.760Z",
+   "built_at": "2026-11-22T02:58:20.722Z",
    "units": {
     "qb": [
      {
@@ -2573,15 +2573,14 @@
       "pos": "SS"
      },
      {
-      "id": "00-0037743",
-      "n": "Daxton Hill",
-      "pos": "CB",
-      "q": "questionable: illness, not practising"
-     },
-     {
       "id": "00-0038549",
       "n": "DJ Turner II",
       "pos": "CB"
+     },
+     {
+      "id": "00-0037193",
+      "n": "Bryan Cook",
+      "pos": "FS"
      }
     ]
    }
