@@ -8919,8 +8919,11 @@ setTimeout(async()=>{
           /* the box score ESPN would serve for this game: one real player off our own roster,
              so the name matching is exercised rather than stubbed around */
           const ros=F('rosterFor')(g3,false);
-          const team=Object.keys(ros).find(t=>ros[t].players.length);
-          const who=team&&ros[team].players[0];
+          /* the player is picked once the game's page is drawn, among the rows it draws: the
+             roster's first man may be one the page shows no row for (ruled out, nothing to
+             project), and a check stands on a row the page draws (22 November 2026, the run
+             refused at 19:20 UTC on a 1pm game under way) */
+          let team=null, who=null;
           let boxCalls=0;
           w.fetch=u=>{ const s2=String(u);
             if(s2.indexOf('/summary?')>=0){ boxCalls++;
@@ -8945,6 +8948,11 @@ setTimeout(async()=>{
             }
             return realFetch(u); };
           d.querySelector('[data-game="'+g3.id+'"]').click();
+          for(const t of Object.keys(ros)){
+            const p=ros[t].players.find(x=>x&&x.pl&&d.querySelector('[data-open="'+x.pl.id+'"] .sum'));
+            if(p){ team=t; who=p; break; } }
+          chk(!!who,'a game in progress draws no player row to read the box score on');
+          if(who){
           chk(!!d.getElementById('gameStatsNow'),'a game in progress has no Refresh stats button');
           const before=d.querySelector('[data-open="'+who.pl.id+'"] .sum').textContent;
           chk(/projected/.test(before),'a player should read projected until the box score is read: '+before);
@@ -8966,6 +8974,7 @@ setTimeout(async()=>{
           /* an ungraded game must not claim stats its week happens to hold for another game */
           chk(!/did not play/.test(d.getElementById('gameView').textContent),
             'a game still being played says a player did not play');
+          }
           d.getElementById('backBtn').click();
         }
         console.log('T3. game modal: '+(g3?'live box score on the button, one call, nothing settled':'no game in progress to drive'));
