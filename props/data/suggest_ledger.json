@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. From app v118 to app v141 each entry held the unit's Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe); since app v142 none is taken (an entry not yet locked is rewritten without them), and an entry locked with them keeps them as they locked, graded as before and never built again. Since app v145 (8 November 2026) every level with legs taken is the likeliest parlay of 2 to 12 legs, of any size, paying its own least price (minDec: Safe 2.1, +110; Medium 4, +300; Aggressive 8, +700; Extreme 16, +1500; pick: likeliest-any, the rule it was chosen by), and a Sunday slot's legs may be of any of its games (one set searched across them); a level taken under app v144 (7 to 8 November 2026) is the likeliest parlay of its fixed size (2, 3, 4 and 5 legs) paying the same prices, a slot level one game's, and carries pick: likeliest; a level taken under app v143 (7 November 2026, until app v144 the same day) pays +100 or more and carries minDec: 2 and no pick (Safe the likeliest pair paying +100; Medium, Aggressive and Extreme the least costly landing 25%, 12% or 5% among those, else the likeliest of their size among those); a level taken before, and an empty level, carries no minDec (an empty level taken since app v145 carries its pick). slot holds each week's Sunday slot (every Sunday game before 7 pm Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary, slot_summary (each with its elo, the Elo picks' history) and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-11-23T18:04:31Z",
+ "updated": "2026-11-23T20:24:03Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -2475,7 +2475,7 @@
    "home": "WAS",
    "kickoff": "2026-11-24T01:15:00Z",
    "lock": "2026-11-23T23:15:00Z",
-   "baked_at": "2026-11-23T17:57+00:00",
+   "baked_at": "2026-11-23T20:18+00:00",
    "pool": {"pref":0,"thin":42,"mkt":1,"far":0},
    "tiers": [
     {
@@ -2484,13 +2484,13 @@
      "n": 2,
      "floor": 0,
      "legs": [
-      {"gid":"2026_11_CIN_WAS","week":11,"pid":"team:CIN","team":"CIN","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-301,"src":"real","name":"Bengals","label":"To win","p":0.6723,"fair":0.7214,"fair_est":false,"thin":true,"market":false},
-      {"gid":"2026_11_CIN_WAS","week":11,"pid":"00-0031588","team":"WAS","grp":"WR","stat":"receptions","k":4.5,"side":"under","main":true,"price":-130,"src":"dkline","name":"Stefon Diggs","label":"Under 4.5 receptions","p":0.4897,"fair":0.5336,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_11_CIN_WAS","week":11,"pid":"team:CIN","team":"CIN","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-300,"src":"real","name":"Bengals","label":"To win","p":0.6723,"fair":0.7207,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_11_CIN_WAS","week":11,"pid":"00-0036442","team":"CIN","grp":"QB","stat":"passing_tds","k":2.5,"side":"under","main":true,"price":-129,"src":"dkline","name":"Joe Burrow","label":"Under 2.5 passing tds","p":0.4625,"fair":0.5316,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.3292,
-     "fair": 0.385,
+     "p": 0.311,
+     "fair": 0.3831,
      "fair_est": true,
-     "dec": 2.112,
+     "dec": 2.121,
      "likeliest": false,
      "thin": 2,
      "mkt": 0,
@@ -2504,14 +2504,14 @@
      "n": 3,
      "floor": 0,
      "legs": [
-      {"gid":"2026_11_CIN_WAS","week":11,"pid":"team:CIN","team":"CIN","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-301,"src":"real","name":"Bengals","label":"To win","p":0.6723,"fair":0.7214,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_11_CIN_WAS","week":11,"pid":"team:CIN","team":"CIN","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-300,"src":"real","name":"Bengals","label":"To win","p":0.6723,"fair":0.7207,"fair_est":false,"thin":true,"market":false},
       {"gid":"2026_11_CIN_WAS","week":11,"pid":"00-0036442","team":"CIN","grp":"QB","stat":"passing_yards","k":302.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Joe Burrow","label":"Over 302.5 passing yards","p":0.5312,"fair":0.5,"fair_est":true,"thin":true,"market":false},
       {"gid":"2026_11_CIN_WAS","week":11,"pid":"00-0036410","team":"CIN","grp":"WR","stat":"any_td","k":1,"side":"over","main":false,"price":-106,"src":"dkline","name":"Tee Higgins","label":"Scores a touchdown","p":0.456,"fair":0.487,"fair_est":true,"thin":true,"market":false}
      ],
      "p": 0.1826,
-     "fair": 0.1966,
+     "fair": 0.1964,
      "fair_est": true,
-     "dec": 4,
+     "dec": 4.008,
      "likeliest": false,
      "thin": 3,
      "mkt": 0,
@@ -2525,15 +2525,15 @@
      "n": 4,
      "floor": 0,
      "legs": [
-      {"gid":"2026_11_CIN_WAS","week":11,"pid":"team:CIN","team":"CIN","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-301,"src":"real","name":"Bengals","label":"To win","p":0.6723,"fair":0.7214,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_11_CIN_WAS","week":11,"pid":"00-0039912","team":"WAS","grp":"TE","stat":"receiving_yards","k":0.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Ben Sinnott","label":"Over 0.5 receiving yards","p":0.7871,"fair":0.5,"fair_est":true,"thin":true,"market":false},
       {"gid":"2026_11_CIN_WAS","week":11,"pid":"00-0040785","team":"CIN","grp":"WR","stat":"receiving_yards","k":20.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Dohnte Meyers","label":"Over 20.5 receiving yards","p":0.5146,"fair":0.5,"fair_est":true,"thin":true,"market":false},
       {"gid":"2026_11_CIN_WAS","week":11,"pid":"00-0039910","team":"WAS","grp":"QB","stat":"passing_yards","k":222.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Jayden Daniels","label":"Over 222.5 passing yards","p":0.5667,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_11_CIN_WAS","week":11,"pid":"00-0034829","team":"CIN","grp":"TE","stat":"receiving_yards","k":26.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Mike Gesicki","label":"Under 26.5 receiving yards","p":0.569,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_11_CIN_WAS","week":11,"pid":"00-0036415","team":"WAS","grp":"WR","stat":"receiving_yards","k":8.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Van Jefferson","label":"Over 8.5 receiving yards","p":0.672,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.116,
+     "p": 0.1946,
      "fair": 0.0943,
      "fair_est": true,
-     "dec": 8.05,
+     "dec": 8.025,
      "likeliest": false,
      "thin": 4,
      "mkt": 0,
@@ -2565,7 +2565,7 @@
      "pick": "likeliest-any"
     }
    ],
-   "taken_at": "2026-11-23T18:04:31Z"
+   "taken_at": "2026-11-23T20:24:03Z"
   }
  },
  "slot_since": "2026-10-19",
