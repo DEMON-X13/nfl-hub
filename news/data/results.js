@@ -649,6 +649,10 @@ const RESULTS = {
  "wk11:MIN-SF": [
   10,
   35
+ ],
+ "wk11:CIN-WAS": [
+  20,
+  22
  ]
 };
 const LINES = {
@@ -817,19 +821,19 @@ const LINES = {
  "wk11:CIN-WAS": "CIN -6, O/U 54.5",
  "wk12:GB-LAR": "LAR -2.5, O/U 44.5",
  "wk12:CHI-DET": "CHI -2.5, O/U 55.5",
- "wk12:PHI-DAL": "DAL -8.5, O/U 48.5",
- "wk12:KC-BUF": "BUF -3, O/U 49.5",
+ "wk12:PHI-DAL": "DAL -8.5, O/U 47.5",
+ "wk12:KC-BUF": "BUF -3, O/U 47.5",
  "wk12:DEN-PIT": "DEN -3, O/U 38.5",
- "wk12:NO-CIN": "CIN -10, O/U 50.5",
+ "wk12:NO-CIN": "CIN -9.5, O/U 50.5",
  "wk12:BAL-HOU": "HOU -6.5, O/U 46.5",
  "wk12:NYG-IND": "NYG -6.5, O/U 41.5",
  "wk12:TEN-JAX": "JAX -14.5, O/U 47.5",
  "wk12:NYJ-MIA": "NYJ -3.5, O/U 40.5",
  "wk12:ATL-MIN": "MIN -7, O/U 42.5",
  "wk12:NE-LAC": "LAC -1.5, O/U 35.5",
- "wk12:WAS-ARI": "WAS -7, O/U 40.5",
+ "wk12:WAS-ARI": "WAS -7.5, O/U 42.5",
  "wk12:SEA-SF": "SF -3, O/U 46.5",
  "wk12:LV-CLE": "CLE -4.5, O/U 41.5",
  "wk12:CAR-TB": "TB -3, O/U 43.5"
 };
-const LINES_ASOF = "2026-11-23";
+const LINES_ASOF = "2026-11-24";
