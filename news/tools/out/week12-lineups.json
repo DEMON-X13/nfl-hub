@@ -109,7 +109,7 @@
   },
   "LAR": {
    "kick": "2026-11-26T01:00Z",
-   "built_at": "2026-11-24T18:04:05.590Z",
+   "built_at": "2026-11-24T21:32:09.469Z",
    "units": {
     "qb": [
      {
@@ -195,8 +195,7 @@
      {
       "id": "00-0036349",
       "n": "Kam Curl",
-      "pos": "SS",
-      "q": "questionable: toe, not practising"
+      "pos": "SS"
      },
      {
       "id": "00-0039772",
@@ -2490,7 +2489,7 @@
   },
   "WAS": {
    "kick": "2026-11-29T21:25Z",
-   "built_at": "2026-11-24T18:04:05.590Z",
+   "built_at": "2026-11-24T21:32:09.469Z",
    "units": {
     "qb": [
      {
@@ -2528,13 +2527,13 @@
     ],
     "rb": [
      {
-      "id": "00-0037256",
-      "n": "Rachaad White",
+      "id": "00-0040242",
+      "n": "Jacory Croskey-Merritt",
       "pos": "RB"
      },
      {
-      "id": "00-0033699",
-      "n": "Austin Ekeler",
+      "id": "00-0037256",
+      "n": "Rachaad White",
       "pos": "RB"
      }
     ],
@@ -3011,7 +3010,7 @@
   },
   "CLE": {
    "kick": "2026-11-30T01:20Z",
-   "built_at": "2026-11-24T18:04:05.590Z",
+   "built_at": "2026-11-24T21:32:09.469Z",
    "units": {
     "qb": [
      {
@@ -3068,7 +3067,8 @@
      {
       "id": "00-0041037",
       "n": "Denzel Boston",
-      "pos": "WR"
+      "pos": "WR",
+      "q": "questionable: toe, not practising"
      },
      {
       "id": "00-0040663",
