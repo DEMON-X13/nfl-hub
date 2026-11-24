@@ -207,7 +207,7 @@
   },
   "CHI": {
    "kick": "2026-11-26T18:00Z",
-   "built_at": "2026-11-24T18:04:05.590Z",
+   "built_at": "2026-11-24T23:51:27.766Z",
    "units": {
     "qb": [
      {
@@ -220,8 +220,7 @@
      {
       "id": "00-0039459",
       "n": "Theo Benedet",
-      "pos": "T",
-      "q": "questionable: quadriceps"
+      "pos": "T"
      },
      {
       "id": "00-0032391",
@@ -311,7 +310,7 @@
   },
   "DET": {
    "kick": "2026-11-26T18:00Z",
-   "built_at": "2026-11-24T18:04:05.590Z",
+   "built_at": "2026-11-24T23:51:27.766Z",
    "units": {
     "qb": [
      {
@@ -368,8 +367,7 @@
      {
       "id": "00-0039065",
       "n": "Sam LaPorta",
-      "pos": "TE",
-      "q": "questionable: ankle"
+      "pos": "TE"
      },
      {
       "id": "00-0037240",
@@ -416,7 +414,7 @@
   },
   "PHI": {
    "kick": "2026-11-26T21:30Z",
-   "built_at": "2026-11-24T18:04:05.590Z",
+   "built_at": "2026-11-24T23:51:27.766Z",
    "units": {
     "qb": [
      {
@@ -456,8 +454,7 @@
      {
       "id": "00-0034844",
       "n": "Saquon Barkley",
-      "pos": "RB",
-      "q": "questionable: neck"
+      "pos": "RB"
      },
      {
       "id": "00-0039746",
@@ -480,8 +477,7 @@
      {
       "id": "00-0034351",
       "n": "Dallas Goedert",
-      "pos": "TE",
-      "q": "questionable: shin"
+      "pos": "TE"
      }
     ],
     "front": [
@@ -621,7 +617,7 @@
   },
   "KC": {
    "kick": "2026-11-27T01:20Z",
-   "built_at": "2026-11-24T18:04:05.590Z",
+   "built_at": "2026-11-24T23:51:27.766Z",
    "units": {
     "qb": [
      {
@@ -659,13 +655,14 @@
     ],
     "rb": [
      {
-      "id": "00-0041013",
-      "n": "Emmett Johnson",
-      "pos": "RB"
+      "id": "00-0038134",
+      "n": "Kenneth Walker III",
+      "pos": "RB",
+      "q": "questionable: groin"
      },
      {
-      "id": "00-0040959",
-      "n": "Jaydn Ott",
+      "id": "00-0041013",
+      "n": "Emmett Johnson",
       "pos": "RB"
      }
     ],
@@ -724,7 +721,7 @@
   },
   "BUF": {
    "kick": "2026-11-27T01:20Z",
-   "built_at": "2026-11-24T18:04:05.590Z",
+   "built_at": "2026-11-24T23:51:27.766Z",
    "units": {
     "qb": [
      {
@@ -758,8 +755,7 @@
      {
       "id": "00-0036976",
       "n": "Spencer Brown",
-      "pos": "T",
-      "q": "questionable: back"
+      "pos": "T"
      }
     ],
     "rb": [
@@ -796,8 +792,7 @@
      {
       "id": "00-0036914",
       "n": "Greg Rousseau",
-      "pos": "OLB",
-      "q": "questionable: back"
+      "pos": "OLB"
      },
      {
       "id": "00-0034832",
@@ -831,7 +826,7 @@
   },
   "DEN": {
    "kick": "2026-11-27T20:00Z",
-   "built_at": "2026-11-24T18:04:05.590Z",
+   "built_at": "2026-11-24T23:51:27.766Z",
    "units": {
     "qb": [
      {
@@ -871,11 +866,6 @@
      {
       "id": "00-0041496",
       "n": "Jonah Coleman",
-      "pos": "RB"
-     },
-     {
-      "id": "00-0036158",
-      "n": "J.K. Dobbins",
       "pos": "RB"
      }
     ],
@@ -917,8 +907,7 @@
      {
       "id": "00-0036221",
       "n": "Brandon Jones",
-      "pos": "FS",
-      "q": "questionable: hamstring"
+      "pos": "FS"
      },
      {
       "id": "00-0038552",
