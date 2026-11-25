@@ -4623,7 +4623,7 @@ setTimeout(async()=>{
          parlay worked in full at the cap, 13.25 units, and a node a depth, three times over); the time is said and never held
          (the second review of app v145) */
       { const L=legsOf([GS]), md=F('mlToDec'), pools=F('spPools')(F('spUnit')(GS.id)), out=[];
-        const WORK_AUD={u:2000+1000+3*13.25,n:6e6+5e5+3*(CAP_AUD+1)};
+        const WORK_AUD={u:2000+1400+3*13.25,n:6e6+5e5+3*(CAP_AUD+1)};
         const pairs=L.filter((a,i)=>L.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03)).length;
         const greedy=minD=>{ const ord=L.slice().sort((a,b)=>(Math.log(md(b.price))/-Math.log(b.p))-(Math.log(md(a.price))/-Math.log(a.p))), cur=[]; let m=1;
           for(const l of ord){ if(cur.length>=CAP_AUD) break; if(!fitsAud(cur,l)) continue; cur.push(l); m*=md(l.price); if(cur.length>=2&&m>=minD){ const x=freeOfAud(cur); if(x.dec>=minD) return x; } } return null; };
@@ -4644,7 +4644,7 @@ setTimeout(async()=>{
          same bound itself), each pass within the walks' own budgets and handed
          the level's work, paying its price, and Extreme holding the total (app v145: Medium, Aggressive and Extreme 2.0, 2.0
          and 3.8 s of W read by the audit, each pass on a fresh budget) */
-      { const GX='2099_95_ABT_ABU', mlP=F('mlProb'), md=F('mlToDec'), SG=w.eval('SGP_HOLD'), out=[], WORK_AUD={u:2000+1000+3*13.25,n:6e6+5e5+3*(CAP_AUD+1)};
+      { const GX='2099_95_ABT_ABU', mlP=F('mlProb'), md=F('mlToDec'), SG=w.eval('SGP_HOLD'), out=[], WORK_AUD={u:2000+1400+3*13.25,n:6e6+5e5+3*(CAP_AUD+1)};
         const L=Array.from({length:60},(_,i)=>{ const p=mlP(-375)/1.03+1e-6*i; return {key:`${GX}|aud18-tp${i}|receptions`,gid:GX,pid:'aud18-tp'+i,stat:'receptions',k:4.5+i,side:'over',main:true,p,pm:p,hp:p,price:-375,src:'real',mu:null,name:'Made-up tp'+i,pos:'WR',grp:'AUD',team:i%2?'ABT':'ABU',opp:i%2?'ABU':'ABT',week:95,thin:true,label:`Over ${4.5+i} receptions`}; });
         const T={key:`${GX}|game|total`,gid:GX,pid:'game',stat:'total',k:44.5,side:'over',main:true,p:0.485,pm:0.485,hp:0.485,price:100,src:'real',mu:null,name:'ABT at ABU',pos:'Game',grp:'TEAM',team:'ABT',opp:'ABU',week:95,market:true,thin:false,label:'Over 44.5 points'};
         const all=[...L,T], plain=!all.some((a,i)=>all.slice(i+1).some(b=>Math.abs(rhoA(a,b))>=0.03)), top12=SG*Math.pow(md(-375),CAP_AUD), withT=SG*md(100)*Math.pow(md(-375),CAP_AUD-1);

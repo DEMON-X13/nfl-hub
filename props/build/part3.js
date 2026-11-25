@@ -2777,7 +2777,7 @@ const PB_FREE={M:1500,DELTA:0.15,TOL:5e-4,E1:1500,E2:300,E3:12000,
   SLACK:[1,1,1.05,1.10,1.20,1.30,1.35,1.40,1.45,1.50,1.55,1.60,1.65],
   C:[1,1,1.03,1.04,1.05,1.06,1.08,1.09,1.10,1.11,1.12,1.13,1.14],
   C2:[1,1,1,1.12,1.15,1.18,1.21,1.24,1.27,1.30,1.33,1.36,1.39],
-  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9,SLEP:1.05,SLT:1.03,UNITS1:2000,NODES1:6000000,UNITS2:1000,NODES2:500000,
+  FRONT:1.03,FM:300,FMT:24000,TRIES:8,WIN:0.004,WIN_EVALS:2000,BORDER:1e-9,SLEP:1.05,SLT:1.03,UNITS1:2000,NODES1:6000000,UNITS2:1000,UNITS2G:1400,NODES2:500000,
   WORK:1500000,RT:200000,R2:150000,RW:100000,GWORK:1200000,GWALK:600000,GFLOOR:10000,GR:300000};
 /* (v146) a level's work, deterministic and alike on every machine, in microseconds of jsdom on the box it was measured on
    (a 4-CPU 2.1 GHz Xeon): a walk's node NODE, each leg its children read KID, a candidate kept KEEP, a parlay of n legs worked in full EX n^2 and its draws
@@ -2913,15 +2913,19 @@ function pbFreeWalk(x,cand,F,mode,B,bar){
   const C=PB_FREE.C, C2=PB_FREE.C2, TOL=PB_FREE.TOL, SUFC=new Float64Array(E.length+1);
   for(let i=E.length-1;i>=0;i--) SUFC[i]=Math.max(SUFC[i+1],C[E[i].s.length]);
   let best=bar||null, ev=0, ev2=0, i=0, mine=null, cut=false; const rest=[];
-  const work=e=>{ let r=B.seen?B.seen.get(e.id):undefined; const hit=r!==undefined; if(!hit){ r=pbExact(e.s.map(c=>x.L[c]),0,F); if(B.seen) B.seen.set(e.id,r||false); }
-    const u=pbFreeCost(e.s.length,!!r); B.u-=u; PB_LV_STAT.units+=u; if(!hit) B.w-=pbWorkEx(e.s.length,!!r,e.s.cor?[e.s.length]:[]); if(!r) return; const c={pr:r.corr,n:e.s.length,ln:e.ln,id:e.id}; if(!best||pbFreeRank(c,best)<0){ best={...c,r}; mine=best; } };
+  /* (v150) a set the level has worked in full already is read from seen for free: no unit, no evaluation counted */
+  const seen=e=>!!B.seen&&B.seen.has(e.id);
+  const work=e=>{ let r=B.seen?B.seen.get(e.id):undefined; const hit=r!==undefined; if(!hit){ r=pbExact(e.s.map(c=>x.L[c]),0,F); if(B.seen) B.seen.set(e.id,r||false);
+      const u=pbFreeCost(e.s.length,!!r); B.u-=u; PB_LV_STAT.units+=u; B.w-=pbWorkEx(e.s.length,!!r,e.s.cor?[e.s.length]:[]); }
+    if(!r) return; const c={pr:r.corr,n:e.s.length,ln:e.ln,id:e.id}; if(!best||pbFreeRank(c,best)<0){ best={...c,r}; mine=best; } };
   const cap=mode===1?PB_FREE.E3:PB_FREE.E1;
   for(;i<E.length;i++){ const e=E[i], n=e.s.length;
     if(best&&e.key*SUFC[i]<best.pr+TOL) break;
     if(best&&e.key*C[n]<best.pr+TOL){ rest.push(e); continue; }
+    if(seen(e)){ work(e); continue; }
     if(ev>=cap||B.u<=0||B.w<=0){ cut=true; break; } ev++; work(e); }
   if(best&&mode!==1){ for(;i<E.length;i++) rest.push(E[i]);
-    for(const e of rest){ const n=e.s.length; if(e.key*Math.max(C[n],C2[n])<best.pr+TOL) continue; if(!pbLvOpp(x,e.s)) continue; if(ev2>=PB_FREE.E2||B.u<=0||B.w<=0) break; ev2++; PB_LV_STAT.opp++; work(e); } }
+    for(const e of rest){ const n=e.s.length; if(e.key*Math.max(C[n],C2[n])<best.pr+TOL) continue; if(!pbLvOpp(x,e.s)) continue; if(seen(e)){ work(e); continue; } if(ev2>=PB_FREE.E2||B.u<=0||B.w<=0) break; ev2++; PB_LV_STAT.opp++; work(e); } }
   PB_LV_STAT.ev+=ev+ev2; PB_LV_STAT.runs++;
   return {best,mine,ev:ev+ev2,cut};
 }
@@ -2957,7 +2961,8 @@ function pbFreeGame(x,legs,fl,k,F,cap,LV){
      past its cap); then, where none paid and candidates were let go, the search again keeping eight and sixty-four times as
      many, the best so far its bar; every walk from the level's budgets (B, B2) */
   let best=w1.best||null;
-  const B2=pbTake(LV,PB_FREE.UNITS2,PB_FREE.NODES2);
+  /* (v150) the second walk of one game: UNITS2G, the Day games' group walk keeping UNITS2 */
+  const B2=pbTake(LV,PB_FREE.UNITS2G,PB_FREE.NODES2);
   /* (v146) the second walk also where the first walk's candidates were cut before it worked any */
   if(w1.ev||c1.cut){ PB_LV_STAT.second++; const sd=pbFreeSeed(x,I,F,cap,fl,k,B2), s0=sd?{pr:sd.corr,n:sd.legs.length,ln:sd.legs.reduce((a,l)=>a+pbLean(l),0),id:sd.legs.map(pbId).sort().join(','),r:sd}:null;
     const b0=best&&(!s0||pbFreeRank(best,s0)<0)?best:s0;

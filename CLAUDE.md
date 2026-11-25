@@ -4870,6 +4870,17 @@ at a time, 0 failures each; every real level (264 on the four payloads and 28 on
 same parlay as app v145's and the all-games engine the same; and the record run as `weekly.py` runs it on a copy of the
 ledger unchanged (week 9's last set, BUF at MIN, locked; no Sunday slot to come), a second run the same.
 
+**A set already worked costs a walk nothing** (app v150, `props/build/patch_walk_seen.py`, whose docstring is the design).
+The props job was refused twice on 24 November 2026 (issue #387) on the audit's made-up lines: LV at CLE's Aggressive took 5
+legs at 7.798% where 4 legs land 10.170% at +700. Most of that game's made-up starters sat at -150 on a 59% chance, so some
+13,000 sets of four priced within a hair of +700 by the reading, and the first paying one was about the 3,320th; the first
+walk (1,500), the second (1,559) and the wider re-run never reached it, since `pbFreeWalk` charged a set already worked in
+full (read from the level's `seen`) to the walk's units and its cap again, so the re-run, walking the same order from the
+top, spent its cap on the first walk's own 1,500. A seen set is now read for free (no unit, no evaluation counted, no work),
+and the second walk of one game has `PB_FREE.UNITS2G`, 1,400 units (`UNITS2`, the Day games' group walk's, stays 1,000);
+the level's work budget (`WORK`) is unchanged and still bounds every level's time. The Aggressive is then 4 legs at 10.23%.
+The audit's and the smoke's per-pass unit bounds (`WORK_AUD`, `WORK_OWN`) read 2,000 + 1,400.
+
 Wherever this file says, before this paragraph or after it, that a level's budgets are a pass's, that the Day games'
 same-game groups are walked and worked in full with no budget, that `parlayProb` draws every leg of a parlay of several
 games together, that the builder's order and a parlay's stated chance follow the visitor's collation, that a press of
