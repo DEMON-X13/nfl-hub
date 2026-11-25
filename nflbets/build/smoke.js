@@ -10428,7 +10428,7 @@ async function softChecks() {
         const pairsS = S18.filter((a, i) => S18.slice(i + 1).some(b => Math.abs(rhoL(a, b)) >= 0.03)).length;
         const greedy = F => { const ord = S18.slice().sort((a, b) => (Math.log(mdL(b.price)) / -Math.log(b.p)) - (Math.log(mdL(a.price)) / -Math.log(a.p))), cur = []; let m = 1;
           for (const l of ord) { if (cur.length >= CAPB) break; if (!pbFitsF(cur, l)) continue; cur.push(l); m *= mdL(l.price); if (cur.length >= 2 && m >= F) { const x = ofB(cur); if (x.dec >= F) return x; } } return null; };
-        const out = [], WORK_OWN = { u: 2000 + 1000 + 3 * 13.25, n: 6e6 + 5e5 + 3 * (CAPB + 1) }, ST = w.eval('PB_LV_STAT'), gameF = w.eval('pbFreeGame'), putGame = w.eval('(function(f){ pbFreeGame=f; })');
+        const out = [], WORK_OWN = { u: 2000 + 1400 + 3 * 13.25, n: 6e6 + 5e5 + 3 * (CAPB + 1) }, ST = w.eval('PB_LV_STAT'), gameF = w.eval('pbFreeGame'), putGame = w.eval('(function(f){ pbFreeGame=f; })');
         for (const [id, F] of FS) { const g = greedy(F), passes = []; held++;
           putGame(function () { const u0 = ST.units, n0 = ST.nodes, x = gameF.apply(this, arguments); passes.push({ u: ST.units - u0, n: ST.nodes - n0 }); return x; });
           let r = null, x = null; try { x = workOf(() => unitF([{ pref: [], thin: S18, mkt: [] }], F, new Map(), CAPB)); r = x.r; } finally { putGame(gameF); } const ms = x ? x.ms : 0;
@@ -10452,7 +10452,7 @@ async function softChecks() {
       { const impl = a => a < 0 ? -a / (100 - a) : 100 / (100 + a), q = impl(-375) / 1.03, SGPo = w.eval('SGP_HOLD'), ST = w.eval('PB_LV_STAT'), gameF = w.eval('pbFreeGame'), putGame = w.eval('(function(f){ pbFreeGame=f; })');
         const TP = Array.from({ length: 60 }, (_, j) => { const x = bl('XX_TP', 't' + j, 'XAUD', 'receptions', 'over', -375, q + 1e-6 * j, j % 2 ? 'XXA' : 'XXB'); x.k = 4.5 + j; return x; });
         const TT = { gid: 'XX_TP', week: 1, pid: 'game', team: null, grp: 'GAME', stat: 'total', side: 'over', k: 44.5, main: true, src: 'real', key: 'XX_TP|total', name: 'XXA at XXB', price: 100, p: 0.485, pm: 0.485, market: true, thin: false };
-        const byP = TP.slice().sort((a, b) => b.p - a.p), WORK_OWN = { u: 2000 + 1000 + 3 * 13.25, n: 6e6 + 5e5 + 3 * (CAPB + 1) }, out = [], badT = [];
+        const byP = TP.slice().sort((a, b) => b.p - a.p), WORK_OWN = { u: 2000 + 1400 + 3 * 13.25, n: 6e6 + 5e5 + 3 * (CAPB + 1) }, out = [], badT = [];
         /* the smoke's own answer: the fewest of the likeliest legs that pay, and with the total where twelve do not */
         const ansT = F => { for (let k = 2; k <= CAPB; k++) { const x = ofB(byP.slice(0, k)); if (x.dec >= F) return { ...x, tot: false }; }
           for (let k = 1; k < CAPB; k++) { const x = ofB([...byP.slice(0, k), TT]); if (x.dec >= F) return { ...x, tot: true }; } return null; };
