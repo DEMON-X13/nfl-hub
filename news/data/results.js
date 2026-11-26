@@ -653,6 +653,10 @@ const RESULTS = {
  "wk11:CIN-WAS": [
   20,
   22
+ ],
+ "wk12:GB-LAR": [
+  13,
+  26
  ]
 };
 const LINES = {
@@ -821,9 +825,9 @@ const LINES = {
  "wk11:CIN-WAS": "CIN -6, O/U 54.5",
  "wk12:GB-LAR": "LAR -2.5, O/U 43.5",
  "wk12:CHI-DET": "CHI -1.5, O/U 55.5",
- "wk12:PHI-DAL": "DAL -8.5, O/U 47.5",
- "wk12:KC-BUF": "BUF -3, O/U 46.5",
- "wk12:DEN-PIT": "DEN -3.5, O/U 36.5",
+ "wk12:PHI-DAL": "DAL -8.5, O/U 48.5",
+ "wk12:KC-BUF": "BUF -3, O/U 45.5",
+ "wk12:DEN-PIT": "DEN -4.5, O/U 36.5",
  "wk12:NO-CIN": "CIN -10, O/U 49.5",
  "wk12:BAL-HOU": "HOU -6.5, O/U 47.5",
  "wk12:NYG-IND": "NYG -6, O/U 41.5",
@@ -833,11 +837,13 @@ const LINES = {
  "wk12:NE-LAC": "NE -1.5, O/U 35.5",
  "wk12:WAS-ARI": "WAS -7, O/U 41.5",
  "wk12:SEA-SF": "SF -2.5, O/U 44.5",
- "wk12:LV-CLE": "CLE -4.5, O/U 39.5",
+ "wk12:LV-CLE": "CLE -4.5, O/U 40.5",
  "wk12:CAR-TB": "TB -3, O/U 43.5",
+ "wk13:KC-LAR": "LAR -1.5, O/U 44.5",
  "wk13:DET-ATL": "DET -3.5, O/U 49.5",
  "wk13:JAX-CHI": "CHI -3, O/U 49.5",
  "wk13:CIN-CLE": "CIN -6, O/U 46.5",
+ "wk13:GB-NO": "GB -4.5, O/U 46.5",
  "wk13:SF-NYG": "SF -6.5, O/U 47.5",
  "wk13:LAC-TB": "TB -5.5, O/U 40.5",
  "wk13:WAS-TEN": "WAS -4.5, O/U 47.5",
