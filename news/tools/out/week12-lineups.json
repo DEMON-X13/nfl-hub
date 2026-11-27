@@ -1351,7 +1351,7 @@
   },
   "HOU": {
    "kick": "2026-11-29T18:00Z",
-   "built_at": "2026-11-26T23:21:42.464Z",
+   "built_at": "2026-11-27T16:53:31.667Z",
    "units": {
     "qb": [
      {
@@ -1434,7 +1434,7 @@
       "id": "00-0032759",
       "n": "Sheldon Rankins",
       "pos": "DT",
-      "q": "questionable: ankle, not practising"
+      "q": "questionable: ankle"
      }
     ],
     "db": [
@@ -1458,7 +1458,7 @@
   },
   "NYG": {
    "kick": "2026-11-29T18:00Z",
-   "built_at": "2026-11-26T03:29:26.522Z",
+   "built_at": "2026-11-27T16:53:31.667Z",
    "units": {
     "qb": [
      {
@@ -1529,7 +1529,7 @@
       "id": "00-0040677",
       "n": "Abdul Carter",
       "pos": "OLB",
-      "q": "questionable: ankle, not practising"
+      "q": "questionable: calf, not practising"
      },
      {
       "id": "00-0041509",
@@ -1669,7 +1669,7 @@
   },
   "TEN": {
    "kick": "2026-11-29T18:00Z",
-   "built_at": "2026-11-26T23:21:42.464Z",
+   "built_at": "2026-11-27T16:53:31.667Z",
    "units": {
     "qb": [
      {
@@ -1682,8 +1682,7 @@
      {
       "id": "00-0036869",
       "n": "Dan Moore Jr.",
-      "pos": "T",
-      "q": "not practising: knee"
+      "pos": "T"
      },
      {
       "id": "00-0038536",
@@ -1774,7 +1773,7 @@
   },
   "JAX": {
    "kick": "2026-11-29T18:00Z",
-   "built_at": "2026-11-26T23:21:42.464Z",
+   "built_at": "2026-11-27T16:53:31.667Z",
    "units": {
     "qb": [
      {
@@ -1827,12 +1826,6 @@
     ],
     "rec": [
      {
-      "id": "00-0038606",
-      "n": "Parker Washington",
-      "pos": "WR",
-      "q": "questionable: shoulder"
-     },
-     {
       "id": "00-0034960",
       "n": "Jakobi Meyers",
       "pos": "WR",
@@ -1842,6 +1835,11 @@
       "id": "00-0038935",
       "n": "Brenton Strange",
       "pos": "TE"
+     },
+     {
+      "id": "00-0039893",
+      "n": "Brian Thomas Jr.",
+      "pos": "WR"
      }
     ],
     "front": [
@@ -2720,7 +2718,7 @@
   },
   "SEA": {
    "kick": "2026-11-29T21:25Z",
-   "built_at": "2026-11-26T23:21:42.464Z",
+   "built_at": "2026-11-27T16:53:31.667Z",
    "units": {
     "qb": [
      {
@@ -2803,7 +2801,7 @@
       "id": "00-0031411",
       "n": "DeMarcus Lawrence",
       "pos": "OLB",
-      "q": "questionable: shoulder, not practising"
+      "q": "questionable: shoulder"
      }
     ],
     "db": [
@@ -3037,7 +3035,7 @@
   },
   "CLE": {
    "kick": "2026-11-30T01:20Z",
-   "built_at": "2026-11-26T23:21:42.464Z",
+   "built_at": "2026-11-27T16:53:31.667Z",
    "units": {
     "qb": [
      {
@@ -3067,7 +3065,7 @@
       "id": "00-0041049",
       "n": "Austin Barber",
       "pos": "T",
-      "q": "questionable: knee, not practising"
+      "q": "questionable: knee"
      },
      {
       "id": "00-0035234",
@@ -3145,7 +3143,7 @@
   },
   "CAR": {
    "kick": "2026-12-01T01:15Z",
-   "built_at": "2026-11-26T23:21:42.464Z",
+   "built_at": "2026-11-27T16:53:31.667Z",
    "units": {
     "qb": [
      {
@@ -3228,7 +3226,7 @@
       "id": "00-0037007",
       "n": "Patrick Jones II",
       "pos": "OLB",
-      "q": "questionable: ankle"
+      "q": "questionable: ankle, not practising"
      }
     ],
     "db": [
