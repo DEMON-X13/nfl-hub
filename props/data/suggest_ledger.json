@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job. prime (since 16 October 2026): each Thursday, Sunday and Monday night game's four parlays on the Suggested Parlays tab (Safe, Medium, Aggressive, Extreme, every leg from that game), taken from the published page on the payload just baked, keyed season|week|kickoff|game, rewritten while the set's lock (2 hours before kickoff) is to come and locked from it, so each entry is the set as the job last published it before the lock; from the lock to kickoff a level holding a player ruled out since is built again, that level alone, and recorded in updates. From app v118 to app v141 each entry held the unit's Elo picks too (elo: elo-safe to elo-xtrm, each leg with its Elo chance pe); since app v142 none is taken (an entry not yet locked is rewritten without them), and an entry locked with them keeps them as they locked, graded as before and never built again. Since app v145 (8 November 2026) every level with legs taken is the likeliest parlay of 2 to 12 legs, of any size, paying its own least price (minDec: Safe 2.1, +110; Medium 4, +300; Aggressive 8, +700; Extreme 16, +1500; pick: likeliest-any, the rule it was chosen by), and a Sunday slot's legs may be of any of its games (one set searched across them); a level taken under app v144 (7 to 8 November 2026) is the likeliest parlay of its fixed size (2, 3, 4 and 5 legs) paying the same prices, a slot level one game's, and carries pick: likeliest; a level taken under app v143 (7 November 2026, until app v144 the same day) pays +100 or more and carries minDec: 2 and no pick (Safe the likeliest pair paying +100; Medium, Aggressive and Extreme the least costly landing 25%, 12% or 5% among those, else the likeliest of their size among those); a level taken before, and an empty level, carries no minDec (an empty level taken since app v145 carries its pick). slot holds each week's Sunday slot (every Sunday game before 7 pm Eastern, one set across them), keyed season|week|first kickoff|<season>_<WW>_SUN with its games, locked 2 hours before its first kickoff by the same rules. entries (12 to 16 October 2026): the Parlay Builder's retired all-games panel under its default choices, keyed season|week|kickoff wave and frozen at that kickoff; no new one is taken. A frozen entry of either kind is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. prime_summary, slot_summary (each with its elo, the Elo picks' history) and summary: per level, parlays graded won or lost (prime: each game's level once; entries: each parlay once however many waves showed it), won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen or locked entries moved.",
  "since": "2026-10-12",
- "updated": "2026-11-28T00:05:58Z",
+ "updated": "2026-11-28T14:18:05Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":2,"won":1,"lost":1,"push":0,"exp_fair":0.4531,"fair_n":2,"exp_model":0.6879,"units":2.199},
@@ -2687,7 +2687,7 @@
    "home": "CLE",
    "kickoff": "2026-11-30T01:20:00Z",
    "lock": "2026-11-29T23:20:00Z",
-   "baked_at": "2026-11-27T23:59+00:00",
+   "baked_at": "2026-11-28T14:11+00:00",
    "pool": {"pref":0,"thin":25,"mkt":1,"far":0},
    "tiers": [
     {
@@ -2696,13 +2696,13 @@
      "n": 2,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0033537","team":"CLE","grp":"QB","stat":"passing_tds","k":1.5,"side":"under","main":true,"price":-173,"src":"dkline","name":"Deshaun Watson","label":"Under 1.5 passing tds","p":0.81,"fair":0.5982,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0041562","team":"LV","grp":"QB","stat":"passing_tds","k":0.5,"side":"over","main":true,"price":-219,"src":"dkline","name":"Fernando Mendoza","label":"Over 0.5 passing tds","p":0.5324,"fair":0.6482,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"team:CLE","team":"CLE","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-241,"src":"real","name":"Browns","label":"To win","p":0.6337,"fair":0.6788,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0040162","team":"CLE","grp":"RB","stat":"receptions","k":2.5,"side":"over","main":true,"price":-150,"src":"dkline","name":"Dylan Sampson","label":"Over 2.5 receptions","p":0.4577,"fair":0.5658,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.4236,
-     "fair": 0.3752,
+     "p": 0.2901,
+     "fair": 0.3841,
      "fair_est": true,
-     "dec": 2.121,
+     "dec": 2.113,
      "likeliest": false,
      "thin": 2,
      "mkt": 0,
@@ -2716,14 +2716,14 @@
      "n": 3,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"team:CLE","team":"CLE","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-236,"src":"real","name":"Browns","label":"To win","p":0.6337,"fair":0.6745,"fair_est":false,"thin":true,"market":false},
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0033537","team":"CLE","grp":"QB","stat":"passing_yards","k":211.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Deshaun Watson","label":"Over 211.5 passing yards","p":0.6009,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0040663","team":"CLE","grp":"TE","stat":"receptions","k":4.5,"side":"over","main":true,"price":-115,"src":"dkline","name":"Harold Fannin Jr.","label":"Over 4.5 receptions","p":0.4623,"fair":0.5052,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"team:CLE","team":"CLE","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-241,"src":"real","name":"Browns","label":"To win","p":0.6337,"fair":0.6788,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0033537","team":"CLE","grp":"QB","stat":"passing_yards","k":210.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Deshaun Watson","label":"Over 210.5 passing yards","p":0.5858,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0040784","team":"CLE","grp":"RB","stat":"receiving_yards","k":7.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Quinshon Judkins","label":"Over 7.5 receiving yards","p":0.5614,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.1976,
-     "fair": 0.1953,
+     "p": 0.2279,
+     "fair": 0.1912,
      "fair_est": true,
-     "dec": 4.031,
+     "dec": 4.122,
      "likeliest": false,
      "thin": 3,
      "mkt": 0,
@@ -2737,15 +2737,15 @@
      "n": 4,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"team:CLE","team":"CLE","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-236,"src":"real","name":"Browns","label":"To win","p":0.6337,"fair":0.6745,"fair_est":false,"thin":true,"market":false},
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0033537","team":"CLE","grp":"QB","stat":"passing_yards","k":211.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Deshaun Watson","label":"Over 211.5 passing yards","p":0.6009,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0040663","team":"CLE","grp":"TE","stat":"receptions","k":4.5,"side":"over","main":true,"price":-115,"src":"dkline","name":"Harold Fannin Jr.","label":"Over 4.5 receptions","p":0.4623,"fair":0.5052,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0038563","team":"LV","grp":"WR","stat":"receiving_yards","k":29.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tre Tucker","label":"Under 29.5 receiving yards","p":0.5148,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0040122","team":"LV","grp":"RB","stat":"receiving_yards","k":29.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Ashton Jeanty","label":"Under 29.5 receiving yards","p":0.5589,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0033537","team":"CLE","grp":"QB","stat":"passing_tds","k":1.5,"side":"under","main":true,"price":-183,"src":"dkline","name":"Deshaun Watson","label":"Under 1.5 passing tds","p":0.8109,"fair":0.6105,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0040162","team":"CLE","grp":"RB","stat":"rushing_yards","k":18.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Dylan Sampson","label":"Under 18.5 rushing yards","p":0.5941,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0041562","team":"LV","grp":"QB","stat":"passing_yards","k":190.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Fernando Mendoza","label":"Under 190.5 passing yards","p":0.6076,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.0972,
-     "fair": 0.093,
+     "p": 0.1806,
+     "fair": 0.0926,
      "fair_est": true,
-     "dec": 8.079,
+     "dec": 8.201,
      "likeliest": false,
      "thin": 4,
      "mkt": 0,
@@ -2759,16 +2759,16 @@
      "n": 5,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0040122","team":"LV","grp":"RB","stat":"receiving_yards","k":30.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Ashton Jeanty","label":"Under 30.5 receiving yards","p":0.5702,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0033537","team":"CLE","grp":"QB","stat":"rushing_yards","k":25.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Deshaun Watson","label":"Under 25.5 rushing yards","p":0.5393,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0041562","team":"LV","grp":"QB","stat":"passing_yards","k":193.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Fernando Mendoza","label":"Under 193.5 passing yards","p":0.6139,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0041547","team":"CLE","grp":"WR","stat":"receptions","k":4.5,"side":"under","main":true,"price":-128,"src":"dkline","name":"KC Concepcion","label":"Under 4.5 receptions","p":0.6921,"fair":0.5289,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0038563","team":"LV","grp":"WR","stat":"receiving_yards","k":29.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tre Tucker","label":"Under 29.5 receiving yards","p":0.5148,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0041562","team":"LV","grp":"QB","stat":"passing_yards","k":190.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Fernando Mendoza","label":"Under 190.5 passing yards","p":0.6076,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0041547","team":"CLE","grp":"WR","stat":"receiving_yards","k":52.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"KC Concepcion","label":"Under 52.5 receiving yards","p":0.6781,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0040784","team":"CLE","grp":"RB","stat":"receptions","k":1.5,"side":"under","main":true,"price":-138,"src":"dkline","name":"Quinshon Judkins","label":"Under 1.5 receptions","p":0.4464,"fair":0.5463,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"team:LV","team":"LV","grp":"TEAM","stat":"ats","k":4.5,"side":"over","main":false,"price":-114,"src":"real","name":"Raiders","label":"To cover +4.5","p":0.4967,"fair":0.5098,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_LV_CLE","week":12,"pid":"00-0038563","team":"LV","grp":"WR","stat":"receiving_yards","k":30.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tre Tucker","label":"Under 30.5 receiving yards","p":0.5328,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.0838,
-     "fair": 0.0456,
+     "p": 0.0588,
+     "fair": 0.0454,
      "fair_est": true,
-     "dec": 16,
+     "dec": 16.043,
      "likeliest": false,
      "thin": 5,
      "mkt": 0,
@@ -2777,7 +2777,7 @@
      "pick": "likeliest-any"
     }
    ],
-   "taken_at": "2026-11-28T00:05:58Z"
+   "taken_at": "2026-11-28T14:18:05Z"
   },
   "2026|12|2026-12-01T01:15:00Z|2026_12_CAR_TB": {
    "season": 2026,
@@ -2787,7 +2787,7 @@
    "home": "TB",
    "kickoff": "2026-12-01T01:15:00Z",
    "lock": "2026-11-30T23:15:00Z",
-   "baked_at": "2026-11-27T20:58+00:00",
+   "baked_at": "2026-11-28T14:11+00:00",
    "pool": {"pref":0,"thin":37,"mkt":1,"far":0},
    "tiers": [
     {
@@ -2796,13 +2796,13 @@
      "n": 2,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0039150","team":"CAR","grp":"QB","stat":"passing_tds","k":1.5,"side":"under","main":true,"price":-175,"src":"dkline","name":"Bryce Young","label":"Under 1.5 passing tds","p":0.6369,"fair":0.6015,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0040237","team":"TB","grp":"WR","stat":"receptions","k":1.5,"side":"under","main":true,"price":-189,"src":"dkline","name":"Tez Johnson","label":"Under 1.5 receptions","p":0.5625,"fair":0.6168,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0034855","team":"TB","grp":"QB","stat":"passing_tds","k":1.5,"side":"under","main":true,"price":-165,"src":"dkline","name":"Baker Mayfield","label":"Under 1.5 passing tds","p":0.6025,"fair":0.5876,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0037614","team":"CAR","grp":"WR","stat":"receptions","k":1.5,"side":"under","main":true,"price":-182,"src":"dkline","name":"John Metchie III","label":"Under 1.5 receptions","p":0.499,"fair":0.6084,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.3662,
-     "fair": 0.3799,
+     "p": 0.3096,
+     "fair": 0.366,
      "fair_est": true,
-     "dec": 2.119,
+     "dec": 2.189,
      "likeliest": false,
      "thin": 2,
      "mkt": 0,
@@ -2816,11 +2816,11 @@
      "n": 3,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0039150","team":"CAR","grp":"QB","stat":"passing_yards","k":232.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Bryce Young","label":"Under 232.5 passing yards","p":0.6295,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0037614","team":"CAR","grp":"WR","stat":"receptions","k":1.5,"side":"under","main":true,"price":-182,"src":"dkline","name":"John Metchie III","label":"Under 1.5 receptions","p":0.4993,"fair":0.6084,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0037005","team":"CAR","grp":"TE","stat":"receiving_yards","k":18.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tommy Tremble","label":"Under 18.5 receiving yards","p":0.5789,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0039150","team":"CAR","grp":"QB","stat":"passing_yards","k":233.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Bryce Young","label":"Under 233.5 passing yards","p":0.6362,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0037614","team":"CAR","grp":"WR","stat":"receptions","k":1.5,"side":"under","main":true,"price":-182,"src":"dkline","name":"John Metchie III","label":"Under 1.5 receptions","p":0.499,"fair":0.6084,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0037005","team":"CAR","grp":"TE","stat":"receiving_yards","k":18.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tommy Tremble","label":"Under 18.5 receiving yards","p":0.5786,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.2223,
+     "p": 0.2237,
      "fair": 0.1974,
      "fair_est": true,
      "dec": 4.013,
@@ -2837,15 +2837,15 @@
      "n": 4,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0039150","team":"CAR","grp":"QB","stat":"passing_yards","k":232.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Bryce Young","label":"Under 232.5 passing yards","p":0.6295,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"team:TB","team":"TB","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-159,"src":"real","name":"Buccaneers","label":"To win","p":0.5869,"fair":0.5896,"fair_est":false,"thin":true,"market":false},
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0036555","team":"CAR","grp":"RB","stat":"receiving_yards","k":18.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Chuba Hubbard","label":"Under 18.5 receiving yards","p":0.6085,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0037005","team":"CAR","grp":"TE","stat":"receiving_yards","k":18.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tommy Tremble","label":"Under 18.5 receiving yards","p":0.5789,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0039150","team":"CAR","grp":"QB","stat":"passing_yards","k":233.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Bryce Young","label":"Under 233.5 passing yards","p":0.6362,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0039491","team":"CAR","grp":"WR","stat":"receiving_yards","k":44.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Jalen Coker","label":"Under 44.5 receiving yards","p":0.6959,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0041048","team":"TB","grp":"WR","stat":"receiving_yards","k":26.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Ted Hurst III","label":"Under 26.5 receiving yards","p":0.6445,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0040124","team":"CAR","grp":"WR","stat":"receiving_yards","k":54.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tetairoa McMillan","label":"Under 54.5 receiving yards","p":0.5367,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.1516,
-     "fair": 0.0947,
+     "p": 0.1947,
+     "fair": 0.0959,
      "fair_est": true,
-     "dec": 8.036,
+     "dec": 8.142,
      "likeliest": false,
      "thin": 4,
      "mkt": 0,
@@ -2859,16 +2859,16 @@
      "n": 5,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0034855","team":"TB","grp":"QB","stat":"passing_yards","k":201.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Baker Mayfield","label":"Over 201.5 passing yards","p":0.5873,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0033921","team":"TB","grp":"WR","stat":"receiving_yards","k":23.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Chris Godwin Jr.","label":"Over 23.5 receiving yards","p":0.6113,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0036555","team":"CAR","grp":"RB","stat":"any_td","k":1,"side":"over","main":false,"price":-110,"src":"dkline","name":"Chuba Hubbard","label":"Scores a touchdown","p":0.377,"fair":0.4958,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0040237","team":"TB","grp":"WR","stat":"receiving_yards","k":11.5,"side":"over","main":true,"price":-112,"src":"dkline","name":"Tez Johnson","label":"Over 11.5 receiving yards","p":0.6738,"fair":0.5,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0037005","team":"CAR","grp":"TE","stat":"receiving_yards","k":18.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tommy Tremble","label":"Under 18.5 receiving yards","p":0.5789,"fair":0.5,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0039150","team":"CAR","grp":"QB","stat":"passing_yards","k":233.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Bryce Young","label":"Under 233.5 passing yards","p":0.6362,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0039491","team":"CAR","grp":"WR","stat":"receiving_yards","k":44.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Jalen Coker","label":"Under 44.5 receiving yards","p":0.6959,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0036919","team":"TB","grp":"RB","stat":"receiving_yards","k":16.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Kenny Gainwell","label":"Under 16.5 receiving yards","p":0.5942,"fair":0.5,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"team:CAR","team":"CAR","grp":"TEAM","stat":"ats","k":3,"side":"over","main":false,"price":-112,"src":"real","name":"Panthers","label":"To cover +3","p":0.501,"fair":0.5055,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_CAR_TB","week":12,"pid":"00-0040124","team":"CAR","grp":"WR","stat":"receiving_yards","k":54.5,"side":"under","main":true,"price":-112,"src":"dkline","name":"Tetairoa McMillan","label":"Under 54.5 receiving yards","p":0.5367,"fair":0.5,"fair_est":true,"thin":true,"market":false}
      ],
-     "p": 0.0701,
-     "fair": 0.0457,
+     "p": 0.0887,
+     "fair": 0.0461,
      "fair_est": true,
-     "dec": 16.029,
+     "dec": 16.086,
      "likeliest": false,
      "thin": 5,
      "mkt": 0,
@@ -2877,7 +2877,7 @@
      "pick": "likeliest-any"
     }
    ],
-   "taken_at": "2026-11-27T21:04:16Z"
+   "taken_at": "2026-11-28T14:18:05Z"
   }
  },
  "slot_since": "2026-10-19",
@@ -3582,8 +3582,8 @@
    "kickoff": "2026-11-29T18:00:00Z",
    "last": "2026-11-29T21:25:00Z",
    "lock": "2026-11-29T16:00:00Z",
-   "baked_at": "2026-11-27T23:59+00:00",
-   "pool": {"pref":0,"thin":270,"mkt":9,"far":0},
+   "baked_at": "2026-11-28T14:11+00:00",
+   "pool": {"pref":0,"thin":304,"mkt":9,"far":0},
    "tiers": [
     {
      "id": "safe",
@@ -3591,13 +3591,13 @@
      "n": 2,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_NO_CIN","week":12,"pid":"team:CIN","team":"CIN","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-570,"src":"real","name":"Bengals","label":"To win","p":0.7638,"fair":0.8182,"fair_est":false,"thin":true,"market":false},
-      {"gid":"2026_12_TEN_JAX","week":12,"pid":"00-0041100","team":"JAX","grp":"WR","stat":"receptions","k":3.5,"side":"under","main":true,"price":-127,"src":"dkline","name":"Josh Cameron","label":"Under 3.5 receptions","p":0.8138,"fair":0.5274,"fair_est":true,"thin":true,"market":false}
+      {"gid":"2026_12_SEA_SF","week":12,"pid":"team:SF","team":"SF","grp":"TEAM","stat":"ats","k":1.5,"side":"over","main":false,"price":-111,"src":"real","name":"49ers","label":"To cover +1.5","p":0.5817,"fair":0.5033,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_TEN_JAX","week":12,"pid":"team:JAX","team":"JAX","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-930,"src":"real","name":"Jaguars","label":"To win","p":0.8672,"fair":0.8683,"fair_est":false,"thin":true,"market":false}
      ],
-     "p": 0.6216,
-     "fair": 0.4315,
-     "fair_est": true,
-     "dec": 2.101,
+     "p": 0.5044,
+     "fair": 0.437,
+     "fair_est": false,
+     "dec": 2.105,
      "likeliest": false,
      "thin": 2,
      "mkt": 0,
@@ -3611,14 +3611,14 @@
      "n": 3,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_SEA_SF","week":12,"pid":"team:SF","team":"SF","grp":"TEAM","stat":"ats","k":1.5,"side":"over","main":false,"price":-115,"src":"real","name":"49ers","label":"To cover +1.5","p":0.5817,"fair":0.512,"fair_est":false,"thin":true,"market":false},
-      {"gid":"2026_12_WAS_ARI","week":12,"pid":"team:WAS","team":"WAS","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-343,"src":"real","name":"Commanders","label":"To win","p":0.6403,"fair":0.7443,"fair_est":false,"thin":true,"market":false},
-      {"gid":"2026_12_NE_LAC","week":12,"pid":"team:NE","team":"NE","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-152,"src":"real","name":"Patriots","label":"To win","p":0.592,"fair":0.5779,"fair_est":false,"thin":true,"market":false}
+      {"gid":"2026_12_NE_LAC","week":12,"pid":"team:NE","team":"NE","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-150,"src":"real","name":"Patriots","label":"To win","p":0.592,"fair":0.5766,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_SEA_SF","week":12,"pid":"team:SEA","team":"SEA","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-122,"src":"real","name":"Seahawks","label":"To win","p":0.4621,"fair":0.5273,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_ATL_MIN","week":12,"pid":"team:MIN","team":"MIN","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-310,"src":"real","name":"Vikings","label":"To win","p":0.7141,"fair":0.7269,"fair_est":false,"thin":true,"market":false}
      ],
-     "p": 0.2205,
-     "fair": 0.2202,
+     "p": 0.1954,
+     "fair": 0.221,
      "fair_est": false,
-     "dec": 4.003,
+     "dec": 4.011,
      "likeliest": false,
      "thin": 3,
      "mkt": 0,
@@ -3629,19 +3629,20 @@
     {
      "id": "aggr",
      "label": "Aggressive",
-     "n": 3,
+     "n": 4,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_WAS_ARI","week":12,"pid":"00-0040242","team":"WAS","grp":"RB","stat":"any_td","k":1,"side":"over","main":false,"price":110,"src":"dkline","name":"Jacory Croskey-Merritt","label":"Scores a touchdown","p":0.415,"fair":0.4507,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_NYG_IND","week":12,"pid":"00-0036223","team":"IND","grp":"RB","stat":"any_td","k":1,"side":"over","main":false,"price":102,"src":"dkline","name":"Jonathan Taylor","label":"Scores a touchdown","p":0.3458,"fair":0.4685,"fair_est":true,"thin":true,"market":false},
+      {"gid":"2026_12_WAS_ARI","week":12,"pid":"team:WAS","team":"WAS","grp":"TEAM","stat":"ats","k":-6.5,"side":"over","main":false,"price":-118,"src":"real","name":"Commanders","label":"To cover -6.5","p":0.4513,"fair":0.5174,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_NYG_IND","week":12,"pid":"team:NYG","team":"NYG","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-267,"src":"real","name":"Giants","label":"To win","p":0.6406,"fair":0.7002,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_NE_LAC","week":12,"pid":"team:NE","team":"NE","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-150,"src":"real","name":"Patriots","label":"To win","p":0.592,"fair":0.5766,"fair_est":false,"thin":true,"market":false},
       {"gid":"2026_12_BAL_HOU","week":12,"pid":"team:HOU","team":"HOU","grp":"TEAM","stat":"ats","k":-6.5,"side":"over","main":false,"price":-112,"src":"real","name":"Texans","label":"To cover -6.5","p":0.5018,"fair":0.5055,"fair_est":false,"thin":true,"market":false}
      ],
-     "p": 0.072,
-     "fair": 0.1067,
-     "fair_est": true,
-     "dec": 8.03,
+     "p": 0.0859,
+     "fair": 0.1056,
+     "fair_est": false,
+     "dec": 8.011,
      "likeliest": false,
-     "thin": 3,
+     "thin": 4,
      "mkt": 0,
      "chance": "fair",
      "minDec": 8,
@@ -3650,27 +3651,28 @@
     {
      "id": "xtrm",
      "label": "Extreme",
-     "n": 4,
+     "n": 5,
      "floor": 0,
      "legs": [
-      {"gid":"2026_12_BAL_HOU","week":12,"pid":"00-0035685","team":"HOU","grp":"RB","stat":"any_td","k":1,"side":"over","main":false,"price":106,"src":"dkline","name":"David Montgomery","label":"Scores a touchdown","p":0.3553,"fair":0.4594,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_WAS_ARI","week":12,"pid":"00-0040242","team":"WAS","grp":"RB","stat":"any_td","k":1,"side":"over","main":false,"price":110,"src":"dkline","name":"Jacory Croskey-Merritt","label":"Scores a touchdown","p":0.415,"fair":0.4507,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_NYG_IND","week":12,"pid":"00-0036223","team":"IND","grp":"RB","stat":"any_td","k":1,"side":"over","main":false,"price":102,"src":"dkline","name":"Jonathan Taylor","label":"Scores a touchdown","p":0.3458,"fair":0.4685,"fair_est":true,"thin":true,"market":false},
-      {"gid":"2026_12_SEA_SF","week":12,"pid":"team:SEA","team":"SEA","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-119,"src":"real","name":"Seahawks","label":"To win","p":0.4621,"fair":0.522,"fair_est":false,"thin":true,"market":false}
+      {"gid":"2026_12_NE_LAC","week":12,"pid":"team:LAC","team":"LAC","grp":"TEAM","stat":"ats","k":3,"side":"over","main":false,"price":-118,"src":"real","name":"Chargers","label":"To cover +3","p":0.4958,"fair":0.5186,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_NYG_IND","week":12,"pid":"team:IND","team":"IND","grp":"TEAM","stat":"ats","k":5.5,"side":"over","main":false,"price":-112,"src":"real","name":"Colts","label":"To cover +5.5","p":0.5189,"fair":0.5055,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_NYJ_MIA","week":12,"pid":"team:NYJ","team":"NYJ","grp":"TEAM","stat":"ats","k":-5.5,"side":"over","main":false,"price":-110,"src":"real","name":"Jets","label":"To cover -5.5","p":0.3993,"fair":0.5011,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_SEA_SF","week":12,"pid":"team:SEA","team":"SEA","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-122,"src":"real","name":"Seahawks","label":"To win","p":0.4621,"fair":0.5273,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_12_ATL_MIN","week":12,"pid":"team:MIN","team":"MIN","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-310,"src":"real","name":"Vikings","label":"To win","p":0.7141,"fair":0.7269,"fair_est":false,"thin":true,"market":false}
      ],
-     "p": 0.0236,
-     "fair": 0.0506,
-     "fair_est": true,
-     "dec": 16.082,
+     "p": 0.0339,
+     "fair": 0.0503,
+     "fair_est": false,
+     "dec": 16.067,
      "likeliest": false,
-     "thin": 4,
+     "thin": 5,
      "mkt": 0,
      "chance": "fair",
      "minDec": 16,
      "pick": "likeliest-any"
     }
    ],
-   "taken_at": "2026-11-28T00:05:58Z"
+   "taken_at": "2026-11-28T14:18:05Z"
   }
  }
 }
